@@ -24,6 +24,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 from azoth import _core
+from azoth._registry_gen import spec as _spec_for
 from azoth.core.result import (
     ChokedFlowAreaResult,
     ColebrookResult,
@@ -39,7 +40,7 @@ from azoth.core.result import (
     ReynoldsNumberResult,
     SwameeJainResult,
 )
-from azoth.core.units import Q, from_si, to_si
+from azoth.core.units import Q, from_si, input_to_si, to_si
 from azoth.core.warnings import Warning, WarningCode
 
 
@@ -139,11 +140,15 @@ def darcy_weisbach(
 
 def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
     """Plane-wall conduction, computed in Rust."""
+    spec = _spec_for("thermal.conduction_plane_wall")
     result = _core.conduction_plane_wall(
-        to_si(k, "W/(m*K)", "k"),
-        to_si(A, "m**2", "A"),
-        to_si(dT, "K", "dT"),
-        to_si(L, "m", "L"),
+        input_to_si(spec, "k", k),
+        input_to_si(spec, "A", A),
+        # `interval: true` in the spec, so an absolute `Q(30, "degC")` is refused
+        # here rather than converted to 303.15 K. Both backends must make the same
+        # choice, and this is the only place the Rust path's units are decided.
+        input_to_si(spec, "dT", dT),
+        input_to_si(spec, "L", L),
     )
     return ConductionPlaneWallResult(
         # `q` is an SI base magnitude from the extension, so it is rebuilt as a real

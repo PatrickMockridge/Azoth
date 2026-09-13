@@ -244,7 +244,12 @@
           "default": false,
           "description": "Optional inputs may be omitted; the implementation must then emit a RANGE_CHECK_SKIPPED warning for any range check that depends on them, rather than silently passing."
         },
-        "default": { "type": "number" }
+        "default": { "type": "number" },
+        "interval": {
+          "type": "boolean",
+          "default": false,
+          "description": "The input is a temperature *difference* rather than an absolute temperature. Both are the same dimension, so a caller who passes 30 degC where a 30 K difference was meant gets 303.15 K: a plausible number wrong by 273.15, with nothing to catch it. Marking the input makes the Python boundary refuse an offset unit (degC, degF) rather than silently applying the offset - which is what Rust already gets for free by taking a TemperatureInterval rather than a ThermodynamicTemperature. Only meaningful on a unit that can express a difference, which is K; spec_lint enforces that."
+        }
       },
       "allOf": [
         {

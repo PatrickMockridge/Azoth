@@ -172,6 +172,21 @@ than restating what you expect it to be.
 dimensionless quantities (`f`, `Re`, `epsilon/D`) are plain floats; everything
 else is a `pint` quantity in Python and a `uom` quantity in Rust.
 
+**A temperature difference is not an absolute temperature, and the spec has to
+say which.** They share a dimension, so nothing in the units can separate them:
+`pint` converts an absolute `Q(30, "degC")` to 303.15 K, and a calc that meant "a
+30 kelvin difference" returns a plausible answer ten times too large. Mark such an
+input `interval: true` in the spec, and convert it with `input_to_si(spec, name,
+value)` rather than `to_si(...)` so the flag is read rather than restated - a flag
+the spec holds and the call site ignores is a check that exists on paper only.
+Rust needs no equivalent: `TemperatureInterval` and `ThermodynamicTemperature` are
+different types and the absolute one does not fit. `spec_lint` errors on the flag
+used away from `K`, and warns when a kelvin-dimensioned input named like a
+difference lacks it; `test_every_interval_input_in_the_registry_is_honoured_on_both_backends`
+walks the registry and checks that each marked input actually refuses an offset
+unit on both backends, which is what catches a spec and an implementation that
+disagree.
+
 **Errors are typed; range violations are warnings.** They are different things
 and the library keeps them different. A value outside its validated range is
 still a value - say so, do not refuse it.

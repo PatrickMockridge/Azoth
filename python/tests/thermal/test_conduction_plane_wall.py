@@ -8,7 +8,7 @@ import pytest
 
 import _helpers as h
 from azoth import ureg
-from azoth.core.errors import OutOfRangeError
+from azoth.core.errors import OutOfRangeError, UnitMismatchError
 from azoth.core.result import ConductionPlaneWallResult
 from azoth.thermal import conduction_plane_wall
 
@@ -134,29 +134,50 @@ def test_a_negative_temperature_difference_reverses_the_flow_instead_of_failing(
     assert result.is_clean, f"unexpected warnings: {result.warnings}"
 
 
-def test_an_absolute_celsius_temperature_would_be_silently_wrong() -> None:
+def test_an_absolute_temperature_is_refused_rather_than_offset() -> None:
     """A difference and an absolute temperature are the same dimension and are not
-    interchangeable.
+    interchangeable, so the absolute one is rejected.
 
-    This is not a test of the calc but a record of a hazard the calc cannot detect.
-    ``to_si`` converts to kelvin, and pint converts an *absolute* 30 degC to
-    303.15 K rather than to 30 - so a caller who reaches for ``degC`` instead of
-    ``delta_degC`` gets a plausible number that is wrong by 273.15. The spec says
-    so on the ``dT`` input; this pins the behaviour so the day it is fixed, the
-    test that has to change is this one.
+    ``dT`` is declared ``interval: true`` in the spec. Without that, ``to_si`` would
+    convert an *absolute* ``Q(30, "degC")`` to 303.15 K rather than to 30, and this
+    calc would return 545670 W where the caller meant 54000 - a plausible number
+    wrong by a factor of ten, from a unit that looks right.
+
+    Rust never had this problem, because ``dT`` takes a ``TemperatureInterval`` and a
+    ``ThermodynamicTemperature`` does not fit. This test is what holds the Python
+    side to the same promise, on both backends, since the refusal must not depend on
+    which one answered.
     """
-    wrong = conduction_plane_wall(
-        Q(45.0, "W/(m*K)"), Q(2.0, "m**2"), Q(30.0, "degC"), Q(0.05, "m")
-    ).q.magnitude
     right = conduction_plane_wall(
         Q(45.0, "W/(m*K)"), Q(2.0, "m**2"), Q(30.0, "delta_degC"), Q(0.05, "m")
     ).q.magnitude
-
     assert right == pytest.approx(54000.0)
-    assert wrong != pytest.approx(right), (
-        "if these ever agree, pint has stopped distinguishing an absolute "
-        "temperature from a difference and this hazard has gone"
-    )
+
+    for absolute in (Q(30.0, "degC"), Q(86.0, "degF")):
+        with pytest.raises(UnitMismatchError) as excinfo:
+            conduction_plane_wall(Q(45.0, "W/(m*K)"), Q(2.0, "m**2"), absolute, Q(0.05, "m"))
+        assert excinfo.value.field() == "dT"
+        # The message has to carry the fix, not just the refusal: the caller's
+        # mistake is a plausible one and "wrong dimensions" would not explain it.
+        assert "delta_degC" in str(excinfo.value)
+
+
+def test_a_scaled_but_unoffset_temperature_unit_still_works() -> None:
+    """`delta_degF` is not an offset unit and must not be caught by the interval check.
+
+    This is the case that makes the check's *implementation* matter. An offset unit
+    is one where zero of it is not zero of its base - `degC` is 273.15 K at zero.
+    Testing "one of this unit is not one kelvin" instead would also reject
+    `delta_degF`, whose one is 5/9 K, and that is the unit a US-customary caller is
+    supposed to reach for.
+    """
+    celsius = conduction_plane_wall(
+        Q(45.0, "W/(m*K)"), Q(2.0, "m**2"), Q(30.0, "delta_degC"), Q(0.05, "m")
+    ).q.magnitude
+    fahrenheit = conduction_plane_wall(
+        Q(45.0, "W/(m*K)"), Q(2.0, "m**2"), Q(54.0, "delta_degF"), Q(0.05, "m")
+    ).q.magnitude
+    h.assert_close(fahrenheit, celsius, 1e-12, "54 degF interval is 30 degC interval")
 
 
 def test_property_tests_are_covered() -> None:

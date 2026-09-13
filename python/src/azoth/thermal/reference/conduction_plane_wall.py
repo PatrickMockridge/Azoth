@@ -29,7 +29,7 @@ from __future__ import annotations
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ConductionPlaneWallResult
-from azoth.core.units import Q, from_si, to_si
+from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 
 CALC_ID = "thermal.conduction_plane_wall"
@@ -42,9 +42,10 @@ def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
         k: thermal conductivity, taken as constant across the temperature range.
         A: area of the wall face the heat flows through.
         dT: temperature difference across the wall. A *difference*, not an absolute
-            temperature: pass ``Q(30, "delta_degC")`` or ``Q(30, "K")``. An
-            absolute ``Q(30, "degC")`` would be converted as an absolute scale and
-            silently arrive as 303.15 K.
+            temperature: pass ``Q(30, "delta_degC")``, ``Q(30, "delta_degF")`` or
+            ``Q(30, "K")``. An absolute ``Q(30, "degC")`` is **refused** with
+            `UnitMismatchError`, because the spec marks this input ``interval: true``
+            - converting it would silently give 303.15 K where 30 was meant.
         L: wall thickness in the direction of heat flow.
 
     Raises:
@@ -65,10 +66,12 @@ def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
     warnings: list[Warning] = []
 
     values = {
-        "k": to_si(k, "W/(m*K)", "k"),
-        "A": to_si(A, "m**2", "A"),
-        "dT": to_si(dT, "K", "dT"),
-        "L": to_si(L, "m", "L"),
+        "k": input_to_si(spec, "k", k),
+        "A": input_to_si(spec, "A", A),
+        # Reads the spec's `interval: true`, which is what makes an absolute
+        # `Q(30, "degC")` a refusal rather than a silent 303.15 K.
+        "dT": input_to_si(spec, "dT", dT),
+        "L": input_to_si(spec, "L", L),
     }
 
     apply_checks(checks.on_input, values.get, warnings)

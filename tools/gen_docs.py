@@ -153,6 +153,11 @@ def describe_quantity(declaration: dict[str, Any]) -> tuple[str, str]:
         unit = " / ".join(declaration.get("values", []))
     else:
         unit = declaration.get("unit", "-")
+    # A difference rather than an absolute temperature, marked on the unit itself
+    # rather than left to the prose: it changes what a caller may pass, so a reader
+    # scanning the table for "what unit does this take" has to see it.
+    if declaration.get("interval"):
+        unit = f"{unit} (interval)"
     description = " ".join(str(declaration.get("description", "")).split())
     if declaration.get("optional"):
         description = f"*Optional.* {description}"

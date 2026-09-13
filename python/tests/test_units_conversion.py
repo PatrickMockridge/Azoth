@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import pytest
 
+import _helpers as h
 from azoth.core.errors import UnitMismatchError
 from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si, unit_for, ureg
 
@@ -143,3 +144,79 @@ def test_dimensionless_values_pass_through_unchanged() -> None:
     bare = to_si(ureg.Quantity(0.023), "dimensionless", "f")
     assert stated == pytest.approx(0.023)
     assert bare == pytest.approx(0.023)
+
+
+def test_an_offset_unit_is_refused_where_a_difference_is_meant() -> None:
+    """`interval=True` refuses `degC`/`degF`, and only those.
+
+    A temperature difference and an absolute temperature are the same dimension, so
+    nothing about `pint`'s conversion can tell them apart: it will convert an
+    absolute ``Q(30, "degC")`` to 303.15 K for an input that means "a 30 kelvin
+    difference", and the caller gets a plausible number wrong by 273.15.
+
+    The unit is not guessed at - it is read the way `has_offset` reads it, by asking
+    whether zero of it is zero of its base. That is what makes `delta_degF` pass
+    while `degF` is refused: both scale, only one offsets.
+    """
+    from azoth.core.units import has_offset
+
+    assert has_offset("degC") and has_offset("degF")
+    assert not has_offset("delta_degC")
+    assert not has_offset("delta_degF")
+    # A scaling unit is not an offset unit, which is why "one of this unit is not
+    # one kelvin" would have been the wrong test: it would reject delta_degF too.
+    assert not has_offset("mm")
+    assert not has_offset("K")
+
+    for absolute in ("degC", "degF"):
+        with pytest.raises(UnitMismatchError) as excinfo:
+            to_si(ureg.Quantity(30.0, absolute), "K", "dT", interval=True)
+        assert excinfo.value.field() == "dT"
+        assert "delta_degC" in str(excinfo.value)
+
+    # A difference in any of its spellings converts normally.
+    assert to_si(ureg.Quantity(30.0, "delta_degC"), "K", "dT", interval=True) == 30.0
+    assert to_si(ureg.Quantity(30.0, "K"), "K", "dT", interval=True) == 30.0
+    assert to_si(ureg.Quantity(54.0, "delta_degF"), "K", "dT", interval=True) == pytest.approx(30.0)
+
+    # And without the flag, an absolute temperature still converts - the fluid
+    # property tables need exactly that.
+    assert to_si(ureg.Quantity(20.0, "degC"), "K", "temperature") == pytest.approx(293.15)
+
+
+def test_every_interval_input_in_the_registry_is_honoured_on_both_backends() -> None:
+    """The flag is only worth having if the calcs carrying it act on it.
+
+    Walks the registry rather than naming `conduction_plane_wall`, so a calc that
+    declares ``interval: true`` and never passes the flag through is caught here
+    instead of at a caller's expense. The failure this guards is a spec that says
+    one thing and an implementation that does another, which no amount of reading a
+    single calc's test would reveal.
+
+    Both backends, because the refusal happens at the Python boundary: the Rust
+    binding converts inputs too, and a fix applied only to the reference would leave
+    the default backend silently offsetting.
+    """
+    from azoth._dispatch import available, resolve, use_backend
+    from azoth._registry_gen import CALCS
+
+    marked = [
+        (calc, name)
+        for calc in CALCS
+        for name, declaration in calc["inputs"].items()
+        if declaration.get("interval", False)
+    ]
+    assert marked, "no input declares interval: true; this test would pass vacuously"
+
+    for calc, name in marked:
+        case = next(
+            (c for c in h.all_tests(calc) if c["status"] == "active" and "inputs" in c),
+            None,
+        )
+        assert case is not None, f"{calc['id']} has no runnable case to build from"
+        kwargs = h.kwargs_for(calc, case["inputs"])
+        absolute = ureg.Quantity(float(case["inputs"][name]), "degC")
+        for backend in sorted(available()):
+            with use_backend(backend), pytest.raises(UnitMismatchError) as excinfo:
+                resolve(calc["id"])(**{**kwargs, name: absolute})
+            assert excinfo.value.field() == name, f"{calc['id']} on {backend}"

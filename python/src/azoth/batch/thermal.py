@@ -45,10 +45,16 @@ def conduction_plane_wall(
 ) -> ConductionPlaneWallBatch:
     """Steady conduction through a plane wall, over arrays.
 
-    Inputs in W/(m*K), m**2, K and m. ``dT`` is a temperature **difference**, not an
-    absolute temperature: ``dT=[30.0]`` means a 30 kelvin difference, and no 273.15 is
-    added. The scalar API takes a `pint` quantity here, where passing ``30 degC`` would
-    mean an absolute 303.15 K - see the note in ``docs/src/batch.md``.
+    Inputs in W/(m*K), m**2, K and m. ``dT`` is a temperature **difference**: a bare
+    number here means kelvin of difference and no 273.15 is added.
+
+    The hazard this avoids one layer up is worth naming. The scalar API takes a `pint`
+    quantity for `dT`, and a difference and an absolute temperature share a dimension,
+    so ``Q(30, "degC")`` is the tempting mistake - it converts to 303.15 K and returns a
+    plausible answer ten times too large. The spec marks that input ``interval: true``
+    and the scalar boundary refuses the offset unit. A batch call cannot make the
+    mistake at all, because it takes no quantities: there is no unit to be wrong about.
+    See the note in ``docs/src/batch.md``.
 
     See :func:`azoth.thermal.conduction_plane_wall` for the calculation itself.
     """

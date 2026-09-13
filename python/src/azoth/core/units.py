@@ -66,6 +66,7 @@ throughout the package, which confines the problem to this module.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, Final
 
 import pint
@@ -142,7 +143,21 @@ def quantity(magnitude: float, spec_unit: str) -> Q:
     return ureg.Quantity(magnitude, unit_for(spec_unit))
 
 
-def to_si(value: Any, spec_unit: str, field: str) -> float:
+def has_offset(unit: Any) -> bool:
+    """Whether a unit carries an additive offset, like ``degC`` or ``degF``.
+
+    Read out of `pint` rather than listed, so a unit this library has never heard of
+    is classified correctly. The test is "is zero of this unit zero of its base
+    unit": a `degC` is 273.15 K at zero, a `delta_degC` is 0 K, and a `degF` is
+    255.37 K. Scaling alone does not make a unit offset - `mm` and `delta_degF` both
+    map zero to zero - which is why `one != 1` would be the wrong test: it would
+    call `delta_degF` offset as well, and that is the unit a caller is *supposed* to
+    reach for.
+    """
+    return float(ureg.Quantity(0.0, unit).to_base_units().magnitude) != 0.0
+
+
+def to_si(value: Any, spec_unit: str, field: str, *, interval: bool = False) -> float:
     """Convert a caller's quantity to the SI base magnitude the calcs work in.
 
     The input is first converted to the spec's declared unit, which is what checks
@@ -151,21 +166,74 @@ def to_si(value: Any, spec_unit: str, field: str) -> float:
     rejected rather than silently read as metres, and the second is why a spec may
     declare `mm` without the two implementations disagreeing by 1000x.
 
+    Args:
+        value: the caller's quantity.
+        spec_unit: the unit the spec declares, which fixes the dimension.
+        field: the input's name, for the error message.
+        interval: set for an input the spec marks ``interval: true`` - a temperature
+            *difference* rather than an absolute temperature. Both are
+            kelvin-dimensioned, so nothing about the dimensions can tell them
+            apart, and `pint` will happily convert an absolute ``Q(30, "degC")`` to
+            303.15 K for an input that means "a 30 kelvin difference". That is a
+            plausible number wrong by 273.15, which is the failure this library
+            exists to make impossible, so an offset unit is **refused** instead.
+
     Raises:
-        UnitMismatchError: if `value` is not a quantity, or carries the wrong
-            dimensions. Both are caller errors: a bare number where a length is
-            expected is exactly the mistake this library exists to make
+        UnitMismatchError: if `value` is not a quantity, carries the wrong
+            dimensions, or is an offset-unit quantity where `interval` says a
+            difference is meant. All three are caller errors: a bare number where a
+            length is expected is exactly the mistake this library exists to make
             impossible, so it is rejected loudly rather than assumed to be SI.
     """
     if not isinstance(value, pint.Quantity):
         raise UnitMismatchError(field, spec_unit, f"{type(value).__name__} {value!r}")
     target = unit_for(spec_unit)
+    if interval and has_offset(value.units):
+        # Deliberately not converted. A caller with an absolute temperature who
+        # wants a difference should write the conversion, `q.to("delta_degC")` or
+        # `q.to("K")`, so the 273.15 lands in their code where it is visible rather
+        # than inside this function where it is not.
+        raise UnitMismatchError(
+            field,
+            spec_unit,
+            f"{value.units} (an absolute temperature; this input is a temperature "
+            f"difference, so pass `delta_degC`/`delta_degF`, or convert explicitly "
+            f"with `.to('K')` first)",
+        )
     try:
         converted: Q = value.to(target)
     except pint.errors.DimensionalityError as exc:
         raise UnitMismatchError(field, spec_unit, str(value.units)) from exc
     base: Q = converted.to_base_units()
     return float(base.magnitude)
+
+
+def input_to_si(spec: Mapping[str, Any], field: str, value: Any) -> float:
+    """Convert one declared input, reading its unit and flags from the spec.
+
+    The point is the `interval` flag and not the unit string. A call site that
+    writes `to_si(dT, "K", "dT")` is restating what the spec already declares, and a
+    flag the spec holds but the call site ignores is a check that exists on paper
+    and not in the code - exactly the failure this project is organised against. The
+    unit is read for the same reason: one fewer literal that can drift.
+
+    Reads the spec's own `inputs` block rather than a generated copy of it, so a
+    spec edited without regenerating cannot leave this function agreeing with a
+    stale table.
+
+    Raises:
+        UnitMismatchError: as :func:`to_si`.
+        KeyError: if the spec does not declare `field`. A programming error in the
+            implementation, not a caller condition - the whole point of the spec is
+            that the input names are the contract.
+    """
+    declaration = spec["inputs"][field]
+    return to_si(
+        value,
+        declaration["unit"],
+        field,
+        interval=bool(declaration.get("interval", False)),
+    )
 
 
 def from_si(si_magnitude: float, spec_unit: str) -> Q:

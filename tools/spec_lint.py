@@ -501,6 +501,48 @@ def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
         )
 
 
+def check_input_flags(report: Report, rel: Path, spec: dict[str, Any]) -> None:
+    """The `interval` flag must be on an input that can actually have an interval.
+
+    `interval: true` tells the Python boundary to refuse an offset unit (`degC`,
+    `degF`) so an absolute temperature cannot be passed where a difference is meant.
+    That only means anything for a unit that can express a difference, and there is
+    exactly one: `K`. On, say, `m` the flag would silently do nothing - a check that
+    looks like validation and is not, which is the failure mode this tool exists to
+    catch.
+
+    The second rule is the one with teeth. A temperature *difference* declared
+    without the flag is the hazard itself: nothing then distinguishes `Q(30, "degC")`
+    from `Q(30, "delta_degC")`, `pint` applies the 273.15 offset, and the calc returns
+    a plausible number wrong by a factor the caller cannot see.
+    """
+    for name, declaration in spec["inputs"].items():
+        unit = declaration.get("unit")
+        marked = bool(declaration.get("interval", False))
+
+        if marked and unit != "K":
+            report.error(
+                str(rel),
+                f"input '{name}' is marked interval: true but its unit is "
+                f"'{unit}'. Only 'K' can express a temperature difference; on any "
+                f"other unit the flag does nothing.",
+            )
+            continue
+
+        # A name is not proof, so this is a heuristic and is reported as such: it
+        # catches the two names a difference is actually written under in this tree
+        # rather than claiming to read the English in `description`.
+        looks_like_a_difference = name.lower().startswith("dt") or name.lower().startswith("delta_")
+        if looks_like_a_difference and unit == "K" and not marked:
+            report.warn(
+                str(rel),
+                f"input '{name}' is a kelvin-dimensioned quantity whose name reads "
+                f"as a difference but is not marked interval: true. If it is a "
+                f"difference, an absolute 'degC' will be silently offset by 273.15. "
+                f"If it is an absolute temperature, ignore this.",
+            )
+
+
 def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     """Declared data files must exist and must satisfy the fitting_list contract."""
     fittings_used: set[str] = set()
@@ -679,6 +721,7 @@ def check_numeric_literals(report: Report, rel: Path, spec: dict[str, Any]) -> N
 
 def lint_spec(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     check_identity(report, rel, spec)
+    check_input_flags(report, rel, spec)
     check_identifier_names(report, rel, spec)
     check_numeric_literals(report, rel, spec)
     check_range_checks(report, rel, spec)

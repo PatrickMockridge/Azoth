@@ -38,7 +38,7 @@ The assumptions are therefore all in `assumptions`, which is where the schema pu
 |---|---|---|
 | `k` | W/(m*K) | Thermal conductivity of the wall material, taken as constant across the temperature range. A real material's conductivity varies with temperature, so this is a single representative value and the caller chooses it. |
 | `A` | m**2 | area of the wall face through which the heat flows |
-| `dT` | K | temperature difference across the wall. May be negative, and then `q` is negative - see the sign convention on the output. |
+| `dT` | K (interval) | temperature difference across the wall. May be negative, and then `q` is negative - see the sign convention on the output. `interval` marks this as a *difference* rather than an absolute temperature. Both are kelvin-dimensioned and they are not interchangeable: a 30 K difference is a 30 degC difference, while an absolute 30 degC is 303.15 K. The flag makes the Python boundary refuse an offset unit instead of silently applying the offset, which is what `uom`'s `TemperatureInterval` already gives the Rust side. |
 | `L` | m | wall thickness in the direction of heat flow |
 
 
