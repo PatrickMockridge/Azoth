@@ -18,6 +18,7 @@
   - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)
   - [Pressure-temperature flash](./eos/pt_flash.md)
   - [Pure-component saturation pressure](./eos/pure_saturation.md)
+  - [Tangent-plane stability test](./eos/stability_test.md)
 - [Hydraulics](./hydraulics/index.md)
   - [Choked-flow throat area for an ideal gas](./hydraulics/choked_flow_area.md)
   - [Liquid flow through a control valve from its flow coefficient](./hydraulics/control_valve_cv.md)

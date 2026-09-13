@@ -1,0 +1,93 @@
+# Tangent-plane stability test
+
+`eos.stability_test`
+
+Whether a feed at a given temperature and pressure is stable as a single phase, by the tangent-plane criterion. Two trial phases are seeded from Wilson K-value estimates - one liquid-like, one vapour-like - and each is iterated to a stationary point of the tangent-plane distance function. The feed is unstable if either stationary point lies below the tangent plane through the feed.
+This is the question `eos.pt_flash` cannot ask. Successive substitution finds *a* stationary point; whether the feed was stable to begin with is a different question, and a flash that converges to `x = y = z` has demonstrated that its own starting point was not a split - not that the feed is single phase.
+
+## Source
+
+**Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability"** (Fluid Phase Equilibria 9(1), 1-19) - TODO: source needed
+
+DOI: [10.1016/0378-3812(82)85001-2](https://doi.org/10.1016/0378-3812(82)85001-2)
+
+**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+
+The method is Michelsen (1982) and the port is NeqSim's. What is unconfirmed is the equation number and the reading of the paper - a port never upgrades a verification status, because reading someone's Java is not reading the paper.
+**Verified against `eos.pt_flash` instead, which is a stronger check than it sounds.** The two models answer different questions about the same states, and their answers are related: a feed `pt_flash` splits into two phases must come back UNSTABLE here, and a feed it reports as single phase by the no-root proof must come back STABLE. Those are asserted on every case both models share.
+# Correction 1: the iteration cap was set by assumption and was too low
+The first draft carried `max_iterations: 200`, reasoned from the fact that the parallel flash converges in a dozen steps. It is not parallel, and 200 was measured to be too few on an ordinary state - methane/n-butane at 300 K and 100 bar, a liquid, where the *liquid-like* trial needs **507** iterations to reach 1e-10.
+The failure is not a divergence. Successive substitution here is linear with a ratio near 0.93 in `ln W`, so the residual falls by roughly twenty per hundred iterations and simply needs longer than the cap allowed. Measured on that state:
+```text iteration    50        100       200       400 residual     2.9e-04   4.1e-05   1.6e-06   2.9e-09 ```
+The cap is now 2000, which is above every state tested and still bounded. It is a *cap* and not a target: the vapour-like trial on the same state converges in 22 steps.
+This is also the measurement that justifies not porting NeqSim's DEM/Aitken acceleration. It exists precisely because this iteration is slow, and it is not needed for the criterion - but the cost of leaving it out is paid here, in a cap an order of magnitude higher than the flash's, and that is the honest place to record it rather than in a claim that the acceleration was unnecessary.
+
+## Algorithm
+
+A model rather than a calculation: what this page pins down is the procedure,
+not an equation, and both implementations read it from here.
+
+| Setting | Value |
+|---|---|
+| Scheme | `tangent_plane_stability` |
+| Convergence | `absolute` |
+| Tolerance | `1e-10` |
+| Max iterations | `2000` |
+| Initialisation | `wilson` |
+
+## Inputs
+
+| Name | Unit | Description |
+|---|---|---|
+| `Tc` | K | critical temperatures, in the mixture's component order |
+| `Pc` | Pa | critical pressures, in the same order |
+| `omega` | dimensionless | acentric factors, in the same order |
+| `kij` | dimensionless | binary interaction parameters, as for `eos.pt_flash` |
+| `T` | K | absolute temperature |
+| `P` | Pa | absolute pressure |
+| `z` | dimensionless | overall mole fractions. Checked rather than renormalised, as everywhere else in this namespace. |
+
+
+## Outputs
+
+| Name | Unit | Description |
+|---|---|---|
+| `verdict` | stable / unstable | Whether the feed is stable as a single phase. `unstable` means one of the two trials reached a stationary point below the tangent plane, so a single phase at this state is not the Gibbs minimum - a split exists. It does **not** say what the split is, or how many phases it has; that is `eos.pt_flash`'s question, and for three phases neither model answers it. The distinction a caller must not lose: `stable` here means *these two trials found nothing*, not *no split exists*. See the assumption on LLE. |
+| `tm` | dimensionless | The tangent-plane distance at each trial's stationary point, in the same order as `w`. Two entries, always: the trials are the two Wilson seeds, and the vector is fixed-length rather than "one per phase found" because a trial that converges to a trivial solution still has a distance and it is that number - near zero - which is the evidence it was trivial. Negative means the trial lies below the tangent plane through the feed, which is what makes the feed unstable. The threshold is `-1e-8` rather than zero: a trial that is trivially the feed converges to a distance of order `1e-16`, and a strict `tm < 0` would call a single-phase feed unstable on rounding. |
+| `iterations` | dimensionless | Successive-substitution steps each trial took, in the same order as `tm`. Reported because it bounds how much the distances can be trusted, and because the two trials can differ by more than an order of magnitude: measured on methane/n-butane at 300 K and 100 bar, one trial settles in 22 steps and the other needs 507. **Why is not established** - the reduced temperature there is 0.71, away from the near-critical region the bound below is about - so this is recorded as a measurement rather than explained, and a state whose trials both converge in a few steps is not therefore easier to believe. |
+| `min_t_over_tc` | dimensionless | The smallest `T / Tc_i` over the components. Reported because it is the diagnostic this method most needs: a minimum above 0.9 means no component is well below its critical temperature, and the trials then have little separation to find. See the bound below. |
+| `w` | dimensionless | The stationary-point composition of each trial, in the same order as `tm`. Rows are normalised mole fractions. A row equal to the feed is a trivial solution - the trial found the feed's own stationary point and says nothing about whether another exists. |
+
+| Bound | On violation | Why |
+|---|---|---|
+| `T > 0` | raises | an absolute temperature; zero and below are not states |
+| `P > 0` | raises | an absolute pressure; zero and below are not states |
+| `min_t_over_tc <= 0.9` | warns `OUT_OF_VALID_RANGE` | The same bound `eos.pt_flash` carries, and it applies here at least as directly. Above `T / Tc = 0.9` for *every* component - which is what a minimum above 0.9 means - the cubic's roots are close to coalescing and the two phases stop being distinguishable. This model rests entirely on the trials finding *distinct* stationary points, so near the critical point a `stable` verdict is the one to distrust: it may mean the feed is single phase, or it may mean the trials could not separate. A warning rather than an error because the arithmetic is defined and the answer is still the criterion's - what degrades is what a negative result is worth, not what a positive one says. |
+
+## Assumptions
+
+- **Only two trial phases are run, both from Wilson K-values, and Wilson assumes gas-liquid equilibrium.** A feed that is unstable to a *liquid-liquid* split can come back `stable` from this model, because both trials start adjacent to the feed in the gas-liquid direction. That is a real false negative and it is NOT checked: nothing here detects that the trials were badly placed.
+NeqSim carries a supplementary `pureComponentStabilityTrials` for exactly this, initialising the trials as nearly-pure heaviest and lightest components, and it is deliberately not ported. Its scope is gated on heuristics rather than on physics - it turns itself on for model families whose names contain "CPA" or "Pitzer", and for systems containing water when an "enhanced multi-phase check" flag is set - and none of that belongs in a spec. A caller who needs LLE stability has to compose it, which means running trials they choose themselves.
+
+- the feed's own fugacity coefficients are evaluated at the feed composition, so `d_i = ln z_i + ln phi_i(z)` presupposes that the feed is a single phase occupying one root of the cubic. A feed already inside the two-phase region has no single root, and the reference chemical potentials this test compares against are then those of an unstable state.
+
+- the cubic is Peng-Robinson, as throughout this namespace, with the alpha function and mixing rule `eos.pt_flash` uses. The test is a property of the model, not of the mixture alone: the same state can be stable under one equation of state and unstable under another.
+
+- `tm` is reported for the stationary point each trial reached, and successive substitution finds the nearest one rather than the global minimum. A feed stable against both of these trials is stable against the perturbations they represent, which is not the same as stable.
+
+
+## Cases
+
+| Case | Inputs | Expected |
+|---|---|---|
+| `a_two_phase_feed_is_unstable` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], T = 330.0, P = 2500000.0, z = [0.6, 0.4] | tm = [0.0, -0.2151222395220802], w = [[0.6, 0.4], [0.06163985547175917, 0.9383601445282409]], iterations = [16, 9] |
+| `a_trivial_flash_is_not_a_stable_feed` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], T = 430.0, P = 6000000.0, z = [0.6, 0.4] | tm = [0.0, -4.440892098500626e-16], w = [[0.6000000000039283, 0.39999999999607183], [0.5999999999942244, 0.40000000000577574]], iterations = [16, 17] |
+
+## References
+
+- Michelsen, M. L. (1982). "The isothermal flash problem. Part I. Stability." Fluid Phase Equilibria 9(1), 1-19. The tangent-plane criterion, the two-trial structure and the `tm = 1 - sum(W)` form.
+
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0, developed at NTNU and maintained by Equinor. `Flash.stabilityAnalysis`, the port source. See `NOTICE` at the repository root for the attribution.
+
+- `eos.pt_flash`, which is the same state asked a different question, and the cross-check this model's tests lean on.
+
