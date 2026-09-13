@@ -184,7 +184,7 @@ fn rms_delta(ln_k_new: &[f64], k: &[f64]) -> f64 {
 ///
 /// `|ln K_i| < 1e-8` for every `i` means the two phases have converged onto the
 /// feed. It is compared against the *K-values* and never against `beta`, which is
-/// indeterminate there; the spec's verification notes record the feed that a `beta`
+/// indeterminate there; the spec's notes record the feed that a `beta`
 /// test would have mislabelled.
 const TRIVIAL_TOLERANCE: f64 = 1.0e-08;
 
@@ -431,7 +431,7 @@ enum Outcome {
 /// Whether the K-values have converged onto the feed.
 ///
 /// Compared against the *K-values* and never against `beta`, which is indeterminate
-/// there; the spec's verification notes record the feed that a `beta` test would
+/// there; the spec's notes record the feed that a `beta` test would
 /// have mislabelled.
 fn is_trivial(k: &[f64]) -> bool {
     k.iter().all(|value| value.ln().abs() < TRIVIAL_TOLERANCE)

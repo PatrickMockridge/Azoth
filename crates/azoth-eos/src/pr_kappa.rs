@@ -53,7 +53,7 @@ use crate::spec_gen;
 /// # Errors
 /// In practice none. [`azoth_core::AzothError::OutOfRange`] would require a spec
 /// bound with `error` severity, and the spec deliberately declares none - see its
-/// `verification` notes for why an error bound would be an accuracy claim in
+/// `notes` for why an error bound would be an accuracy claim in
 /// disguise.
 ///
 /// # Example

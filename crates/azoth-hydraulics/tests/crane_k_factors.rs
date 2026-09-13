@@ -142,7 +142,7 @@ fn components_echo_the_registry_coefficients() {
 fn the_registry_is_entirely_estimated_dummy_data_right_now() {
     // This test exists to fail loudly the day someone populates the registry
     // from a real source. At that point this assertion breaks, and whoever did
-    // the work is forced to update the spec's verification notes and the docs
+    // the work is forced to update the spec's notes and the docs
     // rather than leaving them claiming the data is placeholder. Deleting this
     // test is the correct response to that failure, not updating the expected
     // number.
@@ -157,7 +157,7 @@ fn the_registry_is_entirely_estimated_dummy_data_right_now() {
         rows.len(),
         "some rows are no longer estimated_dummy ({:?} of {}). If the coefficients have \
          now been verified against the primary standard, delete this test and update the \
-         spec's verification block.",
+         spec's notes.",
         estimated,
         rows.len()
     );

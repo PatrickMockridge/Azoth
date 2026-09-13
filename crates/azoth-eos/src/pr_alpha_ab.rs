@@ -28,7 +28,7 @@
 //! So this module carries the full-precision pair. They are not transcribed from
 //! anywhere - they are the unique solution of the triple-root condition, which is
 //! the check `every_omega_is_the_triple_root_solution` in this crate's tests
-//! performs. See the spec's `verification` notes for what remains unconfirmed.
+//! performs. See the spec's `notes` for what remains unconfirmed.
 
 use azoth_core::{Result, apply_checks};
 

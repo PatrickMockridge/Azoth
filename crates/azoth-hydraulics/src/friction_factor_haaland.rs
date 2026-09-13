@@ -15,10 +15,10 @@
 //! caller comparing them at the same inputs gets a cheap sense of how much the
 //! choice of explicit form matters.
 //!
-//! The citation is `unverified`: the equation is not in doubt, but nobody has
-//! opened the paper and checked this against it. See the spec's `verification`
-//! block, which also records that the valid range below is the framework's rather
-//! than a range read from the source.
+//! The attribution is unconfirmed: the equation is not in doubt, but nobody has
+//! opened the paper and checked this against it. See the spec's `notes`, which
+//! also record that the valid range below is the framework's rather than a range
+//! read from the source.
 
 use crate::results::HaalandResult;
 use crate::spec_gen;

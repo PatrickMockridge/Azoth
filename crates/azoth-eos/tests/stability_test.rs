@@ -297,7 +297,7 @@ fn a_trivial_flash_is_not_a_stable_feed() {
 /// The feed is placed on whichever admissible root has the lower Gibbs energy.
 ///
 /// The decision this model is most likely to get quietly wrong, and the one the
-/// spec's `verification` notes record a measurement for. The comparison is
+/// spec's `notes` record a measurement for. The comparison is
 /// `A^R/RT - ln Z + Z` and **not** `A^R/RT + Z`: the ideal part of `G/RT` carries
 /// `-ln Z`, and `V = Z R T / P` differs between the two roots, so only `-ln Z`
 /// separates them at one `(T, P, n)`.

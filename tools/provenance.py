@@ -214,7 +214,6 @@ def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
         "id": spec["id"],
         "name": spec["name"],
         "equation": spec["equation"],
-        "verification": spec["verification"]["status"],
         "spec": describe(f"specs/calcs/{namespace}/{name}.yaml"),
         "code": [
             describe(f"python/src/azoth/{namespace}/reference/{name}.py"),
@@ -237,7 +236,6 @@ def model_entry(spec: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": spec["id"],
         "name": spec["name"],
-        "verification": spec["verification"]["status"],
         "spec": describe(f"specs/models/{namespace}/{name}.yaml"),
         "code": [
             describe(f"python/src/azoth/{namespace}/reference/{name}.py"),

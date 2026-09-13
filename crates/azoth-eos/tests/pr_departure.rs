@@ -85,7 +85,7 @@ fn every_case_in_the_spec() {
 /// `h_dep_rt - s_dep_r` equals `ln_phi`, swept rather than spot-checked.
 ///
 /// The identity is exact in real arithmetic - the two `psi` terms cancel, and the
-/// spec's `verification` shows the three lines - so any disagreement is rounding.
+/// spec's `notes` show the three lines - so any disagreement is rounding.
 /// It is the only check that catches a sign error in either departure function:
 /// flipping one leaves `ln_phi` untouched and moves the other to a value that is
 /// still plausible as an enthalpy or entropy departure.

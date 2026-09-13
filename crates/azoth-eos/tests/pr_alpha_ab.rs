@@ -110,7 +110,7 @@ fn the_omegas_make_the_critical_point_a_triple_root() {
 
 /// ...and the values the paper *prints* do not, which is why this crate does not use them.
 ///
-/// This is the trap the spec's `verification` notes exist for. `0.45724` and
+/// This is the trap the spec's `notes` exist for. `0.45724` and
 /// `0.07780` are roundings of the pair above, and rounding them breaks the
 /// condition by three orders of magnitude more than the tolerance - because a
 /// triple root is cubically ill-conditioned, so a 5e-6 error in the coefficient

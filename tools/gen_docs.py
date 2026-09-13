@@ -107,6 +107,12 @@ def source_of(spec: dict[str, Any]) -> str:
     return f"specs/calcs/{parts[0]}/{parts[-1]}.yaml"
 
 
+def source_of_model(spec: dict[str, Any]) -> str:
+    """Repo-relative path of a model's spec file."""
+    parts = spec["id"].split(".")
+    return f"specs/models/{parts[0]}/{parts[-1]}.yaml"
+
+
 def describe_source(spec: dict[str, Any]) -> str:
     """One line naming where the equation came from."""
     source = spec["source"]
@@ -421,6 +427,7 @@ def render_model(spec: dict[str, Any]) -> str:
     algorithm = spec.get("algorithm")
 
     parts = [
+        BANNER.format(source=source_of_model(spec)) + "\n\n",
         f"# {spec['name']}\n\n",
         f"`{spec['id']}`\n\n",
         f"{spec['description'].strip()}\n\n",

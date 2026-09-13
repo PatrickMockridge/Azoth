@@ -73,7 +73,7 @@
 //! [`AzothError::SolverNotConverged`], the rule the flash already applies to its own
 //! loop.
 //!
-//! The cap is 2000 rather than the flash's 100, and the spec's verification notes
+//! The cap is 2000 rather than the flash's 100, and the spec's notes
 //! record why: successive substitution here is linear with a ratio near 0.93 in
 //! `ln W`, so a trial on an ordinary liquid measured **507** iterations to reach the
 //! tolerance. A cap and not a target - the other trial on the same state settled in

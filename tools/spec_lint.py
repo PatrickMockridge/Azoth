@@ -693,12 +693,13 @@ def check_worked_example(report: Report, rel: Path, spec: dict[str, Any]) -> Non
             "worked example does not assert any of the calc's required outputs",
         )
 
-    if False:  # derivation is optional prose; the example itself is what is required
-        report.warn(
-            str(rel),
-            "worked example has no `derivation`; a reviewer cannot retrace where the "
-            "expected value came from",
-        )
+    # No derivation check. One used to live here, behind `if False`, warning when a
+    # worked example carried no `derivation` prose - and a rule that is switched off
+    # is worse than a rule that was never written, because it reads as enforcement to
+    # anyone skimming. The check is deleted rather than re-enabled: `derivation` is
+    # optional prose about how an expected value was obtained, the example's own
+    # inputs and expected values are what the tests compare, and nothing here can
+    # tell whether arithmetic written in a sentence is true. See CONTRIBUTING.md.
 
     tol = example["tolerance"]
     if tol > MAX_SENSIBLE_TOLERANCE:
