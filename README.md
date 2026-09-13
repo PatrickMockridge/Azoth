@@ -193,6 +193,10 @@ worked example, and the tests - including which are deliberately skipped and why
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [PR template](.github/PULL_REQUEST_TEMPLATE.md). Commits are signed.
 
+Participation is covered by the [Code of Conduct](CODE_OF_CONDUCT.md), and
+anything that could produce a wrong number should go through
+[SECURITY.md](SECURITY.md) rather than the public issue tracker.
+
 ## Licence
 
 **Code is AGPL-3.0-or-later.** If you run a modified version of this library as

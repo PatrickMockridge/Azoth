@@ -1,0 +1,26 @@
+{
+  "id": "crane_tp410_example_3_5",
+  "calc": "hydraulics.darcy_weisbach",
+  "source": {
+    "attribution": "Crane TP-410 Example 3-5",
+    "verification": "source_needed",
+    "notes": "The project brief attributed this case to 'Crane TP-410 Example 3-5' and supplied expected: {dP: 2245.5}. Neither could be confirmed: the example could not be located, and the supplied value is inconsistent with the equation the same brief states, being exactly 10x too small. 2245.5 is precisely rho*v**2 - the dynamic pressure, which appears nowhere in the Darcy-Weisbach equation - so it looks like a dropped factor of ten rather than a different convention. The inputs are kept because they are a perfectly good case; the expected value is derived from the equation rather than taken from the brief, and the attribution is recorded as unconfirmed. Reproducing a worked example from the standard would also be what the project's copyright rule forbids, so there is no path to 'verified' here that does not involve a person with a legitimate copy working the example themselves.",
+    "correction": {
+      "supplied_expected_dP": 2245.5,
+      "derived_expected_dP": 22455.0,
+      "ratio": 10.0
+    }
+  },
+  "derivation": "dP = f * (L / D) * (rho * v**2 / 2). With f = 0.02, L = 100 m, D = 0.1 m, rho = 998 kg/m**3, v = 1.5 m/s:  L/D = 100 / 0.1 = 1000;  rho*v**2/2 = 998 * 2.25 / 2 = 1122.75;  dP = 0.02 * 1000 * 1122.75 = 22455.0 Pa.",
+  "inputs": {
+    "f": 0.02,
+    "L": 100.0,
+    "D": 0.1,
+    "rho": 998.0,
+    "v": 1.5
+  },
+  "expected": {
+    "dp": 22455.0
+  },
+  "tolerance": 1.0e-9
+}

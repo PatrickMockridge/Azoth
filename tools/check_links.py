@@ -34,6 +34,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DOCS_SRC = ROOT / "docs" / "src"
 
+#: Markdown outside the book. The README's links are as capable of being wrong
+#: as the book's, and were: it pointed at CONTRIBUTING.md before that file
+#: existed, which nothing caught because only docs/ was checked.
+ROOT_PAGES = (
+    "README.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "TRUST.md",
+    "validation/README.md",
+)
+
 #: Markdown inline links and images: `[text](target)` and `![alt](target)`.
 LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 
@@ -109,6 +121,16 @@ def main() -> int:
 
     links = sum(check_file(page, errors) for page in pages)
     links += check_summary_paths(errors)
+
+    # Root-level markdown, checked for broken links but not for SUMMARY
+    # membership, which only applies inside the book.
+    for name in ROOT_PAGES:
+        page = ROOT / name
+        if not page.exists():
+            errors.append(f"{name} is listed as a root page but does not exist")
+            continue
+        links += check_file(page, errors)
+        pages.append(page)
 
     if errors:
         for error in errors:

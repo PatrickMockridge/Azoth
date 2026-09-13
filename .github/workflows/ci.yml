@@ -183,3 +183,28 @@ jobs:
         with:
           name: provenance
           path: provenance.json
+
+  validation:
+    name: validation
+    runs-on: ubuntu-latest
+    env:
+      # External validation cases, so they need the real implementation on both
+      # sides rather than a skip that quietly verifies nothing.
+      AZOTH_REQUIRE_RUST: "1"
+      VIRTUAL_ENV: ${{ github.workspace }}/.venv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12
+      - run: uv pip install maturin pytest "pint>=0.24"
+      - run: .venv/bin/maturin develop
+      # A validation case is an external check on a calculation. Anything that
+      # disagrees with the recorded numbers fails here.
+      - run: .venv/bin/python -m pytest python/tests/validation
+        env:
+          PYTHONPATH: ""

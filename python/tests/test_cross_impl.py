@@ -27,7 +27,6 @@ import pytest
 import _helpers as h
 from azoth._dispatch import resolve
 from azoth._registry_gen import CALCS
-from azoth.core.units import quantity
 
 pytestmark = pytest.mark.requires_rust
 
@@ -43,32 +42,6 @@ def _extension() -> ModuleType:
         return importlib.import_module("azoth._core")
     except ImportError as exc:  # pragma: no cover - the marker skips these
         raise AssertionError("azoth._core is not built; run `maturin develop`") from exc
-
-
-def _kwargs(calc: dict[str, Any], inputs: dict[str, Any]) -> dict[str, Any]:
-    """Turn a spec's test inputs into keyword arguments for the real signature.
-
-    Both the type and the unit come from the spec's own ``inputs`` block, so
-    adding a calc needs no change here.
-
-    Note that `type` is absent for a plain quantity - it defaults to `quantity`,
-    and the specs only spell it out for the exceptions. Treating a missing `type`
-    as anything other than the default silently passes bare floats where
-    quantities are required, which is exactly the mistake this library exists to
-    make impossible; the reference implementation rejects it, and did.
-    """
-    declared = calc["inputs"]
-    kwargs: dict[str, Any] = {}
-    for name, value in inputs.items():
-        declaration = declared[name]
-        kind = declaration.get("type", "quantity")
-        if kind == "fitting_list":
-            kwargs[name] = list(value)
-        elif kind == "quantity" and declaration.get("unit") != "dimensionless":
-            kwargs[name] = quantity(float(value), declaration["unit"])
-        else:
-            kwargs[name] = float(value)
-    return kwargs
 
 
 def _active_cases() -> list[tuple[dict[str, Any], dict[str, Any]]]:
@@ -95,7 +68,7 @@ CASES = _active_cases()
 )
 def test_python_and_rust_agree(calc: dict[str, Any], case: dict[str, Any]) -> None:
     """Run one spec case through both implementations and compare."""
-    kwargs = _kwargs(calc, case["inputs"])
+    kwargs = h.kwargs_for(calc, case["inputs"])
     tolerance = float(case.get("tolerance") or calc["worked_example"]["tolerance"])
     context = f"{calc['id']}::{case['id']}"
 

@@ -20,7 +20,7 @@ import pint
 
 from azoth._registry_gen import BY_ID, CALCS
 from azoth.core.result import FlowRegime
-from azoth.core.units import to_si
+from azoth.core.units import quantity, to_si
 from azoth.core.warnings import Warning, WarningCode
 
 __all__ = [
@@ -33,6 +33,7 @@ __all__ = [
     "assert_warnings_agree_with_spec",
     "expected",
     "input_",
+    "kwargs_for",
     "list_input",
     "spec",
 ]
@@ -285,3 +286,30 @@ def regime_of(name: str) -> FlowRegime:
 def to_si_(value: Any, spec_unit: str, field: str) -> float:
     """Re-exported for tests that need to convert an expected value."""
     return to_si(value, spec_unit, field)
+
+
+def kwargs_for(calc: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, Any]:
+    """Turn a spec's declared inputs into keyword arguments for the real call.
+
+    Both the type and the unit come from the spec's own ``inputs`` block, so a
+    validation case or a test case needs no unit handling of its own, and adding
+    a calc needs no change here.
+
+    Note that ``type`` is absent for a plain quantity - it defaults to
+    ``quantity``, and the specs only spell it out for the exceptions. Treating a
+    missing ``type`` as anything other than the default passes bare floats where
+    quantities are required, which is exactly the mistake this library exists to
+    make impossible, and which the reference implementation will reject.
+    """
+    declared = calc["inputs"]
+    kwargs: dict[str, Any] = {}
+    for name, value in inputs.items():
+        declaration = declared[name]
+        kind = declaration.get("type", "quantity")
+        if kind == "fitting_list":
+            kwargs[name] = list(value)
+        elif kind == "quantity" and declaration.get("unit") != "dimensionless":
+            kwargs[name] = quantity(float(value), declaration["unit"])
+        else:
+            kwargs[name] = float(value)
+    return kwargs
