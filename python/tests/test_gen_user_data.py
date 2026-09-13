@@ -226,6 +226,8 @@ def test_the_generator_agrees_with_the_checker_about_the_template() -> None:
         f"project removes wherever it appears."
     )
     assert report.by_status, "no rows were counted, so validation did not run"
+    # `unstated` is the expected label: a keycard row carries no verification
+    # status, which is the point of the change.
 
 
 def test_the_template_can_be_generated_once_the_fluids_are_registered() -> None:

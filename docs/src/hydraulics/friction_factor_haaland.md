@@ -18,16 +18,18 @@ f = (1.0 / (-1.8 * log10((relative_roughness / 3.7)**1.11 + 6.9 / Re)))**2
 
 ## Source
 
-**Haaland, S. E. (1983)** (Journal of Fluids Engineering, 105(1), 89-90) - TODO: source needed
+**Haaland, S. E. (1983)** (Journal of Fluids Engineering, 105(1), 89-90)
 
-## Verification
-
-**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+## Notes
 
 The equation is not in doubt: it is the standard explicit approximation to Colebrook, quoted in essentially every modern fluid mechanics text, and its form is published in Haaland's 1983 paper. What has NOT been done is checking this spec against the paper itself - nobody has opened it and compared.
-Specifically unconfirmed: (1) the equation number within the paper, which is why `source.equation` is marked TODO rather than guessed; (2) the volume and page numbers in `source.edition`, which are reproduced from memory of the citation rather than read from the journal; (3) whether the paper states a DOI, so no DOI is claimed; (4) the paper's own stated validity range.
+
+Specifically unconfirmed: (1) the equation number within the paper, which is why `source.equation` is left unstated rather than guessed; (2) the volume and page numbers in `source.edition`, which are reproduced from memory of the citation rather than read from the journal; (3) whether the paper states a DOI, so no DOI is claimed; (4) the paper's own stated validity range.
+
 Consequence for `valid_range`, and this is the part a reader should notice: the bounds below are NOT Haaland's stated range, because that could not be read. They are the Moody/Colebrook framework bounds this library already applies to the Colebrook equation, and their rationales say so. A spec whose bounds are inherited from the framework rather than the source has to say which, or the bounds read as a claim about the paper.
+
 `unverified` rather than `source_needed` on the distinction the schema draws: no source is in doubt, only its citation. The equation is standard and the worked example is derived from it, so there is a runnable test - which `source_needed` would forbid and which is worth more than a citation nobody has checked. See the note on the equation in `source`.
+
 Accuracy: the equation is an approximation to Colebrook, quoted as within about 1-2% for turbulent flow. Measured here it is 1.31% below Colebrook at the worked example's inputs, which is consistent with that claim. The cross-method test below asserts against the claim rather than against a number chosen here.
 
 ## Inputs
@@ -51,8 +53,8 @@ Accuracy: the equation is an approximation to Colebrook, quoted as within about 
 |---|---|---|
 | `re > 0` | raises | the 6.9/Re term is singular at Re = 0 |
 | `relative_roughness >= 0` | raises | negative roughness is unphysical |
-| `re > 4000` | warns `OUT_OF_VALID_RANGE` | Below Re ~ 4000 the equation is outside turbulent pipe flow, which is the regime it approximates within Colebrook. It still returns a finite number - `log10` of a positive argument is defined everywhere the hard bounds allow - so this is a warning rather than an error, but that number is not covered by the accuracy claim. For laminar flow use f = 64/Re, which is a different equation and deliberately not part of this calc. This bound is the framework boundary already applied to Colebrook in this registry, not a figure read from Haaland's paper. See `verification`. |
-| `relative_roughness <= 0.05` | warns `OUT_OF_VALID_RANGE` | Above epsilon/D ~ 0.05 the Moody framework is no longer meaningful, and this library does not carry roughness data that large. The bound is inclusive because 0.05 is itself still inside the framework; it is the same bound and the same inclusive flag the Colebrook spec uses. See `verification` - it is the framework's bound, not Haaland's. |
+| `re > 4000` | warns `OUT_OF_VALID_RANGE` | Below Re ~ 4000 the equation is outside turbulent pipe flow, which is the regime it approximates within Colebrook. It still returns a finite number - `log10` of a positive argument is defined everywhere the hard bounds allow - so this is a warning rather than an error, but that number is not covered by the accuracy claim. For laminar flow use f = 64/Re, which is a different equation and deliberately not part of this calc. This bound is the framework boundary already applied to Colebrook in this registry, not a figure read from Haaland's paper. See `notes`. |
+| `relative_roughness <= 0.05` | warns `OUT_OF_VALID_RANGE` | Above epsilon/D ~ 0.05 the Moody framework is no longer meaningful, and this library does not carry roughness data that large. The bound is inclusive because 0.05 is itself still inside the framework; it is the same bound and the same inclusive flag the Colebrook spec uses. See `notes` - it is the framework's bound, not Haaland's. |
 
 
 ## Assumptions
@@ -108,7 +110,7 @@ For Re = 1.0e5 and relative_roughness = 4.6e-4 (commercial steel, epsilon = 0.04
 
 ## References
 
-- Haaland, S. E. (1983). "Simple and explicit formulas for the friction factor in turbulent pipe flow." Journal of Fluids Engineering, 105(1), 89-90. (the citation is unconfirmed - see `verification`)
+- Haaland, S. E. (1983). "Simple and explicit formulas for the friction factor in turbulent pipe flow." Journal of Fluids Engineering, 105(1), 89-90. (the citation is unconfirmed - see `notes`)
 - Colebrook, C. F. (1939). "Turbulent flow in pipes, with particular reference to the transition region between the smooth and rough pipe laws." Journal of the Institution of Civil Engineers, 11(4), 133-156. (the implicit equation this approximates - citation confirmed, see the Colebrook spec)
 
 

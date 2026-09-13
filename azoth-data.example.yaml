@@ -59,26 +59,26 @@
 #  fitting registry today, and whatever else comes to need a table later.
 #
 #  ---------------------------------------------------------------------------
-#  STATUS VALUES, AND WHY THEY MATTER
+#  CITATIONS ARE YOURS, AND OPTIONAL
 #  ---------------------------------------------------------------------------
 #
-#    verified         You checked it against the source named in source_ref.
-#                     Only you can say this, and only if you did.
-#    unverified       Not a placeholder, but not checked by anyone either.
-#    estimated_dummy  A placeholder. Keep the word DUMMY in the citation; the
-#                     checker enforces that, so a placeholder cannot be quietly
-#                     promoted by editing one field.
+#  A row may carry a `citation` naming where its values came from. It does not
+#  have to. There is no status field, no requirement and no check: **provenance
+#  is your job, not this library's**, and a YAML linter cannot do it for you.
 #
-#  `source_ref` and `source_locator` are required for anything that is not
-#  `estimated_dummy`, and `source_ref` must be one of:
+#  That is the deliberate position, not an omission. An earlier version required
+#  a `verify_status` on every row and a machine-fetchable `source_ref` beside it,
+#  and a rule that the two had to agree. Nobody can check whether a person read a
+#  standard, so the field was a form to fill in rather than a fact - and a form
+#  teaches people to fill it in.
 #
-#    arweave:<43-char transaction id>   preferred: content-addressed, immutable,
-#                                       independently timestamped
-#    doi:<doi>
-#    https://...
+#  What this library owes you instead is disclosure: it says what it ships and
+#  where that came from (`NOTICE`), and a result computed from your keycard
+#  records whose keycard it was. The rest is engineering judgement.
 #
-#  Prose is not accepted. A reference a tool cannot fetch is the same as no
-#  reference at all, and this is checked rather than trusted.
+#  One thing is still checked, and it is about contradiction rather than trust:
+#  if you write `verify_status: estimated_dummy` (the field is understood, though
+#  nothing needs it), the citation has to say the value is a placeholder too.
 #
 # ============================================================================
 
@@ -92,7 +92,8 @@ schema_version: 1
 #
 #  Read by `azoth.hydraulics.crane_k_factors` and by the `azoth pipe` CLI, where
 #  it becomes the fitting share of a pressure drop. Until you supply your own,
-#  every row here is a placeholder, which the `verify_status` column records.
+#  every row here is a placeholder - the citation says so, which is the whole of
+#  how a placeholder is recorded.
 #
 #  `n_ld` is the equivalent length ratio L_eq/D for fully turbulent flow, which
 #  is the coefficient such a table expresses. Record which basis you used in
@@ -109,13 +110,8 @@ fittings:
     n_ld: 30.0
     f_t_basis: f_t
     citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard. Replace with your own data."
-    verify_status: estimated_dummy
-    source_ref: ""
-    source_locator: ""
 
-  # What a finished row looks like. Uncomment it once you have the value and the
-  # document it came from, and change verify_status only if you personally
-  # checked it against that document.
+  # What a finished row looks like. Uncomment it once you have the value.
   #
   # - id: gate_valve_open
   #   family: valve
@@ -123,9 +119,6 @@ fittings:
   #   n_ld: 8.0
   #   f_t_basis: f_t
   #   citation: "Read from the source named below."
-  #   verify_status: verified
-  #   source_ref: "arweave:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-  #   source_locator: "Table 2, gate valve, fully open"
 
 # ---------------------------------------------------------------------------
 #  Fluid properties
@@ -148,14 +141,8 @@ fluids:
       density_kg_m3: 1000.0
       dynamic_viscosity_pa_s: 0.0018
       citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard."
-      verify_status: estimated_dummy
-      source_ref: ""
-      source_locator: ""
 
     - temperature_c: 100.0
       density_kg_m3: 958.0
       dynamic_viscosity_pa_s: 0.00028
       citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard."
-      verify_status: estimated_dummy
-      source_ref: ""
-      source_locator: ""

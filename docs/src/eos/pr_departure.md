@@ -23,24 +23,32 @@ s_dep_r = ln(z - b_reduced) + (a_reduced/(2*2**0.5*b_reduced))*psi*I
 
 ## Source
 
-**Peng, D. Y.; Robinson, D. B. (1976)** (A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64) - TODO: source needed
+**Peng, D. Y.; Robinson, D. B. (1976)** (A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64)
 
 DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 
-## Verification
-
-**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+## Notes
 
 The three expressions are the standard Peng-Robinson departure functions in reduced variables. The citation is confirmed and the equations are not in doubt - they follow from the cubic by the usual departure-function algebra, which is reproduced below rather than cited, because the algebra is the part worth checking.
-What has NOT been done is opening the paper and confirming that it states them in this form. Specifically unconfirmed: (1) the equation numbers, hence the TODO above; (2) that the paper gives the departure enthalpy and entropy at all, as opposed to the fugacity coefficient alone - they follow from it either way, but a citation should say which; (3) that `psi` is written as the paper writes it, since (T/a)(da/dT) has several algebraically equivalent forms and only one of them is bit-reproducible.
-# The Gibbs identity is the check, and it is algebraic
+
+What has NOT been done is opening the paper and confirming that it states them in this form. Specifically unconfirmed: (1) the equation numbers, so none is given above; (2) that the paper gives the departure enthalpy and entropy at all, as opposed to the fugacity coefficient alone - they follow from it either way, but a citation should say which; (3) that `psi` is written as the paper writes it, since (T/a)(da/dT) has several algebraically equivalent forms and only one of them is bit-reproducible.
+
+#### The Gibbs identity is the check, and it is algebraic
+
 For a pure component the departure Gibbs energy divided by RT **is** the logarithm of the fugacity coefficient, because G = H - TS. Substituting the three expressions above:
 
+
+
   h_dep_rt - s_dep_r = (z - 1) + C*(psi - 1)*I - ln(z - B) - C*psi*I
+
                      = (z - 1) - ln(z - B) - C*I
+
                      = ln_phi
 
+
+
 with C = a_reduced/(2*sqrt(2)*b_reduced). Every psi term cancels. So the identity is not a numerical coincidence to be tolerated - it is exact in real arithmetic, and any disagreement is rounding. That is what makes it a first-class test: it ties three separately-implemented expressions to one analytic relation, and a sign error in either departure function breaks it while leaving every point value plausible.
+
 Measured: 2.8e-17 on the worked example's vapour root, 1.4e-17 on the supercritical case, and 1.3e-15 on the liquid root - larger because `h_dep_rt` and `s_dep_r` are both near -6.6 there and cancel to give -0.32, so the subtraction loses about two digits. The property test's tolerance is set from that measurement rather than from caution.
 
 ## Inputs

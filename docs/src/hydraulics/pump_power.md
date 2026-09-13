@@ -18,19 +18,24 @@ power = rho * g * q * H / eta
 
 ## Source
 
-**standard pump hydraulics; the hydraulic-power relation in any fluids text** - TODO: source needed
+**standard pump hydraulics; the hydraulic-power relation in any fluids text**
 
-## Verification
-
-**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+## Notes
 
 This is the commonest relation in pump engineering: hydraulic power is `rho * g * Q * H`, and dividing by the efficiency gives the shaft power the motor has to supply. It is reproduced in every pump handbook and fluids text.
-What has NOT been done is checking this spec against a named source, which is why `source.equation` is marked TODO rather than quoting an equation number. No specific standard is claimed in `source.standard` either: the relation is too general to belong to one, and naming whichever handbook happened to be at hand would be a citation chosen for how it looks.
+
+What has NOT been done is checking this spec against a named source, which is why `source.equation` is left unstated rather than quoting an equation number. No specific standard is claimed in `source.standard` either: the relation is too general to belong to one, and naming whichever handbook happened to be at hand would be a citation chosen for how it looks.
+
 `unverified` rather than `source_needed`, on the distinction the schema draws: nothing about the physics is in doubt, only whether anyone has opened a source and checked the form this spec writes down. The worked example is derived from the equation and runs, which `source_needed` would forbid.
-# `g` is a constant, not an input
+
+#### `g` is a constant, not an input
+
 `g = 9.80665 m/s**2`, standard gravity. This is a *defined* value, not a measured one - the CGPM fixed it exactly in 1901 - which puts it in the same category as pi rather than in the same category as a fluid's density. Baking a definition into an equation does not hide an assumption in the way baking in a measured property would, and it keeps the interface to the four quantities a caller actually knows.
+
 The alternative was to take `g` as a fifth input, which would have meant adding `m/s**2` to the unit vocabulary. It was rejected as a worse default rather than as more work: a caller who has to supply `g` can supply a wrong one, and local gravity varies by about 0.3% with latitude and a little more with altitude - far below the uncertainty in a pump efficiency that is itself an input. A caller who does need local gravity can scale the result by `g_local / 9.80665`, and the calibration tools all report head in metres of the pumped fluid, which is what this calc takes.
-# Why there are no warning bounds
+
+#### Why there are no warning bounds
+
 Pump efficiency is not a correlation with a validated range; it is a number the caller supplies from a manufacturer's curve. A band below some efficiency would read as validation while asserting something no source states - the same reasoning as `thermal.conduction_plane_wall`. What can be checked is checked: efficiency outside `(0, 1]` is unphysical rather than merely unusual, and it is an error.
 
 ## Inputs
@@ -118,7 +123,7 @@ Water at 20 C pumped at 10 L/s against 30 m of head by a pump of 75% efficiency:
 ## References
 
 - Standard gravity: the 1901 CGPM resolution fixed it at exactly 9.80665 m/s**2. Cited as a definition, not as the source of the equation.
-- The relation itself is general pump engineering, reproduced in every pump handbook and fluids text. No specific source is claimed - see `verification`.
+- The relation itself is general pump engineering, reproduced in every pump handbook and fluids text. No specific source is claimed - see `notes`.
 
 
 ---

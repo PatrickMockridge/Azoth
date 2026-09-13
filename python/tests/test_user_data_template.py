@@ -69,22 +69,28 @@ def test_the_template_passes_the_checker() -> None:
 
 
 def test_every_row_in_the_template_is_a_placeholder() -> None:
-    """No row may claim to be sourced, because no row is.
+    """No row may look sourced, because no row is.
 
-    `verified` and `unverified` both require a `source_ref`, and a template cannot
-    honestly carry one - the reader has not supplied it yet. A row that said
-    `unverified` with a plausible-looking reference would be the worst case: real
-    enough to copy without reading, and unchecked by construction.
+    A template row cannot honestly cite anything - the reader has not supplied the
+    source yet. The marker is now the citation itself: a row whose citation does not
+    say it is a placeholder is a row that reads as real, and the worst case is one
+    real enough to copy without reading.
+
+    This used to be a `verify_status` field on every row. That field is gone: it
+    asked the reader to make a claim about their own diligence and could not check
+    the answer, which is a form rather than a provenance record. The citation says
+    the same thing and is the thing a reader actually reads.
     """
     document = template_document()
-    statuses = {row["verify_status"] for row in document["fittings"]}
+    citations = [row["citation"] for row in document["fittings"]]
     for rows in document["fluids"].values():
-        statuses.update(row["verify_status"] for row in rows)
+        citations.extend(row["citation"] for row in rows)
 
-    assert statuses == {"estimated_dummy"}, (
-        f"the template carries rows with status {sorted(statuses)}; every row must be "
-        f"a placeholder. Show the shape of a finished row in a comment instead - an "
-        f"active row claiming a source is a citation nobody has checked."
+    unmarked = [c for c in citations if "DUMMY" not in c.upper()]
+    assert not unmarked, (
+        f"the template carries {len(unmarked)} row(s) that do not say they are "
+        f"placeholders: {unmarked}. Every template row must say so in its citation; "
+        f"show the shape of a finished row in a comment instead."
     )
 
 

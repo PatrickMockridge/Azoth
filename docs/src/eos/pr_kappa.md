@@ -18,22 +18,28 @@ kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2
 
 ## Source
 
-**Peng, D. Y.; Robinson, D. B. (1976)** (A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64) - TODO: source needed
+**Peng, D. Y.; Robinson, D. B. (1976)** (A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64)
 
 DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 
-## Verification
-
-**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+## Notes
 
 The citation is confirmed: Peng & Robinson, "A New Two-Constant Equation of State", Ind. Eng. Chem. Fundam. 15(1), 59-64, DOI 10.1021/i160057a011. The equation that uses this coefficient is one of the two or three most widely implemented in chemical engineering, and alpha = (1 + kappa*(1 - sqrt(Tr)))**2 is not in doubt.
-What has NOT been done is opening the paper and reading the three coefficients off it. Specifically unconfirmed: (1) that the quadratic in omega is printed as 0.37464 + 1.54226*omega - 0.26992*omega**2 in the 1976 paper, rather than being a later re-fit or a value reproduced from a secondary source that attributed it to that paper; (2) the equation number, which is why `source.equation` is marked TODO.
-# Why this matters more here than an equation number usually does
+
+What has NOT been done is opening the paper and reading the three coefficients off it. Specifically unconfirmed: (1) that the quadratic in omega is printed as 0.37464 + 1.54226*omega - 0.26992*omega**2 in the 1976 paper, rather than being a later re-fit or a value reproduced from a secondary source that attributed it to that paper; (2) the equation number, which is why `source.equation` is left unstated.
+
+#### Why this matters more here than an equation number usually does
+
 A transposed digit in 0.26992 produces a coefficient that is wrong by a fraction of a percent, and therefore an alpha function, and therefore a Z factor, a fugacity coefficient, a K-value and a phase split that are each slightly wrong - while every one of them still converges, still passes a consistency check against its own equation, and still looks entirely reasonable. There is no internal check that catches it, because the constant is an input to the maths rather than a consequence of it. Only reading the paper catches it.
+
 An open search confirms the DOI, the title and the journal. It does not contain the coefficients, which is exactly the situation `unverified` describes: the equation is standard and the citation is not confirmed. It is not `source_needed`, because the equation is standard and the worked example below is derived from it and runs.
-# The fitted range is unconfirmed too
+
+#### The fitted range is unconfirmed too
+
 The range of acentric factors the correlation was fitted over has not been established either, and no bound is asserted for it here. See `assumptions`.
-# Why this calc has no error bounds
+
+#### Why this calc has no error bounds
+
 Every bound below is a warning. There is no acentric factor for which this polynomial is undefined - it is defined for every real omega, including the negative values that quantum fluids carry - so there is no input a refusal would be the right answer for. An error bound here would have to be an accuracy claim dressed up as a domain check, which is the failure this schema's `valid_range` description is written against.
 
 ## Inputs
@@ -54,7 +60,7 @@ Every bound below is a warning. There is no acentric factor for which this polyn
 
 | Bound | On violation | Why |
 |---|---|---|
-| `kappa > 0` | warns `OUT_OF_VALID_RANGE` | The polynomial passes through zero at two values of omega, the roots of 0.37464 + 1.54226*omega - 0.26992*omega**2 = 0: -0.23338349942403008 and 5.947150541510574. Below the lower one - and above the upper one, which no real fluid reaches - kappa is negative. That matters because kappa enters alpha = (1 + kappa*(1 - sqrt(Tr)))**2 as the coefficient of how fast the attraction weakens with temperature. For kappa > 0 the attraction weakens as Tr rises, which is the behaviour the function exists to model; for kappa < 0 it strengthens, which is not a physical statement about any fluid. The returned value is still the polynomial's value and is still returned - a warning, not a refusal - but it is no longer a Peng-Robinson attraction parameter. This fires for real fluids, not for a theoretical corner. Helium (omega = -0.385) is below the root and produces kappa = -0.259138992; hydrogen (-0.216) is just above it and produces kappa = +0.02891845248, a coefficient small enough that alpha is very nearly 1 at every temperature. That PR handles the quantum fluids poorly is well known, and this bound says so in a way a caller can branch on rather than in a footnote. The roots are stated to full precision rather than rounded because they are the boundary this bound is drawn at, and a reader checking where the sign changes should get the same answer this does. They are the roots of the quadratic as published; see `verification` for what that qualification means here. |
+| `kappa > 0` | warns `OUT_OF_VALID_RANGE` | The polynomial passes through zero at two values of omega, the roots of 0.37464 + 1.54226*omega - 0.26992*omega**2 = 0: -0.23338349942403008 and 5.947150541510574. Below the lower one - and above the upper one, which no real fluid reaches - kappa is negative. That matters because kappa enters alpha = (1 + kappa*(1 - sqrt(Tr)))**2 as the coefficient of how fast the attraction weakens with temperature. For kappa > 0 the attraction weakens as Tr rises, which is the behaviour the function exists to model; for kappa < 0 it strengthens, which is not a physical statement about any fluid. The returned value is still the polynomial's value and is still returned - a warning, not a refusal - but it is no longer a Peng-Robinson attraction parameter. This fires for real fluids, not for a theoretical corner. Helium (omega = -0.385) is below the root and produces kappa = -0.259138992; hydrogen (-0.216) is just above it and produces kappa = +0.02891845248, a coefficient small enough that alpha is very nearly 1 at every temperature. That PR handles the quantum fluids poorly is well known, and this bound says so in a way a caller can branch on rather than in a footnote. The roots are stated to full precision rather than rounded because they are the boundary this bound is drawn at, and a reader checking where the sign changes should get the same answer this does. They are the roots of the quadratic as published; see `notes` for what that qualification means here. |
 
 
 ## Assumptions
@@ -66,7 +72,7 @@ satisfy for the result to mean what it says.
 - the acentric factor supplied is correct for the component intended. NOT CHECKED - this calc has no databank and no second source; omega comes from the caller and is taken at face value.
 - omega is taken as the constant Pitzer acentric factor evaluated at Tr = 0.7. A component whose acentric factor has been derived some other way, or fitted to a different reduced temperature, is not the quantity this correlation expects.
 - the coefficient applies to the 1976 Peng-Robinson alpha function and to nothing else. Peng-Robinson-Stryjek-Vera, PR-Twu and every other revision change exactly this temperature dependence, and a kappa from here is not comparable with one from those.
-- the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one. Values far outside the usual band - above about 1, or below 0 - are an extrapolation of a quadratic fitted elsewhere, and the correlation's behaviour there is a property of the polynomial rather than a claim anyone has checked. See `verification`.
+- the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one. Values far outside the usual band - above about 1, or below 0 - are an extrapolation of a quadratic fitted elsewhere, and the correlation's behaviour there is a property of the polynomial rather than a claim anyone has checked. See `notes`.
 - this calc returns a coefficient, not an equation of state. It makes no claim about the Z factor, fugacity coefficient or phase behaviour that alpha feeds into; those are separate calcs with their own sources and their own ranges.
 
 
@@ -108,7 +114,7 @@ Propane-like, omega = 0.152 - the conventional acentric factor for propane, roun
 
 ## References
 
-- Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011. (the origin of the alpha function and of this coefficient; the citation is confirmed, the coefficients are not - see `verification`)
+- Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011. (the origin of the alpha function and of this coefficient; the citation is confirmed, the coefficients are not - see `notes`)
 - Pitzer, K. S. (1955). "The Volumetric and Thermodynamic Properties of Fluids. I. Theoretical Basis and Virial Coefficients." Journal of the American Chemical Society 77(13), 3427-3433. DOI 10.1021/ja01618a002. (the definition of the acentric factor this calc takes as an input)
 
 

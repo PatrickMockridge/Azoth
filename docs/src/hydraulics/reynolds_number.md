@@ -18,13 +18,11 @@ Re = rho * v * D / mu
 
 ## Source
 
-**Crane TP-410** (2013) - TODO: source needed
+**Crane TP-410** (2013)
 
-## Verification
+## Notes
 
-**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
-
-The Reynolds number originates with Reynolds (1883) and is reproduced in every fluid mechanics text; the equation itself is not in doubt. What is unconfirmed is the specific Crane TP-410 equation number, so it is marked TODO rather than guessed at. The regime boundaries below are the Crane/Moody convention (laminar < 2000, transitional 2000-4000, turbulent > 4000) and are approximate engineering guidance, not exact physical transitions: the real onset of transition depends on inlet geometry, vibration and roughness.
+The Reynolds number originates with Reynolds (1883) and is reproduced in every fluid mechanics text; the equation itself is not in doubt. What is unconfirmed is the specific Crane TP-410 equation number, so it is left unstated rather than guessed at. The regime boundaries below are the Crane/Moody convention (laminar < 2000, transitional 2000-4000, turbulent > 4000) and are approximate engineering guidance, not exact physical transitions: the real onset of transition depends on inlet geometry, vibration and roughness.
 
 ## Inputs
 

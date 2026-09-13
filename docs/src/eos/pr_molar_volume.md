@@ -18,20 +18,26 @@ v = z*R*T/P
 
 ## Source
 
-**The ideal-gas law with the compressibility factor as the departure from it** (Clapeyron, É. (1834); van der Waals, J. D. (1873) for the compressibility factor as the correction) - TODO: source needed
+**The ideal-gas law with the compressibility factor as the departure from it** (Clapeyron, É. (1834); van der Waals, J. D. (1873) for the compressibility factor as the correction)
 
-## Verification
-
-**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+## Notes
 
 `v = z*R*T/P` is the definition of the compressibility factor rearranged: `z` is *defined* as `P*v/(R*T)`, so this calc is that definition solved for `v`. The equation is therefore not something to cite - it is the meaning of the quantity passed in - and no source can make it more true.
+
 What is worth recording instead is the two things this calc *does* bring:
-# The gas constant is exact, not measured
+
+#### The gas constant is exact, not measured
+
 Since the 2019 SI redefinition both constants in `R = N_A * k_B` are exact by definition - the Avogadro constant is `6.02214076e23 /mol` and the Boltzmann constant is `1.380649e-23 J/K`, both fixed with no uncertainty - so their product is a defined value rather than a measurement, and no digits are being rounded by writing it to 15 figures. `eos.py` computes `R` from those two constants rather than carrying a literal, so the arithmetic shows where it comes from. The same argument `hydraulics.pump_power` makes for the standard gravity.
-# The value 8.314462618 is the rounded one
+
+#### The value 8.314462618 is the rounded one
+
 The commonly quoted `8.314462618` is this value truncated. The difference is about 2e-10 relative, which matters for nothing a cubic equation of state does - but the truncation is a *choice* and it should be a stated one rather than an accident of which text a number was copied from.
+
 What has NOT been done: checking this against any source, because there is nothing to check. The equation numbers below are the origin of the ideas and not a claim that either author wrote this line.
-# Why this calc exists at all
+
+#### Why this calc exists at all
+
 It is the one place the namespace becomes dimensional. Everything else in `eos` is reduced variables and constitutive coefficients, deliberately unit-free; this is where a compressibility factor becomes a volume, and it is therefore the only calc here whose spec declares a unit that is not `dimensionless`. It is also the calc that made `m**3/mol` the seventeenth entry in the unit vocabulary.
 
 ## Inputs
@@ -112,7 +118,7 @@ The propane-like state the rest of this namespace is built on, closed back to di
 
 ## References
 
-- Clapeyron, É. (1834). "Mémoire sur la puissance motrice de la chaleur." (the ideal-gas law; the citation is unconfirmed and the equation above is a rearrangement of a definition rather than a result from it - see `verification`)
+- Clapeyron, É. (1834). "Mémoire sur la puissance motrice de la chaleur." (the ideal-gas law; the citation is unconfirmed and the equation above is a rearrangement of a definition rather than a result from it - see `notes`)
 - van der Waals, J. D. (1873). "Over de Continuiteit van den Gas- en Vloeistoftoestand." Leiden. (the compressibility factor as the departure from ideality)
 - BIPM. "The International System of Units (SI)", 9th edition (2019). (the exact values of the Avogadro and Boltzmann constants, from which `R` is computed)
 

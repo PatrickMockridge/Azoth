@@ -8,22 +8,32 @@ The companion of `eos.bubble_pressure` and the same iteration with the other pha
 ## Source
 
 **Michelsen, M. L. (1982)** (The isothermal flash problem. Part II. Phase-split calculation. Fluid Phase Equilibria 9(1), 21-40. The dew-point iteration is the same successive- substitution scheme as the bubble point's with the roles of the two phases exchanged.
-) - TODO: source needed
+)
 
 DOI: [10.1016/0378-3812(82)85002-4](https://doi.org/10.1016/0378-3812(82)85002-4)
 
-**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+## Notes
 
 `sum_i y_i / K_i = 1` says that the liquid in equilibrium with the vapour is one mole of liquid, and `K_i = phi_i^L / phi_i^V` is the definition of a K-value. What is ours is the initialisation, the update, the tolerance and the guard.
-# The update is the bubble point's, inverted, and getting that wrong is easy
+
+#### The update is the bubble point's, inverted, and getting that wrong is easy
+
 The pressure update is `P <- P / S` here, against the bubble point's `P <- P * S`, and the reason is worth stating because an earlier draft of this model had it the wrong way round and diverged without saying so.
+
 The rule in both models is the same sentence: **if there is too much of the incipient phase, move away from it.** For a bubble point the incipient phase is vapour, `S = sum_i x_i K_i` is how much vapour the liquid would give off, and `S > 1` means too much - so the pressure rises. For a dew point the incipient phase is liquid, `S = sum_i y_i / K_i` is how much liquid the vapour would condense, and `S < 1` means too *little* - so here too the pressure rises, and `P / S` is what raises it.
+
 Measured with the sign wrong: the dew point of methane/n-butane at 300 K ran down to `P = 3.6e-07` Pa over nine iterations and then failed inside `eos.pr_z_factor`, because the pressure had gone to zero rather than to the answer. Nothing about the trajectory was obviously wrong until it was.
-# The trivial solution, and why the guard is on the K-values
+
+#### The trivial solution, and why the guard is on the K-values
+
 `sum_i y_i / K_i = 1` is satisfied by `K_i = 1` for every `i` at *every* pressure, since `sum_i y_i = 1` identically. That trivial solution is a fixed point of the iteration and the physical one is not, so a vapour with no dew point at this temperature converges to it.
+
 Testing the residual does not detect it, and the reason is measured rather than argued: `S - 1 = sum_i y_i (1/K_i - 1)` is a **weighted sum whose terms cancel**. On a state with no dew point the individual deviations can be of order `1e-7` while their weighted sum falls below `1e-12`. So the guard is on the K-values, at `max_i |ln K_i| < 1e-02`. The measurement behind the constant is of the lowest value each state's `max_i |ln K_i|` reaches at any step, not of where it ends up: genuine dew points keep it at `1.30` or above throughout, and states with no dew point drive it below `1e-06`. `eos.bubble_pressure`'s notes carry the full argument and record the drafting error that produced a wrong threshold the first time; it is the same trap and the same constant.
+
 A vapour above the mixture's critical condition has no dew point, and this is how the model says so: `OutOfRange` naming `min_t_over_tc`, the same shape `eos.pure_saturation` uses for `T >= Tc`.
-# No accuracy claim
+
+#### No accuracy claim
+
 As everywhere in this namespace, none of the bounds below is an accuracy claim - they are about where the calculation is defined.
 
 ## Algorithm
@@ -89,3 +99,17 @@ not an equation, and both implementations read it from here.
 
 - Michelsen, M. L. (1982). "The isothermal flash problem. Part II. Phase-split calculation." Fluid Phase Equilibria 9(1), 21-40. DOI 10.1016/0378-3812(82)85002-4. (the successive-substitution scheme; the DOI is confirmed and the paper has not been read)
 - Wilson, G. M. (1969). "A Modified Redlich-Kwong Equation of State, Application to General Physical Data Calculations." Paper 15C, AIChE 65th National Meeting. (the K-value estimate the initial guess is built from)
+
+## Notes
+
+`sum_i y_i / K_i = 1` says that the liquid in equilibrium with the vapour is one mole of liquid, and `K_i = phi_i^L / phi_i^V` is the definition of a K-value. What is ours is the initialisation, the update, the tolerance and the guard.
+# The update is the bubble point's, inverted, and getting that wrong is easy
+The pressure update is `P <- P / S` here, against the bubble point's `P <- P * S`, and the reason is worth stating because an earlier draft of this model had it the wrong way round and diverged without saying so.
+The rule in both models is the same sentence: **if there is too much of the incipient phase, move away from it.** For a bubble point the incipient phase is vapour, `S = sum_i x_i K_i` is how much vapour the liquid would give off, and `S > 1` means too much - so the pressure rises. For a dew point the incipient phase is liquid, `S = sum_i y_i / K_i` is how much liquid the vapour would condense, and `S < 1` means too *little* - so here too the pressure rises, and `P / S` is what raises it.
+Measured with the sign wrong: the dew point of methane/n-butane at 300 K ran down to `P = 3.6e-07` Pa over nine iterations and then failed inside `eos.pr_z_factor`, because the pressure had gone to zero rather than to the answer. Nothing about the trajectory was obviously wrong until it was.
+# The trivial solution, and why the guard is on the K-values
+`sum_i y_i / K_i = 1` is satisfied by `K_i = 1` for every `i` at *every* pressure, since `sum_i y_i = 1` identically. That trivial solution is a fixed point of the iteration and the physical one is not, so a vapour with no dew point at this temperature converges to it.
+Testing the residual does not detect it, and the reason is measured rather than argued: `S - 1 = sum_i y_i (1/K_i - 1)` is a **weighted sum whose terms cancel**. On a state with no dew point the individual deviations can be of order `1e-7` while their weighted sum falls below `1e-12`. So the guard is on the K-values, at `max_i |ln K_i| < 1e-02`. The measurement behind the constant is of the lowest value each state's `max_i |ln K_i|` reaches at any step, not of where it ends up: genuine dew points keep it at `1.30` or above throughout, and states with no dew point drive it below `1e-06`. `eos.bubble_pressure`'s notes carry the full argument and record the drafting error that produced a wrong threshold the first time; it is the same trap and the same constant.
+A vapour above the mixture's critical condition has no dew point, and this is how the model says so: `OutOfRange` naming `min_t_over_tc`, the same shape `eos.pure_saturation` uses for `T >= Tc`.
+# No accuracy claim
+As everywhere in this namespace, none of the bounds below is an accuracy claim - they are about where the calculation is defined.

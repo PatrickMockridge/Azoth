@@ -8,36 +8,60 @@ The companion of `eos.dew_pressure`, and the same iteration with the other phase
 ## Source
 
 **Michelsen, M. L. (1982)** (The isothermal flash problem. Part II. Phase-split calculation. Fluid Phase Equilibria 9(1), 21-40. The bubble- and dew-point iterations are the standard successive-substitution schemes and are set out there and in any cubic-EOS text; the formulation here is the one every implementation uses.
-) - TODO: source needed
+)
 
 DOI: [10.1016/0378-3812(82)85002-4](https://doi.org/10.1016/0378-3812(82)85002-4)
 
-**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+## Notes
 
 The bubble-point equation is not ours: `sum_i x_i K_i = 1` says that the vapour in equilibrium with the liquid is one mole of vapour, and `K_i = phi_i^L / phi_i^V` is the definition of a K-value. The citation above covers the scheme rather than the equation, because the equation is not something one cites.
+
 What is ours and unverified: the initialisation, the pressure update, the tolerance and the catch described below.
-# The trap this model shares with the flash, and the one it does not
+
+#### The trap this model shares with the flash, and the one it does not
+
 `sum_i x_i K_i = 1` has **two** kinds of solution. One is the bubble point. The other is the trivial one, `K_i = 1` for every `i`, which is satisfied at *every* pressure because `sum_i x_i = 1` identically - and which the iteration converges to whenever the feed has no bubble point, because the trivial state is a fixed point of the update rule and the physical one is not there to attract it.
+
 The flash detects that on the K-values. This model has to detect it on the K-values too, but the obvious alternative - testing the residual `|S - 1|` - **does not work**, and the reason is worth recording because it is not obvious:
+
 ```text S - 1 = sum_i x_i (K_i - 1) ```
+
 is a weighted sum whose terms **cancel**. Measured on a mixture with no bubble point (methane/propane/n-butane, 50/30/20, T = 350 K): the iteration reached `K = (1.000000375, 0.999999724, 0.999999476)`, whose deviations are of order `1e-7`, and `S - 1` came out at **1.5e-13** - below the tolerance. The individual K-values were nowhere near 1 and their weighted sum was. A convergence test on `S` alone therefore accepts the trivial solution, and it does so *silently*, returning a pressure around 24 MPa that looks entirely plausible for that mixture at that temperature.
+
 So the guard is on the K-values:
+
 ```text max_i |ln K_i| < 1e-02   =>  the two phases have merged; there is no bubble point ```
-# Why 1e-2, and the measurement behind it
+
+#### Why 1e-2, and the measurement behind it
+
 The threshold is not arbitrary and it is not tight, and the measurement behind it is of the *lowest* value each state's `max_i |ln K_i|` reaches at any point in its iteration - which is what a threshold has to clear, since a degenerate state drives the quantity smoothly through every value on its way down. Over a scan of the two binaries and the ternary in the test files:
+
 * every state with a genuine bubble point kept `max_i |ln K_i| >= 1.30` at
+
   **every** step;
+
 * every state with no bubble point drove it below `1e-06` before its residual
+
   test could fire.
 
+
+
 The gap spans six orders of magnitude and 1e-2 sits in the middle of it. A tighter threshold would be nearer the degenerate cluster for no gain; a looser one would start refusing genuine bubble points near the critical region, where the K-values legitimately approach 1.
+
 **The residual is not a substitute and it is worth saying why.** The first measurement taken here was of `max_i |ln K_i|` at the step the residual test fires, which suggested the degenerate cluster topped out at `9.1e-04`. That was an artefact of a guard at `1e-3` having already stopped the iteration early: with no guard at all the same states run on to `1e-06`. Measuring where a state *ends up* rather than what it *passes through* is how a threshold gets set one order of magnitude too loose.
+
 A mixture **above its critical pressure at this temperature has no bubble point**, and this is the model's way of saying so. It refuses with `OutOfRange` naming `min_t_over_tc` - the same shape `eos.pure_saturation` uses for `T >= Tc`, and for the same reason: the state asked for does not exist.
-# What is NOT a failure: the same trap as the flash
+
+#### What is NOT a failure: the same trap as the flash
+
 The update is `P <- P * S`. It is first-order, and the convergence is linear: the residual falls by a roughly constant factor each step, so a state near the mixture's critical condition can take a hundred iterations where an ordinary one takes twenty. The cap is 200 and the spec's cases are chosen with the achieved counts well inside it - see the notes on each.
-# The pure-component case is refused, deliberately
+
+#### The pure-component case is refused, deliberately
+
 For one component the two phases necessarily have the same composition, so `K = S` and the bubble point is defined by `K = 1` rather than by the composition difference this model's outputs are about. That is `eos.pure_saturation`'s calculation, and the model returns an error naming it rather than a `k` vector of ones and an `incipient` equal to the feed.
-# No accuracy claim
+
+#### No accuracy claim
+
 Peng-Robinson's saturation predictions are good to a few per cent for light hydrocarbons and worse elsewhere; a bubble-point pressure inherits that and adds the mixture's. As everywhere in this namespace, no bound below is an accuracy claim.
 
 ## Algorithm
@@ -103,3 +127,31 @@ not an equation, and both implementations read it from here.
 
 - Michelsen, M. L. (1982). "The isothermal flash problem. Part II. Phase-split calculation." Fluid Phase Equilibria 9(1), 21-40. DOI 10.1016/0378-3812(82)85002-4. (the successive-substitution scheme; the DOI is confirmed and the paper has not been read)
 - Wilson, G. M. (1969). "A Modified Redlich-Kwong Equation of State, Application to General Physical Data Calculations." Paper 15C, AIChE 65th National Meeting. (the K-value estimate the initial guess is built from, via the same `eos.pt_flash` records)
+
+## Notes
+
+The bubble-point equation is not ours: `sum_i x_i K_i = 1` says that the vapour in equilibrium with the liquid is one mole of vapour, and `K_i = phi_i^L / phi_i^V` is the definition of a K-value. The citation above covers the scheme rather than the equation, because the equation is not something one cites.
+What is ours and unverified: the initialisation, the pressure update, the tolerance and the catch described below.
+# The trap this model shares with the flash, and the one it does not
+`sum_i x_i K_i = 1` has **two** kinds of solution. One is the bubble point. The other is the trivial one, `K_i = 1` for every `i`, which is satisfied at *every* pressure because `sum_i x_i = 1` identically - and which the iteration converges to whenever the feed has no bubble point, because the trivial state is a fixed point of the update rule and the physical one is not there to attract it.
+The flash detects that on the K-values. This model has to detect it on the K-values too, but the obvious alternative - testing the residual `|S - 1|` - **does not work**, and the reason is worth recording because it is not obvious:
+```text S - 1 = sum_i x_i (K_i - 1) ```
+is a weighted sum whose terms **cancel**. Measured on a mixture with no bubble point (methane/propane/n-butane, 50/30/20, T = 350 K): the iteration reached `K = (1.000000375, 0.999999724, 0.999999476)`, whose deviations are of order `1e-7`, and `S - 1` came out at **1.5e-13** - below the tolerance. The individual K-values were nowhere near 1 and their weighted sum was. A convergence test on `S` alone therefore accepts the trivial solution, and it does so *silently*, returning a pressure around 24 MPa that looks entirely plausible for that mixture at that temperature.
+So the guard is on the K-values:
+```text max_i |ln K_i| < 1e-02   =>  the two phases have merged; there is no bubble point ```
+# Why 1e-2, and the measurement behind it
+The threshold is not arbitrary and it is not tight, and the measurement behind it is of the *lowest* value each state's `max_i |ln K_i|` reaches at any point in its iteration - which is what a threshold has to clear, since a degenerate state drives the quantity smoothly through every value on its way down. Over a scan of the two binaries and the ternary in the test files:
+* every state with a genuine bubble point kept `max_i |ln K_i| >= 1.30` at
+  **every** step;
+* every state with no bubble point drove it below `1e-06` before its residual
+  test could fire.
+
+The gap spans six orders of magnitude and 1e-2 sits in the middle of it. A tighter threshold would be nearer the degenerate cluster for no gain; a looser one would start refusing genuine bubble points near the critical region, where the K-values legitimately approach 1.
+**The residual is not a substitute and it is worth saying why.** The first measurement taken here was of `max_i |ln K_i|` at the step the residual test fires, which suggested the degenerate cluster topped out at `9.1e-04`. That was an artefact of a guard at `1e-3` having already stopped the iteration early: with no guard at all the same states run on to `1e-06`. Measuring where a state *ends up* rather than what it *passes through* is how a threshold gets set one order of magnitude too loose.
+A mixture **above its critical pressure at this temperature has no bubble point**, and this is the model's way of saying so. It refuses with `OutOfRange` naming `min_t_over_tc` - the same shape `eos.pure_saturation` uses for `T >= Tc`, and for the same reason: the state asked for does not exist.
+# What is NOT a failure: the same trap as the flash
+The update is `P <- P * S`. It is first-order, and the convergence is linear: the residual falls by a roughly constant factor each step, so a state near the mixture's critical condition can take a hundred iterations where an ordinary one takes twenty. The cap is 200 and the spec's cases are chosen with the achieved counts well inside it - see the notes on each.
+# The pure-component case is refused, deliberately
+For one component the two phases necessarily have the same composition, so `K = S` and the bubble point is defined by `K = 1` rather than by the composition difference this model's outputs are about. That is `eos.pure_saturation`'s calculation, and the model returns an error naming it rather than a `k` vector of ones and an `incipient` equal to the feed.
+# No accuracy claim
+Peng-Robinson's saturation predictions are good to a few per cent for light hydrocarbons and worse elsewhere; a bubble-point pressure inherits that and adds the mixture's. As everywhere in this namespace, no bound below is an accuracy claim.

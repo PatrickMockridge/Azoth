@@ -1,24 +1,23 @@
-"""spec_lint's rule about verification status and runnable worked examples.
+"""spec_lint's worked-example rule, which is the one requirement it kept.
 
-The defect these tests exist for: ``source_needed`` was a documented,
-schema-legal, contributor-facing status that no spec could actually hold.
+The library used to carry a ``verification.status`` — ``verified``, ``unverified`` or
+``source_needed`` — and a rule coupling it to whether a calc's worked example could run.
+The status is gone: provenance is the engineer's business, not a YAML linter's, and a
+field nobody can enforce honestly trains people to fill it in rather than to know the
+answer.
 
-``check_tests`` demanded an active ``worked_example`` test unconditionally, and
-the rule immediately below it forbade an active ``worked_example`` for exactly
-the calcs that are permitted to omit one. The two rules were contradictory, so
-every ``source_needed`` spec failed lint - and because no spec in the registry
-used the status, nothing ever noticed. CONTRIBUTING.md told contributors to
-reach for a state the tooling rejected.
+What survives is the rule underneath it, which was never about provenance at all:
+**a calculation ships a runnable worked example.** It costs a dozen lines, it is the
+cheapest check in the registry, and it is what pins a number to something a reader can
+retrace. Skipping it is allowed, but the test has to say why.
 
-A test that only asserted "a source_needed spec lints clean" would pass just as
-happily if the worked-example requirement had been deleted outright. So these
-pin both directions: the status is reachable, **and** the check it relaxes still
-bites for every other status, and still bites for the contradiction it was
-guarding against.
+These tests pin both directions. A test that only asserted "a skipped example lints
+clean" would pass just as happily if the requirement had been deleted outright, so the
+last case asserts the requirement still bites when nothing is declared at all.
 
-The specs are built by mutating a copy of a real spec that already passes, so a
-failure here is about the rule under test rather than about some unrelated field
-being malformed.
+The specs are built by mutating a copy of a real spec that already passes, so a failure
+here is about the rule under test rather than about some unrelated field being
+malformed.
 """
 
 from __future__ import annotations
@@ -66,106 +65,70 @@ def spec_tree(tmp_path: Path, mutate: Mutator | None = None) -> Path:
 
 
 def skip_worked_example(spec: dict[str, Any], reason: str) -> None:
-    """Mark the worked-example test skipped, as a source-less calc must."""
+    """Mark the worked-example test skipped, as a calc with nothing to check must."""
     for test in spec["tests"]:
         if test["type"] == "worked_example":
             test["status"] = "skipped"
             test["skip_reason"] = reason
 
 
-def as_source_needed(spec: dict[str, Any]) -> None:
-    """No adequate source found, so the worked example is skipped."""
-    spec["verification"]["status"] = "source_needed"
-    skip_worked_example(spec, "source_needed: no adequate source located for this calc")
+def as_skipped_with_a_reason(spec: dict[str, Any]) -> None:
+    skip_worked_example(spec, "the arithmetic is not reproducible on a machine")
 
 
-def as_unverified_without_an_example(spec: dict[str, Any]) -> None:
-    """The status that does *not* excuse a missing runnable example."""
-    spec["verification"]["status"] = "unverified"
-    skip_worked_example(spec, "source_needed: this excuse does not apply here")
-
-
-def as_source_needed_with_an_active_example(spec: dict[str, Any]) -> None:
-    """The contradiction: no source found, yet claiming a passing example."""
-    spec["verification"]["status"] = "source_needed"
-
-
-def as_source_needed_with_nothing_active(spec: dict[str, Any]) -> None:
-    """Every test skipped, so the spec is exercised by nothing at all."""
-    spec["verification"]["status"] = "source_needed"
+def as_skipped_without_a_reason(spec: dict[str, Any]) -> None:
     for test in spec["tests"]:
-        test["status"] = "skipped"
-        test["skip_reason"] = "source_needed: no adequate source located for this calc"
+        if test["type"] == "worked_example":
+            test["status"] = "skipped"
+            test.pop("skip_reason", None)
 
 
-def test_source_needed_with_a_skipped_example_lints_clean(tmp_path: Path) -> None:
-    """The status is reachable: this is the regression test for the defect.
-
-    Under the old rules this spec failed, because a skipped worked example left
-    `active_worked_example` false and nothing consulted the status before
-    demanding one. `source_needed` was therefore write-only documentation.
-    """
-    result = lint(spec_tree(tmp_path, as_source_needed))
-    assert result.returncode == 0, (
-        f"a source_needed spec with a skipped worked example must lint clean, "
-        f"but spec_lint failed:\n{result.stdout}{result.stderr}"
-    )
+def as_having_no_worked_example(spec: dict[str, Any]) -> None:
+    spec["tests"] = [t for t in spec["tests"] if t["type"] != "worked_example"]
 
 
-def test_relaxing_source_needed_does_not_relax_anything_else(tmp_path: Path) -> None:
-    """The exemption is narrow: `unverified` still requires a runnable example.
-
-    Without this, deleting the worked-example requirement entirely would leave
-    the test above passing.
-    """
-    result = lint(spec_tree(tmp_path, as_unverified_without_an_example))
-    assert result.returncode != 0, (
-        "an unverified spec with no active worked example must still fail; the "
-        f"source_needed exemption has leaked:\n{result.stdout}{result.stderr}"
-    )
-    assert "no active worked_example test" in result.stderr
-
-
-def test_source_needed_with_an_active_example_still_fails(tmp_path: Path) -> None:
-    """The other half of the contradiction is still guarded.
-
-    `source_needed` says no adequate source was found. An active worked example
-    asserts the opposite, and the pair must not both be true.
-    """
-    result = lint(spec_tree(tmp_path, as_source_needed_with_an_active_example))
-    assert result.returncode != 0, (
-        "a source_needed spec claiming an active worked example must fail:\n"
-        f"{result.stdout}{result.stderr}"
-    )
-    assert "must not claim a passing example" in result.stderr
-
-
-def test_source_needed_with_no_active_test_is_reported(tmp_path: Path) -> None:
-    """A calc nothing exercises should be loud, though it is not an error.
-
-    Skipping the worked example is legal under `source_needed`, and
-    `tests: minItems: 1` is satisfied by the skipped test alone - so a spec can
-    reach the registry with nothing running at all. That is a warning rather than
-    a failure, because there are honest reasons to record a calc in that state,
-    but it must not pass silently.
-    """
-    result = lint(spec_tree(tmp_path, as_source_needed_with_nothing_active))
-    assert result.returncode == 0, (
-        f"an untested source_needed spec is a warning, not an error:\n"
-        f"{result.stdout}{result.stderr}"
-    )
-    assert "no test of any kind is active" in result.stderr
-
-
-def test_the_harness_lints_the_unmutated_spec_clean(tmp_path: Path) -> None:
-    """Sanity check on the harness itself: the unmutated spec still passes.
-
-    Guards against these tests passing for the wrong reason. If copying a spec
-    into a temporary tree failed lint on its own - a mangled round-trip, say -
-    then a non-zero exit above would prove nothing about the mutation.
-    """
+def test_an_active_worked_example_lints_clean(tmp_path: Path) -> None:
+    """The baseline. Every other case here is a mutation of a spec that passes."""
     result = lint(spec_tree(tmp_path))
     assert result.returncode == 0, (
-        f"an unmutated copy of a passing spec must lint clean, so a failure above "
-        f"is attributable to the mutation:\n{result.stdout}{result.stderr}"
+        f"the unmutated spec must lint clean:\n{result.stdout}{result.stderr}"
+    )
+
+
+def test_skipping_the_example_with_a_reason_is_allowed(tmp_path: Path) -> None:
+    """A calc with nothing checkable may say so and move on.
+
+    This is the case the old ``source_needed`` status existed to permit and then
+    failed to, because two rules contradicted each other and no spec ever used the
+    status, so nothing noticed. The permission is real now: the reason is the whole
+    requirement.
+    """
+    result = lint(spec_tree(tmp_path, as_skipped_with_a_reason))
+    assert result.returncode == 0, (
+        f"a skipped worked example with a recorded reason must lint clean:\n"
+        f"{result.stdout}{result.stderr}"
+    )
+
+
+def test_skipping_the_example_without_a_reason_fails(tmp_path: Path) -> None:
+    """Skipping is legal; a silent skip is not. The schema requires the reason."""
+    result = lint(spec_tree(tmp_path, as_skipped_without_a_reason))
+    assert result.returncode != 0, (
+        f"a skipped worked example with no skip_reason must fail:\n{result.stdout}{result.stderr}"
+    )
+
+
+def test_a_calc_with_no_worked_example_at_all_fails(tmp_path: Path) -> None:
+    """The requirement still bites, which is what makes the permission mean anything.
+
+    Without this case the whole file would pass if the check had been deleted rather
+    than relaxed - the failure mode the old test was written to avoid and which is
+    just as easy to hit now.
+    """
+    result = lint(spec_tree(tmp_path, as_having_no_worked_example))
+    assert result.returncode != 0, (
+        f"a calc with no worked_example test of any kind must fail:\n{result.stdout}{result.stderr}"
+    )
+    assert "worked_example" in result.stdout + result.stderr, (
+        "the failure must name the missing worked example rather than being a generic schema error"
     )

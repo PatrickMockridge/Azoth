@@ -22,11 +22,11 @@ In the form the library evaluates:
 
 DOI: [10.1680/ijoti.1939.13150](https://doi.org/10.1680/ijoti.1939.13150)
 
-## Verification
-
-Verified against the primary source.
+## Notes
 
 Citation confirmed: Colebrook, C.F. (1939), "Turbulent flow in pipes, with particular reference to the transition region between the smooth and rough pipe laws", J. Inst. Civil Engineers 11(4), 133-156, DOI 10.1680/ijoti.1939.13150. The equation is implicit in f and has no closed-form solution, hence the solver block below.
+
+The bound above is a LOWER bound on Re. An earlier draft of this spec wrote it as `max: 4000`, which said the opposite of what its own rationale described and warned on every valid turbulent case; the warning-agreement test caught it. Recorded here rather than in the rationale because the rationale is printed inside user-facing warning text, and a note about this repository's drafting history does not belong there.
 
 ## Inputs
 

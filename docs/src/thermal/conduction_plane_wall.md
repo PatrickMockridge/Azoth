@@ -18,18 +18,22 @@ q = k * A * dT / L
 
 ## Source
 
-**Fourier, J. (1822)** (Théorie analytique de la chaleur, Paris: Firmin Didot) - TODO: source needed
+**Fourier, J. (1822)** (Théorie analytique de la chaleur, Paris: Firmin Didot)
 
-## Verification
-
-**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+## Notes
 
 Fourier's law is not in doubt. It is the founding statement of conduction, it is reproduced in every heat transfer text, and the plane-wall solution below is the simplest thing one can do with it. What has NOT been done is checking this spec against a primary source.
-Specifically unconfirmed: (1) the equation number, which is why `source.equation` is marked TODO - the 1822 treatise develops the law in differential form and does not present this integrated result as a numbered equation, so there may be no number to cite; (2) the edition and its pagination, which are reproduced from memory of the citation rather than read from a copy.
+
+Specifically unconfirmed: (1) the equation number, which is why `source.equation` is left unstated - the 1822 treatise develops the law in differential form and does not present this integrated result as a numbered equation, so there may be no number to cite; (2) the edition and its pagination, which are reproduced from memory of the citation rather than read from a copy.
+
 `unverified` rather than `verified`, on the distinction the schema draws: nothing about the physics is in question, only whether anyone has opened the source. It is not `source_needed` because the equation is standard and the worked example is derived from it, so there is a runnable test - which `source_needed` forbids, and which is worth more than a citation nobody has checked.
-# Why this calc has no warning bounds
+
+#### Why this calc has no warning bounds
+
 Every other calc in the registry has at least one `warning` bound, marking a band where the correlation stops being covered by its accuracy claim. This one has none, and that is a deliberate difference rather than an omission.
+
 Fourier's law is exact within its assumptions. It is not fitted to data over a range the way the Colebrook or Haaland correlations are, so there is no band outside which the number stops being trustworthy and starts being merely arithmetic. What can go wrong here is that the *assumptions* are violated - the wall is not one-dimensional, the conductivity varies with temperature, the faces are not isothermal - and none of that is checkable from the four inputs this calc has. Putting a bound on, say, `dT` would look like validation while asserting something no source states.
+
 The assumptions are therefore all in `assumptions`, which is where the schema puts what is documented rather than enforced. A caller who needs a temperature-dependent `k` must supply one; this calc takes a single value and means it.
 
 ## Inputs
@@ -116,7 +120,7 @@ A carbon steel plate 50 mm thick and 2 m square, with a 30 K difference between 
 
 ## References
 
-- Fourier, J. (1822). "Théorie analytique de la chaleur." Paris: Firmin Didot. (the origin of the law; the citation is unconfirmed - see `verification`)
+- Fourier, J. (1822). "Théorie analytique de la chaleur." Paris: Firmin Didot. (the origin of the law; the citation is unconfirmed - see `notes`)
 
 
 ---

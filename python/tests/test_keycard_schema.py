@@ -10,13 +10,18 @@ indistinguishable from a constraint with a typo in it, and the failure mode is t
 one this repository is organised against: a rule that looks like validation and
 does nothing.
 
-**It holds the two schemas to one provenance definition.** `keycard.schema.json`
-`$ref`s `calc.schema.json#/$defs/provenance_row` rather than restating the
-citation rules, because a user's data row and the repository's are the same kind of
-claim. The test asserts the reference resolves to *that* definition - so a later
-refactor that inlines a copy fails here rather than quietly creating a second
-answer to what a valid citation is. That is the same drift that had already
-happened once between `check_source` and its duplicate in the user-data checker.
+**It holds the two schemas to one citation definition.** `keycard.schema.json`
+`$ref`s `calc.schema.json#/$defs/citation` rather than restating what a citation is,
+because a user's data row and the repository's record the same kind of thing. The test
+asserts the reference resolves to *that* definition - so a later refactor that inlines a
+copy fails here rather than quietly creating a second answer to what a citation is.
+
+**And it asserts the absence of the old regime.** A keycard used to require a
+`verify_status` on every row, one of `verified` / `unverified` / `estimated_dummy`,
+with a rule that the citation had to agree with it. That was provenance policing: a
+field that could not be checked by a tool, required anyway, which taught people to fill
+it in rather than to know the answer. It is gone, and a test says so, because a field
+deleted from a schema and left in the tests comes back.
 """
 
 from __future__ import annotations
@@ -34,7 +39,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CALC_SCHEMA = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
 KEYCARD_SCHEMA = REPO_ROOT / "specs" / "schema" / "keycard.schema.json"
 
-PROVENANCE_REF = "calc.schema.json#/$defs/provenance_row"
+CITATION_REF = "calc.schema.json#/$defs/citation"
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -75,7 +80,6 @@ def a_valid_keycard() -> dict[str, Any]:
                 "n_ld": 8.0,
                 "f_t_basis": "f_t",
                 "citation": "Read from the source named below.",
-                "verify_status": "verified",
             }
         ],
         "fluids": {
@@ -85,18 +89,12 @@ def a_valid_keycard() -> dict[str, Any]:
                     "density_kg_m3": 1028.0,
                     "dynamic_viscosity_pa_s": 0.00188,
                     "citation": "Read from the source named below.",
-                    "verify_status": "unverified",
-                    "source_ref": "https://example.test/seawater",
-                    "source_locator": "Table 1",
                 },
                 {
                     "temperature_c": 20.0,
                     "density_kg_m3": 1024.0,
                     "dynamic_viscosity_pa_s": 0.00107,
                     "citation": "Read from the source named below.",
-                    "verify_status": "unverified",
-                    "source_ref": "https://example.test/seawater",
-                    "source_locator": "Table 1",
                 },
             ]
         },
@@ -106,9 +104,6 @@ def a_valid_keycard() -> dict[str, Any]:
                     "value": 190.564,
                     "unit": "K",
                     "citation": "NeqSim v3.20.0 COMP.csv (Equinor/NTNU), Apache-2.0",
-                    "verify_status": "unverified",
-                    "source_ref": "https://github.com/equinor/neqsim",
-                    "source_locator": "COMP.csv, methane",
                 }
             }
         },
@@ -119,9 +114,6 @@ def a_valid_keycard() -> dict[str, Any]:
                     "unit": "dimensionless",
                     "convention": "iso_5167_corner",
                     "citation": "Read from the source named below.",
-                    "verify_status": "verified",
-                    "source_ref": "https://iso.example/5167-2",
-                    "source_locator": "Table 4, corner tappings, beta = 0.5",
                 }
             }
         },
@@ -152,59 +144,67 @@ def test_a_well_formed_keycard_is_accepted(keycard_validator: Draft202012Validat
     assert errors_for(keycard_validator, a_valid_keycard()) == []
 
 
-def test_the_two_schemas_share_one_provenance_definition() -> None:
-    """The keycard must `$ref` the calc schema's rules, not carry a copy.
+def test_the_two_schemas_share_one_citation_definition() -> None:
+    """The keycard must `$ref` the calc schema's definition, not carry a copy.
 
-    Asserted on the reference *and* on the target's presence, because either alone
-    is satisfiable by accident: a `$ref` to a definition that does not exist, or a
-    copy that happens to sit under the same name, would each pass one of them.
+    Asserted on the reference *and* on the target's presence, because either alone is
+    satisfiable by accident: a `$ref` to a definition that does not exist, or a copy
+    that happens to sit under the same name, would each pass one of them.
     """
     keycard = load(KEYCARD_SCHEMA)
     calc = load(CALC_SCHEMA)
-    assert "provenance_row" in calc["$defs"], (
-        "calc.schema.json no longer defines provenance_row; the keycard schema "
-        "references it and the reference would dangle"
+    assert "citation" in calc["$defs"], (
+        "calc.schema.json no longer defines citation; the keycard schema references "
+        "it and the reference would dangle"
     )
     references = json.dumps(keycard)
-    assert PROVENANCE_REF in references, (
-        f"keycard.schema.json does not reference {PROVENANCE_REF!r}. If the rules "
-        f"were inlined, there are now two definitions of what a valid citation is."
+    assert CITATION_REF in references, (
+        f"keycard.schema.json does not reference {CITATION_REF!r}. If the definition "
+        f"were inlined, there are now two answers to what a citation is."
     )
 
 
-#: Every rule in `provenance_row`, one malformed row each. Mirrors the branches
-#: `tools/spec_lint.py::check_source` enforces on the CSV files, because the two
-#: must agree and only one of them is machine-checked here.
+#: A citation is a string and nothing else. The rules that used to live beside it -
+#: a machine-fetchable `source_ref`, a `source_locator`, a `verify_status` and the
+#: agreement between the last two - are gone, so what is left to reject is a citation
+#: of the wrong shape and a field that no longer exists.
 @pytest.mark.parametrize(
     ("label", "mutate"),
     [
-        (
-            "placeholder whose citation does not say DUMMY",
-            lambda: _row(citation="a plausible number", verify_status="estimated_dummy"),
-        ),
-        (
-            "placeholder that also claims a source",
-            lambda: _row(verify_status="estimated_dummy", source_ref="https://x.test/y"),
-        ),
-        (
-            "promoted to verified without editing the citation",
-            lambda: _row(citation="DUMMY value, not from any source"),
-        ),
-        (
-            "an unrecognised verify_status",
-            lambda: _row(verify_status="probably_fine"),
-        ),
+        ("a citation that is not a string", lambda: _row(citation={"source": "tables"})),
+        ("a citation that is a number", lambda: _row(citation=42)),
+        ("a verify_status, which no longer exists", lambda: _row(verify_status="verified")),
+        ("a source_ref, which no longer exists", lambda: _row(source_ref="doi:10.1/x")),
     ],
 )
-def test_the_provenance_rules_reject_what_they_should(
+def test_the_removed_provenance_fields_are_gone(
     keycard_validator: Draft202012Validator, label: str, mutate: Any
 ) -> None:
+    """The old regime must be *rejected*, not merely permitted.
+
+    A field deleted from the schema but still accepted is a field that comes back.
+    `additionalProperties: false` on the row is what makes this a test rather than a
+    hope, and these four cases are what prove the setting is live.
+    """
     document = a_valid_keycard()
     document["fittings"] = [mutate()]
     assert errors_for(keycard_validator, document), f"{label} was accepted"
 
 
-def _row(**overrides: str) -> dict[str, Any]:
+def test_a_row_needs_no_citation_at_all(keycard_validator: Draft202012Validator) -> None:
+    """The positive half, and the point of the change.
+
+    A keycard row with no citation, no status and no reference to anything is valid.
+    The engineer supplying the data owns its provenance; this library does not ask.
+    """
+    row = _row()
+    del row["citation"]
+    document = a_valid_keycard()
+    document["fittings"] = [row]
+    assert errors_for(keycard_validator, document) == []
+
+
+def _row(**overrides: Any) -> dict[str, Any]:
     """A fitting row, valid unless a test says otherwise."""
     row = {
         "id": "gate_valve_open",
@@ -213,9 +213,6 @@ def _row(**overrides: str) -> dict[str, Any]:
         "n_ld": 8.0,
         "f_t_basis": "f_t",
         "citation": "Read from the source named below.",
-        "verify_status": "verified",
-        "source_ref": "https://example.test/table",
-        "source_locator": "Table 2",
     }
     row.update(overrides)
     return row
