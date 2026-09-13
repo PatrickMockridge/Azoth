@@ -25,7 +25,7 @@ counts below will age. The shape is the part worth reading.*
 | Thermodynamics alone | 199,598 lines | — |
 | Test files | 2,123 | 766 tests |
 | Registered calculations | 60+ equations of state, 33+ equipment types | 21 calcs, 5 models |
-| Component data | 258 rows in `COMP.csv`, 76,705 in `COMP_EXT.csv`, 1,309 kij rows | none |
+| Component data | 258 rows in `COMP.csv`, 76,705 in `COMP_EXT.csv`, 1,309 kij rows | 173 in `data/components/`, 516 kij rows, vendored from NeqSim |
 | Licence | Apache-2.0 | AGPL-3.0 code, CC-BY-4.0 docs and data |
 
 The comparison that matters is not the arithmetic. It is that NeqSim is a **process
@@ -57,20 +57,36 @@ NeqSim ships a component databank: 258 components in `COMP.csv`, 76,705 in
 columns — critical properties, ideal-gas heat capacity coefficients, Antoine constants,
 association parameters, SAFT parameters, hydrate coefficients, viscosity correlations.
 
-azoth ships **no component data at all**. `Tc`, `Pc`, `omega` and `kij` are arguments to
-every model.
+**azoth now ships a databank too, and it is NeqSim's.** When this page was first
+written the row above read "none", and the comparison made the point that an azoth user
+had to supply every critical constant by hand while a NeqSim user wrote
+`addComponent("methane", 1.0)` and got an answer. That was the better half of the
+usability trade and it was conceded as such. It is no longer true: `data/components/` is
+generated from this repository's `COMP.csv` and `INTER.csv` by
+[`tools/gen_databank.py`](https://github.com/PatrickMockridge/Azoth/blob/main/tools/gen_databank.py),
+and `azoth.eos.from_names(["methane", "n-butane"])` is the NeqSim call in azoth's
+spelling.
 
-**This is a trade, and NeqSim has the better half of it on usability.** A NeqSim user
-writes `addComponent("methane", 1.0)` and gets an answer. An azoth user must supply the
-critical properties, which is more work and one more place to be wrong.
+Three things about the vendoring are worth stating, because they are where it differs
+from what NeqSim ships.
 
-What azoth gets for that: no answer it ships is owed to a row that nobody in this
-repository can trace. `COMP.csv` has no citation column, so a value in it carries
-NeqSim's provenance — institutional, which is real and is more than most engineering
-data has — rather than a per-value one. For a library whose entire claim is that a
-number arrives with its provenance attached, that is the central question, and azoth
-answers it by not shipping data. See [Copyright and licensed data](../copyright.md) for
-where that boundary has since moved.
+**Not every row came across.** 62 of the 258 components are ions, and a cubic equation
+of state has no notion of one — NeqSim fills their critical properties with a shared
+default, which shows up as 29 rows carrying the same `Pc`, `omega` and `Vc`. That is
+not a coincidence and it is not data, so those rows are excluded, along with `ice`,
+`salt`, `seawater`, `asphaltene` and the rows with no type at all. 173 substances came
+across. `COMP_EXT.csv` did not: 86 MB of heavy fluids this library cannot characterise.
+
+**The provenance is institutional, and that is now the whole of it.** `COMP.csv` has no
+citation column, so a value in it carries a project, a version and a file rather than a
+per-value citation. That is real — more than most engineering data has — and it is not a
+person having checked anything, which is why the rows say `unverified` and one test
+asserts they cannot drift upward.
+
+**The residual risk is inherited, not resolved.** Apache-2.0 permits redistributing
+NeqSim's compilation; it does not establish that every value inside was cleanly sourced
+upstream. That is not inspectable from here and the mitigation is attribution rather than
+inspection. See [Copyright and licensed data](../copyright.md).
 
 ### 3. How correctness is claimed
 
@@ -152,7 +168,7 @@ The boundary, stated so that it is visible rather than discovered:
 
 | Not implemented | Why |
 |---|---|
-| Any component, `kij` or heat-capacity databank | The central question of axis 2. |
+| Heat-capacity coefficients and the SAFT/CPA association parameters | The databank carries critical constants and `kij` only. The rest arrive when models that read them do. |
 | CPA, SAFT, GERG-2008, Helmholtz reference equations, electrolytes | Different physics from a cubic EOS. Each is its own programme. |
 | Flowsheets, equipment models, pipeline flow | Axis 5. A thesis change, not a feature. |
 | PVT simulation, hydrates, wax, asphaltene, scale | Real capabilities, all outside a cubic-EOS library. |
