@@ -113,6 +113,10 @@ NAMESPACE_SUPPORT = {
         # is recorded once here rather than once per model. `pt_flash.rs` and
         # `pure_saturation.rs` are picked up by the per-model naming convention.
         "crates/azoth-eos/src/mixture.rs",
+        # The pressure iteration the two phase-boundary models share. Recorded once
+        # here rather than twice under their names, for the same reason `mixture.rs`
+        # is: it is one piece of code that both answers depend on.
+        "crates/azoth-eos/src/phase_boundary.rs",
         "crates/azoth-eos/src/model_gen.rs",
         "crates/azoth-eos/src/spec_gen.rs",
         "crates/azoth-python/src/eos.rs",

@@ -183,7 +183,7 @@ def test_the_mixture_form_reduces_to_pr_departure_at_one_component() -> None:
     the cross-sum factor collapses to 1 and the whole expression becomes
     `eos.pr_departure`'s, which has its own spec, worked example and source.
     """
-    from azoth.eos.reference.pt_flash import _phase_state
+    from azoth.eos.reference._mixture_state import phase_state as _phase_state
 
     for component, tr, pr in ((PROPANE, 0.8, 0.25), (BUTANE, 0.7, 0.4), (METHANE, 1.2, 0.9)):
         tc = component.Tc.to_base_units().magnitude
@@ -204,11 +204,8 @@ def test_the_mixture_parameters_and_vapour_fraction_reduce_to_the_binary_kernels
     to a couple of ulps rather than bit-for-bit, because the registered kernel
     evaluates its three terms longhand while this sums a double loop.
     """
-    from azoth.eos.reference.pt_flash import (
-        _mixture_parameters,
-        _rachford_rice,
-        _rachford_rice_bounds,
-    )
+    from azoth.eos.reference._mixture_state import mixture_parameters as _mixture_parameters
+    from azoth.eos.reference.pt_flash import _rachford_rice, _rachford_rice_bounds
 
     fluid = methane_butane()
     for t_c, p_pa in ((330.0, 2.5e6), (300.0, 3.0e6), (350.0, 5.0e6)):
@@ -435,7 +432,7 @@ def test_the_reported_roots_are_the_cubics_roots_at_the_reported_compositions() 
     A `z_liquid` that was not the smallest admissible root would make every `ln phi`
     downstream wrong while `beta` stayed entirely plausible.
     """
-    from azoth.eos.reference.pt_flash import _mixture_parameters
+    from azoth.eos.reference._mixture_state import mixture_parameters as _mixture_parameters
 
     fluid = methane_butane()
     for t_c, p_pa, z in ((330.0, 2.5e6, [0.6, 0.4]), (300.0, 3.0e6, [0.1, 0.9])):

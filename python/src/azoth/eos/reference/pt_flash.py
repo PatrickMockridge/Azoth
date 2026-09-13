@@ -72,35 +72,18 @@ from azoth.core.result import Phase, PtFlashResult
 from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning, WarningCode
 from azoth.eos.mixture import Mixture
-from azoth.eos.reference.pr_alpha_ab import pr_alpha_ab
-from azoth.eos.reference.pr_kappa import pr_kappa
-from azoth.eos.reference.pr_z_factor import pr_z_factor
+from azoth.eos.reference._mixture_state import (
+    compositions,
+    is_trivial,
+    phase_state,
+    reduced_parameters,
+    wilson_k,
+)
 
 MODEL_ID = "eos.pt_flash"
 
 #: The ``|ln K|`` below which the iteration has found the trivial solution.
 TRIVIAL_TOLERANCE = 1.0e-08
-
-#: Wilson's constant. Some sources print 5.37 and the paper is dated 1968 in some
-#: and 1969 in others; the discrepancy is recorded in the spec's references rather
-#: than resolved, because a reader meeting the other value needs to know it is the
-#: same correlation and not a correction.
-WILSON_CONSTANT = 5.373
-
-_SQRT_2 = math.sqrt(2.0)
-
-
-def _wilson_k(mixture: Mixture, temperature: float, pressure: float) -> list[float]:
-    """Wilson's correlation for the initial K-values."""
-    return [
-        (component.Pc.to_base_units().magnitude / pressure)
-        * math.exp(
-            WILSON_CONSTANT
-            * (1.0 + component.omega)
-            * (1.0 - component.Tc.to_base_units().magnitude / temperature)
-        )
-        for component in mixture.components
-    ]
 
 
 def _rachford_rice_bounds(k: list[float]) -> tuple[float, float] | None:
@@ -143,67 +126,6 @@ def _rachford_rice(
         else:
             upper = mid
     return 0.5 * (lower + upper)
-
-
-def _mixture_parameters(
-    a: list[float], b: list[float], kij: tuple[tuple[float, ...], ...], x: list[float]
-) -> tuple[float, float]:
-    """The van der Waals one-fluid mixture parameters for a composition."""
-    n = len(x)
-    b_mix = sum(x[i] * b[i] for i in range(n))
-    a_mix = 0.0
-    for i in range(n):
-        for j in range(n):
-            a_mix += x[i] * x[j] * (1.0 - kij[i][j]) * math.sqrt(a[i] * a[j])
-    return a_mix, b_mix
-
-
-def _phase_state(
-    a: list[float],
-    b: list[float],
-    kij: tuple[tuple[float, ...], ...],
-    x: list[float],
-    *,
-    liquid: bool,
-) -> tuple[float, list[float]]:
-    """``(z, ln_phi)`` for one phase at a composition.
-
-    ``z`` is selected by *ordering* - the smallest admissible root for the liquid,
-    the largest for the vapour - never by an initial guess, which is the rule
-    ``eos.pr_z_factor`` fixes.
-    """
-    n = len(x)
-    a_mix, b_mix = _mixture_parameters(a, b, kij, x)
-    roots = pr_z_factor(a_mix, b_mix)
-    z = roots.z_min if liquid else roots.z_max
-
-    cross = [
-        sum(x[j] * (1.0 - kij[i][j]) * math.sqrt(a[i] * a[j]) for j in range(n)) for i in range(n)
-    ]
-    i_term = math.log((z + (1.0 + _SQRT_2) * b_mix) / (z + (1.0 - _SQRT_2) * b_mix))
-    coefficient = a_mix / (2.0 * _SQRT_2 * b_mix)
-    ln_z_minus_b = math.log(z - b_mix)
-
-    ln_phi = []
-    for i in range(n):
-        b_ratio = b[i] / b_mix
-        # The cross-sum factor, which is 1 for a pure component and makes this
-        # identical to `eos.pr_departure` at N = 1.
-        factor = 2.0 * cross[i] / a_mix - b_ratio
-        ln_phi.append(b_ratio * (z - 1.0) - ln_z_minus_b - coefficient * factor * i_term)
-    return z, ln_phi
-
-
-def _compositions(z: list[float], k: list[float], beta: float) -> tuple[list[float], list[float]]:
-    """The two phases' compositions at a vapour fraction."""
-    x = [zi / (1.0 + beta * (ki - 1.0)) for zi, ki in zip(z, k, strict=True)]
-    y = [ki * xi for ki, xi in zip(k, x, strict=True)]
-    return x, y
-
-
-def _is_trivial(k: list[float]) -> bool:
-    """Whether the K-values have converged onto the feed."""
-    return all(abs(math.log(value)) < TRIVIAL_TOLERANCE for value in k)
 
 
 def _rms_delta(ln_k_new: list[float], k: list[float]) -> float:
@@ -286,25 +208,14 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
     # The reduced parameters depend on `T` and `P` alone, so they are computed once
     # rather than once per iteration: `A_i` and `B_i` are the same numbers for both
     # phases, and only the composition re-weights them.
-    a: list[float] = []
-    b: list[float] = []
-    for component in mixture.components:
-        kappa = pr_kappa(component.omega)
-        warnings.extend(kappa.warnings)
-        ab = pr_alpha_ab(
-            kappa.kappa,
-            t_si / component.Tc.to_base_units().magnitude,
-            p_si / component.Pc.to_base_units().magnitude,
-        )
-        warnings.extend(ab.warnings)
-        a.append(ab.a_reduced)
-        b.append(ab.b_reduced)
+    a, b, kernel_warnings = reduced_parameters(mixture, t_si, p_si)
+    warnings.extend(kernel_warnings)
 
     algorithm = spec["algorithm"]
     inner = algorithm["inner"]
     kij = mixture.kij
 
-    k = _wilson_k(mixture, t_si, p_si)
+    k = wilson_k(mixture, t_si, p_si)
     iterations = 0
     residual = math.nan
     settled: str | None = None
@@ -315,7 +226,7 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         # Both guards run *before* the Rachford-Rice solve, because both are cases
         # where the bracket is a division by zero: `K_i = 1` puts a pole at
         # infinity, and K-values all on one side of one put a bracket end there.
-        if _is_trivial(k):
+        if is_trivial(k, TRIVIAL_TOLERANCE):
             settled = "trivial"
             break
         # A K-value that is not finite and positive is the iteration diverging rather
@@ -330,9 +241,9 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
             break
 
         beta = _rachford_rice(list(z), k, bounds, inner["tolerance"], inner["max_iterations"])
-        x, y = _compositions(list(z), k, beta)
-        _, ln_phi_liquid = _phase_state(a, b, kij, x, liquid=True)
-        _, ln_phi_vapour = _phase_state(a, b, kij, y, liquid=False)
+        x, y = compositions(list(z), k, beta)
+        _, ln_phi_liquid = phase_state(a, b, kij, x, liquid=True)
+        _, ln_phi_vapour = phase_state(a, b, kij, y, liquid=False)
 
         ln_k_new = [lp - lv for lp, lv in zip(ln_phi_liquid, ln_phi_vapour, strict=True)]
         residual = _rms_delta(ln_k_new, k)
@@ -342,7 +253,7 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
             break
 
     beta_out: float | None
-    if settled == "trivial" or (settled is None and _is_trivial(k)):
+    if settled == "trivial" or (settled is None and is_trivial(k, TRIVIAL_TOLERANCE)):
         # Stated *exactly* - x = y = z and K = 1 - rather than as the last iterate
         # that approached it, which is a function of where the bisection stopped on
         # an identically-zero function and is not reproducible.
@@ -363,7 +274,7 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         if bounds is None:  # pragma: no cover - guarded above
             raise SolverNotConvergedError(iterations, residual, algorithm["tolerance"])
         beta_out = _rachford_rice(list(z), k, bounds, inner["tolerance"], inner["max_iterations"])
-        x, y = _compositions(list(z), k, beta_out)
+        x, y = compositions(list(z), k, beta_out)
         if beta_out < 0.0:
             phase = Phase.ALL_LIQUID
         elif beta_out > 1.0:
@@ -373,8 +284,8 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         if phase is not Phase.TWO_PHASE:
             warnings.append(_negative_flash_warning(phase, beta_out))
 
-    z_liquid, ln_phi_liquid = _phase_state(a, b, kij, x, liquid=True)
-    z_vapour, ln_phi_vapour = _phase_state(a, b, kij, y, liquid=False)
+    z_liquid, ln_phi_liquid = phase_state(a, b, kij, x, liquid=True)
+    z_vapour, ln_phi_vapour = phase_state(a, b, kij, y, liquid=False)
 
     return PtFlashResult(
         beta=beta_out,

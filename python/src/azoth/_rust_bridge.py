@@ -26,11 +26,13 @@ from typing import Any
 from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.result import (
+    BubblePressureResult,
     ChokedFlowAreaResult,
     ColebrookResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
     DarcyWeisbachResult,
+    DewPressureResult,
     FlowRegime,
     HaalandResult,
     KComponent,
@@ -453,7 +455,68 @@ def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
     )
 
 
+def _boundary_result(raw: Any, result_type: Any, *, liquid_first: bool) -> Any:
+    """Shared unpacking for the two phase-boundary models.
+
+    The two differ only in whether the held phase is the liquid, so the `z_liquid`
+    and `z_vapour` fields land in the opposite order. Doing that here rather than
+    twice is the same argument the Rust side makes for one shared iteration.
+    """
+    held, incipient = (raw.z_liquid, raw.z_vapour) if liquid_first else (raw.z_vapour, raw.z_liquid)
+    return result_type(
+        pressure=from_si(raw.pressure.magnitude_si, raw.pressure.unit),
+        incipient=tuple(raw.incipient),
+        k=tuple(raw.k),
+        z_liquid=held if liquid_first else incipient,
+        z_vapour=incipient if liquid_first else held,
+        min_t_over_tc=raw.min_t_over_tc,
+        iterations=raw.iterations,
+        residual=raw.residual,
+        warnings=_warnings(raw.warnings),
+    )
+
+
+def bubble_pressure(mixture: Any, T: Q, x: Sequence[float]) -> BubblePressureResult:
+    """The bubble-point pressure of a mixture, computed in Rust.
+
+    The held composition crosses as a list, as the flash's feed does. The Rust side
+    rebuilds the mixture from the same three vectors and flattened matrix the flash
+    uses, so the component order is the one thing the two sides agree about.
+    """
+    spec = _models_gen.model("eos.bubble_pressure")
+    raw = _core.bubble_pressure(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "T", T),
+        list(x),
+    )
+    return _boundary_result(raw, BubblePressureResult, liquid_first=True)  # type: ignore[no-any-return]
+
+
+def dew_pressure(mixture: Any, T: Q, y: Sequence[float]) -> DewPressureResult:
+    """The dew-point pressure of a mixture, computed in Rust.
+
+    The mirror of the bubble point: the held phase is the vapour, so the Rust
+    result's `z_liquid` and `z_vapour` are swapped on the way back to keep the
+    Python field names naming the phases they say they do.
+    """
+    spec = _models_gen.model("eos.dew_pressure")
+    raw = _core.dew_pressure(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "T", T),
+        list(y),
+    )
+    return _boundary_result(raw, DewPressureResult, liquid_first=False)  # type: ignore[no-any-return]
+
+
 _MODEL_IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
+    "eos.bubble_pressure": bubble_pressure,
+    "eos.dew_pressure": dew_pressure,
     "eos.pure_saturation": pure_saturation,
     "eos.pt_flash": pt_flash,
 }

@@ -569,6 +569,59 @@ class PtFlashResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class BubblePressureResult(_HasWarnings):
+    """Result of ``eos.bubble_pressure``.
+
+    Shares its shape with :class:`DewPressureResult` rather than being one type with
+    a switch, because the two differ in *which* composition is the input - ``x`` here
+    and ``y`` there - and a shared field would have to be named after neither.
+    """
+
+    #: The bubble-point pressure.
+    pressure: Q
+    #: The composition of the vapour that first appears.
+    incipient: tuple[float, ...]
+    #: K-values at the converged pressure.
+    k: tuple[float, ...]
+    #: The liquid root of the cubic at the converged state.
+    z_liquid: float
+    #: The vapour root.
+    z_vapour: float
+    #: The smallest ``T / Tc_i`` over the components.
+    min_t_over_tc: float
+    #: Pressure updates taken.
+    iterations: int
+    #: ``|sum_i x_i K_i - 1|`` at the last completed step.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DewPressureResult(_HasWarnings):
+    """Result of ``eos.dew_pressure``."""
+
+    #: The dew-point pressure.
+    pressure: Q
+    #: The composition of the liquid that first appears.
+    incipient: tuple[float, ...]
+    #: K-values at the converged pressure.
+    k: tuple[float, ...]
+    #: The liquid root of the cubic at the converged state.
+    z_liquid: float
+    #: The vapour root.
+    z_vapour: float
+    #: The smallest ``T / Tc_i`` over the components.
+    min_t_over_tc: float
+    #: Pressure updates taken.
+    iterations: int
+    #: ``|sum_i y_i / K_i - 1|`` at the last completed step.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 #: Calc id -> the result dataclass it produces. Used by the contract test to
 #: check each shape against the Rust side without importing every name by hand.
 RESULT_TYPES: dict[str, type[object]] = {
@@ -603,6 +656,8 @@ RESULT_TYPES: dict[str, type[object]] = {
 #: were covered by no shape check at all, which the flash - thirteen fields and an
 #: optional one - is a good reason to fix.
 MODEL_RESULT_TYPES: dict[str, type[object]] = {
-    "eos.pure_saturation": PureSaturationResult,
+    "eos.bubble_pressure": BubblePressureResult,
+    "eos.dew_pressure": DewPressureResult,
     "eos.pt_flash": PtFlashResult,
+    "eos.pure_saturation": PureSaturationResult,
 }

@@ -13,9 +13,9 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPtFlashResult,
-    PyPureSaturationResult, PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
+    PyPhaseBoundaryResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
+    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -206,6 +206,35 @@ pub fn pure_saturation(
 /// `beta` is `Option<f64>` on purpose: `None` crosses as `None`. A sentinel number
 /// at this boundary would undo, one layer below where it was decided, the design
 /// that stops a caller mistaking a trivial solution for a phase split.
+/// A mixture from the three per-component vectors and a flattened `kij` matrix.
+///
+/// Shared by the flash and the two phase-boundary models: all three take the same
+/// component arguments in the same order, and building the object in one place is
+/// what keeps the component ordering from being decided three times.
+#[allow(non_snake_case)] // `Tc` and `Pc` are the symbols in the chemistry
+fn build_mixture(
+    py: Python<'_>,
+    Tc: &[f64],
+    Pc: &[f64],
+    omega: &[f64],
+    kij: Vec<f64>,
+) -> PyResult<eos::Mixture> {
+    let n = Tc.len();
+    if Pc.len() != n || omega.len() != n {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "Tc, Pc and omega must be the same length; got {}, {} and {}",
+            Tc.len(),
+            Pc.len(),
+            omega.len()
+        )));
+    }
+    let components = (0..n)
+        .map(|i| eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i]))
+        .collect::<azoth_core::Result<Vec<_>>>()
+        .map_err(|e| to_pyerr(py, e))?;
+    eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))
+}
+
 #[pyfunction]
 #[pyo3(signature = (Tc, Pc, omega, kij, T, P, z))]
 #[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z)")]
@@ -221,23 +250,56 @@ pub fn pt_flash(
     P: f64,
     z: Vec<f64>,
 ) -> PyResult<PyPtFlashResult> {
-    let n = Tc.len();
-    if Pc.len() != n || omega.len() != n {
-        return Err(pyo3::exceptions::PyValueError::new_err(format!(
-            "Tc, Pc and omega must be the same length; got {}, {} and {}",
-            Tc.len(),
-            Pc.len(),
-            omega.len()
-        )));
-    }
-    let components = (0..n)
-        .map(|i| eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i]))
-        .collect::<azoth_core::Result<Vec<_>>>()
-        .map_err(|e| to_pyerr(py, e))?;
-    let mixture = eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))?;
-
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
     eos::pt_flash(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyPtFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The pressure at which a liquid of composition `x` first gives off vapour.
+///
+/// The first of the two phase-boundary models. They take the same six arguments as
+/// the flash - three per-component vectors, a flattened interaction matrix,
+/// temperature and a composition - and differ only in which composition it is,
+/// which is why they are two functions rather than one with a switch.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, held))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held)")]
+#[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn bubble_pressure(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    T: f64,
+    held: Vec<f64>,
+) -> PyResult<PyPhaseBoundaryResult> {
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
+    eos::bubble_pressure(&mixture, kelvins(T), &held)
+        .map(|r| PyPhaseBoundaryResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The pressure at which a vapour of composition `held` first condenses.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, held))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held)")]
+#[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn dew_pressure(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    T: f64,
+    held: Vec<f64>,
+) -> PyResult<PyPhaseBoundaryResult> {
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
+    eos::dew_pressure(&mixture, kelvins(T), &held)
+        .map(|r| PyPhaseBoundaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

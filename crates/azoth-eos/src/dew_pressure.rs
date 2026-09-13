@@ -1,0 +1,88 @@
+//! `eos.dew_pressure` - the pressure at which a vapour first condenses.
+//!
+//! Spec: `specs/models/eos/dew_pressure.yaml`
+//!
+//! The companion of [`crate::bubble_pressure`], and the same iteration with the
+//! phases exchanged. The loop, the initialisation and the guard against the trivial
+//! solution live in [`crate::phase_boundary`] so that they are written once - the
+//! two models differ in which composition is the input and which is solved for, and
+//! in one line of the pressure update, not in their procedure.
+
+use azoth_core::units::{ThermodynamicTemperature, pascals};
+use azoth_core::{Result, apply_checks};
+
+use crate::mixture::Mixture;
+use crate::model_gen;
+use crate::phase_boundary::{Incipient, phase_boundary_pressure};
+use crate::results::DewPressureResult;
+
+/// The pressure at which a vapour of composition `y` first condenses.
+///
+/// `y` is the vapour's composition and is taken as given: this model does not ask
+/// whether that vapour is stable, only where its dew point is.
+///
+/// # Errors
+/// * [`AzothError::OutOfRange`] if `T` is not positive, or if the mixture has no dew
+///   point at this temperature - reported on `min_t_over_tc`, meaning the mixture is
+///   at or above its critical condition.
+/// * [`AzothError::InvalidInput`] if the mixture has one component, or if `y` is the
+///   wrong length, has a negative entry, or does not sum to one.
+/// * [`AzothError::SolverNotConverged`] if the iteration hits its cap.
+///
+/// # Example
+/// ```
+/// use azoth_core::units::{kelvins, pascals};
+/// use azoth_eos::mixture::{Component, Mixture};
+/// use azoth_eos::dew_pressure;
+///
+/// let mixture = Mixture::new(
+///     vec![
+///         Component::new(kelvins(190.56), pascals(4_599_200.0), 0.01142)?,
+///         Component::new(kelvins(425.12), pascals(3_796_000.0), 0.2002)?,
+///     ],
+///     vec![0.0, 0.05, 0.05, 0.0],
+/// )?;
+/// let r = dew_pressure(&mixture, kelvins(300.0), &[0.8, 0.2])?;
+/// assert!((r.pressure.value / 1e6 - 1.568262871743118).abs() < 1e-9);
+/// # Ok::<(), azoth_core::AzothError>(())
+/// ```
+pub fn dew_pressure(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    y: &[f64],
+) -> Result<DewPressureResult> {
+    let spec = &model_gen::DEW_PRESSURE_SPEC;
+    let mut warnings = Vec::new();
+
+    apply_checks(
+        spec.input_checks(),
+        |quantity| (quantity == "T").then_some(t.value),
+        &mut warnings,
+    )?;
+
+    let min_t_over_tc = mixture
+        .components()
+        .iter()
+        .map(|c| t.value / c.tc.value)
+        .fold(f64::INFINITY, f64::min);
+    apply_checks(
+        spec.derived_checks(),
+        |quantity| (quantity == "min_t_over_tc").then_some(min_t_over_tc),
+        &mut warnings,
+    )?;
+
+    let boundary = phase_boundary_pressure(mixture, t, y, Incipient::Liquid)?;
+    warnings.extend(boundary.warnings);
+
+    Ok(DewPressureResult {
+        pressure: pascals(boundary.pressure),
+        incipient: boundary.incipient,
+        k: boundary.k,
+        z_liquid: boundary.z_incipient,
+        z_vapour: boundary.z_held,
+        min_t_over_tc,
+        iterations: boundary.iterations,
+        residual: boundary.residual,
+        warnings,
+    })
+}

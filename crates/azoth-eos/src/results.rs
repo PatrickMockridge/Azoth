@@ -292,6 +292,95 @@ impl CalcResult for PtFlashResult {
     }
 }
 
+/// Result of `eos.bubble_pressure`.
+///
+/// Deliberately sharing a shape with [`DewPressureResult`] rather than one type
+/// with a switch: the two differ in *which* composition is the input, and a shared
+/// field would have to be named after neither. The flash's spec makes the same
+/// argument for two models rather than a `kind` argument.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BubblePressureResult {
+    /// The bubble-point pressure.
+    pub pressure: Pressure,
+    /// The composition of the vapour that first appears.
+    pub incipient: Vec<f64>,
+    /// K-values at the converged pressure.
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the converged state.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components.
+    pub min_t_over_tc: f64,
+    /// Pressure updates taken.
+    pub iterations: u32,
+    /// `|sum_i x_i K_i - 1|` at the last completed step.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for BubblePressureResult {
+    const CALC_ID: &'static str = "eos.bubble_pressure";
+    const FIELDS: &'static [&'static str] = &[
+        "pressure",
+        "incipient",
+        "k",
+        "z_liquid",
+        "z_vapour",
+        "min_t_over_tc",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.dew_pressure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DewPressureResult {
+    /// The dew-point pressure.
+    pub pressure: Pressure,
+    /// The composition of the liquid that first appears.
+    pub incipient: Vec<f64>,
+    /// K-values at the converged pressure.
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the converged state.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components.
+    pub min_t_over_tc: f64,
+    /// Pressure updates taken.
+    pub iterations: u32,
+    /// `|sum_i y_i / K_i - 1|` at the last completed step.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for DewPressureResult {
+    const CALC_ID: &'static str = "eos.dew_pressure";
+    const FIELDS: &'static [&'static str] = &[
+        "pressure",
+        "incipient",
+        "k",
+        "z_liquid",
+        "z_vapour",
+        "min_t_over_tc",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for PrMolarVolumeResult {
     const CALC_ID: &'static str = "eos.pr_molar_volume";
     const FIELDS: &'static [&'static str] = &["v", "warnings"];

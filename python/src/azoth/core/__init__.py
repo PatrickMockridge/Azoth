@@ -38,8 +38,10 @@ from azoth.core.errors import (
 from azoth.core.range import Band, RangeCheck, Severity, SpecChecks, apply_checks, checks_for
 from azoth.core.result import (
     RESULT_TYPES,
+    BubblePressureResult,
     ColebrookResult,
     DarcyWeisbachResult,
+    DewPressureResult,
     FlowRegime,
     KComponent,
     KFactorsResult,
@@ -76,10 +78,12 @@ __all__ = [
     "RESULT_TYPES",
     "AzothError",
     "Band",
+    "BubblePressureResult",
     "ColebrookResult",
     "Convergence",
     "CubicRootsOutcome",
     "DarcyWeisbachResult",
+    "DewPressureResult",
     "FlowRegime",
     "InvalidInputError",
     "KComponent",

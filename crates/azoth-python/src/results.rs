@@ -17,9 +17,9 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
-    RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
+    BubblePressureResult, DewPressureResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -952,6 +952,96 @@ impl PyPtFlashResult {
     }
 }
 
+/// Result of `eos.bubble_pressure` or `eos.dew_pressure`, transported.
+///
+/// One transport type for two models, because the Rust results have the same shape
+/// and the difference is only which phase is which - which the bridge resolves by
+/// naming. Two `pyclass`es would be two copies of the same thirteen lines.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PhaseBoundaryResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPhaseBoundaryResult {
+    /// The boundary pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// The incipient phase's composition.
+    #[pyo3(get)]
+    pub incipient: Vec<f64>,
+    /// K-values at the converged pressure.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the converged state.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// Pressure updates taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The final residual.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPhaseBoundaryResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PhaseBoundaryResult(pressure={} {}, {} iteration(s))",
+            self.pressure.magnitude_si, self.pressure.unit, self.iterations
+        )
+    }
+}
+
+impl From<&BubblePressureResult> for PyPhaseBoundaryResult {
+    fn from(r: &BubblePressureResult) -> Self {
+        Self {
+            pressure: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            incipient: r.incipient.clone(),
+            k: r.k.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+impl From<&DewPressureResult> for PyPhaseBoundaryResult {
+    fn from(r: &DewPressureResult) -> Self {
+        Self {
+            pressure: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            incipient: r.incipient.clone(),
+            k: r.k.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PtFlashResult> for PyPtFlashResult {
     fn from(r: &PtFlashResult) -> Self {
         Self {
@@ -1227,6 +1317,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         // the model results were covered by no shape check at all.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
         PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
+        BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
+        DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),

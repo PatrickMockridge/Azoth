@@ -66,6 +66,8 @@ from __future__ import annotations
 
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    BubblePressureResult,
+    DewPressureResult,
     PrAlphaAbResult,
     PrDepartureResult,
     PrKappaResult,
@@ -84,6 +86,8 @@ from azoth.eos.mixture import Component, Mixture, mixture
 __all__ = [
     "Component",
     "Mixture",
+    "bubble_pressure",
+    "dew_pressure",
     "mixture",
     "pr_alpha_ab",
     "pr_departure",
@@ -101,6 +105,8 @@ __all__ = [
 _PR_KAPPA = "eos.pr_kappa"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
+_BUBBLE_PRESSURE = "eos.bubble_pressure"
+_DEW_PRESSURE = "eos.dew_pressure"
 _PT_FLASH = "eos.pt_flash"
 _PURE_SATURATION = "eos.pure_saturation"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
@@ -251,6 +257,44 @@ def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
     See :func:`azoth.eos.reference.pr_mass_density`.
     """
     return resolve(_PR_MASS_DENSITY)(M=M, v=v)  # type: ignore[no-any-return]
+
+
+def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureResult:
+    """The pressure at which a liquid of composition ``x`` first gives off vapour.
+
+    The companion of :func:`dew_pressure`: the same iteration with the other phase
+    held, which is why the argument is ``x`` here and ``y`` there. A shared name
+    would have to be ``z``, which means the feed and would be wrong.
+
+    ``x`` is the liquid's composition and is taken as given - whether that liquid is
+    stable is not asked.
+
+    Raises:
+        InvalidInputError: if the mixture has one component - a pure component's
+            bubble point is its saturation pressure, which :func:`pure_saturation`
+            computes - or if ``x`` is not a composition.
+        OutOfRangeError: if ``T`` is not positive, or if the mixture has no bubble
+            point at this temperature. That is a real state and not a solver
+            failure: a mixture above its critical condition has neither a bubble nor
+            a dew point, and the error names ``min_t_over_tc``.
+
+    See :func:`azoth.eos.reference.bubble_pressure`.
+    """
+    return resolve(_BUBBLE_PRESSURE)(mixture=mixture, T=T, x=x)  # type: ignore[no-any-return]
+
+
+def dew_pressure(mixture: Mixture, T: Q, y: list[float]) -> DewPressureResult:
+    """The pressure at which a vapour of composition ``y`` first condenses.
+
+    Raises:
+        InvalidInputError: if the mixture has one component, or if ``y`` is not a
+            composition.
+        OutOfRangeError: if ``T`` is not positive, or if the mixture has no dew point
+            at this temperature.
+
+    See :func:`azoth.eos.reference.dew_pressure`.
+    """
+    return resolve(_DEW_PRESSURE)(mixture=mixture, T=T, y=y)  # type: ignore[no-any-return]
 
 
 def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
