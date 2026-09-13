@@ -154,14 +154,18 @@ S6](./spec.md#s6-provenance-is-the-engineers-job-not-the-librarys) has the reaso
 2. Write one function in Python and one in Rust.
 3. Declare the tests in the spec.
 
-The documentation, the range checks both implementations enforce, and the test
-cases both implementations run are all generated from that one file. If you can
-write the spec, you have written the calc, the tests and the docs.
+The documentation, the range checks both implementations enforce, the test cases
+both implementations run, and the list of what exists on this page are all derived
+from that one file. If you can write the spec, you have written the calc, the tests
+and the docs.
 
-A few things are deliberately **not** generated, and a test is what makes
-omitting one fail the build rather than fail at call time: the result dataclasses
-on both sides, which are the cross-language shape contract; the batch wrapper;
-and the two hand-maintained lists of what is implemented.
+Nothing is registered. For a while a calculation had to be added to a dozen places —
+an id-to-function table, a result-type table, four PyO3 declaration lists, a type
+stub, a batch arm in each language, and this page — and each of those is now either
+derived from the calculation's own id or emitted by a generator. What is left is the
+boilerplate that attaches a Rust function to a Python name, which is still typed by
+hand. [Contributing](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md)
+has the current count, measured rather than remembered.
 
 ## The batch API
 

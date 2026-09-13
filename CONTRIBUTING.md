@@ -122,14 +122,26 @@ belongs there, and it costs a file rather than a contribution. See
 
 ## Adding a calculation
 
-**Five new files, and then fourteen edits to existing ones** — plus eight more if
-the calc is the first in a new namespace.
+**Five new files, and ten edits to existing ones** — plus eight more if the calc is
+the first in a new namespace.
 
-The second half is not generated, and this section used to claim it was — "four
-files, and the rest follows" was wrong. So was "twelve edits": that count predated
-the batch API, which added a registration point in each language. **These numbers
-are measured, not guessed** — the last one by adding `eos.pr_kappa` and counting.
-Don't trust a smaller number without re-measuring.
+That number is smaller than it was, and it is still falling. It was fourteen. Four of
+those are now gone by *deletion* rather than code generation, which is the better fix
+and worth naming:
+
+- the bridge's `id → function` table and the `RESULT_TYPES` table are both **derived**
+  — from the id, and from each implementation's return annotation — so there is no list
+  to keep in step with another list;
+- the README's table and this book's index are **generated into marked blocks**, so the
+  two places a *reader* meets a new calculation no longer need editing.
+
+What remains is mostly the Rust boilerplate: a name has to be attached to a function
+before a Python caller can reach it, and that attachment is still typed by hand.
+
+**This number is measured, not guessed**, and the last measurement was by adding a
+calculation and counting. It has been wrong before — the section used to claim "the
+rest follows", which was never true, and later gave a count that predated the batch
+API. Don't trust a smaller number without re-measuring.
 
 The paths below use `hydraulics` as the worked example. Substitute your own
 namespace everywhere, and see the next section if it does not exist yet.
@@ -152,7 +164,7 @@ that are *not* checked, a worked example, and the tests.
 Both test files are driven by the spec's `tests` list, so they follow from the
 spec's contents rather than being written against the implementation.
 
-### The fourteen edits
+### The ten edits
 
 Listed because "the rest follows" was a claim nobody had checked, and because a
 forgotten one fails in a different way in each case:
@@ -166,13 +178,15 @@ forgotten one fails in a different way in each case:
 | `crates/azoth-python/src/lib.rs` | `add_class`, `add_function` |
 | `crates/azoth-python/src/batch.rs` | the batch arm — the Rust half of the batch API |
 | `python/src/azoth/_core.pyi` | the function signature and the result class |
-| `python/src/azoth/_rust_bridge.py` | the bridge function and its `_IMPLEMENTATIONS` entry |
-| `python/src/azoth/core/result.py` | the result dataclass and its `RESULT_TYPES` entry |
 | `python/src/azoth/<ns>/__init__.py` | the dispatch wrapper, `__all__`, the id constant, the docstring list |
 | `python/src/azoth/<ns>/reference/__init__.py` | the import and `__all__` |
 | `python/src/azoth/batch/<ns>.py` | the batch wrapper — the Python half of the batch API |
-| `README.md` | the "what is implemented" table |
-| `docs/src/index.md` | the "what is implemented" list |
+
+Three of the files that used to appear here no longer do. `_rust_bridge.py` and
+`core/result.py` are unchanged by a new calculation, because the tables that lived in
+them are derived from the id and from the return annotation. `README.md` and
+`docs/src/index.md` *are* changed by one — but by `tools/gen_docs.py`, into a marked
+block, and a hand-edit there fails the drift check.
 
 **The batch API is two edits, in two languages, and it is not optional.** There is
 a Rust arm and a Python module because the batch path loops over the *scalar*
@@ -215,20 +229,19 @@ the import, not just the `__all__` entry.
 
 ### How you find out you forgot one
 
-Run the suite. Each omission has its own failure, which is the point of having this
-many registration points rather than generating them away:
+Run the suite. Each omission has its own failure:
 
 | Omission | What fails |
 |---|---|
-| the result dataclass, the stub, the bridge table, `calc_ids()` | `test_registration_completeness.py`, which names the file to go and edit |
+| the result dataclass, the stub, `calc_ids()`, the bridge function | `test_registration_completeness.py`, which names what is missing |
 | the function signatures, the declared outputs, the result fields | `test_registry_contract.py` |
 | either half of the batch API | `test_batch.py::test_the_excluded_set_is_exactly_crane_k_factors` |
-| the entries in `README.md` or `docs/src/index.md` | `test_every_calc_is_announced_in_the_hand_written_lists` |
+| the generated block in `README.md` or `docs/src/index.md` | `test_the_announced_list_is_generated_rather_than_hand_edited`, by running the generator |
 | the `NAMESPACES` entry | `gen_docs.py` exits, naming the namespace |
 
-Those two lists are also where the prose about what is *not* implemented lives,
-which no test can read for you: if you add the first orifice calc, go and fix those
-paragraphs by hand.
+The two front-page files are also where the prose about what is *not* implemented
+lives, and no test can read that for you: if you add the first relief-valve
+calculation, go and fix the paragraphs around the generated block by hand.
 
 Read an existing calc end to end first — `reynolds_number` is the simplest, and
 `eos.pr_kappa` is the most recent and has the fewest moving parts.
