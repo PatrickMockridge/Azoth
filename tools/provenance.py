@@ -57,6 +57,7 @@ SCHEMA_VERSION = 1
 #: Files that affect every calculation's result. Hashed once here rather than
 #: once per calc, because repeating them would suggest they are per-calc.
 SHARED = (
+    "crates/azoth-core/src/error.rs",
     "crates/azoth-core/src/range.rs",
     "crates/azoth-core/src/result.rs",
     "crates/azoth-core/src/solver.rs",
@@ -68,12 +69,28 @@ SHARED = (
     # are not - see NAMESPACE_SUPPORT.
     "crates/azoth-python/src/data.rs",
     "crates/azoth-python/src/results.rs",
+    # The Python twins of the Rust modules above, and they are listed for the
+    # reason the pair exists: this list used to carry `core/result.rs`,
+    # `core/warning.rs` and `core/range.rs` while omitting `core/result.py`,
+    # `core/warnings.py` and `core/errors.py`. A change to the Python warning
+    # codes - which is what the Keycard work does - moved no recorded hash at all,
+    # while the identical change on the Rust side moved one. A mirrored file that
+    # is hashed on one side and not the other is a hash that records half a change.
+    "python/src/azoth/core/errors.py",
     "python/src/azoth/core/range.py",
+    "python/src/azoth/core/result.py",
     "python/src/azoth/core/solver.py",
     "python/src/azoth/core/units.py",
+    "python/src/azoth/core/warnings.py",
     "python/src/azoth/_models_gen.py",
     "python/src/azoth/_registry_gen.py",
     "python/src/azoth/_rust_bridge.py",
+    # The schemas define the vocabularies the generators emit from - units,
+    # warning codes, solver kinds, model kinds. A change there changes what a spec
+    # may say, and it would otherwise move no hash because the generated files it
+    # feeds are hashed and it is not.
+    "specs/schema/calc.schema.json",
+    "specs/schema/model.schema.json",
     # The tools are part of the chain: gen_registry.py writes spec_gen.rs, which
     # every calc reads its range checks from, so a change there changes results.
     # provenance.py hashes itself - the hash of the output then depends on the
