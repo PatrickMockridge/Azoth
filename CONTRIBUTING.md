@@ -63,7 +63,12 @@ cross-language agreement is verified by nothing.
 
 ## Adding a calculation
 
-Four files, and the rest follows.
+**Five new files, and then twelve edits to existing ones.** The second half is not
+generated, and this section used to claim it was — "four files, and the rest
+follows" was wrong, which is worth stating plainly here because a contributor who
+believes it will push something that does not work.
+
+### The five new files
 
 **1. The spec** — `specs/calcs/<namespace>/<name>.yaml`. This is the real work.
 It must carry an equation, a `latex` form for the docs, a source, inputs and
@@ -72,12 +77,34 @@ that are *not* checked, a worked example, and the tests.
 
 **2. Python** — `python/src/azoth/hydraulics/reference/<name>.py`.
 
-**3. Rust** — `crates/azoth-hydraulics/src/<name>.rs`, plus a result struct in
-`results.rs`.
+**3. Rust** — `crates/azoth-hydraulics/src/<name>.rs`.
 
-**4. Tests** — `python/tests/hydraulics/test_<name>.py` and
-`crates/azoth-hydraulics/tests/<name>.rs`, both driven by the spec's `tests`
-list.
+**4. Tests, Python** — `python/tests/hydraulics/test_<name>.py`.
+
+**5. Tests, Rust** — `crates/azoth-hydraulics/tests/<name>.rs`.
+
+Both test files are driven by the spec's `tests` list, so they follow from the
+spec's contents rather than being written against the implementation.
+
+### The twelve edits
+
+Listed because "the rest follows" was a claim nobody had checked, and because a
+forgotten one fails in a different way in each case:
+
+| File | What to add |
+|---|---|
+| `crates/azoth-hydraulics/src/lib.rs` | `pub mod`, the re-export, the crate docstring's list |
+| `crates/azoth-hydraulics/src/results.rs` | the result struct, its `CalcResult` impl, the two test tables |
+| `crates/azoth-python/src/hydraulics.rs` | the `#[pyfunction]` wrapper |
+| `crates/azoth-python/src/results.rs` | the `Py*Result` transport class, `result_fields`, `calc_ids` |
+| `crates/azoth-python/src/lib.rs` | `add_class`, `add_function` |
+| `python/src/azoth/_core.pyi` | the function signature and the result class |
+| `python/src/azoth/_rust_bridge.py` | the bridge function and its `_IMPLEMENTATIONS` entry |
+| `python/src/azoth/core/result.py` | the result dataclass and its `RESULT_TYPES` entry |
+| `python/src/azoth/hydraulics/__init__.py` | the dispatch wrapper, `__all__`, the id constant, the docstring list |
+| `python/src/azoth/hydraulics/reference/__init__.py` | the import and `__all__` |
+| `README.md` | the "what is implemented" table |
+| `docs/src/index.md` | the "what is implemented" list |
 
 Then:
 
@@ -85,8 +112,18 @@ Then:
 .venv/bin/python tools/gen_registry.py && .venv/bin/python tools/gen_docs.py
 ```
 
-The docs, the range checks both implementations enforce, and the test cases both
-implementations run are all generated from that one YAML file.
+which produces the registries, the calc's doc page and the book's contents.
+
+### How you find out you forgot one
+
+Run the suite. `python/tests/test_registration_completeness.py` checks the points
+that nothing else does — the extension's own `calc_ids()`, the bridge's id table,
+the stub, and that the result class is a real dataclass — and names the file to go
+and edit. `test_registry_contract.py` covers the rest. The two lists in `README.md`
+and `docs/src/index.md` are checked by `test_every_calc_is_announced_in_the_hand_written_lists`,
+and those two are also where the prose about what is *not* implemented lives, which
+no test can read for you: if you add the first orifice calc, go and fix those
+paragraphs by hand.
 
 Read an existing calc end to end first — `reynolds_number` is the simplest.
 
