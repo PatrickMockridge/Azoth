@@ -24,8 +24,8 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyColebrookResult, PyDarcyWeisbachResult, PyKFactorsResult, PyReynoldsNumberResult,
-    PySwameeJainResult,
+    PyColebrookResult, PyDarcyWeisbachResult, PyHaalandResult, PyKFactorsResult,
+    PyReynoldsNumberResult, PySwameeJainResult,
 };
 
 /// Reynolds number for flow in a circular pipe.
@@ -77,6 +77,20 @@ pub fn friction_factor_swamee_jain(
 ) -> PyResult<PySwameeJainResult> {
     hyd::friction_factor_swamee_jain(re, relative_roughness)
         .map(|r| PySwameeJainResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Explicit Haaland approximation to the Colebrook friction factor.
+#[pyfunction]
+#[pyo3(signature = (re, relative_roughness))]
+#[pyo3(text_signature = "(re, relative_roughness)")]
+pub fn friction_factor_haaland(
+    py: Python<'_>,
+    re: f64,
+    relative_roughness: f64,
+) -> PyResult<PyHaalandResult> {
+    hyd::friction_factor_haaland(re, relative_roughness)
+        .map(|r| PyHaalandResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

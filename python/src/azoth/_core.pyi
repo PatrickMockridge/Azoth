@@ -55,6 +55,11 @@ class SwameeJainResult:
     warnings: list[Warning]
 
 @final
+class HaalandResult:
+    f: float
+    warnings: list[Warning]
+
+@final
 class KFactorsResult:
     k_total: float
     f_t: float
@@ -76,6 +81,7 @@ class DarcyWeisbachResult:
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
 def friction_factor_colebrook(re: float, relative_roughness: float) -> ColebrookResult: ...
 def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJainResult: ...
+def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResult: ...
 def crane_k_factors(fittings: list[str], f_t: float) -> KFactorsResult: ...
 def darcy_weisbach(
     f: float, L: float, D: float, rho: float, v: float, mu: float | None = None

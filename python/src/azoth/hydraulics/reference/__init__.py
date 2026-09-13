@@ -28,6 +28,9 @@ from azoth.hydraulics.reference.friction_factor_colebrook import (
     friction_factor_colebrook,
     fully_rough_limit,
 )
+from azoth.hydraulics.reference.friction_factor_haaland import (
+    friction_factor_haaland,
+)
 from azoth.hydraulics.reference.friction_factor_swamee_jain import (
     friction_factor_swamee_jain,
 )
@@ -51,6 +54,7 @@ __all__ = [
     "find_fitting",
     "fixed_point",
     "friction_factor_colebrook",
+    "friction_factor_haaland",
     "friction_factor_swamee_jain",
     "fully_rough_limit",
     "registry",

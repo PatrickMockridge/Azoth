@@ -96,6 +96,7 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.reynolds_number` | Reynolds number and flow regime |
 | `hydraulics.friction_factor_colebrook` | Implicit Colebrook-White friction factor |
 | `hydraulics.friction_factor_swamee_jain` | Explicit approximation to it |
+| `hydraulics.friction_factor_haaland` | A second explicit approximation, fitted differently |
 | `hydraulics.crane_k_factors` | Fitting losses by the equivalent-length method |
 | `hydraulics.darcy_weisbach` | Pressure drop over a straight pipe |
 

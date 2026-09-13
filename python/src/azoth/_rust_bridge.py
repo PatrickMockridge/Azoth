@@ -28,6 +28,7 @@ from azoth.core.result import (
     ColebrookResult,
     DarcyWeisbachResult,
     FlowRegime,
+    HaalandResult,
     KComponent,
     KFactorsResult,
     ReynoldsNumberResult,
@@ -82,6 +83,12 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
     return SwameeJainResult(f=result.f, warnings=_warnings(result.warnings))
 
 
+def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResult:
+    """Haaland explicit friction factor, evaluated in Rust."""
+    result = _core.friction_factor_haaland(re, relative_roughness)
+    return HaalandResult(f=result.f, warnings=_warnings(result.warnings))
+
+
 def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:
     """Fitting resistance coefficients, resolved in Rust."""
     result = _core.crane_k_factors(list(fittings), f_t)
@@ -130,6 +137,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "hydraulics.reynolds_number": reynolds_number,
     "hydraulics.friction_factor_colebrook": friction_factor_colebrook,
     "hydraulics.friction_factor_swamee_jain": friction_factor_swamee_jain,
+    "hydraulics.friction_factor_haaland": friction_factor_haaland,
     "hydraulics.crane_k_factors": crane_k_factors,
     "hydraulics.darcy_weisbach": darcy_weisbach,
 }

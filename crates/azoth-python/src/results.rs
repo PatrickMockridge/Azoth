@@ -15,8 +15,8 @@
 use azoth_core::CalcResult;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_hydraulics::results::{
-    ColebrookResult, DarcyWeisbachResult, KComponent, KFactorsResult, ReynoldsNumberResult,
-    SwameeJainResult,
+    ColebrookResult, DarcyWeisbachResult, HaalandResult, KComponent, KFactorsResult,
+    ReynoldsNumberResult, SwameeJainResult,
 };
 use pyo3::prelude::*;
 
@@ -254,6 +254,39 @@ impl From<&SwameeJainResult> for PySwameeJainResult {
     }
 }
 
+/// Result of `hydraulics.friction_factor_haaland`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HaalandResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHaalandResult {
+    /// Darcy friction factor. Dimensionless.
+    #[pyo3(get)]
+    pub f: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHaalandResult {
+    fn __repr__(&self) -> String {
+        format!("HaalandResult(f={})", self.f)
+    }
+}
+
+impl From<&HaalandResult> for PyHaalandResult {
+    fn from(r: &HaalandResult) -> Self {
+        Self {
+            f: r.f,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `hydraulics.crane_k_factors`, transported.
 #[pyclass(
     frozen,
@@ -383,6 +416,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ReynoldsNumberResult::CALC_ID => ReynoldsNumberResult::FIELDS.to_vec(),
         ColebrookResult::CALC_ID => ColebrookResult::FIELDS.to_vec(),
         SwameeJainResult::CALC_ID => SwameeJainResult::FIELDS.to_vec(),
+        HaalandResult::CALC_ID => HaalandResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
         _ => Vec::new(),
@@ -400,6 +434,7 @@ pub fn calc_ids() -> Vec<String> {
         ReynoldsNumberResult::CALC_ID.to_string(),
         ColebrookResult::CALC_ID.to_string(),
         SwameeJainResult::CALC_ID.to_string(),
+        HaalandResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),
     ]

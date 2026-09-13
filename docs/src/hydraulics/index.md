@@ -9,5 +9,6 @@ Every calculation in this section is generated from its specification. Each page
 | [`hydraulics.crane_k_factors`](./crane_k_factors.md) | $K = f_t \sum_{i} n_{L/D,i}$ | Crane TP-410 |
 | [`hydraulics.darcy_weisbach`](./darcy_weisbach.md) | $\Delta P = f\,\frac{L}{D}\,\frac{\rho v^{2}}{2}$ | Crane TP-410 |
 | [`hydraulics.friction_factor_colebrook`](./friction_factor_colebrook.md) | $\frac{1}{\sqrt{f}} = -2\,\log_{10}\!\left(\frac{\varepsilon/D}{3.7} + \frac{2.51}{Re\,\sqrt{f}}\right)$ | Colebrook, C. F. (1939) |
+| [`hydraulics.friction_factor_haaland`](./friction_factor_haaland.md) | $f = \left[-1.8\,\log_{10}\!\left[\left(\frac{\varepsilon/D}{3.7}\right)^{1.11} + \frac{6.9}{Re}\right]\right]^{-2}$ | Haaland, S. E. (1983) |
 | [`hydraulics.friction_factor_swamee_jain`](./friction_factor_swamee_jain.md) | $f = \frac{0.25}{\left[\log_{10}\!\left(\frac{\varepsilon/D}{3.7} + \frac{5.74}{Re^{0.9}}\right)\right]^{2}}$ | Swamee, P. K.; Jain, A. K. (1976) |
 | [`hydraulics.reynolds_number`](./reynolds_number.md) | $Re = \frac{\rho v D}{\mu}$ | Crane TP-410 |
