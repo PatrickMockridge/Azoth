@@ -1,0 +1,383 @@
+//! `eos.stability_test` - the tangent-plane stability test.
+//!
+//! Whether a feed at a fixed temperature and pressure is stable as a single phase.
+//! The question [`crate::pt_flash`] cannot ask: successive substitution finds *a*
+//! stationary point, and a flash that converges to `x = y = z` has shown that its own
+//! starting point was not a split, not that the feed is single phase.
+//!
+//! Spec: `specs/models/eos/stability_test.yaml`
+//!
+//! # The criterion
+//!
+//! Michelsen's tangent-plane distance. With the feed's own chemical potentials as the
+//! reference,
+//!
+//! ```text
+//! d_i    = ln z_i + ln phi_i(z)     the reference, from the feed itself
+//! w_i    = W_i / sum(W)             a trial composition
+//! ln W_i = d_i - ln phi_i(w)        iterated to a stationary point
+//! tm     = 1 - sum(W)               the distance at that point
+//! ```
+//!
+//! and the feed is unstable if any trial reaches `tm < 0`. A trial that converges to
+//! the feed itself has `sum(W) = 1` and `tm = 0` - which is exactly why the threshold
+//! is `-1e-8` and not zero, and why no separate trivial-solution test is needed: a
+//! trivial trial cannot fall below it.
+//!
+//! # Two trials, and what that costs
+//!
+//! Both are seeded from Wilson K-values, one vapour-like (`z_i K_i`) and one
+//! liquid-like (`z_i / K_i`). Wilson assumes gas-liquid equilibrium, so a feed
+//! unstable to a *liquid-liquid* split can come back `stable`. That is a real false
+//! negative, stated in the spec's assumptions and not detectable from here. NeqSim
+//! carries a supplementary pure-component trial for it, gated on model-family-name
+//! heuristics that have no place in a spec; it is deliberately not ported.
+//!
+//! # What the feed's own root is
+//!
+//! `ln phi_i(z)` needs the feed to sit on *a* root of the cubic, and in the two-phase
+//! region there are three. The feed is placed at the **lower Gibbs energy** of the
+//! admissible roots.
+//!
+//! With `G / RT = A / RT + Z` and `A = A^ideal + A^R`, the ideal part carries
+//! `-n ln V` - and **`V` is not the same at two roots**, so the ideal part is not the
+//! same either. Reducing it, with `sum(n) = 1` and `V = Z R T / P`, leaves only
+//! `-ln Z` differing between roots at one `(T, P, n)`. The comparison is therefore
+//!
+//! ```text
+//! A^R / RT - ln Z + Z
+//! ```
+//!
+//! **and not `A^R / RT + Z`.** Measured, because the wrong form is plausible and
+//! quiet: pure methane at 150 K and 1 bar is superheated vapour - its saturation
+//! pressure there is about 10 bar - and the two roots give
+//!
+//! ```text
+//! root             A^R/RT      Z          A^R/RT + Z   A^R/RT - ln Z + Z
+//! liquid-like     -2.558039   0.003344   -2.554695    3.145800
+//! vapour-like     -0.015548   0.984493    0.968946    0.984573
+//! ```
+//!
+//! The wrong form picks the liquid and calls a plain vapour unstable; the right one
+//! picks the vapour. Nothing else about the model changes, which is what made it
+//! worth measuring rather than reasoning about.
+//!
+//! A single admissible root is the common case and is taken directly.
+//!
+//! # An unconverged trial raises
+//!
+//! A tangent-plane distance bounds stability only at a *stationary point*, so a `tm`
+//! read from a partially-converged iterate is a fact about the iteration rather than
+//! about the mixture. Discarding it would turn "could not tell" into "stable", which
+//! is the failure this library is organised against - so it raises
+//! [`AzothError::SolverNotConverged`], the rule the flash already applies to its own
+//! loop.
+//!
+//! The cap is 2000 rather than the flash's 100, and the spec's verification notes
+//! record why: successive substitution here is linear with a ratio near 0.93 in
+//! `ln W`, so a trial on an ordinary liquid measured **507** iterations to reach the
+//! tolerance. A cap and not a target - the other trial on the same state settled in
+//! 22.
+
+use azoth_core::units::{Pressure, ThermodynamicTemperature};
+use azoth_core::{AzothError, Result, apply_checks};
+
+use crate::algorithm_of;
+use crate::mixture::{Mixture, PhaseState, ReducedParameters, RootSide, normalise, wilson_k};
+use crate::model_gen;
+use crate::pr_z_factor;
+
+use crate::results::{StabilityTestResult, StabilityVerdict};
+
+/// Below this the feed is unstable.
+///
+/// Negative rather than zero because a trivial trial - one that converges to the
+/// feed - reaches `tm` of order `1e-16`, and a strict `tm < 0` would call a
+/// single-phase feed unstable on rounding alone.
+const TM_LIMIT: f64 = -1.0e-08;
+
+/// A trial whose mole numbers leave this range is diverging rather than converging.
+///
+/// `exp` of a large `ln W` overflows to infinity and the next normalisation is a
+/// division by it, so the guard is what keeps "diverged" from being reported as a
+/// number.
+const LOG_W_CEILING: f64 = 700.0;
+
+/// `ln`, with a non-positive argument giving negative infinity rather than raising.
+///
+/// A component absent from the feed has `z_i = 0` and a reference potential of
+/// `-inf`, which is the correct value: its trial mole number is zero and stays zero.
+/// Spelled out rather than left to `f64::ln` because the Python reference has to be
+/// (`math.log` raises, and `log(-0.0)` differs between the two), and the two sides
+/// are meant to be readable as the same function.
+fn ln(value: f64) -> f64 {
+    if value > 0.0 {
+        value.ln()
+    } else {
+        f64::NEG_INFINITY
+    }
+}
+
+/// The feed's phase state, on whichever admissible root has the lower Gibbs energy.
+///
+/// See the module documentation for the comparison and the measurement behind it. A
+/// single admissible root is the common case and is taken directly.
+fn feed_state(mixture: &Mixture, reduced: &ReducedParameters, z: &[f64]) -> Result<PhaseState> {
+    let (a_mix, b_mix) = mixture.mixture_parameters(reduced, z);
+    let roots = pr_z_factor(a_mix, b_mix)?;
+    let mut candidates = vec![roots.z_min];
+    if roots.z_min != roots.z_max {
+        candidates.push(roots.z_max);
+    }
+
+    let mut best: Option<f64> = None;
+    let mut best_gibbs = f64::INFINITY;
+    for compressibility in candidates {
+        let residual = mixture.helmholtz_energy(reduced, z, compressibility)?;
+        let gibbs = residual - compressibility.ln() + compressibility;
+        if gibbs < best_gibbs {
+            best_gibbs = gibbs;
+            best = Some(compressibility);
+        }
+    }
+    // `candidates` is never empty - `z_min` is always pushed - so this is a proof
+    // obligation rather than a case, and it is returned rather than unwrapped because
+    // this crate does not panic on a path a caller can reach.
+    let compressibility = best.ok_or_else(|| AzothError::InvalidInput {
+        field: "z".to_string(),
+        reason: "the cubic returned no admissible root for the feed, so there is no \
+                 reference state for the tangent plane to be measured from"
+            .to_string(),
+    })?;
+    mixture.phase_state_at(reduced, z, compressibility)
+}
+
+/// What one trial found: its composition, its distance, and the steps it took.
+struct Trial {
+    w: Vec<f64>,
+    tm: f64,
+    iterations: u32,
+}
+
+/// Iterate one trial to a stationary point of the tangent-plane distance.
+///
+/// `liquid` names which root the trial's phase claims: the smallest for the
+/// liquid-like seed, the largest for the vapour-like one. Selecting by *ordering* is
+/// the rule [`crate::pr_z_factor`] fixes, and both implementations follow it rather
+/// than re-deriving a root per iteration.
+///
+/// # Errors
+/// * [`AzothError::SolverNotConverged`] if the iteration hits its cap, or if a mole
+///   number leaves the representable range. **Not** a trial discarded and the feed
+///   called stable: see the module documentation.
+/// * Propagates the mixture's and the cubic's range checks.
+fn trial(
+    mixture: &Mixture,
+    reduced: &ReducedParameters,
+    d: &[f64],
+    seed: &[f64],
+    liquid: bool,
+    tolerance: f64,
+    cap: u32,
+) -> Result<Trial> {
+    let mut w = seed.to_vec();
+    normalise(&mut w);
+    let mut ln_w: Vec<f64> = w.iter().map(|&value| ln(value)).collect();
+    let mut residual = f64::INFINITY;
+    let side = if liquid {
+        RootSide::Liquid
+    } else {
+        RootSide::Vapour
+    };
+
+    for step in 1..=cap {
+        let state = mixture.phase_state(reduced, &w, side)?;
+        let ln_w_new: Vec<f64> = d
+            .iter()
+            .zip(&state.ln_phi)
+            .map(|(&di, &lp)| di - lp)
+            .collect();
+
+        if ln_w_new.iter().any(|&value| value > LOG_W_CEILING) {
+            return Err(AzothError::SolverNotConverged {
+                iterations: step,
+                residual,
+                tolerance,
+            });
+        }
+
+        // The unnormalised mole numbers, which is what `tm` is written against.
+        let mole_numbers: Vec<f64> = ln_w_new.iter().map(|&value| value.exp()).collect();
+        let totals: f64 = mole_numbers.iter().sum();
+
+        residual = (ln_w_new
+            .iter()
+            .zip(&ln_w)
+            .map(|(&new, &old)| (new - old) * (new - old))
+            .sum::<f64>()
+            / ln_w_new.len() as f64)
+            .sqrt();
+        w = mole_numbers;
+        normalise(&mut w);
+        ln_w = ln_w_new;
+
+        if residual <= tolerance {
+            return Ok(Trial {
+                w,
+                tm: 1.0 - totals,
+                iterations: step,
+            });
+        }
+    }
+
+    Err(AzothError::SolverNotConverged {
+        iterations: cap,
+        residual,
+        tolerance,
+    })
+}
+
+/// Whether a mixture at a temperature and pressure is stable as a single phase.
+///
+/// `z` is the overall composition, in mole fractions, and is **checked rather than
+/// renormalised** - silently rescaling a caller's composition would make their error
+/// invisible in a way that changes every number downstream.
+///
+/// # Errors
+/// * [`AzothError::OutOfRange`] if `T` or `P` is not positive.
+/// * [`AzothError::InvalidInput`] if `z` is the wrong length, has a negative entry,
+///   or does not sum to one.
+/// * [`AzothError::SolverNotConverged`] if a trial hits its cap, or if a trial's mole
+///   numbers leave the representable range - which is the iteration diverging rather
+///   than a state to diagnose.
+/// * Propagates the kernels' range checks.
+///
+/// # Example
+/// ```
+/// use azoth_core::units::{kelvins, pascals};
+/// use azoth_eos::mixture::{Component, Mixture};
+/// use azoth_eos::{StabilityVerdict, stability_test};
+///
+/// let mixture = Mixture::new(
+///     vec![
+///         Component::new(kelvins(190.56), pascals(4_599_200.0), 0.01142)?,
+///         Component::new(kelvins(425.12), pascals(3_796_000.0), 0.2002)?,
+///     ],
+///     vec![0.0, 0.05, 0.05, 0.0],
+/// )?;
+/// let r = stability_test(&mixture, kelvins(330.0), pascals(2_500_000.0), &[0.6, 0.4])?;
+/// assert_eq!(r.verdict, StabilityVerdict::Unstable);
+/// assert!((r.tm[1] - -0.2151222395220802).abs() < 1e-9);
+/// # Ok::<(), azoth_core::AzothError>(())
+/// ```
+pub fn stability_test(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+) -> Result<StabilityTestResult> {
+    let spec = &model_gen::STABILITY_TEST_SPEC;
+    let mut warnings = Vec::new();
+
+    let n = mixture.len();
+    if z.len() != n {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!("a feed for {n} components has {} entries", z.len()),
+        ));
+    }
+    if let Some(bad) = z.iter().position(|&value| value < 0.0) {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "z[{bad}] is {} but a mole fraction cannot be negative",
+                z[bad]
+            ),
+        ));
+    }
+    let sum: f64 = z.iter().sum();
+    if (sum - 1.0).abs() > 1.0e-09 {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "the feed's mole fractions sum to {sum}, not to one. Renormalising it \
+                 here would make a composition error invisible in every number \
+                 downstream, so it is refused instead"
+            ),
+        ));
+    }
+
+    let min_t_over_tc = mixture
+        .components()
+        .iter()
+        .map(|c| t.value / c.tc.value)
+        .fold(f64::INFINITY, f64::min);
+    apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(t.value),
+            "P" => Some(p.value),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+    apply_checks(
+        spec.derived_checks(),
+        |quantity| (quantity == "min_t_over_tc").then_some(min_t_over_tc),
+        &mut warnings,
+    )?;
+
+    let reduced = mixture.reduced_parameters(t, p)?;
+    warnings.extend(reduced.warnings.iter().cloned());
+
+    let algorithm = algorithm_of(spec)?;
+
+    // The reference potentials, from the feed on its lower-Gibbs root.
+    let feed = feed_state(mixture, &reduced, z)?;
+    let d: Vec<f64> = z
+        .iter()
+        .zip(&feed.ln_phi)
+        .map(|(&zi, &lp)| ln(zi) + lp)
+        .collect();
+
+    let k = wilson_k(mixture, t, p);
+    let vapour_seed: Vec<f64> = z.iter().zip(&k).map(|(&zi, &ki)| zi * ki).collect();
+    let liquid_seed: Vec<f64> = z.iter().zip(&k).map(|(&zi, &ki)| zi / ki).collect();
+
+    let mut tm = Vec::with_capacity(2);
+    let mut w = Vec::with_capacity(2);
+    let mut iterations = Vec::with_capacity(2);
+
+    // Ordered vapour-like first, then liquid-like, and the order is the contract:
+    // `tm` and `w` are positional and a caller reads `tm[0]` as the vapour-like
+    // trial. Swapping them would silently relabel the two.
+    for (seed, liquid) in [(&vapour_seed, false), (&liquid_seed, true)] {
+        let outcome = trial(
+            mixture,
+            &reduced,
+            &d,
+            seed,
+            liquid,
+            algorithm.tolerance,
+            algorithm.max_iterations,
+        )?;
+        w.push(outcome.w);
+        tm.push(outcome.tm);
+        iterations.push(outcome.iterations);
+    }
+
+    let unstable = tm.iter().any(|&distance| distance < TM_LIMIT);
+
+    Ok(StabilityTestResult {
+        verdict: if unstable {
+            StabilityVerdict::Unstable
+        } else {
+            StabilityVerdict::Stable
+        },
+        tm,
+        w,
+        iterations,
+        min_t_over_tc,
+        warnings,
+    })
+}

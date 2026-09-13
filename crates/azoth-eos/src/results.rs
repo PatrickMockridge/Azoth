@@ -294,6 +294,76 @@ impl CalcResult for PtFlashResult {
     }
 }
 
+/// Whether a feed is stable as a single phase.
+///
+/// Two values rather than a boolean because the *asymmetry* between them is the
+/// point: [`Self::Unstable`] is a proof - a trial reached a stationary point below
+/// the tangent plane, so a single phase is not the Gibbs minimum - while
+/// [`Self::Stable`] is the absence of one, from two trials that were placed by a
+/// gas-liquid correlation. A caller who reads `stable` as "no split exists" has read
+/// it wrong, and a bare `true` invites exactly that.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum StabilityVerdict {
+    /// Neither trial found a stationary point below the tangent plane.
+    Stable,
+    /// At least one trial did. A single phase is not the Gibbs minimum here.
+    Unstable,
+}
+
+impl StabilityVerdict {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Stable => "stable",
+            Self::Unstable => "unstable",
+        }
+    }
+}
+
+/// Result of `eos.stability_test`.
+///
+/// # Why `tm` and `w` are fixed-length vectors rather than "one per phase found"
+///
+/// Two trials are run, always, so both are length two in a fixed order - the
+/// vapour-like trial first. A trial that converges to the feed itself still has a
+/// tangent-plane distance, and it is that near-zero number which is the evidence it
+/// was trivial; reporting only the trials that found something would throw away the
+/// only record of the ones that did not, and would make the vector's *index* mean
+/// something different on every state.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StabilityTestResult {
+    /// Whether the feed is stable as a single phase.
+    pub verdict: StabilityVerdict,
+    /// The tangent-plane distance at each trial's stationary point, vapour-like
+    /// trial first. Negative means that trial lies below the tangent plane.
+    pub tm: Vec<f64>,
+    /// The stationary-point composition of each trial, in the same order.
+    pub w: Vec<Vec<f64>>,
+    /// Iterations each trial took, in the same order.
+    pub iterations: Vec<u32>,
+    /// The smallest `T / Tc_i` over the components.
+    pub min_t_over_tc: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for StabilityTestResult {
+    const CALC_ID: &'static str = "eos.stability_test";
+    const FIELDS: &'static [&'static str] = &[
+        "verdict",
+        "tm",
+        "w",
+        "iterations",
+        "min_t_over_tc",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.bubble_pressure`.
 ///
 /// Deliberately sharing a shape with [`DewPressureResult`] rather than one type

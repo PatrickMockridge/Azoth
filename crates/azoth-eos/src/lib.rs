@@ -18,7 +18,7 @@
 //!
 //! # Models
 //!
-//! The four below are *models* rather than calculations: their specs fix procedures
+//! The models below are *models* rather than calculations: their specs fix procedures
 //! rather than equations, they live under `specs/models/`, and `tools/gen_models.py`
 //! generates them into [`model_gen`] rather than into `spec_gen`. Each composes the
 //! kernels above and adds a search over them.
@@ -27,12 +27,14 @@
 //!   equal fugacity, by bisection
 //! * [`pt_flash`] - the two-phase split of a mixture at a fixed state, by successive
 //!   substitution
+//! * [`stability_test`] - whether a feed is stable as a single phase, by the
+//!   tangent-plane criterion
 //! * [`bubble_pressure`] - the pressure at which a liquid first gives off vapour
 //! * [`dew_pressure`] - the pressure at which a vapour first condenses
 //!
-//! The last three share the mixture fugacity coefficient in [`mixture`], which no
-//! registered calculation covers, and the last two share their iteration in
-//! [`phase_boundary`].
+//! The last four share the mixture fugacity coefficient in [`mixture`], which no
+//! registered calculation covers, and the two phase-boundary models share their
+//! iteration in [`phase_boundary`].
 //!
 //! # Why the coefficients come first
 //!
@@ -100,6 +102,7 @@ pub mod pure_saturation;
 pub mod rachford_rice_binary;
 pub mod results;
 pub mod spec_gen;
+pub mod stability_test;
 pub mod vdw1f_mix_binary;
 
 pub use bubble_pressure::bubble_pressure;
@@ -123,6 +126,8 @@ pub use results::{
     BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
     MolarEnthalpyEntropyResult, Phase, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
     PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, RootStructure, Vdw1fMixBinaryResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RootStructure, StabilityTestResult,
+    StabilityVerdict, Vdw1fMixBinaryResult,
 };
+pub use stability_test::stability_test;
 pub use vdw1f_mix_binary::vdw1f_mix_binary;
