@@ -1,36 +1,45 @@
 # chemeng fittings registry
 #
-# Resistance coefficients for the equivalent-length method:
+# ============================================================================
+#  WARNING: EVERY VALUE IN THIS FILE IS AN ESTIMATED DUMMY VALUE.
 #
-#     K = n_ld * f_t
+#  These numbers were NOT taken from Crane TP-410, or from any other standard,
+#  textbook or table. They are placeholders of a plausible magnitude, present so
+#  that the software pipeline - spec -> Rust -> Python -> docs -> CLI -> CI - can
+#  be built and tested against something concrete.
 #
-# where n_ld is the equivalent length ratio (L_eq / D) and f_t is the Darcy
-# friction factor for fully turbulent flow at the nominal fitting size. This is
-# a METHOD, not a table: the equation is the contribution, the numbers below are
-# inputs to it.
+#  THEY ARE NOT ENGINEERING DATA. DO NOT USE THEM TO SIZE ANYTHING. A pressure
+#  drop computed from this file can be wrong by a factor of two or more and will
+#  still look perfectly reasonable. No test in this repository can detect that,
+#  because there is nothing correct to compare against.
 #
-# COPYRIGHT: this file is NOT a transcription of any table from Crane TP-410 or
-# any other copyrighted source. Each row records where its value was read and
-# whether a human has checked it against the primary standard. Nothing here was
-# copied cell-for-cell from a published table; values are the widely republished
-# engineering consensus for these fittings.
+#  Before this library is used for design work every row must be replaced with
+#  values read from a copy of the primary standard by a competent engineer, and
+#  its verify_status changed to `verified` with the source recorded in
+#  `citation`. Until then, `spec_lint.py` reports the estimated-row count on
+#  every run so this cannot be forgotten quietly.
+# ============================================================================
 #
-# READ THIS BEFORE USE: every row is currently marked `unverified`, which means
-# the value has been read from secondary public references but has NOT been
-# checked against the primary standard by a competent engineer. Do not use this
-# library for design work on the strength of these numbers alone. To verify a
-# row, check it against your own copy of the standard, then change its
-# verify_status to `verified` and put your name and the date in citation.
+# The METHOD being implemented (K = n_ld * f_t) is standard and is the actual
+# contribution; only the coefficients below are placeholders. See
+# specs/calcs/hydraulics/crane_k_factors.yaml for the equation and its status.
+#
+#   K      = f_t * sum(n_ld)   resistance coefficient of the fittings
+#   n_ld   = L_eq / D          equivalent length ratio, fully turbulent flow
+#   f_t                        Darcy friction factor for fully turbulent flow
 #
 # verify_status values:
-#   unverified  - read from secondary public references, not checked against the standard
-#   verified    - checked against the primary standard by a named human
+#   estimated_dummy - placeholder, not from any source. Software testing ONLY.
+#   unverified      - read from a secondary public reference, not checked
+#                     against the primary standard
+#   verified        - read from the primary standard by a named engineer, with
+#                     the source and date recorded in `citation`
 #
 fitting_id,family,name,n_ld,f_t_basis,citation,verify_status
-90_elbow,bend,90 degree standard elbow,30,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
-90_elbow_long_radius,bend,90 degree long-radius elbow,16,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
-45_elbow,bend,45 degree standard elbow,16,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
-gate_valve_open,valve,gate valve fully open,8,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
-ball_valve_open,valve,ball valve full bore,3,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
-plug_valve_straightway,valve,plug valve straightway,18,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
-globe_valve_open,valve,globe valve fully open,340,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
+90_elbow,bend,90 degree standard elbow,30,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+90_elbow_long_radius,bend,90 degree long-radius elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+45_elbow,bend,45 degree standard elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+gate_valve_open,valve,gate valve fully open,8,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+ball_valve_open,valve,ball valve full bore,3,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+plug_valve_straightway,valve,plug valve straightway,18,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+globe_valve_open,valve,globe valve fully open,340,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy

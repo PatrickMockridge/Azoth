@@ -52,6 +52,9 @@ STATE_KEYWORDS = {"phase"}
 # check. Relative tolerance, so 1e-3 means "agrees to 0.1%".
 MAX_SENSIBLE_TOLERANCE = 0.05
 
+# Permitted provenance states for a data row.
+VALID_VERIFY_STATUS = {"verified", "unverified", "estimated_dummy"}
+
 
 @dataclass
 class Report:
@@ -59,6 +62,10 @@ class Report:
 
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # Placeholder data rows, keyed by file, counted so the run can shout about
+    # them. Dummy coefficients cannot be caught by a test - there is nothing
+    # correct to compare against - so the only defence is making them loud.
+    estimated_rows: dict[str, int] = field(default_factory=dict)
 
     def error(self, spec: str, msg: str) -> None:
         self.errors.append(f"{spec}: {msg}")
@@ -396,11 +403,33 @@ def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                     report.error(
                         str(rel), f"{raw_path}: fitting '{fid}' has non-positive n_ld"
                     )
-                if row.get("verify_status") not in {"verified", "unverified"}:
+
+                status = row.get("verify_status")
+                if status not in VALID_VERIFY_STATUS:
                     report.error(
                         str(rel),
-                        f"{raw_path}: fitting '{fid}' has invalid verify_status "
-                        f"'{row.get('verify_status')}'",
+                        f"{raw_path}: fitting '{fid}' has invalid verify_status '{status}'; "
+                        f"expected one of {sorted(VALID_VERIFY_STATUS)}",
+                    )
+                elif status == "estimated_dummy":
+                    report.estimated_rows[raw_path] = (
+                        report.estimated_rows.get(raw_path, 0) + 1
+                    )
+                    # A row cannot simultaneously be a placeholder and verified.
+                    # This is the copy-paste that would silently promote dummy
+                    # data to trusted data.
+                    citation = row.get("citation", "")
+                    if "DUMMY" not in citation.upper():
+                        report.error(
+                            str(rel),
+                            f"{raw_path}: fitting '{fid}' is marked estimated_dummy but its "
+                            f"citation does not say so. The marker and the citation must agree.",
+                        )
+                elif status == "verified" and "DUMMY" in row.get("citation", "").upper():
+                    report.error(
+                        str(rel),
+                        f"{raw_path}: fitting '{fid}' is marked verified but its citation "
+                        f"still says it is a dummy value",
                     )
                 # Coefficients must be exact decimals, not exponent notation, so
                 # that Python and Rust parse identical bit patterns.
@@ -483,6 +512,27 @@ def main() -> int:
 
     if not args.quiet:
         print(f"spec_lint: {len(parsed)} spec(s) checked against {SCHEMA_PATH.name}")
+
+    # Placeholder data is the one defect this tool cannot fail on, because there
+    # is no correct value to compare against. So it is printed loudly instead,
+    # on every run, where it cannot be missed.
+    if report.estimated_rows:
+        total = sum(report.estimated_rows.values())
+        banner = "!" * 78
+        print(f"\n{banner}", file=sys.stderr)
+        print(
+            f"!! NOT ENGINEERING DATA: {total} coefficient row(s) are ESTIMATED DUMMY VALUES.",
+            file=sys.stderr,
+        )
+        for path, count in sorted(report.estimated_rows.items()):
+            print(f"!!   {path}: {count} row(s)", file=sys.stderr)
+        print(
+            "!! These are placeholders for software testing. Do NOT use them to size\n"
+            "!! equipment. Replace with values from the primary standard and set\n"
+            "!! verify_status=verified before any real use.",
+            file=sys.stderr,
+        )
+        print(f"{banner}\n", file=sys.stderr)
 
     for warning in report.warnings:
         print(f"  warning  {warning}", file=sys.stderr)

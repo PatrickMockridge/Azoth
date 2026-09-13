@@ -10,16 +10,27 @@ source:
 verification:
   status: unverified
   notes: >
-    The equivalent-length METHOD (K = f_t * L_eq/D) is the contribution here and
-    is standard practice; the specific Crane equation number is unconfirmed and
-    marked TODO rather than guessed. The per-fitting numbers live in
-    data/fittings/crane_k_factors.csv and carry their own per-row provenance and
-    verify_status. That file is NOT a transcription of any published table - see
-    its header. As of writing every row is `unverified`, meaning values were read
-    from secondary public references and have not been checked against the primary
-    standard by a competent engineer. The worked example below therefore tests the
-    ARITHMETIC (that K is computed correctly from the coefficients), not the
-    provenance of the coefficients themselves.
+    TWO SEPARATE THINGS ARE UNVERIFIED HERE, and they matter differently.
+
+    (1) The METHOD (K = f_t * L_eq/D) is standard engineering practice and is the
+    real contribution of this calc. The specific Crane equation number is
+    unconfirmed, so it is marked TODO rather than guessed.
+
+    (2) The COEFFICIENTS in data/fittings/crane_k_factors.csv are ESTIMATED DUMMY
+    VALUES. They were not read from Crane TP-410 or from any other standard; they
+    are placeholders of plausible magnitude so that the software pipeline can be
+    built and tested end to end. They are not engineering data and nothing
+    computed from them should be used to size equipment. Every row is marked
+    `estimated_dummy` and tools/spec_lint.py prints the count on every run so the
+    placeholder status cannot be forgotten.
+
+    Consequence for testing: because the coefficients are placeholders, there is
+    no correct value for the calc to be checked against, so no test in this
+    repository can detect a wrong coefficient. The tests below therefore validate
+    the ARITHMETIC and the data LOOKUP - that K is computed correctly from
+    whatever coefficients are present - and are honest about not validating the
+    coefficients themselves. This is the one calc in the slice whose numbers are
+    unvalidatable by construction, which is precisely why it is marked so loudly.
 
 inputs:
   fittings:
@@ -74,8 +85,8 @@ data:
   fittings: data/fittings/crane_k_factors.csv
 
 references:
-  - Crane Technical Paper No. 410, "Flow of Fluids Through Valves, Fittings and Pipe" (2013) - the equivalent-length method and the L_eq/D approach.
-  - "Note on copyright: the coefficients used by this calc are recorded in data/fittings/crane_k_factors.csv with per-row citations. They are not reproduced from any copyrighted table."
+  - Crane Technical Paper No. 410, "Flow of Fluids Through Valves, Fittings and Pipe" (2013) - the equivalent-length method and the L_eq/D approach. The coefficients in this repository are NOT taken from it.
+  - "The coefficients in data/fittings/crane_k_factors.csv are estimated dummy values for software testing, with no source. They are not reproduced from, and do not represent, any copyrighted table."
 
 worked_example:
   source: derived from the equation above
@@ -83,13 +94,14 @@ worked_example:
     The CLI example from the project brief: a 90 degree standard elbow plus a fully
     open gate valve, with f_t = 0.018 (a typical fully turbulent friction factor for
     a 100 mm pipe).
-      n_ld(90_elbow)       = 30
-      n_ld(gate_valve_open) = 8
+      n_ld(90_elbow)        = 30      <- ESTIMATED DUMMY COEFFICIENT
+      n_ld(gate_valve_open) = 8       <- ESTIMATED DUMMY COEFFICIENT
       sum(n_ld)             = 38
       K = f_t * sum(n_ld)   = 0.018 * 38 = 0.684
-    This is a pure multiplication of the coefficients in
-    data/fittings/crane_k_factors.csv, so the example validates the arithmetic and
-    the data lookup, not the provenance of the coefficients.
+    The coefficients are placeholders (see `verification` above), so this example
+    validates the arithmetic and the data lookup path only. If the dummy 30 is
+    changed to any other number, the expected value here changes with it: the test
+    cannot and does not tell you whether 30 is right.
   inputs:
     f_t: 0.018
     fittings: [90_elbow, gate_valve_open]
@@ -105,10 +117,11 @@ tests:
     type: worked_example
     status: active
     note: >
-      The worked_example block above lists the coefficients explicitly rather than
-      as a fitting list, because the expected value must be checkable by hand. The
-      test generated from it passes the fitting ids through the real lookup path,
-      so it additionally proves the CSV lookup returns those coefficients.
+      Validates the arithmetic and the CSV lookup path given the dummy
+      coefficients currently in the data file. It does NOT validate the
+      coefficients, and cannot - see `verification`. When the dummy values are
+      replaced with verified ones this test's expected value must be updated in
+      the same commit.
 
   - id: single_fitting_matches_coefficient
     type: reference
