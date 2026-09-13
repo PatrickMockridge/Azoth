@@ -109,6 +109,8 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.pr_z_factor` | The Peng-Robinson compressibility factor |
 | `eos.pr_departure` | Fugacity coefficient and departure functions |
 | `eos.prsv_kappa` | The Stryjek-Vera coefficient, for the same alpha function |
+| `eos.vdw1f_mix_binary` | van der Waals one-fluid mixing, for a binary |
+| `eos.rachford_rice_binary` | The vapour fraction that solves Rachford-Rice |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use

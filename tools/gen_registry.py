@@ -188,6 +188,19 @@ def emit_range_check(check: dict[str, Any], spec_id: str) -> str:
             f"Every bound must explain why it exists - a bound with no reason is a "
             f"bound nobody dares change."
         )
+    # `enum` is a bound kind the schema permits and neither implementation can
+    # evaluate: a range check resolves a quantity to a float, and an enum bound
+    # compares strings. Emitting it would produce a check that silently never fires,
+    # so the generator refuses instead. `spec_lint` refuses it earlier, with the
+    # same reasoning; this is the second gate, because a spec reaching the generator
+    # is a spec that got past the linter.
+    if check.get("enum") is not None:
+        raise SystemExit(
+            f"{spec_id}: range check on '{check['quantity']}' uses `enum`, which "
+            f"neither implementation can evaluate. A range check resolves its "
+            f"quantity to a float; an enum bound compares strings. Emitting it would "
+            f"produce a check that never fires."
+        )
     return (
         "            check: RangeCheck {\n"
         f"                quantity: {rust_str(check['quantity'])},\n"
@@ -195,6 +208,7 @@ def emit_range_check(check: dict[str, Any], spec_id: str) -> str:
         f"                min_inclusive: {str(check.get('min_inclusive', True)).lower()},\n"
         f"                max: {rust_opt_f64(check.get('max'))},\n"
         f"                max_inclusive: {str(check.get('max_inclusive', True)).lower()},\n"
+        f"                equals: {rust_opt_f64(check.get('equals'))},\n"
         f"                band: {band},\n"
         f"                severity: {severity},\n"
         f"                code: {code},\n"

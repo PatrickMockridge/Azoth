@@ -17,6 +17,8 @@ from azoth.eos.reference.pr_departure import pr_departure
 from azoth.eos.reference.pr_kappa import pr_kappa
 from azoth.eos.reference.pr_z_factor import pr_z_factor
 from azoth.eos.reference.prsv_kappa import prsv_kappa
+from azoth.eos.reference.rachford_rice_binary import rachford_rice_binary
+from azoth.eos.reference.vdw1f_mix_binary import vdw1f_mix_binary
 
 __all__ = [
     "OMEGA_A",
@@ -26,4 +28,6 @@ __all__ = [
     "pr_kappa",
     "pr_z_factor",
     "prsv_kappa",
+    "rachford_rice_binary",
+    "vdw1f_mix_binary",
 ]

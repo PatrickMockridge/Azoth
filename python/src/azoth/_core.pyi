@@ -112,6 +112,17 @@ class PrKappaResult:
     warnings: list[Warning]
 
 @final
+class Vdw1fMixBinaryResult:
+    a_mix: float
+    b_mix: float
+    warnings: list[Warning]
+
+@final
+class RachfordRiceBinaryResult:
+    beta: float
+    warnings: list[Warning]
+
+@final
 class PrDepartureResult:
     ln_phi: float
     h_dep_rt: float
@@ -195,6 +206,10 @@ def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult: ...
 def pr_departure(
     a_reduced: float, b_reduced: float, z: float, kappa: float, Tr: float
 ) -> PrDepartureResult: ...
+def vdw1f_mix_binary(
+    z1: float, a1: float, a2: float, b1: float, b2: float, k12: float
+) -> Vdw1fMixBinaryResult: ...
+def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...

@@ -18,6 +18,7 @@ use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrZFactorResult, PrsvKappaResult,
+    RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -676,6 +677,86 @@ impl From<&PrDepartureResult> for PyPrDepartureResult {
     }
 }
 
+/// Result of `eos.vdw1f_mix_binary`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "Vdw1fMixBinaryResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyVdw1fMixBinaryResult {
+    /// The mixture's attraction parameter. Dimensionless.
+    #[pyo3(get)]
+    pub a_mix: f64,
+    /// The mixture's repulsion parameter. Dimensionless.
+    #[pyo3(get)]
+    pub b_mix: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyVdw1fMixBinaryResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "Vdw1fMixBinaryResult(a_mix={}, b_mix={}, {} warning(s))",
+            self.a_mix,
+            self.b_mix,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&Vdw1fMixBinaryResult> for PyVdw1fMixBinaryResult {
+    fn from(r: &Vdw1fMixBinaryResult) -> Self {
+        Self {
+            a_mix: r.a_mix,
+            b_mix: r.b_mix,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.rachford_rice_binary`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "RachfordRiceBinaryResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyRachfordRiceBinaryResult {
+    /// The vapour fraction. Dimensionless, and outside `[0, 1]` when the feed is
+    /// single phase - in which case the result carries a warning.
+    #[pyo3(get)]
+    pub beta: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyRachfordRiceBinaryResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "RachfordRiceBinaryResult(beta={}, {} warning(s))",
+            self.beta,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&RachfordRiceBinaryResult> for PyRachfordRiceBinaryResult {
+    fn from(r: &RachfordRiceBinaryResult) -> Self {
+        Self {
+            beta: r.beta,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PrZFactorResult> for PyPrZFactorResult {
     fn from(r: &PrZFactorResult) -> Self {
         Self {
@@ -910,6 +991,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
         PrsvKappaResult::CALC_ID => PrsvKappaResult::FIELDS.to_vec(),
         PrDepartureResult::CALC_ID => PrDepartureResult::FIELDS.to_vec(),
+        Vdw1fMixBinaryResult::CALC_ID => Vdw1fMixBinaryResult::FIELDS.to_vec(),
+        RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -938,6 +1021,8 @@ pub fn calc_ids() -> Vec<String> {
         PrZFactorResult::CALC_ID.to_string(),
         PrsvKappaResult::CALC_ID.to_string(),
         PrDepartureResult::CALC_ID.to_string(),
+        Vdw1fMixBinaryResult::CALC_ID.to_string(),
+        RachfordRiceBinaryResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),

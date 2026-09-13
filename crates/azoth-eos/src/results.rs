@@ -135,6 +135,46 @@ pub struct PrDepartureResult {
     pub warnings: Vec<Warning>,
 }
 
+/// Result of `eos.vdw1f_mix_binary`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Vdw1fMixBinaryResult {
+    /// The mixture's attraction parameter.
+    pub a_mix: f64,
+    /// The mixture's repulsion parameter.
+    pub b_mix: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for Vdw1fMixBinaryResult {
+    const CALC_ID: &'static str = "eos.vdw1f_mix_binary";
+    const FIELDS: &'static [&'static str] = &["a_mix", "b_mix", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.rachford_rice_binary`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RachfordRiceBinaryResult {
+    /// The vapour fraction that solves the Rachford-Rice equation. Outside `[0, 1]`
+    /// the feed is single phase and this is the tangent-plane value rather than a
+    /// phase split; the result carries `OutOfValidRange` when so.
+    pub beta: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for RachfordRiceBinaryResult {
+    const CALC_ID: &'static str = "eos.rachford_rice_binary";
+    const FIELDS: &'static [&'static str] = &["beta", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for PrDepartureResult {
     const CALC_ID: &'static str = "eos.pr_departure";
     const FIELDS: &'static [&'static str] = &["ln_phi", "h_dep_rt", "s_dep_r", "warnings"];

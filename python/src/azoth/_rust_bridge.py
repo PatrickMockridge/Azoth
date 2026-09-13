@@ -42,9 +42,11 @@ from azoth.core.result import (
     PrsvKappaResult,
     PrZFactorResult,
     PumpPowerResult,
+    RachfordRiceBinaryResult,
     ReynoldsNumberResult,
     RootStructure,
     SwameeJainResult,
+    Vdw1fMixBinaryResult,
 )
 from azoth.core.units import Q, from_si, input_to_si, to_si
 from azoth.core.warnings import Warning, WarningCode
@@ -236,6 +238,22 @@ def pr_departure(
     )
 
 
+def vdw1f_mix_binary(
+    z1: float, a1: float, a2: float, b1: float, b2: float, k12: float
+) -> Vdw1fMixBinaryResult:
+    """Van der Waals one-fluid mixing, computed in Rust. Dimensionless throughout."""
+    result = _core.vdw1f_mix_binary(z1, a1, a2, b1, b2, k12)
+    return Vdw1fMixBinaryResult(
+        a_mix=result.a_mix, b_mix=result.b_mix, warnings=_warnings(result.warnings)
+    )
+
+
+def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult:
+    """The binary Rachford-Rice vapour fraction, computed in Rust."""
+    result = _core.rachford_rice_binary(z1, K1, K2)
+    return RachfordRiceBinaryResult(beta=result.beta, warnings=_warnings(result.warnings))
+
+
 def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     """Pump shaft power, computed in Rust."""
     result = _core.pump_power(
@@ -315,6 +333,8 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.pr_z_factor": pr_z_factor,
     "eos.prsv_kappa": prsv_kappa,
     "eos.pr_departure": pr_departure,
+    "eos.vdw1f_mix_binary": vdw1f_mix_binary,
+    "eos.rachford_rice_binary": rachford_rice_binary,
 }
 
 

@@ -28,11 +28,15 @@ __all__ = [
     "PrKappaBatch",
     "PrZFactorBatch",
     "PrsvKappaBatch",
+    "RachfordRiceBinaryBatch",
+    "Vdw1fMixBinaryBatch",
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
     "pr_z_factor",
     "prsv_kappa",
+    "rachford_rice_binary",
+    "vdw1f_mix_binary",
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
@@ -40,6 +44,8 @@ _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
+_VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
+_RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -283,5 +289,99 @@ def pr_departure(
             "Tr": sequence(Tr, "Tr"),
         },
         _build_departure,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class Vdw1fMixBinaryBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.vdw1f_mix_binary`."""
+
+    #: The mixture's attraction parameter per element. Dimensionless.
+    a_mix: array[float]
+    #: The mixture's repulsion parameter per element. Dimensionless.
+    b_mix: array[float]
+
+
+def _build_vdw1f(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> Vdw1fMixBinaryBatch:
+    return Vdw1fMixBinaryBatch(
+        warnings=warnings,
+        units=units,
+        a_mix=columns["a_mix"],  # type: ignore[arg-type]
+        b_mix=columns["b_mix"],  # type: ignore[arg-type]
+    )
+
+
+def vdw1f_mix_binary(
+    *,
+    z1: Sequence[float],
+    a1: Sequence[float],
+    a2: Sequence[float],
+    b1: Sequence[float],
+    b2: Sequence[float],
+    k12: Sequence[float],
+) -> Vdw1fMixBinaryBatch:
+    """Van der Waals one-fluid mixing, over arrays.
+
+    Six dimensionless arrays in, two out. ``k12`` is the per-pair parameter this
+    library ships no values for, so there is nothing to broadcast from. See
+    :func:`azoth.eos.vdw1f_mix_binary` for the calculation itself.
+    """
+    result: Vdw1fMixBinaryBatch = run(
+        _VDW1F_MIX_BINARY,
+        {
+            "z1": sequence(z1, "z1"),
+            "a1": sequence(a1, "a1"),
+            "a2": sequence(a2, "a2"),
+            "b1": sequence(b1, "b1"),
+            "b2": sequence(b2, "b2"),
+            "k12": sequence(k12, "k12"),
+        },
+        _build_vdw1f,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class RachfordRiceBinaryBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.rachford_rice_binary`."""
+
+    #: The vapour fraction per element. Dimensionless, and outside ``[0, 1]`` for
+    #: elements whose feed is single phase - each of which carries its own warning.
+    beta: array[float]
+
+
+def _build_rachford_rice(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> RachfordRiceBinaryBatch:
+    return RachfordRiceBinaryBatch(
+        warnings=warnings,
+        units=units,
+        beta=columns["beta"],  # type: ignore[arg-type]
+    )
+
+
+def rachford_rice_binary(
+    *, z1: Sequence[float], K1: Sequence[float], K2: Sequence[float]
+) -> RachfordRiceBinaryBatch:
+    """The binary Rachford-Rice vapour fraction, over arrays.
+
+    See :func:`azoth.eos.rachford_rice_binary` for the calculation itself, including
+    what a ``beta`` outside ``[0, 1]`` means and why it is a warning.
+    """
+    result: RachfordRiceBinaryBatch = run(
+        _RACHFORD_RICE_BINARY,
+        {
+            "z1": sequence(z1, "z1"),
+            "K1": sequence(K1, "K1"),
+            "K2": sequence(K2, "K2"),
+        },
+        _build_rachford_rice,
     )
     return result

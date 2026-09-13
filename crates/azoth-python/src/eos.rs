@@ -13,6 +13,7 @@ use pyo3::prelude::*;
 use crate::errors::to_pyerr;
 use crate::results::{
     PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -92,5 +93,46 @@ pub fn pr_departure(
 ) -> PyResult<PyPrDepartureResult> {
     eos::pr_departure(a_reduced, b_reduced, z, kappa, Tr)
         .map(|r| PyPrDepartureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The van der Waals one-fluid mixture parameters for a binary.
+///
+/// Six dimensionless arguments and two dimensionless outputs. `k12` is the
+/// caller's - this library ships no fitted binary parameters.
+#[pyfunction]
+#[pyo3(signature = (z1, a1, a2, b1, b2, k12))]
+#[pyo3(text_signature = "(z1, a1, a2, b1, b2, k12)")]
+pub fn vdw1f_mix_binary(
+    py: Python<'_>,
+    z1: f64,
+    a1: f64,
+    a2: f64,
+    b1: f64,
+    b2: f64,
+    k12: f64,
+) -> PyResult<PyVdw1fMixBinaryResult> {
+    eos::vdw1f_mix_binary(z1, a1, a2, b1, b2, k12)
+        .map(|r| PyVdw1fMixBinaryResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The binary Rachford-Rice vapour fraction.
+///
+/// A `beta` outside `[0, 1]` crosses as a value carrying an `OUT_OF_VALID_RANGE`
+/// warning rather than as an error - the feed is single phase, which is a real
+/// answer and not a failure.
+#[pyfunction]
+#[pyo3(signature = (z1, K1, K2))]
+#[pyo3(text_signature = "(z1, K1, K2)")]
+#[allow(non_snake_case)] // `K1` and `K2` are the symbols in the published equation
+pub fn rachford_rice_binary(
+    py: Python<'_>,
+    z1: f64,
+    K1: f64,
+    K2: f64,
+) -> PyResult<PyRachfordRiceBinaryResult> {
+    eos::rachford_rice_binary(z1, K1, K2)
+        .map(|r| PyRachfordRiceBinaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

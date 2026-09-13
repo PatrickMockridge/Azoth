@@ -7,6 +7,8 @@
 //!   - specs/calcs/eos/pr_kappa.yaml
 //!   - specs/calcs/eos/pr_z_factor.yaml
 //!   - specs/calcs/eos/prsv_kappa.yaml
+//!   - specs/calcs/eos/rachford_rice_binary.yaml
+//!   - specs/calcs/eos/vdw1f_mix_binary.yaml
 //!
 //! Tables for the `eos` namespace. Every namespace has its own generated
 //! file, because a crate is the unit of compilation and a calculation must be able
@@ -31,6 +33,7 @@ static PR_ALPHA_AB_CHECKS: &[SpecCheck] = &[
             min_inclusive: false,
             max: None,
             max_inclusive: true,
+            equals: None,
             band: Band::Outside,
             severity: Severity::Error,
             code: WarningCode::OutOfValidRange,
@@ -45,6 +48,7 @@ static PR_ALPHA_AB_CHECKS: &[SpecCheck] = &[
             min_inclusive: false,
             max: None,
             max_inclusive: true,
+            equals: None,
             band: Band::Outside,
             severity: Severity::Error,
             code: WarningCode::OutOfValidRange,
@@ -149,6 +153,7 @@ static PR_DEPARTURE_CHECKS: &[SpecCheck] = &[
             min_inclusive: false,
             max: None,
             max_inclusive: true,
+            equals: None,
             band: Band::Outside,
             severity: Severity::Error,
             code: WarningCode::OutOfValidRange,
@@ -163,6 +168,7 @@ static PR_DEPARTURE_CHECKS: &[SpecCheck] = &[
             min_inclusive: false,
             max: None,
             max_inclusive: true,
+            equals: None,
             band: Band::Outside,
             severity: Severity::Error,
             code: WarningCode::OutOfValidRange,
@@ -295,6 +301,7 @@ static PR_KAPPA_CHECKS: &[SpecCheck] = &[SpecCheck {
         min_inclusive: false,
         max: None,
         max_inclusive: true,
+        equals: None,
         band: Band::Outside,
         severity: Severity::Warning,
         code: WarningCode::OutOfValidRange,
@@ -386,6 +393,7 @@ static PR_Z_FACTOR_CHECKS: &[SpecCheck] = &[
             min_inclusive: false,
             max: None,
             max_inclusive: true,
+            equals: None,
             band: Band::Outside,
             severity: Severity::Error,
             code: WarningCode::OutOfValidRange,
@@ -400,6 +408,7 @@ static PR_Z_FACTOR_CHECKS: &[SpecCheck] = &[
             min_inclusive: true,
             max: None,
             max_inclusive: true,
+            equals: None,
             band: Band::Outside,
             severity: Severity::Error,
             code: WarningCode::OutOfValidRange,
@@ -559,6 +568,7 @@ static PRSV_KAPPA_CHECKS: &[SpecCheck] = &[SpecCheck {
         min_inclusive: false,
         max: None,
         max_inclusive: true,
+        equals: None,
         band: Band::Outside,
         severity: Severity::Error,
         code: WarningCode::OutOfValidRange,
@@ -651,6 +661,309 @@ pub static PRSV_KAPPA_SPEC: CalcSpec = CalcSpec {
     tests: PRSV_KAPPA_TESTS,
 };
 
+/// Registry entry for `eos.rachford_rice_binary`.
+static RACHFORD_RICE_BINARY_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "z1",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a mole fraction; both ends are admitted, since a pure component is a legitimate limiting case and is a useful check",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "K1",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`K = y/x` with both compositions positive, so a K-value is strictly positive. A zero or negative one is not in the range where the equation means anything, and it would make the vapour composition `K*x` negative.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "K2",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "as for `K1`",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "K1",
+            min: None,
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: Some(1.0),
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`K1 - 1` is a divisor in the closed form. It is also the degenerate case of the equation: with `K1 = 1` component 1 distributes equally and drops out of the sum entirely, leaving a one-component problem whose solution is entirely determined by `K2`. Refusing is better than returning whatever the algebra collapses to.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "K2",
+            min: None,
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: Some(1.0),
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "as for `K1`",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "beta",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "Outside `[0, 1]` the feed is single phase and the equation's solution is the *tangent-plane* value rather than a phase split. The result is returned with this warning rather than refused, because the value is meaningful and useful - a negative `beta` says the feed is subcooled liquid, and `beta > 1` says it is superheated vapour - but a caller must not read it as a vapour fraction. The warning is on the output rather than on the inputs because whether the feed splits depends on all three, not on any one of them, and there is no bound on `z1`, `K1` or `K2` individually that expresses it.",
+        },
+    },
+];
+
+static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "a_feed_that_does_not_split",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-15,
+        numbers: &[("z1", 0.5), ("K1", 2.0), ("K2", 1.5)],
+        lists: &[],
+        expected: &[("beta", -1.5)],
+    },
+    TestCase {
+        id: "a_second_two_phase_case",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("z1", 0.3), ("K1", 5.0), ("K2", 0.2)],
+        lists: &[],
+        expected: &[("beta", 0.19999999999999998)],
+    },
+    TestCase {
+        id: "the_returned_beta_solves_the_equation",
+        kind: "property",
+        property: Some("consistency_with"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "skipped",
+        skip_reason: Some(
+            "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision, following `crane_k_factors` and the other `eos` calcs.",
+        ),
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+];
+
+/// Registered spec for `eos.rachford_rice_binary`.
+///
+/// Public and addressable directly, so a calc can hold `&RACHFORD_RICE_BINARY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static RACHFORD_RICE_BINARY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.rachford_rice_binary",
+    verification: "unverified",
+    checks: RACHFORD_RICE_BINARY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "a_hand_checkable_case",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("z1", 0.6), ("K1", 4.0), ("K2", 0.25)],
+        lists: &[],
+        expected: &[("beta", 0.6666666666666665)],
+    },
+    tests: RACHFORD_RICE_BINARY_TESTS,
+};
+
+/// Registry entry for `eos.vdw1f_mix_binary`.
+static VDW1F_MIX_BINARY_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "z1",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A mole fraction. Both ends are admitted - a pure component is a legitimate thing to ask this calc for, and it is a useful check, since `z1 = 0` or `1` must reproduce the pure-component parameters exactly. Outside them is a caller error, not a limiting case.",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "a_mix",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`a_mix` is a quadratic form in `(z1, z2)` with matrix `[[a1, a12], [a12, a2]]` where `a12 = (1 - k12)*sqrt(a1*a2)`, so it is non-negative for every composition exactly when `a12**2 <= a1*a2` - that is, when `0 <= k12 <= 2`. Outside that band some composition makes `a_mix` negative, and a negative attraction parameter is not a quantity the cubic can take: `eos.pr_z_factor` refuses `a_reduced < 0` for that reason. The bound is on `a_mix` rather than on `k12` because a `k12` outside the band is not wrong in itself - most compositions still give a physical `a_mix` - and refusing the parameter would reject calls that are fine. This bound fires on the case that is actually broken, and the rationale names the cause.",
+        },
+    },
+];
+
+static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "a_pure_component_reproduces_its_own_parameters",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-15,
+        numbers: &[
+            ("z1", 1.0),
+            ("a1", 0.20206500174625697),
+            ("a2", 0.08448417260831159),
+            ("b1", 0.02431127309496514),
+            ("b2", 0.025932024634629486),
+            ("k12", 0.05),
+        ],
+        lists: &[],
+        expected: &[
+            ("a_mix", 0.20206500174625697),
+            ("b_mix", 0.02431127309496514),
+        ],
+    },
+    TestCase {
+        id: "ethane_and_a_large_k12",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("z1", 0.25),
+            ("a1", 0.115),
+            ("a2", 0.31),
+            ("b1", 0.018),
+            ("b2", 0.041),
+            ("k12", 0.4),
+        ],
+        lists: &[],
+        expected: &[("a_mix", 0.22404521707412323), ("b_mix", 0.03525)],
+    },
+    TestCase {
+        id: "monotonic",
+        kind: "property",
+        property: Some("monotonic"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "skipped",
+        skip_reason: Some(
+            "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision, following `crane_k_factors` and the other `eos` calcs.",
+        ),
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+];
+
+/// Registered spec for `eos.vdw1f_mix_binary`.
+///
+/// Public and addressable directly, so a calc can hold `&VDW1F_MIX_BINARY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static VDW1F_MIX_BINARY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.vdw1f_mix_binary",
+    verification: "unverified",
+    checks: VDW1F_MIX_BINARY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "propane_like_and_methane_like_with_k12",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("z1", 0.6),
+            ("a1", 0.20206500174625697),
+            ("a2", 0.08448417260831159),
+            ("b1", 0.02431127309496514),
+            ("b2", 0.025932024634629486),
+            ("k12", 0.05),
+        ],
+        lists: &[],
+        expected: &[
+            ("a_mix", 0.14584053499701302),
+            ("b_mix", 0.02495957371083088),
+        ],
+    },
+    tests: VDW1F_MIX_BINARY_TESTS,
+};
+
 /// Every calculation in the registry, sorted by id.
 static ALL_SPECS: &[&CalcSpec] = &[
     &PR_ALPHA_AB_SPEC,
@@ -658,6 +971,8 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &PR_KAPPA_SPEC,
     &PR_Z_FACTOR_SPEC,
     &PRSV_KAPPA_SPEC,
+    &RACHFORD_RICE_BINARY_SPEC,
+    &VDW1F_MIX_BINARY_SPEC,
 ];
 
 /// All specs, in a stable order.

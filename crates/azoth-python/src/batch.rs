@@ -549,6 +549,48 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "s_dep_r", "dimensionless", s_dep_r);
         }
 
+        "eos.vdw1f_mix_binary" => {
+            let (z1, a1, a2, b1, b2, k12) = (
+                take(&inputs, "z1")?,
+                take(&inputs, "a1")?,
+                take(&inputs, "a2")?,
+                take(&inputs, "b1")?,
+                take(&inputs, "b2")?,
+                take(&inputs, "k12")?,
+            );
+            let mut a_mix = Vec::with_capacity(n);
+            let mut b_mix = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::vdw1f_mix_binary(z1[i], a1[i], a2[i], b1[i], b2[i], k12[i]),
+                    &mut warnings,
+                )?;
+                a_mix.push(r.a_mix);
+                b_mix.push(r.b_mix);
+            }
+            push_values(&mut columns, "a_mix", "dimensionless", a_mix);
+            push_values(&mut columns, "b_mix", "dimensionless", b_mix);
+        }
+
+        "eos.rachford_rice_binary" => {
+            let (z1, k1, k2) = (
+                take(&inputs, "z1")?,
+                take(&inputs, "K1")?,
+                take(&inputs, "K2")?,
+            );
+            let mut beta = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::rachford_rice_binary(z1[i], k1[i], k2[i]),
+                    &mut warnings,
+                )?;
+                beta.push(r.beta);
+            }
+            push_values(&mut columns, "beta", "dimensionless", beta);
+        }
+
         other => {
             return Err(pyo3::exceptions::PyNotImplementedError::new_err(format!(
                 "no batch arm for `{other}`"

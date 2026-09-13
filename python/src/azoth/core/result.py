@@ -262,6 +262,36 @@ class PrKappaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class Vdw1fMixBinaryResult(_HasWarnings):
+    """Result of ``eos.vdw1f_mix_binary``.
+
+    The mixture's van der Waals one-fluid parameters. Both dimensionless, like
+    everything else in this namespace.
+    """
+
+    #: The mixture's attraction parameter.
+    a_mix: float
+    #: The mixture's repulsion parameter - the mole-fraction-weighted mean of the
+    #: pure ones, with no binary correction. vdW1f has no ``l12``.
+    b_mix: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class RachfordRiceBinaryResult(_HasWarnings):
+    """Result of ``eos.rachford_rice_binary``."""
+
+    #: The vapour fraction that solves the Rachford-Rice equation. Outside ``[0, 1]``
+    #: the feed is single phase and this is the tangent-plane value rather than a
+    #: phase split; the result carries ``OUT_OF_VALID_RANGE`` when so. ``beta < 0``
+    #: means subcooled liquid and ``beta > 1`` superheated vapour.
+    beta: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PrDepartureResult(_HasWarnings):
     """Result of ``eos.pr_departure``.
 
@@ -423,4 +453,6 @@ RESULT_TYPES: dict[str, type[object]] = {
     "eos.pr_z_factor": PrZFactorResult,
     "eos.prsv_kappa": PrsvKappaResult,
     "eos.pr_departure": PrDepartureResult,
+    "eos.vdw1f_mix_binary": Vdw1fMixBinaryResult,
+    "eos.rachford_rice_binary": RachfordRiceBinaryResult,
 }

@@ -51,6 +51,7 @@ from azoth.core.result import (
     ReynoldsNumberResult,
     RootStructure,
     SwameeJainResult,
+    Vdw1fMixBinaryResult,
 )
 from azoth.core.solver import (
     Convergence,
@@ -86,6 +87,7 @@ __all__ = [
     "PropertyUnavailableError",
     "PrsvKappaResult",
     "Q",
+    "RachfordRiceBinaryResult",
     "RangeCheck",
     "ReynoldsNumberResult",
     "RootStructure",
@@ -98,6 +100,7 @@ __all__ = [
     "UnitMismatchError",
     "UnknownFittingError",
     "UnverifiedCalculationError",
+    "Vdw1fMixBinaryResult",
     "Warning",
     "WarningCode",
     "apply_checks",

@@ -54,6 +54,24 @@ pub struct RangeCheck {
     pub max: Option<f64>,
     /// Whether the upper bound itself is inside the interval.
     pub max_inclusive: bool,
+    /// A single forbidden value, if this bound is an exclusion rather than an
+    /// interval.
+    ///
+    /// The case it exists for is a divisor becoming zero: `K - 1` in
+    /// `eos.rachford_rice_binary`, where the equation degenerates and the algebra
+    /// divides by nothing. "Close to 1" is not the question there, so this is an
+    /// exact comparison rather than a tolerance, and `min`/`max` are not set.
+    ///
+    /// **This field was absent until `eos.rachford_rice_binary` needed it**, and its
+    /// absence was not harmless. The spec schema permits `equals` and `enum` as
+    /// bound kinds, and this struct implemented neither - so a spec could declare a
+    /// hard bound with `severity: error`, the generator would emit a check with both
+    /// endpoints `None`, `violated` would answer `false` for every value, and the
+    /// bound would silently do nothing. That is the "looks like validation, does
+    /// nothing" failure this library is organised against, sitting in the machinery
+    /// every calc's bounds go through. No spec in the tree used `equals` until then,
+    /// which is why nothing caught it.
+    pub equals: Option<f64>,
     /// Which side of the interval violates.
     pub band: Band,
     /// What a violation means.
@@ -86,6 +104,7 @@ impl RangeCheck {
             min_inclusive: inclusive,
             max: None,
             max_inclusive: true,
+            equals: None,
             band: Band::Outside,
             severity,
             code: WarningCode::OutOfValidRange,
@@ -108,6 +127,7 @@ impl RangeCheck {
             min_inclusive: true,
             max: Some(max),
             max_inclusive: inclusive,
+            equals: None,
             band: Band::Outside,
             severity,
             code: WarningCode::OutOfValidRange,
@@ -131,6 +151,7 @@ impl RangeCheck {
             min_inclusive: true,
             max: Some(max),
             max_inclusive: true,
+            equals: None,
             band: Band::Outside,
             severity,
             code: WarningCode::OutOfValidRange,
@@ -166,6 +187,12 @@ impl RangeCheck {
         if value.is_nan() {
             return true;
         }
+        // An exclusion rather than an interval. Checked first and returned
+        // unconditionally: `band` describes which side of an interval violates, and
+        // has no meaning for a single forbidden value.
+        if let Some(equals) = self.equals {
+            return value == equals;
+        }
         let below = match self.min {
             Some(min) if self.min_inclusive => value < min,
             Some(min) => value <= min,
@@ -187,6 +214,9 @@ impl RangeCheck {
     #[must_use]
     pub fn describe(&self) -> String {
         let q = self.quantity;
+        if let Some(equals) = self.equals {
+            return format!("{q} == {equals}");
+        }
         let lo = self.min.map(|m| {
             let op = if self.min_inclusive { ">=" } else { ">" };
             format!("{op} {m}")
@@ -290,6 +320,35 @@ mod tests {
             RangeCheck::above("re", 4000.0, true, Severity::Warning, "turbulent only"),
             RangeCheck::inside_band("re", 2000.0, 4000.0, Severity::Warning, "transitional"),
         ]
+    }
+
+    #[test]
+    fn an_equals_bound_fires_on_exactly_that_value() {
+        // The bound kind `eos.rachford_rice_binary` added, and the reason it was
+        // needed: a divisor becoming zero. It must fire on the forbidden value and
+        // on nothing else - an exact comparison, because "close to 1" is not the
+        // question when the algebra divides by the difference.
+        let check = RangeCheck {
+            equals: Some(1.0),
+            ..RangeCheck::above("K", 0.0, false, Severity::Error, "must be positive")
+        };
+        assert!(
+            check.violated(1.0),
+            "the forbidden value itself must violate"
+        );
+        assert!(!check.violated(0.999999), "a value near it must not");
+        assert!(!check.violated(1.000001));
+        assert!(!check.violated(2.0));
+        assert!(check.violated(f64::NAN), "NaN violates everything");
+    }
+
+    #[test]
+    fn an_equals_bound_reports_itself_as_an_equality() {
+        let check = RangeCheck {
+            equals: Some(1.0),
+            ..RangeCheck::above("K", 0.0, false, Severity::Error, "must not be one")
+        };
+        assert_eq!(check.describe(), "K == 1");
     }
 
     #[test]

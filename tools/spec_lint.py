@@ -296,6 +296,23 @@ def check_range_checks(report: Report, rel: Path, spec: dict[str, Any]) -> None:
 
     for check in spec["valid_range"]:
         quantity = check["quantity"]
+
+        # `enum` is a bound kind the schema permits and neither implementation can
+        # evaluate. It is refused here rather than emitted and ignored, because a
+        # check that never fires is the failure this whole file is written against -
+        # and it was reachable: the schema's `anyOf` accepts `enum` as a bound, and
+        # until `eos.rachford_rice_binary` no spec used `equals` either, so the whole
+        # family of non-interval bounds sat there looking supported.
+        if check.get("enum") is not None:
+            report.error(
+                str(rel),
+                f"range check on '{quantity}' uses `enum`, which neither "
+                f"implementation can evaluate. A range check resolves its quantity to "
+                f"a float; an enum bound compares strings. Emitting it would produce "
+                f"a check that silently never fires.",
+            )
+            continue
+
         known = quantity in inputs or quantity in outputs or quantity in STATE_KEYWORDS
 
         if not known:

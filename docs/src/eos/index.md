@@ -11,3 +11,5 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.pr_kappa`](./pr_kappa.md) | $\kappa = 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2}$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pr_z_factor`](./pr_z_factor.md) | $z^{3} - \left(1 - B\right)z^{2} + \left(A - 3B^{2} - 2B\right)z - \left(AB - B^{2} - B^{3}\right) = 0$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.prsv_kappa`](./prsv_kappa.md) | $\kappa = 0.378893 + 1.4897153\,\omega - 0.17131848\,\omega^{2} + 0.0196554\,\omega^{3} + \kappa_{1}\left(1 + \sqrt{T_{r}}\right)\left(0.7 - T_{r}\right)$ | Stryjek, R.; Vera, J. H. (1986) |
+| [`eos.rachford_rice_binary`](./rachford_rice_binary.md) | $\beta = -\frac{z_{1}\left(K_{1} - 1\right) + z_{2}\left(K_{2} - 1\right)}{\left(K_{1} - 1\right)\left(K_{2} - 1\right)}$ | Rachford, H. H.; Rice, J. D. (1952) |
+| [`eos.vdw1f_mix_binary`](./vdw1f_mix_binary.md) | $a_{\mathrm{mix}} = z_{1}^{2}a_{1} + 2z_{1}z_{2}\left(1 - k_{12}\right)\sqrt{a_{1}a_{2}} + z_{2}^{2}a_{2}, \qquad b_{\mathrm{mix}} = z_{1}b_{1} + z_{2}b_{2}$ | van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text |

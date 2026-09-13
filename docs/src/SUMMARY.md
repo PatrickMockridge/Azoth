@@ -7,6 +7,8 @@
   - [Peng-Robinson attraction-parameter coefficient](./eos/pr_kappa.md)
   - [Peng-Robinson compressibility factor](./eos/pr_z_factor.md)
   - [Peng-Robinson-Stryjek-Vera alpha-function coefficient](./eos/prsv_kappa.md)
+  - [Rachford-Rice vapour fraction, for a binary](./eos/rachford_rice_binary.md)
+  - [van der Waals one-fluid mixing, for a binary](./eos/vdw1f_mix_binary.md)
 - [Hydraulics](./hydraulics/index.md)
   - [Choked-flow throat area for an ideal gas](./hydraulics/choked_flow_area.md)
   - [Liquid flow through a control valve from its flow coefficient](./hydraulics/control_valve_cv.md)

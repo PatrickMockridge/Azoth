@@ -11,6 +11,8 @@ since a wrong coefficient is invisible downstream.
 * :func:`pr_departure` - fugacity coefficient and departure functions
 * :func:`pr_z_factor` - the compressibility factor, the cubic's real roots
 * :func:`prsv_kappa` - the Stryjek-Vera coefficient, for the same alpha function
+* :func:`vdw1f_mix_binary` - van der Waals one-fluid mixing for a binary
+* :func:`rachford_rice_binary` - the vapour fraction that solves Rachford-Rice
 
 # Why the coefficients come first
 
@@ -60,6 +62,8 @@ from azoth.core.result import (
     PrKappaResult,
     PrsvKappaResult,
     PrZFactorResult,
+    RachfordRiceBinaryResult,
+    Vdw1fMixBinaryResult,
 )
 
 __all__ = [
@@ -68,6 +72,8 @@ __all__ = [
     "pr_kappa",
     "pr_z_factor",
     "prsv_kappa",
+    "rachford_rice_binary",
+    "vdw1f_mix_binary",
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
@@ -75,6 +81,8 @@ _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DEPARTURE = "eos.pr_departure"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
+_VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
+_RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 
 
 def pr_kappa(omega: float) -> PrKappaResult:
@@ -154,3 +162,38 @@ def pr_departure(
     return resolve(_PR_DEPARTURE)(  # type: ignore[no-any-return]
         a_reduced=a_reduced, b_reduced=b_reduced, z=z, kappa=kappa, Tr=Tr
     )
+
+
+def vdw1f_mix_binary(
+    z1: float, a1: float, a2: float, b1: float, b2: float, k12: float
+) -> Vdw1fMixBinaryResult:
+    """The van der Waals one-fluid mixture parameters for a binary.
+
+    ``k12`` is the binary interaction parameter, and **this library ships no values
+    for it** - a table of fitted binary parameters is the databank it deliberately
+    does not have.
+
+    Raises:
+        OutOfRangeError: if ``z1`` is outside ``[0, 1]`` or the resulting ``a_mix``
+            would be negative.
+
+    See :func:`azoth.eos.reference.vdw1f_mix_binary`.
+    """
+    return resolve(_VDW1F_MIX_BINARY)(  # type: ignore[no-any-return]
+        z1=z1, a1=a1, a2=a2, b1=b1, b2=b2, k12=k12
+    )
+
+
+def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult:
+    """The vapour fraction that solves the Rachford-Rice equation for two components.
+
+    A ``beta`` outside ``[0, 1]`` comes back carrying ``OUT_OF_VALID_RANGE`` rather
+    than raising: it says the feed is single phase, which is a real answer.
+
+    Raises:
+        OutOfRangeError: if ``z1`` is outside ``[0, 1]``, either K-value is not
+            positive, or either equals 1.
+
+    See :func:`azoth.eos.reference.rachford_rice_binary`.
+    """
+    return resolve(_RACHFORD_RICE_BINARY)(z1=z1, K1=K1, K2=K2)  # type: ignore[no-any-return]
