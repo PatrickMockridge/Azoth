@@ -55,6 +55,10 @@ verification:
     Putting a bound on, say, `Cd` would look like validation while asserting
     something no source states here.
 
+    [Copyright and licensed data](../copyright.md) records this alongside every
+    other value the project cannot ship, and why a coefficient is an input here
+    rather than a table in the repository.
+
 inputs:
   d:
     unit: mm

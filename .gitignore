@@ -43,6 +43,16 @@ docs/book/
 # thing. CI generates one per build and uploads it as an artifact for review.
 /provenance.json
 
+# --- user-supplied licensed data ---
+# Your own data file, and the data files generated from it, are yours. Committing
+# values that came from a standard you licensed would redistribute them, which is
+# the thing the copyright rule exists to avoid - see docs/src/copyright.md. The
+# committed copies under data/ must keep the placeholders, which is why the
+# generated files are NOT listed here: gitignore cannot untrack a file that is
+# already committed, so that rule is the generator's to enforce and yours to
+# respect rather than something this file can do.
+/azoth-data.yaml
+
 # --- local scratch ---
 /tmp/
 *.local.*

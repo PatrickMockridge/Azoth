@@ -34,6 +34,7 @@ Different conventions fold different corrections into the coefficient. ISO 5167 
 # Why there are no warning bounds
 Third calc in a row with none, after `thermal.conduction_plane_wall` and `hydraulics.pump_power`, and the same reasoning each time: the equation is exact given its inputs, so there is no fitted range outside which it stops being trustworthy. What varies is the caller's `Cd`, and the ranges over which a standard's coefficient is valid are expressed in terms of the diameter ratio and the Reynolds number - neither of which this calc has, so it could not check them even if it wanted to. They are recorded as assumptions instead.
 Putting a bound on, say, `Cd` would look like validation while asserting something no source states here.
+[Copyright and licensed data](../copyright.md) records this alongside every other value the project cannot ship, and why a coefficient is an input here rather than a table in the repository.
 
 ## Inputs
 
