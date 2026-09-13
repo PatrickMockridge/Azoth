@@ -73,6 +73,7 @@ variables rather than in quantities with units.
 - [`eos.dew_pressure`](./eos/dew_pressure.md) — Dew-point pressure
 - [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — Molar enthalpy and entropy of a mixture
 - [`eos.ph_flash`](./eos/ph_flash.md) — Pressure-enthalpy flash
+- [`eos.ps_flash`](./eos/ps_flash.md) — Pressure-entropy flash
 - [`eos.pt_flash`](./eos/pt_flash.md) — Pressure-temperature flash
 - [`eos.pure_saturation`](./eos/pure_saturation.md) — Pure-component saturation pressure
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test

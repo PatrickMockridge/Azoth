@@ -114,6 +114,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.pr_molar_volume` | Molar volume from a compressibility factor |
 | `eos.pr_z_factor` | Peng-Robinson compressibility factor |
 | `eos.prsv_kappa` | Peng-Robinson-Stryjek-Vera alpha-function coefficient |
+| `eos.ps_flash` | Pressure-entropy flash — a *model* |
 | `eos.pt_flash` | Pressure-temperature flash — a *model* |
 | `eos.pure_saturation` | Pure-component saturation pressure — a *model* |
 | `eos.rachford_rice_binary` | Rachford-Rice vapour fraction, for a binary |

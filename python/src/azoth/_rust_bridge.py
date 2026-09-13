@@ -49,6 +49,7 @@ from azoth.core.result import (
     PrMolarVolumeResult,
     PrsvKappaResult,
     PrZFactorResult,
+    PsFlashResult,
     PtFlashResult,
     PumpPowerResult,
     PureSaturationResult,
@@ -482,6 +483,45 @@ def ph_flash(mixture: Any, ideal_gas: Any, P: Q, H: Q, z: Sequence[float]) -> Ph
         list(z),
     )
     return PhFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ps_flash(mixture: Any, ideal_gas: Any, P: Q, S: Q, z: Sequence[float]) -> PsFlashResult:
+    """The pressure-entropy flash of a mixture, solved in Rust.
+
+    The isentropic companion to `ph_flash`, and the same arguments: the ideal-gas
+    vectors are the datum the requested entropy is a difference from.
+    """
+    spec = _models_gen.model("eos.ps_flash")
+    result = _core.ps_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        [v for v in ideal_gas.h_ref],
+        [v for v in ideal_gas.s_ref],
+        input_to_si(spec, "T_ref", ideal_gas.T_ref),
+        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "S", S),
+        list(z),
+    )
+    return PsFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
         beta=result.beta,
         x=tuple(result.x),

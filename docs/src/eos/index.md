@@ -28,6 +28,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.molar_enthalpy_entropy`](./molar_enthalpy_entropy.md) | `direct composition` | The composition of ideal-gas and residual contributions |
 | [`eos.ph_flash`](./ph_flash.md) | `ph_flash_temperature_bisection` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
+| [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_bisection` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.pt_flash`](./pt_flash.md) | `successive_substitution_flash` | Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982) |
 | [`eos.pure_saturation`](./pure_saturation.md) | `saturation_pressure_bisection` | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |

@@ -8,7 +8,8 @@
 //! step with the spec.
 
 use azoth_core::units::{
-    cubic_meters_per_mole, joules_per_mole, kelvins, kilograms_per_mole, pascals,
+    cubic_meters_per_mole, joules_per_mole, joules_per_mole_kelvin, kelvins, kilograms_per_mole,
+    pascals,
 };
 use azoth_eos as eos;
 use pyo3::prelude::*;
@@ -18,8 +19,8 @@ use crate::results::{
     PyCriticalPointResult, PyIdealGasCpResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
     PyPhaseBoundaryResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
     PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult, PyStabilityTestResult,
-    PyVdw1fMixBinaryResult,
+    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
+    PyStabilityTestResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -307,6 +308,58 @@ pub fn ph_flash(
     eos::ph_flash(&mixture, &ideal_gas, pascals(P), joules_per_mole(H), &z)
         .map(|r| PyPhFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// The temperature at which a mixture has a given molar entropy at a pressure.
+///
+/// The isentropic companion to `ph_flash`, and the same fifteen arguments: a compressor
+/// or an expander assumed ideal knows the pressure it leaves at and the entropy it
+/// arrived with, and not the temperature that results.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, P, S, z))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, P, S, z)"
+)]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T_ref` and the rest are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn ps_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    h_ref: Vec<f64>,
+    s_ref: Vec<f64>,
+    T_ref: f64,
+    P_ref: f64,
+    P: f64,
+    S: f64,
+    z: Vec<f64>,
+) -> PyResult<PyPsFlashResult> {
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
+    let ideal_gas = eos::IdealGasModel {
+        cp_a,
+        cp_b,
+        cp_c,
+        cp_d,
+        h_ref,
+        s_ref,
+        t_ref: kelvins(T_ref),
+        p_ref: pascals(P_ref),
+    };
+    eos::ps_flash(
+        &mixture,
+        &ideal_gas,
+        pascals(P),
+        joules_per_mole_kelvin(S),
+        &z,
+    )
+    .map(|r| PyPsFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Whether a feed at a temperature and pressure is stable as a single phase.

@@ -6,6 +6,7 @@
 //!   - specs/models/eos/dew_pressure.yaml
 //!   - specs/models/eos/molar_enthalpy_entropy.yaml
 //!   - specs/models/eos/ph_flash.yaml
+//!   - specs/models/eos/ps_flash.yaml
 //!   - specs/models/eos/pt_flash.yaml
 //!   - specs/models/eos/pure_saturation.yaml
 //!   - specs/models/eos/stability_test.yaml
@@ -678,6 +679,136 @@ pub static PH_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: PH_FLASH_CASES,
 };
 
+static PS_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states, and the cubic's reduced variables divide by it.",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(100.0),
+            min_inclusive: true,
+            max: Some(1500.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the bracket itself, reported rather than left implicit. The scan covers 100 K to 1500 K, so an answer outside it cannot be found - and that is a property of this implementation rather than of thermodynamics, which is why it warns.",
+        },
+    },
+];
+
+static PS_FLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "two_phase_round_trip",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-07,
+        numbers: &[
+            ("T_ref", 300.0),
+            ("P_ref", 100000.0),
+            ("P", 2000000.0),
+            ("S", -39.078496670600245),
+        ],
+        lists: &[],
+        vectors: &[
+            ("Tc", &[190.56, 425.12]),
+            ("Pc", &[4599000.0, 3796000.0]),
+            ("omega", &[0.0115, 0.2002]),
+            ("cp_a", &[3.0, 5.0]),
+            ("cp_b", &[0.0, 0.0]),
+            ("cp_c", &[0.0, 0.0]),
+            ("cp_d", &[0.0, 0.0]),
+            ("h_ref", &[0.0, 0.0]),
+            ("s_ref", &[0.0, 0.0]),
+            ("z", &[0.6, 0.4]),
+        ],
+        matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
+        expected: &[("T", 300.0), ("beta", 0.6824390269029676)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "single_phase_vapour_round_trip",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-07,
+        numbers: &[
+            ("T_ref", 300.0),
+            ("P_ref", 100000.0),
+            ("P", 2000000.0),
+            ("S", -7.568398845188517),
+        ],
+        lists: &[],
+        vectors: &[
+            ("Tc", &[190.56, 425.12]),
+            ("Pc", &[4599000.0, 3796000.0]),
+            ("omega", &[0.0115, 0.2002]),
+            ("cp_a", &[3.0, 5.0]),
+            ("cp_b", &[0.0, 0.0]),
+            ("cp_c", &[0.0, 0.0]),
+            ("cp_d", &[0.0, 0.0]),
+            ("h_ref", &[0.0, 0.0]),
+            ("s_ref", &[0.0, 0.0]),
+            ("z", &[0.6, 0.4]),
+        ],
+        matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
+        expected: &[("T", 450.0)],
+        expected_vectors: &[],
+    },
+];
+
+static PS_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    inner: None,
+};
+
+static PS_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "ps_flash_temperature_bisection",
+    convergence: "relative",
+    tolerance: 1e-08,
+    max_iterations: 200,
+    bracket: Some(ModelBracket {
+        scheme: "linear_scan_for_entropy",
+        lower: 100.0,
+        upper: 1500.0,
+        steps: 2000,
+    }),
+    initialisation: None,
+    inner: Some(&PS_FLASH_INNER),
+};
+
+/// Registry entry for `eos.ps_flash`.
+pub static PS_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.ps_flash",
+    kind: "procedure",
+    algorithm: Some(&PS_FLASH_ALGORITHM),
+    checks: PS_FLASH_CHECKS,
+    cases: PS_FLASH_CASES,
+};
+
 static PT_FLASH_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -1124,6 +1255,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &PH_FLASH_SPEC,
+    &PS_FLASH_SPEC,
     &PT_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
     &STABILITY_TEST_SPEC,

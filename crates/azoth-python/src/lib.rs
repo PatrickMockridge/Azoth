@@ -44,7 +44,7 @@ use results::{
     PyCriticalPointResult, PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult,
     PyOrificeFlowResult, PyPhFlashResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
     PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
+    PyPsFlashResult, PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
     PyReynoldsNumberResult, PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
 };
 
@@ -75,6 +75,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPrMassDensityResult>()?;
     m.add_class::<PyPureSaturationResult>()?;
     m.add_class::<PyPhFlashResult>()?;
+    m.add_class::<PyPsFlashResult>()?;
     m.add_class::<PyCriticalPointResult>()?;
     m.add_class::<PyPumpPowerResult>()?;
     m.add_class::<PyOrificeFlowResult>()?;
@@ -124,6 +125,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pure_saturation, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pt_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::ph_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::ps_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::stability_test, m)?)?;
     m.add_function(wrap_pyfunction!(eos::bubble_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::critical_point, m)?)?;

@@ -150,6 +150,20 @@ class PhFlashResult:
     warnings: list[Warning]
 
 @final
+class PsFlashResult:
+    T: Qty
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    phase: str
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class MolarEnthalpyEntropyResult:
     h: Qty
     s: Qty
@@ -380,6 +394,23 @@ def ph_flash(
     H: float,
     z: list[float],
 ) -> PhFlashResult: ...
+def ps_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    h_ref: list[float],
+    s_ref: list[float],
+    T_ref: float,
+    P_ref: float,
+    P: float,
+    S: float,
+    z: list[float],
+) -> PsFlashResult: ...
 def stability_test(
     Tc: list[float],
     Pc: list[float],

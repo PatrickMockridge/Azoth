@@ -606,6 +606,40 @@ class PhFlashResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class PsFlashResult(_HasWarnings):
+    """Result of ``eos.ps_flash``.
+
+    The state a stream reaches when it is expanded or compressed **isentropically** at a
+    fixed pressure. Same shape as :class:`PhFlashResult`, deliberately: the two models
+    differ in which property they invert and agree on everything else, so a caller
+    reading one already knows how to read the other.
+    """
+
+    #: The temperature that satisfies the entropy. This is the model's answer.
+    T: Q
+    #: The vapour fraction at that temperature, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Bisection steps taken.
+    iterations: int
+    #: ``|S(T) - S_target| / max(|S_target|, 1)`` at the answer.
+    residual: float
+    #: Caveats, deduplicated.
+    warnings: tuple[Warning, ...]
+
+
 class StabilityVerdict(StrEnum):
     """Whether a feed is stable as a single phase.
 

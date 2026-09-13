@@ -19,8 +19,9 @@ use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
     MolarEnthalpyEntropyResult, PhFlashResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, StabilityTestResult, Vdw1fMixBinaryResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, StabilityTestResult,
+    Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1256,6 +1257,92 @@ impl From<&PhFlashResult> for PyPhFlashResult {
     }
 }
 
+/// Result of `eos.ps_flash`, transported.
+///
+/// The same fields as `PyPhFlashResult`, which is the point: the two models differ in
+/// which property they invert and agree on everything else, so a caller who has read one
+/// already knows how to read the other.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PsFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` is the symbol the spec and the Python result both use
+pub struct PyPsFlashResult {
+    /// The temperature that satisfies the entropy.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The vapour fraction, or `None` for a single-phase feed.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The liquid root of the cubic.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// Bisection steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `|S(T) - S_target| / max(|S_target|, 1)` at the answer.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPsFlashResult {
+    fn __repr__(&self) -> String {
+        match self.beta {
+            Some(beta) => format!(
+                "PsFlashResult(T={} K, phase={}, beta={beta})",
+                self.T.magnitude_si, self.phase
+            ),
+            None => format!(
+                "PsFlashResult(T={} K, phase={}, {} iteration(s))",
+                self.T.magnitude_si, self.phase, self.iterations
+            ),
+        }
+    }
+}
+
+impl From<&PsFlashResult> for PyPsFlashResult {
+    fn from(r: &PsFlashResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            beta: r.beta,
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            phase: r.phase.as_str().to_string(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.stability_test`, transported.
 ///
 /// The first result here whose fields are all vectors or lists, and the first whose
@@ -1576,6 +1663,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
         PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
         PhFlashResult::CALC_ID => PhFlashResult::FIELDS.to_vec(),
+        PsFlashResult::CALC_ID => PsFlashResult::FIELDS.to_vec(),
         StabilityTestResult::CALC_ID => StabilityTestResult::FIELDS.to_vec(),
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),

@@ -79,6 +79,7 @@ from azoth.core.result import (
     PrMolarVolumeResult,
     PrsvKappaResult,
     PrZFactorResult,
+    PsFlashResult,
     PtFlashResult,
     PureSaturationResult,
     RachfordRiceBinaryResult,
@@ -129,6 +130,7 @@ _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
 _PH_FLASH = "eos.ph_flash"
+_PS_FLASH = "eos.ps_flash"
 _PT_FLASH = "eos.pt_flash"
 _STABILITY_TEST = "eos.stability_test"
 _PURE_SATURATION = "eos.pure_saturation"
@@ -476,6 +478,40 @@ def ph_flash(
     """
     return resolve(_PH_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, P=P, H=H, z=z
+    )
+
+
+def ps_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, P: Q, S: Q, z: list[float]
+) -> PsFlashResult:
+    """The temperature a mixture reaches at a pressure when expanded isentropically.
+
+    The companion to :func:`ph_flash`, for the unit operations that conserve entropy
+    rather than energy: a compressor or an expander assumed ideal, a turbine, a nozzle::
+
+        r = azoth.eos.ps_flash(fluid, ig, P=q(20, "bar"), S=q(-39.078, "J/(mol*K)"), z=[0.6, 0.4])
+        r.T, r.phase, r.beta
+
+    **``S`` is a difference from the datum ``ideal_gas`` carries**, not an absolute
+    quantity - the same caveat :func:`molar_enthalpy_entropy` carries, for the same
+    reason.
+
+    The two phases are summed at *their own* compositions, so the result carries the
+    entropy of mixing. That is the physically correct assembly and it is not optional:
+    summing the phases at the feed composition would conserve entropy across a phase
+    change, which is wrong.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``P`` is not positive, or a range check on the answer fails.
+        SolverNotConvergedError: if no temperature on the model's bracket produces the
+            requested entropy, or if the bisection hits its cap.
+
+    See :func:`azoth.eos.reference.ps_flash`.
+    """
+    return resolve(_PS_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, P=P, S=S, z=z
     )
 
 

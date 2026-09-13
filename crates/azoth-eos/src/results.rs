@@ -351,6 +351,59 @@ impl CalcResult for PhFlashResult {
     }
 }
 
+/// Result of `eos.ps_flash`.
+///
+/// The state a stream reaches when it is expanded or compressed **isentropically** at a
+/// fixed pressure. The same shape as [`PhFlashResult`], deliberately: the two models
+/// differ in which property they invert and agree on everything else, so a caller
+/// reading one already knows how to read the other.
+#[derive(Debug, Clone)]
+pub struct PsFlashResult {
+    /// The temperature that satisfies the entropy. This is the model's answer.
+    pub temperature: ThermodynamicTemperature,
+    /// The vapour fraction at that temperature, or `None` for a single-phase feed.
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions at the answer.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions at the answer.
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i` at the answer.
+    pub k: Vec<f64>,
+    /// Which phase the feed is in at the answer.
+    pub phase: Phase,
+    /// The liquid root of the cubic at the answer.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// Bisection steps taken.
+    pub iterations: u32,
+    /// `|S(T) - S_target| / max(|S_target|, 1)` at the answer.
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PsFlashResult {
+    const CALC_ID: &'static str = "eos.ps_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "T",
+        "beta",
+        "x",
+        "y",
+        "k",
+        "phase",
+        "z_liquid",
+        "z_vapour",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Whether a feed is stable as a single phase.
 ///
 /// Two values rather than a boolean because the *asymmetry* between them is the

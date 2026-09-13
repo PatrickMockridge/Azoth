@@ -18,6 +18,7 @@
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)
   - [Pressure-enthalpy flash](./eos/ph_flash.md)
+  - [Pressure-entropy flash](./eos/ps_flash.md)
   - [Pressure-temperature flash](./eos/pt_flash.md)
   - [Pure-component saturation pressure](./eos/pure_saturation.md)
   - [Tangent-plane stability test](./eos/stability_test.md)
