@@ -1,0 +1,186 @@
+# azoth and NeqSim
+
+<!-- Hand-written, like copyright.md, and listed in tools/gen_docs.py's STATIC_PAGES
+     for the same reason: the summary is generated, and an unregistered page is
+     silently dropped by mdBook. -->
+
+[NeqSim](https://github.com/equinor/neqsim) is a Java library that solves the same
+problem azoth does: cubic equations of state, phase equilibrium, thermodynamic
+properties. It was developed at NTNU and is maintained by Equinor, it is Apache-2.0,
+and it is incomparably larger.
+
+This page exists because a side-by-side comparison is the only way to answer a question
+this project would otherwise never have to face: **what is azoth for?** Reading another
+library's choices makes your own visible, including the ones that are limitations.
+
+*Snapshot: NeqSim 3.20.0, cloned 2026-09-13. NeqSim is under active development and the
+counts below will age. The shape is the part worth reading.*
+
+## The scale, first
+
+| | NeqSim | azoth |
+|---|---|---|
+| Language | Java 8 | Rust + Python |
+| Lines in `src/main` | 1,285,392 across 3,371 files | — |
+| Thermodynamics alone | 199,598 lines | — |
+| Test files | 2,123 | 766 tests |
+| Registered calculations | 60+ equations of state, 33+ equipment types | 21 calcs, 5 models |
+| Component data | 258 rows in `COMP.csv`, 76,705 in `COMP_EXT.csv`, 1,309 kij rows | none |
+| Licence | Apache-2.0 | AGPL-3.0 code, CC-BY-4.0 docs and data |
+
+The comparison that matters is not the arithmetic. It is that NeqSim is a **process
+simulator** and azoth is a **calculation library**, and every difference below follows
+from that.
+
+## Seven axes where the two differ by design
+
+### 1. Where the truth lives
+
+NeqSim's thermodynamics is the Java source, with prose documentation written alongside
+it. azoth's thermodynamics is a YAML spec, from which the documentation, the registries,
+the range checks and the test cases are all generated — and CI regenerates them and
+fails on any difference.
+
+This has a visible consequence in NeqSim's own repository: `docs/BROKEN_API_AUDIT_REPORT.md`
+is a hand-run scan finding documentation that references classes which do not exist —
+`SimpleWell`, `ChokeValve` — with a table of file and line number for each. It is a
+careful and honest document, produced because the same defect kept recurring.
+
+**That defect class cannot occur here.** A page under `docs/src/eos/` is rendered from the
+spec that both implementations read. There is no second description of the equation to
+drift from the first.
+
+### 2. What data ships
+
+NeqSim ships a component databank: 258 components in `COMP.csv`, 76,705 in
+`COMP_EXT.csv`, and 1,309 binary interaction rows, each component carrying around 180
+columns — critical properties, ideal-gas heat capacity coefficients, Antoine constants,
+association parameters, SAFT parameters, hydrate coefficients, viscosity correlations.
+
+azoth ships **no component data at all**. `Tc`, `Pc`, `omega` and `kij` are arguments to
+every model.
+
+**This is a trade, and NeqSim has the better half of it on usability.** A NeqSim user
+writes `addComponent("methane", 1.0)` and gets an answer. An azoth user must supply the
+critical properties, which is more work and one more place to be wrong.
+
+What azoth gets for that: no answer it ships is owed to a row that nobody in this
+repository can trace. `COMP.csv` has no citation column, so a value in it carries
+NeqSim's provenance — institutional, which is real and is more than most engineering
+data has — rather than a per-value one. For a library whose entire claim is that a
+number arrives with its provenance attached, that is the central question, and azoth
+answers it by not shipping data. See [Copyright and licensed data](../copyright.md) for
+where that boundary has since moved.
+
+### 3. How correctness is claimed
+
+NeqSim has 2,123 test files in the conventional style, plus benchmarks and regression
+suites. azoth has two **independent implementations** of every calculation, in Python
+and Rust, compared case by case with the **iteration counts required to match exactly** —
+the sharpest cheap check that both ran the same procedure — plus a small set of external
+validation cases that each carry a `source.verification` status.
+
+The difference is sharpest on the one calculation both libraries have recently built.
+NeqSim's `CriticalPointFlash` implements Heidemann & Khalil (1980) correctly as far as
+can be told from reading it, and has **no validation of any kind**: no check against a
+pure component's known critical point, no check against a mixture critical locus, and a
+silent `break` on a `NaN`. Nothing in it is wrong; nothing in it is checked either.
+
+That is where azoth's contribution actually lies. The algorithm is not ours. **What holds
+the algorithm is.**
+
+### 4. Units
+
+NeqSim is `double` throughout, with unit conventions that are consistent and documented
+by habit rather than by type: `COMP.csv` stores critical temperature in degrees Celsius
+and the loader adds `273.15`; pressure is in bara; molar mass is g/mol in the file and
+kg/mol in memory; volumes carry an internal factor of `1e5`. None of this is a defect —
+it is how a mature library written before dimensional types were common works, and the
+conversions are all in one place.
+
+azoth puts `uom` on the Rust boundary and `pint` on the Python one, declares every
+input's unit in the spec, and runs a `unit_round_trip` test per calculation. A
+Celsius/kelvin confusion is a type error rather than a factor of 273.15.
+
+### 5. Scope
+
+NeqSim is 1.29 million lines: 33+ equipment packages, PVT simulation, pipeline flow,
+hydrates, safety and relief, mechanical design, cost estimation, field development
+economics — and, more recently, an MCP server and tooling for AI agents.
+
+azoth is 26 registered calculations. `docs/src/index.md` says "each calculation is
+independent, and the composition is done by the caller," and that is a **chosen
+boundary**: the moment azoth grew a flowsheet it would be a different project with a
+different thesis, and a much larger one.
+
+### 6. Licence, and who each library is for
+
+NeqSim is Apache-2.0 — permissive, embeddable in a proprietary product, no obligation
+beyond attribution.
+
+azoth is AGPL-3.0 for code, with documentation and data under CC-BY-4.0. That split is
+deliberate and is argued on the copyright page: *"the equations and the coefficients are
+the part most people want to reuse or cite, and they should not require adopting a
+copyleft obligation to do it."* The two libraries are aimed at different things. NeqSim
+can go inside a closed product; azoth's code cannot, and azoth's *numbers* can be cited
+by anyone.
+
+### 7. The same values, mechanised differently
+
+This is the most interesting finding, and it is not a difference of principle.
+
+NeqSim cares about exactly what azoth cares about. Its Pitzer documentation says *"No
+missing interaction is silently converted to zero"* and describes failing closed on
+incomplete parameter coverage. Its reaction-model audit says *"a shared reaction name or
+stoichiometry is not evidence that its equilibrium constants, activity convention, or
+validity range transfer between thermodynamic models."* Those are the same convictions
+as azoth's *"a check that could not run is not a check that passed"* and *"a wrong number
+that looks reasonable is the failure this project is organised against."*
+
+The difference is **when** and **by what**. NeqSim enforces its values at **runtime**,
+with fail-closed guards and diagnostics, and reviews them with **retrospective audit
+tools** — a provenance document here, an audit report there. azoth enforces its values
+at **build time**, with schema-required spec fields, generated documentation, and CI
+drift checks that fail the build.
+
+Both are honest answers to the same problem. Saying so is more accurate than claiming a
+virtue the other library lacks.
+
+## What azoth does not do, and why
+
+The boundary, stated so that it is visible rather than discovered:
+
+| Not implemented | Why |
+|---|---|
+| Any component, `kij` or heat-capacity databank | The central question of axis 2. |
+| CPA, SAFT, GERG-2008, Helmholtz reference equations, electrolytes | Different physics from a cubic EOS. Each is its own programme. |
+| Flowsheets, equipment models, pipeline flow | Axis 5. A thesis change, not a feature. |
+| PVT simulation, hydrates, wax, asphaltene, scale | Real capabilities, all outside a cubic-EOS library. |
+| Relief-valve *sizing* to a standard | The de-rating coefficients are the caller's to compose; `choked_flow_area` is the isentropic basis. |
+| A mixture critical point | Not shipped **yet** — the mechanical route is a plausible wrong number for any mixture. See the README note; this is the item NeqSim's implementation unblocks. |
+
+## What we take from it
+
+NeqSim is Apache-2.0, which permits reuse with attribution, and this project ports from
+it. Two rules govern what that means, and they are in `CONTRIBUTING.md`:
+
+**A port never upgrades a verification status.** Reading someone's Java is not reading
+the paper it came from. A ported calculation cites the paper for the *method*, the
+implementation for the *port*, and the changes made — and it stays `unverified` until a
+person has read the primary source.
+
+**A port is accepted on this library's tests, never on its provenance.** That a
+well-known library implements something is evidence that it can be implemented. It is
+not evidence that it is right, and NeqSim's critical point is the concrete case: correct
+by inspection, and validated nowhere.
+
+Every ported algorithm is listed with its source file and commit, so the boundary
+between what is ours and what is borrowed is legible in the specs themselves.
+
+## Credit
+
+NeqSim is developed at NTNU and maintained by Equinor, and is used in real oil and gas,
+carbon capture and hydrogen work. Its documentation is unusually thorough about *why* its
+models are built the way they are, and reading it is how this project resolved a problem
+it had recorded as unsolvable. The attribution obligations owed when code or data is
+reused are listed in the repository's `NOTICE` file.
