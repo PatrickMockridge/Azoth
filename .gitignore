@@ -37,11 +37,11 @@ docs/book/
 .vscode/
 
 # --- release artifacts ---
-# provenance.json is generated per release and attached to the release, not
-# committed at the repo root where it would go stale immediately. Released
-# copies live under provenance/<tag>.json and ARE committed.
+# provenance.json is generated per release and, once signed, attached to the
+# release alongside the wheels - which is where a signature is useful, since a
+# committed copy would be a second, unsigned, silently-stale record of the same
+# thing. CI generates one per build and uploads it as an artifact for review.
 /provenance.json
-!provenance/
 
 # --- local scratch ---
 /tmp/

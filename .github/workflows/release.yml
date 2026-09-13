@@ -1,0 +1,189 @@
+name: Release
+
+# Triggered by a version tag. The tag is expected to be signed - see TRUST.md -
+# which is what ties the artifacts to a commit someone vouched for.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build (workflow_dispatch only)"
+        required: false
+
+permissions:
+  contents: write # create the release
+  id-token: write # required for cosign keyless signing
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `git describe` must see the tag, and provenance records it.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12
+      - run: uv pip install maturin
+
+      # abi3: one wheel tag covers CPython 3.12 and later, so there is no
+      # per-version matrix and no chance of the versions drifting apart.
+      - name: Build wheels
+        run: .venv/bin/maturin build --release --out dist
+      - name: Build sdist
+        run: .venv/bin/maturin sdist --out dist
+
+      - name: Keep the distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  provenance:
+    name: Generate provenance
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pyyaml
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      # Every spec, code file, test and data table that went into the release,
+      # hashed, plus the artifacts themselves.
+      - name: Generate
+        run: |
+          set -euo pipefail
+          args=()
+          for f in dist/*; do args+=(--artifact "$f"); done
+          python tools/provenance.py --out provenance.json --tag "${GITHUB_REF_NAME}" "${args[@]}"
+
+      # A dirty tree means the record describes something nobody else can
+      # reproduce. The build ran from a tag, so this should never fire - which
+      # is exactly why it is worth checking rather than assuming.
+      - name: Refuse to release from a dirty tree
+        run: |
+          python - <<'EOF'
+          import json, sys
+          record = json.load(open("provenance.json"))
+          if record["git"]["dirty"]:
+              sys.exit("provenance records a dirty tree; refusing to release")
+          if not record["git"]["tag"]:
+              sys.exit("provenance has no tag; refusing to release")
+          print(f"tag {record['git']['tag']} at {record['git']['commit']}")
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: provenance
+          path: provenance.json
+
+  sign:
+    name: Sign with cosign
+    needs: [build, provenance]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: sigstore/cosign-installer@v3
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: provenance
+          path: .
+
+      # Keyless signing. There is no private key in this repository and no
+      # secret to configure: cosign exchanges the job's OIDC token for a
+      # short-lived certificate, and the resulting signature records which
+      # repository and workflow produced it. That is checkable by anyone, and
+      # there is nothing here to leak.
+      - name: Sign every artifact and the provenance record
+        run: |
+          set -euo pipefail
+          for f in dist/* provenance.json; do
+            echo "signing $f"
+            cosign sign-blob --yes --bundle "${f}.sigstore.json" "$f"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signed
+          path: |
+            dist/**
+            provenance.json
+            *.sigstore.json
+
+  verify:
+    name: Verify what we just signed
+    needs: [sign]
+    runs-on: ubuntu-latest
+    steps:
+      # Checked out at the tag being released, so the provenance check below
+      # compares the record against the exact tree it describes.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pyyaml
+      - uses: sigstore/cosign-installer@v3
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed
+          path: .
+
+      # Signing and verifying in the release pipeline is not redundant: it is
+      # the only thing that proves the published bundle verifies against the
+      # published artifact. A signature nobody has ever checked is a claim.
+      - name: Verify
+        run: |
+          set -euo pipefail
+          for f in dist/* provenance.json; do
+            cosign verify-blob "$f" \
+              --bundle "${f}.sigstore.json" \
+              --certificate-identity-regexp \
+                '^https://github\.com/placeholder/chemeng/\.github/workflows/release\.yml@refs/tags/v.*$' \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          done
+
+      - name: Confirm provenance matches the published tree
+        run: python3 tools/provenance.py --verify provenance.json
+
+  publish:
+    name: Publish the release
+    needs: [verify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed
+          path: .
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo "${{ github.repository }}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "See TRUST.md for how to verify these artifacts." \
+            dist/* provenance.json

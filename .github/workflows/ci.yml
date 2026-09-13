@@ -143,3 +143,43 @@ jobs:
             echo "::error::  python tools/gen_docs.py && python tools/gen_registry.py"
             exit 1
           fi
+
+  provenance:
+    name: provenance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `git describe` cannot see the tag without the full history, and the
+          # record would silently claim "no tag" for a tagged build.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip pyyaml
+      # Generated here so every build produces a reviewable record, not only
+      # tagged releases. It is unsigned on a branch, and says so.
+      - run: python tools/provenance.py --out provenance.json
+      - name: Show what it recorded
+        run: |
+          python - <<'EOF'
+          import json
+          record = json.load(open("provenance.json"))
+          git = record["git"]
+          print(f"commit {git['commit']} tag {git['tag']} dirty {git['dirty']}")
+          missing = [
+              f"{c['id']}:{f['path']}"
+              for c in record["calcs"]
+              for f in [c["spec"], *c["code"], *c["tests"]]
+              if not f["present"]
+          ]
+          print(f"{len(record['calcs'])} calc(s)")
+          if missing:
+              print("files recorded as absent:")
+              for m in missing:
+                  print(f"  {m}")
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: provenance
+          path: provenance.json
