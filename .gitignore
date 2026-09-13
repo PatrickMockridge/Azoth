@@ -49,8 +49,8 @@ docs/book/
 # the thing the copyright rule exists to avoid - see docs/src/copyright.md. The
 # committed copies under data/ must keep the placeholders, which is why the
 # generated files are NOT listed here: gitignore cannot untrack a file that is
-# already committed, so that rule is the generator's to enforce and yours to
-# respect rather than something this file can do.
+# already committed, so that rule is `tools/gen_user_data.py`'s to announce and
+# yours to respect rather than something this file can do.
 /azoth-data.yaml
 
 # --- local scratch ---

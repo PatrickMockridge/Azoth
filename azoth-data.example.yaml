@@ -7,6 +7,16 @@
 #
 #      python tools/check_user_data.py azoth-data.yaml
 #
+#  Then, once it passes, compile it into the files both implementations read:
+#
+#      python tools/gen_user_data.py azoth-data.yaml
+#      maturin develop
+#
+#  That overwrites the placeholders under `data/` IN PLACE, because Rust embeds
+#  them at compile time and needs them at the paths the code names. Nothing stops
+#  you committing the result by accident - so don't. `git checkout -- data/`
+#  restores the shipped placeholders.
+#
 #  `azoth-data.yaml` is gitignored. Do NOT commit it, and do not commit the data
 #  files generated from it: if the values came from a standard you licensed,
 #  committing them redistributes them, which is the thing this mechanism exists

@@ -60,6 +60,7 @@
 # source_ref is required for any row that is not estimated_dummy. The tools
 # enforce the format, so a tx ID cannot be mistyped into prose and go unnoticed.
 #
+# Rows in this file: 7 estimated_dummy.
 #
 # Licence: CC-BY-4.0. This data is deliberately not AGPL: the reference
 # values are meant to be reusable and citable without a copyleft

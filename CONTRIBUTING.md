@@ -61,6 +61,17 @@ mdbook build docs
 Without it a broken build makes every test pass on the Python path while the
 cross-language agreement is verified by nothing.
 
+If you have supplied your own licensed data, one more:
+
+```bash
+.venv/bin/python tools/check_user_data.py azoth-data.yaml
+.venv/bin/python tools/gen_user_data.py   azoth-data.yaml --check
+```
+
+Both need the file to exist, so neither is in CI — `azoth-data.yaml` is
+gitignored and never committed. The tooling itself is covered by
+`python/tests/test_gen_user_data.py`, which runs against the template.
+
 ## Adding a calculation
 
 **Five new files, and then twelve edits to existing ones.** The second half is not

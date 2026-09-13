@@ -127,18 +127,18 @@ them** — which is the thing this whole page exists to avoid. `azoth-data.yaml`
 gitignored. The data files generated from it must not be committed either; the
 repository's committed copies must stay the placeholders.
 
-### What is not built yet
+### Compiling it
 
-The generator that turns a checked `azoth-data.yaml` into the repository's data files
-**does not exist**. What exists today is the template and the checker, so that a user
-can prepare and validate their data now.
-
-The intended shape, and why:
+```bash
+python tools/check_user_data.py azoth-data.yaml     # validate, writes nothing
+python tools/gen_user_data.py   azoth-data.yaml     # then compile
+maturin develop                                     # and rebuild
+```
 
 ```
 azoth-data.yaml                    you write this, and keep it
        │
-       │  tools/gen_user_data.py   validates, then writes
+       │  tools/gen_user_data.py   validates with the checker's own rules, then writes
        ▼
 data/fittings/crane_k_factors.csv  ─┐
 data/fluids/<fluid>.csv            ─┼─►  embedded by Rust (include_str!)
@@ -157,6 +157,32 @@ So the user's file is a **source**, compiled once into the canonical form — ex
 relationship `specs/calcs/*.yaml` already has to the two languages. The cost is that
 changing your data means re-running the tool and rebuilding, which suits a build from
 source rather than a `pip install` of a wheel.
+
+Three things about the tool are deliberate and worth knowing before you run it:
+
+**It overwrites `data/` in place.** That is forced: `include_str!` needs the file at the
+path the code names. The shipped placeholders are committed, so `git checkout -- data/`
+brings them back — but nothing structural stops you committing licensed values by
+accident. It prints a warning, and the file's own banner says so too, and the rest is
+yours.
+
+**A number keeps the text you wrote.** `0.0000200` stays `0.0000200` and does not become
+`2e-05`. The same float, and not the same statement: the first says three significant
+figures. A tool that reformatted your data would be discarding information you put
+there on purpose.
+
+**A fluid nothing can read is refused, not written.** Both implementations hardcode the
+fluid list — Rust through `include_str!` and a `match`, Python through a `_BUILTINS`
+dict — so `data/fluids/<name>.csv` for an unregistered `<name>` would be a file that
+loads nothing and warns nobody. Generating it would produce exactly the kind of thing
+this project is built to prevent: data that looks like it is in use. The tool refuses
+and prints the five places to register the name; `example_fluid` in the template is
+deliberately one of these, so the template shows the shape without pretending the
+repository carries a third table.
+
+**And if you do generate licensed data, two tests will fail** — the ones asserting the
+shipped coefficients are placeholders. That is what they are for. Read this page before
+changing them.
 
 ## Why not simply include the numbers
 
