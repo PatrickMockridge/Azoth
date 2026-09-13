@@ -281,16 +281,29 @@ def test_the_feed_is_placed_on_its_lower_gibbs_root() -> None:
         "A^R/RT - ln Z + Z must pick the vapour root for a superheated vapour"
     )
 
-    # The consequence: a superheated vapour is a stable single phase, and the trial
-    # seeded on its own side lands on the feed exactly.
-    result = stability_test(fluid, T=Q(150.0, "K"), P=Q(1.0, "bar"), z=z)
-    assert result.verdict is StabilityVerdict.STABLE, (
-        f"the wrong root calls this unstable: {result.tm}"
-    )
-    assert result.tm[0] == 0.0, "the vapour-like trial should land on the feed"
-    assert result.w[0] == (1.0,), "the feed's own stationary point is the feed"
-    assert result.iterations[0] == 1, "it starts at the answer"
-    assert result.tm[1] > 0.0, "the liquid-like trial is measured from the vapour root"
+    # The consequence, on **both** backends: a superheated vapour is a stable single
+    # phase, and the trial seeded on its own side lands on the feed exactly.
+    #
+    # Both, because this state is the one that tells the two comparisons apart, and
+    # each implementation chooses the root independently - a reference that had the
+    # wrong form would place the feed on the liquid root here and report `unstable`
+    # at about `-7.7`, while the Rust side reported `stable` at zero. A test on the
+    # default backend alone would see only one of them.
+    with use_backend("python"):
+        from_python = stability_test(fluid, T=Q(150.0, "K"), P=Q(1.0, "bar"), z=z)
+    with use_backend("rust"):
+        from_rust = stability_test(fluid, T=Q(150.0, "K"), P=Q(1.0, "bar"), z=z)
+
+    for backend, result in (("python", from_python), ("rust", from_rust)):
+        assert result.verdict is StabilityVerdict.STABLE, (
+            f"{backend}: the wrong root calls this unstable: {result.tm}"
+        )
+        assert result.tm[0] == 0.0, f"{backend}: the vapour-like trial should land on the feed"
+        assert result.w[0] == (1.0,), f"{backend}: the feed's own stationary point is the feed"
+        assert result.iterations[0] == 1, f"{backend}: it starts at the answer"
+        assert result.tm[1] > 0.0, (
+            f"{backend}: the liquid-like trial is measured from the vapour root"
+        )
 
 
 def test_a_pure_components_trials_are_both_the_feed_and_one_is_trivial() -> None:

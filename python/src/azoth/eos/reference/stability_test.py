@@ -120,7 +120,7 @@ def _feed_state(
     ```text
     root             A^R/RT      Z          A^R/RT + Z   A^R/RT - ln Z + Z
     liquid-like     -2.558039   0.003344   -2.554695    3.145800
-    vapour-like     -0.015548   0.984493    0.968946    0.984573
+    vapour-like     -0.015548   0.984493    0.968946    0.984574
     ```
 
     The wrong form picks the liquid and calls a plain vapour unstable; the right

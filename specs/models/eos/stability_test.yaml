@@ -301,6 +301,15 @@ cases:
       saying nothing and the other saying everything is the normal case, and it is
       why a verdict cannot be read off a single distance.
 
+      **`w` here reaches the Python side only, and that is a gap rather than a
+      design.** A case's `expected` carries numbers and vectors, and `w` is a
+      *matrix*; `TestCase` in `azoth-core` has no field for one, so this assertion
+      is read by `python/tests/models/test_stability_test.py` and is not emitted
+      into `model_gen.rs` at all. The Rust side is held to it indirectly - the
+      cross-backend test compares every field of every case against Python - but
+      that is a weaker guarantee than an assertion the spec states, and it is
+      stated here rather than left for someone to discover.
+
   - id: a_trivial_flash_is_not_a_stable_feed
     inputs:
       Tc: [190.56, 425.12]
