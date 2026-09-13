@@ -102,13 +102,16 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.pump_power` | Shaft power from flow, head and efficiency |
 | `hydraulics.orifice_flow` | Flow through an orifice from its pressure difference |
 | `hydraulics.control_valve_cv` | Liquid flow through a control valve |
+| `hydraulics.choked_flow_area` | Throat area for a choked gas flow |
 | `thermal.conduction_plane_wall` | Steady conduction through a slab |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use
 different methods and adding them is a modelling decision worth seeing explicitly.
 
-Relief valve calculations are not implemented.
+Relief valve *sizing* to a standard is not implemented. `hydraulics.choked_flow_area`
+is the isentropic basis - the throat area a given choked mass flow needs - and the
+de-rating coefficients a standard applies are the caller's to compose.
 
 The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`), not by
 project. They appear in provenance records and citations, so renaming the project

@@ -6,6 +6,7 @@ Every calculation in this section is generated from its specification. Each page
 
 | Calculation | Equation | Source |
 |---|---|---|
+| [`hydraulics.choked_flow_area`](./choked_flow_area.md) | $A = \frac{\dot m}{\sqrt{k\,\rho_0 P_0}\,\left(\frac{2}{k+1}\right)^{\frac{k+1}{2(k-1)}}}$ | the isentropic critical-flow relation from gas dynamics; API 520 / ISO 4126 for relief valve sizing, which this calc does NOT implement |
 | [`hydraulics.control_valve_cv`](./control_valve_cv.md) | $Q = C_v \sqrt{\frac{\Delta P}{SG}}$ | the liquid sizing equation for control valves; IEC 60534 for the coefficient tables, which this calc does not implement |
 | [`hydraulics.crane_k_factors`](./crane_k_factors.md) | $K = f_t \sum_{i} n_{L/D,i}$ | Crane TP-410 |
 | [`hydraulics.darcy_weisbach`](./darcy_weisbach.md) | $\Delta P = f\,\frac{L}{D}\,\frac{\rho v^{2}}{2}$ | Crane TP-410 |

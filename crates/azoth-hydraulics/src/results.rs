@@ -23,7 +23,7 @@
 //! alternative would be to throw away information the caller wants.
 
 use azoth_core::{CalcResult, FlowRegime, Warning};
-use uom::si::f64::{Power, Pressure, VolumeRate};
+use uom::si::f64::{Area, Power, Pressure, VolumeRate};
 
 /// Result of `hydraulics.reynolds_number`.
 #[derive(Debug, Clone, PartialEq)]
@@ -177,6 +177,24 @@ impl CalcResult for ControlValveCvResult {
     }
 }
 
+/// Result of `hydraulics.choked_flow_area`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChokedFlowAreaResult {
+    /// Throat area required for the choked flow.
+    pub a: Area,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ChokedFlowAreaResult {
+    const CALC_ID: &'static str = "hydraulics.choked_flow_area";
+    const FIELDS: &'static [&'static str] = &["a", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// One fitting's contribution to the total resistance coefficient.
 #[derive(Debug, Clone, PartialEq)]
 pub struct KComponent {
@@ -250,6 +268,7 @@ mod tests {
             (ColebrookResult::CALC_ID, ColebrookResult::FIELDS),
             (SwameeJainResult::CALC_ID, SwameeJainResult::FIELDS),
             (HaalandResult::CALC_ID, HaalandResult::FIELDS),
+            (ChokedFlowAreaResult::CALC_ID, ChokedFlowAreaResult::FIELDS),
             (ControlValveCvResult::CALC_ID, ControlValveCvResult::FIELDS),
             (OrificeFlowResult::CALC_ID, OrificeFlowResult::FIELDS),
             (PumpPowerResult::CALC_ID, PumpPowerResult::FIELDS),
@@ -272,6 +291,7 @@ mod tests {
             SwameeJainResult::CALC_ID,
             HaalandResult::CALC_ID,
             KFactorsResult::CALC_ID,
+            ChokedFlowAreaResult::CALC_ID,
             ControlValveCvResult::CALC_ID,
             OrificeFlowResult::CALC_ID,
             PumpPowerResult::CALC_ID,
@@ -303,6 +323,7 @@ mod tests {
             SwameeJainResult::FIELDS,
             HaalandResult::FIELDS,
             KFactorsResult::FIELDS,
+            ChokedFlowAreaResult::FIELDS,
             ControlValveCvResult::FIELDS,
             OrificeFlowResult::FIELDS,
             PumpPowerResult::FIELDS,

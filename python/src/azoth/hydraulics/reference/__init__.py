@@ -15,6 +15,7 @@ is a bug in one of them - and the cross-implementation tests are what catch it.
 
 from __future__ import annotations
 
+from azoth.hydraulics.reference.choked_flow_area import choked_flow_area
 from azoth.hydraulics.reference.control_valve_cv import CV_TO_SI, control_valve_cv
 from azoth.hydraulics.reference.crane_k_factors import crane_k_factors
 from azoth.hydraulics.reference.darcy_weisbach import add_fitting_loss, darcy_weisbach
@@ -54,6 +55,7 @@ __all__ = [
     "SolverOutcome",
     "VerifyStatus",
     "add_fitting_loss",
+    "choked_flow_area",
     "control_valve_cv",
     "crane_k_factors",
     "darcy_weisbach",

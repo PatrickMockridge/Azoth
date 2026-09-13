@@ -56,12 +56,14 @@ around it.
 - [`hydraulics.pump_power`](./hydraulics/pump_power.md)
 - [`hydraulics.orifice_flow`](./hydraulics/orifice_flow.md)
 - [`hydraulics.control_valve_cv`](./hydraulics/control_valve_cv.md)
+- [`hydraulics.choked_flow_area`](./hydraulics/choked_flow_area.md)
 
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)
 
-Relief valve calculations are not implemented.
+Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`
+is the isentropic basis, with the standard's de-rating coefficients left to the caller.
 
 ## How the pieces fit together
 

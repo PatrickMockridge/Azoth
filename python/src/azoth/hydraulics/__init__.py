@@ -13,6 +13,7 @@ separately:
 * :func:`pump_power` - shaft power from flow, head and efficiency
 * :func:`orifice_flow` - flow through an orifice from its pressure difference
 * :func:`control_valve_cv` - liquid flow through a control valve
+* :func:`choked_flow_area` - the throat area a choked gas flow needs
 
 Pipe *with* fittings is a composition of the last two, performed by the
 ``azoth pipe`` CLI rather than by a calc of its own, because the two losses are
@@ -40,6 +41,7 @@ from collections.abc import Sequence
 
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    ChokedFlowAreaResult,
     ColebrookResult,
     ControlValveCvResult,
     DarcyWeisbachResult,
@@ -53,6 +55,7 @@ from azoth.core.result import (
 from azoth.core.units import Q
 
 __all__ = [
+    "choked_flow_area",
     "control_valve_cv",
     "crane_k_factors",
     "darcy_weisbach",
@@ -73,6 +76,7 @@ _DARCY_WEISBACH = "hydraulics.darcy_weisbach"
 _PUMP_POWER = "hydraulics.pump_power"
 _ORIFICE_FLOW = "hydraulics.orifice_flow"
 _CONTROL_VALVE_CV = "hydraulics.control_valve_cv"
+_CHOKED_FLOW_AREA = "hydraulics.choked_flow_area"
 
 
 def reynolds_number(rho: Q, v: Q, D: Q, mu: Q) -> ReynoldsNumberResult:
@@ -186,6 +190,28 @@ def control_valve_cv(Cv: float, dP: Q, SG: float) -> ControlValveCvResult:
     See :func:`azoth.hydraulics.reference.control_valve_cv`.
     """
     return resolve(_CONTROL_VALVE_CV)(Cv=Cv, dP=dP, SG=SG)  # type: ignore[no-any-return]
+
+
+def choked_flow_area(m_dot: Q, P0: Q, rho0: Q, k: float) -> ChokedFlowAreaResult:
+    """Throat area required for a choked gas flow.
+
+    This is the isentropic critical-flow relation, which is the physical basis of
+    relief valve sizing. It is **not** relief valve sizing to a standard: the
+    de-rating coefficients API 520 requires - discharge, back pressure, combination -
+    are the caller's to apply, and their values are tabulated in the standard rather
+    than reproduced here.
+
+    ``k`` is the isentropic exponent, dimensionless and above 1 for every real gas.
+    The flow must be choked for this area to be the right one, and that cannot be
+    checked here; see the reference implementation.
+
+    Raises:
+        OutOfRangeError: if ``P0`` or ``rho0`` is not positive, if ``m_dot`` is
+            negative, or if ``k`` is not greater than 1.
+
+    See :func:`azoth.hydraulics.reference.choked_flow_area`.
+    """
+    return resolve(_CHOKED_FLOW_AREA)(m_dot=m_dot, P0=P0, rho0=rho0, k=k)  # type: ignore[no-any-return]
 
 
 def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:

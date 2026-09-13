@@ -18,8 +18,9 @@ use azoth_core::warning::{Warning, WarningCode};
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
-    ColebrookResult, ControlValveCvResult, DarcyWeisbachResult, HaalandResult, KComponent,
-    KFactorsResult, OrificeFlowResult, PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
+    ChokedFlowAreaResult, ColebrookResult, ControlValveCvResult, DarcyWeisbachResult,
+    HaalandResult, KComponent, KFactorsResult, OrificeFlowResult, PumpPowerResult,
+    ReynoldsNumberResult, SwameeJainResult,
 };
 use pyo3::prelude::*;
 
@@ -377,6 +378,45 @@ impl From<&ControlValveCvResult> for PyControlValveCvResult {
     }
 }
 
+/// Result of `hydraulics.choked_flow_area`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ChokedFlowAreaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyChokedFlowAreaResult {
+    /// Throat area, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub a: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyChokedFlowAreaResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ChokedFlowAreaResult(a={} {})",
+            self.a.magnitude_si, self.a.unit
+        )
+    }
+}
+
+impl From<&ChokedFlowAreaResult> for PyChokedFlowAreaResult {
+    fn from(r: &ChokedFlowAreaResult) -> Self {
+        Self {
+            a: PyQty {
+                magnitude_si: r.a.value,
+                unit: "m**2".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `thermal.conduction_plane_wall`, transported.
 ///
 /// Carries a dimensioned output, so it transports a [`PyQty`] rather than a bare
@@ -599,6 +639,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HaalandResult::CALC_ID => HaalandResult::FIELDS.to_vec(),
         OrificeFlowResult::CALC_ID => OrificeFlowResult::FIELDS.to_vec(),
         ControlValveCvResult::CALC_ID => ControlValveCvResult::FIELDS.to_vec(),
+        ChokedFlowAreaResult::CALC_ID => ChokedFlowAreaResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
@@ -621,6 +662,7 @@ pub fn calc_ids() -> Vec<String> {
         HaalandResult::CALC_ID.to_string(),
         OrificeFlowResult::CALC_ID.to_string(),
         ControlValveCvResult::CALC_ID.to_string(),
+        ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

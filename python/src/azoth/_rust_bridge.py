@@ -25,6 +25,7 @@ from typing import Any
 
 from azoth import _core
 from azoth.core.result import (
+    ChokedFlowAreaResult,
     ColebrookResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
@@ -196,6 +197,21 @@ def control_valve_cv(Cv: float, dP: Q, SG: float) -> ControlValveCvResult:
     )
 
 
+def choked_flow_area(m_dot: Q, P0: Q, rho0: Q, k: float) -> ChokedFlowAreaResult:
+    """Choked-flow throat area, computed in Rust."""
+    result = _core.choked_flow_area(
+        to_si(m_dot, "kg/s", "m_dot"),
+        to_si(P0, "Pa", "P0"),
+        to_si(rho0, "kg/m**3", "rho0"),
+        # Dimensionless: no unit to convert, so it crosses as a plain float.
+        k,
+    )
+    return ChokedFlowAreaResult(
+        a=from_si(result.a.magnitude_si, result.a.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 #: Calc id -> the bridge function implementing it. Explicit rather than derived
 #: from the function names, so a renamed id fails here at import rather than
 #: resolving to the wrong calc.
@@ -209,6 +225,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "hydraulics.pump_power": pump_power,
     "hydraulics.orifice_flow": orifice_flow,
     "hydraulics.control_valve_cv": control_valve_cv,
+    "hydraulics.choked_flow_area": choked_flow_area,
     "thermal.conduction_plane_wall": conduction_plane_wall,
 }
 

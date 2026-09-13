@@ -2,6 +2,7 @@
 
 - [azoth](./index.md)
 - [Hydraulics](./hydraulics/index.md)
+  - [Choked-flow throat area for an ideal gas](./hydraulics/choked_flow_area.md)
   - [Liquid flow through a control valve from its flow coefficient](./hydraulics/control_valve_cv.md)
   - [Fitting resistance coefficients by the equivalent-length method](./hydraulics/crane_k_factors.md)
   - [Darcy-Weisbach pressure drop](./hydraulics/darcy_weisbach.md)

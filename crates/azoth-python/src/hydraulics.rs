@@ -17,17 +17,17 @@
 //! module: the public API is `azoth.hydraulics`, which is.
 
 use azoth_core::units::{
-    DynamicViscosity, cubic_meters_per_second, kilograms_per_cubic_meter, meters,
-    meters_per_second, pascal_seconds, pascals,
+    DynamicViscosity, cubic_meters_per_second, kilograms_per_cubic_meter, kilograms_per_second,
+    meters, meters_per_second, pascal_seconds, pascals,
 };
 use azoth_hydraulics as hyd;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyColebrookResult, PyControlValveCvResult, PyDarcyWeisbachResult, PyHaalandResult,
-    PyKFactorsResult, PyOrificeFlowResult, PyPumpPowerResult, PyReynoldsNumberResult,
-    PySwameeJainResult,
+    PyChokedFlowAreaResult, PyColebrookResult, PyControlValveCvResult, PyDarcyWeisbachResult,
+    PyHaalandResult, PyKFactorsResult, PyOrificeFlowResult, PyPumpPowerResult,
+    PyReynoldsNumberResult, PySwameeJainResult,
 };
 
 /// Reynolds number for flow in a circular pipe.
@@ -159,6 +159,31 @@ pub fn control_valve_cv(
     hyd::control_valve_cv(Cv, pascals(dP), SG)
         .map(|r| PyControlValveCvResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// Throat area required for a choked gas flow.
+///
+/// All arguments are SI magnitudes and `k` is dimensionless, so it arrives as a plain
+/// float.
+#[pyfunction]
+#[pyo3(signature = (m_dot, P0, rho0, k))]
+#[pyo3(text_signature = "(m_dot, P0, rho0, k)")]
+#[allow(non_snake_case)] // `P0` and `rho0` are the symbols in the published relation
+pub fn choked_flow_area(
+    py: Python<'_>,
+    m_dot: f64,
+    P0: f64,
+    rho0: f64,
+    k: f64,
+) -> PyResult<PyChokedFlowAreaResult> {
+    hyd::choked_flow_area(
+        kilograms_per_second(m_dot),
+        pascals(P0),
+        kilograms_per_cubic_meter(rho0),
+        k,
+    )
+    .map(|r| PyChokedFlowAreaResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Total resistance coefficient for a list of fittings.

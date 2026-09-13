@@ -70,6 +70,11 @@ class PumpPowerResult:
     warnings: list[Warning]
 
 @final
+class ChokedFlowAreaResult:
+    a: Qty
+    warnings: list[Warning]
+
+@final
 class ControlValveCvResult:
     q: Qty
     warnings: list[Warning]
@@ -106,6 +111,7 @@ def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> Conduction
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...
+def choked_flow_area(m_dot: float, P0: float, rho0: float, k: float) -> ChokedFlowAreaResult: ...
 def crane_k_factors(fittings: list[str], f_t: float) -> KFactorsResult: ...
 def darcy_weisbach(
     f: float, L: float, D: float, rho: float, v: float, mu: float | None = None

@@ -200,6 +200,16 @@ class ControlValveCvResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ChokedFlowAreaResult(_HasWarnings):
+    """Result of ``hydraulics.choked_flow_area``."""
+
+    #: Throat area required for the choked flow.
+    a: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ConductionPlaneWallResult(_HasWarnings):
     """Result of ``thermal.conduction_plane_wall``.
 
@@ -271,4 +281,5 @@ RESULT_TYPES: dict[str, type[object]] = {
     "hydraulics.pump_power": PumpPowerResult,
     "hydraulics.orifice_flow": OrificeFlowResult,
     "hydraulics.control_valve_cv": ControlValveCvResult,
+    "hydraulics.choked_flow_area": ChokedFlowAreaResult,
 }
