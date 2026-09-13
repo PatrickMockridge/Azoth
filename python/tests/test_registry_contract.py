@@ -14,20 +14,39 @@ is a user.
 from __future__ import annotations
 
 import dataclasses
+import importlib
 import inspect
 import json
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import pytest
 
-from azoth import hydraulics
 from azoth._registry_gen import BY_ID, CALCS, spec
 from azoth.core.result import RESULT_TYPES
 from azoth.core.warnings import WarningCode
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
+
+
+def namespace_module(calc_id: str) -> ModuleType:
+    """The public package a calc lives in, e.g. ``azoth.thermal`` for ``thermal.x``.
+
+    Derived from the id rather than imported by name, because the point of this file
+    is to hold the spec/registry/code contract for *every* namespace. A hardcoded
+    import silently excluded the second one: the tests passed, having checked only
+    the namespace that happened to be named.
+    """
+    namespace, _, _ = calc_id.rpartition(".")
+    return importlib.import_module(f"azoth.{namespace}")
+
+
+def reference_module(calc_id: str, function_name: str) -> ModuleType:
+    """The pure-Python reference module for a calc, in whichever namespace."""
+    namespace, _, _ = calc_id.rpartition(".")
+    return importlib.import_module(f"azoth.{namespace}.reference.{function_name}")
 
 
 def test_every_spec_has_a_result_type() -> None:
@@ -66,16 +85,12 @@ def test_every_result_carries_the_calc_id(calc: dict[str, Any]) -> None:
     namespace, _, function_name = calc["id"].rpartition(".")
     assert calc["implementations"]["python"] == f"azoth.{namespace}.{function_name}"
 
-    module = getattr(hydraulics, function_name, None)
-    assert module is not None, f"{calc['id']}: azoth.hydraulics.{function_name} does not exist"
-
-    reference = getattr(
-        __import__(
-            f"azoth.hydraulics.reference.{function_name}",
-            fromlist=[function_name],
-        ),
-        function_name,
+    namespace = namespace_module(calc["id"])
+    assert hasattr(namespace, function_name), (
+        f"{calc['id']}: azoth.{calc['id'].rpartition('.')[0]}.{function_name} does not exist"
     )
+
+    reference = getattr(reference_module(calc["id"], function_name), function_name)
     assert callable(reference)
 
 
@@ -90,21 +105,26 @@ def test_spec_inputs_match_function_signatures(calc: dict[str, Any]) -> None:
     namespace, _, function_name = calc["id"].rpartition(".")
 
     declared = set(calc["inputs"])
-    dispatched = set(inspect.signature(getattr(hydraulics, function_name)).parameters)
-    reference_module = __import__(
-        f"azoth.hydraulics.reference.{function_name}", fromlist=[function_name]
+    public = namespace_module(calc["id"])
+    dispatched = set(inspect.signature(getattr(public, function_name)).parameters)
+    reference = set(
+        inspect.signature(
+            getattr(reference_module(calc["id"], function_name), function_name)
+        ).parameters
     )
-    reference = set(inspect.signature(getattr(reference_module, function_name)).parameters)
 
     assert dispatched == declared, (
-        f"{calc['id']}: azoth.hydraulics.{function_name} takes {sorted(dispatched)} "
+        f"{calc['id']}: azoth.{namespace}.{function_name} takes {sorted(dispatched)} "
         f"but the spec declares {sorted(declared)}"
     )
     assert reference == declared, (
         f"{calc['id']}: the reference implementation takes {sorted(reference)} "
         f"but the spec declares {sorted(declared)}"
     )
-    assert namespace == "hydraulics"
+    # The namespace above is derived from the id, so this asserts the derivation
+    # agrees with what the spec's own implementation path claims - the check that
+    # used to be a hardcoded equality against "hydraulics".
+    assert calc["implementations"]["python"].startswith(f"azoth.{namespace}.")
 
 
 @pytest.mark.parametrize("calc", CALCS, ids=lambda c: c["id"])
@@ -115,10 +135,8 @@ def test_optional_inputs_are_optional_in_the_signature(calc: dict[str, Any]) -> 
     and the optionality is a lie.
     """
     _, _, function_name = calc["id"].rpartition(".")
-    reference_module = __import__(
-        f"azoth.hydraulics.reference.{function_name}", fromlist=[function_name]
-    )
-    parameters = inspect.signature(getattr(reference_module, function_name)).parameters
+    module = reference_module(calc["id"], function_name)
+    parameters = inspect.signature(getattr(module, function_name)).parameters
 
     for name, declaration in calc["inputs"].items():
         is_optional = bool(declaration.get("optional", False))

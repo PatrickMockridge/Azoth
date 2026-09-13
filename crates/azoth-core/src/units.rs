@@ -41,15 +41,16 @@
 
 pub use uom::si::f64::{
     Area, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate, MolarMass, Power,
-    Pressure, SpecificHeatCapacity, ThermalConductivity, ThermodynamicTemperature, Velocity,
-    VolumeRate,
+    Pressure, SpecificHeatCapacity, TemperatureInterval, ThermalConductivity,
+    ThermodynamicTemperature, Velocity, VolumeRate,
 };
 pub use uom::si::{
     area::square_meter, dynamic_viscosity::pascal_second,
     heat_transfer::watt_per_square_meter_kelvin, length::meter, length::millimeter,
     mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
     molar_mass::kilogram_per_mole, power::watt, pressure::pascal,
-    specific_heat_capacity::joule_per_kilogram_kelvin, thermal_conductivity::watt_per_meter_kelvin,
+    specific_heat_capacity::joule_per_kilogram_kelvin,
+    temperature_interval::kelvin as kelvin_interval, thermal_conductivity::watt_per_meter_kelvin,
     thermodynamic_temperature::kelvin, velocity::meter_per_second,
     volume_rate::cubic_meter_per_second,
 };
@@ -105,6 +106,30 @@ pub fn pascals(value: f64) -> Pressure {
 #[must_use]
 pub fn kelvins(value: f64) -> ThermodynamicTemperature {
     ThermodynamicTemperature::new::<kelvin>(value)
+}
+
+/// A temperature *interval* in kelvin: a difference between two temperatures,
+/// which is a different thing from [`kelvins`] and deliberately a different type.
+///
+/// `uom` separates them because they convert differently, and that difference is
+/// the reason to keep the types apart at the boundary. A 30 K interval is a 30 degC
+/// interval, but an absolute 30 K is -243.15 degC: treating a difference as an
+/// absolute temperature silently adds 273.15, which is a plausible-looking wrong
+/// number rather than an error.
+///
+/// A calc that means a difference therefore takes this type, and cannot be handed
+/// the absolute one by accident. `conduction_plane_wall` is the first caller - its
+/// `dT` is a difference across a wall, and it has no opinion about either face's
+/// absolute temperature.
+///
+/// The vocabulary's `K` maps to [`kelvins`], the absolute one, because that is what
+/// the unit name means on its own. A difference measured in kelvin is the same
+/// number either way, so a spec declaring `K` for a difference converts to the same
+/// magnitude through either type - the distinction is only enforceable in Rust,
+/// where the caller has to choose.
+#[must_use]
+pub fn kelvin_intervals(value: f64) -> TemperatureInterval {
+    TemperatureInterval::new::<kelvin_interval>(value)
 }
 
 /// An area in square metres.

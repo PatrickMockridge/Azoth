@@ -1,23 +1,37 @@
-//! Shared helpers for the spec-driven integration tests.
+//! Shared helpers for the spec-driven integration tests, across every namespace.
 //!
-//! The tests in this directory are not hand-written per calc. They walk the
-//! spec's `tests` list and execute whatever it declares, so a test added to a
-//! spec YAML runs in both languages with no new test code. That is the whole
-//! point of generating `spec_gen.rs`: the specs are the test plan.
-
-#![allow(dead_code)] // each test binary uses a subset of these
+//! The tests are not hand-written per calc. They walk the spec's `tests` list and
+//! execute whatever it declares, so a test added to a spec YAML runs in both
+//! languages with no new test code. That is the whole point of generating
+//! `spec_gen.rs`: the specs are the test plan.
+//!
+//! # Why this is a crate and not a `tests/common/mod.rs`
+//!
+//! It was `crates/azoth-hydraulics/tests/common/mod.rs`, which works for one
+//! namespace and fails for two: Rust has no way to share a test module between
+//! crates, so the second namespace would have copied the file. Two copies of
+//! `assert_warnings_agree_with_spec` is the worst possible thing to duplicate -
+//! it is the check that a warning fires exactly when a spec bound says it should,
+//! and a copy that drifted would silently weaken the guarantee in one namespace
+//! while the other stayed green.
+//!
+//! The only thing in here that ever knew about a namespace was the spec lookup.
+//! That is now a parameter: each test binary passes its own `spec_gen::specs()`,
+//! which is the one line of a spec-driven test that is namespace-specific.
 
 use azoth_core::spec::{CalcSpec, TestCase};
 use azoth_core::{CalcResult, Warning, WarningCode};
-use azoth_hydraulics::spec_gen;
 
-/// Fetch a spec, failing loudly if the id is wrong. A missing spec means the
-/// test file and the registry disagree, which is a test bug, not a runtime
-/// condition.
+/// Fetch a spec from a namespace's generated tables, failing loudly if the id is
+/// wrong. A missing spec means the test file and the registry disagree, which is
+/// a test bug, not a runtime condition.
+///
+/// The tables are passed in rather than looked up here because this crate cannot
+/// depend on the namespace crates - they depend on it.
 #[track_caller]
-pub fn spec(id: &str) -> &'static CalcSpec {
-    spec_gen::spec(id).unwrap_or_else(|| {
-        let known: Vec<&str> = spec_gen::specs().iter().map(|s| s.id).collect();
+pub fn spec(all: &'static [&'static CalcSpec], id: &str) -> &'static CalcSpec {
+    all.iter().copied().find(|s| s.id == id).unwrap_or_else(|| {
+        let known: Vec<&str> = all.iter().map(|s| s.id).collect();
         panic!("no spec for `{id}`; registry has {known:?}")
     })
 }

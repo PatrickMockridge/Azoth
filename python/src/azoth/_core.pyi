@@ -60,6 +60,11 @@ class HaalandResult:
     warnings: list[Warning]
 
 @final
+class ConductionPlaneWallResult:
+    q: Qty
+    warnings: list[Warning]
+
+@final
 class KFactorsResult:
     k_total: float
     f_t: float
@@ -82,6 +87,7 @@ def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumber
 def friction_factor_colebrook(re: float, relative_roughness: float) -> ColebrookResult: ...
 def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJainResult: ...
 def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResult: ...
+def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
 def crane_k_factors(fittings: list[str], f_t: float) -> KFactorsResult: ...
 def darcy_weisbach(
     f: float, L: float, D: float, rho: float, v: float, mu: float | None = None

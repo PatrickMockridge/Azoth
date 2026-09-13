@@ -10,7 +10,7 @@
 //!
 //! * **Arguments are SI magnitudes, not quantities.** Unit handling happens once,
 //!   in Python, so the two backends cannot disagree about what a number is in.
-//!   See `hydraulics.rs`.
+//!   See `hydraulics.rs` and `thermal.rs`.
 //! * **Exception classes are imported from `azoth.core.errors`, not defined
 //!   here.** Both backends then raise the *same* class objects, so
 //!   ``except OutOfRangeError`` works regardless of which one answered. See
@@ -29,10 +29,11 @@ use pyo3::types::PyModule;
 mod errors;
 mod hydraulics;
 mod results;
+mod thermal;
 
 use results::{
-    PyColebrookResult, PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult,
-    PyQty, PyReynoldsNumberResult, PySwameeJainResult, PyWarning,
+    PyColebrookResult, PyConductionPlaneWallResult, PyDarcyWeisbachResult, PyHaalandResult,
+    PyKComponent, PyKFactorsResult, PyQty, PyReynoldsNumberResult, PySwameeJainResult, PyWarning,
 };
 
 #[pymodule]
@@ -50,6 +51,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyColebrookResult>()?;
     m.add_class::<PySwameeJainResult>()?;
     m.add_class::<PyHaalandResult>()?;
+    m.add_class::<PyConductionPlaneWallResult>()?;
     m.add_class::<PyKFactorsResult>()?;
     m.add_class::<PyDarcyWeisbachResult>()?;
 
@@ -63,6 +65,9 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(hydraulics::friction_factor_haaland, m)?)?;
     m.add_function(wrap_pyfunction!(hydraulics::crane_k_factors, m)?)?;
     m.add_function(wrap_pyfunction!(hydraulics::darcy_weisbach, m)?)?;
+
+    // Thermal calculations.
+    m.add_function(wrap_pyfunction!(thermal::conduction_plane_wall, m)?)?;
 
     // Introspection.
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;

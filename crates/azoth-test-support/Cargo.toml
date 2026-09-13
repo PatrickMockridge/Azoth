@@ -1,0 +1,17 @@
+[package]
+name = "azoth-test-support"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Shared helpers for azoth's spec-driven integration tests"
+
+# A dev-dependency of the namespace crates only, so it stays out of the shipped
+# dependency graph entirely. That is what keeps it from needing to justify itself
+# under the project's small-dependency rule: nothing a user installs pulls it in.
+[dependencies]
+azoth-core.workspace = true
+
+[lints]
+workspace = true

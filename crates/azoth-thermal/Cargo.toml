@@ -1,17 +1,15 @@
 [package]
-name = "azoth-hydraulics"
+name = "azoth-thermal"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Hydraulics calculations: Reynolds number, friction factors, fitting losses, Darcy-Weisbach"
+description = "Heat transfer calculations: steady conduction through a plane wall"
 
 [dependencies]
 azoth-core.workspace = true
 uom.workspace = true
-thiserror.workspace = true
-csv.workspace = true
 
 [dev-dependencies]
 azoth-test-support.workspace = true

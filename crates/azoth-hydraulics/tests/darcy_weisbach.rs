@@ -1,11 +1,11 @@
 //! Spec-driven tests for `hydraulics.darcy_weisbach`.
 
-mod common;
+use azoth_test_support as common;
 
 use azoth_core::spec::TestCase;
 use azoth_core::units::{kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds};
 use azoth_core::{AzothError, CalcResult, FlowRegime, WarningCode};
-use azoth_hydraulics::{add_fitting_loss, darcy_weisbach};
+use azoth_hydraulics::{add_fitting_loss, darcy_weisbach, spec_gen};
 
 const CALC_ID: &str = "hydraulics.darcy_weisbach";
 
@@ -25,7 +25,7 @@ fn call(case: &TestCase) -> azoth_hydraulics::DarcyWeisbachResult {
 
 #[test]
 fn every_case_in_the_spec() {
-    let spec = common::spec(CALC_ID);
+    let spec = common::spec(spec_gen::specs(), CALC_ID);
     common::assert_skips_are_explained(spec);
 
     let mut executed = 0;

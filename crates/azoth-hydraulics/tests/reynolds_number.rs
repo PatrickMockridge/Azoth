@@ -3,12 +3,12 @@
 //! Every case here comes from `specs/calcs/hydraulics/reynolds_number.yaml`. Add
 //! a test to that file and it runs here and in Python with no new test code.
 
-mod common;
+use azoth_test_support as common;
 
 use azoth_core::spec::TestCase;
 use azoth_core::units::{kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds};
 use azoth_core::{AzothError, CalcResult, FlowRegime, WarningCode};
-use azoth_hydraulics::{regime_warning, reynolds_number};
+use azoth_hydraulics::{regime_warning, reynolds_number, spec_gen};
 
 const CALC_ID: &str = "hydraulics.reynolds_number";
 
@@ -24,7 +24,7 @@ fn call(case: &TestCase) -> azoth_hydraulics::ReynoldsNumberResult {
 
 #[test]
 fn every_case_in_the_spec() {
-    let spec = common::spec(CALC_ID);
+    let spec = common::spec(spec_gen::specs(), CALC_ID);
     common::assert_skips_are_explained(spec);
 
     let mut executed = 0;

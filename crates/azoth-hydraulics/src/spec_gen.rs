@@ -18,10 +18,10 @@
 //! merely descriptive. Each calc reads its own range checks from here, so a
 //! bound changed in a spec file changes the code's behaviour with no second
 //! edit - and `cargo test` fails if the two ever disagree.
-
 use azoth_core::{
     Band, CalcSpec, RangeCheck, Severity, SolverSpec, SpecCheck, TestCase, WarningCode,
 };
+
 /// Registry entry for `hydraulics.crane_k_factors`.
 static CRANE_K_FACTORS_CHECKS: &[SpecCheck] = &[
     SpecCheck {

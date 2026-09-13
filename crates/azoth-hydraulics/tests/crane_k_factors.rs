@@ -11,11 +11,11 @@
 //! assertions compare against values derived from the same dummy coefficients,
 //! so they would all still pass if the coefficients were nonsense.
 
-mod common;
+use azoth_test_support as common;
 
 use azoth_core::spec::TestCase;
 use azoth_core::{AzothError, CalcResult, WarningCode};
-use azoth_hydraulics::{crane_k_factors, fittings, known_fittings};
+use azoth_hydraulics::{crane_k_factors, fittings, known_fittings, spec_gen};
 
 const CALC_ID: &str = "hydraulics.crane_k_factors";
 
@@ -29,7 +29,7 @@ fn call(case: &TestCase) -> azoth_hydraulics::KFactorsResult {
 
 #[test]
 fn every_case_in_the_spec() {
-    let spec = common::spec(CALC_ID);
+    let spec = common::spec(spec_gen::specs(), CALC_ID);
     common::assert_skips_are_explained(spec);
 
     let mut executed = 0;
