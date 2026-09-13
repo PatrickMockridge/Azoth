@@ -200,11 +200,41 @@ single coefficient recorded with a citation is fine; a table is not.
 
 **Read [docs/src/copyright.md](docs/src/copyright.md) before designing a
 calculation around a value you cannot ship.** It lists every place this rule has
-changed what the library does, and the two patterns that resolve all of them so
+changed what the library does, and the three patterns that resolve all of them so
 far: a *single* coefficient becomes a function argument (`Cd`, `eta`, `f_t` - no
-file, no licensing question), and a *set* of coefficients becomes user-supplied
-data with per-row provenance. A new calculation that needs a standard's table
-should be designed to take the numbers, not to embed them.
+file, no licensing question), a *set* of coefficients becomes user-supplied data
+with per-row provenance, and *code under a permissive licence* may be ported with
+attribution. A new calculation that needs a standard's table should be designed
+to take the numbers, not to embed them. The third pattern is the one that looks
+most like the others and is least like them - a licence that grants redistribution
+settles the copyright question and says nothing at all about whether the ported
+answer is right.
+
+**A ported algorithm names its source, and a port never upgrades a verification
+status.** Some of what this library implements was worked out elsewhere and is
+worth reusing rather than re-deriving. That is allowed, and it is governed by two
+rules.
+
+*Three citations, not one.* A ported calculation's spec carries a `ported_from`
+block naming the project, the version, the **file**, the commit and the licence;
+its `references` cite the **paper the method comes from**; and its `notes` say
+what was **changed** — because a port is never a transcription, and the
+differences are the part a reader cannot recover from either source.
+
+*A port stays `unverified`.* A verification status is a claim about a person
+having read a source. Reading someone's Java is not that. If the paper has not
+been read, the status stays what it was, however good the port is — the port is a
+second implementation of a method, not a second source for it.
+
+**And a port is accepted on this library's tests, never on its provenance.** That
+a well-known library implements something is evidence that it *can* be
+implemented. It is not evidence that it is right. The concrete case: NeqSim's
+`CriticalPointFlash` implements Heidemann & Khalil correctly by inspection and
+validates the result **nowhere** — no pure-component check, no mixture-locus
+check, a silent `break` on `NaN`. Porting it carries the algorithm and none of
+the confidence, so every port needs a test that would fail if the port were
+wrong, and that test has to be ours. See
+[azoth and NeqSim](docs/src/comparison/neqsim.md).
 
 **Every number in a worked example must be derivable and shown.** Write the
 substitution out. A worked example nobody can retrace is a number somebody typed.

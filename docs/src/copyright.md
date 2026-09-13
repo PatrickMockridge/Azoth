@@ -44,10 +44,13 @@ primary formulation.** That is the same discipline the fitting registry uses, in
 milder tier — and the schema keeps the two apart, because `estimated_dummy` means "a
 placeholder" while `unverified` means "real, unchecked".
 
-## The two patterns that come out of this
+## The three patterns that come out of this
 
-Everything above resolves into one of two shapes. Knowing which one a blocked value
+Everything above resolves into one of three shapes. Knowing which one a blocked value
 belongs to is the whole answer to "what do I do about it".
+
+The first two are for values this library may **not** ship. The third is for values and
+code it **may**, which is a different question and is easy to conflate with them.
 
 ### A single number becomes a function argument
 
@@ -90,6 +93,48 @@ registry is the one that exists today; a control-valve table and a relief-valve
 
 Those need a file. The repository ships placeholders, and a user supplies the real
 values — see below.
+
+### A licensed implementation may be ported, with attribution
+
+The rule at the top of this page is about material that **cannot** be redistributed.
+Where a licence grants the right, the answer is the opposite, and the two cases are
+easy to mistake for each other because both involve taking someone else's work.
+
+[NeqSim](https://github.com/equinor/neqsim) is Apache-2.0. That licence explicitly
+permits redistribution and derivation, including into this repository's AGPL-3.0 code —
+Apache-2.0 is one-way compatible with the GNU licences, and the obligation it imposes is
+**attribution**, not copyleft reciprocity. So a NeqSim algorithm is not a Crane table.
+The Crane table cannot be shipped at any price; a NeqSim implementation can be shipped
+provided the credit and the statement of changes are made, which is what
+[`NOTICE`](https://github.com/PatrickMockridge/Azoth/blob/main/NOTICE) at the repository
+root and the `ported_from` block in the spec are for.
+
+**The licence is not the hard part. The verification is.** A port arrives looking
+authoritative — it came from a maintained industrial library — and that is a stronger
+pull than a table would be, because a table at least looks like data someone has to
+check. NeqSim's `CriticalPointFlash` is the case that made this concrete: it implements
+Heidemann & Khalil correctly as far as can be told by reading it, and it checks the
+result **nowhere** — no pure-component test, no mixture test, and a silent `break` on a
+`NaN`. Agreeing with it is not evidence of anything, because there is nothing there for
+it to be right against.
+
+So a port is governed by these, and they are in
+[CONTRIBUTING.md](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md):
+
+- It stays `unverified`. A verification status is a claim about a person having read a
+  source, and reading someone's Java is not that.
+- It cites three things: the paper for the **method**, the implementation for the
+  **port**, and its own notes for the **changes**.
+- It is accepted on this library's tests, never on its provenance — and those tests have
+  to be ones that would fail if the port were wrong.
+
+**A databank is a third thing again, and the distinction is worth keeping.** A
+compilation can carry its own copyright where the individual facts in it do not, so
+"Apache-2.0" settles the code and does not by itself settle a data table. Where a
+licensed table is vendored here it is recorded separately, with its own provenance, and
+one risk is named rather than hidden: a permissive licence on someone's *compilation*
+does not establish that every value inside it was cleanly sourced upstream. That is not
+inspectable from here, and the mitigation is attribution rather than inspection.
 
 ## Supplying your own data
 

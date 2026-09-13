@@ -1,0 +1,64 @@
+azoth
+Copyright (C) 2026 the azoth contributors
+
+This product includes software and data developed by third parties, listed
+below. Each entry records what was reused, from where, under what licence, and
+what was changed. The list is maintained by hand and is checked in review; the
+`ported_from` block in a calculation's spec is the machine-readable form of the
+same statement, and the two are expected to agree.
+
+--------------------------------------------------------------------------------
+NeqSim
+--------------------------------------------------------------------------------
+
+  Project:   NeqSim - https://github.com/equinor/neqsim
+  Version:   3.20.0 (commit dedba8735d030c6411e09b6fd7e69f6c4a136114)
+  Licence:   Apache License, Version 2.0
+             http://www.apache.org/licenses/LICENSE-2.0
+  Copyright: Copyright 2018 neqsim
+             Developed at NTNU; maintained by Equinor.
+             Cited author: Even Solbraa (Equinor / NTNU), ORCID 0000-0002-0203-3863,
+             and the NeqSim contributors.
+
+NeqSim is a Java library for thermodynamic fluid properties and process
+simulation. The full licence text is at the URL above and is not reproduced
+here.
+
+### What is reused
+
+Nothing yet. This file exists before the first reuse because the obligation is
+easier to discharge with a place to discharge it in than to reconstruct
+afterwards, and because the alternative - a first port arriving with its
+attribution invented on the spot - is how provenance rot starts.
+
+### Why this file exists, and what the obligation is
+
+NeqSim is licensed under Apache-2.0 and azoth is licensed under AGPL-3.0-or-later.
+Apache-2.0 is **one-way compatible** with the GNU licences: Apache-2.0 code may be
+incorporated into an AGPL-3.0 work, and the result may be distributed under
+AGPL-3.0. The obligation Apache-2.0 imposes is **attribution**, not copyleft
+reciprocity - a derivative work must carry the licence, retain the copyright and
+attribution notices it received, and state the changes it made. That is what the
+sections above and below are for.
+
+Two things make this simpler than it might be. NeqSim ships **no per-file licence
+headers** (0 of its 3,371 source files carry one) and **no NOTICE file of its own**,
+so there is no downstream notice to reproduce verbatim. And every reuse here is of
+an **algorithm**, which is not copyrightable in the first place - what is protected
+is the expression, so what is owed is credit and a statement of the differences,
+which is what this file gives.
+
+### What is not reused
+
+NeqSim's component databank (`COMP.csv`, `COMP_EXT.csv`) and its binary
+interaction table (`INTER.csv`) are **data**, not code, and data is not covered by
+the paragraph above - a compilation can carry its own copyright even where the
+facts in it do not. If any of it is vendored into this repository, it is entered
+here separately with its own provenance, and `docs/src/copyright.md` records the
+reasoning.
+
+### Changes
+
+Recorded per calculation in the spec's `ported_from` block, which names the
+NeqSim file, the commit, and what was changed. A single global statement of
+changes would be less useful than one attached to the algorithm it describes.
