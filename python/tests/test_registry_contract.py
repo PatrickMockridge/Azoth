@@ -17,6 +17,8 @@ import dataclasses
 import importlib
 import inspect
 import json
+import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -205,12 +207,13 @@ def test_registry_matches_the_spec_files() -> None:
     )
 
 
-#: Files that hand-maintain a list of the implemented calculations.
+#: The two files a reader meets azoth through, and the two that list every calculation.
 #:
-#: These are the two places a new calc has to be announced by hand, and until this
-#: test existed nothing checked either of them. They are prose rather than data, so
-#: no generator can own them; the best available defence is a test that notices
-#: when the prose has fallen behind the registry.
+#: They are hand-written prose - the README's install and quick-start sections, the
+#: index's account of how the pieces fit - with one *generated* block each, spliced
+#: between markers by `tools/gen_docs.py`. Until that block existed these were two
+#: places a new calc had to be announced by hand, and the drift was silent: the
+#: library gained a calculation and the front page did not mention it.
 CALC_LIST_FILES = ("README.md", "docs/src/index.md")
 
 
@@ -248,8 +251,32 @@ def test_every_calc_is_announced_in_the_hand_written_lists(relative_path: str) -
     )
     assert not missing, (
         f"{relative_path} does not mention {missing}. Every registered id - calc or "
-        f"model - has to appear in the hand-written lists, because that is where a "
-        f"reader finds out it exists."
+        f"model - has to appear in the list, because that is where a reader finds out "
+        f"it exists. Run `python tools/gen_docs.py`."
+    )
+
+
+def test_the_announced_list_is_generated_rather_than_hand_edited() -> None:
+    """The list is spliced in by the generator, so a hand-edit is caught here.
+
+    The test above proves every id is *mentioned*; this one proves nobody typed it.
+    Both are needed: a hand-edited list passes the first until the day someone adds a
+    calc and forgets, and a generated list that has gone stale passes it too - right
+    up until `gen_docs --check` is run, which is what this does.
+
+    That check is also what the `docs-drift` CI job runs, so this is the same
+    guarantee one step earlier - at the point where the person who forgot is still
+    looking at the problem.
+    """
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "tools" / "gen_docs.py"), "--check"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"a generated file is out of date - run `python tools/gen_docs.py`\n"
+        f"{result.stdout}{result.stderr}"
     )
 
 

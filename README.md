@@ -98,36 +98,38 @@ leaves the flow regime unchecked, and the result says so.
 
 ## What is implemented
 
-| Calc | What it does |
+<!-- BEGIN GENERATED: implemented -->
+| Calculation | What it does |
 |---|---|
-| `hydraulics.reynolds_number` | Reynolds number and flow regime |
-| `hydraulics.friction_factor_colebrook` | Implicit Colebrook-White friction factor |
-| `hydraulics.friction_factor_swamee_jain` | Explicit approximation to it |
-| `hydraulics.friction_factor_haaland` | A second explicit approximation, fitted differently |
-| `hydraulics.crane_k_factors` | Fitting losses by the equivalent-length method |
-| `hydraulics.darcy_weisbach` | Pressure drop over a straight pipe |
-| `hydraulics.pump_power` | Shaft power from flow, head and efficiency |
-| `hydraulics.orifice_flow` | Flow through an orifice from its pressure difference |
-| `hydraulics.control_valve_cv` | Liquid flow through a control valve |
-| `hydraulics.choked_flow_area` | Throat area for a choked gas flow |
-| `thermal.conduction_plane_wall` | Steady conduction through a slab |
-| `eos.pr_kappa` | The Peng-Robinson alpha-function coefficient |
-| `eos.pr_alpha_ab` | The alpha function and the reduced attraction parameters |
-| `eos.pr_z_factor` | The Peng-Robinson compressibility factor |
-| `eos.pr_departure` | Fugacity coefficient and departure functions |
-| `eos.prsv_kappa` | The Stryjek-Vera coefficient, for the same alpha function |
-| `eos.vdw1f_mix_binary` | van der Waals one-fluid mixing, for a binary |
-| `eos.rachford_rice_binary` | The vapour fraction that solves Rachford-Rice |
-| `eos.pr_molar_volume` | Molar volume from a compressibility factor |
+| `eos.bubble_pressure` | Bubble-point pressure — a *model* |
+| `eos.critical_point` | Mixture critical point — a *model* |
+| `eos.dew_pressure` | Dew-point pressure — a *model* |
+| `eos.ideal_gas_cp` | Ideal-gas heat capacity from a polynomial |
+| `eos.molar_enthalpy_entropy` | Molar enthalpy and entropy of a mixture — a *model* |
+| `eos.pr_alpha_ab` | Peng-Robinson alpha function and reduced attraction parameters |
+| `eos.pr_departure` | Peng-Robinson fugacity coefficient and departure functions |
+| `eos.pr_kappa` | Peng-Robinson attraction-parameter coefficient |
 | `eos.pr_mass_density` | Mass density from a molar volume |
-| `eos.ideal_gas_cp` | Ideal-gas heat capacity from a caller-supplied polynomial |
-| `eos.pure_saturation` | Saturation pressure, by bisection — a *model*, not a calc |
-| `eos.pt_flash` | Two-phase flash at a fixed temperature and pressure — a *model* |
-| `eos.molar_enthalpy_entropy` | Absolute molar enthalpy and entropy — a *direct* model |
-| `eos.bubble_pressure` | Bubble-point pressure at a fixed temperature — a *model* |
-| `eos.dew_pressure` | Dew-point pressure at a fixed temperature — a *model* |
-| `eos.critical_point` | The critical point of a mixture — a *model* |
-| `eos.stability_test` | Tangent-plane stability of a feed — a *model* |
+| `eos.pr_molar_volume` | Molar volume from a compressibility factor |
+| `eos.pr_z_factor` | Peng-Robinson compressibility factor |
+| `eos.prsv_kappa` | Peng-Robinson-Stryjek-Vera alpha-function coefficient |
+| `eos.pt_flash` | Pressure-temperature flash — a *model* |
+| `eos.pure_saturation` | Pure-component saturation pressure — a *model* |
+| `eos.rachford_rice_binary` | Rachford-Rice vapour fraction, for a binary |
+| `eos.stability_test` | Tangent-plane stability test — a *model* |
+| `eos.vdw1f_mix_binary` | van der Waals one-fluid mixing, for a binary |
+| `hydraulics.choked_flow_area` | Choked-flow throat area for an ideal gas |
+| `hydraulics.control_valve_cv` | Liquid flow through a control valve from its flow coefficient |
+| `hydraulics.crane_k_factors` | Fitting resistance coefficients by the equivalent-length method |
+| `hydraulics.darcy_weisbach` | Darcy-Weisbach pressure drop |
+| `hydraulics.friction_factor_colebrook` | Colebrook-White friction factor (implicit) |
+| `hydraulics.friction_factor_haaland` | Haaland friction factor (explicit) |
+| `hydraulics.friction_factor_swamee_jain` | Swamee-Jain friction factor (explicit) |
+| `hydraulics.orifice_flow` | Flow through an orifice from the pressure difference across it |
+| `hydraulics.pump_power` | Pump shaft power from flow, head and efficiency |
+| `hydraulics.reynolds_number` | Reynolds number for pipe flow |
+| `thermal.conduction_plane_wall` | Steady conduction through a plane wall |
+<!-- END GENERATED: implemented -->
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use

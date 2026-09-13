@@ -517,6 +517,80 @@ def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | N
     return out
 
 
+#: The name of the generated block inside the two hand-written files that list every
+#: calculation. README.md and docs/src/index.md are the front door and are written by
+#: hand - but both carry a list that must contain every id, and a list somebody has to
+#: remember to edit is a list that eventually does not.
+BLOCK = "implemented"
+_BEGIN = "<!-- BEGIN GENERATED: {name} -->"
+_END = "<!-- END GENERATED: {name} -->"
+
+
+def render_implemented_table(calcs: list[dict[str, Any]], models: list[dict[str, Any]]) -> str:
+    """Every calc and model as a table row, for the README.
+
+    One row each, in id order, with the spec's own `name`. Those names are what the
+    book's navigation already uses, so the README and the book cannot describe the
+    same calculation differently.
+    """
+    model_ids = {m["id"] for m in models}
+    rows = ["| Calculation | What it does |", "|---|---|"]
+    for entry in sorted([*calcs, *models], key=lambda e: e["id"]):
+        suffix = " — a *model*" if entry["id"] in model_ids else ""
+        rows.append(f"| `{entry['id']}` | {entry['name']}{suffix} |")
+    return "\n".join(rows)
+
+
+def render_implemented_lists(calcs: list[dict[str, Any]], models: list[dict[str, Any]]) -> str:
+    """Every calc and model grouped by namespace and linked to its page, for the book.
+
+    Grouped rather than tabulated because this page is the book's map: a reader here
+    wants to see the shape of what exists and click into it, not to compare columns.
+    """
+    lines: list[str] = []
+    namespaces = sorted(
+        {c["id"].split(".")[0] for c in calcs} | {m["id"].split(".")[0] for m in models}
+    )
+    for namespace in namespaces:
+        title = namespace_title(namespace)
+        lines.append(f"**{title}** - [`{namespace}/index.md`](./{namespace}/index.md):\n")
+        for entry in [*calcs, *models]:
+            if entry["id"].split(".")[0] != namespace or entry["id"] in {m["id"] for m in models}:
+                continue
+            name = entry["id"].split(".")[-1]
+            lines.append(f"- [`{entry['id']}`](./{namespace}/{name}.md)")
+        mine = sorted(
+            (m for m in models if m["id"].split(".")[0] == namespace), key=lambda m: m["id"]
+        )
+        if mine:
+            lines.append("")
+            lines.append("*Models* — whose specs fix a procedure rather than an equation:\n")
+            for model in mine:
+                name = model["id"].split(".")[-1]
+                lines.append(f"- [`{model['id']}`](./{namespace}/{name}.md) — {model['name']}")
+        lines.append("")
+    return "\n".join(lines).rstrip()
+
+
+def replace_block(text: str, name: str, body: str, where: str) -> str:
+    """Replace the generated block in a hand-written file, leaving the rest alone.
+
+    Marked rather than whole-file because these two files are prose: the README's
+    install and quick-start sections, the index's explanation of how the pieces fit,
+    are written by hand and must stay that way. Only the list is generated.
+
+    Refuses rather than appending when the markers are missing, so a file that lost
+    them is an error at generation time rather than a file that silently stops being
+    updated.
+    """
+    begin, end = _BEGIN.format(name=name), _END.format(name=name)
+    if begin not in text or end not in text:
+        sys.exit(f"gen_docs: {where} has no `{name}` block. It expects:\n  {begin}\n  ...\n  {end}")
+    head, _, rest = text.partition(begin)
+    _, _, tail = rest.partition(end)
+    return f"{head}{begin}\n{body}\n{end}{tail}"
+
+
 def render_theory_solvers(calcs: list[dict[str, Any]]) -> str:
     """The solver contract, gathered from every spec that declares one.
 
@@ -625,6 +699,14 @@ def main() -> int:
         for model in mine:
             outputs[directory / f"{model['id'].split('.')[-1]}.md"] = render_model(model)
 
+    # The two hand-written files that list every calculation. Their generated block is
+    # spliced into the existing prose rather than replacing the file, so these are
+    # handled apart from `outputs`.
+    blocks = {
+        ROOT / "README.md": render_implemented_table(calcs, models),
+        DOCS_SRC / "index.md": render_implemented_lists(calcs, models),
+    }
+
     stale: list[Path] = []
     for path, content in outputs.items():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -634,6 +716,15 @@ def main() -> int:
                 stale.append(path)
         else:
             path.write_text(content, encoding="utf-8")
+
+    for path, body in blocks.items():
+        current = path.read_text(encoding="utf-8")
+        updated = replace_block(current, BLOCK, body, str(path))
+        if args.check:
+            if current != updated:
+                stale.append(path)
+        else:
+            path.write_text(updated, encoding="utf-8")
 
     if args.check:
         if stale:
