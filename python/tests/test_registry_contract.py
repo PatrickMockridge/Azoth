@@ -179,6 +179,44 @@ def test_registry_matches_the_spec_files() -> None:
     )
 
 
+#: Files that hand-maintain a list of the implemented calculations.
+#:
+#: These are the two places a new calc has to be announced by hand, and until this
+#: test existed nothing checked either of them. They are prose rather than data, so
+#: no generator can own them; the best available defence is a test that notices
+#: when the prose has fallen behind the registry.
+CALC_LIST_FILES = ("README.md", "docs/src/index.md")
+
+
+@pytest.mark.parametrize("relative_path", CALC_LIST_FILES)
+def test_every_calc_is_announced_in_the_hand_written_lists(relative_path: str) -> None:
+    """Every registered calc must be named in the hand-written lists.
+
+    This is the drift that actually happens: a calc is added, the spec, both
+    implementations and the tests all follow from the machinery, and the two places
+    a *reader* looks are the two places nothing generates. The failure is silent -
+    the library gains a calculation and the front page does not mention it.
+
+    One-directional on purpose. The lists may name things the registry does not,
+    and today they should: both still say orifice, control valve, relief valve and
+    pump calculations are not implemented, which is true and will stop being true.
+    Asserting the reverse would forbid a reader-facing note about work in progress.
+
+    That prose is also why this test cannot be a complete guard. It can catch a
+    calc missing from the list; it cannot tell whether the surrounding sentences
+    about what is *not* implemented are still accurate. Whoever adds the first
+    orifice calc has to read those paragraphs, and this test is what sends them
+    there.
+    """
+    text = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+    missing = sorted(calc["id"] for calc in CALCS if calc["id"] not in text)
+    assert not missing, (
+        f"{relative_path} does not mention {missing}. Every calc in the registry has "
+        f"to appear in the hand-written lists, because that is where a reader finds "
+        f"out it exists."
+    )
+
+
 def test_spec_lookup_rejects_unknown_ids() -> None:
     """A wrong calc id must fail loudly rather than returning something."""
     with pytest.raises(KeyError, match="unknown calc"):
