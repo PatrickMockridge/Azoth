@@ -7,6 +7,7 @@
 //!   - specs/models/eos/molar_enthalpy_entropy.yaml
 //!   - specs/models/eos/pt_flash.yaml
 //!   - specs/models/eos/pure_saturation.yaml
+//!   - specs/models/eos/stability_test.yaml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
 //! on any difference.
@@ -878,6 +879,121 @@ pub static PURE_SATURATION_SPEC: ModelSpec = ModelSpec {
     cases: PURE_SATURATION_CASES,
 };
 
+static STABILITY_TEST_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "min_t_over_tc",
+            min: None,
+            min_inclusive: true,
+            max: Some(0.9),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The same bound `eos.pt_flash` carries, and it applies here at least as directly. Above `T / Tc = 0.9` for *every* component - which is what a minimum above 0.9 means - the cubic's roots are close to coalescing and the two phases stop being distinguishable. This model rests entirely on the trials finding *distinct* stationary points, so near the critical point a `stable` verdict is the one to distrust: it may mean the feed is single phase, or it may mean the trials could not separate. A warning rather than an error because the arithmetic is defined and the answer is still the criterion's - what degrades is what a negative result is worth, not what a positive one says.",
+        },
+    },
+];
+
+static STABILITY_TEST_CASES: &[TestCase] = &[
+    TestCase {
+        id: "a_two_phase_feed_is_unstable",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 330.0), ("P", 2500000.0)],
+        lists: &[],
+        vectors: &[
+            ("Tc", &[190.56, 425.12]),
+            ("Pc", &[4599200.0, 3796000.0]),
+            ("omega", &[0.01142, 0.2002]),
+            ("z", &[0.6, 0.4]),
+        ],
+        matrices: &[("kij", &[0.0, 0.05, 0.05, 0.0])],
+        expected: &[],
+        expected_vectors: &[
+            ("tm", &[0.0, -0.2151222395220802]),
+            ("iterations", &[16.0, 9.0]),
+        ],
+    },
+    TestCase {
+        id: "a_trivial_flash_is_not_a_stable_feed",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 430.0), ("P", 6000000.0)],
+        lists: &[],
+        vectors: &[
+            ("Tc", &[190.56, 425.12]),
+            ("Pc", &[4599200.0, 3796000.0]),
+            ("omega", &[0.01142, 0.2002]),
+            ("z", &[0.6, 0.4]),
+        ],
+        matrices: &[("kij", &[0.0, 0.05, 0.05, 0.0])],
+        expected: &[],
+        expected_vectors: &[
+            ("tm", &[0.0, -4.440892098500626e-16]),
+            ("iterations", &[16.0, 17.0]),
+        ],
+    },
+];
+
+static STABILITY_TEST_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "tangent_plane_stability",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 2000,
+    bracket: None,
+    initialisation: Some("wilson"),
+    inner: None,
+};
+
+/// Registry entry for `eos.stability_test`.
+pub static STABILITY_TEST_SPEC: ModelSpec = ModelSpec {
+    id: "eos.stability_test",
+    verification: "unverified",
+    kind: "procedure",
+    algorithm: Some(&STABILITY_TEST_ALGORITHM),
+    checks: STABILITY_TEST_CHECKS,
+    cases: STABILITY_TEST_CASES,
+};
+
 static ALL_MODELS: &[&ModelSpec] = &[
     &BUBBLE_PRESSURE_SPEC,
     &CRITICAL_POINT_SPEC,
@@ -885,6 +1001,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &PT_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
+    &STABILITY_TEST_SPEC,
 ];
 
 /// Every model in this namespace, in id order.

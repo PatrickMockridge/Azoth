@@ -569,6 +569,45 @@ class PtFlashResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+class StabilityVerdict(StrEnum):
+    """Whether a feed is stable as a single phase.
+
+    Two values rather than a boolean because the *asymmetry* between them is the
+    point: `UNSTABLE` is a proof - a trial reached a stationary point below the
+    tangent plane, so a single phase is not the Gibbs minimum - while `STABLE` is
+    the absence of one, from two trials that were placed by a gas-liquid
+    correlation. A caller who reads `STABLE` as "no split exists" has read it wrong,
+    and a bare `True` invites exactly that.
+    """
+
+    STABLE = "stable"
+    UNSTABLE = "unstable"
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class StabilityTestResult(_HasWarnings):
+    """Result of ``eos.stability_test``.
+
+    Two trials, always, so `tm` and `w` are fixed-length rather than "one per phase
+    found": a trial that converges trivially still has a distance, and it is that
+    near-zero number which is the evidence it was trivial.
+    """
+
+    #: Whether the feed is stable as a single phase.
+    verdict: StabilityVerdict
+    #: The tangent-plane distance at each trial's stationary point, vapour-like
+    #: trial first. Negative means that trial lies below the tangent plane.
+    tm: tuple[float, ...]
+    #: The stationary-point composition of each trial, in the same order.
+    w: tuple[tuple[float, ...], ...]
+    #: Iterations each trial took, in the same order.
+    iterations: tuple[int, ...]
+    #: The smallest ``T / Tc_i`` over the components.
+    min_t_over_tc: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 @dataclass(frozen=True, slots=True, eq=False)
 class BubblePressureResult(_HasWarnings):
     """Result of ``eos.bubble_pressure``.
@@ -737,4 +776,5 @@ MODEL_RESULT_TYPES: dict[str, type[object]] = {
     "eos.dew_pressure": DewPressureResult,
     "eos.pt_flash": PtFlashResult,
     "eos.pure_saturation": PureSaturationResult,
+    "eos.stability_test": StabilityTestResult,
 }
