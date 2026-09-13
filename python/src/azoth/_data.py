@@ -2,8 +2,13 @@
 
 The data lives at the repository root (``data/``) rather than inside the Python
 package, because the Rust side embeds the same bytes with ``include_str!``. One
-file, two languages, and a test asserting they parse to identical values - which
-is only meaningful if there is genuinely one file.
+file, two languages.
+
+One file is where the arrangement stops. The two parsers are not compared against
+each other: the compiled extension exposes the calcs but not the tables it parses,
+so a test on this side has no Rust-parsed value to check. That is a known gap, not
+a checked property, and it is worth stating because the whole reason this library
+keeps two implementations is to have them disagree when one is wrong.
 
 That arrangement means the Python side has to *find* it, and where it lives
 depends on how azoth was obtained:

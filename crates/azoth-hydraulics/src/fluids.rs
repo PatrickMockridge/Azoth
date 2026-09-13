@@ -1,9 +1,22 @@
 //! Fluid property tables, read from `data/fluids/`.
 //!
 //! Mirrors `azoth.properties` on the Python side, and reads the same files -
-//! one source of truth, two languages, with a cross-language test comparing the
-//! parsed values. The Rust side embeds them with `include_str!`; the Python side
-//! locates them at runtime.
+//! one source of truth, two languages. The Rust side embeds them with
+//! `include_str!`; the Python side locates them at runtime.
+//!
+//! # What the two sides do not check
+//!
+//! The two parsers are not compared. They read the same bytes, but that is a
+//! fact about the repository rather than a property either implementation
+//! enforces, and the parsers themselves are genuinely different code - Python's
+//! `csv` module and `float()` against the `csv` crate and `f64::from_str`, which
+//! do not have to agree on quoting, byte-order marks or exponent notation.
+//!
+//! A cross-language comparison cannot be written from here: the compiled
+//! extension exposes the calcs but not these tables, so there is no Rust-parsed
+//! value for a Python test to compare against. This is a known gap rather than an
+//! oversight - it is stated plainly because a docstring claiming a check that
+//! does not exist is the exact failure this project is organised against.
 //!
 //! # Provenance
 //!

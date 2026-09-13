@@ -1,11 +1,17 @@
 //! The fittings registry: equivalent-length coefficients read from
 //! `data/fittings/crane_k_factors.csv`.
 //!
-//! The CSV is embedded with `include_str!` rather than read at runtime, for two
-//! reasons. It removes any question of which file was loaded, and it means the
-//! Rust and Python implementations necessarily read byte-identical data - the
-//! Python side opens the same file, and a test compares the parsed coefficient
-//! for every row across the two languages.
+//! The CSV is embedded with `include_str!` rather than read at runtime. That
+//! removes any question of which file was loaded: the Python side opens the same
+//! path from the repository, so the two implementations read one file rather than
+//! two copies that are supposed to match.
+//!
+//! Reading the same bytes is not the same as being checked against each other,
+//! and the parsed coefficients are **not** compared row by row. The Python side
+//! cannot reach this parser: the compiled extension exposes the calcs but not the
+//! registry, so a Python test has no Rust-parsed value to compare against. The
+//! gap is recorded rather than papered over, because a docstring claiming a check
+//! that does not exist is the failure this project exists to prevent.
 //!
 //! **Every coefficient in that file is currently an estimated dummy value, not
 //! engineering data.** See the file's header. [`Fitting::is_estimated`] reports
