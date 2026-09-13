@@ -1,6 +1,7 @@
 id: hydraulics.crane_k_factors
 name: Fitting resistance coefficients by the equivalent-length method
 equation: "K = f_t * sum(n_ld for each fitting)"
+latex: 'K = f_t \sum_{i} n_{L/D,i}'
 
 source:
   standard: Crane TP-410

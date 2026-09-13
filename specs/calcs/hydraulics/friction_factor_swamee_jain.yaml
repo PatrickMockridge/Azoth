@@ -1,6 +1,7 @@
 id: hydraulics.friction_factor_swamee_jain
 name: Swamee-Jain friction factor (explicit)
 equation: "f = 0.25 / (log10(relative_roughness / 3.7 + 5.74 / Re**0.9))**2"
+latex: 'f = \frac{0.25}{\left[\log_{10}\!\left(\frac{\varepsilon/D}{3.7} + \frac{5.74}{Re^{0.9}}\right)\right]^{2}}'
 
 source:
   standard: Swamee, P. K.; Jain, A. K. (1976)

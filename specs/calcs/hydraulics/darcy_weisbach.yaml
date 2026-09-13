@@ -1,6 +1,7 @@
 id: hydraulics.darcy_weisbach
 name: Darcy-Weisbach pressure drop
 equation: "dP = f * (L / D) * (rho * v**2 / 2)"
+latex: '\Delta P = f\,\frac{L}{D}\,\frac{\rho v^{2}}{2}'
 
 source:
   standard: Crane TP-410

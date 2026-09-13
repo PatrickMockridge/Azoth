@@ -1,0 +1,40 @@
+name: Add a calculation
+description: Propose a calculation for the library
+labels: ["new-calc"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Proposed id
+      description: Dotted, lowercase, e.g. `hydraulics.orifice_flow`
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: |
+        The standard, textbook or paper the equation comes from, with an edition
+        and equation number where you have one. A proposed calc without a source
+        cannot be merged - see CONTRIBUTING.md.
+    validations:
+      required: true
+  - type: textarea
+    id: range
+    attributes:
+      label: Range of validity and assumptions
+      description: |
+        Where the correlation holds, and what it assumes that is not checked.
+        This is often the most valuable part of a spec.
+    validations:
+      required: false
+  - type: textarea
+    id: example
+    attributes:
+      label: A worked example
+      description: |
+        Inputs and expected outputs, ideally one you can reproduce by hand. It
+        does not need to come from the source - a derived example with the
+        derivation shown is fine, and is often better.
+    validations:
+      required: false

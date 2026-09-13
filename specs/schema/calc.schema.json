@@ -9,6 +9,7 @@
     "id",
     "name",
     "equation",
+    "latex",
     "source",
     "verification",
     "inputs",
@@ -36,6 +37,12 @@
       "minLength": 1,
       "description": "The equation. Written in Python expression syntax where the equation is explicit, so the worked example can be independently re-derived from it. For implicit equations (e.g. Colebrook) it is the defining relation and the worked example is derived by the solver named in `solver`. Rendered as LaTeX in the generated docs.",
       "examples": ["dP = f * (L / D) * (rho * v**2 / 2)"]
+    },
+    "latex": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The equation in LaTeX, for the generated documentation. A separate field from `equation` because the two have different jobs: `equation` is Python source, machine-evaluable and used to re-derive the worked example, while `latex` is typeset for a reader. `equation` cannot be rendered as mathematics - `log10(rr / 3.7 + ...)` is not notation a human reads - and `latex` cannot be evaluated. spec_lint requires this field rather than making it optional, because a calc whose documentation shows no equation is the drift this project exists to prevent.",
+      "examples": ["\\Delta P = f\\,\\frac{L}{D}\\,\\frac{\\rho v^{2}}{2}"]
     },
     "source": {
       "type": "object",

@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  # Fail fast on a Rust warning rather than letting it accumulate.
+  RUSTFLAGS: -D warnings
+
+jobs:
+  spec-validate:
+    name: spec-validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip pyyaml jsonschema
+      # Every YAML in specs/calcs must validate against the schema, and must
+      # satisfy the semantic rules the schema cannot express. Also prints the
+      # count of estimated-dummy data rows, so placeholder data is visible in
+      # every build log rather than only where it is used.
+      - run: python tools/spec_lint.py
+
+  rust-test:
+    name: rust-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --all-targets
+
+  rust-lint:
+    name: rust-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  python-test:
+    name: python-test
+    runs-on: ubuntu-latest
+    env:
+      # The whole point of this job. Without it, a broken extension build makes
+      # every test pass on the Python path while the cross-language agreement
+      # this project promises is verified by nothing.
+      CHEMENG_REQUIRE_RUST: "1"
+      VIRTUAL_ENV: ${{ github.workspace }}/.venv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12
+      # Installed explicitly rather than via `pip install -e .`, which would
+      # trigger a maturin build here and needs the Rust toolchain in jobs that
+      # have no use for it.
+      - run: uv pip install maturin pytest "pint>=0.24"
+      # Builds the extension against the venv interpreter, so both backends are
+      # available and the cross-implementation tests actually run.
+      - run: .venv/bin/maturin develop
+      - run: .venv/bin/python -m pytest
+        env:
+          # Absent on a runner, but stated so a developer copying this command
+          # does not get a different result because their shell sets it.
+          PYTHONPATH: ""
+
+  python-lint:
+    name: python-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12
+      # pint is needed for mypy to resolve `chemeng.core.units`, not to run.
+      - run: uv pip install ruff mypy "pint>=0.24"
+      - run: .venv/bin/ruff check
+      - run: .venv/bin/ruff format --check
+      # Strict, over both the library and its tests.
+      - run: .venv/bin/mypy
+
+  docs-build:
+    name: docs-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          # The docs tools are Rust binaries; caching them keeps this job from
+          # spending minutes compiling mdBook and its preprocessors every run.
+          cache-all-crates: true
+      - name: Install mdBook and preprocessors
+        run: |
+          cargo install mdbook mdbook-katex mdbook-mermaid --locked
+      - name: Check internal links
+        run: python3 tools/check_links.py
+      - name: Build the book
+        run: mdbook build docs
+
+  docs-drift:
+    name: docs-drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12
+      # The generators import the runtime to render bounds, so pint is required
+      # here too - see the note in tools/gen_docs.py.
+      - run: uv pip install pyyaml jsonschema "pint>=0.24"
+      # The gate that makes "the docs are generated from the registry" true
+      # rather than aspirational. Regenerate everything and fail on any diff:
+      # a spec edited without regenerating its docs, registry, or tests is
+      # caught here and nowhere else.
+      - name: Regenerate everything
+        run: |
+          .venv/bin/python tools/gen_docs.py
+          .venv/bin/python tools/gen_registry.py
+      - name: Fail if anything drifted
+        run: |
+          if ! git diff --exit-code; then
+            echo "::error::Generated files are out of date. Run:"
+            echo "::error::  python tools/gen_docs.py && python tools/gen_registry.py"
+            exit 1
+          fi

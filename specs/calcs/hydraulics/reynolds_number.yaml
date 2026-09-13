@@ -1,6 +1,7 @@
 id: hydraulics.reynolds_number
 name: Reynolds number for pipe flow
 equation: "Re = rho * v * D / mu"
+latex: 'Re = \frac{\rho v D}{\mu}'
 
 source:
   standard: Crane TP-410

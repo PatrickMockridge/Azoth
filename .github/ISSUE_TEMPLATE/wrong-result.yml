@@ -1,0 +1,43 @@
+name: A result looks wrong
+description: A calculation returns a number you believe is incorrect
+labels: ["correctness"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A library whose purpose is to be trusted is only as good as
+        the reports against it.
+
+        If you can, please also say whether the calc's *spec* (`specs/calcs/...`)
+        or its *implementation* is at fault - the two are separable here, and it
+        changes what the fix looks like.
+  - type: input
+    id: calc
+    attributes:
+      label: Which calculation
+      description: The spec id, e.g. `hydraulics.darcy_weisbach`
+    validations:
+      required: true
+  - type: textarea
+    id: inputs
+    attributes:
+      label: Inputs
+      description: The values you passed, with units.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and from where
+      description: |
+        If you are comparing against a published worked example, cite it. If you
+        are comparing against your own calculation, show it.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What you got
+      description: The full result, including any warnings.
+    validations:
+      required: true

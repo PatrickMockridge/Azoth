@@ -33,10 +33,11 @@ dev = [
   "pytest>=8",
   "ruff>=0.9",
   "mypy>=1.13",
-  # The spec tools read YAML. Listed here because the test suite shells out to
-  # `tools/gen_registry.py --check`, so a dev environment without it fails a test
-  # rather than skipping one.
+  # The spec tools read YAML and validate against the JSON Schema. Listed here
+  # because the test suite shells out to `tools/gen_registry.py --check`, so a
+  # dev environment without them fails a test rather than skipping one.
   "pyyaml>=6",
+  "jsonschema>=4.20",
 ]
 
 [project.urls]

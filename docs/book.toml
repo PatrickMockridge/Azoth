@@ -1,0 +1,19 @@
+[book]
+title = "chemeng"
+description = "Open, validated, citable chemical engineering calculations"
+authors = ["chemeng contributors"]
+language = "en"
+src = "src"
+
+[preprocessor.katex]
+# Run after the link preprocessor, so a `$...$` inside link text is not mangled.
+after = ["links"]
+
+[preprocessor.mermaid]
+
+[output.html]
+git-repository-url = "https://github.com/placeholder/chemeng"
+# `smart-punctuation` in mdBook 0.5; the key was `curly-quotes` in 0.4 and the
+# old name is a hard error rather than a warning.
+smart-punctuation = true
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
