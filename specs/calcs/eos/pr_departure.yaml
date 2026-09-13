@@ -1,0 +1,300 @@
+id: eos.pr_departure
+name: Peng-Robinson fugacity coefficient and departure functions
+equation: |
+  psi = -kappa*Tr**0.5/(1 + kappa*(1 - Tr**0.5))
+  I = ln((z + (1 + 2**0.5)*b_reduced)/(z + (1 - 2**0.5)*b_reduced))
+  ln_phi = z - 1 - ln(z - b_reduced) - (a_reduced/(2*2**0.5*b_reduced))*I
+  h_dep_rt = (z - 1) + (a_reduced/(2*2**0.5*b_reduced))*(psi - 1)*I
+  s_dep_r = ln(z - b_reduced) + (a_reduced/(2*2**0.5*b_reduced))*psi*I
+latex: '\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - \frac{A}{2\sqrt{2}B}I, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + \frac{A}{2\sqrt{2}B}\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + \frac{A}{2\sqrt{2}B}\psi I'
+
+source:
+  standard: Peng, D. Y.; Robinson, D. B. (1976)
+  edition: "A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64"
+  equation: "TODO: source needed"
+  doi: "10.1021/i160057a011"
+
+verification:
+  status: unverified
+  notes: >
+    The three expressions are the standard Peng-Robinson departure functions in
+    reduced variables. The citation is confirmed and the equations are not in doubt
+    - they follow from the cubic by the usual departure-function algebra, which is
+    reproduced below rather than cited, because the algebra is the part worth
+    checking.
+
+    What has NOT been done is opening the paper and confirming that it states them
+    in this form. Specifically unconfirmed: (1) the equation numbers, hence the TODO
+    above; (2) that the paper gives the departure enthalpy and entropy at all, as
+    opposed to the fugacity coefficient alone - they follow from it either way, but
+    a citation should say which; (3) that `psi` is written as the paper writes it,
+    since (T/a)(da/dT) has several algebraically equivalent forms and only one of
+    them is bit-reproducible.
+
+    # The Gibbs identity is the check, and it is algebraic
+
+    For a pure component the departure Gibbs energy divided by RT **is** the
+    logarithm of the fugacity coefficient, because G = H - TS. Substituting the three
+    expressions above:
+
+      h_dep_rt - s_dep_r = (z - 1) + C*(psi - 1)*I - ln(z - B) - C*psi*I
+                         = (z - 1) - ln(z - B) - C*I
+                         = ln_phi
+
+    with C = a_reduced/(2*sqrt(2)*b_reduced). Every psi term cancels. So the identity
+    is not a numerical coincidence to be tolerated - it is exact in real arithmetic,
+    and any disagreement is rounding. That is what makes it a first-class test: it
+    ties three separately-implemented expressions to one analytic relation, and a
+    sign error in either departure function breaks it while leaving every point value
+    plausible.
+
+    Measured: 2.8e-17 on the worked example's vapour root, 1.4e-17 on the
+    supercritical case, and 1.3e-15 on the liquid root - larger because `h_dep_rt` and
+    `s_dep_r` are both near -6.6 there and cancel to give -0.32, so the subtraction
+    loses about two digits. The property test's tolerance is set from that
+    measurement rather than from caution.
+
+inputs:
+  a_reduced:
+    unit: dimensionless
+    description: the cubic's attraction parameter `A`, from `eos.pr_alpha_ab`
+  b_reduced:
+    unit: dimensionless
+    description: the cubic's repulsion parameter `B`, from `eos.pr_alpha_ab`
+  z:
+    unit: dimensionless
+    description: >
+      The compressibility factor, from `eos.pr_z_factor`. **This calc does not check
+      that `z` is a root of the cubic `A` and `B` define** - it cannot, since the
+      cubic is solved by another calc - so a caller who passes a `z` from a different
+      state gets a self-consistent set of departure functions for a state that does
+      not exist. See `assumptions`.
+  kappa:
+    unit: dimensionless
+    description: >
+      The alpha-function coefficient, from `eos.pr_kappa` or `eos.prsv_kappa`. Either
+      serves: this calc uses it only through `psi`, which is the logarithmic
+      derivative of the alpha function, and both correlations supply a coefficient
+      for the same alpha function.
+  Tr:
+    unit: dimensionless
+    description: reduced temperature, T / Tc
+
+outputs:
+  ln_phi:
+    unit: dimensionless
+    description: >
+      The logarithm of the fugacity coefficient. Returned as a logarithm rather than
+      as `phi` because the logarithm is what the algebra produces, what the
+      equilibrium condition equates, and what has the useful symmetry `ln(K_i) =
+      ln_phi_liquid - ln_phi_vapour`.
+  h_dep_rt:
+    unit: dimensionless
+    description: >
+      The departure enthalpy divided by `R*T` - the enthalpy relative to the
+      ideal-gas state at the same temperature and pressure, made dimensionless.
+      Dimensionless on purpose: this namespace carries no units at all, so the
+      multiplication by `R*T` happens where the temperature and the gas constant
+      live, which is the model layer, not here.
+  s_dep_r:
+    unit: dimensionless
+    description: the departure entropy divided by `R`, dimensionless for the same reason
+
+valid_range:
+  - quantity: b_reduced
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      `b_reduced` appears as a divisor in the coefficient `A/(2*sqrt(2)*B)`. At
+      B = 0 the departure functions are all zero - the ideal-gas limit - and that
+      limit is a real thing to ask about, but it is not reachable by division. A
+      caller wanting it does not need this calc.
+
+  - quantity: z_minus_b_reduced
+    computed_from: [z, b_reduced]
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      `z` appears as `ln(z - b_reduced)`, so `z = b_reduced` is the zero-volume
+      limit and `z < b_reduced` makes the logarithm of a negative number. That the
+      requirement is on the *difference* rather than on `z` alone is why this is a
+      derived check: a bound on `z` would have to be a bound that happened to be
+      right for the `B` in play, which is not a bound at all.
+
+      `eos.pr_z_factor` already discards roots at or below `B`, so a `z` from there
+      passes this - which is the point. This bound exists for the caller who supplied
+      `z` some other way, and it names the failure rather than letting `math domain
+      error` do it.
+
+assumptions:
+  - "**`z` is a root of the cubic that `a_reduced` and `b_reduced` define.** NOT CHECKED, and not checkable here: it would mean solving the cubic, which is `eos.pr_z_factor`'s job. A mismatched `z` gives departure functions that are internally consistent and describe a state that does not exist."
+  - "`kappa` and `Tr` correspond to the state `a_reduced` and `b_reduced` describe. Also NOT CHECKED, and the failure is quieter: `psi` is the logarithmic derivative of the alpha function, so a coefficient from a different temperature shifts the enthalpy and entropy departures without touching `ln_phi`, which does not use them. A liquid root's departure functions are the ones most sensitive to this."
+  - the alpha function is the one whose logarithmic derivative `psi` is. Both Peng-Robinson's and PRSV's coefficients feed the same alpha function, so either may be passed - but not a coefficient from a different equation of state.
+  - the departure functions are relative to the ideal-gas state at the same temperature and pressure. A caller wanting an absolute enthalpy needs an ideal-gas reference and a heat-capacity correlation as well, and the choice of reference is theirs.
+  - no mixing rule is applied. These are pure-component departure functions, computed from the composition-weighted `A` and `B` a caller passes.
+
+references:
+  - 'Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011. (the origin of the cubic these functions are derived from; the citation is confirmed and the equation numbers are not)'
+
+worked_example:
+  source: derived from the equations above
+  derivation: >
+    The vapour root of the propane-like state already in this namespace, so every
+    input is traceable to a calc that produced it:
+
+      A = 0.20206500174625697    from eos.pr_alpha_ab at kappa = 0.60282728832, Tr = 0.8, Pr = 0.25
+      B = 0.02431127309496514    from the same call
+      z = 0.7907789662973796     the larger admissible root, from eos.pr_z_factor
+      kappa = 0.60282728832      from eos.pr_kappa at omega = 0.152
+      Tr = 0.8
+
+    The two substitutions:
+
+      sqrt(0.8) = 0.8944271909999159
+      psi = -0.60282728832 * 0.8944271909999159
+            / (1 + 0.60282728832 * (1 - 0.8944271909999159))
+          = -0.5069234120945535
+
+      (1 + sqrt(2))*B = 2.414213562373095  * 0.02431127309496514 = 0.05869260522442097
+      (1 - sqrt(2))*B = -0.4142135623730951 * 0.02431127309496514 = -0.010070059034490693
+      z + (1 + sqrt(2))*B = 0.7907789662973796 + 0.05869260522442097 = 0.8494715715218006
+      z + (1 - sqrt(2))*B = 0.7907789662973796 - 0.010070059034490693 = 0.780708907262889
+      I = ln(0.8494715715218006 / 0.780708907262889) = 0.08441211320846123
+
+      2*sqrt(2)*B = 2 * 1.4142135623730951 * 0.02431127309496514 = 0.06876266425891167
+      A/(2*sqrt(2)*B) = 0.20206500174625697 / 0.06876266425891167 = 2.9385859888357837
+
+      z - B = 0.7664676932024145,   ln(z - B) = -0.26596273002244775
+
+    And the three outputs:
+
+      ln_phi   = 0.7907789662973796 - 1 - ln(0.7664676932024145)
+                 - 2.9385859888357837 * 0.08441211320846123
+               = -0.19131055684257678
+      h_dep_rt = 0.7907789662973796 - 1
+                 + 2.9385859888357837 * (-0.5069234120945535 - 1) * 0.08441211320846123
+               = -0.5830167814158524
+      s_dep_r  = ln(0.7664676932024145)
+                 + 2.9385859888357837 * (-0.5069234120945535) * 0.08441211320846123
+               = -0.39170622457327564
+
+    The identity closes on these numbers:
+
+      h_dep_rt - s_dep_r = -0.5830167814158524 - (-0.39170622457327564)
+                         = -0.19131055684257676   against ln_phi = -0.19131055684257678
+
+    a difference of 2.8e-17, which is a rounding of the subtraction and not a
+    residual. The numbers above were checked against exact decimal arithmetic at 50
+    digits; the final identity differs there because the three expressions are
+    evaluated in a different order from the algebra that cancels the psi terms, and
+    no order can avoid that in floating point.
+
+    The inputs are not all round numbers - they come from the calcs upstream, which
+    is the point: this is what the chain produces. The tolerance below is 1e-12,
+    looser than `eos.pr_kappa`'s worked example because this arithmetic has
+    logarithms and a cancellation in it.
+  inputs: { a_reduced: 0.20206500174625697, b_reduced: 0.02431127309496514, z: 0.7907789662973796, kappa: 0.60282728832, Tr: 0.8 }
+  expected: { ln_phi: -0.19131055684257678, h_dep_rt: -0.5830167814158524, s_dep_r: -0.39170622457327564 }
+  tolerance: 1.0e-12
+
+implementations:
+  python: azoth.eos.pr_departure
+  rust: azoth_eos::pr_departure
+
+tests:
+  - id: propane_vapour_root_worked_example
+    type: worked_example
+    status: active
+
+  - id: the_liquid_root_of_the_same_state
+    type: reference
+    status: active
+    source: >
+      Derived from the equations above, at the same A, B, kappa and Tr as the worked
+      example but at the *other* admissible root, z = 0.036765449656896015.
+
+        ln_phi   = -0.3218698775991462
+        h_dep_rt = -6.6056599807533996
+        s_dep_r  = -6.283790103154252
+
+      Worth having because it is the branch a phase-equilibrium calculation actually
+      needs: the K-value is `ln_phi_liquid - ln_phi_vapour`, so a calc that only ever
+      exercised the vapour root would not be testing the case its callers use.
+
+      It is also the case that exposed a numerical limit. `h_dep_rt` and `s_dep_r`
+      are both near -6.6 here and their difference is -0.32, so the subtraction that
+      forms the Gibbs identity loses about two digits: 1.3e-15 against 2.8e-17 on the
+      vapour root. That is why the property test below asserts at 1e-12 rather than
+      at 1e-15 - the tolerance comes from this measurement, not from caution.
+    inputs: { a_reduced: 0.20206500174625697, b_reduced: 0.02431127309496514, z: 0.036765449656896015, kappa: 0.60282728832, Tr: 0.8 }
+    expected: { ln_phi: -0.3218698775991462, h_dep_rt: -6.6056599807533996, s_dep_r: -6.283790103154252 }
+    tolerance: 1.0e-12
+
+  - id: supercritical_state_with_a_different_coefficient
+    type: reference
+    status: active
+    source: >
+      Derived from the equations above, at the methane-like supercritical state from
+      `eos.pr_alpha_ab` and `eos.pr_z_factor`: A = 0.08448417260831159,
+      B = 0.025932024634629486, z = 0.943312987185517, with `eos.pr_kappa`'s
+      coefficient 0.392217407205312 at Tr = 1.5.
+
+        psi      = -0.5268033695356904
+        I        = 0.07571034498029687
+        ln_phi   = -0.05766112543659872
+        h_dep_rt = -0.18983428427214197
+        s_dep_r  = -0.13217315883554326
+
+      Exercises a different `kappa` and a different `Tr`, so `psi` differs from the
+      worked example's - which the two root cases above cannot do, since they share a
+      state. A calc that ignored `kappa` or `Tr` entirely would pass both of those
+      and fail this.
+    inputs: { a_reduced: 0.08448417260831159, b_reduced: 0.025932024634629486, z: 0.943312987185517, kappa: 0.392217407205312, Tr: 1.5 }
+    expected: { ln_phi: -0.05766112543659872, h_dep_rt: -0.18983428427214197, s_dep_r: -0.13217315883554326 }
+    tolerance: 1.0e-12
+
+  - id: the_gibbs_identity_holds
+    type: property
+    property: consistency_with
+    status: active
+    note: >
+      `h_dep_rt - s_dep_r` must equal `ln_phi`. Not approximately, in principle: the
+      two `psi` terms cancel algebraically - the derivation in `verification` shows
+      it in three lines - so any disagreement is rounding and nothing else.
+
+      This is the test that would catch a sign error in either departure function,
+      which no point-value case reliably does: flipping the sign of the `psi` term in
+      `h_dep_rt` leaves `ln_phi` untouched and moves `h_dep_rt` to a value that is
+      still perfectly plausible as an enthalpy departure. Only the identity sees it.
+
+      Asserted at 1e-12, which is looser than the identity deserves algebraically, and
+      the reason is measured rather than defensive: on the liquid-root case the two
+      departures are both near -6.6 and cancel to -0.32, losing about two digits to
+      floating-point cancellation. 1.3e-15 is what that case achieves.
+
+  - id: low_pressure_limit_is_the_ideal_gas
+    type: property
+    property: consistency_with
+    status: active
+    note: >
+      As `b_reduced` and `a_reduced` go to zero at fixed `z = 1`, all three outputs
+      go to zero: the departure from ideal-gas behaviour vanishes when the attraction
+      and repulsion do. Measured on a geometric sweep - B = 1e-3, 1e-5, 1e-7, 1e-9
+      with A = 8B - the outputs fall by a factor of 100 per decade of B, which is
+      linearity in B rather than mere convergence.
+
+      Worth having because it is the one check that constrains all three expressions
+      at once using no reference values at all. It also pins `ln(z - B)` approaching
+      `ln(1) = 0` rather than diverging, which a stray additive constant in either
+      departure function would break.
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: skipped
+    skip_reason: >
+      Every input and every output is dimensionless, so there is no unit to convert.
+      Declared rather than omitted so the omission is a recorded decision, following
+      `crane_k_factors` and the other four `eos` calcs.

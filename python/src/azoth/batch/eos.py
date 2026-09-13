@@ -24,10 +24,12 @@ from azoth.core.warnings import Warning
 
 __all__ = [
     "PrAlphaAbBatch",
+    "PrDepartureBatch",
     "PrKappaBatch",
     "PrZFactorBatch",
     "PrsvKappaBatch",
     "pr_alpha_ab",
+    "pr_departure",
     "pr_kappa",
     "pr_z_factor",
     "prsv_kappa",
@@ -37,6 +39,7 @@ _PR_KAPPA = "eos.pr_kappa"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
+_PR_DEPARTURE = "eos.pr_departure"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -226,5 +229,59 @@ def prsv_kappa(
             "kappa1": sequence(kappa1, "kappa1"),
         },
         _build_prsv,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrDepartureBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_departure`."""
+
+    #: Logarithm of the fugacity coefficient per element. Dimensionless.
+    ln_phi: array[float]
+    #: Departure enthalpy over ``R*T`` per element. Dimensionless.
+    h_dep_rt: array[float]
+    #: Departure entropy over ``R`` per element. Dimensionless.
+    s_dep_r: array[float]
+
+
+def _build_departure(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrDepartureBatch:
+    return PrDepartureBatch(
+        warnings=warnings,
+        units=units,
+        ln_phi=columns["ln_phi"],  # type: ignore[arg-type]
+        h_dep_rt=columns["h_dep_rt"],  # type: ignore[arg-type]
+        s_dep_r=columns["s_dep_r"],  # type: ignore[arg-type]
+    )
+
+
+def pr_departure(
+    *,
+    a_reduced: Sequence[float],
+    b_reduced: Sequence[float],
+    z: Sequence[float],
+    kappa: Sequence[float],
+    Tr: Sequence[float],
+) -> PrDepartureBatch:
+    """The Peng-Robinson fugacity coefficient and departures, over arrays.
+
+    All five arguments are dimensionless, and so are the three outputs - the
+    multiplication by ``R`` and ``T`` happens in the model layer. See
+    :func:`azoth.eos.pr_departure` for the calculation itself.
+    """
+    result: PrDepartureBatch = run(
+        _PR_DEPARTURE,
+        {
+            "a_reduced": sequence(a_reduced, "a_reduced"),
+            "b_reduced": sequence(b_reduced, "b_reduced"),
+            "z": sequence(z, "z"),
+            "kappa": sequence(kappa, "kappa"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_departure,
     )
     return result

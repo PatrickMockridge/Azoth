@@ -11,7 +11,9 @@ use azoth_eos as eos;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::results::{PyPrAlphaAbResult, PyPrKappaResult, PyPrZFactorResult, PyPrsvKappaResult};
+use crate::results::{
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrZFactorResult, PyPrsvKappaResult,
+};
 
 /// The Peng-Robinson alpha-function coefficient.
 ///
@@ -68,5 +70,27 @@ pub fn pr_z_factor(py: Python<'_>, a_reduced: f64, b_reduced: f64) -> PyResult<P
 pub fn prsv_kappa(py: Python<'_>, omega: f64, Tr: f64, kappa1: f64) -> PyResult<PyPrsvKappaResult> {
     eos::prsv_kappa(omega, Tr, kappa1)
         .map(|r| PyPrsvKappaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Peng-Robinson fugacity coefficient and departure functions.
+///
+/// Five dimensionless arguments and three dimensionless outputs. `kappa` may come
+/// from either `pr_kappa` or `prsv_kappa` - this calc uses it only through the
+/// logarithmic derivative of the alpha function, which both correlations feed.
+#[pyfunction]
+#[pyo3(signature = (a_reduced, b_reduced, z, kappa, Tr))]
+#[pyo3(text_signature = "(a_reduced, b_reduced, z, kappa, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn pr_departure(
+    py: Python<'_>,
+    a_reduced: f64,
+    b_reduced: f64,
+    z: f64,
+    kappa: f64,
+    Tr: f64,
+) -> PyResult<PyPrDepartureResult> {
+    eos::pr_departure(a_reduced, b_reduced, z, kappa, Tr)
+        .map(|r| PyPrDepartureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

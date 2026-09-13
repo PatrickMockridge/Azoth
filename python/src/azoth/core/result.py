@@ -262,6 +262,30 @@ class PrKappaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PrDepartureResult(_HasWarnings):
+    """Result of ``eos.pr_departure``.
+
+    Three dimensionless outputs: the logarithm of the fugacity coefficient, and the
+    departure enthalpy and entropy made dimensionless as ``h_dep_rt`` and
+    ``s_dep_r``. The multiplication by ``R`` and ``T`` happens where those live -
+    the model layer - so this namespace stays unit-free end to end.
+    """
+
+    #: The logarithm of the fugacity coefficient. Returned as a logarithm rather
+    #: than as ``phi`` because the logarithm is what the algebra produces, what the
+    #: equilibrium condition equates, and what makes ``ln(K) = ln_phi_l - ln_phi_v``
+    #: a subtraction rather than a division.
+    ln_phi: float
+    #: The departure enthalpy over ``R*T`` - the departure from ideal-gas behaviour
+    #: at the same temperature and pressure.
+    h_dep_rt: float
+    #: The departure entropy over ``R``.
+    s_dep_r: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PrsvKappaResult(_HasWarnings):
     """Result of ``eos.prsv_kappa``.
 
@@ -398,4 +422,5 @@ RESULT_TYPES: dict[str, type[object]] = {
     "eos.pr_alpha_ab": PrAlphaAbResult,
     "eos.pr_z_factor": PrZFactorResult,
     "eos.prsv_kappa": PrsvKappaResult,
+    "eos.pr_departure": PrDepartureResult,
 }

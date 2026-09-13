@@ -37,6 +37,7 @@ from azoth.core.result import (
     KFactorsResult,
     OrificeFlowResult,
     PrAlphaAbResult,
+    PrDepartureResult,
     PrKappaResult,
     PrsvKappaResult,
     PrZFactorResult,
@@ -218,6 +219,23 @@ def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult:
     return PrsvKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
 
 
+def pr_departure(
+    a_reduced: float, b_reduced: float, z: float, kappa: float, Tr: float
+) -> PrDepartureResult:
+    """The Peng-Robinson fugacity coefficient and departures, computed in Rust.
+
+    Five dimensionless arguments and three dimensionless outputs, so there is
+    nothing to convert and no unit string to keep in step.
+    """
+    result = _core.pr_departure(a_reduced, b_reduced, z, kappa, Tr)
+    return PrDepartureResult(
+        ln_phi=result.ln_phi,
+        h_dep_rt=result.h_dep_rt,
+        s_dep_r=result.s_dep_r,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     """Pump shaft power, computed in Rust."""
     result = _core.pump_power(
@@ -296,6 +314,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.pr_alpha_ab": pr_alpha_ab,
     "eos.pr_z_factor": pr_z_factor,
     "eos.prsv_kappa": prsv_kappa,
+    "eos.pr_departure": pr_departure,
 }
 
 

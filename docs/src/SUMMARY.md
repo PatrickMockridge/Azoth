@@ -3,6 +3,7 @@
 - [azoth](./index.md)
 - [Equations of state](./eos/index.md)
   - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)
+  - [Peng-Robinson fugacity coefficient and departure functions](./eos/pr_departure.md)
   - [Peng-Robinson attraction-parameter coefficient](./eos/pr_kappa.md)
   - [Peng-Robinson compressibility factor](./eos/pr_z_factor.md)
   - [Peng-Robinson-Stryjek-Vera alpha-function coefficient](./eos/prsv_kappa.md)

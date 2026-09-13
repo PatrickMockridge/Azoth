@@ -122,6 +122,28 @@ impl CalcResult for PrsvKappaResult {
     }
 }
 
+/// Result of `eos.pr_departure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrDepartureResult {
+    /// The logarithm of the fugacity coefficient.
+    pub ln_phi: f64,
+    /// The departure enthalpy over `R*T`.
+    pub h_dep_rt: f64,
+    /// The departure entropy over `R`.
+    pub s_dep_r: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrDepartureResult {
+    const CALC_ID: &'static str = "eos.pr_departure";
+    const FIELDS: &'static [&'static str] = &["ln_phi", "h_dep_rt", "s_dep_r", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for PrZFactorResult {
     const CALC_ID: &'static str = "eos.pr_z_factor";
     const FIELDS: &'static [&'static str] = &[

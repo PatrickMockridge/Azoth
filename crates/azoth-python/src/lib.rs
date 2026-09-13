@@ -42,8 +42,8 @@ mod thermal;
 use results::{
     PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
     PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult, PyOrificeFlowResult,
-    PyPrAlphaAbResult, PyPrKappaResult, PyPrZFactorResult, PyPrsvKappaResult, PyPumpPowerResult,
-    PyQty, PyReynoldsNumberResult, PySwameeJainResult, PyWarning,
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPumpPowerResult, PyQty, PyReynoldsNumberResult, PySwameeJainResult, PyWarning,
 };
 
 #[pymodule]
@@ -66,6 +66,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPrAlphaAbResult>()?;
     m.add_class::<PyPrZFactorResult>()?;
     m.add_class::<PyPrsvKappaResult>()?;
+    m.add_class::<PyPrDepartureResult>()?;
     m.add_class::<PyPumpPowerResult>()?;
     m.add_class::<PyOrificeFlowResult>()?;
     m.add_class::<PyControlValveCvResult>()?;
@@ -104,6 +105,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pr_alpha_ab, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_z_factor, m)?)?;
     m.add_function(wrap_pyfunction!(eos::prsv_kappa, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_departure, m)?)?;
 
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;

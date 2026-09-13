@@ -7,6 +7,7 @@ Every calculation in this section is generated from its specification. Each page
 | Calculation | Equation | Source |
 |---|---|---|
 | [`eos.pr_alpha_ab`](./pr_alpha_ab.md) | $\alpha = \left[1 + \kappa\left(1 - \sqrt{T_{r}}\right)\right]^{2}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}$ | Peng, D. Y.; Robinson, D. B. (1976) |
+| [`eos.pr_departure`](./pr_departure.md) | $\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - \frac{A}{2\sqrt{2}B}I, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + \frac{A}{2\sqrt{2}B}\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + \frac{A}{2\sqrt{2}B}\psi I$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pr_kappa`](./pr_kappa.md) | $\kappa = 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2}$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pr_z_factor`](./pr_z_factor.md) | $z^{3} - \left(1 - B\right)z^{2} + \left(A - 3B^{2} - 2B\right)z - \left(AB - B^{2} - B^{3}\right) = 0$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.prsv_kappa`](./prsv_kappa.md) | $\kappa = 0.378893 + 1.4897153\,\omega - 0.17131848\,\omega^{2} + 0.0196554\,\omega^{3} + \kappa_{1}\left(1 + \sqrt{T_{r}}\right)\left(0.7 - T_{r}\right)$ | Stryjek, R.; Vera, J. H. (1986) |

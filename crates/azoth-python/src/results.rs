@@ -16,7 +16,9 @@ use azoth_core::CalcResult;
 use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
-use azoth_eos::results::{PrAlphaAbResult, PrKappaResult, PrZFactorResult, PrsvKappaResult};
+use azoth_eos::results::{
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrZFactorResult, PrsvKappaResult,
+};
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -627,6 +629,53 @@ impl From<&PrsvKappaResult> for PyPrsvKappaResult {
     }
 }
 
+/// Result of `eos.pr_departure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrDepartureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrDepartureResult {
+    /// The logarithm of the fugacity coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub ln_phi: f64,
+    /// The departure enthalpy over `R*T`. Dimensionless.
+    #[pyo3(get)]
+    pub h_dep_rt: f64,
+    /// The departure entropy over `R`. Dimensionless.
+    #[pyo3(get)]
+    pub s_dep_r: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrDepartureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrDepartureResult(ln_phi={}, h_dep_rt={}, s_dep_r={}, {} warning(s))",
+            self.ln_phi,
+            self.h_dep_rt,
+            self.s_dep_r,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&PrDepartureResult> for PyPrDepartureResult {
+    fn from(r: &PrDepartureResult) -> Self {
+        Self {
+            ln_phi: r.ln_phi,
+            h_dep_rt: r.h_dep_rt,
+            s_dep_r: r.s_dep_r,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PrZFactorResult> for PyPrZFactorResult {
     fn from(r: &PrZFactorResult) -> Self {
         Self {
@@ -860,6 +909,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
         PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
         PrsvKappaResult::CALC_ID => PrsvKappaResult::FIELDS.to_vec(),
+        PrDepartureResult::CALC_ID => PrDepartureResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -887,6 +937,7 @@ pub fn calc_ids() -> Vec<String> {
         PrAlphaAbResult::CALC_ID.to_string(),
         PrZFactorResult::CALC_ID.to_string(),
         PrsvKappaResult::CALC_ID.to_string(),
+        PrDepartureResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),

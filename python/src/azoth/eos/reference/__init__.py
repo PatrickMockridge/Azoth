@@ -13,6 +13,7 @@ a bug in one of them - and the cross-implementation tests are what catch it.
 from __future__ import annotations
 
 from azoth.eos.reference.pr_alpha_ab import OMEGA_A, OMEGA_B, pr_alpha_ab
+from azoth.eos.reference.pr_departure import pr_departure
 from azoth.eos.reference.pr_kappa import pr_kappa
 from azoth.eos.reference.pr_z_factor import pr_z_factor
 from azoth.eos.reference.prsv_kappa import prsv_kappa
@@ -21,6 +22,7 @@ __all__ = [
     "OMEGA_A",
     "OMEGA_B",
     "pr_alpha_ab",
+    "pr_departure",
     "pr_kappa",
     "pr_z_factor",
     "prsv_kappa",

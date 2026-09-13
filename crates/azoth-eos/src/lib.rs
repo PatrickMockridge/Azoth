@@ -9,6 +9,7 @@
 //! * [`pr_kappa`] - the Peng-Robinson alpha-function coefficient
 //! * [`pr_alpha_ab`] - the alpha function and the reduced attraction parameters
 //! * [`pr_z_factor`] - the compressibility factor, the cubic's real roots
+//! * [`pr_departure`] - fugacity coefficient and departure functions
 //! * [`prsv_kappa`] - the Stryjek-Vera coefficient, for the same alpha function
 //!
 //! # Why the coefficients come first
@@ -35,6 +36,7 @@
 //! the boundary, in one place, where it can be tested once.
 
 pub mod pr_alpha_ab;
+pub mod pr_departure;
 pub mod pr_kappa;
 pub mod pr_z_factor;
 pub mod prsv_kappa;
@@ -42,9 +44,11 @@ pub mod results;
 pub mod spec_gen;
 
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
+pub use pr_departure::pr_departure;
 pub use pr_kappa::pr_kappa;
 pub use pr_z_factor::pr_z_factor;
 pub use prsv_kappa::prsv_kappa;
 pub use results::{
-    PrAlphaAbResult, PrKappaResult, PrZFactorResult, PrsvKappaResult, RootStructure,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrZFactorResult, PrsvKappaResult,
+    RootStructure,
 };
