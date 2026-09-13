@@ -70,6 +70,11 @@ class PumpPowerResult:
     warnings: list[Warning]
 
 @final
+class OrificeFlowResult:
+    q: Qty
+    warnings: list[Warning]
+
+@final
 class KFactorsResult:
     k_total: float
     f_t: float
@@ -94,6 +99,7 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResult: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
+def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def crane_k_factors(fittings: list[str], f_t: float) -> KFactorsResult: ...
 def darcy_weisbach(
     f: float, L: float, D: float, rho: float, v: float, mu: float | None = None

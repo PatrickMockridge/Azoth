@@ -18,15 +18,15 @@
 
 use azoth_core::units::{
     DynamicViscosity, cubic_meters_per_second, kilograms_per_cubic_meter, meters,
-    meters_per_second, pascal_seconds,
+    meters_per_second, pascal_seconds, pascals,
 };
 use azoth_hydraulics as hyd;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyColebrookResult, PyDarcyWeisbachResult, PyHaalandResult, PyKFactorsResult, PyPumpPowerResult,
-    PyReynoldsNumberResult, PySwameeJainResult,
+    PyColebrookResult, PyDarcyWeisbachResult, PyHaalandResult, PyKFactorsResult,
+    PyOrificeFlowResult, PyPumpPowerResult, PyReynoldsNumberResult, PySwameeJainResult,
 };
 
 /// Reynolds number for flow in a circular pipe.
@@ -118,6 +118,27 @@ pub fn pump_power(
     )
     .map(|r| PyPumpPowerResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// Volumetric flow through an orifice.
+///
+/// `d` arrives as the SI **base** magnitude, so a 50 mm bore crosses as `0.05` - the
+/// spec declares millimetres, but unit handling happens once in Python and what
+/// crosses is metres. `Cd` is dimensionless and arrives as a plain float.
+#[pyfunction]
+#[pyo3(signature = (d, dP, rho, Cd))]
+#[pyo3(text_signature = "(d, dP, rho, Cd)")]
+#[allow(non_snake_case)] // `dP` and `Cd` are the symbols in the published equation
+pub fn orifice_flow(
+    py: Python<'_>,
+    d: f64,
+    dP: f64,
+    rho: f64,
+    Cd: f64,
+) -> PyResult<PyOrificeFlowResult> {
+    hyd::orifice_flow(meters(d), pascals(dP), kilograms_per_cubic_meter(rho), Cd)
+        .map(|r| PyOrificeFlowResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// Total resistance coefficient for a list of fittings.

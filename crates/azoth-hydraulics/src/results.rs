@@ -23,7 +23,7 @@
 //! alternative would be to throw away information the caller wants.
 
 use azoth_core::{CalcResult, FlowRegime, Warning};
-use uom::si::f64::{Power, Pressure};
+use uom::si::f64::{Power, Pressure, VolumeRate};
 
 /// Result of `hydraulics.reynolds_number`.
 #[derive(Debug, Clone, PartialEq)]
@@ -141,6 +141,24 @@ impl CalcResult for PumpPowerResult {
     }
 }
 
+/// Result of `hydraulics.orifice_flow`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct OrificeFlowResult {
+    /// Volumetric flow rate through the orifice.
+    pub q: VolumeRate,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for OrificeFlowResult {
+    const CALC_ID: &'static str = "hydraulics.orifice_flow";
+    const FIELDS: &'static [&'static str] = &["q", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// One fitting's contribution to the total resistance coefficient.
 #[derive(Debug, Clone, PartialEq)]
 pub struct KComponent {
@@ -214,6 +232,7 @@ mod tests {
             (ColebrookResult::CALC_ID, ColebrookResult::FIELDS),
             (SwameeJainResult::CALC_ID, SwameeJainResult::FIELDS),
             (HaalandResult::CALC_ID, HaalandResult::FIELDS),
+            (OrificeFlowResult::CALC_ID, OrificeFlowResult::FIELDS),
             (PumpPowerResult::CALC_ID, PumpPowerResult::FIELDS),
             (KFactorsResult::CALC_ID, KFactorsResult::FIELDS),
             (DarcyWeisbachResult::CALC_ID, DarcyWeisbachResult::FIELDS),
@@ -234,6 +253,7 @@ mod tests {
             SwameeJainResult::CALC_ID,
             HaalandResult::CALC_ID,
             KFactorsResult::CALC_ID,
+            OrificeFlowResult::CALC_ID,
             PumpPowerResult::CALC_ID,
             DarcyWeisbachResult::CALC_ID,
         ];
@@ -263,6 +283,7 @@ mod tests {
             SwameeJainResult::FIELDS,
             HaalandResult::FIELDS,
             KFactorsResult::FIELDS,
+            OrificeFlowResult::FIELDS,
             PumpPowerResult::FIELDS,
             DarcyWeisbachResult::FIELDS,
         ] {

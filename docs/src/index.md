@@ -54,12 +54,13 @@ around it.
 - [`hydraulics.crane_k_factors`](./hydraulics/crane_k_factors.md)
 - [`hydraulics.darcy_weisbach`](./hydraulics/darcy_weisbach.md)
 - [`hydraulics.pump_power`](./hydraulics/pump_power.md)
+- [`hydraulics.orifice_flow`](./hydraulics/orifice_flow.md)
 
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)
 
-Orifice, control valve and relief valve calculations are not implemented.
+Control valve and relief valve calculations are not implemented.
 
 ## How the pieces fit together
 

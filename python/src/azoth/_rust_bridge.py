@@ -32,6 +32,7 @@ from azoth.core.result import (
     HaalandResult,
     KComponent,
     KFactorsResult,
+    OrificeFlowResult,
     PumpPowerResult,
     ReynoldsNumberResult,
     SwameeJainResult,
@@ -165,6 +166,21 @@ def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     )
 
 
+def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:
+    """Orifice flow, computed in Rust."""
+    result = _core.orifice_flow(
+        to_si(d, "mm", "d"),
+        to_si(dP, "Pa", "dP"),
+        to_si(rho, "kg/m**3", "rho"),
+        # Dimensionless: no unit to convert, so it crosses as a plain float.
+        Cd,
+    )
+    return OrificeFlowResult(
+        q=from_si(result.q.magnitude_si, result.q.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 #: Calc id -> the bridge function implementing it. Explicit rather than derived
 #: from the function names, so a renamed id fails here at import rather than
 #: resolving to the wrong calc.
@@ -176,6 +192,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "hydraulics.crane_k_factors": crane_k_factors,
     "hydraulics.darcy_weisbach": darcy_weisbach,
     "hydraulics.pump_power": pump_power,
+    "hydraulics.orifice_flow": orifice_flow,
     "thermal.conduction_plane_wall": conduction_plane_wall,
 }
 

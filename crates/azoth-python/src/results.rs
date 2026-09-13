@@ -19,7 +19,7 @@ use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
     ColebrookResult, DarcyWeisbachResult, HaalandResult, KComponent, KFactorsResult,
-    PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
+    OrificeFlowResult, PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
 };
 use pyo3::prelude::*;
 
@@ -299,6 +299,45 @@ impl From<&PumpPowerResult> for PyPumpPowerResult {
     }
 }
 
+/// Result of `hydraulics.orifice_flow`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "OrificeFlowResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyOrificeFlowResult {
+    /// Volumetric flow rate, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub q: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyOrificeFlowResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "OrificeFlowResult(q={} {})",
+            self.q.magnitude_si, self.q.unit
+        )
+    }
+}
+
+impl From<&OrificeFlowResult> for PyOrificeFlowResult {
+    fn from(r: &OrificeFlowResult) -> Self {
+        Self {
+            q: PyQty {
+                magnitude_si: r.q.value,
+                unit: "m**3/s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `thermal.conduction_plane_wall`, transported.
 ///
 /// Carries a dimensioned output, so it transports a [`PyQty`] rather than a bare
@@ -519,6 +558,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ColebrookResult::CALC_ID => ColebrookResult::FIELDS.to_vec(),
         SwameeJainResult::CALC_ID => SwameeJainResult::FIELDS.to_vec(),
         HaalandResult::CALC_ID => HaalandResult::FIELDS.to_vec(),
+        OrificeFlowResult::CALC_ID => OrificeFlowResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
@@ -539,6 +579,7 @@ pub fn calc_ids() -> Vec<String> {
         ColebrookResult::CALC_ID.to_string(),
         SwameeJainResult::CALC_ID.to_string(),
         HaalandResult::CALC_ID.to_string(),
+        OrificeFlowResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
