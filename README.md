@@ -220,13 +220,32 @@ checks, the test cases and the type stubs are generated from the spec.
 [Specification, S9](docs/src/spec.md#s9-what-a-contribution-costs) states the whole
 contract, and S5 says why registration was deleted rather than automated.
 
+## Extending it without writing code
+
+Most of what you would want to change is data, not arithmetic. A **keycard** is one
+YAML file that overrides or extends what the library ships — a component's critical
+constants, a binary interaction parameter, a fluid's property table, a fitting's
+equivalent length, a coefficient a calculation takes, or a named model variant:
+
+```python
+import azoth
+
+azoth.keycard.load("keycard.yaml")
+azoth.eos.component("methane")  # your values, not the databank's
+```
+
+Nothing needs registering to make it apply, in either language. `keycard.example.yaml`
+is the template, `python tools/check_user_data.py` checks yours, and
+[The keycard](docs/src/keycard.md) documents every section. What the library ships and
+where it came from is on [What ships](docs/src/data.md).
+
 ## Not for design work yet
 
 `data/fittings/crane_k_factors.csv` holds **estimated dummy values** - plausible
 magnitudes chosen so the software has something to run against. They are not from
 Crane TP-410 or any other standard. A pressure drop computed from them can be
 wrong by a factor of two and look entirely reasonable. Supply your own with
-`azoth-data.example.yaml`; see
+`keycard.example.yaml`; see
 [Copyright and licensed data](docs/src/copyright.md).
 
 The `verify_status` column records that, and a test fails the day someone populates

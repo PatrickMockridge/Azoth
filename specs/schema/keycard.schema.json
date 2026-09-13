@@ -88,6 +88,27 @@
         }
       }
     },
+    "kij": {
+      "description": "Binary interaction parameters, overriding or extending `data/components/kij.csv`. An array of rows rather than a map, because the key is a *pair* and every spelling of one - `a|b`, `b,a`, nested objects - is a convention nobody can guess. These are the values a cubic's mixing rule actually reads, so a keycard that overrides a component's `Tc` but not its interaction parameters is overriding less than it looks like.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "citation": { "$ref": "calc.schema.json#/$defs/citation" },
+          "component_a": { "type": "string", "minLength": 1 },
+          "component_b": { "type": "string", "minLength": 1 },
+          "value": { "type": "number" },
+          "temperature_k": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "The temperature the parameter was fitted at, where the source says. Optional: most published `kij` are treated as constants, and recording a temperature where the source gives one is disclosure, not a requirement."
+          }
+        },
+        "additionalProperties": false,
+        "required": ["component_a", "component_b", "value"]
+      }
+    },
     "coefficients": {
       "description": "Single constants a calculation takes as an argument, keyed by calculation id and then by input name - the identifiers the spec, both implementations and the registry already use. These are a *default*: a caller who passes the argument explicitly wins and the keycard is not consulted.",
       "type": "object",
@@ -129,41 +150,23 @@
             "description": "The model family. **One member, and deliberately.** A kind is here only when both implementations run it and a contract test holds the vocabulary to them together - the argument `docs/src/theory/solvers.md` already makes about `solver.kind`. Widening this enum is a deliberate act that happens alongside the implementation, never before it."
           },
           "shape": {
-            "enum": [
-              "van_der_waals",
-              "soave_redlich_kwong",
-              "peng_robinson",
-              "peng_robinson_1978",
-              "patel_teja_factorial"
-            ],
-            "description": "Named as a pair rather than as loose numbers because it fixes the cubic's two constants (`e`, `f`), and naming them separately would make an invalid combination representable."
+            "enum": ["peng_robinson"],
+            "description": "Named as a pair rather than as loose numbers because it fixes the cubic's two constants (`e`, `f`), and naming them separately would make an invalid combination representable. **One member, and deliberately** - the same rule `kind` states above: a shape is here only when both implementations run it and a contract test holds the vocabulary to them together. An earlier draft listed five cubics and six alpha functions, none of which the code implemented; a keycard declaring one would have been accepted, stored, and silently evaluated as Peng-Robinson. Widening an enum is a deliberate act that happens alongside the implementation, never before it."
           },
           "alpha": {
-            "enum": [
-              "constant",
-              "soave",
-              "peng_robinson",
-              "peng_robinson_1978",
-              "twu",
-              "mathias_copeman"
-            ]
+            "enum": ["peng_robinson"],
+            "description": "One member for the same reason as `shape`. See `eos.pr_kappa` and `eos.pr_alpha_ab`: the alpha function is `[1 + kappa(1 - sqrt(Tr))]**2` with `kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2`. Mathias-Copeman and Twu are fitted forms with their own parameters; nothing here reads `alpha_parameters`, so declaring one would be a promise this build cannot keep."
           },
           "critical_rule": {
-            "enum": ["soave", "peng_robinson", "explicit"],
-            "description": "How the cubic's two constants are obtained. `explicit` means the caller supplies them rather than the implementation deriving them from the critical point. There is deliberately no `if/then` for it beyond this enum: what it changes is which parameters the implementation requires, and that check belongs where the parameters are read. Recorded so the absence is a decision - an earlier draft carried a `not` that forbade `shape`, which is required, and would have made this choice unsatisfiable."
+            "enum": ["peng_robinson"],
+            "description": "How the cubic's two constants are obtained. One member: the full-precision Peng-Robinson pair is what `eos.pr_alpha_ab` derives from the triple-root condition, and nothing here derives another."
           },
           "mixing_rule": {
-            "enum": [
-              "classical",
-              "classical_kij",
-              "wong_sandler",
-              "huron_vidal",
-              "huron_vidal_mhv1",
-              "huron_vidal_mhv2"
-            ]
+            "enum": ["classical_kij"],
+            "description": "One member: van der Waals one-fluid mixing with binary interaction parameters, which is what `eos.vdw1f_mix_binary` implements and what the flashes mix with. A keycard's `kij` rows are the parameters this rule reads."
           },
-          "volume_translation": { "enum": ["none", "peneloux", "constant"] },
-          "root_selection": { "enum": ["from_phase", "largest_positive", "smallest_positive"] },
+          "volume_translation": { "enum": ["none"] },
+          "root_selection": { "enum": ["from_phase"] },
           "components": {
             "type": "array",
             "minItems": 1,
@@ -172,29 +175,10 @@
           },
           "alpha_parameters": {
             "type": "object",
-            "description": "The extra parameters an alpha function needs - `eta` for Mathias-Copeman, `L`, `M` and `N` for Twu. Empty for the ones that need none.",
+            "description": "The extra parameters an alpha function needs. Present and empty for the one this build implements, which needs none - and left in the format because it is how a fitted alpha function would arrive. The `if/then` branches that required `eta` for Mathias-Copeman and `L`, `M`, `N` for Twu are gone with those members: a constraint on a value the enum no longer admits is a rule that can never fire.",
             "additionalProperties": { "type": "number" }
           }
-        },
-        "allOf": [
-          {
-            "comment": "An alpha function that needs a parameter must be given it, or the schema accepts the choice and the implementation silently evaluates a different equation. **`required` is stated at both levels deliberately.** `properties` constrains a key only when it is present, so `then: {properties: {alpha_parameters: {required: [eta]}}}` does nothing at all to a model that omits `alpha_parameters` entirely - which is the normal way to write one for an alpha function that needs none. The outer `required` is what makes the inner one reachable, and the first version of this file omitted it. The test proved the constraint did not fire; reading it would not have.",
-            "if": { "properties": { "alpha": { "const": "mathias_copeman" } }, "required": ["alpha"] },
-            "then": {
-              "additionalProperties": false,
-              "required": ["alpha_parameters"],
-              "properties": { "alpha_parameters": { "required": ["eta"] } }
-            }
-          },
-          {
-            "if": { "properties": { "alpha": { "const": "twu" } }, "required": ["alpha"] },
-            "then": {
-              "additionalProperties": false,
-              "required": ["alpha_parameters"],
-              "properties": { "alpha_parameters": { "required": ["L", "M", "N"] } }
-            }
-          }
-        ]
+        }
       }
     }
   }

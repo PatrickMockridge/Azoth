@@ -69,6 +69,10 @@ def test_molar_mass_is_in_kg_per_mol_and_not_g_per_mol() -> None:
     magnitude wrong.
     """
     methane = databank.entry("methane")
+    # `molar_mass` is optional because a component a keycard *adds* has none - a
+    # keycard supplies the parameters a cubic reads and nothing else. A substance in
+    # the shipped databank always has one, which is what this asserts.
+    assert methane.molar_mass is not None
     assert methane.molar_mass.to("kg/mol").magnitude == pytest.approx(0.016043, rel=1e-4)
     # The sanity check that catches it without knowing the answer: a mol of methane
     # weighs about 16 grams, and 16 kg/mol is not a substance.

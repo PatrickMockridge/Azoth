@@ -153,9 +153,27 @@ class PropertyUnavailableError(AzothError, LookupError):
         return self.property_name
 
 
+class KeycardError(AzothError, ValueError):
+    """A keycard cannot be loaded, or names something this build does not implement.
+
+    Python-only, and deliberately so: a keycard is the *Python* extension surface.
+    The Rust core never reads one - it is handed the values a keycard resolved to -
+    so there is no second implementation to keep this class identical to.
+    """
+
+    def __init__(self, where: str, reason: str) -> None:
+        self.where = where
+        self.reason = reason
+        super().__init__(f"keycard {where}: {reason}")
+
+    def field(self) -> str | None:
+        return self.where
+
+
 __all__ = [
     "AzothError",
     "InvalidInputError",
+    "KeycardError",
     "OutOfRangeError",
     "PropertyUnavailableError",
     "SolverNotConvergedError",

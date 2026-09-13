@@ -66,6 +66,8 @@ NAMESPACES = {
 #: be registered here or it does not appear at all - and the failure is caught
 #: rather than being a page nobody ever reads.
 STATIC_PAGES = (
+    ("The keycard", "keycard.md"),
+    ("What ships", "data.md"),
     ("Copyright and licensed data", "copyright.md"),
     ("The batch API", "batch.md"),
     ("azoth and NeqSim", "comparison/neqsim.md"),

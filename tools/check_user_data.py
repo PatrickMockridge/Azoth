@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check a user data file before it is used to generate the repository's data.
 
-`azoth-data.example.yaml` at the repository root describes the format. A user
+`keycard.example.yaml` at the repository root describes the format. A user
 fills in the values they are entitled to use, and this checks the result.
 
 It checks *provenance*, not values. Nothing here can tell whether a coefficient
@@ -31,7 +31,7 @@ checked file is a separate tool, so that checking and writing cannot become one
 step that does both when one of them fails.
 
 Usage:
-    python tools/check_user_data.py azoth-data.yaml
+    python tools/check_user_data.py keycard.yaml
 
 Exit status is non-zero if any error is found.
 
@@ -44,6 +44,7 @@ would be a flag to hide the only thing here that a user needs to be told.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -62,12 +63,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # constants and functions live beside the rules they belong to.
 from spec_lint import Report, check_fittings, check_fluids
 
-#: The version of the *user data file format*. It lives here rather than in
-#: `spec_lint` because it is this format's version, not a calc spec's - and it is
-#: imported by `gen_user_data.py` from here for the same reason.
-SCHEMA_VERSION = 1
+#: The version of the *keycard format*. It lives here rather than in `spec_lint`
+#: because it is this format's version, not a calc spec's - and it is imported by
+#: `gen_user_data.py` from here for the same reason. Version 2 added `components`,
+#: `kij`, `coefficients` and `models`.
+SCHEMA_VERSION = 2
 
-#: The sections a data file may carry, and the rule each one is checked by.
+#: The sections a keycard may carry, and the row rule each one is checked by here.
 #: Paired rather than listed because a section this file does not know about is
 #: rejected below, and a list that could drift from the things actually checked
 #: would make that rejection wrong in the direction that matters.
@@ -75,6 +77,12 @@ KNOWN_SECTIONS = (
     ("fittings", check_fittings),
     ("fluids", check_fluids),
 )
+
+#: Sections that carry no row rule *here*, because something else owns them: the
+#: JSON Schema checks their shape and `azoth.keycard` checks whether this build can
+#: actually use them. Listed rather than skipped silently, so that a section this
+#: checker does not know about is still an error.
+OTHER_SECTIONS = ("keyholder", "components", "kij", "coefficients", "models")
 
 
 def check_document(report: Report, document: dict[str, Any], where: str) -> None:
@@ -91,7 +99,7 @@ def check_document(report: Report, document: dict[str, Any], where: str) -> None
     Both the checker and the generator call this, on the same parsed document, so
     a file that passes one generates in the other with the same words.
     """
-    known = {"schema_version"} | {name for name, _ in KNOWN_SECTIONS}
+    known = {"schema_version"} | {name for name, _ in KNOWN_SECTIONS} | set(OTHER_SECTIONS)
     unknown = sorted(set(document) - known)
     if unknown:
         report.error(
@@ -101,7 +109,7 @@ def check_document(report: Report, document: dict[str, Any], where: str) -> None
             f"nothing reads is data that looks in use and is not.",
         )
 
-    present = [name for name, _ in KNOWN_SECTIONS if name in document]
+    present = [name for name in known if name != "schema_version" and name in document]
     for name, check in KNOWN_SECTIONS:
         if name in document:
             check(report, document[name])
@@ -112,6 +120,62 @@ def check_document(report: Report, document: dict[str, Any], where: str) -> None
             "has no data sections at all. A keycard with nothing in it is most often "
             "a file that failed to save rather than a deliberate empty one.",
         )
+
+
+def check_against_schema(report: Report, document: dict[str, Any], where: str) -> None:
+    """Validate the document against `keycard.schema.json`, the written contract.
+
+    This is where the format is *defined*. The row rules above and the loader in
+    `azoth.keycard` are two implementations of parts of it, and this is the
+    document itself - so a shape the schema forbids is an error here even when both
+    of those would have coped.
+
+    The `$ref`s into `calc.schema.json` are resolved by putting both documents in a
+    registry keyed by `$id`; the two are separate files and the citation definition
+    is deliberately shared rather than copied.
+    """
+    try:
+        import jsonschema
+        from referencing import Registry, Resource
+    except ImportError:  # pragma: no cover
+        report.warn(where, "jsonschema is not installed, so the schema was not checked")
+        return
+
+    root = Path(__file__).resolve().parent.parent
+    schema_dir = root / "specs" / "schema"
+    keycard_schema = json.loads((schema_dir / "keycard.schema.json").read_text(encoding="utf-8"))
+    calc_schema = json.loads((schema_dir / "calc.schema.json").read_text(encoding="utf-8"))
+
+    registry = Registry()
+    for schema in (calc_schema, keycard_schema):
+        registry = registry.with_resource(schema["$id"], Resource.from_contents(schema))
+    validator = jsonschema.Draft202012Validator(keycard_schema, registry=registry)
+
+    for error in sorted(validator.iter_errors(document), key=lambda e: list(e.path)):
+        location = ".".join(str(part) for part in error.path) or "<document>"
+        report.error(where, f"`{location}`: {error.message}")
+
+
+def check_with_loader(report: Report, document: dict[str, Any], where: str) -> None:
+    """Load the document through `azoth.keycard`, the way a caller would.
+
+    The schema says what shape a keycard may take; the loader says whether *this
+    build* can use it - whether an enum admits a model the code implements, whether
+    a component parameter is one something reads. A document can satisfy the schema
+    and still be one the library would refuse, so both are run and the loader's
+    refusal is reported as an error rather than discovered at first use.
+    """
+    try:
+        from azoth import keycard
+    except ImportError:  # pragma: no cover
+        report.warn(where, "azoth is not importable, so the loader was not run")
+        return
+    try:
+        keycard.use(document, path=Path(where))
+    except Exception as exc:  # the loader raises KeycardError; anything else is a bug
+        report.error(where, f"the loader refuses it: {exc}")
+    finally:
+        keycard.clear()
 
 
 def check(path: Path) -> int:
@@ -140,7 +204,9 @@ def check(path: Path) -> int:
         return 1
 
     report = Report()
+    check_against_schema(report, document, path.name)
     check_document(report, document, path.name)
+    check_with_loader(report, document, path.name)
     return report_result(report, path)
 
 

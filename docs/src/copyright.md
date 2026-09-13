@@ -145,11 +145,16 @@ inspectable from here, and the mitigation is attribution rather than inspection.
 
 ### The file
 
-`azoth-data.example.yaml` at the repository root is the template. Copy it to
-`azoth-data.yaml`, fill in the values you are entitled to use, and check it:
+Please note: the keycard is reserved for **sets** of values that a calculation looks up
+by name — a fluid's property table, a fitting registry, that sort of thing. A *single*
+coefficient needs no file at all and is better passed as an argument: see the first of
+the three patterns above.
+
+`keycard.example.yaml` at the repository root is the template. Copy it to
+`keycard.yaml`, fill in the values you are entitled to use, and check it:
 
 ```bash
-python tools/check_user_data.py azoth-data.yaml
+python tools/check_user_data.py keycard.yaml
 ```
 
 It has a `fittings:` section for the equivalent-length registry and a `fluids:` section
@@ -177,20 +182,20 @@ row claiming `verified` would be a citation nobody had checked.
 ### Do not commit what you generate
 
 **If the values came from a standard you licensed, committing them redistributes
-them** — which is the thing this whole page exists to avoid. `azoth-data.yaml` is
+them** — which is the thing this whole page exists to avoid. `keycard.yaml` is
 gitignored. The data files generated from it must not be committed either; the
 repository's committed copies must stay the placeholders.
 
 ### Compiling it
 
 ```bash
-python tools/check_user_data.py azoth-data.yaml     # validate, writes nothing
-python tools/gen_user_data.py   azoth-data.yaml     # then compile
+python tools/check_user_data.py keycard.yaml     # validate, writes nothing
+python tools/gen_user_data.py   keycard.yaml     # then compile
 maturin develop                                     # and rebuild
 ```
 
 ```
-azoth-data.yaml                    you write this, and keep it
+keycard.yaml                    you write this, and keep it
        │
        │  tools/gen_user_data.py   validates with the checker's own rules, then writes
        ▼

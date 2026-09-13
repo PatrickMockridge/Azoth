@@ -1,6 +1,6 @@
 """The user data generator: does what it writes match what the loaders read.
 
-``tools/gen_user_data.py`` compiles a checked ``azoth-data.yaml`` into the CSVs
+``tools/gen_user_data.py`` compiles a checked ``keycard.yaml`` into the CSVs
 under ``data/``. The dangerous property of a generator like that is not that it
 crashes - it is that it writes something *nearly* right: a column renamed, a value
 reformatted, a header line missing. Every one of those produces a file that looks
@@ -174,7 +174,7 @@ def test_the_banner_stops_claiming_every_value_is_a_placeholder() -> None:
 def test_the_banner_does_not_claim_the_tool_wrote_a_file_it_did_not() -> None:
     """The shipped water table is real data that never went near this tool.
 
-    A banner saying "generated from azoth-data.yaml" would be false about it, and
+    A banner saying "generated from keycard.yaml" would be false about it, and
     the water and air tables are legitimately committed - they are published facts,
     not a licensed table. So the non-placeholder banner has to be true of both
     cases, which means it names the restriction conditionally rather than
@@ -217,7 +217,7 @@ def test_the_generator_agrees_with_the_checker_about_the_template() -> None:
     wherever it appears. The template is the file both are documented against, so
     it is the one to run them both over.
     """
-    template = REPO_ROOT / "azoth-data.example.yaml"
+    template = REPO_ROOT / "keycard.example.yaml"
     document = gen.yaml.load(template.read_text(encoding="utf-8"), Loader=gen.TextLoader)
     report = gen.validate(document, template)
     assert not report.errors, (
@@ -238,7 +238,7 @@ def test_the_template_can_be_generated_once_the_fluids_are_registered() -> None:
     that section out leaves a document the tool can write, which is what makes the
     rest of this file's claims reachable rather than hypothetical.
     """
-    template = REPO_ROOT / "azoth-data.example.yaml"
+    template = REPO_ROOT / "keycard.example.yaml"
     document = gen.yaml.load(template.read_text(encoding="utf-8"), Loader=gen.TextLoader)
     document.pop("fluids")
 
@@ -284,16 +284,16 @@ def test_an_unknown_schema_version_is_refused(
 ) -> None:
     """A newer document shape is refused rather than guessed at.
 
-    `TextLoader` carries every scalar as text, so `schema_version: 1` arrives as
-    the string `"1"`. Reading it as a float or an int would accept `1.5` or reject
-    `"1"`, and either would be a silent decision about a format this tool does not
-    know - so it is compared as text, and anything else is refused.
+    `TextLoader` carries every scalar as text, so a version arrives as a string
+    rather than a number. Reading it as a float or an int would accept `1.5` or
+    reject `"2"`, and either would be a silent decision about a format this tool
+    does not know - so it is compared as text, and anything else is refused.
     """
-    path = tmp_path / "azoth-data.yaml"
+    path = tmp_path / "keycard.yaml"
     path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": 2,
+                "schema_version": 99,
                 "fittings": [
                     {
                         "id": "x",
@@ -302,9 +302,6 @@ def test_an_unknown_schema_version_is_refused(
                         "n_ld": 1.0,
                         "f_t_basis": "f_t",
                         "citation": "DUMMY",
-                        "verify_status": "estimated_dummy",
-                        "source_ref": "",
-                        "source_locator": "",
                     }
                 ],
             }
@@ -325,11 +322,11 @@ def test_a_document_that_fails_its_checks_writes_nothing(
     `check_user_data.py` does not write. The failure that motivates it: a partial
     or unchecked file landing in `data/` and being embedded by the next build.
     """
-    path = tmp_path / "azoth-data.yaml"
+    path = tmp_path / "keycard.yaml"
     path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "fittings": [
                     {
                         "id": "x",
@@ -338,9 +335,6 @@ def test_a_document_that_fails_its_checks_writes_nothing(
                         "n_ld": -1.0,  # non-positive, which the checker refuses
                         "f_t_basis": "f_t",
                         "citation": "DUMMY",
-                        "verify_status": "estimated_dummy",
-                        "source_ref": "",
-                        "source_locator": "",
                     }
                 ],
             }

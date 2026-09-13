@@ -103,13 +103,22 @@ cross-language agreement is verified by nothing.
 If you have supplied your own licensed data, one more:
 
 ```bash
-.venv/bin/python tools/check_user_data.py azoth-data.yaml
-.venv/bin/python tools/gen_user_data.py   azoth-data.yaml --check
+.venv/bin/python tools/check_user_data.py keycard.yaml
+.venv/bin/python tools/gen_user_data.py   keycard.yaml --check
 ```
 
-Both need the file to exist, so neither is in CI — `azoth-data.yaml` is
+Both need the file to exist, so neither is in CI — `keycard.yaml` is
 gitignored and never committed. The tooling itself is covered by
 `python/tests/test_gen_user_data.py`, which runs against the template.
+
+## Adding data, rather than code
+
+Most of what a user wants to change is not a calculation. **A keycard is a YAML file
+that overrides or extends what the library ships** — components, interaction
+parameters, coefficients, fittings, fluids and named model variants — with no code at
+all, in either language. If what you are adding is a value rather than an equation, it
+belongs there, and it costs a file rather than a contribution. See
+[The keycard](docs/src/keycard.md).
 
 ## Adding a calculation
 

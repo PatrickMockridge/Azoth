@@ -28,6 +28,7 @@ from __future__ import annotations
 from azoth.core.errors import (
     AzothError,
     InvalidInputError,
+    KeycardError,
     OutOfRangeError,
     PropertyUnavailableError,
     SolverNotConvergedError,
@@ -93,6 +94,7 @@ __all__ = [
     "InvalidInputError",
     "KComponent",
     "KFactorsResult",
+    "KeycardError",
     "MolarEnthalpyEntropyResult",
     "OutOfRangeError",
     "Phase",

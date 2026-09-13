@@ -121,7 +121,7 @@ def a_valid_keycard() -> dict[str, Any]:
             "vendor_pr": {
                 "kind": "cubic_eos",
                 "shape": "peng_robinson",
-                "alpha": "peng_robinson_1978",
+                "alpha": "peng_robinson",
                 "mixing_rule": "classical_kij",
                 "components": ["methane"],
             }

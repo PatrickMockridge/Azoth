@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Compile a checked user data file into the repository's data files.
 
-`azoth-data.yaml` at the repository root is a *source*, not a runtime input. This
+`keycard.yaml` at the repository root is a *source*, not a runtime input. This
 turns it into the canonical CSVs that both languages read, exactly as
 `specs/calcs/*.yaml` is compiled into two registries. Run it, rebuild, and your
 values are what the calculations use.
 
-    python tools/check_user_data.py azoth-data.yaml     # check first
-    python tools/gen_user_data.py   azoth-data.yaml     # then write
-    python tools/gen_user_data.py   azoth-data.yaml --check
+    python tools/check_user_data.py keycard.yaml     # check first
+    python tools/gen_user_data.py   keycard.yaml     # then write
+    python tools/gen_user_data.py   keycard.yaml --check
 
 # Why files, rather than reading the YAML at runtime
 
@@ -143,7 +143,7 @@ DUMMY_WARNING = """\
 #: The banner for a file that is not all placeholders. It does not make the claim
 #: above, which would then be false, and it does not claim the file was generated
 #: either - the shipped water and air tables are real published values that were
-#: never near this tool, and a banner saying "generated from azoth-data.yaml" would
+#: never near this tool, and a banner saying "generated from keycard.yaml" would
 #: be a lie about them. What it says instead is true of both: read the column, and
 #: do not commit licensed values.
 NOT_A_PLACEHOLDER_WARNING = """\

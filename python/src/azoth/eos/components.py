@@ -43,9 +43,10 @@ from __future__ import annotations
 
 import csv
 import io
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import cache
 
+from azoth import keycard
 from azoth._data import find
 from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 from azoth.core.units import Q, ureg
@@ -78,18 +79,29 @@ class DatabankEntry:
     Wider than :class:`~azoth.eos.mixture.Component` on purpose: the file carries
     the CAS number, the formula and the liquid density, which are worth reporting
     and are not part of what a cubic takes.
+
+    **Those wider fields are optional, and a keycard is why.** A keycard supplies the
+    parameters a *model* needs - ``Tc``, ``Pc`` and ``omega`` - and nothing else,
+    because nothing else is required to run a cubic. A substance a keycard adds
+    therefore has no CAS number here, and ``None`` says so rather than a blank string
+    standing in for one. Filling those in from a similar substance would be inventing
+    data, which is the failure mode this whole module is arranged against.
     """
 
     name: str
-    cas: str
-    formula: str
+    cas: str | None
+    formula: str | None
     Tc: Q
     Pc: Q
     omega: float
-    molar_mass: Q
-    critical_volume: Q
-    liquid_density: Q
-    citation: str
+    molar_mass: Q | None
+    critical_volume: Q | None
+    liquid_density: Q | None
+    citation: str | None
+    #: Where these values came from: the vendored databank, or the keycard in force.
+    #: Not part of a citation - it is the *provenance of the lookup*, which a caller
+    #: needs when a result turns out to depend on which file was in play.
+    source: str = "databank"
 
     def component(self) -> Component:
         """This entry as the thing a calculation takes."""
@@ -149,30 +161,91 @@ def _kij() -> dict[tuple[str, str], float]:
 
 
 def available() -> tuple[str, ...]:
-    """Every name the databank has, sorted."""
-    return tuple(sorted(_table()))
+    """Every name available, sorted: the databank plus whatever a keycard adds."""
+    card = keycard.current()
+    extra = set(card.components) if card is not None else set()
+    return tuple(sorted(set(_table()) | extra))
 
 
 def entry(name: str) -> DatabankEntry:
-    """One substance's full record.
+    """One substance's full record, with any keycard override already applied.
+
+    A keycard wins over the databank, by name, parameter by parameter: a card that
+    overrides only ``omega`` keeps the shipped ``Tc`` and ``Pc``. That is the point
+    of naming parameters rather than replacing records whole - a user correcting one
+    value should not have to restate the others, and should not silently lose them
+    if they do not.
 
     Raises:
-        PropertyUnavailableError: if the name is not in the databank. An error rather
-            than a default: substituting a similar substance would produce a
-            plausible answer for the wrong fluid, and the caller would have no way to
-            see it.
+        PropertyUnavailableError: if the name is in neither the databank nor the
+            keycard, or is in the keycard without every parameter a cubic reads. An
+            error rather than a default: substituting a similar substance would
+            produce a plausible answer for the wrong fluid, and the caller would
+            have no way to see it.
     """
     key = name.strip().lower()
-    try:
-        return _table()[key]
-    except KeyError:
-        raise PropertyUnavailableError(
-            name,
-            "critical constants",
-            f"not in the component databank ({len(_table())} substances). "
-            f"`available()` lists them; `component()` takes a Tc, Pc and omega "
-            f"directly for anything else.",
-        ) from None
+    base = _table().get(key)
+    card = keycard.current()
+    override = card.component(key) if card is not None else None
+
+    if override is None:
+        if base is None:
+            raise PropertyUnavailableError(
+                name,
+                "critical constants",
+                f"not in the component databank ({len(_table())} substances) and not in "
+                f"the loaded keycard. `available()` lists them; `component()` takes a "
+                f"Tc, Pc and omega directly for anything else.",
+            )
+        return base
+
+    if base is None:
+        missing = sorted(set(keycard.COMPONENT_PARAMETERS) - set(override))
+        if missing:
+            raise PropertyUnavailableError(
+                name,
+                "critical constants",
+                f"the keycard supplies {sorted(override)} but a cubic needs "
+                f"{sorted(keycard.COMPONENT_PARAMETERS)}; {missing} is missing. A "
+                f"partial component is refused rather than completed from a similar "
+                f"substance, which would be inventing data.",
+            )
+        return DatabankEntry(
+            name=name.strip(),
+            cas=None,
+            formula=None,
+            Tc=override["Tc"],
+            Pc=override["Pc"],
+            omega=_as_float(override["omega"], key),
+            molar_mass=None,
+            critical_volume=None,
+            liquid_density=None,
+            citation=None,
+            source="keycard",
+        )
+
+    return replace(
+        base,
+        Tc=override.get("Tc", base.Tc),
+        Pc=override.get("Pc", base.Pc),
+        omega=_as_float(override["omega"], key) if "omega" in override else base.omega,
+        source="keycard",
+    )
+
+
+def _as_float(value: Q, name: str) -> float:
+    """A dimensionless quantity as a plain float, refusing a dimensioned one.
+
+    The check is `dimensionality` rather than `check("[dimensionless]")`: pint has no
+    `[dimensionless]` dimension, so the obvious spelling raises a `ValueError` about
+    the registry rather than returning a verdict about the value.
+    """
+    if value.dimensionality != ureg.dimensionless.dimensionality:
+        raise InvalidInputError(
+            f"components.{name}.omega",
+            f"the acentric factor is a pure number, but got {value}",
+        )
+    return float(value.to("dimensionless").magnitude)
 
 
 def component(name: str) -> Component:
@@ -187,16 +260,26 @@ def component(name: str) -> Component:
 def kij_for(names: tuple[str, ...]) -> dict[tuple[int, int], float]:
     """The interaction pairs the databank knows, for a list of components.
 
-    Only pairs where both names are present are returned, and only where the
-    databank has a value - an unlisted pair is zero, which is the ideal-mixture
-    assumption and is what `mixture()` already does with an omitted pair.
+    Only pairs where both names are present are returned, and only where a value
+    exists - an unlisted pair is zero, which is the ideal-mixture assumption and is
+    what `mixture()` already does with an omitted pair.
+
+    **A keycard's value wins over the databank's**, including when the keycard's
+    value is exactly zero: overriding a fitted pair back to ideal mixing is a
+    deliberate act, and a rule that treated zero as "absent" would silently undo it.
 
     Keyed by index into `names`, which is the form `mixture()` takes.
     """
+    card = keycard.current()
     pairs: dict[tuple[int, int], float] = {}
     for i, a in enumerate(names):
         for j in range(i + 1, len(names)):
-            value = _kij().get((a.strip().lower(), names[j].strip().lower()))
+            from_keycard = card.kij_for(a, names[j]) if card is not None else None
+            value = (
+                from_keycard
+                if from_keycard is not None
+                else _kij().get((a.strip().lower(), names[j].strip().lower()))
+            )
             if value is not None and value != 0.0:
                 pairs[(i, j)] = value
     return pairs
@@ -220,8 +303,50 @@ def from_names(names: list[str]) -> Mixture:
     return mixture(components, kij=kij_for(tuple(resolved)))
 
 
+def from_model(name: str) -> Mixture:
+    """A :class:`~azoth.eos.mixture.Mixture` from a model a keycard declares.
+
+    A keycard's ``models`` section names a cubic variant and the substances it is for
+    - named choices from closed vocabularies and nothing to execute, so there is no
+    code in a keycard and nothing a keycard can do that this library has not already
+    implemented.
+
+    Every declaration is checked against what this build runs, and a name outside the
+    vocabularies is refused when the *keycard is loaded* rather than when this is
+    called - a model that silently fell back to Peng-Robinson would be a wrong answer
+    with no symptom.
+
+    Raises:
+        PropertyUnavailableError: if no keycard is loaded, or it declares no model of
+            that name.
+        PropertyUnavailableError: from :func:`from_names`, if a component of the model
+            cannot be resolved.
+    """
+    card = keycard.current()
+    model = card.model(name) if card is not None else None
+    if model is None:
+        where = "the loaded keycard" if card is not None else "no keycard is loaded"
+        known = sorted(card.models) if card is not None else []
+        raise PropertyUnavailableError(
+            name,
+            "model definition",
+            f"not declared in {where}. Declared models: {known}. A model is a "
+            f"keycard's `models` section, not something a calculation resolves on "
+            f"its own.",
+        )
+    return from_names(list(model.components))
+
+
 # Imported at the bottom because `mixture` lives with the types this module builds
 # on, and importing it at the top would make the cycle explicit for no gain.
 from azoth.eos.mixture import mixture  # noqa: E402
 
-__all__ = ["DatabankEntry", "available", "component", "entry", "from_names", "kij_for"]
+__all__ = [
+    "DatabankEntry",
+    "available",
+    "component",
+    "entry",
+    "from_model",
+    "from_names",
+    "kij_for",
+]

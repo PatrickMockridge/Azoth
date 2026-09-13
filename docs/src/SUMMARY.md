@@ -33,6 +33,8 @@
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
 - [Heat transfer](./thermal/index.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
+- [The keycard](./keycard.md)
+- [What ships](./data.md)
 - [Copyright and licensed data](./copyright.md)
 - [The batch API](./batch.md)
 - [azoth and NeqSim](./comparison/neqsim.md)

@@ -1,6 +1,6 @@
 """The user data template must be valid, and must stay a template.
 
-``azoth-data.example.yaml`` is the file a user copies to supply values from a
+``keycard.example.yaml`` is the file a user copies to supply values from a
 standard they licensed, and ``tools/check_user_data.py`` is what tells them
 whether they filled it in correctly. Both are documentation as much as they are
 code, which is what makes them worth testing.
@@ -28,7 +28,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CHECKER = REPO_ROOT / "tools" / "check_user_data.py"
-TEMPLATE = REPO_ROOT / "azoth-data.example.yaml"
+TEMPLATE = REPO_ROOT / "keycard.example.yaml"
 
 
 def run_checker(path: Path) -> subprocess.CompletedProcess[str]:
@@ -50,7 +50,7 @@ def template_document() -> dict[str, Any]:
 def test_the_template_exists() -> None:
     """A missing template is the failure mode this file is named for."""
     assert TEMPLATE.is_file(), (
-        "azoth-data.example.yaml is missing. It is what docs/src/copyright.md tells "
+        "keycard.example.yaml is missing. It is what docs/src/copyright.md tells "
         "a user to copy; without it that page describes a file that is not there."
     )
 

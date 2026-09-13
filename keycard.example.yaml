@@ -1,0 +1,229 @@
+# ============================================================================
+#  keycard.example.yaml - the TEMPLATE for your own keycard
+# ============================================================================
+#
+#  A keycard is how you add to azoth, or override what it ships, **without
+#  writing Rust or Python**. Everything in it is data: a component, a fluid, a
+#  fitting, a coefficient, and a cubic variant.
+#
+#  Copy this to `keycard.yaml` at the repository root, fill in the values you
+#  are entitled to use, and load it:
+#
+#      import azoth
+#      azoth.keycard.load("keycard.yaml")
+#
+#  Check it first, with:
+#
+#      python tools/check_user_data.py keycard.yaml
+#
+#  This template validates as it stands. That is deliberate and a test enforces
+#  it: a template that does not pass its own checker teaches the wrong shape.
+#
+#  ---------------------------------------------------------------------------
+#  PROVENANCE IS YOURS, AND OPTIONAL
+#  ---------------------------------------------------------------------------
+#
+#  A row may carry a `citation` naming where its values came from. It does not
+#  have to. There is no status field, no requirement and no check: **provenance
+#  is your job, not this library's**, and a YAML linter cannot do it for you.
+#
+#  That is the deliberate position, not an omission. An earlier version required
+#  a `verify_status` on every row and a machine-fetchable `source_ref` beside it,
+#  and a rule that the two had to agree. Nobody can check whether a person read a
+#  standard, so the field was a form to fill in rather than a fact - and a form
+#  teaches people to fill it in.
+#
+#  What the library owes you instead is disclosure: it says what it ships and
+#  where that came from (`NOTICE`), and a result computed from your keycard
+#  records whose keycard it was.
+#
+#  ---------------------------------------------------------------------------
+#  WHAT A KEYCARD IS NOT
+#  ---------------------------------------------------------------------------
+#
+#  It is not code, and it cannot be. Every section is named choices from closed
+#  vocabularies plus numbers - so there is nothing in a keycard that this library
+#  has not already implemented, and nothing a keycard can make it do.
+#
+#  One keycard is in force at a time, process-wide. `load()` replaces whatever
+#  was there, and `azoth.keycard.clear()` goes back to what ships. Two datasets
+#  are two processes, which is also the only way to compare them honestly.
+# ============================================================================
+
+# Bump only if the format changes; the checker rejects unknown versions rather
+# than guessing at what a newer shape meant.
+schema_version: 2
+
+# ---------------------------------------------------------------------------
+#  Keyholder
+# ---------------------------------------------------------------------------
+#
+#  Who is asserting the right to use these values. A result computed from a
+#  keycard records whose keycard it was, and the recording needs a name.
+#
+keyholder:
+  name: Example Engineering Ltd
+  # Optional: a fetchable reference to the licence itself, so a reviewer can see
+  # the terms a value was used under rather than being told they exist. A keycard
+  # carrying only public data has no licence to name.
+  #
+  # licence: https://example.com/licences/iso-5167
+
+# ---------------------------------------------------------------------------
+#  Components
+# ---------------------------------------------------------------------------
+#
+#  Overrides or extends `data/components/components.csv`, which is NeqSim's
+#  databank (Equinor/NTNU, Apache-2.0) - 173 substances. Supplying a name that
+#  is already there replaces the parameters you list and keeps the rest, so
+#  correcting one value does not require restating the others.
+#
+#  The parameters a cubic reads are `Tc`, `Pc` and `omega`. That list is closed:
+#  a name outside it is refused rather than stored, because a value nothing reads
+#  is data that looks in use and is not.
+#
+#  Units are checked and converted, not assumed. The vocabulary is the same one
+#  the specs use - `K`, `Pa`, `kg/m**3` and so on - so a value is either written
+#  in a unit this library knows or it is refused by name. That is what stops a
+#  `Tc` meant in Celsius being read as kelvin, which would shift every result by
+#  273 and look entirely reasonable.
+#
+components:
+  # An invented value for a substance that ships. The shape is real; this number
+  # is not, and the citation says so. Delete the whole section if you have none.
+  methane:
+    Tc: { value: 190.0, unit: K, citation: "EXAMPLE - not the accepted value." }
+
+  # A substance the databank does not have. All three parameters are required:
+  # a partial component is refused rather than completed from something similar,
+  # which would be inventing data.
+  #
+  # n-hexadecane:
+  #   Tc: { value: 722.0, unit: K }
+  #   Pc: { value: 1.40e6, unit: Pa }
+  #   omega: { value: 0.717, unit: dimensionless }
+
+# ---------------------------------------------------------------------------
+#  Binary interaction parameters
+# ---------------------------------------------------------------------------
+#
+#  Overrides or extends `data/components/kij.csv` - 516 fitted pairs. These are
+#  the values a cubic's mixing rule actually reads, so a keycard that overrides a
+#  component's `Tc` but not its interaction parameters is overriding less than it
+#  looks like.
+#
+#  Ordered pairs are not a thing here: `component_a`/`component_b` may be given in
+#  either order and mean the same pair.
+#
+kij:
+  - component_a: methane
+    component_b: n-butane
+    value: 0.0135
+    citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard. Replace with your own."
+    # `temperature_k` is optional: most published kij are treated as constants,
+    # and recording a temperature where the source gives one is disclosure.
+
+# ---------------------------------------------------------------------------
+#  Coefficients
+# ---------------------------------------------------------------------------
+#
+#  Single constants a calculation takes as an argument, keyed by calculation id
+#  and then by input name - the same identifiers the spec, both implementations
+#  and the docs use.
+#
+#  **These are a default, and an explicit argument always wins.** A caller who
+#  writes `azoth.hydraulics.orifice_flow(..., Cd=0.61)` gets 0.61 and the keycard
+#  is not consulted. That direction matters: silently overriding a value someone
+#  stated in their own call would be the worst kind of surprise.
+#
+#  Many of these need no keycard at all - pass them instead. This section exists
+#  for the case where the same coefficient is used everywhere and belongs in one
+#  place.
+#
+coefficients:
+  hydraulics.orifice_flow:
+    Cd:
+      value: 0.61
+      unit: dimensionless
+      citation: "EXAMPLE - a placeholder, not a value read from ISO 5167."
+      # Which convention the value is stated in, where the quantity is not a true
+      # ratio. `control_valve_cv`'s `Cv` is the case: it is declared dimensionless
+      # because no vocabulary unit can express `gpm/sqrt(psi)`.
+      convention: iso_5167_corner
+
+# ---------------------------------------------------------------------------
+#  Models
+# ---------------------------------------------------------------------------
+#
+#  Declarative model definitions: named choices from closed vocabularies plus the
+#  substances it is for. Nothing here executes, and every name is checked when the
+#  keycard is *loaded* - a model that silently fell back to Peng-Robinson would be
+#  a wrong answer with no symptom.
+#
+#  A definition is a convenience, not a new equation: it names a mixture once so a
+#  caller does not restate it. Use it with `azoth.eos.from_model("name")`.
+#
+# models:
+  # Every member below is the only value each vocabulary currently admits, and
+  # that is deliberate rather than a placeholder. A shape is listed only when both
+  # implementations run it and a test holds the vocabulary to them together;
+  # widening one is a change that happens alongside the implementation.
+  #
+  # vendor_gas:
+  #   kind: cubic_eos
+  #   shape: peng_robinson
+  #   alpha: peng_robinson
+  #   mixing_rule: classical_kij
+  #   components: [methane, n-butane]
+
+# ---------------------------------------------------------------------------
+#  Fittings
+# ---------------------------------------------------------------------------
+#
+#  Read by `azoth.hydraulics.crane_k_factors` and by the `azoth pipe` CLI, where
+#  it becomes the fitting share of a pressure drop. Until you supply your own,
+#  every row here is a placeholder - the citation says so, which is the whole of
+#  how a placeholder is recorded.
+#
+#  `n_ld` is the equivalent length ratio L_eq/D for fully turbulent flow, which
+#  is the coefficient such a table expresses. Record which basis you used in
+#  `f_t_basis`: using the actual friction factor at the flow Reynolds number
+#  instead of the fully turbulent f_T is a defensible variant that gives a
+#  different answer, so the basis has to travel with the number.
+#
+fittings:
+  # An invented row. The id and the shape are real; the number is not, and the
+  # citation says so. Replace the whole list with your own.
+  - id: 90_elbow
+    family: bend
+    name: 90 degree standard elbow
+    n_ld: 30.0
+    f_t_basis: f_t
+    citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard. Replace with your own data."
+
+# ---------------------------------------------------------------------------
+#  Fluid properties
+# ---------------------------------------------------------------------------
+#
+#  Read by the CLI and by `azoth.properties` to turn a fluid name and a
+#  temperature into a density and a viscosity. Linear interpolation between the
+#  points you give, and no extrapolation: past either end a straight-line
+#  extension is a confident wrong number rather than a small error. Water's
+#  viscosity varies by a factor of six across 0-100 C, which is why.
+#
+#  Keys are fluid names and each becomes a table. Tabulate over a range that
+#  covers the temperatures you will ask for, and in ascending temperature order.
+#
+fluids:
+  # An example fluid, deliberately not water: the repository already carries
+  # water and air, and this is here to show the shape rather than to be used.
+  example_fluid:
+    - temperature_c: 0.0
+      density_kg_m3: 1000.0
+      dynamic_viscosity_pa_s: 0.0018
+      citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard."
+
+    - temperature_c: 100.0
+      density_kg_m3: 958.0
+      dynamic_viscosity_pa_s: 0.00028
+      citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard."

@@ -86,7 +86,7 @@ from azoth.core.result import (
 )
 from azoth.core.units import Q
 from azoth.eos.components import available as available_components
-from azoth.eos.components import component, from_names
+from azoth.eos.components import component, from_model, from_names
 from azoth.eos.mixture import Component, Mixture, mixture
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
@@ -99,6 +99,7 @@ __all__ = [
     "component",
     "critical_point",
     "dew_pressure",
+    "from_model",
     "from_names",
     "ideal_gas_cp",
     "mixture",

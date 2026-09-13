@@ -30,7 +30,7 @@ TWO SEPARATE THINGS ARE UNVERIFIED HERE, and they matter differently.
 
 Consequence for testing: because the coefficients are placeholders, there is no correct value for the calc to be checked against, so no test in this repository can detect a wrong coefficient. The tests below therefore validate the ARITHMETIC and the data LOOKUP - that K is computed correctly from whatever coefficients are present - and are honest about not validating the coefficients themselves. This is the one calc in the slice whose numbers are unvalidatable by construction, which is precisely why it is marked so loudly.
 
-[Copyright and licensed data](../copyright.md) lists this alongside every other value the project cannot ship, and the pattern that resolves each. The answer for this one is a file of your own: see azoth-data.example.yaml.
+[Copyright and licensed data](../copyright.md) lists this alongside every other value the project cannot ship, and the pattern that resolves each. The answer for this one is a file of your own: see keycard.example.yaml.
 
 Deliberately no `unit_round_trip` test here, unlike the other four calcs in this slice. This calc has no dimensioned inputs at all - a fitting list and a dimensionless friction factor - so a units round-trip would have nothing to convert and would assert nothing. A test that cannot fail is worse than no test, because it counts as coverage.
 

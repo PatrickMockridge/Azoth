@@ -57,6 +57,7 @@ from azoth._dispatch import Backend, available, describe, extension, select, use
 from azoth.core.errors import (
     AzothError,
     InvalidInputError,
+    KeycardError,
     OutOfRangeError,
     PropertyUnavailableError,
     SolverNotConvergedError,
@@ -73,13 +74,14 @@ __version__ = "0.1.0"
 # Imported last: `azoth.hydraulics` pulls in the dispatch layer, which imports
 # this package's submodules. Keeping it at the bottom means everything it needs
 # is already bound.
-from azoth import batch, eos, hydraulics, properties, thermal
+from azoth import batch, eos, hydraulics, keycard, properties, thermal
 
 __all__ = [
     "AzothError",
     "Backend",
     "FlowRegime",
     "InvalidInputError",
+    "KeycardError",
     "OutOfRangeError",
     "PropertyUnavailableError",
     "Q",
@@ -98,6 +100,7 @@ __all__ = [
     "eos",
     "extension",
     "hydraulics",
+    "keycard",
     "properties",
     "select",
     "thermal",

@@ -40,6 +40,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from azoth import keycard
 from azoth._dispatch import resolve
 from azoth.core.result import (
     ChokedFlowAreaResult,
@@ -152,7 +153,7 @@ def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     return resolve(_PUMP_POWER)(rho=rho, q=q, H=H, eta=eta)  # type: ignore[no-any-return]
 
 
-def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:
+def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float | None = None) -> OrificeFlowResult:
     """Volumetric flow through an orifice.
 
     ``Cd`` is the discharge coefficient and is supplied rather than computed: the
@@ -161,16 +162,23 @@ def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:
     coefficient for ``q = Cd * A * sqrt(2*dP/rho)`` as written, with no
     velocity-of-approach factor added - see the reference implementation.
 
+    **``Cd`` may be omitted when a keycard supplies it**, as
+    ``coefficients.hydraulics.orifice_flow.Cd``. An explicit argument always wins and
+    the keycard is not consulted - see :func:`azoth.keycard.coefficient_value`.
+
     ``d`` is the bore and is declared in millimetres, as bores are quoted; any length
     is accepted. ``dP`` is a magnitude and may not be negative.
 
     Raises:
         OutOfRangeError: if ``d`` or ``rho`` is not positive, if ``dP`` is negative,
             or if ``Cd`` is outside ``(0, 1]``.
+        InvalidInputError: if ``Cd`` is omitted and no keycard supplies it.
 
     See :func:`azoth.hydraulics.reference.orifice_flow`.
     """
-    return resolve(_ORIFICE_FLOW)(d=d, dP=dP, rho=rho, Cd=Cd)  # type: ignore[no-any-return]
+    return resolve(_ORIFICE_FLOW)(  # type: ignore[no-any-return]
+        d=d, dP=dP, rho=rho, Cd=keycard.coefficient_value(_ORIFICE_FLOW, "Cd", Cd)
+    )
 
 
 def control_valve_cv(Cv: float, dP: Q, SG: float) -> ControlValveCvResult:
