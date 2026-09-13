@@ -4,8 +4,16 @@ This library asks to be trusted with engineering numbers, so it should be
 possible to check rather than believe. This document says what you can verify,
 how to do it, and - just as importantly - what none of it proves.
 
-Nothing here involves a blockchain. The trust comes from git, signatures, and
-reproducible hashes, which are boring and work.
+The trust comes from git, signatures, and reproducible hashes, which are boring
+and work. chemeng operates no ledger, issues no token, and contains no smart
+contract or consensus code.
+
+One external service does appear: **source documents are pinned by Arweave
+transaction ID**. That is a deliberate and narrow use - a tx ID is the hash of
+its content, so pinning a standard there makes a citation checkable byte-for-byte
+by anyone, forever, without trusting this repository. The property being used is
+*content addressing plus an independent timestamp*, not decentralisation for its
+own sake. See [How a source is referenced](#how-a-source-is-referenced).
 
 ## What is and is not established
 
@@ -160,6 +168,42 @@ the record's `git.commit` matches the tag you checked in the first step.
 - `git.dirty` - true means the record describes a working tree with uncommitted
   changes, which nobody else can reproduce. A release is never dirty.
 
+## How a source is referenced
+
+Data values are not sourced to a citation string. Each row that is not a
+placeholder carries two machine-readable fields:
+
+| Field | What it holds |
+|---|---|
+| `source_ref` | The document, in a fetchable form |
+| `source_locator` | Where inside that document, e.g. `Table 2, 90 deg standard elbow` |
+
+Accepted forms are `arweave:<txid>`, `doi:<doi>`, and `https://…`, and
+`tools/spec_lint.py` rejects anything else. That matters: a reference written as
+prose cannot be checked by a tool, so it is the same as not citing it.
+
+**`arweave:` references are the strongest of the three here.** An Arweave
+transaction ID is the hash of its content, so the document is content-addressed,
+immutable, and independently timestamped by the network. Anyone can fetch it and
+get byte-identical data. That closes the gap between "this number is in our git
+history" and "here is the document it came from": a reviewer fetches the
+transaction and reads the row named by `source_locator` themselves, without
+having to trust this repository, the maintainer, or an archive that might have
+changed underneath them.
+
+It is a separate question whether a given pinned document is a faithful
+reproduction of the printed standard. `source_ref` records *which document was
+used*, which is what makes that question answerable at all - the answer is the
+same for everyone, because the bytes are fixed.
+
+Reproducing the data is straightforward:
+
+```bash
+# Fetch the document a value was read from:
+curl -L "https://arweave.net/$(grep 90_elbow data/fittings/crane_k_factors.csv \
+  | cut -d, -f8 | cut -d: -f2)" -o crane.pdf
+```
+
 ## What is deliberately not here
 
 **No blockchain, no token, no smart contract.** Signatures and hashes answer
@@ -174,11 +218,16 @@ design, so there is no key to leak and no secret to rotate.
 Two things would strengthen the trust story and are **not implemented**. They are
 listed so nobody assumes more than exists.
 
-**OpenTimestamps anchoring.** A signed tag proves a commit existed, but not *when*
-- a key holder can backdate a tag, and a compromised key can forge history. An
-OpenTimestamps proof would anchor a commit hash into Bitcoin, giving an
-independent lower bound on when it existed. It needs no new trust assumption
+**OpenTimestamps anchoring of releases.** A signed tag proves a commit existed,
+but not *when* - a key holder can backdate a tag, and a compromised key can forge
+history. An OpenTimestamps proof would anchor a commit hash into Bitcoin, giving
+an independent lower bound on when it existed. It needs no new trust assumption
 beyond Bitcoin's existence, and no token.
+
+Note that this is a different question from the Arweave pinning described above.
+Pinning a *source document* establishes which document a value was read from.
+Anchoring a *release commit* would establish when this code existed. The first is
+implemented; the second is not.
 
 **A multi-validator registry.** Today, a result is validated by whoever wrote its
 worked example. A registry where independent parties reproduce a calc's worked

@@ -32,7 +32,7 @@ from chemeng._registry_gen import spec as _spec_for
 from chemeng.core.range import apply_checks, checks_for
 from chemeng.core.result import KComponent, KFactorsResult
 from chemeng.core.warnings import Warning, WarningCode
-from chemeng.hydraulics.reference.fittings import find_fitting
+from chemeng.hydraulics.reference.fittings import VerifyStatus, find_fitting
 
 CALC_ID = "hydraulics.crane_k_factors"
 
@@ -77,15 +77,23 @@ def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:
 
     components: list[KComponent] = []
     estimated: list[str] = []
+    unverified: list[str] = []
     for fitting_id in fittings:
         row = find_fitting(fitting_id)
-        if row.is_estimated:
+        if row.status is VerifyStatus.ESTIMATED_DUMMY:
             estimated.append(row.id)
+        elif row.status is VerifyStatus.UNVERIFIED:
+            unverified.append(row.id)
         components.append(KComponent(fitting_id=row.id, n_ld=row.n_ld, k=f_t * row.n_ld))
 
-    # Provenance warning, driven by the data rather than hardcoded: promote a row
-    # to `verified` and this warning stops firing for that row with no code
-    # change.
+    # Provenance warnings, driven by the data rather than hardcoded: promote a row
+    # and the warning for it stops firing with no code change.
+    #
+    # Two levels, because there are two different things to say. A placeholder is
+    # not engineering data at all; a cited-but-unconfirmed value is a real
+    # published figure that nobody has checked against an authoritative copy.
+    # Both deserve a warning, and collapsing them into one would either overstate
+    # the first or understate the second.
     if estimated:
         warnings.append(
             Warning(
@@ -97,6 +105,19 @@ def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:
                     f"placeholder and must not be used to size equipment. Populate "
                     f"data/fittings/crane_k_factors.csv from the primary standard and "
                     f"set verify_status=verified."
+                ),
+            )
+        )
+    if unverified:
+        warnings.append(
+            Warning(
+                code=WarningCode.UNVERIFIED_SOURCE,
+                message=(
+                    f"{len(unverified)} of {len(fittings)} fitting(s) use coefficients "
+                    f"that are cited but NOT CONFIRMED by a named verifier against an "
+                    f"authoritative copy of the source ({', '.join(unverified)}). They "
+                    f"may be correct; nobody has checked. Treat this resistance "
+                    f"coefficient as provisional and confirm it before sizing equipment."
                 ),
             )
         )

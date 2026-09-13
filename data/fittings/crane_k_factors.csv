@@ -28,18 +28,43 @@
 #   n_ld   = L_eq / D          equivalent length ratio, fully turbulent flow
 #   f_t                        Darcy friction factor for fully turbulent flow
 #
-# verify_status values:
+# verify_status values, and the warning each one raises:
 #   estimated_dummy - placeholder, not from any source. Software testing ONLY.
-#   unverified      - read from a secondary public reference, not checked
-#                     against the primary standard
-#   verified        - read from the primary standard by a named engineer, with
-#                     the source and date recorded in `citation`
+#                     Raises ESTIMATED_DATA on every result that uses it.
+#   unverified      - has a citation, but no named person has confirmed it
+#                     against an authoritative copy of the source. This covers
+#                     both "read from a secondary public reference" and "read
+#                     from a copy of the standard that nobody has verified is
+#                     faithful". Raises UNVERIFIED_SOURCE on every result that
+#                     uses it.
+#   verified        - confirmed by a named person against an authoritative
+#                     copy, with their name, the edition, and the date recorded
+#                     in `citation`. Raises nothing.
 #
-fitting_id,family,name,n_ld,f_t_basis,citation,verify_status
-90_elbow,bend,90 degree standard elbow,30,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-90_elbow_long_radius,bend,90 degree long-radius elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-45_elbow,bend,45 degree standard elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-gate_valve_open,valve,gate valve fully open,8,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-ball_valve_open,valve,ball valve full bore,3,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-plug_valve_straightway,valve,plug valve straightway,18,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
-globe_valve_open,valve,globe valve fully open,340,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+# Only `verified` is silent. Every other state says so at runtime, on the result
+# itself, rather than relying on a reader to check this file.
+#
+# source_ref identifies the document a value was read from, in a form anyone can
+# fetch and check. `arweave:<txid>` is the preferred form: an Arweave transaction
+# ID is the hash of its content, so it is immutable, independently timestamped,
+# and fetchable byte-for-byte by anyone. That makes the provenance of a single
+# number auditable rather than a matter of trusting whoever typed it in.
+#
+#   arweave:<43-char txid>   a document pinned on Arweave
+#   doi:<doi>                a published paper
+#   https://...              anything else fetchable
+#
+# source_locator says where inside that document to look, e.g. "Table 2, 90 deg
+# standard elbow, threaded". A checker needs both: the document, and the place.
+#
+# source_ref is required for any row that is not estimated_dummy. The tools
+# enforce the format, so a tx ID cannot be mistyped into prose and go unnoticed.
+#
+fitting_id,family,name,n_ld,f_t_basis,citation,verify_status,source_ref,source_locator
+90_elbow,bend,90 degree standard elbow,30,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
+90_elbow_long_radius,bend,90 degree long-radius elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
+45_elbow,bend,45 degree standard elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
+gate_valve_open,valve,gate valve fully open,8,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
+ball_valve_open,valve,ball valve full bore,3,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
+plug_valve_straightway,valve,plug valve straightway,18,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
+globe_valve_open,valve,globe valve fully open,340,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,

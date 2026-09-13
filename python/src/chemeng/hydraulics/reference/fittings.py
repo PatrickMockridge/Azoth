@@ -34,7 +34,15 @@ COLUMNS = (
     "f_t_basis",
     "citation",
     "verify_status",
+    "source_ref",
+    "source_locator",
 )
+
+
+def _optional(raw: str) -> str | None:
+    """An empty CSV field means absent, not an empty string."""
+    stripped = raw.strip()
+    return stripped or None
 
 
 class VerifyStatus(StrEnum):
@@ -68,6 +76,15 @@ class Fitting:
     citation: str
     #: How far the value can be trusted.
     status: VerifyStatus
+    #: The document the value was read from, in a fetchable form.
+    #:
+    #: ``arweave:<txid>`` is preferred: an Arweave transaction ID is the hash of
+    #: its content, so the document is immutable, independently timestamped, and
+    #: fetchable byte-for-byte by anyone. That makes a single number's provenance
+    #: auditable rather than a matter of trusting whoever typed it.
+    source_ref: str | None
+    #: Where inside that document to look, e.g. "Table 2, 90 deg elbow".
+    source_locator: str | None
 
     @property
     def is_estimated(self) -> bool:
@@ -105,6 +122,8 @@ def _read_rows(lines: list[str]) -> list[Fitting]:
                 f_t_basis=raw["f_t_basis"],
                 citation=raw["citation"],
                 status=status,
+                source_ref=_optional(raw["source_ref"]),
+                source_locator=_optional(raw["source_locator"]),
             )
         )
     return rows

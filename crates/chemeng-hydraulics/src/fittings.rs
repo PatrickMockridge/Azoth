@@ -36,6 +36,15 @@ pub struct Fitting {
     pub citation: String,
     /// How far the value can be trusted.
     pub status: VerifyStatus,
+    /// The document the value was read from, in a fetchable form.
+    ///
+    /// `arweave:<txid>` is preferred: an Arweave transaction ID is the hash of
+    /// its content, so the document is immutable, independently timestamped, and
+    /// fetchable byte-for-byte by anyone. That makes a single number's
+    /// provenance auditable rather than a matter of trusting whoever typed it.
+    pub source_ref: Option<String>,
+    /// Where inside that document to look, e.g. "Table 2, 90 deg elbow".
+    pub source_locator: Option<String>,
 }
 
 impl Fitting {
@@ -81,13 +90,15 @@ fn parse() -> Result<Vec<Fitting>> {
             f_t_basis: field("f_t_basis")?.to_string(),
             citation: field("citation")?.to_string(),
             status: VerifyStatus::parse(field("verify_status")?)?,
+            source_ref: optional(field("source_ref")?),
+            source_locator: optional(field("source_locator")?),
         });
     }
     Ok(out)
 }
 
 /// Column order as declared in the CSV header.
-const COLUMNS: [&str; 7] = [
+const COLUMNS: [&str; 9] = [
     "fitting_id",
     "family",
     "name",
@@ -95,7 +106,15 @@ const COLUMNS: [&str; 7] = [
     "f_t_basis",
     "citation",
     "verify_status",
+    "source_ref",
+    "source_locator",
 ];
+
+/// An empty CSV field means absent, not an empty string.
+fn optional(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
 
 fn record_field_index(name: &str) -> usize {
     COLUMNS.iter().position(|c| *c == name).unwrap_or(0)

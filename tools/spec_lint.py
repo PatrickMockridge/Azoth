@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -54,6 +55,17 @@ MAX_SENSIBLE_TOLERANCE = 0.05
 
 # Permitted provenance states for a data row.
 VALID_VERIFY_STATUS = {"verified", "unverified", "estimated_dummy"}
+
+# A source reference has to be fetchable and checkable by tooling, not prose.
+# `arweave:<txid>` is the preferred form: the tx ID is the hash of its content,
+# so the document is immutable, independently timestamped, and fetchable
+# byte-for-byte by anyone who wants to check a value against it.
+SOURCE_REF_PATTERNS = {
+    # Arweave transaction IDs are 43 characters of base64url.
+    "arweave": re.compile(r"^arweave:[A-Za-z0-9_-]{43}$"),
+    "doi": re.compile(r"^doi:10\.\d{4,9}/\S+$"),
+    "https": re.compile(r"^https://\S+$"),
+}
 
 
 @dataclass
@@ -533,6 +545,46 @@ def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                         str(rel),
                         f"{raw_path}: fitting '{fid}' is marked verified but its citation "
                         f"still says it is a dummy value",
+                    )
+
+                # Anything that is not a placeholder must say which document it
+                # came from, and say it in a form a tool can fetch. Otherwise the
+                # claim is uncheckable, which is the same as not making it.
+                source_ref = (row.get("source_ref") or "").strip()
+                source_locator = (row.get("source_locator") or "").strip()
+                if status != "estimated_dummy":
+                    if not source_ref:
+                        report.error(
+                            str(rel),
+                            f"{raw_path}: fitting '{fid}' is marked '{status}' but has no "
+                            f"source_ref. A value that is not a placeholder must name the "
+                            f"document it came from, in a fetchable form.",
+                        )
+                    elif not any(p.match(source_ref) for p in SOURCE_REF_PATTERNS.values()):
+                        report.error(
+                            str(rel),
+                            f"{raw_path}: fitting '{fid}' has source_ref '{source_ref}', "
+                            f"which is not a recognised form. Expected arweave:<43-char "
+                            f"txid>, doi:<doi>, or https://...",
+                        )
+                    if not source_locator:
+                        report.error(
+                            str(rel),
+                            f"{raw_path}: fitting '{fid}' has a source_ref but no "
+                            f"source_locator. A checker needs both the document and the "
+                            f"place inside it to look.",
+                        )
+                elif source_ref:
+                    # A contradiction, like the two above it: a value cannot both
+                    # be invented and be sourced. Treated as an error for the same
+                    # reason those are - it is the copy-paste that would promote
+                    # placeholder data to sourced data.
+                    report.error(
+                        str(rel),
+                        f"{raw_path}: fitting '{fid}' is a placeholder but has a "
+                        f"source_ref '{source_ref}'. A placeholder is invented; it "
+                        f"cannot also be sourced. Remove the reference or change "
+                        f"verify_status.",
                     )
                 # Coefficients must be exact decimals, not exponent notation, so
                 # that Python and Rust parse identical bit patterns.
