@@ -24,8 +24,8 @@ from typing import Any
 import pytest
 
 from azoth import _models_gen
+from azoth._dispatch import result_types
 from azoth._registry_gen import BY_ID, CALCS, spec
-from azoth.core.result import RESULT_TYPES
 from azoth.core.warnings import WarningCode
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -51,10 +51,17 @@ def reference_module(calc_id: str, function_name: str) -> ModuleType:
 
 
 def test_every_spec_has_a_result_type() -> None:
-    """A spec with no result type is a calc nothing can represent."""
-    missing = sorted(c["id"] for c in CALCS if c["id"] not in RESULT_TYPES)
-    assert not missing, f"specs with no registered result type: {missing}"
-    extra = sorted(set(RESULT_TYPES) - set(BY_ID))
+    """Every calc and model resolves to a result type, and nothing else does.
+
+    The mapping is derived from each implementation's return annotation rather than
+    listed, so `missing` here means an implementation that annotates nothing - which
+    is a calc nothing can represent. `extra` means an id in neither registry, which
+    would be a name a caller could ask for and get a shape for.
+    """
+    known = set(BY_ID) | {m["id"] for m in _models_gen.MODELS}
+    missing = sorted(c["id"] for c in CALCS if c["id"] not in result_types())
+    assert not missing, f"specs with no resolvable result type: {missing}"
+    extra = sorted(set(result_types()) - known)
     assert not extra, f"result types with no spec: {extra}"
 
 
@@ -69,7 +76,7 @@ def test_declared_outputs_are_result_fields(calc: dict[str, Any]) -> None:
     # Any rather than a parameterised type: the registry maps ids to a
     # heterogeneous set of dataclasses, and `dataclasses.fields` is
     # deliberately runtime, so there is no useful static type to give it.
-    result_type: Any = RESULT_TYPES[calc["id"]]
+    result_type: Any = result_types()[calc["id"]]
     fields = {f.name for f in dataclasses.fields(result_type)}
     declared = set(calc["outputs"])
     missing = declared - fields

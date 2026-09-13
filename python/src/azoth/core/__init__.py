@@ -38,7 +38,6 @@ from azoth.core.errors import (
 )
 from azoth.core.range import Band, RangeCheck, Severity, SpecChecks, apply_checks, checks_for
 from azoth.core.result import (
-    RESULT_TYPES,
     BubblePressureResult,
     ColebrookResult,
     DarcyWeisbachResult,
@@ -80,7 +79,6 @@ from azoth.core.warnings import Warning, WarningCode
 
 __all__ = [
     "CANONICAL_UNITS",
-    "RESULT_TYPES",
     "AzothError",
     "Band",
     "BubblePressureResult",

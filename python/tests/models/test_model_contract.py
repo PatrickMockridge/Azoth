@@ -44,6 +44,19 @@ def _extension() -> ModuleType:
         raise AssertionError("azoth._core is not built; run `maturin develop`") from exc
 
 
+def model_result_types() -> dict[str, type[Any]]:
+    """The result dataclass each model produces, derived from the models themselves.
+
+    From `azoth._dispatch.result_types`, which reads each implementation's return
+    annotation, filtered to the model ids. It used to be a hand-maintained table in
+    `core.result`, asserted equal to the registry by the test below - which is a list
+    kept in step with a list, so the test could only tell you that you had forgotten.
+    """
+    from azoth._dispatch import result_types
+
+    return {key: value for key, value in result_types().items() if key in schema_model_ids()}
+
+
 def schema_model_ids() -> set[str]:
     """The model ids the spec tree declares."""
     return {str(m["id"]) for m in _models_gen.MODELS}
@@ -198,21 +211,19 @@ def test_the_model_registry_is_not_the_calc_registry() -> None:
 
 
 def test_the_bridge_carries_a_model_arm_for_every_model() -> None:
-    """`_MODEL_IMPLEMENTATIONS` covers exactly the model registry.
+    """Every registered model has a bridge function to resolve to.
 
-    Kept in its own table rather than the calc one, because that table is asserted to
-    be exactly the calc registry in both directions. This is the test that makes the
-    separation hold: a model added to the registry without a bridge entry would
-    otherwise resolve to the Python reference for one backend and raise for the
-    other, which is a cross-language disagreement rather than a missing function.
+    The bridge used to keep a model table separate from the calc one, and both are
+    gone: `resolve` derives the function from the id, so what can go wrong is a
+    bridge function that was never written. A model without one would resolve to the
+    Python reference on one backend and raise on the other, which is a cross-language
+    disagreement rather than a missing function - so it is checked here rather than
+    left to the first caller who switches backends.
     """
-    from azoth._rust_bridge import _MODEL_IMPLEMENTATIONS
+    from azoth._rust_bridge import resolve
 
-    assert set(_MODEL_IMPLEMENTATIONS) == schema_model_ids(), (
-        f"the bridge's model table and the registry differ\n"
-        f"  missing from the bridge: {sorted(schema_model_ids() - set(_MODEL_IMPLEMENTATIONS))}\n"
-        f"  not in the registry: {sorted(set(_MODEL_IMPLEMENTATIONS) - schema_model_ids())}"
-    )
+    for model_id in sorted(schema_model_ids()):
+        assert callable(resolve(model_id)), f"{model_id} resolves to nothing in the bridge"
 
 
 @pytest.mark.requires_rust
@@ -227,11 +238,9 @@ def test_the_result_shapes_agree_across_languages() -> None:
     """
     import dataclasses
 
-    from azoth.core.result import MODEL_RESULT_TYPES
-
     core = _extension()
-    assert MODEL_RESULT_TYPES, "no model results to check"
-    for model_id, result_type in MODEL_RESULT_TYPES.items():
+    assert model_result_types(), "no model results to check"
+    for model_id, result_type in model_result_types().items():
         typed: Any = result_type
         python_fields = [f.name for f in dataclasses.fields(typed)]
         rust_fields = list(core.result_fields(model_id))
@@ -241,19 +250,19 @@ def test_the_result_shapes_agree_across_languages() -> None:
 
 
 def test_the_model_result_table_covers_every_model() -> None:
-    """`MODEL_RESULT_TYPES` is exactly the model registry.
+    """Every model resolves to a result type, and nothing else does.
 
-    Kept separate from the calc table, which is asserted to be exactly the calc
-    registry - so a model result appearing there would break that contract rather
-    than extend it. A model in the registry with no result type would be a shape
-    nothing checks, which is what this table exists to prevent.
+    The derivation reads a return annotation, so a model whose implementation
+    annotates nothing - or annotates something that is not a dataclass - is caught
+    here rather than at the first caller who asks for a field. That is what the
+    hand-maintained table this replaced was for, and it caught only the case where
+    somebody remembered to add a row.
     """
-    from azoth.core.result import MODEL_RESULT_TYPES
 
-    assert set(MODEL_RESULT_TYPES) == schema_model_ids(), (
+    assert set(model_result_types()) == schema_model_ids(), (
         f"the model result table and the registry differ\n"
-        f"  missing: {sorted(schema_model_ids() - set(MODEL_RESULT_TYPES))}\n"
-        f"  extra:   {sorted(set(MODEL_RESULT_TYPES) - schema_model_ids())}"
+        f"  missing: {sorted(schema_model_ids() - set(model_result_types()))}\n"
+        f"  extra:   {sorted(set(model_result_types()) - schema_model_ids())}"
     )
 
 

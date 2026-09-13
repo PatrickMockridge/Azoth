@@ -708,41 +708,6 @@ class MolarEnthalpyEntropyResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
-#: Calc id -> the result dataclass it produces. Used by the contract test to
-#: check each shape against the Rust side without importing every name by hand.
-RESULT_TYPES: dict[str, type[object]] = {
-    "hydraulics.reynolds_number": ReynoldsNumberResult,
-    "hydraulics.friction_factor_colebrook": ColebrookResult,
-    "hydraulics.friction_factor_swamee_jain": SwameeJainResult,
-    "hydraulics.friction_factor_haaland": HaalandResult,
-    "hydraulics.crane_k_factors": KFactorsResult,
-    "hydraulics.darcy_weisbach": DarcyWeisbachResult,
-    "thermal.conduction_plane_wall": ConductionPlaneWallResult,
-    "hydraulics.pump_power": PumpPowerResult,
-    "hydraulics.orifice_flow": OrificeFlowResult,
-    "hydraulics.control_valve_cv": ControlValveCvResult,
-    "hydraulics.choked_flow_area": ChokedFlowAreaResult,
-    "eos.pr_kappa": PrKappaResult,
-    "eos.pr_alpha_ab": PrAlphaAbResult,
-    "eos.pr_z_factor": PrZFactorResult,
-    "eos.prsv_kappa": PrsvKappaResult,
-    "eos.pr_departure": PrDepartureResult,
-    "eos.vdw1f_mix_binary": Vdw1fMixBinaryResult,
-    "eos.rachford_rice_binary": RachfordRiceBinaryResult,
-    "eos.pr_molar_volume": PrMolarVolumeResult,
-    "eos.pr_mass_density": PrMassDensityResult,
-    "eos.ideal_gas_cp": IdealGasCpResult,
-}
-
-
-#: Model id -> the result dataclass it produces.
-#:
-#: A separate table from ``RESULT_TYPES`` for the same reason
-#: ``_MODEL_IMPLEMENTATIONS`` is separate from ``_IMPLEMENTATIONS``: the calc table
-#: is asserted to be exactly the calc registry, so a model appearing there would
-#: break that contract rather than extend it. Before this existed the model results
-#: were covered by no shape check at all, which the flash - thirteen fields and an
-#: optional one - is a good reason to fix.
 @dataclass(frozen=True, slots=True, eq=False)
 class CriticalPointResult(_HasWarnings):
     """Result of ``eos.critical_point``.
@@ -767,14 +732,3 @@ class CriticalPointResult(_HasWarnings):
     residual: float
     #: Caveats.
     warnings: tuple[Warning, ...]
-
-
-MODEL_RESULT_TYPES: dict[str, type[object]] = {
-    "eos.bubble_pressure": BubblePressureResult,
-    "eos.critical_point": CriticalPointResult,
-    "eos.molar_enthalpy_entropy": MolarEnthalpyEntropyResult,
-    "eos.dew_pressure": DewPressureResult,
-    "eos.pt_flash": PtFlashResult,
-    "eos.pure_saturation": PureSaturationResult,
-    "eos.stability_test": StabilityTestResult,
-}

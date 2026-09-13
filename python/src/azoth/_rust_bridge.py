@@ -403,34 +403,6 @@ def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResu
     )
 
 
-#: Calc id -> the bridge function implementing it. Explicit rather than derived
-#: from the function names, so a renamed id fails here at import rather than
-#: resolving to the wrong calc.
-_IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
-    "hydraulics.reynolds_number": reynolds_number,
-    "hydraulics.friction_factor_colebrook": friction_factor_colebrook,
-    "hydraulics.friction_factor_swamee_jain": friction_factor_swamee_jain,
-    "hydraulics.friction_factor_haaland": friction_factor_haaland,
-    "hydraulics.crane_k_factors": crane_k_factors,
-    "hydraulics.darcy_weisbach": darcy_weisbach,
-    "hydraulics.pump_power": pump_power,
-    "hydraulics.orifice_flow": orifice_flow,
-    "hydraulics.control_valve_cv": control_valve_cv,
-    "hydraulics.choked_flow_area": choked_flow_area,
-    "thermal.conduction_plane_wall": conduction_plane_wall,
-    "eos.pr_kappa": pr_kappa,
-    "eos.pr_alpha_ab": pr_alpha_ab,
-    "eos.pr_z_factor": pr_z_factor,
-    "eos.prsv_kappa": prsv_kappa,
-    "eos.pr_departure": pr_departure,
-    "eos.vdw1f_mix_binary": vdw1f_mix_binary,
-    "eos.rachford_rice_binary": rachford_rice_binary,
-    "eos.pr_molar_volume": pr_molar_volume,
-    "eos.pr_mass_density": pr_mass_density,
-    "eos.ideal_gas_cp": ideal_gas_cp,
-}
-
-
 #: The same table for *models*, kept separate because the calc table is asserted to
 #: be exactly the calc registry - ``test_registration_completeness`` compares it by
 #: equality in both directions, so a model id in it would break that contract rather
@@ -633,34 +605,32 @@ def molar_enthalpy_entropy(
     )
 
 
-_MODEL_IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
-    "eos.molar_enthalpy_entropy": molar_enthalpy_entropy,
-    "eos.bubble_pressure": bubble_pressure,
-    "eos.critical_point": critical_point,
-    "eos.dew_pressure": dew_pressure,
-    "eos.pure_saturation": pure_saturation,
-    "eos.pt_flash": pt_flash,
-    "eos.stability_test": stability_test,
-}
-
-
 def resolve(calc_id: str) -> Callable[..., Any]:
-    """The bridge function for a calc id.
+    """The bridge function for a calc id, derived from the id rather than listed.
+
+    A calculation's id is its address here exactly as it is on the reference side:
+    `hydraulics.orifice_flow` names `orifice_flow` in this module. So there is no
+    table, and adding a calculation adds no entry.
+
+    The table this replaces was hand-maintained and asserted equal to the registry by
+    a test - which is a list kept in step with a list, so the test could only ever
+    tell you that you had forgotten something. Deriving it means there is nothing to
+    forget, and a calc whose bridge function is missing fails the same completeness
+    test one step earlier.
 
     Raises:
-        KeyError: if the calc has no Rust implementation. That is a programming
-            error rather than a runtime condition - the reference and the
-            extension are supposed to cover the same calcs, and a test asserts
-            they do.
+        KeyError: if the id is not in the registry at all. That is a programming
+            error rather than a runtime condition - the reference and the extension
+            are supposed to cover the same calcs, and a test asserts they do.
     """
-    try:
-        return _IMPLEMENTATIONS[calc_id]
-    except KeyError:
-        pass
-    try:
-        return _MODEL_IMPLEMENTATIONS[calc_id]
-    except KeyError:
+    from azoth._models_gen import MODELS
+    from azoth._registry_gen import CALCS
+
+    if calc_id not in {entry["id"] for entry in [*CALCS, *MODELS]}:
         raise KeyError(
-            f"no Rust implementation for {calc_id!r}; the extension covers "
-            f"{sorted(_IMPLEMENTATIONS)} and the models {sorted(_MODEL_IMPLEMENTATIONS)}"
+            f"no Rust implementation for {calc_id!r}: it is not in the registry. "
+            f"The extension covers {len(CALCS)} calc(s) and {len(MODELS)} model(s)."
         ) from None
+
+    resolved: Callable[..., Any] = globals()[calc_id.rpartition(".")[2]]
+    return resolved

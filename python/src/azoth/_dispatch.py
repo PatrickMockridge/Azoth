@@ -17,7 +17,7 @@ import os
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from types import ModuleType
-from typing import Any, Literal
+from typing import Any, Literal, get_type_hints
 
 Backend = Literal["python", "rust"]
 
@@ -109,6 +109,65 @@ def extension() -> ModuleType | None:
     return _EXTENSION
 
 
+def reference_for(calc_id: str) -> Callable[..., Any]:
+    """The pure-Python implementation of `calc_id`, found by its id.
+
+    A calculation's id **is** its address: `hydraulics.darcy_weisbach` names
+    `azoth.hydraulics.reference.darcy_weisbach.darcy_weisbach`, with nothing in
+    between. So this is a lookup rather than a table, and adding a calculation adds
+    no entry anywhere.
+
+    The namespace used to be hardcoded as `hydraulics` while only the function name
+    was derived, so a calc in any other namespace resolved from
+    `azoth.hydraulics.reference.<name>` and failed with an `ImportError` *at call
+    time* - not at build time, not at import time, but the first time a caller used
+    it. That is the latest possible moment for a wiring mistake to surface, which is
+    what made it worth deriving rather than listing.
+    """
+    namespace, _, function_name = calc_id.rpartition(".")
+    # Annotated rather than inferred: `getattr` returns Any, which would make the
+    # return an implicit Any and fail `--strict` at the boundary of exactly the
+    # function whose job is to keep the two implementations interchangeable.
+    resolved: Callable[..., Any] = getattr(
+        importlib.import_module(f"azoth.{namespace}.reference.{function_name}"),
+        function_name,
+    )
+    return resolved
+
+
+def result_type(calc_id: str) -> type[Any]:
+    """The result dataclass a calculation produces, read from its own annotation.
+
+    Derived rather than listed, and the annotation is the right place to read it
+    from: `def friction_factor_colebrook(...) -> ColebrookResult` already says what
+    the function returns, and a table beside it is a second answer to a question the
+    code has answered. The table this replaces could not have been derived by naming
+    convention either - the calc is `friction_factor_colebrook` and its result is
+    `ColebrookResult` - which is exactly why it was hand-written, and exactly why it
+    could drift.
+
+    Raises:
+        KeyError: if the function carries no return annotation. Every calculation
+            does, and one that does not is a defect rather than a case to handle.
+    """
+    hints = get_type_hints(reference_for(calc_id))
+    if "return" not in hints:
+        raise KeyError(
+            f"{calc_id!r} has no return annotation, so its result type cannot be "
+            f"read. Every calculation in the registry annotates what it returns."
+        )
+    resolved: type[Any] = hints["return"]
+    return resolved
+
+
+def result_types() -> dict[str, type[Any]]:
+    """Every calculation and model id, mapped to the result type it produces."""
+    from azoth._models_gen import MODELS
+    from azoth._registry_gen import CALCS
+
+    return {entry["id"]: result_type(entry["id"]) for entry in [*CALCS, *MODELS]}
+
+
 def resolve(calc_id: str) -> Callable[..., Any]:
     """The callable implementing `calc_id` on the selected backend.
 
@@ -116,21 +175,7 @@ def resolve(calc_id: str) -> Callable[..., Any]:
     caller never has to know which backend answered - the Rust binding's own
     result objects are adapted before they leave this module.
     """
-    # Both segments come from the id. The namespace used to be hardcoded as
-    # `hydraulics` while only the function name was derived, so a calc in any other
-    # namespace resolved its reference implementation from `azoth.hydraulics.
-    # reference.<name>` and failed with an ImportError *at call time* - not at
-    # build time, not at import time, but the first time a caller used it. That is
-    # the latest possible moment for a wiring mistake to surface, which is what made
-    # it worth deriving rather than listing.
-    namespace, _, function_name = calc_id.rpartition(".")
-    # Annotated rather than inferred: `getattr` returns Any, which would make the
-    # return below an implicit Any and fail `--strict` at the boundary of exactly
-    # the function whose job is to keep the two implementations interchangeable.
-    reference: Callable[..., Any] = getattr(
-        importlib.import_module(f"azoth.{namespace}.reference.{function_name}"),
-        function_name,
-    )
+    reference = reference_for(calc_id)
 
     if select() == "python":
         return reference

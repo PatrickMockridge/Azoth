@@ -125,10 +125,10 @@ def test_result_shapes_agree_across_languages() -> None:
     """Every result dataclass must have exactly the fields Rust reports."""
     import dataclasses
 
-    from azoth.core.result import RESULT_TYPES
+    from azoth._dispatch import result_types
 
     core = _extension()
-    for calc_id, result_type in RESULT_TYPES.items():
+    for calc_id, result_type in result_types().items():
         typed: Any = result_type
         python_fields = [f.name for f in dataclasses.fields(typed)]
         rust_fields = list(core.result_fields(calc_id))

@@ -183,9 +183,9 @@ def _column_kinds(spec: Mapping[str, Any]) -> dict[str, str]:
     so this side cannot disagree with the Rust arm about which columns exist: if they do
     disagree, the cross-language batch test says so.
     """
-    from azoth.core.result import RESULT_TYPES
+    from azoth._dispatch import result_type as resolve_result_type
 
-    result_type: Any = RESULT_TYPES[spec["id"]]
+    result_type: Any = resolve_result_type(spec["id"])
     hints = get_type_hints(result_type)
     inputs = set(spec["inputs"])
     kinds: dict[str, str] = {}

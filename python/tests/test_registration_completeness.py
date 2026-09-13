@@ -9,7 +9,7 @@ make those omissions fail loudly, naming the file to go and edit.
 Three of the registration points already have an owner, and duplicating them would
 be two places to fix when one changes:
 
-* a spec with no entry in ``RESULT_TYPES`` — ``test_registry_contract``
+* a spec with no entry in ``result_types()`` — ``test_registry_contract``
 * a declared output that is not a field on the result dataclass — same file
 * the namespace function existing — same file, from the spec's
   ``implementations.python``
@@ -44,8 +44,8 @@ from typing import Any
 
 import pytest
 
+from azoth._dispatch import result_types
 from azoth._registry_gen import CALCS
-from azoth.core.result import RESULT_TYPES
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STUB_PATH = REPO_ROOT / "python" / "src" / "azoth" / "_core.pyi"
@@ -96,12 +96,12 @@ def test_there_are_calcs_to_check() -> None:
 def test_the_result_type_is_a_usable_dataclass(calc_id: str) -> None:
     """A result class without its decorator is a class you cannot construct.
 
-    ``RESULT_TYPES`` maps a calc id to a class, and every check that reads those
+    ``result_types()`` maps a calc id to a class, and every check that reads those
     classes reads them through ``dataclasses.fields`` - which raises rather than
     reporting a missing decorator. The class then looks registered and fails at the
     first call. This asserts the decorator, which nothing else did.
     """
-    result_type: Any = RESULT_TYPES[calc_id]
+    result_type: Any = result_types()[calc_id]
     # Read before the assert: `is_dataclass` narrows `result_type` to a dataclass type,
     # which has no `__name__` under mypy --strict even though a class always does.
     class_name: str = result_type.__name__
@@ -160,22 +160,23 @@ def test_the_extension_exposes_the_function(calc_id: str) -> None:
 
 @pytest.mark.requires_rust
 def test_the_bridge_covers_exactly_the_registry() -> None:
-    """``_rust_bridge._IMPLEMENTATIONS`` is the same set as the registry.
+    """Every registered id resolves to a bridge function that exists.
 
-    The bridge's table is what ``resolve`` looks a calc id up in, so an omission is
-    an ImportError-shaped failure at call time rather than anything a build catches.
+    The bridge used to carry an id -> function table, and this test compared it with
+    the registry. Both are gone: `_rust_bridge.resolve` derives the function from the
+    id, because a calc's id is its address on the Rust side exactly as it is on the
+    reference side. So what can go wrong now is a bridge function that was never
+    *written*, and that is what this checks - the derivation is only as good as the
+    names it looks up.
     """
     bridge = importlib.import_module("azoth._rust_bridge")
-    implementations: dict[str, Any] = bridge._IMPLEMENTATIONS
-    official = set(implementations)
-    registry_ids = set(CALC_IDS)
-    assert official == registry_ids, (
-        f"azoth._rust_bridge._IMPLEMENTATIONS and the registry differ\n"
-        f"  missing from the bridge: {sorted(registry_ids - official)}\n"
-        f"  not in the registry: {sorted(official - registry_ids)}\n"
-        f"Add a bridge function in python/src/azoth/_rust_bridge.py and an entry in "
-        f"its _IMPLEMENTATIONS table."
+    missing = sorted(calc_id for calc_id in CALC_IDS if not hasattr(bridge, FUNCTION_NAME[calc_id]))
+    assert not missing, (
+        f"{missing} have no bridge function. Add one named after the id's last "
+        f"segment in python/src/azoth/_rust_bridge.py - there is no table to update."
     )
+    with pytest.raises(KeyError):
+        bridge.resolve("not.a_calc")
 
 
 # --- the type stub ------------------------------------------------------
@@ -204,7 +205,7 @@ def test_the_stub_declares_the_result_class(calc_id: str) -> None:
     Same reasoning as the function check, and the same failure: an undeclared
     result class means the transport object a Rust path returns is untyped.
     """
-    result_type: Any = RESULT_TYPES[calc_id]
+    result_type: Any = result_types()[calc_id]
     class_name: str = result_type.__name__
     assert class_name in _stub_class_names(), (
         f"{calc_id}: python/src/azoth/_core.pyi does not declare "
