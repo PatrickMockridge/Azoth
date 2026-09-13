@@ -144,7 +144,9 @@ tests:
       they are the two invariants that would break if the summation or the data
       lookup were subtly wrong.
 
-  - id: round_trip_units
-    type: property
-    property: unit_round_trip
-    status: active
+notes: >
+  Deliberately no `unit_round_trip` test here, unlike the other four calcs in
+  this slice. This calc has no dimensioned inputs at all - a fitting list and a
+  dimensionless friction factor - so a units round-trip would have nothing to
+  convert and would assert nothing. A test that cannot fail is worse than no
+  test, because it counts as coverage.

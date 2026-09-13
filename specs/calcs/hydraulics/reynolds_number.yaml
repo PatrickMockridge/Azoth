@@ -70,6 +70,7 @@ valid_range:
     max: 4000
     when: inside
     severity: warning
+    code: TRANSITIONAL_FLOW
     rationale: >
       Transitional flow. Downstream friction-factor correlations are indeterminate
       in this band and the two branches disagree by design, so any pressure drop
@@ -93,11 +94,13 @@ worked_example:
   derivation: >
     Using the fluid of the Darcy-Weisbach example in this slice
     (water, rho = 998 kg/m**3, mu = 1.002e-3 Pa*s) in a 0.1 m pipe at 1.5 m/s:
-    Re = 998 * 1.5 * 0.1 / 1.002e-3 = 149.7 / 1.002e-3 = 149401.1976...
-    Rounded to 149401.2. Turbulent (> 4000), so no regime warning.
+    Re = 998 * 1.5 * 0.1 / 1.002e-3 = 149.7 / 1.002e-3 = 149401.19760479042.
+    Turbulent (> 4000), so no regime warning. The expected value is given to full
+    double precision and the tolerance is tight, because the arithmetic is a
+    single division - there is no reason for this to be approximate.
   inputs: { rho: 998.0, v: 1.5, D: 0.1, mu: 1.002e-3 }
-  expected: { re: 149401.2 }
-  tolerance: 1.0e-6
+  expected: { re: 149401.19760479042 }
+  tolerance: 1.0e-12
 
 implementations:
   python: chemeng.hydraulics.reynolds_number
@@ -118,8 +121,8 @@ tests:
       silently unwarned transitional result is the failure mode this warning exists
       to prevent.
     inputs: { rho: 1000.0, v: 0.1, D: 0.05, mu: 1.5e-3 }
-    expected: { re: 3333.333333 }
-    tolerance: 1.0e-6
+    expected: { re: 3333.3333333333335 }
+    tolerance: 1.0e-12
 
   - id: round_trip_units
     type: property

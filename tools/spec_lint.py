@@ -149,6 +149,64 @@ def check_identity(report: Report, rel: Path, spec: dict[str, Any]) -> None:
         )
 
 
+def check_identifier_names(report: Report, rel: Path, spec: dict[str, Any]) -> None:
+    """Names must be usable as parameters and result fields in both languages.
+
+    Two different rules, because the two sections play different roles:
+
+    * **Inputs** are function parameters, and they are deliberately the symbols
+      from the published equation - `L`, `D`, `Re`, `rho`. Keeping them means a
+      reader can check a signature against the paper it came from, and it is why
+      the Rust implementations carry a scoped `allow(non_snake_case)`. The real
+      requirement is that they are legal identifiers in both languages.
+
+    * **Outputs** are attributes on a result object. Those must be snake_case,
+      because `result.dP` is not an attribute either language would naturally
+      produce - and a spec declaring `dP` while the code produces `dp` is a drift
+      no numerical test can catch, since the values agree perfectly and only the
+      attribute name differs. That happened: darcy_weisbach declared `dP`.
+
+    Names in both sections must additionally not collide with language keywords.
+    """
+    import keyword
+    import re
+
+    legal = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+    snake = re.compile(r"^[a-z][a-z0-9_]*$")
+    keywords = set(keyword.kwlist) | set(keyword.softkwlist) | {
+        # Rust keywords that would break a parameter or field name.
+        "as", "break", "const", "continue", "crate", "else", "enum", "extern",
+        "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod",
+        "move", "mut", "pub", "ref", "return", "self", "static", "struct",
+        "super", "trait", "true", "type", "unsafe", "use", "where", "while",
+        "async", "await", "dyn", "abstract", "become", "box", "do", "final",
+        "macro", "override", "priv", "try", "typeof", "unsized", "virtual", "yield",
+    }
+
+    for section in ("inputs", "outputs"):
+        for name in spec[section]:
+            if not legal.match(name):
+                report.error(
+                    str(rel),
+                    f"{section} key '{name}' is not a legal identifier, so it cannot be a "
+                    f"parameter or field name in Rust or Python.",
+                )
+            elif name in keywords:
+                report.error(
+                    str(rel),
+                    f"{section} key '{name}' is a reserved word in Rust or Python.",
+                )
+            elif section == "outputs" and not snake.match(name):
+                suggestion = name.lower()
+                report.error(
+                    str(rel),
+                    f"output '{name}' is not snake_case. Outputs become result fields, so "
+                    f"they must be the name both languages produce - use '{suggestion}'. "
+                    f"Keep '{name}' as the symbol in `equation` if that is what the source "
+                    f"uses.",
+                )
+
+
 def check_range_checks(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     """Every range check must be evaluable, and must be honest about it.
 
@@ -489,6 +547,7 @@ def check_numeric_literals(report: Report, rel: Path, spec: dict[str, Any]) -> N
 
 def lint_spec(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     check_identity(report, rel, spec)
+    check_identifier_names(report, rel, spec)
     check_numeric_literals(report, rel, spec)
     check_range_checks(report, rel, spec)
     check_worked_example(report, rel, spec)

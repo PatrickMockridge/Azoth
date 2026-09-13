@@ -58,6 +58,13 @@ pub struct RangeCheck {
     pub band: Band,
     /// What a violation means.
     pub severity: Severity,
+    /// Which warning code a violation emits.
+    ///
+    /// Defaults to [`WarningCode::OutOfValidRange`], which is right for a plain
+    /// bound. It exists so a bound with a more specific meaning can say so: the
+    /// transitional-flow band emits [`WarningCode::TransitionalFlow`], letting a
+    /// caller react to indeterminate friction without string-matching a message.
+    pub code: WarningCode,
     /// Why the bound exists. Shown to the user, so it should explain the physics
     /// rather than restate the number.
     pub rationale: &'static str,
@@ -81,6 +88,7 @@ impl RangeCheck {
             max_inclusive: true,
             band: Band::Outside,
             severity,
+            code: WarningCode::OutOfValidRange,
             rationale,
         }
     }
@@ -102,6 +110,7 @@ impl RangeCheck {
             max_inclusive: inclusive,
             band: Band::Outside,
             severity,
+            code: WarningCode::OutOfValidRange,
             rationale,
         }
     }
@@ -124,6 +133,7 @@ impl RangeCheck {
             max_inclusive: true,
             band: Band::Outside,
             severity,
+            code: WarningCode::OutOfValidRange,
             rationale,
         }
     }
@@ -141,6 +151,13 @@ impl RangeCheck {
             band: Band::Inside,
             ..Self::between(quantity, min, max, severity, rationale)
         }
+    }
+
+    /// Override the warning code emitted on violation.
+    #[must_use]
+    pub const fn with_code(mut self, code: WarningCode) -> Self {
+        self.code = code;
+        self
     }
 
     /// Whether `value` violates this check. `NaN` violates everything.
@@ -209,7 +226,7 @@ impl RangeCheck {
             )),
             Severity::Warning => {
                 warnings.push(Warning::for_field(
-                    WarningCode::OutOfValidRange,
+                    self.code,
                     self.quantity,
                     format!(
                         "value {value} violates {}. {}",
@@ -231,16 +248,23 @@ impl RangeCheck {
 /// [`WarningCode::RangeCheckSkipped`] warning, so the caller can distinguish
 /// "checked and fine" from "never checked".
 ///
+/// Takes any iterator of checks, so a caller can apply the input-phase checks
+/// and the derived-phase checks separately without collecting either into a
+/// temporary `Vec`.
+///
 /// # Errors
 /// Propagates the first [`Severity::Error`] violation.
-pub fn apply_checks(
-    checks: &[RangeCheck],
+pub fn apply_checks<'a>(
+    checks: impl IntoIterator<Item = &'a RangeCheck>,
     resolve: impl Fn(&str) -> Option<f64>,
     warnings: &mut Vec<Warning>,
 ) -> Result<()> {
     for check in checks {
         match resolve(check.quantity) {
             Some(value) => check.apply(value, warnings)?,
+            // Deliberately not `check.code`: a skipped check was never a
+            // violation of anything, so it always reports as skipped regardless
+            // of which code a violation would have carried.
             None => warnings.push(Warning::for_field(
                 WarningCode::RangeCheckSkipped,
                 check.quantity,

@@ -10,14 +10,36 @@
 //! * [`crane_k_factors`] - fitting losses by the equivalent-length method
 //! * [`darcy_weisbach`] - pressure drop over a straight pipe
 //!
-//! Pipe *with fittings* is a composition of the last two, performed by the
+//! Pipe *with* fittings is a composition of the last two, performed by the
 //! `chemeng pipe` CLI rather than by a calc of its own, because the two losses
 //! are computed by different methods and adding them is a modelling decision the
 //! caller should be able to see.
+//!
+//! # Warning before use
+//!
+//! `crane_k_factors` reads coefficients from `data/fittings/crane_k_factors.csv`,
+//! where every row is currently an **estimated dummy value** - a placeholder for
+//! software testing, not engineering data. Results built from it carry an
+//! [`chemeng_core::WarningCode::EstimatedData`] warning. Nothing in this crate
+//! should be used for design work until that file is populated from a primary
+//! standard.
 
+pub mod crane_k_factors;
+pub mod darcy_weisbach;
+pub mod fittings;
+pub mod friction_factor_colebrook;
+pub mod friction_factor_swamee_jain;
 pub mod results;
+pub mod reynolds_number;
+pub mod solver;
+pub mod spec_gen;
 
+pub use crane_k_factors::{crane_k_factors, known_fittings};
+pub use darcy_weisbach::{add_fitting_loss, darcy_weisbach, propagate_estimated_data};
+pub use friction_factor_colebrook::{friction_factor_colebrook, fully_rough_limit};
+pub use friction_factor_swamee_jain::friction_factor_swamee_jain;
 pub use results::{
     ColebrookResult, DarcyWeisbachResult, KComponent, KFactorsResult, ReynoldsNumberResult,
     SwameeJainResult,
 };
+pub use reynolds_number::{regime_for, regime_warning, reynolds_number};

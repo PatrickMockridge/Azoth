@@ -129,6 +129,15 @@ tests:
       This test needs BOTH friction factor implementations, so it also serves as
       the cross-check that the two correlations in this slice are consistent with
       each other. The expected value is the Colebrook result.
+
+      The point is strictly inside the stated range, not on its boundary. That is
+      deliberate: measured behaviour shows the explicit approximation degrading
+      near the lower limit, reaching 1.39% at Re = 5000 against the paper's
+      headline 1% claim, and returning to 0.59% by Re = 1e4. The published figure
+      is therefore not uniform across the claimed range, and asserting it at the
+      boundary would have been asserting something the paper does not actually
+      deliver there. The boundary case is pinned by a separate test in the
+      Colebrook suite rather than hidden by a loosened tolerance.
     inputs: { re: 100000.0, relative_roughness: 4.6e-4 }
     expected: { f: 0.0201620320 }
     tolerance: 1.0e-2

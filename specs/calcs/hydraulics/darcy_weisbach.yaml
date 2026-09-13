@@ -46,7 +46,7 @@ inputs:
       the library pretend it checked is not.
 
 outputs:
-  dP:
+  dp:
     unit: Pa
     description: pressure drop over the pipe length
   re:
@@ -89,6 +89,7 @@ valid_range:
     max: 4000
     when: inside
     severity: warning
+    code: TRANSITIONAL_FLOW
     rationale: >
       Transitional flow, where the friction factor - and therefore this pressure
       drop - is genuinely indeterminate rather than merely uncertain. The value
@@ -107,7 +108,7 @@ assumptions:
   - for a pipe with fittings, the fittings' resistance must be added separately - see hydraulics.crane_k_factors. This calc covers straight pipe only.
 
 references:
-  - Darcy, H. (1857). "Recherches experimentales relatives au mouvement de l'eau dans les tuyaux." Mallet-Bachelier, Paris.
+  - Darcy, H. (1857). "Recherches expérimentales relatives au mouvement de l'eau dans les tuyaux." Mallet-Bachelier, Paris.
   - Weisbach, J. (1845). "Lehrbuch der Ingenieur- und Maschinen-Mechanik." Vieweg, Braunschweig.
   - Crane Technical Paper No. 410, "Flow of Fluids Through Valves, Fittings and Pipe" (2013) - uses the Darcy-Weisbach basis in its Eq. 1-6. The specific equation number cited by the project brief (3-2) could not be verified; see `verification` above.
 
@@ -128,7 +129,7 @@ worked_example:
     with no example at all. See validation/crane_tp410/example_3_5.json, which
     carries the same correction and is run by CI.
   inputs: { f: 0.02, L: 100.0, D: 0.1, rho: 998.0, v: 1.5 }
-  expected: { dP: 22455.0 }
+  expected: { dp: 22455.0 }
   tolerance: 1.0e-9
 
 implementations:
@@ -169,8 +170,8 @@ tests:
       path and confirms dP is unchanged by supplying mu, while re becomes available
       and the regime check actually runs.
     inputs: { f: 0.02, L: 100.0, D: 0.1, rho: 998.0, v: 1.5, mu: 1.002e-3 }
-    expected: { dP: 22455.0, re: 149401.2 }
-    tolerance: 1.0e-9
+    expected: { dp: 22455.0, re: 149401.19760479042 }
+    tolerance: 1.0e-12
 
   - id: public_water_steel_example
     type: reference
@@ -188,7 +189,7 @@ tests:
       is used as a sanity cross-check, not as an authority, and it is not a
       substitute for a human verifying the citation above.
     inputs: { f: 0.01884561, L: 100.0, D: 0.1, rho: 998.0, v: 1.768388 }
-    expected: { dP: 29600.0 }
+    expected: { dp: 29600.0 }
     tolerance: 2.0e-2
 
   - id: round_trip_units
