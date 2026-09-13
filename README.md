@@ -106,6 +106,7 @@ leaves the flow regime unchecked, and the result says so.
 | `thermal.conduction_plane_wall` | Steady conduction through a slab |
 | `eos.pr_kappa` | The Peng-Robinson alpha-function coefficient |
 | `eos.pr_alpha_ab` | The alpha function and the reduced attraction parameters |
+| `eos.pr_z_factor` | The Peng-Robinson compressibility factor |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use

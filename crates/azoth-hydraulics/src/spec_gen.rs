@@ -697,7 +697,7 @@ pub static FRICTION_FACTOR_COLEBROOK_SPEC: CalcSpec = CalcSpec {
         kind: "fixed_point",
         tolerance: 1e-12,
         max_iterations: 100,
-        initial_guess: 0.02,
+        initial_guess: Some(0.02),
         convergence: "relative",
     }),
     worked_example: TestCase {

@@ -4,6 +4,7 @@
 //!
 //!   - specs/calcs/eos/pr_alpha_ab.yaml
 //!   - specs/calcs/eos/pr_kappa.yaml
+//!   - specs/calcs/eos/pr_z_factor.yaml
 //!
 //! Tables for the `eos` namespace. Every namespace has its own generated
 //! file, because a crate is the unit of compilation and a calculation must be able
@@ -14,7 +15,9 @@
 //! merely descriptive. Each calc reads its own range checks from here, so a
 //! bound changed in a spec file changes the code's behaviour with no second
 //! edit - and `cargo test` fails if the two ever disagree.
-use azoth_core::{Band, CalcSpec, RangeCheck, Severity, SpecCheck, TestCase, WarningCode};
+use azoth_core::{
+    Band, CalcSpec, RangeCheck, Severity, SolverSpec, SpecCheck, TestCase, WarningCode,
+};
 
 /// Registry entry for `eos.pr_alpha_ab`.
 static PR_ALPHA_AB_CHECKS: &[SpecCheck] = &[
@@ -224,8 +227,182 @@ pub static PR_KAPPA_SPEC: CalcSpec = CalcSpec {
     tests: PR_KAPPA_TESTS,
 };
 
+/// Registry entry for `eos.pr_z_factor`.
+static PR_Z_FACTOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "b_reduced",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`B` is proportional to pressure and is zero only at zero pressure, where the cubic degenerates to `z**3 - z**2 = z**2 (z - 1)`. That has a double root at zero and the ideal-gas root at one - so the answer is not wrong, it is *trivial*, and it would come back as `z_min = z_max = 1` with nothing to say it was not a phase. The ideal-gas limit belongs to the caller, who knows they are asking for it; see the same bound and the same argument in `eos.pr_alpha_ab`.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "a_reduced",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`A` is a squared term times a positive coefficient - `Omega_a * alpha * Pr / Tr**2` - so it cannot be negative for any real input to `eos.pr_alpha_ab`. A negative value here means it did not come from that calc, and the cubic it produces is not a Peng-Robinson equation of state. Zero is permitted: it is the hard-sphere limit, which is a real thing to ask about even though no PR state reaches it.",
+        },
+    },
+];
+
+static PR_Z_FACTOR_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "a_hand_pickable_cubic_with_three_roots",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("a_reduced", 0.25), ("b_reduced", 0.03125)],
+        lists: &[],
+        expected: &[
+            ("z_min", 0.04868889529885568),
+            ("z_max", 0.7280875526160305),
+        ],
+    },
+    TestCase {
+        id: "a_single_root_above_the_critical_temperature",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("a_reduced", 0.08448417260831159),
+            ("b_reduced", 0.025932024634629486),
+        ],
+        lists: &[],
+        expected: &[("z_min", 0.943312987185517), ("z_max", 0.943312987185517)],
+    },
+    TestCase {
+        id: "the_critical_point_is_where_the_answer_stops_being_determined",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("a_reduced", 0.4572355289213822),
+            ("b_reduced", 0.07779607390388846),
+        ],
+        lists: &[],
+        expected: &[
+            ("z_min", 0.30740130869870386),
+            ("z_max", 0.30740130869870386),
+        ],
+    },
+    TestCase {
+        id: "selected_roots_satisfy_the_cubic",
+        kind: "property",
+        property: Some("consistency_with"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "the_middle_root_is_not_returned",
+        kind: "property",
+        property: Some("consistency_with"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "the_admissible_count_is_never_two",
+        kind: "property",
+        property: Some("consistency_with"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "monotonic",
+        kind: "property",
+        property: Some("monotonic"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "skipped",
+        skip_reason: Some(
+            "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision, following `crane_k_factors` and the other two `eos` calcs.",
+        ),
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+];
+
+/// Registered spec for `eos.pr_z_factor`.
+///
+/// Public and addressable directly, so a calc can hold `&PR_Z_FACTOR_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static PR_Z_FACTOR_SPEC: CalcSpec = CalcSpec {
+    id: "eos.pr_z_factor",
+    verification: "unverified",
+    checks: PR_Z_FACTOR_CHECKS,
+    solver: Some(SolverSpec {
+        kind: "cubic_roots",
+        tolerance: 1e-14,
+        max_iterations: 50,
+        initial_guess: None,
+        convergence: "relative",
+    }),
+    worked_example: TestCase {
+        id: "propane_like_three_root_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("a_reduced", 0.20206500174625697),
+            ("b_reduced", 0.02431127309496514),
+        ],
+        lists: &[],
+        expected: &[
+            ("z_min", 0.036765449656896015),
+            ("z_max", 0.7907789662973796),
+        ],
+    },
+    tests: PR_Z_FACTOR_TESTS,
+};
+
 /// Every calculation in the registry, sorted by id.
-static ALL_SPECS: &[&CalcSpec] = &[&PR_ALPHA_AB_SPEC, &PR_KAPPA_SPEC];
+static ALL_SPECS: &[&CalcSpec] = &[&PR_ALPHA_AB_SPEC, &PR_KAPPA_SPEC, &PR_Z_FACTOR_SPEC];
 
 /// All specs, in a stable order.
 #[must_use]

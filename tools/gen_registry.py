@@ -289,12 +289,19 @@ def emit_rust(specs: list[dict[str, Any]], source_files: list[str], namespace: s
         solver = spec.get("solver")
         solver_str = "None"
         if solver:
+            # `initial_guess` is optional in the spec: `fixed_point` iterates from a
+            # declared start and the schema requires one, while `cubic_roots` forms
+            # its roots analytically and has no starting point to declare. Emitting
+            # `None` rather than a placeholder keeps that absence visible in the
+            # generated table instead of inventing a value nothing reads.
+            guess = solver.get("initial_guess")
+            guess_str = "None" if guess is None else f"Some({rust_f64(guess)})"
             solver_str = (
                 "Some(SolverSpec {\n"
                 f"            kind: {rust_str(solver['kind'])},\n"
                 f"            tolerance: {rust_f64(solver['tolerance'])},\n"
                 f"            max_iterations: {solver['max_iterations']},\n"
-                f"            initial_guess: {rust_f64(solver['initial_guess'])},\n"
+                f"            initial_guess: {guess_str},\n"
                 f"            convergence: {rust_str(solver['convergence'])},\n"
                 "        })"
             )

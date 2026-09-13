@@ -11,7 +11,7 @@ use azoth_eos as eos;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::results::{PyPrAlphaAbResult, PyPrKappaResult};
+use crate::results::{PyPrAlphaAbResult, PyPrKappaResult, PyPrZFactorResult};
 
 /// The Peng-Robinson alpha-function coefficient.
 ///
@@ -39,5 +39,19 @@ pub fn pr_kappa(py: Python<'_>, omega: f64) -> PyResult<PyPrKappaResult> {
 pub fn pr_alpha_ab(py: Python<'_>, kappa: f64, Tr: f64, Pr: f64) -> PyResult<PyPrAlphaAbResult> {
     eos::pr_alpha_ab(kappa, Tr, Pr)
         .map(|r| PyPrAlphaAbResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Peng-Robinson compressibility factor.
+///
+/// Both arguments are the cubic's dimensionless parameters, so nothing here
+/// touches units. `root_structure` crosses as the spec's spelling and the bridge
+/// rebuilds the enum - the same arrangement `reynolds_number`'s `regime` uses.
+#[pyfunction]
+#[pyo3(signature = (a_reduced, b_reduced))]
+#[pyo3(text_signature = "(a_reduced, b_reduced)")]
+pub fn pr_z_factor(py: Python<'_>, a_reduced: f64, b_reduced: f64) -> PyResult<PyPrZFactorResult> {
+    eos::pr_z_factor(a_reduced, b_reduced)
+        .map(|r| PyPrZFactorResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

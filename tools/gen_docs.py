@@ -184,6 +184,12 @@ def render_solver(spec: dict[str, Any]) -> str:
     solver = spec.get("solver")
     if not solver:
         return ""
+    # The initial guess is shown only when the scheme has one. A `cubic_roots` spec
+    # must not print `Initial guess | None`, which would read as a missing value
+    # rather than as a scheme that has no starting point - and a reader comparing
+    # two calcs' solver blocks should be able to see the difference.
+    guess = solver.get("initial_guess")
+    guess_row = "" if guess is None else f"| Initial guess | `{guess}` |\n"
     return f"""## Solver
 
 This equation is implicit, so it is solved rather than evaluated. The scheme is
@@ -195,8 +201,7 @@ part of the specification because both implementations must run the *same* one:
 | Tolerance | `{solver["tolerance"]}` |
 | Convergence | `{solver["convergence"]}` |
 | Max iterations | `{solver["max_iterations"]}` |
-| Initial guess | `{solver["initial_guess"]}` |
-
+{guess_row}
 Two implementations running the same algorithm converge to the same value; two
 running different-but-equally-valid algorithms agree only to within their
 difference, which is far larger than the agreed tolerance allows.
@@ -377,10 +382,17 @@ def render_theory_solvers(calcs: list[dict[str, Any]]) -> str:
         solver = calc["solver"]
         short = calc["id"].split(".")[-1]
         namespace = calc["id"].split(".")[0]
+        # An em dash rather than a blank for a scheme that has no starting point.
+        # `fixed_point` iterates from a declared guess; `cubic_roots` forms its
+        # roots analytically, so `initial_guess` is absent from its spec rather than
+        # present and unused - and a reader comparing the two rows should be able to
+        # see that difference rather than guess at an empty cell.
+        guess = solver.get("initial_guess")
+        guess_cell = "—" if guess is None else f"`{guess}`"
         out += (
             f"| [`{calc['id']}`](../{namespace}/{short}.md) | `{solver['kind']}` | "
             f"`{solver['tolerance']}` | `{solver['convergence']}` | "
-            f"`{solver['max_iterations']}` | `{solver['initial_guess']}` |\n"
+            f"`{solver['max_iterations']}` | {guess_cell} |\n"
         )
 
     out += (

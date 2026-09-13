@@ -19,12 +19,21 @@ from dataclasses import dataclass
 
 from azoth.batch._core import run, sequence
 from azoth.batch._result import BatchResult
+from azoth.core.result import RootStructure
 from azoth.core.warnings import Warning
 
-__all__ = ["PrAlphaAbBatch", "PrKappaBatch", "pr_alpha_ab", "pr_kappa"]
+__all__ = [
+    "PrAlphaAbBatch",
+    "PrKappaBatch",
+    "PrZFactorBatch",
+    "pr_alpha_ab",
+    "pr_kappa",
+    "pr_z_factor",
+]
 
 _PR_KAPPA = "eos.pr_kappa"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
+_PR_Z_FACTOR = "eos.pr_z_factor"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -109,5 +118,70 @@ def pr_alpha_ab(
             "Pr": sequence(Pr, "Pr"),
         },
         _build_alpha_ab,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrZFactorBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_z_factor`."""
+
+    #: Smallest admissible root per element. Dimensionless.
+    z_min: array[float]
+    #: Largest admissible root per element. Dimensionless.
+    z_max: array[float]
+    #: How many admissible roots each element had. A label column: an enum has no
+    #: numeric form, and an index into a table would make a caller look the mapping
+    #: up to read a value - the same arrangement `reynolds_number`'s regime uses.
+    root_structure: tuple[RootStructure | None, ...]
+    #: Newton steps the polish took per element.
+    iterations: array[float]
+    #: Whether each element's polish met its tolerance, as ``1.0`` or ``0.0``.
+    converged: array[float]
+    #: Final change between iterates per element.
+    residual: array[float]
+
+
+def _build_z_factor(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrZFactorBatch:
+    return PrZFactorBatch(
+        warnings=warnings,
+        units=units,
+        z_min=columns["z_min"],  # type: ignore[arg-type]
+        z_max=columns["z_max"],  # type: ignore[arg-type]
+        root_structure=_structures(columns["root_structure"]),  # type: ignore[arg-type]
+        iterations=columns["iterations"],  # type: ignore[arg-type]
+        converged=columns["converged"],  # type: ignore[arg-type]
+        residual=columns["residual"],  # type: ignore[arg-type]
+    )
+
+
+def _structures(
+    labels: Sequence[str | None],
+) -> tuple[RootStructure | None, ...]:
+    """Rebuild the enum from the label column, `None` where the value was absent."""
+    return tuple(None if label is None else RootStructure(label) for label in labels)
+
+
+def pr_z_factor(*, a_reduced: Sequence[float], b_reduced: Sequence[float]) -> PrZFactorBatch:
+    """The Peng-Robinson compressibility factor, over arrays.
+
+    Both arguments are the cubic's dimensionless parameters, so there is no unit to
+    be wrong about. The solver report travels with the answer, as it does in the
+    scalar API, because the roots are what the polish produced and without
+    ``converged`` a caller cannot tell a solution from a failure to converge.
+
+    See :func:`azoth.eos.pr_z_factor` for the calculation itself.
+    """
+    result: PrZFactorBatch = run(
+        _PR_Z_FACTOR,
+        {
+            "a_reduced": sequence(a_reduced, "a_reduced"),
+            "b_reduced": sequence(b_reduced, "b_reduced"),
+        },
+        _build_z_factor,
     )
     return result

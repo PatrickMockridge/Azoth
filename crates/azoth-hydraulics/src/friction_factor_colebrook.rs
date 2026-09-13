@@ -74,8 +74,12 @@ pub fn friction_factor_colebrook(re: f64, relative_roughness: f64) -> Result<Col
     let convergence = Convergence::parse(solver.convergence)?;
 
     // x = 1/sqrt(f). The initial guess is a friction factor, so its reciprocal
-    // square root is the starting x.
-    let x0 = 1.0 / solver.initial_guess.sqrt();
+    // square root is the starting x. `fixed_point` iterates from a declared start,
+    // so the schema requires one and its absence would be a spec error.
+    let initial_guess = solver
+        .initial_guess
+        .expect("friction_factor_colebrook declares fixed_point, which requires an initial_guess");
+    let x0 = 1.0 / initial_guess.sqrt();
     let outcome = fixed_point(
         x0,
         solver.tolerance,

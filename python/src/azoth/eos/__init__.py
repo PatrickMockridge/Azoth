@@ -8,6 +8,7 @@ since a wrong coefficient is invisible downstream.
 
 * :func:`pr_kappa` - the Peng-Robinson alpha-function coefficient
 * :func:`pr_alpha_ab` - the alpha function and the reduced attraction parameters
+* :func:`pr_z_factor` - the compressibility factor, the cubic's real roots
 
 # Why the coefficients come first
 
@@ -51,15 +52,17 @@ see :func:`azoth.backends` and :func:`azoth.use_backend`.
 from __future__ import annotations
 
 from azoth._dispatch import resolve
-from azoth.core.result import PrAlphaAbResult, PrKappaResult
+from azoth.core.result import PrAlphaAbResult, PrKappaResult, PrZFactorResult
 
 __all__ = [
     "pr_alpha_ab",
     "pr_kappa",
+    "pr_z_factor",
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
+_PR_Z_FACTOR = "eos.pr_z_factor"
 
 
 def pr_kappa(omega: float) -> PrKappaResult:
@@ -89,3 +92,18 @@ def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:
     See :func:`azoth.eos.reference.pr_alpha_ab`.
     """
     return resolve(_PR_ALPHA_AB)(kappa=kappa, Tr=Tr, Pr=Pr)  # type: ignore[no-any-return]
+
+
+def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
+    """The Peng-Robinson compressibility factor, for one state.
+
+    Returns the smallest and largest *admissible* real roots, where admissible means
+    ``z > b_reduced``, plus how many there were. The middle root is deliberately not
+    returned: it is a root of the polynomial and not a state the equation describes.
+
+    Raises:
+        OutOfRangeError: if ``b_reduced <= 0`` or ``a_reduced < 0``.
+
+    See :func:`azoth.eos.reference.pr_z_factor`.
+    """
+    return resolve(_PR_Z_FACTOR)(a_reduced=a_reduced, b_reduced=b_reduced)  # type: ignore[no-any-return]

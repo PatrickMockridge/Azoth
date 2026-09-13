@@ -475,6 +475,36 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "b_reduced", "dimensionless", b_reduced);
         }
 
+        "eos.pr_z_factor" => {
+            let (a, b) = (take(&inputs, "a_reduced")?, take(&inputs, "b_reduced")?);
+            let mut z_min = Vec::with_capacity(n);
+            let mut z_max = Vec::with_capacity(n);
+            let mut root_structure = Vec::with_capacity(n);
+            let mut iterations = Vec::with_capacity(n);
+            let mut converged = Vec::with_capacity(n);
+            let mut residual = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(py, eos::pr_z_factor(a[i], b[i]), &mut warnings)?;
+                z_min.push(r.z_min);
+                z_max.push(r.z_max);
+                // A label column, like `reynolds_number`'s regime: an enum has no
+                // numeric form, and inventing one would make a caller look the
+                // mapping up to read a value.
+                root_structure.push(Some(r.root_structure.as_str().to_string()));
+                iterations.push(f64::from(r.iterations));
+                // A batch column is an array of numbers, so the flag is one;
+                // `bool(...)` recovers it and the conversion is exact.
+                converged.push(flag(r.converged));
+                residual.push(r.residual);
+            }
+            push_values(&mut columns, "z_min", "dimensionless", z_min);
+            push_values(&mut columns, "z_max", "dimensionless", z_max);
+            push_labels(&mut columns, "root_structure", root_structure);
+            push_values(&mut columns, "iterations", "dimensionless", iterations);
+            push_values(&mut columns, "converged", "dimensionless", converged);
+            push_values(&mut columns, "residual", "dimensionless", residual);
+        }
+
         other => {
             return Err(pyo3::exceptions::PyNotImplementedError::new_err(format!(
                 "no batch arm for `{other}`"

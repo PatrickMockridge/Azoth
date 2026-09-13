@@ -38,6 +38,8 @@ use crate::{AzothError, Result};
 pub enum SolverKind {
     /// `x -> f(x)`, iterated from the spec's declared initial guess.
     FixedPoint,
+    /// The real roots of a cubic, formed analytically and then polished.
+    CubicRoots,
 }
 
 impl SolverKind {
@@ -48,13 +50,14 @@ impl SolverKind {
     /// naming a kind neither can run "would describe a calculation neither
     /// implementation can run, which is the 'looks like validation, does
     /// nothing' failure this schema exists to catch".
-    pub const ALL: &'static [SolverKind] = &[SolverKind::FixedPoint];
+    pub const ALL: &'static [SolverKind] = &[SolverKind::FixedPoint, SolverKind::CubicRoots];
 
     /// The schema's spelling of this kind.
     #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::FixedPoint => "fixed_point",
+            Self::CubicRoots => "cubic_roots",
         }
     }
 
@@ -170,6 +173,158 @@ pub fn fixed_point(
     }
 }
 
+/// What [`cubic_roots`] produced.
+///
+/// Not a [`SolverOutcome`], because a cubic has up to three answers rather than
+/// one and the caller - not this module - decides which of them is the physical
+/// one. `roots` is returned whole so that decision stays with the calc that knows
+/// what its roots mean.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CubicRootsOutcome {
+    /// The real roots, ascending, after polishing.
+    ///
+    /// Length 1 when the discriminant is positive and 3 when it is not, which
+    /// includes the degenerate cases: a double or triple root is returned as
+    /// repeated values rather than collapsed, so a caller that counts roots gets
+    /// the algebraic count and not a de-duplicated one.
+    pub roots: Vec<f64>,
+    /// Newton steps taken, summed over the roots.
+    pub iterations: u32,
+    /// Whether every root met the stopping rule.
+    pub converged: bool,
+    /// The largest `|x_k - x_{k-1}|` seen on the final step of any root.
+    pub residual: f64,
+}
+
+/// The real roots of `x**3 + c2*x**2 + c1*x + c0`, formed analytically then polished.
+///
+/// # Why analytic first
+///
+/// An iterative root-finder started from a fixed guess does not reliably find the
+/// root a caller wants. Measured on the Peng-Robinson cubic for propane at
+/// `Tr = 0.8, Pr = 0.25` - roots 0.0368, 0.1481, 0.7908 - Newton started at 0.30
+/// converges to the *middle* root, at 0.50 to the liquid root and at 0.70 to the
+/// vapour one. Which root comes back depends on where the search began, so an
+/// implementation that guesses cannot be told what it found. Forming the roots
+/// analytically and ordering them removes the guess.
+///
+/// # Why the polish is not optional
+///
+/// Three reasons, and all of them are measured rather than anticipated:
+///
+/// * **Cardano cancels catastrophically when the roots are close.** The
+///   subtraction `cbrt(-q/2 + sqrt(d)) - cbrt(-q/2 - sqrt(d))` loses precision as
+///   the two terms approach each other, which is exactly the near-triple-root case.
+/// * **The discriminant's sign is not reliably computable near zero.** With the
+///   rounded Peng-Robinson constants at the critical point it is `1.8e-12` -
+///   positive, but small enough that a different rounding puts it on the other
+///   side, selecting the three-real-root branch for a cubic whose roots are mostly
+///   complex.
+/// * **`cbrt`, `acos` and `cos` are not correctly rounded** in any libm, so the
+///   analytic value is only close to begin with. The polish is what makes the two
+///   languages agree to a tolerance worth asserting.
+///
+/// A Newton step on the polynomial is cheap, is exactly representable arithmetic,
+/// and converges quadratically once it is near - and the analytic formation has
+/// already put it near.
+///
+/// # Degenerate cases
+///
+/// A double or triple root is returned as repeated values, not collapsed. When the
+/// depressed cubic's `p` and `q` are both zero the trigonometric branch would
+/// divide by zero, so that case is answered directly as a triple root at `-c2/3`.
+#[must_use]
+pub fn cubic_roots(
+    c2: f64,
+    c1: f64,
+    c0: f64,
+    tolerance: f64,
+    max_iterations: u32,
+    convergence: Convergence,
+) -> CubicRootsOutcome {
+    // Depress x**3 + c2*x**2 + c1*x + c0 to w**3 + p*w + q by x = w - c2/3.
+    let p = c1 - c2 * c2 / 3.0;
+    let q = 2.0 * c2 * c2 * c2 / 27.0 - c2 * c1 / 3.0 + c0;
+    let half_q = q / 2.0;
+    let third_p = p / 3.0;
+    let discriminant = half_q * half_q + third_p * third_p * third_p;
+
+    let mut roots: Vec<f64> = if discriminant > 0.0 {
+        // One real root and two complex conjugates. Cardano, with `cbrt` carrying
+        // the sign so a negative argument does not become NaN.
+        let root_d = discriminant.sqrt();
+        let u = (-half_q + root_d).cbrt();
+        let v = (-half_q - root_d).cbrt();
+        vec![u + v - c2 / 3.0]
+    } else {
+        let radius = (-third_p * third_p * third_p).sqrt();
+        if radius == 0.0 {
+            // p = q = 0: the cubic is (w)**3, a triple root. The general form would
+            // divide by `radius` here.
+            vec![-c2 / 3.0; 3]
+        } else {
+            // Clamped because rounding can push the ratio a hair outside [-1, 1],
+            // and `acos` of that is NaN rather than a slightly wrong angle.
+            let cosine = (-half_q / radius).clamp(-1.0, 1.0);
+            let angle = cosine.acos();
+            let scale = 2.0 * (-third_p).sqrt();
+            let mut three: Vec<f64> = (0..3)
+                .map(|k| {
+                    let two_pi_k = 2.0 * std::f64::consts::PI * f64::from(k);
+                    scale * ((angle + two_pi_k) / 3.0).cos() - c2 / 3.0
+                })
+                .collect();
+            three.sort_by(|a, b| a.partial_cmp(b).expect("no NaN before polishing"));
+            three
+        }
+    };
+
+    // Newton polish, on the polynomial rather than the depressed form: that is the
+    // equation the caller wrote, and a step on it needs no back-substitution.
+    let mut iterations = 0_u32;
+    let mut residual = 0.0_f64;
+    let mut converged = true;
+    for root in &mut roots {
+        let mut x = *root;
+        let mut step_residual = f64::INFINITY;
+        let mut root_converged = false;
+        for _ in 0..max_iterations {
+            let f = ((x + c2) * x + c1) * x + c0;
+            let df = (3.0 * x + 2.0 * c2) * x + c1;
+            if df == 0.0 {
+                // A stationary point: Newton cannot step, and the analytic value is
+                // the best available. Leave it and let the stopping rule decide.
+                break;
+            }
+            let next = x - f / df;
+            let delta = (next - x).abs();
+            step_residual = delta;
+            x = next;
+            iterations += 1;
+            let close_enough = match convergence {
+                Convergence::Absolute => delta <= tolerance,
+                Convergence::Relative => delta <= tolerance * x.abs(),
+            };
+            if close_enough {
+                root_converged = true;
+                break;
+            }
+        }
+        if !root_converged {
+            converged = false;
+        }
+        residual = residual.max(step_residual);
+        *root = x;
+    }
+
+    CubicRootsOutcome {
+        roots,
+        iterations,
+        converged,
+        residual,
+    }
+}
+
 /// Turn a non-converged outcome into an error.
 ///
 /// A caller that gets `f` from a run that never converged has a number that
@@ -180,6 +335,31 @@ pub fn fixed_point(
 /// Returns [`AzothError::SolverNotConverged`] when the outcome did not
 /// converge.
 pub fn require_converged(outcome: SolverOutcome, tolerance: f64) -> Result<SolverOutcome> {
+    if outcome.converged {
+        return Ok(outcome);
+    }
+    Err(AzothError::SolverNotConverged {
+        iterations: outcome.iterations,
+        residual: outcome.residual,
+        tolerance,
+    })
+}
+
+/// Turn a cubic outcome that did not converge into an error.
+///
+/// The same rule [`require_converged`] applies and for the same reason: a root
+/// that did not meet tolerance is the last iterate of an iteration that did not
+/// finish, and is not a root of anything. Separate from [`require_converged`]
+/// rather than generic over it because the two outcomes are different shapes -
+/// one answer against up to three - and a trait to unify them would buy one call
+/// site and cost a reader a definition to chase.
+///
+/// # Errors
+/// Returns [`AzothError::SolverNotConverged`] when the polish did not converge.
+pub fn require_cubic_converged(
+    outcome: CubicRootsOutcome,
+    tolerance: f64,
+) -> Result<CubicRootsOutcome> {
     if outcome.converged {
         return Ok(outcome);
     }
@@ -280,6 +460,65 @@ mod tests {
         assert_eq!(unique.len(), names.len(), "ALL contains a duplicate");
         for name in names {
             assert_eq!(name, name.to_lowercase(), "`{name}` is not lowercase");
+        }
+    }
+
+    #[test]
+    fn cubic_roots_finds_three_well_separated_roots_in_order() {
+        // (x - 1)(x - 2)(x - 3) = x**3 - 6x**2 + 11x - 6
+        let out = cubic_roots(-6.0, 11.0, -6.0, 1e-14, 50, Convergence::Relative);
+        assert!(out.converged, "residual {:e}", out.residual);
+        assert_eq!(out.roots.len(), 3);
+        for (got, want) in out.roots.iter().zip([1.0, 2.0, 3.0]) {
+            assert!((got - want).abs() < 1e-12, "got {got}, want {want}");
+        }
+    }
+
+    #[test]
+    fn cubic_roots_returns_one_root_when_the_other_two_are_complex() {
+        // x**3 + x + 1 has one real root, near -0.682327803828.
+        let out = cubic_roots(0.0, 1.0, 1.0, 1e-14, 50, Convergence::Relative);
+        assert_eq!(out.roots.len(), 1);
+        assert!(out.converged);
+        let root = out.roots[0];
+        let residual = ((root) * root + 1.0) * root + 1.0;
+        assert!(residual.abs() < 1e-12, "not a root: f = {residual:e}");
+    }
+
+    #[test]
+    fn cubic_roots_handles_a_triple_root_without_dividing_by_zero() {
+        // (x - 2)**3 = x**3 - 6x**2 + 12x - 8. This is the degenerate case the
+        // trigonometric branch cannot take, because its radius is zero.
+        let out = cubic_roots(-6.0, 12.0, -8.0, 1e-14, 50, Convergence::Relative);
+        assert_eq!(out.roots.len(), 3, "a triple root is three roots, not one");
+        for got in &out.roots {
+            assert!((got - 2.0).abs() < 1e-9, "got {got}, want 2");
+        }
+    }
+
+    #[test]
+    fn cubic_roots_is_deterministic() {
+        // The same property `fixed_point` is held to, and for the same reason: the
+        // two languages are compared against each other, so a scheme that lands on
+        // different roots from identical input would make that comparison
+        // meaningless rather than merely noisy.
+        let run = || cubic_roots(-6.0, 11.0, -6.0, 1e-14, 50, Convergence::Relative);
+        let first = run();
+        let second = run();
+        assert_eq!(first.iterations, second.iterations);
+        for (a, b) in first.roots.iter().zip(&second.roots) {
+            assert_eq!(a.to_bits(), b.to_bits());
+        }
+    }
+
+    #[test]
+    fn cubic_roots_answers_a_polynomial_it_was_not_shaped_for() {
+        // x**3 - 2x**2 - 5x + 6 = (x - 1)(x + 2)(x - 3), roots -2, 1, 3. Included
+        // because its roots straddle zero, so an implementation that assumed
+        // positive roots - which a Z factor always is - fails here.
+        let out = cubic_roots(-2.0, -5.0, 6.0, 1e-14, 50, Convergence::Relative);
+        for (got, want) in out.roots.iter().zip([-2.0, 1.0, 3.0]) {
+            assert!((got - want).abs() < 1e-12, "got {got}, want {want}");
         }
     }
 

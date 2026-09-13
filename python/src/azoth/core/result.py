@@ -81,6 +81,25 @@ class FlowRegime(StrEnum):
         return self is FlowRegime.TRANSITIONAL
 
 
+class RootStructure(StrEnum):
+    """How many admissible real roots a cubic equation of state had.
+
+    Reported so a caller can tell a single-root state from one where ``z_min`` and
+    ``z_max`` are genuinely two different roots, without comparing floats.
+
+    **There is no ``TWO_ROOTS``, and that is a theorem rather than an omission.**
+    For the Peng-Robinson cubic, ``f(b_reduced)`` is exactly ``-2*b_reduced**2`` -
+    the algebra is in ``specs/calcs/eos/pr_z_factor.yaml`` - so ``b_reduced`` lies
+    either below all three roots or between the middle and the largest one. The
+    admissible count is therefore 1 or 3 and never 2. A variant that cannot occur
+    would be a value a caller branches on and never sees, which is worse than an
+    absent one.
+    """
+
+    ONE_ROOT = "one_root"
+    THREE_ROOTS = "three_roots"
+
+
 class _HasWarnings:
     """Shared warning accessors, mirroring ``CalcResult`` on the Rust side.
 
@@ -268,6 +287,40 @@ class PrAlphaAbResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PrZFactorResult(_HasWarnings):
+    """Result of ``eos.pr_z_factor``.
+
+    The first result in the registry to carry a solver report *and* an enum output:
+    the cubic's roots are the answer, and ``root_structure`` says how many of them
+    were admissible without making the caller compare two floats.
+
+    ``z_min`` and ``z_max`` are named for their position in the ordered root set
+    rather than as "liquid" and "vapour" on purpose. Above the critical temperature
+    there is one root and neither name is true, and a field called ``z_liquid``
+    holding a supercritical compressibility factor is a wrong answer that looks
+    like a right one.
+    """
+
+    #: The smallest admissible root.
+    z_min: float
+    #: The largest admissible root. Equal to ``z_min`` when only one is admissible.
+    z_max: float
+    #: How many admissible roots there were.
+    root_structure: RootStructure
+    #: Newton steps the polish took, summed over the roots. Carried because the
+    #: answer alone does not say whether the solver did any work, and because the
+    #: cross-language agreement test compares iteration counts as the sharpest
+    #: cheap check that both implementations ran the same scheme.
+    iterations: int
+    #: Whether the polish met its stopping rule.
+    converged: bool
+    #: The largest ``|x_k - x_{k-1}|`` at the final polish step.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """One fitting's contribution to the total resistance coefficient."""
 
@@ -326,4 +379,5 @@ RESULT_TYPES: dict[str, type[object]] = {
     "hydraulics.choked_flow_area": ChokedFlowAreaResult,
     "eos.pr_kappa": PrKappaResult,
     "eos.pr_alpha_ab": PrAlphaAbResult,
+    "eos.pr_z_factor": PrZFactorResult,
 }

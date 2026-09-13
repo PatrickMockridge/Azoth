@@ -40,7 +40,10 @@ pub mod warning;
 pub use error::{AzothError, Result, Warned};
 pub use range::{Band, RangeCheck, Severity, apply_checks};
 pub use result::{CalcResult, FlowRegime};
-pub use solver::{Convergence, SolverKind, SolverOutcome, fixed_point, require_converged};
+pub use solver::{
+    Convergence, CubicRootsOutcome, SolverKind, SolverOutcome, cubic_roots, fixed_point,
+    require_converged, require_cubic_converged,
+};
 pub use spec::{CalcSpec, SolverSpec, SpecCheck, TestCase};
 pub use warning::{Warning, WarningCode};
 

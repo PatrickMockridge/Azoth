@@ -121,6 +121,18 @@ class PrAlphaAbResult:
     warnings: list[Warning]
 
 @final
+class PrZFactorResult:
+    z_min: float
+    z_max: float
+    # The spec's spelling, rebuilt into `azoth.core.result.RootStructure` by the
+    # bridge - the same arrangement `ReynoldsNumberResult.regime` uses.
+    root_structure: str
+    iterations: int
+    converged: bool
+    residual: float
+    warnings: list[Warning]
+
+@final
 class PumpPowerResult:
     power: Qty
     warnings: list[Warning]
@@ -166,6 +178,7 @@ def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResu
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
 def pr_kappa(omega: float) -> PrKappaResult: ...
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
+def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...

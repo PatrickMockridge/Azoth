@@ -38,8 +38,10 @@ from azoth.core.result import (
     OrificeFlowResult,
     PrAlphaAbResult,
     PrKappaResult,
+    PrZFactorResult,
     PumpPowerResult,
     ReynoldsNumberResult,
+    RootStructure,
     SwameeJainResult,
 )
 from azoth.core.units import Q, from_si, input_to_si, to_si
@@ -187,6 +189,25 @@ def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:
     )
 
 
+def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
+    """The Peng-Robinson compressibility factor, computed in Rust.
+
+    `root_structure` crosses as the spec's string and is rebuilt into the enum, the
+    same way `regime` is for `reynolds_number` - so a caller cannot tell which
+    backend answered, which is the point of the adapter.
+    """
+    result = _core.pr_z_factor(a_reduced, b_reduced)
+    return PrZFactorResult(
+        z_min=result.z_min,
+        z_max=result.z_max,
+        root_structure=RootStructure(result.root_structure),
+        iterations=result.iterations,
+        converged=result.converged,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     """Pump shaft power, computed in Rust."""
     result = _core.pump_power(
@@ -263,6 +284,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "thermal.conduction_plane_wall": conduction_plane_wall,
     "eos.pr_kappa": pr_kappa,
     "eos.pr_alpha_ab": pr_alpha_ab,
+    "eos.pr_z_factor": pr_z_factor,
 }
 
 

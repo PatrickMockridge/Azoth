@@ -36,18 +36,24 @@ use crate::range::RangeCheck;
 pub struct SolverSpec {
     /// The scheme to solve with, as the spec spells it.
     ///
-    /// `fixed_point` is the only value the spec schema permits, and the only one
-    /// implemented in either language. The field is a string rather than an enum
-    /// because it is a direct transcription of the spec, and because the contract
-    /// test that would hold an enum to the schema does not exist yet - see the
-    /// schema's `solver.kind` for what adding a second kind requires.
+    /// A string rather than [`crate::solver::SolverKind`] because it is a direct
+    /// transcription of the spec, and because the generated table is data rather
+    /// than behaviour: the calc parses it with `SolverKind::parse`, which rejects
+    /// an unknown name rather than defaulting to one that would run a scheme the
+    /// spec did not ask for. `test_solver_contract.py` holds this vocabulary to the
+    /// schema and to both implementations.
     pub kind: &'static str,
     /// Stopping tolerance.
     pub tolerance: f64,
     /// Iteration cap.
     pub max_iterations: u32,
     /// Starting value.
-    pub initial_guess: f64,
+    ///
+    /// `None` for a scheme that does not iterate from a declared start -
+    /// `cubic_roots` forms the roots analytically and only *polishes* them, so a
+    /// starting point is not part of its scheme. The schema requires this key
+    /// conditionally for exactly that reason.
+    pub initial_guess: Option<f64>,
     /// `absolute` or `relative`; see the spec schema for what each means.
     pub convergence: &'static str,
 }

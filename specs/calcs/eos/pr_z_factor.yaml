@@ -1,0 +1,342 @@
+id: eos.pr_z_factor
+name: Peng-Robinson compressibility factor
+equation: "z**3 - (1 - b_reduced)*z**2 + (a_reduced - 3*b_reduced**2 - 2*b_reduced)*z - (a_reduced*b_reduced - b_reduced**2 - b_reduced**3) = 0"
+latex: 'z^{3} - \left(1 - B\right)z^{2} + \left(A - 3B^{2} - 2B\right)z - \left(AB - B^{2} - B^{3}\right) = 0'
+
+source:
+  standard: Peng, D. Y.; Robinson, D. B. (1976)
+  edition: "A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64"
+  equation: "TODO: source needed"
+  doi: "10.1021/i160057a011"
+
+verification:
+  status: unverified
+  notes: >
+    The cubic is the 1976 Peng-Robinson equation written in reduced variables. The
+    citation is confirmed; the form of the equation is not in doubt - it is one of
+    the two or three most widely implemented in chemical engineering, and this
+    rearrangement is algebra rather than a separate result.
+
+    What is NOT confirmed: the equation number in the paper (hence the TODO above),
+    the constants A and B are built from - see `eos.pr_alpha_ab`, which records
+    that the paper's printed Omega values are deliberately not the ones shipped -
+    and that the paper writes the cubic in this reduced form at all, rather than
+    only in the pressure-explicit form from which it follows.
+
+    # The solver is a separate contract from the equation
+
+    This is the first calc in the registry whose equation is implicit in a way that
+    needs a *named* scheme of its own, and the first to declare
+    `solver.kind: cubic_roots`. That kind, its scheme and the contract test holding
+    it to both implementations are described in `docs/src/theory/solvers.md`, which
+    is generated from the specs. `eos.pr_z_factor` is where `cubic_roots` entered
+    the registry, and the schema's own description of `solver.kind` records that.
+
+    The scheme is fixed here rather than chosen by each implementation because the
+    two languages have to land on the *same* root. A cubic has up to three real
+    roots and which one a search returns depends on where it started: measured on
+    the worked example below, whose roots are 0.0368, 0.1481 and 0.7908, Newton
+    from 0.30 converges to the middle root, from 0.50 to the liquid root and from
+    0.70 to the vapour one. So the scheme forms the roots analytically and orders
+    them, which removes the guess entirely, and then polishes - see
+    `docs/src/theory/solvers.md` for why the polish is not optional.
+
+inputs:
+  a_reduced:
+    unit: dimensionless
+    description: >
+      The cubic's attraction parameter `A`, from `eos.pr_alpha_ab`. Dimensionless,
+      and already carrying the composition: this calc does not apply a mixing rule
+      and cannot tell whether it was given a pure component or a mixture's
+      pseudo-parameter.
+  b_reduced:
+    unit: dimensionless
+    description: >
+      The cubic's repulsion parameter `B`, from `eos.pr_alpha_ab`. Also
+      dimensionless and composition-carrying.
+
+outputs:
+  z_min:
+    unit: dimensionless
+    description: >
+      The smallest *admissible* real root. Roots at or below `b_reduced` are
+      discarded, because `z = b_reduced` is the zero-volume limit - a root below it
+      makes `ln(z - B)` the logarithm of a negative number and gives a negative
+      molar volume. When only one admissible root exists this and `z_max` are equal,
+      which `root_structure` says.
+  z_max:
+    unit: dimensionless
+    description: >
+      The largest admissible real root. The two are named for their position in the
+      ordered root set rather than as "liquid" and "vapour" on purpose: above the
+      critical temperature there is one root and neither name is true, and a field
+      called `z_liquid` holding a supercritical compressibility factor is a
+      plausible-looking wrong answer rather than an obviously absent one.
+  root_structure:
+    type: enum
+    values: [one_root, three_roots]
+    description: >
+      How many admissible real roots the cubic has, so a caller can tell a
+      single-root state from one where `z_min` and `z_max` are two genuinely
+      distinct roots without comparing floats.
+
+      **Only one or three can occur, and that is a theorem rather than an
+      observation.** The polynomial evaluated at `z = b_reduced` is exactly
+      `-2*b_reduced**2`:
+
+          f(B) = B**3 - (1 - B)B**2 + (A - 3B**2 - 2B)B - (AB - B**2 - B**3)
+               = B**3 - B**2 + B**3 + AB - 3B**3 - 2B**2 - AB + B**2 + B**3
+               = -2B**2
+
+      which is negative for every permitted `B`. A cubic with a positive leading
+      coefficient is negative on `(-inf, r1)` and on `(r2, r3)`, so `B` lies either
+      below all three roots - three admissible - or between the middle and largest
+      ones - one admissible. There is no third case, so `two_roots` is not a value
+      this enum can take and is not one it offers. A value that cannot occur is the
+      "looks like validation, does nothing" failure this schema is written against,
+      so it was removed rather than kept for symmetry. The property test
+      `the_admissible_count_is_never_two` asserts it across a parameter sweep.
+
+valid_range:
+  - quantity: b_reduced
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      `B` is proportional to pressure and is zero only at zero pressure, where the
+      cubic degenerates to `z**3 - z**2 = z**2 (z - 1)`. That has a double root at
+      zero and the ideal-gas root at one - so the answer is not wrong, it is
+      *trivial*, and it would come back as `z_min = z_max = 1` with nothing to say
+      it was not a phase. The ideal-gas limit belongs to the caller, who knows they
+      are asking for it; see the same bound and the same argument in
+      `eos.pr_alpha_ab`.
+
+  - quantity: a_reduced
+    min: 0
+    min_inclusive: true
+    severity: error
+    rationale: >
+      `A` is a squared term times a positive coefficient - `Omega_a * alpha * Pr /
+      Tr**2` - so it cannot be negative for any real input to `eos.pr_alpha_ab`. A
+      negative value here means it did not come from that calc, and the cubic it
+      produces is not a Peng-Robinson equation of state. Zero is permitted: it is
+      the hard-sphere limit, which is a real thing to ask about even though no
+      PR state reaches it.
+
+assumptions:
+  - "the cubic has a real root above `b_reduced`. NOT CHECKED, but it is not an assumption in the usual sense - it is a theorem for `B > 0`, since the polynomial evaluates to `-2*B**2` at `z = b_reduced` and tends to positive infinity, so a root always lies above it. Asserted rather than assumed, in both implementations' tests, because an implementation that returned an empty root set would otherwise have nothing to return."
+  - the caller has applied a mixing rule if the system is a mixture. This calc takes `A` and `B`, which are already the composition-weighted parameters; it cannot see a composition and does not check that one was applied.
+  - "**`z_min` and `z_max` are the extreme roots, not the stable phases.** Which root has the lower Gibbs energy at these conditions is a question about the mixture and is not answered here. For a pure component the stable root is the one with the lower fugacity coefficient, which `eos.pr_departure` computes - so a caller who needs the stable phase composes the two calcs, exactly as the `azoth pipe` CLI composes the two loss calcs rather than hiding the comparison in one of them."
+  - "**near the critical point the answer is not well determined, and this calc cannot tell.** The cubic's constants exist to place a triple root at the critical point, and a triple root is cubically ill-conditioned: the polynomial is flat enough there that its value stays within 1e-12 of zero across a window roughly 2e-4 wide in `z`, and it changes sign repeatedly inside that window on floating-point noise alone. So at `A = Omega_a, B = Omega_b` both implementations return *a* root rather than *the* root, and the last few digits are not meaningful. This is documented rather than bounded because the calc does not receive `Tr` or `Pr` - the reduction happened two calcs upstream - and so cannot detect that it is in the region. A caller who needs to know should check `Tr` and `Pr` themselves, or read the warning `eos.pr_alpha_ab` is the natural place to add."
+
+references:
+  - 'Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011. (the origin of the cubic; the citation is confirmed and the equation number is not)'
+
+solver:
+  kind: cubic_roots
+  tolerance: 1.0e-14
+  max_iterations: 50
+  convergence: relative
+
+worked_example:
+  source: derived from the equation above
+  derivation: >
+    The propane-like state from `eos.pr_alpha_ab`'s worked example, with its
+    parameters fed straight in: A = 0.20206500174625697, B = 0.02431127309496514.
+
+    The cubic is then
+
+      z**3 - (1 - 0.02431127309496514) z**2
+           + (0.20206500174625697 - 3*0.02431127309496514**2 - 2*0.02431127309496514) z
+           - (0.20206500174625697*0.02431127309496514 - 0.02431127309496514**2
+              - 0.02431127309496514**3) = 0
+
+    whose coefficients evaluate to
+
+      z**3 - 0.97568872690503483 z**2 + 0.15166934155783277 z
+           - 0.0043070505546745881 = 0
+
+    This has three real roots:
+
+      z = 0.036765449656896015
+      z = 0.14814431095075864    (the middle root, discarded)
+      z = 0.7907789662973796
+
+    All three exceed B = 0.02431127309496514, so all three are admissible and
+    `root_structure` is `three_roots`.
+
+      z_min = 0.036765449656896015
+      z_max = 0.7907789662973796
+
+    The derivation is not by hand - a cubic's roots cannot honestly be presented
+    that way - so what makes it checkable is the substitution: each returned root
+    satisfies the cubic above to within 4e-16, which is one rounding of the
+    coefficients. That substitution is not left as a claim in prose; it is the
+    `selected_roots_satisfy_the_cubic` property test below, asserted at 1e-12 on
+    every spec case.
+
+    The middle root is discarded and is not returned. It is a real root of the
+    polynomial and it is not a state this equation of state describes: it sits on
+    the unstable branch between the spinodals. Dropping it is deliberate, and the
+    `note` on the property test says so.
+  inputs: { a_reduced: 0.20206500174625697, b_reduced: 0.02431127309496514 }
+  expected: { z_min: 0.036765449656896015, z_max: 0.7907789662973796 }
+  tolerance: 1.0e-12
+
+implementations:
+  python: azoth.eos.pr_z_factor
+  rust: azoth_eos::pr_z_factor
+
+tests:
+  - id: propane_like_three_root_worked_example
+    type: worked_example
+    status: active
+
+  - id: a_hand_pickable_cubic_with_three_roots
+    type: reference
+    status: active
+    source: >
+      Derived from the equation above, at A = 0.25 and B = 0.03125. Both are exact
+      in binary - 0.25 is a power of two and 0.03125 is 2**-5 - and the resulting
+      coefficients are short enough to type into any polynomial solver:
+
+        z**3 - 0.96875 z**2 + (0.25 - 3*0.03125**2 - 2*0.03125) z
+             - (0.25*0.03125 - 0.03125**2 - 0.03125**3) = 0
+        z**3 - 0.96875 z**2 + 0.1845703125 z - 0.006805419921875 = 0
+
+      with roots
+
+        0.04868889529885568, 0.191973552085114, 0.7280875526160305
+
+      The point of this case is that a reader can check it without trusting either
+      implementation, the spec, or this derivation: the coefficients above are
+      exact decimals, and any polynomial solver will return those roots. That is a
+      different kind of check from the worked example, whose coefficients are
+      whatever the upstream calc produced.
+
+      z_min = 0.04868889529885568, z_max = 0.7280875526160305, structure three.
+    inputs: { a_reduced: 0.25, b_reduced: 0.03125 }
+    expected: { z_min: 0.04868889529885568, z_max: 0.7280875526160305 }
+    tolerance: 1.0e-12
+
+  - id: a_single_root_above_the_critical_temperature
+    type: reference
+    status: active
+    source: >
+      Derived from the equation above, at the parameters `eos.pr_alpha_ab` gives for
+      methane at Tr = 1.5 and Pr = 0.5: A = 0.08448417260831159,
+      B = 0.025932024634629486.
+
+        z**3 - 0.97406797536537049 z**2 + 0.030602713634099526 z
+             - 0.0015009372376083338 = 0
+
+      has one real root, z = 0.943312987185517, and two complex ones. So
+      z_min = z_max = 0.943312987185517 and `root_structure` is `one_root`.
+
+      Worth having because it is the case where the two outputs are *equal*, which
+      is what an implementation that always reported a phase split would get wrong,
+      and because it is above the critical temperature - where a cubic equation of
+      state is most used and least tested.
+    inputs: { a_reduced: 0.08448417260831159, b_reduced: 0.025932024634629486 }
+    expected: { z_min: 0.943312987185517, z_max: 0.943312987185517 }
+    tolerance: 1.0e-12
+
+  - id: the_critical_point_is_where_the_answer_stops_being_determined
+    type: reference
+    status: active
+    source: >
+      Derived from the equation above, at A = Omega_a and B = Omega_b - the critical
+      point by construction, since those are the constants chosen to place a triple
+      root there.
+
+      This case is deliberately asserted **loosely**, at 1e-3 rather than 1e-12, and
+      the reason is the substance of the test. The cubic here is
+
+        z**3 - 0.92220392609611157 z**2 + 0.28348669376902746 z
+             - 0.029048060221089245 = 0
+
+      whose exact triple root is -c2/3 = 0.30740130869870386. But the polynomial is
+      flat: over the window [0.3073, 0.3075] its value never leaves the range
+      +/-1.1e-12, and it changes sign dozens of times within it purely from
+      floating-point noise. So every value in that window is a root as far as
+      double precision can tell, and no implementation can pin the last four digits.
+
+      Asserting a tight tolerance here would therefore be asserting something
+      false, and asserting nothing would hide a real limit of the equation. The
+      compromise is this: a loose check that the answer is in the right region, and
+      the `selected_roots_satisfy_the_cubic` property test below, which checks the
+      genuinely checkable thing - that whatever value comes back does satisfy the
+      cubic - at 1e-12 like every other case.
+    inputs: { a_reduced: 0.4572355289213822, b_reduced: 0.07779607390388846 }
+    expected: { z_min: 0.30740130869870386, z_max: 0.30740130869870386 }
+    tolerance: 1.0e-3
+
+  - id: selected_roots_satisfy_the_cubic
+    type: property
+    property: consistency_with
+    status: active
+    note: >
+      Every returned root, on every case, substituted back into the cubic must leave
+      a residual within 1e-12. This is the check that does not depend on knowing the
+      right answer - which matters most in the critical-point case above, where no
+      implementation can know it. It is also what catches a polish that has been
+      removed, an analytic branch taken on the wrong side of the discriminant, or a
+      root returned unpolished: all three produce plausible values that do not
+      satisfy the equation.
+
+      Measured on the worked example: residuals of 8.7e-19, 7.8e-18 and 3.1e-16 for
+      the three roots - a few roundings of the coefficients, which is all a correct
+      implementation should leave.
+
+  - id: the_middle_root_is_not_returned
+    type: property
+    property: consistency_with
+    status: active
+    note: >
+      When three real roots exist, the returned pair must be the outermost two and
+      the middle one must be absent. `z_min < z_middle < z_max` is checked by
+      bracketing: the middle root is the one the cubic has between the other two,
+      so `z_min` and `z_max` must straddle a sign change of the polynomial while
+      sharing none with it. A calc that reported the two *smallest* roots, or the
+      two it happened to find, would pass the residual check above and fail this.
+
+  - id: the_admissible_count_is_never_two
+    type: property
+    property: consistency_with
+    status: active
+    note: >
+      Sweep `a_reduced` and `b_reduced` over a grid and assert the admissible root
+      count is never two. This is the test for the theorem in `root_structure`'s
+      description: `f(b_reduced)` is exactly `-2*b_reduced**2`, so `B` cannot lie
+      between the two smallest roots, and the count is 1 or 3 and nothing else.
+
+      Worth asserting rather than proving once in prose, because the argument
+      depends on the cubic's coefficients being exactly what this spec says they
+      are. A sign error in `c0` would break `f(B) = -2*B**2` and could make a
+      count of two reachable - at which point the enum would be missing a value it
+      needs, and that should fail here rather than surface as a caller's
+      `AttributeError` or a silently mislabelled structure.
+
+      Measured over 47,477 parameter combinations before this test was written:
+      counts of 1 (41,607 times) and 3 (5,870 times), and never 2.
+
+  - id: monotonic
+    type: property
+    property: monotonic
+    status: active
+    note: >
+      Both extreme roots fall as `a_reduced` rises and rise as `b_reduced` rises -
+      more attraction pulls the fluid together, more repulsion pushes it apart.
+      Measured across the range: at B = 0.024311, increasing A from 0.10 to 0.30
+      takes z_max from 0.9242 to 0.5224; at A = 0.202065, increasing B from 0.005 to
+      0.06 takes z_max from 0.7359 to 0.8690. A sign error in either coefficient of
+      the cubic, or a transposed one, cannot survive both directions.
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: skipped
+    skip_reason: >
+      Every input and every output is dimensionless, so there is no unit to convert.
+      Declared rather than omitted so the omission is a recorded decision,
+      following `crane_k_factors` and the other two `eos` calcs.

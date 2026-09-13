@@ -31,6 +31,7 @@ import dataclasses
 import importlib
 import math
 from collections.abc import Iterator, Mapping
+from enum import Enum
 from typing import Any
 
 import pytest
@@ -76,10 +77,17 @@ def _scalar_base(value: Any) -> float | None:
 
 
 def _label(value: Any) -> str | None:
-    """A scalar result field as an enum label, or `None` for an absent one."""
+    """A scalar result field as an enum label, or `None` for an absent one.
+
+    Any `Enum`, not `FlowRegime` by name - the same generalisation `_is_enum_hint` in
+    the batch core needed once `eos.pr_z_factor`'s `root_structure` became an enum
+    output outside the hydraulics namespace. `str()` on a `StrEnum` happens to give
+    the value, but that is a property of `StrEnum` rather than of the rule, and a
+    plain `Enum` would have come back as `RootStructure.THREE_ROOTS`.
+    """
     if value is None:
         return None
-    return value.value if isinstance(value, FlowRegime) else str(value)
+    return value.value if isinstance(value, Enum) else str(value)
 
 
 def _column_kinds(calc_id: str) -> dict[str, str]:

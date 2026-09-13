@@ -16,7 +16,7 @@ use azoth_core::CalcResult;
 use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
-use azoth_eos::results::{PrAlphaAbResult, PrKappaResult};
+use azoth_eos::results::{PrAlphaAbResult, PrKappaResult, PrZFactorResult};
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -540,6 +540,70 @@ impl From<&PrAlphaAbResult> for PyPrAlphaAbResult {
     }
 }
 
+/// Result of `eos.pr_z_factor`, transported.
+///
+/// Carries `root_structure` as the spec's string rather than as an enum, so the
+/// bridge rebuilds `azoth.core.result.RootStructure` - the same arrangement
+/// `PyReynoldsNumberResult.regime` uses, and for the same reason: the enum is
+/// Python's, and this layer must not grow a second definition of it.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrZFactorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrZFactorResult {
+    /// The smallest admissible root. Dimensionless.
+    #[pyo3(get)]
+    pub z_min: f64,
+    /// The largest admissible root. Dimensionless.
+    #[pyo3(get)]
+    pub z_max: f64,
+    /// `one_root` or `three_roots`.
+    #[pyo3(get)]
+    pub root_structure: String,
+    /// Newton steps the polish took.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Whether the polish met its stopping rule.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// The largest `|x_k - x_{k-1}|` at the final polish step.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrZFactorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrZFactorResult(z_min={}, z_max={}, root_structure={}, {} warning(s))",
+            self.z_min,
+            self.z_max,
+            self.root_structure,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&PrZFactorResult> for PyPrZFactorResult {
+    fn from(r: &PrZFactorResult) -> Self {
+        Self {
+            z_min: r.z_min,
+            z_max: r.z_max,
+            root_structure: r.root_structure.as_str().to_string(),
+            iterations: r.iterations,
+            converged: r.converged,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&ConductionPlaneWallResult> for PyConductionPlaneWallResult {
     fn from(r: &ConductionPlaneWallResult) -> Self {
         Self {
@@ -757,6 +821,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
+        PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -782,6 +847,7 @@ pub fn calc_ids() -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID.to_string(),
         PrKappaResult::CALC_ID.to_string(),
         PrAlphaAbResult::CALC_ID.to_string(),
+        PrZFactorResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),

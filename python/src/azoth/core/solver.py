@@ -27,6 +27,7 @@ general-purpose numerical library and must not become one.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
@@ -53,6 +54,8 @@ class SolverKind(StrEnum):
 
     #: ``x -> f(x)``, iterated from the spec's declared initial guess.
     FIXED_POINT = "fixed_point"
+    #: The real roots of a cubic, formed analytically and then polished.
+    CUBIC_ROOTS = "cubic_roots"
 
     @classmethod
     def parse(cls, name: str) -> SolverKind:
@@ -148,6 +151,155 @@ def fixed_point(
             return SolverOutcome(x=x, iterations=iteration, converged=True, residual=residual)
 
     return SolverOutcome(x=x, iterations=max_iterations, converged=False, residual=residual)
+
+
+@dataclass(frozen=True, slots=True)
+class CubicRootsOutcome:
+    """What :func:`cubic_roots` produced.
+
+    Not a :class:`SolverOutcome`, because a cubic has up to three answers rather
+    than one and the caller - not this module - decides which of them is physical.
+    ``roots`` is returned whole so that decision stays with the calc that knows
+    what its roots mean.
+    """
+
+    #: The real roots, ascending, after polishing.
+    #:
+    #: Length 1 when the discriminant is positive and 3 when it is not, which
+    #: includes the degenerate cases: a double or triple root is returned as
+    #: repeated values rather than collapsed, so a caller that counts roots gets the
+    #: algebraic count and not a de-duplicated one.
+    roots: tuple[float, ...]
+    #: Newton steps taken, summed over the roots.
+    iterations: int
+    #: Whether every root met the stopping rule.
+    converged: bool
+    #: The largest ``|x_k - x_{k-1}|`` seen on the final step of any root.
+    residual: float
+
+
+def cubic_roots(
+    c2: float,
+    c1: float,
+    c0: float,
+    tolerance: float,
+    max_iterations: int,
+    convergence: Convergence,
+) -> CubicRootsOutcome:
+    """The real roots of ``x**3 + c2*x**2 + c1*x + c0``, formed analytically then polished.
+
+    # Why analytic first
+
+    An iterative root-finder started from a fixed guess does not reliably find the
+    root a caller wants. Measured on the Peng-Robinson cubic for propane at
+    ``Tr = 0.8, Pr = 0.25`` - roots 0.0368, 0.1481, 0.7908 - Newton started at 0.30
+    converges to the *middle* root, at 0.50 to the liquid root and at 0.70 to the
+    vapour one. Which root comes back depends on where the search began, so an
+    implementation that guesses cannot be told what it found. Forming the roots
+    analytically and ordering them removes the guess.
+
+    # Why the polish is not optional
+
+    Three reasons, all measured rather than anticipated:
+
+    * **Cardano cancels catastrophically when the roots are close.** The subtraction
+      ``cbrt(-q/2 + sqrt(d)) - cbrt(-q/2 - sqrt(d))`` loses precision as the two
+      terms approach each other, which is exactly the near-triple-root case.
+    * **The discriminant's sign is not reliably computable near zero.** With the
+      rounded Peng-Robinson constants at the critical point it is ``1.8e-12`` -
+      positive, but small enough that a different rounding puts it on the other
+      side, selecting the three-real-root branch for a cubic whose roots are mostly
+      complex.
+    * **``cbrt``, ``acos`` and ``cos`` are not correctly rounded** in any libm, so
+      the analytic value is only close to begin with. The polish is what makes the
+      two languages agree to a tolerance worth asserting.
+
+    A Newton step on the polynomial is cheap, is exactly representable arithmetic,
+    and converges quadratically once it is near - and the analytic formation has
+    already put it near.
+    """
+    # Depress x**3 + c2*x**2 + c1*x + c0 to w**3 + p*w + q by x = w - c2/3.
+    p = c1 - c2 * c2 / 3.0
+    q = 2.0 * c2 * c2 * c2 / 27.0 - c2 * c1 / 3.0 + c0
+    half_q = q / 2.0
+    third_p = p / 3.0
+    discriminant = half_q * half_q + third_p * third_p * third_p
+
+    if discriminant > 0.0:
+        # One real root and two complex conjugates. Cardano, with `cbrt` carrying
+        # the sign so a negative argument does not become NaN.
+        root_d = math.sqrt(discriminant)
+        u = math.cbrt(-half_q + root_d)
+        v = math.cbrt(-half_q - root_d)
+        roots = [u + v - c2 / 3.0]
+    else:
+        radius = math.sqrt(-third_p * third_p * third_p)
+        if radius == 0.0:
+            # p = q = 0: the cubic is (w)**3, a triple root. The general form would
+            # divide by `radius` here.
+            roots = [-c2 / 3.0, -c2 / 3.0, -c2 / 3.0]
+        else:
+            # Clamped because rounding can push the ratio a hair outside [-1, 1],
+            # and `acos` of that is NaN rather than a slightly wrong angle.
+            cosine = max(-1.0, min(1.0, -half_q / radius))
+            angle = math.acos(cosine)
+            scale = 2.0 * math.sqrt(-third_p)
+            roots = sorted(
+                scale * math.cos((angle + 2.0 * math.pi * k) / 3.0) - c2 / 3.0 for k in range(3)
+            )
+
+    # Newton polish, on the polynomial rather than the depressed form: that is the
+    # equation the caller wrote, and a step on it needs no back-substitution.
+    iterations = 0
+    residual = 0.0
+    converged = True
+    polished: list[float] = []
+    for root in roots:
+        x = root
+        step_residual = math.inf
+        root_converged = False
+        for _ in range(max_iterations):
+            f = ((x + c2) * x + c1) * x + c0
+            df = (3.0 * x + 2.0 * c2) * x + c1
+            if df == 0.0:
+                # A stationary point: Newton cannot step, and the analytic value is
+                # the best available. Leave it and let the stopping rule decide.
+                break
+            next_x = x - f / df
+            delta = abs(next_x - x)
+            step_residual = delta
+            x = next_x
+            iterations += 1
+            if convergence is Convergence.ABSOLUTE:
+                close_enough = delta <= tolerance
+            else:
+                close_enough = delta <= tolerance * abs(x)
+            if close_enough:
+                root_converged = True
+                break
+        if not root_converged:
+            converged = False
+        residual = max(residual, step_residual)
+        polished.append(x)
+
+    return CubicRootsOutcome(
+        roots=tuple(polished),
+        iterations=iterations,
+        converged=converged,
+        residual=residual,
+    )
+
+
+def require_cubic_converged(outcome: CubicRootsOutcome, tolerance: float) -> CubicRootsOutcome:
+    """Turn a cubic outcome that did not converge into an error.
+
+    The same rule :func:`require_converged` applies and for the same reason: a root
+    that did not meet tolerance is the last iterate of an iteration that did not
+    finish, and is not a root of anything.
+    """
+    if outcome.converged:
+        return outcome
+    raise SolverNotConvergedError(outcome.iterations, outcome.residual, tolerance)
 
 
 def require_converged(outcome: SolverOutcome, tolerance: float) -> SolverOutcome:
