@@ -38,6 +38,7 @@ from azoth.core.result import (
     OrificeFlowResult,
     PrAlphaAbResult,
     PrKappaResult,
+    PrsvKappaResult,
     PrZFactorResult,
     PumpPowerResult,
     ReynoldsNumberResult,
@@ -208,6 +209,15 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
     )
 
 
+def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult:
+    """The PRSV alpha-function coefficient, computed in Rust.
+
+    Dimensionless end to end, so nothing is converted in either direction.
+    """
+    result = _core.prsv_kappa(omega, Tr, kappa1)
+    return PrsvKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
+
+
 def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     """Pump shaft power, computed in Rust."""
     result = _core.pump_power(
@@ -285,6 +295,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.pr_kappa": pr_kappa,
     "eos.pr_alpha_ab": pr_alpha_ab,
     "eos.pr_z_factor": pr_z_factor,
+    "eos.prsv_kappa": prsv_kappa,
 }
 
 

@@ -69,6 +69,7 @@ variables rather than in quantities with units.
 - [`eos.pr_kappa`](./eos/pr_kappa.md)
 - [`eos.pr_alpha_ab`](./eos/pr_alpha_ab.md)
 - [`eos.pr_z_factor`](./eos/pr_z_factor.md)
+- [`eos.prsv_kappa`](./eos/prsv_kappa.md)
 
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`
 is the isentropic basis, with the standard's de-rating coefficients left to the caller.

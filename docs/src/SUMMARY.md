@@ -5,6 +5,7 @@
   - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)
   - [Peng-Robinson attraction-parameter coefficient](./eos/pr_kappa.md)
   - [Peng-Robinson compressibility factor](./eos/pr_z_factor.md)
+  - [Peng-Robinson-Stryjek-Vera alpha-function coefficient](./eos/prsv_kappa.md)
 - [Hydraulics](./hydraulics/index.md)
   - [Choked-flow throat area for an ideal gas](./hydraulics/choked_flow_area.md)
   - [Liquid flow through a control valve from its flow coefficient](./hydraulics/control_valve_cv.md)

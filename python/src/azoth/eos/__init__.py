@@ -9,6 +9,7 @@ since a wrong coefficient is invisible downstream.
 * :func:`pr_kappa` - the Peng-Robinson alpha-function coefficient
 * :func:`pr_alpha_ab` - the alpha function and the reduced attraction parameters
 * :func:`pr_z_factor` - the compressibility factor, the cubic's real roots
+* :func:`prsv_kappa` - the Stryjek-Vera coefficient, for the same alpha function
 
 # Why the coefficients come first
 
@@ -52,17 +53,19 @@ see :func:`azoth.backends` and :func:`azoth.use_backend`.
 from __future__ import annotations
 
 from azoth._dispatch import resolve
-from azoth.core.result import PrAlphaAbResult, PrKappaResult, PrZFactorResult
+from azoth.core.result import PrAlphaAbResult, PrKappaResult, PrsvKappaResult, PrZFactorResult
 
 __all__ = [
     "pr_alpha_ab",
     "pr_kappa",
     "pr_z_factor",
+    "prsv_kappa",
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_Z_FACTOR = "eos.pr_z_factor"
+_PRSV_KAPPA = "eos.prsv_kappa"
 
 
 def pr_kappa(omega: float) -> PrKappaResult:
@@ -107,3 +110,19 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
     See :func:`azoth.eos.reference.pr_z_factor`.
     """
     return resolve(_PR_Z_FACTOR)(a_reduced=a_reduced, b_reduced=b_reduced)  # type: ignore[no-any-return]
+
+
+def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult:
+    """The PRSV alpha-function coefficient for a pure component.
+
+    ``kappa1`` is the pure-compound parameter PRSV adds, and **this library ships no
+    values for it** - a table of fitted parameters is the databank this library
+    deliberately has none of. Passing a real one is the caller's job, and passing
+    zero does not reproduce Peng-Robinson.
+
+    Raises:
+        OutOfRangeError: if ``Tr <= 0``.
+
+    See :func:`azoth.eos.reference.prsv_kappa`.
+    """
+    return resolve(_PRSV_KAPPA)(omega=omega, Tr=Tr, kappa1=kappa1)  # type: ignore[no-any-return]

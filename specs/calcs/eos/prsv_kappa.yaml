@@ -1,0 +1,253 @@
+id: eos.prsv_kappa
+name: Peng-Robinson-Stryjek-Vera alpha-function coefficient
+equation: "kappa = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3 + kappa1*(1 + Tr**0.5)*(0.7 - Tr)"
+latex: '\kappa = 0.378893 + 1.4897153\,\omega - 0.17131848\,\omega^{2} + 0.0196554\,\omega^{3} + \kappa_{1}\left(1 + \sqrt{T_{r}}\right)\left(0.7 - T_{r}\right)'
+
+source:
+  standard: Stryjek, R.; Vera, J. H. (1986)
+  edition: "PRSV: An improved Peng-Robinson equation of state for pure compounds and mixtures. The Canadian Journal of Chemical Engineering, 64(2), 323-333"
+  equation: "TODO: source needed"
+  doi: "10.1002/cjce.5450640224"
+
+verification:
+  status: unverified
+  notes: >
+    The citation is confirmed: Stryjek & Vera, "PRSV: An improved Peng-Robinson
+    equation of state for pure compounds and mixtures", Canadian Journal of Chemical
+    Engineering 64(2), 323-333, DOI 10.1002/cjce.5450640224. The paper's abstract
+    confirms the substance of what this calc implements - it modifies the
+    temperature and acentric-factor dependence of the Peng-Robinson attraction term
+    and introduces "a single pure-compound parameter".
+
+    What has NOT been done is opening the paper and reading the coefficients off it.
+    Specifically unconfirmed: (1) that the four constants of the acentric-factor
+    polynomial are printed as 0.378893, 1.4897153, -0.17131848 and 0.0196554; (2)
+    that the temperature factor is written as (1 + sqrt(Tr))*(0.7 - Tr), rather than
+    in some algebraically equivalent form that would not be bit-identical; (3) the
+    equation numbers, hence the TODO above.
+
+    # What this calc deliberately does NOT carry, and why it matters here
+
+    `kappa1` is a **per-component fitted parameter**. PRSV's accuracy over PR comes
+    from fitting it to each substance's vapour pressure data, and a table of those
+    values is exactly the kind of data this library does not ship - the same
+    decision `eos.pr_kappa` records for the acentric factor and `hydraulics` for the
+    fitting coefficients. So it is an input, supplied by the caller, and the worked
+    example below uses a round illustrative value while saying so.
+
+    That is worth stating plainly because it is the one place a reader might expect
+    a databank: the whole point of PRSV is the extra parameter, and a library that
+    offers PRSV without offering the parameters is offering the equation and not
+    the correlation. It is still useful - it is the same equation a caller's own
+    fitted values need - but a caller who expected to get PRSV's published accuracy
+    for free will not get it, and should be told so here rather than discover it.
+
+    # Why no bound asserts the fitted range
+
+    PRSV is fitted over a range of reduced temperatures and acentric factors, and
+    that range is not established here, so no bound claims one. `eos.pr_kappa`
+    records the same omission for the same reason.
+
+inputs:
+  omega:
+    unit: dimensionless
+    description: >
+      Acentric factor, as in `eos.pr_kappa`. A property of the substance, supplied
+      by the caller.
+  Tr:
+    unit: dimensionless
+    description: >
+      Reduced temperature, T / Tc.
+  kappa1:
+    unit: dimensionless
+    description: >
+      The pure-compound parameter PRSV adds, fitted per substance to vapour
+      pressure data. **Supplied by the caller, and this library ships no values for
+      it** - see `verification`. Its sign is unconstrained and both signs occur.
+
+outputs:
+  kappa:
+    unit: dimensionless
+    description: >
+      The PRSV alpha-function coefficient. Feeds the same alpha function as
+      Peng-Robinson's - `alpha = (1 + kappa*(1 - sqrt(Tr)))**2` - which is what
+      `eos.pr_alpha_ab` computes and why that calc needed no change to serve this
+      one.
+
+      Note the temperature dependence: unlike Peng-Robinson's coefficient, this one
+      varies with `Tr`. That is the whole of PRSV's modification, and it is why
+      `kappa` is computed here rather than passed on from `eos.pr_kappa`.
+
+valid_range:
+  - quantity: Tr
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      `Tr` appears as a square root. Tr = 0 is finite but a negative Tr makes the
+      root undefined, and a reduced temperature at or below zero is not a state.
+      Refusing both ends keeps the bound to one rule rather than two that differ by
+      accident.
+
+assumptions:
+  - "`kappa1` is a fitted parameter for the substance intended, and its correctness is NOT CHECKED - this library ships no values for it and has no second source. A caller who passes zero has not silently got Peng-Robinson; see the next entry."
+  - "**`kappa1 = 0` is not the same as Peng-Robinson.** The acentric-only polynomial here is `0.378893 + 1.4897153*omega - ...`, which is a *different* correlation from the `0.37464 + 1.54226*omega - ...` that `eos.pr_kappa` computes, so the two coefficients differ even at the same acentric factor. They are two fits by different authors for the same physical role, and neither reduces to the other."
+  - the alpha function this coefficient feeds is unchanged from Peng-Robinson. PRSV modifies the temperature dependence of the coefficient and nothing else, which is why `eos.pr_alpha_ab` serves both - that is the claim `the_prsv_coefficient_feeds_the_pr_alpha_function` tests.
+  - the range of reduced temperatures and acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.
+  - this is the 1986 PRSV of the cited paper. The companion paper in the same issue introduces new mixing rules for the same equation, and PRSV2 is a later revision of the pure-compound parameter - a coefficient from here is not comparable with one from either.
+
+references:
+  - 'Stryjek, R.; Vera, J. H. (1986). "PRSV: An improved Peng-Robinson equation of state for pure compounds and mixtures." The Canadian Journal of Chemical Engineering 64(2), 323-333. DOI 10.1002/cjce.5450640224. (the origin of this coefficient; the citation is confirmed, the printed coefficients are not)'
+  - 'Pitzer, K. S. (1955). "The Volumetric and Thermodynamic Properties of Fluids. I. Theoretical Basis and Virial Coefficients." Journal of the American Chemical Society 77(13), 3427-3433. DOI 10.1021/ja01618a002. (the definition of the acentric factor, as in `eos.pr_kappa`)'
+
+worked_example:
+  source: derived from the equation above
+  derivation: >
+    The propane-like component from `eos.pr_kappa`'s worked example, omega = 0.152,
+    at Tr = 0.8, with kappa1 = 0.05.
+
+    **The value 0.05 is illustrative and is not a fitted parameter for any
+    substance.** It is round, it is stated here so nobody mistakes it for data, and
+    the arithmetic below is what the example exists to demonstrate. A reader with a
+    real kappa1 substitutes it and the same four steps apply.
+
+    The acentric-only part, in the order the equation states it. Each line is the
+    double the implementation produces, not the exact decimal:
+
+      0.378893                        = 0.378893
+      1.4897153 * 0.152               = 0.2264367256
+      0.152 * 0.152                   = 0.023104
+      0.17131848 * 0.023104           = 0.0039581421619199995
+      0.152 * 0.152 * 0.152           = 0.003511808
+      0.0196554 * 0.003511808         = 0.0000690259909632
+      0.378893 + 0.2264367256         = 0.6053297256
+      0.6053297256 - 0.0039581421619199995 = 0.60137158343808
+      0.60137158343808 + 0.0000690259909632 = 0.6014406094290431
+
+    The temperature-dependent part:
+
+      sqrt(0.8)                       = 0.8944271909999159
+      1 + sqrt(0.8)                   = 1.8944271909999157
+      0.7 - 0.8                       = -0.10000000000000009
+      product                         = -0.18944271909999175
+      0.05 * product                  = -0.009472135954999588
+
+    kappa = 0.6014406094290431 - 0.009472135954999588 = 0.5919684734740435
+
+    # Why this example is NOT bit-exact, unlike `eos.pr_kappa`'s
+
+    Two things are worth stating rather than glossing, because both are the kind of
+    detail that makes a derivation untrustworthy when it is wrong.
+
+    **`0.7 - 0.8` is not `-0.1`.** Neither 0.7 nor 0.8 is exactly representable in
+    binary, and the double nearest their difference is -0.10000000000000009. A
+    reader checking this by hand will get -0.1 and a slightly different answer
+    downstream; the derivation above prints what the machine actually holds.
+
+    **The sum is one ulp below the exact value.** The four acentric terms sum to
+    0.6014406094290432 as exact decimals and to 0.6014406094290431 in double
+    precision - a relative difference of 1.7e-16, which is one rounding of a
+    four-term alternating sum and not an error. `sqrt(0.8)` is irrational besides,
+    so no decimal statement of this derivation can be exact.
+
+    So the expected value below is the double the implementation produces, checked
+    against exact decimal arithmetic at 50 digits to confirm the discrepancy really
+    is one ulp and not a mistake. `eos.pr_kappa`'s worked example can claim
+    bit-exactness; this one cannot, and says so.
+  inputs: { omega: 0.152, Tr: 0.8, kappa1: 0.05 }
+  expected: { kappa: 0.5919684734740435 }
+  tolerance: 1.0e-12
+
+implementations:
+  python: azoth.eos.prsv_kappa
+  rust: azoth_eos::prsv_kappa
+
+tests:
+  - id: propane_like_worked_example
+    type: worked_example
+    status: active
+
+  - id: at_tr_0_7_the_kappa1_term_vanishes
+    type: reference
+    status: active
+    source: >
+      Derived from the equation above, at Tr = 0.7. The temperature factor is
+      `(1 + sqrt(Tr))*(0.7 - Tr)`, which is **exactly zero** at Tr = 0.7 for any
+      finite kappa1 - the first factor is never zero, so the whole term is. The
+      coefficient therefore collapses to its acentric-only part:
+
+        kappa(0.152, Tr = 0.7, any kappa1) = 0.6014406094290431
+
+      with inputs omega = 0.152 and kappa1 = 0.05 - a kappa1 chosen deliberately
+      non-zero, because a case with kappa1 = 0 would pass whether or not the
+      implementation carried the term at all.
+
+      This is the anchor the correlation is built around: Tr = 0.7 is where the
+      acentric factor is defined, so PRSV is pinned to the acentric-only fit there
+      and departs from it elsewhere by however much kappa1 says. It is also the
+      sharpest cheap test of the temperature term - an implementation that dropped
+      it, or got its sign wrong, or used a different anchor, fails here.
+    inputs: { omega: 0.152, Tr: 0.7, kappa1: 0.05 }
+    expected: { kappa: 0.6014406094290431 }
+    tolerance: 1.0e-12
+
+  - id: with_kappa1_zero_the_coefficient_is_temperature_independent
+    type: reference
+    status: active
+    source: >
+      Derived from the equation above, at Tr = 0.85 with kappa1 = 0. Every part of
+      the coefficient that depends on temperature is multiplied by kappa1, so with
+      it zero the coefficient is the acentric-only polynomial at any Tr:
+
+        kappa(0.152, 0.85, 0.0) = 0.6014406094290431
+
+      identical to the value at Tr = 0.7 despite the different temperature. Asserted
+      as a point value so an implementation that leaked a temperature dependence into
+      the acentric-only part - by factoring the polynomial wrongly, or by applying
+      the (0.7 - Tr) shape to both terms - fails against a single number.
+
+      Not to be confused with Peng-Robinson: see `assumptions` for why a zero kappa1
+      does not reproduce `eos.pr_kappa`'s coefficient.
+    inputs: { omega: 0.152, Tr: 0.85, kappa1: 0.0 }
+    expected: { kappa: 0.6014406094290431 }
+    tolerance: 1.0e-12
+
+  - id: the_prsv_coefficient_feeds_the_pr_alpha_function
+    type: property
+    property: consistency_with
+    status: active
+    note: >
+      The claim the decomposition rests on: PRSV changes the coefficient's
+      temperature dependence and nothing else, so `eos.pr_alpha_ab` serves it
+      unchanged. This test computes a PRSV coefficient and feeds it to
+      `eos.pr_alpha_ab`, asserting the alpha function comes back consistent with
+      the coefficient it was given - `alpha` is `(1 + kappa*(1 - sqrt(Tr)))**2`, so
+      the returned alpha and the returned coefficient must satisfy that relation,
+      and the reduced parameters that follow must be built from the PRSV alpha
+      rather than a stale one.
+
+      It is a cross-calc test rather than a single-calc one, which is why it is
+      declared here and implemented in both test files rather than generated. If
+      PRSV had needed `pr_alpha_ab` to change, this is where that would have shown
+      up - and the whole argument for splitting the coefficients out of the
+      equation of state would have been wrong.
+
+  - id: monotonic
+    type: property
+    property: monotonic
+    status: active
+    note: >
+      `kappa` increases with `omega`, for any `kappa1`. The derivative of the
+      acentric-only polynomial, `1.4897153 - 0.34263696*omega + 0.0589662*omega**2`,
+      has a negative discriminant and so is positive everywhere, and the kappa1 term
+      does not involve omega at all - so the monotonicity holds independent of the
+      fitted parameter, which is what makes it safe to assert without one.
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: skipped
+    skip_reason: >
+      Every input and every output is dimensionless, so there is no unit to convert.
+      Declared rather than omitted so the omission is a recorded decision, following
+      `crane_k_factors` and the other three `eos` calcs.

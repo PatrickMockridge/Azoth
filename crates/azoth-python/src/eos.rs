@@ -11,7 +11,7 @@ use azoth_eos as eos;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::results::{PyPrAlphaAbResult, PyPrKappaResult, PyPrZFactorResult};
+use crate::results::{PyPrAlphaAbResult, PyPrKappaResult, PyPrZFactorResult, PyPrsvKappaResult};
 
 /// The Peng-Robinson alpha-function coefficient.
 ///
@@ -53,5 +53,20 @@ pub fn pr_alpha_ab(py: Python<'_>, kappa: f64, Tr: f64, Pr: f64) -> PyResult<PyP
 pub fn pr_z_factor(py: Python<'_>, a_reduced: f64, b_reduced: f64) -> PyResult<PyPrZFactorResult> {
     eos::pr_z_factor(a_reduced, b_reduced)
         .map(|r| PyPrZFactorResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The PRSV alpha-function coefficient.
+///
+/// All three arguments are dimensionless, and `kappa1` is the caller's - this
+/// library ships no fitted values for it, which is the one thing about PRSV a
+/// caller is most likely to expect and not get.
+#[pyfunction]
+#[pyo3(signature = (omega, Tr, kappa1))]
+#[pyo3(text_signature = "(omega, Tr, kappa1)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn prsv_kappa(py: Python<'_>, omega: f64, Tr: f64, kappa1: f64) -> PyResult<PyPrsvKappaResult> {
+    eos::prsv_kappa(omega, Tr, kappa1)
+        .map(|r| PyPrsvKappaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

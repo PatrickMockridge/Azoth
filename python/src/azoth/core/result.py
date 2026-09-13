@@ -262,6 +262,23 @@ class PrKappaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PrsvKappaResult(_HasWarnings):
+    """Result of ``eos.prsv_kappa``.
+
+    One dimensionless number, like :class:`PrKappaResult` - but a *different* number
+    with a different property: this one varies with temperature, where
+    Peng-Robinson's coefficient does not. The two are not interchangeable and a
+    caller who substitutes one for the other gets a plausible answer from the wrong
+    correlation.
+    """
+
+    #: The PRSV alpha-function coefficient. Dimensionless.
+    kappa: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PrAlphaAbResult(_HasWarnings):
     """Result of ``eos.pr_alpha_ab``.
 
@@ -380,4 +397,5 @@ RESULT_TYPES: dict[str, type[object]] = {
     "eos.pr_kappa": PrKappaResult,
     "eos.pr_alpha_ab": PrAlphaAbResult,
     "eos.pr_z_factor": PrZFactorResult,
+    "eos.prsv_kappa": PrsvKappaResult,
 }

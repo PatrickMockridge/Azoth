@@ -16,7 +16,7 @@ use azoth_core::CalcResult;
 use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
-use azoth_eos::results::{PrAlphaAbResult, PrKappaResult, PrZFactorResult};
+use azoth_eos::results::{PrAlphaAbResult, PrKappaResult, PrZFactorResult, PrsvKappaResult};
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -590,6 +590,43 @@ impl PyPrZFactorResult {
     }
 }
 
+/// Result of `eos.prsv_kappa`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrsvKappaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrsvKappaResult {
+    /// The PRSV alpha-function coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub kappa: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrsvKappaResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrsvKappaResult(kappa={}, {} warning(s))",
+            self.kappa,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&PrsvKappaResult> for PyPrsvKappaResult {
+    fn from(r: &PrsvKappaResult) -> Self {
+        Self {
+            kappa: r.kappa,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PrZFactorResult> for PyPrZFactorResult {
     fn from(r: &PrZFactorResult) -> Self {
         Self {
@@ -822,6 +859,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
         PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
+        PrsvKappaResult::CALC_ID => PrsvKappaResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -848,6 +886,7 @@ pub fn calc_ids() -> Vec<String> {
         PrKappaResult::CALC_ID.to_string(),
         PrAlphaAbResult::CALC_ID.to_string(),
         PrZFactorResult::CALC_ID.to_string(),
+        PrsvKappaResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),

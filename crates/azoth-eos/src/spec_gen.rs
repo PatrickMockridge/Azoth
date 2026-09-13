@@ -5,6 +5,7 @@
 //!   - specs/calcs/eos/pr_alpha_ab.yaml
 //!   - specs/calcs/eos/pr_kappa.yaml
 //!   - specs/calcs/eos/pr_z_factor.yaml
+//!   - specs/calcs/eos/prsv_kappa.yaml
 //!
 //! Tables for the `eos` namespace. Every namespace has its own generated
 //! file, because a crate is the unit of compilation and a calculation must be able
@@ -401,8 +402,114 @@ pub static PR_Z_FACTOR_SPEC: CalcSpec = CalcSpec {
     tests: PR_Z_FACTOR_TESTS,
 };
 
+/// Registry entry for `eos.prsv_kappa`.
+static PRSV_KAPPA_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "Tr",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "`Tr` appears as a square root. Tr = 0 is finite but a negative Tr makes the root undefined, and a reduced temperature at or below zero is not a state. Refusing both ends keeps the bound to one rule rather than two that differ by accident.",
+    },
+}];
+
+static PRSV_KAPPA_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "at_tr_0_7_the_kappa1_term_vanishes",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("omega", 0.152), ("Tr", 0.7), ("kappa1", 0.05)],
+        lists: &[],
+        expected: &[("kappa", 0.6014406094290431)],
+    },
+    TestCase {
+        id: "with_kappa1_zero_the_coefficient_is_temperature_independent",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("omega", 0.152), ("Tr", 0.85), ("kappa1", 0.0)],
+        lists: &[],
+        expected: &[("kappa", 0.6014406094290431)],
+    },
+    TestCase {
+        id: "the_prsv_coefficient_feeds_the_pr_alpha_function",
+        kind: "property",
+        property: Some("consistency_with"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "monotonic",
+        kind: "property",
+        property: Some("monotonic"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "skipped",
+        skip_reason: Some(
+            "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision, following `crane_k_factors` and the other three `eos` calcs.",
+        ),
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+];
+
+/// Registered spec for `eos.prsv_kappa`.
+///
+/// Public and addressable directly, so a calc can hold `&PRSV_KAPPA_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static PRSV_KAPPA_SPEC: CalcSpec = CalcSpec {
+    id: "eos.prsv_kappa",
+    verification: "unverified",
+    checks: PRSV_KAPPA_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "propane_like_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("omega", 0.152), ("Tr", 0.8), ("kappa1", 0.05)],
+        lists: &[],
+        expected: &[("kappa", 0.5919684734740435)],
+    },
+    tests: PRSV_KAPPA_TESTS,
+};
+
 /// Every calculation in the registry, sorted by id.
-static ALL_SPECS: &[&CalcSpec] = &[&PR_ALPHA_AB_SPEC, &PR_KAPPA_SPEC, &PR_Z_FACTOR_SPEC];
+static ALL_SPECS: &[&CalcSpec] = &[
+    &PR_ALPHA_AB_SPEC,
+    &PR_KAPPA_SPEC,
+    &PR_Z_FACTOR_SPEC,
+    &PRSV_KAPPA_SPEC,
+];
 
 /// All specs, in a stable order.
 #[must_use]

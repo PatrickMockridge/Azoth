@@ -103,6 +103,25 @@ pub struct PrZFactorResult {
     pub warnings: Vec<Warning>,
 }
 
+/// Result of `eos.prsv_kappa`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrsvKappaResult {
+    /// The PRSV alpha-function coefficient. Dimensionless, and unlike
+    /// Peng-Robinson's it varies with temperature.
+    pub kappa: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrsvKappaResult {
+    const CALC_ID: &'static str = "eos.prsv_kappa";
+    const FIELDS: &'static [&'static str] = &["kappa", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for PrZFactorResult {
     const CALC_ID: &'static str = "eos.pr_z_factor";
     const FIELDS: &'static [&'static str] = &[
