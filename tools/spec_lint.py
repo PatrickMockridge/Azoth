@@ -81,12 +81,18 @@ class Report:
     # them. Dummy coefficients cannot be caught by a test - there is nothing
     # correct to compare against - so the only defence is making them loud.
     estimated_rows: dict[str, int] = field(default_factory=dict)
+    # Every status seen, counted. Used by the user-data checker's summary, which
+    # reports what it found rather than only what was wrong.
+    by_status: dict[str, int] = field(default_factory=dict)
 
     def error(self, spec: str, msg: str) -> None:
         self.errors.append(f"{spec}: {msg}")
 
     def warn(self, spec: str, msg: str) -> None:
         self.warnings.append(f"{spec}: {msg}")
+
+    def count(self, status: str) -> None:
+        self.by_status[status] = self.by_status.get(status, 0) + 1
 
 
 def check_source(report: Report, where: str, row: dict[str, Any]) -> str | None:
@@ -176,6 +182,178 @@ def check_source(report: Report, where: str, row: dict[str, Any]) -> str | None:
     return status
 
 
+#: Required keys per row, by section. Taken from the columns of the data files
+#: the generator produces, so a row that validates has everything the loader
+#: will later ask for.
+FITTING_FIELDS = (
+    "id",
+    "family",
+    "name",
+    "n_ld",
+    "f_t_basis",
+    "citation",
+    "verify_status",
+    "source_ref",
+    "source_locator",
+)
+
+FLUID_FIELDS = (
+    "temperature_c",
+    "density_kg_m3",
+    "dynamic_viscosity_pa_s",
+    "citation",
+    "verify_status",
+    "source_ref",
+    "source_locator",
+)
+
+
+def check_numeric(report: Report, where: str, row: dict[str, Any], field: str) -> float | None:
+    """One numeric field, present and parseable."""
+    if field not in row:
+        report.error(where, f"is missing '{field}'")
+        return None
+    try:
+        return float(row[field])
+    except (TypeError, ValueError):
+        report.error(where, f"'{field}' is {row[field]!r}, which is not a number")
+        return None
+
+
+def check_fittings(report: Report, raw: Any) -> None:
+    """The fitting registry: equivalent-length ratios, looked up by id.
+
+    Shared, not restated: `check_user_data.py` applies these to a user's file and
+    this file applies them to the repository's, and there is one definition of
+    what a valid row is rather than two that can drift.
+    """
+    if not isinstance(raw, list) or not raw:
+        report.error("fittings", "must be a non-empty list of rows")
+        return
+
+    seen: set[str] = set()
+    for index, row in enumerate(raw):
+        if not isinstance(row, dict):
+            report.error(f"fittings[{index}]", "is not a mapping")
+            continue
+        fitting_id = str(row.get("id") or "")
+        where = f"fittings[{fitting_id or index}]"
+
+        missing = [field for field in FITTING_FIELDS if field not in row]
+        if missing:
+            report.error(where, f"is missing {missing}")
+            continue
+
+        if not fitting_id:
+            report.error(where, "has an empty id")
+        elif fitting_id in seen:
+            report.error(where, "is a duplicate id; ids are looked up by name")
+        seen.add(fitting_id)
+
+        for column in ("family", "name", "f_t_basis"):
+            if not str(row.get(column) or "").strip():
+                report.error(where, f"has an empty '{column}'")
+
+        n_ld = check_numeric(report, where, row, "n_ld")
+        if n_ld is not None and n_ld <= 0:
+            report.error(
+                where,
+                f"has n_ld={n_ld}; a non-positive equivalent length would give a "
+                f"negative or zero fitting loss",
+            )
+
+        status = check_source(report, where, row)
+        if status is not None:
+            report.count(status)
+
+
+def check_fluids(report: Report, raw: Any) -> None:
+    """Fluid property tables, one per fluid, interpolated over temperature."""
+    if not isinstance(raw, dict) or not raw:
+        report.error("fluids", "must be a non-empty mapping of fluid name to table")
+        return
+
+    for fluid, rows in raw.items():
+        if not isinstance(rows, list) or len(rows) < 2:
+            report.error(
+                f"fluids.{fluid}",
+                "must be a list of at least two rows; one point cannot be interpolated "
+                "between, and this provider does not extrapolate",
+            )
+            continue
+
+        previous_temperature: float | None = None
+        for index, row in enumerate(rows):
+            if not isinstance(row, dict):
+                report.error(f"fluids.{fluid}[{index}]", "is not a mapping")
+                continue
+            where = f"fluids.{fluid}[{index}]"
+
+            missing = [field for field in FLUID_FIELDS if field not in row]
+            if missing:
+                report.error(where, f"is missing {missing}")
+                continue
+
+            temperature = check_numeric(report, where, row, "temperature_c")
+            density = check_numeric(report, where, row, "density_kg_m3")
+            viscosity = check_numeric(report, where, row, "dynamic_viscosity_pa_s")
+
+            if density is not None and density <= 0:
+                report.error(where, f"has density {density}; it must be positive")
+            if viscosity is not None and viscosity <= 0:
+                report.error(where, f"has viscosity {viscosity}; it must be positive")
+            if temperature is not None:
+                if previous_temperature is not None and temperature <= previous_temperature:
+                    report.error(
+                        where,
+                        f"has temperature {temperature}, which does not increase. "
+                        f"Rows are interpolated in order, so an unsorted table would "
+                        f"give answers that depend on how it happened to be written.",
+                    )
+                previous_temperature = temperature
+
+            status = check_source(report, where, row)
+            if status is not None:
+                report.count(status)
+
+
+def check_fluid_tables(report: Report, fluids_dir: Path) -> None:
+    """Every fluid table the repository ships, checked unconditionally.
+
+    Not driven by a spec's `data:` block, because no calc reads these: the CLI
+    does, and the property provider does. So there is no spec to hang the check
+    off, and before this existed `data/fluids/*.csv` was the one committed data in
+    the repository that nothing validated - which is how both shipped tables came
+    to carry provenance the checker would have rejected.
+    """
+    for path in sorted(fluids_dir.glob("*.csv")):
+        rows = load_csv_rows(path)
+        if not rows:
+            report.error(display_path(path).as_posix(), "has a header but no data rows")
+            continue
+        check_fluids(report, {path.stem: rows})
+
+
+def load_csv_rows(path: Path) -> list[dict[str, str]]:
+    """A data file's rows, with the `#` comment banner stripped.
+
+    The banner is not decoration - it carries the copyright statement and the
+    meaning of `verify_status` - so the parser tolerates it rather than the file
+    having to be machine-only.
+
+    **Blank lines go too, and that is not tidiness.** `csv.DictReader` takes the
+    first line it is handed as the header row, so a single blank line between the
+    banner and the header makes every field name `None` and every value land in
+    `restkey` - the whole file parses into rows that look like
+    `{None: ['0', '999.8', ...]}`. The fluid tables have that blank line and the
+    fittings registry does not, which is the only reason the fittings side was
+    working: it was one blank line away from the same silent nothing.
+    """
+    with path.open(newline="", encoding="utf-8") as handle:
+        content = [line for line in handle if line.strip() and not line.lstrip().startswith("#")]
+    return [dict(row) for row in csv.DictReader(content)]
+
+
 def load_fittings_csv(path: Path) -> dict[str, dict[str, str]]:
     """Read the fittings registry, skipping the leading comment block.
 
@@ -183,15 +361,10 @@ def load_fittings_csv(path: Path) -> dict[str, dict[str, str]]:
     the meaning of verify_status - so the parser has to tolerate it rather than
     the file having to be machine-only.
     """
-    rows: dict[str, dict[str, str]] = {}
-    with path.open(newline="", encoding="utf-8") as handle:
-        content = [line for line in handle if not line.lstrip().startswith("#")]
-    reader = csv.DictReader(content)
-    if reader.fieldnames is None:
+    rows = load_csv_rows(path)
+    if not rows:
         raise ValueError(f"{path} has no header row")
-    for row in reader:
-        rows[row["fitting_id"]] = dict(row)
-    return rows
+    return {row["fitting_id"]: row for row in rows}
 
 
 def display_path(path: Path) -> Path:
@@ -905,6 +1078,13 @@ def main() -> int:
 
     if not args.quiet:
         print(f"spec_lint: {len(parsed)} spec(s) checked against {SCHEMA_PATH.name}")
+
+    # The fluid tables, unconditionally. They are not reached through a spec's
+    # `data:` block - the CLI and the property provider read them, not a calc - so
+    # there is nothing to hang the check off, and before this existed they were
+    # the one committed data in the repository that nothing validated. Both
+    # shipped tables had drifted into a state the shared rules reject.
+    check_fluid_tables(report, ROOT / "data" / "fluids")
 
     # Placeholder data is the one defect this tool cannot fail on, because there
     # is no correct value to compare against. So it is printed loudly instead,

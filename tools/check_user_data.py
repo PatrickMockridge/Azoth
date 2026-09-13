@@ -12,12 +12,17 @@ is checkable, and a person decides whether it is true.
 
 # Why the rules are imported rather than restated
 
-`VALID_VERIFY_STATUS` and `SOURCE_REF_PATTERNS` come from `tools/spec_lint.py`,
-which applies them to the repository's own data files. A user's file and the
-repository's files are the same kind of thing, so they are held to the same
-rules - and a second copy of those rules here would be a second definition of
-what a valid citation is, which is exactly the drift this project organises
-against.
+`Report`, `check_fittings` and `check_fluids` are the row rules, and they live in
+`tools/spec_lint.py`, which applies them to the repository's own data files. A
+user's file and the repository's files are the same kind of thing, so they are
+held to the same rules - and a second copy of those rules here was a second
+definition of what a valid citation is, which is exactly the drift this project
+organises against.
+
+That is not hypothetical: the two copies had already diverged. The repository's
+rejected a row marked `verified` whose citation still said DUMMY, and this one
+accepted it, so a file could pass the checker a user is told to run and fail the
+one CI runs.
 
 # What this does not do
 
@@ -41,7 +46,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Any
 
 try:
     import yaml
@@ -50,157 +54,17 @@ except ImportError:  # pragma: no cover
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-# The repository's own rules for a data row, shared so there is one definition of
-# what a fetchable citation and a legal status are. `check_source` is the rule
-# itself, not a restatement of it: this file used to carry its own copy, and the
-# two had already diverged - the repository's rejected a `verified` row whose
-# citation still said DUMMY, and this one accepted it.
-from spec_lint import check_source
+# The repository's own rules for a data row, imported rather than restated. This
+# file used to carry its own copies and they had already diverged: the
+# repository's `spec_lint` rejected a `verified` row whose citation still said
+# DUMMY, and this one accepted it. One definition now serves both, and the
+# constants and functions live beside the rules they belong to.
+from spec_lint import Report, check_fittings, check_fluids
 
+#: The version of the *user data file format*. It lives here rather than in
+#: `spec_lint` because it is this format's version, not a calc spec's - and it is
+#: imported by `gen_user_data.py` from here for the same reason.
 SCHEMA_VERSION = 1
-
-#: Required keys per row, by section. Taken from the columns of the data files
-#: the generator will produce, so a row that validates here has everything the
-#: loader will later ask for.
-FITTING_FIELDS = (
-    "id",
-    "family",
-    "name",
-    "n_ld",
-    "f_t_basis",
-    "citation",
-    "verify_status",
-    "source_ref",
-    "source_locator",
-)
-
-FLUID_FIELDS = (
-    "temperature_c",
-    "density_kg_m3",
-    "dynamic_viscosity_pa_s",
-    "citation",
-    "verify_status",
-    "source_ref",
-    "source_locator",
-)
-
-
-class Report:
-    """Collected problems, plus the counts a user wants to see."""
-
-    def __init__(self) -> None:
-        self.errors: list[str] = []
-        self.by_status: dict[str, int] = {}
-
-    def error(self, where: str, message: str) -> None:
-        self.errors.append(f"{where}: {message}")
-
-    def count(self, status: str) -> None:
-        self.by_status[status] = self.by_status.get(status, 0) + 1
-
-
-def check_numeric(report: Report, where: str, row: dict[str, Any], field: str) -> float | None:
-    """One numeric field, present and parseable."""
-    if field not in row:
-        report.error(where, f"is missing '{field}'")
-        return None
-    try:
-        return float(row[field])
-    except (TypeError, ValueError):
-        report.error(where, f"'{field}' is {row[field]!r}, which is not a number")
-        return None
-
-
-def check_fittings(report: Report, raw: Any) -> None:
-    """The fitting registry: equivalent-length ratios, looked up by id."""
-    if not isinstance(raw, list) or not raw:
-        report.error("fittings", "must be a non-empty list of rows")
-        return
-
-    seen: set[str] = set()
-    for index, row in enumerate(raw):
-        if not isinstance(row, dict):
-            report.error(f"fittings[{index}]", "is not a mapping")
-            continue
-        fitting_id = str(row.get("id") or "")
-        where = f"fittings[{fitting_id or index}]"
-
-        missing = [field for field in FITTING_FIELDS if field not in row]
-        if missing:
-            report.error(where, f"is missing {missing}")
-            continue
-
-        if not fitting_id:
-            report.error(where, "has an empty id")
-        elif fitting_id in seen:
-            report.error(where, "is a duplicate id; ids are looked up by name")
-        seen.add(fitting_id)
-
-        for field in ("family", "name", "f_t_basis"):
-            if not str(row.get(field) or "").strip():
-                report.error(where, f"has an empty '{field}'")
-
-        n_ld = check_numeric(report, where, row, "n_ld")
-        if n_ld is not None and n_ld <= 0:
-            report.error(
-                where,
-                f"has n_ld={n_ld}; a non-positive equivalent length would give a "
-                f"negative or zero fitting loss",
-            )
-
-        status = check_source(report, where, row)
-        if status is not None:
-            report.count(status)
-
-
-def check_fluids(report: Report, raw: Any) -> None:
-    """Fluid property tables, one per fluid, interpolated over temperature."""
-    if not isinstance(raw, dict) or not raw:
-        report.error("fluids", "must be a non-empty mapping of fluid name to table")
-        return
-
-    for fluid, rows in raw.items():
-        if not isinstance(rows, list) or len(rows) < 2:
-            report.error(
-                f"fluids.{fluid}",
-                "must be a list of at least two rows; one point cannot be interpolated "
-                "between, and this provider does not extrapolate",
-            )
-            continue
-
-        previous_temperature: float | None = None
-        for index, row in enumerate(rows):
-            if not isinstance(row, dict):
-                report.error(f"fluids.{fluid}[{index}]", "is not a mapping")
-                continue
-            where = f"fluids.{fluid}[{index}]"
-
-            missing = [field for field in FLUID_FIELDS if field not in row]
-            if missing:
-                report.error(where, f"is missing {missing}")
-                continue
-
-            temperature = check_numeric(report, where, row, "temperature_c")
-            density = check_numeric(report, where, row, "density_kg_m3")
-            viscosity = check_numeric(report, where, row, "dynamic_viscosity_pa_s")
-
-            if density is not None and density <= 0:
-                report.error(where, f"has density {density}; it must be positive")
-            if viscosity is not None and viscosity <= 0:
-                report.error(where, f"has viscosity {viscosity}; it must be positive")
-            if temperature is not None:
-                if previous_temperature is not None and temperature <= previous_temperature:
-                    report.error(
-                        where,
-                        f"has temperature {temperature}, which does not increase. "
-                        f"Rows are interpolated in order, so an unsorted table would "
-                        f"give answers that depend on how it happened to be written.",
-                    )
-                previous_temperature = temperature
-
-            status = check_source(report, where, row)
-            if status is not None:
-                report.count(status)
 
 
 def check(path: Path) -> int:
