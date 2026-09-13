@@ -39,16 +39,37 @@
 //! Python API. They carry no unit to be safe about, and a newtype wrapper around
 //! a ratio would be an abstraction with exactly one implementation.
 
-pub use uom::si::f64::{DynamicViscosity, Length, MassDensity, Pressure, Velocity};
+pub use uom::si::f64::{
+    Area, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate, MolarMass, Power,
+    Pressure, SpecificHeatCapacity, ThermalConductivity, ThermodynamicTemperature, Velocity,
+    VolumeRate,
+};
 pub use uom::si::{
-    dynamic_viscosity::pascal_second, length::meter, mass_density::kilogram_per_cubic_meter,
-    pressure::pascal, velocity::meter_per_second,
+    area::square_meter, dynamic_viscosity::pascal_second,
+    heat_transfer::watt_per_square_meter_kelvin, length::meter, length::millimeter,
+    mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
+    molar_mass::kilogram_per_mole, power::watt, pressure::pascal,
+    specific_heat_capacity::joule_per_kilogram_kelvin, thermal_conductivity::watt_per_meter_kelvin,
+    thermodynamic_temperature::kelvin, velocity::meter_per_second,
+    volume_rate::cubic_meter_per_second,
 };
 
 /// A length in metres.
 #[must_use]
 pub fn meters(value: f64) -> Length {
     Length::new::<meter>(value)
+}
+
+/// A length in millimetres.
+///
+/// The one unit in the vocabulary that is not its own SI base unit, which is why
+/// it is worth having explicitly: `.value` is still metres, so a caller building a
+/// length from millimetres cannot accidentally work in them. Pipe diameters are
+/// conventionally quoted in millimetres, so this is the constructor the next
+/// hydraulics calcs will reach for.
+#[must_use]
+pub fn millimeters(value: f64) -> Length {
+    Length::new::<millimeter>(value)
 }
 
 /// A velocity in metres per second.
@@ -74,6 +95,96 @@ pub fn pascal_seconds(value: f64) -> DynamicViscosity {
 pub fn pascals(value: f64) -> Pressure {
     Pressure::new::<pascal>(value)
 }
+
+/// A thermodynamic temperature in kelvin.
+///
+/// Added when the unit vocabulary was made checkable, not when a calc first
+/// needed it: `K` had been a unit the schema permitted and `CANONICAL_UNITS`
+/// knew about since the beginning, while this crate had no temperature type at
+/// all. Nothing used it, so nothing noticed.
+#[must_use]
+pub fn kelvins(value: f64) -> ThermodynamicTemperature {
+    ThermodynamicTemperature::new::<kelvin>(value)
+}
+
+/// An area in square metres.
+#[must_use]
+pub fn square_meters(value: f64) -> Area {
+    Area::new::<square_meter>(value)
+}
+
+/// A volumetric flow rate in cubic metres per second.
+#[must_use]
+pub fn cubic_meters_per_second(value: f64) -> VolumeRate {
+    VolumeRate::new::<cubic_meter_per_second>(value)
+}
+
+/// A mass flow rate in kilograms per second.
+#[must_use]
+pub fn kilograms_per_second(value: f64) -> MassRate {
+    MassRate::new::<kilogram_per_second>(value)
+}
+
+/// A power in watts.
+#[must_use]
+pub fn watts(value: f64) -> Power {
+    Power::new::<watt>(value)
+}
+
+/// A specific heat capacity in joules per kilogram kelvin.
+#[must_use]
+pub fn joules_per_kilogram_kelvin(value: f64) -> SpecificHeatCapacity {
+    SpecificHeatCapacity::new::<joule_per_kilogram_kelvin>(value)
+}
+
+/// A thermal conductivity in watts per metre kelvin.
+#[must_use]
+pub fn watts_per_meter_kelvin(value: f64) -> ThermalConductivity {
+    ThermalConductivity::new::<watt_per_meter_kelvin>(value)
+}
+
+/// A heat transfer coefficient in watts per square metre kelvin.
+#[must_use]
+pub fn watts_per_square_meter_kelvin(value: f64) -> HeatTransfer {
+    HeatTransfer::new::<watt_per_square_meter_kelvin>(value)
+}
+
+/// A molar mass in kilograms per mole.
+#[must_use]
+pub fn kilograms_per_mole(value: f64) -> MolarMass {
+    MolarMass::new::<kilogram_per_mole>(value)
+}
+
+/// The canonical unit strings the spec schema permits.
+///
+/// This is the Rust half of a three-way contract. The schema's
+/// `$defs.unit.enum`, `azoth.core.units.CANONICAL_UNITS` on the Python side, and
+/// this list must name the same set; `test_units_contract.py` asserts that rather
+/// than trusting three hand-edited lists to stay in step. The list is exposed to
+/// Python through `azoth._core.unit_names`, which is what makes the third leg of
+/// that check possible at all.
+///
+/// A name here is a claim that this crate has a *correct* conversion path for it -
+/// see `every_unit_name_has_a_conversion_path`, which fails if a name is added
+/// without one, or with one that yields the wrong SI base magnitude.
+pub const UNIT_NAMES: &[&str] = &[
+    "dimensionless",
+    "m",
+    "mm",
+    "m**2",
+    "m**3/s",
+    "kg/s",
+    "kg/m**3",
+    "m/s",
+    "Pa",
+    "Pa*s",
+    "K",
+    "W",
+    "J/(kg*K)",
+    "W/(m*K)",
+    "W/(m**2*K)",
+    "kg/mol",
+];
 
 #[cfg(test)]
 mod tests {
@@ -102,5 +213,93 @@ mod tests {
         let a = meters(0.3048);
         let b = Length::new::<uom::si::length::foot>(1.0);
         assert!((a.value - b.value).abs() < 1e-15);
+    }
+
+    /// One row of [`Self::CONVERSION_PATHS`]: the spec unit string, the conversion
+    /// this crate performs for it, and the SI base magnitude that conversion must
+    /// yield for an input of 1.0.
+    type ConversionPath = (&'static str, fn(f64) -> f64, f64);
+
+    /// Each vocabulary name paired with the conversion this crate performs for it,
+    /// and the SI base magnitude that conversion must yield for an input of 1.0.
+    ///
+    /// The table is the point. A `UNIT_NAMES` entry is a claim that a spec may
+    /// declare this unit and a calculation will receive a correct number; asserting
+    /// only that the list is non-empty would let a name sit in it with no
+    /// conversion behind it at all, which is precisely how `K` went unnoticed.
+    const CONVERSION_PATHS: &[ConversionPath] = &[
+        // Dimensionless quantities carry no unit, so the conversion is the identity.
+        ("dimensionless", |v| v, 1.0),
+        ("m", |v| meters(v).value, 1.0),
+        ("mm", |v| millimeters(v).value, 1.0e-3),
+        ("m**2", |v| square_meters(v).value, 1.0),
+        ("m**3/s", |v| cubic_meters_per_second(v).value, 1.0),
+        ("kg/s", |v| kilograms_per_second(v).value, 1.0),
+        ("kg/m**3", |v| kilograms_per_cubic_meter(v).value, 1.0),
+        ("m/s", |v| meters_per_second(v).value, 1.0),
+        ("Pa", |v| pascals(v).value, 1.0),
+        ("Pa*s", |v| pascal_seconds(v).value, 1.0),
+        ("K", |v| kelvins(v).value, 1.0),
+        ("W", |v| watts(v).value, 1.0),
+        ("J/(kg*K)", |v| joules_per_kilogram_kelvin(v).value, 1.0),
+        ("W/(m*K)", |v| watts_per_meter_kelvin(v).value, 1.0),
+        (
+            "W/(m**2*K)",
+            |v| watts_per_square_meter_kelvin(v).value,
+            1.0,
+        ),
+        ("kg/mol", |v| kilograms_per_mole(v).value, 1.0),
+    ];
+
+    #[test]
+    fn every_unit_name_has_a_conversion_path() {
+        use std::collections::BTreeSet;
+
+        let declared: BTreeSet<&str> = UNIT_NAMES.iter().copied().collect();
+        let convertible: BTreeSet<&str> = CONVERSION_PATHS.iter().map(|(n, _, _)| *n).collect();
+
+        let missing: Vec<_> = declared.difference(&convertible).collect();
+        let extra: Vec<_> = convertible.difference(&declared).collect();
+        assert!(
+            missing.is_empty(),
+            "unit name(s) {missing:?} are permitted by the vocabulary but this crate has \
+             no conversion for them, so a spec could declare one and a calculation would \
+             receive a number in the wrong unit"
+        );
+        assert!(
+            extra.is_empty(),
+            "conversion path(s) {extra:?} exist for unit name(s) not in UNIT_NAMES"
+        );
+    }
+
+    #[test]
+    fn every_conversion_yields_the_si_base_magnitude() {
+        // `.value` is always the SI base value, and the Python side converts to
+        // base units too, so both implementations work in the same number for any
+        // unit the vocabulary permits. That is what the cross-language agreement
+        // test rests on.
+        //
+        // `mm` is the one entry that is not its own SI base unit, so it is the one
+        // that would catch a regression: it must yield 1.0e-3 here, and the Python
+        // half of the same check lives in test_units_conversion.py, where a
+        // conversion back to the declared unit would put 1000x between the two.
+        for (name, convert, expected_si_base) in CONVERSION_PATHS {
+            let got = convert(1.0);
+            assert!(
+                (got - expected_si_base).abs() < 1e-15,
+                "{name}: converting 1.0 yielded {got} in SI base, expected {expected_si_base}"
+            );
+        }
+    }
+
+    #[test]
+    fn unit_names_are_unique() {
+        use std::collections::BTreeSet;
+        let unique: BTreeSet<&str> = UNIT_NAMES.iter().copied().collect();
+        assert_eq!(
+            unique.len(),
+            UNIT_NAMES.len(),
+            "UNIT_NAMES contains a duplicate"
+        );
     }
 }

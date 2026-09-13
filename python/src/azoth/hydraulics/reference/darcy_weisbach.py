@@ -26,7 +26,7 @@ from __future__ import annotations
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import DarcyWeisbachResult, FlowRegime
-from azoth.core.units import Q, quantity, to_si
+from azoth.core.units import Q, from_si, to_si
 from azoth.core.warnings import Warning
 
 CALC_ID = "hydraulics.darcy_weisbach"
@@ -123,7 +123,11 @@ def darcy_weisbach(
     # would just train callers to ignore them.
 
     return DarcyWeisbachResult(
-        dp=quantity(dp, "Pa"),
+        # `dp` is an SI base magnitude, not a number in pascals, so it is rebuilt
+        # with `from_si`. The two coincide for pascals, which is why using the
+        # wrong one here would not have shown up - but it is the difference that
+        # matters for any unit that is not its own SI base unit.
+        dp=from_si(dp, "Pa"),
         f=f,
         re=re,
         regime=regime,

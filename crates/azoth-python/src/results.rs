@@ -13,6 +13,7 @@
 //! perfectly and only the attribute name differs.
 
 use azoth_core::CalcResult;
+use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_hydraulics::results::{
     ColebrookResult, DarcyWeisbachResult, HaalandResult, KComponent, KFactorsResult,
@@ -402,6 +403,20 @@ pub fn warning_codes() -> Vec<String> {
         .iter()
         .map(|c| c.as_str().to_string())
         .collect()
+}
+
+/// Every canonical unit string the spec schema permits.
+///
+/// The same job `warning_codes` does for the warning vocabulary, and it exists for
+/// the same reason: the schema, `azoth.core.units.CANONICAL_UNITS` and this crate's
+/// `UNIT_NAMES` all have to name one set, and a Python test can only assert that if
+/// the third list is reachable from Python. Without this function the Rust half of
+/// that contract would be unverifiable - which is exactly how `K` sat in the
+/// vocabulary for the whole life of the project with no Rust conversion behind it.
+#[pyfunction]
+#[must_use]
+pub fn unit_names() -> Vec<String> {
+    UNIT_NAMES.iter().map(|name| (*name).to_string()).collect()
 }
 
 /// The public field names of a calc's result, in declaration order.
