@@ -58,15 +58,17 @@ from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import (
+    PhaseState,
+    ReducedParameters,
     helmholtz_energy,
     mixture_parameters,
     normalise,
     phase_state,
     phase_state_at,
-    pr_z_factor,
     reduced_parameters,
     wilson_k,
 )
+from azoth.eos.reference.pr_z_factor import pr_z_factor
 
 CALC_ID = "eos.stability_test"
 
@@ -93,7 +95,9 @@ def _ln(value: float) -> float:
     return math.log(value) if value > 0.0 else -math.inf
 
 
-def _feed_state(reduced: object, kij: tuple[tuple[float, ...], ...], z: list[float]) -> object:
+def _feed_state(
+    reduced: ReducedParameters, kij: tuple[tuple[float, ...], ...], z: list[float]
+) -> PhaseState:
     """The feed's phase state, on whichever admissible root has the lower Gibbs energy.
 
     ``G / RT = A / RT + Z`` with ``A = A^ideal + A^R``, and ``A^ideal`` carries
@@ -141,7 +145,7 @@ def _feed_state(reduced: object, kij: tuple[tuple[float, ...], ...], z: list[flo
 
 
 def _trial(
-    reduced: object,
+    reduced: ReducedParameters,
     kij: tuple[tuple[float, ...], ...],
     d: list[float],
     seed: list[float],
@@ -294,9 +298,9 @@ def stability_test(mixture: Mixture, T: Q, P: Q, z: list[float]) -> StabilityTes
 
     return StabilityTestResult(
         verdict=StabilityVerdict.UNSTABLE if unstable else StabilityVerdict.STABLE,
-        tm=tm,
-        w=w_rows,
-        iterations=iterations,
+        tm=tuple(tm),
+        w=tuple(tuple(row) for row in w_rows),
+        iterations=tuple(iterations),
         min_t_over_tc=min_t_over_tc,
         warnings=tuple(warnings),
     )
