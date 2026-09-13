@@ -23,6 +23,7 @@ from typing import Any
 
 import pytest
 
+from azoth import _models_gen
 from azoth._registry_gen import BY_ID, CALCS, spec
 from azoth.core.result import RESULT_TYPES
 from azoth.core.warnings import WarningCode
@@ -208,30 +209,40 @@ CALC_LIST_FILES = ("README.md", "docs/src/index.md")
 
 @pytest.mark.parametrize("relative_path", CALC_LIST_FILES)
 def test_every_calc_is_announced_in_the_hand_written_lists(relative_path: str) -> None:
-    """Every registered calc must be named in the hand-written lists.
+    """Every registered calc **and model** must be named in the hand-written lists.
 
     This is the drift that actually happens: a calc is added, the spec, both
     implementations and the tests all follow from the machinery, and the two places
     a *reader* looks are the two places nothing generates. The failure is silent -
     the library gains a calculation and the front page does not mention it.
 
-    One-directional on purpose. The lists may name things the registry does not,
-    and today they should: both still say orifice, control valve, relief valve and
-    pump calculations are not implemented, which is true and will stop being true.
-    Asserting the reverse would forbid a reader-facing note about work in progress.
+    **Models were outside this check until they were not**, and the omission was
+    caught by reading rather than by a failure: `eos.stability_test` arrived with a
+    spec, two implementations, tests and a generated docs page, and was absent from
+    both lists for the whole time. The test was one-directional in the wrong place -
+    it named `CALCS`, so the newer half of the registry was never announced. That is
+    the same shape as the batch API being missed from a count of registration points:
+    a list that was complete when it was written, and a second thing that grew beside
+    it.
 
-    That prose is also why this test cannot be a complete guard. It can catch a
-    calc missing from the list; it cannot tell whether the surrounding sentences
-    about what is *not* implemented are still accurate. Whoever adds the first
-    orifice calc has to read those paragraphs, and this test is what sends them
-    there.
+    One-directional otherwise, on purpose. The lists may name things the registry
+    does not, and today they should: both still say relief-valve sizing is not
+    implemented, which is true and will stop being true. Asserting the reverse would
+    forbid a reader-facing note about work in progress.
+
+    That prose is also why this test cannot be a complete guard. It can catch an id
+    missing from the list; it cannot tell whether the surrounding sentences about
+    what is *not* implemented are still accurate. Whoever ships the first flowsheet
+    has to read those paragraphs, and this test is what sends them there.
     """
     text = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
-    missing = sorted(calc["id"] for calc in CALCS if calc["id"] not in text)
+    missing = sorted(
+        entry["id"] for entry in [*CALCS, *_models_gen.MODELS] if entry["id"] not in text
+    )
     assert not missing, (
-        f"{relative_path} does not mention {missing}. Every calc in the registry has "
-        f"to appear in the hand-written lists, because that is where a reader finds "
-        f"out it exists."
+        f"{relative_path} does not mention {missing}. Every registered id - calc or "
+        f"model - has to appear in the hand-written lists, because that is where a "
+        f"reader finds out it exists."
     )
 
 

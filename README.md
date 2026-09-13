@@ -119,6 +119,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.bubble_pressure` | Bubble-point pressure at a fixed temperature — a *model* |
 | `eos.dew_pressure` | Dew-point pressure at a fixed temperature — a *model* |
 | `eos.critical_point` | The critical point of a mixture — a *model* |
+| `eos.stability_test` | Tangent-plane stability of a feed — a *model* |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use
