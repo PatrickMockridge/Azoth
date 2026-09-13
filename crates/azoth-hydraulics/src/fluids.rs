@@ -36,7 +36,7 @@
 use std::sync::OnceLock;
 
 use azoth_core::units::{DynamicViscosity, MassDensity, kilograms_per_cubic_meter, pascal_seconds};
-use azoth_core::{AzothError, Result};
+use azoth_core::{AzothError, Result, Warning, WarningCode};
 
 use crate::csv_text::{body, optional};
 use crate::provenance::VerifyStatus;
@@ -153,6 +153,52 @@ impl FluidTable {
     #[must_use]
     pub fn has_placeholder_rows(&self) -> bool {
         self.points.iter().any(|p| p.status.is_placeholder())
+    }
+
+    /// The provenance warning this table's rows warrant, if any.
+    ///
+    /// The counterpart of `crane_k_factors`'s, and it exists because the two had
+    /// diverged: a fitting row's status becomes a warning on every result that used
+    /// it, and this table's status reached nothing at all. The shipped water and air
+    /// tables are `unverified` - real published values that no person here has
+    /// checked against the primary formulation - and a caller had no way to learn
+    /// that from a result. They could only learn it by opening the CSV.
+    ///
+    /// That is the same claim the fitting registry makes out loud, so this makes it
+    /// too. Which code a status raises is [`VerifyStatus::warning_code`]'s job;
+    /// what to say about it is this function's.
+    #[must_use]
+    pub fn provenance_warnings(&self) -> Vec<Warning> {
+        // The worst state present, because one placeholder row taints the table:
+        // the caller cannot tell which interpolated value came from it.
+        let worst = self
+            .points
+            .iter()
+            .filter_map(|point| point.status.warning_code())
+            .next();
+
+        let Some(code) = worst else {
+            return Vec::new();
+        };
+
+        let total = self.points.len();
+        let message = match code {
+            WarningCode::EstimatedData => format!(
+                "{total} point(s) of the `{}` fluid table are ESTIMATED DUMMY values \
+                 that are not engineering data. Properties interpolated from them must \
+                 not be used for design work. Populate data/fluids/{}.csv and set \
+                 verify_status=verified.",
+                self.name, self.name
+            ),
+            _ => format!(
+                "{total} point(s) of the `{}` fluid table are cited but NOT CONFIRMED \
+                 by a named verifier against a primary formulation. The values are real \
+                 published figures; what is missing is a person having checked them. \
+                 See data/fluids/{}.csv.",
+                self.name, self.name
+            ),
+        };
+        vec![Warning::new(code, message)]
     }
 }
 

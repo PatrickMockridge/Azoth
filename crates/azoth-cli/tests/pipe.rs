@@ -151,6 +151,29 @@ fn estimated_fitting_data_is_reported() {
 }
 
 #[test]
+fn the_fluid_tables_own_provenance_is_reported() {
+    // The counterpart of the fitting test above, and it did not exist until now:
+    // a fitting row's status became a warning on every result and a fluid row's
+    // reached nothing at all. Every density and viscosity in this run came out of
+    // `data/fluids/water.csv`, which is `unverified` - real published values that
+    // no person here has checked against a primary formulation - and the only way
+    // to learn that was to open the CSV.
+    //
+    // The fitting half of this was tested from the beginning. The fluid half was
+    // not, which is how it came to be missing: nothing was asserting that a fluid
+    // table could speak about itself at all.
+    let result = headline();
+    assert!(
+        result
+            .warnings
+            .iter()
+            .any(|w| w.code == WarningCode::UnverifiedSource),
+        "a result built from an unverified fluid table must carry UNVERIFIED_SOURCE; got {:?}",
+        result.warnings.iter().map(|w| w.code).collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn warnings_are_not_repeated() {
     // Each contributing calc checks its own inputs, so the same condition can be
     // raised more than once. A list that repeats itself is a list people skim.

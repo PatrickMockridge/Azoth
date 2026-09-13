@@ -15,7 +15,7 @@
 //! placeholder" and a value being "trustworthy" are different claims, and a
 //! library that collapses them is telling its users something it does not know.
 
-use azoth_core::{AzothError, Result};
+use azoth_core::{AzothError, Result, WarningCode};
 
 /// Provenance of a data value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,6 +65,28 @@ impl VerifyStatus {
     #[must_use]
     pub const fn is_placeholder(self) -> bool {
         matches!(self, Self::EstimatedDummy)
+    }
+
+    /// The warning a result should carry when it used a value in this state.
+    ///
+    /// `None` for [`Self::Verified`], which is the only state that is silent.
+    ///
+    /// The mapping lives here rather than in each caller because it is the one
+    /// thing every data-backed calculation has to agree on. The two callers, the
+    /// fitting registry and the fluid tables, had already diverged: a fitting row's
+    /// status became a warning on every result, and a fluid row's became nothing at
+    /// all. Which code a status raises is a property of the status, not of the file
+    /// it happened to be read from.
+    ///
+    /// The *message* is the caller's, because a placeholder fitting and a
+    /// placeholder fluid have different things to say about what to do next.
+    #[must_use]
+    pub const fn warning_code(self) -> Option<WarningCode> {
+        match self {
+            Self::EstimatedDummy => Some(WarningCode::EstimatedData),
+            Self::Unverified => Some(WarningCode::UnverifiedSource),
+            Self::Verified => None,
+        }
     }
 }
 
