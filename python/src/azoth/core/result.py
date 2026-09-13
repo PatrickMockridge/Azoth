@@ -695,6 +695,7 @@ RESULT_TYPES: dict[str, type[object]] = {
     "eos.ideal_gas_cp": IdealGasCpResult,
 }
 
+
 #: Model id -> the result dataclass it produces.
 #:
 #: A separate table from ``RESULT_TYPES`` for the same reason
@@ -703,8 +704,35 @@ RESULT_TYPES: dict[str, type[object]] = {
 #: break that contract rather than extend it. Before this existed the model results
 #: were covered by no shape check at all, which the flash - thirteen fields and an
 #: optional one - is a good reason to fix.
+@dataclass(frozen=True, slots=True, eq=False)
+class CriticalPointResult(_HasWarnings):
+    """Result of ``eos.critical_point``.
+
+    The four state variables of a mixture critical point. ``Z_c`` is here rather than
+    derived by the caller because it is the quantity that distinguishes this model from
+    the mechanical conditions: a pure component's is ``(1 - omega_b)/3``, a mixture's
+    varies with composition, and the mechanical route cannot produce the second.
+    """
+
+    #: The critical temperature.
+    tc: Q
+    #: The critical pressure.
+    pc: Q
+    #: The critical molar volume.
+    vc: Q
+    #: ``Pc Vc/(R Tc)``.
+    z_c: float
+    #: Outer iterations taken.
+    iterations: int
+    #: ``max(|smallest eigenvalue|, |cubic form|)`` at the returned state.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 MODEL_RESULT_TYPES: dict[str, type[object]] = {
     "eos.bubble_pressure": BubblePressureResult,
+    "eos.critical_point": CriticalPointResult,
     "eos.molar_enthalpy_entropy": MolarEnthalpyEntropyResult,
     "eos.dew_pressure": DewPressureResult,
     "eos.pt_flash": PtFlashResult,

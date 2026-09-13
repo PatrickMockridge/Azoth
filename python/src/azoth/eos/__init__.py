@@ -67,6 +67,7 @@ from __future__ import annotations
 from azoth._dispatch import resolve
 from azoth.core.result import (
     BubblePressureResult,
+    CriticalPointResult,
     DewPressureResult,
     IdealGasCpResult,
     MolarEnthalpyEntropyResult,
@@ -91,6 +92,7 @@ __all__ = [
     "IdealGasModel",
     "Mixture",
     "bubble_pressure",
+    "critical_point",
     "dew_pressure",
     "ideal_gas_cp",
     "mixture",
@@ -114,6 +116,7 @@ _PR_MASS_DENSITY = "eos.pr_mass_density"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
+_CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
 _PT_FLASH = "eos.pt_flash"
 _PURE_SATURATION = "eos.pure_saturation"
@@ -289,6 +292,31 @@ def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureRes
     See :func:`azoth.eos.reference.bubble_pressure`.
     """
     return resolve(_BUBBLE_PRESSURE)(mixture=mixture, T=T, x=x)  # type: ignore[no-any-return]
+
+
+def critical_point(mixture: Mixture, z: list[float]) -> CriticalPointResult:
+    """The critical point of a mixture of composition ``z``.
+
+    ``z`` is the composition of the single phase whose critical point is wanted, not a
+    feed being split - so unlike the flash's, this model does not decide what happens
+    to it. Whether that composition could exist at the returned state is a different
+    question and is not asked.
+
+    The result is a **mixture** critical point, and its ``Z_c`` is what shows it: a pure
+    component's is ``(1 - omega_b)/3`` exactly, and a mixture's varies with composition.
+    Solving ``dP/dV = d2P/dV2 = 0`` instead - the obvious route - gives that same
+    constant for every mixture there is, which is why this does not use it.
+
+    Raises:
+        InvalidInputError: if ``z`` is the wrong length, has a negative entry, or does
+            not sum to one. It is checked rather than renormalised.
+        SolverNotConvergedError: if the two conditions do not reach the tolerance in
+            the spec's iteration cap. A critical point that is nearly one is not one.
+        OutOfRangeError: if the state the iteration converged on is not a state.
+
+    See :func:`azoth.eos.reference.critical_point`.
+    """
+    return resolve(_CRITICAL_POINT)(mixture=mixture, z=z)  # type: ignore[no-any-return]
 
 
 def dew_pressure(mixture: Mixture, T: Q, y: list[float]) -> DewPressureResult:

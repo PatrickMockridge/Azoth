@@ -13,6 +13,7 @@ a bug in one of them - and the cross-implementation tests are what catch it.
 from __future__ import annotations
 
 from azoth.eos.reference.bubble_pressure import bubble_pressure
+from azoth.eos.reference.critical_point import critical_point
 from azoth.eos.reference.dew_pressure import dew_pressure
 from azoth.eos.reference.ideal_gas_cp import REFERENCE_TEMPERATURE, ideal_gas_cp
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel, molar_enthalpy_entropy
@@ -35,6 +36,7 @@ __all__ = [
     "REFERENCE_TEMPERATURE",
     "IdealGasModel",
     "bubble_pressure",
+    "critical_point",
     "dew_pressure",
     "ideal_gas_cp",
     "molar_enthalpy_entropy",

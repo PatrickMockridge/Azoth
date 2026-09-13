@@ -119,6 +119,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.molar_enthalpy_entropy` | Absolute molar enthalpy and entropy — a *direct* model |
 | `eos.bubble_pressure` | Bubble-point pressure at a fixed temperature — a *model* |
 | `eos.dew_pressure` | Dew-point pressure at a fixed temperature — a *model* |
+| `eos.critical_point` | The critical point of a mixture — a *model* |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use
@@ -128,22 +129,24 @@ Relief valve *sizing* to a standard is not implemented. `hydraulics.choked_flow_
 is the isentropic basis - the throat area a given choked mass flow needs - and the
 de-rating coefficients a standard applies are the caller's to compose.
 
-A mixture **critical point** is not implemented yet, and it is worth saying why rather
-than leaving a gap. The obvious route - solving `dP/dV = d2P/dV2 = 0` at fixed
-composition - is exact for a pure component but predicts the *same* `Z_c` for every
-mixture, because in reduced variables those two conditions have a single universal
-root. That makes it a plausible-looking wrong number for any mixture, which is the
-failure this library is organised against, so it is not shipped. The correct method is
-Heidemann & Khalil (1980), *AIChE Journal* 26(5), 769-779; its formulas are implemented
-in open source in NeqSim's `CriticalPointFlash` (Apache-2.0), which supplies the two
-parts this project could not re-derive - the Q matrix as the scaled Helmholtz Hessian
-at constant temperature and volume, and the nested Newton that drives its smallest
-eigenvalue to zero. That implementation has **no validation of any kind** - no
-pure-component check, no mixture check - so it is a source for the method and not for
-the answer, and the paper is still the work item that moves the status off `unverified`.
-`eos.bubble_pressure` and `eos.dew_pressure` are implemented and are what a
-phase-boundary calculation usually wants. [azoth and
-NeqSim](docs/src/comparison/neqsim.md) compares the two libraries in full.
+A mixture **critical point** (`eos.critical_point`) is implemented, and the way it is
+worth describing is by the route it does *not* take. The obvious one - solving
+`dP/dV = d2P/dV2 = 0` at fixed composition - is exact for a pure component and predicts
+the *same* `Z_c` for every mixture, because in reduced variables those two conditions
+have a single universal root. It is a plausible-looking wrong number, and a
+pure-component test cannot tell it apart from a right one. This uses Heidemann & Khalil
+(1980), *AIChE Journal* 26(5), 769-779, whose two conditions do generalise: a mixture's
+`Z_c` moves with composition, and a test asserts that it moves.
+
+The method is ported from NeqSim's `CriticalPointFlash` (Apache-2.0) - see
+[`NOTICE`](NOTICE) and the spec's `ported_from` block - which supplies the Q matrix as
+the scaled Helmholtz Hessian at constant temperature and volume, and the nested Newton
+that drives its smallest eigenvalue to zero. **That implementation validates its result
+nowhere**, so it is a source for the method and not for the answer; everything this
+model is checked against is this project's, including the closed-form `Z_c` a pure
+Peng-Robinson fluid has. It ships `unverified`, because reading the paper is what would
+move it. [azoth and NeqSim](docs/src/comparison/neqsim.md) compares the two libraries in
+full.
 
 The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`, `eos.*`),
 not by project. They appear in provenance records and citations, so renaming the

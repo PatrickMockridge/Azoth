@@ -107,6 +107,48 @@
       "items": { "type": "string", "minLength": 1 },
       "description": "Citations. Cite equations and papers; never reproduce copyrighted tables or text."
     },
+    "ported_from": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Implementations this calculation's algorithm was taken from. If this block is present the calculation is a port, and two rules apply: the verification status is NOT upgraded by it - reading someone's source is not reading the paper - and the implementation is accepted on this library's tests rather than on its provenance. A licence that permits reuse settles the copyright question and says nothing about whether the ported answer is right. See CONTRIBUTING.md and docs/src/copyright.md.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["project", "version", "file", "commit", "licence", "changes"],
+        "properties": {
+          "project": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The project the algorithm came from, named the way its own repository names it."
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The released version, because a port is of one revision of someone's code and not of a moving target."
+          },
+          "file": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The file within that project, as a path from its repository root, so a reader can find the method being described."
+          },
+          "commit": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$",
+            "description": "The full 40-character commit hash. A version tag can be moved; a hash cannot."
+          },
+          "licence": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The licence the source was under. Recorded because the obligation it creates is the whole reason this block exists, and because a reader checking whether the reuse was permitted needs it here rather than in a commit message."
+          },
+          "changes": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What was changed, and why. Required and free-form on purpose: a port is never a transcription, and the differences are the part a reader cannot recover from either the paper or the source. A block that said only 'none' would be claiming a transcription, which is the one thing this can never be."
+          }
+        }
+      }
+    },
     "solver": {
       "type": "object",
       "additionalProperties": false,

@@ -41,11 +41,11 @@ mod thermal;
 
 use results::{
     PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
-    PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult, PyOrificeFlowResult,
-    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPumpPowerResult,
-    PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult, PyReynoldsNumberResult,
-    PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
+    PyCriticalPointResult, PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult,
+    PyOrificeFlowResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
+    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
+    PyReynoldsNumberResult, PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
 };
 
 #[pymodule]
@@ -74,6 +74,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPrMolarVolumeResult>()?;
     m.add_class::<PyPrMassDensityResult>()?;
     m.add_class::<PyPureSaturationResult>()?;
+    m.add_class::<PyCriticalPointResult>()?;
     m.add_class::<PyPumpPowerResult>()?;
     m.add_class::<PyOrificeFlowResult>()?;
     m.add_class::<PyControlValveCvResult>()?;
@@ -122,6 +123,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pure_saturation, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pt_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::bubble_pressure, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::critical_point, m)?)?;
     m.add_function(wrap_pyfunction!(eos::dew_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::ideal_gas_cp, m)?)?;
     m.add_function(wrap_pyfunction!(eos::molar_enthalpy_entropy, m)?)?;

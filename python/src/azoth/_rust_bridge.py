@@ -31,6 +31,7 @@ from azoth.core.result import (
     ColebrookResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
+    CriticalPointResult,
     DarcyWeisbachResult,
     DewPressureResult,
     FlowRegime,
@@ -514,6 +515,31 @@ def bubble_pressure(mixture: Any, T: Q, x: Sequence[float]) -> BubblePressureRes
     return _boundary_result(raw, BubblePressureResult, liquid_first=True)  # type: ignore[no-any-return]
 
 
+def critical_point(mixture: Any, z: Sequence[float]) -> CriticalPointResult:
+    """The critical point of a mixture of composition ``z``, computed in Rust.
+
+    The composition crosses as a list, as the flash's feed does. The Rust side rebuilds
+    the mixture from the same three vectors and flattened matrix the other models use,
+    so the component order is the one thing the two sides agree about.
+    """
+    raw = _core.critical_point(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(z),
+    )
+    return CriticalPointResult(
+        tc=from_si(raw.tc.magnitude_si, "K"),
+        pc=from_si(raw.pc.magnitude_si, "Pa"),
+        vc=from_si(raw.vc.magnitude_si, "m**3/mol"),
+        z_c=raw.z_c,
+        iterations=raw.iterations,
+        residual=raw.residual,
+        warnings=_warnings(raw.warnings),
+    )
+
+
 def dew_pressure(mixture: Any, T: Q, y: Sequence[float]) -> DewPressureResult:
     """The dew-point pressure of a mixture, computed in Rust.
 
@@ -576,6 +602,7 @@ def molar_enthalpy_entropy(
 _MODEL_IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.molar_enthalpy_entropy": molar_enthalpy_entropy,
     "eos.bubble_pressure": bubble_pressure,
+    "eos.critical_point": critical_point,
     "eos.dew_pressure": dew_pressure,
     "eos.pure_saturation": pure_saturation,
     "eos.pt_flash": pt_flash,

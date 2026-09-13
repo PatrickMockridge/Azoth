@@ -81,6 +81,7 @@ pub(crate) fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> 
 }
 
 pub mod bubble_pressure;
+pub mod critical_point;
 pub mod dew_pressure;
 pub mod ideal_gas_cp;
 pub mod mixture;
@@ -102,6 +103,7 @@ pub mod spec_gen;
 pub mod vdw1f_mix_binary;
 
 pub use bubble_pressure::bubble_pressure;
+pub use critical_point::critical_point;
 pub use dew_pressure::dew_pressure;
 pub use ideal_gas_cp::{REFERENCE_TEMPERATURE, ideal_gas_cp};
 pub use mixture::{Component, Mixture, PhaseState, ReducedParameters, RootSide};
@@ -118,9 +120,9 @@ pub use pt_flash::pt_flash;
 pub use pure_saturation::pure_saturation;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use results::{
-    BubblePressureResult, DewPressureResult, IdealGasCpResult, MolarEnthalpyEntropyResult, Phase,
-    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
-    RachfordRiceBinaryResult, RootStructure, Vdw1fMixBinaryResult,
+    BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
+    MolarEnthalpyEntropyResult, Phase, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RootStructure, Vdw1fMixBinaryResult,
 };
 pub use vdw1f_mix_binary::vdw1f_mix_binary;

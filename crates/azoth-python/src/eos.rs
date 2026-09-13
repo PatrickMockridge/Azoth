@@ -13,10 +13,10 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyIdealGasCpResult, PyMolarEnthalpyEntropyResult, PyPhaseBoundaryResult, PyPrAlphaAbResult,
-    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrZFactorResult, PyPrsvKappaResult, PyPtFlashResult, PyPureSaturationResult,
-    PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
+    PyCriticalPointResult, PyIdealGasCpResult, PyMolarEnthalpyEntropyResult, PyPhaseBoundaryResult,
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPtFlashResult,
+    PyPureSaturationResult, PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -280,6 +280,31 @@ pub fn bubble_pressure(
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
     eos::bubble_pressure(&mixture, kelvins(T), &held)
         .map(|r| PyPhaseBoundaryResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The critical point of a mixture of composition `z`.
+///
+/// The one model here that solves for a *state* rather than for a phase split, and the
+/// only one whose answer a caller cannot check against a phase they can see. It takes
+/// the same six arguments as the boundary models and returns four state variables
+/// instead of one pressure.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, z))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, z)")]
+#[allow(non_snake_case)] // `Tc`, `Pc` and `z` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn critical_point(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    z: Vec<f64>,
+) -> PyResult<PyCriticalPointResult> {
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
+    eos::critical_point(&mixture, &z)
+        .map(|r| PyCriticalPointResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

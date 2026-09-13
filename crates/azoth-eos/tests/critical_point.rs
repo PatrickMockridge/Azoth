@@ -1,0 +1,253 @@
+//! Spec-driven tests for the `eos.critical_point` model.
+//!
+//! The spec's cases pin the two implementations to each other. These tests are for
+//! what a case cannot say, and one of them matters more than the rest: **a pure
+//! component's critical point is known in closed form**, so the whole construction -
+//! the constant-volume Hessian, the ideal part, the scaling, the cubic form and the
+//! nesting - is checked against an analytic answer rather than against a second
+//! reading of the same method.
+
+use azoth_core::units::{kelvins, pascals};
+use azoth_core::{AzothError, CalcResult};
+use azoth_eos::critical_point::symmetric_eigen;
+use azoth_eos::mixture::{Component, Mixture};
+use azoth_eos::{critical_point, model_gen};
+use azoth_test_support as common;
+
+const MODEL_ID: &str = "eos.critical_point";
+
+fn mixture_of(tc: &[f64], pc: &[f64], omega: &[f64], kij: Vec<f64>) -> Mixture {
+    let components = (0..tc.len())
+        .map(|i| {
+            Component::new(kelvins(tc[i]), pascals(pc[i]), omega[i]).expect("a valid component")
+        })
+        .collect();
+    Mixture::new(components, kij).expect("a valid mixture")
+}
+
+fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
+    mixture_of(
+        case.vector("Tc").expect("the case declares Tc"),
+        case.vector("Pc").expect("the case declares Pc"),
+        case.vector("omega").expect("the case declares omega"),
+        case.matrix("kij").expect("the case declares kij").to_vec(),
+    )
+}
+
+fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::CriticalPointResult {
+    let mixture = mixture_from_case(case);
+    critical_point(&mixture, case.vector("z").expect("the case declares z"))
+        .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
+}
+
+#[test]
+fn every_case_in_the_spec() {
+    let spec = model_gen::model(MODEL_ID).expect("the model should be in its own table");
+    assert!(!spec.cases.is_empty(), "the model should have cases");
+
+    for case in spec.cases {
+        let result = call(case);
+        common::assert_close(
+            result.tc.value,
+            common::expected(case, "Tc"),
+            case.tolerance,
+            &format!("{}::{} (Tc)", spec.id, case.id),
+        );
+        common::assert_close(
+            result.pc.value,
+            common::expected(case, "Pc"),
+            case.tolerance,
+            &format!("{}::{} (Pc)", spec.id, case.id),
+        );
+        common::assert_close(
+            result.vc.value,
+            common::expected(case, "Vc"),
+            case.tolerance,
+            &format!("{}::{} (Vc)", spec.id, case.id),
+        );
+        common::assert_close(
+            result.z_c,
+            common::expected(case, "Z_c"),
+            case.tolerance,
+            &format!("{}::{} (Z_c)", spec.id, case.id),
+        );
+        assert!(
+            result.iterations > 0,
+            "{}::{}: the solve took no steps",
+            spec.id,
+            case.id
+        );
+        assert!(
+            result.residual <= spec.algorithm.expect("a procedure").tolerance,
+            "{}::{}: residual {:e} exceeds the declared tolerance",
+            spec.id,
+            case.id,
+            result.residual
+        );
+        common::assert_consistent(&result, case.id);
+    }
+}
+
+/// A pure component's critical point is analytic, and this is where the `Z_c` that
+/// every test in this repository asserts comes from: `(1 - omega_b)/3`.
+///
+/// The check is on the whole construction rather than on the arithmetic, because
+/// every piece of it - the Hessian at constant volume, the ideal part
+/// `delta_ij/n_i`, the `sqrt(n_i n_j)` scaling, the ideal third derivative in the
+/// cubic form, the nesting - has to be right for this to come out.
+#[test]
+fn a_pure_component_reproduces_the_analytic_critical_point() {
+    let expected_z_c = (1.0 - azoth_eos::OMEGA_B) / 3.0;
+    for (name, tc, pc, omega) in [
+        ("propane", 369.83, 4_248_000.0, 0.1523),
+        ("methane", 190.56, 4_599_200.0, 0.01142),
+        ("n-butane", 425.12, 3_796_000.0, 0.2002),
+        ("carbon dioxide", 304.13, 7_377_000.0, 0.2239),
+    ] {
+        let mixture = mixture_of(&[tc], &[pc], &[omega], vec![0.0]);
+        let r = critical_point(&mixture, &[1.0]).expect("a critical point");
+
+        // Measured, on both implementations: Tc to 2.5e-12 relative, Pc to 1.6e-11,
+        // Z_c to 5.2e-10 absolute - and the same four figures for all four components,
+        // which is the signature of a systematic floor rather than of noise. The floor
+        // is the finite-difference step the cubic form is evaluated over; see the
+        // spec's notes. The tolerances below are that floor with room for a different
+        // `ln` on another platform, and they are still four orders tighter than the
+        // error the mechanical conditions would produce.
+        common::assert_close(r.tc.value, tc, 1e-10, &format!("{name}: Tc"));
+        common::assert_close(r.pc.value, pc, 1e-10, &format!("{name}: Pc"));
+        assert!(
+            (r.z_c - expected_z_c).abs() < 1e-8,
+            "{name}: Z_c is {} against the analytic {expected_z_c}",
+            r.z_c
+        );
+    }
+}
+
+/// A mixture's `Z_c` varies with composition, and that is the whole discriminating test.
+///
+/// The mechanical conditions - solving `dP/dV = d2P/dV2 = 0` at fixed composition -
+/// reproduce a pure component's critical point exactly and return `(1 - omega_b)/3`
+/// for **every** mixture, because in reduced variables they have a single universal
+/// root. A pure-component check cannot tell the two routes apart. This can: the
+/// spread below is 0.14, against a constant.
+#[test]
+fn a_mixtures_critical_compressibility_varies_with_composition() {
+    let mut seen = Vec::new();
+    for methane_fraction in [0.2, 0.4, 0.6, 0.8] {
+        let mixture = mixture_of(
+            &[190.56, 425.12],
+            &[4_599_200.0, 3_796_000.0],
+            &[0.01142, 0.2002],
+            vec![0.0, 0.05, 0.05, 0.0],
+        );
+        let r = critical_point(&mixture, &[methane_fraction, 1.0 - methane_fraction])
+            .expect("a critical point");
+        seen.push(r.z_c);
+    }
+    let spread = seen.iter().cloned().fold(f64::MIN, f64::max)
+        - seen.iter().cloned().fold(f64::MAX, f64::min);
+    assert!(
+        spread > 0.1,
+        "Z_c varied by only {spread} across the composition range: {seen:?}. A spread \
+         near zero is what the mechanical conditions give, and is not a mixture \
+         critical point."
+    );
+}
+
+/// The `Tc` locus of a binary falls between its pure endpoints, and monotonically.
+///
+/// A shape check rather than a value check, and it is the one that would catch an
+/// iteration that converges on the wrong root: the critical locus of a binary is a
+/// continuous curve from one pure component to the other, so a point outside the
+/// bracket or out of order is wrong whatever it is near.
+#[test]
+fn a_binarys_critical_locus_falls_between_its_pure_endpoints() {
+    let mixture = mixture_of(
+        &[190.56, 425.12],
+        &[4_599_200.0, 3_796_000.0],
+        &[0.01142, 0.2002],
+        vec![0.0, 0.05, 0.05, 0.0],
+    );
+
+    let mut previous = 425.12_f64;
+    for methane_fraction in [0.2, 0.4, 0.6, 0.8] {
+        let r = critical_point(&mixture, &[methane_fraction, 1.0 - methane_fraction])
+            .expect("a critical point");
+        assert!(
+            r.tc.value > 190.56 && r.tc.value < 425.12,
+            "Tc = {} at z = {methane_fraction} is outside the pure endpoints",
+            r.tc.value
+        );
+        assert!(
+            r.tc.value < previous,
+            "Tc = {} at z = {methane_fraction} did not fall below {previous}",
+            r.tc.value
+        );
+        previous = r.tc.value;
+    }
+}
+
+/// The Jacobi solver, against eigenvalues that are known without it.
+#[test]
+fn the_eigensolver_agrees_with_the_closed_form() {
+    // [[2, 1], [1, 2]] has eigenvalues 1 and 3, and eigenvectors along (1, -1) and
+    // (1, 1).
+    let e = symmetric_eigen(&[vec![2.0, 1.0], vec![1.0, 2.0]], 1e-15, 100);
+    common::assert_close(e.values[0], 1.0, 1e-14, "the smaller eigenvalue");
+    common::assert_close(e.values[1], 3.0, 1e-14, "the larger eigenvalue");
+    let root_half = std::f64::consts::FRAC_1_SQRT_2;
+    common::assert_close(e.vectors[0][0].abs(), root_half, 1e-14, "the eigenvector");
+
+    // A diagonal matrix must come back exactly, and ascending.
+    let e = symmetric_eigen(&[vec![5.0, 0.0], vec![0.0, 3.0]], 1e-15, 100);
+    assert_eq!(e.values, vec![3.0, 5.0]);
+
+    // An already-diagonal 1x1 is its own answer.
+    let e = symmetric_eigen(&[vec![-2.0]], 1e-15, 100);
+    assert_eq!(e.values, vec![-2.0]);
+    assert_eq!(e.vectors, vec![vec![1.0]]);
+}
+
+/// A composition that is not a composition is refused rather than renormalised.
+#[test]
+fn a_malformed_composition_is_refused() {
+    let mixture = mixture_of(
+        &[190.56, 425.12],
+        &[4_599_200.0, 3_796_000.0],
+        &[0.01142, 0.2002],
+        vec![0.0, 0.05, 0.05, 0.0],
+    );
+    for (label, z) in [
+        ("too short", vec![0.5]),
+        ("too long", vec![0.5, 0.25, 0.25]),
+        ("negative", vec![1.5, -0.5]),
+        ("does not sum to one", vec![0.5, 0.6]),
+    ] {
+        let error = critical_point(&mixture, &z).expect_err(label);
+        assert!(
+            matches!(error, AzothError::InvalidInput { .. }),
+            "{label}: expected an invalid-input error"
+        );
+    }
+}
+
+/// The result is clean at an ordinary composition, and reports what the spec says.
+#[test]
+fn the_result_carries_the_declared_fields() {
+    let mixture = mixture_of(
+        &[190.56, 425.12],
+        &[4_599_200.0, 3_796_000.0],
+        &[0.01142, 0.2002],
+        vec![0.0, 0.05, 0.05, 0.0],
+    );
+    let r = critical_point(&mixture, &[0.4, 0.6]).expect("a critical point");
+    assert!(r.is_clean(), "unexpected warnings: {:?}", r.warnings);
+    assert_eq!(
+        <azoth_eos::CriticalPointResult as CalcResult>::CALC_ID,
+        MODEL_ID
+    );
+    // `Z_c` is `Pc Vc/(R Tc)` by definition, so the two ways of forming it agree.
+    let recomputed = r.pc.value * r.vc.value / (8.31446261815324 * r.tc.value);
+    common::assert_close(recomputed, r.z_c, 1e-12, "Z_c from the returned state");
+}

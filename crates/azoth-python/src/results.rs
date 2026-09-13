@@ -17,10 +17,10 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    BubblePressureResult, DewPressureResult, IdealGasCpResult, MolarEnthalpyEntropyResult,
-    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
-    RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
+    BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
+    MolarEnthalpyEntropyResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1426,6 +1426,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
         PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
+        CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
@@ -1473,4 +1474,72 @@ pub fn calc_ids() -> Vec<String> {
 #[must_use]
 pub fn version() -> String {
     azoth_core::VERSION.to_string()
+}
+
+/// Result of `eos.critical_point`.
+///
+/// The four state variables of a mixture critical point. The units are strings here,
+/// as everywhere on this boundary, and each is the unit the spec declares.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CriticalPointResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCriticalPointResult {
+    /// The critical temperature.
+    #[pyo3(get)]
+    pub tc: PyQty,
+    /// The critical pressure.
+    #[pyo3(get)]
+    pub pc: PyQty,
+    /// The critical molar volume.
+    #[pyo3(get)]
+    pub vc: PyQty,
+    /// `Pc Vc/(R Tc)`.
+    #[pyo3(get)]
+    pub z_c: f64,
+    /// Outer iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `max(|smallest eigenvalue|, |cubic form|)` at the returned state.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCriticalPointResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CriticalPointResult(tc={} K, pc={} Pa, vc={} m**3/mol, z_c={})",
+            self.tc.magnitude_si, self.pc.magnitude_si, self.vc.magnitude_si, self.z_c
+        )
+    }
+}
+
+impl From<&CriticalPointResult> for PyCriticalPointResult {
+    fn from(r: &CriticalPointResult) -> Self {
+        Self {
+            tc: PyQty {
+                magnitude_si: r.tc.value,
+                unit: "K".to_string(),
+            },
+            pc: PyQty {
+                magnitude_si: r.pc.value,
+                unit: "Pa".to_string(),
+            },
+            vc: PyQty {
+                magnitude_si: r.vc.value,
+                unit: "m**3/mol".to_string(),
+            },
+            z_c: r.z_c,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
 }

@@ -5,7 +5,9 @@
 //! [`CalcResult::FIELDS`], with a test asserting the three agree. See
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
-use azoth_core::units::{MassDensity, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure};
+use azoth_core::units::{
+    MassDensity, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, ThermodynamicTemperature,
+};
 use azoth_core::{CalcResult, Warning};
 
 /// Result of `eos.pr_kappa`.
@@ -524,6 +526,47 @@ impl CalcResult for PrZFactorResult {
         "root_structure",
         "iterations",
         "converged",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.critical_point`.
+///
+/// The four state variables of a mixture critical point. `z_c` is here rather than left
+/// to the caller because it is the quantity that distinguishes this model from the
+/// mechanical conditions: a pure component's is `(1 - omega_b)/3`, a mixture's varies
+/// with composition, and the mechanical route cannot produce the second.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CriticalPointResult {
+    /// The critical temperature.
+    pub tc: ThermodynamicTemperature,
+    /// The critical pressure.
+    pub pc: Pressure,
+    /// The critical molar volume.
+    pub vc: MolarVolume,
+    /// `Pc Vc/(R Tc)`.
+    pub z_c: f64,
+    /// Outer iterations taken.
+    pub iterations: u32,
+    /// `max(|smallest eigenvalue|, |cubic form|)` at the returned state.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CriticalPointResult {
+    const CALC_ID: &'static str = "eos.critical_point";
+    const FIELDS: &'static [&'static str] = &[
+        "tc",
+        "pc",
+        "vc",
+        "z_c",
+        "iterations",
         "residual",
         "warnings",
     ];

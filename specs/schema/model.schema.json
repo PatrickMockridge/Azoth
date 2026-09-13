@@ -52,6 +52,7 @@
     "valid_range": { "$ref": "calc.schema.json#/properties/valid_range" },
     "assumptions": { "$ref": "calc.schema.json#/properties/assumptions" },
     "references": { "$ref": "calc.schema.json#/properties/references" },
+    "ported_from": { "$ref": "calc.schema.json#/properties/ported_from" },
     "implementations": { "$ref": "calc.schema.json#/properties/implementations" },
     "cases": {
       "type": "array",

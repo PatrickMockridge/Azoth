@@ -153,6 +153,16 @@ class IdealGasCpResult:
     warnings: list[Warning]
 
 @final
+class CriticalPointResult:
+    tc: Qty
+    pc: Qty
+    vc: Qty
+    z_c: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class PhaseBoundaryResult:
     pressure: Qty
     incipient: list[float]
@@ -295,6 +305,13 @@ def molar_enthalpy_entropy(
     compressibility: float,
 ) -> MolarEnthalpyEntropyResult: ...
 def ideal_gas_cp(a: float, b: float, c: float, d: float, T: float) -> IdealGasCpResult: ...
+def critical_point(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    z: list[float],
+) -> CriticalPointResult: ...
 def bubble_pressure(
     Tc: list[float],
     Pc: list[float],
