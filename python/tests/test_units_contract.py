@@ -15,12 +15,11 @@ schema allowed and ``CANONICAL_UNITS`` knew about, while ``azoth-core`` had no
 temperature type at all. No calc used it, so no test touched it. A vocabulary is
 only a contract if something compares the copies, which is what this file does.
 
-The other thing checked here is the *convention*, which is subtler than the set. The
-Python side works in the magnitude of the unit's canonical form; the Rust side's
-``uom`` quantities always report ``.value`` as the SI **base** magnitude. Those are
-the same number only when a unit's canonical form is its SI base unit. Every entry
-here satisfies that except ``mm``, which is recorded rather than hidden - see
-``NON_SI_BASE_UNITS``.
+The other thing checked here is that no entry is *dead* - each one converts in both
+directions rather than merely being listed. Whether the numbers those conversions
+produce are correct is a separate question and lives in
+``test_units_conversion.py``; this file is about the vocabulary being one set and
+every member of it working.
 """
 
 from __future__ import annotations
@@ -29,12 +28,12 @@ import importlib
 import json
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Final
+from typing import Any
 
 import pytest
 
 from azoth._registry_gen import CALCS
-from azoth.core.units import CANONICAL_UNITS, quantity
+from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
@@ -53,41 +52,10 @@ def _extension() -> ModuleType:
         raise AssertionError("azoth._core is not built; run `maturin develop`") from exc
 
 
-#: Units whose canonical form is not the SI base unit, mapped to the SI base
-#: magnitude of one canonical unit.
-#:
-#: ``mm`` is the only entry and it is a **known defect, not a decision**. A spec
-#: declaring ``mm`` would have the Python side working in millimetres and the Rust
-#: side in metres, and the cross-language agreement test would fail by 1000x rather
-#: than by a rounding error. It has never mattered because no spec uses ``mm``.
-#:
-#: It is pinned rather than fixed or deleted for two reasons. It cannot be deleted
-#: on the evidence - pipe diameters are conventionally quoted in millimetres, so
-#: this is the unit the next hydraulics calc is most likely to want. And it cannot
-#: be fixed here: making the two sides agree means separating "the unit the spec
-#: declares" from "the unit the calculation works in", which is a change to
-#: ``to_si``, ``quantity``, both test helpers and both languages.
-#:
-#: Recording it as an exception means a *second* unit with the same problem fails
-#: this test instead of joining the set. When the convention is made coherent this
-#: dict should become empty, and the test will say so.
-NON_SI_BASE_UNITS: Final[dict[str, float]] = {"mm": 1.0e-3}
-
-
 def schema_units() -> set[str]:
     """The unit strings the spec schema permits."""
     schema: dict[str, Any] = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     return set(schema["$defs"]["unit"]["enum"])
-
-
-def si_base_magnitude(spec_unit: str) -> float:
-    """The SI base magnitude of one unit of ``spec_unit``.
-
-    ``1.0`` for a unit that *is* its own SI base unit, which is every entry the
-    vocabulary is allowed to contain.
-    """
-    base = quantity(1.0, spec_unit).to_base_units()
-    return float(base.magnitude)
 
 
 def test_the_schema_and_the_python_vocabulary_agree() -> None:
@@ -124,26 +92,26 @@ def test_the_rust_vocabulary_agrees_with_both() -> None:
     assert rust_side == set(CANONICAL_UNITS)
 
 
-def test_the_canonical_unit_is_the_si_base_unit() -> None:
-    """Every unit is its own SI base unit, except the recorded exceptions.
+def test_every_vocabulary_entry_has_a_working_conversion() -> None:
+    """Each name converts, in both directions, without raising.
 
-    This is the convention that makes the two implementations comparable. The
-    Python side hands a calculation the magnitude of ``spec_unit``; the Rust side
-    hands it ``.value``, which is always the SI base magnitude. The two agree
-    exactly when ``spec_unit`` is the SI base unit for that dimension.
+    The vocabulary is a promise that a spec may declare this unit. A name that
+    ``pint`` cannot parse, or that ``CANONICAL_UNITS`` maps to something that is not
+    a unit, would break that promise at runtime and only for whoever declared it.
 
-    Stated as an equality against a named exception set, so a new unit that breaks
-    the rule fails here rather than by 1000x somewhere downstream.
+    This says nothing about whether the *numbers* are right - that is
+    ``test_units_conversion.py``, which is a different question and a different
+    file. Here the concern is only that the vocabulary has no dead entries.
     """
-    factors = {unit: si_base_magnitude(unit) for unit in CANONICAL_UNITS}
-    not_base = {unit: factor for unit, factor in factors.items() if factor != 1.0}
-    assert not_base == NON_SI_BASE_UNITS, (
-        f"the set of units that are not their own SI base unit has changed:\n"
-        f"  observed: {not_base}\n"
-        f"  recorded: {NON_SI_BASE_UNITS}\n"
-        f"A new entry means a unit whose two implementations disagree. An entry "
-        f"that has gone means the convention was fixed - update this list."
-    )
+    for unit in CANONICAL_UNITS:
+        # A round trip through both directions, which is the path a real value
+        # takes: a caller's quantity in, a result quantity out.
+        si = to_si(quantity(1.0, unit), unit, "x")
+        assert isinstance(si, float), f"{unit}: to_si did not return a float"
+        rebuilt = from_si(si, unit)
+        assert rebuilt.dimensionality == quantity(1.0, unit).dimensionality, (
+            f"{unit}: from_si(to_si(...)) changed the dimensionality"
+        )
 
 
 def test_every_unit_a_spec_declares_is_in_the_vocabulary() -> None:

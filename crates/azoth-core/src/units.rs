@@ -60,6 +60,18 @@ pub fn meters(value: f64) -> Length {
     Length::new::<meter>(value)
 }
 
+/// A length in millimetres.
+///
+/// The one unit in the vocabulary that is not its own SI base unit, which is why
+/// it is worth having explicitly: `.value` is still metres, so a caller building a
+/// length from millimetres cannot accidentally work in them. Pipe diameters are
+/// conventionally quoted in millimetres, so this is the constructor the next
+/// hydraulics calcs will reach for.
+#[must_use]
+pub fn millimeters(value: f64) -> Length {
+    Length::new::<millimeter>(value)
+}
+
 /// A velocity in metres per second.
 #[must_use]
 pub fn meters_per_second(value: f64) -> Velocity {
@@ -219,7 +231,7 @@ mod tests {
         // Dimensionless quantities carry no unit, so the conversion is the identity.
         ("dimensionless", |v| v, 1.0),
         ("m", |v| meters(v).value, 1.0),
-        ("mm", |v| Length::new::<millimeter>(v).value, 1.0e-3),
+        ("mm", |v| millimeters(v).value, 1.0e-3),
         ("m**2", |v| square_meters(v).value, 1.0),
         ("m**3/s", |v| cubic_meters_per_second(v).value, 1.0),
         ("kg/s", |v| kilograms_per_second(v).value, 1.0),
@@ -262,13 +274,15 @@ mod tests {
 
     #[test]
     fn every_conversion_yields_the_si_base_magnitude() {
-        // `.value` is always the SI base value, and the Python side works in the
-        // unit's canonical form. Those are the same number only when the canonical
-        // unit IS the SI base unit, which is the rule the vocabulary follows and the
-        // thing the cross-language agreement test rests on. `mm` is the one entry
-        // that is not SI base, and 1.0e-3 above records its factor rather than
-        // hiding it: a spec declaring mm would have this side in metres and the
-        // Python side in millimetres.
+        // `.value` is always the SI base value, and the Python side converts to
+        // base units too, so both implementations work in the same number for any
+        // unit the vocabulary permits. That is what the cross-language agreement
+        // test rests on.
+        //
+        // `mm` is the one entry that is not its own SI base unit, so it is the one
+        // that would catch a regression: it must yield 1.0e-3 here, and the Python
+        // half of the same check lives in test_units_conversion.py, where a
+        // conversion back to the declared unit would put 1000x between the two.
         for (name, convert, expected_si_base) in CONVERSION_PATHS {
             let got = convert(1.0);
             assert!(

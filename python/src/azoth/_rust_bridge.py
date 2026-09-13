@@ -33,7 +33,7 @@ from azoth.core.result import (
     ReynoldsNumberResult,
     SwameeJainResult,
 )
-from azoth.core.units import Q, quantity, to_si
+from azoth.core.units import Q, from_si, to_si
 from azoth.core.warnings import Warning, WarningCode
 
 
@@ -115,7 +115,9 @@ def darcy_weisbach(
     return DarcyWeisbachResult(
         # Rebuilt as a real pint quantity from the SI magnitude and the unit the
         # Rust side reported, so the field has the same type as the reference's.
-        dp=quantity(result.dp.magnitude_si, result.dp.unit),
+        # `magnitude_si` is SI base, which is the `from_si` direction, not a number
+        # already stated in pascals - the two coincide for pascals alone.
+        dp=from_si(result.dp.magnitude_si, result.dp.unit),
         f=result.f,
         re=result.re,
         regime=None if result.regime is None else FlowRegime(result.regime),
