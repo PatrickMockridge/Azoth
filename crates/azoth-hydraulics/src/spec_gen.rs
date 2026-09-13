@@ -5,6 +5,7 @@
 //!   - specs/calcs/hydraulics/crane_k_factors.yaml
 //!   - specs/calcs/hydraulics/darcy_weisbach.yaml
 //!   - specs/calcs/hydraulics/friction_factor_colebrook.yaml
+//!   - specs/calcs/hydraulics/friction_factor_haaland.yaml
 //!   - specs/calcs/hydraulics/friction_factor_swamee_jain.yaml
 //!   - specs/calcs/hydraulics/reynolds_number.yaml
 //!
@@ -540,6 +541,127 @@ pub static FRICTION_FACTOR_COLEBROOK_SPEC: CalcSpec = CalcSpec {
     tests: FRICTION_FACTOR_COLEBROOK_TESTS,
 };
 
+/// Registry entry for `hydraulics.friction_factor_haaland`.
+static FRICTION_FACTOR_HAALAND_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "re",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the 6.9/Re term is singular at Re = 0",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "relative_roughness",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "negative roughness is unphysical",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "re",
+            min: Some(4000.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "Below Re ~ 4000 the equation is outside turbulent pipe flow, which is the regime it approximates within Colebrook. It still returns a finite number - `log10` of a positive argument is defined everywhere the hard bounds allow - so this is a warning rather than an error, but that number is not covered by the accuracy claim. For laminar flow use f = 64/Re, which is a different equation and deliberately not part of this calc. This bound is the framework boundary already applied to Colebrook in this registry, not a figure read from Haaland's paper. See `verification`.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "relative_roughness",
+            min: None,
+            min_inclusive: true,
+            max: Some(0.05),
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "Above epsilon/D ~ 0.05 the Moody framework is no longer meaningful, and this library does not carry roughness data that large. The bound is inclusive because 0.05 is itself still inside the framework; it is the same bound and the same inclusive flag the Colebrook spec uses. See `verification` - it is the framework's bound, not Haaland's.",
+        },
+    },
+];
+
+static FRICTION_FACTOR_HAALAND_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "agrees_with_colebrook_within_two_percent",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.02,
+        numbers: &[("re", 100000.0), ("relative_roughness", 0.00046)],
+        lists: &[],
+        expected: &[("f", 0.020162032)],
+    },
+    TestCase {
+        id: "smooth_pipe_limit",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("re", 100000.0), ("relative_roughness", 0.0)],
+        lists: &[],
+        expected: &[("f", 0.017824939200764653)],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+];
+
+/// Registered spec for `hydraulics.friction_factor_haaland`.
+///
+/// Public and addressable directly, so a calc can hold `&FRICTION_FACTOR_HAALAND_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static FRICTION_FACTOR_HAALAND_SPEC: CalcSpec = CalcSpec {
+    id: "hydraulics.friction_factor_haaland",
+    verification: "unverified",
+    checks: FRICTION_FACTOR_HAALAND_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "commercial_steel_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("re", 100000.0), ("relative_roughness", 0.00046)],
+        lists: &[],
+        expected: &[("f", 0.0198980585)],
+    },
+    tests: FRICTION_FACTOR_HAALAND_TESTS,
+};
+
 /// Registry entry for `hydraulics.friction_factor_swamee_jain`.
 static FRICTION_FACTOR_SWAMEE_JAIN_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -818,6 +940,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &CRANE_K_FACTORS_SPEC,
     &DARCY_WEISBACH_SPEC,
     &FRICTION_FACTOR_COLEBROOK_SPEC,
+    &FRICTION_FACTOR_HAALAND_SPEC,
     &FRICTION_FACTOR_SWAMEE_JAIN_SPEC,
     &REYNOLDS_NUMBER_SPEC,
 ];

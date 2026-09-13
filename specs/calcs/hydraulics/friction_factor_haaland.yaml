@@ -1,0 +1,183 @@
+id: hydraulics.friction_factor_haaland
+name: Haaland friction factor (explicit)
+equation: "f = (1.0 / (-1.8 * log10((relative_roughness / 3.7)**1.11 + 6.9 / Re)))**2"
+latex: 'f = \left[-1.8\,\log_{10}\!\left[\left(\frac{\varepsilon/D}{3.7}\right)^{1.11} + \frac{6.9}{Re}\right]\right]^{-2}'
+
+source:
+  standard: Haaland, S. E. (1983)
+  edition: "Journal of Fluids Engineering, 105(1), 89-90"
+  equation: "TODO: source needed"
+
+verification:
+  status: unverified
+  notes: >
+    The equation is not in doubt: it is the standard explicit approximation to
+    Colebrook, quoted in essentially every modern fluid mechanics text, and its
+    form is published in Haaland's 1983 paper. What has NOT been done is checking
+    this spec against the paper itself - nobody has opened it and compared.
+
+    Specifically unconfirmed: (1) the equation number within the paper, which is
+    why `source.equation` is marked TODO rather than guessed; (2) the volume and
+    page numbers in `source.edition`, which are reproduced from memory of the
+    citation rather than read from the journal; (3) whether the paper states a
+    DOI, so no DOI is claimed; (4) the paper's own stated validity range.
+
+    Consequence for `valid_range`, and this is the part a reader should notice:
+    the bounds below are NOT Haaland's stated range, because that could not be
+    read. They are the Moody/Colebrook framework bounds this library already
+    applies to the Colebrook equation, and their rationales say so. A spec whose
+    bounds are inherited from the framework rather than the source has to say
+    which, or the bounds read as a claim about the paper.
+
+    `unverified` rather than `source_needed` on the distinction the schema draws:
+    no source is in doubt, only its citation. The equation is standard and the
+    worked example is derived from it, so there is a runnable test - which
+    `source_needed` would forbid and which is worth more than a citation nobody
+    has checked. See the note on the equation in `source`.
+
+    Accuracy: the equation is an approximation to Colebrook, quoted as within
+    about 1-2% for turbulent flow. Measured here it is 1.31% below Colebrook at
+    the worked example's inputs, which is consistent with that claim. The
+    cross-method test below asserts against the claim rather than against a
+    number chosen here.
+
+inputs:
+  re:
+    unit: dimensionless
+    description: Reynolds number
+  relative_roughness:
+    unit: dimensionless
+    description: "absolute roughness divided by internal diameter (epsilon / D)"
+
+outputs:
+  f:
+    unit: dimensionless
+    description: Darcy-Weisbach friction factor
+
+valid_range:
+  - quantity: re
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: the 6.9/Re term is singular at Re = 0
+
+  - quantity: relative_roughness
+    min: 0
+    severity: error
+    rationale: negative roughness is unphysical
+
+  - quantity: re
+    min: 4000
+    min_inclusive: false
+    severity: warning
+    rationale: >
+      Below Re ~ 4000 the equation is outside turbulent pipe flow, which is the
+      regime it approximates within Colebrook. It still returns a finite number -
+      `log10` of a positive argument is defined everywhere the hard bounds allow -
+      so this is a warning rather than an error, but that number is not covered by
+      the accuracy claim. For laminar flow use f = 64/Re, which is a different
+      equation and deliberately not part of this calc.
+
+      This bound is the framework boundary already applied to Colebrook in this
+      registry, not a figure read from Haaland's paper. See `verification`.
+
+  - quantity: relative_roughness
+    max: 0.05
+    max_inclusive: true
+    severity: warning
+    rationale: >
+      Above epsilon/D ~ 0.05 the Moody framework is no longer meaningful, and this
+      library does not carry roughness data that large. The bound is inclusive
+      because 0.05 is itself still inside the framework; it is the same bound and
+      the same inclusive flag the Colebrook spec uses. See `verification` - it is
+      the framework's bound, not Haaland's.
+
+assumptions:
+  - fully turbulent flow
+  - circular pipe running full
+  - steady, fully developed, single-phase, incompressible flow
+  - uniform sand-grain roughness of height epsilon
+  - Newtonian fluid
+  - accuracy within about 2% of the Colebrook equation over the range above
+  - the roughness is the sand-grain equivalent, which is what the correlation was fitted to; a pipe whose real surface differs in character will not be described by it however well epsilon is estimated
+
+references:
+  - Haaland, S. E. (1983). "Simple and explicit formulas for the friction factor in turbulent pipe flow." Journal of Fluids Engineering, 105(1), 89-90. (the citation is unconfirmed - see `verification`)
+  - Colebrook, C. F. (1939). "Turbulent flow in pipes, with particular reference to the transition region between the smooth and rough pipe laws." Journal of the Institution of Civil Engineers, 11(4), 133-156. (the implicit equation this approximates - citation confirmed, see the Colebrook spec)
+
+worked_example:
+  source: derived from the equation above
+  derivation: >
+    For Re = 1.0e5 and relative_roughness = 4.6e-4 (commercial steel,
+    epsilon = 0.046 mm in a 100 mm pipe). This is the same case as the Colebrook
+    and Swamee-Jain specs, so all three explicit/implicit forms can be compared
+    directly rather than each being checked in isolation:
+      relative_roughness/3.7        = 4.6e-4 / 3.7            = 1.2432432432432433e-4
+      (relative_roughness/3.7)**1.11 = 1.2432432432432433e-4 ** 1.11 = 4.62335540280221e-5
+      6.9/Re                        = 6.9 / 1.0e5             = 6.9e-5
+      sum                           = 4.62335540280221e-5 + 6.9e-5 = 1.1523355402802211e-4
+      log10(sum)                    = -3.938421043417981
+      -1.8 * log10(sum)             = 7.089157878152366
+      f = (1 / 7.089157878152366)**2 = 1.41060527...e-2 ** 2    = 0.019898058496980637
+    Colebrook gives 0.02016203204441476 for the same inputs, so this is 1.31%
+    below it - consistent with the 1-2% the explicit form is quoted at.
+  inputs: { re: 100000.0, relative_roughness: 4.6e-4 }
+  expected: { f: 0.0198980585 }
+  tolerance: 1.0e-6
+
+implementations:
+  python: azoth.hydraulics.friction_factor_haaland
+  rust: azoth_hydraulics::friction_factor_haaland
+
+tests:
+  - id: commercial_steel_worked_example
+    type: worked_example
+    status: active
+
+  - id: agrees_with_colebrook_within_two_percent
+    type: reference
+    status: active
+    source: >
+      Cross-method comparison against the Colebrook equation, which is the
+      quantity this approximation exists to approximate and which is `verified` in
+      this registry. The published accuracy for the explicit form is about 1-2%;
+      measured here it is 1.31% at the worked example's inputs, so the tolerance is
+      set to the published claim with headroom rather than to the measurement.
+
+      Like the equivalent test in the Swamee-Jain spec, this needs both
+      implementations, so it doubles as the cross-check that the correlations in
+      this slice are consistent with one another. The expected value is the
+      Colebrook result, taken from that spec's own worked example inputs.
+    inputs: { re: 100000.0, relative_roughness: 4.6e-4 }
+    expected: { f: 0.0201620320 }
+    tolerance: 2.0e-2
+
+  - id: smooth_pipe_limit
+    type: reference
+    status: active
+    source: >
+      With relative_roughness = 0 the equation reduces to
+      f = (1 / (-1.8 * log10(6.9/Re)))**2, which is explicit and can be evaluated
+      by hand. At Re = 1e5: 6.9/1e5 = 6.9e-5, its log10 is -4.161150909262744, so
+      -1.8 * that is 7.490071634672939, and f = 1/7.490071634672939**2
+      = 0.017824939200764653. This pins the implementation against a directly
+      computable value rather than against the other implementation, and it is the
+      case where the roughness term vanishes entirely - so a bug in the
+      `**1.11` term's interaction with the sum would show up here as a mismatch
+      that the worked example alone might not.
+    inputs: { re: 100000.0, relative_roughness: 0.0 }
+    expected: { f: 0.017824939200764653 }
+    tolerance: 1.0e-6
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: active
+    note: >
+      Both inputs are dimensionless, so this calc has no units of its own to round
+      trip. The property is still meaningful and is exercised the same way the
+      Swamee-Jain spec exercises it: the Reynolds number is built twice from the
+      same physical state described in SI and in US customary units, and the
+      resulting friction factors must be bit-identical. That tests the unit
+      handling of the calc this one composes with, which is where a conversion
+      factor could actually enter.

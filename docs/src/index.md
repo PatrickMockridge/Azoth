@@ -46,6 +46,7 @@ The current slice is the hydraulics kernel through Darcy-Weisbach pressure drop:
 - [`hydraulics.reynolds_number`](./hydraulics/reynolds_number.md)
 - [`hydraulics.friction_factor_colebrook`](./hydraulics/friction_factor_colebrook.md)
 - [`hydraulics.friction_factor_swamee_jain`](./hydraulics/friction_factor_swamee_jain.md)
+- [`hydraulics.friction_factor_haaland`](./hydraulics/friction_factor_haaland.md)
 - [`hydraulics.crane_k_factors`](./hydraulics/crane_k_factors.md)
 - [`hydraulics.darcy_weisbach`](./hydraulics/darcy_weisbach.md)
 

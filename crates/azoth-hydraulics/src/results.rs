@@ -97,6 +97,28 @@ impl CalcResult for SwameeJainResult {
     }
 }
 
+/// Result of `hydraulics.friction_factor_haaland`.
+///
+/// No solver report, for the same reason as Swamee-Jain: the Haaland equation is
+/// explicit, and an iteration count would imply a similarity to Colebrook that
+/// does not exist.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HaalandResult {
+    /// Darcy friction factor. Dimensionless.
+    pub f: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HaalandResult {
+    const CALC_ID: &'static str = "hydraulics.friction_factor_haaland";
+    const FIELDS: &'static [&'static str] = &["f", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// One fitting's contribution to the total resistance coefficient.
 #[derive(Debug, Clone, PartialEq)]
 pub struct KComponent {
@@ -169,6 +191,7 @@ mod tests {
             (ReynoldsNumberResult::CALC_ID, ReynoldsNumberResult::FIELDS),
             (ColebrookResult::CALC_ID, ColebrookResult::FIELDS),
             (SwameeJainResult::CALC_ID, SwameeJainResult::FIELDS),
+            (HaalandResult::CALC_ID, HaalandResult::FIELDS),
             (KFactorsResult::CALC_ID, KFactorsResult::FIELDS),
             (DarcyWeisbachResult::CALC_ID, DarcyWeisbachResult::FIELDS),
         ];
@@ -186,6 +209,7 @@ mod tests {
             ReynoldsNumberResult::CALC_ID,
             ColebrookResult::CALC_ID,
             SwameeJainResult::CALC_ID,
+            HaalandResult::CALC_ID,
             KFactorsResult::CALC_ID,
             DarcyWeisbachResult::CALC_ID,
         ];
@@ -213,6 +237,7 @@ mod tests {
             ReynoldsNumberResult::FIELDS,
             ColebrookResult::FIELDS,
             SwameeJainResult::FIELDS,
+            HaalandResult::FIELDS,
             KFactorsResult::FIELDS,
             DarcyWeisbachResult::FIELDS,
         ] {

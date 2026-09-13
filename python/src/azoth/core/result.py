@@ -153,6 +153,23 @@ class SwameeJainResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HaalandResult(_HasWarnings):
+    """Result of ``hydraulics.friction_factor_haaland``.
+
+    Shaped identically to :class:`SwameeJainResult`, and for the same reason: the
+    Haaland equation is explicit, so there is no iteration to report. The two are
+    separate classes rather than one shared type because the spec-to-result
+    contract is asserted per calc id, and a shared class would make it impossible
+    to tell which calc a result came from.
+    """
+
+    #: Darcy friction factor. Dimensionless.
+    f: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """One fitting's contribution to the total resistance coefficient."""
 
@@ -201,6 +218,7 @@ RESULT_TYPES: dict[str, type[object]] = {
     "hydraulics.reynolds_number": ReynoldsNumberResult,
     "hydraulics.friction_factor_colebrook": ColebrookResult,
     "hydraulics.friction_factor_swamee_jain": SwameeJainResult,
+    "hydraulics.friction_factor_haaland": HaalandResult,
     "hydraulics.crane_k_factors": KFactorsResult,
     "hydraulics.darcy_weisbach": DarcyWeisbachResult,
 }

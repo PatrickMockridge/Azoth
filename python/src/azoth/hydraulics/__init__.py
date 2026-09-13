@@ -7,6 +7,7 @@ separately:
 * :func:`reynolds_number` - the flow regime, and the input every other calc needs
 * :func:`friction_factor_colebrook` - the implicit, accurate friction factor
 * :func:`friction_factor_swamee_jain` - the explicit approximation to it
+* :func:`friction_factor_haaland` - a second explicit approximation, fitted differently
 * :func:`crane_k_factors` - fitting losses by the equivalent-length method
 * :func:`darcy_weisbach` - pressure drop over a straight pipe
 
@@ -38,6 +39,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     ColebrookResult,
     DarcyWeisbachResult,
+    HaalandResult,
     KFactorsResult,
     ReynoldsNumberResult,
     SwameeJainResult,
@@ -48,6 +50,7 @@ __all__ = [
     "crane_k_factors",
     "darcy_weisbach",
     "friction_factor_colebrook",
+    "friction_factor_haaland",
     "friction_factor_swamee_jain",
     "reynolds_number",
 ]
@@ -55,6 +58,7 @@ __all__ = [
 _REYNOLDS_NUMBER = "hydraulics.reynolds_number"
 _COLEBROOK = "hydraulics.friction_factor_colebrook"
 _SWAMEE_JAIN = "hydraulics.friction_factor_swamee_jain"
+_HAALAND = "hydraulics.friction_factor_haaland"
 _CRANE_K = "hydraulics.crane_k_factors"
 _DARCY_WEISBACH = "hydraulics.darcy_weisbach"
 
@@ -97,6 +101,22 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
     See :func:`azoth.hydraulics.reference.friction_factor_swamee_jain`.
     """
     return resolve(_SWAMEE_JAIN)(re=re, relative_roughness=relative_roughness)  # type: ignore[no-any-return]
+
+
+def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResult:
+    """Explicit Haaland approximation to the Colebrook friction factor.
+
+    The second explicit approximation in this package, alongside Swamee-Jain. They
+    were fitted differently and are accurate to about 1% and 2% respectively, so
+    evaluating both at the same inputs is a cheap way to see how much the choice of
+    explicit form matters.
+
+    Raises:
+        OutOfRangeError: if ``re <= 0`` or ``relative_roughness < 0``.
+
+    See :func:`azoth.hydraulics.reference.friction_factor_haaland`.
+    """
+    return resolve(_HAALAND)(re=re, relative_roughness=relative_roughness)  # type: ignore[no-any-return]
 
 
 def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:

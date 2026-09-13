@@ -31,8 +31,8 @@ mod hydraulics;
 mod results;
 
 use results::{
-    PyColebrookResult, PyDarcyWeisbachResult, PyKComponent, PyKFactorsResult, PyQty,
-    PyReynoldsNumberResult, PySwameeJainResult, PyWarning,
+    PyColebrookResult, PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult,
+    PyQty, PyReynoldsNumberResult, PySwameeJainResult, PyWarning,
 };
 
 #[pymodule]
@@ -49,6 +49,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyReynoldsNumberResult>()?;
     m.add_class::<PyColebrookResult>()?;
     m.add_class::<PySwameeJainResult>()?;
+    m.add_class::<PyHaalandResult>()?;
     m.add_class::<PyKFactorsResult>()?;
     m.add_class::<PyDarcyWeisbachResult>()?;
 
@@ -59,6 +60,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         hydraulics::friction_factor_swamee_jain,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(hydraulics::friction_factor_haaland, m)?)?;
     m.add_function(wrap_pyfunction!(hydraulics::crane_k_factors, m)?)?;
     m.add_function(wrap_pyfunction!(hydraulics::darcy_weisbach, m)?)?;
 

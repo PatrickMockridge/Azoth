@@ -7,6 +7,7 @@
 //! * [`reynolds_number`] - the flow regime, and the input every other calc needs
 //! * [`friction_factor_colebrook`] - the implicit, accurate friction factor
 //! * [`friction_factor_swamee_jain`] - the explicit approximation to it
+//! * [`friction_factor_haaland`] - a second explicit approximation, fitted differently
 //! * [`crane_k_factors`] - fitting losses by the equivalent-length method
 //! * [`darcy_weisbach`] - pressure drop over a straight pipe
 //!
@@ -29,6 +30,7 @@ pub mod darcy_weisbach;
 pub mod fittings;
 pub mod fluids;
 pub mod friction_factor_colebrook;
+pub mod friction_factor_haaland;
 pub mod friction_factor_swamee_jain;
 pub mod provenance;
 pub mod results;
@@ -40,10 +42,11 @@ pub use crane_k_factors::{crane_k_factors, known_fittings};
 pub use darcy_weisbach::{add_fitting_loss, darcy_weisbach, propagate_estimated_data};
 pub use fluids::{available_fluids, provider_for};
 pub use friction_factor_colebrook::{friction_factor_colebrook, fully_rough_limit};
+pub use friction_factor_haaland::friction_factor_haaland;
 pub use friction_factor_swamee_jain::friction_factor_swamee_jain;
 pub use provenance::VerifyStatus;
 pub use results::{
-    ColebrookResult, DarcyWeisbachResult, KComponent, KFactorsResult, ReynoldsNumberResult,
-    SwameeJainResult,
+    ColebrookResult, DarcyWeisbachResult, HaalandResult, KComponent, KFactorsResult,
+    ReynoldsNumberResult, SwameeJainResult,
 };
 pub use reynolds_number::{regime_for, regime_warning, reynolds_number};
