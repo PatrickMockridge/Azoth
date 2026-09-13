@@ -183,13 +183,23 @@ def test_the_mixture_form_reduces_to_pr_departure_at_one_component() -> None:
     the cross-sum factor collapses to 1 and the whole expression becomes
     `eos.pr_departure`'s, which has its own spec, worked example and source.
     """
+    from azoth.eos.reference._mixture_state import ReducedParameters
     from azoth.eos.reference._mixture_state import phase_state as _phase_state
 
     for component, tr, pr in ((PROPANE, 0.8, 0.25), (BUTANE, 0.7, 0.4), (METHANE, 1.2, 0.9)):
         tc = component.Tc.to_base_units().magnitude
         pc = component.Pc.to_base_units().magnitude
-        ab = pr_alpha_ab(pr_kappa(component.omega).kappa, tr, pr)
-        z, ln_phi = _phase_state([ab.a_reduced], [ab.b_reduced], ((0.0,),), [1.0], liquid=False)
+        kappa = pr_kappa(component.omega).kappa
+        ab = pr_alpha_ab(kappa, tr, pr)
+        sqrt_tr = tr**0.5
+        reduced = ReducedParameters(
+            a=[ab.a_reduced],
+            b=[ab.b_reduced],
+            psi=[-kappa * sqrt_tr / (1.0 + kappa * (1.0 - sqrt_tr))],
+            warnings=[],
+        )
+        state = _phase_state(reduced, ((0.0,),), [1.0], liquid=False)
+        z, ln_phi = state.z, state.ln_phi
         kappa = pr_kappa(component.omega).kappa
         pure = pr_departure(ab.a_reduced, ab.b_reduced, z, kappa, tr)
         h.assert_close(ln_phi[0], pure.ln_phi, 1e-12, f"ln phi for Tc={tc}, Pc={pc}")

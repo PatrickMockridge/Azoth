@@ -118,6 +118,12 @@ NAMESPACE_SUPPORT = {
         # is: it is one piece of code that both answers depend on.
         "crates/azoth-eos/src/phase_boundary.rs",
         "crates/azoth-eos/src/model_gen.rs",
+        # The mixture layer's own arithmetic has no spec to be hashed under - the
+        # registry is scalar and there is nowhere in it for a composition vector - so
+        # its reduction tests are recorded here rather than under a calc or a model.
+        # They are what holds the one piece of this crate that no kernel checks.
+        "crates/azoth-eos/tests/mixture.rs",
+        "python/tests/eos/test_mixture_layer.py",
         "crates/azoth-eos/src/spec_gen.rs",
         "crates/azoth-python/src/eos.rs",
     ),

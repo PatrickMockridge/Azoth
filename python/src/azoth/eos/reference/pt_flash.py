@@ -208,8 +208,8 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
     # The reduced parameters depend on `T` and `P` alone, so they are computed once
     # rather than once per iteration: `A_i` and `B_i` are the same numbers for both
     # phases, and only the composition re-weights them.
-    a, b, kernel_warnings = reduced_parameters(mixture, t_si, p_si)
-    warnings.extend(kernel_warnings)
+    reduced = reduced_parameters(mixture, t_si, p_si)
+    warnings.extend(reduced.warnings)
 
     algorithm = spec["algorithm"]
     inner = algorithm["inner"]
@@ -242,10 +242,12 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
 
         beta = _rachford_rice(list(z), k, bounds, inner["tolerance"], inner["max_iterations"])
         x, y = compositions(list(z), k, beta)
-        _, ln_phi_liquid = phase_state(a, b, kij, x, liquid=True)
-        _, ln_phi_vapour = phase_state(a, b, kij, y, liquid=False)
+        liquid_state = phase_state(reduced, kij, x, liquid=True)
+        vapour_state = phase_state(reduced, kij, y, liquid=False)
 
-        ln_k_new = [lp - lv for lp, lv in zip(ln_phi_liquid, ln_phi_vapour, strict=True)]
+        ln_k_new = [
+            lp - lv for lp, lv in zip(liquid_state.ln_phi, vapour_state.ln_phi, strict=True)
+        ]
         residual = _rms_delta(ln_k_new, k)
         k = [math.exp(value) for value in ln_k_new]
 
@@ -284,18 +286,18 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         if phase is not Phase.TWO_PHASE:
             warnings.append(_negative_flash_warning(phase, beta_out))
 
-    z_liquid, ln_phi_liquid = phase_state(a, b, kij, x, liquid=True)
-    z_vapour, ln_phi_vapour = phase_state(a, b, kij, y, liquid=False)
+    liquid_state = phase_state(reduced, kij, x, liquid=True)
+    vapour_state = phase_state(reduced, kij, y, liquid=False)
 
     return PtFlashResult(
         beta=beta_out,
         x=tuple(x),
         y=tuple(y),
         k=tuple(k),
-        ln_phi_liquid=tuple(ln_phi_liquid),
-        ln_phi_vapour=tuple(ln_phi_vapour),
-        z_liquid=z_liquid,
-        z_vapour=z_vapour,
+        ln_phi_liquid=tuple(liquid_state.ln_phi),
+        ln_phi_vapour=tuple(vapour_state.ln_phi),
+        z_liquid=liquid_state.z,
+        z_vapour=vapour_state.z,
         min_t_over_tc=min_t_over_tc,
         phase=phase,
         iterations=iterations,

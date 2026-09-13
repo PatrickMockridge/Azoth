@@ -126,17 +126,20 @@ def phase_boundary_pressure(
     for step in range(1, algorithm["max_iterations"] + 1):
         iterations = step
 
-        a, b, kernel_warnings = reduced_parameters(mixture, temperature, pressure)
-        warnings.extend(kernel_warnings)
+        reduced = reduced_parameters(mixture, temperature, pressure)
+        warnings.extend(reduced.warnings)
 
         if incipient == VAPOUR:
             liquid, vapour = held, other
         else:
             liquid, vapour = other, held
-        z_liquid, ln_phi_liquid = phase_state(a, b, mixture.kij, list(liquid), liquid=True)
-        z_vapour, ln_phi_vapour = phase_state(a, b, mixture.kij, list(vapour), liquid=False)
+        liquid_state = phase_state(reduced, mixture.kij, list(liquid), liquid=True)
+        vapour_state = phase_state(reduced, mixture.kij, list(vapour), liquid=False)
 
-        k = [math.exp(lp - lv) for lp, lv in zip(ln_phi_liquid, ln_phi_vapour, strict=True)]
+        k = [
+            math.exp(lp - lv)
+            for lp, lv in zip(liquid_state.ln_phi, vapour_state.ln_phi, strict=True)
+        ]
 
         # Checked before the update, and on the K-values rather than on the residual:
         # `S - 1` cancels, so it is small here long before the K-values are near 1.
@@ -163,9 +166,9 @@ def phase_boundary_pressure(
 
         if residual <= algorithm["tolerance"]:
             if incipient == VAPOUR:
-                z_held, z_incipient = z_liquid, z_vapour
+                z_held, z_incipient = liquid_state.z, vapour_state.z
             else:
-                z_held, z_incipient = z_vapour, z_liquid
+                z_held, z_incipient = vapour_state.z, liquid_state.z
             return {
                 "pressure": pressure,
                 "incipient": other,

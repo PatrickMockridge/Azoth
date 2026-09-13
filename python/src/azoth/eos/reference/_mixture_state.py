@@ -29,7 +29,7 @@ order rather than about the mixing rule.
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, NamedTuple
 
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
@@ -77,31 +77,65 @@ def wilson_k(mixture: Mixture, temperature: float, pressure: float) -> list[floa
     ]
 
 
-def reduced_parameters(
-    mixture: Mixture, temperature: float, pressure: float
-) -> tuple[list[float], list[float], list[Warning]]:
-    """``(A_i, B_i, warnings)`` for every component at a state.
+class ReducedParameters(NamedTuple):
+    """The per-component quantities at one state.
 
-    These depend on ``T`` and ``P`` alone, not on the composition, which is why they
-    are computed once per solve rather than once per iteration: ``A_i`` and ``B_i``
-    are the same numbers for the liquid and the vapour, and only the composition
-    re-weights them.
+    ``A``, ``B`` and ``psi`` are all functions of the temperature and pressure alone,
+    not of the composition, which is why they are computed once per solve rather than
+    once per iteration: they are the same numbers for the liquid and the vapour, and
+    only the composition re-weights them.
+
+    ``psi`` is the logarithmic derivative of the alpha function. It is carried here
+    because the mixture's departure functions are the pure form with ``psi`` replaced
+    by a composition-weighted average of these.
     """
+
+    a: list[float]
+    b: list[float]
+    psi: list[float]
+    warnings: list[Warning]
+
+
+class PhaseState(NamedTuple):
+    """One phase's state at a composition."""
+
+    #: The mixture's attraction parameter at this composition.
+    a_mix: float
+    #: The mixture's repulsion parameter at this composition.
+    b_mix: float
+    #: The root of the cubic this phase sits on.
+    z: float
+    #: ``ln phi_i`` for every component.
+    ln_phi: list[float]
+    #: The departure enthalpy over ``R*T``, for the mixture.
+    h_dep_rt: float
+    #: The departure entropy over ``R``, for the mixture.
+    s_dep_r: float
+    #: The composition-weighted average of the components' ``psi``.
+    psi_bar: float
+
+
+def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) -> ReducedParameters:
+    """``(A_i, B_i, psi_i, warnings)`` for every component at a state."""
     a: list[float] = []
     b: list[float] = []
+    psi: list[float] = []
     warnings: list[Warning] = []
     for component in mixture.components:
         kappa = pr_kappa(component.omega)
         warnings.extend(kappa.warnings)
+        reduced_temperature = temperature / component.Tc.to_base_units().magnitude
         ab = pr_alpha_ab(
             kappa.kappa,
-            temperature / component.Tc.to_base_units().magnitude,
+            reduced_temperature,
             pressure / component.Pc.to_base_units().magnitude,
         )
         warnings.extend(ab.warnings)
+        sqrt_tr = math.sqrt(reduced_temperature)
         a.append(ab.a_reduced)
         b.append(ab.b_reduced)
-    return a, b, warnings
+        psi.append(-kappa.kappa * sqrt_tr / (1.0 + kappa.kappa * (1.0 - sqrt_tr)))
+    return ReducedParameters(a=a, b=b, psi=psi, warnings=warnings)
 
 
 def mixture_parameters(
@@ -118,19 +152,19 @@ def mixture_parameters(
 
 
 def phase_state(
-    a: list[float],
-    b: list[float],
+    reduced: ReducedParameters,
     kij: tuple[tuple[float, ...], ...],
     x: list[float],
     *,
     liquid: bool,
-) -> tuple[float, list[float]]:
-    """``(z, ln_phi)`` for one phase at a composition.
+) -> PhaseState:
+    """One phase's state at a composition.
 
     ``z`` is selected by *ordering* - the smallest admissible root for the liquid,
     the largest for the vapour - never by an initial guess, which is the rule
     ``eos.pr_z_factor`` fixes.
     """
+    a, b = reduced.a, reduced.b
     n = len(x)
     a_mix, b_mix = mixture_parameters(a, b, kij, x)
     roots = pr_z_factor(a_mix, b_mix)
@@ -150,7 +184,31 @@ def phase_state(
         # identical to `eos.pr_departure` at N = 1.
         factor = 2.0 * cross[i] / a_mix - b_ratio
         ln_phi.append(b_ratio * (z - 1.0) - ln_z_minus_b - coefficient * factor * i_term)
-    return z, ln_phi
+
+    # The mixture's departure functions. `psi_bar` is the composition-weighted average
+    # of the components' `psi`, and the two lines below are then `pr_departure`'s
+    # expressions with `psi_bar` in place of `psi` - which is what makes them reduce to
+    # it exactly at one component.
+    weight_total = 0.0
+    weighted_psi = 0.0
+    for i in range(n):
+        for j in range(n):
+            weight = x[i] * x[j] * (1.0 - kij[i][j]) * math.sqrt(a[i] * a[j])
+            weight_total += weight
+            weighted_psi += weight * 0.5 * (reduced.psi[i] + reduced.psi[j])
+    psi_bar = weighted_psi / weight_total
+    h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term
+    s_dep_r = h_dep_rt - sum(xi * lp for xi, lp in zip(x, ln_phi, strict=True))
+
+    return PhaseState(
+        a_mix=a_mix,
+        b_mix=b_mix,
+        z=z,
+        ln_phi=ln_phi,
+        h_dep_rt=h_dep_rt,
+        s_dep_r=s_dep_r,
+        psi_bar=psi_bar,
+    )
 
 
 def compositions(z: list[float], k: list[float], beta: float) -> tuple[list[float], list[float]]:

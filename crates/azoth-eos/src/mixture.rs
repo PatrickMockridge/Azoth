@@ -56,6 +56,26 @@ pub struct PhaseState {
     pub z: f64,
     /// `ln phi_i` for every component, one entry per component.
     pub ln_phi: Vec<f64>,
+    /// The departure enthalpy over `R*T`, for the mixture.
+    ///
+    /// `pr_departure`'s expression with the pure component's `psi` replaced by
+    /// [`Self::psi_bar`]. Verified by reduction: at `N = 1` this is bit-identical to
+    /// the registered calc's `h_dep_rt`.
+    pub h_dep_rt: f64,
+    /// The departure entropy over `R`, for the mixture.
+    ///
+    /// `h_dep_rt - sum_i z_i ln phi_i`, which is the Gibbs identity and therefore
+    /// exact rather than a second formula that could disagree with the first. It is
+    /// also why this is one ulp from the pure calc's `s_dep_r` at `N = 1`: the sum is
+    /// taken in a different order, and that is the whole of the difference.
+    pub s_dep_r: f64,
+    /// `sum_i sum_j z_i z_j A_ij (psi_i + psi_j)/2 / sum_i sum_j z_i z_j A_ij`.
+    ///
+    /// The composition-weighted average of the components' `psi`, weighted by the
+    /// attraction parameters. Reported because it is what makes the mixture departure
+    /// a departure at all, and because at `N = 1` it must equal that component's own
+    /// `psi` exactly - a test asserts it.
+    pub psi_bar: f64,
 }
 
 /// One component's critical constants.
@@ -215,21 +235,30 @@ impl Mixture {
     ) -> Result<ReducedParameters> {
         let mut a = Vec::with_capacity(self.len());
         let mut b = Vec::with_capacity(self.len());
+        let mut psi = Vec::with_capacity(self.len());
         let mut warnings = Vec::new();
 
         for component in &self.components {
             let kappa = pr_kappa(component.omega)?;
             warnings.extend(kappa.warnings);
+            let reduced_temperature = t.value / component.tc.value;
             let ab = pr_alpha_ab(
                 kappa.kappa,
-                t.value / component.tc.value,
+                reduced_temperature,
                 p.value / component.pc.value,
             )?;
             warnings.extend(ab.warnings);
+            let sqrt_tr = reduced_temperature.sqrt();
             a.push(ab.a_reduced);
             b.push(ab.b_reduced);
+            psi.push(-kappa.kappa * sqrt_tr / (1.0 + kappa.kappa * (1.0 - sqrt_tr)));
         }
-        Ok(ReducedParameters { a, b, warnings })
+        Ok(ReducedParameters {
+            a,
+            b,
+            psi,
+            warnings,
+        })
     }
 
     /// The state of one phase: its mixture parameters, its root, and its `ln phi`.
@@ -279,7 +308,7 @@ impl Mixture {
         let coefficient = a_mix / (2.0 * sqrt_2 * b_mix);
         let ln_z_minus_b = (z - b_mix).ln();
 
-        let ln_phi = (0..n)
+        let ln_phi: Vec<f64> = (0..n)
             .map(|i| {
                 let b_ratio = reduced.b[i] / b_mix;
                 // The factor that is 1 for a pure component: `2 * sum_j x_j A_ij / A
@@ -290,11 +319,37 @@ impl Mixture {
             })
             .collect();
 
+        // The mixture's departure functions. `psi_bar` is the composition-weighted
+        // average of the components' `psi`, and the two lines below are then
+        // `pr_departure`'s expressions with `psi_bar` in place of `psi` - which is
+        // what makes them reduce to it exactly at one component.
+        let mut weight_total = 0.0;
+        let mut weighted_psi = 0.0;
+        for i in 0..n {
+            for j in 0..n {
+                let weight =
+                    x[i] * x[j] * (1.0 - self.kij(i, j)) * (reduced.a[i] * reduced.a[j]).sqrt();
+                weight_total += weight;
+                weighted_psi += weight * 0.5 * (reduced.psi[i] + reduced.psi[j]);
+            }
+        }
+        let psi_bar = weighted_psi / weight_total;
+        let h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term;
+        let s_dep_r = h_dep_rt
+            - ln_phi
+                .iter()
+                .zip(x)
+                .map(|(&lp, &x_i)| x_i * lp)
+                .sum::<f64>();
+
         Ok(PhaseState {
             a_mix,
             b_mix,
             z,
             ln_phi,
+            h_dep_rt,
+            s_dep_r,
+            psi_bar,
         })
     }
 
@@ -335,6 +390,14 @@ pub struct ReducedParameters {
     pub a: Vec<f64>,
     /// `B_i = omega_b * Pr_i / Tr_i`, one per component.
     pub b: Vec<f64>,
+    /// `psi_i = -(kappa_i sqrt(Tr_i)) / (1 + kappa_i (1 - sqrt(Tr_i)))`, one per
+    /// component: the logarithmic derivative of the alpha function.
+    ///
+    /// Carried alongside `A` and `B` because it is the same kind of quantity - a
+    /// per-component function of the state, identical for both phases, computed once
+    /// per solve - and because the mixture's departure functions are the pure form
+    /// with `psi` replaced by a composition-weighted average of these.
+    pub psi: Vec<f64>,
     /// Warnings raised while computing them - in practice `pr_kappa`'s
     /// `kappa < 0` for a component with a sufficiently negative acentric factor.
     pub warnings: Vec<Warning>,
