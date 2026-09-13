@@ -89,16 +89,38 @@ def test_the_rust_registry_covers_the_same_models() -> None:
 def test_every_scheme_is_reachable_from_both_languages() -> None:
     """Each model's scheme name is the one the Rust side implements.
 
-    The whole of the contract: a model spec naming `saturation_pressure_bisection`
-    while the Rust implementation ran a different loop would agree with the Python
-    side on every case only by luck, and the mismatch would be a name nothing
-    compares.
+    The whole of the contract for a procedure: a model spec naming
+    `saturation_pressure_bisection` while the Rust implementation ran a different loop
+    would agree with the Python side on every case only by luck, and the mismatch would
+    be a name nothing compares.
+
+    A `direct` model has no scheme, so the assertion is that the list is *empty* rather
+    than that some placeholder matches. That is the difference between a contract and a
+    comparison that passes vacuously.
     """
+    core = _extension()
     for model in _models_gen.MODELS:
-        rust_schemes = _extension().model_schemes(model["id"])
-        assert rust_schemes == [model["algorithm"]["scheme"]], (
-            f"{model['id']}: the spec names {model['algorithm']['scheme']!r} but Rust "
-            f"reports {rust_schemes}"
+        rust_schemes = core.model_schemes(model["id"])
+        expected = [model["algorithm"]["scheme"]] if "algorithm" in model else []
+        assert rust_schemes == expected, (
+            f"{model['id']}: the spec implies {expected} but Rust reports {rust_schemes}"
+        )
+
+
+@pytest.mark.requires_rust
+def test_every_model_kind_is_reachable_from_both_languages() -> None:
+    """Each model's `kind` is the one the Rust side reports.
+
+    `kind` decides whether a model has an algorithm block at all, so it is load-bearing
+    rather than descriptive - and a spec field that decides something and is checked by
+    nothing is exactly the defect this project is organised against. Held to the Rust
+    table the same way `scheme` is.
+    """
+    core = _extension()
+    for model in _models_gen.MODELS:
+        assert core.model_kind(model["id"]) == model["kind"], (
+            f"{model['id']}: the spec says {model['kind']!r} but Rust reports "
+            f"{core.model_kind(model['id'])!r}"
         )
 
 
@@ -114,7 +136,7 @@ def test_the_schema_requires_every_field_a_model_needs() -> None:
     needed = {
         "id",
         "name",
-        "algorithm",
+        "kind",
         "inputs",
         "outputs",
         "verification",
@@ -124,10 +146,40 @@ def test_the_schema_requires_every_field_a_model_needs() -> None:
     missing = needed - required
     assert not missing, f"the model schema does not require {sorted(missing)}"
 
+    # `algorithm` is required of a *procedure* and forbidden of a direct model, which
+    # is what lets a model with no iteration live in the same tree. Asserted as a
+    # conditional rather than as a required key, because a schema that required it
+    # outright would force a direct model to carry a vacuous block.
+    assert "algorithm" not in required, (
+        "`algorithm` must not be unconditionally required: a direct model has none, and "
+        "the conditional in allOf is what expresses that"
+    )
+    assert "allOf" in schema, "the kind-conditional on `algorithm` is missing"
+
     algorithm_required = set(schema["$defs"]["algorithm"]["required"])
     assert {"scheme", "tolerance", "max_iterations", "convergence"} <= algorithm_required, (
         "the algorithm block must require the parameters both implementations read"
     )
+
+
+def test_every_model_declares_a_kind_the_schema_allows() -> None:
+    """`kind` is `procedure` or `direct`, and a procedure has an algorithm.
+
+    The schema expresses this conditionally, so nothing else would catch a spec that
+    named a third kind or a direct model carrying an algorithm - both of which the
+    generator would silently accept a default for.
+    """
+    schema: dict[str, Any] = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    allowed = set(schema["properties"]["kind"]["enum"])
+    for model in _models_gen.MODELS:
+        assert model["kind"] in allowed, f"{model['id']}: kind {model['kind']!r}"
+        if model["kind"] == "procedure":
+            assert "algorithm" in model, f"{model['id']}: a procedure needs an algorithm"
+        else:
+            assert "algorithm" not in model, (
+                f"{model['id']}: a direct model must not carry an algorithm block - "
+                f"there is no loop for one to describe"
+            )
 
 
 def test_the_model_registry_is_not_the_calc_registry() -> None:

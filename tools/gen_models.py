@@ -154,23 +154,40 @@ def emit_rust_algorithm(algorithm: dict[str, Any], inner_ref: str, indent: str) 
 
 
 def emit_rust_model(model: dict[str, Any]) -> str:
-    ident_ = ident(model["id"])
-    algorithm = model["algorithm"]
+    """One registry entry, plus whatever static its algorithm needs.
 
-    # A nested scheme becomes its own `static`, emitted before the spec that points
-    # at it. One level is all any spec here uses today; the recursion in
-    # `emit_rust_algorithm` costs nothing and means a second level is a spec change
-    # rather than a generator change.
-    inner = algorithm.get("inner")
-    inner_static = ""
-    if inner is None:
-        outer_algorithm = emit_rust_algorithm(algorithm, "None", "        ")
-    else:
-        inner_static = (
-            f"static {ident_}_INNER: ModelAlgorithm = "
-            f"{emit_rust_algorithm(inner, 'None', '    ')};\n\n"
+    A `direct` model has no algorithm at all - the schema forbids one rather than
+    allowing a vacuous one - so the algorithm static is emitted only for a
+    `procedure`. That is the whole of the difference between the two kinds here; the
+    checks and the cases are emitted the same way, because a direct model has bounds
+    and cases like any other.
+    """
+    ident_ = ident(model["id"])
+    kind = model.get("kind", "procedure")
+
+    algorithm_static = ""
+    algorithm_literal = "None"
+    if kind == "procedure":
+        algorithm = model["algorithm"]
+        # A nested scheme becomes its own `static`, emitted before the one that points
+        # at it. One level is all any spec here uses today; the recursion in
+        # `emit_rust_algorithm` costs nothing and means a second level is a spec
+        # change rather than a generator change.
+        inner = algorithm.get("inner")
+        inner_static = ""
+        if inner is None:
+            outer = emit_rust_algorithm(algorithm, "None", "    ")
+        else:
+            inner_static = (
+                f"static {ident_}_INNER: ModelAlgorithm = "
+                f"{emit_rust_algorithm(inner, 'None', '    ')};\n\n"
+            )
+            outer = emit_rust_algorithm(algorithm, f"Some(&{ident_}_INNER)", "    ")
+        algorithm_static = (
+            inner_static
+            + f"static {ident_}_ALGORITHM: ModelAlgorithm = {outer};\n\n"
         )
-        outer_algorithm = emit_rust_algorithm(algorithm, f"Some(&{ident_}_INNER)", "        ")
+        algorithm_literal = f"Some(&{ident_}_ALGORITHM)"
 
     checks = "".join(
         f"        SpecCheck {{\n"
@@ -198,11 +215,12 @@ static {ident_}_CHECKS: &[SpecCheck] = &[
 static {ident_}_CASES: &[TestCase] = &[
 {cases}];
 
-{inner_static}/// Registry entry for `{model["id"]}`.
+{algorithm_static}/// Registry entry for `{model["id"]}`.
 pub static {ident_}_SPEC: ModelSpec = ModelSpec {{
     id: {rust_str(model["id"])},
     verification: {rust_str(model["verification"]["status"])},
-    algorithm: {outer_algorithm},
+    kind: {rust_str(kind)},
+    algorithm: {algorithm_literal},
     checks: {ident_}_CHECKS,
     cases: {ident_}_CASES,
 }};

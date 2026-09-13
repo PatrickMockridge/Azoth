@@ -80,7 +80,7 @@ fn every_case_in_the_spec() {
             common::expected(case, "iterations")
         );
         assert!(
-            result.residual <= spec.algorithm.tolerance,
+            result.residual <= spec.algorithm.expect("a procedure").tolerance,
             "{context}: residual {:e} exceeds the declared tolerance",
             result.residual
         );

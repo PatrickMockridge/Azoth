@@ -76,6 +76,8 @@ verification:
     As everywhere in this namespace, none of the bounds below is an accuracy claim -
     they are about where the calculation is defined.
 
+kind: procedure
+
 algorithm:
   scheme: dew_pressure_successive_substitution
   initialisation: wilson_raoult

@@ -80,12 +80,12 @@ fn every_case_in_the_spec() {
         // is reproducible - and what the case does assert - is the iteration count.
         // See the spec's correction 4.
         assert!(
-            result.residual <= spec.algorithm.tolerance,
+            result.residual <= spec.algorithm.expect("a procedure").tolerance,
             "{}::{}: residual {:e} exceeds the declared tolerance {:e}",
             spec.id,
             case.id,
             result.residual,
-            spec.algorithm.tolerance
+            spec.algorithm.expect("a procedure").tolerance
         );
         assert_eq!(
             result.iterations as f64,

@@ -55,6 +55,7 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
 
+use crate::algorithm_of;
 use crate::mixture::{Mixture, RootSide};
 use crate::model_gen;
 
@@ -180,7 +181,7 @@ pub fn phase_boundary_pressure(
         Incipient::Vapour => &model_gen::BUBBLE_PRESSURE_SPEC,
         Incipient::Liquid => &model_gen::DEW_PRESSURE_SPEC,
     };
-    let algorithm = spec.algorithm;
+    let algorithm = algorithm_of(spec)?;
 
     let psat = wilson_psat(mixture, t);
     let mut warnings = Vec::new();

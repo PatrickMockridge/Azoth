@@ -11,7 +11,7 @@
     "description",
     "source",
     "verification",
-    "algorithm",
+    "kind",
     "inputs",
     "outputs",
     "assumptions",
@@ -32,6 +32,10 @@
     },
     "source": { "$ref": "calc.schema.json#/properties/source" },
     "verification": { "$ref": "calc.schema.json#/properties/verification" },
+    "kind": {
+      "enum": ["procedure", "direct"],
+      "description": "What this model's spec fixes, and therefore whether it has an algorithm block. `procedure` - the usual case, and the reason the model tree exists at all - means a loop: a scheme, a convergence rule, a tolerance and a cap, which both implementations run and which a calc cannot express. `direct` means a computation over vectors with no iteration. A direct model is here because the calc registry's inputs are scalars, so a composition vector has nowhere to go; it has no `algorithm` block, and the schema forbids one rather than allowing a vacuous one, because a spec field nothing reads is the defect this project is organised against."
+    },
     "algorithm": { "$ref": "#/$defs/algorithm" },
     "inputs": {
       "type": "object",
@@ -57,6 +61,20 @@
     },
     "notes": { "$ref": "calc.schema.json#/properties/notes" }
   },
+
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "procedure" } } },
+      "then": {
+        "required": ["algorithm"],
+        "description": "A procedure is a loop, and a loop needs its scheme, its convergence rule, its tolerance and its cap written down - that is the whole contract."
+      },
+      "else": {
+        "not": { "required": ["algorithm"] },
+        "description": "A direct model has no loop, so it must not carry an algorithm block. Forbidding one rather than ignoring it keeps `algorithm` meaning what it says: a thing both implementations run."
+      }
+    }
+  ],
 
   "$defs": {
     "quantity": {

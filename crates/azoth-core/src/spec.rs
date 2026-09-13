@@ -283,8 +283,16 @@ pub struct ModelSpec {
     pub id: &'static str,
     /// `verified`, `unverified` or `source_needed`, as for a calc.
     pub verification: &'static str,
-    /// The procedure both implementations must run.
-    pub algorithm: ModelAlgorithm,
+    /// `procedure` or `direct` - what this spec fixes.
+    ///
+    /// A **procedure** is a loop, and [`Self::algorithm`] is present and is the whole
+    /// contract. A **direct** model is a computation over vectors with no iteration,
+    /// which the model tree holds because the calc registry's inputs are scalars and
+    /// a composition vector has nowhere else to go; it has no algorithm, and the
+    /// schema forbids one rather than allowing a vacuous one.
+    pub kind: &'static str,
+    /// The procedure both implementations must run, for a `procedure`.
+    pub algorithm: Option<&'static ModelAlgorithm>,
     /// Bounds, in the same shape a calc's `valid_range` produces.
     pub checks: &'static [SpecCheck],
     /// Cases both implementations must reproduce.

@@ -37,12 +37,12 @@ fn every_case_in_the_spec() {
             case.id
         );
         assert!(
-            result.residual <= spec.algorithm.tolerance,
+            result.residual <= spec.algorithm.expect("a procedure").tolerance,
             "{}::{}: residual {:e} exceeds the declared tolerance {:e}",
             spec.id,
             case.id,
             result.residual,
-            spec.algorithm.tolerance
+            spec.algorithm.expect("a procedure").tolerance
         );
     }
 }
@@ -104,6 +104,7 @@ fn the_answer_is_below_the_spinodal() {
     // Walk up until the cubic stops having a liquid branch, which is the spinodal.
     let bracket = model_gen::PURE_SATURATION_SPEC
         .algorithm
+        .expect("a procedure")
         .bracket
         .expect("this model's scheme brackets");
     let mut spinodal = bracket.lower;

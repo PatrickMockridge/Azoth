@@ -117,6 +117,8 @@ verification:
     the mixture's. As everywhere in this namespace, no bound below is an accuracy
     claim.
 
+kind: procedure
+
 algorithm:
   scheme: bubble_pressure_successive_substitution
   initialisation: wilson_raoult

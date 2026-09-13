@@ -343,6 +343,21 @@ pub fn model_ids() -> Vec<String> {
         .collect()
 }
 
+/// What a model's spec fixes, by model id: `procedure` or `direct`.
+///
+/// Held to the specs by the same contract test that holds `model_schemes`: a `kind`
+/// field nothing reads would be a spec field nothing checks, which is the defect this
+/// project is organised against. A `direct` model has no scheme, so this is the one
+/// thing that distinguishes it before its algorithm is looked for.
+#[pyfunction]
+#[must_use]
+pub fn model_kind(model_id: &str) -> String {
+    match eos::model_gen::model(model_id) {
+        Some(spec) => spec.kind.to_string(),
+        None => String::new(),
+    }
+}
+
 /// The algorithm scheme each model runs, by model id.
 ///
 /// The third leg of the same contract `solver_kinds()` provides for solvers: the
@@ -353,7 +368,13 @@ pub fn model_ids() -> Vec<String> {
 #[must_use]
 pub fn model_schemes(model_id: &str) -> Vec<String> {
     match eos::model_gen::model(model_id) {
-        Some(spec) => vec![spec.algorithm.scheme.to_string()],
+        // A `direct` model has no scheme, and an empty list is the honest answer:
+        // there is no procedure whose name could be compared, and the contract test
+        // asserts the emptiness rather than papering over it with a placeholder.
+        Some(spec) => spec
+            .algorithm
+            .map(|a| vec![a.scheme.to_string()])
+            .unwrap_or_default(),
         None => Vec::new(),
     }
 }

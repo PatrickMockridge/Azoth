@@ -112,19 +112,22 @@ static BUBBLE_PRESSURE_CASES: &[TestCase] = &[
     },
 ];
 
+static BUBBLE_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "bubble_pressure_successive_substitution",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("wilson_raoult"),
+    inner: None,
+};
+
 /// Registry entry for `eos.bubble_pressure`.
 pub static BUBBLE_PRESSURE_SPEC: ModelSpec = ModelSpec {
     id: "eos.bubble_pressure",
     verification: "unverified",
-    algorithm: ModelAlgorithm {
-        scheme: "bubble_pressure_successive_substitution",
-        convergence: "absolute",
-        tolerance: 1e-12,
-        max_iterations: 200,
-        bracket: None,
-        initialisation: Some("wilson_raoult"),
-        inner: None,
-    },
+    kind: "procedure",
+    algorithm: Some(&BUBBLE_PRESSURE_ALGORITHM),
     checks: BUBBLE_PRESSURE_CHECKS,
     cases: BUBBLE_PRESSURE_CASES,
 };
@@ -227,19 +230,22 @@ static DEW_PRESSURE_CASES: &[TestCase] = &[
     },
 ];
 
+static DEW_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "dew_pressure_successive_substitution",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("wilson_raoult"),
+    inner: None,
+};
+
 /// Registry entry for `eos.dew_pressure`.
 pub static DEW_PRESSURE_SPEC: ModelSpec = ModelSpec {
     id: "eos.dew_pressure",
     verification: "unverified",
-    algorithm: ModelAlgorithm {
-        scheme: "dew_pressure_successive_substitution",
-        convergence: "absolute",
-        tolerance: 1e-12,
-        max_iterations: 200,
-        bracket: None,
-        initialisation: Some("wilson_raoult"),
-        inner: None,
-    },
+    kind: "procedure",
+    algorithm: Some(&DEW_PRESSURE_ALGORITHM),
     checks: DEW_PRESSURE_CHECKS,
     cases: DEW_PRESSURE_CASES,
 };
@@ -423,19 +429,22 @@ static PT_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     inner: None,
 };
 
+static PT_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    inner: Some(&PT_FLASH_INNER),
+};
+
 /// Registry entry for `eos.pt_flash`.
 pub static PT_FLASH_SPEC: ModelSpec = ModelSpec {
     id: "eos.pt_flash",
     verification: "unverified",
-    algorithm: ModelAlgorithm {
-        scheme: "successive_substitution_flash",
-        convergence: "absolute",
-        tolerance: 1e-10,
-        max_iterations: 300,
-        bracket: None,
-        initialisation: Some("wilson"),
-        inner: Some(&PT_FLASH_INNER),
-    },
+    kind: "procedure",
+    algorithm: Some(&PT_FLASH_ALGORITHM),
     checks: PT_FLASH_CHECKS,
     cases: PT_FLASH_CASES,
 };
@@ -544,24 +553,27 @@ static PURE_SATURATION_CASES: &[TestCase] = &[
     },
 ];
 
+static PURE_SATURATION_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "saturation_pressure_bisection",
+    convergence: "relative",
+    tolerance: 1e-12,
+    max_iterations: 200,
+    bracket: Some(ModelBracket {
+        scheme: "linear_scan_for_spinodal",
+        lower: 1e-06,
+        upper: 0.999,
+        steps: 4000,
+    }),
+    initialisation: None,
+    inner: None,
+};
+
 /// Registry entry for `eos.pure_saturation`.
 pub static PURE_SATURATION_SPEC: ModelSpec = ModelSpec {
     id: "eos.pure_saturation",
     verification: "unverified",
-    algorithm: ModelAlgorithm {
-        scheme: "saturation_pressure_bisection",
-        convergence: "relative",
-        tolerance: 1e-12,
-        max_iterations: 200,
-        bracket: Some(ModelBracket {
-            scheme: "linear_scan_for_spinodal",
-            lower: 1e-06,
-            upper: 0.999,
-            steps: 4000,
-        }),
-        initialisation: None,
-        inner: None,
-    },
+    kind: "procedure",
+    algorithm: Some(&PURE_SATURATION_ALGORITHM),
     checks: PURE_SATURATION_CHECKS,
     cases: PURE_SATURATION_CASES,
 };

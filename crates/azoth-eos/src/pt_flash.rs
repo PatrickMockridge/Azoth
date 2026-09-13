@@ -57,8 +57,10 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, apply_checks};
 
+use crate::algorithm_of;
 use crate::mixture::{Mixture, RootSide};
 use crate::model_gen;
+
 use crate::results::{Phase, PtFlashResult};
 
 /// Wilson's correlation for the initial K-values.
@@ -296,7 +298,7 @@ pub fn pt_flash(
     let reduced = mixture.reduced_parameters(t, p)?;
     warnings.extend(reduced.warnings.iter().cloned());
 
-    let algorithm = spec.algorithm;
+    let algorithm = algorithm_of(spec)?;
     let inner = algorithm.inner.ok_or_else(|| AzothError::InvalidInput {
         field: "algorithm.inner".to_string(),
         reason: format!(

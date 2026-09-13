@@ -58,6 +58,8 @@ verification:
     than asserting a band, because a band on `Tr` would look like validation while
     asserting nothing - the same argument `eos.pr_kappa` makes.
 
+kind: procedure
+
 algorithm:
   scheme: saturation_pressure_bisection
   convergence: relative

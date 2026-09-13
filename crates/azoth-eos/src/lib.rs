@@ -57,6 +57,29 @@
 //! why this crate has no `uom` dependency: the dimensional conversion belongs at
 //! the boundary, in one place, where it can be tested once.
 
+use azoth_core::{AzothError, ModelAlgorithm, ModelSpec, Result};
+
+/// The algorithm a model's spec fixes, which its `kind` says it has.
+///
+/// The schema requires an `algorithm` block for a `procedure` and forbids one for a
+/// `direct` model, so a missing one where a procedure is expected means the generated
+/// table and the schema disagree - a generator defect rather than a caller error.
+/// Returned rather than panicked, per this crate's no-panic rule.
+///
+/// Here rather than in each of the three models that need it, because three copies of
+/// a check is three places for it to drift, and the check is about the *spec* rather
+/// than about any one model.
+pub(crate) fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
+    spec.algorithm.ok_or_else(|| AzothError::InvalidInput {
+        field: "algorithm".to_string(),
+        reason: format!(
+            "model `{}` is declared `{}` but its spec carries no algorithm, so there is \
+             no procedure to run",
+            spec.id, spec.kind
+        ),
+    })
+}
+
 pub mod bubble_pressure;
 pub mod dew_pressure;
 pub mod ideal_gas_cp;

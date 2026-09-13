@@ -46,8 +46,10 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature, pascals};
 use azoth_core::{AzothError, Result, apply_checks};
 
+use crate::algorithm_of;
+use crate::model_gen;
 use crate::results::{PureSaturationResult, RootStructure};
-use crate::{model_gen, pr_alpha_ab, pr_departure, pr_kappa, pr_z_factor};
+use crate::{pr_alpha_ab, pr_departure, pr_kappa, pr_z_factor};
 
 /// The saturation pressure of a pure component at a temperature.
 ///
@@ -102,7 +104,7 @@ pub fn pure_saturation(
         &mut warnings,
     )?;
 
-    let algorithm = spec.algorithm;
+    let algorithm = algorithm_of(spec)?;
     let Some(bracket) = algorithm.bracket else {
         // The spec's scheme is `saturation_pressure_bisection`, which searches a
         // bracket. `bracket` is optional in the schema because a *nested* scheme

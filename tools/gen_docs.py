@@ -394,7 +394,7 @@ def render_model(spec: dict[str, Any]) -> str:
     The algorithm is the whole reason a model exists in a second spec tree, so it is
     rendered prominently rather than buried.
     """
-    algorithm = spec["algorithm"]
+    algorithm = spec.get("algorithm")
 
     parts = [
         f"# {spec['name']}\n\n",
@@ -404,12 +404,24 @@ def render_model(spec: dict[str, Any]) -> str:
         f"{describe_source(spec)}\n\n",
         render_verification(spec),
     ]
-    parts.append(
-        "\n## Algorithm\n\n"
-        "A model rather than a calculation: what this page pins down is the procedure,\n"
-        "not an equation, and both implementations read it from here.\n\n"
-        + render_algorithm(algorithm, 2)
-    )
+    if algorithm is None:
+        # A direct model: vectors in, values out, no loop. The absence of an algorithm
+        # block is the point, so it is stated rather than left as a missing section.
+        parts.append(
+            "\n## What this model is\n\n"
+            "A **direct** model: a computation over vectors, with no iteration and "
+            "therefore no algorithm block. It is here because a calculation's inputs "
+            "are scalars, so a composition vector has nowhere in the calc registry to "
+            "go - and it is a model rather than a library function so that it has two "
+            "implementations like everything else.\n"
+        )
+    else:
+        parts.append(
+            "\n## Algorithm\n\n"
+            "A model rather than a calculation: what this page pins down is the procedure,\n"
+            "not an equation, and both implementations read it from here.\n\n"
+            + render_algorithm(algorithm, 2)
+        )
 
     for section, key in (("Inputs", "inputs"), ("Outputs", "outputs")):
         rows = []
