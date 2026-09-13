@@ -21,8 +21,9 @@ signal a user relies on.
 
 **Provenance that can be forged or is silently wrong.** A `provenance.json` that
 verifies against a tree it does not describe, a signature check that passes when
-it should not, a `verify_status` promoted without a verifier. See
-[TRUST.md](TRUST.md) for what the trust layer claims.
+it should not, a `verify_status` on the repository's own data claiming more than
+its citation supports — the column is derived, so a way to make it lie is a way to
+hide a placeholder. See [TRUST.md](TRUST.md) for what the trust layer claims.
 
 **A source that is wrong or misattributed.** A spec citing an equation number
 that does not exist, or a coefficient recorded against a standard that does not

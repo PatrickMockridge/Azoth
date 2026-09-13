@@ -4,21 +4,34 @@
 
 ## If this adds a calculation
 
-Every calculation must ship with all of these, and CI enforces most of them:
+The contract in full is [Specification, S9](docs/src/spec.md#s9-what-a-contribution-costs).
+The short version:
 
-- [ ] A spec under `specs/calcs/` with an equation, a source, a valid range, assumptions, a worked example, and tests
-- [ ] The LaTeX form of the equation (`latex`), not just the evaluable form
-- [ ] One Python function and one Rust function
-- [ ] The worked example's expected values derived and shown, not copied from a source's answers
-- [ ] `python tools/gen_registry.py && python tools/gen_docs.py` run and committed
+- [ ] A spec under `specs/calcs/` — equation, LaTeX form, source, inputs and outputs
+      with units, valid range, assumptions, a worked example, and tests
+- [ ] One Python file and one Rust file
+- [ ] The worked example's expected values derived and shown, not copied from a
+      source's answers
+- [ ] The generators run and committed: `python tools/gen_registry.py &&
+      python tools/gen_docs.py`
+
+**Nothing is registered.** There is no dispatch table, no `__all__` and no
+registration call to update, because a calculation's id *is* its address: the module
+path and the function name follow from it by convention. If you found yourself
+editing a list to say "this calculation exists", something is wrong — say so in the
+PR rather than doing it.
 
 ## If a source is uncertain
 
-Say so rather than guessing. Set `verification.status` in the spec and either
-find a source or skip the test with a recorded reason:
+Say so in words, in the spec's `notes`, rather than guessing.
 
-- [ ] `verification.status` reflects what is actually known
-- [ ] Any test that cannot run is `skipped` with a `skip_reason`
+There is deliberately no status field to set. This library does not record whether a
+person checked an attribution, because no tool can verify that a person did — so the
+field would be a form to fill in rather than a fact, and a form teaches people to
+fill it in. Write down what is confirmed and what is not, and a reader can judge it.
+
+- [ ] The spec's `notes` say what has and has not been confirmed
+- [ ] Any test that cannot run is `skipped`, with a `skip_reason`
 
 Do not reproduce tables or text from a standard, textbook, or paper. Cite the
 equation; write your own worked example.

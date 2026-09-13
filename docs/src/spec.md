@@ -196,6 +196,24 @@ all, because it manufactures confidence.
 The rest is engineering judgement, which is a professional responsibility and not one a
 YAML linter can discharge.
 
+**One asymmetry is deliberate, and is stated here so that it is not mistaken for a
+leftover.** The data *this repository ships* carries a `verify_status` column; a
+keycard's rows do not. The two are not the same kind of thing:
+
+- A keycard is the user's, and the library does not ask. The engineer who supplied a
+  value knows whether they trust it, and a status field would only invite them to
+  assert something nobody can check.
+- The shipped data is the *library's own* statement about itself, and it is what makes
+  disclosure concrete rather than a promise. It is derived at generation time from
+  whether a row's citation says the value is a placeholder, and it drives the warning a
+  user gets when a result rests on the Crane coefficients — seven values that are not
+  from any standard and can make a pressure drop wrong by a factor of two while looking
+  entirely reasonable.
+
+Compressing those two into one rule either way loses something real. Asking users for a
+status produces forms; dropping the shipped column produces a library that ships
+placeholders and says nothing.
+
 ## S7. Every Rust calculation is mirrored in Python
 
 Not a binding to a black box, and not a second-class path. **Both implementations are

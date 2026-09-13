@@ -226,79 +226,49 @@ Read an existing calc end to end first — `reynolds_number` is the simplest, an
 
 ## The rules that are not negotiable
 
-**No calculation without a source and a worked example.** If you cannot find a
-source, set `verification.status: source_needed` in the spec and skip the worked
-example test with a recorded reason. A gap that is visible is fine; a citation
-nobody checked is not.
+Seven, and each is either enforced by a test or is a constraint from outside the
+project. Anything that is merely good advice is under
+[What reviewers will look at](#what-reviewers-will-look-at) instead, so that this
+list stays short enough to actually read.
 
-**Never reproduce copyrighted tables or text.** This is why the fitting
-coefficients are labelled placeholder rather than sourced: Crane TP-410 is
-copyrighted, and transcribing its tables is not something this project does. Cite
-the equation, work your own arithmetic. *Facts* are not copyrightable, so a
-single coefficient recorded with a citation is fine; a table is not.
+**Never reproduce copyrighted tables or text.** This is why the fitting coefficients
+are placeholders rather than sourced: Crane TP-410 is copyrighted, and transcribing
+its tables is not something this project does. Cite the equation; work your own
+arithmetic. A *fact* is not copyrightable, so a single coefficient recorded with a
+citation is fine; a *table* is not.
 
-**Read [docs/src/copyright.md](docs/src/copyright.md) before designing a
-calculation around a value you cannot ship.** It lists every place this rule has
-changed what the library does, and the three patterns that resolve all of them so
-far: a *single* coefficient becomes a function argument (`Cd`, `eta`, `f_t` - no
-file, no licensing question), a *set* of coefficients becomes user-supplied data
-with per-row provenance, and *code under a permissive licence* may be ported with
-attribution. A new calculation that needs a standard's table should be designed
-to take the numbers, not to embed them. The third pattern is the one that looks
-most like the others and is least like them - a licence that grants redistribution
-settles the copyright question and says nothing at all about whether the ported
-answer is right.
+[Copyright and licensed data](docs/src/copyright.md) lists every place this rule has
+changed what the library does, and the three patterns that resolve all of them: a
+single coefficient becomes a function argument (`Cd`, `eta`, `f_t` — no file, no
+licensing question), a *set* of coefficients becomes keycard data, and *code under a
+permissive licence* may be ported with attribution. Read it before designing a
+calculation around a value you cannot ship.
 
-**A ported algorithm names its source, and a port never upgrades a verification
-status.** Some of what this library implements was worked out elsewhere and is
-worth reusing rather than re-deriving. That is allowed, and it is governed by two
-rules.
+**A port is accepted on this library's tests, never on its provenance.** That a
+well-known library implements something is evidence that it *can* be implemented. It
+is not evidence that it is right. The concrete case: NeqSim's `CriticalPointFlash`
+implements Heidemann & Khalil correctly by inspection and validates the result
+**nowhere** — no pure-component check, no mixture-locus check, a silent `break` on
+`NaN`. Porting it carries the algorithm and none of the confidence, so every port
+needs a test that would fail if the port were wrong, and that test has to be ours.
 
-*Attribution lives in one place: `NOTICE`.* It names the project, the version,
-the commit and the licence, once, for every calculation that reuses it. There is
-deliberately no per-calculation field for it — a block repeated in twenty specs is
-a block nobody reads and a test has to enforce, and vendoring a dependency is not
-a thing you re-state per function.
+Attribution for anything ported lives in [`NOTICE`](NOTICE), once, rather than in a
+per-calc field — a block repeated in twenty specs is a block nobody reads. The spec
+still cites two things: its `references` name the paper the method comes from, and its
+`notes` say what was **changed** and why, because a port is never a transcription and
+the differences are the part a reader cannot recover from either source.
 
-*The spec still cites two things.* Its `references` cite the **paper the method
-comes from**, and its `notes` say what was **changed** and why — because a port is
-never a transcription, and the differences are the part a reader cannot recover
-from either source.
+**A worked example must be retraceable by hand.** Write the substitution out. An
+example nobody can follow is a number somebody typed.
 
-*A port stays `unverified`.* A verification status is a claim about a person
-having read a source. Reading someone's Java is not that. If the paper has not
-been read, the status stays what it was, however good the port is — the port is a
-second implementation of a method, not a second source for it.
-
-**And a port is accepted on this library's tests, never on its provenance.** That
-a well-known library implements something is evidence that it *can* be
-implemented. It is not evidence that it is right. The concrete case: NeqSim's
-`CriticalPointFlash` implements Heidemann & Khalil correctly by inspection and
-validates the result **nowhere** — no pure-component check, no mixture-locus
-check, a silent `break` on `NaN`. Porting it carries the algorithm and none of
-the confidence, so every port needs a test that would fail if the port were
-wrong, and that test has to be ours. See
-[azoth and NeqSim](docs/src/comparison/neqsim.md).
-
-**Every number in a worked example must be derivable and shown.** Write the
-substitution out. A worked example nobody can retrace is a number somebody typed.
-
-`spec_lint` enforces the *shown* half — it requires a `derivation` to exist and warns
-when it is missing. It does **not** check that the arithmetic in it is true, and that
-is a known gap rather than an oversight. A checker was written and withdrawn: deciding
-which `=` in a paragraph of prose is a claim turned out to require more discrimination
-than the text carries. `1 US gallon = 3.785411784e-3 m**3` is a unit conversion, not a
-numeric equality; `rho * g = 998 * 9.80665 = 9787.036699999999 W/(m**3/s)` is a claim
-with a unit stuck on the end; and a checker that cannot tell those apart flagged
-thirty-six of them on this registry alone. A check that noisy is worse than none,
-because it teaches people to skim its output.
-
-So the arithmetic in a derivation is a reviewer's job. Two specs were written with
-derivation arithmetic that did not close before anyone noticed. The one mistake that
-landed in an `expected` value rather than in prose would have been caught by the
-generated test — that value is compared against the implementation. The ones in prose
-had nothing checking them at all. Write the substitution out and *recompute it* rather
-than restating what you expect it to be.
+Be aware of what is **not** checked. Nothing verifies the arithmetic in a
+`derivation`, because deciding which `=` in a paragraph is a claim turns out to need
+more discrimination than prose carries: `1 US gallon = 3.785411784e-3 m**3` is a unit
+conversion, `rho * g = 998 * 9.80665 = 9787.036699999999 W/(m**3/s)` is a claim with a
+unit on the end, and a checker that cannot tell those apart flagged thirty-six of them
+on this registry alone. It was withdrawn for being too noisy, because a check that
+noisy teaches people to skim its output. So the arithmetic is a reviewer's job —
+**recompute your derivation rather than restating what you expect it to be.**
 
 **Units-safe signatures, no bare floats for physical quantities.** Genuinely
 dimensionless quantities (`f`, `Re`, `epsilon/D`) are plain floats; everything
@@ -323,12 +293,13 @@ disagree.
 and the library keeps them different. A value outside its validated range is
 still a value - say so, do not refuse it.
 
-**Justify new dependencies.** The tree is deliberately small. Say in the pull
-request what the dependency buys and why something already present will not do.
+**Justify new dependencies.** The tree is deliberately small. Say in the pull request
+what the dependency buys and why something already present will not do.
 
-**Do not hand-edit generated files.** `spec_gen.rs`, `_registry_gen.py` and
-everything under `docs/src/hydraulics/` are output. Each carries a banner saying
-so. Change the spec and regenerate.
+**Do not hand-edit generated files.** `spec_gen.rs`, `model_gen.rs`,
+`_registry_gen.py`, `_models_gen.py` and every page under `docs/src/eos/`,
+`docs/src/hydraulics/` and `docs/src/thermal/` are output. Each carries a banner
+saying so. Change the spec and regenerate.
 
 ## What reviewers will look at
 

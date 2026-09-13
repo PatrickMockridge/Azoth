@@ -23,9 +23,8 @@ page in this book is built on.
 **That guarantee is being traded deliberately, and for something narrower.** What
 survives:
 
-- A **unit operation** is still a registered model with a spec, a source, an
-  `unverified` status, and a worked example a human can retrace. Nothing about the
-  process layer relaxes that.
+- A **unit operation** is still a model with a spec, a source, and a worked example a
+  human can retrace. Nothing about the process layer relaxes that.
 - A **flowsheet** carries a hand-computable case — a mixer into a flash, no recycle —
   plus conservation checks that hold at every answer rather than at one recorded one.
   That is the honest analogue of a worked example, and it is weaker. Saying so is the

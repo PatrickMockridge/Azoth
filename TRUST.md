@@ -200,39 +200,20 @@ the record's `git.commit` matches the tag you checked in the first step.
 
 ## How a source is referenced
 
-Data values are not sourced to a citation string. Each row that is not a
-placeholder carries two machine-readable fields:
+A data row may carry a `citation`: a string naming where its values came from, written
+for a person to read. **Nothing requires one, and nothing validates one.**
 
-| Field | What it holds |
-|---|---|
-| `source_ref` | The document, in a fetchable form |
-| `source_locator` | Where inside that document, e.g. `Table 2, 90 deg standard elbow` |
+There is deliberately no machine-readable `source_ref` or `source_locator` beside it.
+An earlier version required both, with a rule that they agree — and that was a form to
+fill in rather than a fact, because no tool can check whether a person read the document
+a reference points at. A field that cannot be checked, required anyway, teaches people
+to fill it in rather than to know the answer.
 
-Accepted forms are `arweave:<txid>`, `doi:<doi>`, and `https://…`, and
-`tools/spec_lint.py` rejects anything else. That matters: a reference written as
-prose cannot be checked by a tool, so it is the same as not citing it.
-
-**`arweave:` references are the strongest of the three here.** An Arweave
-transaction ID is the hash of its content, so the document is content-addressed,
-immutable, and independently timestamped by the network. Anyone can fetch it and
-get byte-identical data. That closes the gap between "this number is in our git
-history" and "here is the document it came from": a reviewer fetches the
-transaction and reads the row named by `source_locator` themselves, without
-having to trust this repository, the maintainer, or an archive that might have
-changed underneath them.
-
-It is a separate question whether a given pinned document is a faithful
-reproduction of the printed standard. `source_ref` records *which document was
-used*, which is what makes that question answerable at all - the answer is the
-same for everyone, because the bytes are fixed.
-
-Reproducing the data is straightforward:
-
-```bash
-# Fetch the document a value was read from:
-curl -L "https://arweave.net/$(grep 90_elbow data/fittings/crane_k_factors.csv \
-  | cut -d, -f8 | cut -d: -f2)" -o crane.pdf
-```
+What the library owes instead is disclosure, and it is specific: `NOTICE` says what
+ships and where it came from; the shipped data records that provenance in its own
+citation column; and the engineer who supplied a keycard is accountable for their own
+values and their right to use them. See
+[Specification, S6](docs/src/spec.md#s6-provenance-is-the-engineers-job-not-the-librarys).
 
 ## What is deliberately not here
 
@@ -254,10 +235,10 @@ history. An OpenTimestamps proof would anchor a commit hash into Bitcoin, giving
 an independent lower bound on when it existed. It needs no new trust assumption
 beyond Bitcoin's existence, and no token.
 
-Note that this is a different question from the Arweave pinning described above.
-Pinning a *source document* establishes which document a value was read from.
-Anchoring a *release commit* would establish when this code existed. The first is
-implemented; the second is not.
+Note that this is a different question from the provenance of a *value*. Recording
+which document a value was read from says where the number came from. Anchoring a
+release commit would establish when *this code* existed. Neither is implemented for
+values beyond the citation string, and the second is not implemented at all.
 
 **A multi-validator registry.** Today, a result is validated by whoever wrote its
 worked example. A registry where independent parties reproduce a calc's worked

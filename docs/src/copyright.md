@@ -1,4 +1,4 @@
-# Copyright, and the data we cannot ship
+# Copyright, and licensed data
 
 <!-- Hand-written, unlike the pages under the namespaces, which are generated from
      the specs. It is listed in SUMMARY.md by tools/gen_docs.py, and
@@ -27,7 +27,7 @@ project does. The same line runs through every entry below.
 |---|---|---|---|
 | **Crane TP-410 fitting coefficients** (the L_eq/D table) | The table is Crane's expression of the facts | `crane_k_factors`, and the fitting share of the `azoth pipe` CLI | `data/fittings/crane_k_factors.csv` ships **estimated dummy values**, recorded in its `verify_status` column, and a test fails the day the file is populated |
 | **ISO 5167 discharge-coefficient equation** | A long fitted expression whose constants come from a table of experimental results | `orifice_flow` cannot compute `Cd` | `Cd` is a **caller input**. The spec says so, names the convention required, and argues why |
-| **Crane TP-410 equation numbers** | The numbering cannot be confirmed without the standard | `reynolds_number`, `darcy_weisbach` and `crane_k_factors` cite Crane | `source.equation: "TODO: source needed"` and `verification.status: unverified` — a gap that is visible rather than a number that was guessed |
+| **Crane TP-410 equation numbers** | The numbering cannot be confirmed without the standard | `reynolds_number`, `darcy_weisbach` and `crane_k_factors` cite Crane | The specs leave `source.equation` unstated rather than guessing a number, and say so in their `notes` — a gap that is visible rather than a number that was made up |
 | **Crane TP-410 Example 3-5** | Reproducing a worked example from the standard is the thing the rule forbids | A `reference` test in `darcy_weisbach` | `status: skipped` with the reason recorded in `skip_reason`; the derived worked example covers the same arithmetic |
 | **Perry's 8th ed. Eq. 6-42** | Same | A `reference` test in `darcy_weisbach` | Skipped, same way |
 | **API 520 relief-valve sizing constants** | Fitted constants and de-rating factors | `relief_valve_area` — **not implemented** | Will take the constants as inputs, as `orifice_flow` takes `Cd`. Not built yet |
@@ -38,11 +38,15 @@ project does. The same line runs through every entry below.
 The water and air property tables in `data/fluids/` are real published values, and no
 copyright question arises: they are facts, published widely, and this repository
 reproduces no table — it records a handful of points with a citation. They are marked
-`unverified` rather than `verified`, which is a different statement entirely: **not
-that the numbers are doubtful, but that no person here has checked them against a
-primary formulation.** That is the same discipline the fitting registry uses, in a
-milder tier — and the schema keeps the two apart, because `estimated_dummy` means "a
+`unverified`, which is **not** a statement that the numbers are doubtful: it says that
+no person here has checked them against a primary formulation. That is the same
+discipline the fitting registry uses, in a milder tier — `estimated_dummy` means "a
 placeholder" while `unverified` means "real, unchecked".
+
+The column is derived when the data file is generated, from whether the row's citation
+says the value is a placeholder. There is deliberately no `verified` value: a tool
+cannot check whether a person checked something, so offering the word would only invite
+an assertion nobody can test. See [Specification, S6](./spec.md#s6-provenance-is-the-engineers-job-not-the-librarys).
 
 ## The three patterns that come out of this
 
@@ -121,10 +125,11 @@ it to be right against.
 So a port is governed by these, and they are in
 [CONTRIBUTING.md](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md):
 
-- It stays `unverified`. A verification status is a claim about a person having read a
-  source, and reading someone's Java is not that.
+- It is not evidence. Reading someone's Java is not reading the paper the method came
+  from, and a port is a second implementation of a method — never a second source for
+  it. Nothing here records a status saying otherwise.
 - It cites three things: the paper for the **method**, the implementation for the
-  **port**, and its own notes for the **changes**.
+  **port**, and its own `notes` for the **changes**.
 - It is accepted on this library's tests, never on its provenance — and those tests have
   to be ones that would fail if the port were wrong.
 
@@ -148,10 +153,14 @@ python tools/check_user_data.py azoth-data.yaml
 ```
 
 It has a `fittings:` section for the equivalent-length registry and a `fluids:` section
-for property tables, and it carries the same per-row provenance the repository's own
-data files do — `verify_status`, `source_ref`, `source_locator` — because a value you
-supplied and a value this repository ships are the same kind of thing and should be
-checkable the same way.
+for property tables. A row **may** carry a `citation`; nothing requires one, and there
+is no status field.
+
+That is the deliberate position rather than an omission. The repository's own data
+records a derived `verify_status` so that it can warn you when a result rests on its
+placeholders — but a value *you* supply is yours, and a form asking you to assert
+something no tool can check would teach you to fill it in rather than to know the
+answer. **Provenance is your job, not this library's.**
 
 `tools/check_user_data.py` enforces those rules and imports them from
 `tools/spec_lint.py` rather than restating them, so a user's file and the repository's

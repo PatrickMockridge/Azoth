@@ -80,8 +80,9 @@ across. `COMP_EXT.csv` did not: 86 MB of heavy fluids this library cannot charac
 **The provenance is institutional, and that is now the whole of it.** `COMP.csv` has no
 citation column, so a value in it carries a project, a version and a file rather than a
 per-value citation. That is real — more than most engineering data has — and it is not a
-person having checked anything, which is why the rows say `unverified` and one test
-asserts they cannot drift upward.
+person having checked anything. The vendored rows therefore carry that citation
+verbatim, naming Equinor and NTNU and the version it came from, rather than an assertion
+about how far it can be trusted.
 
 **The residual risk is inherited, not resolved.** Apache-2.0 permits redistributing
 NeqSim's compilation; it does not establish that every value inside was cleanly sourced
@@ -205,12 +206,14 @@ stated in `docs/src/roadmap.md`.
 NeqSim is Apache-2.0, which permits reuse with attribution, and this project ports from
 it. Two rules govern what that means, and they are in `CONTRIBUTING.md`:
 
-**A port never upgrades a verification status.** Reading someone's Java is not reading
-the paper it came from. A port cites the paper for the *method*, the source for the
-*port*, and records what it changed — and it stays `unverified` until a person has read
-the primary source. Attribution itself lives in `NOTICE`, once, rather than restated per
-spec; the per-port `changes` prose stays in the spec's `verification.notes`, where every
-other design decision in this tree already lives.
+**A port is never evidence.** Reading someone's Java is not reading the paper it came
+from, and a port is a second implementation of a method rather than a second source for
+it. A port cites the paper for the *method*, the source for the *port*, and records what
+it changed — and nothing in the tree records a status claiming otherwise, because a
+status is a claim about a person having read a source and no tool can check one.
+Attribution itself lives in `NOTICE`, once, rather than restated per spec; the per-port
+`changes` prose stays in the spec's `notes`, where every other design decision in this
+tree already lives.
 
 **A port is accepted on this library's tests, never on its provenance.** That a
 well-known library implements something is evidence that it can be implemented. It is

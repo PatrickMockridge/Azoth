@@ -1,6 +1,6 @@
 # azoth
 
-Open, validated, citable chemical engineering calculations.
+**An opinionated port of NeqSim to Rust, with every calculation mirrored in Python.**
 
 Every calculation in this book ships with its equation, where the equation came
 from, the range in which it is validated, its assumptions, a worked example, and
@@ -8,6 +8,11 @@ the tests that exercise it. Nothing here is prose written alongside code: the
 pages under [Hydraulics](./hydraulics/index.md) are **generated from the same
 specification files the code is generated from**, so they cannot drift from it.
 CI regenerates them and fails on any difference.
+
+**[The specification](./spec.md) says what azoth is** — why Rust rather than Java,
+what is in scope and what deliberately is not, and what it costs to add a
+calculation. It is normative: where a page here disagrees with it, that page is
+wrong.
 
 ## The two ideas this library is built around
 
@@ -31,8 +36,8 @@ Each page has the same shape, and the order is deliberate:
 | Section | Why it is there |
 |---|---|
 | Equation | In LaTeX for a reader, and in the form the library evaluates, so you can check one against the other |
-| Source | Where the equation came from. Marked `TODO: source needed` when it is not confirmed |
-| Verification | Whether a person has checked the citation. **Read this before trusting a number** |
+| Source | Where the equation came from, and what about that attribution is not confirmed |
+| Notes | The reasoning you need in order to judge a number: where this implementation departs from its source, why a constant takes the value it does, which claims are unconfirmed |
 | Inputs and outputs | Names, units, and what they mean |
 | Valid range | The bounds, what happens when one is violated, and why each exists |
 | Assumptions | What is **not** checked at runtime, and is therefore your responsibility |
@@ -134,6 +139,12 @@ reasonable. The `verify_status` column records that, and the
 
 Water and air properties are a different case: real published values, marked
 `unverified` because they have not been checked against a primary formulation.
+
+That column exists on the data *this repository ships*, and not on the rows of a
+keycard you supply — a deliberate asymmetry rather than a leftover. The shipped data
+is the library's own statement about itself, and it is what makes disclosure concrete;
+a keycard is yours, and the library does not ask. [Specification,
+S6](./spec.md#s6-provenance-is-the-engineers-job-not-the-librarys) has the reasoning.
 
 ## How a calculation is added
 

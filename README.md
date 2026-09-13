@@ -1,18 +1,26 @@
 # azoth
 
-Open, validated, citable chemical engineering calculations.
+**An opinionated port of NeqSim to Rust, with every calculation mirrored in Python.**
 
-> azoth is an open library of standard chemical engineering calculations where
-> every one carries its equation, the standard it came from, the range over which
-> it is validated, its assumptions, a worked example and automated tests. Python
-> reference implementation, Rust performance core, PyO3 binding them. Docs are
-> generated from the same machine-readable specs, so they cannot drift from the
-> code.
+azoth is a thermodynamic and process library: equations of state, flashes, property
+models, unit operations and flowsheets. The algorithms are carried across from
+[NeqSim](https://github.com/equinor/neqsim), Equinor's open-source Java process
+simulator, under Apache-2.0 and credited in [`NOTICE`](NOTICE) rather than re-derived.
+What is azoth's own is the structure around them: a small core that every domain
+depends on and no domain depends on another, an extension surface that is a data file
+rather than an API, and no registration step anywhere.
 
-**Status: early.** One vertical slice is implemented - the hydraulics kernel
-through Darcy-Weisbach pressure drop. The fitting coefficients it uses are
-**placeholders, not engineering data**. See
-[Not for design work yet](#not-for-design-work-yet).
+**[`SPEC.md`](SPEC.md) says what azoth is, and it is normative.** Where another document
+disagrees with it, that document is wrong. Why Rust rather than Java, what is in scope
+and what deliberately is not, and what it costs to add a calculation are all answered
+there rather than here.
+
+**Status: early.** Twenty-one calculations and seven models - a hydraulics kernel,
+steady conduction, and the Peng-Robinson equation of state through a two-phase flash,
+stability testing and mixture critical points. The fitting coefficients it ships are
+**placeholders, not engineering data**; see
+[Not for design work yet](#not-for-design-work-yet). Unit operations, flowsheets and
+reports are the next tranche, and [Roadmap](docs/src/roadmap.md) has the programme.
 
 ## Install
 
@@ -144,9 +152,9 @@ the scaled Helmholtz Hessian at constant temperature and volume, and the nested 
 that drives its smallest eigenvalue to zero. **That implementation validates its result
 nowhere**, so it is a source for the method and not for the answer; everything this
 model is checked against is this project's, including the closed-form `Z_c` a pure
-Peng-Robinson fluid has. It ships `unverified`, because reading the paper is what would
-move it. [azoth and NeqSim](docs/src/comparison/neqsim.md) compares the two libraries in
-full.
+Peng-Robinson fluid has. The spec's notes say plainly what has and has not been
+confirmed, which is that nobody has read the paper.
+[azoth and NeqSim](docs/src/comparison/neqsim.md) compares the two libraries in full.
 
 The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`, `eos.*`),
 not by project. They appear in provenance records and citations, so renaming the
@@ -203,9 +211,14 @@ CI regenerates the docs and the registries and fails on any diff, which is what
 makes "the docs cannot drift from the code" a property of the build rather than a
 claim in this file.
 
-Adding a calculation means writing one spec, one Python function, one Rust
-function, and declaring the tests. The docs, the range checks and the test cases
-follow.
+Adding a calculation is a spec, one Python file and one Rust file — **and nothing
+else**. There is no dispatch table, no `__all__` and no registration call to update,
+because a calculation's id *is* its address: `hydraulics.darcy_weisbach` names
+`azoth/hydraulics/reference/darcy_weisbach.py` and
+`azoth-hydraulics/src/darcy_weisbach.rs` by convention. The docs page, the range
+checks, the test cases and the type stubs are generated from the spec.
+[Specification, S9](docs/src/spec.md#s9-what-a-contribution-costs) states the whole
+contract, and S5 says why registration was deleted rather than automated.
 
 ## Not for design work yet
 
@@ -216,12 +229,15 @@ wrong by a factor of two and look entirely reasonable. Supply your own with
 `azoth-data.example.yaml`; see
 [Copyright and licensed data](docs/src/copyright.md).
 
-The `verify_status` column records that, and a test fails the day someone
-populates the file properly.
+The `verify_status` column records that, and a test fails the day someone populates
+the file properly. Water and air under `data/fluids/` are a different case: real
+published values, marked `unverified` because nobody has checked them against a
+primary formulation.
 
-Water and air properties under `data/fluids/` are a different case: real
-published values, marked `unverified` because they have not been checked against
-a primary formulation.
+That column exists on the data *this repository ships*, and not on the rows of a
+keycard, which is a deliberate asymmetry rather than a leftover —
+[Specification, S6](docs/src/spec.md#s6-provenance-is-the-engineers-job-not-the-librarys)
+is where the reasoning lives.
 
 ## Verifying a result
 
@@ -238,9 +254,11 @@ mdbook build docs && xdg-open docs/book/index.html
 ```
 
 Every calc page carries the equation in LaTeX and in the form the library
-evaluates, its source and verification status, inputs and outputs, the validated
-range with the reason for each bound, the assumptions that are *not* checked, a
-worked example, and the tests - including which are deliberately skipped and why.
+evaluates, its source, its notes, inputs and outputs, the validated range with the
+reason for each bound, the assumptions that are *not* checked, a worked example, and
+the tests - including which are deliberately skipped and why. A model page carries
+its algorithm where a calc page carries its solver, because a model's spec fixes a
+*loop* rather than an equation.
 
 ## Contributing
 
