@@ -170,10 +170,35 @@ The boundary, stated so that it is visible rather than discovered:
 |---|---|
 | Heat-capacity coefficients and the SAFT/CPA association parameters | The databank carries critical constants and `kij` only. The rest arrive when models that read them do. |
 | CPA, SAFT, GERG-2008, Helmholtz reference equations, electrolytes | Different physics from a cubic EOS. Each is its own programme. |
-| Flowsheets, equipment models, pipeline flow | Axis 5. A thesis change, not a feature. |
+| Distillation columns, transient pipeline flow, reactors, networks | Separate programmes, each larger than this one. See `docs/src/roadmap.md`. |
 | PVT simulation, hydrates, wax, asphaltene, scale | Real capabilities, all outside a cubic-EOS library. |
+| Mechanical design, cost, field development, safety and risk | Engineering deliverables, not flowsheet physics. |
 | Relief-valve *sizing* to a standard | The de-rating coefficients are the caller's to compose; `choked_flow_area` is the isentropic basis. |
-| A mixture critical point | Not shipped **yet** — the mechanical route is a plausible wrong number for any mixture. See the README note; this is the item NeqSim's implementation unblocks. |
+
+Two rows left this table and are worth naming, because each was a boundary this page
+argued for and each has since been crossed by the databank work or by a port:
+
+**A component databank** was "the central question of axis 2" and the answer here was
+that this library ships none. It ships one now — 173 substances and 516 `kij` pairs,
+generated from NeqSim's `COMP.csv` and `INTER.csv` and carrying NeqSim's provenance
+rather than a per-value one. The reasoning that changed is on
+[Copyright and licensed data](../copyright.md); the residual risk — a permissive licence
+on a compilation does not vouch for every value inside it — is named in `NOTICE` rather
+than hidden.
+
+**A mixture critical point** was "not shipped yet", with the mechanical route
+`dP/dV = d2P/dv2 = 0` rejected because it returns the same `Z_c` for every mixture. It
+ships, on Heidemann & Khalil's conditions, and the test that distinguishes the two
+routes is that a mixture's `Z_c` moves with composition — it varies by 0.146 across
+methane/n-butane, against a constant.
+
+**Flowsheets and equipment models are on their way in.** This page used to say they were
+"a thesis change, not a feature", and that was the right call when it was written: the
+project's guarantee is that every calculation has one phase, one composition and a
+worked example a human can retrace, and a flowsheet has none of those. The user has
+since asked for the wider port — unit operations, reports and an agent surface — so the
+boundary moves deliberately rather than by drift, and what replaces the guarantee is
+stated in `docs/src/roadmap.md`.
 
 ## What we take from it
 
@@ -181,9 +206,11 @@ NeqSim is Apache-2.0, which permits reuse with attribution, and this project por
 it. Two rules govern what that means, and they are in `CONTRIBUTING.md`:
 
 **A port never upgrades a verification status.** Reading someone's Java is not reading
-the paper it came from. A ported calculation cites the paper for the *method*, the
-implementation for the *port*, and the changes made — and it stays `unverified` until a
-person has read the primary source.
+the paper it came from. A port cites the paper for the *method*, the source for the
+*port*, and records what it changed — and it stays `unverified` until a person has read
+the primary source. Attribution itself lives in `NOTICE`, once, rather than restated per
+spec; the per-port `changes` prose stays in the spec's `verification.notes`, where every
+other design decision in this tree already lives.
 
 **A port is accepted on this library's tests, never on its provenance.** That a
 well-known library implements something is evidence that it can be implemented. It is

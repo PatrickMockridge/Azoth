@@ -83,6 +83,8 @@ variables rather than in quantities with units.
 - [`eos.pt_flash`](./eos/pt_flash.md)
 - [`eos.bubble_pressure`](./eos/bubble_pressure.md)
 - [`eos.dew_pressure`](./eos/dew_pressure.md)
+- [`eos.critical_point`](./eos/critical_point.md)
+- [`eos.stability_test`](./eos/stability_test.md)
 - [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — a *direct* model, which composes vectors with no iteration
 
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`
@@ -90,9 +92,15 @@ is the isentropic basis, with the standard's de-rating coefficients left to the 
 
 ## How the pieces fit together
 
-Each calculation is independent, and the composition is done by the caller. The
-`azoth pipe` command performs the one shown here, and reports the two pressure
-drop contributions separately rather than only their sum - they come from
+Each calculation is independent, and the composition is done by the caller. That is
+still true of every id in the list above, and it is why each one has a worked example a
+reader can retrace by hand. A **process layer** - unit operations, and flowsheets that
+compose them - is being built on top, and it composes for you; what it gives up in
+exchange, and what replaces the guarantee, is set out in
+[the roadmap](./roadmap.md) rather than left to be discovered.
+
+The `azoth pipe` command performs the composition shown here, and reports the two
+pressure drop contributions separately rather than only their sum - they come from
 different methods, and seeing which one dominates is part of judging the answer.
 
 ```mermaid

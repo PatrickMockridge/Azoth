@@ -69,6 +69,7 @@ STATIC_PAGES = (
     ("Copyright and licensed data", "copyright.md"),
     ("The batch API", "batch.md"),
     ("azoth and NeqSim", "comparison/neqsim.md"),
+    ("Roadmap", "roadmap.md"),
 )
 
 

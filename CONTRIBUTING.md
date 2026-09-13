@@ -5,6 +5,20 @@ deliberately higher than "the tests pass": a wrong number that looks reasonable
 is the failure this project is organised against, and the process is shaped
 around making that hard to ship.
 
+**It is becoming a calculation library *with a process layer*** — unit operations,
+flowsheets that compose them, reports and an agent surface. That is a deliberate
+crossing of a boundary the project used to hold, and it does not relax anything
+below. Two things follow from it, and both are requirements rather than notes:
+
+- **The two-implementation rule covers the new layer too.** A unit operation is a
+  registered model with a spec, two implementations and a case both run; a flowsheet
+  is a document both implementations execute and compare. There is no third lane
+  where code is allowed to have one implementation.
+- **A flowsheet has no single retraceable worked example**, and pretending otherwise
+  would be the exact failure this file is organised against. What replaces it is
+  stated in `docs/src/roadmap.md`: a hand-computable case for the composition, and
+  conservation checks that hold at every answer.
+
 ## Getting set up
 
 You need Rust (the version in `rust-toolchain.toml`), Python 3.12, and for the
