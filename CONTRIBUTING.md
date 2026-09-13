@@ -40,9 +40,34 @@ why link checking is `tools/check_links.py` instead.
 projects makes pytest autoload plugins that fail to import, and the error looks
 nothing like its cause.
 
+## Where work lands
+
+**Directly on `main`.** Commit, push, and let CI tell you.
+
+There was a rule that every change went on its own branch behind its own pull
+request, and it is **suspended, not repealed**. It is worth writing down why,
+because the reasoning has not changed even though the practice has: a branch per
+milestone is what makes `git bisect` able to separate "this equation is wrong"
+from "this tooling is wrong", and it is what keeps a reviewer from having to read
+a diff of a whole subsystem at once.
+
+What changed is the baseline. This library is part-way through porting NeqSim, and
+while that is true a milestone is not a unit anybody can review on its own — the
+pieces only make sense together, and the branch machinery was costing more than it
+bought. When the port is done and the surface stops moving, the rule comes back.
+
+Two things survive regardless, because they were never about branches:
+
+- **A commit is still the unit of reasoning.** One concern per commit, and a
+  message that says *why*. `git bisect` and `git log` read the commit sequence, not
+  the pull request.
+- **The generated documentation is the review artefact.** Reading `docs/src/eos/`
+  *is* reviewing the physics, because the docs are rendered from the specs the
+  implementations read. That was true when a PR carried it and it is true now.
+
 ## The checks
 
-All of these run in CI. Run them before opening a pull request.
+All of these run in CI. Run them before pushing.
 
 ```bash
 cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --all --check
