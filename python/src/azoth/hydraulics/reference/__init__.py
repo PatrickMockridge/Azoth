@@ -34,6 +34,7 @@ from azoth.hydraulics.reference.friction_factor_haaland import (
 from azoth.hydraulics.reference.friction_factor_swamee_jain import (
     friction_factor_swamee_jain,
 )
+from azoth.hydraulics.reference.orifice_flow import orifice_flow
 from azoth.hydraulics.reference.reynolds_number import reynolds_number
 from azoth.hydraulics.reference.solver import (
     Convergence,
@@ -57,6 +58,7 @@ __all__ = [
     "friction_factor_haaland",
     "friction_factor_swamee_jain",
     "fully_rough_limit",
+    "orifice_flow",
     "registry",
     "require_converged",
     "reynolds_number",

@@ -1,4 +1,4 @@
-//! The five calculations, exposed to Python.
+//! The hydraulics calculations, exposed to Python.
 //!
 //! # Why these take plain floats
 //!
@@ -17,7 +17,7 @@
 //! module: the public API is `azoth.hydraulics`, which is.
 
 use azoth_core::units::{
-    DynamicViscosity, kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds,
+    DynamicViscosity, kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds, pascals,
 };
 use azoth_hydraulics as hyd;
 use pyo3::prelude::*;
@@ -25,7 +25,7 @@ use pyo3::prelude::*;
 use crate::errors::to_pyerr;
 use crate::results::{
     PyColebrookResult, PyDarcyWeisbachResult, PyHaalandResult, PyKFactorsResult,
-    PyReynoldsNumberResult, PySwameeJainResult,
+    PyOrificeFlowResult, PyReynoldsNumberResult, PySwameeJainResult,
 };
 
 /// Reynolds number for flow in a circular pipe.
@@ -91,6 +91,27 @@ pub fn friction_factor_haaland(
 ) -> PyResult<PyHaalandResult> {
     hyd::friction_factor_haaland(re, relative_roughness)
         .map(|r| PyHaalandResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Volumetric flow through an orifice.
+///
+/// `d` arrives as the SI **base** magnitude, so a 50 mm bore crosses as `0.05` - the
+/// spec declares millimetres, but unit handling happens once in Python and what
+/// crosses is metres. `Cd` is dimensionless and arrives as a plain float.
+#[pyfunction]
+#[pyo3(signature = (d, dP, rho, Cd))]
+#[pyo3(text_signature = "(d, dP, rho, Cd)")]
+#[allow(non_snake_case)] // `dP` and `Cd` are the symbols in the published equation
+pub fn orifice_flow(
+    py: Python<'_>,
+    d: f64,
+    dP: f64,
+    rho: f64,
+    Cd: f64,
+) -> PyResult<PyOrificeFlowResult> {
+    hyd::orifice_flow(meters(d), pascals(dP), kilograms_per_cubic_meter(rho), Cd)
+        .map(|r| PyOrificeFlowResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

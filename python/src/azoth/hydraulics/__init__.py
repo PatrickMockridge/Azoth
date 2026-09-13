@@ -10,6 +10,7 @@ separately:
 * :func:`friction_factor_haaland` - a second explicit approximation, fitted differently
 * :func:`crane_k_factors` - fitting losses by the equivalent-length method
 * :func:`darcy_weisbach` - pressure drop over a straight pipe
+* :func:`orifice_flow` - flow through an orifice from its pressure difference
 
 Pipe *with* fittings is a composition of the last two, performed by the
 ``azoth pipe`` CLI rather than by a calc of its own, because the two losses are
@@ -41,6 +42,7 @@ from azoth.core.result import (
     DarcyWeisbachResult,
     HaalandResult,
     KFactorsResult,
+    OrificeFlowResult,
     ReynoldsNumberResult,
     SwameeJainResult,
 )
@@ -52,6 +54,7 @@ __all__ = [
     "friction_factor_colebrook",
     "friction_factor_haaland",
     "friction_factor_swamee_jain",
+    "orifice_flow",
     "reynolds_number",
 ]
 
@@ -61,6 +64,7 @@ _SWAMEE_JAIN = "hydraulics.friction_factor_swamee_jain"
 _HAALAND = "hydraulics.friction_factor_haaland"
 _CRANE_K = "hydraulics.crane_k_factors"
 _DARCY_WEISBACH = "hydraulics.darcy_weisbach"
+_ORIFICE_FLOW = "hydraulics.orifice_flow"
 
 
 def reynolds_number(rho: Q, v: Q, D: Q, mu: Q) -> ReynoldsNumberResult:
@@ -117,6 +121,27 @@ def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResu
     See :func:`azoth.hydraulics.reference.friction_factor_haaland`.
     """
     return resolve(_HAALAND)(re=re, relative_roughness=relative_roughness)  # type: ignore[no-any-return]
+
+
+def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:
+    """Volumetric flow through an orifice.
+
+    ``Cd`` is the discharge coefficient and is supplied rather than computed: the
+    standard's coefficient equations are fitted expressions built on tables of
+    experimental constants, and this library does not reproduce those. Supply the
+    coefficient for ``q = Cd * A * sqrt(2*dP/rho)`` as written, with no
+    velocity-of-approach factor added - see the reference implementation.
+
+    ``d`` is the bore and is declared in millimetres, as bores are quoted; any length
+    is accepted. ``dP`` is a magnitude and may not be negative.
+
+    Raises:
+        OutOfRangeError: if ``d`` or ``rho`` is not positive, if ``dP`` is negative,
+            or if ``Cd`` is outside ``(0, 1]``.
+
+    See :func:`azoth.hydraulics.reference.orifice_flow`.
+    """
+    return resolve(_ORIFICE_FLOW)(d=d, dP=dP, rho=rho, Cd=Cd)  # type: ignore[no-any-return]
 
 
 def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:

@@ -10,6 +10,7 @@
 //! * [`friction_factor_haaland`] - a second explicit approximation, fitted differently
 //! * [`crane_k_factors`] - fitting losses by the equivalent-length method
 //! * [`darcy_weisbach`] - pressure drop over a straight pipe
+//! * [`orifice_flow`] - flow through an orifice from its pressure difference
 //!
 //! Pipe *with* fittings is a composition of the last two, performed by the
 //! `azoth pipe` CLI rather than by a calc of its own, because the two losses
@@ -32,6 +33,7 @@ pub mod fluids;
 pub mod friction_factor_colebrook;
 pub mod friction_factor_haaland;
 pub mod friction_factor_swamee_jain;
+pub mod orifice_flow;
 pub mod provenance;
 pub mod results;
 pub mod reynolds_number;
@@ -44,9 +46,10 @@ pub use fluids::{available_fluids, provider_for};
 pub use friction_factor_colebrook::{friction_factor_colebrook, fully_rough_limit};
 pub use friction_factor_haaland::friction_factor_haaland;
 pub use friction_factor_swamee_jain::friction_factor_swamee_jain;
+pub use orifice_flow::orifice_flow;
 pub use provenance::VerifyStatus;
 pub use results::{
     ColebrookResult, DarcyWeisbachResult, HaalandResult, KComponent, KFactorsResult,
-    ReynoldsNumberResult, SwameeJainResult,
+    OrificeFlowResult, ReynoldsNumberResult, SwameeJainResult,
 };
 pub use reynolds_number::{regime_for, regime_warning, reynolds_number};

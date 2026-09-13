@@ -7,6 +7,7 @@
 //!   - specs/calcs/hydraulics/friction_factor_colebrook.yaml
 //!   - specs/calcs/hydraulics/friction_factor_haaland.yaml
 //!   - specs/calcs/hydraulics/friction_factor_swamee_jain.yaml
+//!   - specs/calcs/hydraulics/orifice_flow.yaml
 //!   - specs/calcs/hydraulics/reynolds_number.yaml
 //!
 //! Tables for the `hydraulics` namespace. Every namespace has its own generated
@@ -695,6 +696,152 @@ pub static FRICTION_FACTOR_SWAMEE_JAIN_SPEC: CalcSpec = CalcSpec {
     tests: FRICTION_FACTOR_SWAMEE_JAIN_TESTS,
 };
 
+/// Registry entry for `hydraulics.orifice_flow`.
+static ORIFICE_FLOW_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "d",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the bore is squared, so a zero bore would give zero area and zero flow, and a negative one would give a positive area from a nonsensical input. Both are caller errors rather than physical states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "dP",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a negative difference would mean flow in the other direction, which is a different calculation and not the one named here. Zero is allowed and correct: no pressure difference drives no flow.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "rho",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "density is a divisor inside the square root, so zero is singular and negative would make the root imaginary.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Cd",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a non-positive coefficient would give a flow that is zero or in the wrong direction - wrong rather than merely unusual.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Cd",
+            min: None,
+            min_inclusive: true,
+            max: Some(1.0),
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the ideal, lossless orifice passes exactly the ideal flow, so a coefficient above 1 would claim more flow than an obstruction of that area can pass at that pressure difference. That is not an uncertainty to warn about but a violation of the relation, so it is rejected. The bound is inclusive because 1 is the ideal limit and a legitimate one.",
+        },
+    },
+];
+
+static ORIFICE_FLOW_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "larger_bore_and_lower_differential",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("d", 100.0), ("dP", 10000.0), ("rho", 1000.0), ("Cd", 0.61)],
+        lists: &[],
+        expected: &[("q", 0.021425684929674216)],
+    },
+    TestCase {
+        id: "an_ideal_orifice_passes_the_ideal_flow",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("d", 50.0), ("dP", 25000.0), ("rho", 998.0), ("Cd", 1.0)],
+        lists: &[],
+        expected: &[("q", 0.013897914051711287)],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "monotonic",
+        kind: "property",
+        property: Some("monotonic"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+];
+
+/// Registered spec for `hydraulics.orifice_flow`.
+///
+/// Public and addressable directly, so a calc can hold `&ORIFICE_FLOW_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static ORIFICE_FLOW_SPEC: CalcSpec = CalcSpec {
+    id: "hydraulics.orifice_flow",
+    verification: "unverified",
+    checks: ORIFICE_FLOW_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "water_through_a_50mm_orifice_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("d", 50.0), ("dP", 25000.0), ("rho", 998.0), ("Cd", 0.62)],
+        lists: &[],
+        expected: &[("q", 0.008616706712060997)],
+    },
+    tests: ORIFICE_FLOW_TESTS,
+};
+
 /// Registry entry for `hydraulics.reynolds_number`.
 static REYNOLDS_NUMBER_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -826,6 +973,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &FRICTION_FACTOR_COLEBROOK_SPEC,
     &FRICTION_FACTOR_HAALAND_SPEC,
     &FRICTION_FACTOR_SWAMEE_JAIN_SPEC,
+    &ORIFICE_FLOW_SPEC,
     &REYNOLDS_NUMBER_SPEC,
 ];
 
