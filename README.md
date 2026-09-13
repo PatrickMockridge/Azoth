@@ -113,6 +113,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.rachford_rice_binary` | The vapour fraction that solves Rachford-Rice |
 | `eos.pr_molar_volume` | Molar volume from a compressibility factor |
 | `eos.pr_mass_density` | Mass density from a molar volume |
+| `eos.ideal_gas_cp` | Ideal-gas heat capacity from a caller-supplied polynomial |
 | `eos.pure_saturation` | Saturation pressure, by bisection — a *model*, not a calc |
 | `eos.pt_flash` | Two-phase flash at a fixed temperature and pressure — a *model* |
 | `eos.bubble_pressure` | Bubble-point pressure at a fixed temperature — a *model* |

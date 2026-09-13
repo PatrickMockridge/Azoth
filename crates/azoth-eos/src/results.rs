@@ -5,7 +5,7 @@
 //! [`CalcResult::FIELDS`], with a test asserting the three agree. See
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
-use azoth_core::units::{MassDensity, MolarVolume, Pressure};
+use azoth_core::units::{MassDensity, MolarHeatCapacity, MolarVolume, Pressure};
 use azoth_core::{CalcResult, Warning};
 
 /// Result of `eos.pr_kappa`.
@@ -375,6 +375,32 @@ impl CalcResult for DewPressureResult {
         "residual",
         "warnings",
     ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.ideal_gas_cp`.
+///
+/// Reports the polynomial's own dimensionless value as well as the dimensioned heat
+/// capacity, because the dimensionless form is what a reader checking the arithmetic
+/// by hand computes first - and because the multiplication by `R` is then visible as
+/// the single step it is, rather than folded into the answer.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IdealGasCpResult {
+    /// The polynomial's value, `Cp/R`.
+    pub cp_over_r: f64,
+    /// The ideal-gas heat capacity. Carries `OutOfValidRange` when it is not
+    /// positive, which means the polynomial has been evaluated outside its range.
+    pub cp: MolarHeatCapacity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for IdealGasCpResult {
+    const CALC_ID: &'static str = "eos.ideal_gas_cp";
+    const FIELDS: &'static [&'static str] = &["cp_over_r", "cp", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

@@ -123,6 +123,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pt_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::bubble_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::dew_pressure, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::ideal_gas_cp, m)?)?;
 
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;

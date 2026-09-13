@@ -40,14 +40,15 @@
 //! a ratio would be an abstraction with exactly one implementation.
 
 pub use uom::si::f64::{
-    Area, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate, MolarMass, MolarVolume,
-    Power, Pressure, SpecificHeatCapacity, TemperatureInterval, ThermalConductivity,
-    ThermodynamicTemperature, Velocity, VolumeRate,
+    Area, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate, MolarEnergy,
+    MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
+    TemperatureInterval, ThermalConductivity, ThermodynamicTemperature, Velocity, VolumeRate,
 };
 pub use uom::si::{
     area::square_meter, dynamic_viscosity::pascal_second,
     heat_transfer::watt_per_square_meter_kelvin, length::meter, length::millimeter,
     mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
+    molar_energy::joule_per_mole, molar_heat_capacity::joule_per_kelvin_mole,
     molar_mass::kilogram_per_mole, molar_volume::cubic_meter_per_mole, power::watt,
     pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
     temperature_interval::kelvin as kelvin_interval, thermal_conductivity::watt_per_meter_kelvin,
@@ -183,6 +184,35 @@ pub fn cubic_meters_per_mole(value: f64) -> MolarVolume {
     MolarVolume::new::<cubic_meter_per_mole>(value)
 }
 
+/// A molar energy in joules per mole.
+///
+/// Carries an enthalpy, and - as [`molar_heat_capacity`] explains - an entropy too.
+/// The model layer is what makes it necessary: every kernel in `eos` returns
+/// dimensionless departures, and the multiplication by `R*T` that turns one into
+/// joules happens where `R` and `T` are, at the top.
+#[must_use]
+pub fn joules_per_mole(value: f64) -> MolarEnergy {
+    MolarEnergy::new::<joule_per_mole>(value)
+}
+
+/// A molar heat capacity in joules per mole kelvin.
+///
+/// **This is also the carrier for a molar *entropy*.** `uom` has no
+/// `MolarEntropy`, and it does not need one: the two are dimensionally identical -
+/// `J/(mol*K)` either way - so a second quantity type would be a second name for one
+/// dimension. The rereading is worth a comment rather than a silent reuse, because a
+/// reader who sees `MolarHeatCapacity` carrying an entropy should be able to find out
+/// in one place why that is right.
+///
+/// Note the conversion path's name: `joule_per_kelvin_mole`, not the
+/// `joule_per_mole_kelvin` the unit string suggests. That ordering is `uom`'s, and
+/// getting it wrong is a compile error rather than a silent one, which is one of the
+/// reasons the boundary uses `uom` at all.
+#[must_use]
+pub fn joules_per_mole_kelvin(value: f64) -> MolarHeatCapacity {
+    MolarHeatCapacity::new::<joule_per_kelvin_mole>(value)
+}
+
 /// A molar mass in kilograms per mole.
 #[must_use]
 pub fn kilograms_per_mole(value: f64) -> MolarMass {
@@ -219,6 +249,8 @@ pub const UNIT_NAMES: &[&str] = &[
     "W/(m**2*K)",
     "kg/mol",
     "m**3/mol",
+    "J/mol",
+    "J/(mol*K)",
 ];
 
 #[cfg(test)]
@@ -285,6 +317,8 @@ mod tests {
         ),
         ("kg/mol", |v| kilograms_per_mole(v).value, 1.0),
         ("m**3/mol", |v| cubic_meters_per_mole(v).value, 1.0),
+        ("J/mol", |v| joules_per_mole(v).value, 1.0),
+        ("J/(mol*K)", |v| joules_per_mole_kelvin(v).value, 1.0),
     ];
 
     #[test]

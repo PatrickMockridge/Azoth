@@ -622,6 +622,25 @@ class DewPressureResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class IdealGasCpResult(_HasWarnings):
+    """Result of ``eos.ideal_gas_cp``.
+
+    Reports the polynomial's own dimensionless value as well as the dimensioned heat
+    capacity, because the dimensionless form is what a reader checking the arithmetic
+    by hand computes first - and because the multiplication by ``R`` is then visible
+    as the single step it is, rather than folded into the answer.
+    """
+
+    #: The polynomial's value, ``Cp/R``.
+    cp_over_r: float
+    #: The ideal-gas heat capacity. Carries ``OUT_OF_VALID_RANGE`` when it is not
+    #: positive, which means the polynomial has been evaluated outside its range.
+    cp: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 #: Calc id -> the result dataclass it produces. Used by the contract test to
 #: check each shape against the Rust side without importing every name by hand.
 RESULT_TYPES: dict[str, type[object]] = {
@@ -645,6 +664,7 @@ RESULT_TYPES: dict[str, type[object]] = {
     "eos.rachford_rice_binary": RachfordRiceBinaryResult,
     "eos.pr_molar_volume": PrMolarVolumeResult,
     "eos.pr_mass_density": PrMassDensityResult,
+    "eos.ideal_gas_cp": IdealGasCpResult,
 }
 
 #: Model id -> the result dataclass it produces.

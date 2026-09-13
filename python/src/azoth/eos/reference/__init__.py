@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from azoth.eos.reference.bubble_pressure import bubble_pressure
 from azoth.eos.reference.dew_pressure import dew_pressure
+from azoth.eos.reference.ideal_gas_cp import REFERENCE_TEMPERATURE, ideal_gas_cp
 from azoth.eos.reference.pr_alpha_ab import OMEGA_A, OMEGA_B, pr_alpha_ab
 from azoth.eos.reference.pr_departure import pr_departure
 from azoth.eos.reference.pr_kappa import pr_kappa
@@ -30,8 +31,10 @@ __all__ = [
     "MOLAR_GAS_CONSTANT",
     "OMEGA_A",
     "OMEGA_B",
+    "REFERENCE_TEMPERATURE",
     "bubble_pressure",
     "dew_pressure",
+    "ideal_gas_cp",
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",

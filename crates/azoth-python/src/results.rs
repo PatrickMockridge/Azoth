@@ -17,9 +17,9 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    BubblePressureResult, DewPressureResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
+    BubblePressureResult, DewPressureResult, IdealGasCpResult, PrAlphaAbResult, PrDepartureResult,
+    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult,
+    PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -952,6 +952,49 @@ impl PyPtFlashResult {
     }
 }
 
+/// Result of `eos.ideal_gas_cp`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "IdealGasCpResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyIdealGasCpResult {
+    /// The polynomial's value, `Cp/R`.
+    #[pyo3(get)]
+    pub cp_over_r: f64,
+    /// The ideal-gas heat capacity.
+    #[pyo3(get)]
+    pub cp: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyIdealGasCpResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "IdealGasCpResult(cp={} {})",
+            self.cp.magnitude_si, self.cp.unit
+        )
+    }
+}
+
+impl From<&IdealGasCpResult> for PyIdealGasCpResult {
+    fn from(r: &IdealGasCpResult) -> Self {
+        Self {
+            cp_over_r: r.cp_over_r,
+            cp: PyQty {
+                magnitude_si: r.cp.value,
+                unit: "J/(mol*K)".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.bubble_pressure` or `eos.dew_pressure`, transported.
 ///
 /// One transport type for two models, because the Rust results have the same shape
@@ -1319,6 +1362,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
+        IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -1351,6 +1395,7 @@ pub fn calc_ids() -> Vec<String> {
         RachfordRiceBinaryResult::CALC_ID.to_string(),
         PrMolarVolumeResult::CALC_ID.to_string(),
         PrMassDensityResult::CALC_ID.to_string(),
+        IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),

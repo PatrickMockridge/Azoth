@@ -35,6 +35,7 @@ from azoth.core.result import (
     DewPressureResult,
     FlowRegime,
     HaalandResult,
+    IdealGasCpResult,
     KComponent,
     KFactorsResult,
     OrificeFlowResult,
@@ -382,6 +383,22 @@ def choked_flow_area(m_dot: Q, P0: Q, rho0: Q, k: float) -> ChokedFlowAreaResult
     )
 
 
+def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResult:
+    """The ideal-gas heat capacity, computed in Rust.
+
+    All four coefficients cross as plain floats because they are genuinely
+    dimensionless - the same rule the rest of this namespace follows. Only `T` needs
+    a conversion, and only the result needs a unit put back on it.
+    """
+    spec = _spec_for("eos.ideal_gas_cp")
+    result = _core.ideal_gas_cp(a, b, c, d, input_to_si(spec, "T", T))
+    return IdealGasCpResult(
+        cp_over_r=result.cp_over_r,
+        cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 #: Calc id -> the bridge function implementing it. Explicit rather than derived
 #: from the function names, so a renamed id fails here at import rather than
 #: resolving to the wrong calc.
@@ -406,6 +423,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.rachford_rice_binary": rachford_rice_binary,
     "eos.pr_molar_volume": pr_molar_volume,
     "eos.pr_mass_density": pr_mass_density,
+    "eos.ideal_gas_cp": ideal_gas_cp,
 }
 
 

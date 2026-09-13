@@ -2,6 +2,7 @@
 
 - [azoth](./index.md)
 - [Equations of state](./eos/index.md)
+  - [Ideal-gas heat capacity from a polynomial](./eos/ideal_gas_cp.md)
   - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)
   - [Peng-Robinson fugacity coefficient and departure functions](./eos/pr_departure.md)
   - [Peng-Robinson attraction-parameter coefficient](./eos/pr_kappa.md)

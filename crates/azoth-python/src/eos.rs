@@ -13,9 +13,10 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyPhaseBoundaryResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
-    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
+    PyIdealGasCpResult, PyPhaseBoundaryResult, PyPrAlphaAbResult, PyPrDepartureResult,
+    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult,
+    PyPrsvKappaResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
+    PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -300,6 +301,30 @@ pub fn dew_pressure(
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
     eos::dew_pressure(&mixture, kelvins(T), &held)
         .map(|r| PyPhaseBoundaryResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The ideal-gas heat capacity from a four-term polynomial.
+///
+/// The first calc in this namespace whose constants are fitted data rather than
+/// coefficients of a published equation, and the first whose arguments include a
+/// caller-supplied coefficient set at all. All four coefficients cross as plain
+/// floats: they are dimensionless by construction, because the polynomial is written
+/// against `T/(1000 K)` and divided through by `R`.
+#[pyfunction]
+#[pyo3(signature = (a, b, c, d, T))]
+#[pyo3(text_signature = "(a, b, c, d, T)")]
+#[allow(non_snake_case)] // `T` is the symbol in the chemistry
+pub fn ideal_gas_cp(
+    py: Python<'_>,
+    a: f64,
+    b: f64,
+    c: f64,
+    d: f64,
+    T: f64,
+) -> PyResult<PyIdealGasCpResult> {
+    eos::ideal_gas_cp(a, b, c, d, kelvins(T))
+        .map(|r| PyIdealGasCpResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

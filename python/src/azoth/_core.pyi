@@ -136,6 +136,12 @@ class PtFlashResult:
     warnings: list[Warning]
 
 @final
+class IdealGasCpResult:
+    cp_over_r: float
+    cp: Qty
+    warnings: list[Warning]
+
+@final
 class PhaseBoundaryResult:
     pressure: Qty
     incipient: list[float]
@@ -259,6 +265,7 @@ def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryR
 def pr_molar_volume(z: float, T: float, P: float) -> PrMolarVolumeResult: ...
 def pr_mass_density(M: float, v: float) -> PrMassDensityResult: ...
 def pure_saturation(Tc: float, Pc: float, omega: float, T: float) -> PureSaturationResult: ...
+def ideal_gas_cp(a: float, b: float, c: float, d: float, T: float) -> IdealGasCpResult: ...
 def bubble_pressure(
     Tc: list[float],
     Pc: list[float],

@@ -23,6 +23,7 @@ from azoth.core.result import RootStructure
 from azoth.core.warnings import Warning
 
 __all__ = [
+    "IdealGasCpBatch",
     "PrAlphaAbBatch",
     "PrDepartureBatch",
     "PrKappaBatch",
@@ -32,6 +33,7 @@ __all__ = [
     "PrsvKappaBatch",
     "RachfordRiceBinaryBatch",
     "Vdw1fMixBinaryBatch",
+    "ideal_gas_cp",
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
@@ -51,6 +53,7 @@ _PR_DEPARTURE = "eos.pr_departure"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
+_IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
 
 
@@ -457,5 +460,58 @@ def pr_mass_density(*, M: Sequence[float], v: Sequence[float]) -> PrMassDensityB
         _PR_MASS_DENSITY,
         {"M": sequence(M, "M"), "v": sequence(v, "v")},
         _build_mass_density,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class IdealGasCpBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.ideal_gas_cp`."""
+
+    #: The polynomial's dimensionless value per element.
+    cp_over_r: array[float]
+    #: Ideal-gas heat capacity per element, in J/(mol*K).
+    cp: array[float]
+
+
+def _build_ideal_gas_cp(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> IdealGasCpBatch:
+    return IdealGasCpBatch(
+        warnings=warnings,
+        units=units,
+        cp_over_r=columns["cp_over_r"],  # type: ignore[arg-type]
+        cp=columns["cp"],  # type: ignore[arg-type]
+    )
+
+
+def ideal_gas_cp(
+    *,
+    a: Sequence[float],
+    b: Sequence[float],
+    c: Sequence[float],
+    d: Sequence[float],
+    T: Sequence[float],
+) -> IdealGasCpBatch:
+    """Ideal-gas heat capacity, over arrays.
+
+    ``T`` is in kelvin. This is the first calc in this namespace whose unit is not
+    dimensionless, so it is the first batch arm here that carries a unit back out -
+    ``cp`` is in ``J/(mol*K)``, which the result records.
+
+    See :func:`azoth.eos.ideal_gas_cp`.
+    """
+    result: IdealGasCpBatch = run(
+        _IDEAL_GAS_CP,
+        {
+            "a": sequence(a, "a"),
+            "b": sequence(b, "b"),
+            "c": sequence(c, "c"),
+            "d": sequence(d, "d"),
+            "T": sequence(T, "T"),
+        },
+        _build_ideal_gas_cp,
     )
     return result

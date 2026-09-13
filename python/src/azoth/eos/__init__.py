@@ -68,6 +68,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     BubblePressureResult,
     DewPressureResult,
+    IdealGasCpResult,
     PrAlphaAbResult,
     PrDepartureResult,
     PrKappaResult,
@@ -88,6 +89,7 @@ __all__ = [
     "Mixture",
     "bubble_pressure",
     "dew_pressure",
+    "ideal_gas_cp",
     "mixture",
     "pr_alpha_ab",
     "pr_departure",
@@ -105,6 +107,7 @@ __all__ = [
 _PR_KAPPA = "eos.pr_kappa"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
+_IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _DEW_PRESSURE = "eos.dew_pressure"
 _PT_FLASH = "eos.pt_flash"
@@ -295,6 +298,30 @@ def dew_pressure(mixture: Mixture, T: Q, y: list[float]) -> DewPressureResult:
     See :func:`azoth.eos.reference.dew_pressure`.
     """
     return resolve(_DEW_PRESSURE)(mixture=mixture, T=T, y=y)  # type: ignore[no-any-return]
+
+
+def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResult:
+    """The ideal-gas heat capacity at a temperature, from a caller-supplied polynomial.
+
+    ``Cp/R = a + b*theta + c*theta**2 + d*theta**3`` with ``theta = T/(1000 K)``, so
+    the four coefficients are dimensionless and a published table's printed numbers go
+    in unchanged - see :func:`azoth.eos.reference.ideal_gas_cp` for the derivation of
+    that substitution.
+
+    **This library ships no heat-capacity coefficients.** They are per-component fitted
+    data, which is the databank this library deliberately has none of.
+
+    ``T`` must lie inside the range the coefficients were fitted over, and that is not
+    checked. A polynomial evaluated outside it turns over, ``cp`` goes negative, and
+    the result carries ``OUT_OF_VALID_RANGE`` - which is the case this catches, not the
+    more likely one where the value is simply a few per cent wrong.
+
+    Raises:
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.ideal_gas_cp`.
+    """
+    return resolve(_IDEAL_GAS_CP)(a=a, b=b, c=c, d=d, T=T)  # type: ignore[no-any-return]
 
 
 def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:

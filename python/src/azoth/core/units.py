@@ -118,6 +118,11 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     "W/(m**2*K)": "watt/(meter**2*kelvin)",
     "kg/mol": "kilogram/mole",
     "m**3/mol": "meter**3/mole",
+    "J/mol": "joule/mole",
+    # Also the carrier for a molar *entropy*: `pint` has no separate name for it
+    # because the two are dimensionally identical, and the Rust side records the
+    # same reasoning on `joules_per_mole_kelvin`.
+    "J/(mol*K)": "joule/(mole*kelvin)",
 }
 
 
