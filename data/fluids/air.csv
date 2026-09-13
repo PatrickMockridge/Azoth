@@ -8,6 +8,10 @@
 # valid near atmospheric pressure - the provider warns if it is asked for
 # something else rather than silently returning a wrong number.
 #
+#
+# Licence: CC-BY-4.0. This data is deliberately not AGPL: the reference
+# values are meant to be reusable and citable without a copyleft
+# obligation. See LICENSE-CC-BY-4.0.
 temperature_c,density_kg_m3,dynamic_viscosity_pa_s,citation,verify_status
 0,1.292,0.0000172,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
 20,1.204,0.0000181,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified

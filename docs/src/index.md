@@ -99,3 +99,16 @@ Water and air properties are a different case: real published values, marked
 The documentation, the range checks both implementations enforce, and the test
 cases both implementations run are all generated from that one file. If you can
 write the spec, you have written the calc, the tests and the docs.
+
+## Licence
+
+The code is **AGPL-3.0-or-later**. The documentation and the reference data are
+**CC-BY-4.0** - attribution only, no copyleft. See `LICENSE` and
+`LICENSE-CC-BY-4.0` in the repository root.
+
+The split is deliberate. A validated calculation library is only worth what its
+validation is worth, and validation that cannot be read cannot be checked, so the
+code carries the copyleft. The equations and coefficients are the part most
+people want to reuse or cite, and those should not require adopting a copyleft
+obligation to do it.
+

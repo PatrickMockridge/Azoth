@@ -92,6 +92,12 @@ DATA = (
 
 LOCK_FILES = ("Cargo.lock", "uv.lock")
 
+#: The licence texts, hashed like anything else. A release's legal terms are part
+#: of the release: if a licence file changed between this record and the tree you
+#: have, you are looking at different terms, and a hash is the only way a reader
+#: finds that out without diffing by eye.
+LICENCES = ("LICENSE", "LICENSE-CC-BY-4.0")
+
 
 def sha256_of(path: Path) -> str:
     """SHA-256 of a file's bytes."""
@@ -178,6 +184,7 @@ def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
         "shared": [describe(p) for p in SHARED],
         "data": [describe(p) for p in DATA],
         "lock_files": [describe(p) for p in LOCK_FILES],
+        "licences": [describe(p) for p in LICENCES],
         "artifacts": [describe(a) for a in artifacts],
         "signature": {
             "sigstore_bundle": None,
@@ -237,7 +244,7 @@ def verify(path: Path) -> int:
         for item in entry["tests"]:
             compare(item, f"{entry['id']}.tests")
 
-    for section in ("shared", "data", "lock_files"):
+    for section in ("shared", "data", "lock_files", "licences"):
         for item in recorded.get(section, []):
             compare(item, section)
 

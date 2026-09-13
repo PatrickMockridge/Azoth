@@ -195,6 +195,22 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and the
 
 ## Licence
 
-Code under dual MIT / Apache-2.0. Documentation and data under CC-BY-4.0. See
-[LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE) and
-[LICENSE-CC-BY](LICENSE-CC-BY).
+**Code is AGPL-3.0-or-later.** If you run a modified version of this library as
+a network service, the AGPL requires you to offer the modified source to that
+service's users. That is deliberate: a validated calculation library is only
+worth what its validation is worth, and validation that cannot be read cannot be
+checked.
+
+**Documentation and data are CC-BY-4.0** - the reference data under `data/` and
+the prose under `docs/`. Attribution only, no copyleft. The equations and the
+coefficients are the part most people want to reuse or cite, and they should not
+require adopting a copyleft obligation to do it.
+
+| What | Licence | File |
+|---|---|---|
+| Rust crates, Python package, CLI, tools | AGPL-3.0-or-later | [LICENSE](LICENSE) |
+| `docs/`, `data/` | CC-BY-4.0 | [LICENSE-CC-BY-4.0](LICENSE-CC-BY-4.0) |
+
+If you need a permissive licence for commercial use, the calculations themselves
+are standard published equations and the citations are in each spec - you are
+free to reimplement from the sources we cite.

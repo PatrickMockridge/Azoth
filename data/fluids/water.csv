@@ -13,6 +13,10 @@
 #                     the primary formulation
 #   verified        - checked against the primary formulation by a named person
 #
+#
+# Licence: CC-BY-4.0. This data is deliberately not AGPL: the reference
+# values are meant to be reusable and citable without a copyleft
+# obligation. See LICENSE-CC-BY-4.0.
 temperature_c,density_kg_m3,dynamic_viscosity_pa_s,citation,verify_status
 0,999.8,0.001781,Widely published engineering table values consistent with IAPWS-IF97 / NIST and CRC Handbook,unverified
 20,998.2,0.001002,Widely published engineering table values consistent with IAPWS-IF97 / NIST and CRC Handbook,unverified
