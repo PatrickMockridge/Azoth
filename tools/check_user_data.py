@@ -46,6 +46,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 try:
     import yaml
@@ -65,6 +66,47 @@ from spec_lint import Report, check_fittings, check_fluids
 #: `spec_lint` because it is this format's version, not a calc spec's - and it is
 #: imported by `gen_user_data.py` from here for the same reason.
 SCHEMA_VERSION = 1
+
+#: The sections a data file may carry, and the rule each one is checked by.
+#: Paired rather than listed because a section this file does not know about is
+#: rejected below, and a list that could drift from the things actually checked
+#: would make that rejection wrong in the direction that matters.
+KNOWN_SECTIONS = (
+    ("fittings", check_fittings),
+    ("fluids", check_fluids),
+)
+
+
+def check_document(report: Report, document: dict[str, Any], where: str) -> None:
+    """Every section of a parsed data file, and nothing that is not one.
+
+    **Unknown top-level sections are an error, not something to skip past.** The
+    checker used to read `schema_version`, `fittings` and `fluids` and ignore every
+    other key, which meant a misspelled `fitting:` was accepted and its rows were
+    dropped - a file that looks like data in use and is read by nothing, which is
+    the failure this whole mechanism exists to prevent. It is also what makes the
+    format's version mean anything: without it, a file written for a newer shape
+    passes the older checker and quietly loses whatever it added.
+
+    Both the checker and the generator call this, on the same parsed document, so
+    a file that passes one generates in the other with the same words.
+    """
+    known = {"schema_version"} | {name for name, _ in KNOWN_SECTIONS}
+    unknown = sorted(set(document) - known)
+    if unknown:
+        report.error(
+            where,
+            f"has section(s) {unknown} that this format does not define. Known "
+            f"sections: {sorted(known)}. Refused rather than ignored: a section "
+            f"nothing reads is data that looks in use and is not.",
+        )
+
+    for name, check in KNOWN_SECTIONS:
+        if name in document:
+            check(report, document[name])
+
+    if not report.by_status and not unknown:
+        report.error(where, "has neither a 'fittings' nor a 'fluids' section")
 
 
 def check(path: Path) -> int:
@@ -93,14 +135,7 @@ def check(path: Path) -> int:
         return 1
 
     report = Report()
-    if "fittings" in document:
-        check_fittings(report, document["fittings"])
-    if "fluids" in document:
-        check_fluids(report, document["fluids"])
-
-    if not report.by_status:
-        report.error("document", "has neither a 'fittings' nor a 'fluids' section")
-
+    check_document(report, document, path.name)
     return report_result(report, path)
 
 

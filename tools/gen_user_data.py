@@ -57,7 +57,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # The validator, not a second copy of it. A file this tool writes must be a file
 # that tool passes, and restating the rules here would make that two claims.
-from check_user_data import SCHEMA_VERSION, Report, check_fittings, check_fluids
+from check_user_data import SCHEMA_VERSION, Report, check_document
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 FITTINGS_PATH = Path("data/fittings/crane_k_factors.csv")
@@ -381,12 +381,7 @@ def validate(document: dict[str, Any], path: Path) -> Report:
     here with the same words.
     """
     report = Report()
-    if "fittings" in document:
-        check_fittings(report, document["fittings"])
-    if "fluids" in document:
-        check_fluids(report, document["fluids"])
-    if not report.by_status:
-        report.error(str(path), "has neither a 'fittings' nor a 'fluids' section")
+    check_document(report, document, str(path))
     return report
 
 
