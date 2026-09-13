@@ -43,8 +43,16 @@ pub mod provenance;
 pub mod pump_power;
 pub mod results;
 pub mod reynolds_number;
-pub mod solver;
 pub mod spec_gen;
+
+// The solver moved to `azoth-core` once a second namespace needed one: this crate
+// could not have been the home for it without forcing `azoth-eos` to depend on
+// `azoth-hydraulics`, which would be one domain crate depending on another.
+//
+// Re-exported rather than removed so that `crate::solver::` in this crate's calcs
+// keeps working unchanged - the move is a relocation, not a redesign, and keeping
+// the paths stable is what makes it reviewable as one.
+pub use azoth_core::solver;
 
 pub use choked_flow_area::choked_flow_area;
 pub use control_valve_cv::{CV_TO_SI, control_valve_cv};

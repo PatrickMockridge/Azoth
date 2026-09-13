@@ -74,10 +74,17 @@ gitignored and never committed. The tooling itself is covered by
 
 ## Adding a calculation
 
-**Five new files, and then twelve edits to existing ones.** The second half is not
-generated, and this section used to claim it was — "four files, and the rest
-follows" was wrong, which is worth stating plainly here because a contributor who
-believes it will push something that does not work.
+**Five new files, and then fourteen edits to existing ones** — plus eight more if
+the calc is the first in a new namespace.
+
+The second half is not generated, and this section used to claim it was — "four
+files, and the rest follows" was wrong. So was "twelve edits": that count predated
+the batch API, which added a registration point in each language. **These numbers
+are measured, not guessed** — the last one by adding `eos.pr_kappa` and counting.
+Don't trust a smaller number without re-measuring.
+
+The paths below use `hydraulics` as the worked example. Substitute your own
+namespace everywhere, and see the next section if it does not exist yet.
 
 ### The five new files
 
@@ -97,25 +104,35 @@ that are *not* checked, a worked example, and the tests.
 Both test files are driven by the spec's `tests` list, so they follow from the
 spec's contents rather than being written against the implementation.
 
-### The twelve edits
+### The fourteen edits
 
 Listed because "the rest follows" was a claim nobody had checked, and because a
 forgotten one fails in a different way in each case:
 
 | File | What to add |
 |---|---|
-| `crates/azoth-hydraulics/src/lib.rs` | `pub mod`, the re-export, the crate docstring's list |
-| `crates/azoth-hydraulics/src/results.rs` | the result struct, its `CalcResult` impl, the two test tables |
-| `crates/azoth-python/src/hydraulics.rs` | the `#[pyfunction]` wrapper |
+| `crates/azoth-<ns>/src/lib.rs` | `pub mod`, the re-export, the crate docstring's list |
+| `crates/azoth-<ns>/src/results.rs` | the result struct, its `CalcResult` impl, the two test tables |
+| `crates/azoth-python/src/<ns>.rs` | the `#[pyfunction]` wrapper |
 | `crates/azoth-python/src/results.rs` | the `Py*Result` transport class, `result_fields`, `calc_ids` |
 | `crates/azoth-python/src/lib.rs` | `add_class`, `add_function` |
+| `crates/azoth-python/src/batch.rs` | the batch arm — the Rust half of the batch API |
 | `python/src/azoth/_core.pyi` | the function signature and the result class |
 | `python/src/azoth/_rust_bridge.py` | the bridge function and its `_IMPLEMENTATIONS` entry |
 | `python/src/azoth/core/result.py` | the result dataclass and its `RESULT_TYPES` entry |
-| `python/src/azoth/hydraulics/__init__.py` | the dispatch wrapper, `__all__`, the id constant, the docstring list |
-| `python/src/azoth/hydraulics/reference/__init__.py` | the import and `__all__` |
+| `python/src/azoth/<ns>/__init__.py` | the dispatch wrapper, `__all__`, the id constant, the docstring list |
+| `python/src/azoth/<ns>/reference/__init__.py` | the import and `__all__` |
+| `python/src/azoth/batch/<ns>.py` | the batch wrapper — the Python half of the batch API |
 | `README.md` | the "what is implemented" table |
 | `docs/src/index.md` | the "what is implemented" list |
+
+**The batch API is two edits, in two languages, and it is not optional.** There is
+a Rust arm and a Python module because the batch path loops over the *scalar*
+implementation on each side rather than introducing a third one, so both halves
+have to learn the new calc. `python/tests/test_batch.py` enforces this: its
+`test_the_excluded_set_is_exactly_crane_k_factors` asserts that the only calc
+without a batch form is `crane_k_factors`, so a new calc that skips either edit
+fails there rather than raising `NotImplementedError` at call time.
 
 Then:
 
@@ -125,18 +142,48 @@ Then:
 
 which produces the registries, the calc's doc page and the book's contents.
 
+### If it is the first calc in a new namespace
+
+Eight more, all of which a namespace needs once rather than per calc:
+
+| File | What to add |
+|---|---|
+| `crates/azoth-<ns>/Cargo.toml` | the crate manifest (new file) |
+| `Cargo.toml` | the crate in `members` and in `[workspace.dependencies]` |
+| `crates/azoth-python/Cargo.toml` | the dependency |
+| `crates/azoth-python/src/lib.rs` | `mod <ns>;`, alongside the per-calc `add_class`/`add_function` |
+| `python/src/azoth/__init__.py` | `from azoth import ... <ns> ...`, and `__all__` |
+| `python/src/azoth/batch/__init__.py` | the import and `__all__` |
+| `tools/gen_docs.py` | the namespace's display title in `NAMESPACES` |
+| `tools/provenance.py` | the namespace's shared files in `NAMESPACE_SUPPORT` |
+
+The two generator dicts are the ones that fail loudly: `gen_docs` exits naming the
+namespace it has no title for, and `provenance` would silently hash nothing for it.
+
+**`azoth/__init__.py` is the one that fails quietly**, and it has now been missed
+once — `thermal` was unreachable as `azoth.thermal` from a bare `import azoth` for
+as long as that namespace existed, because the submodule was never imported. Add
+the import, not just the `__all__` entry.
+
 ### How you find out you forgot one
 
-Run the suite. `python/tests/test_registration_completeness.py` checks the points
-that nothing else does — the extension's own `calc_ids()`, the bridge's id table,
-the stub, and that the result class is a real dataclass — and names the file to go
-and edit. `test_registry_contract.py` covers the rest. The two lists in `README.md`
-and `docs/src/index.md` are checked by `test_every_calc_is_announced_in_the_hand_written_lists`,
-and those two are also where the prose about what is *not* implemented lives, which
-no test can read for you: if you add the first orifice calc, go and fix those
+Run the suite. Each omission has its own failure, which is the point of having this
+many registration points rather than generating them away:
+
+| Omission | What fails |
+|---|---|
+| the result dataclass, the stub, the bridge table, `calc_ids()` | `test_registration_completeness.py`, which names the file to go and edit |
+| the function signatures, the declared outputs, the result fields | `test_registry_contract.py` |
+| either half of the batch API | `test_batch.py::test_the_excluded_set_is_exactly_crane_k_factors` |
+| the entries in `README.md` or `docs/src/index.md` | `test_every_calc_is_announced_in_the_hand_written_lists` |
+| the `NAMESPACES` entry | `gen_docs.py` exits, naming the namespace |
+
+Those two lists are also where the prose about what is *not* implemented lives,
+which no test can read for you: if you add the first orifice calc, go and fix those
 paragraphs by hand.
 
-Read an existing calc end to end first — `reynolds_number` is the simplest.
+Read an existing calc end to end first — `reynolds_number` is the simplest, and
+`eos.pr_kappa` is the most recent and has the fewest moving parts.
 
 ## The rules that are not negotiable
 

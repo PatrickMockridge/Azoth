@@ -77,6 +77,11 @@ class RangeCheck:
     min_inclusive: bool
     max: float | None
     max_inclusive: bool
+    #: A single forbidden value, if this bound is an exclusion rather than an
+    #: interval. Mirrors ``RangeCheck::equals`` in Rust, including the reason it
+    #: exists: the schema permits it, nothing implemented it, and a bound that
+    #: silently does nothing is worse than an absent one.
+    equals: float | None
     band: Band
     severity: Severity
     code: WarningCode
@@ -100,6 +105,7 @@ class RangeCheck:
             min_inclusive=bool(raw.get("min_inclusive", True)),
             max=None if raw.get("max") is None else float(raw["max"]),
             max_inclusive=bool(raw.get("max_inclusive", True)),
+            equals=None if raw.get("equals") is None else float(raw["equals"]),
             band=band,
             severity=severity,
             code=code,
@@ -116,6 +122,11 @@ class RangeCheck:
         """
         if math.isnan(value):
             return True
+        # An exclusion rather than an interval. Checked first and returned
+        # unconditionally: `band` describes which side of an interval violates, and
+        # has no meaning for a single forbidden value.
+        if self.equals is not None:
+            return value == self.equals
         below = False
         if self.min is not None:
             below = value < self.min if self.min_inclusive else value <= self.min
@@ -128,6 +139,8 @@ class RangeCheck:
     def describe(self) -> str:
         """Human-readable form of the bound, e.g. ``'Re >= 4000'``."""
         quantity = self.quantity
+        if self.equals is not None:
+            return f"{quantity} == {_format_number(self.equals)}"
         parts: list[str] = []
         if self.min is not None:
             operator = ">=" if self.min_inclusive else ">"

@@ -13,8 +13,15 @@
 //! perfectly and only the attribute name differs.
 
 use azoth_core::CalcResult;
+use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
+use azoth_eos::results::{
+    BubblePressureResult, DewPressureResult, IdealGasCpResult, MolarEnthalpyEntropyResult,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
+};
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -448,6 +455,747 @@ impl PyConductionPlaneWallResult {
     }
 }
 
+/// Result of `eos.pr_kappa`, transported.
+///
+/// Both the input and the output are dimensionless, so this carries a bare `f64`
+/// and no [`PyQty`] - the same shape `reynolds_number` uses, and the reason there
+/// is no unit string here to keep in step with the spec.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrKappaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrKappaResult {
+    /// The Peng-Robinson alpha-function coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub kappa: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrKappaResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrKappaResult(kappa={}, {} warning(s))",
+            self.kappa,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&PrKappaResult> for PyPrKappaResult {
+    fn from(r: &PrKappaResult) -> Self {
+        Self {
+            kappa: r.kappa,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_alpha_ab`, transported.
+///
+/// Three dimensionless outputs, so three bare `f64`s and no [`PyQty`].
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrAlphaAbResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrAlphaAbResult {
+    /// The alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// The cubic's `A`. Dimensionless.
+    #[pyo3(get)]
+    pub a_reduced: f64,
+    /// The cubic's `B`. Dimensionless.
+    #[pyo3(get)]
+    pub b_reduced: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrAlphaAbResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrAlphaAbResult(alpha={}, a_reduced={}, b_reduced={}, {} warning(s))",
+            self.alpha,
+            self.a_reduced,
+            self.b_reduced,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&PrAlphaAbResult> for PyPrAlphaAbResult {
+    fn from(r: &PrAlphaAbResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            a_reduced: r.a_reduced,
+            b_reduced: r.b_reduced,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_z_factor`, transported.
+///
+/// Carries `root_structure` as the spec's string rather than as an enum, so the
+/// bridge rebuilds `azoth.core.result.RootStructure` - the same arrangement
+/// `PyReynoldsNumberResult.regime` uses, and for the same reason: the enum is
+/// Python's, and this layer must not grow a second definition of it.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrZFactorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrZFactorResult {
+    /// The smallest admissible root. Dimensionless.
+    #[pyo3(get)]
+    pub z_min: f64,
+    /// The largest admissible root. Dimensionless.
+    #[pyo3(get)]
+    pub z_max: f64,
+    /// `one_root` or `three_roots`.
+    #[pyo3(get)]
+    pub root_structure: String,
+    /// Newton steps the polish took.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Whether the polish met its stopping rule.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// The largest `|x_k - x_{k-1}|` at the final polish step.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrZFactorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrZFactorResult(z_min={}, z_max={}, root_structure={}, {} warning(s))",
+            self.z_min,
+            self.z_max,
+            self.root_structure,
+            self.warnings.len()
+        )
+    }
+}
+
+/// Result of `eos.prsv_kappa`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrsvKappaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrsvKappaResult {
+    /// The PRSV alpha-function coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub kappa: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrsvKappaResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrsvKappaResult(kappa={}, {} warning(s))",
+            self.kappa,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&PrsvKappaResult> for PyPrsvKappaResult {
+    fn from(r: &PrsvKappaResult) -> Self {
+        Self {
+            kappa: r.kappa,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_departure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrDepartureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrDepartureResult {
+    /// The logarithm of the fugacity coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub ln_phi: f64,
+    /// The departure enthalpy over `R*T`. Dimensionless.
+    #[pyo3(get)]
+    pub h_dep_rt: f64,
+    /// The departure entropy over `R`. Dimensionless.
+    #[pyo3(get)]
+    pub s_dep_r: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrDepartureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrDepartureResult(ln_phi={}, h_dep_rt={}, s_dep_r={}, {} warning(s))",
+            self.ln_phi,
+            self.h_dep_rt,
+            self.s_dep_r,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&PrDepartureResult> for PyPrDepartureResult {
+    fn from(r: &PrDepartureResult) -> Self {
+        Self {
+            ln_phi: r.ln_phi,
+            h_dep_rt: r.h_dep_rt,
+            s_dep_r: r.s_dep_r,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.vdw1f_mix_binary`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "Vdw1fMixBinaryResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyVdw1fMixBinaryResult {
+    /// The mixture's attraction parameter. Dimensionless.
+    #[pyo3(get)]
+    pub a_mix: f64,
+    /// The mixture's repulsion parameter. Dimensionless.
+    #[pyo3(get)]
+    pub b_mix: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyVdw1fMixBinaryResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "Vdw1fMixBinaryResult(a_mix={}, b_mix={}, {} warning(s))",
+            self.a_mix,
+            self.b_mix,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&Vdw1fMixBinaryResult> for PyVdw1fMixBinaryResult {
+    fn from(r: &Vdw1fMixBinaryResult) -> Self {
+        Self {
+            a_mix: r.a_mix,
+            b_mix: r.b_mix,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.rachford_rice_binary`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "RachfordRiceBinaryResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyRachfordRiceBinaryResult {
+    /// The vapour fraction. Dimensionless, and outside `[0, 1]` when the feed is
+    /// single phase - in which case the result carries a warning.
+    #[pyo3(get)]
+    pub beta: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyRachfordRiceBinaryResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "RachfordRiceBinaryResult(beta={}, {} warning(s))",
+            self.beta,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&RachfordRiceBinaryResult> for PyRachfordRiceBinaryResult {
+    fn from(r: &RachfordRiceBinaryResult) -> Self {
+        Self {
+            beta: r.beta,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_molar_volume`, transported.
+///
+/// The only transport class in this namespace carrying a `PyQty`, because it is the
+/// only calc here that returns a dimensioned quantity.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrMolarVolumeResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrMolarVolumeResult {
+    /// Molar volume, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub v: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrMolarVolumeResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrMolarVolumeResult(v={} {})",
+            self.v.magnitude_si, self.v.unit
+        )
+    }
+}
+
+impl From<&PrMolarVolumeResult> for PyPrMolarVolumeResult {
+    fn from(r: &PrMolarVolumeResult) -> Self {
+        Self {
+            v: PyQty {
+                magnitude_si: r.v.value,
+                unit: "m**3/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_mass_density`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrMassDensityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrMassDensityResult {
+    /// Mass density, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub rho: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrMassDensityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrMassDensityResult(rho={} {})",
+            self.rho.magnitude_si, self.rho.unit
+        )
+    }
+}
+
+/// Result of `eos.pure_saturation`, transported.
+///
+/// A model's result, shaped like any other. The difference between a model and a
+/// calculation is in how the answer was reached, not in what an answer is.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PureSaturationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPureSaturationResult {
+    /// The saturation pressure.
+    #[pyo3(get)]
+    pub p_sat: PyQty,
+    /// The common `ln phi` at the converged pressure.
+    #[pyo3(get)]
+    pub ln_phi: f64,
+    /// Bisection steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The final bracket's dimensionless half-width.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPureSaturationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PureSaturationResult(p_sat={} {}, {} iteration(s))",
+            self.p_sat.magnitude_si, self.p_sat.unit, self.iterations
+        )
+    }
+}
+
+impl From<&PureSaturationResult> for PyPureSaturationResult {
+    fn from(r: &PureSaturationResult) -> Self {
+        Self {
+            p_sat: PyQty {
+                magnitude_si: r.p_sat.value,
+                unit: "Pa".to_string(),
+            },
+            ln_phi: r.ln_phi,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pt_flash`, transported.
+///
+/// The first result here whose fields are vectors, and the first with an optional
+/// scalar. `beta` crosses as `Option<f64>` and arrives as `None` - that is the whole
+/// point of it being optional, so flattening it to a sentinel number at the boundary
+/// would undo the design one layer below where it was made.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PtFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPtFlashResult {
+    /// The vapour fraction, or `None` when there is none to report.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// `ln phi_i` in the liquid phase.
+    #[pyo3(get)]
+    pub ln_phi_liquid: Vec<f64>,
+    /// `ln phi_i` in the vapour phase.
+    #[pyo3(get)]
+    pub ln_phi_vapour: Vec<f64>,
+    /// The liquid root of the cubic.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Successive-substitution steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The rms change in `ln K` at the last completed step, or `NaN`.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPtFlashResult {
+    fn __repr__(&self) -> String {
+        match self.beta {
+            Some(beta) => format!(
+                "PtFlashResult(phase={}, beta={beta}, z_liquid={}, z_vapour={})",
+                self.phase, self.z_liquid, self.z_vapour
+            ),
+            None => format!(
+                "PtFlashResult(phase={}, beta=None, {} iteration(s))",
+                self.phase, self.iterations
+            ),
+        }
+    }
+}
+
+/// Result of `eos.ideal_gas_cp`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "IdealGasCpResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyIdealGasCpResult {
+    /// The polynomial's value, `Cp/R`.
+    #[pyo3(get)]
+    pub cp_over_r: f64,
+    /// The ideal-gas heat capacity.
+    #[pyo3(get)]
+    pub cp: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyIdealGasCpResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "IdealGasCpResult(cp={} {})",
+            self.cp.magnitude_si, self.cp.unit
+        )
+    }
+}
+
+impl From<&IdealGasCpResult> for PyIdealGasCpResult {
+    fn from(r: &IdealGasCpResult) -> Self {
+        Self {
+            cp_over_r: r.cp_over_r,
+            cp: PyQty {
+                magnitude_si: r.cp.value,
+                unit: "J/(mol*K)".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.molar_enthalpy_entropy`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MolarEnthalpyEntropyResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMolarEnthalpyEntropyResult {
+    /// The molar enthalpy.
+    #[pyo3(get)]
+    pub h: PyQty,
+    /// The molar entropy.
+    #[pyo3(get)]
+    pub s: PyQty,
+    /// The ideal-gas part of the enthalpy.
+    #[pyo3(get)]
+    pub h_ideal: PyQty,
+    /// The ideal-gas part of the entropy.
+    #[pyo3(get)]
+    pub s_ideal: PyQty,
+    /// The residual enthalpy.
+    #[pyo3(get)]
+    pub h_departure: PyQty,
+    /// The residual entropy.
+    #[pyo3(get)]
+    pub s_departure: PyQty,
+    /// The composition-weighted average of the components' `psi`.
+    #[pyo3(get)]
+    pub psi_bar: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMolarEnthalpyEntropyResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MolarEnthalpyEntropyResult(h={} {}, s={} {})",
+            self.h.magnitude_si, self.h.unit, self.s.magnitude_si, self.s.unit
+        )
+    }
+}
+
+impl From<&MolarEnthalpyEntropyResult> for PyMolarEnthalpyEntropyResult {
+    fn from(r: &MolarEnthalpyEntropyResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            h: qty(r.h.value, "J/mol"),
+            s: qty(r.s.value, "J/(mol*K)"),
+            h_ideal: qty(r.h_ideal.value, "J/mol"),
+            s_ideal: qty(r.s_ideal.value, "J/(mol*K)"),
+            h_departure: qty(r.h_departure.value, "J/mol"),
+            s_departure: qty(r.s_departure.value, "J/(mol*K)"),
+            psi_bar: r.psi_bar,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.bubble_pressure` or `eos.dew_pressure`, transported.
+///
+/// One transport type for two models, because the Rust results have the same shape
+/// and the difference is only which phase is which - which the bridge resolves by
+/// naming. Two `pyclass`es would be two copies of the same thirteen lines.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PhaseBoundaryResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPhaseBoundaryResult {
+    /// The boundary pressure.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// The incipient phase's composition.
+    #[pyo3(get)]
+    pub incipient: Vec<f64>,
+    /// K-values at the converged pressure.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the converged state.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// Pressure updates taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The final residual.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPhaseBoundaryResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PhaseBoundaryResult(pressure={} {}, {} iteration(s))",
+            self.pressure.magnitude_si, self.pressure.unit, self.iterations
+        )
+    }
+}
+
+impl From<&BubblePressureResult> for PyPhaseBoundaryResult {
+    fn from(r: &BubblePressureResult) -> Self {
+        Self {
+            pressure: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            incipient: r.incipient.clone(),
+            k: r.k.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+impl From<&DewPressureResult> for PyPhaseBoundaryResult {
+    fn from(r: &DewPressureResult) -> Self {
+        Self {
+            pressure: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            incipient: r.incipient.clone(),
+            k: r.k.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+impl From<&PtFlashResult> for PyPtFlashResult {
+    fn from(r: &PtFlashResult) -> Self {
+        Self {
+            beta: r.beta,
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            ln_phi_liquid: r.ln_phi_liquid.clone(),
+            ln_phi_vapour: r.ln_phi_vapour.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            phase: r.phase.as_str().to_string(),
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+impl From<&PrMassDensityResult> for PyPrMassDensityResult {
+    fn from(r: &PrMassDensityResult) -> Self {
+        Self {
+            rho: PyQty {
+                magnitude_si: r.rho.value,
+                unit: "kg/m**3".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+impl From<&PrZFactorResult> for PyPrZFactorResult {
+    fn from(r: &PrZFactorResult) -> Self {
+        Self {
+            z_min: r.z_min,
+            z_max: r.z_max,
+            root_structure: r.root_structure.as_str().to_string(),
+            iterations: r.iterations,
+            converged: r.converged,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&ConductionPlaneWallResult> for PyConductionPlaneWallResult {
     fn from(r: &ConductionPlaneWallResult) -> Self {
         Self {
@@ -624,6 +1372,28 @@ pub fn unit_names() -> Vec<String> {
     UNIT_NAMES.iter().map(|name| (*name).to_string()).collect()
 }
 
+/// Every solver kind this crate implements, in the schema's spelling.
+///
+/// The third leg of the same contract `warning_codes` and `unit_names` each
+/// provide one leg of: `specs/schema/calc.schema.json`'s `solver.kind` enum,
+/// `azoth.core.solver.SolverKind` and this crate's `SolverKind::ALL` must name one
+/// set, and a Python test can only assert that if the Rust list is reachable from
+/// Python.
+///
+/// The schema's own description of `solver.kind` names this function as the
+/// missing piece - "Nothing does that for solver kinds today, which is why this
+/// enum is narrow rather than merely unchecked" - so its absence was the stated
+/// reason no second solver kind could be added. It exists now, which is what
+/// makes widening that enum a mechanical act rather than an unchecked one.
+#[pyfunction]
+#[must_use]
+pub fn solver_kinds() -> Vec<String> {
+    SolverKind::ALL
+        .iter()
+        .map(|kind| kind.as_str().to_string())
+        .collect()
+}
+
 /// The public field names of a calc's result, in declaration order.
 ///
 /// Returns an empty list for an unknown id rather than raising: this is an
@@ -641,6 +1411,24 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ControlValveCvResult::CALC_ID => ControlValveCvResult::FIELDS.to_vec(),
         ChokedFlowAreaResult::CALC_ID => ChokedFlowAreaResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
+        PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
+        PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
+        PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
+        PrsvKappaResult::CALC_ID => PrsvKappaResult::FIELDS.to_vec(),
+        PrDepartureResult::CALC_ID => PrDepartureResult::FIELDS.to_vec(),
+        Vdw1fMixBinaryResult::CALC_ID => Vdw1fMixBinaryResult::FIELDS.to_vec(),
+        RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
+        PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
+        PrMassDensityResult::CALC_ID => PrMassDensityResult::FIELDS.to_vec(),
+        // Models. Present here because a result's *shape* is a cross-language
+        // contract whether or not its spec calls it a calculation, and before this
+        // the model results were covered by no shape check at all.
+        PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
+        PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
+        BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
+        DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
+        IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
+        MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -664,6 +1452,16 @@ pub fn calc_ids() -> Vec<String> {
         ControlValveCvResult::CALC_ID.to_string(),
         ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
+        PrKappaResult::CALC_ID.to_string(),
+        PrAlphaAbResult::CALC_ID.to_string(),
+        PrZFactorResult::CALC_ID.to_string(),
+        PrsvKappaResult::CALC_ID.to_string(),
+        PrDepartureResult::CALC_ID.to_string(),
+        Vdw1fMixBinaryResult::CALC_ID.to_string(),
+        RachfordRiceBinaryResult::CALC_ID.to_string(),
+        PrMolarVolumeResult::CALC_ID.to_string(),
+        PrMassDensityResult::CALC_ID.to_string(),
+        IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),

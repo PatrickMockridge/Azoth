@@ -1,0 +1,242 @@
+id: eos.vdw1f_mix_binary
+name: van der Waals one-fluid mixing, for a binary
+equation: |
+  a_mix = z1**2*a1 + 2*z1*(1 - z1)*(1 - k12)*(a1*a2)**0.5 + (1 - z1)**2*a2
+  b_mix = z1*b1 + (1 - z1)*b2
+latex: 'a_{\mathrm{mix}} = z_{1}^{2}a_{1} + 2z_{1}z_{2}\left(1 - k_{12}\right)\sqrt{a_{1}a_{2}} + z_{2}^{2}a_{2}, \qquad b_{\mathrm{mix}} = z_{1}b_{1} + z_{2}b_{2}'
+
+source:
+  standard: van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text
+  edition: "The classical mixing rule. Its modern form, and the role of k12, are set out in e.g. Poling, Prausnitz & O'Connell, The Properties of Gases and Liquids, 5th ed., ch. 5."
+  equation: "TODO: source needed"
+
+verification:
+  status: unverified
+  notes: >
+    The van der Waals one-fluid (vdW1f) mixing rule is the classical one: the mixture
+    parameters are quadratic and linear averages of the pure-component ones, with one
+    binary parameter `k12` correcting the cross term. It is in every cubic-EOS text
+    and its form is not in doubt.
+
+    What has NOT been done is checking this spec against a primary source.
+    Specifically unconfirmed: (1) the equation number, hence the TODO above, and
+    whether a single attribution is even appropriate for a rule this old - the
+    quadratic form is van der Waals', the `k12` convention is a later addition and
+    different authors scale it differently (some use `(1 - k12)` as here, some use a
+    signed `a12` directly); (2) that the edition cited states the cross term in this
+    form, which is why the edition is described rather than given a page.
+
+    # Why this is a binary calc and not an N-component one
+
+    The quadratic form for `a_mix` is a double sum over components, so a general
+    version takes a composition vector and a matrix of `kij`. The calc registry is
+    scalar: its inputs are named quantities with units, and there is no vector or
+    matrix type. The two-component case is the largest the registry can express, and
+    it is written out longhand rather than as a loop so that the double sum's three
+    distinct terms - the two pure ones and the cross term - are visible.
+
+    A general N-component version belongs to the model layer, and the spec for the
+    flash records that the model layer must reduce to this calc at N = 2. That is the
+    contract that keeps the two from drifting apart.
+
+    # The k12 this library does not ship
+
+    `k12` is a fitted parameter - one per binary pair - and a table of them is the
+    databank this library deliberately has none of. It is an input. The worked
+    example uses a round illustrative value and says so.
+
+inputs:
+  z1:
+    unit: dimensionless
+    description: >
+      Mole fraction of component 1 in the phase being mixed. Component 2 is
+      `1 - z1`, which is why there is no `z2` input: passing both would allow a pair
+      that does not sum to one, and this calc would have to decide which to believe.
+  a1:
+    unit: dimensionless
+    description: the cubic's attraction parameter `A` for component 1, from `eos.pr_alpha_ab`
+  a2:
+    unit: dimensionless
+    description: the same for component 2
+  b1:
+    unit: dimensionless
+    description: the cubic's repulsion parameter `B` for component 1
+  b2:
+    unit: dimensionless
+    description: the same for component 2
+  k12:
+    unit: dimensionless
+    description: >
+      The binary interaction parameter for the pair. **Supplied by the caller, and
+      this library ships no values for it** - a table of fitted binary parameters is
+      the databank this library does not have. Conventionally small and positive for
+      light-hydrocarbon pairs, and not necessarily so in general; see the bound on
+      `a_mix` for the range over which the mixture parameter stays physical.
+
+outputs:
+  a_mix:
+    unit: dimensionless
+    description: the mixture's attraction parameter, `1/2 * sum_i sum_j z_i z_j a_ij`
+  b_mix:
+    unit: dimensionless
+    description: >
+      the mixture's repulsion parameter, the mole-fraction-weighted mean of the pure
+      ones. Linear and parameter-free: there is no `l12` here, and the absence is
+      deliberate rather than an omission - a binary correction to the covolume
+      exists in some models but is not part of vdW1f.
+
+valid_range:
+  - quantity: z1
+    min: 0
+    max: 1
+    severity: error
+    rationale: >
+      A mole fraction. Both ends are admitted - a pure component is a legitimate
+      thing to ask this calc for, and it is a useful check, since `z1 = 0` or `1`
+      must reproduce the pure-component parameters exactly. Outside them is a caller
+      error, not a limiting case.
+
+  - quantity: a_mix
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      `a_mix` is a quadratic form in `(z1, z2)` with matrix `[[a1, a12], [a12, a2]]`
+      where `a12 = (1 - k12)*sqrt(a1*a2)`, so it is non-negative for every
+      composition exactly when `a12**2 <= a1*a2` - that is, when
+      `0 <= k12 <= 2`. Outside that band some composition makes `a_mix` negative,
+      and a negative attraction parameter is not a quantity the cubic can take:
+      `eos.pr_z_factor` refuses `a_reduced < 0` for that reason.
+
+      The bound is on `a_mix` rather than on `k12` because a `k12` outside the band
+      is not wrong in itself - most compositions still give a physical `a_mix` - and
+      refusing the parameter would reject calls that are fine. This bound fires on
+      the case that is actually broken, and the rationale names the cause.
+
+assumptions:
+  - "`k12` is a fitted parameter for the pair intended, and its correctness is NOT CHECKED - this library ships no values for it and has no second source."
+  - "The convention is `a12 = (1 - k12)*sqrt(a1*a2)`. Authors differ - some tabulate a signed `a12` directly, and some use a `k12` whose sign means the opposite - so a value copied from a table without checking its convention is a plausible-looking wrong number. It is also why the worked example's `k12` is labelled illustrative rather than borrowed."
+  - the two components' `A` and `B` must come from the *same* equation of state and the same temperature. Mixing Peng-Robinson parameters with PRSV ones, or two temperatures, gives a mixture parameter for no state that exists.
+  - this is not a pressure or temperature dependence. `A` and `B` carry those; this calc only combines them.
+  - no volume translation is applied, and no `l12` covolume correction.
+
+references:
+  - 'van der Waals, J. D. (1890). "On the Continuity of the Gaseous and Liquid States." (the origin of the quadratic mixing form; the citation is unconfirmed - see `verification`)'
+  - 'Poling, B. E.; Prausnitz, J. M.; O''Connell, J. P. "The Properties of Gases and Liquids", 5th ed. (the modern statement of vdW1f and of the k12 convention used here; the edition is described rather than page-cited, and is unconfirmed)'
+
+worked_example:
+  source: derived from the equation above
+  derivation: >
+    The propane-like and methane-like reduced parameters already in this namespace, at
+    equal-ish proportions, with a k12 chosen to be round.
+
+    **The value 0.05 is illustrative and is not a fitted parameter for this - or any
+    - pair.** It is a plausible magnitude for a light-hydrocarbon pair so that the
+    example is not absurd, and it is stated here so nobody mistakes it for data. A
+    real k12 is the caller's, and the arithmetic below is what the example
+    demonstrates.
+
+      z1 = 0.6,  a1 = 0.20206500174625697,  b1 = 0.02431127309496514
+                a2 = 0.08448417260831159,  b2 = 0.025932024634629486
+      k12 = 0.05
+
+    The three terms of the double sum, in order:
+
+      z1**2 * a1                     = 0.36 * 0.20206500174625697 = 0.0727434006286525
+      sqrt(a1*a2)                    = sqrt(0.20206500174625697 * 0.08448417260831159)
+                                     = 0.1306571639276988
+      2*z1*(1 - z1)*(1 - k12)*sqrt   = 2 * 0.6 * 0.4 * 0.95 * 0.1306571639276988
+                                     = 0.05957966675103065
+      (1 - z1)**2 * a2               = 0.16 * 0.08448417260831159 = 0.013517467617329857
+
+    a_mix = 0.0727434006286525 + 0.05957966675103065 + 0.013517467617329857
+          = 0.14584053499701302
+
+    b_mix = 0.6 * 0.02431127309496514 + 0.4 * 0.025932024634629486
+          = 0.014586763856979084 + 0.010372809853851795
+          = 0.02495957371083088
+
+    Every value was checked against exact decimal arithmetic at 50 digits; the square
+    root is irrational, so the tolerance below accounts for the rounding of one
+    operation, not for the model.
+  inputs: { z1: 0.6, a1: 0.20206500174625697, a2: 0.08448417260831159, b1: 0.02431127309496514, b2: 0.025932024634629486, k12: 0.05 }
+  expected: { a_mix: 0.14584053499701302, b_mix: 0.02495957371083088 }
+  tolerance: 1.0e-12
+
+implementations:
+  python: azoth.eos.vdw1f_mix_binary
+  rust: azoth_eos::vdw1f_mix_binary
+
+tests:
+  - id: propane_like_and_methane_like_with_k12
+    type: worked_example
+    status: active
+
+  - id: a_pure_component_reproduces_its_own_parameters
+    type: reference
+    status: active
+    source: >
+      Derived from the equations above, in the limit the mixing rule exists to
+      respect: at `z1 = 1` the quadratic form must collapse to component 1's own
+      parameters and at `z1 = 0` to component 2's, because every term carrying the
+      absent component's fraction vanishes.
+
+        z1 = 1: a_mix = 1**2*a1 = a1 = 0.20206500174625697,  b_mix = b1 = 0.02431127309496514
+        z1 = 0: a_mix = a2 = 0.08448417260831159,            b_mix = b2 = 0.025932024634629486
+
+      This is the check that a mixing rule is a mixing rule. An implementation with a
+      transposed weight, or with `(1 - z1)` written as `z1` somewhere, fails it while
+      still looking reasonable at a mid-range composition - which is exactly why the
+      case is a separate test rather than left to the worked example.
+
+      Both ends are admitted by `valid_range`, deliberately: a pure component is a
+      legitimate thing to ask for, and it is the sharpest available check.
+    inputs: { z1: 1.0, a1: 0.20206500174625697, a2: 0.08448417260831159, b1: 0.02431127309496514, b2: 0.025932024634629486, k12: 0.05 }
+    expected: { a_mix: 0.20206500174625697, b_mix: 0.02431127309496514 }
+    tolerance: 1.0e-15
+
+  - id: ethane_and_a_large_k12
+    type: reference
+    status: active
+    source: >
+      Derived from the equations above at a different composition, different
+      parameters and a much larger interaction parameter, so an implementation that
+      had hardcoded the worked example or that ignored `k12` fails:
+
+        z1 = 0.25, a1 = 0.115, a2 = 0.31, b1 = 0.018, b2 = 0.041, k12 = 0.4
+
+        z1**2*a1                   = 0.0625 * 0.115 = 0.0071875
+        sqrt(a1*a2)                = sqrt(0.115 * 0.31) = 0.18881207588499208
+        2*z1*(1-z1)*(1-k12)*sqrt   = 2 * 0.25 * 0.75 * 0.6 * 0.18881207588499208
+                                   = 0.04248271707412321
+        (1-z1)**2*a2               = 0.5625 * 0.31 = 0.174375
+        a_mix                      = 0.0071875 + 0.04248271707412321 + 0.174375
+                                   = 0.22404521707412323
+        b_mix                      = 0.25*0.018 + 0.75*0.041 = 0.0045 + 0.03075 = 0.03525
+
+      `a_mix = 0.22404521707412323`. The parameters are not from any real pair - they
+      are chosen so the arithmetic is short enough to check and the k12 large enough
+      that dropping it changes the answer in the second decimal.
+    inputs: { z1: 0.25, a1: 0.115, a2: 0.31, b1: 0.018, b2: 0.041, k12: 0.4 }
+    expected: { a_mix: 0.22404521707412323, b_mix: 0.03525 }
+    tolerance: 1.0e-12
+
+  - id: monotonic
+    type: property
+    property: monotonic
+    status: active
+    note: >
+      `a_mix` and `b_mix` both increase with `z1` when component 1's parameters exceed
+      component 2's, which is what a weighted average means and what a swapped weight
+      breaks. It also increases with `a1`, `a2`, `b1` and `b2` individually. Checked
+      over the whole composition range rather than at one point, because the
+      quadratic form's *shape* is the thing a mis-parenthesised cross term changes.
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: skipped
+    skip_reason: >
+      Every input and every output is dimensionless, so there is no unit to convert.
+      Declared rather than omitted so the omission is a recorded decision, following
+      `crane_k_factors` and the other `eos` calcs.

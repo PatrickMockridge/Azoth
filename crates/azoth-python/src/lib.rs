@@ -18,10 +18,11 @@
 //!
 //! # Introspection
 //!
-//! `warning_codes`, `unit_names`, `result_fields`, `calc_ids` and `version` exist
-//! so the test suite can assert cross-language agreement without parsing Rust
-//! source. They are the mechanism behind the claims that the two implementations
-//! share a warning vocabulary, a unit vocabulary and a result shape.
+//! `warning_codes`, `unit_names`, `solver_kinds`, `result_fields`, `calc_ids` and
+//! `version` exist so the test suite can assert cross-language agreement without
+//! parsing Rust source. They are the mechanism behind the claims that the two
+//! implementations share a warning vocabulary, a unit vocabulary, a solver
+//! vocabulary and a result shape.
 //!
 //! `data_files`, `fittings_rows` and `fluid_rows` do the same job for the data the
 //! calcs are built from. See `data.rs` - the claim that both languages read the same
@@ -32,6 +33,7 @@ use pyo3::types::PyModule;
 
 mod batch;
 mod data;
+mod eos;
 mod errors;
 mod hydraulics;
 mod results;
@@ -40,7 +42,10 @@ mod thermal;
 use results::{
     PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
     PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult, PyOrificeFlowResult,
-    PyPumpPowerResult, PyQty, PyReynoldsNumberResult, PySwameeJainResult, PyWarning,
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPumpPowerResult,
+    PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult, PyReynoldsNumberResult,
+    PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
 };
 
 #[pymodule]
@@ -59,6 +64,16 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySwameeJainResult>()?;
     m.add_class::<PyHaalandResult>()?;
     m.add_class::<PyConductionPlaneWallResult>()?;
+    m.add_class::<PyPrKappaResult>()?;
+    m.add_class::<PyPrAlphaAbResult>()?;
+    m.add_class::<PyPrZFactorResult>()?;
+    m.add_class::<PyPrsvKappaResult>()?;
+    m.add_class::<PyPrDepartureResult>()?;
+    m.add_class::<PyVdw1fMixBinaryResult>()?;
+    m.add_class::<PyRachfordRiceBinaryResult>()?;
+    m.add_class::<PyPrMolarVolumeResult>()?;
+    m.add_class::<PyPrMassDensityResult>()?;
+    m.add_class::<PyPureSaturationResult>()?;
     m.add_class::<PyPumpPowerResult>()?;
     m.add_class::<PyOrificeFlowResult>()?;
     m.add_class::<PyControlValveCvResult>()?;
@@ -92,6 +107,25 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Thermal calculations.
     m.add_function(wrap_pyfunction!(thermal::conduction_plane_wall, m)?)?;
 
+    // Equations of state.
+    m.add_function(wrap_pyfunction!(eos::pr_kappa, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_alpha_ab, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_z_factor, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::prsv_kappa, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_departure, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::vdw1f_mix_binary, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::rachford_rice_binary, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_molar_volume, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_mass_density, m)?)?;
+
+    // Models: the same shape, a different spec tree and generator.
+    m.add_function(wrap_pyfunction!(eos::pure_saturation, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pt_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::bubble_pressure, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::dew_pressure, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::ideal_gas_cp, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::molar_enthalpy_entropy, m)?)?;
+
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;
     m.add_function(wrap_pyfunction!(data::data_files, m)?)?;
@@ -99,6 +133,10 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(data::fluid_rows, m)?)?;
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;
     m.add_function(wrap_pyfunction!(results::unit_names, m)?)?;
+    m.add_function(wrap_pyfunction!(results::solver_kinds, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::model_ids, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::model_schemes, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::model_kind, m)?)?;
     m.add_function(wrap_pyfunction!(results::result_fields, m)?)?;
     m.add_function(wrap_pyfunction!(results::calc_ids, m)?)?;
     m.add_function(wrap_pyfunction!(results::version, m)?)?;

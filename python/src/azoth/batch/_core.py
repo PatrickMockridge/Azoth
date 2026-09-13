@@ -35,6 +35,7 @@ import dataclasses
 import importlib
 from array import array
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from enum import Enum
 from functools import cache
 from typing import Any, get_args, get_origin, get_type_hints
 
@@ -201,11 +202,21 @@ def _column_kinds(spec: Mapping[str, Any]) -> dict[str, str]:
 def _is_enum_hint(hint: object) -> bool:
     """Whether a field's type is (or is an optional) enum.
 
-    `FlowRegime | None` is the case that exists today: an absent regime is not any of the
-    three real ones, so it survives as `None` in the label column.
+    Any `Enum`, not one of them by name. This checked `FlowRegime` specifically until
+    `eos.pr_z_factor`'s `root_structure` became the first enum output outside the
+    hydraulics namespace - at which point a field that was correctly a label column
+    in the scalar API came back as a numeric one, and the batch arm's label went into
+    it as a string a caller could not read as a number. The paragraph above already
+    stated the general rule; the code now implements it.
+
+    `FlowRegime | None` is still the motivating case: an absent regime is not any of
+    the three real ones, so it survives as `None` in the label column. So does an
+    absent `RootStructure`.
     """
     return any(
-        argument is FlowRegime for argument in (hint, *get_args(hint)) if argument is not None
+        isinstance(argument, type) and issubclass(argument, Enum)
+        for argument in (hint, *get_args(hint))
+        if argument is not None
     )
 
 

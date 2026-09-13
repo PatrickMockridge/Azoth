@@ -77,6 +77,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "azoth-eos"
+version = "0.1.0"
+dependencies = [
+ "azoth-core",
+ "azoth-test-support",
+ "uom",
+]
+
+[[package]]
 name = "azoth-hydraulics"
 version = "0.1.0"
 dependencies = [
@@ -92,6 +101,7 @@ name = "azoth-python"
 version = "0.1.0"
 dependencies = [
  "azoth-core",
+ "azoth-eos",
  "azoth-hydraulics",
  "azoth-thermal",
  "pyo3",

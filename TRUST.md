@@ -121,12 +121,42 @@ print(r.dp)
 ```
 
 The two implementations are independent - one in Python, one in Rust - and the
-test suite runs every spec case through both and compares. They agree
-bit-for-bit on this example. If they ever disagree, that is a bug in one of them,
-and CI fails.
+test suite runs every spec case through both and compares. If they ever disagree,
+that is a bug in one of them, and CI fails.
+
+### How closely they agree depends on the arithmetic, and the claim is layered
+
+An earlier version of this page said "they agree bit-for-bit on this example",
+without qualification. That is true of `darcy_weisbach`, whose arithmetic is
+`+ - * /` only - IEEE-754 requires those to be correctly rounded, so identical
+source order gives identical bits. It is **not** true of everything here, and
+saying it unqualified was the kind of claim this project exists to avoid.
+
+| Claim | Where it holds | How it is checked |
+|---|---|---|
+| **Bit-identical** | Kernels using only `+ - * /` and `sqrt`. Covers `pr_kappa`, `pr_alpha_ab`, `pr_molar_volume`, `rachford_rice_binary`, `vdw1f_mix_binary`, and the flash's Rachford-Rice bisection | `to_bits()` equality, one CI runner |
+| **Within a declared tolerance** | Anything using `ln`, `acos` or `cos` - `pr_departure`, the cubic's root locator - and any platform other than the CI runner | The tolerance the spec case declares |
+| **The same algorithm** | Every solver and every model | **Identical iteration counts** on every case. The sharpest cheap check: a difference of one ulp that flips an iteration shows up as `13 vs 14` rather than as a mystifying `1e-11` drift |
+| **The right answer** | The flash, saturation, bubble/dew | External `validation/` cases plus the identities that need no data |
+
+Two consequences worth knowing as a caller. A count that agrees is strong
+evidence the two ran the same loop; a count that differs means one of them
+stopped at a different step even if the answers look close. And test cases for
+iterated calculations have to be chosen *away* from a convergence boundary, since
+a one-ulp difference there flips the count - if you add one, pick a state where
+the residual at the stopping step is comfortably below the tolerance rather than
+just under it.
 
 **Read the warnings.** A result that used out-of-range inputs, or skipped a check
 because an optional input was missing, says so. `r.warnings` is not decoration.
+
+**Read `pt_flash`'s `phase`, not its `beta`.** The vapour fraction is `None` when
+there is genuinely none to report - a feed with no two-phase solution, or an
+iteration that converged to `x = y = z`. In the second case the model cannot tell
+you *which* single phase the feed is: that needs a stability analysis it does not
+perform. A `beta` outside `[0, 1]` but present is the negative flash, which is a
+real reading rather than a failure. All of this is in the result's docstring and
+in the model's spec page.
 
 ## Verify `provenance.json`
 

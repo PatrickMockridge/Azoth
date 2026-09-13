@@ -6,6 +6,13 @@
 //! that every calculation in the workspace reports failures, caveats and units
 //! the same way.
 //!
+//! [`solver`] is the one module that is *machinery* rather than vocabulary, and
+//! it is here for the same reason: a named solution scheme is shared the way a
+//! unit is, because two implementations of one equation must run the same
+//! scheme to agree numerically. Like [`range`], it is not a calculation - it has
+//! no equation and no spec - and it grows only when the spec schema's
+//! `solver.kind` grows.
+//!
 //! The two ideas worth understanding before reading anything else:
 //!
 //! 1. **Warnings are not errors.** A value outside the range in which a
@@ -25,6 +32,7 @@
 pub mod error;
 pub mod range;
 pub mod result;
+pub mod solver;
 pub mod spec;
 pub mod units;
 pub mod warning;
@@ -32,7 +40,13 @@ pub mod warning;
 pub use error::{AzothError, Result, Warned};
 pub use range::{Band, RangeCheck, Severity, apply_checks};
 pub use result::{CalcResult, FlowRegime};
-pub use spec::{CalcSpec, SolverSpec, SpecCheck, TestCase};
+pub use solver::{
+    Convergence, CubicRootsOutcome, SolverKind, SolverOutcome, cubic_roots, fixed_point,
+    require_converged, require_cubic_converged,
+};
+pub use spec::{
+    CalcSpec, ModelAlgorithm, ModelBracket, ModelSpec, SolverSpec, SpecCheck, TestCase,
+};
 pub use warning::{Warning, WarningCode};
 
 /// Version of the `azoth` library.

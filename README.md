@@ -104,6 +104,21 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.control_valve_cv` | Liquid flow through a control valve |
 | `hydraulics.choked_flow_area` | Throat area for a choked gas flow |
 | `thermal.conduction_plane_wall` | Steady conduction through a slab |
+| `eos.pr_kappa` | The Peng-Robinson alpha-function coefficient |
+| `eos.pr_alpha_ab` | The alpha function and the reduced attraction parameters |
+| `eos.pr_z_factor` | The Peng-Robinson compressibility factor |
+| `eos.pr_departure` | Fugacity coefficient and departure functions |
+| `eos.prsv_kappa` | The Stryjek-Vera coefficient, for the same alpha function |
+| `eos.vdw1f_mix_binary` | van der Waals one-fluid mixing, for a binary |
+| `eos.rachford_rice_binary` | The vapour fraction that solves Rachford-Rice |
+| `eos.pr_molar_volume` | Molar volume from a compressibility factor |
+| `eos.pr_mass_density` | Mass density from a molar volume |
+| `eos.ideal_gas_cp` | Ideal-gas heat capacity from a caller-supplied polynomial |
+| `eos.pure_saturation` | Saturation pressure, by bisection — a *model*, not a calc |
+| `eos.pt_flash` | Two-phase flash at a fixed temperature and pressure — a *model* |
+| `eos.molar_enthalpy_entropy` | Absolute molar enthalpy and entropy — a *direct* model |
+| `eos.bubble_pressure` | Bubble-point pressure at a fixed temperature — a *model* |
+| `eos.dew_pressure` | Dew-point pressure at a fixed temperature — a *model* |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use
@@ -113,12 +128,26 @@ Relief valve *sizing* to a standard is not implemented. `hydraulics.choked_flow_
 is the isentropic basis - the throat area a given choked mass flow needs - and the
 de-rating coefficients a standard applies are the caller's to compose.
 
-The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`), not by
-project. They appear in provenance records and citations, so renaming the project
-does not - and should not - invalidate them. Two namespaces exist deliberately:
-the second is what proves the spec pipeline is domain-agnostic rather than shaped
-around pipe flow, since it runs through the same specs, generators, tests and
-documentation with no special case anywhere.
+A mixture **critical point** is not implemented either, and it is worth saying why
+rather than leaving a gap. The obvious route - solving `dP/dV = d2P/dV2 = 0` at fixed
+composition - is exact for a pure component but predicts the *same* `Z_c` for every
+mixture, because in reduced variables those two conditions have a single universal
+root. That makes it a plausible-looking wrong number for any mixture, which is the
+failure this library is organised against, so it is not shipped. The correct method
+is Heidemann & Khalil (1980), *AIChE Journal* 26(5), 769-779, and its defining
+formulas are not stated in any open source - reading the paper is the work item that
+unblocks it. `eos.bubble_pressure` and `eos.dew_pressure` are implemented and are
+what a phase-boundary calculation usually wants.
+
+The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`, `eos.*`),
+not by project. They appear in provenance records and citations, so renaming the
+project does not - and should not - invalidate them. The second namespace is what
+proved the spec pipeline is domain-agnostic rather than shaped around pipe flow,
+since it runs through the same specs, generators, tests and documentation with no
+special case anywhere. The third is where the shapes stop matching: an equation of
+state is written in reduced variables, so it is dimensionless end to end and
+carries no unit at all - which the same pipeline absorbed without a special case
+either.
 
 ## Architecture
 

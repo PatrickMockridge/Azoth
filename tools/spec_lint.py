@@ -43,7 +43,9 @@ except ImportError:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
+MODEL_DIR = ROOT / "specs" / "models"
 SCHEMA_PATH = ROOT / "specs" / "schema" / "calc.schema.json"
+MODEL_SCHEMA_PATH = ROOT / "specs" / "schema" / "model.schema.json"
 
 # Quantities that name a state rather than a number. These have no units and are
 # not function parameters, so they are allowed in range checks without appearing
@@ -283,6 +285,95 @@ def check_identifier_names(report: Report, rel: Path, spec: dict[str, Any]) -> N
                 )
 
 
+def check_model(report: Report, rel: Path, spec: dict[str, Any]) -> None:
+    """The semantic checks a model spec needs beyond schema validation.
+
+    `gen_models.py` validates against the schema before it generates anything, but a
+    schema cannot say whether a bound is *evaluable* - which is the same gap
+    `check_range_checks` fills for calcs, and the reason it is called here rather
+    than left to the generator.
+
+    The checks that do not apply are the calc ones: a model has no `equation`, no
+    `worked_example` and no `tests` list, because what it pins down is a procedure.
+    Its cases carry inputs and expected outputs like a calc's, so those are checked
+    against the declared outputs here.
+    """
+    check_identity_model(report, rel, spec)
+    check_range_checks(report, rel, spec)
+    check_model_cases(report, rel, spec)
+
+
+def check_identity_model(report: Report, rel: Path, spec: dict[str, Any]) -> None:
+    """The id, the filename and the declared implementations must agree.
+
+    The same rule a calc follows, and for the same reason: the id is what
+    `_models_gen.model()` is keyed by and what the two implementations are named
+    after, so a mismatch is a model nothing can look up.
+    """
+    model_id = spec["id"]
+    expected_stem = model_id.split(".")[-1]
+    if rel.stem != expected_stem:
+        report.error(
+            str(rel),
+            f"id '{model_id}' has final segment '{expected_stem}' but the file is "
+            f"'{rel.stem}.yaml'. The generated table is keyed by the id and the docs "
+            f"page is named after the file, so the two have to agree.",
+        )
+
+    namespace = model_id.split(".")[0]
+    expected_python = f"azoth.{namespace}.{expected_stem}"
+    expected_rust = f"azoth_{namespace}::{expected_stem}"
+    implementations = spec["implementations"]
+    for language, expected in (("python", expected_python), ("rust", expected_rust)):
+        actual = implementations[language]
+        if actual != expected:
+            report.error(
+                str(rel),
+                f"implementations.{language} is '{actual}' but the id implies '{expected}'.",
+            )
+
+
+def check_model_cases(report: Report, rel: Path, spec: dict[str, Any]) -> None:
+    """Every case's inputs and expected outputs name declared quantities.
+
+    A case naming an input the model does not take, or asserting an output it does
+    not produce, is a test nothing can run - and the failure would otherwise be a
+    KeyError in the generated table rather than a lint error here.
+    """
+    inputs = set(spec["inputs"])
+    outputs = set(spec["outputs"])
+    seen: set[str] = set()
+
+    for case in spec["cases"]:
+        case_id = case["id"]
+        if case_id in seen:
+            report.error(str(rel), f"duplicate case id '{case_id}'")
+        seen.add(case_id)
+
+        unknown_inputs = sorted(set(case["inputs"]) - inputs)
+        if unknown_inputs:
+            report.error(
+                str(rel),
+                f"case '{case_id}' passes {unknown_inputs}, which the model does not "
+                f"declare as inputs. Declared: {sorted(inputs)}",
+            )
+        unknown_expected = sorted(set(case["expected"]) - outputs)
+        if unknown_expected:
+            report.error(
+                str(rel),
+                f"case '{case_id}' asserts {unknown_expected}, which the model does "
+                f"not declare as outputs. Declared: {sorted(outputs)}",
+            )
+
+        if len(case["inputs"]) != len(inputs):
+            report.warn(
+                str(rel),
+                f"case '{case_id}' supplies {len(case['inputs'])} of {len(inputs)} "
+                f"inputs; a case that leaves one out is not reproducing the model's "
+                f"whole signature.",
+            )
+
+
 def check_range_checks(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     """Every range check must be evaluable, and must be honest about it.
 
@@ -296,6 +387,23 @@ def check_range_checks(report: Report, rel: Path, spec: dict[str, Any]) -> None:
 
     for check in spec["valid_range"]:
         quantity = check["quantity"]
+
+        # `enum` is a bound kind the schema permits and neither implementation can
+        # evaluate. It is refused here rather than emitted and ignored, because a
+        # check that never fires is the failure this whole file is written against -
+        # and it was reachable: the schema's `anyOf` accepts `enum` as a bound, and
+        # until `eos.rachford_rice_binary` no spec used `equals` either, so the whole
+        # family of non-interval bounds sat there looking supported.
+        if check.get("enum") is not None:
+            report.error(
+                str(rel),
+                f"range check on '{quantity}' uses `enum`, which neither "
+                f"implementation can evaluate. A range check resolves its quantity to "
+                f"a float; an enum bound compares strings. Emitting it would produce "
+                f"a check that silently never fires.",
+            )
+            continue
+
         known = quantity in inputs or quantity in outputs or quantity in STATE_KEYWORDS
 
         if not known:
@@ -752,6 +860,19 @@ def main() -> int:
     parsed = check_schema(report, validator, args.spec_dir)
     for rel, spec in parsed:
         lint_spec(report, rel, spec)
+
+    # Models, against their own schema. The model schema `$ref`s the calc schema for
+    # units and quantities, so the two share one definition of what a unit is - and
+    # the reference has to be resolvable locally rather than fetched.
+    if MODEL_SCHEMA_PATH.exists():
+        from referencing import Registry, Resource
+
+        model_schema = json.loads(MODEL_SCHEMA_PATH.read_text(encoding="utf-8"))
+        Draft202012Validator.check_schema(model_schema)
+        registry = Registry().with_resource(schema["$id"], Resource.from_contents(schema))
+        model_validator = Draft202012Validator(model_schema, registry=registry)
+        for rel, spec in check_schema(report, model_validator, MODEL_DIR):
+            check_model(report, rel, spec)
 
     if not args.quiet:
         print(f"spec_lint: {len(parsed)} spec(s) checked against {SCHEMA_PATH.name}")

@@ -59,6 +59,7 @@ SCHEMA_VERSION = 1
 SHARED = (
     "crates/azoth-core/src/range.rs",
     "crates/azoth-core/src/result.rs",
+    "crates/azoth-core/src/solver.rs",
     "crates/azoth-core/src/spec.rs",
     "crates/azoth-core/src/units.rs",
     "crates/azoth-core/src/warning.rs",
@@ -68,13 +69,16 @@ SHARED = (
     "crates/azoth-python/src/data.rs",
     "crates/azoth-python/src/results.rs",
     "python/src/azoth/core/range.py",
+    "python/src/azoth/core/solver.py",
     "python/src/azoth/core/units.py",
+    "python/src/azoth/_models_gen.py",
     "python/src/azoth/_registry_gen.py",
     "python/src/azoth/_rust_bridge.py",
     # The tools are part of the chain: gen_registry.py writes spec_gen.rs, which
     # every calc reads its range checks from, so a change there changes results.
     # provenance.py hashes itself - the hash of the output then depends on the
     # generator, which is the property you want and not a circularity.
+    "tools/gen_models.py",
     "tools/gen_registry.py",
     "tools/gen_docs.py",
     "tools/spec_lint.py",
@@ -84,14 +88,14 @@ SHARED = (
 
 #: Files a namespace's calculations share, hashed once each rather than once per
 #: calc. Keyed by namespace because they genuinely differ: hydraulics carries a
-#: solver, a fittings registry and fluid tables, and thermal carries none of those.
+#: fittings registry and fluid tables, and thermal carries neither. The solver is
+#: deliberately *not* here - it affects every namespace, so it sits in SHARED.
 #:
 #: These used to sit in SHARED, including `crates/azoth-hydraulics/src/spec_gen.rs`
 #: - which was already a namespace's file rather than a shared one, and became
 #: plainly wrong once each namespace got its own generated tables.
 NAMESPACE_SUPPORT = {
     "hydraulics": (
-        "crates/azoth-hydraulics/src/solver.rs",
         "crates/azoth-hydraulics/src/fittings.rs",
         "crates/azoth-hydraulics/src/fluids.rs",
         "crates/azoth-hydraulics/src/provenance.rs",
@@ -101,6 +105,27 @@ NAMESPACE_SUPPORT = {
     "thermal": (
         "crates/azoth-thermal/src/spec_gen.rs",
         "crates/azoth-python/src/thermal.rs",
+    ),
+    "eos": (
+        # The mixture layer is the model layer's own arithmetic - components, the
+        # van der Waals one-fluid mixing rule, and the mixture fugacity coefficient
+        # no registered calc covers. It affects every model in this namespace, so it
+        # is recorded once here rather than once per model. `pt_flash.rs` and
+        # `pure_saturation.rs` are picked up by the per-model naming convention.
+        "crates/azoth-eos/src/mixture.rs",
+        # The pressure iteration the two phase-boundary models share. Recorded once
+        # here rather than twice under their names, for the same reason `mixture.rs`
+        # is: it is one piece of code that both answers depend on.
+        "crates/azoth-eos/src/phase_boundary.rs",
+        "crates/azoth-eos/src/model_gen.rs",
+        # The mixture layer's own arithmetic has no spec to be hashed under - the
+        # registry is scalar and there is nowhere in it for a composition vector - so
+        # its reduction tests are recorded here rather than under a calc or a model.
+        # They are what holds the one piece of this crate that no kernel checks.
+        "crates/azoth-eos/tests/mixture.rs",
+        "python/tests/eos/test_mixture_layer.py",
+        "crates/azoth-eos/src/spec_gen.rs",
+        "crates/azoth-python/src/eos.rs",
     ),
 }
 
@@ -182,11 +207,41 @@ def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def model_entry(spec: dict[str, Any]) -> dict[str, Any]:
+    """Provenance for one model.
+
+    The same fields a calc entry carries, from a different spec tree. A model's spec
+    is what pins its *procedure* down, so hashing it is at least as load-bearing as
+    hashing a calc's equation: a changed tolerance or bracket rule changes every
+    answer the model returns while its inputs and outputs look identical.
+    """
+    name = spec["id"].split(".")[-1]
+    namespace = spec["id"].split(".")[0]
+    return {
+        "id": spec["id"],
+        "name": spec["name"],
+        "verification": spec["verification"]["status"],
+        "spec": describe(f"specs/models/{namespace}/{name}.yaml"),
+        "code": [
+            describe(f"python/src/azoth/{namespace}/reference/{name}.py"),
+            describe(f"crates/azoth-{namespace}/src/{name}.rs"),
+        ],
+        "tests": [
+            describe(f"python/tests/models/test_{name}.py"),
+            describe(f"crates/azoth-{namespace}/tests/{name}.rs"),
+        ],
+    }
+
+
 def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
     """Assemble the provenance record."""
     paths = sorted(SPEC_DIR.rglob("*.yaml"))
     calcs = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in paths]
     calcs.sort(key=lambda c: c["id"])
+
+    model_paths = sorted((ROOT / "specs" / "models").rglob("*.yaml"))
+    models = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in model_paths]
+    models.sort(key=lambda m: m["id"])
 
     status = git("status", "--porcelain")
     resolved_tag = tag if tag is not None else git("describe", "--tags", "--exact-match")
@@ -202,6 +257,7 @@ def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
             "dirty": bool(status),
         },
         "calcs": [calc_entry(c) for c in calcs],
+        "models": [model_entry(m) for m in models],
         "shared": [describe(p) for p in SHARED],
         "namespaces": [
             {"namespace": ns, "files": [describe(p) for p in files]}

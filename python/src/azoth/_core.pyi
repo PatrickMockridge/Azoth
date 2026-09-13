@@ -104,6 +104,121 @@ class ConductionPlaneWallResult:
     warnings: list[Warning]
 
 @final
+class PrKappaResult:
+    # Dimensionless, so a bare float rather than a `Qty`: there is no unit for the
+    # two implementations to disagree about, which is what writing the equation of
+    # state in reduced variables buys at the boundary.
+    kappa: float
+    warnings: list[Warning]
+
+@final
+class PureSaturationResult:
+    p_sat: Qty
+    ln_phi: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
+class PtFlashResult:
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    ln_phi_liquid: list[float]
+    ln_phi_vapour: list[float]
+    z_liquid: float
+    z_vapour: float
+    min_t_over_tc: float
+    phase: str
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
+class MolarEnthalpyEntropyResult:
+    h: Qty
+    s: Qty
+    h_ideal: Qty
+    s_ideal: Qty
+    h_departure: Qty
+    s_departure: Qty
+    psi_bar: float
+    warnings: list[Warning]
+
+@final
+class IdealGasCpResult:
+    cp_over_r: float
+    cp: Qty
+    warnings: list[Warning]
+
+@final
+class PhaseBoundaryResult:
+    pressure: Qty
+    incipient: list[float]
+    k: list[float]
+    z_liquid: float
+    z_vapour: float
+    min_t_over_tc: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
+class PrMolarVolumeResult:
+    v: Qty
+    warnings: list[Warning]
+
+@final
+class PrMassDensityResult:
+    rho: Qty
+    warnings: list[Warning]
+
+@final
+class Vdw1fMixBinaryResult:
+    a_mix: float
+    b_mix: float
+    warnings: list[Warning]
+
+@final
+class RachfordRiceBinaryResult:
+    beta: float
+    warnings: list[Warning]
+
+@final
+class PrDepartureResult:
+    ln_phi: float
+    h_dep_rt: float
+    s_dep_r: float
+    warnings: list[Warning]
+
+@final
+class PrsvKappaResult:
+    kappa: float
+    warnings: list[Warning]
+
+@final
+class PrAlphaAbResult:
+    # All three dimensionless, so bare floats for the same reason `PrKappaResult`
+    # carries one.
+    alpha: float
+    a_reduced: float
+    b_reduced: float
+    warnings: list[Warning]
+
+@final
+class PrZFactorResult:
+    z_min: float
+    z_max: float
+    # The spec's spelling, rebuilt into `azoth.core.result.RootStructure` by the
+    # bridge - the same arrangement `ReynoldsNumberResult.regime` uses.
+    root_structure: str
+    iterations: int
+    converged: bool
+    residual: float
+    warnings: list[Warning]
+
+@final
 class PumpPowerResult:
     power: Qty
     warnings: list[Warning]
@@ -147,6 +262,64 @@ def friction_factor_colebrook(re: float, relative_roughness: float) -> Colebrook
 def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJainResult: ...
 def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResult: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
+def pr_kappa(omega: float) -> PrKappaResult: ...
+def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
+def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult: ...
+def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult: ...
+def pr_departure(
+    a_reduced: float, b_reduced: float, z: float, kappa: float, Tr: float
+) -> PrDepartureResult: ...
+def vdw1f_mix_binary(
+    z1: float, a1: float, a2: float, b1: float, b2: float, k12: float
+) -> Vdw1fMixBinaryResult: ...
+def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
+def pr_molar_volume(z: float, T: float, P: float) -> PrMolarVolumeResult: ...
+def pr_mass_density(M: float, v: float) -> PrMassDensityResult: ...
+def pure_saturation(Tc: float, Pc: float, omega: float, T: float) -> PureSaturationResult: ...
+def molar_enthalpy_entropy(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    h_ref: list[float],
+    s_ref: list[float],
+    T_ref: float,
+    P_ref: float,
+    T: float,
+    P: float,
+    z: list[float],
+    compressibility: float,
+) -> MolarEnthalpyEntropyResult: ...
+def ideal_gas_cp(a: float, b: float, c: float, d: float, T: float) -> IdealGasCpResult: ...
+def bubble_pressure(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    T: float,
+    held: list[float],
+) -> PhaseBoundaryResult: ...
+def dew_pressure(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    T: float,
+    held: list[float],
+) -> PhaseBoundaryResult: ...
+def pt_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    T: float,
+    P: float,
+    z: list[float],
+) -> PtFlashResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...
@@ -164,6 +337,10 @@ def fittings_rows() -> list[FittingRow]: ...
 def fluid_rows(name: str) -> list[FluidRow]: ...
 def warning_codes() -> list[str]: ...
 def unit_names() -> list[str]: ...
+def solver_kinds() -> list[str]: ...
+def model_ids() -> list[str]: ...
+def model_schemes(model_id: str) -> list[str]: ...
+def model_kind(model_id: str) -> str: ...
 def result_fields(calc_id: str) -> list[str]: ...
 def calc_ids() -> list[str]: ...
 def version() -> str: ...

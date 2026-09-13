@@ -110,21 +110,35 @@
     "solver": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "tolerance", "max_iterations", "initial_guess", "convergence"],
+      "required": ["kind", "tolerance", "max_iterations", "convergence"],
       "description": "Required for implicit equations. Encoding the solver in the spec is what keeps the Python and Rust implementations numerically comparable: a different-but-valid solver, or the same solver with a different stopping rule, would diverge in the last bits and fail the agreement test. Both implementations must implement exactly this scheme - see docs/src/theory/solvers.md.",
       "properties": {
         "kind": {
-          "enum": ["fixed_point"],
-          "description": "The scheme to solve with. Only `fixed_point` is implemented, in both languages, so it is the only value this enum permits: a spec naming `bisection` or `newton` would describe a calculation neither implementation can run, which is the 'looks like validation, does nothing' failure this schema exists to catch. Adding a kind means three things in one commit - the solver in both implementations, the cross-language agreement test that proves they run the same scheme, and a new contract test holding this enum and the implementations' solver kinds to each other the way test_warning_codes_match_the_schema holds the warning codes to the schema. Nothing does that for solver kinds today, which is why this enum is narrow rather than merely unchecked."
+          "enum": ["fixed_point", "cubic_roots"],
+          "description": "The scheme to solve with. A kind is here only when both implementations run it: a spec naming `bisection` or `newton` would describe a calculation neither implementation can run, which is the 'looks like validation, does nothing' failure this schema exists to catch. Adding a kind means three things in one commit - the solver in both implementations, the cross-language agreement test that proves they run the same scheme, and a contract test holding this enum and the implementations' kinds to each other. All three exist as of `eos.pr_z_factor`, which added `cubic_roots`: the test is `python/tests/test_solver_contract.py` and it asserts the schema, `azoth.core.solver.SolverKind` and `azoth_core::solver::SolverKind::ALL` are one set. An earlier version of this description said nothing did that yet, which was true when it was written and is not now. `cubic_roots` is analytic rather than iterative and ignores `initial_guess`, which is why that key is required conditionally rather than always - see the `allOf` below."
         },
         "tolerance": { "type": "number", "exclusiveMinimum": 0 },
         "max_iterations": { "type": "integer", "minimum": 1 },
-        "initial_guess": { "type": "number", "exclusiveMinimum": 0 },
+        "initial_guess": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Where the iteration starts. Required when `kind` is `fixed_point`, which iterates from a declared start, and meaningless for `cubic_roots`, which forms the roots analytically before polishing them - so it is required conditionally rather than always."
+        },
         "convergence": {
           "enum": ["absolute", "relative"],
           "description": "Stopping rule applied to successive iterates x_k. `relative` means |x_{k+1} - x_k| <= tolerance * |x_{k+1}|; `absolute` means |x_{k+1} - x_k| <= tolerance. Naming this explicitly matters: the same tolerance means different things under the two rules, and the two implementations must agree on which one is meant."
         }
-      }
+      },
+      "allOf": [
+        {
+          "comment": "fixed_point iterates from a declared start, so it has to declare one",
+          "if": {
+            "properties": { "kind": { "const": "fixed_point" } },
+            "required": ["kind"]
+          },
+          "then": { "required": ["initial_guess"] }
+        }
+      ]
     },
     "data": {
       "type": "object",
@@ -216,7 +230,10 @@
         "J/(kg*K)",
         "W/(m*K)",
         "W/(m**2*K)",
-        "kg/mol"
+        "kg/mol",
+        "m**3/mol",
+        "J/mol",
+        "J/(mol*K)"
       ],
       "description": "Canonical unit of a quantity in the equation. SI-first. API callers may pass any convertible unit; this is the unit the spec and generated docs speak in, not the unit anything is calculated in - calculations work in SI base magnitudes, and to_si/from_si are the only places the two representations meet. Extend deliberately, with a conversion path in both languages: python/src/azoth/core/units.py's CANONICAL_UNITS, crates/azoth-core/src/units.rs's UNIT_NAMES, and a constructor in each. A contract test asserts the three lists are the same set, so adding a name to one and not the others fails rather than going unnoticed, and a conversion test asserts the round trip for every entry. SI-first is a convention for how these are written down, not a load-bearing property: mm is not its own SI base unit and converts correctly, because both implementations convert to base units rather than to the name recorded here."
     },
@@ -312,7 +329,8 @@
             "TRANSITIONAL_FLOW",
             "SOLVER_NOT_CONVERGED",
             "UNVERIFIED_SOURCE",
-            "ESTIMATED_DATA"
+            "ESTIMATED_DATA",
+            "TRIVIAL_SOLUTION"
           ],
           "default": "OUT_OF_VALID_RANGE",
           "description": "Which warning code a violation emits. Defaults to OUT_OF_VALID_RANGE, which is right for a plain bound. Override it when the violation has a more specific meaning - the transitional-flow band emits TRANSITIONAL_FLOW, so a caller can react to indeterminate friction without string-matching a message. The code is data, not behaviour: naming it here is what keeps the spec and the warning the code raises from drifting apart."

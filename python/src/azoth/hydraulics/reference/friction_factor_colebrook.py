@@ -24,12 +24,12 @@ import math
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ColebrookResult
-from azoth.core.warnings import Warning
-from azoth.hydraulics.reference.solver import (
+from azoth.core.solver import (
     Convergence,
     fixed_point,
     require_converged,
 )
+from azoth.core.warnings import Warning
 
 CALC_ID = "hydraulics.friction_factor_colebrook"
 

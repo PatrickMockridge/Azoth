@@ -41,9 +41,11 @@ Each page has the same shape, and the order is deliberate:
 
 ## What is implemented
 
-Two namespaces. The first is the hydraulics kernel through Darcy-Weisbach pressure
-drop; the second exists to demonstrate that nothing in the pipeline is shaped
-around it.
+Three namespaces. The first is the hydraulics kernel through Darcy-Weisbach
+pressure drop. The second exists to demonstrate that nothing in the pipeline is
+shaped around it. The third is where the model stops being a correlation over a
+geometry: an equation of state is implicit, mixture-valued, and written in reduced
+variables rather than in quantities with units.
 
 **Hydraulics** - [`hydraulics/index.md`](./hydraulics/index.md):
 
@@ -61,6 +63,27 @@ around it.
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)
+
+**Equations of state** - [`eos/index.md`](./eos/index.md):
+
+- [`eos.pr_kappa`](./eos/pr_kappa.md)
+- [`eos.pr_alpha_ab`](./eos/pr_alpha_ab.md)
+- [`eos.pr_z_factor`](./eos/pr_z_factor.md)
+- [`eos.pr_departure`](./eos/pr_departure.md)
+- [`eos.prsv_kappa`](./eos/prsv_kappa.md)
+- [`eos.vdw1f_mix_binary`](./eos/vdw1f_mix_binary.md)
+- [`eos.rachford_rice_binary`](./eos/rachford_rice_binary.md)
+- [`eos.pr_molar_volume`](./eos/pr_molar_volume.md)
+- [`eos.pr_mass_density`](./eos/pr_mass_density.md)
+- [`eos.ideal_gas_cp`](./eos/ideal_gas_cp.md)
+
+*Models* - whose specs fix a procedure rather than an equation:
+
+- [`eos.pure_saturation`](./eos/pure_saturation.md)
+- [`eos.pt_flash`](./eos/pt_flash.md)
+- [`eos.bubble_pressure`](./eos/bubble_pressure.md)
+- [`eos.dew_pressure`](./eos/dew_pressure.md)
+- [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — a *direct* model, which composes vectors with no iteration
 
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`
 is the isentropic basis, with the standard's de-rating coefficients left to the caller.

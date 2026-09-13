@@ -171,7 +171,38 @@ def collect_numbers(mapping: dict[str, Any]) -> list[tuple[str, float]]:
 
 
 def collect_lists(mapping: dict[str, Any]) -> list[tuple[str, list[str]]]:
-    return [(k, v) for k, v in mapping.items() if isinstance(v, list)]
+    """Lists of strings: fitting ids, which are identifiers rather than numbers."""
+    return [
+        (k, v)
+        for k, v in mapping.items()
+        if isinstance(v, list) and v and all(isinstance(x, str) for x in v)
+    ]
+
+
+def collect_vectors(mapping: dict[str, Any]) -> list[tuple[str, list[float]]]:
+    """Lists of numbers: a composition, or one constant per component."""
+    return [
+        (k, v)
+        for k, v in mapping.items()
+        if isinstance(v, list) and v and all(isinstance(x, (int, float)) for x in v)
+    ]
+
+
+def collect_matrices(mapping: dict[str, Any]) -> list[tuple[str, list[float]]]:
+    """Lists of lists of numbers, flattened row-major.
+
+    The dimension is not emitted: every matrix this registry carries is square and
+    the same size as the vectors beside it, so a consumer reshapes against their
+    length rather than against a second copy of the same number.
+    """
+    out: list[tuple[str, list[float]]] = []
+    for key, value in mapping.items():
+        if not isinstance(value, list) or not value:
+            continue
+        if not all(isinstance(row, list) for row in value):
+            continue
+        out.append((key, [float(x) for row in value for x in row]))
+    return out
 
 
 def emit_range_check(check: dict[str, Any], spec_id: str) -> str:
@@ -188,6 +219,19 @@ def emit_range_check(check: dict[str, Any], spec_id: str) -> str:
             f"Every bound must explain why it exists - a bound with no reason is a "
             f"bound nobody dares change."
         )
+    # `enum` is a bound kind the schema permits and neither implementation can
+    # evaluate: a range check resolves a quantity to a float, and an enum bound
+    # compares strings. Emitting it would produce a check that silently never fires,
+    # so the generator refuses instead. `spec_lint` refuses it earlier, with the
+    # same reasoning; this is the second gate, because a spec reaching the generator
+    # is a spec that got past the linter.
+    if check.get("enum") is not None:
+        raise SystemExit(
+            f"{spec_id}: range check on '{check['quantity']}' uses `enum`, which "
+            f"neither implementation can evaluate. A range check resolves its "
+            f"quantity to a float; an enum bound compares strings. Emitting it would "
+            f"produce a check that never fires."
+        )
     return (
         "            check: RangeCheck {\n"
         f"                quantity: {rust_str(check['quantity'])},\n"
@@ -195,6 +239,7 @@ def emit_range_check(check: dict[str, Any], spec_id: str) -> str:
         f"                min_inclusive: {str(check.get('min_inclusive', True)).lower()},\n"
         f"                max: {rust_opt_f64(check.get('max'))},\n"
         f"                max_inclusive: {str(check.get('max_inclusive', True)).lower()},\n"
+        f"                equals: {rust_opt_f64(check.get('equals'))},\n"
         f"                band: {band},\n"
         f"                severity: {severity},\n"
         f"                code: {code},\n"
@@ -216,7 +261,10 @@ def emit_test_case(
 ) -> str:
     numbers = collect_numbers(inputs)
     lists = collect_lists(inputs)
+    vectors = collect_vectors(inputs)
+    matrices = collect_matrices(inputs)
     expected_numbers = collect_numbers(expected)
+    expected_vectors = collect_vectors(expected)
 
     def pairs(items: list[tuple[str, float]]) -> str:
         if not items:
@@ -228,6 +276,14 @@ def emit_test_case(
         if not items:
             return "&[]"
         inner = ", ".join(f"({rust_str(k)}, {rust_slice_str(v)})" for k, v in items)
+        return f"&[{inner}]"
+
+    def number_slice_pairs(items: list[tuple[str, list[float]]]) -> str:
+        if not items:
+            return "&[]"
+        inner = ", ".join(
+            f"({rust_str(k)}, &[{', '.join(rust_f64(x) for x in v)}])" for k, v in items
+        )
         return f"&[{inner}]"
 
     prop = f"Some({rust_str(property_name)})" if property_name else "None"
@@ -243,7 +299,10 @@ def emit_test_case(
         f"{indent}    tolerance: {rust_f64(tolerance)},\n"
         f"{indent}    numbers: {pairs(numbers)},\n"
         f"{indent}    lists: {list_pairs(lists)},\n"
+        f"{indent}    vectors: {number_slice_pairs(vectors)},\n"
+        f"{indent}    matrices: {number_slice_pairs(matrices)},\n"
         f"{indent}    expected: {pairs(expected_numbers)},\n"
+        f"{indent}    expected_vectors: {number_slice_pairs(expected_vectors)},\n"
         f"{indent}}},\n"
     )
 
@@ -289,12 +348,19 @@ def emit_rust(specs: list[dict[str, Any]], source_files: list[str], namespace: s
         solver = spec.get("solver")
         solver_str = "None"
         if solver:
+            # `initial_guess` is optional in the spec: `fixed_point` iterates from a
+            # declared start and the schema requires one, while `cubic_roots` forms
+            # its roots analytically and has no starting point to declare. Emitting
+            # `None` rather than a placeholder keeps that absence visible in the
+            # generated table instead of inventing a value nothing reads.
+            guess = solver.get("initial_guess")
+            guess_str = "None" if guess is None else f"Some({rust_f64(guess)})"
             solver_str = (
                 "Some(SolverSpec {\n"
                 f"            kind: {rust_str(solver['kind'])},\n"
                 f"            tolerance: {rust_f64(solver['tolerance'])},\n"
                 f"            max_iterations: {solver['max_iterations']},\n"
-                f"            initial_guess: {rust_f64(solver['initial_guess'])},\n"
+                f"            initial_guess: {guess_str},\n"
                 f"            convergence: {rust_str(solver['convergence'])},\n"
                 "        })"
             )
