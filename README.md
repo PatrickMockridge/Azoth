@@ -139,7 +139,7 @@ pure-component test cannot tell it apart from a right one. This uses Heidemann &
 `Z_c` moves with composition, and a test asserts that it moves.
 
 The method is ported from NeqSim's `CriticalPointFlash` (Apache-2.0) - see
-[`NOTICE`](NOTICE) and the spec's `ported_from` block - which supplies the Q matrix as
+[`NOTICE`](NOTICE) - which supplies the Q matrix as
 the scaled Helmholtz Hessian at constant temperature and volume, and the nested Newton
 that drives its smallest eigenvalue to zero. **That implementation validates its result
 nowhere**, so it is a source for the method and not for the answer; everything this

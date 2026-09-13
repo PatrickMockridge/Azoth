@@ -240,11 +240,16 @@ status.** Some of what this library implements was worked out elsewhere and is
 worth reusing rather than re-deriving. That is allowed, and it is governed by two
 rules.
 
-*Three citations, not one.* A ported calculation's spec carries a `ported_from`
-block naming the project, the version, the **file**, the commit and the licence;
-its `references` cite the **paper the method comes from**; and its `notes` say
-what was **changed** — because a port is never a transcription, and the
-differences are the part a reader cannot recover from either source.
+*Attribution lives in one place: `NOTICE`.* It names the project, the version,
+the commit and the licence, once, for every calculation that reuses it. There is
+deliberately no per-calculation field for it — a block repeated in twenty specs is
+a block nobody reads and a test has to enforce, and vendoring a dependency is not
+a thing you re-state per function.
+
+*The spec still cites two things.* Its `references` cite the **paper the method
+comes from**, and its `notes` say what was **changed** and why — because a port is
+never a transcription, and the differences are the part a reader cannot recover
+from either source.
 
 *A port stays `unverified`.* A verification status is a claim about a person
 having read a source. Reading someone's Java is not that. If the paper has not

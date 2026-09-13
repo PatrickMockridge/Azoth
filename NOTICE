@@ -3,9 +3,9 @@ Copyright (C) 2026 the azoth contributors
 
 This product includes software and data developed by third parties, listed
 below. Each entry records what was reused, from where, under what licence, and
-what was changed. The list is maintained by hand and is checked in review; the
-`ported_from` block in a calculation's spec is the machine-readable form of the
-same statement, and the two are expected to agree.
+what was changed. This is the one place that attribution lives: a calculation's
+spec cites the paper its method comes from and says in its own notes what was
+changed, and neither restates the licence terms recorded here.
 
 --------------------------------------------------------------------------------
 NeqSim
@@ -59,6 +59,8 @@ reasoning.
 
 ### Changes
 
-Recorded per calculation in the spec's `ported_from` block, which names the
-NeqSim file, the commit, and what was changed. A single global statement of
-changes would be less useful than one attached to the algorithm it describes.
+Recorded in each calculation's spec, in its own notes - which is where the design
+decisions already live - rather than in a block kept for the purpose. What each
+spec says is how its implementation differs from NeqSim's and why, because those
+differences are the part a reader cannot recover from either side.
+

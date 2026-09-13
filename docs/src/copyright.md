@@ -107,7 +107,7 @@ Apache-2.0 is one-way compatible with the GNU licences, and the obligation it im
 The Crane table cannot be shipped at any price; a NeqSim implementation can be shipped
 provided the credit and the statement of changes are made, which is what
 [`NOTICE`](https://github.com/PatrickMockridge/Azoth/blob/main/NOTICE) at the repository
-root and the `ported_from` block in the spec are for.
+root is for — once, for everything reused, rather than restated per calculation.
 
 **The licence is not the hard part. The verification is.** A port arrives looking
 authoritative — it came from a maintained industrial library — and that is a stronger

@@ -7,13 +7,21 @@ A *procedure* rather than a direct model: there is an iteration here, a starting
 
 ## Source
 
-**Heidemann, R. A.; Khalil, A. M. (1980)** (The calculation of critical points. AIChE Journal 26(5), 769-779. The paper is the method's source and has **not been read**. The implementation follows an open-source one instead; see `verification.notes` and the `ported_from` block below, which is the whole reason that block exists.
+**Heidemann, R. A.; Khalil, A. M. (1980)** (The calculation of critical points. AIChE Journal 26(5), 769-779. The paper is the method's source and has **not been read**. The implementation follows an open-source one instead, and `verification.notes` records where the two differ.
 ) - TODO: source needed
 
 DOI: [TODO: source needed](https://doi.org/TODO: source needed)
 
 **Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
 
+The method is Heidemann and Khalil's; what is unconfirmed is the equation number and the reading of the paper.
+# Where this differs from NeqSim's implementation
+The two conditions are the same, and the nested structure is the same. Four things differ, and each was a decision rather than a transcription.
+**The derivative frame is the Helmholtz one directly.** NeqSim forms `Q` from `getdfugdn`, which is a constant-pressure composition derivative, and converts to constant volume with `-dfugdp * V_j * dP/dV`. This implementation never forms the constant-pressure derivative: `_mixture_state.criticality_matrix` builds the Hessian of the Helmholtz energy at constant temperature and volume, so there is nothing to convert. That also makes the symmetry structural, and NeqSim needs an explicit symmetrisation step because theirs is not.
+**The pressure comes from the volume, not from the cubic.** NeqSim sets the volume and asks its phase object for the pressure through the cubic solver. A critical point is exactly where a cubic is degenerate - at `Tr = Pr = 1` the three roots have merged and even the full-precision constants leave about five significant digits - so this implementation evaluates the explicit equation of state instead, `P = R T/(V - b) - a/(V^2 + 2 b V - b^2)`, which is well posed everywhere the state is.
+**The convergence target is the eigenvalue, not a determinant.** NeqSim's own code comment records that a determinant is "far better scaled" as a Rayleigh quotient, and its implementation does use the quotient; it keeps the name `detM` for the variable and reports it as such. This implementation names the quantity for what it is, and takes the **algebraically smallest** eigenvalue rather than the smallest in magnitude, because the one that crosses zero at a critical point is the one that goes from negative to positive.
+**The ideal part of the cubic form is written down.** NeqSim's `calcdpd` forms a central second difference of the Rayleigh quotient, which measures the quartic term; the criticality condition is on the cubic one, which is the central *first* difference. This implementation takes the first difference and subtracts the ideal part's third derivative explicitly, without which a pure component reads `1.000000000` at its own critical point instead of zero.
+**No validation was inherited, because there is none to inherit.** The NeqSim class checks its result against nothing. Every check below is this project's.
 The two conditions are not ours: that a critical point is where the smallest eigenvalue of the scaled Helmholtz Hessian vanishes, and where the cubic form along its eigenvector vanishes, is Heidemann and Khalil's result. What is ours and unverified is the derivative frame, the pressure route, the initialisation, the two tolerances, and the finite-difference step the cubic form is evaluated at.
 **The paper has not been read**, so this ships `unverified` even though it is checked hard against closed-form answers. Reading Heidemann and Khalil is what would move it, and it is the same human-blocked work item the README records.
 # What it is checked against, and it is not another implementation
