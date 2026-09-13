@@ -58,28 +58,10 @@ use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::algorithm_of;
-use crate::mixture::{Mixture, RootSide};
+use crate::mixture::{Mixture, RootSide, wilson_k};
 use crate::model_gen;
 
 use crate::results::{Phase, PtFlashResult};
-
-/// Wilson's correlation for the initial K-values.
-///
-/// `K_i = (Pc_i / P) * exp(5.373 * (1 + omega_i) * (1 - Tc_i / T))`.
-///
-/// The constant is 5.373. Some sources print 5.37 and the paper is dated 1968 in
-/// some and 1969 in others; the discrepancy is recorded in the spec's references
-/// rather than resolved, because a reader meeting the other value needs to know it
-/// is the same correlation and not a correction.
-fn wilson_k(mixture: &Mixture, t: ThermodynamicTemperature, p: Pressure) -> Vec<f64> {
-    mixture
-        .components()
-        .iter()
-        .map(|c| {
-            (c.pc.value / p.value) * (5.373 * (1.0 + c.omega) * (1.0 - c.tc.value / t.value)).exp()
-        })
-        .collect()
-}
 
 /// The interval on which Rachford-Rice has its physical root, or `None` if it has
 /// none.

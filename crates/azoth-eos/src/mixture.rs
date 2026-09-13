@@ -659,6 +659,46 @@ impl Mixture {
     }
 }
 
+/// Wilson's correlation for a mixture's initial K-values.
+///
+/// `K_i = (Pc_i / P) * exp(5.373 * (1 + omega_i) * (1 - Tc_i / T))`.
+///
+/// The constant is 5.373. Some sources print 5.37 and the paper is dated 1968 in
+/// some and 1969 in others; the discrepancy is recorded in the specs' references
+/// rather than resolved, because a reader meeting the other value needs to know it
+/// is the same correlation and not a correction.
+///
+/// Here rather than in either model that uses it, because two do: `eos.pt_flash`
+/// seeds its iteration with it, and `eos.stability_test` seeds *both* of its trials
+/// with it - the vapour-like one from `z_i K_i` and the liquid-like one from
+/// `z_i / K_i`. A second copy would be a second place for the constant to drift, and
+/// the two models' answers are compared against each other.
+pub(crate) fn wilson_k(mixture: &Mixture, t: ThermodynamicTemperature, p: Pressure) -> Vec<f64> {
+    mixture
+        .components()
+        .iter()
+        .map(|c| {
+            (c.pc.value / p.value) * (5.373 * (1.0 + c.omega) * (1.0 - c.tc.value / t.value)).exp()
+        })
+        .collect()
+}
+
+/// Rescale a vector to sum to one, in place.
+///
+/// A non-positive total leaves the values untouched rather than dividing by it: the
+/// caller is holding a set of mole numbers that are all zero, which is not a
+/// composition, and returning `NaN`s would turn "no composition here" into a number.
+/// The two callers both guarantee a positive total, so this is a guard rather than a
+/// branch either of them takes.
+pub(crate) fn normalise(values: &mut [f64]) {
+    let sum: f64 = values.iter().sum();
+    if sum > 0.0 {
+        for value in values.iter_mut() {
+            *value /= sum;
+        }
+    }
+}
+
 /// The reduced parameters of every component at one state, plus any warnings the
 /// kernels raised on the way.
 ///

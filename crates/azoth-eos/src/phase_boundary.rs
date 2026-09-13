@@ -56,7 +56,7 @@ use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
 
 use crate::algorithm_of;
-use crate::mixture::{Mixture, RootSide};
+use crate::mixture::{Mixture, RootSide, normalise};
 use crate::model_gen;
 
 /// The `max_i |ln K_i|` below which the two phases have merged.
@@ -348,16 +348,6 @@ fn check_composition(values: &[f64], n: usize, field: &str) -> Result<()> {
         ));
     }
     Ok(())
-}
-
-/// Rescale a vector to sum to one, in place.
-fn normalise(values: &mut [f64]) {
-    let sum: f64 = values.iter().sum();
-    if sum > 0.0 {
-        for value in values.iter_mut() {
-            *value /= sum;
-        }
-    }
 }
 
 /// A `uom` pressure from a bare pascal magnitude.
