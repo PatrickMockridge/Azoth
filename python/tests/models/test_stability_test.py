@@ -35,6 +35,7 @@ from azoth.eos import (
     stability_test,
 )
 from azoth.eos.reference._mixture_state import (
+    ReducedParameters,
     helmholtz_energy,
     mixture_parameters,
     phase_state,
@@ -81,7 +82,10 @@ def call(case: dict[str, Any]) -> StabilityTestResult:
 
 
 def gibbs_at_root(
-    reduced: Any, kij: tuple[tuple[float, ...], ...], z: list[float], compressibility: float
+    reduced: ReducedParameters,
+    kij: tuple[tuple[float, ...], ...],
+    z: list[float],
+    compressibility: float,
 ) -> float:
     """``A^R/RT - ln Z + Z`` at one root, which is ``G/RT`` up to a constant.
 

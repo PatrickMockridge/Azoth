@@ -160,3 +160,14 @@ ignore_errors = true
 # import; the tools themselves are already outside `files`.
 module = ["yaml"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Neither `jsonschema` nor `referencing` publishes type information. The consumers
+# on the checked path are `test_keycard_schema.py`, which validates documents
+# against the real schemas rather than a mock - a schema is only worth testing
+# against the validator that reads it - and it needs `referencing` to resolve the
+# `$ref` between the two schema documents. Same reasoning as `yaml` above: a stub
+# package would be a new dev dependency for one import, and the tools that use the
+# same libraries are already outside `files`.
+module = ["jsonschema", "referencing"]
+ignore_missing_imports = true

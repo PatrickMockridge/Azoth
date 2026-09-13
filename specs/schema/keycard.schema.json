@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/keycard.schema.json",
+  "title": "Azoth Keycard",
+  "description": "The file a user supplies to carry the values this library will not ship: licensed coefficients, a component databank, a model definition. It is the same mechanism as `azoth-data.example.yaml`, named and specified, and it exists because most of what a calculation needs is not copyrightable and some of it is - see `docs/src/copyright.md`. The provenance rules are `$ref`-ed from `calc.schema.json` rather than restated, so a user's row and the repository's row are one definition of what a valid citation is.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "keyholder"],
+  "properties": {
+    "schema_version": {
+      "const": 2,
+      "description": "The keycard format's version. Version 2 added `components`, `coefficients` and `models`. Bumped rather than extended in place because the checker that reads version 1 does not reject unknown sections - so a version-1 file carrying `components` would be accepted and the section silently dropped, which is data that looks in use and is read by nothing."
+    },
+    "keyholder": {
+      "description": "Who is asserting the right to use these values. Required, because a result computed from a keycard records whose keycard it was and the recording needs a name.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The person or organisation holding the licence, as they want to be named."
+        },
+        "licence": {
+          "type": "string",
+          "pattern": "^(arweave:[A-Za-z0-9_-]{43}|doi:10\\.[0-9]{4,9}/\\S+|https://\\S+)$",
+          "description": "A fetchable reference to the licence itself, so a reviewer can see the terms a value was used under rather than being told they exist. Optional: a keycard carrying only public data has no licence to name."
+        }
+      }
+    },
+    "fittings": {
+      "description": "Equivalent-length coefficients, overriding or extending `data/fittings/crane_k_factors.csv`.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "allOf": [
+          { "$ref": "calc.schema.json#/$defs/provenance_row" },
+          {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "family": { "type": "string", "minLength": 1 },
+              "name": { "type": "string", "minLength": 1 },
+              "n_ld": { "type": "number", "exclusiveMinimum": 0 },
+              "f_t_basis": { "type": "string", "minLength": 1 }
+            },
+            "required": ["id", "family", "name", "n_ld", "f_t_basis"]
+          }
+        ]
+      }
+    },
+    "fluids": {
+      "description": "Property tables, keyed by fluid name, overriding or extending `data/fluids/`.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 2,
+        "items": {
+          "allOf": [
+            { "$ref": "calc.schema.json#/$defs/provenance_row" },
+            {
+              "type": "object",
+              "properties": {
+                "temperature_c": { "type": "number" },
+                "density_kg_m3": { "type": "number", "exclusiveMinimum": 0 },
+                "dynamic_viscosity_pa_s": { "type": "number", "exclusiveMinimum": 0 }
+              },
+              "required": ["temperature_c", "density_kg_m3", "dynamic_viscosity_pa_s"]
+            }
+          ]
+        }
+      }
+    },
+    "components": {
+      "description": "A component databank, keyed by substance name. A component is a *set* of named parameters rather than a fixed record, because the models need different ones - a cubic needs `Tc`, `Pc` and `omega`, an associating model needs those plus association parameters - so the parameter names are open and the checker refuses one no model reads. Supplying a name the shipped databank already has overrides it; supplying a new one extends it.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {
+          "allOf": [
+            { "$ref": "calc.schema.json#/$defs/provenance_row" },
+            {
+              "type": "object",
+              "properties": {
+                "value": { "type": "number" },
+                "unit": { "$ref": "calc.schema.json#/$defs/unit" }
+              },
+              "required": ["value", "unit"]
+            }
+          ]
+        }
+      }
+    },
+    "coefficients": {
+      "description": "Single constants a calculation takes as an argument, keyed by calculation id and then by input name - the identifiers the spec, both implementations and the registry already use. These are a *default*: a caller who passes the argument explicitly wins and the keycard is not consulted.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {
+          "allOf": [
+            { "$ref": "calc.schema.json#/$defs/provenance_row" },
+            {
+              "type": "object",
+              "properties": {
+                "value": { "type": "number" },
+                "unit": {
+                  "$ref": "calc.schema.json#/$defs/unit",
+                  "description": "Required, and checked against the spec's declared unit for that input. It is the one silent-error risk the entry carries: a coefficient declared in the wrong unit is a factor with no symptom."
+                },
+                "convention": {
+                  "type": "string",
+                  "description": "Which convention the value is stated in, where the quantity is not a true ratio. `control_valve_cv`'s `Cv` is the case: it is declared `dimensionless` because no vocabulary unit can express `gpm/sqrt(psi)`, and that declaration is a fiction the warning carries instead."
+                }
+              },
+              "required": ["value", "unit"]
+            }
+          ]
+        }
+      }
+    },
+    "models": {
+      "description": "Declarative model definitions. A restricted, data-only form: named choices from closed vocabularies plus numeric parameters, with nothing to execute. Both implementations interpret the form independently and are cross-checked, which is what keeps the two-implementation guarantee true for a model this repository cannot see.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "shape", "alpha", "mixing_rule", "components"],
+        "properties": {
+          "kind": {
+            "enum": ["cubic_eos"],
+            "description": "The model family. **One member, and deliberately.** A kind is here only when both implementations run it and a contract test holds the vocabulary to them together - the argument `docs/src/theory/solvers.md` already makes about `solver.kind`. Widening this enum is a deliberate act that happens alongside the implementation, never before it."
+          },
+          "shape": {
+            "enum": [
+              "van_der_waals",
+              "soave_redlich_kwong",
+              "peng_robinson",
+              "peng_robinson_1978",
+              "patel_teja_factorial"
+            ],
+            "description": "Named as a pair rather than as loose numbers because it fixes the cubic's two constants (`e`, `f`), and naming them separately would make an invalid combination representable."
+          },
+          "alpha": {
+            "enum": [
+              "constant",
+              "soave",
+              "peng_robinson",
+              "peng_robinson_1978",
+              "twu",
+              "mathias_copeman"
+            ]
+          },
+          "critical_rule": {
+            "enum": ["soave", "peng_robinson", "explicit"],
+            "description": "How the cubic's two constants are obtained. `explicit` means the caller supplies them rather than the implementation deriving them from the critical point. There is deliberately no `if/then` for it beyond this enum: what it changes is which parameters the implementation requires, and that check belongs where the parameters are read. Recorded so the absence is a decision - an earlier draft carried a `not` that forbade `shape`, which is required, and would have made this choice unsatisfiable."
+          },
+          "mixing_rule": {
+            "enum": [
+              "classical",
+              "classical_kij",
+              "wong_sandler",
+              "huron_vidal",
+              "huron_vidal_mhv1",
+              "huron_vidal_mhv2"
+            ]
+          },
+          "volume_translation": { "enum": ["none", "peneloux", "constant"] },
+          "root_selection": { "enum": ["from_phase", "largest_positive", "smallest_positive"] },
+          "components": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Component names, resolved against this keycard's `components` section."
+          },
+          "alpha_parameters": {
+            "type": "object",
+            "description": "The extra parameters an alpha function needs - `eta` for Mathias-Copeman, `L`, `M` and `N` for Twu. Empty for the ones that need none.",
+            "additionalProperties": { "type": "number" }
+          }
+        },
+        "allOf": [
+          {
+            "comment": "An alpha function that needs a parameter must be given it, or the schema accepts the choice and the implementation silently evaluates a different equation. **`required` is stated at both levels deliberately.** `properties` constrains a key only when it is present, so `then: {properties: {alpha_parameters: {required: [eta]}}}` does nothing at all to a model that omits `alpha_parameters` entirely - which is the normal way to write one for an alpha function that needs none. The outer `required` is what makes the inner one reachable, and the first version of this file omitted it. The test proved the constraint did not fire; reading it would not have.",
+            "if": { "properties": { "alpha": { "const": "mathias_copeman" } }, "required": ["alpha"] },
+            "then": {
+              "required": ["alpha_parameters"],
+              "properties": { "alpha_parameters": { "required": ["eta"] } }
+            }
+          },
+          {
+            "if": { "properties": { "alpha": { "const": "twu" } }, "required": ["alpha"] },
+            "then": {
+              "required": ["alpha_parameters"],
+              "properties": { "alpha_parameters": { "required": ["L", "M", "N"] } }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
