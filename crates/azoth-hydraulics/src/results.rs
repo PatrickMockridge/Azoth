@@ -23,7 +23,7 @@
 //! alternative would be to throw away information the caller wants.
 
 use azoth_core::{CalcResult, FlowRegime, Warning};
-use uom::si::f64::Pressure;
+use uom::si::f64::{Power, Pressure};
 
 /// Result of `hydraulics.reynolds_number`.
 #[derive(Debug, Clone, PartialEq)]
@@ -119,6 +119,28 @@ impl CalcResult for HaalandResult {
     }
 }
 
+/// Result of `hydraulics.pump_power`.
+///
+/// Carries a dimensioned output, like `darcy_weisbach`'s: shaft power is a
+/// quantity, not a bare number, and the transport layer needs both the SI
+/// magnitude and the unit to hand it back.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PumpPowerResult {
+    /// Shaft power the pump must be supplied with.
+    pub power: Power,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PumpPowerResult {
+    const CALC_ID: &'static str = "hydraulics.pump_power";
+    const FIELDS: &'static [&'static str] = &["power", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// One fitting's contribution to the total resistance coefficient.
 #[derive(Debug, Clone, PartialEq)]
 pub struct KComponent {
@@ -192,6 +214,7 @@ mod tests {
             (ColebrookResult::CALC_ID, ColebrookResult::FIELDS),
             (SwameeJainResult::CALC_ID, SwameeJainResult::FIELDS),
             (HaalandResult::CALC_ID, HaalandResult::FIELDS),
+            (PumpPowerResult::CALC_ID, PumpPowerResult::FIELDS),
             (KFactorsResult::CALC_ID, KFactorsResult::FIELDS),
             (DarcyWeisbachResult::CALC_ID, DarcyWeisbachResult::FIELDS),
         ];
@@ -211,6 +234,7 @@ mod tests {
             SwameeJainResult::CALC_ID,
             HaalandResult::CALC_ID,
             KFactorsResult::CALC_ID,
+            PumpPowerResult::CALC_ID,
             DarcyWeisbachResult::CALC_ID,
         ];
         let unique: std::collections::HashSet<_> = all.iter().collect();
@@ -239,6 +263,7 @@ mod tests {
             SwameeJainResult::FIELDS,
             HaalandResult::FIELDS,
             KFactorsResult::FIELDS,
+            PumpPowerResult::FIELDS,
             DarcyWeisbachResult::FIELDS,
         ] {
             let unique: std::collections::HashSet<_> = fields.iter().collect();

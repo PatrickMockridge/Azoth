@@ -170,6 +170,16 @@ class HaalandResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PumpPowerResult(_HasWarnings):
+    """Result of ``hydraulics.pump_power``."""
+
+    #: Shaft power the pump must be supplied with.
+    power: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ConductionPlaneWallResult(_HasWarnings):
     """Result of ``thermal.conduction_plane_wall``.
 
@@ -238,4 +248,5 @@ RESULT_TYPES: dict[str, type[object]] = {
     "hydraulics.crane_k_factors": KFactorsResult,
     "hydraulics.darcy_weisbach": DarcyWeisbachResult,
     "thermal.conduction_plane_wall": ConductionPlaneWallResult,
+    "hydraulics.pump_power": PumpPowerResult,
 }

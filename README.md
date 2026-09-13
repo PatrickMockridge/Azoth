@@ -99,13 +99,14 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.friction_factor_haaland` | A second explicit approximation, fitted differently |
 | `hydraulics.crane_k_factors` | Fitting losses by the equivalent-length method |
 | `hydraulics.darcy_weisbach` | Pressure drop over a straight pipe |
+| `hydraulics.pump_power` | Shaft power from flow, head and efficiency |
 | `thermal.conduction_plane_wall` | Steady conduction through a slab |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use
 different methods and adding them is a modelling decision worth seeing explicitly.
 
-Orifice, control valve, relief valve and pump calculations are not implemented.
+Orifice, control valve and relief valve calculations are not implemented.
 
 The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`), not by
 project. They appear in provenance records and citations, so renaming the project
