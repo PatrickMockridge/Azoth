@@ -145,3 +145,11 @@ follow_untyped_imports = false
 [[tool.mypy.overrides]]
 module = ["azoth._registry_gen"]
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+# PyYAML publishes no type information. The only consumer on the checked path is
+# the spec_lint test, which writes a synthetic spec out as YAML and needs a real
+# parser to do it. A stub package would be a new dev dependency for that one
+# import; the tools themselves are already outside `files`.
+module = ["yaml"]
+ignore_missing_imports = true
