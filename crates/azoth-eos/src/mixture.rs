@@ -410,6 +410,253 @@ impl Mixture {
         }
         (a_mix, b_mix)
     }
+
+    /// `A^R/(R T)` - the residual Helmholtz energy, at a set of mole numbers.
+    ///
+    /// ```text
+    /// Phi = -N ln(1 - b) - (a / (2 sqrt2 b)) G(b)
+    /// ```
+    ///
+    /// The energy whose first composition derivative is the logarithm of fugacity
+    /// and whose second is [`Self::helmholtz_hessian`]. It is exposed because those
+    /// two relations are what the tests are built on, and a function that cannot be
+    /// evaluated cannot have its derivatives checked:
+    ///
+    /// ```text
+    /// d(A^R/RT)/dn_i = ln phi_i + ln Z
+    /// ```
+    ///
+    /// which is asserted against [`Self::phase_state_at`]'s `ln phi` - a different
+    /// code path, reached by differentiating a departure function rather than an
+    /// energy, so the agreement is evidence rather than a restatement.
+    ///
+    /// # Mole numbers, not mole fractions
+    ///
+    /// `n` is a set of mole numbers, and the argument is named for it because the
+    /// distinction is load-bearing: `A^R` is homogeneous of degree one in `(V, n)`
+    /// but **not** in `n` at fixed `V`, so the total is part of the state and a
+    /// function of the fractions alone could not be differentiated. A caller
+    /// holding a composition summing to one is already passing mole numbers.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if `n` is not one entry per component.
+    /// * [`AzothError::OutOfRange`] if the mixture's `B` is not positive.
+    pub fn helmholtz_energy(
+        &self,
+        reduced: &ReducedParameters,
+        n: &[f64],
+        compressibility: f64,
+    ) -> Result<f64> {
+        let count = self.check_mole_numbers(n)?;
+        let (b_hat, a_ij) = self.scaled_constants(reduced, compressibility, count);
+        let total: f64 = n.iter().sum();
+        let b_sum: f64 = (0..count).map(|i| n[i] * b_hat[i]).sum();
+        self.check_b_sum(b_sum, compressibility)?;
+        let mut a_sum = 0.0;
+        for i in 0..count {
+            for j in 0..count {
+                a_sum += n[i] * n[j] * a_ij[i][j];
+            }
+        }
+        let sqrt_2 = std::f64::consts::SQRT_2;
+        let g = ((1.0 + (1.0 + sqrt_2) * b_sum) / (1.0 + (1.0 - sqrt_2) * b_sum)).ln();
+        Ok(-total * (1.0 - b_sum).ln() - (a_sum / (2.0 * sqrt_2 * b_sum)) * g)
+    }
+
+    /// `d2(A^R/RT)/dn_i dn_j` at constant temperature and **volume**.
+    ///
+    /// Not at constant pressure, and the difference is the whole reason this exists
+    /// rather than being one more derivative of [`Self::phase_state_at`]. The
+    /// Hessian of the Helmholtz energy is the quantity every criticality condition
+    /// is written in, because its vanishing is what separates a stable phase from a
+    /// metastable one, and it is only the Helmholtz Hessian that has that meaning.
+    /// A constant-pressure composition derivative answers a different question, and
+    /// converting between the two frames needs two further derivative families and
+    /// a partial-molar-volume correction that this avoids entirely.
+    ///
+    /// **Everything is dimensionless**, like the rest of the `eos` core:
+    /// `a_i/(R T V)` is `A_i/Z` and `b_i/V` is `B_i/Z`, so the reduced parameters
+    /// the caller already holds carry the whole construction and no dimensioned
+    /// quantity appears.
+    ///
+    /// With `b = sum_i n_i B_i/Z`, `L = ln(1 - b)` and
+    /// `G = ln((1 + (1+sqrt2)b)/(1 + (1-sqrt2)b))`, every term below is one of those
+    /// three differentiated once or twice. They are written out because a factored
+    /// form would hide which derivative each term came from, and this is the piece
+    /// of the critical point most likely to be got wrong.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if `n` is not one entry per component.
+    /// * [`AzothError::OutOfRange`] if the mixture's `B` is not positive.
+    pub fn helmholtz_hessian(
+        &self,
+        reduced: &ReducedParameters,
+        n: &[f64],
+        compressibility: f64,
+    ) -> Result<Vec<Vec<f64>>> {
+        let count = self.check_mole_numbers(n)?;
+        let (b_hat, a_ij) = self.scaled_constants(reduced, compressibility, count);
+        let total: f64 = n.iter().sum();
+        let b_sum: f64 = (0..count).map(|i| n[i] * b_hat[i]).sum();
+        self.check_b_sum(b_sum, compressibility)?;
+
+        let sqrt_2 = std::f64::consts::SQRT_2;
+        let d = 1.0 - b_sum;
+        // L(b) = ln(1 - b), G(b) = ln((1 + (1+sqrt2)b) / (1 + (1-sqrt2)b)).
+        let l_prime = -1.0 / d;
+        let l_second = -1.0 / (d * d);
+        let q = 1.0 + 2.0 * b_sum - b_sum * b_sum;
+        let g = ((1.0 + (1.0 + sqrt_2) * b_sum) / (1.0 + (1.0 - sqrt_2) * b_sum)).ln();
+        let g_prime = 2.0 * sqrt_2 / q;
+        let g_second = -4.0 * sqrt_2 * d / (q * q);
+
+        let a_bar: Vec<f64> = (0..count)
+            .map(|i| (0..count).map(|j| n[j] * a_ij[i][j]).sum())
+            .collect();
+        let mut a_sum = 0.0;
+        for i in 0..count {
+            for j in 0..count {
+                a_sum += n[i] * n[j] * a_ij[i][j];
+            }
+        }
+
+        let mut hessian = vec![vec![0.0; count]; count];
+        for i in 0..count {
+            for j in 0..count {
+                let pair = a_bar[i] * b_hat[j] + a_bar[j] * b_hat[i];
+                let product = b_hat[i] * b_hat[j];
+                hessian[i][j] = -(b_hat[i] + b_hat[j]) * l_prime
+                    - total * product * l_second
+                    - g * a_ij[i][j] / (sqrt_2 * b_sum)
+                    + g * pair / (sqrt_2 * b_sum * b_sum)
+                    - g * a_sum * product / (sqrt_2 * b_sum * b_sum * b_sum)
+                    - g_prime * pair / (sqrt_2 * b_sum)
+                    + g_prime * a_sum * product / (sqrt_2 * b_sum * b_sum)
+                    - g_second * a_sum * product / (2.0 * sqrt_2 * b_sum);
+            }
+        }
+        Ok(hessian)
+    }
+
+    /// Heidemann & Khalil's `Q`, whose smallest eigenvalue vanishes at a critical point.
+    ///
+    /// ```text
+    /// Q_ij = sqrt(n_i n_j) * d2(A/RT)/dn_i dn_j
+    /// ```
+    ///
+    /// at constant temperature and volume, the **total** Helmholtz energy rather than
+    /// the residual one. The ideal part of that Hessian at constant volume is
+    /// `delta_ij / n_i` - not the `delta_ij/n_i - 1/n` that appears in the
+    /// constant-pressure frame, where the `-1/n` is the entropy of mixing. Using the
+    /// pressure form here shifts every diagonal entry by `-1`, and at a pure
+    /// component's critical point it turns a quantity that should be zero into
+    /// exactly `-1`.
+    ///
+    /// **The scaling by `sqrt(n_i n_j)` is not decoration.** A Maxwell relation makes
+    /// the Hessian symmetric already; the scaling makes that symmetry *structural*
+    /// rather than numerical, so the eigenvalues are real and the eigenvectors are
+    /// available in every case rather than almost every case.
+    ///
+    /// **`Q` is not singular at ordinary states.** `A(T, V, n)` is not homogeneous in
+    /// `n` at fixed `V` - homogeneity needs the volume to scale with it - so there is
+    /// no Euler-theorem null vector, and the ideal part of the Hessian at constant
+    /// volume is positive definite on its own. The vanishing is therefore informative
+    /// rather than generic, and the direction it vanishes along is the critical
+    /// composition fluctuation and nothing else.
+    ///
+    /// That is why the critical point solves for the **smallest-magnitude eigenvalue**
+    /// rather than for `det(Q)`: the determinant is the product of every eigenvalue,
+    /// so it vanishes when *any* of them does - including ones whose vanishing is not
+    /// criticality - and it is badly scaled for a Newton step.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if `n` is not one entry per component.
+    /// * [`AzothError::OutOfRange`] if the mixture's `B` is not positive.
+    pub fn criticality_matrix(
+        &self,
+        reduced: &ReducedParameters,
+        n: &[f64],
+        compressibility: f64,
+    ) -> Result<Vec<Vec<f64>>> {
+        let hessian = self.helmholtz_hessian(reduced, n, compressibility)?;
+        let count = n.len();
+        Ok((0..count)
+            .map(|i| {
+                (0..count)
+                    .map(|j| {
+                        let ideal = if i == j { 1.0 / n[i] } else { 0.0 };
+                        (n[i] * n[j]).sqrt() * (hessian[i][j] + ideal)
+                    })
+                    .collect()
+            })
+            .collect())
+    }
+
+    /// One entry per component, and every entry finite.
+    fn check_mole_numbers(&self, n: &[f64]) -> Result<usize> {
+        let count = self.len();
+        if n.len() != count {
+            return Err(AzothError::invalid_input(
+                "n",
+                format!(
+                    "a mixture of {count} components has {} mole numbers",
+                    n.len()
+                ),
+            ));
+        }
+        Ok(count)
+    }
+
+    /// The `b` in `L(b)` and `G(b)`: `sum_i n_i B_i / Z`.
+    ///
+    /// Reports `compressibility`, the input the caller actually passed, rather than
+    /// `b` itself. `b` is derived from the root and the composition, so naming it
+    /// would hand a caller a number they never supplied and cannot act on; the value
+    /// is quoted in the message instead, where it explains the refusal without
+    /// pretending to be an input.
+    fn check_b_sum(&self, b_sum: f64, compressibility: f64) -> Result<()> {
+        // Explicit finiteness-and-positivity rather than `!(b_sum > 0.0)`: both
+        // reject NaN, and the explicit form also rejects an infinity. The
+        // logarithmic terms below are written against `b`, so zero is a division.
+        if !b_sum.is_finite() || b_sum <= 0.0 {
+            return Err(AzothError::OutOfRange {
+                field: "compressibility".to_string(),
+                value: compressibility,
+                detail: format!(
+                    "the mixture's `B/Z` came out as {b_sum}, and the logarithmic terms \
+                     of the Helmholtz energy are written against it. It is positive for \
+                     any admissible root, so this is a composition or a root that is not \
+                     a state rather than a compressibility that is out of range"
+                ),
+            });
+        }
+        Ok(())
+    }
+
+    /// `b_i/V` per component, and the cross term `A_ij/Z`.
+    ///
+    /// The identities that make the Helmholtz construction dimensionless: with `V`
+    /// the molar volume, `A_i/Z = a_i/(R T V)` and `B_i/Z = b_i/V`. Both are
+    /// **independent of the composition**, which is what lets the sums carry all of
+    /// the composition dependence and is why they are hoisted out of every loop.
+    /// `a_i/(R T V)` itself is not returned because it appears only inside `A_ij`.
+    fn scaled_constants(
+        &self,
+        reduced: &ReducedParameters,
+        compressibility: f64,
+        count: usize,
+    ) -> (Vec<f64>, Vec<Vec<f64>>) {
+        let a_hat: Vec<f64> = reduced.a.iter().map(|v| v / compressibility).collect();
+        let b_hat: Vec<f64> = reduced.b.iter().map(|v| v / compressibility).collect();
+        let a_ij: Vec<Vec<f64>> = (0..count)
+            .map(|i| {
+                (0..count)
+                    .map(|j| (1.0 - self.kij(i, j)) * (a_hat[i] * a_hat[j]).sqrt())
+                    .collect()
+            })
+            .collect();
+        (b_hat, a_ij)
+    }
 }
 
 /// The reduced parameters of every component at one state, plus any warnings the

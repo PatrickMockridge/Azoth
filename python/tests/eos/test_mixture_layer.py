@@ -12,13 +12,23 @@ produced itself would check nothing.
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 import _helpers as h
 from azoth import ureg
 from azoth.eos import Component, mixture, pr_departure, pr_kappa
 from azoth.eos.mixture import Mixture
-from azoth.eos.reference._mixture_state import PhaseState, phase_state, reduced_parameters
+from azoth.eos.reference._mixture_state import (
+    PhaseState,
+    criticality_matrix,
+    helmholtz_energy,
+    helmholtz_hessian,
+    phase_state,
+    phase_state_at,
+    reduced_parameters,
+)
 
 Q = ureg.Quantity
 
@@ -134,3 +144,190 @@ def test_the_departures_are_proportional_to_pressure_at_low_pressure() -> None:
     for name in ("h_dep_rt", "s_dep_r"):
         ratio = getattr(mid, name) / getattr(low, name)
         h.assert_close(ratio, 10.0, 1e-2, f"{name} ratio over a tenfold pressure rise")
+
+
+def test_the_energy_differentiates_to_the_fugacity_coefficient() -> None:
+    """``d(A^R/RT)/dn_i`` must be ``ln phi_i + ln Z``.
+
+    The right-hand side comes from :func:`phase_state_at`, which reaches it by
+    differentiating a departure function; the left is a central difference of the
+    energy directly. Two routes to one quantity, so the agreement is evidence rather
+    than a restatement - and it is the identity that ties the critical point's
+    machinery to the flash's.
+    """
+    fluid = methane_butane()
+    reduced = reduced_parameters(fluid, 330.0, 2_500_000.0)
+    n, z = [0.6, 0.4], 0.8274482588400789
+    state = phase_state_at(reduced, fluid.kij, n, z)
+
+    step = 1e-6
+    for i in range(2):
+        up, down = list(n), list(n)
+        up[i] += step
+        down[i] -= step
+        gradient = (
+            helmholtz_energy(reduced, fluid.kij, up, z)
+            - helmholtz_energy(reduced, fluid.kij, down, z)
+        ) / (2.0 * step)
+        h.assert_close(
+            gradient,
+            state.ln_phi[i] + math.log(z),
+            1e-9,
+            f"component {i}: the energy's gradient against `ln phi + ln Z`",
+        )
+
+
+def test_the_hessian_is_the_second_derivative_of_the_energy() -> None:
+    """Checked by central finite difference, at a step the two error terms agree on.
+
+    The step is ``1e-3`` and the tolerance loose because a central second difference
+    in ``f64`` cannot do better: truncation falls as ``h**2`` and round-off rises as
+    ``eps/h**2``, and the measured minimum of the sum is about ``3e-8`` there. A
+    tighter tolerance would be a claim about the difference quotient rather than
+    about the Hessian - and it would still catch an error in any term, which moves an
+    entry by order ``0.1``.
+    """
+    fluid = methane_butane()
+    reduced = reduced_parameters(fluid, 330.0, 2_500_000.0)
+    n, z = [0.6, 0.4], 0.8274482588400789
+    hessian = helmholtz_hessian(reduced, fluid.kij, n, z)
+
+    step = 1e-3
+
+    def corner(di: float, dj: float, i: int, j: int) -> float:
+        shifted = list(n)
+        shifted[i] += di * step
+        shifted[j] += dj * step
+        return helmholtz_energy(reduced, fluid.kij, shifted, z)
+
+    for i in range(2):
+        for j in range(2):
+            difference = (
+                corner(1.0, 1.0, i, j)
+                - corner(1.0, -1.0, i, j)
+                - corner(-1.0, 1.0, i, j)
+                + corner(-1.0, -1.0, i, j)
+            ) / (4.0 * step * step)
+            h.assert_close(hessian[i][j], difference, 1e-6, f"H[{i}][{j}] against the difference")
+
+
+def test_the_hessian_and_the_criticality_matrix_are_exactly_symmetric() -> None:
+    """Exactly, not closely.
+
+    The expression is symmetric term by term, so the two must agree bit for bit. It
+    matters because the eigenvalues are only real if the matrix is symmetric, and an
+    asymmetry that appeared here would stay invisible until it produced a complex
+    eigenvector somewhere downstream.
+    """
+    fluid = methane_butane()
+    reduced = reduced_parameters(fluid, 330.0, 2_500_000.0)
+    n, z = [0.6, 0.4], 0.8274482588400789
+
+    hessian = helmholtz_hessian(reduced, fluid.kij, n, z)
+    assert hessian[0][1] == hessian[1][0], "the Hessian is not symmetric"
+    matrix = criticality_matrix(reduced, fluid.kij, n, z)
+    assert matrix[0][1] == matrix[1][0], "Q is not symmetric"
+
+
+def test_the_criticality_matrix_vanishes_at_a_pure_components_critical_point() -> None:
+    """The check a port cannot inherit, against an answer known in closed form.
+
+    Heidemann & Khalil's first condition is that the smallest eigenvalue of ``Q``
+    reaches zero. For one component ``Q`` is ``1 x 1`` and equals ``H_11 + 1``, and
+    Peng-Robinson's critical point is analytic: ``Tr = Pr = 1``, ``Z_c = (1 - omega_b)/3``.
+    So the whole construction - the constant-volume Hessian, the ideal part, the
+    scaling - is checked against a closed form rather than against another
+    implementation.
+
+    **Every component gives the same number**, because at ``Tr = Pr = 1`` they all
+    share the reduced state ``(A, B) = (omega_a, omega_b)``. That is the statement
+    that the construction depends on ``(A, B, Z)`` and nothing else, which is what
+    "the eos core carries no dimensioned quantity" means in practice.
+    """
+    from azoth.eos.reference.pr_alpha_ab import OMEGA_A, OMEGA_B
+
+    z_critical = (1.0 - OMEGA_B) / 3.0
+    seen: list[float] = []
+    carbon_dioxide = Component(Q(304.13, "K"), Q(7_377_000.0, "Pa"), 0.2239)
+    for component in (PROPANE, METHANE, BUTANE, carbon_dioxide):
+        pure = mixture([component])
+        t_c = component.Tc.to_base_units().magnitude
+        p_c = component.Pc.to_base_units().magnitude
+        reduced = reduced_parameters(pure, t_c, p_c)
+        assert abs(reduced.a[0] - OMEGA_A) < 1e-15
+        assert abs(reduced.b[0] - OMEGA_B) < 1e-15
+
+        value = criticality_matrix(reduced, pure.kij, [1.0], z_critical)[0][0]
+        assert abs(value) < 1e-14, f"Q is {value!r} at the critical point, and it must be zero"
+        seen.append(value)
+
+    assert len(set(seen)) == 1, f"Q differs between components: {seen}"
+
+
+def test_the_criticality_matrix_is_minimised_at_the_critical_temperature() -> None:
+    """The zero is a minimum, not a small number that happens to be near one.
+
+    Along ``P = Pc`` the critical point is the temperature at which ``Q`` reaches
+    zero, and it is clearly positive on both sides. Without this, ``Q = 1e-16`` at one
+    state would be equally consistent with a construction that is uniformly near zero
+    everywhere - which is what a missing diagonal term would give.
+    """
+    from azoth.eos.reference.pr_alpha_ab import OMEGA_B
+    from azoth.eos.reference.pr_z_factor import pr_z_factor
+
+    z_critical = (1.0 - OMEGA_B) / 3.0
+    fluid = mixture([PROPANE])
+    t_c = PROPANE.Tc.to_base_units().magnitude
+    p_c = PROPANE.Pc.to_base_units().magnitude
+
+    at_critical = criticality_matrix(
+        reduced_parameters(fluid, t_c, p_c), fluid.kij, [1.0], z_critical
+    )[0][0]
+    assert abs(at_critical) < 1e-14
+
+    for offset in (0.98, 0.99, 0.999, 1.001, 1.01, 1.02):
+        reduced = reduced_parameters(fluid, t_c * offset, p_c)
+        roots = pr_z_factor(reduced.a[0], reduced.b[0])
+        root = roots.z_min if offset < 1.0 else roots.z_max
+        value = criticality_matrix(reduced, fluid.kij, [1.0], root)[0][0]
+        assert value > 1e-4, (
+            f"T/Tc = {offset}: Q is {value}, but away from the critical point it must "
+            f"be clearly positive"
+        )
+
+
+def test_both_implementations_agree_on_the_helmholtz_layer() -> None:
+    """The same numbers the Rust tests pin, to the last few digits.
+
+    Two languages, the same algebra written out separately, one set of values. The
+    tolerance is ``1e-12`` rather than bit-equality because ``ln`` is not correctly
+    rounded in either language; the arithmetic other than that is ``+ - * /`` and
+    ``sqrt``, which would have permitted a bit comparison.
+    """
+    fluid = methane_butane()
+    reduced = reduced_parameters(fluid, 330.0, 2_500_000.0)
+    n, z = [0.6, 0.4], 0.8274482588400789
+
+    h.assert_close(
+        helmholtz_energy(reduced, fluid.kij, n, z),
+        -0.18431637484617638,
+        1e-12,
+        "the residual Helmholtz energy",
+    )
+    hessian = helmholtz_hessian(reduced, fluid.kij, n, z)
+    for (i, j), wanted in {
+        (0, 0): -0.07061646554242604,
+        (0, 1): -0.2665575186559369,
+        (1, 0): -0.2665575186559369,
+        (1, 1): -1.0605194453072955,
+    }.items():
+        h.assert_close(hessian[i][j], wanted, 1e-12, f"the Hessian at {i},{j}")
+
+    matrix = criticality_matrix(reduced, fluid.kij, n, z)
+    for (i, j), wanted in {
+        (0, 0): 0.9576301206745444,
+        (0, 1): -0.1305859815618906,
+        (1, 0): -0.1305859815618906,
+        (1, 1): 0.5757922218770818,
+    }.items():
+        h.assert_close(matrix[i][j], wanted, 1e-12, f"Q at {i},{j}")

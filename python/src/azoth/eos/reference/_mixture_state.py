@@ -237,6 +237,205 @@ def phase_state_at(
     )
 
 
+def helmholtz_energy(
+    reduced: ReducedParameters,
+    kij: tuple[tuple[float, ...], ...],
+    n: list[float],
+    compressibility: float,
+) -> float:
+    """``A^R/(R T)`` - the residual Helmholtz energy, at a set of mole numbers.
+
+    The energy whose first composition derivative is the logarithm of fugacity and
+    whose second is :func:`helmholtz_hessian`. It is exposed because those two
+    relations are what the tests are built on, and a function that cannot be
+    evaluated cannot have its derivatives checked.
+
+        ``d(A^R/RT)/dn_i = ln phi_i + ln Z``
+
+    which is asserted against :func:`phase_state_at`'s ``ln phi`` - a different code
+    path, reached by differentiating a departure function rather than an energy, so
+    the agreement is evidence rather than a tautology.
+
+    It is also the quantity a stability analysis minimises, and the reason the
+    critical point is written in Helmholtz terms at all.
+
+    # Mole numbers, not mole fractions
+
+    ``n`` is a set of mole numbers, not a composition, and the argument is named for
+    it because the distinction is load-bearing: ``A^R`` is homogeneous of degree one
+    in ``(V, n)`` but **not** in ``n`` at fixed ``V``, so the total is part of the
+    state and a function of the fractions alone could not be differentiated. A
+    caller holding a composition summing to one is already passing mole numbers.
+    """
+    count = len(n)
+    # `a_i/(R T V)` is `A_i/Z` and `b_i/V` is `B_i/Z`. Those two identities are what
+    # make the whole construction dimensionless; the scaled constants below are
+    # therefore independent of `n`, which is what lets the sums carry all of the
+    # composition dependence.
+    a_hat = [value / compressibility for value in reduced.a]
+    b_hat = [value / compressibility for value in reduced.b]
+    a_ij = [
+        [(1.0 - kij[i][j]) * math.sqrt(a_hat[i] * a_hat[j]) for j in range(count)]
+        for i in range(count)
+    ]
+    total = sum(n)
+    b_sum = sum(n[i] * b_hat[i] for i in range(count))
+    if not b_sum > 0.0:
+        raise OutOfRangeError(
+            "compressibility",
+            compressibility,
+            f"the mixture's `B/Z` came out as {b_sum}, and the logarithmic terms of "
+            f"the Helmholtz energy are written against it. It is positive for any "
+            f"admissible root, so this is a composition or a root that is not a state "
+            f"rather than a compressibility that is out of range",
+        )
+    a_sum = sum(n[i] * n[j] * a_ij[i][j] for i in range(count) for j in range(count))
+    g = math.log((1.0 + (1.0 + _SQRT_2) * b_sum) / (1.0 + (1.0 - _SQRT_2) * b_sum))
+    return -total * math.log(1.0 - b_sum) - (a_sum / (2.0 * _SQRT_2 * b_sum)) * g
+
+
+def helmholtz_hessian(
+    reduced: ReducedParameters,
+    kij: tuple[tuple[float, ...], ...],
+    n: list[float],
+    compressibility: float,
+) -> list[list[float]]:
+    """``d2(A^R/RT)/dn_i dn_j`` at constant temperature and **volume**.
+
+    Not at constant pressure, and the difference is the whole reason this function
+    exists rather than being one more derivative of :func:`phase_state_at`. The
+    Hessian of the Helmholtz energy is the quantity every criticality condition is
+    written in, because its vanishing is what separates a stable phase from a
+    metastable one, and it is only the Helmholtz Hessian that has that meaning.
+    A constant-pressure composition derivative answers a different question, and
+    converting between the two frames needs two further derivative families and a
+    partial-molar-volume correction that this avoids entirely.
+
+    **Everything is dimensionless**, like the rest of the ``eos`` core:
+    ``a_i/(R T V)`` is ``A_i/Z`` and ``b_i/V`` is ``B_i/Z``, so the reduced
+    parameters the caller already holds carry the whole construction and no
+    dimensioned quantity appears. ``compressibility`` is the cubic's root for the
+    phase, which is what turns those two identities.
+
+    ``n`` is a set of mole numbers, as in :func:`helmholtz_energy`. The criticality
+    conditions want the composition, which is a set of mole numbers summing to one,
+    so a caller passing one gets the Hessian those conditions are written against.
+
+    # What it is checked against
+
+    A finite difference of :func:`helmholtz_energy`, and the identity that ties the
+    energy to :func:`phase_state_at`: ``d(A^R/RT)/dn_i`` must be ``ln phi_i + ln Z``.
+    Both are data-free, and the second reaches the same quantity by a different
+    route - differentiating a departure function rather than an energy - so the
+    agreement is evidence rather than a restatement.
+
+    # The form, and why it is written out rather than factored
+
+    With ``b = sum_i n_i B_i/Z`` (the mixture's ``B`` over the root, times the total),
+    ``L = ln(1 - b)`` and ``G = ln((1 + (1+sqrt2)b)/(1 + (1-sqrt2)b))``, every term
+    below is one of those three differentiated once or twice. They are written out
+    because the alternative - a factored form - hides which derivative each term
+    came from, and this is the piece of the critical point most likely to be got
+    wrong.
+    """
+    count = len(n)
+    a_hat = [value / compressibility for value in reduced.a]
+    b_hat = [value / compressibility for value in reduced.b]
+    a_ij = [
+        [(1.0 - kij[i][j]) * math.sqrt(a_hat[i] * a_hat[j]) for j in range(count)]
+        for i in range(count)
+    ]
+    total = sum(n)
+    b_sum = sum(n[i] * b_hat[i] for i in range(count))
+    if not b_sum > 0.0:
+        raise OutOfRangeError(
+            "compressibility",
+            compressibility,
+            f"the mixture's `B/Z` came out as {b_sum}, and the logarithmic terms of "
+            f"the Helmholtz energy are written against it. It is positive for any "
+            f"admissible root, so this is a composition or a root that is not a state "
+            f"rather than a compressibility that is out of range",
+        )
+
+    d = 1.0 - b_sum
+    # L(b) = ln(1 - b), G(b) = ln((1 + (1+sqrt2)b) / (1 + (1-sqrt2)b)).
+    l_prime = -1.0 / d
+    l_second = -1.0 / (d * d)
+    q = 1.0 + 2.0 * b_sum - b_sum * b_sum
+    g = math.log((1.0 + (1.0 + _SQRT_2) * b_sum) / (1.0 + (1.0 - _SQRT_2) * b_sum))
+    g_prime = 2.0 * _SQRT_2 / q
+    g_second = -4.0 * _SQRT_2 * d / (q * q)
+
+    a_bar = [sum(n[j] * a_ij[i][j] for j in range(count)) for i in range(count)]
+    a_sum = sum(n[i] * n[j] * a_ij[i][j] for i in range(count) for j in range(count))
+
+    hessian = [[0.0] * count for _ in range(count)]
+    for i in range(count):
+        for j in range(count):
+            pair = a_bar[i] * b_hat[j] + a_bar[j] * b_hat[i]
+            product = b_hat[i] * b_hat[j]
+            hessian[i][j] = (
+                -(b_hat[i] + b_hat[j]) * l_prime
+                - total * product * l_second
+                - g * a_ij[i][j] / (_SQRT_2 * b_sum)
+                + g * pair / (_SQRT_2 * b_sum * b_sum)
+                - g * a_sum * product / (_SQRT_2 * b_sum * b_sum * b_sum)
+                - g_prime * pair / (_SQRT_2 * b_sum)
+                + g_prime * a_sum * product / (_SQRT_2 * b_sum * b_sum)
+                - g_second * a_sum * product / (2.0 * _SQRT_2 * b_sum)
+            )
+    return hessian
+
+
+def criticality_matrix(
+    reduced: ReducedParameters,
+    kij: tuple[tuple[float, ...], ...],
+    n: list[float],
+    compressibility: float,
+) -> list[list[float]]:
+    """Heidemann & Khalil's ``Q``, whose smallest eigenvalue vanishes at a critical point.
+
+    ``Q_ij = sqrt(n_i n_j) * d2(A/RT)/dn_i dn_j`` at constant temperature and volume,
+    the **total** Helmholtz energy rather than the residual one. The ideal part of
+    that Hessian at constant volume is ``delta_ij / n_i`` - not the
+    ``delta_ij/n_i - 1/n`` that appears in the constant-pressure frame, where the
+    ``-1/n`` is the entropy of mixing. Using the pressure form here shifts every
+    diagonal entry by ``-1``, and at a pure component's critical point it turns a
+    quantity that should be zero into exactly ``-1``.
+
+    **The scaling by ``sqrt(n_i n_j)`` is not decoration.** A Maxwell relation makes
+    the Hessian symmetric already; the scaling makes that symmetry *structural*
+    rather than numerical, so the eigenvalues are real and the eigenvectors are
+    available in every case rather than almost every case.
+
+    **``Q`` is not singular at ordinary states**, which is worth stating because the
+    opposite is easy to assume. ``A(T, V, n)`` is not homogeneous in ``n`` at fixed
+    ``V`` - homogeneity needs the volume to scale with it - so there is no
+    Euler-theorem null vector, and the ideal part of the Hessian at constant volume
+    (``delta_ij/n_i``) is positive definite on its own. Measured across a sweep of
+    temperatures and volumes, the smallest eigenvalue of ``Q`` is nowhere near zero
+    away from a critical point. The vanishing is therefore informative rather than
+    generic, and the direction it vanishes along is the critical composition
+    fluctuation and nothing else.
+
+    That is why the critical point solves for the **smallest-magnitude eigenvalue**
+    rather than for ``det(Q)``. The two are not the same equation: the determinant
+    is the product of every eigenvalue, so it vanishes when *any* of them does -
+    including ones whose vanishing is not criticality - and it is a product, so it
+    is badly scaled for a Newton step. The eigenvalue is the quantity whose
+    vanishing is the condition.
+    """
+    hessian = helmholtz_hessian(reduced, kij, n, compressibility)
+    count = len(n)
+    return [
+        [
+            math.sqrt(n[i] * n[j]) * (hessian[i][j] + (1.0 / n[i] if i == j else 0.0))
+            for j in range(count)
+        ]
+        for i in range(count)
+    ]
+
+
 def compositions(z: list[float], k: list[float], beta: float) -> tuple[list[float], list[float]]:
     """The two phases' compositions at a vapour fraction."""
     x = [zi / (1.0 + beta * (ki - 1.0)) for zi, ki in zip(z, k, strict=True)]

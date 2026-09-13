@@ -191,3 +191,257 @@ fn the_departures_are_proportional_to_pressure_at_low_pressure() {
         );
     }
 }
+
+/// The Helmholtz energy's gradient *is* the fugacity coefficient, by a different route.
+///
+/// `d(A^R/RT)/dn_i` must equal `ln phi_i + ln Z`. The right-hand side comes from
+/// [`Mixture::phase_state_at`], which reaches it by differentiating a departure
+/// function; the left is a central difference of the energy directly. Two routes to
+/// one quantity, so the agreement is evidence rather than a restatement - and it is
+/// the identity that ties the critical point's machinery to the flash's.
+#[test]
+fn the_energy_differentiates_to_the_fugacity_coefficient() {
+    let mixture = methane_butane();
+    let (t, p, n) = (330.0, 2_500_000.0, [0.6, 0.4]);
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("a state");
+    let z = 0.827_448_258_840_078_9;
+    let state = mixture.phase_state_at(&reduced, &n, z).expect("a phase");
+
+    let h = 1e-6;
+    for i in 0..2 {
+        let mut up = n;
+        let mut down = n;
+        up[i] += h;
+        down[i] -= h;
+        let gradient = (mixture
+            .helmholtz_energy(&reduced, &up, z)
+            .expect("an energy")
+            - mixture
+                .helmholtz_energy(&reduced, &down, z)
+                .expect("an energy"))
+            / (2.0 * h);
+        let wanted = state.ln_phi[i] + z.ln();
+        assert!(
+            (gradient - wanted).abs() < 1e-9,
+            "component {i}: the gradient is {gradient}, but `ln phi + ln Z` is {wanted}"
+        );
+    }
+}
+
+/// The Hessian is the second derivative of the energy, checked by finite difference.
+///
+/// The step is `1e-3` and the tolerance is loose because a central second difference
+/// of a function evaluated in `f64` cannot do better: the truncation error falls as
+/// `h**2` and the round-off rises as `eps/h**2`, and the measured minimum of the sum
+/// is around `3e-8` at `h = 1e-3`. A tighter tolerance would be a claim about the
+/// difference quotient rather than about the Hessian - and it would still catch any
+/// error in a term, which moves an entry by order `0.1`.
+#[test]
+fn the_hessian_is_the_second_derivative_of_the_energy() {
+    let mixture = methane_butane();
+    let (t, p, n) = (330.0, 2_500_000.0, [0.6, 0.4]);
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("a state");
+    let z = 0.827_448_258_840_078_9;
+    let hessian = mixture
+        .helmholtz_hessian(&reduced, &n, z)
+        .expect("a hessian");
+
+    let h = 1e-3;
+    for i in 0..2 {
+        for j in 0..2 {
+            let corner = |di: f64, dj: f64| {
+                let mut shifted = n;
+                shifted[i] += di * h;
+                shifted[j] += dj * h;
+                mixture
+                    .helmholtz_energy(&reduced, &shifted, z)
+                    .expect("an energy")
+            };
+            let fd = (corner(1.0, 1.0) - corner(1.0, -1.0) - corner(-1.0, 1.0)
+                + corner(-1.0, -1.0))
+                / (4.0 * h * h);
+            assert!(
+                (hessian[i][j] - fd).abs() < 1e-6,
+                "H[{i}][{j}] is {} but the finite difference gives {fd}",
+                hessian[i][j]
+            );
+        }
+    }
+}
+
+/// `H_ij == H_ji` exactly, not merely closely.
+///
+/// The expression is symmetric term by term, so the two must agree bit for bit. The
+/// check matters because the eigenvalues are only real if the matrix is symmetric,
+/// and a `f64` asymmetry that appeared here would be invisible until it produced a
+/// complex eigenvector somewhere downstream.
+#[test]
+fn the_hessian_and_the_criticality_matrix_are_exactly_symmetric() {
+    let mixture = methane_butane();
+    let reduced = mixture
+        .reduced_parameters(kelvins(330.0), pascals(2_500_000.0))
+        .expect("a state");
+    let n = [0.6, 0.4];
+    let z = 0.827_448_258_840_078_9;
+
+    let hessian = mixture
+        .helmholtz_hessian(&reduced, &n, z)
+        .expect("a hessian");
+    assert_eq!(hessian[0][1], hessian[1][0], "the Hessian is not symmetric");
+
+    let q = mixture
+        .criticality_matrix(&reduced, &n, z)
+        .expect("a matrix");
+    assert_eq!(q[0][1], q[1][0], "Q is not symmetric");
+}
+
+/// `Q` vanishes at a pure component's critical point - the check a port cannot inherit.
+///
+/// Heidemann & Khalil's first condition is that the smallest eigenvalue of `Q` reach
+/// zero. For one component `Q` is `1 x 1` and equals `H_11 + 1`, and PR's critical
+/// point is known in closed form: `Tr = Pr = 1, Z_c = (1 - omega_b)/3`. So the whole
+/// construction - the constant-volume Hessian, the ideal part, the scaling - is
+/// checked against an analytic answer rather than against another implementation.
+///
+/// **Every component gives the same number**, because at `Tr = Pr = 1` they all have
+/// the same reduced state `(A, B) = (omega_a, omega_b)`. That is worth asserting
+/// separately: it is the statement that this construction depends on `(A, B, Z)` and
+/// on nothing else, which is what "the eos core carries no dimensioned quantity"
+/// means in practice.
+#[test]
+fn the_criticality_matrix_vanishes_at_a_pure_components_critical_point() {
+    let z_critical = (1.0 - azoth_eos::OMEGA_B) / 3.0;
+    let mut seen: Option<f64> = None;
+    for (tc, pc, omega) in [
+        (369.83, 4_248_000.0, 0.1523),
+        (190.56, 4_599_200.0, 0.01142),
+        (425.12, 3_796_000.0, 0.2002),
+        (304.13, 7_377_000.0, 0.2239),
+    ] {
+        let mixture = mix(&[tc], &[pc], &[omega], vec![0.0]);
+        // `Tr = Pr = 1` is the critical state, so the reduced parameters are the
+        // universal `(omega_a, omega_b)` and are the same for every component here.
+        let reduced = mixture
+            .reduced_parameters(kelvins(tc), pascals(pc))
+            .expect("a state");
+        assert!((reduced.a[0] - azoth_eos::OMEGA_A).abs() < 1e-15);
+        assert!((reduced.b[0] - azoth_eos::OMEGA_B).abs() < 1e-15);
+
+        let q = mixture
+            .criticality_matrix(&reduced, &[1.0], z_critical)
+            .expect("a matrix");
+        assert!(
+            q[0][0].abs() < 1e-14,
+            "Tc={tc}: Q is {} at the critical point, and it must be zero",
+            q[0][0]
+        );
+        match seen {
+            None => seen = Some(q[0][0]),
+            Some(first) => assert_eq!(first, q[0][0], "Tc={tc}: Q differs between components"),
+        }
+    }
+}
+
+/// And the zero is a minimum, not a small number that happens to be near one.
+///
+/// Along `P = Pc` the critical point is the temperature at which `Q` reaches zero,
+/// and it is positive on both sides. Without this, `Q = 1e-16` at one state would be
+/// equally consistent with a construction that is uniformly near zero everywhere -
+/// which is what a missing diagonal term would give.
+#[test]
+fn the_criticality_matrix_is_minimised_at_the_critical_temperature() {
+    let z_critical = (1.0 - azoth_eos::OMEGA_B) / 3.0;
+    let (tc, pc, omega) = (369.83, 4_248_000.0, 0.1523);
+    let mixture = mix(&[tc], &[pc], &[omega], vec![0.0]);
+
+    let at_critical = {
+        let reduced = mixture
+            .reduced_parameters(kelvins(tc), pascals(pc))
+            .expect("a state");
+        mixture
+            .criticality_matrix(&reduced, &[1.0], z_critical)
+            .expect("a matrix")[0][0]
+    };
+    assert!(at_critical.abs() < 1e-14);
+
+    for offset in [0.98, 0.99, 0.999, 1.001, 1.01, 1.02] {
+        let reduced = mixture
+            .reduced_parameters(kelvins(tc * offset), pascals(pc))
+            .expect("a state");
+        let root = azoth_eos::pr_z_factor(reduced.a[0], reduced.b[0]).expect("a cubic");
+        let z = if offset < 1.0 { root.z_min } else { root.z_max };
+        let q = mixture
+            .criticality_matrix(&reduced, &[1.0], z)
+            .expect("a matrix")[0][0];
+        assert!(
+            q > 1e-4,
+            "T/Tc = {offset}: Q is {q}, but away from the critical point it must be \
+             clearly positive"
+        );
+    }
+}
+
+/// The two implementations agree on the Helmholtz layer, to the last few digits.
+///
+/// The values are pinned here and in `python/tests/eos/test_mixture_layer.py`, and
+/// that is the whole check: two languages, the same algebra written out separately,
+/// one set of numbers. The tolerance is `1e-12` rather than bit-equality because
+/// `ln` is not correctly rounded in either language - the same reason the departure
+/// tests are not bit-exact - and `+ - * / sqrt` alone would have permitted `to_bits`.
+#[test]
+fn both_implementations_agree_on_the_helmholtz_layer() {
+    let mixture = methane_butane();
+    let reduced = mixture
+        .reduced_parameters(kelvins(330.0), pascals(2_500_000.0))
+        .expect("a state");
+    let n = [0.6, 0.4];
+    let z = 0.827_448_258_840_078_9;
+
+    let energy = mixture
+        .helmholtz_energy(&reduced, &n, z)
+        .expect("an energy");
+    assert!(
+        (energy + 0.184_316_374_846_176_38).abs() < 1e-12,
+        "the energy is {energy}"
+    );
+
+    let hessian = mixture
+        .helmholtz_hessian(&reduced, &n, z)
+        .expect("a hessian");
+    let wanted = [
+        [-0.070_616_465_542_426_04, -0.266_557_518_655_936_9],
+        [-0.266_557_518_655_936_9, -1.060_519_445_307_295_5],
+    ];
+    for i in 0..2 {
+        for j in 0..2 {
+            assert!(
+                (hessian[i][j] - wanted[i][j]).abs() < 1e-12,
+                "H[{i}][{j}] is {} but the other implementation gives {}",
+                hessian[i][j],
+                wanted[i][j]
+            );
+        }
+    }
+
+    let q = mixture
+        .criticality_matrix(&reduced, &n, z)
+        .expect("a matrix");
+    let wanted = [
+        [0.957_630_120_674_544_4, -0.130_585_981_561_890_6],
+        [-0.130_585_981_561_890_6, 0.575_792_221_877_081_8],
+    ];
+    for i in 0..2 {
+        for j in 0..2 {
+            assert!(
+                (q[i][j] - wanted[i][j]).abs() < 1e-12,
+                "Q[{i}][{j}] is {} but the other implementation gives {}",
+                q[i][j],
+                wanted[i][j]
+            );
+        }
+    }
+}
