@@ -63,9 +63,9 @@ Status is stated as of the last commit that touched this page, and a tranche is 
 
 | | Tranche | Status |
 |---|---|---|
-| 0 | Repair the claims this plan falsifies; a roadmap page; an announcement test that covers models | **in progress** |
-| 1 | `eos.ph_flash` and `eos.ps_flash` — the critical path, since eight of the ten units above are one of them plus arithmetic | planned |
-| 2a | The stream and the flowsheet: a `stream` quantity type, `specs/flowsheets/`, the sequential solver, proved on `process.mixer` and `process.separator` | planned |
+| 0 | Repair the claims this plan falsifies; a roadmap page; an announcement test that covers models | **done** |
+| 1 | `eos.ph_flash` and `eos.ps_flash` — the critical path, since eight of the ten units above are one of them plus arithmetic | **done** |
+| 2a | The stream and the flowsheet: a `stream` quantity type, `specs/flowsheets/`, the sequential solver, proved on `process.mixer` and `process.separator` | **in progress** |
 | 2b | The rest of the Pareto set: valve, heater, cooler, splitter, compressor, pump, expander, heat exchanger, three-phase separator; plus `eos.viscosity` and `eos.thermal_conductivity` | planned |
 | 2c | Recycle convergence (direct substitution and Wegstein) | planned |
 | 3 | `azoth report` — Markdown and HTML from Rust, no new dependency | planned |
