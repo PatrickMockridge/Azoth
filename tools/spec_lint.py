@@ -89,6 +89,93 @@ class Report:
         self.warnings.append(f"{spec}: {msg}")
 
 
+def check_source(report: Report, where: str, row: dict[str, Any]) -> str | None:
+    """The provenance rules, applied identically to every kind of data row.
+
+    One definition, imported by `check_user_data.py` rather than restated there.
+    A user's file and the repository's files are the same kind of thing and are
+    held to the same rules, and a second copy of those rules is a second answer to
+    what a valid citation is - which is the drift this project removes wherever it
+    finds it. The two copies that existed had already diverged: the repository's
+    rejected a `verified` row whose citation still said DUMMY, and a user's did not.
+
+    A value that is not a placeholder must name the document it came from, in a
+    form a tool can fetch, and say where inside that document to look. A value that
+    *is* a placeholder must say so and must not also claim a source - being both
+    invented and sourced is a contradiction, and it is the copy-paste that would
+    silently promote dummy data to trusted data.
+
+    Returns the status when it is one this understands, and `None` when it is not,
+    so the caller can count what it found. Counting is left to the caller because
+    the two callers count different things: `spec_lint` counts placeholder rows per
+    file to shout about them, and `check_user_data` counts every status to report a
+    summary.
+    """
+    status = row.get("verify_status")
+    if status not in VALID_VERIFY_STATUS:
+        report.error(
+            where,
+            f"verify_status is {status!r}; expected one of {sorted(VALID_VERIFY_STATUS)}",
+        )
+        return None
+
+    citation = str(row.get("citation") or "")
+    source_ref = str(row.get("source_ref") or "").strip()
+    source_locator = str(row.get("source_locator") or "").strip()
+
+    if status == "estimated_dummy":
+        if "DUMMY" not in citation.upper():
+            report.error(
+                where,
+                "marked estimated_dummy but its citation does not say so. The marker "
+                "and the citation must agree, or a reader skimming the citation will "
+                "not realise the number is a placeholder.",
+            )
+        if source_ref:
+            report.error(
+                where,
+                f"is marked estimated_dummy yet carries source_ref {source_ref!r}. A "
+                f"value cannot be both invented and sourced.",
+            )
+        return status
+
+    # A citation that still says DUMMY under a status that is not `estimated_dummy`
+    # is the promotion this file exists to catch: nobody edited the prose when they
+    # edited the status, so the row now claims more than it says.
+    if "DUMMY" in citation.upper():
+        report.error(
+            where,
+            f"is marked {status!r} but its citation still says it is a dummy value. "
+            f"Changing the status does not make the citation true.",
+        )
+
+    if not source_ref:
+        report.error(
+            where,
+            f"is marked {status!r} but has no source_ref. A value that is not a "
+            f"placeholder must name the document it came from, in a fetchable form.",
+        )
+    elif not any(pattern.match(source_ref) for pattern in SOURCE_REF_PATTERNS.values()):
+        report.error(
+            where,
+            f"source_ref {source_ref!r} is not a recognised form. Expected "
+            f"arweave:<43-char txid>, doi:<doi>, or https://...",
+        )
+
+    # Only once a document has actually been named does asking for a place inside
+    # it mean anything. Asking unconditionally produced the message "has a
+    # source_ref but no source_locator" on rows that had just been told they had no
+    # source_ref - a report that contradicts itself in two consecutive lines, which
+    # is a good way to teach a reader to skim the output.
+    if source_ref and not source_locator:
+        report.error(
+            where,
+            "has a source_ref but no source_locator. A checker needs both the "
+            "document and the place inside it to look.",
+        )
+    return status
+
+
 def load_fittings_csv(path: Path) -> dict[str, dict[str, str]]:
     """Read the fittings registry, skipping the leading comment block.
 
@@ -706,71 +793,13 @@ def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                 if n_ld <= 0:
                     report.error(str(rel), f"{raw_path}: fitting '{fid}' has non-positive n_ld")
 
-                status = row.get("verify_status")
-                if status not in VALID_VERIFY_STATUS:
-                    report.error(
-                        str(rel),
-                        f"{raw_path}: fitting '{fid}' has invalid verify_status '{status}'; "
-                        f"expected one of {sorted(VALID_VERIFY_STATUS)}",
-                    )
-                elif status == "estimated_dummy":
+                # One definition of the provenance rules, shared with
+                # `check_user_data.py` rather than restated there. A user's row and
+                # the repository's row are the same kind of claim.
+                status = check_source(report, f"{raw_path}: fitting '{fid}'", row)
+                if status == "estimated_dummy":
                     report.estimated_rows[raw_path] = report.estimated_rows.get(raw_path, 0) + 1
-                    # A row cannot simultaneously be a placeholder and verified.
-                    # This is the copy-paste that would silently promote dummy
-                    # data to trusted data.
-                    citation = row.get("citation", "")
-                    if "DUMMY" not in citation.upper():
-                        report.error(
-                            str(rel),
-                            f"{raw_path}: fitting '{fid}' is marked estimated_dummy but its "
-                            f"citation does not say so. The marker and the citation must agree.",
-                        )
-                elif status == "verified" and "DUMMY" in row.get("citation", "").upper():
-                    report.error(
-                        str(rel),
-                        f"{raw_path}: fitting '{fid}' is marked verified but its citation "
-                        f"still says it is a dummy value",
-                    )
 
-                # Anything that is not a placeholder must say which document it
-                # came from, and say it in a form a tool can fetch. Otherwise the
-                # claim is uncheckable, which is the same as not making it.
-                source_ref = (row.get("source_ref") or "").strip()
-                source_locator = (row.get("source_locator") or "").strip()
-                if status != "estimated_dummy":
-                    if not source_ref:
-                        report.error(
-                            str(rel),
-                            f"{raw_path}: fitting '{fid}' is marked '{status}' but has no "
-                            f"source_ref. A value that is not a placeholder must name the "
-                            f"document it came from, in a fetchable form.",
-                        )
-                    elif not any(p.match(source_ref) for p in SOURCE_REF_PATTERNS.values()):
-                        report.error(
-                            str(rel),
-                            f"{raw_path}: fitting '{fid}' has source_ref '{source_ref}', "
-                            f"which is not a recognised form. Expected arweave:<43-char "
-                            f"txid>, doi:<doi>, or https://...",
-                        )
-                    if not source_locator:
-                        report.error(
-                            str(rel),
-                            f"{raw_path}: fitting '{fid}' has a source_ref but no "
-                            f"source_locator. A checker needs both the document and the "
-                            f"place inside it to look.",
-                        )
-                elif source_ref:
-                    # A contradiction, like the two above it: a value cannot both
-                    # be invented and be sourced. Treated as an error for the same
-                    # reason those are - it is the copy-paste that would promote
-                    # placeholder data to sourced data.
-                    report.error(
-                        str(rel),
-                        f"{raw_path}: fitting '{fid}' is a placeholder but has a "
-                        f"source_ref '{source_ref}'. A placeholder is invented; it "
-                        f"cannot also be sourced. Remove the reference or change "
-                        f"verify_status.",
-                    )
                 # Coefficients must be exact decimals, not exponent notation, so
                 # that Python and Rust parse identical bit patterns.
                 raw = row["n_ld"]

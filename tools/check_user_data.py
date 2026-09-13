@@ -27,9 +27,13 @@ step that does both when one of them fails.
 
 Usage:
     python tools/check_user_data.py azoth-data.yaml
-    python tools/check_user_data.py azoth-data.yaml --quiet
 
 Exit status is non-zero if any error is found.
+
+There is deliberately no `--quiet`. This tool's job is to say what it found, and
+the one thing it must never do quietly is report that a file is full of
+placeholders - that note is the reason it prints at all. A flag to suppress it
+would be a flag to hide the only thing here that a user needs to be told.
 """
 
 from __future__ import annotations
@@ -47,8 +51,11 @@ except ImportError:  # pragma: no cover
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # The repository's own rules for a data row, shared so there is one definition of
-# what a fetchable citation and a legal status are.
-from spec_lint import SOURCE_REF_PATTERNS, VALID_VERIFY_STATUS
+# what a fetchable citation and a legal status are. `check_source` is the rule
+# itself, not a restatement of it: this file used to carry its own copy, and the
+# two had already diverged - the repository's rejected a `verified` row whose
+# citation still said DUMMY, and this one accepted it.
+from spec_lint import check_source
 
 SCHEMA_VERSION = 1
 
@@ -88,64 +95,6 @@ class Report:
 
     def count(self, status: str) -> None:
         self.by_status[status] = self.by_status.get(status, 0) + 1
-
-
-def check_source(report: Report, where: str, row: dict[str, Any]) -> None:
-    """The provenance rules, applied identically to every kind of row.
-
-    A value that is not a placeholder must name the document it came from, in a
-    form a tool can fetch, and say where inside that document to look. A value
-    that *is* a placeholder must say so and must not also claim a source - being
-    both invented and sourced is a contradiction, and it is the copy-paste that
-    would silently promote dummy data to trusted data.
-    """
-    status = row.get("verify_status")
-    if status not in VALID_VERIFY_STATUS:
-        report.error(
-            where,
-            f"verify_status is {status!r}; expected one of {sorted(VALID_VERIFY_STATUS)}",
-        )
-        return
-
-    report.count(str(status))
-    citation = str(row.get("citation") or "")
-    source_ref = str(row.get("source_ref") or "").strip()
-    source_locator = str(row.get("source_locator") or "").strip()
-
-    if status == "estimated_dummy":
-        if "DUMMY" not in citation.upper():
-            report.error(
-                where,
-                "marked estimated_dummy but its citation does not say so. The marker "
-                "and the citation must agree, or a reader skimming the citation will "
-                "not realise the number is a placeholder.",
-            )
-        if source_ref:
-            report.error(
-                where,
-                f"is marked estimated_dummy yet carries source_ref {source_ref!r}. A "
-                f"value cannot be both invented and sourced.",
-            )
-        return
-
-    if not source_ref:
-        report.error(
-            where,
-            f"is marked {status!r} but has no source_ref. A value that is not a "
-            f"placeholder must name the document it came from, in a fetchable form.",
-        )
-    elif not any(pattern.match(source_ref) for pattern in SOURCE_REF_PATTERNS.values()):
-        report.error(
-            where,
-            f"source_ref {source_ref!r} is not a recognised form. Expected "
-            f"arweave:<43-char txid>, doi:<doi>, or https://...",
-        )
-    if not source_locator:
-        report.error(
-            where,
-            "has a source_ref but no source_locator. A checker needs both the "
-            "document and the place inside it to look.",
-        )
 
 
 def check_numeric(report: Report, where: str, row: dict[str, Any], field: str) -> float | None:
@@ -197,7 +146,9 @@ def check_fittings(report: Report, raw: Any) -> None:
                 f"negative or zero fitting loss",
             )
 
-        check_source(report, where, row)
+        status = check_source(report, where, row)
+        if status is not None:
+            report.count(status)
 
 
 def check_fluids(report: Report, raw: Any) -> None:
@@ -245,7 +196,9 @@ def check_fluids(report: Report, raw: Any) -> None:
                     )
                 previous_temperature = temperature
 
-            check_source(report, where, row)
+            status = check_source(report, where, row)
+            if status is not None:
+                report.count(status)
 
 
 def check(path: Path) -> int:
