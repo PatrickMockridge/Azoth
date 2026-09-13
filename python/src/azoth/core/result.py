@@ -170,6 +170,22 @@ class HaalandResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ConductionPlaneWallResult(_HasWarnings):
+    """Result of ``thermal.conduction_plane_wall``.
+
+    The first result in the registry to carry a dimensioned output from a
+    namespace other than hydraulics, which is what made a second domain worth
+    having: nothing about this class is hydraulics-shaped.
+    """
+
+    #: Heat flow rate through the wall. Signed, and it follows the sign of the
+    #: temperature difference rather than being reported as a magnitude.
+    q: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """One fitting's contribution to the total resistance coefficient."""
 
@@ -221,4 +237,5 @@ RESULT_TYPES: dict[str, type[object]] = {
     "hydraulics.friction_factor_haaland": HaalandResult,
     "hydraulics.crane_k_factors": KFactorsResult,
     "hydraulics.darcy_weisbach": DarcyWeisbachResult,
+    "thermal.conduction_plane_wall": ConductionPlaneWallResult,
 }

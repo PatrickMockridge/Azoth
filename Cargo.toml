@@ -2,7 +2,9 @@
 resolver = "3"
 members = [
   "crates/azoth-core",
+  "crates/azoth-test-support",
   "crates/azoth-hydraulics",
+  "crates/azoth-thermal",
   "crates/azoth-python",
   "crates/azoth-cli",
 ]
@@ -18,7 +20,9 @@ authors = ["azoth contributors"]
 
 [workspace.dependencies]
 azoth-core = { path = "crates/azoth-core" }
+azoth-test-support = { path = "crates/azoth-test-support" }
 azoth-hydraulics = { path = "crates/azoth-hydraulics" }
+azoth-thermal = { path = "crates/azoth-thermal" }
 azoth-python = { path = "crates/azoth-python" }
 azoth-cli = { path = "crates/azoth-cli" }
 

@@ -9,134 +9,18 @@
 //!   - specs/calcs/hydraulics/friction_factor_swamee_jain.yaml
 //!   - specs/calcs/hydraulics/reynolds_number.yaml
 //!
+//! Tables for the `hydraulics` namespace. Every namespace has its own generated
+//! file, because a crate is the unit of compilation and a calculation must be able
+//! to read its own bounds without depending on another namespace's crate. The
+//! types these tables are built from are shared - see `azoth_core::spec`.
+//!
 //! These tables are what make the specs authoritative at runtime rather than
 //! merely descriptive. Each calc reads its own range checks from here, so a
 //! bound changed in a spec file changes the code's behaviour with no second
 //! edit - and `cargo test` fails if the two ever disagree.
-
-use azoth_core::{Band, RangeCheck, Severity, WarningCode};
-
-/// Solver configuration for an implicit calculation.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct SolverSpec {
-    /// `fixed_point`, `bisection` or `newton`.
-    pub kind: &'static str,
-    /// Stopping tolerance.
-    pub tolerance: f64,
-    /// Iteration cap.
-    pub max_iterations: u32,
-    /// Starting value.
-    pub initial_guess: f64,
-    /// `absolute` or `relative`; see the spec schema for what each means.
-    pub convergence: &'static str,
-}
-
-/// One test case from a spec's `tests` list, plus the worked example.
-#[derive(Debug, Clone, Copy)]
-pub struct TestCase {
-    /// Test id, unique within the calc.
-    pub id: &'static str,
-    /// `worked_example`, `reference`, or `property`.
-    pub kind: &'static str,
-    /// Which invariant a `property` test checks.
-    pub property: Option<&'static str>,
-    /// `active` or `skipped`.
-    pub status: &'static str,
-    /// Why a skipped test does not run. Never `None` when status is `skipped`.
-    pub skip_reason: Option<&'static str>,
-    /// Relative tolerance for comparison.
-    pub tolerance: f64,
-    /// Scalar inputs, by name.
-    pub numbers: &'static [(&'static str, f64)],
-    /// List-valued inputs, by name.
-    pub lists: &'static [(&'static str, &'static [&'static str])],
-    /// Expected outputs, by name.
-    pub expected: &'static [(&'static str, f64)],
-}
-
-impl TestCase {
-    /// Fetch a scalar input. `None` if the spec does not supply it.
-    #[must_use]
-    pub fn input(&self, name: &str) -> Option<f64> {
-        self.numbers
-            .iter()
-            .find(|(k, _)| *k == name)
-            .map(|(_, v)| *v)
-    }
-
-    /// Fetch a list-valued input.
-    #[must_use]
-    pub fn list(&self, name: &str) -> Option<&'static [&'static str]> {
-        self.lists.iter().find(|(k, _)| *k == name).map(|(_, v)| *v)
-    }
-
-    /// Fetch an expected output. `None` if the test does not assert it.
-    #[must_use]
-    pub fn expected_value(&self, name: &str) -> Option<f64> {
-        self.expected
-            .iter()
-            .find(|(k, _)| *k == name)
-            .map(|(_, v)| *v)
-    }
-
-    /// Whether this test should actually run.
-    #[must_use]
-    pub fn is_active(&self) -> bool {
-        self.status == "active"
-    }
-}
-
-/// A range check plus the phase in which it can be evaluated.
-#[derive(Debug, Clone, Copy)]
-pub struct SpecCheck {
-    /// True when the bounded quantity is one of the calc's declared inputs, so
-    /// the check can run before the calculation.
-    ///
-    /// False for outputs and derived quantities, which only exist afterwards -
-    /// and, for an optional input, may not exist at all.
-    pub on_input: bool,
-    /// The bound itself.
-    pub check: RangeCheck,
-}
-
-/// Everything the Rust side needs to know about one calculation.
-#[derive(Debug, Clone, Copy)]
-pub struct CalcSpec {
-    /// Spec id, e.g. `hydraulics.darcy_weisbach`.
-    pub id: &'static str,
-    /// `verified`, `unverified` or `source_needed`.
-    pub verification: &'static str,
-    /// Bounds, in spec order.
-    pub checks: &'static [SpecCheck],
-    /// Present only for implicit calculations.
-    pub solver: Option<SolverSpec>,
-    /// The worked example, as a runnable test case.
-    pub worked_example: TestCase,
-    /// The rest of the `tests` list, excluding the worked example.
-    pub tests: &'static [TestCase],
-}
-
-impl CalcSpec {
-    /// Checks evaluable from the inputs alone.
-    pub fn input_checks(&self) -> impl Iterator<Item = &RangeCheck> {
-        self.checks.iter().filter(|c| c.on_input).map(|c| &c.check)
-    }
-
-    /// Checks that need the calculation to have run first.
-    pub fn derived_checks(&self) -> impl Iterator<Item = &RangeCheck> {
-        self.checks.iter().filter(|c| !c.on_input).map(|c| &c.check)
-    }
-
-    /// Every check, in spec order.
-    pub fn all_checks(&self) -> impl Iterator<Item = &RangeCheck> {
-        self.checks.iter().map(|c| &c.check)
-    }
-
-    /// The worked example plus every other test, in spec order.
-    pub fn all_tests(&self) -> impl Iterator<Item = &TestCase> {
-        std::iter::once(&self.worked_example).chain(self.tests.iter())
-    }
-}
+use azoth_core::{
+    Band, CalcSpec, RangeCheck, Severity, SolverSpec, SpecCheck, TestCase, WarningCode,
+};
 
 /// Registry entry for `hydraulics.crane_k_factors`.
 static CRANE_K_FACTORS_CHECKS: &[SpecCheck] = &[

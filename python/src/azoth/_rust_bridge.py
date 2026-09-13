@@ -26,6 +26,7 @@ from typing import Any
 from azoth import _core
 from azoth.core.result import (
     ColebrookResult,
+    ConductionPlaneWallResult,
     DarcyWeisbachResult,
     FlowRegime,
     HaalandResult,
@@ -132,6 +133,22 @@ def darcy_weisbach(
     )
 
 
+def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
+    """Plane-wall conduction, computed in Rust."""
+    result = _core.conduction_plane_wall(
+        to_si(k, "W/(m*K)", "k"),
+        to_si(A, "m**2", "A"),
+        to_si(dT, "K", "dT"),
+        to_si(L, "m", "L"),
+    )
+    return ConductionPlaneWallResult(
+        # `q` is an SI base magnitude from the extension, so it is rebuilt as a real
+        # pint quantity with `from_si` - the same direction the reference uses.
+        q=from_si(result.q.magnitude_si, result.q.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 #: Calc id -> the bridge function implementing it. Explicit rather than derived
 #: from the function names, so a renamed id fails here at import rather than
 #: resolving to the wrong calc.
@@ -142,6 +159,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "hydraulics.friction_factor_haaland": friction_factor_haaland,
     "hydraulics.crane_k_factors": crane_k_factors,
     "hydraulics.darcy_weisbach": darcy_weisbach,
+    "thermal.conduction_plane_wall": conduction_plane_wall,
 }
 
 

@@ -8,4 +8,6 @@
   - [Haaland friction factor (explicit)](./hydraulics/friction_factor_haaland.md)
   - [Swamee-Jain friction factor (explicit)](./hydraulics/friction_factor_swamee_jain.md)
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
+- [Heat transfer](./thermal/index.md)
+  - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
 - [Solvers](./theory/solvers.md)

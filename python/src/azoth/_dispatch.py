@@ -116,12 +116,19 @@ def resolve(calc_id: str) -> Callable[..., Any]:
     caller never has to know which backend answered - the Rust binding's own
     result objects are adapted before they leave this module.
     """
-    _, _, function_name = calc_id.rpartition(".")
+    # Both segments come from the id. The namespace used to be hardcoded as
+    # `hydraulics` while only the function name was derived, so a calc in any other
+    # namespace resolved its reference implementation from `azoth.hydraulics.
+    # reference.<name>` and failed with an ImportError *at call time* - not at
+    # build time, not at import time, but the first time a caller used it. That is
+    # the latest possible moment for a wiring mistake to surface, which is what made
+    # it worth deriving rather than listing.
+    namespace, _, function_name = calc_id.rpartition(".")
     # Annotated rather than inferred: `getattr` returns Any, which would make the
     # return below an implicit Any and fail `--strict` at the boundary of exactly
     # the function whose job is to keep the two implementations interchangeable.
     reference: Callable[..., Any] = getattr(
-        importlib.import_module(f"azoth.hydraulics.reference.{function_name}"),
+        importlib.import_module(f"azoth.{namespace}.reference.{function_name}"),
         function_name,
     )
 

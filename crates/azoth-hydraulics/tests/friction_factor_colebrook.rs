@@ -1,12 +1,13 @@
 //! Spec-driven tests for `hydraulics.friction_factor_colebrook`.
 
-mod common;
+use azoth_test_support as common;
 
+use azoth_core::spec::TestCase;
 use azoth_core::units::{kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds};
 use azoth_core::{AzothError, CalcResult, WarningCode};
-use azoth_hydraulics::spec_gen::TestCase;
 use azoth_hydraulics::{
     friction_factor_colebrook, friction_factor_swamee_jain, fully_rough_limit, reynolds_number,
+    spec_gen,
 };
 
 const CALC_ID: &str = "hydraulics.friction_factor_colebrook";
@@ -30,7 +31,7 @@ fn resolve(case: &TestCase, f: f64) -> impl Fn(&str) -> Option<f64> + '_ {
 
 #[test]
 fn every_case_in_the_spec() {
-    let spec = common::spec(CALC_ID);
+    let spec = common::spec(spec_gen::specs(), CALC_ID);
     common::assert_skips_are_explained(spec);
 
     let mut executed = 0;

@@ -17,6 +17,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 azoth-core.workspace = true
 azoth-hydraulics.workspace = true
+azoth-thermal.workspace = true
 uom.workspace = true
 pyo3 = { workspace = true }
 

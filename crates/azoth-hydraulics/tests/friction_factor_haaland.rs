@@ -1,11 +1,13 @@
 //! Spec-driven tests for `hydraulics.friction_factor_haaland`.
 
-mod common;
+use azoth_test_support as common;
 
+use azoth_core::spec::TestCase;
 use azoth_core::units::{kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds};
 use azoth_core::{AzothError, CalcResult, WarningCode};
-use azoth_hydraulics::spec_gen::TestCase;
-use azoth_hydraulics::{friction_factor_colebrook, friction_factor_haaland, reynolds_number};
+use azoth_hydraulics::{
+    friction_factor_colebrook, friction_factor_haaland, reynolds_number, spec_gen,
+};
 
 const CALC_ID: &str = "hydraulics.friction_factor_haaland";
 
@@ -19,7 +21,7 @@ fn call(case: &TestCase) -> azoth_hydraulics::HaalandResult {
 
 #[test]
 fn every_case_in_the_spec() {
-    let spec = common::spec(CALC_ID);
+    let spec = common::spec(spec_gen::specs(), CALC_ID);
     common::assert_skips_are_explained(spec);
 
     let mut executed = 0;

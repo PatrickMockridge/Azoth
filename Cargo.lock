@@ -81,6 +81,7 @@ name = "azoth-hydraulics"
 version = "0.1.0"
 dependencies = [
  "azoth-core",
+ "azoth-test-support",
  "csv",
  "thiserror",
  "uom",
@@ -92,7 +93,24 @@ version = "0.1.0"
 dependencies = [
  "azoth-core",
  "azoth-hydraulics",
+ "azoth-thermal",
  "pyo3",
+ "uom",
+]
+
+[[package]]
+name = "azoth-test-support"
+version = "0.1.0"
+dependencies = [
+ "azoth-core",
+]
+
+[[package]]
+name = "azoth-thermal"
+version = "0.1.0"
+dependencies = [
+ "azoth-core",
+ "azoth-test-support",
  "uom",
 ]
 
