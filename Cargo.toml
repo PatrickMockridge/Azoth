@@ -1,0 +1,49 @@
+[workspace]
+resolver = "3"
+members = ["crates/chemeng-core", "crates/chemeng-hydraulics"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/placeholder/chemeng"
+description = "Open, validated, citable chemical engineering calculations"
+authors = ["chemeng contributors"]
+
+[workspace.dependencies]
+chemeng-core = { path = "crates/chemeng-core" }
+chemeng-hydraulics = { path = "crates/chemeng-hydraulics" }
+
+# Units. Fixed-SI quantities at the public boundary; plain f64 inside. See
+# crates/chemeng-core/src/units.rs for why the API is not generic over U.
+uom = "0.38"
+
+# Typed errors. Every variant carries enough context to name the offending
+# field, which is what makes a failure actionable rather than just loud.
+thiserror = "2"
+
+# Reading the fittings registry. A real CSV parser rather than split(','):
+# the file currently has no quoted fields, but silently mis-parsing a quoted
+# citation the day someone adds one is not a failure mode worth risking for
+# one small, ubiquitous dependency.
+csv = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+# Panics must unwind, not abort: the PyO3 layer converts a Rust panic into a
+# Python exception. With panic=abort a panic anywhere in the Rust stack takes
+# the interpreter down with no traceback, which is untraceable for a user.
+panic = "unwind"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+# Physical constants and comparisons are numeric; pedantic float lints fight the
+# domain rather than helping it.
+cast_precision_loss = "allow"
+similar_names = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
