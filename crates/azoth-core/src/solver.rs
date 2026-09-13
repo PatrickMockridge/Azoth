@@ -9,10 +9,75 @@
 //! than a tight tolerance would allow.
 //!
 //! So the scheme is fixed by the spec - kind, tolerance, iteration cap, initial
-//! guess and convergence rule - and both languages implement exactly it. Nothing
-//! here is a general-purpose numerical library and it should not grow into one.
+//! guess and convergence rule - and both languages implement exactly it.
+//!
+//! This is not a general-purpose numerical library and must not become one. The
+//! rule that governs what may be added here: **it holds the named schemes that
+//! `specs/schema/calc.schema.json`'s `solver.kind` permits, and it grows only
+//! when that enum grows** - each addition bringing the scheme in both languages
+//! and the contract test that holds the enum to them, in one commit.
+//!
+//! It lives in `azoth-core` rather than in a namespace crate because every
+//! namespace may need it and no namespace may depend on another. It was in
+//! `azoth-hydraulics` while hydraulics was the only domain with an implicit
+//! equation; the first calc outside it made that untenable.
 
-use azoth_core::{AzothError, Result};
+use crate::{AzothError, Result};
+
+/// The named solution schemes the spec schema permits.
+///
+/// A cross-language contract in the same way [`Convergence`] and
+/// `WarningCode` are: the schema's `solver.kind` enum, the Python [`SolverKind`]
+/// in `azoth/core/solver.py`, and [`SolverKind::ALL`] here must name the same
+/// set, and `python/tests/test_solver_contract.py` asserts that rather than
+/// trusting three hand-edited lists to stay in step. [`SolverKind::ALL`] is
+/// exposed to Python through `azoth._core.solver_kinds`.
+///
+/// [`SolverKind`]: https://docs.rs/azoth/latest/azoth/core/solver
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SolverKind {
+    /// `x -> f(x)`, iterated from the spec's declared initial guess.
+    FixedPoint,
+}
+
+impl SolverKind {
+    /// Every kind this crate implements, in the schema's spelling.
+    ///
+    /// Adding a name here is a claim that *both* implementations run it. The
+    /// schema's own description of `solver.kind` says why that matters: a spec
+    /// naming a kind neither can run "would describe a calculation neither
+    /// implementation can run, which is the 'looks like validation, does
+    /// nothing' failure this schema exists to catch".
+    pub const ALL: &'static [SolverKind] = &[SolverKind::FixedPoint];
+
+    /// The schema's spelling of this kind.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::FixedPoint => "fixed_point",
+        }
+    }
+
+    /// Parse the spec's spelling.
+    ///
+    /// # Errors
+    /// Unknown names are an error rather than a silent default: guessing which
+    /// scheme was meant would change the answer, and silently falling back to
+    /// the only implemented kind would run a scheme the spec did not ask for.
+    pub fn parse(name: &str) -> Result<Self> {
+        Self::ALL
+            .iter()
+            .copied()
+            .find(|kind| kind.as_str() == name)
+            .ok_or_else(|| {
+                let known: Vec<&str> = Self::ALL.iter().map(|k| k.as_str()).collect();
+                AzothError::invalid_input(
+                    "solver.kind",
+                    format!("unknown solver kind `{name}`; expected one of {known:?}"),
+                )
+            })
+    }
+}
 
 /// How successive iterates are compared to decide convergence.
 ///
@@ -199,5 +264,33 @@ mod tests {
         );
         assert!(Convergence::parse("Relative").is_err());
         assert!(Convergence::parse("rel").is_err());
+    }
+
+    #[test]
+    fn every_solver_kind_round_trips_through_its_name() {
+        for kind in SolverKind::ALL {
+            assert_eq!(SolverKind::parse(kind.as_str()).unwrap(), *kind);
+        }
+    }
+
+    #[test]
+    fn solver_kind_names_are_unique_and_lowercase() {
+        let names: Vec<&str> = SolverKind::ALL.iter().map(|k| k.as_str()).collect();
+        let unique: std::collections::BTreeSet<&str> = names.iter().copied().collect();
+        assert_eq!(unique.len(), names.len(), "ALL contains a duplicate");
+        for name in names {
+            assert_eq!(name, name.to_lowercase(), "`{name}` is not lowercase");
+        }
+    }
+
+    #[test]
+    fn an_unknown_solver_kind_is_an_error_naming_what_is_known() {
+        let err = SolverKind::parse("bisection").unwrap_err();
+        let message = err.to_string();
+        assert!(message.contains("bisection"), "{message}");
+        assert!(
+            message.contains("fixed_point"),
+            "the error should say what IS implemented: {message}"
+        );
     }
 }

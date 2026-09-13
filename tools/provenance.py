@@ -59,6 +59,7 @@ SCHEMA_VERSION = 1
 SHARED = (
     "crates/azoth-core/src/range.rs",
     "crates/azoth-core/src/result.rs",
+    "crates/azoth-core/src/solver.rs",
     "crates/azoth-core/src/spec.rs",
     "crates/azoth-core/src/units.rs",
     "crates/azoth-core/src/warning.rs",
@@ -68,6 +69,7 @@ SHARED = (
     "crates/azoth-python/src/data.rs",
     "crates/azoth-python/src/results.rs",
     "python/src/azoth/core/range.py",
+    "python/src/azoth/core/solver.py",
     "python/src/azoth/core/units.py",
     "python/src/azoth/_registry_gen.py",
     "python/src/azoth/_rust_bridge.py",
@@ -84,14 +86,14 @@ SHARED = (
 
 #: Files a namespace's calculations share, hashed once each rather than once per
 #: calc. Keyed by namespace because they genuinely differ: hydraulics carries a
-#: solver, a fittings registry and fluid tables, and thermal carries none of those.
+#: fittings registry and fluid tables, and thermal carries neither. The solver is
+#: deliberately *not* here - it affects every namespace, so it sits in SHARED.
 #:
 #: These used to sit in SHARED, including `crates/azoth-hydraulics/src/spec_gen.rs`
 #: - which was already a namespace's file rather than a shared one, and became
 #: plainly wrong once each namespace got its own generated tables.
 NAMESPACE_SUPPORT = {
     "hydraulics": (
-        "crates/azoth-hydraulics/src/solver.rs",
         "crates/azoth-hydraulics/src/fittings.rs",
         "crates/azoth-hydraulics/src/fluids.rs",
         "crates/azoth-hydraulics/src/provenance.rs",

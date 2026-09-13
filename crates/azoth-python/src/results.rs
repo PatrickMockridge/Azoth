@@ -13,6 +13,7 @@
 //! perfectly and only the attribute name differs.
 
 use azoth_core::CalcResult;
+use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_thermal::results::ConductionPlaneWallResult;
@@ -622,6 +623,28 @@ pub fn warning_codes() -> Vec<String> {
 #[must_use]
 pub fn unit_names() -> Vec<String> {
     UNIT_NAMES.iter().map(|name| (*name).to_string()).collect()
+}
+
+/// Every solver kind this crate implements, in the schema's spelling.
+///
+/// The third leg of the same contract `warning_codes` and `unit_names` each
+/// provide one leg of: `specs/schema/calc.schema.json`'s `solver.kind` enum,
+/// `azoth.core.solver.SolverKind` and this crate's `SolverKind::ALL` must name one
+/// set, and a Python test can only assert that if the Rust list is reachable from
+/// Python.
+///
+/// The schema's own description of `solver.kind` names this function as the
+/// missing piece - "Nothing does that for solver kinds today, which is why this
+/// enum is narrow rather than merely unchecked" - so its absence was the stated
+/// reason no second solver kind could be added. It exists now, which is what
+/// makes widening that enum a mechanical act rather than an unchecked one.
+#[pyfunction]
+#[must_use]
+pub fn solver_kinds() -> Vec<String> {
+    SolverKind::ALL
+        .iter()
+        .map(|kind| kind.as_str().to_string())
+        .collect()
 }
 
 /// The public field names of a calc's result, in declaration order.

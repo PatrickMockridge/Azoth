@@ -1,6 +1,6 @@
 """The iterative solver used by implicit equations.
 
-Mirrors ``azoth_hydraulics::solver`` in Rust, statement for statement.
+Mirrors ``azoth_core::solver`` in Rust, statement for statement.
 
 This module is small and deliberately not general. It exists because
 ``hydraulics.friction_factor_colebrook`` is implicit in ``f``, and the two
@@ -11,8 +11,18 @@ only to within their difference, which is far larger than a tight tolerance
 allows.
 
 So the scheme is fixed by the spec (kind, tolerance, iteration cap, initial guess,
-convergence rule) and both languages implement exactly it. Nothing here should
-grow into a general-purpose numerical library.
+convergence rule) and both languages implement exactly it.
+
+It lives in :mod:`azoth.core` rather than in a namespace package because every
+namespace may need it and no namespace may depend on another. It was in
+``azoth.hydraulics.reference`` while hydraulics was the only domain with an
+implicit equation; the first calc outside it made that untenable.
+
+The rule that governs what may be added here: **it holds the named schemes that
+``specs/schema/calc.schema.json``'s ``solver.kind`` permits, and it grows only
+when that enum grows** - each addition bringing the scheme in both languages and
+the contract test that holds the enum to them, in one commit. It is not a
+general-purpose numerical library and must not become one.
 """
 
 from __future__ import annotations
@@ -22,6 +32,44 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+
+
+class SolverKind(StrEnum):
+    """The named solution schemes the spec schema permits.
+
+    A cross-language contract in the same way :class:`Convergence` and
+    :class:`~azoth.core.warnings.WarningCode` are: the schema's ``solver.kind``
+    enum, this class, and ``azoth_core::solver::SolverKind::ALL`` in Rust must
+    name the same set, and ``python/tests/test_solver_contract.py`` asserts that
+    rather than trusting three hand-edited lists to stay in step. The Rust list
+    reaches Python through ``azoth._core.solver_kinds()``.
+
+    Adding a name here is a claim that *both* implementations run it. The
+    schema's own description of ``solver.kind`` says why that matters: a spec
+    naming a kind neither can run would "describe a calculation neither
+    implementation can run, which is the 'looks like validation, does nothing'
+    failure this schema exists to catch".
+    """
+
+    #: ``x -> f(x)``, iterated from the spec's declared initial guess.
+    FIXED_POINT = "fixed_point"
+
+    @classmethod
+    def parse(cls, name: str) -> SolverKind:
+        """Parse the spec's spelling.
+
+        Unknown names are an error rather than a silent default: guessing which
+        scheme was meant would change the answer, and falling back to the only
+        implemented kind would run a scheme the spec did not ask for.
+        """
+        try:
+            return cls(name)
+        except ValueError:
+            known = [kind.value for kind in cls]
+            raise InvalidInputError(
+                "solver.kind",
+                f"unknown solver kind `{name}`; expected one of {known}",
+            ) from None
 
 
 class Convergence(StrEnum):

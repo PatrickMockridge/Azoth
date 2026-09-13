@@ -15,6 +15,12 @@ is a bug in one of them - and the cross-implementation tests are what catch it.
 
 from __future__ import annotations
 
+from azoth.core.solver import (
+    Convergence,
+    SolverOutcome,
+    fixed_point,
+    require_converged,
+)
 from azoth.hydraulics.reference.choked_flow_area import choked_flow_area
 from azoth.hydraulics.reference.control_valve_cv import CV_TO_SI, control_valve_cv
 from azoth.hydraulics.reference.crane_k_factors import crane_k_factors
@@ -39,12 +45,6 @@ from azoth.hydraulics.reference.friction_factor_swamee_jain import (
 from azoth.hydraulics.reference.orifice_flow import orifice_flow
 from azoth.hydraulics.reference.pump_power import STANDARD_GRAVITY_M_S2, pump_power
 from azoth.hydraulics.reference.reynolds_number import reynolds_number
-from azoth.hydraulics.reference.solver import (
-    Convergence,
-    SolverOutcome,
-    fixed_point,
-    require_converged,
-)
 
 __all__ = [
     "CV_TO_SI",

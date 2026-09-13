@@ -18,10 +18,11 @@
 //!
 //! # Introspection
 //!
-//! `warning_codes`, `unit_names`, `result_fields`, `calc_ids` and `version` exist
-//! so the test suite can assert cross-language agreement without parsing Rust
-//! source. They are the mechanism behind the claims that the two implementations
-//! share a warning vocabulary, a unit vocabulary and a result shape.
+//! `warning_codes`, `unit_names`, `solver_kinds`, `result_fields`, `calc_ids` and
+//! `version` exist so the test suite can assert cross-language agreement without
+//! parsing Rust source. They are the mechanism behind the claims that the two
+//! implementations share a warning vocabulary, a unit vocabulary, a solver
+//! vocabulary and a result shape.
 //!
 //! `data_files`, `fittings_rows` and `fluid_rows` do the same job for the data the
 //! calcs are built from. See `data.rs` - the claim that both languages read the same
@@ -99,6 +100,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(data::fluid_rows, m)?)?;
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;
     m.add_function(wrap_pyfunction!(results::unit_names, m)?)?;
+    m.add_function(wrap_pyfunction!(results::solver_kinds, m)?)?;
     m.add_function(wrap_pyfunction!(results::result_fields, m)?)?;
     m.add_function(wrap_pyfunction!(results::calc_ids, m)?)?;
     m.add_function(wrap_pyfunction!(results::version, m)?)?;
