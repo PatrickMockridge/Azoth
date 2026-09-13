@@ -13,8 +13,8 @@
 
 mod common;
 
+use azoth_core::spec::TestCase;
 use azoth_core::{AzothError, CalcResult, WarningCode};
-use azoth_hydraulics::spec_gen::TestCase;
 use azoth_hydraulics::{crane_k_factors, fittings, known_fittings};
 
 const CALC_ID: &str = "hydraulics.crane_k_factors";

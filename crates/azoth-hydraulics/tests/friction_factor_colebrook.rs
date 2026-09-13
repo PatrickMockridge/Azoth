@@ -2,9 +2,9 @@
 
 mod common;
 
+use azoth_core::spec::TestCase;
 use azoth_core::units::{kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds};
 use azoth_core::{AzothError, CalcResult, WarningCode};
-use azoth_hydraulics::spec_gen::TestCase;
 use azoth_hydraulics::{
     friction_factor_colebrook, friction_factor_swamee_jain, fully_rough_limit, reynolds_number,
 };

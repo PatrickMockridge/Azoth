@@ -5,9 +5,9 @@
 
 mod common;
 
+use azoth_core::spec::TestCase;
 use azoth_core::units::{kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds};
 use azoth_core::{AzothError, CalcResult, FlowRegime, WarningCode};
-use azoth_hydraulics::spec_gen::TestCase;
 use azoth_hydraulics::{regime_warning, reynolds_number};
 
 const CALC_ID: &str = "hydraulics.reynolds_number";

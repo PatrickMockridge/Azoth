@@ -25,12 +25,14 @@
 pub mod error;
 pub mod range;
 pub mod result;
+pub mod spec;
 pub mod units;
 pub mod warning;
 
 pub use error::{AzothError, Result, Warned};
 pub use range::{Band, RangeCheck, Severity, apply_checks};
 pub use result::{CalcResult, FlowRegime};
+pub use spec::{CalcSpec, SolverSpec, SpecCheck, TestCase};
 pub use warning::{Warning, WarningCode};
 
 /// Version of the `azoth` library.

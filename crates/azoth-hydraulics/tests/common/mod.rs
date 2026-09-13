@@ -7,8 +7,9 @@
 
 #![allow(dead_code)] // each test binary uses a subset of these
 
+use azoth_core::spec::{CalcSpec, TestCase};
 use azoth_core::{CalcResult, Warning, WarningCode};
-use azoth_hydraulics::spec_gen::{self, CalcSpec, TestCase};
+use azoth_hydraulics::spec_gen;
 
 /// Fetch a spec, failing loudly if the id is wrong. A missing spec means the
 /// test file and the registry disagree, which is a test bug, not a runtime
