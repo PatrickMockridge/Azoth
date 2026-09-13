@@ -200,8 +200,25 @@
     },
 
     "unit": {
-      "enum": ["dimensionless", "m", "mm", "kg/m**3", "m/s", "Pa", "Pa*s", "K"],
-      "description": "Canonical unit of a quantity in the equation. SI-first. API callers may pass any convertible unit; this is the unit the spec and generated docs speak in. Extend deliberately, with a conversion path in both languages."
+      "enum": [
+        "dimensionless",
+        "m",
+        "mm",
+        "m**2",
+        "m**3/s",
+        "kg/s",
+        "kg/m**3",
+        "m/s",
+        "Pa",
+        "Pa*s",
+        "K",
+        "W",
+        "J/(kg*K)",
+        "W/(m*K)",
+        "W/(m**2*K)",
+        "kg/mol"
+      ],
+      "description": "Canonical unit of a quantity in the equation. SI-first. API callers may pass any convertible unit; this is the unit the spec and generated docs speak in. Extend deliberately, with a conversion path in both languages - python/src/azoth/core/units.py's CANONICAL_UNITS, crates/azoth-core/src/units.rs's UNIT_NAMES, and a constructor in each. A contract test asserts the three lists are the same set, so adding a name to one and not the others fails rather than going unnoticed. Prefer a unit that IS the SI base unit: for those, the magnitude the Python side works in and the magnitude the Rust side works in are the same number, and no conversion factor can hide between them. A unit whose canonical form is not SI base (mm is the one such entry) needs a second conversion step that neither implementation currently performs - see the note in units.py."
     },
 
     "quantity": {

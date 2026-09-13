@@ -47,15 +47,43 @@ type Q = pint.Quantity[float]
 #: Canonical unit strings, keyed by the strings the spec schema allows. The
 #: schema restricts `unit` to this set, so a spec cannot name a unit the code has
 #: no conversion path for.
+#:
+#: # The SI-base rule
+#:
+#: `to_si` returns the magnitude expressed in the unit named here, and that number
+#: is what crosses into a calculation. The Rust side's `uom` quantities always
+#: report `.value` as the SI *base* magnitude. For those two to be the same number
+#: - which is what the cross-language agreement test rests on - every entry below
+#: has to be the SI base unit, so that "the unit named here" and "the SI base unit"
+#: are the same thing and no conversion factor can hide between the two languages.
+#:
+#: `mm` is the one entry that breaks that rule, and it is a known defect rather
+#: than a decision. A spec declaring `mm` would have this side work in millimetres
+#: while the Rust side works in metres, and the two would disagree by 1000x. It is
+#: recorded rather than quietly fixed or quietly deleted because pipe diameters are
+#: conventionally quoted in millimetres, so this unit is likely to be wanted - and
+#: it must not be reached for before the convention is made coherent.
+#: `test_units_contract.py` pins the exception so that a second unit added with the
+#: same problem fails rather than joining it.
 CANONICAL_UNITS: Final[dict[str, str]] = {
     "dimensionless": "dimensionless",
     "m": "meter",
+    # NOT SI base - see the note above. The only such entry, and unused by every
+    # spec in the registry, which is the only reason it has never mattered.
     "mm": "millimeter",
+    "m**2": "meter**2",
+    "m**3/s": "meter**3/second",
+    "kg/s": "kilogram/second",
     "kg/m**3": "kilogram/meter**3",
     "m/s": "meter/second",
     "Pa": "pascal",
     "Pa*s": "pascal*second",
     "K": "kelvin",
+    "W": "watt",
+    "J/(kg*K)": "joule/(kilogram*kelvin)",
+    "W/(m*K)": "watt/(meter*kelvin)",
+    "W/(m**2*K)": "watt/(meter**2*kelvin)",
+    "kg/mol": "kilogram/mole",
 }
 
 
