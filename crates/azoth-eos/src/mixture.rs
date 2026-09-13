@@ -278,6 +278,33 @@ impl Mixture {
         x: &[f64],
         side: RootSide,
     ) -> Result<PhaseState> {
+        let (a_mix, b_mix) = self.mixture_parameters(reduced, x);
+        let roots = pr_z_factor(a_mix, b_mix)?;
+        let z = match side {
+            RootSide::Liquid => roots.z_min,
+            RootSide::Vapour => roots.z_max,
+        };
+        self.phase_state_at(reduced, x, z)
+    }
+
+    /// The state of one phase, at a root the caller has already chosen.
+    ///
+    /// For a caller who has a compressibility factor in hand - from
+    /// [`crate::pr_z_factor`], or from a flash that solved for one - and does not want
+    /// it re-derived. The choice of root is a *phase*, and a caller holding a Z has
+    /// already made it; re-deriving here would silently overrule them.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if `x` is not one entry per component, or if it
+    ///   does not sum to one.
+    /// * [`AzothError::OutOfRange`] if the root is not admissible - `z` must exceed
+    ///   the mixture's `B`, or `ln(z - B)` is the logarithm of a negative number.
+    pub fn phase_state_at(
+        &self,
+        reduced: &ReducedParameters,
+        x: &[f64],
+        z: f64,
+    ) -> Result<PhaseState> {
         let n = self.len();
         if x.len() != n {
             return Err(AzothError::invalid_input(
@@ -287,11 +314,18 @@ impl Mixture {
         }
 
         let (a_mix, b_mix) = self.mixture_parameters(reduced, x);
-        let roots = pr_z_factor(a_mix, b_mix)?;
-        let z = match side {
-            RootSide::Liquid => roots.z_min,
-            RootSide::Vapour => roots.z_max,
-        };
+        // Written as an explicit test rather than `!(z > b_mix)`, which reads as a
+        // double negative and is the shape clippy flags. Both reject NaN; the
+        // explicit form also rejects a root at or below `B`, which is the case here.
+        if !z.is_finite() || z <= b_mix {
+            return Err(AzothError::OutOfRange {
+                field: "z".to_string(),
+                value: z,
+                detail: format!(
+                    "the root must exceed the mixture's B = {b_mix}, because `ln(z - B)`                      is otherwise the logarithm of a negative number. `z <= B` is the                      zero-volume limit, which is not a state"
+                ),
+            });
+        }
 
         // The cross sum `sum_j x_j A_ij`, one per component, hoisted out of the loop
         // below so both languages evaluate it once and in the same order.

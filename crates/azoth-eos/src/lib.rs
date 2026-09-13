@@ -85,6 +85,7 @@ pub mod dew_pressure;
 pub mod ideal_gas_cp;
 pub mod mixture;
 pub mod model_gen;
+pub mod molar_enthalpy_entropy;
 pub mod phase_boundary;
 pub mod pr_alpha_ab;
 pub mod pr_departure;
@@ -104,6 +105,7 @@ pub use bubble_pressure::bubble_pressure;
 pub use dew_pressure::dew_pressure;
 pub use ideal_gas_cp::{REFERENCE_TEMPERATURE, ideal_gas_cp};
 pub use mixture::{Component, Mixture, PhaseState, ReducedParameters, RootSide};
+pub use molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
 pub use phase_boundary::{Incipient, PhaseBoundary, phase_boundary_pressure};
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
 pub use pr_departure::pr_departure;
@@ -116,9 +118,9 @@ pub use pt_flash::pt_flash;
 pub use pure_saturation::pure_saturation;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use results::{
-    BubblePressureResult, DewPressureResult, IdealGasCpResult, Phase, PrAlphaAbResult,
-    PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult,
-    PrsvKappaResult, PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RootStructure,
-    Vdw1fMixBinaryResult,
+    BubblePressureResult, DewPressureResult, IdealGasCpResult, MolarEnthalpyEntropyResult, Phase,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, RootStructure, Vdw1fMixBinaryResult,
 };
 pub use vdw1f_mix_binary::vdw1f_mix_binary;

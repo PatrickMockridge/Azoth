@@ -641,6 +641,34 @@ class IdealGasCpResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class MolarEnthalpyEntropyResult(_HasWarnings):
+    """Result of ``eos.molar_enthalpy_entropy``.
+
+    The ideal-gas and departure parts are reported separately as well as summed,
+    because the split is what a caller checking the answer needs: ``h_ideal`` carries
+    the datum, ``h_departure`` carries the equation of state, and a single total hides
+    which of the two a disagreement came from.
+    """
+
+    #: The molar enthalpy, ``h_ideal + h_departure``.
+    h: Q
+    #: The molar entropy, ``s_ideal + s_departure``.
+    s: Q
+    #: The ideal-gas part of the enthalpy - the reference values and the integrals.
+    h_ideal: Q
+    #: The ideal-gas part of the entropy.
+    s_ideal: Q
+    #: The residual enthalpy, ``R*T*h_dep_rt``.
+    h_departure: Q
+    #: The residual entropy, ``R*s_dep_r``. Does **not** include the entropy of mixing.
+    s_departure: Q
+    #: The composition-weighted average of the components' ``psi``.
+    psi_bar: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 #: Calc id -> the result dataclass it produces. Used by the contract test to
 #: check each shape against the Rust side without importing every name by hand.
 RESULT_TYPES: dict[str, type[object]] = {
@@ -677,6 +705,7 @@ RESULT_TYPES: dict[str, type[object]] = {
 #: optional one - is a good reason to fix.
 MODEL_RESULT_TYPES: dict[str, type[object]] = {
     "eos.bubble_pressure": BubblePressureResult,
+    "eos.molar_enthalpy_entropy": MolarEnthalpyEntropyResult,
     "eos.dew_pressure": DewPressureResult,
     "eos.pt_flash": PtFlashResult,
     "eos.pure_saturation": PureSaturationResult,

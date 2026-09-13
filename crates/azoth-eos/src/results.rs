@@ -5,7 +5,7 @@
 //! [`CalcResult::FIELDS`], with a test asserting the three agree. See
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
-use azoth_core::units::{MassDensity, MolarHeatCapacity, MolarVolume, Pressure};
+use azoth_core::units::{MassDensity, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure};
 use azoth_core::{CalcResult, Warning};
 
 /// Result of `eos.pr_kappa`.
@@ -396,6 +396,50 @@ pub struct IdealGasCpResult {
     pub cp: MolarHeatCapacity,
     /// Caveats.
     pub warnings: Vec<Warning>,
+}
+
+/// Result of `eos.molar_enthalpy_entropy`.
+///
+/// Reports the ideal-gas and departure parts separately as well as their sum, because
+/// the split is what a caller checking the answer needs: `h_ideal` carries the datum,
+/// `h_departure` carries the equation of state, and a single total hides which of the
+/// two a disagreement came from.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MolarEnthalpyEntropyResult {
+    /// The molar enthalpy, `h_ideal + h_departure`.
+    pub h: MolarEnergy,
+    /// The molar entropy, `s_ideal + s_departure`.
+    pub s: MolarHeatCapacity,
+    /// The ideal-gas part of the enthalpy - the reference values and the integrals.
+    pub h_ideal: MolarEnergy,
+    /// The ideal-gas part of the entropy.
+    pub s_ideal: MolarHeatCapacity,
+    /// The residual enthalpy, `R*T*h_dep_rt`.
+    pub h_departure: MolarEnergy,
+    /// The residual entropy, `R*s_dep_r`. Does **not** include the entropy of mixing.
+    pub s_departure: MolarHeatCapacity,
+    /// The composition-weighted average of the components' `psi`.
+    pub psi_bar: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for MolarEnthalpyEntropyResult {
+    const CALC_ID: &'static str = "eos.molar_enthalpy_entropy";
+    const FIELDS: &'static [&'static str] = &[
+        "h",
+        "s",
+        "h_ideal",
+        "s_ideal",
+        "h_departure",
+        "s_departure",
+        "psi_bar",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
 }
 
 impl CalcResult for IdealGasCpResult {

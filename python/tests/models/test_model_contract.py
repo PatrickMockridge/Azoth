@@ -265,6 +265,10 @@ def test_every_model_scheme_and_inner_scheme_is_named() -> None:
     which is the whole failure this tree exists to prevent.
     """
     for model in _models_gen.MODELS:
+        if model["kind"] != "procedure":
+            # A direct model has no algorithm to name, and asserting anything about
+            # one would be asserting something about a block it must not have.
+            continue
         algorithm = model["algorithm"]
         assert "initialisation" in algorithm or algorithm["scheme"].endswith("bisection"), (
             f"{model['id']}: a scheme that needs a starting point must declare "

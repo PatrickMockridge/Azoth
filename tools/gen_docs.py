@@ -342,7 +342,14 @@ def render_namespace_index(
             "| Model | Scheme | Source |\n|---|---|---|\n"
         )
         for model in models:
-            scheme = model["algorithm"]["scheme"].replace("|", r"\|")
+            # A direct model has no scheme - there is no loop for one to name - so the
+            # column says what it is instead. Printing an empty cell would read as a
+            # missing value rather than as a model that has none.
+            scheme = (
+                model["algorithm"]["scheme"].replace("|", r"\|")
+                if "algorithm" in model
+                else "direct composition"
+            )
             standard = model["source"]["standard"].replace("|", r"\|")
             out += (
                 f"| [`{model['id']}`](./{model['id'].split('.')[-1]}.md) "

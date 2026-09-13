@@ -136,6 +136,17 @@ class PtFlashResult:
     warnings: list[Warning]
 
 @final
+class MolarEnthalpyEntropyResult:
+    h: Qty
+    s: Qty
+    h_ideal: Qty
+    s_ideal: Qty
+    h_departure: Qty
+    s_departure: Qty
+    psi_bar: float
+    warnings: list[Warning]
+
+@final
 class IdealGasCpResult:
     cp_over_r: float
     cp: Qty
@@ -265,6 +276,24 @@ def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryR
 def pr_molar_volume(z: float, T: float, P: float) -> PrMolarVolumeResult: ...
 def pr_mass_density(M: float, v: float) -> PrMassDensityResult: ...
 def pure_saturation(Tc: float, Pc: float, omega: float, T: float) -> PureSaturationResult: ...
+def molar_enthalpy_entropy(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    h_ref: list[float],
+    s_ref: list[float],
+    T_ref: float,
+    P_ref: float,
+    T: float,
+    P: float,
+    z: list[float],
+    compressibility: float,
+) -> MolarEnthalpyEntropyResult: ...
 def ideal_gas_cp(a: float, b: float, c: float, d: float, T: float) -> IdealGasCpResult: ...
 def bubble_pressure(
     Tc: list[float],

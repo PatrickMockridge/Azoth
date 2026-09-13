@@ -38,6 +38,7 @@ from azoth.core.result import (
     IdealGasCpResult,
     KComponent,
     KFactorsResult,
+    MolarEnthalpyEntropyResult,
     OrificeFlowResult,
     PrAlphaAbResult,
     PrDepartureResult,
@@ -532,7 +533,48 @@ def dew_pressure(mixture: Any, T: Q, y: Sequence[float]) -> DewPressureResult:
     return _boundary_result(raw, DewPressureResult, liquid_first=False)  # type: ignore[no-any-return]
 
 
+def molar_enthalpy_entropy(
+    mixture: Any, ideal_gas: Any, T: Q, P: Q, z: Sequence[float], compressibility: float
+) -> MolarEnthalpyEntropyResult:
+    """The absolute enthalpy and entropy of a mixture, computed in Rust.
+
+    The `IdealGasModel` and the `Mixture` are unpacked into the flat vectors the
+    boundary carries, so the component order is the one thing the two sides agree
+    about - the same arrangement `pt_flash` uses.
+    """
+    spec = _models_gen.model("eos.molar_enthalpy_entropy")
+    result = _core.molar_enthalpy_entropy(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.h_ref),
+        list(ideal_gas.s_ref),
+        input_to_si(spec, "T_ref", ideal_gas.T_ref),
+        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        compressibility,
+    )
+    return MolarEnthalpyEntropyResult(
+        h=from_si(result.h.magnitude_si, result.h.unit),
+        s=from_si(result.s.magnitude_si, result.s.unit),
+        h_ideal=from_si(result.h_ideal.magnitude_si, result.h_ideal.unit),
+        s_ideal=from_si(result.s_ideal.magnitude_si, result.s_ideal.unit),
+        h_departure=from_si(result.h_departure.magnitude_si, result.h_departure.unit),
+        s_departure=from_si(result.s_departure.magnitude_si, result.s_departure.unit),
+        psi_bar=result.psi_bar,
+        warnings=_warnings(result.warnings),
+    )
+
+
 _MODEL_IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
+    "eos.molar_enthalpy_entropy": molar_enthalpy_entropy,
     "eos.bubble_pressure": bubble_pressure,
     "eos.dew_pressure": dew_pressure,
     "eos.pure_saturation": pure_saturation,

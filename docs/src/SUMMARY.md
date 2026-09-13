@@ -14,6 +14,7 @@
   - [van der Waals one-fluid mixing, for a binary](./eos/vdw1f_mix_binary.md)
   - [Bubble-point pressure](./eos/bubble_pressure.md)
   - [Dew-point pressure](./eos/dew_pressure.md)
+  - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)
   - [Pressure-temperature flash](./eos/pt_flash.md)
   - [Pure-component saturation pressure](./eos/pure_saturation.md)
 - [Hydraulics](./hydraulics/index.md)

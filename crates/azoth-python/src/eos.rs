@@ -13,10 +13,10 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyIdealGasCpResult, PyPhaseBoundaryResult, PyPrAlphaAbResult, PyPrDepartureResult,
-    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult,
-    PyPrsvKappaResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
-    PyVdw1fMixBinaryResult,
+    PyIdealGasCpResult, PyMolarEnthalpyEntropyResult, PyPhaseBoundaryResult, PyPrAlphaAbResult,
+    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
+    PyPrZFactorResult, PyPrsvKappaResult, PyPtFlashResult, PyPureSaturationResult,
+    PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -326,6 +326,66 @@ pub fn ideal_gas_cp(
     eos::ideal_gas_cp(a, b, c, d, kelvins(T))
         .map(|r| PyIdealGasCpResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// The absolute molar enthalpy and entropy of a mixture at a state.
+///
+/// A `direct` model - vectors in, values out, no iteration - which is why it has no
+/// algorithm block in its spec and why its arguments are the one place in this
+/// namespace where sixteen of them arrive at once. They are flattened here rather
+/// than passed as an object because the boundary carries numbers, and the Python side
+/// is where the caller's `IdealGasModel` is unpacked.
+#[pyfunction]
+#[pyo3(signature = (
+    Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, z,
+    compressibility
+))]
+#[pyo3(text_signature = "(
+    Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, z,
+    compressibility
+)")]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn molar_enthalpy_entropy(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    h_ref: Vec<f64>,
+    s_ref: Vec<f64>,
+    T_ref: f64,
+    P_ref: f64,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressibility: f64,
+) -> PyResult<PyMolarEnthalpyEntropyResult> {
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
+    let ideal_gas = eos::IdealGasModel {
+        cp_a,
+        cp_b,
+        cp_c,
+        cp_d,
+        h_ref,
+        s_ref,
+        t_ref: kelvins(T_ref),
+        p_ref: pascals(P_ref),
+    };
+    eos::molar_enthalpy_entropy(
+        &mixture,
+        &ideal_gas,
+        kelvins(T),
+        pascals(P),
+        &z,
+        compressibility,
+    )
+    .map(|r| PyMolarEnthalpyEntropyResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Every model id `azoth-eos` implements.

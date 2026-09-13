@@ -83,6 +83,7 @@ variables rather than in quantities with units.
 - [`eos.pt_flash`](./eos/pt_flash.md)
 - [`eos.bubble_pressure`](./eos/bubble_pressure.md)
 - [`eos.dew_pressure`](./eos/dew_pressure.md)
+- [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — a *direct* model, which composes vectors with no iteration
 
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`
 is the isentropic basis, with the standard's de-rating coefficients left to the caller.

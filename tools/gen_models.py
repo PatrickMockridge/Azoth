@@ -184,8 +184,7 @@ def emit_rust_model(model: dict[str, Any]) -> str:
             )
             outer = emit_rust_algorithm(algorithm, f"Some(&{ident_}_INNER)", "    ")
         algorithm_static = (
-            inner_static
-            + f"static {ident_}_ALGORITHM: ModelAlgorithm = {outer};\n\n"
+            inner_static + f"static {ident_}_ALGORITHM: ModelAlgorithm = {outer};\n\n"
         )
         algorithm_literal = f"Some(&{ident_}_ALGORITHM)"
 

@@ -116,6 +116,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.ideal_gas_cp` | Ideal-gas heat capacity from a caller-supplied polynomial |
 | `eos.pure_saturation` | Saturation pressure, by bisection — a *model*, not a calc |
 | `eos.pt_flash` | Two-phase flash at a fixed temperature and pressure — a *model* |
+| `eos.molar_enthalpy_entropy` | Absolute molar enthalpy and entropy — a *direct* model |
 | `eos.bubble_pressure` | Bubble-point pressure at a fixed temperature — a *model* |
 | `eos.dew_pressure` | Dew-point pressure at a fixed temperature — a *model* |
 

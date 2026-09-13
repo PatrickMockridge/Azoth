@@ -17,9 +17,10 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    BubblePressureResult, DewPressureResult, IdealGasCpResult, PrAlphaAbResult, PrDepartureResult,
-    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult,
-    PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
+    BubblePressureResult, DewPressureResult, IdealGasCpResult, MolarEnthalpyEntropyResult,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -995,6 +996,70 @@ impl From<&IdealGasCpResult> for PyIdealGasCpResult {
     }
 }
 
+/// Result of `eos.molar_enthalpy_entropy`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MolarEnthalpyEntropyResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMolarEnthalpyEntropyResult {
+    /// The molar enthalpy.
+    #[pyo3(get)]
+    pub h: PyQty,
+    /// The molar entropy.
+    #[pyo3(get)]
+    pub s: PyQty,
+    /// The ideal-gas part of the enthalpy.
+    #[pyo3(get)]
+    pub h_ideal: PyQty,
+    /// The ideal-gas part of the entropy.
+    #[pyo3(get)]
+    pub s_ideal: PyQty,
+    /// The residual enthalpy.
+    #[pyo3(get)]
+    pub h_departure: PyQty,
+    /// The residual entropy.
+    #[pyo3(get)]
+    pub s_departure: PyQty,
+    /// The composition-weighted average of the components' `psi`.
+    #[pyo3(get)]
+    pub psi_bar: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMolarEnthalpyEntropyResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MolarEnthalpyEntropyResult(h={} {}, s={} {})",
+            self.h.magnitude_si, self.h.unit, self.s.magnitude_si, self.s.unit
+        )
+    }
+}
+
+impl From<&MolarEnthalpyEntropyResult> for PyMolarEnthalpyEntropyResult {
+    fn from(r: &MolarEnthalpyEntropyResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            h: qty(r.h.value, "J/mol"),
+            s: qty(r.s.value, "J/(mol*K)"),
+            h_ideal: qty(r.h_ideal.value, "J/mol"),
+            s_ideal: qty(r.s_ideal.value, "J/(mol*K)"),
+            h_departure: qty(r.h_departure.value, "J/mol"),
+            s_departure: qty(r.s_departure.value, "J/(mol*K)"),
+            psi_bar: r.psi_bar,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.bubble_pressure` or `eos.dew_pressure`, transported.
 ///
 /// One transport type for two models, because the Rust results have the same shape
@@ -1363,6 +1428,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
+        MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),

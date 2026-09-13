@@ -69,6 +69,7 @@ from azoth.core.result import (
     BubblePressureResult,
     DewPressureResult,
     IdealGasCpResult,
+    MolarEnthalpyEntropyResult,
     PrAlphaAbResult,
     PrDepartureResult,
     PrKappaResult,
@@ -83,14 +84,17 @@ from azoth.core.result import (
 )
 from azoth.core.units import Q
 from azoth.eos.mixture import Component, Mixture, mixture
+from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
 __all__ = [
     "Component",
+    "IdealGasModel",
     "Mixture",
     "bubble_pressure",
     "dew_pressure",
     "ideal_gas_cp",
     "mixture",
+    "molar_enthalpy_entropy",
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
@@ -108,6 +112,7 @@ _PR_KAPPA = "eos.pr_kappa"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
+_MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _DEW_PRESSURE = "eos.dew_pressure"
 _PT_FLASH = "eos.pt_flash"
@@ -322,6 +327,41 @@ def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResu
     See :func:`azoth.eos.reference.ideal_gas_cp`.
     """
     return resolve(_IDEAL_GAS_CP)(a=a, b=b, c=c, d=d, T=T)  # type: ignore[no-any-return]
+
+
+def molar_enthalpy_entropy(
+    mixture: Mixture,
+    ideal_gas: IdealGasModel,
+    T: Q,
+    P: Q,
+    z: list[float],
+    compressibility: float,
+) -> MolarEnthalpyEntropyResult:
+    """The absolute molar enthalpy and entropy of a mixture at a state.
+
+    ``H = H_ig(T_ref) + integral Cp dT + H_dep`` and
+    ``S = S_ig(T_ref) + integral Cp/T dT - R ln(P/P_ref) - R sum z_i ln z_i + S_dep``.
+
+    **``ideal_gas`` carries the datum and nothing checks it.** Two enthalpies computed
+    from different reference values are not comparable, and subtracting them gives a
+    plausible number rather than an error - so a caller computing a difference must
+    know both calls used the same one.
+
+    ``compressibility`` is the cubic's root for the phase wanted, taken as given rather
+    than solved for: which root describes the phase is a choice, and a caller holding a
+    ``Z`` from :func:`pr_z_factor` or from :func:`pt_flash` has already made it.
+
+    Raises:
+        InvalidInputError: if the composition or any ideal-gas vector is the wrong
+            length, or if ``z`` is not a composition.
+        OutOfRangeError: if a temperature or pressure is not positive, or if the root
+            is not admissible.
+
+    See :func:`azoth.eos.reference.molar_enthalpy_entropy`.
+    """
+    return resolve(_MOLAR_ENTHALPY_ENTROPY)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, T=T, P=P, z=z, compressibility=compressibility
+    )
 
 
 def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:

@@ -31,6 +31,7 @@ from __future__ import annotations
 import math
 from typing import Any, NamedTuple
 
+from azoth.core.errors import OutOfRangeError
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference.pr_alpha_ab import pr_alpha_ab
@@ -162,13 +163,38 @@ def phase_state(
 
     ``z`` is selected by *ordering* - the smallest admissible root for the liquid,
     the largest for the vapour - never by an initial guess, which is the rule
-    ``eos.pr_z_factor`` fixes.
+    ``eos.pr_z_factor`` fixes. A caller who already has a root should use
+    :func:`phase_state_at` instead, which does not re-derive it.
+    """
+    a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, kij, x)
+    roots = pr_z_factor(a_mix, b_mix)
+    return phase_state_at(reduced, kij, x, roots.z_min if liquid else roots.z_max)
+
+
+def phase_state_at(
+    reduced: ReducedParameters,
+    kij: tuple[tuple[float, ...], ...],
+    x: list[float],
+    z: float,
+) -> PhaseState:
+    """One phase's state, at a root the caller has already chosen.
+
+    For a caller holding a compressibility factor - from ``eos.pr_z_factor``, or from
+    a flash that solved for one - who does not want it re-derived. The choice of root
+    is a *phase*, and a caller holding a ``Z`` has already made it; re-deriving here
+    would silently overrule them.
     """
     a, b = reduced.a, reduced.b
     n = len(x)
     a_mix, b_mix = mixture_parameters(a, b, kij, x)
-    roots = pr_z_factor(a_mix, b_mix)
-    z = roots.z_min if liquid else roots.z_max
+    if not z > b_mix:
+        raise OutOfRangeError(
+            "z",
+            z,
+            f"the root must exceed the mixture's B = {b_mix}, because `ln(z - B)` is "
+            f"otherwise the logarithm of a negative number. `z <= B` is the "
+            f"zero-volume limit, which is not a state",
+        )
 
     cross = [
         sum(x[j] * (1.0 - kij[i][j]) * math.sqrt(a[i] * a[j]) for j in range(n)) for i in range(n)
