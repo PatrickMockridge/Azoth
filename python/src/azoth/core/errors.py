@@ -113,8 +113,24 @@ class UnknownFittingError(AzothError, LookupError):
 
 
 class UnverifiedCalculationError(AzothError):
-    """The calculation has no verified source, so it must not be presented as a
-    validated result."""
+    """The calculation has no verified source, and the caller asked for that to be
+    a hard failure rather than a warning.
+
+    **Nothing raises this today.** It is defined, exported, and mapped from the
+    Rust variant of the same name, but no code path constructs it. It is kept for
+    one specific job: an opt-in strictness gate, in the shape of the existing
+    ``AZOTH_REQUIRE_RUST``, through which a caller running design work can say "fail
+    rather than hand me a number from an unconfirmed source".
+
+    Until that gate exists, an unconfirmed source is reported the way every other
+    caveat is - as a warning on the result, either ``UNVERIFIED_SOURCE`` or
+    ``ESTIMATED_DATA``, with ``result.is_clean`` reporting it.
+
+    One constraint on any future use: this must never be raised *from inside a
+    calculation* on an ``UNVERIFIED_SOURCE`` condition. Warnings are not errors
+    here, and a calc that raised would break that rule and the cross-language
+    warning-parity test that enforces it.
+    """
 
     def __init__(self, calc_id: str) -> None:
         self.calc_id = calc_id
