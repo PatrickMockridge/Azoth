@@ -113,7 +113,10 @@
       "required": ["kind", "tolerance", "max_iterations", "initial_guess", "convergence"],
       "description": "Required for implicit equations. Encoding the solver in the spec is what keeps the Python and Rust implementations numerically comparable: a different-but-valid solver, or the same solver with a different stopping rule, would diverge in the last bits and fail the agreement test. Both implementations must implement exactly this scheme - see docs/src/theory/solvers.md.",
       "properties": {
-        "kind": { "enum": ["fixed_point", "bisection", "newton"] },
+        "kind": {
+          "enum": ["fixed_point"],
+          "description": "The scheme to solve with. Only `fixed_point` is implemented, in both languages, so it is the only value this enum permits: a spec naming `bisection` or `newton` would describe a calculation neither implementation can run, which is the 'looks like validation, does nothing' failure this schema exists to catch. Adding a kind means three things in one commit - the solver in both implementations, the cross-language agreement test that proves they run the same scheme, and a new contract test holding this enum and the implementations' solver kinds to each other the way test_warning_codes_match_the_schema holds the warning codes to the schema. Nothing does that for solver kinds today, which is why this enum is narrow rather than merely unchecked."
+        },
         "tolerance": { "type": "number", "exclusiveMinimum": 0 },
         "max_iterations": { "type": "integer", "minimum": 1 },
         "initial_guess": { "type": "number", "exclusiveMinimum": 0 },

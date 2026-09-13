@@ -1,10 +1,14 @@
 """The fittings registry: equivalent-length coefficients read from
 ``data/fittings/crane_k_factors.csv``.
 
-The Rust side embeds the same file with ``include_str!``. A cross-language test
-compares the parsed coefficient for every row, which is only a meaningful check
-because both languages genuinely read one file rather than two copies that are
-supposed to match.
+The Rust side embeds the same file with ``include_str!``, so both languages read
+one file rather than two copies that are supposed to match.
+
+Reading the same bytes is not the same as being checked against each other, and
+the parsed coefficients are **not** compared row by row. This side cannot reach
+the Rust parser - the compiled extension exposes the calcs but not this registry -
+so there is nothing here to compare against, and the gap is recorded rather than
+described away.
 
 **Every coefficient in that file is currently an estimated dummy value, not
 engineering data.** See the file's header. :attr:`Fitting.is_estimated` reports

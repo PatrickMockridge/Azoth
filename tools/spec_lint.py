@@ -12,6 +12,7 @@ exists to catch them.
 Usage:
     python tools/spec_lint.py            # check everything
     python tools/spec_lint.py --quiet    # only report problems
+    python tools/spec_lint.py --spec-dir <dir>   # check a different tree of specs
 
 Exit status is non-zero if any error-level problem is found. Warnings do not fail
 the run, but they are printed, because a warning nobody reads is the same as no
@@ -104,18 +105,31 @@ def load_fittings_csv(path: Path) -> dict[str, dict[str, str]]:
     return rows
 
 
+def display_path(path: Path) -> Path:
+    """A spec's path as a reader should see it.
+
+    Specs normally live under the repository root. `--spec-dir` lets the test
+    suite point this tool at a temporary tree, which is outside `ROOT`, so the
+    relative form has to degrade rather than raise.
+    """
+    try:
+        return path.relative_to(ROOT)
+    except ValueError:
+        return path
+
+
 def check_schema(
-    report: Report, validator: Draft202012Validator
+    report: Report, validator: Draft202012Validator, spec_dir: Path
 ) -> list[tuple[Path, dict[str, Any]]]:
     """Validate each spec against the JSON Schema. Returns the ones that parsed."""
     parsed: list[tuple[Path, dict[str, Any]]] = []
-    specs = sorted(SPEC_DIR.rglob("*.yaml"))
+    specs = sorted(spec_dir.rglob("*.yaml"))
     if not specs:
-        report.error("specs", f"no spec files found under {SPEC_DIR}")
+        report.error("specs", f"no spec files found under {spec_dir}")
         return parsed
 
     for path in specs:
-        rel = path.relative_to(ROOT)
+        rel = display_path(path)
         try:
             spec = yaml.safe_load(path.read_text(encoding="utf-8"))
         except yaml.YAMLError as exc:
@@ -391,6 +405,7 @@ def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     outputs = spec["outputs"]
     seen: set[str] = set()
     active_worked_example = False
+    active_tests = 0
 
     for test in spec["tests"]:
         tid = test["id"]
@@ -402,6 +417,8 @@ def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
             # Skipping is legitimate, but only when it says why. This is the rule
             # that keeps "TODO: source needed" from becoming a silent omission.
             continue
+
+        active_tests += 1
 
         if test["type"] == "worked_example":
             active_worked_example = True
@@ -441,7 +458,14 @@ def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                     f"{MAX_SENSIBLE_TOLERANCE}",
                 )
 
-    if not active_worked_example:
+    status = spec["verification"]["status"]
+    # `source_needed` is the one status under which a calc may ship without a
+    # runnable worked example. The check below has to know that before it can
+    # demand one: demanding an active example unconditionally made
+    # `source_needed` an unreachable state, because the rule further down forbids
+    # exactly that combination. The docs, the schema and CONTRIBUTING all
+    # described a status no spec could actually hold.
+    if not active_worked_example and status != "source_needed":
         report.error(
             str(rel),
             "no active worked_example test. Every calc must ship a runnable worked "
@@ -449,7 +473,6 @@ def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
             "the reason recorded in the test's skip_reason.",
         )
 
-    status = spec["verification"]["status"]
     if status == "source_needed":
         example_tests = [t for t in spec["tests"] if t["type"] == "worked_example"]
         if any(t["status"] == "active" for t in example_tests):
@@ -458,6 +481,18 @@ def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                 "verification.status is 'source_needed' but a worked_example test is "
                 "active. An unverified calc must not claim a passing example - either "
                 "find a source or skip the test.",
+            )
+        if active_tests == 0:
+            # Reaching here is legal but should be rare and deliberate. A calc with
+            # no running test at all is the weakest thing this registry can hold,
+            # and `tests: minItems: 1` is satisfied by the skipped example alone.
+            report.warn(
+                str(rel),
+                "verification.status is 'source_needed' and no test of any kind is "
+                "active, so nothing in this spec is exercised. If the equation is "
+                "standard and only its citation is unconfirmed, 'unverified' with "
+                "notes is the honest status and it still permits a runnable worked "
+                "example. Reserve 'source_needed' for a calc nothing can check.",
             )
     elif status == "unverified" and not spec["verification"].get("notes"):
         report.warn(
@@ -655,6 +690,15 @@ def lint_spec(report: Report, rel: Path, spec: dict[str, Any]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--quiet", action="store_true", help="only print problems")
+    parser.add_argument(
+        "--spec-dir",
+        type=Path,
+        default=SPEC_DIR,
+        help=(
+            "tree of specs to check (default: specs/calcs). Exists so the test "
+            "suite can lint a synthetic spec that is not part of the registry."
+        ),
+    )
     args = parser.parse_args()
 
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
@@ -662,7 +706,7 @@ def main() -> int:
     validator = Draft202012Validator(schema)
 
     report = Report()
-    parsed = check_schema(report, validator)
+    parsed = check_schema(report, validator, args.spec_dir)
     for rel, spec in parsed:
         lint_spec(report, rel, spec)
 
