@@ -18,10 +18,10 @@
 //!
 //! # Introspection
 //!
-//! `warning_codes`, `result_fields`, `calc_ids` and `version` exist so the test
-//! suite can assert cross-language agreement without parsing Rust source. They
-//! are the mechanism behind the claims that the two implementations share a
-//! warning vocabulary and a result shape.
+//! `warning_codes`, `unit_names`, `result_fields`, `calc_ids` and `version` exist
+//! so the test suite can assert cross-language agreement without parsing Rust
+//! source. They are the mechanism behind the claims that the two implementations
+//! share a warning vocabulary, a unit vocabulary and a result shape.
 
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
@@ -64,6 +64,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Introspection.
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;
+    m.add_function(wrap_pyfunction!(results::unit_names, m)?)?;
     m.add_function(wrap_pyfunction!(results::result_fields, m)?)?;
     m.add_function(wrap_pyfunction!(results::calc_ids, m)?)?;
     m.add_function(wrap_pyfunction!(results::version, m)?)?;

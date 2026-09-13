@@ -39,7 +39,7 @@ from azoth.core.result import (
     ReynoldsNumberResult,
     SwameeJainResult,
 )
-from azoth.core.units import CANONICAL_UNITS, Q, quantity, to_si, unit_for, ureg
+from azoth.core.units import CANONICAL_UNITS, Q, from_si, quantity, to_si, unit_for, ureg
 from azoth.core.warnings import Warning, WarningCode
 
 __all__ = [
@@ -69,6 +69,7 @@ __all__ = [
     "WarningCode",
     "apply_checks",
     "checks_for",
+    "from_si",
     "quantity",
     "to_si",
     "unit_for",
