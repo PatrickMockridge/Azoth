@@ -33,8 +33,18 @@
     "source": { "$ref": "calc.schema.json#/properties/source" },
     "verification": { "$ref": "calc.schema.json#/properties/verification" },
     "algorithm": { "$ref": "#/$defs/algorithm" },
-    "inputs": { "$ref": "calc.schema.json#/properties/inputs" },
-    "outputs": { "$ref": "calc.schema.json#/properties/outputs" },
+    "inputs": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/quantity" },
+      "description": "Input quantities, keyed by parameter name. A calc's inputs are all scalars; a model's may be vectors and matrices, because a mixture is a list of components rather than one number."
+    },
+    "outputs": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/quantity" },
+      "description": "Output quantities, keyed by result field name."
+    },
     "valid_range": { "$ref": "calc.schema.json#/properties/valid_range" },
     "assumptions": { "$ref": "calc.schema.json#/properties/assumptions" },
     "references": { "$ref": "calc.schema.json#/properties/references" },
@@ -49,6 +59,60 @@
   },
 
   "$defs": {
+    "quantity": {
+      "description": "A scalar, vector or matrix quantity. A calc's `$defs.quantity` is `$ref`-ed rather than restated, so units and descriptions have one definition across both spec kinds; the two extra shapes exist because a mixture is not a number.",
+      "oneOf": [
+        { "$ref": "calc.schema.json#/$defs/quantity" },
+        { "$ref": "#/$defs/vector_quantity" },
+        { "$ref": "#/$defs/matrix_quantity" }
+      ]
+    },
+
+    "value": {
+      "description": "A case value: a number, a composition vector, or a matrix stated as rows. Extends the calc `$defs.value`, which permits a number or a list of *strings* - a model's vectors are numbers, and collecting them with the fitting-id rule gave a composition the type of a list of names.",
+      "oneOf": [
+        { "$ref": "calc.schema.json#/$defs/value" },
+        { "type": "array", "minItems": 1, "items": { "type": "number" } },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "array", "minItems": 1, "items": { "type": "number" } }
+        }
+      ]
+    },
+
+    "vector_quantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "unit", "description"],
+      "properties": {
+        "type": { "const": "vector" },
+        "unit": { "$ref": "calc.schema.json#/$defs/unit" },
+        "description": { "type": "string", "minLength": 1 },
+        "length": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What the length means, e.g. 'one entry per component'. Prose rather than a number, because the length is the caller's: the model is written for any N."
+        }
+      }
+    },
+
+    "matrix_quantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "unit", "description"],
+      "properties": {
+        "type": { "const": "matrix" },
+        "unit": { "$ref": "calc.schema.json#/$defs/unit" },
+        "description": { "type": "string", "minLength": 1 },
+        "shape": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The matrix's shape, e.g. 'N x N, symmetric, zero diagonal'. Recorded because a shape assertion a reader can check is worth more than one they assume."
+        }
+      }
+    },
+
     "algorithm": {
       "type": "object",
       "additionalProperties": false,
@@ -63,6 +127,15 @@
         "convergence": { "$ref": "calc.schema.json#/properties/solver/properties/convergence" },
         "tolerance": { "$ref": "calc.schema.json#/properties/solver/properties/tolerance" },
         "max_iterations": { "$ref": "calc.schema.json#/properties/solver/properties/max_iterations" },
+        "initialisation": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "How the iteration starts, where the scheme needs a starting point. The analogue of a solver's `initial_guess`, and in the spec for the same reason: two implementations that start from different guesses take different paths to the same answer, and a convergence claim that holds from one starting point need not hold from another. `wilson` is the K-value correlation."
+        },
+        "inner": {
+          "description": "A nested procedure the outer one runs each iteration. Recursive, because an inner scheme has the same shape as an outer one and describing it with a second set of keys would be a second definition of what an algorithm is.",
+          "$ref": "#/$defs/algorithm"
+        },
         "bracket": {
           "type": "object",
           "additionalProperties": false,
@@ -94,13 +167,13 @@
         "inputs": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": { "$ref": "calc.schema.json#/$defs/value" },
-          "description": "Input values in the units declared in `inputs`, exactly as a calc's worked example states them."
+          "additionalProperties": { "$ref": "#/$defs/value" },
+          "description": "Input values in the units declared in `inputs`, exactly as a calc's worked example states them - except that a vector or matrix input is stated as an array, since a mixture has no scalar form."
         },
         "expected": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": { "$ref": "calc.schema.json#/$defs/value" }
+          "additionalProperties": { "$ref": "#/$defs/value" }
         },
         "tolerance": { "type": "number", "exclusiveMinimum": 0 },
         "source": {

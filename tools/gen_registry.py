@@ -171,7 +171,38 @@ def collect_numbers(mapping: dict[str, Any]) -> list[tuple[str, float]]:
 
 
 def collect_lists(mapping: dict[str, Any]) -> list[tuple[str, list[str]]]:
-    return [(k, v) for k, v in mapping.items() if isinstance(v, list)]
+    """Lists of strings: fitting ids, which are identifiers rather than numbers."""
+    return [
+        (k, v)
+        for k, v in mapping.items()
+        if isinstance(v, list) and v and all(isinstance(x, str) for x in v)
+    ]
+
+
+def collect_vectors(mapping: dict[str, Any]) -> list[tuple[str, list[float]]]:
+    """Lists of numbers: a composition, or one constant per component."""
+    return [
+        (k, v)
+        for k, v in mapping.items()
+        if isinstance(v, list) and v and all(isinstance(x, (int, float)) for x in v)
+    ]
+
+
+def collect_matrices(mapping: dict[str, Any]) -> list[tuple[str, list[float]]]:
+    """Lists of lists of numbers, flattened row-major.
+
+    The dimension is not emitted: every matrix this registry carries is square and
+    the same size as the vectors beside it, so a consumer reshapes against their
+    length rather than against a second copy of the same number.
+    """
+    out: list[tuple[str, list[float]]] = []
+    for key, value in mapping.items():
+        if not isinstance(value, list) or not value:
+            continue
+        if not all(isinstance(row, list) for row in value):
+            continue
+        out.append((key, [float(x) for row in value for x in row]))
+    return out
 
 
 def emit_range_check(check: dict[str, Any], spec_id: str) -> str:
@@ -230,7 +261,10 @@ def emit_test_case(
 ) -> str:
     numbers = collect_numbers(inputs)
     lists = collect_lists(inputs)
+    vectors = collect_vectors(inputs)
+    matrices = collect_matrices(inputs)
     expected_numbers = collect_numbers(expected)
+    expected_vectors = collect_vectors(expected)
 
     def pairs(items: list[tuple[str, float]]) -> str:
         if not items:
@@ -242,6 +276,12 @@ def emit_test_case(
         if not items:
             return "&[]"
         inner = ", ".join(f"({rust_str(k)}, {rust_slice_str(v)})" for k, v in items)
+        return f"&[{inner}]"
+
+    def number_slice_pairs(items: list[tuple[str, list[float]]]) -> str:
+        if not items:
+            return "&[]"
+        inner = ", ".join(f"({rust_str(k)}, &[{', '.join(rust_f64(x) for x in v)}])" for k, v in items)
         return f"&[{inner}]"
 
     prop = f"Some({rust_str(property_name)})" if property_name else "None"
@@ -257,7 +297,10 @@ def emit_test_case(
         f"{indent}    tolerance: {rust_f64(tolerance)},\n"
         f"{indent}    numbers: {pairs(numbers)},\n"
         f"{indent}    lists: {list_pairs(lists)},\n"
+        f"{indent}    vectors: {number_slice_pairs(vectors)},\n"
+        f"{indent}    matrices: {number_slice_pairs(matrices)},\n"
         f"{indent}    expected: {pairs(expected_numbers)},\n"
+        f"{indent}    expected_vectors: {number_slice_pairs(expected_vectors)},\n"
         f"{indent}}},\n"
     )
 

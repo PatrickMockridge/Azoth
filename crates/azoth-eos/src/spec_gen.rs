@@ -69,11 +69,14 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         tolerance: 1e-15,
         numbers: &[("kappa", 0.60282728832), ("Tr", 1.0), ("Pr", 1.0)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("alpha", 1.0),
             ("a_reduced", 0.4572355289213822),
             ("b_reduced", 0.07779607390388846),
         ],
+        expected_vectors: &[],
     },
     TestCase {
         id: "supercritical_and_a_different_kappa",
@@ -84,11 +87,14 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("kappa", 0.392217407205312), ("Tr", 1.5), ("Pr", 0.5)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("alpha", 0.8314725184069646),
             ("a_reduced", 0.08448417260831159),
             ("b_reduced", 0.025932024634629486),
         ],
+        expected_vectors: &[],
     },
     TestCase {
         id: "monotonic",
@@ -99,7 +105,10 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -112,7 +121,10 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -136,11 +148,14 @@ pub static PR_ALPHA_AB_SPEC: CalcSpec = CalcSpec {
         tolerance: 1e-12,
         numbers: &[("kappa", 0.60282728832), ("Tr", 0.8), ("Pr", 0.25)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("alpha", 1.1313346661636197),
             ("a_reduced", 0.20206500174625697),
             ("b_reduced", 0.02431127309496514),
         ],
+        expected_vectors: &[],
     },
     tests: PR_ALPHA_AB_TESTS,
 };
@@ -195,11 +210,14 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
             ("Tr", 0.8),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("ln_phi", -0.3218698775991462),
             ("h_dep_rt", -6.6056599807533996),
             ("s_dep_r", -6.283790103154252),
         ],
+        expected_vectors: &[],
     },
     TestCase {
         id: "supercritical_state_with_a_different_coefficient",
@@ -216,11 +234,14 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
             ("Tr", 1.5),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("ln_phi", -0.05766112543659872),
             ("h_dep_rt", -0.18983428427214197),
             ("s_dep_r", -0.13217315883554326),
         ],
+        expected_vectors: &[],
     },
     TestCase {
         id: "the_gibbs_identity_holds",
@@ -231,7 +252,10 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "low_pressure_limit_is_the_ideal_gas",
@@ -242,7 +266,10 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -255,7 +282,10 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -285,11 +315,14 @@ pub static PR_DEPARTURE_SPEC: CalcSpec = CalcSpec {
             ("Tr", 0.8),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("ln_phi", -0.19131055684257678),
             ("h_dep_rt", -0.5830167814158524),
             ("s_dep_r", -0.39170622457327564),
         ],
+        expected_vectors: &[],
     },
     tests: PR_DEPARTURE_TESTS,
 };
@@ -321,7 +354,10 @@ static PR_KAPPA_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("omega", 0.01142)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("kappa", 0.392217407205312)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "a_negative_acentric_factor_warns",
@@ -332,7 +368,10 @@ static PR_KAPPA_TESTS: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("omega", -0.385)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("kappa", -0.259138992)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "monotonic",
@@ -343,7 +382,10 @@ static PR_KAPPA_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -356,7 +398,10 @@ static PR_KAPPA_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -380,7 +425,10 @@ pub static PR_KAPPA_SPEC: CalcSpec = CalcSpec {
         tolerance: 1e-12,
         numbers: &[("omega", 0.152)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("kappa", 0.60282728832)],
+        expected_vectors: &[],
     },
     tests: PR_KAPPA_TESTS,
 };
@@ -429,7 +477,10 @@ static PR_MASS_DENSITY_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("M", 0.0440956), ("v", 8.516118084951335e-05)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("rho", 517.7899080323988)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "doubling_the_molar_mass_doubles_the_density",
@@ -440,7 +491,10 @@ static PR_MASS_DENSITY_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -451,7 +505,10 @@ static PR_MASS_DENSITY_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -475,7 +532,10 @@ pub static PR_MASS_DENSITY_SPEC: CalcSpec = CalcSpec {
         tolerance: 1e-12,
         numbers: &[("M", 0.0440956), ("v", 0.0018317107825229842)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("rho", 24.073451125981286)],
+        expected_vectors: &[],
     },
     tests: PR_MASS_DENSITY_TESTS,
 };
@@ -543,7 +603,10 @@ static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
             ("P", 1062000.0),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("v", 8.516118084951335e-05)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "the_ideal_gas_limit_is_z_of_one",
@@ -554,7 +617,10 @@ static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("z", 1.0), ("T", 300.0), ("P", 101325.0)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("v", 0.024617209824287906)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "monotonic",
@@ -565,7 +631,10 @@ static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -576,7 +645,10 @@ static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -600,7 +672,10 @@ pub static PR_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
         tolerance: 1e-12,
         numbers: &[("z", 0.7907789662973796), ("T", 295.864), ("P", 1062000.0)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("v", 0.0018317107825229842)],
+        expected_vectors: &[],
     },
     tests: PR_MOLAR_VOLUME_TESTS,
 };
@@ -649,10 +724,13 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("a_reduced", 0.25), ("b_reduced", 0.03125)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("z_min", 0.04868889529885568),
             ("z_max", 0.7280875526160305),
         ],
+        expected_vectors: &[],
     },
     TestCase {
         id: "a_single_root_above_the_critical_temperature",
@@ -666,7 +744,10 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
             ("b_reduced", 0.025932024634629486),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("z_min", 0.943312987185517), ("z_max", 0.943312987185517)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "the_critical_point_is_where_the_answer_stops_being_determined",
@@ -680,10 +761,13 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
             ("b_reduced", 0.07779607390388846),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("z_min", 0.30740130869870386),
             ("z_max", 0.30740130869870386),
         ],
+        expected_vectors: &[],
     },
     TestCase {
         id: "selected_roots_satisfy_the_cubic",
@@ -694,7 +778,10 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "the_middle_root_is_not_returned",
@@ -705,7 +792,10 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "the_admissible_count_is_never_two",
@@ -716,7 +806,10 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "monotonic",
@@ -727,7 +820,10 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -740,7 +836,10 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -773,10 +872,13 @@ pub static PR_Z_FACTOR_SPEC: CalcSpec = CalcSpec {
             ("b_reduced", 0.02431127309496514),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("z_min", 0.036765449656896015),
             ("z_max", 0.7907789662973796),
         ],
+        expected_vectors: &[],
     },
     tests: PR_Z_FACTOR_TESTS,
 };
@@ -808,7 +910,10 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("omega", 0.152), ("Tr", 0.7), ("kappa1", 0.05)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("kappa", 0.6014406094290431)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "with_kappa1_zero_the_coefficient_is_temperature_independent",
@@ -819,7 +924,10 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("omega", 0.152), ("Tr", 0.85), ("kappa1", 0.0)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("kappa", 0.6014406094290431)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "the_prsv_coefficient_feeds_the_pr_alpha_function",
@@ -830,7 +938,10 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "monotonic",
@@ -841,7 +952,10 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -854,7 +968,10 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -878,7 +995,10 @@ pub static PRSV_KAPPA_SPEC: CalcSpec = CalcSpec {
         tolerance: 1e-12,
         numbers: &[("omega", 0.152), ("Tr", 0.8), ("kappa1", 0.05)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("kappa", 0.5919684734740435)],
+        expected_vectors: &[],
     },
     tests: PRSV_KAPPA_TESTS,
 };
@@ -987,7 +1107,10 @@ static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
         tolerance: 1e-15,
         numbers: &[("z1", 0.5), ("K1", 2.0), ("K2", 1.5)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("beta", -1.5)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "a_second_two_phase_case",
@@ -998,7 +1121,10 @@ static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("z1", 0.3), ("K1", 5.0), ("K2", 0.2)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("beta", 0.19999999999999998)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "the_returned_beta_solves_the_equation",
@@ -1009,7 +1135,10 @@ static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1022,7 +1151,10 @@ static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -1046,7 +1178,10 @@ pub static RACHFORD_RICE_BINARY_SPEC: CalcSpec = CalcSpec {
         tolerance: 1e-12,
         numbers: &[("z1", 0.6), ("K1", 4.0), ("K2", 0.25)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("beta", 0.6666666666666665)],
+        expected_vectors: &[],
     },
     tests: RACHFORD_RICE_BINARY_TESTS,
 };
@@ -1102,10 +1237,13 @@ static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
             ("k12", 0.05),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("a_mix", 0.20206500174625697),
             ("b_mix", 0.02431127309496514),
         ],
+        expected_vectors: &[],
     },
     TestCase {
         id: "ethane_and_a_large_k12",
@@ -1123,7 +1261,10 @@ static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
             ("k12", 0.4),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("a_mix", 0.22404521707412323), ("b_mix", 0.03525)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "monotonic",
@@ -1134,7 +1275,10 @@ static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1147,7 +1291,10 @@ static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -1178,10 +1325,13 @@ pub static VDW1F_MIX_BINARY_SPEC: CalcSpec = CalcSpec {
             ("k12", 0.05),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[
             ("a_mix", 0.14584053499701302),
             ("b_mix", 0.02495957371083088),
         ],
+        expected_vectors: &[],
     },
     tests: VDW1F_MIX_BINARY_TESTS,
 };

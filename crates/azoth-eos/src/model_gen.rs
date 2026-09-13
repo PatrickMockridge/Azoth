@@ -89,7 +89,10 @@ static PURE_SATURATION_CASES: &[TestCase] = &[
             ("T", 300.0),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("p_sat", 997667.7436544185)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "carbon_dioxide_at_280_k",
@@ -105,7 +108,10 @@ static PURE_SATURATION_CASES: &[TestCase] = &[
             ("T", 280.0),
         ],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("p_sat", 4159392.604815074)],
+        expected_vectors: &[],
     },
 ];
 

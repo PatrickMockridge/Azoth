@@ -75,10 +75,28 @@ pub struct TestCase {
     pub tolerance: f64,
     /// Scalar inputs, by name.
     pub numbers: &'static [(&'static str, f64)],
-    /// List-valued inputs, by name.
+    /// List-valued inputs, by name - a list of fitting ids.
     pub lists: &'static [(&'static str, &'static [&'static str])],
-    /// Expected outputs, by name.
+    /// Vector-valued inputs, by name: one number per component, or a composition.
+    ///
+    /// Separate from [`Self::lists`] because the two are different things that both
+    /// happen to be JSON arrays. A list of fitting ids is *identifiers*, which a
+    /// model resolves against a data file; a vector is *numbers*, which it does
+    /// arithmetic on. Collecting them with one rule gave a composition the type of a
+    /// list of names.
+    pub vectors: &'static [(&'static str, &'static [f64])],
+    /// Matrix-valued inputs, by name, flattened row-major.
+    ///
+    /// The dimension is not carried: every matrix this registry declares is `N x N`
+    /// for the same `N` its vectors have, so a consumer reshapes against the vector
+    /// length rather than against a second copy of the same number.
+    pub matrices: &'static [(&'static str, &'static [f64])],
+    /// Expected scalar outputs, by name.
     pub expected: &'static [(&'static str, f64)],
+    /// Expected vector outputs, by name - a phase composition, or one K-value per
+    /// component. Separate from [`Self::expected`] for the same reason
+    /// [`Self::vectors`] is separate from [`Self::lists`].
+    pub expected_vectors: &'static [(&'static str, &'static [f64])],
 }
 
 impl TestCase {
@@ -97,10 +115,37 @@ impl TestCase {
         self.lists.iter().find(|(k, _)| *k == name).map(|(_, v)| *v)
     }
 
-    /// Fetch an expected output. `None` if the test does not assert it.
+    /// Fetch a vector-valued input.
+    #[must_use]
+    pub fn vector(&self, name: &str) -> Option<&'static [f64]> {
+        self.vectors
+            .iter()
+            .find(|(k, _)| *k == name)
+            .map(|(_, v)| *v)
+    }
+
+    /// Fetch a matrix-valued input, flattened row-major.
+    #[must_use]
+    pub fn matrix(&self, name: &str) -> Option<&'static [f64]> {
+        self.matrices
+            .iter()
+            .find(|(k, _)| *k == name)
+            .map(|(_, v)| *v)
+    }
+
+    /// Fetch an expected scalar output. `None` if the test does not assert it.
     #[must_use]
     pub fn expected_value(&self, name: &str) -> Option<f64> {
         self.expected
+            .iter()
+            .find(|(k, _)| *k == name)
+            .map(|(_, v)| *v)
+    }
+
+    /// Fetch an expected vector output. `None` if the test does not assert it.
+    #[must_use]
+    pub fn expected_vector(&self, name: &str) -> Option<&'static [f64]> {
+        self.expected_vectors
             .iter()
             .find(|(k, _)| *k == name)
             .map(|(_, v)| *v)

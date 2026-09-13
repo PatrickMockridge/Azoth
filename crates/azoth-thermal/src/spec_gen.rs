@@ -74,7 +74,10 @@ static CONDUCTION_PLANE_WALL_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("k", 0.7), ("A", 10.0), ("dT", 20.0), ("L", 0.2)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("q", 700.0)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "sign_follows_the_temperature_difference",
@@ -85,7 +88,10 @@ static CONDUCTION_PLANE_WALL_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[("k", 45.0), ("A", 2.0), ("dT", -30.0), ("L", 0.05)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("q", -54000.0)],
+        expected_vectors: &[],
     },
     TestCase {
         id: "monotonic",
@@ -96,7 +102,10 @@ static CONDUCTION_PLANE_WALL_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -107,7 +116,10 @@ static CONDUCTION_PLANE_WALL_TESTS: &[TestCase] = &[
         tolerance: 1e-12,
         numbers: &[],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[],
+        expected_vectors: &[],
     },
 ];
 
@@ -131,7 +143,10 @@ pub static CONDUCTION_PLANE_WALL_SPEC: CalcSpec = CalcSpec {
         tolerance: 1e-12,
         numbers: &[("k", 45.0), ("A", 2.0), ("dT", 30.0), ("L", 0.05)],
         lists: &[],
+        vectors: &[],
+        matrices: &[],
         expected: &[("q", 54000.0)],
+        expected_vectors: &[],
     },
     tests: CONDUCTION_PLANE_WALL_TESTS,
 };
