@@ -9,12 +9,9 @@
     "id",
     "name",
     "description",
-    "source",
     "kind",
     "inputs",
     "outputs",
-    "assumptions",
-    "references",
     "implementations",
     "cases"
   ],
@@ -30,7 +27,6 @@
       "description": "What the model computes and, where it is not obvious, why it is a model rather than a calc. Rendered as the docs page's opening paragraph."
     },
     "source": { "$ref": "calc.schema.json#/properties/source" },
-    "verification": { "$ref": "calc.schema.json#/properties/verification" },
     "kind": {
       "enum": ["procedure", "direct"],
       "description": "What this model's spec fixes, and therefore whether it has an algorithm block. `procedure` - the usual case, and the reason the model tree exists at all - means a loop: a scheme, a convergence rule, a tolerance and a cap, which both implementations run and which a calc cannot express. `direct` means a computation over vectors with no iteration. A direct model is here because the calc registry's inputs are scalars, so a composition vector has nowhere to go; it has no `algorithm` block, and the schema forbids one rather than allowing a vacuous one, because a spec field nothing reads is the defect this project is organised against."

@@ -15,75 +15,73 @@ description: >
 source:
   standard: Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability"
   edition: "Fluid Phase Equilibria 9(1), 1-19"
-  equation: "TODO: source needed"
   doi: "10.1016/0378-3812(82)85001-2"
 
-verification:
-  status: unverified
-  notes: >
-    The method is Michelsen (1982). What is unconfirmed is the equation number - the
-    paper has not been read.
+notes: >
+  The method is Michelsen (1982). What is unconfirmed is the equation number - the
+  paper has not been read.
 
-    # Where this differs from NeqSim's implementation
+  # Where this differs from NeqSim's implementation
 
-    The two Wilson trials, the tangent-plane distance `tm = 1 - sum(W)`, the
-    unconverged-reset rule and the instability threshold are the same. Three
-    things differ, and each was a decision rather than a transcription.
+  The two Wilson trials, the tangent-plane distance `tm = 1 - sum(W)`, the
+  unconverged-reset rule and the instability threshold are the same. Three
+  things differ, and each was a decision rather than a transcription.
 
-    **The trial phases are seeded from azoth's own Wilson correlation.** NeqSim
-    reads `Component.getK()`, which is whatever the last flash left on the
-    component. That is an implicit coupling between two calculations - the answer
-    here would depend on what ran before - so this seeds from
-    `_mixture_state.wilson_k` explicitly and depends on nothing but its inputs.
+  **The trial phases are seeded from azoth's own Wilson correlation.** NeqSim
+  reads `Component.getK()`, which is whatever the last flash left on the
+  component. That is an implicit coupling between two calculations - the answer
+  here would depend on what ran before - so this seeds from
+  `_mixture_state.wilson_k` explicitly and depends on nothing but its inputs.
 
-    **The second-order Newton fallback and the DEM acceleration are not ported.**
-    NeqSim switches to a Newton step on `sqrt(W)` when successive substitution
-    stalls, and accelerates on an Aitken-style estimate every fifth iteration.
-    Both change how fast the iteration reaches its stationary point and not which
-    point that is, and neither is needed to state the criterion. Without them the
-    iteration is plain successive substitution, which is what the spec's
-    `algorithm` block describes and what both implementations run.
+  **The second-order Newton fallback and the DEM acceleration are not ported.**
+  NeqSim switches to a Newton step on `sqrt(W)` when successive substitution
+  stalls, and accelerates on an Aitken-style estimate every fifth iteration.
+  Both change how fast the iteration reaches its stationary point and not which
+  point that is, and neither is needed to state the criterion. Without them the
+  iteration is plain successive substitution, which is what the spec's
+  `algorithm` block describes and what both implementations run.
 
-    **An unconverged trial raises rather than being discarded.** NeqSim breaks out
-    of the loop on a failed `init` and carries on with whatever `tm` the partial
-    iteration reached. A tangent-plane distance is only a bound on stability at a
-    *stationary point*, so a `tm` read from a partially-converged iterate is a
-    number about the iteration rather than about the mixture - and discarding it
-    turns "could not tell" into "stable". It raises `SolverNotConvergedError`
-    instead, which is the rule `eos.pt_flash` already applies to its own loop.
+  **An unconverged trial raises rather than being discarded.** NeqSim breaks out
+  of the loop on a failed `init` and carries on with whatever `tm` the partial
+  iteration reached. A tangent-plane distance is only a bound on stability at a
+  *stationary point*, so a `tm` read from a partially-converged iterate is a
+  number about the iteration rather than about the mixture - and discarding it
+  turns "could not tell" into "stable". It raises `SolverNotConvergedError`
+  instead, which is the rule `eos.pt_flash` already applies to its own loop.
 
-    **Verified against `eos.pt_flash` instead, which is a stronger check than it
-    sounds.** The two models answer different questions about the same states, and
-    their answers are related: a feed `pt_flash` splits into two phases must come
-    back UNSTABLE here, and a feed it reports as single phase by the no-root proof
-    must come back STABLE. Those are asserted on every case both models share.
+  **Verified against `eos.pt_flash` instead, which is a stronger check than it
+  sounds.** The two models answer different questions about the same states, and
+  their answers are related: a feed `pt_flash` splits into two phases must come
+  back UNSTABLE here, and a feed it reports as single phase by the no-root proof
+  must come back STABLE. Those are asserted on every case both models share.
 
-    # Correction 1: the iteration cap was set by assumption and was too low
+  # Correction 1: the iteration cap was set by assumption and was too low
 
-    The first draft carried `max_iterations: 200`, reasoned from the fact that the
-    parallel flash converges in a dozen steps. It is not parallel, and 200 was
-    measured to be too few on an ordinary state - methane/n-butane at 300 K and
-    100 bar, a liquid, where the *liquid-like* trial needs **507** iterations to
-    reach 1e-10.
+  The first draft carried `max_iterations: 200`, reasoned from the fact that the
+  parallel flash converges in a dozen steps. It is not parallel, and 200 was
+  measured to be too few on an ordinary state - methane/n-butane at 300 K and
+  100 bar, a liquid, where the *liquid-like* trial needs **507** iterations to
+  reach 1e-10.
 
-    The failure is not a divergence. Successive substitution here is linear with a
-    ratio near 0.93 in `ln W`, so the residual falls by roughly twenty per hundred
-    iterations and simply needs longer than the cap allowed. Measured on that state:
+  The failure is not a divergence. Successive substitution here is linear with a
+  ratio near 0.93 in `ln W`, so the residual falls by roughly twenty per hundred
+  iterations and simply needs longer than the cap allowed. Measured on that state:
 
-    ```text
-    iteration    50        100       200       400
-    residual     2.9e-04   4.1e-05   1.6e-06   2.9e-09
-    ```
+  ```text
+  iteration    50        100       200       400
+  residual     2.9e-04   4.1e-05   1.6e-06   2.9e-09
+  ```
 
-    The cap is now 2000, which is above every state tested and still bounded. It is
-    a *cap* and not a target: the vapour-like trial on the same state converges in
-    22 steps.
+  The cap is now 2000, which is above every state tested and still bounded. It is
+  a *cap* and not a target: the vapour-like trial on the same state converges in
+  22 steps.
 
-    This is also the measurement that justifies not porting NeqSim's DEM/Aitken
-    acceleration. It exists precisely because this iteration is slow, and it is not
-    needed for the criterion - but the cost of leaving it out is paid here, in a cap
-    an order of magnitude higher than the flash's, and that is the honest place to
-    record it rather than in a claim that the acceleration was unnecessary.
+  This is also the measurement that justifies not porting NeqSim's DEM/Aitken
+  acceleration. It exists precisely because this iteration is slow, and it is not
+  needed for the criterion - but the cost of leaving it out is paid here, in a cap
+  an order of magnitude higher than the flash's, and that is the honest place to
+  record it rather than in a claim that the acceleration was unnecessary.
+
 
 kind: procedure
 

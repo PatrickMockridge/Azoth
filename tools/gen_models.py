@@ -217,7 +217,6 @@ static {ident_}_CASES: &[TestCase] = &[
 {algorithm_static}/// Registry entry for `{model["id"]}`.
 pub static {ident_}_SPEC: ModelSpec = ModelSpec {{
     id: {rust_str(model["id"])},
-    verification: {rust_str(model["verification"]["status"])},
     kind: {rust_str(kind)},
     algorithm: {algorithm_literal},
     checks: {ident_}_CHECKS,

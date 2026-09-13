@@ -128,7 +128,6 @@ static BUBBLE_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
 /// Registry entry for `eos.bubble_pressure`.
 pub static BUBBLE_PRESSURE_SPEC: ModelSpec = ModelSpec {
     id: "eos.bubble_pressure",
-    verification: "unverified",
     kind: "procedure",
     algorithm: Some(&BUBBLE_PRESSURE_ALGORITHM),
     checks: BUBBLE_PRESSURE_CHECKS,
@@ -257,7 +256,6 @@ static CRITICAL_POINT_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
 /// Registry entry for `eos.critical_point`.
 pub static CRITICAL_POINT_SPEC: ModelSpec = ModelSpec {
     id: "eos.critical_point",
-    verification: "unverified",
     kind: "procedure",
     algorithm: Some(&CRITICAL_POINT_ALGORITHM),
     checks: CRITICAL_POINT_CHECKS,
@@ -375,7 +373,6 @@ static DEW_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
 /// Registry entry for `eos.dew_pressure`.
 pub static DEW_PRESSURE_SPEC: ModelSpec = ModelSpec {
     id: "eos.dew_pressure",
-    verification: "unverified",
     kind: "procedure",
     algorithm: Some(&DEW_PRESSURE_ALGORITHM),
     checks: DEW_PRESSURE_CHECKS,
@@ -544,7 +541,6 @@ static MOLAR_ENTHALPY_ENTROPY_CASES: &[TestCase] = &[
 /// Registry entry for `eos.molar_enthalpy_entropy`.
 pub static MOLAR_ENTHALPY_ENTROPY_SPEC: ModelSpec = ModelSpec {
     id: "eos.molar_enthalpy_entropy",
-    verification: "unverified",
     kind: "direct",
     algorithm: None,
     checks: MOLAR_ENTHALPY_ENTROPY_CHECKS,
@@ -743,7 +739,6 @@ static PT_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
 /// Registry entry for `eos.pt_flash`.
 pub static PT_FLASH_SPEC: ModelSpec = ModelSpec {
     id: "eos.pt_flash",
-    verification: "unverified",
     kind: "procedure",
     algorithm: Some(&PT_FLASH_ALGORITHM),
     checks: PT_FLASH_CHECKS,
@@ -872,7 +867,6 @@ static PURE_SATURATION_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
 /// Registry entry for `eos.pure_saturation`.
 pub static PURE_SATURATION_SPEC: ModelSpec = ModelSpec {
     id: "eos.pure_saturation",
-    verification: "unverified",
     kind: "procedure",
     algorithm: Some(&PURE_SATURATION_ALGORITHM),
     checks: PURE_SATURATION_CHECKS,
@@ -987,7 +981,6 @@ static STABILITY_TEST_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
 /// Registry entry for `eos.stability_test`.
 pub static STABILITY_TEST_SPEC: ModelSpec = ModelSpec {
     id: "eos.stability_test",
-    verification: "unverified",
     kind: "procedure",
     algorithm: Some(&STABILITY_TEST_ALGORITHM),
     checks: STABILITY_TEST_CHECKS,

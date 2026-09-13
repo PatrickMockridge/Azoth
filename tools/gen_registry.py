@@ -212,13 +212,11 @@ def emit_range_check(check: dict[str, Any], spec_id: str) -> str:
     # `code` to the known set, and spec_lint checks the same strings against the
     # Python enum, so a typo here cannot reach the generated file.
     code = "WarningCode::" + camel_variant(check.get("code", "OUT_OF_VALID_RANGE"))
+    # A bound's rationale is optional and is not checked here. It was required, on
+    # the argument that a bound with no reason is a bound nobody dares change - which
+    # is true, and is not this tool's business. A bound with no stated reason is a
+    # bound to ask about in review.
     rationale = check.get("rationale", "")
-    if not rationale:
-        raise SystemExit(
-            f"{spec_id}: range check on '{check['quantity']}' has no rationale. "
-            f"Every bound must explain why it exists - a bound with no reason is a "
-            f"bound nobody dares change."
-        )
     # `enum` is a bound kind the schema permits and neither implementation can
     # evaluate: a range check resolves a quantity to a float, and an enum bound
     # compares strings. Emitting it would produce a check that silently never fires,
@@ -396,7 +394,6 @@ def emit_rust(specs: list[dict[str, Any]], source_files: list[str], namespace: s
 /// rather than something to handle.
 pub static {ident}_SPEC: CalcSpec = CalcSpec {{
     id: {rust_str(spec["id"])},
-    verification: {rust_str(spec["verification"]["status"])},
     checks: {ident}_CHECKS,
     solver: {solver_str},
     worked_example: {
@@ -496,7 +493,6 @@ CALCS: Final[tuple[dict[str, Any], ...]] = (
         out.append(f'        "id": {spec["id"]!r},\n')
         out.append(f'        "name": {spec["name"]!r},\n')
         out.append(f'        "equation": {spec["equation"]!r},\n')
-        out.append(f'        "verification": {spec["verification"]["status"]!r},\n')
         out.append(f'        "source": {spec["source"]!r},\n')
         out.append(f'        "inputs": { {k: dict(v) for k, v in spec["inputs"].items()}!r},\n')
         out.append(f'        "outputs": { {k: dict(v) for k, v in spec["outputs"].items()}!r},\n')

@@ -10,66 +10,63 @@ source:
     out in e.g. Poling, Prausnitz & O'Connell, The Properties of Gases and Liquids,
     5th ed., ch. 3. The reference temperature is the scale at which the coefficients
     are quoted, not a fitted quantity.
-  equation: "TODO: source needed"
-  doi: "TODO: source needed"
 
-verification:
-  status: unverified
-  notes: >
-    The polynomial is standard and its form is not in doubt. **What is ours, and what
-    this entry is really about, is where the coefficients come from: nowhere.** This
-    library ships none. The equation's constants are per-component fitted data, and a
-    table of them is precisely the databank this library has decided not to have - a
-    licensing and provenance problem as much as a data problem. So `a`, `b`, `c` and
-    `d` are the caller's, and the same decision that keeps `Cd`, `Cv`, `f_T`, `k_ij`,
-    `kappa_1` and every pure-component constant out of the repository keeps these out
-    too.
+notes: >
+  The polynomial is standard and its form is not in doubt. **What is ours, and what
+  this entry is really about, is where the coefficients come from: nowhere.** This
+  library ships none. The equation's constants are per-component fitted data, and a
+  table of them is precisely the databank this library has decided not to have - a
+  licensing and provenance problem as much as a data problem. So `a`, `b`, `c` and
+  `d` are the caller's, and the same decision that keeps `Cd`, `Cv`, `f_T`, `k_ij`,
+  `kappa_1` and every pure-component constant out of the repository keeps these out
+  too.
 
-    # Why the polynomial is written against `T/1000`
+  # Why the polynomial is written against `T/1000`
 
-    The reference temperature is not decoration and it is not arbitrary. Published
-    coefficients are quoted for `Cp/R = A + B T + C T**2 + D T**3` with `T` in kelvin,
-    and the tabulated `B`, `C` and `D` are printed multiplied by `10**3`, `10**6` and
-    `10**9` respectively - exactly so that all four numbers come out dimensionless.
-    Writing the polynomial against `theta = T/(1000 K)` is the substitution that makes
-    that literal:
+  The reference temperature is not decoration and it is not arbitrary. Published
+  coefficients are quoted for `Cp/R = A + B T + C T**2 + D T**3` with `T` in kelvin,
+  and the tabulated `B`, `C` and `D` are printed multiplied by `10**3`, `10**6` and
+  `10**9` respectively - exactly so that all four numbers come out dimensionless.
+  Writing the polynomial against `theta = T/(1000 K)` is the substitution that makes
+  that literal:
 
-    ```text
-    A + B T + C T**2 + D T**3   =   A + (10**3 B) theta + (10**6 C) theta**2 + (10**9 D) theta**3
-    ```
+  ```text
+  A + B T + C T**2 + D T**3   =   A + (10**3 B) theta + (10**6 C) theta**2 + (10**9 D) theta**3
+  ```
 
-    so a caller copies the four numbers off a table straight into `a`, `b`, `c` and
-    `d`, and this calc needs **no unit for a polynomial coefficient at all**. A caller
-    whose table is quoted against a different reference converts once, by
-    `b_new = b * 1000/T_ref` and the same for `c` and `d`; the worked example below
-    spells that out.
+  so a caller copies the four numbers off a table straight into `a`, `b`, `c` and
+  `d`, and this calc needs **no unit for a polynomial coefficient at all**. A caller
+  whose table is quoted against a different reference converts once, by
+  `b_new = b * 1000/T_ref` and the same for `c` and `d`; the worked example below
+  spells that out.
 
-    # The one thing this calc can check, and it checks it
+  # The one thing this calc can check, and it checks it
 
-    A polynomial fitted over one temperature range is meaningless outside it, and the
-    way it fails is *silent*: a cubic with a negative leading coefficient eventually
-    turns over, and `Cp` goes **negative**, which no substance has. The value is then
-    fed into `integral Cp dT` and produces an enthalpy that is wrong by an amount
-    nobody can see. So a non-positive `Cp` is reported, as a warning rather than a
-    refusal - the arithmetic is well defined and inspecting the limit is a legitimate
-    thing to be doing - and there is a spec case at `T = 1000 K` whose only purpose is
-    to sit on the wrong side of that bound.
+  A polynomial fitted over one temperature range is meaningless outside it, and the
+  way it fails is *silent*: a cubic with a negative leading coefficient eventually
+  turns over, and `Cp` goes **negative**, which no substance has. The value is then
+  fed into `integral Cp dT` and produces an enthalpy that is wrong by an amount
+  nobody can see. So a non-positive `Cp` is reported, as a warning rather than a
+  refusal - the arithmetic is well defined and inspecting the limit is a legitimate
+  thing to be doing - and there is a spec case at `T = 1000 K` whose only purpose is
+  to sit on the wrong side of that bound.
 
-    Nothing here checks whether `T` is *inside* the range the coefficients were fitted
-    over. That range is the caller's and this library has no way to know it. It is the
-    single most likely way to get a wrong number out of this calc, and it is recorded
-    in `assumptions` for that reason.
+  Nothing here checks whether `T` is *inside* the range the coefficients were fitted
+  over. That range is the caller's and this library has no way to know it. It is the
+  single most likely way to get a wrong number out of this calc, and it is recorded
+  in `assumptions` for that reason.
 
-    # The gas constant is a definition
+  # The gas constant is a definition
 
-    `R = 8.31446261815324 J/(mol*K)` exactly - and note the digits beyond the ninth,
-    which are easy to lose. The 2019 SI redefinition makes `N_A` and `k_B` exact, so
-    `R` is their product rather than a measurement, and its decimal expansion does not
-    stop at the `8.314462618` that a table prints. This calc reads the same constant
-    `eos.pr_molar_volume` does, and the expected values below carry all of it: the
-    worked example's `cp` differs from `4.3875 * 8.314462618` in the tenth decimal,
-    which is exactly the difference a truncated gas constant would produce and is
-    invisible at any looser tolerance than the one this case declares.
+  `R = 8.31446261815324 J/(mol*K)` exactly - and note the digits beyond the ninth,
+  which are easy to lose. The 2019 SI redefinition makes `N_A` and `k_B` exact, so
+  `R` is their product rather than a measurement, and its decimal expansion does not
+  stop at the `8.314462618` that a table prints. This calc reads the same constant
+  `eos.pr_molar_volume` does, and the expected values below carry all of it: the
+  worked example's `cp` differs from `4.3875 * 8.314462618` in the tenth decimal,
+  which is exactly the difference a truncated gas constant would produce and is
+  invisible at any looser tolerance than the one this case declares.
+
 
 inputs:
   a:

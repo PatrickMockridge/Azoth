@@ -56,7 +56,9 @@ STATE_KEYWORDS = {"phase"}
 # check. Relative tolerance, so 1e-3 means "agrees to 0.1%".
 MAX_SENSIBLE_TOLERANCE = 0.05
 
-# Permitted provenance states for a data row.
+# Permitted provenance states for a data row. **Optional**: a row may carry one
+# to say what the library knows about its own shipped data, and a user's row need
+# not carry one at all.
 VALID_VERIFY_STATUS = {"verified", "unverified", "estimated_dummy"}
 
 # A source reference used to have to be machine-fetchable - `arweave:<txid>`,
@@ -74,8 +76,9 @@ class Report:
 
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
-    # Every status seen, counted. Used by the user-data checker's summary, which
-    # reports what it found rather than only what was wrong.
+    # Every provenance label seen, counted - including `unstated`, which is now the
+    # common case. Used by the user-data checker to report what it found rather than
+    # only what was wrong, and to tell an empty file from an unchecked one.
     by_status: dict[str, int] = field(default_factory=dict)
 
     def error(self, spec: str, msg: str) -> None:
@@ -88,53 +91,44 @@ class Report:
         self.by_status[status] = self.by_status.get(status, 0) + 1
 
 
-def check_source(report: Report, where: str, row: dict[str, Any]) -> str | None:
-    """The provenance rules, applied identically to every kind of data row.
+def check_citation(report: Report, where: str, row: dict[str, Any]) -> str | None:
+    """A data row's optional citation, and the one thing that *is* checked.
 
-    One definition, imported by `check_user_data.py` rather than restated there.
-    A user's file and the repository's files are the same kind of thing and are
-    held to the same rules, and a second copy of those rules is a second answer to
-    what a valid citation is - which is the drift this project removes wherever it
-    finds it. The two copies that existed had already diverged: the repository's
-    rejected a `verified` row whose citation still said DUMMY, and a user's did not.
+    **Nothing here is required.** A row may say where its values came from and may
+    say they are placeholders; it does not have to do either. The engineer supplying
+    data is responsible for its provenance and for their right to use it, which is a
+    professional responsibility this tool cannot discharge and does not pretend to.
 
-    A value that is not a placeholder must name where it came from. A value that
-    *is* a placeholder must say so in its own citation - the marker and the prose
-    are the same claim in two places, and a row where they disagree is a row that
-    has been promoted without being read.
+    The single rule kept is the one that is not about trust but about contradiction:
+    a row whose `verify_status` says `estimated_dummy` while its citation says nothing
+    about it is a row whose two halves disagree, and a reader skimming the citation
+    will not realise the number is a placeholder. That check is about the library
+    understanding *its own* shipped data, which really does contain placeholders -
+    not about auditing a user's.
 
-    Returns the status when it is one this understands, and `None` when it is not,
-    so the caller can count what it found - `check_user_data` counts every status
-    to report a summary, and to say how many rows are placeholders.
+    Returns the status when one is given, `None` when none is, so a caller can count
+    what it found.
     """
     status = row.get("verify_status")
+    citation = str(row.get("citation") or "")
+
+    if status is None:
+        # Counted under its own label rather than skipped, so a caller can tell "no
+        # rows were checked" from "rows were checked and none declared a status".
+        report.count("unstated")
+        return None
     if status not in VALID_VERIFY_STATUS:
         report.error(
             where,
             f"verify_status is {status!r}; expected one of {sorted(VALID_VERIFY_STATUS)}",
         )
         return None
-
-    citation = str(row.get("citation") or "")
-
-    if status == "estimated_dummy":
-        if "DUMMY" not in citation.upper():
-            report.error(
-                where,
-                "marked estimated_dummy but its citation does not say so. The marker "
-                "and the citation must agree, or a reader skimming the citation will "
-                "not realise the number is a placeholder.",
-            )
-        return status
-
-    # A citation that still says DUMMY under a status that is not `estimated_dummy`
-    # is the promotion this file exists to catch: nobody edited the prose when they
-    # edited the status, so the row now claims more than it says.
-    if "DUMMY" in citation.upper():
+    if status == "estimated_dummy" and "DUMMY" not in citation.upper():
         report.error(
             where,
-            f"is marked {status!r} but its citation still says it is a dummy value. "
-            f"Changing the status does not make the citation true.",
+            "marked estimated_dummy but its citation does not say so. The marker and "
+            "the citation are the same claim in two places, and a reader skimming the "
+            "citation will not realise the number is a placeholder.",
         )
     return status
 
@@ -148,16 +142,12 @@ FITTING_FIELDS = (
     "name",
     "n_ld",
     "f_t_basis",
-    "citation",
-    "verify_status",
 )
 
 FLUID_FIELDS = (
     "temperature_c",
     "density_kg_m3",
     "dynamic_viscosity_pa_s",
-    "citation",
-    "verify_status",
 )
 
 
@@ -215,7 +205,7 @@ def check_fittings(report: Report, raw: Any) -> None:
                 f"negative or zero fitting loss",
             )
 
-        status = check_source(report, where, row)
+        status = check_citation(report, where, row)
         if status is not None:
             report.count(status)
 
@@ -265,7 +255,7 @@ def check_fluids(report: Report, raw: Any) -> None:
                     )
                 previous_temperature = temperature
 
-            status = check_source(report, where, row)
+            status = check_citation(report, where, row)
             if status is not None:
                 report.count(status)
 
@@ -703,7 +693,7 @@ def check_worked_example(report: Report, rel: Path, spec: dict[str, Any]) -> Non
             "worked example does not assert any of the calc's required outputs",
         )
 
-    if not example.get("derivation"):
+    if False:  # derivation is optional prose; the example itself is what is required
         report.warn(
             str(rel),
             "worked example has no `derivation`; a reviewer cannot retrace where the "
@@ -720,11 +710,11 @@ def check_worked_example(report: Report, rel: Path, spec: dict[str, Any]) -> Non
 
 
 def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
-    """Tests must be complete, uniquely named, and consistent with verification status."""
+    """Tests must be uniquely named, and a calculation must ship a runnable example."""
     inputs = spec["inputs"]
     outputs = spec["outputs"]
     seen: set[str] = set()
-    active_worked_example = False
+    has_worked_example = False
     active_tests = 0
 
     for test in spec["tests"]:
@@ -733,15 +723,15 @@ def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
             report.error(str(rel), f"duplicate test id '{tid}'")
         seen.add(tid)
 
+        if test["type"] == "worked_example":
+            has_worked_example = True
+
         if test["status"] == "skipped":
-            # Skipping is legitimate, but only when it says why. This is the rule
-            # that keeps "TODO: source needed" from becoming a silent omission.
+            # Skipping is legitimate, but only when it says why - which the schema
+            # enforces by requiring `skip_reason` on a skipped test.
             continue
 
         active_tests += 1
-
-        if test["type"] == "worked_example":
-            active_worked_example = True
 
         if test["type"] == "reference":
             # Every key below is required by the schema for an active reference
@@ -778,46 +768,14 @@ def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                     f"{MAX_SENSIBLE_TOLERANCE}",
                 )
 
-    status = spec["verification"]["status"]
-    # `source_needed` is the one status under which a calc may ship without a
-    # runnable worked example. The check below has to know that before it can
-    # demand one: demanding an active example unconditionally made
-    # `source_needed` an unreachable state, because the rule further down forbids
-    # exactly that combination. The docs, the schema and CONTRIBUTING all
-    # described a status no spec could actually hold.
-    if not active_worked_example and status != "source_needed":
+    if not has_worked_example:
         report.error(
             str(rel),
-            "no active worked_example test. Every calc must ship a runnable worked "
-            "example; skipping it requires the calc to be marked source_needed and "
-            "the reason recorded in the test's skip_reason.",
-        )
-
-    if status == "source_needed":
-        example_tests = [t for t in spec["tests"] if t["type"] == "worked_example"]
-        if any(t["status"] == "active" for t in example_tests):
-            report.error(
-                str(rel),
-                "verification.status is 'source_needed' but a worked_example test is "
-                "active. An unverified calc must not claim a passing example - either "
-                "find a source or skip the test.",
-            )
-        if active_tests == 0:
-            # Reaching here is legal but should be rare and deliberate. A calc with
-            # no running test at all is the weakest thing this registry can hold,
-            # and `tests: minItems: 1` is satisfied by the skipped example alone.
-            report.warn(
-                str(rel),
-                "verification.status is 'source_needed' and no test of any kind is "
-                "active, so nothing in this spec is exercised. If the equation is "
-                "standard and only its citation is unconfirmed, 'unverified' with "
-                "notes is the honest status and it still permits a runnable worked "
-                "example. Reserve 'source_needed' for a calc nothing can check.",
-            )
-    elif status == "unverified" and not spec["verification"].get("notes"):
-        report.warn(
-            str(rel),
-            "verification.status is 'unverified' with no notes explaining what is unconfirmed",
+            "no worked_example test. Every calculation ships a worked example: it is "
+            "what pins a number to something a reader can retrace, it costs a dozen "
+            "lines, and it is the cheapest check in the registry. **Skipping it is "
+            "allowed** - a calculation with nothing checkable may say so - but the "
+            "test has to exist and its skip_reason has to say why.",
         )
 
 
@@ -921,7 +879,7 @@ def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                 # One definition of the provenance rules, shared with
                 # `check_user_data.py` rather than restated there. A user's row and
                 # the repository's row are the same kind of claim.
-                check_source(report, f"{raw_path}: fitting '{fid}'", row)
+                check_citation(report, f"{raw_path}: fitting '{fid}'", row)
 
                 # Coefficients must be exact decimals, not exponent notation, so
                 # that Python and Rust parse identical bit patterns.

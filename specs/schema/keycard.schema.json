@@ -2,8 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/keycard.schema.json",
   "title": "Azoth Keycard",
-  "description": "The file a user supplies to carry the values this library will not ship: licensed coefficients, a component databank, a model definition. It is the same mechanism as `azoth-data.example.yaml`, named and specified, and it exists because most of what a calculation needs is not copyrightable and some of it is - see `docs/src/copyright.md`. The provenance rules are `$ref`-ed from `calc.schema.json` rather than restated, so a user's row and the repository's row are one definition of what a valid citation is.",
+  "description": "The file a user supplies to extend or override what this library ships: components, fluids, fittings, coefficients, and declarative model definitions. It is the way to add to azoth without writing Rust or Python - a component, a fluid, a coefficient and a cubic variant are all data. **A keycard is the user's, and this library does not police it.** A row may carry a citation; nothing requires one and nothing validates one. The engineer supplying data is responsible for its provenance and for their right to use it, which is a professional responsibility no schema can discharge.",
   "type": "object",
+  "additionalProperties": false,
   "additionalProperties": false,
   "required": ["schema_version"],
   "properties": {
@@ -14,6 +15,7 @@
     "keyholder": {
       "description": "Who is asserting the right to use these values. Required, because a result computed from a keycard records whose keycard it was and the recording needs a name.",
       "type": "object",
+      "additionalProperties": false,
       "additionalProperties": false,
       "required": ["name"],
       "properties": {
@@ -34,20 +36,17 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "allOf": [
-          { "$ref": "calc.schema.json#/$defs/provenance_row" },
-          {
-            "type": "object",
-            "properties": {
-              "id": { "type": "string", "minLength": 1 },
-              "family": { "type": "string", "minLength": 1 },
-              "name": { "type": "string", "minLength": 1 },
-              "n_ld": { "type": "number", "exclusiveMinimum": 0 },
-              "f_t_basis": { "type": "string", "minLength": 1 }
-            },
-            "required": ["id", "family", "name", "n_ld", "f_t_basis"]
-          }
-        ]
+        "type": "object",
+        "properties": {
+          "citation": { "$ref": "calc.schema.json#/$defs/citation" },
+          "id": { "type": "string", "minLength": 1 },
+          "family": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "n_ld": { "type": "number", "exclusiveMinimum": 0 },
+          "f_t_basis": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false,
+        "required": ["id", "family", "name", "n_ld", "f_t_basis"]
       }
     },
     "fluids": {
@@ -58,18 +57,15 @@
         "type": "array",
         "minItems": 2,
         "items": {
-          "allOf": [
-            { "$ref": "calc.schema.json#/$defs/provenance_row" },
-            {
-              "type": "object",
-              "properties": {
-                "temperature_c": { "type": "number" },
-                "density_kg_m3": { "type": "number", "exclusiveMinimum": 0 },
-                "dynamic_viscosity_pa_s": { "type": "number", "exclusiveMinimum": 0 }
-              },
-              "required": ["temperature_c", "density_kg_m3", "dynamic_viscosity_pa_s"]
-            }
-          ]
+          "type": "object",
+          "properties": {
+            "citation": { "$ref": "calc.schema.json#/$defs/citation" },
+            "temperature_c": { "type": "number" },
+            "density_kg_m3": { "type": "number", "exclusiveMinimum": 0 },
+            "dynamic_viscosity_pa_s": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "additionalProperties": false,
+          "required": ["temperature_c", "density_kg_m3", "dynamic_viscosity_pa_s"]
         }
       }
     },
@@ -81,17 +77,14 @@
         "type": "object",
         "minProperties": 1,
         "additionalProperties": {
-          "allOf": [
-            { "$ref": "calc.schema.json#/$defs/provenance_row" },
-            {
-              "type": "object",
-              "properties": {
-                "value": { "type": "number" },
-                "unit": { "$ref": "calc.schema.json#/$defs/unit" }
-              },
-              "required": ["value", "unit"]
-            }
-          ]
+          "type": "object",
+          "properties": {
+            "citation": { "$ref": "calc.schema.json#/$defs/citation" },
+            "value": { "type": "number" },
+            "unit": { "$ref": "calc.schema.json#/$defs/unit" }
+          },
+          "additionalProperties": false,
+          "required": ["value", "unit"]
         }
       }
     },
@@ -103,24 +96,21 @@
         "type": "object",
         "minProperties": 1,
         "additionalProperties": {
-          "allOf": [
-            { "$ref": "calc.schema.json#/$defs/provenance_row" },
-            {
-              "type": "object",
-              "properties": {
-                "value": { "type": "number" },
-                "unit": {
-                  "$ref": "calc.schema.json#/$defs/unit",
-                  "description": "Required, and checked against the spec's declared unit for that input. It is the one silent-error risk the entry carries: a coefficient declared in the wrong unit is a factor with no symptom."
-                },
-                "convention": {
-                  "type": "string",
-                  "description": "Which convention the value is stated in, where the quantity is not a true ratio. `control_valve_cv`'s `Cv` is the case: it is declared `dimensionless` because no vocabulary unit can express `gpm/sqrt(psi)`, and that declaration is a fiction the warning carries instead."
-                }
-              },
-              "required": ["value", "unit"]
+          "type": "object",
+          "properties": {
+            "citation": { "$ref": "calc.schema.json#/$defs/citation" },
+            "value": { "type": "number" },
+            "unit": {
+              "$ref": "calc.schema.json#/$defs/unit",
+              "description": "Required, and checked against the spec's declared unit for that input. It is the one silent-error risk the entry carries: a coefficient declared in the wrong unit is a factor with no symptom."
+            },
+            "convention": {
+              "type": "string",
+              "description": "Which convention the value is stated in, where the quantity is not a true ratio. `control_valve_cv`'s `Cv` is the case: it is declared `dimensionless` because no vocabulary unit can express `gpm/sqrt(psi)`, and that declaration is a fiction the warning carries instead."
             }
-          ]
+          },
+          "additionalProperties": false,
+          "required": ["value", "unit"]
         }
       }
     },
@@ -130,6 +120,7 @@
       "minProperties": 1,
       "additionalProperties": {
         "type": "object",
+        "additionalProperties": false,
         "additionalProperties": false,
         "required": ["kind", "shape", "alpha", "mixing_rule", "components"],
         "properties": {
@@ -190,6 +181,7 @@
             "comment": "An alpha function that needs a parameter must be given it, or the schema accepts the choice and the implementation silently evaluates a different equation. **`required` is stated at both levels deliberately.** `properties` constrains a key only when it is present, so `then: {properties: {alpha_parameters: {required: [eta]}}}` does nothing at all to a model that omits `alpha_parameters` entirely - which is the normal way to write one for an alpha function that needs none. The outer `required` is what makes the inner one reachable, and the first version of this file omitted it. The test proved the constraint did not fire; reading it would not have.",
             "if": { "properties": { "alpha": { "const": "mathias_copeman" } }, "required": ["alpha"] },
             "then": {
+              "additionalProperties": false,
               "required": ["alpha_parameters"],
               "properties": { "alpha_parameters": { "required": ["eta"] } }
             }
@@ -197,6 +189,7 @@
           {
             "if": { "properties": { "alpha": { "const": "twu" } }, "required": ["alpha"] },
             "then": {
+              "additionalProperties": false,
               "required": ["alpha_parameters"],
               "properties": { "alpha_parameters": { "required": ["L", "M", "N"] } }
             }

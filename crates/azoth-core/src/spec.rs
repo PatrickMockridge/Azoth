@@ -176,8 +176,6 @@ pub struct SpecCheck {
 pub struct CalcSpec {
     /// Spec id, e.g. `hydraulics.darcy_weisbach`.
     pub id: &'static str,
-    /// `verified`, `unverified` or `source_needed`.
-    pub verification: &'static str,
     /// Bounds, in spec order.
     pub checks: &'static [SpecCheck],
     /// Present only for implicit calculations.
@@ -281,8 +279,6 @@ pub struct ModelAlgorithm {
 pub struct ModelSpec {
     /// Dotted identifier, e.g. `eos.pure_saturation`.
     pub id: &'static str,
-    /// `verified`, `unverified` or `source_needed`, as for a calc.
-    pub verification: &'static str,
     /// `procedure` or `direct` - what this spec fixes.
     ///
     /// A **procedure** is a loop, and [`Self::algorithm`] is present and is the whole

@@ -260,10 +260,27 @@ def render_header(title: str, *, statuses: dict[str, int], body: str) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _status(row: dict[str, Any]) -> str:
+    """The `verify_status` column value for a row, derived rather than asked for.
+
+    The shipped CSVs carry this column and the loaders read it, because a result
+    computed from placeholder data has to say so at the point of use - the file's
+    banner reaches a reader who opens the file, and the column reaches one who never
+    does.
+
+    **It is derived, not supplied.** A keycard row has no `verify_status`: the field
+    was a form nobody could check, required of every user, and it taught people to
+    fill it in. The one thing worth carrying is whether a value is a placeholder, and
+    a citation that says DUMMY already says that.
+    """
+    citation = str(row.get("citation") or "")
+    return "estimated_dummy" if "DUMMY" in citation.upper() else "unverified"
+
+
 def _statuses(rows: list[dict[str, Any]]) -> dict[str, int]:
     counts: dict[str, int] = {}
     for row in rows:
-        status = str(row["verify_status"])
+        status = _status(row)
         counts[status] = counts.get(status, 0) + 1
     return counts
 
@@ -281,7 +298,12 @@ def _write_rows(columns: tuple[str, ...], rows: list[dict[str, Any]]) -> str:
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow(columns)
     for row in rows:
-        writer.writerow([_cell(row.get(column)) for column in columns])
+        writer.writerow(
+            [
+                _cell(_status(row) if column == "verify_status" else row.get(column))
+                for column in columns
+            ]
+        )
     return buffer.getvalue()
 
 

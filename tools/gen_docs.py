@@ -121,26 +121,39 @@ def describe_source(spec: dict[str, Any]) -> str:
     return line
 
 
-def render_verification(spec: dict[str, Any]) -> str:
-    """The verification status, stated plainly rather than buried.
+def render_notes(spec: dict[str, Any]) -> str:
+    """The spec's notes, rendered for a reader.
 
-    A reader deciding whether to trust a number needs this above the fold, not in
-    a footnote. `source_needed` in particular means the calc should not be used.
+    This is where a spec records the reasoning a reader needs in order to judge a
+    number: where this implementation departs from the source it cites, why a
+    constant takes the value it does, and which claims are unconfirmed. Several
+    fields elsewhere in a spec point here by name, so leaving it unrendered would
+    make those pointers dead ends.
+
+    It is deliberately *not* a provenance status. There is no `verified` /
+    `unverified` field and nothing here is machine-checked - a note is prose, and
+    the engineer reading it decides what it is worth.
     """
-    status = spec["verification"]["status"]
-    label = {
-        "verified": "Verified against the primary source.",
-        "unverified": (
-            "**Unverified.** The equation is standard, but its citation has not been "
-            "checked against the primary source by a person."
-        ),
-        "source_needed": ("**No adequate source found.** Do not rely on this calculation."),
-    }[status]
-    notes = spec["verification"].get("notes", "").strip()
-    out = f"{label}\n"
-    if notes:
-        out += f"\n{notes}\n"
-    return out
+    notes = (spec.get("notes") or "").strip()
+    if not notes:
+        return ""
+
+    # Two rewrites, both because YAML's folded scalar (`>`) is not markdown.
+    #
+    # It folds every wrapped line into a space, so each surviving newline is a
+    # paragraph break - and markdown needs a blank line to see one. Without this
+    # the whole note renders as a single wall of text.
+    #
+    # And it keeps the author's `#` headings, which would otherwise land as level-1
+    # headings competing with the page title. Demoted two levels so they nest under
+    # the section this is rendered into.
+    paragraphs = []
+    for line in notes.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            line = f"###{stripped}"
+        paragraphs.append(line)
+    return "\n\n".join(paragraphs) + "\n"
 
 
 def render_table(rows: list[tuple[str, str, str]], headers: tuple[str, str, str]) -> str:
@@ -262,8 +275,10 @@ def render_calc(spec: dict[str, Any]) -> str:
     parts.append(f"In the form the library evaluates:\n\n```python\n{spec['equation']}\n```\n")
     parts.append("## Source\n")
     parts.append(describe_source(spec) + "\n")
-    parts.append("## Verification\n")
-    parts.append(render_verification(spec))
+    notes = render_notes(spec)
+    if notes:
+        parts.append("## Notes\n")
+        parts.append(notes)
 
     rows = [(f"`{name}`", *describe_quantity(d)) for name, d in spec["inputs"].items()]
     parts.append("## Inputs\n")
@@ -398,8 +413,8 @@ def render_algorithm(algorithm: dict[str, Any], level: int) -> str:
 def render_model(spec: dict[str, Any]) -> str:
     """A documentation page for one model.
 
-    Same shape as a calc page - source, verification, inputs, outputs, bounds,
-    assumptions, cases - with the algorithm block where a calc has its solver block.
+    Same shape as a calc page - source, inputs, outputs, bounds, assumptions, cases -
+    with the algorithm block where a calc has its solver block.
     The algorithm is the whole reason a model exists in a second spec tree, so it is
     rendered prominently rather than buried.
     """
@@ -411,8 +426,10 @@ def render_model(spec: dict[str, Any]) -> str:
         f"{spec['description'].strip()}\n\n",
         "## Source\n\n",
         f"{describe_source(spec)}\n\n",
-        render_verification(spec),
     ]
+    notes = render_notes(spec)
+    if notes:
+        parts.append(f"## Notes\n\n{notes}")
     if algorithm is None:
         # A direct model: vectors in, values out, no loop. The absence of an algorithm
         # block is the point, so it is stated rather than left as a missing section.

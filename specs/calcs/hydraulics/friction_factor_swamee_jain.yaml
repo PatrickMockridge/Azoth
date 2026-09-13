@@ -8,15 +8,14 @@ source:
   edition: "Journal of the Hydraulics Division, ASCE, 102(5), 657-664"
   equation: "\"Explicit equations for pipe-flow problems\""
 
-verification:
-  status: verified
-  notes: >
-    Citation confirmed: Swamee, P.K. and Jain, A.K. (1976), "Explicit equations
-    for pipe-flow problems", Journal of the Hydraulics Division, ASCE, 102(5),
-    657-664. This is the explicit approximation to the Colebrook equation, and is
-    provided alongside it so callers can trade a small accuracy loss for the
-    absence of an iteration. It is NOT a replacement for Colebrook in the sense
-    of being more correct - it is an approximation of it.
+notes: >
+  Citation confirmed: Swamee, P.K. and Jain, A.K. (1976), "Explicit equations
+  for pipe-flow problems", Journal of the Hydraulics Division, ASCE, 102(5),
+  657-664. This is the explicit approximation to the Colebrook equation, and is
+  provided alongside it so callers can trade a small accuracy loss for the
+  absence of an iteration. It is NOT a replacement for Colebrook in the sense
+  of being more correct - it is an approximation of it.
+
 
 inputs:
   re:

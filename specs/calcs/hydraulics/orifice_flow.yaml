@@ -5,59 +5,57 @@ latex: 'Q = C_d \frac{\pi d^{2}}{4} \sqrt{\frac{2\,\Delta P}{\rho}}'
 
 source:
   standard: "the orifice equation; ISO 5167 for the discharge coefficient, which this calc does not implement"
-  equation: "TODO: source needed"
 
-verification:
-  status: unverified
-  notes: >
-    The orifice equation is standard and is not in doubt. What has NOT been done is
-    checking this spec against a named source, so `source.equation` is TODO rather
-    than quoting an equation number.
+notes: >
+  The orifice equation is standard and is not in doubt. What has NOT been done is
+  checking this spec against a named source, so `source.equation` is left
+  unstated rather than quoting an equation number.
 
-    # The discharge coefficient is an input, and that is the point
+  # The discharge coefficient is an input, and that is the point
 
-    `Cd` is supplied by the caller. This calc does NOT compute it, and that is a
-    deliberate design decision rather than an omission.
+  `Cd` is supplied by the caller. This calc does NOT compute it, and that is a
+  deliberate design decision rather than an omission.
 
-    ISO 5167's discharge-coefficient equation is a long fitted expression whose
-    constants come from a table of experimental results. Reproducing that table is
-    exactly what this project's copyright rule forbids, and "just implementing the
-    equation" is how it would happen by accident. Making `Cd` an input keeps this
-    calc to the relation that is genuinely public - the flow through a restriction
-    is proportional to its area and to the square root of the pressure difference -
-    and leaves the fitted coefficient to a caller who has the standard.
+  ISO 5167's discharge-coefficient equation is a long fitted expression whose
+  constants come from a table of experimental results. Reproducing that table is
+  exactly what this project's copyright rule forbids, and "just implementing the
+  equation" is how it would happen by accident. Making `Cd` an input keeps this
+  calc to the relation that is genuinely public - the flow through a restriction
+  is proportional to its area and to the square root of the pressure difference -
+  and leaves the fitted coefficient to a caller who has the standard.
 
-    It is also the same shape as the rest of the registry: `f` is an input to
-    `darcy_weisbach`, `f_t` to `crane_k_factors`, and `eta` to `pump_power`. A
-    library that computed one of those and took the others would be inconsistent
-    about where its own responsibility stops.
+  It is also the same shape as the rest of the registry: `f` is an input to
+  `darcy_weisbach`, `f_t` to `crane_k_factors`, and `eta` to `pump_power`. A
+  library that computed one of those and took the others would be inconsistent
+  about where its own responsibility stops.
 
-    # Which `Cd`, and the velocity-of-approach factor
+  # Which `Cd`, and the velocity-of-approach factor
 
-    Different conventions fold different corrections into the coefficient. ISO 5167
-    uses a coefficient that already includes the velocity-of-approach factor
-    `1/sqrt(1 - beta**4)`; older texts write the two separately. This calc applies
-    `q = Cd * A * sqrt(2*dP/rho)` exactly as written and adds no factor of its own,
-    so the `Cd` a caller supplies must be the coefficient for *this* form. That is
-    stated on the input as well, because supplying the wrong convention's
-    coefficient is a silent error of a few per cent rather than a visible one.
+  Different conventions fold different corrections into the coefficient. ISO 5167
+  uses a coefficient that already includes the velocity-of-approach factor
+  `1/sqrt(1 - beta**4)`; older texts write the two separately. This calc applies
+  `q = Cd * A * sqrt(2*dP/rho)` exactly as written and adds no factor of its own,
+  so the `Cd` a caller supplies must be the coefficient for *this* form. That is
+  stated on the input as well, because supplying the wrong convention's
+  coefficient is a silent error of a few per cent rather than a visible one.
 
-    # Why there are no warning bounds
+  # Why there are no warning bounds
 
-    Third calc in a row with none, after `thermal.conduction_plane_wall` and
-    `hydraulics.pump_power`, and the same reasoning each time: the equation is exact
-    given its inputs, so there is no fitted range outside which it stops being
-    trustworthy. What varies is the caller's `Cd`, and the ranges over which a
-    standard's coefficient is valid are expressed in terms of the diameter ratio and
-    the Reynolds number - neither of which this calc has, so it could not check them
-    even if it wanted to. They are recorded as assumptions instead.
+  Third calc in a row with none, after `thermal.conduction_plane_wall` and
+  `hydraulics.pump_power`, and the same reasoning each time: the equation is exact
+  given its inputs, so there is no fitted range outside which it stops being
+  trustworthy. What varies is the caller's `Cd`, and the ranges over which a
+  standard's coefficient is valid are expressed in terms of the diameter ratio and
+  the Reynolds number - neither of which this calc has, so it could not check them
+  even if it wanted to. They are recorded as assumptions instead.
 
-    Putting a bound on, say, `Cd` would look like validation while asserting
-    something no source states here.
+  Putting a bound on, say, `Cd` would look like validation while asserting
+  something no source states here.
 
-    [Copyright and licensed data](../copyright.md) records this alongside every
-    other value the project cannot ship, and why a coefficient is an input here
-    rather than a table in the repository.
+  [Copyright and licensed data](../copyright.md) records this alongside every
+  other value the project cannot ship, and why a coefficient is an input here
+  rather than a table in the repository.
+
 
 inputs:
   d:
@@ -142,13 +140,13 @@ assumptions:
   - the orifice is a square-edged plate, and `Cd` describes that geometry. Other primaries - a nozzle, a Venturi, a cone - have different coefficients, and nothing here reveals which was meant.
   - "`Cd` is valid at this Reynolds number and this diameter ratio. A standard's coefficient is fitted over stated ranges of both, and this calc has neither, so it cannot check the coefficient it was handed. This is the assumption that most needs the caller's attention."
   - the pressure difference is measured between the tappings the coefficient is defined against. Corner, flange and D-and-D/2 tappings give different numbers for the same flow, and the coefficient differs accordingly.
-  - the approach velocity is accounted for either inside `Cd` or not at all - this calc adds no velocity-of-approach factor. See the note on conventions in `verification`.
+  - the approach velocity is accounted for either inside `Cd` or not at all - this calc adds no velocity-of-approach factor. See the note on conventions in `notes`.
   - steady flow, with no pulsation; an orifice in a pulsating flow reads a difference that is not the mean
   - fully developed, undisturbed velocity profile approaching the orifice. Close-coupled fittings or a partly closed valve upstream can change the coefficient substantially, and the required straight lengths are a standard's concern rather than this calc's.
 
 references:
   - "ISO 5167-1 and -2, Measurement of fluid flow by means of pressure differential devices - the standard for orifice plates and their discharge coefficients. Cited for context: this calc does NOT implement its coefficient, and no part of its tables or text is reproduced here."
-  - "The relation q = Cd * A * sqrt(2*dP/rho) is standard fluid mechanics and appears in every fluids text. No specific source is claimed - see `verification`."
+  - "The relation q = Cd * A * sqrt(2*dP/rho) is standard fluid mechanics and appears in every fluids text. No specific source is claimed - see `notes`."
 
 worked_example:
   source: derived from the equation above

@@ -131,7 +131,6 @@ static CONDUCTION_PLANE_WALL_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static CONDUCTION_PLANE_WALL_SPEC: CalcSpec = CalcSpec {
     id: "thermal.conduction_plane_wall",
-    verification: "unverified",
     checks: CONDUCTION_PLANE_WALL_CHECKS,
     solver: None,
     worked_example: TestCase {

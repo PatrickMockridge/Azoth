@@ -101,12 +101,17 @@ def check_document(report: Report, document: dict[str, Any], where: str) -> None
             f"nothing reads is data that looks in use and is not.",
         )
 
+    present = [name for name, _ in KNOWN_SECTIONS if name in document]
     for name, check in KNOWN_SECTIONS:
         if name in document:
             check(report, document[name])
 
-    if not report.by_status and not unknown:
-        report.error(where, "has neither a 'fittings' nor a 'fluids' section")
+    if not present and not unknown:
+        report.error(
+            where,
+            "has no data sections at all. A keycard with nothing in it is most often "
+            "a file that failed to save rather than a deliberate empty one.",
+        )
 
 
 def check(path: Path) -> int:

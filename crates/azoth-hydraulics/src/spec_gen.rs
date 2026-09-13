@@ -177,7 +177,6 @@ static CHOKED_FLOW_AREA_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static CHOKED_FLOW_AREA_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.choked_flow_area",
-    verification: "unverified",
     checks: CHOKED_FLOW_AREA_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -332,7 +331,6 @@ static CONTROL_VALVE_CV_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static CONTROL_VALVE_CV_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.control_valve_cv",
-    verification: "unverified",
     checks: CONTROL_VALVE_CV_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -425,7 +423,6 @@ static CRANE_K_FACTORS_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static CRANE_K_FACTORS_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.crane_k_factors",
-    verification: "unverified",
     checks: CRANE_K_FACTORS_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -637,7 +634,6 @@ static DARCY_WEISBACH_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static DARCY_WEISBACH_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.darcy_weisbach",
-    verification: "unverified",
     checks: DARCY_WEISBACH_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -780,7 +776,6 @@ static FRICTION_FACTOR_COLEBROOK_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static FRICTION_FACTOR_COLEBROOK_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.friction_factor_colebrook",
-    verification: "verified",
     checks: FRICTION_FACTOR_COLEBROOK_CHECKS,
     solver: Some(SolverSpec {
         kind: "fixed_point",
@@ -850,7 +845,7 @@ static FRICTION_FACTOR_HAALAND_CHECKS: &[SpecCheck] = &[
             band: Band::Outside,
             severity: Severity::Warning,
             code: WarningCode::OutOfValidRange,
-            rationale: "Below Re ~ 4000 the equation is outside turbulent pipe flow, which is the regime it approximates within Colebrook. It still returns a finite number - `log10` of a positive argument is defined everywhere the hard bounds allow - so this is a warning rather than an error, but that number is not covered by the accuracy claim. For laminar flow use f = 64/Re, which is a different equation and deliberately not part of this calc. This bound is the framework boundary already applied to Colebrook in this registry, not a figure read from Haaland's paper. See `verification`.",
+            rationale: "Below Re ~ 4000 the equation is outside turbulent pipe flow, which is the regime it approximates within Colebrook. It still returns a finite number - `log10` of a positive argument is defined everywhere the hard bounds allow - so this is a warning rather than an error, but that number is not covered by the accuracy claim. For laminar flow use f = 64/Re, which is a different equation and deliberately not part of this calc. This bound is the framework boundary already applied to Colebrook in this registry, not a figure read from Haaland's paper. See `notes`.",
         },
     },
     SpecCheck {
@@ -865,7 +860,7 @@ static FRICTION_FACTOR_HAALAND_CHECKS: &[SpecCheck] = &[
             band: Band::Outside,
             severity: Severity::Warning,
             code: WarningCode::OutOfValidRange,
-            rationale: "Above epsilon/D ~ 0.05 the Moody framework is no longer meaningful, and this library does not carry roughness data that large. The bound is inclusive because 0.05 is itself still inside the framework; it is the same bound and the same inclusive flag the Colebrook spec uses. See `verification` - it is the framework's bound, not Haaland's.",
+            rationale: "Above epsilon/D ~ 0.05 the Moody framework is no longer meaningful, and this library does not carry roughness data that large. The bound is inclusive because 0.05 is itself still inside the framework; it is the same bound and the same inclusive flag the Colebrook spec uses. See `notes` - it is the framework's bound, not Haaland's.",
         },
     },
 ];
@@ -923,7 +918,6 @@ static FRICTION_FACTOR_HAALAND_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static FRICTION_FACTOR_HAALAND_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.friction_factor_haaland",
-    verification: "unverified",
     checks: FRICTION_FACTOR_HAALAND_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -1090,7 +1084,6 @@ static FRICTION_FACTOR_SWAMEE_JAIN_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static FRICTION_FACTOR_SWAMEE_JAIN_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.friction_factor_swamee_jain",
-    verification: "verified",
     checks: FRICTION_FACTOR_SWAMEE_JAIN_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -1256,7 +1249,6 @@ static ORIFICE_FLOW_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static ORIFICE_FLOW_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.orifice_flow",
-    verification: "unverified",
     checks: ORIFICE_FLOW_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -1422,7 +1414,6 @@ static PUMP_POWER_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static PUMP_POWER_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.pump_power",
-    verification: "unverified",
     checks: PUMP_POWER_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -1560,7 +1551,6 @@ static REYNOLDS_NUMBER_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static REYNOLDS_NUMBER_SPEC: CalcSpec = CalcSpec {
     id: "hydraulics.reynolds_number",
-    verification: "unverified",
     checks: REYNOLDS_NUMBER_CHECKS,
     solver: None,
     worked_example: TestCase {

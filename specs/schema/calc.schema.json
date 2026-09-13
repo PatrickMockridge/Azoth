@@ -2,22 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/calc.schema.json",
   "title": "Azoth calculation spec",
-  "description": "A single calculation in the Azoth registry. Every calc must declare its equation, a source, the range in which it is validated, its assumptions, a worked example, and the tests that exercise it. Docs and tests are generated from these files, so this schema is the single source of truth.",
+  "description": "A single calculation in the Azoth registry. A calc must declare what it is called, the equation, its inputs and outputs, where the two implementations live, a worked example and the tests that exercise it. Docs and the registries are generated from these files, so this schema is the single source of truth. Everything else - a citation, a validated range, the assumptions, the LaTeX form - is **optional**, and a calc that has nothing to say about one of them simply omits it.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "id",
     "name",
     "equation",
-    "latex",
-    "source",
     "inputs",
     "outputs",
-    "valid_range",
-    "assumptions",
-    "references",
-    "worked_example",
     "implementations",
+    "worked_example",
     "tests"
   ],
   "properties": {
@@ -47,7 +42,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["standard"],
-      "description": "Where the equation comes from. The `equation` field here is the source's own equation number and may be 'TODO: source needed' when it cannot be verified.",
+      "description": "Where the equation comes from. Only `standard` is required. A source whose equation number or DOI is unknown omits those keys rather than writing a placeholder into them - a placeholder renders into the generated page as though it were a citation, which is worse than saying less.",
       "properties": {
         "standard": {
           "type": "string",
@@ -57,23 +52,10 @@
         "edition": { "type": "string" },
         "equation": {
           "type": "string",
-          "description": "Equation number within the source. Use 'TODO: source needed' if unverified."
+          "description": "Equation number within the source. Omit the key when the number is not known."
         },
         "doi": { "type": "string" },
         "url": { "type": "string", "format": "uri" }
-      }
-    },
-    "verification": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["status"],
-      "description": "Whether a human has verified this spec against its primary source. Drives whether tests may run (enforced by tools/spec_lint.py).",
-      "properties": {
-        "status": {
-          "enum": ["verified", "unverified", "source_needed"],
-          "description": "verified = checked against the primary source. unverified = equation is standard but the citation is not confirmed. source_needed = no adequate source found; the worked_example test must be skipped."
-        },
-        "notes": { "type": "string" }
       }
     },
     "inputs": {
@@ -199,43 +181,14 @@
     },
     "notes": {
       "type": "string",
-      "description": "Free-form reviewer notes. Not rendered in the docs."
+      "description": "Free-form notes on the calculation, rendered into its generated page as a `## Notes` section. This is where a spec records what a reader needs in order to judge a number: where the implementation departs from the source it cites, why a constant takes the value it does, and which claims are unconfirmed. Fields elsewhere in the spec point here by name. Deliberately not a status: nothing here is machine-checked and there is no `verified`/`unverified` vocabulary to fill in."
     }
   },
 
   "$defs": {
-    "provenance_row": {
-      "description": "One row of a data table: a value, and the claim made about where it came from. Shared with `keycard.schema.json`, which `$ref`s this definition rather than restating it, because a user's data row and the repository's are the same kind of claim. `tools/spec_lint.py::check_source` enforces the same rules on the CSV files, which no JSON Schema sees, and a test asserts the referenced object here is this one rather than a copy.",
-      "type": "object",
-      "properties": {
-        "citation": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Where the value came from, in prose, for a reader. This is the whole provenance record: a string naming the source. It used to be split across `citation`, a machine-fetchable `source_ref` in `arweave:`/`doi:`/`https:` form, and a `source_locator` giving the place inside the document - which was built to make a *single transcribed value* auditable, and became fiction when applied to a vendored databank of 258 rows whose provenance is institutional. A vendor, a version and a file name a source well enough."
-        },
-        "verify_status": {
-          "enum": ["verified", "unverified", "estimated_dummy"],
-          "description": "How far the value can be trusted. `verified` = read from the primary source by a named person; `unverified` = real and cited, but nobody here has checked it; `estimated_dummy` = a placeholder, not from any source. The middle case is the one that gets lost: 'not a placeholder' and 'trustworthy' are different claims."
-        }
-      },
-      "required": ["citation", "verify_status"],
-      "allOf": [
-        {
-          "comment": "A placeholder must say so in its own citation, and a citation that still says DUMMY under a status that is not `estimated_dummy` is the promotion case: nobody edited the prose when they edited the status, so the row now claims more than it says.",
-          "if": {
-            "properties": { "verify_status": { "const": "estimated_dummy" } },
-            "required": ["verify_status"]
-          },
-          "then": {
-            "properties": { "citation": { "type": "string", "pattern": "[Dd][Uu][Mm][Mm][Yy]" } }
-          },
-          "else": {
-            "properties": {
-              "citation": { "type": "string", "not": { "pattern": "[Dd][Uu][Mm][Mm][Yy]" } }
-            }
-          }
-        }
-      ]
+    "citation": {
+      "type": "string",
+      "description": "Where a value came from, for a reader. **Optional everywhere, and validated nowhere.** The engineer supplying data is responsible for knowing its provenance and whether they may use it - that is a professional responsibility a YAML linter cannot discharge, and one this library does not pretend to. What the library owes instead is disclosure: it says what it ships and where that came from (see NOTICE), and a result computed from a keycard records whose keycard it was. A field that was required and unenforceable taught people to fill it in rather than to know the answer."
     },
     "value": {
       "description": "A scalar quantity, or a list of identifiers for list-valued inputs such as a fitting list.",

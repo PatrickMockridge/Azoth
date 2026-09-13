@@ -155,7 +155,6 @@ static IDEAL_GAS_CP_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static IDEAL_GAS_CP_SPEC: CalcSpec = CalcSpec {
     id: "eos.ideal_gas_cp",
-    verification: "unverified",
     checks: IDEAL_GAS_CP_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -292,7 +291,6 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static PR_ALPHA_AB_SPEC: CalcSpec = CalcSpec {
     id: "eos.pr_alpha_ab",
-    verification: "unverified",
     checks: PR_ALPHA_AB_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -453,7 +451,6 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static PR_DEPARTURE_SPEC: CalcSpec = CalcSpec {
     id: "eos.pr_departure",
-    verification: "unverified",
     checks: PR_DEPARTURE_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -496,7 +493,7 @@ static PR_KAPPA_CHECKS: &[SpecCheck] = &[SpecCheck {
         band: Band::Outside,
         severity: Severity::Warning,
         code: WarningCode::OutOfValidRange,
-        rationale: "The polynomial passes through zero at two values of omega, the roots of 0.37464 + 1.54226*omega - 0.26992*omega**2 = 0: -0.23338349942403008 and 5.947150541510574. Below the lower one - and above the upper one, which no real fluid reaches - kappa is negative. That matters because kappa enters alpha = (1 + kappa*(1 - sqrt(Tr)))**2 as the coefficient of how fast the attraction weakens with temperature. For kappa > 0 the attraction weakens as Tr rises, which is the behaviour the function exists to model; for kappa < 0 it strengthens, which is not a physical statement about any fluid. The returned value is still the polynomial's value and is still returned - a warning, not a refusal - but it is no longer a Peng-Robinson attraction parameter. This fires for real fluids, not for a theoretical corner. Helium (omega = -0.385) is below the root and produces kappa = -0.259138992; hydrogen (-0.216) is just above it and produces kappa = +0.02891845248, a coefficient small enough that alpha is very nearly 1 at every temperature. That PR handles the quantum fluids poorly is well known, and this bound says so in a way a caller can branch on rather than in a footnote. The roots are stated to full precision rather than rounded because they are the boundary this bound is drawn at, and a reader checking where the sign changes should get the same answer this does. They are the roots of the quadratic as published; see `verification` for what that qualification means here.",
+        rationale: "The polynomial passes through zero at two values of omega, the roots of 0.37464 + 1.54226*omega - 0.26992*omega**2 = 0: -0.23338349942403008 and 5.947150541510574. Below the lower one - and above the upper one, which no real fluid reaches - kappa is negative. That matters because kappa enters alpha = (1 + kappa*(1 - sqrt(Tr)))**2 as the coefficient of how fast the attraction weakens with temperature. For kappa > 0 the attraction weakens as Tr rises, which is the behaviour the function exists to model; for kappa < 0 it strengthens, which is not a physical statement about any fluid. The returned value is still the polynomial's value and is still returned - a warning, not a refusal - but it is no longer a Peng-Robinson attraction parameter. This fires for real fluids, not for a theoretical corner. Helium (omega = -0.385) is below the root and produces kappa = -0.259138992; hydrogen (-0.216) is just above it and produces kappa = +0.02891845248, a coefficient small enough that alpha is very nearly 1 at every temperature. That PR handles the quantum fluids poorly is well known, and this bound says so in a way a caller can branch on rather than in a footnote. The roots are stated to full precision rather than rounded because they are the boundary this bound is drawn at, and a reader checking where the sign changes should get the same answer this does. They are the roots of the quadratic as published; see `notes` for what that qualification means here.",
     },
 }];
 
@@ -569,7 +566,6 @@ static PR_KAPPA_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static PR_KAPPA_SPEC: CalcSpec = CalcSpec {
     id: "eos.pr_kappa",
-    verification: "unverified",
     checks: PR_KAPPA_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -676,7 +672,6 @@ static PR_MASS_DENSITY_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static PR_MASS_DENSITY_SPEC: CalcSpec = CalcSpec {
     id: "eos.pr_mass_density",
-    verification: "unverified",
     checks: PR_MASS_DENSITY_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -816,7 +811,6 @@ static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static PR_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
     id: "eos.pr_molar_volume",
-    verification: "unverified",
     checks: PR_MOLAR_VOLUME_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -1007,7 +1001,6 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static PR_Z_FACTOR_SPEC: CalcSpec = CalcSpec {
     id: "eos.pr_z_factor",
-    verification: "unverified",
     checks: PR_Z_FACTOR_CHECKS,
     solver: Some(SolverSpec {
         kind: "cubic_roots",
@@ -1139,7 +1132,6 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static PRSV_KAPPA_SPEC: CalcSpec = CalcSpec {
     id: "eos.prsv_kappa",
-    verification: "unverified",
     checks: PRSV_KAPPA_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -1322,7 +1314,6 @@ static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static RACHFORD_RICE_BINARY_SPEC: CalcSpec = CalcSpec {
     id: "eos.rachford_rice_binary",
-    verification: "unverified",
     checks: RACHFORD_RICE_BINARY_CHECKS,
     solver: None,
     worked_example: TestCase {
@@ -1462,7 +1453,6 @@ static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
 /// rather than something to handle.
 pub static VDW1F_MIX_BINARY_SPEC: CalcSpec = CalcSpec {
     id: "eos.vdw1f_mix_binary",
-    verification: "unverified",
     checks: VDW1F_MIX_BINARY_CHECKS,
     solver: None,
     worked_example: TestCase {

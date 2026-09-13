@@ -6,19 +6,17 @@ latex: '\Delta P = f\,\frac{L}{D}\,\frac{\rho v^{2}}{2}'
 source:
   standard: Crane TP-410
   edition: "2013"
-  equation: "TODO: source needed"
 
-verification:
-  status: unverified
-  notes: >
-    The Darcy-Weisbach equation itself is entirely standard and is not in doubt -
-    it appears in every fluid mechanics text and is the basis of the L_eq/D method
-    Crane uses. What is unconfirmed is the specific equation number. The project
-    brief cited "Crane Eq. 3-2", but Crane TP-410's publicly documented numbering
-    for this relation is Eq. 1-6 / 1-7 (and the resistance-of-bends equation 2-20),
-    not 3-2, so the number is marked TODO rather than repeated. This spec is
-    therefore `unverified`: usable, but the citation needs a human with a copy of
-    the standard. See also the note on the worked example below.
+notes: >
+  The Darcy-Weisbach equation itself is entirely standard and is not in doubt -
+  it appears in every fluid mechanics text and is the basis of the L_eq/D method
+  Crane uses. What is unconfirmed is the specific equation number. The project
+  brief cited "Crane Eq. 3-2", but Crane TP-410's publicly documented numbering
+  for this relation is Eq. 1-6 / 1-7 (and the resistance-of-bends equation 2-20),
+  not 3-2, so the number is left unstated rather than repeated. This spec is
+  therefore `unverified`: usable, but the citation needs a human with a copy of
+  the standard. See also the note on the worked example below.
+
 
 inputs:
   f:
@@ -111,7 +109,7 @@ assumptions:
 references:
   - Darcy, H. (1857). "Recherches expérimentales relatives au mouvement de l'eau dans les tuyaux." Mallet-Bachelier, Paris.
   - Weisbach, J. (1845). "Lehrbuch der Ingenieur- und Maschinen-Mechanik." Vieweg, Braunschweig.
-  - Crane Technical Paper No. 410, "Flow of Fluids Through Valves, Fittings and Pipe" (2013) - uses the Darcy-Weisbach basis in its Eq. 1-6. The specific equation number cited by the project brief (3-2) could not be verified; see `verification` above.
+  - Crane Technical Paper No. 410, "Flow of Fluids Through Valves, Fittings and Pipe" (2013) - uses the Darcy-Weisbach basis in its Eq. 1-6. The specific equation number cited by the project brief (3-2) could not be verified; see `notes` above.
 
 worked_example:
   source: derived from the equation above
