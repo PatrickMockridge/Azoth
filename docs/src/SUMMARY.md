@@ -1,6 +1,7 @@
 # Summary
 
 - [azoth](./index.md)
+- [Specification](./spec.md)
 - [Equations of state](./eos/index.md)
   - [Ideal-gas heat capacity from a polynomial](./eos/ideal_gas_cp.md)
   - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)

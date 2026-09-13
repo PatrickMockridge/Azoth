@@ -482,6 +482,10 @@ def render_model(spec: dict[str, Any]) -> str:
 
 def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | None = None) -> str:
     out = "# Summary\n\n- [azoth](./index.md)\n"
+    # The specification sits directly under the index rather than in STATIC_PAGES,
+    # which would put it below twenty calculation pages. It is the page every other
+    # page defers to, and one a reader arrives at last is one they do not read.
+    out += "- [Specification](./spec.md)\n"
     by_namespace: dict[str, list[dict[str, Any]]] = {}
     for calc in calcs:
         by_namespace.setdefault(calc["id"].split(".")[0], []).append(calc)
