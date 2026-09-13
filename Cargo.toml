@@ -5,6 +5,7 @@ members = [
   "crates/azoth-test-support",
   "crates/azoth-hydraulics",
   "crates/azoth-thermal",
+  "crates/azoth-eos",
   "crates/azoth-python",
   "crates/azoth-cli",
 ]
@@ -23,6 +24,7 @@ azoth-core = { path = "crates/azoth-core" }
 azoth-test-support = { path = "crates/azoth-test-support" }
 azoth-hydraulics = { path = "crates/azoth-hydraulics" }
 azoth-thermal = { path = "crates/azoth-thermal" }
+azoth-eos = { path = "crates/azoth-eos" }
 azoth-python = { path = "crates/azoth-python" }
 azoth-cli = { path = "crates/azoth-cli" }
 

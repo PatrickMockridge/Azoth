@@ -104,6 +104,7 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.control_valve_cv` | Liquid flow through a control valve |
 | `hydraulics.choked_flow_area` | Throat area for a choked gas flow |
 | `thermal.conduction_plane_wall` | Steady conduction through a slab |
+| `eos.pr_kappa` | The Peng-Robinson alpha-function coefficient |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use

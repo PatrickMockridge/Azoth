@@ -1,6 +1,8 @@
 # Summary
 
 - [azoth](./index.md)
+- [Equations of state](./eos/index.md)
+  - [Peng-Robinson attraction-parameter coefficient](./eos/pr_kappa.md)
 - [Hydraulics](./hydraulics/index.md)
   - [Choked-flow throat area for an ideal gas](./hydraulics/choked_flow_area.md)
   - [Liquid flow through a control valve from its flow coefficient](./hydraulics/control_valve_cv.md)

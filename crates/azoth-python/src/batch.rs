@@ -28,6 +28,7 @@ use azoth_core::units::{
     cubic_meters_per_second, kelvin_intervals, kilograms_per_cubic_meter, kilograms_per_second,
     meters, meters_per_second, pascal_seconds, pascals, square_meters, watts_per_meter_kelvin,
 };
+use azoth_eos as eos;
 use azoth_hydraulics as hyd;
 use azoth_thermal as therm;
 use pyo3::prelude::*;
@@ -438,6 +439,20 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
                 q.push(r.q.value);
             }
             push_values(&mut columns, "q", "W", q);
+        }
+
+        "eos.pr_kappa" => {
+            let omega = take(&inputs, "omega")?;
+            let mut kappa = Vec::with_capacity(n);
+            for value in &omega {
+                // No unit wrapping in either direction: `omega` is a genuine
+                // dimensionless quantity, so it crosses as the number it is. That
+                // is the same rule that makes `f` and `re` plain floats in the
+                // hydraulics arms.
+                let r = element(py, eos::pr_kappa(*value), &mut warnings)?;
+                kappa.push(r.kappa);
+            }
+            push_values(&mut columns, "kappa", "dimensionless", kappa);
         }
 
         other => {

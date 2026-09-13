@@ -7,6 +7,7 @@ this deliberately does *not* do.
 
 * :mod:`azoth.batch.hydraulics` - the hydraulics calculations, batched
 * :mod:`azoth.batch.thermal` - the thermal calculations, batched
+* :mod:`azoth.batch.eos` - the equations-of-state calculations, batched
 
 # A batch call is a loop over the scalar kernels
 
@@ -30,6 +31,6 @@ excluded set is exactly that one, so the exclusion stays a decision.
 
 from __future__ import annotations
 
-from azoth.batch import hydraulics, thermal
+from azoth.batch import eos, hydraulics, thermal
 
-__all__ = ["hydraulics", "thermal"]
+__all__ = ["eos", "hydraulics", "thermal"]

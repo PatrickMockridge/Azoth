@@ -16,6 +16,7 @@ use azoth_core::CalcResult;
 use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
+use azoth_eos::results::PrKappaResult;
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -449,6 +450,47 @@ impl PyConductionPlaneWallResult {
     }
 }
 
+/// Result of `eos.pr_kappa`, transported.
+///
+/// Both the input and the output are dimensionless, so this carries a bare `f64`
+/// and no [`PyQty`] - the same shape `reynolds_number` uses, and the reason there
+/// is no unit string here to keep in step with the spec.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrKappaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrKappaResult {
+    /// The Peng-Robinson alpha-function coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub kappa: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrKappaResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrKappaResult(kappa={}, {} warning(s))",
+            self.kappa,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&PrKappaResult> for PyPrKappaResult {
+    fn from(r: &PrKappaResult) -> Self {
+        Self {
+            kappa: r.kappa,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&ConductionPlaneWallResult> for PyConductionPlaneWallResult {
     fn from(r: &ConductionPlaneWallResult) -> Self {
         Self {
@@ -664,6 +706,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ControlValveCvResult::CALC_ID => ControlValveCvResult::FIELDS.to_vec(),
         ChokedFlowAreaResult::CALC_ID => ChokedFlowAreaResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
+        PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -687,6 +730,7 @@ pub fn calc_ids() -> Vec<String> {
         ControlValveCvResult::CALC_ID.to_string(),
         ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
+        PrKappaResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),

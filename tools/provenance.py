@@ -104,6 +104,10 @@ NAMESPACE_SUPPORT = {
         "crates/azoth-thermal/src/spec_gen.rs",
         "crates/azoth-python/src/thermal.rs",
     ),
+    "eos": (
+        "crates/azoth-eos/src/spec_gen.rs",
+        "crates/azoth-python/src/eos.rs",
+    ),
 }
 
 #: Data files whose contents change results.

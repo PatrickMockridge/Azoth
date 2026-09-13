@@ -62,6 +62,10 @@ around it.
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)
 
+**Equations of state** - [`eos/index.md`](./eos/index.md):
+
+- [`eos.pr_kappa`](./eos/pr_kappa.md)
+
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`
 is the isentropic basis, with the standard's de-rating coefficients left to the caller.
 

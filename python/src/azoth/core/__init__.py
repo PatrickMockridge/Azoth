@@ -43,6 +43,7 @@ from azoth.core.result import (
     FlowRegime,
     KComponent,
     KFactorsResult,
+    PrKappaResult,
     ReynoldsNumberResult,
     SwameeJainResult,
 )
@@ -69,6 +70,7 @@ __all__ = [
     "KComponent",
     "KFactorsResult",
     "OutOfRangeError",
+    "PrKappaResult",
     "PropertyUnavailableError",
     "Q",
     "RangeCheck",

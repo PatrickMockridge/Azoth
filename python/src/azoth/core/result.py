@@ -226,6 +226,23 @@ class ConductionPlaneWallResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PrKappaResult(_HasWarnings):
+    """Result of ``eos.pr_kappa``.
+
+    Both the input and the output are dimensionless, so this is the first result
+    in the registry with no ``pint`` quantity in it at all - which is what an
+    equation of state written in reduced variables looks like at a boundary. There
+    is no conversion to get wrong because there is no unit to convert.
+    """
+
+    #: The Peng-Robinson alpha-function coefficient. Dimensionless, and a property
+    #: of the substance alone: no temperature, no pressure.
+    kappa: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """One fitting's contribution to the total resistance coefficient."""
 
@@ -282,4 +299,5 @@ RESULT_TYPES: dict[str, type[object]] = {
     "hydraulics.orifice_flow": OrificeFlowResult,
     "hydraulics.control_valve_cv": ControlValveCvResult,
     "hydraulics.choked_flow_area": ChokedFlowAreaResult,
+    "eos.pr_kappa": PrKappaResult,
 }

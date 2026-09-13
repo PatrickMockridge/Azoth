@@ -1,0 +1,74 @@
+"""Equations of state.
+
+The third namespace, and the first that is not a correlation over pipe or wall
+geometry. It exists because a cubic equation of state decomposes the same way every
+other calculation here does - into constitutive coefficients, each with a published
+source and a worked example - and the decomposition is worth having explicitly,
+since a wrong coefficient is invisible downstream.
+
+* :func:`pr_kappa` - the Peng-Robinson alpha-function coefficient
+
+# Why the coefficients come first
+
+The obvious shape for this namespace is one calc per equation of state, taking a
+component and returning a Z factor. That shape hides the constants: a transposed
+digit in the ``omega**2`` coefficient produces an equation that still runs, still
+converges and is slightly wrong everywhere, and no check on the Z factor can see
+it, because the Z factor is computed *from* the coefficient.
+
+Splitting the constitutive coefficients out gives each one its own spec, its own
+worked example and its own cross-language test. It also makes a modification cheap:
+Peng-Robinson-Stryjek-Vera changes the temperature dependence of ``kappa`` and
+nothing else, so under this decomposition it is one new calc rather than a fork of
+the whole chain.
+
+# Where the components come from
+
+Nowhere, deliberately. There is **no component databank** in this library: every
+pure-component constant - the acentric factor here, and the critical temperature
+and pressure that go with it - is supplied by the caller. A databank is a
+licensing and provenance problem as much as a data problem, and shipping one is a
+decision worth making on its own rather than in passing. The same reasoning
+already governs the fitting coefficients in :mod:`azoth.hydraulics`.
+
+# Dimensionless by construction
+
+Everything here works in reduced variables - ``Tr``, ``Pr``, and the dimensionless
+coefficients that follow from them. ``A = 0.45724 * alpha * Pr / Tr**2`` needs no
+gas constant, no pressure unit and no temperature unit, and the vapour-liquid
+mixing rule is linear in ``A`` and ``B`` exactly as it is in ``a`` and ``b``. So
+these functions take and return ``pint`` quantities that carry no unit, and the
+dimensional conversion happens once, at the boundary, where it can be tested once.
+
+# Which implementation answers
+
+As in every other namespace, each function dispatches to the Rust extension when it
+is built and to :mod:`azoth.eos.reference` otherwise. Both are always reachable -
+see :func:`azoth.backends` and :func:`azoth.use_backend`.
+"""
+
+from __future__ import annotations
+
+from azoth._dispatch import resolve
+from azoth.core.result import PrKappaResult
+
+__all__ = [
+    "pr_kappa",
+]
+
+_PR_KAPPA = "eos.pr_kappa"
+
+
+def pr_kappa(omega: float) -> PrKappaResult:
+    """The Peng-Robinson alpha-function coefficient for a pure component.
+
+    ``omega`` is the acentric factor, and a plain float rather than a ``pint``
+    quantity because it is genuinely dimensionless - the same rule that makes
+    ``Re``, ``f`` and ``epsilon/D`` plain floats in the hydraulics calcs. A
+    ``kappa`` below zero comes back carrying ``OUT_OF_VALID_RANGE`` rather than
+    raising: the coefficient is negative for any acentric factor below about
+    -0.2334, which helium is, and a value out of range is still a value.
+
+    See :func:`azoth.eos.reference.pr_kappa`.
+    """
+    return resolve(_PR_KAPPA)(omega=omega)  # type: ignore[no-any-return]

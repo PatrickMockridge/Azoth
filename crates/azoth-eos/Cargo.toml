@@ -1,0 +1,17 @@
+[package]
+name = "azoth-eos"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Equations of state: the Peng-Robinson constitutive coefficients"
+
+[dependencies]
+azoth-core.workspace = true
+
+[dev-dependencies]
+azoth-test-support.workspace = true
+
+[lints]
+workspace = true

@@ -36,6 +36,7 @@ from azoth.core.result import (
     KComponent,
     KFactorsResult,
     OrificeFlowResult,
+    PrKappaResult,
     PumpPowerResult,
     ReynoldsNumberResult,
     SwameeJainResult,
@@ -158,6 +159,18 @@ def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
     )
 
 
+def pr_kappa(omega: float) -> PrKappaResult:
+    """The Peng-Robinson attraction-parameter coefficient, computed in Rust.
+
+    No conversion in either direction: both this input and this output are
+    genuinely dimensionless, so the extension carries a bare float and there is no
+    unit string for the two implementations to disagree about. The acentric factor
+    crosses this boundary as the same number the callers on both sides used.
+    """
+    result = _core.pr_kappa(omega)
+    return PrKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
+
+
 def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     """Pump shaft power, computed in Rust."""
     result = _core.pump_power(
@@ -232,6 +245,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "hydraulics.control_valve_cv": control_valve_cv,
     "hydraulics.choked_flow_area": choked_flow_area,
     "thermal.conduction_plane_wall": conduction_plane_wall,
+    "eos.pr_kappa": pr_kappa,
 }
 
 
