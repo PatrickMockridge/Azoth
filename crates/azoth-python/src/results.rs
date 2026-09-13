@@ -17,8 +17,8 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrZFactorResult, PrsvKappaResult,
-    RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrZFactorResult, PrsvKappaResult, RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -757,6 +757,87 @@ impl From<&RachfordRiceBinaryResult> for PyRachfordRiceBinaryResult {
     }
 }
 
+/// Result of `eos.pr_molar_volume`, transported.
+///
+/// The only transport class in this namespace carrying a `PyQty`, because it is the
+/// only calc here that returns a dimensioned quantity.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrMolarVolumeResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrMolarVolumeResult {
+    /// Molar volume, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub v: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrMolarVolumeResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrMolarVolumeResult(v={} {})",
+            self.v.magnitude_si, self.v.unit
+        )
+    }
+}
+
+impl From<&PrMolarVolumeResult> for PyPrMolarVolumeResult {
+    fn from(r: &PrMolarVolumeResult) -> Self {
+        Self {
+            v: PyQty {
+                magnitude_si: r.v.value,
+                unit: "m**3/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_mass_density`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrMassDensityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrMassDensityResult {
+    /// Mass density, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub rho: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrMassDensityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrMassDensityResult(rho={} {})",
+            self.rho.magnitude_si, self.rho.unit
+        )
+    }
+}
+
+impl From<&PrMassDensityResult> for PyPrMassDensityResult {
+    fn from(r: &PrMassDensityResult) -> Self {
+        Self {
+            rho: PyQty {
+                magnitude_si: r.rho.value,
+                unit: "kg/m**3".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PrZFactorResult> for PyPrZFactorResult {
     fn from(r: &PrZFactorResult) -> Self {
         Self {
@@ -993,6 +1074,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrDepartureResult::CALC_ID => PrDepartureResult::FIELDS.to_vec(),
         Vdw1fMixBinaryResult::CALC_ID => Vdw1fMixBinaryResult::FIELDS.to_vec(),
         RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
+        PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
+        PrMassDensityResult::CALC_ID => PrMassDensityResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -1023,6 +1106,8 @@ pub fn calc_ids() -> Vec<String> {
         PrDepartureResult::CALC_ID.to_string(),
         Vdw1fMixBinaryResult::CALC_ID.to_string(),
         RachfordRiceBinaryResult::CALC_ID.to_string(),
+        PrMolarVolumeResult::CALC_ID.to_string(),
+        PrMassDensityResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),

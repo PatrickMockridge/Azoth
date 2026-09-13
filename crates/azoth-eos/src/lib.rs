@@ -10,6 +10,8 @@
 //! * [`pr_alpha_ab`] - the alpha function and the reduced attraction parameters
 //! * [`pr_z_factor`] - the compressibility factor, the cubic's real roots
 //! * [`pr_departure`] - fugacity coefficient and departure functions
+//! * [`pr_molar_volume`] - molar volume, the one dimensional quantity here
+//! * [`pr_mass_density`] - mass density, and the end of the path to something useful
 //! * [`prsv_kappa`] - the Stryjek-Vera coefficient, for the same alpha function
 //! * [`vdw1f_mix_binary`] - van der Waals one-fluid mixing for a binary
 //! * [`rachford_rice_binary`] - the vapour fraction that solves Rachford-Rice
@@ -40,6 +42,8 @@
 pub mod pr_alpha_ab;
 pub mod pr_departure;
 pub mod pr_kappa;
+pub mod pr_mass_density;
+pub mod pr_molar_volume;
 pub mod pr_z_factor;
 pub mod prsv_kappa;
 pub mod rachford_rice_binary;
@@ -50,11 +54,14 @@ pub mod vdw1f_mix_binary;
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
 pub use pr_departure::pr_departure;
 pub use pr_kappa::pr_kappa;
+pub use pr_mass_density::pr_mass_density;
+pub use pr_molar_volume::{MOLAR_GAS_CONSTANT, pr_molar_volume};
 pub use pr_z_factor::pr_z_factor;
 pub use prsv_kappa::prsv_kappa;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use results::{
-    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrZFactorResult, PrsvKappaResult,
-    RachfordRiceBinaryResult, RootStructure, Vdw1fMixBinaryResult,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrZFactorResult, PrsvKappaResult, RachfordRiceBinaryResult, RootStructure,
+    Vdw1fMixBinaryResult,
 };
 pub use vdw1f_mix_binary::vdw1f_mix_binary;

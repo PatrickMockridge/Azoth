@@ -40,16 +40,16 @@
 //! a ratio would be an abstraction with exactly one implementation.
 
 pub use uom::si::f64::{
-    Area, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate, MolarMass, Power,
-    Pressure, SpecificHeatCapacity, TemperatureInterval, ThermalConductivity,
+    Area, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate, MolarMass, MolarVolume,
+    Power, Pressure, SpecificHeatCapacity, TemperatureInterval, ThermalConductivity,
     ThermodynamicTemperature, Velocity, VolumeRate,
 };
 pub use uom::si::{
     area::square_meter, dynamic_viscosity::pascal_second,
     heat_transfer::watt_per_square_meter_kelvin, length::meter, length::millimeter,
     mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
-    molar_mass::kilogram_per_mole, power::watt, pressure::pascal,
-    specific_heat_capacity::joule_per_kilogram_kelvin,
+    molar_mass::kilogram_per_mole, molar_volume::cubic_meter_per_mole, power::watt,
+    pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
     temperature_interval::kelvin as kelvin_interval, thermal_conductivity::watt_per_meter_kelvin,
     thermodynamic_temperature::kelvin, velocity::meter_per_second,
     volume_rate::cubic_meter_per_second,
@@ -174,6 +174,15 @@ pub fn watts_per_square_meter_kelvin(value: f64) -> HeatTransfer {
     HeatTransfer::new::<watt_per_square_meter_kelvin>(value)
 }
 
+/// A molar volume in cubic metres per mole.
+///
+/// The namespace's first dimensional quantity, and the one that takes an equation
+/// of state from a compressibility factor to a volume.
+#[must_use]
+pub fn cubic_meters_per_mole(value: f64) -> MolarVolume {
+    MolarVolume::new::<cubic_meter_per_mole>(value)
+}
+
 /// A molar mass in kilograms per mole.
 #[must_use]
 pub fn kilograms_per_mole(value: f64) -> MolarMass {
@@ -209,6 +218,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "W/(m*K)",
     "W/(m**2*K)",
     "kg/mol",
+    "m**3/mol",
 ];
 
 #[cfg(test)]
@@ -274,6 +284,7 @@ mod tests {
             1.0,
         ),
         ("kg/mol", |v| kilograms_per_mole(v).value, 1.0),
+        ("m**3/mol", |v| cubic_meters_per_mole(v).value, 1.0),
     ];
 
     #[test]

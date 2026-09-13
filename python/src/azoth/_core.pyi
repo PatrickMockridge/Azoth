@@ -112,6 +112,16 @@ class PrKappaResult:
     warnings: list[Warning]
 
 @final
+class PrMolarVolumeResult:
+    v: Qty
+    warnings: list[Warning]
+
+@final
+class PrMassDensityResult:
+    rho: Qty
+    warnings: list[Warning]
+
+@final
 class Vdw1fMixBinaryResult:
     a_mix: float
     b_mix: float
@@ -210,6 +220,8 @@ def vdw1f_mix_binary(
     z1: float, a1: float, a2: float, b1: float, b2: float, k12: float
 ) -> Vdw1fMixBinaryResult: ...
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
+def pr_molar_volume(z: float, T: float, P: float) -> PrMolarVolumeResult: ...
+def pr_mass_density(M: float, v: float) -> PrMassDensityResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...

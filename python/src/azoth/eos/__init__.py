@@ -10,6 +10,8 @@ since a wrong coefficient is invisible downstream.
 * :func:`pr_alpha_ab` - the alpha function and the reduced attraction parameters
 * :func:`pr_departure` - fugacity coefficient and departure functions
 * :func:`pr_z_factor` - the compressibility factor, the cubic's real roots
+* :func:`pr_molar_volume` - molar volume, the one dimensional quantity here
+* :func:`pr_mass_density` - mass density, and the end of the path to something useful
 * :func:`prsv_kappa` - the Stryjek-Vera coefficient, for the same alpha function
 * :func:`vdw1f_mix_binary` - van der Waals one-fluid mixing for a binary
 * :func:`rachford_rice_binary` - the vapour fraction that solves Rachford-Rice
@@ -60,16 +62,21 @@ from azoth.core.result import (
     PrAlphaAbResult,
     PrDepartureResult,
     PrKappaResult,
+    PrMassDensityResult,
+    PrMolarVolumeResult,
     PrsvKappaResult,
     PrZFactorResult,
     RachfordRiceBinaryResult,
     Vdw1fMixBinaryResult,
 )
+from azoth.core.units import Q
 
 __all__ = [
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
+    "pr_mass_density",
+    "pr_molar_volume",
     "pr_z_factor",
     "prsv_kappa",
     "rachford_rice_binary",
@@ -77,6 +84,8 @@ __all__ = [
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
+_PR_MOLAR_VOLUME = "eos.pr_molar_volume"
+_PR_MASS_DENSITY = "eos.pr_mass_density"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DEPARTURE = "eos.pr_departure"
 _PR_Z_FACTOR = "eos.pr_z_factor"
@@ -197,3 +206,31 @@ def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryR
     See :func:`azoth.eos.reference.rachford_rice_binary`.
     """
     return resolve(_RACHFORD_RICE_BINARY)(z1=z1, K1=K1, K2=K2)  # type: ignore[no-any-return]
+
+
+def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:
+    """Molar volume at a state, from its compressibility factor.
+
+    Either admissible root may be passed to ``z`` - the vapour one gives the vapour
+    volume and the liquid one the liquid volume.
+
+    Raises:
+        OutOfRangeError: if ``z <= 0`` or if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.pr_molar_volume`.
+    """
+    return resolve(_PR_MOLAR_VOLUME)(z=z, T=T, P=P)  # type: ignore[no-any-return]
+
+
+def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
+    """Mass density from a molar mass and a molar volume.
+
+    ``M`` is the caller's - this library ships no component data - and note the unit
+    is ``kg/mol``, not the ``g/mol`` tables usually quote.
+
+    Raises:
+        OutOfRangeError: if ``M <= 0`` or ``v <= 0``.
+
+    See :func:`azoth.eos.reference.pr_mass_density`.
+    """
+    return resolve(_PR_MASS_DENSITY)(M=M, v=v)  # type: ignore[no-any-return]

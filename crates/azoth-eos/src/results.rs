@@ -5,6 +5,7 @@
 //! [`CalcResult::FIELDS`], with a test asserting the three agree. See
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
+use azoth_core::units::{MassDensity, MolarVolume};
 use azoth_core::{CalcResult, Warning};
 
 /// Result of `eos.pr_kappa`.
@@ -144,6 +145,42 @@ pub struct Vdw1fMixBinaryResult {
     pub b_mix: f64,
     /// Caveats.
     pub warnings: Vec<Warning>,
+}
+
+/// Result of `eos.pr_molar_volume`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrMolarVolumeResult {
+    /// Molar volume. The namespace's only dimensioned output.
+    pub v: MolarVolume,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrMolarVolumeResult {
+    const CALC_ID: &'static str = "eos.pr_molar_volume";
+    const FIELDS: &'static [&'static str] = &["v", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.pr_mass_density`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrMassDensityResult {
+    /// Mass density.
+    pub rho: MassDensity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrMassDensityResult {
+    const CALC_ID: &'static str = "eos.pr_mass_density";
+    const FIELDS: &'static [&'static str] = &["rho", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
 }
 
 impl CalcResult for Vdw1fMixBinaryResult {

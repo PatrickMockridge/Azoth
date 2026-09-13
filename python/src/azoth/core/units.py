@@ -117,6 +117,7 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     "W/(m*K)": "watt/(meter*kelvin)",
     "W/(m**2*K)": "watt/(meter**2*kelvin)",
     "kg/mol": "kilogram/mole",
+    "m**3/mol": "meter**3/mole",
 }
 
 

@@ -42,9 +42,10 @@ mod thermal;
 use results::{
     PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
     PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult, PyOrificeFlowResult,
-    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPumpPowerResult, PyQty, PyRachfordRiceBinaryResult, PyReynoldsNumberResult,
-    PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPumpPowerResult, PyQty,
+    PyRachfordRiceBinaryResult, PyReynoldsNumberResult, PySwameeJainResult, PyVdw1fMixBinaryResult,
+    PyWarning,
 };
 
 #[pymodule]
@@ -70,6 +71,8 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPrDepartureResult>()?;
     m.add_class::<PyVdw1fMixBinaryResult>()?;
     m.add_class::<PyRachfordRiceBinaryResult>()?;
+    m.add_class::<PyPrMolarVolumeResult>()?;
+    m.add_class::<PyPrMassDensityResult>()?;
     m.add_class::<PyPumpPowerResult>()?;
     m.add_class::<PyOrificeFlowResult>()?;
     m.add_class::<PyControlValveCvResult>()?;
@@ -111,6 +114,8 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pr_departure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::vdw1f_mix_binary, m)?)?;
     m.add_function(wrap_pyfunction!(eos::rachford_rice_binary, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_molar_volume, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_mass_density, m)?)?;
 
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;

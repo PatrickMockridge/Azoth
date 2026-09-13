@@ -26,6 +26,8 @@ __all__ = [
     "PrAlphaAbBatch",
     "PrDepartureBatch",
     "PrKappaBatch",
+    "PrMassDensityBatch",
+    "PrMolarVolumeBatch",
     "PrZFactorBatch",
     "PrsvKappaBatch",
     "RachfordRiceBinaryBatch",
@@ -33,6 +35,8 @@ __all__ = [
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
+    "pr_mass_density",
+    "pr_molar_volume",
     "pr_z_factor",
     "prsv_kappa",
     "rachford_rice_binary",
@@ -46,6 +50,8 @@ _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
+_PR_MOLAR_VOLUME = "eos.pr_molar_volume"
+_PR_MASS_DENSITY = "eos.pr_mass_density"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -383,5 +389,73 @@ def rachford_rice_binary(
             "K2": sequence(K2, "K2"),
         },
         _build_rachford_rice,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrMolarVolumeBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_molar_volume`."""
+
+    #: Molar volume per element.
+    v: array[float]
+
+
+def _build_molar_volume(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrMolarVolumeBatch:
+    return PrMolarVolumeBatch(warnings=warnings, units=units, v=columns["v"])  # type: ignore[arg-type]
+
+
+def pr_molar_volume(
+    *, z: Sequence[float], T: Sequence[float], P: Sequence[float]
+) -> PrMolarVolumeBatch:
+    """Molar volume, over arrays.
+
+    Plain numbers in the spec's canonical units - ``T`` in K and ``P`` in Pa - and SI
+    base magnitudes out, like every other batch call. See
+    :func:`azoth.eos.pr_molar_volume` for the calculation itself.
+    """
+    result: PrMolarVolumeBatch = run(
+        _PR_MOLAR_VOLUME,
+        {
+            "z": sequence(z, "z"),
+            "T": sequence(T, "T"),
+            "P": sequence(P, "P"),
+        },
+        _build_molar_volume,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrMassDensityBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_mass_density`."""
+
+    #: Mass density per element.
+    rho: array[float]
+
+
+def _build_mass_density(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrMassDensityBatch:
+    return PrMassDensityBatch(warnings=warnings, units=units, rho=columns["rho"])  # type: ignore[arg-type]
+
+
+def pr_mass_density(*, M: Sequence[float], v: Sequence[float]) -> PrMassDensityBatch:
+    """Mass density, over arrays.
+
+    ``M`` is in kg/mol in the spec's canonical unit, as the scalar API declares - a
+    batch call cannot check it, which is the one thing the batch API gives up and
+    ``docs/src/batch.md`` says so. See :func:`azoth.eos.pr_mass_density`.
+    """
+    result: PrMassDensityBatch = run(
+        _PR_MASS_DENSITY,
+        {"M": sequence(M, "M"), "v": sequence(v, "v")},
+        _build_mass_density,
     )
     return result

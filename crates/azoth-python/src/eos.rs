@@ -7,13 +7,15 @@
 //! so there is no conversion to do at the boundary and no unit string to keep in
 //! step with the spec.
 
+use azoth_core::units::{cubic_meters_per_mole, kelvins, kilograms_per_mole, pascals};
 use azoth_eos as eos;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyRachfordRiceBinaryResult,
+    PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -134,5 +136,34 @@ pub fn rachford_rice_binary(
 ) -> PyResult<PyRachfordRiceBinaryResult> {
     eos::rachford_rice_binary(z1, K1, K2)
         .map(|r| PyRachfordRiceBinaryResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Molar volume from a compressibility factor.
+///
+/// The one dimensional calc in this namespace, so unlike its neighbours this takes
+/// and returns SI magnitudes with units attached - `T` in kelvin and `P` in pascals
+/// in, a molar volume out.
+#[pyfunction]
+#[pyo3(signature = (z, T, P))]
+#[pyo3(text_signature = "(z, T, P)")]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the published equation
+pub fn pr_molar_volume(py: Python<'_>, z: f64, T: f64, P: f64) -> PyResult<PyPrMolarVolumeResult> {
+    eos::pr_molar_volume(z, kelvins(T), pascals(P))
+        .map(|r| PyPrMolarVolumeResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Mass density from a molar mass and a molar volume.
+///
+/// `M` is in kg/mol - not the g/mol a table would quote - and `v` in m**3/mol.
+/// Both are SI magnitudes crossing this boundary, converted once in Python.
+#[pyfunction]
+#[pyo3(signature = (M, v))]
+#[pyo3(text_signature = "(M, v)")]
+#[allow(non_snake_case)] // `M` is the symbol in the equation
+pub fn pr_mass_density(py: Python<'_>, M: f64, v: f64) -> PyResult<PyPrMassDensityResult> {
+    eos::pr_mass_density(kilograms_per_mole(M), cubic_meters_per_mole(v))
+        .map(|r| PyPrMassDensityResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

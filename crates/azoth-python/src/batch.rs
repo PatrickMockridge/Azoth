@@ -25,8 +25,9 @@
 
 use azoth_core::Warning;
 use azoth_core::units::{
-    cubic_meters_per_second, kelvin_intervals, kilograms_per_cubic_meter, kilograms_per_second,
-    meters, meters_per_second, pascal_seconds, pascals, square_meters, watts_per_meter_kelvin,
+    cubic_meters_per_mole, cubic_meters_per_second, kelvin_intervals, kelvins,
+    kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters, meters_per_second,
+    pascal_seconds, pascals, square_meters, watts_per_meter_kelvin,
 };
 use azoth_eos as eos;
 use azoth_hydraulics as hyd;
@@ -589,6 +590,38 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
                 beta.push(r.beta);
             }
             push_values(&mut columns, "beta", "dimensionless", beta);
+        }
+
+        "eos.pr_molar_volume" => {
+            let (z, t, p) = (
+                take(&inputs, "z")?,
+                take(&inputs, "T")?,
+                take(&inputs, "P")?,
+            );
+            let mut v = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::pr_molar_volume(z[i], kelvins(t[i]), pascals(p[i])),
+                    &mut warnings,
+                )?;
+                v.push(r.v.value);
+            }
+            push_values(&mut columns, "v", "m**3/mol", v);
+        }
+
+        "eos.pr_mass_density" => {
+            let (m, v) = (take(&inputs, "M")?, take(&inputs, "v")?);
+            let mut rho = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::pr_mass_density(kilograms_per_mole(m[i]), cubic_meters_per_mole(v[i])),
+                    &mut warnings,
+                )?;
+                rho.push(r.rho.value);
+            }
+            push_values(&mut columns, "rho", "kg/m**3", rho);
         }
 
         other => {

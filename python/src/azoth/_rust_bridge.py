@@ -39,6 +39,8 @@ from azoth.core.result import (
     PrAlphaAbResult,
     PrDepartureResult,
     PrKappaResult,
+    PrMassDensityResult,
+    PrMolarVolumeResult,
     PrsvKappaResult,
     PrZFactorResult,
     PumpPowerResult,
@@ -254,6 +256,43 @@ def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryR
     return RachfordRiceBinaryResult(beta=result.beta, warnings=_warnings(result.warnings))
 
 
+def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:
+    """Molar volume, computed in Rust.
+
+    One of the two dimensional calcs in this namespace, so unlike its neighbours it
+    converts: `T` and `P` to SI magnitudes on the way in, and the volume back to a
+    real pint quantity on the way out.
+    """
+    spec = _spec_for("eos.pr_molar_volume")
+    result = _core.pr_molar_volume(
+        z,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+    )
+    return PrMolarVolumeResult(
+        v=from_si(result.v.magnitude_si, result.v.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
+    """Mass density, computed in Rust.
+
+    `M` crosses as kg/mol, which is what the spec declares - a caller supplying the
+    g/mol a table quotes has already been refused by `to_si`'s dimensionality check
+    or has converted themselves, and there is no third case.
+    """
+    spec = _spec_for("eos.pr_mass_density")
+    result = _core.pr_mass_density(
+        input_to_si(spec, "M", M),
+        input_to_si(spec, "v", v),
+    )
+    return PrMassDensityResult(
+        rho=from_si(result.rho.magnitude_si, result.rho.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     """Pump shaft power, computed in Rust."""
     result = _core.pump_power(
@@ -335,6 +374,8 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.pr_departure": pr_departure,
     "eos.vdw1f_mix_binary": vdw1f_mix_binary,
     "eos.rachford_rice_binary": rachford_rice_binary,
+    "eos.pr_molar_volume": pr_molar_volume,
+    "eos.pr_mass_density": pr_mass_density,
 }
 
 

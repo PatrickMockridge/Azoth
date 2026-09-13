@@ -5,6 +5,8 @@
 //!   - specs/calcs/eos/pr_alpha_ab.yaml
 //!   - specs/calcs/eos/pr_departure.yaml
 //!   - specs/calcs/eos/pr_kappa.yaml
+//!   - specs/calcs/eos/pr_mass_density.yaml
+//!   - specs/calcs/eos/pr_molar_volume.yaml
 //!   - specs/calcs/eos/pr_z_factor.yaml
 //!   - specs/calcs/eos/prsv_kappa.yaml
 //!   - specs/calcs/eos/rachford_rice_binary.yaml
@@ -381,6 +383,226 @@ pub static PR_KAPPA_SPEC: CalcSpec = CalcSpec {
         expected: &[("kappa", 0.60282728832)],
     },
     tests: PR_KAPPA_TESTS,
+};
+
+/// Registry entry for `eos.pr_mass_density`.
+static PR_MASS_DENSITY_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "M",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A molar mass is a positive mass per amount of substance. Zero would give a density of zero for any volume, which is not a state; negative has no meaning at all. Note that this bound is on a *physical constant*, so it catches only the caller who passed something that is not a molar mass.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "v",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`v` is a divisor, and molar volume is strictly positive for any real state - `eos.pr_molar_volume` refuses a `z`, `T` or `P` that would make it otherwise. Zero is the zero-volume limit, which is arithmetic rather than a state.",
+        },
+    },
+];
+
+static PR_MASS_DENSITY_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "a_liquid_density_that_shows_the_equations_error",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("M", 0.0440956), ("v", 8.516118084951335e-05)],
+        lists: &[],
+        expected: &[("rho", 517.7899080323988)],
+    },
+    TestCase {
+        id: "doubling_the_molar_mass_doubles_the_density",
+        kind: "property",
+        property: Some("consistency_with"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+];
+
+/// Registered spec for `eos.pr_mass_density`.
+///
+/// Public and addressable directly, so a calc can hold `&PR_MASS_DENSITY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static PR_MASS_DENSITY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.pr_mass_density",
+    verification: "unverified",
+    checks: PR_MASS_DENSITY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "propane_vapour_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("M", 0.0440956), ("v", 0.0018317107825229842)],
+        lists: &[],
+        expected: &[("rho", 24.073451125981286)],
+    },
+    tests: PR_MASS_DENSITY_TESTS,
+};
+
+/// Registry entry for `eos.pr_molar_volume`.
+static PR_MOLAR_VOLUME_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "z",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A molar volume is positive, so a `z` at or below zero could only come from a caller who is not passing a compressibility factor. The cubic's admissible roots are all strictly above `b_reduced`, which is positive, so a `z` from `eos.pr_z_factor` always passes this - the bound is for the caller who computed one some other way.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states, and a negative one would give a negative volume",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`P` is a divisor, and zero pressure is the infinite-volume limit - which is arithmetic rather than a state this calc can answer for. A negative pressure would give a negative volume.",
+        },
+    },
+];
+
+static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "a_reference_for_the_liquid_root",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("z", 0.036765449656896015),
+            ("T", 295.864),
+            ("P", 1062000.0),
+        ],
+        lists: &[],
+        expected: &[("v", 8.516118084951335e-05)],
+    },
+    TestCase {
+        id: "the_ideal_gas_limit_is_z_of_one",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("z", 1.0), ("T", 300.0), ("P", 101325.0)],
+        lists: &[],
+        expected: &[("v", 0.024617209824287906)],
+    },
+    TestCase {
+        id: "monotonic",
+        kind: "property",
+        property: Some("monotonic"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+];
+
+/// Registered spec for `eos.pr_molar_volume`.
+///
+/// Public and addressable directly, so a calc can hold `&PR_MOLAR_VOLUME_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static PR_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
+    id: "eos.pr_molar_volume",
+    verification: "unverified",
+    checks: PR_MOLAR_VOLUME_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "propane_vapour_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("z", 0.7907789662973796), ("T", 295.864), ("P", 1062000.0)],
+        lists: &[],
+        expected: &[("v", 0.0018317107825229842)],
+    },
+    tests: PR_MOLAR_VOLUME_TESTS,
 };
 
 /// Registry entry for `eos.pr_z_factor`.
@@ -969,6 +1191,8 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &PR_ALPHA_AB_SPEC,
     &PR_DEPARTURE_SPEC,
     &PR_KAPPA_SPEC,
+    &PR_MASS_DENSITY_SPEC,
+    &PR_MOLAR_VOLUME_SPEC,
     &PR_Z_FACTOR_SPEC,
     &PRSV_KAPPA_SPEC,
     &RACHFORD_RICE_BINARY_SPEC,

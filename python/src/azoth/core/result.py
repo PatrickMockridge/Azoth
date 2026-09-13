@@ -262,6 +262,32 @@ class PrKappaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PrMolarVolumeResult(_HasWarnings):
+    """Result of ``eos.pr_molar_volume``.
+
+    The only result in this namespace carrying a ``pint`` quantity. Everything else
+    here is dimensionless, so this is where the boundary rule starts doing work
+    again.
+    """
+
+    #: Molar volume.
+    v: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PrMassDensityResult(_HasWarnings):
+    """Result of ``eos.pr_mass_density``."""
+
+    #: Mass density. Positive whenever the molar mass and volume are, which the
+    #: bounds ensure.
+    rho: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Vdw1fMixBinaryResult(_HasWarnings):
     """Result of ``eos.vdw1f_mix_binary``.
 
@@ -455,4 +481,6 @@ RESULT_TYPES: dict[str, type[object]] = {
     "eos.pr_departure": PrDepartureResult,
     "eos.vdw1f_mix_binary": Vdw1fMixBinaryResult,
     "eos.rachford_rice_binary": RachfordRiceBinaryResult,
+    "eos.pr_molar_volume": PrMolarVolumeResult,
+    "eos.pr_mass_density": PrMassDensityResult,
 }

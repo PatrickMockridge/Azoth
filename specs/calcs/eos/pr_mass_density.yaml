@@ -1,0 +1,173 @@
+id: eos.pr_mass_density
+name: Mass density from a molar volume
+equation: "rho = M/v"
+latex: '\rho = \frac{M}{v}'
+
+source:
+  standard: The definition of molar mass
+  edition: "Molar mass is the mass per amount of substance, so a mass density is a molar mass divided by a molar volume. There is no paper to cite for that."
+
+verification:
+  status: unverified
+  notes: >
+    `rho = M/v` is dimensional analysis rather than a correlation: a molar mass is
+    kilograms per mole, a molar volume is cubic metres per mole, and their ratio is
+    kilograms per cubic metre. There is nothing to verify against a source, and
+    saying so is more honest than attaching a citation to make the entry look like
+    the others.
+
+    # Why this is a calc rather than a line in the caller
+
+    It is one division, and the obvious question is why it earns a spec, two
+    implementations and a batch arm. Three reasons, and the third is the one that
+    decided it:
+
+    * It is the last step of the path a caller actually wants. `eos.pr_z_factor`
+      gives a compressibility factor, `eos.pr_molar_volume` turns it into a volume,
+      and this turns that into the density somebody asked for. Stopping one step
+      short would leave every caller writing the same division with units.
+    * The division has a unit on each side, so it is exactly the kind of step the
+      units layer exists to make safe: `M` in kg/mol over `v` in m**3/mol gives
+      kg/m**3, and passing a specific volume where a molar one was meant is a
+      `UnitMismatchError` rather than a wrong answer.
+    * **It gives `kg/mol` its first consumer.** That unit has been in the vocabulary
+      since the vocabulary was made checkable, with a correct conversion path and no
+      calculation using it - the same state `K` was in, which is what the unit
+      contract test was written to catch. A unit nothing uses is not a defect while
+      its conversion is tested, but it is a unit nobody has ever proved works
+      end to end through a real calculation. Now one has.
+
+    # What is NOT here
+
+    No component data. `M` is the caller's, and this library ships no molar masses -
+    the same decision every other calc in this namespace records. The worked example
+    uses propane's conventional value and says where it came from.
+
+inputs:
+  M:
+    unit: kg/mol
+    description: >
+      Molar mass of the substance. **Supplied by the caller** - this library ships no
+      component data, so there is nothing to look up. Note the unit: `kg/mol`, not
+      the `g/mol` that molar masses are usually quoted in, which is a factor of
+      `1000` waiting to catch someone.
+  v:
+    unit: m**3/mol
+    description: molar volume, from `eos.pr_molar_volume`
+
+outputs:
+  rho:
+    unit: kg/m**3
+    description: >
+      Mass density. Positive whenever `M` and `v` are, which the bounds below
+      ensure.
+
+valid_range:
+  - quantity: M
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      A molar mass is a positive mass per amount of substance. Zero would give a
+      density of zero for any volume, which is not a state; negative has no meaning
+      at all. Note that this bound is on a *physical constant*, so it catches only
+      the caller who passed something that is not a molar mass.
+
+  - quantity: v
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      `v` is a divisor, and molar volume is strictly positive for any real state -
+      `eos.pr_molar_volume` refuses a `z`, `T` or `P` that would make it otherwise.
+      Zero is the zero-volume limit, which is arithmetic rather than a state.
+
+assumptions:
+  - "`M` is the molar mass of the same substance `v` describes. NOT CHECKED, and not checkable: the two are independent inputs with no relation this calc can see, and passing one substance's molar mass with another's volume gives a density for no substance."
+  - "`M` is in `kg/mol`. A caller who supplies the `g/mol` figure most tables quote gets a density 1000 times too small. The units layer cannot catch this - both are plausible magnitudes of the same dimension - so it is stated here and in the input's description."
+  - the substance is a single phase and the volume is the phase the caller means. A density from a liquid root and one from a vapour root are both correct answers to different questions.
+
+references:
+  - 'BIPM. "The International System of Units (SI)", 9th edition (2019). (the mole and the kilogram, and therefore the units this calc divides)'
+
+worked_example:
+  source: derived from the equation above
+  derivation: >
+    The vapour state from `eos.pr_molar_volume`'s worked example, with propane's
+    conventional molar mass:
+
+      M = 0.0440956 kg/mol    (44.0956 g/mol, the value quoted for propane in the
+                               standard tables; a widely published fact, not read
+                               from a primary source here)
+      v = 0.0018317107825229842 m**3/mol
+
+      rho = 0.0440956 / 0.0018317107825229842 = 24.073451125981286 kg/m**3
+
+    which is a plausible vapour density for propane at 295.9 K and 10.6 bar. The
+    same arithmetic on the liquid root gives 517.8 kg/m**3, and the
+    `a_liquid_density_that_shows_the_equations_error` case below is where that is
+    discussed - this calc divides whatever it is given and takes no view.
+
+    A note on the input: `0.0440956 kg/mol` is `44.0956 g/mol` divided by a thousand,
+    and the division is the caller's. Writing the g/mol figure straight in would give
+    a density a thousand times too small, which is the failure the input's
+    description warns about and which no bound can catch.
+  inputs: { M: 0.0440956, v: 0.0018317107825229842 }
+  expected: { rho: 24.073451125981286 }
+  tolerance: 1.0e-12
+
+implementations:
+  python: azoth.eos.pr_mass_density
+  rust: azoth_eos::pr_mass_density
+
+tests:
+  - id: propane_vapour_worked_example
+    type: worked_example
+    status: active
+
+  - id: a_liquid_density_that_shows_the_equations_error
+    type: reference
+    status: active
+    source: >
+      Derived from the equation above, at the liquid root from
+      `eos.pr_molar_volume`'s first reference case:
+
+        rho = 0.0440956 / 8.516118084951335e-05 = 517.7899080323988 kg/m**3
+
+      Included for the same reason that case is: the answer is about 4.5% above what
+      a handbook gives for compressed liquid propane at this state, because a cubic
+      equation of state under-predicts liquid molar volume. This calc is exact for
+      what it is given - it is the `v` that carries the error, and the error is the
+      equation's.
+
+      The case exists so a caller meets that number here, next to the explanation,
+      rather than in a comparison against a handbook with no idea which step to
+      distrust.
+    inputs: { M: 0.0440956, v: 8.516118084951335e-05 }
+    expected: { rho: 517.7899080323988 }
+    tolerance: 1.0e-12
+
+  - id: doubling_the_molar_mass_doubles_the_density
+    type: property
+    property: consistency_with
+    status: active
+    note: >
+      `rho` is linear in `M` and inversely proportional to `v`, so doubling either
+      input's effect is exactly determined: twice the molar mass is twice the
+      density, twice the molar volume is half of it. A point-value case cannot tell a
+      correct formula from one with the two inputs swapped or with `M*v` instead of
+      `M/v`; these two relations can, and they use no reference value at all.
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: active
+    note: >
+      Unlike most of this namespace, both inputs and the output carry units, so this
+      is a real test. The same physical state described with `v` in `m**3/mol` and
+      with `v` in `cm**3/mol` must give the same density - and the conversion factor
+      is 1e-6, so an implementation that got it wrong fails by a factor of a million
+      rather than marginally.
+
+      It is also the second test to exercise `m**3/mol` and the first to exercise
+      `kg/mol` through a real calculation.
