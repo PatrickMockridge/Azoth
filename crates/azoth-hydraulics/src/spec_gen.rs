@@ -9,6 +9,11 @@
 //!   - specs/calcs/hydraulics/friction_factor_swamee_jain.yaml
 //!   - specs/calcs/hydraulics/reynolds_number.yaml
 //!
+//! Tables for the `hydraulics` namespace. Every namespace has its own generated
+//! file, because a crate is the unit of compilation and a calculation must be able
+//! to read its own bounds without depending on another namespace's crate. The
+//! types these tables are built from are shared - see `azoth_core::spec`.
+//!
 //! These tables are what make the specs authoritative at runtime rather than
 //! merely descriptive. Each calc reads its own range checks from here, so a
 //! bound changed in a spec file changes the code's behaviour with no second
@@ -17,13 +22,6 @@
 use azoth_core::{
     Band, CalcSpec, RangeCheck, Severity, SolverSpec, SpecCheck, TestCase, WarningCode,
 };
-
-// `CalcSpec`, `TestCase` and `SpecCheck` are declared in `azoth-core` rather than
-// generated here. They used to be emitted into this file, which was fine while
-// there was exactly one namespace and wrong as soon as there were two: each
-// namespace crate would generate its own distinct `CalcSpec`, and anything taking
-// `&CalcSpec` would accept only its own crate's copy. See `azoth_core::spec`.
-
 /// Registry entry for `hydraulics.crane_k_factors`.
 static CRANE_K_FACTORS_CHECKS: &[SpecCheck] = &[
     SpecCheck {

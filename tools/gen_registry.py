@@ -3,8 +3,17 @@
 
 Reads every spec under specs/calcs/ and emits:
 
-  crates/azoth-hydraulics/src/spec_gen.rs   specs as Rust statics
-  python/src/azoth/_registry_gen.py         specs as Python data
+  crates/azoth-<namespace>/src/spec_gen.rs   one file per namespace, as Rust statics
+  python/src/azoth/_registry_gen.py          every spec, as Python data
+
+The Rust side is split by namespace because a crate is the unit of compilation: a
+calc reads its bounds from a table in its own crate, and a crate must not have to
+depend on another namespace's crate to see its own spec. The types those tables are
+built from are shared, and live in `azoth_core::spec`.
+
+The Python side is one file. It all ships as one package, and `azoth.hydraulics`
+and `azoth.thermal` are subpackages of a single distribution, so there is nothing
+for a split to buy.
 
 Both outputs are committed and drift-checked in CI, so the specs are genuinely
 the single source of truth rather than a document that is supposed to match the
@@ -44,10 +53,46 @@ except ImportError:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
-RUST_OUT = ROOT / "crates" / "azoth-hydraulics" / "src" / "spec_gen.rs"
+CRATES_DIR = ROOT / "crates"
 PY_OUT = ROOT / "python" / "src" / "azoth" / "_registry_gen.py"
 
 GENERATED_BANNER = "GENERATED FILE - DO NOT EDIT BY HAND."
+
+
+def namespace_of(spec: dict[str, Any]) -> str:
+    """The namespace a spec belongs to, which is its id's first segment."""
+    namespace: str = spec["id"].split(".")[0]
+    return namespace
+
+
+def crate_for(namespace: str) -> str:
+    """The crate that owns a namespace's generated tables.
+
+    Derived rather than looked up in a hand-maintained map, so that adding a
+    namespace stays "add a directory under specs/calcs/" - the same rule the rest
+    of the tooling follows. A namespace whose crate does not exist is caught by
+    `rust_out_for` rather than silently writing tables into some default crate.
+    """
+    return f"azoth-{namespace.replace('_', '-')}"
+
+
+def rust_out_for(namespace: str) -> Path:
+    """Where a namespace's generated Rust tables live.
+
+    Fails rather than falling back. The fallback would be writing one namespace's
+    specs into another namespace's crate, which compiles, passes the drift check
+    against itself, and puts a calc's bounds in a crate that calc does not depend
+    on - so the file would simply never be read.
+    """
+    crate = crate_for(namespace)
+    source_dir = CRATES_DIR / crate / "src"
+    if not source_dir.is_dir():
+        sys.exit(
+            f"gen_registry: specs/calcs/{namespace}/ exists but crates/{crate}/src/ "
+            f"does not. A namespace needs a crate to generate into; either create "
+            f"crates/{crate}/, or the namespace is misspelled."
+        )
+    return source_dir / "spec_gen.rs"
 
 
 def rustfmt(source: str) -> str:
@@ -202,7 +247,7 @@ def emit_test_case(
     )
 
 
-def emit_rust(specs: list[dict[str, Any]], source_files: list[str]) -> str:
+def emit_rust(specs: list[dict[str, Any]], source_files: list[str], namespace: str) -> str:
     out: list[str] = []
     out.append(
         f"""//! {GENERATED_BANNER}
@@ -214,22 +259,23 @@ def emit_rust(specs: list[dict[str, Any]], source_files: list[str]) -> str:
     for src in source_files:
         out.append(f"//!   - {src}\n")
     out.append(
-        """//!
+        f"""//!
+//! Tables for the `{namespace}` namespace. Every namespace has its own generated
+//! file, because a crate is the unit of compilation and a calculation must be able
+//! to read its own bounds without depending on another namespace's crate. The
+//! types these tables are built from are shared - see `azoth_core::spec`.
+//!
 //! These tables are what make the specs authoritative at runtime rather than
 //! merely descriptive. Each calc reads its own range checks from here, so a
 //! bound changed in a spec file changes the code's behaviour with no second
 //! edit - and `cargo test` fails if the two ever disagree.
-
+"""
+    )
+    out.append(
+        """
 use azoth_core::{
     Band, CalcSpec, RangeCheck, Severity, SpecCheck, SolverSpec, TestCase, WarningCode,
 };
-
-// `CalcSpec`, `TestCase` and `SpecCheck` are declared in `azoth-core` rather than
-// generated here. They used to be emitted into this file, which was fine while
-// there was exactly one namespace and wrong as soon as there were two: each
-// namespace crate would generate its own distinct `CalcSpec`, and anything taking
-// `&CalcSpec` would accept only its own crate's copy. See `azoth_core::spec`.
-
 """
     )
 
@@ -417,21 +463,36 @@ def main() -> int:
     if not paths:
         sys.exit(f"gen_registry: no specs found under {SPEC_DIR}")
 
-    specs = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in paths]
-    specs.sort(key=lambda s: s["id"])
+    # Paired and sorted together. The specs used to be sorted by id while the
+    # source paths kept directory order - which happened to agree, because a
+    # namespace's directory name is also its id prefix, so the two orders always
+    # matched. The lists are consumed in parallel and are now split per namespace,
+    # so an accidental disagreement would attribute one namespace's spec files to
+    # another's tables and be very hard to see.
+    loaded: list[tuple[str, dict[str, Any]]] = [
+        (str(p.relative_to(ROOT)), yaml.safe_load(p.read_text(encoding="utf-8"))) for p in paths
+    ]
+    loaded.sort(key=lambda pair: pair[1]["id"])
 
     # Guard against two specs claiming the same id: the generated tables key on
     # it, and a duplicate would silently drop one calc from the registry.
-    ids = [s["id"] for s in specs]
+    ids = [spec["id"] for _, spec in loaded]
     duplicates = {i for i in ids if ids.count(i) > 1}
     if duplicates:
         sys.exit(f"gen_registry: duplicate calc id(s): {sorted(duplicates)}")
 
-    source_files = [str(p.relative_to(ROOT)) for p in paths]
-    outputs = {
-        RUST_OUT: rustfmt(emit_rust(specs, source_files)),
-        PY_OUT: emit_python(specs, source_files),
+    by_namespace: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+    for source_file, spec in loaded:
+        by_namespace.setdefault(namespace_of(spec), []).append((source_file, spec))
+
+    outputs: dict[Path, str] = {
+        PY_OUT: emit_python([spec for _, spec in loaded], [src for src, _ in loaded])
     }
+    for namespace in sorted(by_namespace):
+        entries = by_namespace[namespace]
+        outputs[rust_out_for(namespace)] = rustfmt(
+            emit_rust([spec for _, spec in entries], [src for src, _ in entries], namespace)
+        )
 
     stale: list[Path] = []
     for path, content in outputs.items():
@@ -449,12 +510,12 @@ def main() -> int:
                 print(f"gen_registry: {path.relative_to(ROOT)} is out of date", file=sys.stderr)
             print("Run `python tools/gen_registry.py` to regenerate.", file=sys.stderr)
             return 1
-        print(f"gen_registry: {len(specs)} spec(s), generated files up to date")
+        print(f"gen_registry: {len(loaded)} spec(s), generated files up to date")
         return 0
 
     for path in outputs:
         print(f"gen_registry: wrote {path.relative_to(ROOT)}")
-    print(f"gen_registry: {len(specs)} spec(s)")
+    print(f"gen_registry: {len(loaded)} spec(s)")
     return 0
 
 
