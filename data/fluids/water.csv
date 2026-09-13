@@ -1,0 +1,22 @@
+# chemeng fluid property table: liquid water at 1 atm
+#
+# Values are read from widely published engineering tables that trace back to
+# IAPWS-IF97 / NIST and the CRC Handbook. They are marked `unverified` because
+# they have been read from secondary public references rather than checked
+# against a primary formulation by a competent person - the same discipline the
+# fittings registry uses. They are NOT placeholders: unlike the Crane
+# coefficients, these are real published values. Interpolate with care between
+# points; water's viscosity varies by a factor of six across this range.
+#
+# verify_status values:
+#   unverified      - read from a secondary public reference, not checked against
+#                     the primary formulation
+#   verified        - checked against the primary formulation by a named person
+#
+temperature_c,density_kg_m3,dynamic_viscosity_pa_s,citation,verify_status
+0,999.8,0.001781,Widely published engineering table values consistent with IAPWS-IF97 / NIST and CRC Handbook,unverified
+20,998.2,0.001002,Widely published engineering table values consistent with IAPWS-IF97 / NIST and CRC Handbook,unverified
+40,992.2,0.000653,Widely published engineering table values consistent with IAPWS-IF97 / NIST and CRC Handbook,unverified
+60,983.2,0.000466,Widely published engineering table values consistent with IAPWS-IF97 / NIST and CRC Handbook,unverified
+80,971.8,0.000354,Widely published engineering table values consistent with IAPWS-IF97 / NIST and CRC Handbook,unverified
+100,958.4,0.000282,Widely published engineering table values consistent with IAPWS-IF97 / NIST and CRC Handbook,unverified

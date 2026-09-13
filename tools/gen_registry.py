@@ -390,7 +390,7 @@ impl CalcSpec {
         out.append("];\n\n")
 
         out.append(
-            f"""/// Registered spec for `{spec['id']}`.
+            f"""/// Registered spec for `{spec["id"]}`.
 ///
 /// Public and addressable directly, so a calc can hold `&{ident}_SPEC` with no
 /// lookup and no failure path. A calc whose spec is missing is a build-time
@@ -401,21 +401,30 @@ pub static {ident}_SPEC: CalcSpec = CalcSpec {{
     verification: {rust_str(spec["verification"]["status"])},
     checks: {ident}_CHECKS,
     solver: {solver_str},
-    worked_example: {emit_test_case(
-        test_id=spec["id"].split(".")[-1] + "_worked_example",
-        kind="worked_example",
-        status=next(
-            (t["status"] for t in spec["tests"] if t["type"] == "worked_example"),
-            "active",
-        ),
-        tolerance=example["tolerance"],
-        inputs=example["inputs"],
-        expected=example["expected"],
-        indent="        ",
-        # strip() leaves the trailing comma that emit_test_case adds for list
-        # elements; the template supplies its own, and two in a row will not
-        # compile.
-    ).strip().removesuffix(",")},
+    worked_example: {
+                emit_test_case(
+                    # The spec's own worked-example test id, not a synthesized one, so the two
+                    # languages report the same name for the same case.
+                    test_id=next(
+                        (t["id"] for t in spec["tests"] if t["type"] == "worked_example"),
+                        spec["id"].split(".")[-1] + "_worked_example",
+                    ),
+                    kind="worked_example",
+                    status=next(
+                        (t["status"] for t in spec["tests"] if t["type"] == "worked_example"),
+                        "active",
+                    ),
+                    tolerance=example["tolerance"],
+                    inputs=example["inputs"],
+                    expected=example["expected"],
+                    indent="        ",
+                    # strip() leaves the trailing comma that emit_test_case adds for list
+                    # elements; the template supplies its own, and two in a row will not
+                    # compile.
+                )
+                .strip()
+                .removesuffix(",")
+            },
     tests: {ident}_TESTS,
 }};
 

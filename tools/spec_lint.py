@@ -92,7 +92,9 @@ def load_fittings_csv(path: Path) -> dict[str, dict[str, str]]:
     return rows
 
 
-def check_schema(report: Report, validator: Draft202012Validator) -> list[tuple[Path, dict[str, Any]]]:
+def check_schema(
+    report: Report, validator: Draft202012Validator
+) -> list[tuple[Path, dict[str, Any]]]:
     """Validate each spec against the JSON Schema. Returns the ones that parsed."""
     parsed: list[tuple[Path, dict[str, Any]]] = []
     specs = sorted(SPEC_DIR.rglob("*.yaml"))
@@ -173,15 +175,63 @@ def check_identifier_names(report: Report, rel: Path, spec: dict[str, Any]) -> N
 
     legal = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
     snake = re.compile(r"^[a-z][a-z0-9_]*$")
-    keywords = set(keyword.kwlist) | set(keyword.softkwlist) | {
-        # Rust keywords that would break a parameter or field name.
-        "as", "break", "const", "continue", "crate", "else", "enum", "extern",
-        "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod",
-        "move", "mut", "pub", "ref", "return", "self", "static", "struct",
-        "super", "trait", "true", "type", "unsafe", "use", "where", "while",
-        "async", "await", "dyn", "abstract", "become", "box", "do", "final",
-        "macro", "override", "priv", "try", "typeof", "unsized", "virtual", "yield",
-    }
+    keywords = (
+        set(keyword.kwlist)
+        | set(keyword.softkwlist)
+        | {
+            # Rust keywords that would break a parameter or field name.
+            "as",
+            "break",
+            "const",
+            "continue",
+            "crate",
+            "else",
+            "enum",
+            "extern",
+            "false",
+            "fn",
+            "for",
+            "if",
+            "impl",
+            "in",
+            "let",
+            "loop",
+            "match",
+            "mod",
+            "move",
+            "mut",
+            "pub",
+            "ref",
+            "return",
+            "self",
+            "static",
+            "struct",
+            "super",
+            "trait",
+            "true",
+            "type",
+            "unsafe",
+            "use",
+            "where",
+            "while",
+            "async",
+            "await",
+            "dyn",
+            "abstract",
+            "become",
+            "box",
+            "do",
+            "final",
+            "macro",
+            "override",
+            "priv",
+            "try",
+            "typeof",
+            "unsized",
+            "virtual",
+            "yield",
+        }
+    )
 
     for section in ("inputs", "outputs"):
         for name in spec[section]:
@@ -400,8 +450,7 @@ def check_tests(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     elif status == "unverified" and not spec["verification"].get("notes"):
         report.warn(
             str(rel),
-            "verification.status is 'unverified' with no notes explaining what is "
-            "unconfirmed",
+            "verification.status is 'unverified' with no notes explaining what is unconfirmed",
         )
 
 
@@ -419,9 +468,9 @@ def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
         if test["status"] == "active" and test["type"] == "reference":
             collect(test.get("inputs", {}))
 
-    needs_fittings = any(
-        d.get("type") == "fitting_list" for d in spec["inputs"].values()
-    ) or bool(fittings_used)
+    needs_fittings = any(d.get("type") == "fitting_list" for d in spec["inputs"].values()) or bool(
+        fittings_used
+    )
 
     data = spec.get("data", {})
     if needs_fittings and "fittings" not in data:
@@ -458,9 +507,7 @@ def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                     report.error(str(rel), f"{raw_path}: fitting '{fid}' has non-numeric n_ld")
                     continue
                 if n_ld <= 0:
-                    report.error(
-                        str(rel), f"{raw_path}: fitting '{fid}' has non-positive n_ld"
-                    )
+                    report.error(str(rel), f"{raw_path}: fitting '{fid}' has non-positive n_ld")
 
                 status = row.get("verify_status")
                 if status not in VALID_VERIFY_STATUS:
@@ -470,9 +517,7 @@ def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                         f"expected one of {sorted(VALID_VERIFY_STATUS)}",
                     )
                 elif status == "estimated_dummy":
-                    report.estimated_rows[raw_path] = (
-                        report.estimated_rows.get(raw_path, 0) + 1
-                    )
+                    report.estimated_rows[raw_path] = report.estimated_rows.get(raw_path, 0) + 1
                     # A row cannot simultaneously be a placeholder and verified.
                     # This is the copy-paste that would silently promote dummy
                     # data to trusted data.

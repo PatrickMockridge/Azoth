@@ -206,7 +206,7 @@ pub static CRANE_K_FACTORS_SPEC: CalcSpec = CalcSpec {
     checks: CRANE_K_FACTORS_CHECKS,
     solver: None,
     worked_example: TestCase {
-        id: "crane_k_factors_worked_example",
+        id: "elbow_and_gate_valve_worked_example",
         kind: "worked_example",
         property: None,
         status: "active",
@@ -394,7 +394,7 @@ pub static DARCY_WEISBACH_SPEC: CalcSpec = CalcSpec {
     checks: DARCY_WEISBACH_CHECKS,
     solver: None,
     worked_example: TestCase {
-        id: "darcy_weisbach_worked_example",
+        id: "derived_worked_example",
         kind: "worked_example",
         property: None,
         status: "active",
@@ -527,7 +527,7 @@ pub static FRICTION_FACTOR_COLEBROOK_SPEC: CalcSpec = CalcSpec {
         convergence: "relative",
     }),
     worked_example: TestCase {
-        id: "friction_factor_colebrook_worked_example",
+        id: "commercial_steel_worked_example",
         kind: "worked_example",
         property: None,
         status: "active",
@@ -676,7 +676,7 @@ pub static FRICTION_FACTOR_SWAMEE_JAIN_SPEC: CalcSpec = CalcSpec {
     checks: FRICTION_FACTOR_SWAMEE_JAIN_CHECKS,
     solver: None,
     worked_example: TestCase {
-        id: "friction_factor_swamee_jain_worked_example",
+        id: "commercial_steel_worked_example",
         kind: "worked_example",
         property: None,
         status: "active",
@@ -800,7 +800,7 @@ pub static REYNOLDS_NUMBER_SPEC: CalcSpec = CalcSpec {
     checks: REYNOLDS_NUMBER_CHECKS,
     solver: None,
     worked_example: TestCase {
-        id: "reynolds_number_worked_example",
+        id: "water_pipe_worked_example",
         kind: "worked_example",
         property: None,
         status: "active",

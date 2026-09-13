@@ -1,0 +1,132 @@
+[build-system]
+# maturin, because the Rust core is exposed as a compiled extension module.
+# Until `crates/chemeng-python` is built, `pip install .` will fail - which is
+# expected, and is why pytest is configured with `pythonpath` below so the test
+# suite runs against the source tree without needing an install at all.
+requires = ["maturin>=1.15,<2"]
+build-backend = "maturin"
+
+[project]
+name = "chemeng"
+version = "0.1.0"
+description = "Open, validated, citable chemical engineering calculations"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT OR Apache-2.0"
+authors = [{ name = "chemeng contributors" }]
+keywords = ["chemical-engineering", "hydraulics", "fluid-mechanics", "engineering", "validation"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Rust",
+  "Topic :: Scientific/Engineering :: Chemistry",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+  # Units. The whole public API speaks pint quantities, so this is not optional.
+  "pint>=0.24",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "ruff>=0.9",
+  "mypy>=1.13",
+  # The spec tools read YAML. Listed here because the test suite shells out to
+  # `tools/gen_registry.py --check`, so a dev environment without it fails a test
+  # rather than skipping one.
+  "pyyaml>=6",
+]
+
+[project.urls]
+Homepage = "https://github.com/placeholder/chemeng"
+Documentation = "https://github.com/placeholder/chemeng/tree/main/docs"
+
+[tool.maturin]
+# Mixed Rust/Python layout: the Rust extension is one private module inside the
+# Python package, not a package of its own.
+python-source = "python"
+module-name = "chemeng._core"
+manifest-path = "crates/chemeng-python/Cargo.toml"
+features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+testpaths = ["python/tests"]
+# Import `chemeng` straight from the source tree, so the suite runs without an
+# editable install and without the Rust extension having been built.
+# `python/tests` is on the path too, so the shared `_helpers` module is
+# importable from every test file without making the test tree a package.
+pythonpath = ["python/src", "python/tests"]
+addopts = "-q --strict-markers --strict-config"
+markers = [
+  "requires_rust: test needs the compiled chemeng._core extension",
+]
+filterwarnings = ["error"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["python/src", "python/tests"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W",   # pycodestyle
+  "F",        # pyflakes
+  "I",        # isort
+  "UP",       # pyupgrade
+  "B",        # flake8-bugbear
+  "SIM",      # flake8-simplify
+  "RUF",      # ruff-specific
+  "PTH",      # flake8-use-pathlib
+  "RET",      # flake8-return
+  "ARG",      # unused arguments
+  "TID",      # tidy imports
+]
+ignore = [
+  # Physical quantity names are short by convention (L, D, Re, mu) and match the
+  # symbols in the published equations the calcs are transcribed from.
+  "E741",     # ambiguous variable name, e.g. `l`
+]
+
+[tool.ruff.format]
+# The generated registry is the generator's output and must stay byte-identical
+# to it, because `tools/gen_registry.py --check` is a CI gate. Letting the
+# formatter rewrite it would make that gate fail for a purely cosmetic reason.
+# It is still *linted* - see the per-file ignore below - just not reformatted.
+exclude = ["python/src/chemeng/_registry_gen.py"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests legitimately hard-code expected numbers and use long assertion messages.
+"python/tests/**" = ["ARG001", "ARG002"]
+# Generated from the specs. Its values are repr()s of spec contents, so line
+# length is not something the generator controls and not something a reader
+# benefits from wrapping. Correctness of this file is asserted by
+# test_registry_contract.py, not by a linter.
+"python/src/chemeng/_registry_gen.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "python/src"
+# Both the library and its tests are held to strict. Test code reading the
+# generated registry has to reach for `Any` in places, but that is done
+# explicitly at those points rather than by relaxing the whole suite.
+files = ["python/src", "python/tests"]
+strict = true
+warn_unreachable = true
+warn_unused_ignores = true
+show_error_codes = true
+# Generated from the specs; its structure is asserted by tests rather than typed.
+exclude = ["python/src/chemeng/_registry_gen\\.py"]
+
+[[tool.mypy.overrides]]
+# pint ships type information that does not survive `--strict` cleanly: its
+# Quantity is generic, and every bare `Quantity` becomes a [type-arg] error.
+# The wrapper in chemeng.core.units confines that to one module and exposes a
+# single `Q = Quantity[float]` alias, so the rest of the package is fully typed.
+module = ["pint", "pint.*"]
+follow_untyped_imports = false
+
+[[tool.mypy.overrides]]
+module = ["chemeng._registry_gen"]
+ignore_errors = true

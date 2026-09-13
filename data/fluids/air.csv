@@ -1,0 +1,17 @@
+# chemeng fluid property table: dry air at 1 atm
+#
+# See the note in water.csv: read from widely published engineering tables, real
+# published values rather than placeholders, marked `unverified` because they
+# have not been checked against a primary formulation.
+#
+# Air is treated as an ideal gas at 1 atm. The density column is therefore only
+# valid near atmospheric pressure - the provider warns if it is asked for
+# something else rather than silently returning a wrong number.
+#
+temperature_c,density_kg_m3,dynamic_viscosity_pa_s,citation,verify_status
+0,1.292,0.0000172,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
+20,1.204,0.0000181,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
+40,1.127,0.0000191,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
+60,1.060,0.0000200,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
+80,1.000,0.0000209,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
+100,0.946,0.0000217,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
