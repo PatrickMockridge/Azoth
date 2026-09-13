@@ -19,7 +19,7 @@ use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
     ColebrookResult, DarcyWeisbachResult, HaalandResult, KComponent, KFactorsResult,
-    ReynoldsNumberResult, SwameeJainResult,
+    PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
 };
 use pyo3::prelude::*;
 
@@ -257,6 +257,48 @@ impl From<&SwameeJainResult> for PySwameeJainResult {
     }
 }
 
+/// Result of `hydraulics.pump_power`, transported.
+///
+/// Carries a dimensioned output, so it transports a [`PyQty`] rather than a bare
+/// float - the same shape `darcy_weisbach` and `conduction_plane_wall` use.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PumpPowerResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPumpPowerResult {
+    /// Shaft power, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub power: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPumpPowerResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PumpPowerResult(power={} {})",
+            self.power.magnitude_si, self.power.unit
+        )
+    }
+}
+
+impl From<&PumpPowerResult> for PyPumpPowerResult {
+    fn from(r: &PumpPowerResult) -> Self {
+        Self {
+            power: PyQty {
+                magnitude_si: r.power.value,
+                unit: "W".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `thermal.conduction_plane_wall`, transported.
 ///
 /// Carries a dimensioned output, so it transports a [`PyQty`] rather than a bare
@@ -478,6 +520,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         SwameeJainResult::CALC_ID => SwameeJainResult::FIELDS.to_vec(),
         HaalandResult::CALC_ID => HaalandResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
+        PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
         _ => Vec::new(),
@@ -497,6 +540,7 @@ pub fn calc_ids() -> Vec<String> {
         SwameeJainResult::CALC_ID.to_string(),
         HaalandResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
+        PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),
     ]

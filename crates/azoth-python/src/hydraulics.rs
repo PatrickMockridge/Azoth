@@ -17,14 +17,15 @@
 //! module: the public API is `azoth.hydraulics`, which is.
 
 use azoth_core::units::{
-    DynamicViscosity, kilograms_per_cubic_meter, meters, meters_per_second, pascal_seconds,
+    DynamicViscosity, cubic_meters_per_second, kilograms_per_cubic_meter, meters,
+    meters_per_second, pascal_seconds,
 };
 use azoth_hydraulics as hyd;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyColebrookResult, PyDarcyWeisbachResult, PyHaalandResult, PyKFactorsResult,
+    PyColebrookResult, PyDarcyWeisbachResult, PyHaalandResult, PyKFactorsResult, PyPumpPowerResult,
     PyReynoldsNumberResult, PySwameeJainResult,
 };
 
@@ -92,6 +93,31 @@ pub fn friction_factor_haaland(
     hyd::friction_factor_haaland(re, relative_roughness)
         .map(|r| PyHaalandResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// Shaft power a pump must be supplied with.
+///
+/// `eta` is dimensionless and arrives as a plain float. See the module
+/// documentation for why every other argument is an SI magnitude.
+#[pyfunction]
+#[pyo3(signature = (rho, q, H, eta))]
+#[pyo3(text_signature = "(rho, q, H, eta)")]
+#[allow(non_snake_case)] // `H` is the symbol in the published equation
+pub fn pump_power(
+    py: Python<'_>,
+    rho: f64,
+    q: f64,
+    H: f64,
+    eta: f64,
+) -> PyResult<PyPumpPowerResult> {
+    hyd::pump_power(
+        kilograms_per_cubic_meter(rho),
+        cubic_meters_per_second(q),
+        meters(H),
+        eta,
+    )
+    .map(|r| PyPumpPowerResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Total resistance coefficient for a list of fittings.
