@@ -25,9 +25,9 @@ from typing import Any
 import pytest
 
 import _helpers as h
-from chemeng import ureg
 from chemeng._dispatch import resolve
 from chemeng._registry_gen import CALCS
+from chemeng.core.units import quantity
 
 pytestmark = pytest.mark.requires_rust
 
@@ -45,36 +45,45 @@ def _extension() -> ModuleType:
         raise AssertionError("chemeng._core is not built; run `maturin develop`") from exc
 
 
-Q = ureg.Quantity
-
-
 def _kwargs(calc: dict[str, Any], inputs: dict[str, Any]) -> dict[str, Any]:
     """Turn a spec's test inputs into keyword arguments for the real signature.
 
-    Dimensions come from the spec's own ``inputs`` block, so adding a calc needs
-    no change here.
+    Both the type and the unit come from the spec's own ``inputs`` block, so
+    adding a calc needs no change here.
+
+    Note that `type` is absent for a plain quantity - it defaults to `quantity`,
+    and the specs only spell it out for the exceptions. Treating a missing `type`
+    as anything other than the default silently passes bare floats where
+    quantities are required, which is exactly the mistake this library exists to
+    make impossible; the reference implementation rejects it, and did.
     """
     declared = calc["inputs"]
     kwargs: dict[str, Any] = {}
     for name, value in inputs.items():
         declaration = declared[name]
-        if isinstance(value, list):
-            kwargs[name] = value
-        elif declaration.get("type") == "quantity" and declaration.get("unit") != "dimensionless":
-            kwargs[name] = Q(float(value), declaration["unit"])
+        kind = declaration.get("type", "quantity")
+        if kind == "fitting_list":
+            kwargs[name] = list(value)
+        elif kind == "quantity" and declaration.get("unit") != "dimensionless":
+            kwargs[name] = quantity(float(value), declaration["unit"])
         else:
             kwargs[name] = float(value)
     return kwargs
 
 
 def _active_cases() -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """Every runnable case, taken from the specs rather than listed here.
+
+    Uses the shared helper, which folds the `worked_example` block into a
+    runnable case the same way the Rust codegen does. Building it separately here
+    would be a second definition of "what the spec's tests are", and the two
+    could disagree.
+    """
     cases = []
     for calc in CALCS:
-        for case in calc["tests"]:
+        for case in h.all_tests(calc):
             if case["status"] == "active" and case["type"] in ("worked_example", "reference"):
                 cases.append((calc, case))
-        example = calc["worked_example"]
-        cases.append((calc, {"id": "worked_example", **example}))
     return cases
 
 
@@ -87,11 +96,8 @@ CASES = _active_cases()
 def test_python_and_rust_agree(calc: dict[str, Any], case: dict[str, Any]) -> None:
     """Run one spec case through both implementations and compare."""
     kwargs = _kwargs(calc, case["inputs"])
-    tolerance = float(case.get("tolerance", calc["worked_example"]["tolerance"]))
+    tolerance = float(case.get("tolerance") or calc["worked_example"]["tolerance"])
     context = f"{calc['id']}::{case['id']}"
-
-    python_result = resolve(calc["id"])
-    rust_result = resolve(calc["id"])
 
     # `resolve` follows the selected backend, so pin each side explicitly rather
     # than assuming which one answered.
@@ -103,7 +109,6 @@ def test_python_and_rust_agree(calc: dict[str, Any], case: dict[str, Any]) -> No
         rs = resolve(calc["id"])(**kwargs)
 
     h.assert_results_equal(py, rs, tolerance, context)
-    assert python_result is not None and rust_result is not None
 
 
 def test_signatures_agree_across_languages() -> None:

@@ -58,10 +58,7 @@ valid_range:
       to; it is a transition-region correlation for turbulent flow. The iteration
       still converges to a number, so this is a warning rather than an error, but
       the number should not be used. For laminar flow use f = 64/Re instead, which
-      is a different equation and deliberately not part of this calc. Note the
-      bound is a LOWER bound on Re: an earlier draft of this spec wrote it as
-      `max: 4000`, which said the opposite of what its own rationale described,
-      and the warning-agreement test caught the contradiction.
+      is a different equation and deliberately not part of this calc.
 
   - quantity: relative_roughness
     max: 0.05
@@ -144,3 +141,11 @@ tests:
       Both inputs are dimensionless, so the round-trip here checks that a
       dimensionless quantity survives unit conversion untouched rather than
       picking up a scale factor.
+
+notes: >
+  The bound above is a LOWER bound on Re. An earlier draft of this spec wrote it
+  as `max: 4000`, which said the opposite of what its own rationale described and
+  warned on every valid turbulent case; the warning-agreement test caught it.
+  Recorded here rather than in the rationale because the rationale is printed
+  inside user-facing warning text, and a note about this repository's drafting
+  history does not belong there.

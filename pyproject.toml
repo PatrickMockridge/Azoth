@@ -45,8 +45,9 @@ Documentation = "https://github.com/placeholder/chemeng/tree/main/docs"
 
 [tool.maturin]
 # Mixed Rust/Python layout: the Rust extension is one private module inside the
-# Python package, not a package of its own.
-python-source = "python"
+# Python package, not a package of its own. `python-source` is the directory
+# *containing* the `chemeng` package, which the src-layout puts one level down.
+python-source = "python/src"
 module-name = "chemeng._core"
 manifest-path = "crates/chemeng-python/Cargo.toml"
 features = ["pyo3/extension-module"]

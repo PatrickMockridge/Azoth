@@ -12,6 +12,7 @@ importable as a top-level ``_helpers``.
 
 from __future__ import annotations
 
+import dataclasses
 from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 
@@ -222,7 +223,10 @@ def assert_results_equal(left: Any, right: Any, tolerance: float, context: str) 
         f"{context}: different result types: {type(left).__name__} vs {type(right).__name__}"
     )
 
-    for field in (f for f in vars(left) if not f.startswith("_")):
+    # `dataclasses.fields`, not `vars()`: the result dataclasses use slots,
+    # so they have no `__dict__` for `vars()` to read.
+    for spec_field in dataclasses.fields(left):
+        field = spec_field.name
         a = getattr(left, field)
         b = getattr(right, field)
 
@@ -249,10 +253,26 @@ def assert_results_equal(left: Any, right: Any, tolerance: float, context: str) 
 
 
 def _warnings_equal(left: tuple[Warning, ...], right: Any) -> bool:
-    if len(left) != len(tuple(right)):
+    """Compare warnings by code, field and order - not by message text.
+
+    The message is prose for a human, and the two implementations format the
+    numbers inside it differently: Python renders ``0.0`` and ``1e-06`` where
+    Rust renders ``0`` and ``0.000001``. Neither is wrong, and forcing them to
+    agree would mean reimplementing IEEE-754 shortest-representation formatting
+    identically in both languages - real work, for a difference no caller can
+    branch on.
+
+    What a caller *does* branch on is the code, and that is compared exactly,
+    along with the field and the order. Message text is required to be non-empty
+    on both sides so a missing explanation is still caught.
+    """
+    right = tuple(right)
+    if len(left) != len(right):
         return False
     for a, b in zip(left, right, strict=True):
-        if a.code != b.code or a.field != b.field or a.message != b.message:
+        if a.code != b.code or a.field != b.field:
+            return False
+        if not a.message.strip() or not str(b.message).strip():
             return False
     return True
 

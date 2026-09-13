@@ -1,6 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["crates/chemeng-core", "crates/chemeng-hydraulics"]
+members = [
+  "crates/chemeng-core",
+  "crates/chemeng-hydraulics",
+  "crates/chemeng-python",
+  "crates/chemeng-cli",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -14,6 +19,8 @@ authors = ["chemeng contributors"]
 [workspace.dependencies]
 chemeng-core = { path = "crates/chemeng-core" }
 chemeng-hydraulics = { path = "crates/chemeng-hydraulics" }
+chemeng-python = { path = "crates/chemeng-python" }
+chemeng-cli = { path = "crates/chemeng-cli" }
 
 # Units. Fixed-SI quantities at the public boundary; plain f64 inside. See
 # crates/chemeng-core/src/units.rs for why the API is not generic over U.
@@ -28,6 +35,13 @@ thiserror = "2"
 # citation the day someone adds one is not a failure mode worth risking for
 # one small, ubiquitous dependency.
 csv = "1"
+
+# The Python extension. abi3-py312 gives one wheel tag covering CPython
+# 3.12 and later, so the release matrix does not need a wheel per version.
+pyo3 = { version = "0.29", features = ["abi3-py312"] }
+
+# CLI argument parsing.
+clap = { version = "4", features = ["derive"] }
 
 [profile.release]
 lto = true

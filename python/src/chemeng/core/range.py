@@ -46,6 +46,17 @@ class Band(StrEnum):
     INSIDE = "inside"
 
 
+def flatten(text: str) -> str:
+    """Collapse whitespace in a piece of spec prose.
+
+    YAML folded scalars arrive with embedded newlines and a trailing one. Those
+    are a formatting artefact of the spec file, not meaning, and both languages
+    must render the same rationale the same way - the Rust codegen flattens at
+    generation time, so Python flattens at load time.
+    """
+    return " ".join(text.split())
+
+
 def _format_number(value: float) -> str:
     """Render a bound for a human.
 
@@ -92,7 +103,7 @@ class RangeCheck:
             band=band,
             severity=severity,
             code=code,
-            rationale=str(raw.get("rationale", "")),
+            rationale=flatten(str(raw.get("rationale", ""))),
         )
 
     def violated(self, value: float) -> bool:

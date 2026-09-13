@@ -1,0 +1,31 @@
+[package]
+name = "chemeng-python"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "PyO3 bindings exposing the chemeng Rust core to Python"
+
+[lib]
+# Deliberately not `chemeng_core`: that collides with the `chemeng-core` crate's
+# own rlib, and cargo warns about the output-filename clash. The Python-facing
+# module path comes from `module-name` in [tool.maturin], not from here.
+name = "chemeng_python"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+chemeng-core.workspace = true
+chemeng-hydraulics.workspace = true
+uom.workspace = true
+pyo3 = { workspace = true }
+
+[features]
+default = []
+# Enabled by maturin when building the extension. Kept out of `default` so that
+# `cargo test` can link against libpython normally: with `extension-module` set,
+# the crate deliberately does not link it, and every test binary fails to build.
+extension-module = ["pyo3/extension-module"]
+
+[lints]
+workspace = true

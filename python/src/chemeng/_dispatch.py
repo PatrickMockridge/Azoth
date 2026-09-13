@@ -116,7 +116,7 @@ def resolve(calc_id: str) -> Callable[..., Any]:
     caller never has to know which backend answered - the Rust binding's own
     result objects are adapted before they leave this module.
     """
-    namespace, _, function_name = calc_id.rpartition(".")
+    _, _, function_name = calc_id.rpartition(".")
     # Annotated rather than inferred: `getattr` returns Any, which would make the
     # return below an implicit Any and fail `--strict` at the boundary of exactly
     # the function whose job is to keep the two implementations interchangeable.
@@ -130,13 +130,14 @@ def resolve(calc_id: str) -> Callable[..., Any]:
 
     try:
         bridge = importlib.import_module("chemeng._rust_bridge")
-    except ImportError as exc:  # pragma: no cover - until the bindings land
+    except ImportError as exc:
         raise RustBackendUnavailableError(
             "chemeng._core is built but chemeng._rust_bridge is not, so Rust "
             "results cannot be adapted to the Python result types. This is a "
             "packaging bug, not a missing feature."
         ) from exc
-    return bridge.adapter(calc_id, namespace)  # type: ignore[no-any-return]
+    resolved: Callable[..., Any] = bridge.resolve(calc_id)
+    return resolved
 
 
 def describe() -> dict[str, Any]:

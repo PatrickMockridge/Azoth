@@ -27,8 +27,10 @@
 pub mod crane_k_factors;
 pub mod darcy_weisbach;
 pub mod fittings;
+pub mod fluids;
 pub mod friction_factor_colebrook;
 pub mod friction_factor_swamee_jain;
+pub mod provenance;
 pub mod results;
 pub mod reynolds_number;
 pub mod solver;
@@ -36,8 +38,10 @@ pub mod spec_gen;
 
 pub use crane_k_factors::{crane_k_factors, known_fittings};
 pub use darcy_weisbach::{add_fitting_loss, darcy_weisbach, propagate_estimated_data};
+pub use fluids::{available_fluids, provider_for};
 pub use friction_factor_colebrook::{friction_factor_colebrook, fully_rough_limit};
 pub use friction_factor_swamee_jain::friction_factor_swamee_jain;
+pub use provenance::VerifyStatus;
 pub use results::{
     ColebrookResult, DarcyWeisbachResult, KComponent, KFactorsResult, ReynoldsNumberResult,
     SwameeJainResult,

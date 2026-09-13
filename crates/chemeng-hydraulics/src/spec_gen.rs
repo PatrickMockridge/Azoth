@@ -454,7 +454,7 @@ static FRICTION_FACTOR_COLEBROOK_CHECKS: &[SpecCheck] = &[
             band: Band::Outside,
             severity: Severity::Warning,
             code: WarningCode::OutOfValidRange,
-            rationale: "Below Re ~ 4000 the Colebrook equation is outside the range it was fitted to; it is a transition-region correlation for turbulent flow. The iteration still converges to a number, so this is a warning rather than an error, but the number should not be used. For laminar flow use f = 64/Re instead, which is a different equation and deliberately not part of this calc. Note the bound is a LOWER bound on Re: an earlier draft of this spec wrote it as `max: 4000`, which said the opposite of what its own rationale described, and the warning-agreement test caught the contradiction.",
+            rationale: "Below Re ~ 4000 the Colebrook equation is outside the range it was fitted to; it is a transition-region correlation for turbulent flow. The iteration still converges to a number, so this is a warning rather than an error, but the number should not be used. For laminar flow use f = 64/Re instead, which is a different equation and deliberately not part of this calc.",
         },
     },
     SpecCheck {

@@ -14,37 +14,10 @@
 
 use chemeng_core::{ChemEngError, Result};
 
+use crate::provenance::VerifyStatus;
+
 /// The embedded registry. Path is relative to this source file.
 const FITTINGS_CSV: &str = include_str!("../../../data/fittings/crane_k_factors.csv");
-
-/// Provenance of a coefficient.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VerifyStatus {
-    /// Placeholder for software testing. Not from any source. Not engineering
-    /// data.
-    EstimatedDummy,
-    /// Read from a secondary public reference, not checked against the primary
-    /// standard.
-    Unverified,
-    /// Read from the primary standard by a named engineer.
-    Verified,
-}
-
-impl VerifyStatus {
-    fn parse(raw: &str) -> Result<Self> {
-        match raw {
-            "estimated_dummy" => Ok(Self::EstimatedDummy),
-            "unverified" => Ok(Self::Unverified),
-            "verified" => Ok(Self::Verified),
-            other => Err(ChemEngError::invalid_input(
-                "verify_status",
-                format!(
-                    "unknown verify_status `{other}`; expected estimated_dummy, unverified or verified"
-                ),
-            )),
-        }
-    }
-}
 
 /// One row of the registry.
 #[derive(Debug, Clone, PartialEq)]
@@ -67,9 +40,12 @@ pub struct Fitting {
 
 impl Fitting {
     /// True when this coefficient is a placeholder rather than a measurement.
+    ///
+    /// The same concept the fluid tables carry, under the name that reads right
+    /// here: for a coefficient, "estimated" is what a placeholder means.
     #[must_use]
     pub fn is_estimated(&self) -> bool {
-        self.status == VerifyStatus::EstimatedDummy
+        self.status.is_placeholder()
     }
 }
 
