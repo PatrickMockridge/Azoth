@@ -6,6 +6,7 @@ Reads every spec under specs/calcs/ and writes:
   docs/src/SUMMARY.md              the mdBook table of contents
   docs/src/hydraulics/index.md     an index of the calcs
   docs/src/hydraulics/<id>.md      one page per calc
+  docs/src/theory/solvers.md       the solver contract, gathered from the specs
 
 CI regenerates these and fails if `git diff` is non-empty, which is what makes
 "the docs are generated from the registry" a property of the build rather than a
@@ -40,6 +41,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
 DOCS_SRC = ROOT / "docs" / "src"
 CALCS_DIR = DOCS_SRC / "hydraulics"
+THEORY_DIR = DOCS_SRC / "theory"
 
 # The runtime's own bound renderer, so the docs and the warnings cannot disagree
 # about how a bound reads.
@@ -286,6 +288,74 @@ def render_summary(calcs: list[dict[str, Any]]) -> str:
         out += f"- [{title}](./{namespace}/index.md)\n"
         for calc in by_namespace[namespace]:
             out += f"  - [{calc['name']}](./{namespace}/{calc['id'].split('.')[-1]}.md)\n"
+
+    out += "- [Solvers](./theory/solvers.md)\n"
+    return out
+
+
+def render_theory_solvers(calcs: list[dict[str, Any]]) -> str:
+    """The solver contract, gathered from every spec that declares one.
+
+    Generated rather than hand-written for the reason every other page here is:
+    each spec already carries its solver block, and a hand-written page would be
+    a second description of it that could drift from the first. This is the page
+    `specs/schema/calc.schema.json` points at when it says both implementations
+    must run exactly the scheme the spec names.
+    """
+    users = [c for c in calcs if c.get("solver")]
+    out = BANNER.format(source="specs/calcs/") + "\n"
+    out += "\n# Solvers\n\n"
+    out += (
+        "Some equations are implicit: the unknown appears on both sides, so the\n"
+        "value is approached by iteration rather than evaluated in one step. For\n"
+        "those, the scheme is part of the specification rather than an\n"
+        "implementation detail.\n\n"
+        "The reason is the agreement test. Two implementations running the same\n"
+        "scheme converge to the same value; two running different-but-equally-valid\n"
+        "schemes agree only to within their difference, which is far larger than\n"
+        "either declares as a tolerance. The cross-language check would then fail on\n"
+        "a disagreement about the solver rather than about the physics. Naming the\n"
+        "scheme in the spec is what makes the comparison mean something.\n"
+    )
+
+    if not users:
+        out += (
+            "\nNo calculation in this registry is implicit yet, so no solver is\n"
+            "declared. The schema still requires the block of any spec whose equation\n"
+            "is implicit.\n"
+        )
+        return out
+
+    out += "\n## Declared schemes\n\n"
+    out += (
+        "| Calculation | Kind | Tolerance | Convergence | Max iterations | Initial guess |\n"
+        "|---|---|---|---|---|---|\n"
+    )
+    for calc in users:
+        solver = calc["solver"]
+        short = calc["id"].split(".")[-1]
+        namespace = calc["id"].split(".")[0]
+        out += (
+            f"| [`{calc['id']}`](../{namespace}/{short}.md) | `{solver['kind']}` | "
+            f"`{solver['tolerance']}` | `{solver['convergence']}` | "
+            f"`{solver['max_iterations']}` | `{solver['initial_guess']}` |\n"
+        )
+
+    out += (
+        "\n## Convergence\n\n"
+        "The stopping rule is applied to successive iterates `x_k`. The two rules are\n"
+        "not interchangeable - the same tolerance means different things under each,\n"
+        "which is why the spec names one explicitly:\n\n"
+        "- `relative`: `|x_(k+1) - x_k| <= tolerance * |x_(k+1)|`\n"
+        "- `absolute`: `|x_(k+1) - x_k| <= tolerance`\n\n"
+        "## Why only one kind is permitted\n\n"
+        "The schema permits `fixed_point` alone, because that is the only scheme\n"
+        "implemented in both languages. A spec naming a scheme no implementation can\n"
+        "run would describe a calculation that exists only on paper, and would read\n"
+        "as validation while doing nothing. Widening the enum is a deliberate act\n"
+        "that happens alongside the implementation and its agreement test, never\n"
+        "before it.\n"
+    )
     return out
 
 
@@ -301,6 +371,7 @@ def main() -> int:
     calcs.sort(key=lambda c: c["id"])
 
     outputs: dict[Path, str] = {DOCS_SRC / "SUMMARY.md": render_summary(calcs)}
+    outputs[THEORY_DIR / "solvers.md"] = render_theory_solvers(calcs)
     for namespace in sorted({c["id"].split(".")[0] for c in calcs}):
         in_namespace = [c for c in calcs if c["id"].split(".")[0] == namespace]
         directory = namespace_dir(namespace)

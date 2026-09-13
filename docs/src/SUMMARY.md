@@ -7,3 +7,4 @@
   - [Colebrook-White friction factor (implicit)](./hydraulics/friction_factor_colebrook.md)
   - [Swamee-Jain friction factor (explicit)](./hydraulics/friction_factor_swamee_jain.md)
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
+- [Solvers](./theory/solvers.md)
