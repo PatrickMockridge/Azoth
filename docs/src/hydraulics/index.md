@@ -6,6 +6,7 @@ Every calculation in this section is generated from its specification. Each page
 
 | Calculation | Equation | Source |
 |---|---|---|
+| [`hydraulics.control_valve_cv`](./control_valve_cv.md) | $Q = C_v \sqrt{\frac{\Delta P}{SG}}$ | the liquid sizing equation for control valves; IEC 60534 for the coefficient tables, which this calc does not implement |
 | [`hydraulics.crane_k_factors`](./crane_k_factors.md) | $K = f_t \sum_{i} n_{L/D,i}$ | Crane TP-410 |
 | [`hydraulics.darcy_weisbach`](./darcy_weisbach.md) | $\Delta P = f\,\frac{L}{D}\,\frac{\rho v^{2}}{2}$ | Crane TP-410 |
 | [`hydraulics.friction_factor_colebrook`](./friction_factor_colebrook.md) | $\frac{1}{\sqrt{f}} = -2\,\log_{10}\!\left(\frac{\varepsilon/D}{3.7} + \frac{2.51}{Re\,\sqrt{f}}\right)$ | Colebrook, C. F. (1939) |

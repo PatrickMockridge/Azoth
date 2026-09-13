@@ -190,6 +190,16 @@ class OrificeFlowResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ControlValveCvResult(_HasWarnings):
+    """Result of ``hydraulics.control_valve_cv``."""
+
+    #: Volumetric flow rate through the valve.
+    q: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ConductionPlaneWallResult(_HasWarnings):
     """Result of ``thermal.conduction_plane_wall``.
 
@@ -260,4 +270,5 @@ RESULT_TYPES: dict[str, type[object]] = {
     "thermal.conduction_plane_wall": ConductionPlaneWallResult,
     "hydraulics.pump_power": PumpPowerResult,
     "hydraulics.orifice_flow": OrificeFlowResult,
+    "hydraulics.control_valve_cv": ControlValveCvResult,
 }

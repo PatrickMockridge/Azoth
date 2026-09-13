@@ -31,7 +31,7 @@ project does. The same line runs through every entry below.
 | **Crane TP-410 Example 3-5** | Reproducing a worked example from the standard is the thing the rule forbids | A `reference` test in `darcy_weisbach` | `status: skipped` with the reason recorded in `skip_reason`; the derived worked example covers the same arithmetic |
 | **Perry's 8th ed. Eq. 6-42** | Same | A `reference` test in `darcy_weisbach` | Skipped, same way |
 | **API 520 relief-valve sizing constants** | Fitted constants and de-rating factors | `relief_valve_area` — **not implemented** | Will take the constants as inputs, as `orifice_flow` takes `Cd`. Not built yet |
-| **IEC 60534 control-valve Cv/Kv tables** | Copyrighted tables | `control_valve_cv` — **not implemented** | Same pattern. Not built yet |
+| **IEC 60534 control-valve Cv/Kv tables** | Copyrighted tables | Nothing is computed from them | `control_valve_cv` takes `Cv` as an input and is responsible for undoing the unit convention its `dimensionless` declaration hides — see below |
 
 ### And one thing that is *not* blocked, but is often mistaken for it
 
@@ -55,16 +55,28 @@ A discharge coefficient, a pump efficiency, a friction factor and a Crane `f_T` 
 single values. They are **arguments**, and no file is involved:
 
 ```python
-azoth.hydraulics.orifice_flow(..., Cd=0.61)      # your coefficient
-azoth.hydraulics.pump_power(..., eta=0.75)       # your efficiency, from the curve
-azoth.hydraulics.darcy_weisbach(0.02, ...)       # your friction factor
+azoth.hydraulics.orifice_flow(..., Cd=0.61)         # your discharge coefficient
+azoth.hydraulics.control_valve_cv(10.0, ...)        # your valve Cv
+azoth.hydraulics.pump_power(..., eta=0.75)          # your efficiency, from the curve
+azoth.hydraulics.darcy_weisbach(0.02, ...)          # your friction factor
 azoth.hydraulics.crane_k_factors([...], f_t=0.018)
 ```
 
 This is worth stating plainly, because it means **most of the blocked values need no
-mechanism at all**. Four of the seven entries above are already fully usable with
+mechanism at all**. Five of the seven entries above are already fully usable with
 licensed data, today, in both languages: you hold the standard, you read the number,
 you pass it in. The library never needs to know it.
+
+**One of those five is harder than the others, and `control_valve_cv` is where it
+shows.** `Cd`, `eta` and `f` are genuinely dimensionless — ratios of one thing to
+another. `Cv` is not: it is defined as so many gallons per minute at one pound per
+square inch, so it carries the units `gpm/sqrt(psi)`. The schema has to declare it
+`dimensionless` because no unit in the vocabulary can express a fractional power of a
+non-SI unit, and that declaration is a fiction of necessity. Undoing it correctly is
+then the whole job of the calculation: the conversion constant is named, derived from
+the definitions of the gallon and the pound-force, and tested on both sides. A caller
+who supplies a metric `Kv` instead is out by a factor of about 1.156, which is large,
+silent, and produces an entirely ordinary-looking flow.
 
 It is also not a workaround. Passing the coefficient is the better design on its own
 terms — the same shape as `f` in Darcy-Weisbach and `f_t` in the equivalent-length

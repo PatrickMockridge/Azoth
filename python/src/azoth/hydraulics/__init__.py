@@ -12,6 +12,7 @@ separately:
 * :func:`darcy_weisbach` - pressure drop over a straight pipe
 * :func:`pump_power` - shaft power from flow, head and efficiency
 * :func:`orifice_flow` - flow through an orifice from its pressure difference
+* :func:`control_valve_cv` - liquid flow through a control valve
 
 Pipe *with* fittings is a composition of the last two, performed by the
 ``azoth pipe`` CLI rather than by a calc of its own, because the two losses are
@@ -40,6 +41,7 @@ from collections.abc import Sequence
 from azoth._dispatch import resolve
 from azoth.core.result import (
     ColebrookResult,
+    ControlValveCvResult,
     DarcyWeisbachResult,
     HaalandResult,
     KFactorsResult,
@@ -51,6 +53,7 @@ from azoth.core.result import (
 from azoth.core.units import Q
 
 __all__ = [
+    "control_valve_cv",
     "crane_k_factors",
     "darcy_weisbach",
     "friction_factor_colebrook",
@@ -69,6 +72,7 @@ _CRANE_K = "hydraulics.crane_k_factors"
 _DARCY_WEISBACH = "hydraulics.darcy_weisbach"
 _PUMP_POWER = "hydraulics.pump_power"
 _ORIFICE_FLOW = "hydraulics.orifice_flow"
+_CONTROL_VALVE_CV = "hydraulics.control_valve_cv"
 
 
 def reynolds_number(rho: Q, v: Q, D: Q, mu: Q) -> ReynoldsNumberResult:
@@ -162,6 +166,26 @@ def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:
     See :func:`azoth.hydraulics.reference.orifice_flow`.
     """
     return resolve(_ORIFICE_FLOW)(d=d, dP=dP, rho=rho, Cd=Cd)  # type: ignore[no-any-return]
+
+
+def control_valve_cv(Cv: float, dP: Q, SG: float) -> ControlValveCvResult:
+    """Liquid flow through a control valve.
+
+    ``Cv`` is the valve flow coefficient in the **US** convention - gallons per
+    minute of water at one psi - and is supplied rather than looked up: this library
+    does not reproduce IEC 60534's coefficient tables. ``Cv`` is not dimensionless
+    in any physical sense; see the reference implementation for why the schema has
+    to declare it so and what the calculation does about it.
+
+    ``SG`` is the liquid's specific gravity relative to water at 15.6 C.
+
+    Raises:
+        OutOfRangeError: if ``Cv`` or ``SG`` is not positive, or if ``dP`` is
+            negative.
+
+    See :func:`azoth.hydraulics.reference.control_valve_cv`.
+    """
+    return resolve(_CONTROL_VALVE_CV)(Cv=Cv, dP=dP, SG=SG)  # type: ignore[no-any-return]
 
 
 def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:

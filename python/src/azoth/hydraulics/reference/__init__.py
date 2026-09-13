@@ -15,6 +15,7 @@ is a bug in one of them - and the cross-implementation tests are what catch it.
 
 from __future__ import annotations
 
+from azoth.hydraulics.reference.control_valve_cv import CV_TO_SI, control_valve_cv
 from azoth.hydraulics.reference.crane_k_factors import crane_k_factors
 from azoth.hydraulics.reference.darcy_weisbach import add_fitting_loss, darcy_weisbach
 from azoth.hydraulics.reference.fittings import (
@@ -45,6 +46,7 @@ from azoth.hydraulics.reference.solver import (
 )
 
 __all__ = [
+    "CV_TO_SI",
     "REGISTRY_PATH",
     "STANDARD_GRAVITY_M_S2",
     "Convergence",
@@ -52,6 +54,7 @@ __all__ = [
     "SolverOutcome",
     "VerifyStatus",
     "add_fitting_loss",
+    "control_valve_cv",
     "crane_k_factors",
     "darcy_weisbach",
     "find_fitting",

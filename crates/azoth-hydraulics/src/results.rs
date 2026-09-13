@@ -159,6 +159,24 @@ impl CalcResult for OrificeFlowResult {
     }
 }
 
+/// Result of `hydraulics.control_valve_cv`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ControlValveCvResult {
+    /// Volumetric flow rate through the valve.
+    pub q: VolumeRate,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ControlValveCvResult {
+    const CALC_ID: &'static str = "hydraulics.control_valve_cv";
+    const FIELDS: &'static [&'static str] = &["q", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// One fitting's contribution to the total resistance coefficient.
 #[derive(Debug, Clone, PartialEq)]
 pub struct KComponent {
@@ -232,6 +250,7 @@ mod tests {
             (ColebrookResult::CALC_ID, ColebrookResult::FIELDS),
             (SwameeJainResult::CALC_ID, SwameeJainResult::FIELDS),
             (HaalandResult::CALC_ID, HaalandResult::FIELDS),
+            (ControlValveCvResult::CALC_ID, ControlValveCvResult::FIELDS),
             (OrificeFlowResult::CALC_ID, OrificeFlowResult::FIELDS),
             (PumpPowerResult::CALC_ID, PumpPowerResult::FIELDS),
             (KFactorsResult::CALC_ID, KFactorsResult::FIELDS),
@@ -253,6 +272,7 @@ mod tests {
             SwameeJainResult::CALC_ID,
             HaalandResult::CALC_ID,
             KFactorsResult::CALC_ID,
+            ControlValveCvResult::CALC_ID,
             OrificeFlowResult::CALC_ID,
             PumpPowerResult::CALC_ID,
             DarcyWeisbachResult::CALC_ID,
@@ -283,6 +303,7 @@ mod tests {
             SwameeJainResult::FIELDS,
             HaalandResult::FIELDS,
             KFactorsResult::FIELDS,
+            ControlValveCvResult::FIELDS,
             OrificeFlowResult::FIELDS,
             PumpPowerResult::FIELDS,
             DarcyWeisbachResult::FIELDS,

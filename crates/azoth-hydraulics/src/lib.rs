@@ -12,6 +12,7 @@
 //! * [`darcy_weisbach`] - pressure drop over a straight pipe
 //! * [`pump_power`] - shaft power from flow, head and efficiency
 //! * [`orifice_flow`] - flow through an orifice from its pressure difference
+//! * [`control_valve_cv`] - liquid flow through a control valve
 //!
 //! Pipe *with* fittings is a composition of the last two, performed by the
 //! `azoth pipe` CLI rather than by a calc of its own, because the two losses
@@ -27,6 +28,7 @@
 //! should be used for design work until that file is populated from a primary
 //! standard.
 
+pub mod control_valve_cv;
 pub mod crane_k_factors;
 pub mod darcy_weisbach;
 pub mod fittings;
@@ -42,6 +44,7 @@ pub mod reynolds_number;
 pub mod solver;
 pub mod spec_gen;
 
+pub use control_valve_cv::{CV_TO_SI, control_valve_cv};
 pub use crane_k_factors::{crane_k_factors, known_fittings};
 pub use darcy_weisbach::{add_fitting_loss, darcy_weisbach, propagate_estimated_data};
 pub use fluids::{available_fluids, provider_for};
@@ -52,7 +55,7 @@ pub use orifice_flow::orifice_flow;
 pub use provenance::VerifyStatus;
 pub use pump_power::{STANDARD_GRAVITY_M_S2, pump_power};
 pub use results::{
-    ColebrookResult, DarcyWeisbachResult, HaalandResult, KComponent, KFactorsResult,
-    OrificeFlowResult, PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
+    ColebrookResult, ControlValveCvResult, DarcyWeisbachResult, HaalandResult, KComponent,
+    KFactorsResult, OrificeFlowResult, PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
 };
 pub use reynolds_number::{regime_for, regime_warning, reynolds_number};

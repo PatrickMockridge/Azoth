@@ -27,6 +27,7 @@ from azoth import _core
 from azoth.core.result import (
     ColebrookResult,
     ConductionPlaneWallResult,
+    ControlValveCvResult,
     DarcyWeisbachResult,
     FlowRegime,
     HaalandResult,
@@ -181,6 +182,20 @@ def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:
     )
 
 
+def control_valve_cv(Cv: float, dP: Q, SG: float) -> ControlValveCvResult:
+    """Control-valve flow, computed in Rust."""
+    result = _core.control_valve_cv(
+        Cv,
+        to_si(dP, "Pa", "dP"),
+        # Dimensionless: no unit to convert, so it crosses as a plain float.
+        SG,
+    )
+    return ControlValveCvResult(
+        q=from_si(result.q.magnitude_si, result.q.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 #: Calc id -> the bridge function implementing it. Explicit rather than derived
 #: from the function names, so a renamed id fails here at import rather than
 #: resolving to the wrong calc.
@@ -193,6 +208,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "hydraulics.darcy_weisbach": darcy_weisbach,
     "hydraulics.pump_power": pump_power,
     "hydraulics.orifice_flow": orifice_flow,
+    "hydraulics.control_valve_cv": control_valve_cv,
     "thermal.conduction_plane_wall": conduction_plane_wall,
 }
 

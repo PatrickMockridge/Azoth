@@ -25,8 +25,9 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyColebrookResult, PyDarcyWeisbachResult, PyHaalandResult, PyKFactorsResult,
-    PyOrificeFlowResult, PyPumpPowerResult, PyReynoldsNumberResult, PySwameeJainResult,
+    PyColebrookResult, PyControlValveCvResult, PyDarcyWeisbachResult, PyHaalandResult,
+    PyKFactorsResult, PyOrificeFlowResult, PyPumpPowerResult, PyReynoldsNumberResult,
+    PySwameeJainResult,
 };
 
 /// Reynolds number for flow in a circular pipe.
@@ -138,6 +139,25 @@ pub fn orifice_flow(
 ) -> PyResult<PyOrificeFlowResult> {
     hyd::orifice_flow(meters(d), pascals(dP), kilograms_per_cubic_meter(rho), Cd)
         .map(|r| PyOrificeFlowResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Liquid flow through a control valve.
+///
+/// `Cv` and `SG` are dimensionless and arrive as plain floats. `dP` is the SI base
+/// magnitude, so it crosses in pascals whatever unit the spec declares.
+#[pyfunction]
+#[pyo3(signature = (Cv, dP, SG))]
+#[pyo3(text_signature = "(Cv, dP, SG)")]
+#[allow(non_snake_case)] // `Cv` and `SG` are the symbols in the published relation
+pub fn control_valve_cv(
+    py: Python<'_>,
+    Cv: f64,
+    dP: f64,
+    SG: f64,
+) -> PyResult<PyControlValveCvResult> {
+    hyd::control_valve_cv(Cv, pascals(dP), SG)
+        .map(|r| PyControlValveCvResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

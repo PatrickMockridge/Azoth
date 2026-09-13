@@ -101,13 +101,14 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.darcy_weisbach` | Pressure drop over a straight pipe |
 | `hydraulics.pump_power` | Shaft power from flow, head and efficiency |
 | `hydraulics.orifice_flow` | Flow through an orifice from its pressure difference |
+| `hydraulics.control_valve_cv` | Liquid flow through a control valve |
 | `thermal.conduction_plane_wall` | Steady conduction through a slab |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use
 different methods and adding them is a modelling decision worth seeing explicitly.
 
-Control valve and relief valve calculations are not implemented.
+Relief valve calculations are not implemented.
 
 The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`), not by
 project. They appear in provenance records and citations, so renaming the project
