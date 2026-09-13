@@ -10,6 +10,7 @@ separately:
 * :func:`friction_factor_haaland` - a second explicit approximation, fitted differently
 * :func:`crane_k_factors` - fitting losses by the equivalent-length method
 * :func:`darcy_weisbach` - pressure drop over a straight pipe
+* :func:`pump_power` - shaft power from flow, head and efficiency
 * :func:`orifice_flow` - flow through an orifice from its pressure difference
 
 Pipe *with* fittings is a composition of the last two, performed by the
@@ -43,6 +44,7 @@ from azoth.core.result import (
     HaalandResult,
     KFactorsResult,
     OrificeFlowResult,
+    PumpPowerResult,
     ReynoldsNumberResult,
     SwameeJainResult,
 )
@@ -55,6 +57,7 @@ __all__ = [
     "friction_factor_haaland",
     "friction_factor_swamee_jain",
     "orifice_flow",
+    "pump_power",
     "reynolds_number",
 ]
 
@@ -64,6 +67,7 @@ _SWAMEE_JAIN = "hydraulics.friction_factor_swamee_jain"
 _HAALAND = "hydraulics.friction_factor_haaland"
 _CRANE_K = "hydraulics.crane_k_factors"
 _DARCY_WEISBACH = "hydraulics.darcy_weisbach"
+_PUMP_POWER = "hydraulics.pump_power"
 _ORIFICE_FLOW = "hydraulics.orifice_flow"
 
 
@@ -121,6 +125,22 @@ def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResu
     See :func:`azoth.hydraulics.reference.friction_factor_haaland`.
     """
     return resolve(_HAALAND)(re=re, relative_roughness=relative_roughness)  # type: ignore[no-any-return]
+
+
+def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
+    """Shaft power a pump must be supplied with.
+
+    ``eta`` is the pump's own efficiency, dimensionless and in ``(0, 1]``. ``H`` is
+    the head *delivered*, in metres of the pumped fluid: the pump's internal losses
+    are what ``eta`` accounts for, so they do not belong in ``H`` as well.
+
+    Raises:
+        OutOfRangeError: if ``rho`` is not positive, if ``q`` or ``H`` is negative,
+            or if ``eta`` is outside ``(0, 1]``.
+
+    See :func:`azoth.hydraulics.reference.pump_power`.
+    """
+    return resolve(_PUMP_POWER)(rho=rho, q=q, H=H, eta=eta)  # type: ignore[no-any-return]
 
 
 def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:

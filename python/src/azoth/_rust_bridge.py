@@ -33,6 +33,7 @@ from azoth.core.result import (
     KComponent,
     KFactorsResult,
     OrificeFlowResult,
+    PumpPowerResult,
     ReynoldsNumberResult,
     SwameeJainResult,
 )
@@ -150,6 +151,21 @@ def conduction_plane_wall(k: Q, A: Q, dT: Q, L: Q) -> ConductionPlaneWallResult:
     )
 
 
+def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
+    """Pump shaft power, computed in Rust."""
+    result = _core.pump_power(
+        to_si(rho, "kg/m**3", "rho"),
+        to_si(q, "m**3/s", "q"),
+        to_si(H, "m", "H"),
+        # Dimensionless: no unit to convert, so it crosses as a plain float.
+        eta,
+    )
+    return PumpPowerResult(
+        power=from_si(result.power.magnitude_si, result.power.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:
     """Orifice flow, computed in Rust."""
     result = _core.orifice_flow(
@@ -175,6 +191,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "hydraulics.friction_factor_haaland": friction_factor_haaland,
     "hydraulics.crane_k_factors": crane_k_factors,
     "hydraulics.darcy_weisbach": darcy_weisbach,
+    "hydraulics.pump_power": pump_power,
     "hydraulics.orifice_flow": orifice_flow,
     "thermal.conduction_plane_wall": conduction_plane_wall,
 }

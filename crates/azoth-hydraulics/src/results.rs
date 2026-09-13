@@ -23,7 +23,7 @@
 //! alternative would be to throw away information the caller wants.
 
 use azoth_core::{CalcResult, FlowRegime, Warning};
-use uom::si::f64::{Pressure, VolumeRate};
+use uom::si::f64::{Power, Pressure, VolumeRate};
 
 /// Result of `hydraulics.reynolds_number`.
 #[derive(Debug, Clone, PartialEq)]
@@ -113,6 +113,28 @@ pub struct HaalandResult {
 impl CalcResult for HaalandResult {
     const CALC_ID: &'static str = "hydraulics.friction_factor_haaland";
     const FIELDS: &'static [&'static str] = &["f", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `hydraulics.pump_power`.
+///
+/// Carries a dimensioned output, like `darcy_weisbach`'s: shaft power is a
+/// quantity, not a bare number, and the transport layer needs both the SI
+/// magnitude and the unit to hand it back.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PumpPowerResult {
+    /// Shaft power the pump must be supplied with.
+    pub power: Power,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PumpPowerResult {
+    const CALC_ID: &'static str = "hydraulics.pump_power";
+    const FIELDS: &'static [&'static str] = &["power", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings
@@ -211,6 +233,7 @@ mod tests {
             (SwameeJainResult::CALC_ID, SwameeJainResult::FIELDS),
             (HaalandResult::CALC_ID, HaalandResult::FIELDS),
             (OrificeFlowResult::CALC_ID, OrificeFlowResult::FIELDS),
+            (PumpPowerResult::CALC_ID, PumpPowerResult::FIELDS),
             (KFactorsResult::CALC_ID, KFactorsResult::FIELDS),
             (DarcyWeisbachResult::CALC_ID, DarcyWeisbachResult::FIELDS),
         ];
@@ -231,6 +254,7 @@ mod tests {
             HaalandResult::CALC_ID,
             KFactorsResult::CALC_ID,
             OrificeFlowResult::CALC_ID,
+            PumpPowerResult::CALC_ID,
             DarcyWeisbachResult::CALC_ID,
         ];
         let unique: std::collections::HashSet<_> = all.iter().collect();
@@ -260,6 +284,7 @@ mod tests {
             HaalandResult::FIELDS,
             KFactorsResult::FIELDS,
             OrificeFlowResult::FIELDS,
+            PumpPowerResult::FIELDS,
             DarcyWeisbachResult::FIELDS,
         ] {
             let unique: std::collections::HashSet<_> = fields.iter().collect();

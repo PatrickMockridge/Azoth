@@ -10,6 +10,7 @@
 //! * [`friction_factor_haaland`] - a second explicit approximation, fitted differently
 //! * [`crane_k_factors`] - fitting losses by the equivalent-length method
 //! * [`darcy_weisbach`] - pressure drop over a straight pipe
+//! * [`pump_power`] - shaft power from flow, head and efficiency
 //! * [`orifice_flow`] - flow through an orifice from its pressure difference
 //!
 //! Pipe *with* fittings is a composition of the last two, performed by the
@@ -35,6 +36,7 @@ pub mod friction_factor_haaland;
 pub mod friction_factor_swamee_jain;
 pub mod orifice_flow;
 pub mod provenance;
+pub mod pump_power;
 pub mod results;
 pub mod reynolds_number;
 pub mod solver;
@@ -48,8 +50,9 @@ pub use friction_factor_haaland::friction_factor_haaland;
 pub use friction_factor_swamee_jain::friction_factor_swamee_jain;
 pub use orifice_flow::orifice_flow;
 pub use provenance::VerifyStatus;
+pub use pump_power::{STANDARD_GRAVITY_M_S2, pump_power};
 pub use results::{
     ColebrookResult, DarcyWeisbachResult, HaalandResult, KComponent, KFactorsResult,
-    OrificeFlowResult, ReynoldsNumberResult, SwameeJainResult,
+    OrificeFlowResult, PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
 };
 pub use reynolds_number::{regime_for, regime_warning, reynolds_number};

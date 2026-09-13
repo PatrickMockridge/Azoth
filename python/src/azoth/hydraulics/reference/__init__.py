@@ -35,6 +35,7 @@ from azoth.hydraulics.reference.friction_factor_swamee_jain import (
     friction_factor_swamee_jain,
 )
 from azoth.hydraulics.reference.orifice_flow import orifice_flow
+from azoth.hydraulics.reference.pump_power import STANDARD_GRAVITY_M_S2, pump_power
 from azoth.hydraulics.reference.reynolds_number import reynolds_number
 from azoth.hydraulics.reference.solver import (
     Convergence,
@@ -45,6 +46,7 @@ from azoth.hydraulics.reference.solver import (
 
 __all__ = [
     "REGISTRY_PATH",
+    "STANDARD_GRAVITY_M_S2",
     "Convergence",
     "Fitting",
     "SolverOutcome",
@@ -59,6 +61,7 @@ __all__ = [
     "friction_factor_swamee_jain",
     "fully_rough_limit",
     "orifice_flow",
+    "pump_power",
     "registry",
     "require_converged",
     "reynolds_number",

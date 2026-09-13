@@ -8,6 +8,7 @@
 //!   - specs/calcs/hydraulics/friction_factor_haaland.yaml
 //!   - specs/calcs/hydraulics/friction_factor_swamee_jain.yaml
 //!   - specs/calcs/hydraulics/orifice_flow.yaml
+//!   - specs/calcs/hydraulics/pump_power.yaml
 //!   - specs/calcs/hydraulics/reynolds_number.yaml
 //!
 //! Tables for the `hydraulics` namespace. Every namespace has its own generated
@@ -842,6 +843,152 @@ pub static ORIFICE_FLOW_SPEC: CalcSpec = CalcSpec {
     tests: ORIFICE_FLOW_TESTS,
 };
 
+/// Registry entry for `hydraulics.pump_power`.
+static PUMP_POWER_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "rho",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "power scales linearly with density, so a non-positive density would give a zero or negative shaft power - a number that is wrong rather than merely out of range.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "q",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "flow is a magnitude and the sign is not modelled, so a negative value is a caller error rather than reversed flow. Zero is allowed and correct: no flow moves no fluid, so no power is required.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "H",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a negative head means the machine is extracting energy from the fluid, which is a turbine and a different calculation. Zero is allowed and gives zero power: developing no head needs no power.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "eta",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`eta` is a divisor, so zero is singular - and physically it would mean a pump requiring infinite shaft power to deliver finite hydraulic power.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "eta",
+            min: None,
+            min_inclusive: true,
+            max: Some(1.0),
+            max_inclusive: true,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An efficiency above 1 would mean more hydraulic power out than shaft power in. That is not an engineering uncertainty to warn about but a violation of the first law, so it is rejected rather than flagged. The bound is inclusive because 1 is the ideal pump: lossless, and a legitimate limiting case.",
+        },
+    },
+];
+
+static PUMP_POWER_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "denser_fluid_different_operating_point",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("rho", 1200.0), ("q", 0.05), ("H", 12.0), ("eta", 0.6)],
+        lists: &[],
+        expected: &[("power", 11767.98)],
+    },
+    TestCase {
+        id: "an_ideal_pump_delivers_the_hydraulic_power_exactly",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("rho", 998.0), ("q", 0.01), ("H", 30.0), ("eta", 1.0)],
+        lists: &[],
+        expected: &[("power", 2936.11101)],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+    TestCase {
+        id: "monotonic",
+        kind: "property",
+        property: Some("monotonic"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        expected: &[],
+    },
+];
+
+/// Registered spec for `hydraulics.pump_power`.
+///
+/// Public and addressable directly, so a calc can hold `&PUMP_POWER_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static PUMP_POWER_SPEC: CalcSpec = CalcSpec {
+    id: "hydraulics.pump_power",
+    verification: "unverified",
+    checks: PUMP_POWER_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "water_10_litres_per_second_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("rho", 998.0), ("q", 0.01), ("H", 30.0), ("eta", 0.75)],
+        lists: &[],
+        expected: &[("power", 3914.81468)],
+    },
+    tests: PUMP_POWER_TESTS,
+};
+
 /// Registry entry for `hydraulics.reynolds_number`.
 static REYNOLDS_NUMBER_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -974,6 +1121,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &FRICTION_FACTOR_HAALAND_SPEC,
     &FRICTION_FACTOR_SWAMEE_JAIN_SPEC,
     &ORIFICE_FLOW_SPEC,
+    &PUMP_POWER_SPEC,
     &REYNOLDS_NUMBER_SPEC,
 ];
 

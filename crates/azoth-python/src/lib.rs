@@ -33,8 +33,8 @@ mod thermal;
 
 use results::{
     PyColebrookResult, PyConductionPlaneWallResult, PyDarcyWeisbachResult, PyHaalandResult,
-    PyKComponent, PyKFactorsResult, PyOrificeFlowResult, PyQty, PyReynoldsNumberResult,
-    PySwameeJainResult, PyWarning,
+    PyKComponent, PyKFactorsResult, PyOrificeFlowResult, PyPumpPowerResult, PyQty,
+    PyReynoldsNumberResult, PySwameeJainResult, PyWarning,
 };
 
 #[pymodule]
@@ -53,6 +53,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySwameeJainResult>()?;
     m.add_class::<PyHaalandResult>()?;
     m.add_class::<PyConductionPlaneWallResult>()?;
+    m.add_class::<PyPumpPowerResult>()?;
     m.add_class::<PyOrificeFlowResult>()?;
     m.add_class::<PyKFactorsResult>()?;
     m.add_class::<PyDarcyWeisbachResult>()?;
@@ -68,6 +69,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(hydraulics::crane_k_factors, m)?)?;
     m.add_function(wrap_pyfunction!(hydraulics::darcy_weisbach, m)?)?;
 
+    m.add_function(wrap_pyfunction!(hydraulics::pump_power, m)?)?;
     m.add_function(wrap_pyfunction!(hydraulics::orifice_flow, m)?)?;
 
     // Thermal calculations.
