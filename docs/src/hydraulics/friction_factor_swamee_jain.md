@@ -98,9 +98,9 @@ For Re = 1.0e5 and relative_roughness = 4.6e-4 (commercial steel, epsilon = 0.04
 
 ## Implementation
 
-- Python: `chemeng.hydraulics.friction_factor_swamee_jain`
+- Python: `azoth.hydraulics.friction_factor_swamee_jain`
 
-- Rust: `chemeng_hydraulics::friction_factor_swamee_jain`
+- Rust: `azoth_hydraulics::friction_factor_swamee_jain`
 
 
 ## References

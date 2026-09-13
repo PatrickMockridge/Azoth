@@ -1,0 +1,17 @@
+[package]
+name = "azoth-hydraulics"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Hydraulics calculations: Reynolds number, friction factors, fitting losses, Darcy-Weisbach"
+
+[dependencies]
+azoth-core.workspace = true
+uom.workspace = true
+thiserror.workspace = true
+csv.workspace = true
+
+[lints]
+workspace = true

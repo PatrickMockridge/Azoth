@@ -7,12 +7,12 @@ from typing import Any
 import pytest
 
 import _helpers as h
-from chemeng import ureg
-from chemeng.core.errors import OutOfRangeError
-from chemeng.core.result import DarcyWeisbachResult, FlowRegime
-from chemeng.core.warnings import WarningCode
-from chemeng.hydraulics import darcy_weisbach
-from chemeng.hydraulics.reference.darcy_weisbach import add_fitting_loss
+from azoth import ureg
+from azoth.core.errors import OutOfRangeError
+from azoth.core.result import DarcyWeisbachResult, FlowRegime
+from azoth.core.warnings import WarningCode
+from azoth.hydraulics import darcy_weisbach
+from azoth.hydraulics.reference.darcy_weisbach import add_fitting_loss
 
 CALC_ID = "hydraulics.darcy_weisbach"
 Q = ureg.Quantity

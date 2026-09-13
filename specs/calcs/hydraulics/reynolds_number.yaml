@@ -104,8 +104,8 @@ worked_example:
   tolerance: 1.0e-12
 
 implementations:
-  python: chemeng.hydraulics.reynolds_number
-  rust: chemeng_hydraulics::reynolds_number
+  python: azoth.hydraulics.reynolds_number
+  rust: azoth_hydraulics::reynolds_number
 
 tests:
   - id: water_pipe_worked_example

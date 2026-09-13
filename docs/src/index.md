@@ -1,4 +1,4 @@
-# chemeng
+# azoth
 
 Open, validated, citable chemical engineering calculations.
 
@@ -54,7 +54,7 @@ Orifice, control valve, relief valve and pump calculations are not implemented.
 ## How the pieces fit together
 
 Each calculation is independent, and the composition is done by the caller. The
-`chemeng pipe` command performs the one shown here, and reports the two pressure
+`azoth pipe` command performs the one shown here, and reports the two pressure
 drop contributions separately rather than only their sum - they come from
 different methods, and seeing which one dominates is part of judging the answer.
 

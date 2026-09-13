@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from chemeng import ureg
-from chemeng.core.errors import PropertyUnavailableError
-from chemeng.core.units import Q
-from chemeng.properties import AIR, WATER, available_fluids, provider_for
-from chemeng.properties.provider import STANDARD_PRESSURE_PA, PropertyProvider, TableProvider
+from azoth import ureg
+from azoth.core.errors import PropertyUnavailableError
+from azoth.core.units import Q
+from azoth.properties import AIR, WATER, available_fluids, provider_for
+from azoth.properties.provider import STANDARD_PRESSURE_PA, PropertyProvider, TableProvider
 
 
 def celsius(value: float) -> Q:
@@ -104,7 +104,7 @@ def test_fluid_names_are_normalised() -> None:
 
 def test_a_bare_number_is_rejected_where_a_temperature_is_expected() -> None:
     """The units boundary applies to properties too."""
-    from chemeng.core.errors import UnitMismatchError
+    from azoth.core.errors import UnitMismatchError
 
     with pytest.raises(UnitMismatchError):
         WATER.density(293.15)  # type: ignore[arg-type]

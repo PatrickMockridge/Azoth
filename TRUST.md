@@ -1,11 +1,11 @@
-# Verifying chemeng
+# Verifying azoth
 
 This library asks to be trusted with engineering numbers, so it should be
 possible to check rather than believe. This document says what you can verify,
 how to do it, and - just as importantly - what none of it proves.
 
 The trust comes from git, signatures, and reproducible hashes, which are boring
-and work. chemeng operates no ledger, issues no token, and contains no smart
+and work. azoth operates no ledger, issues no token, and contains no smart
 contract or consensus code.
 
 One external service does appear: **source documents are pinned by Arweave
@@ -38,14 +38,14 @@ Tags are signed with an SSH key. You need the maintainer's public key.
 # The key that signs this repository's tags:
 #   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG/xPE6bujR5o37Fw2wU4r5zZZ8su3tQ3rbRoeAfZ/mL
 
-git clone https://github.com/placeholder/chemeng
-cd chemeng
+git clone https://github.com/placeholder/azoth
+cd azoth
 
 # Tell git which keys may sign for which identity. The principal must be the
 # committer email, not the key comment.
 echo 'patrickmockridge@gmail.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG/xPE6bujR5o37Fw2wU4r5zZZ8su3tQ3rbRoeAfZ/mL' \
-  > /tmp/chemeng-allowed-signers
-git -c gpg.ssh.allowedSignersFile=/tmp/chemeng-allowed-signers tag -v v0.1.0
+  > /tmp/azoth-allowed-signers
+git -c gpg.ssh.allowedSignersFile=/tmp/azoth-allowed-signers tag -v v0.1.0
 ```
 
 A good result looks like:
@@ -71,10 +71,10 @@ produced it.
 
 ```bash
 # Install cosign, then download the wheel and its bundle from the release.
-WHEEL=$(ls chemeng-*.whl)
+WHEEL=$(ls azoth-*.whl)
 cosign verify-blob "$WHEEL" \
   --bundle "${WHEEL}.sigstore.json" \
-  --certificate-identity-regexp '^https://github\.com/placeholder/chemeng/\.github/workflows/release\.yml@refs/tags/v.*$' \
+  --certificate-identity-regexp '^https://github\.com/placeholder/azoth/\.github/workflows/release\.yml@refs/tags/v.*$' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
@@ -109,12 +109,12 @@ dP = f * (L / D) * (rho * v**2 / 2)
 Then check the code agrees, in either language:
 
 ```bash
-cargo run -p chemeng-cli -- pipe --fluid water --flow 10 --diameter 0.1 --length 100
+cargo run -p azoth-cli -- pipe --fluid water --flow 10 --diameter 0.1 --length 100
 
 python -c "
-import chemeng
-q = chemeng.ureg.Quantity
-r = chemeng.hydraulics.darcy_weisbach(
+import azoth
+q = azoth.ureg.Quantity
+r = azoth.hydraulics.darcy_weisbach(
     0.02, q(100.0,'m'), q(0.1,'m'), q(998.0,'kg/m**3'), q(1.5,'m/s'))
 print(r.dp)
 "

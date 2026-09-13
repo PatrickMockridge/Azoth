@@ -21,10 +21,10 @@ from typing import Any
 
 import pytest
 
-from chemeng import hydraulics
-from chemeng._registry_gen import BY_ID, CALCS, spec
-from chemeng.core.result import RESULT_TYPES
-from chemeng.core.warnings import WarningCode
+from azoth import hydraulics
+from azoth._registry_gen import BY_ID, CALCS, spec
+from azoth.core.result import RESULT_TYPES
+from azoth.core.warnings import WarningCode
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
@@ -64,14 +64,14 @@ def test_declared_outputs_are_result_fields(calc: dict[str, Any]) -> None:
 def test_every_result_carries_the_calc_id(calc: dict[str, Any]) -> None:
     """The spec's implementation paths must name the real functions."""
     namespace, _, function_name = calc["id"].rpartition(".")
-    assert calc["implementations"]["python"] == f"chemeng.{namespace}.{function_name}"
+    assert calc["implementations"]["python"] == f"azoth.{namespace}.{function_name}"
 
     module = getattr(hydraulics, function_name, None)
-    assert module is not None, f"{calc['id']}: chemeng.hydraulics.{function_name} does not exist"
+    assert module is not None, f"{calc['id']}: azoth.hydraulics.{function_name} does not exist"
 
     reference = getattr(
         __import__(
-            f"chemeng.hydraulics.reference.{function_name}",
+            f"azoth.hydraulics.reference.{function_name}",
             fromlist=[function_name],
         ),
         function_name,
@@ -92,12 +92,12 @@ def test_spec_inputs_match_function_signatures(calc: dict[str, Any]) -> None:
     declared = set(calc["inputs"])
     dispatched = set(inspect.signature(getattr(hydraulics, function_name)).parameters)
     reference_module = __import__(
-        f"chemeng.hydraulics.reference.{function_name}", fromlist=[function_name]
+        f"azoth.hydraulics.reference.{function_name}", fromlist=[function_name]
     )
     reference = set(inspect.signature(getattr(reference_module, function_name)).parameters)
 
     assert dispatched == declared, (
-        f"{calc['id']}: chemeng.hydraulics.{function_name} takes {sorted(dispatched)} "
+        f"{calc['id']}: azoth.hydraulics.{function_name} takes {sorted(dispatched)} "
         f"but the spec declares {sorted(declared)}"
     )
     assert reference == declared, (
@@ -116,7 +116,7 @@ def test_optional_inputs_are_optional_in_the_signature(calc: dict[str, Any]) -> 
     """
     _, _, function_name = calc["id"].rpartition(".")
     reference_module = __import__(
-        f"chemeng.hydraulics.reference.{function_name}", fromlist=[function_name]
+        f"azoth.hydraulics.reference.{function_name}", fromlist=[function_name]
     )
     parameters = inspect.signature(getattr(reference_module, function_name)).parameters
 

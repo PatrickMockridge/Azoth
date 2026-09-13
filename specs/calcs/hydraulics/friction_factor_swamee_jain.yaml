@@ -108,8 +108,8 @@ worked_example:
   tolerance: 1.0e-6
 
 implementations:
-  python: chemeng.hydraulics.friction_factor_swamee_jain
-  rust: chemeng_hydraulics::friction_factor_swamee_jain
+  python: azoth.hydraulics.friction_factor_swamee_jain
+  rust: azoth_hydraulics::friction_factor_swamee_jain
 
 tests:
   - id: commercial_steel_worked_example

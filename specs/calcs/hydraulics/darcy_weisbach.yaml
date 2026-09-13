@@ -134,8 +134,8 @@ worked_example:
   tolerance: 1.0e-9
 
 implementations:
-  python: chemeng.hydraulics.darcy_weisbach
-  rust: chemeng_hydraulics::darcy_weisbach
+  python: azoth.hydraulics.darcy_weisbach
+  rust: azoth_hydraulics::darcy_weisbach
 
 tests:
   - id: derived_worked_example

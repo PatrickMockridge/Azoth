@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://chemeng.dev/schema/calc.schema.json",
-  "title": "ChemEng calculation spec",
-  "description": "A single calculation in the ChemEng registry. Every calc must declare its equation, a source, the range in which it is validated, its assumptions, a worked example, and the tests that exercise it. Docs and tests are generated from these files, so this schema is the single source of truth.",
+  "$id": "https://azoth.dev/schema/calc.schema.json",
+  "title": "Azoth calculation spec",
+  "description": "A single calculation in the Azoth registry. Every calc must declare its equation, a source, the range in which it is validated, its assumptions, a worked example, and the tests that exercise it. Docs and tests are generated from these files, so this schema is the single source of truth.",
   "type": "object",
   "additionalProperties": false,
   "required": [

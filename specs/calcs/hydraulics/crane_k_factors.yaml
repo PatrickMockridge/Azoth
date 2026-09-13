@@ -48,7 +48,7 @@ inputs:
       Crane specifies f_T, the fully turbulent friction factor at the nominal
       fitting size. Using the actual friction factor at the flow Reynolds number
       instead is a common and slightly more accurate variant, and is what the
-      `chemeng pipe` CLI does. Either is defensible; both must be stated, because
+      `azoth pipe` CLI does. Either is defensible; both must be stated, because
       they give different answers.
 
 outputs:
@@ -110,8 +110,8 @@ worked_example:
   tolerance: 1.0e-9
 
 implementations:
-  python: chemeng.hydraulics.crane_k_factors
-  rust: chemeng_hydraulics::crane_k_factors
+  python: azoth.hydraulics.crane_k_factors
+  rust: azoth_hydraulics::crane_k_factors
 
 tests:
   - id: elbow_and_gate_valve_worked_example

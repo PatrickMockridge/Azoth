@@ -1,0 +1,25 @@
+[package]
+name = "azoth-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Command-line interface for the azoth calculation library"
+
+[lib]
+name = "azoth_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "azoth"
+path = "src/main.rs"
+
+[dependencies]
+azoth-core.workspace = true
+azoth-hydraulics.workspace = true
+uom.workspace = true
+clap.workspace = true
+
+[lints]
+workspace = true

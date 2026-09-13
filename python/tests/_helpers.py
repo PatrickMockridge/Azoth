@@ -1,6 +1,6 @@
 """Shared helpers for the spec-driven tests.
 
-Mirrors ``crates/chemeng-hydraulics/tests/common/mod.rs``. The tests in this
+Mirrors ``crates/azoth-hydraulics/tests/common/mod.rs``. The tests in this
 directory are not hand-written per calc: they walk the spec's ``tests`` list and
 execute whatever it declares, so a test added to a spec YAML runs in both
 languages with no new test code. That is the whole point of generating the
@@ -18,10 +18,10 @@ from typing import Any
 
 import pint
 
-from chemeng._registry_gen import BY_ID, CALCS
-from chemeng.core.result import FlowRegime
-from chemeng.core.units import to_si
-from chemeng.core.warnings import Warning, WarningCode
+from azoth._registry_gen import BY_ID, CALCS
+from azoth.core.result import FlowRegime
+from azoth.core.units import to_si
+from azoth.core.warnings import Warning, WarningCode
 
 __all__ = [
     "CALCS",
@@ -169,7 +169,7 @@ def assert_warnings_agree_with_spec(
         if value is None:
             unresolvable.add(quantity)
             continue
-        from chemeng.core.range import RangeCheck
+        from azoth.core.range import RangeCheck
 
         check = RangeCheck.from_spec(raw)
         should_warn = check.severity.value == "warning" and check.violated(value)

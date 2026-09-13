@@ -109,9 +109,9 @@ The inputs are those given in the project brief. The expected value is NOT the o
 
 ## Implementation
 
-- Python: `chemeng.hydraulics.darcy_weisbach`
+- Python: `azoth.hydraulics.darcy_weisbach`
 
-- Rust: `chemeng_hydraulics::darcy_weisbach`
+- Rust: `azoth_hydraulics::darcy_weisbach`
 
 
 ## References

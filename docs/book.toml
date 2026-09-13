@@ -1,7 +1,7 @@
 [book]
-title = "chemeng"
+title = "azoth"
 description = "Open, validated, citable chemical engineering calculations"
-authors = ["chemeng contributors"]
+authors = ["azoth contributors"]
 language = "en"
 src = "src"
 
@@ -12,7 +12,7 @@ after = ["links"]
 [preprocessor.mermaid]
 
 [output.html]
-git-repository-url = "https://github.com/placeholder/chemeng"
+git-repository-url = "https://github.com/placeholder/azoth"
 # `smart-punctuation` in mdBook 0.5; the key was `curly-quotes` in 0.4 and the
 # old name is a hard error rather than a warning.
 smart-punctuation = true

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from chemeng import active_backend, available, backend_info
-from chemeng._dispatch import RustBackendUnavailableError, use_backend
+from azoth import active_backend, available, backend_info
+from azoth._dispatch import RustBackendUnavailableError, use_backend
 
 
 def test_python_is_always_available() -> None:
@@ -24,7 +24,7 @@ def test_selection_is_queryable() -> None:
 def test_the_reference_implementation_is_always_reachable() -> None:
     """A reference that can only be reached through the thing it validates is not
     much of a check."""
-    from chemeng.hydraulics.reference import reynolds_number
+    from azoth.hydraulics.reference import reynolds_number
 
     assert callable(reynolds_number)
 

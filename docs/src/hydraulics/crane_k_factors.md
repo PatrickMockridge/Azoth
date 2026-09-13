@@ -34,7 +34,7 @@ Consequence for testing: because the coefficients are placeholders, there is no 
 | Name | Unit | Description |
 |---|---|---|
 | `fittings` | - | One or more fitting ids, resolved against data/fittings/crane_k_factors.csv. An unknown id is a caller error and raises, rather than being skipped or treated as zero loss. |
-| `f_t` | dimensionless | Darcy friction factor used as the basis for the resistance coefficients. Crane specifies f_T, the fully turbulent friction factor at the nominal fitting size. Using the actual friction factor at the flow Reynolds number instead is a common and slightly more accurate variant, and is what the `chemeng pipe` CLI does. Either is defensible; both must be stated, because they give different answers. |
+| `f_t` | dimensionless | Darcy friction factor used as the basis for the resistance coefficients. Crane specifies f_T, the fully turbulent friction factor at the nominal fitting size. Using the actual friction factor at the flow Reynolds number instead is a common and slightly more accurate variant, and is what the `azoth pipe` CLI does. Either is defensible; both must be stated, because they give different answers. |
 
 
 ## Outputs
@@ -100,9 +100,9 @@ The CLI example from the project brief: a 90 degree standard elbow plus a fully 
 
 ## Implementation
 
-- Python: `chemeng.hydraulics.crane_k_factors`
+- Python: `azoth.hydraulics.crane_k_factors`
 
-- Rust: `chemeng_hydraulics::crane_k_factors`
+- Rust: `azoth_hydraulics::crane_k_factors`
 
 
 ## References

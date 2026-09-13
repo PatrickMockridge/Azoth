@@ -1,48 +1,82 @@
-# chemeng
+# azoth
 
 Open, validated, citable chemical engineering calculations.
 
-Every calculation ships with its equation, the source it came from, the range in
-which it is validated, its assumptions, a worked example, and tests. The
-documentation is generated from the same machine-readable specs the code is
-generated from, so the two cannot drift apart.
+> azoth is an open library of standard chemical engineering calculations where
+> every one carries its equation, the standard it came from, the range over which
+> it is validated, its assumptions, a worked example and automated tests. Python
+> reference implementation, Rust performance core, PyO3 binding them. Docs are
+> generated from the same machine-readable specs, so they cannot drift from the
+> code.
 
-> **Status: early.** This repository currently implements one vertical slice - the
-> hydraulics kernel through Darcy-Weisbach pressure drop. The fitting
-> coefficients it uses are **placeholders, not engineering data**. See
-> [Not for design work yet](#not-for-design-work-yet).
+**Status: early.** One vertical slice is implemented - the hydraulics kernel
+through Darcy-Weisbach pressure drop. The fitting coefficients it uses are
+**placeholders, not engineering data**. See
+[Not for design work yet](#not-for-design-work-yet).
 
-## Install and run
+## Install
 
 ```bash
-cargo test                       # Rust core
-pytest                           # Python package (from python/)
-mdbook build docs                # documentation
-cargo run -p chemeng-cli -- pipe --help
+pip install azoth          # the Python package, with the compiled Rust core
 ```
 
-The end-to-end check:
+From source:
 
 ```bash
-chemeng pipe --fluid water --flow 10 --diameter 0.1 --length 100 \
+git clone https://github.com/placeholder/azoth
+cd azoth
+
+uv venv && uv pip install maturin pytest ruff mypy
+maturin develop            # builds the Rust extension into the venv
+
+cargo test                 # Rust core
+pytest                     # Python package
+mdbook build docs          # documentation
+```
+
+## Quick start
+
+```python
+import azoth
+
+q = azoth.ureg.Quantity
+
+r = azoth.hydraulics.darcy_weisbach(
+    0.02, q(100.0, "m"), q(0.1, "m"), q(998.0, "kg/m**3"), q(1.5, "m/s")
+)
+
+r.dp  # 22455.0 pascal
+r.warnings  # (Warning(RANGE_CHECK_SKIPPED, ...),)
+r.is_clean  # False
+```
+
+Units cross the API as `pint` quantities, so a bare number where a length is
+expected is a `UnitMismatchError` rather than a silent thousand-fold error:
+
+```python
+>>> azoth.hydraulics.darcy_weisbach(0.02, 100.0, q(0.1, "m"), ...)
+UnitMismatchError: `L` must be a quantity convertible to 'meter', got 'float 100.0'
+```
+
+### From the command line
+
+```bash
+azoth pipe --fluid water --flow 10 --diameter 0.1 --length 100 \
     --fittings "90_elbow,gate_valve_open"
 ```
 
-## What's implemented
+```
+  reynolds number      35233.6  (turbulent)
+  friction factor      0.02391984  (colebrook, 13 iterations)
+    straight pipe           1493.3479 Pa
+    fittings                  56.7472 Pa   (3.7% of total)
+    total                   1550.0951 Pa   (1.550095 kPa, 0.015501 bar)
 
-| Calc | What it does |
-|---|---|
-| `hydraulics.reynolds_number` | Reynolds number and flow regime |
-| `hydraulics.friction_factor_colebrook` | Implicit Colebrook-White friction factor |
-| `hydraulics.friction_factor_swamee_jain` | Explicit approximation to it |
-| `hydraulics.crane_k_factors` | Fitting losses by the equivalent-length method |
-| `hydraulics.darcy_weisbach` | Pressure drop over a straight pipe |
+  1 warning(s)
+    [ESTIMATED_DATA] 2 of 2 fitting(s) use ESTIMATED DUMMY coefficients...
+```
 
-Pipe *with* fittings is a composition of the last two, done by the `chemeng pipe`
-CLI rather than by a calc of its own, because the two losses use different
-methods and adding them is a modelling decision worth seeing explicitly.
-
-## Two ideas the library is built around
+## The two ideas this library is built around
 
 **Warnings are not errors.** A value outside the range in which a correlation was
 validated is still a value. Refusing to return it would be less useful than
@@ -55,35 +89,50 @@ is missing, the range check that depends on it reports `RANGE_CHECK_SKIPPED`
 rather than quietly succeeding. In `darcy_weisbach`, omitting the viscosity
 leaves the flow regime unchecked, and the result says so.
 
+## What is implemented
+
+| Calc | What it does |
+|---|---|
+| `hydraulics.reynolds_number` | Reynolds number and flow regime |
+| `hydraulics.friction_factor_colebrook` | Implicit Colebrook-White friction factor |
+| `hydraulics.friction_factor_swamee_jain` | Explicit approximation to it |
+| `hydraulics.crane_k_factors` | Fitting losses by the equivalent-length method |
+| `hydraulics.darcy_weisbach` | Pressure drop over a straight pipe |
+
+Pipe *with* fittings is a composition of the last two, done by the `azoth pipe`
+CLI rather than by a calc of its own, because the two losses use different
+methods and adding them is a modelling decision worth seeing explicitly.
+
+Orifice, control valve, relief valve and pump calculations are not implemented.
+
+The calc ids are namespaced by **domain** (`hydraulics.*`), not by project. They
+appear in provenance records and citations, so renaming the project does not - and
+should not - invalidate them.
+
 ## Architecture
 
-Python for the reference implementation, Rust for the core, PyO3 binding them.
-
-```python
-import chemeng
-
-q = chemeng.ureg.Quantity
-
-r = chemeng.hydraulics.darcy_weisbach(
-    0.02, q(100.0, "m"), q(0.1, "m"), q(998.0, "kg/m**3"), q(1.5, "m/s")
-)
-r.dp  # 22455.0 pascal
-r.warnings  # (Warning(RANGE_CHECK_SKIPPED, ...),)
+```
+specs/calcs/**/*.yaml     the registry: one file per calculation
+        │
+        ├─► tools/gen_registry.py ─► crates/azoth-hydraulics/src/spec_gen.rs
+        │                          └► python/src/azoth/_registry_gen.py
+        ├─► tools/gen_docs.py     ─► docs/src/**
+        └─► tools/provenance.py   ─► provenance.json
 ```
 
+Python is the reference implementation and Rust the core, with PyO3 binding them.
 Units cross the public API as `pint` quantities and become plain floats inside;
 the Rust side does the same with `uom`. Both implementations therefore run the
 same arithmetic on the same numbers rather than each trusting its units library
 to arrive there by a different route, and they agree bit-for-bit on the worked
-examples.
+examples. The test suite runs every spec case through both.
 
 ### Why Rust, if not for speed
 
 For a single call, the Rust core is **not** faster than Python - PyO3 call
 overhead exceeds the cost of the arithmetic. Its value here is being a *second
 independent implementation* to cross-check the first against, plus a path to
-performance that does not require rewriting the maths. The cross-language test
-suite runs every spec case through both.
+performance that does not require rewriting the maths.
 
 If performance is your goal, the win is a batch API operating on arrays, which is
 not implemented. This section exists so nobody adopts the current design for a
@@ -92,24 +141,29 @@ reason it does not support.
 ## The specs are the source of truth
 
 `specs/calcs/**/*.yaml` defines each calculation: equation, source, valid range,
-assumptions, worked example, tests. From those, `tools/` generates:
+assumptions, worked example, tests. Each calc reads its range checks from the
+generated table, so a bound edited in a YAML file changes behaviour in both
+languages with no second edit.
 
-- `crates/chemeng-hydraulics/src/spec_gen.rs` - range checks and test cases
-- `python/src/chemeng/_registry_gen.py` - the same, as Python data
-- `docs/src/**` - the documentation
+CI regenerates the docs and the registries and fails on any diff, which is what
+makes "the docs cannot drift from the code" a property of the build rather than a
+claim in this file.
 
-CI regenerates and fails on any diff, so the docs cannot drift from the code.
-Each calc reads its range checks from the generated table, meaning a bound edited
-in a YAML file changes behaviour with no second edit.
+Adding a calculation means writing one spec, one Python function, one Rust
+function, and declaring the tests. The docs, the range checks and the test cases
+follow.
 
 ## Not for design work yet
 
 `data/fittings/crane_k_factors.csv` holds **estimated dummy values** - plausible
 magnitudes chosen so the software has something to run against. They are not from
 Crane TP-410 or any other standard. A pressure drop computed from them can be
-wrong by a factor of two and look entirely reasonable. Every affected result
-carries an `ESTIMATED_DATA` warning, `tools/spec_lint.py` prints the count on
-every run, and a test fails the day someone populates the file properly.
+wrong by a factor of two and look entirely reasonable.
+
+Every affected result carries an `ESTIMATED_DATA` warning, `tools/spec_lint.py`
+prints the count on every run, and a test fails the day someone populates the
+file properly. Values that are cited but not confirmed by a named verifier carry
+`UNVERIFIED_SOURCE` instead; only confirmed values are silent.
 
 Water and air properties under `data/fluids/` are a different case: real
 published values, marked `unverified` because they have not been checked against
@@ -117,16 +171,30 @@ a primary formulation.
 
 ## Verifying a result
 
-See [TRUST.md](TRUST.md) for verifying a release tag, checking a wheel with
-cosign, reproducing a calculation, and reading `provenance.json`.
+See [TRUST.md](TRUST.md): how to verify a release tag, check a wheel with cosign,
+reproduce a calculation by hand, and check a `provenance.json` record. It also
+states plainly what none of that proves - a verified artifact means the code is
+what it claims to be, not that the correlation is right for your fluid,
+roughness or Reynolds number.
+
+## Documentation
+
+```bash
+mdbook build docs && xdg-open docs/book/index.html
+```
+
+Every calc page carries the equation in LaTeX and in the form the library
+evaluates, its source and verification status, inputs and outputs, the validated
+range with the reason for each bound, the assumptions that are *not* checked, a
+worked example, and the tests - including which are deliberately skipped and why.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Adding a calc means writing one YAML
-spec, one Python function, one Rust function, and one test - the docs and the
-generated registries follow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[PR template](.github/PULL_REQUEST_TEMPLATE.md). Commits are signed.
 
 ## Licence
 
 Code under dual MIT / Apache-2.0. Documentation and data under CC-BY-4.0. See
-`LICENSE-MIT`, `LICENSE-APACHE` and `LICENSE-CC-BY`.
+[LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE) and
+[LICENSE-CC-BY](LICENSE-CC-BY).

@@ -5,7 +5,7 @@ implementations, cross-checked, so that a bug has to be made twice in two
 languages before it reaches a user.
 
 Marked ``requires_rust``: it skips when the extension is not built, and *fails*
-when ``CHEMENG_REQUIRE_RUST=1``. That distinction is the point - a skip is fine
+when ``AZOTH_REQUIRE_RUST=1``. That distinction is the point - a skip is fine
 while developing in Python, but in CI a skip here would mean the cross-language
 guarantee is verified by nothing.
 
@@ -25,9 +25,9 @@ from typing import Any
 import pytest
 
 import _helpers as h
-from chemeng._dispatch import resolve
-from chemeng._registry_gen import CALCS
-from chemeng.core.units import quantity
+from azoth._dispatch import resolve
+from azoth._registry_gen import CALCS
+from azoth.core.units import quantity
 
 pytestmark = pytest.mark.requires_rust
 
@@ -35,14 +35,14 @@ pytestmark = pytest.mark.requires_rust
 def _extension() -> ModuleType:
     """The compiled extension, imported by name.
 
-    By name rather than ``from chemeng import _core`` because the module does not
+    By name rather than ``from azoth import _core`` because the module does not
     exist until the bindings are built, and an attribute mypy cannot resolve is a
     worse trade than a lookup that fails clearly at runtime.
     """
     try:
-        return importlib.import_module("chemeng._core")
+        return importlib.import_module("azoth._core")
     except ImportError as exc:  # pragma: no cover - the marker skips these
-        raise AssertionError("chemeng._core is not built; run `maturin develop`") from exc
+        raise AssertionError("azoth._core is not built; run `maturin develop`") from exc
 
 
 def _kwargs(calc: dict[str, Any], inputs: dict[str, Any]) -> dict[str, Any]:
@@ -101,7 +101,7 @@ def test_python_and_rust_agree(calc: dict[str, Any], case: dict[str, Any]) -> No
 
     # `resolve` follows the selected backend, so pin each side explicitly rather
     # than assuming which one answered.
-    from chemeng._dispatch import use_backend
+    from azoth._dispatch import use_backend
 
     with use_backend("python"):
         py = resolve(calc["id"])(**kwargs)
@@ -136,7 +136,7 @@ def test_warning_codes_agree_across_languages() -> None:
     They are a cross-language contract: a caller comparing a warning from either
     implementation must not need to know which one produced it.
     """
-    from chemeng.core.warnings import WarningCode
+    from azoth.core.warnings import WarningCode
 
     core = _extension()
     rust_codes = set(core.warning_codes())
@@ -152,7 +152,7 @@ def test_result_shapes_agree_across_languages() -> None:
     """Every result dataclass must have exactly the fields Rust reports."""
     import dataclasses
 
-    from chemeng.core.result import RESULT_TYPES
+    from azoth.core.result import RESULT_TYPES
 
     core = _extension()
     for calc_id, result_type in RESULT_TYPES.items():
@@ -170,7 +170,7 @@ def test_errors_are_the_same_class_object() -> None:
     Not merely classes with the same names: the same objects, so that a caller
     writing ``except OutOfRangeError`` catches errors from either backend.
     """
-    from chemeng.core import errors
+    from azoth.core import errors
 
     core = _extension()
     for name in ("OutOfRangeError", "UnknownFittingError", "SolverNotConvergedError"):

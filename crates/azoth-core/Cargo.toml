@@ -1,0 +1,15 @@
+[package]
+name = "azoth-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Core types for the azoth calculation library: units, warnings, errors, results"
+
+[dependencies]
+uom.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

@@ -36,7 +36,7 @@ None, or:
 ## Checklist
 
 - [ ] `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --all --check`
-- [ ] `pytest` (with the extension built: `maturin develop && CHEMENG_REQUIRE_RUST=1 pytest`)
+- [ ] `pytest` (with the extension built: `maturin develop && AZOTH_REQUIRE_RUST=1 pytest`)
 - [ ] `ruff check && ruff format --check && mypy`
 - [ ] `python tools/spec_lint.py`
 - [ ] `mdbook build docs` and `python tools/check_links.py`

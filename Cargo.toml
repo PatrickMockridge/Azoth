@@ -1,10 +1,10 @@
 [workspace]
 resolver = "3"
 members = [
-  "crates/chemeng-core",
-  "crates/chemeng-hydraulics",
-  "crates/chemeng-python",
-  "crates/chemeng-cli",
+  "crates/azoth-core",
+  "crates/azoth-hydraulics",
+  "crates/azoth-python",
+  "crates/azoth-cli",
 ]
 
 [workspace.package]
@@ -12,18 +12,18 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/placeholder/chemeng"
+repository = "https://github.com/placeholder/azoth"
 description = "Open, validated, citable chemical engineering calculations"
-authors = ["chemeng contributors"]
+authors = ["azoth contributors"]
 
 [workspace.dependencies]
-chemeng-core = { path = "crates/chemeng-core" }
-chemeng-hydraulics = { path = "crates/chemeng-hydraulics" }
-chemeng-python = { path = "crates/chemeng-python" }
-chemeng-cli = { path = "crates/chemeng-cli" }
+azoth-core = { path = "crates/azoth-core" }
+azoth-hydraulics = { path = "crates/azoth-hydraulics" }
+azoth-python = { path = "crates/azoth-python" }
+azoth-cli = { path = "crates/azoth-cli" }
 
 # Units. Fixed-SI quantities at the public boundary; plain f64 inside. See
-# crates/chemeng-core/src/units.rs for why the API is not generic over U.
+# crates/azoth-core/src/units.rs for why the API is not generic over U.
 uom = "0.38"
 
 # Typed errors. Every variant carries enough context to name the offending

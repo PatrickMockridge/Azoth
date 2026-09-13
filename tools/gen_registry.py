@@ -3,8 +3,8 @@
 
 Reads every spec under specs/calcs/ and emits:
 
-  crates/chemeng-hydraulics/src/spec_gen.rs   specs as Rust statics
-  python/src/chemeng/_registry_gen.py         specs as Python data
+  crates/azoth-hydraulics/src/spec_gen.rs   specs as Rust statics
+  python/src/azoth/_registry_gen.py         specs as Python data
 
 Both outputs are committed and drift-checked in CI, so the specs are genuinely
 the single source of truth rather than a document that is supposed to match the
@@ -18,7 +18,7 @@ failure. Generating a `&'static` table moves that to compile time and keeps the
 dependency tree free of a parser that exists for one purpose.
 
 Design note on the generated range checks: they are emitted as full struct
-literals rather than through the convenience constructors in chemeng-core. The
+literals rather than through the convenience constructors in azoth-core. The
 constructors assume inclusive bounds, so a spec with, say, an exclusive lower
 and inclusive upper bound would be silently generated wrong. Struct literals
 cannot be wrong that way, and a reviewer reading the generated file sees the
@@ -44,8 +44,8 @@ except ImportError:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
-RUST_OUT = ROOT / "crates" / "chemeng-hydraulics" / "src" / "spec_gen.rs"
-PY_OUT = ROOT / "python" / "src" / "chemeng" / "_registry_gen.py"
+RUST_OUT = ROOT / "crates" / "azoth-hydraulics" / "src" / "spec_gen.rs"
+PY_OUT = ROOT / "python" / "src" / "azoth" / "_registry_gen.py"
 
 GENERATED_BANNER = "GENERATED FILE - DO NOT EDIT BY HAND."
 
@@ -220,7 +220,7 @@ def emit_rust(specs: list[dict[str, Any]], source_files: list[str]) -> str:
 //! bound changed in a spec file changes the code's behaviour with no second
 //! edit - and `cargo test` fails if the two ever disagree.
 
-use chemeng_core::{Band, RangeCheck, Severity, WarningCode};
+use azoth_core::{Band, RangeCheck, Severity, WarningCode};
 
 /// Solver configuration for an implicit calculation.
 #[derive(Debug, Clone, Copy, PartialEq)]

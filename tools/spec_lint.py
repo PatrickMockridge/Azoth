@@ -147,14 +147,14 @@ def check_identity(report: Report, rel: Path, spec: dict[str, Any]) -> None:
         )
 
     namespace, _, func = spec_id.rpartition(".")
-    expected_python = f"chemeng.{namespace}.{func}"
+    expected_python = f"azoth.{namespace}.{func}"
     if spec["implementations"]["python"] != expected_python:
         report.error(
             str(rel),
             f"implementations.python is '{spec['implementations']['python']}' "
             f"but the id implies '{expected_python}'",
         )
-    expected_rust = f"chemeng_{namespace}::{func}"
+    expected_rust = f"azoth_{namespace}::{func}"
     if spec["implementations"]["rust"] != expected_rust:
         report.error(
             str(rel),

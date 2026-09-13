@@ -114,9 +114,9 @@ The equation is implicit, so the example is not obtained by direct substitution.
 
 ## Implementation
 
-- Python: `chemeng.hydraulics.friction_factor_colebrook`
+- Python: `azoth.hydraulics.friction_factor_colebrook`
 
-- Rust: `chemeng_hydraulics::friction_factor_colebrook`
+- Rust: `azoth_hydraulics::friction_factor_colebrook`
 
 
 ## References

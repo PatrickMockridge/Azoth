@@ -8,16 +8,16 @@ from typing import Any
 import pytest
 
 import _helpers as h
-from chemeng import ureg
-from chemeng.core.errors import OutOfRangeError
-from chemeng.core.result import ColebrookResult
-from chemeng.core.warnings import WarningCode
-from chemeng.hydraulics import (
+from azoth import ureg
+from azoth.core.errors import OutOfRangeError
+from azoth.core.result import ColebrookResult
+from azoth.core.warnings import WarningCode
+from azoth.hydraulics import (
     friction_factor_colebrook,
     friction_factor_swamee_jain,
     reynolds_number,
 )
-from chemeng.hydraulics.reference.friction_factor_colebrook import fully_rough_limit
+from azoth.hydraulics.reference.friction_factor_colebrook import fully_rough_limit
 
 CALC_ID = "hydraulics.friction_factor_colebrook"
 Q = ureg.Quantity

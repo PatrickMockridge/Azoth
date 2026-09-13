@@ -100,9 +100,9 @@ Using the fluid of the Darcy-Weisbach example in this slice (water, rho = 998 kg
 
 ## Implementation
 
-- Python: `chemeng.hydraulics.reynolds_number`
+- Python: `azoth.hydraulics.reynolds_number`
 
-- Rust: `chemeng_hydraulics::reynolds_number`
+- Rust: `azoth_hydraulics::reynolds_number`
 
 
 ## References

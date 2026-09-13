@@ -7,11 +7,11 @@ from typing import Any
 import pytest
 
 import _helpers as h
-from chemeng import ureg
-from chemeng.core.errors import OutOfRangeError
-from chemeng.core.result import SwameeJainResult
-from chemeng.core.warnings import WarningCode
-from chemeng.hydraulics import friction_factor_swamee_jain, reynolds_number
+from azoth import ureg
+from azoth.core.errors import OutOfRangeError
+from azoth.core.result import SwameeJainResult
+from azoth.core.warnings import WarningCode
+from azoth.hydraulics import friction_factor_swamee_jain, reynolds_number
 
 CALC_ID = "hydraulics.friction_factor_swamee_jain"
 Q = ureg.Quantity

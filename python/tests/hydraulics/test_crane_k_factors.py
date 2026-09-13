@@ -19,11 +19,11 @@ from typing import Any
 import pytest
 
 import _helpers as h
-from chemeng.core.errors import OutOfRangeError, UnknownFittingError
-from chemeng.core.result import KFactorsResult
-from chemeng.core.warnings import WarningCode
-from chemeng.hydraulics import crane_k_factors
-from chemeng.hydraulics.reference.fittings import find_fitting, registry
+from azoth.core.errors import OutOfRangeError, UnknownFittingError
+from azoth.core.result import KFactorsResult
+from azoth.core.warnings import WarningCode
+from azoth.hydraulics import crane_k_factors
+from azoth.hydraulics.reference.fittings import find_fitting, registry
 
 CALC_ID = "hydraulics.crane_k_factors"
 

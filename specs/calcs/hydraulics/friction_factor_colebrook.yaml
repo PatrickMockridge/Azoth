@@ -97,8 +97,8 @@ worked_example:
   tolerance: 1.0e-6
 
 implementations:
-  python: chemeng.hydraulics.friction_factor_colebrook
-  rust: chemeng_hydraulics::friction_factor_colebrook
+  python: azoth.hydraulics.friction_factor_colebrook
+  rust: azoth_hydraulics::friction_factor_colebrook
 
 tests:
   - id: commercial_steel_worked_example

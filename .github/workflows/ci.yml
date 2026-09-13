@@ -55,7 +55,7 @@ jobs:
       # The whole point of this job. Without it, a broken extension build makes
       # every test pass on the Python path while the cross-language agreement
       # this project promises is verified by nothing.
-      CHEMENG_REQUIRE_RUST: "1"
+      AZOTH_REQUIRE_RUST: "1"
       VIRTUAL_ENV: ${{ github.workspace }}/.venv
     steps:
       - uses: actions/checkout@v4
@@ -89,7 +89,7 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v5
       - run: uv venv --python 3.12
-      # pint is needed for mypy to resolve `chemeng.core.units`, not to run.
+      # pint is needed for mypy to resolve `azoth.core.units`, not to run.
       - run: uv pip install ruff mypy "pint>=0.24"
       - run: .venv/bin/ruff check
       - run: .venv/bin/ruff format --check

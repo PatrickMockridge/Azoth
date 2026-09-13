@@ -24,7 +24,7 @@ exists to rule out.
 # What it does not cover
 
 Per-calc hashes cover that calc's own spec, code and tests. They are not a
-transitive closure: `chemeng-core` and the shared solver affect every result, so
+transitive closure: `azoth-core` and the shared solver affect every result, so
 those are listed once under `shared` rather than repeated per calc. Read the two
 together.
 
@@ -57,21 +57,21 @@ SCHEMA_VERSION = 1
 #: Files that affect every calculation's result. Hashed once here rather than
 #: once per calc, because repeating them would suggest they are per-calc.
 SHARED = (
-    "crates/chemeng-core/src/range.rs",
-    "crates/chemeng-core/src/result.rs",
-    "crates/chemeng-core/src/units.rs",
-    "crates/chemeng-core/src/warning.rs",
-    "crates/chemeng-hydraulics/src/solver.rs",
-    "crates/chemeng-hydraulics/src/fittings.rs",
-    "crates/chemeng-hydraulics/src/fluids.rs",
-    "crates/chemeng-hydraulics/src/provenance.rs",
-    "crates/chemeng-hydraulics/src/spec_gen.rs",
-    "crates/chemeng-python/src/hydraulics.rs",
-    "crates/chemeng-python/src/results.rs",
-    "python/src/chemeng/core/range.py",
-    "python/src/chemeng/core/units.py",
-    "python/src/chemeng/_registry_gen.py",
-    "python/src/chemeng/_rust_bridge.py",
+    "crates/azoth-core/src/range.rs",
+    "crates/azoth-core/src/result.rs",
+    "crates/azoth-core/src/units.rs",
+    "crates/azoth-core/src/warning.rs",
+    "crates/azoth-hydraulics/src/solver.rs",
+    "crates/azoth-hydraulics/src/fittings.rs",
+    "crates/azoth-hydraulics/src/fluids.rs",
+    "crates/azoth-hydraulics/src/provenance.rs",
+    "crates/azoth-hydraulics/src/spec_gen.rs",
+    "crates/azoth-python/src/hydraulics.rs",
+    "crates/azoth-python/src/results.rs",
+    "python/src/azoth/core/range.py",
+    "python/src/azoth/core/units.py",
+    "python/src/azoth/_registry_gen.py",
+    "python/src/azoth/_rust_bridge.py",
     # The tools are part of the chain: gen_registry.py writes spec_gen.rs, which
     # every calc reads its range checks from, so a change there changes results.
     # provenance.py hashes itself - the hash of the output then depends on the
@@ -139,7 +139,7 @@ def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
 
     tests = [
         describe(f"python/tests/{namespace}/test_{name}.py"),
-        describe(f"crates/{'chemeng-' + namespace}/tests/{name}.rs"),
+        describe(f"crates/{'azoth-' + namespace}/tests/{name}.rs"),
     ]
     return {
         "id": spec["id"],
@@ -148,8 +148,8 @@ def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
         "verification": spec["verification"]["status"],
         "spec": describe(f"specs/calcs/{namespace}/{name}.yaml"),
         "code": [
-            describe(f"python/src/chemeng/{namespace}/reference/{name}.py"),
-            describe(f"crates/chemeng-{namespace}/src/{name}.rs"),
+            describe(f"python/src/azoth/{namespace}/reference/{name}.py"),
+            describe(f"crates/azoth-{namespace}/src/{name}.rs"),
         ],
         "tests": tests,
     }
@@ -166,7 +166,7 @@ def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "library": {"name": "chemeng", "version": version()},
+        "library": {"name": "azoth", "version": version()},
         "git": {
             "commit": git("rev-parse", "HEAD"),
             "tag": resolved_tag,
