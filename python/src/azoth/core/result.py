@@ -569,6 +569,43 @@ class PtFlashResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class PhFlashResult(_HasWarnings):
+    """Result of ``eos.ph_flash``.
+
+    The state a mixture reaches when a duty is applied at a fixed pressure: the
+    temperature that satisfies the energy balance, and the phase split at it. The
+    split is reported in as much detail as :class:`PtFlashResult` because it *is* one
+    - the flash evaluated at the answer - and a caller who needs the compositions
+    should not have to run it again to get them.
+    """
+
+    #: The temperature that satisfies the enthalpy. This is the model's answer.
+    T: Q
+    #: The vapour fraction at that temperature, or ``None`` for a single-phase feed.
+    #: ``None`` rather than a number outside ``[0, 1]``: the flash extrapolates a
+    #: split that does not exist, and reporting it would invite a caller to use it.
+    beta: float | None
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Bisection steps taken.
+    iterations: int
+    #: ``|H(T) - H_target| / max(|H_target|, 1)`` at the answer.
+    residual: float
+    #: Caveats, deduplicated - the search evaluates the flash thousands of times.
+    warnings: tuple[Warning, ...]
+
+
 class StabilityVerdict(StrEnum):
     """Whether a feed is stable as a single phase.
 

@@ -41,6 +41,7 @@ from azoth.core.result import (
     KFactorsResult,
     MolarEnthalpyEntropyResult,
     OrificeFlowResult,
+    PhFlashResult,
     PrAlphaAbResult,
     PrDepartureResult,
     PrKappaResult,
@@ -443,6 +444,52 @@ def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
         z_vapour=result.z_vapour,
         min_t_over_tc=result.min_t_over_tc,
         phase=_Phase(result.phase),
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ph_flash(mixture: Any, ideal_gas: Any, P: Q, H: Q, z: Sequence[float]) -> PhFlashResult:
+    """The pressure-enthalpy flash of a mixture, solved in Rust.
+
+    The ideal-gas vectors cross as six parallel lists plus the two reference states,
+    exactly as `molar_enthalpy_entropy` sends them. They are the datum the requested
+    enthalpy is a difference from, and a coefficient set without a reference state is
+    not a thermodynamic model - which is why they are required here even though this
+    model uses only four of the six.
+
+    `beta` crosses as `Option<f64>` and becomes `None`, not a sentinel: a single-phase
+    feed has no vapour fraction, and the flash's own extrapolated value would be a
+    number a caller could use by mistake.
+    """
+    spec = _models_gen.model("eos.ph_flash")
+    result = _core.ph_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        [v for v in ideal_gas.h_ref],
+        [v for v in ideal_gas.s_ref],
+        input_to_si(spec, "T_ref", ideal_gas.T_ref),
+        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "H", H),
+        list(z),
+    )
+    return PhFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
         iterations=result.iterations,
         residual=result.residual,
         warnings=_warnings(result.warnings),

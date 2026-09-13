@@ -1,0 +1,318 @@
+id: eos.ph_flash
+name: Pressure-enthalpy flash
+kind: procedure
+
+description: >
+  The temperature at which a mixture of known composition has a given molar enthalpy
+  at a given pressure, together with the phase split there.
+
+  This is the model a unit operation needs. Every one that adds or removes energy -
+  a heater, a cooler, a compressor, an expander, a valve - knows the pressure a stream
+  leaves at and the duty it put in, and does not know the temperature that results.
+  `eos.pt_flash` answers the other question; this is the second of the two the process
+  layer needs before a flowsheet can run.
+
+  **The enthalpy is a difference from a datum the caller supplies**, not an absolute
+  quantity. Two calls with different reference values are not comparable and their
+  difference is a plausible number rather than an error, which is the same caveat
+  `eos.molar_enthalpy_entropy` carries and for the same reason.
+
+source:
+  standard: Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup
+  edition: >
+    The procedure is the ordinary one: the enthalpy of a mixture at fixed pressure is a
+    strictly increasing function of temperature, so inverting it is well posed, and the
+    enthalpy of a two-phase state is the phase-fraction weighted sum of the two phase
+    enthalpies. **The specific text has not been read** and no equation number is
+    claimed. What is checked is against this project's own pieces, and the spec's notes
+    say what that does and does not establish.
+
+references:
+  - 'Michelsen, M. L.; Mollerup, J. M. (2004). "Thermodynamic Models: Fundamentals and
+    Computational Aspects." Tie-Line Publications. (named as where the treatment of
+    isenthalpic flashes lives; not read, and no equation number is claimed - see `notes`)'
+  - 'Smith, J. M.; Van Ness, H. C.; Abbott, M. M. "Introduction to Chemical Engineering
+    Thermodynamics." (the standard statement that the enthalpy of a mixture at fixed
+    pressure increases with temperature; not read here)'
+
+algorithm:
+  scheme: ph_flash_temperature_bisection
+  convergence: relative
+  tolerance: 1.0e-8
+  max_iterations: 200
+  bracket:
+    scheme: linear_scan_for_enthalpy
+    lower: 100.0
+    upper: 1500.0
+    steps: 2000
+  inner:
+    scheme: successive_substitution_flash
+    initialisation: wilson
+    convergence: absolute
+    tolerance: 1.0e-10
+    max_iterations: 300
+    inner:
+      scheme: rachford_rice_bisection
+      convergence: absolute
+      tolerance: 1.0e-14
+      max_iterations: 200
+
+inputs:
+  Tc:
+    type: vector
+    unit: K
+    length: one per component
+    description: critical temperatures, in the mixture's component order
+  Pc:
+    type: vector
+    unit: Pa
+    length: one per component
+    description: critical pressures, in the same order
+  omega:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: >
+      acentric factors, in the same order. All three vectors are the caller's - this
+      library ships a databank of them (`azoth.eos.component`) - and they must be
+      mutually consistent, which is not checked.
+  kij:
+    type: matrix
+    unit: dimensionless
+    shape: N x N, symmetric, zero diagonal
+    description: binary interaction parameters, as in `eos.pt_flash`
+  cp_a:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: >
+      the constant term of each component's `Cp/R` polynomial, as in
+      `eos.molar_enthalpy_entropy`. Together with the three below and the reference
+      values, this is the datum the requested enthalpy is measured from.
+  cp_b:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the coefficient of `theta` in each component's polynomial
+  cp_c:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the coefficient of `theta**2`
+  cp_d:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the coefficient of `theta**3`
+  h_ref:
+    type: vector
+    unit: J/mol
+    length: one per component
+    description: each component's ideal-gas molar enthalpy at `T_ref`. This is the datum.
+  s_ref:
+    type: vector
+    unit: J/(mol*K)
+    length: one per component
+    description: >
+      each component's ideal-gas molar entropy at `T_ref` and `P_ref`. **Not used by
+      this model** - an isenthalpic flash does not need it - and required only because
+      it belongs to the same ideal-gas model the enthalpy is computed from, and a
+      coefficient set without a reference state is not a thermodynamic model.
+  T_ref:
+    unit: K
+    description: the temperature the reference values are given at
+  P_ref:
+    unit: Pa
+    description: >
+      the pressure `s_ref` is given at. It does not enter this model's answer, for the
+      same reason `s_ref` does not.
+  P:
+    unit: Pa
+    description: absolute pressure. Held fixed; the temperature is what is solved for.
+  H:
+    unit: J/mol
+    description: >
+      the molar enthalpy the mixture is to reach, as a difference from the datum above.
+      A magnitude, and it may be negative - a reference state that puts zero anywhere
+      is a convention, not a physical floor.
+  z:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the feed's mole fractions. Checked rather than renormalised.
+
+outputs:
+  T:
+    unit: K
+    description: the temperature that satisfies the enthalpy. This is the answer.
+  beta:
+    unit: dimensionless
+    description: >
+      the vapour fraction at that temperature. Absent for a single-phase feed, where
+      the flash reports an extrapolated split rather than a physical one - see the
+      notes.
+  x:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: liquid-phase mole fractions at the answer
+  y:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: vapour-phase mole fractions at the answer
+  k:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: '`K_i = y_i / x_i` at the answer, reported because the flash is one'
+  phase:
+    type: enum
+    values: [all_liquid, two_phase, all_vapour]
+    description: which phase the feed is in at the answer
+  z_liquid:
+    unit: dimensionless
+    description: the liquid root of the cubic at the answer
+  z_vapour:
+    unit: dimensionless
+    description: the vapour root
+  iterations:
+    unit: dimensionless
+    description: bisection steps taken
+  residual:
+    unit: dimensionless
+    description: '`|H(T) - H_target| / max(|H_target|, 1)` at the answer'
+
+valid_range:
+  - quantity: P
+    min: 0.0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      an absolute pressure; zero and below are not states, and the cubic's reduced
+      variables divide by it.
+  - quantity: T
+    min: 100.0
+    max: 1500.0
+    min_inclusive: true
+    max_inclusive: true
+    severity: warning
+    rationale: >
+      the bracket itself, reported rather than left implicit. The scan covers 100 K to
+      1500 K, so an answer outside it cannot be found - and that is a property of this
+      implementation rather than of thermodynamics, which is why it warns.
+
+assumptions:
+  - '**the bracket is a fixed range, not an adaptive one.** The scan covers 100 K to
+    1500 K at 2000 points. An enthalpy that no temperature in that range produces is
+    reported as a solver failure rather than searched for elsewhere. The reason is
+    stated in the notes: an adaptive expansion is a second thing for the two
+    implementations to agree about, and two expansions that stop at different points
+    take different iteration counts.'
+  - '**the flash at each trial temperature is converged, not exact.** The inner
+    iteration carries its own tolerance, so the enthalpy this model inverts is the
+    enthalpy of a converged approximation. Tighter than the outer tolerance, which is
+    why the residue reported is dominated by the bisection.'
+  - '**no check that the feed is stable.** This model asks where the energy balance is
+    satisfied, not whether the state it finds is the equilibrium one - the same
+    division `eos.bubble_pressure` makes about its own input.'
+  - '**the enthalpy is a difference from a supplied datum.** It is not an absolute
+    quantity and is not comparable with a value computed from a different reference
+    state.'
+
+notes: >
+  # Where this differs from a textbook isenthalpic flash, and why
+
+  The procedure here is the ordinary one. What is particular to this implementation is
+  that **the inner flash is not modified**: the trial state comes from `eos.pt_flash`
+  exactly as a caller would get it, and the phase enthalpies come from
+  `eos.molar_enthalpy_entropy` exactly as a caller would get them. There is no
+  isenthalpic-flash-specific arithmetic anywhere. That is deliberate - it means the
+  numbers this model returns are the numbers a caller could reproduce by hand with the
+  three public models and a bisection, which is the retraceability the worked example
+  is for.
+
+  # Why `beta` is absent for a single-phase feed, and not just out of range
+
+  Below the bubble point or above the dew point the flash still returns a split, and it
+  is the *extrapolated* one - values outside `[0, 1]` are normal, and this model's own
+  test data shows 1.888. That number is not the vapour fraction of anything. A model
+  that multiplied by it would produce a wrong enthalpy shaped exactly like a right one,
+  so the single-phase branch takes the whole feed and the appropriate root instead, and
+  the result reports no `beta` rather than an extrapolation a caller might use.
+
+  # What is checked, and what is not
+
+  The model is checked against itself in the way that matters: a temperature is chosen,
+  the enthalpy at it is computed, and that enthalpy is fed back in. The temperature
+  that comes out is the one that went in, to 1e-12 relative. **That establishes that
+  the inversion is exact; it does not establish that the enthalpy is right.** The
+  enthalpy is `eos.molar_enthalpy_entropy`'s, and the confidence in it is whatever
+  that model's own notes support.
+
+  A second check is not self-referential and is worth more: the answer is independent
+  of the bracket. A state reached from a 2000-point scan over 100-1500 K and the same
+  state reached from a narrower scan must agree, because bisection converges to the
+  root rather than to the bracket's midpoint. Both are in the tests.
+
+  **The citations are unconfirmed.** No equation number is claimed, and the text named
+  above has not been read - the procedure is standard enough that reading it would not
+  change the arithmetic, but that is an argument for the arithmetic, not a claim that
+  anyone checked the attribution.
+
+implementations:
+  python: azoth.eos.ph_flash
+  rust: azoth_eos::ph_flash
+
+cases:
+  - id: two_phase_round_trip
+    note: >
+      A methane/n-butane mixture at 20 bar, asked for the enthalpy it has at 300 K -
+      which is in the two-phase region, with a vapour fraction of 0.682. The answer
+      must be the 300 K that went in.
+    inputs:
+      Tc: [190.56, 425.12]
+      Pc: [4599000.0, 3796000.0]
+      omega: [0.0115, 0.2002]
+      kij: [[0.0, 0.01289789], [0.01289789, 0.0]]
+      cp_a: [3.0, 5.0]
+      cp_b: [0.0, 0.0]
+      cp_c: [0.0, 0.0]
+      cp_d: [0.0, 0.0]
+      h_ref: [0.0, 0.0]
+      s_ref: [0.0, 0.0]
+      T_ref: 300.0
+      P_ref: 100000.0
+      P: 2000000.0
+      H: -6723.003844102389
+      z: [0.6, 0.4]
+    expected:
+      T: 300.0
+      beta: 0.6824390296506371
+    tolerance: 1.0e-7
+
+  - id: single_phase_vapour_round_trip
+    note: >
+      The same mixture and pressure, above the dew point at 450 K. The point of this
+      case beside the one above is that the phase *differs*: a model that handled only
+      the two-phase branch would pass the first case and fail here, and the two
+      together are what pin the branch on the phase rather than on a vapour fraction.
+    inputs:
+      Tc: [190.56, 425.12]
+      Pc: [4599000.0, 3796000.0]
+      omega: [0.0115, 0.2002]
+      kij: [[0.0, 0.01289789], [0.01289789, 0.0]]
+      cp_a: [3.0, 5.0]
+      cp_b: [0.0, 0.0]
+      cp_c: [0.0, 0.0]
+      cp_d: [0.0, 0.0]
+      h_ref: [0.0, 0.0]
+      s_ref: [0.0, 0.0]
+      T_ref: 300.0
+      P_ref: 100000.0
+      P: 2000000.0
+      H: 4078.801680952362
+      z: [0.6, 0.4]
+    expected:
+      T: 450.0
+    tolerance: 1.0e-7

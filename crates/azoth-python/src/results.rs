@@ -18,7 +18,7 @@ use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
-    MolarEnthalpyEntropyResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
+    MolarEnthalpyEntropyResult, PhFlashResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
     PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
     PureSaturationResult, RachfordRiceBinaryResult, StabilityTestResult, Vdw1fMixBinaryResult,
 };
@@ -1170,6 +1170,92 @@ impl From<&PtFlashResult> for PyPtFlashResult {
     }
 }
 
+/// Result of `eos.ph_flash`, transported.
+///
+/// The temperature crosses as a quantity like every other, and the phase as the spec's
+/// spelling, so the adapter rebuilds the enum and a caller compares `Phase.TWO_PHASE`
+/// regardless of which backend answered.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PhFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` is the symbol the spec and the Python result both use
+pub struct PyPhFlashResult {
+    /// The temperature that satisfies the enthalpy.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The vapour fraction, or `None` for a single-phase feed.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The liquid root of the cubic.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// Bisection steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `|H(T) - H_target| / max(|H_target|, 1)` at the answer.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPhFlashResult {
+    fn __repr__(&self) -> String {
+        match self.beta {
+            Some(beta) => format!(
+                "PhFlashResult(T={} K, phase={}, beta={beta})",
+                self.T.magnitude_si, self.phase
+            ),
+            None => format!(
+                "PhFlashResult(T={} K, phase={}, {} iteration(s))",
+                self.T.magnitude_si, self.phase, self.iterations
+            ),
+        }
+    }
+}
+
+impl From<&PhFlashResult> for PyPhFlashResult {
+    fn from(r: &PhFlashResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            beta: r.beta,
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            phase: r.phase.as_str().to_string(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.stability_test`, transported.
 ///
 /// The first result here whose fields are all vectors or lists, and the first whose
@@ -1489,6 +1575,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         // the model results were covered by no shape check at all.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
         PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
+        PhFlashResult::CALC_ID => PhFlashResult::FIELDS.to_vec(),
         StabilityTestResult::CALC_ID => StabilityTestResult::FIELDS.to_vec(),
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),

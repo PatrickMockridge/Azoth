@@ -71,6 +71,7 @@ from azoth.core.result import (
     DewPressureResult,
     IdealGasCpResult,
     MolarEnthalpyEntropyResult,
+    PhFlashResult,
     PrAlphaAbResult,
     PrDepartureResult,
     PrKappaResult,
@@ -104,6 +105,7 @@ __all__ = [
     "ideal_gas_cp",
     "mixture",
     "molar_enthalpy_entropy",
+    "ph_flash",
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
@@ -126,6 +128,7 @@ _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
+_PH_FLASH = "eos.ph_flash"
 _PT_FLASH = "eos.pt_flash"
 _STABILITY_TEST = "eos.stability_test"
 _PURE_SATURATION = "eos.pure_saturation"
@@ -437,6 +440,43 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
     See :func:`azoth.eos.reference.pt_flash`.
     """
     return resolve(_PT_FLASH)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def ph_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, P: Q, H: Q, z: list[float]
+) -> PhFlashResult:
+    """The temperature a mixture reaches at a pressure when given a duty.
+
+    The model the process layer needs. A heater, a cooler, a compressor, a valve: each
+    knows the pressure a stream leaves at and the energy it added, and none of them
+    knows the temperature that results. This is that temperature, and the phase split
+    at it::
+
+        r = azoth.eos.ph_flash(fluid, ig, P=q(20, "bar"), H=q(-6723.0, "J/mol"), z=[0.6, 0.4])
+        r.T, r.phase, r.beta
+
+    **``H`` is a difference from the datum ``ideal_gas`` carries**, not an absolute
+    quantity. Two calls with different reference values are not comparable, and their
+    difference is a plausible number rather than an error - the same caveat
+    :func:`molar_enthalpy_entropy` carries, for the same reason.
+
+    **Read ``phase``, not ``beta``.** ``beta`` is ``None`` for a single-phase feed.
+    That is not a missing value: the flash reports an *extrapolated* split below the
+    bubble point or above the dew point - values like 1.9 are ordinary - and it is not
+    the vapour fraction of anything.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``P`` is not positive, or a range check on the answer fails.
+        SolverNotConvergedError: if no temperature on the model's bracket produces the
+            requested enthalpy, or if the bisection hits its cap.
+
+    See :func:`azoth.eos.reference.ph_flash`.
+    """
+    return resolve(_PH_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, P=P, H=H, z=z
+    )
 
 
 def stability_test(mixture: Mixture, T: Q, P: Q, z: list[float]) -> StabilityTestResult:

@@ -106,6 +106,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.dew_pressure` | Dew-point pressure — a *model* |
 | `eos.ideal_gas_cp` | Ideal-gas heat capacity from a polynomial |
 | `eos.molar_enthalpy_entropy` | Molar enthalpy and entropy of a mixture — a *model* |
+| `eos.ph_flash` | Pressure-enthalpy flash — a *model* |
 | `eos.pr_alpha_ab` | Peng-Robinson alpha function and reduced attraction parameters |
 | `eos.pr_departure` | Peng-Robinson fugacity coefficient and departure functions |
 | `eos.pr_kappa` | Peng-Robinson attraction-parameter coefficient |

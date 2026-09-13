@@ -294,6 +294,63 @@ impl CalcResult for PtFlashResult {
     }
 }
 
+/// Result of `eos.ph_flash`.
+///
+/// The state a mixture reaches when a duty is applied at a fixed pressure: the
+/// temperature that satisfies the energy balance, and the phase split at it. The split
+/// is reported in as much detail as [`PtFlashResult`] because it *is* one - the flash
+/// evaluated at the answer - and a caller who needs the compositions should not have to
+/// run it again to get them.
+#[derive(Debug, Clone)]
+pub struct PhFlashResult {
+    /// The temperature that satisfies the enthalpy. This is the model's answer.
+    pub temperature: ThermodynamicTemperature,
+    /// The vapour fraction at that temperature, or `None` for a single-phase feed.
+    ///
+    /// `None` rather than a number outside `[0, 1]`: the flash extrapolates a split
+    /// that does not exist, and reporting it would invite a caller to use it.
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions at the answer.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions at the answer.
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i` at the answer.
+    pub k: Vec<f64>,
+    /// Which phase the feed is in at the answer.
+    pub phase: Phase,
+    /// The liquid root of the cubic at the answer.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// Bisection steps taken.
+    pub iterations: u32,
+    /// `|H(T) - H_target| / max(|H_target|, 1)` at the answer.
+    pub residual: f64,
+    /// Caveats, deduplicated - the search evaluates the flash thousands of times.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PhFlashResult {
+    const CALC_ID: &'static str = "eos.ph_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "T",
+        "beta",
+        "x",
+        "y",
+        "k",
+        "phase",
+        "z_liquid",
+        "z_vapour",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Whether a feed is stable as a single phase.
 ///
 /// Two values rather than a boolean because the *asymmetry* between them is the

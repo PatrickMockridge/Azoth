@@ -42,7 +42,7 @@ mod thermal;
 use results::{
     PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
     PyCriticalPointResult, PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult,
-    PyOrificeFlowResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
+    PyOrificeFlowResult, PyPhFlashResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
     PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
     PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
     PyReynoldsNumberResult, PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
@@ -74,6 +74,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPrMolarVolumeResult>()?;
     m.add_class::<PyPrMassDensityResult>()?;
     m.add_class::<PyPureSaturationResult>()?;
+    m.add_class::<PyPhFlashResult>()?;
     m.add_class::<PyCriticalPointResult>()?;
     m.add_class::<PyPumpPowerResult>()?;
     m.add_class::<PyOrificeFlowResult>()?;
@@ -122,6 +123,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Models: the same shape, a different spec tree and generator.
     m.add_function(wrap_pyfunction!(eos::pure_saturation, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pt_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::ph_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::stability_test, m)?)?;
     m.add_function(wrap_pyfunction!(eos::bubble_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::critical_point, m)?)?;

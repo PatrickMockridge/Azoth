@@ -41,6 +41,7 @@ __all__ = [
     "dew_pressure",
     "ideal_gas_cp",
     "molar_enthalpy_entropy",
+    "ph_flash",
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
