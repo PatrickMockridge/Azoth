@@ -162,7 +162,7 @@ jobs:
             cosign verify-blob "$f" \
               --bundle "${f}.sigstore.json" \
               --certificate-identity-regexp \
-                '^https://github\.com/placeholder/azoth/\.github/workflows/release\.yml@refs/tags/v.*$' \
+                '(?i)^https://github\.com/patrickmockridge/azoth/\.github/workflows/release\.yml@refs/tags/v.*$' \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com
           done
 

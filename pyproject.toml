@@ -42,8 +42,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/placeholder/azoth"
-Documentation = "https://github.com/placeholder/azoth/tree/main/docs"
+Homepage = "https://github.com/PatrickMockridge/Azoth"
+Documentation = "https://github.com/PatrickMockridge/Azoth/tree/main/docs"
 
 [tool.maturin]
 # Mixed Rust/Python layout: the Rust extension is one private module inside the

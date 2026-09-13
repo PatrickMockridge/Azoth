@@ -38,7 +38,7 @@ Tags are signed with an SSH key. You need the maintainer's public key.
 # The key that signs this repository's tags:
 #   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG/xPE6bujR5o37Fw2wU4r5zZZ8su3tQ3rbRoeAfZ/mL
 
-git clone https://github.com/placeholder/azoth
+git clone https://github.com/PatrickMockridge/Azoth
 cd azoth
 
 # Tell git which keys may sign for which identity. The principal must be the
@@ -74,7 +74,7 @@ produced it.
 WHEEL=$(ls azoth-*.whl)
 cosign verify-blob "$WHEEL" \
   --bundle "${WHEEL}.sigstore.json" \
-  --certificate-identity-regexp '^https://github\.com/placeholder/azoth/\.github/workflows/release\.yml@refs/tags/v.*$' \
+  --certificate-identity-regexp '(?i)^https://github\.com/patrickmockridge/azoth/\.github/workflows/release\.yml@refs/tags/v.*$' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 

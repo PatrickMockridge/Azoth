@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: A calculation is wrong
-    url: https://github.com/placeholder/azoth/blob/main/CONTRIBUTING.md
+    url: https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md
     about: Please open a normal issue and include the spec id and the source you are comparing against.

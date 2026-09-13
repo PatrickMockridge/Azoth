@@ -12,7 +12,7 @@ after = ["links"]
 [preprocessor.mermaid]
 
 [output.html]
-git-repository-url = "https://github.com/placeholder/azoth"
+git-repository-url = "https://github.com/PatrickMockridge/Azoth"
 # `smart-punctuation` in mdBook 0.5; the key was `curly-quotes` in 0.4 and the
 # old name is a hard error rather than a warning.
 smart-punctuation = true

@@ -23,8 +23,8 @@ pip install azoth          # the Python package, with the compiled Rust core
 From source:
 
 ```bash
-git clone https://github.com/placeholder/azoth
-cd azoth
+git clone https://github.com/PatrickMockridge/Azoth
+cd Azoth
 
 uv venv && uv pip install maturin pytest ruff mypy
 maturin develop            # builds the Rust extension into the venv

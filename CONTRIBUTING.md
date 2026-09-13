@@ -11,8 +11,8 @@ You need Rust (the version in `rust-toolchain.toml`), Python 3.12, and for the
 docs, mdBook with two preprocessors.
 
 ```bash
-git clone https://github.com/placeholder/azoth
-cd azoth
+git clone https://github.com/PatrickMockridge/Azoth
+cd Azoth
 
 uv venv --python 3.12
 uv pip install maturin pytest ruff mypy pyyaml jsonschema "pint>=0.24"
