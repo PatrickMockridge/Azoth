@@ -1,0 +1,93 @@
+# Pure-component saturation pressure
+
+`eos.pure_saturation`
+
+The pressure at which a pure component's vapour and liquid roots have equal fugacity, found by bisection on pressure. The first model rather than calculation in this registry: what has to be pinned down is not an equation - `ln phi_L = ln phi_V` is one line - but the *procedure* that searches for the pressure where it holds, and a procedure that differs between two implementations takes a different number of steps to a slightly different answer.
+
+## Source
+
+**Peng, D. Y.; Robinson, D. B. (1976)** (A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64) - TODO: source needed
+
+DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
+
+**Unverified.** The equation is standard, but its citation has not been checked against the primary source by a person.
+
+The equilibrium condition is not in doubt: a pure component at saturation has equal fugacity in both phases, `ln phi_L = ln phi_V`, which is the definition of the saturation pressure rather than a correlation for it. The Peng-Robinson equation both fugacities come from is `eos.pr_z_factor` and `eos.pr_departure`, whose own verification notes apply here unchanged - this model adds a search, not a correlation.
+What is ours and unverified: the **procedure**. The bracketing rule, the tolerance and the iteration cap are choices, not results, and no source states them because no source would. They are recorded here so a reader can judge the choices rather than having to reverse-engineer them:
+* The upper bracket is the **spinodal** - the highest reduced pressure at which
+  the cubic still has three admissible roots - found by a linear scan. Above it
+  there is one root, no liquid branch, and nothing to equate.
+* The lower bracket is the scan's first point, `Pr = 1e-06`. Any pressure below
+  the spinodal works: the residual is positive everywhere below the saturation
+  pressure and monotonically decreasing, so the bracket only has to straddle the
+  root, not be tight.
+* The stopping rule is on the **bracket width**, relative, not on the residual.
+  A rule on `|g|` would stop at whatever pressure makes the fugacities agree to
+  within a tolerance - which is the thing being solved for, so the rule would be
+  circular when the two disagree for a reason other than the pressure.
+
+# What the bracket is NOT
+The upper end is a spinodal. The lower end is not - and an earlier version of this note said it was, describing a "spinodal window" of 0.10-18.94 bar for propane at 300 K. That range was an artefact of where the scan happened to start. A cubic equation of state has three real roots at *every* pressure below the upper spinodal, including pressures so low that the "liquid" root describes a molar volume no liquid could have. The window is one-sided, and the bracket's lower end is arbitrary on purpose.
+# Why no accuracy claim
+PR's saturation pressures are good to a few tenths of a per cent for light hydrocarbons and worse elsewhere. The cases below record the deviations rather than asserting a band, because a band on `Tr` would look like validation while asserting nothing - the same argument `eos.pr_kappa` makes.
+
+## Algorithm
+
+A model rather than a calculation: what this page pins down is the procedure,
+not an equation, and both implementations read it from here.
+
+| Setting | Value |
+|---|---|
+| Scheme | `saturation_pressure_bisection` |
+| Convergence | `relative` |
+| Tolerance | `1e-12` |
+| Max iterations | `200` |
+| Bracket | `linear_scan_for_spinodal` |
+| Bracket range | `1e-06` to `0.999` |
+| Bracket steps | `4000` |
+
+## Inputs
+
+| Name | Unit | Description |
+|---|---|---|
+| `Tc` | K | critical temperature of the pure component |
+| `Pc` | Pa | critical pressure of the pure component |
+| `omega` | dimensionless | acentric factor, as in `eos.pr_kappa`. All three of these are the caller's - this library ships no component databank. |
+| `T` | K | absolute temperature at which the saturation pressure is wanted. Must be below `Tc`: above the critical temperature a pure component has no saturation pressure, and the model refuses rather than returning the critical pressure or a plausible-looking extrapolation. |
+
+
+## Outputs
+
+| Name | Unit | Description |
+|---|---|---|
+| `p_sat` | Pa | the saturation pressure |
+| `ln_phi` | dimensionless | The common value of `ln phi_L` and `ln phi_V` at the converged pressure. Equal for both phases by construction; reported because it is the quantity the iteration drives to agreement, so a caller can see how well it closed rather than inferring it from the pressure. |
+| `iterations` | dimensionless | Bisection steps taken. Carried because the answer alone does not say whether the search did any work, and because the cross-language agreement test compares iteration counts as the sharpest cheap check that both implementations ran the same procedure. |
+| `residual` | dimensionless | The *dimensionless* half-width of the final bracket, `(hi - lo) / (2 * mid)` - that is, the relative uncertainty in the reduced pressure. Not `ln phi_L - ln phi_V`, which was measured at 2e-13 for the worked example and is a different number; a caller who wants that can compute both fugacities from `eos.pr_departure` at the returned pressure. |
+
+| Bound | On violation | Why |
+|---|---|---|
+| `T > 0` | raises | an absolute temperature; zero and below are not states |
+| `Tc > 0` | raises | a critical temperature is absolute and positive by definition; it is also a divisor in the reduced temperature |
+| `Pc > 0` | raises | a critical pressure is positive by definition, and it converts the reduced answer back to pascals |
+| `t_over_tc < 1` | raises | Above the critical temperature a pure component has no saturation pressure. The bound is on the *ratio* because that is the quantity the model needs - a bound on `T` alone would have to be a bound that happened to be right for the `Tc` in play, which is not a bound at all. At exactly `Tc` the two roots have merged, there is one fugacity, and the residual is zero for every pressure - so the search would converge on nothing. Hence exclusive. |
+
+## Assumptions
+
+- the component's `Tc`, `Pc` and `omega` are correct and mutually consistent. NOT CHECKED - they are the caller's, and this library ships no component data.
+- the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes. PRSV, with `eos.prsv_kappa`, would give a different saturation pressure from the same inputs, and this model does not accept a coefficient.
+- **`p_sat` is the pressure where the two *roots* agree, not necessarily the pressure where the component really saturates.** The cubic has three real roots below the spinodal at every pressure, including pressures so low that the liquid root describes an impossible molar volume; the bisection finds where their fugacities cross, which is the model's saturation pressure by definition and is a property of the equation rather than of the substance.
+- **near the critical temperature the answer degrades sharply**, and the model cannot tell. The roots coalesce as `Tr -> 1`, the residual flattens, and the last digits of `p_sat` stop being determined by the equation - the same ill-conditioning `eos.pr_z_factor` records. A caller working close to the critical point should read `residual` and `iterations` rather than trusting the digits.
+- no stability analysis is performed. The two roots exist and their fugacities cross; whether the single-root solution would have been more stable is not asked.
+- the result is a *pure-component* property. A mixture's bubble point is a different calculation and is not this one with an extra component.
+
+## Cases
+
+| Case | Inputs | Expected |
+|---|---|---|
+| `propane_at_300_k` | Tc = 369.83, Pc = 4248000.0, omega = 0.1523, T = 300.0 | p_sat = 997667.7436544185 |
+| `carbon_dioxide_at_280_k` | Tc = 304.13, Pc = 7377000.0, omega = 0.2239, T = 280.0 | p_sat = 4159392.604815074 |
+
+## References
+
+- Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011. (the equation of state whose roots this equates; the citation is confirmed and the equation numbers are not)

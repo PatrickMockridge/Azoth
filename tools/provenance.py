@@ -71,12 +71,14 @@ SHARED = (
     "python/src/azoth/core/range.py",
     "python/src/azoth/core/solver.py",
     "python/src/azoth/core/units.py",
+    "python/src/azoth/_models_gen.py",
     "python/src/azoth/_registry_gen.py",
     "python/src/azoth/_rust_bridge.py",
     # The tools are part of the chain: gen_registry.py writes spec_gen.rs, which
     # every calc reads its range checks from, so a change there changes results.
     # provenance.py hashes itself - the hash of the output then depends on the
     # generator, which is the property you want and not a circularity.
+    "tools/gen_models.py",
     "tools/gen_registry.py",
     "tools/gen_docs.py",
     "tools/spec_lint.py",
@@ -105,6 +107,7 @@ NAMESPACE_SUPPORT = {
         "crates/azoth-python/src/thermal.rs",
     ),
     "eos": (
+        "crates/azoth-eos/src/model_gen.rs",
         "crates/azoth-eos/src/spec_gen.rs",
         "crates/azoth-python/src/eos.rs",
     ),
@@ -188,11 +191,41 @@ def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def model_entry(spec: dict[str, Any]) -> dict[str, Any]:
+    """Provenance for one model.
+
+    The same fields a calc entry carries, from a different spec tree. A model's spec
+    is what pins its *procedure* down, so hashing it is at least as load-bearing as
+    hashing a calc's equation: a changed tolerance or bracket rule changes every
+    answer the model returns while its inputs and outputs look identical.
+    """
+    name = spec["id"].split(".")[-1]
+    namespace = spec["id"].split(".")[0]
+    return {
+        "id": spec["id"],
+        "name": spec["name"],
+        "verification": spec["verification"]["status"],
+        "spec": describe(f"specs/models/{namespace}/{name}.yaml"),
+        "code": [
+            describe(f"python/src/azoth/{namespace}/reference/{name}.py"),
+            describe(f"crates/azoth-{namespace}/src/{name}.rs"),
+        ],
+        "tests": [
+            describe(f"python/tests/models/test_{name}.py"),
+            describe(f"crates/azoth-{namespace}/tests/{name}.rs"),
+        ],
+    }
+
+
 def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
     """Assemble the provenance record."""
     paths = sorted(SPEC_DIR.rglob("*.yaml"))
     calcs = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in paths]
     calcs.sort(key=lambda c: c["id"])
+
+    model_paths = sorted((ROOT / "specs" / "models").rglob("*.yaml"))
+    models = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in model_paths]
+    models.sort(key=lambda m: m["id"])
 
     status = git("status", "--porcelain")
     resolved_tag = tag if tag is not None else git("describe", "--tags", "--exact-match")
@@ -208,6 +241,7 @@ def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
             "dirty": bool(status),
         },
         "calcs": [calc_entry(c) for c in calcs],
+        "models": [model_entry(m) for m in models],
         "shared": [describe(p) for p in SHARED],
         "namespaces": [
             {"namespace": ns, "files": [describe(p) for p in files]}

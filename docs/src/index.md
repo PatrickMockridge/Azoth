@@ -75,6 +75,7 @@ variables rather than in quantities with units.
 - [`eos.rachford_rice_binary`](./eos/rachford_rice_binary.md)
 - [`eos.pr_molar_volume`](./eos/pr_molar_volume.md)
 - [`eos.pr_mass_density`](./eos/pr_mass_density.md)
+- [`eos.pure_saturation`](./eos/pure_saturation.md) — a *model*, whose spec fixes a procedure rather than an equation
 
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`
 is the isentropic basis, with the standard's de-rating coefficients left to the caller.

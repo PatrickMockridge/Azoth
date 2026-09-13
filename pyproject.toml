@@ -115,7 +115,7 @@ ignore = [
 # against a regeneration by `tools/gen_registry.py --check`. Letting the
 # formatter rewrite it would fail that gate for a purely cosmetic reason. It
 # remains linted; only reformatting is skipped.
-exclude = ["python/src/azoth/_registry_gen.py"]
+exclude = ["python/src/azoth/_registry_gen.py", "python/src/azoth/_models_gen.py"]
 
 [tool.ruff.lint.per-file-ignores]
 # Tests legitimately hard-code expected numbers and use long assertion messages.
@@ -125,6 +125,7 @@ exclude = ["python/src/azoth/_registry_gen.py"]
 # benefits from wrapping. Correctness of this file is asserted by
 # test_registry_contract.py, not by a linter.
 "python/src/azoth/_registry_gen.py" = ["E501"]
+"python/src/azoth/_models_gen.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -149,7 +150,7 @@ module = ["pint", "pint.*"]
 follow_untyped_imports = false
 
 [[tool.mypy.overrides]]
-module = ["azoth._registry_gen"]
+module = ["azoth._registry_gen", "azoth._models_gen"]
 ignore_errors = true
 
 [[tool.mypy.overrides]]

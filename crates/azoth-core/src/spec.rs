@@ -164,3 +164,74 @@ impl CalcSpec {
         std::iter::once(&self.worked_example).chain(self.tests.iter())
     }
 }
+
+/// A model's bracketing rule, as the spec declares it.
+///
+/// Part of the algorithm rather than an implementation detail. Two implementations
+/// that bracket differently find different roots when there is more than one, and the
+/// difference is invisible in a converged answer until it is a different answer.
+#[derive(Debug, Clone, Copy)]
+pub struct ModelBracket {
+    /// How the bracket is found, as the spec spells it.
+    pub scheme: &'static str,
+    /// Where the search starts, in the reduced variable the scheme names - so the
+    /// bracket does not depend on which unit a caller used.
+    pub lower: f64,
+    /// Where the search stops.
+    pub upper: f64,
+    /// How many points the search evaluates. Stated because it quantises the bracket:
+    /// two implementations with different step counts take different numbers of
+    /// iterations to the same answer.
+    pub steps: u32,
+}
+
+/// A model's procedure, as the spec declares it.
+///
+/// This is the whole reason a model is not a calc. A calc's spec fixes an equation
+/// and both implementations evaluate it; a model's fixes a *loop*, and a loop that
+/// differs even slightly between two implementations diverges. `scheme` is held to
+/// the implementations by a contract test, the way `SolverKind` is.
+#[derive(Debug, Clone, Copy)]
+pub struct ModelAlgorithm {
+    /// The procedure's name, e.g. `saturation_pressure_bisection`.
+    pub scheme: &'static str,
+    /// `absolute` or `relative`.
+    pub convergence: &'static str,
+    /// Stopping tolerance.
+    pub tolerance: f64,
+    /// Iteration cap.
+    pub max_iterations: u32,
+    /// How the starting interval is found.
+    pub bracket: ModelBracket,
+}
+
+/// One model, as the generated table carries it.
+///
+/// Deliberately reuses [`SpecCheck`] and [`TestCase`] from the calc side: a model's
+/// bounds are the same kind of bound and its cases are the same kind of case, and a
+/// second set of types for them would be a second definition of what a bound is.
+#[derive(Debug, Clone, Copy)]
+pub struct ModelSpec {
+    /// Dotted identifier, e.g. `eos.pure_saturation`.
+    pub id: &'static str,
+    /// `verified`, `unverified` or `source_needed`, as for a calc.
+    pub verification: &'static str,
+    /// The procedure both implementations must run.
+    pub algorithm: ModelAlgorithm,
+    /// Bounds, in the same shape a calc's `valid_range` produces.
+    pub checks: &'static [SpecCheck],
+    /// Cases both implementations must reproduce.
+    pub cases: &'static [TestCase],
+}
+
+impl ModelSpec {
+    /// Checks evaluable from the inputs alone.
+    pub fn input_checks(&self) -> impl Iterator<Item = &RangeCheck> {
+        self.checks.iter().filter(|c| c.on_input).map(|c| &c.check)
+    }
+
+    /// Checks that need a computed value.
+    pub fn derived_checks(&self) -> impl Iterator<Item = &RangeCheck> {
+        self.checks.iter().filter(|c| !c.on_input).map(|c| &c.check)
+    }
+}

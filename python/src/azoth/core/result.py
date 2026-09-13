@@ -262,6 +262,29 @@ class PrKappaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PureSaturationResult(_HasWarnings):
+    """Result of ``eos.pure_saturation``.
+
+    The first *model* result: its spec fixes a procedure rather than an equation, and
+    it composes the kernels rather than reimplementing them. The shape is an ordinary
+    result shape, deliberately - a model's answer is an answer like any other, and
+    the difference is in how it was reached.
+    """
+
+    #: The saturation pressure.
+    p_sat: Q
+    #: The common value of ``ln phi_L`` and ``ln phi_V`` at the converged pressure.
+    ln_phi: float
+    #: Bisection steps taken.
+    iterations: int
+    #: The dimensionless half-width of the final bracket - the relative uncertainty in
+    #: the reduced pressure, not the fugacity residual.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PrMolarVolumeResult(_HasWarnings):
     """Result of ``eos.pr_molar_volume``.
 

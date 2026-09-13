@@ -169,6 +169,7 @@ jobs:
         run: |
           .venv/bin/python tools/gen_docs.py
           .venv/bin/python tools/gen_registry.py
+          .venv/bin/python tools/gen_models.py
       - name: Fail if anything drifted
         run: |
           if ! git diff --exit-code; then

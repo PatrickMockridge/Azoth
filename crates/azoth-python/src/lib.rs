@@ -43,9 +43,9 @@ use results::{
     PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
     PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult, PyOrificeFlowResult,
     PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPumpPowerResult, PyQty,
-    PyRachfordRiceBinaryResult, PyReynoldsNumberResult, PySwameeJainResult, PyVdw1fMixBinaryResult,
-    PyWarning,
+    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPumpPowerResult,
+    PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult, PyReynoldsNumberResult,
+    PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
 };
 
 #[pymodule]
@@ -73,6 +73,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyRachfordRiceBinaryResult>()?;
     m.add_class::<PyPrMolarVolumeResult>()?;
     m.add_class::<PyPrMassDensityResult>()?;
+    m.add_class::<PyPureSaturationResult>()?;
     m.add_class::<PyPumpPowerResult>()?;
     m.add_class::<PyOrificeFlowResult>()?;
     m.add_class::<PyControlValveCvResult>()?;
@@ -117,6 +118,9 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pr_molar_volume, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_mass_density, m)?)?;
 
+    // Models: the same shape, a different spec tree and generator.
+    m.add_function(wrap_pyfunction!(eos::pure_saturation, m)?)?;
+
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;
     m.add_function(wrap_pyfunction!(data::data_files, m)?)?;
@@ -125,6 +129,8 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;
     m.add_function(wrap_pyfunction!(results::unit_names, m)?)?;
     m.add_function(wrap_pyfunction!(results::solver_kinds, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::model_ids, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::model_schemes, m)?)?;
     m.add_function(wrap_pyfunction!(results::result_fields, m)?)?;
     m.add_function(wrap_pyfunction!(results::calc_ids, m)?)?;
     m.add_function(wrap_pyfunction!(results::version, m)?)?;

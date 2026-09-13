@@ -18,7 +18,8 @@ use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrZFactorResult, PrsvKappaResult, RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
+    PrZFactorResult, PrsvKappaResult, PureSaturationResult, RachfordRiceBinaryResult,
+    Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -823,6 +824,60 @@ impl PyPrMassDensityResult {
             "PrMassDensityResult(rho={} {})",
             self.rho.magnitude_si, self.rho.unit
         )
+    }
+}
+
+/// Result of `eos.pure_saturation`, transported.
+///
+/// A model's result, shaped like any other. The difference between a model and a
+/// calculation is in how the answer was reached, not in what an answer is.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PureSaturationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPureSaturationResult {
+    /// The saturation pressure.
+    #[pyo3(get)]
+    pub p_sat: PyQty,
+    /// The common `ln phi` at the converged pressure.
+    #[pyo3(get)]
+    pub ln_phi: f64,
+    /// Bisection steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The final bracket's dimensionless half-width.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPureSaturationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PureSaturationResult(p_sat={} {}, {} iteration(s))",
+            self.p_sat.magnitude_si, self.p_sat.unit, self.iterations
+        )
+    }
+}
+
+impl From<&PureSaturationResult> for PyPureSaturationResult {
+    fn from(r: &PureSaturationResult) -> Self {
+        Self {
+            p_sat: PyQty {
+                magnitude_si: r.p_sat.value,
+                unit: "Pa".to_string(),
+            },
+            ln_phi: r.ln_phi,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
     }
 }
 

@@ -14,8 +14,8 @@ use pyo3::prelude::*;
 use crate::errors::to_pyerr;
 use crate::results::{
     PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyRachfordRiceBinaryResult,
-    PyVdw1fMixBinaryResult,
+    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPureSaturationResult,
+    PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -166,4 +166,55 @@ pub fn pr_mass_density(py: Python<'_>, M: f64, v: f64) -> PyResult<PyPrMassDensi
     eos::pr_mass_density(kilograms_per_mole(M), cubic_meters_per_mole(v))
         .map(|r| PyPrMassDensityResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// The saturation pressure of a pure component.
+///
+/// A *model* rather than a calculation - its spec fixes a procedure and it composes
+/// the kernels above rather than adding arithmetic of its own. It crosses the
+/// boundary like any other function: SI magnitudes in, a quantity out.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, T))]
+#[pyo3(text_signature = "(Tc, Pc, omega, T)")]
+#[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the chemistry
+pub fn pure_saturation(
+    py: Python<'_>,
+    Tc: f64,
+    Pc: f64,
+    omega: f64,
+    T: f64,
+) -> PyResult<PyPureSaturationResult> {
+    eos::pure_saturation(kelvins(Tc), pascals(Pc), omega, kelvins(T))
+        .map(|r| PyPureSaturationResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Every model id `azoth-eos` implements.
+///
+/// Separate from `calc_ids()` on purpose: the calc registry's id list is asserted to
+/// be *exactly* the specs under `specs/calcs/`, so a model appearing there would
+/// break that contract rather than extend it. Models have their own list, generated
+/// from their own tree.
+#[pyfunction]
+#[must_use]
+pub fn model_ids() -> Vec<String> {
+    eos::model_gen::models()
+        .iter()
+        .map(|m| m.id.to_string())
+        .collect()
+}
+
+/// The algorithm scheme each model runs, by model id.
+///
+/// The third leg of the same contract `solver_kinds()` provides for solvers: the
+/// schema's `algorithm.scheme`, the implementations' own names, and this list must
+/// agree, and `test_model_contract.py` asserts it rather than trusting three
+/// hand-edited lists to stay in step.
+#[pyfunction]
+#[must_use]
+pub fn model_schemes(model_id: &str) -> Vec<String> {
+    match eos::model_gen::model(model_id) {
+        Some(spec) => vec![spec.algorithm.scheme.to_string()],
+        None => Vec::new(),
+    }
 }

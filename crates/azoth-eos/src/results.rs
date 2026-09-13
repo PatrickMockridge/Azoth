@@ -5,7 +5,7 @@
 //! [`CalcResult::FIELDS`], with a test asserting the three agree. See
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
-use azoth_core::units::{MassDensity, MolarVolume};
+use azoth_core::units::{MassDensity, MolarVolume, Pressure};
 use azoth_core::{CalcResult, Warning};
 
 /// Result of `eos.pr_kappa`.
@@ -154,6 +154,32 @@ pub struct PrMolarVolumeResult {
     pub v: MolarVolume,
     /// Caveats.
     pub warnings: Vec<Warning>,
+}
+
+/// Result of `eos.pure_saturation`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PureSaturationResult {
+    /// The saturation pressure.
+    pub p_sat: Pressure,
+    /// The common value of `ln phi_L` and `ln phi_V` at the converged pressure.
+    pub ln_phi: f64,
+    /// Bisection steps taken.
+    pub iterations: u32,
+    /// The dimensionless half-width of the final bracket - the relative uncertainty
+    /// in the reduced pressure, not the fugacity residual.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PureSaturationResult {
+    const CALC_ID: &'static str = "eos.pure_saturation";
+    const FIELDS: &'static [&'static str] =
+        &["p_sat", "ln_phi", "iterations", "residual", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
 }
 
 impl CalcResult for PrMolarVolumeResult {

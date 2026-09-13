@@ -23,7 +23,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from azoth import _core
+from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.result import (
     ChokedFlowAreaResult,
@@ -44,6 +44,7 @@ from azoth.core.result import (
     PrsvKappaResult,
     PrZFactorResult,
     PumpPowerResult,
+    PureSaturationResult,
     RachfordRiceBinaryResult,
     ReynoldsNumberResult,
     RootStructure,
@@ -275,6 +276,31 @@ def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:
     )
 
 
+def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
+    """The saturation pressure of a pure component, computed in Rust.
+
+    A model rather than a calculation - its spec fixes a procedure and the Rust side
+    composes the same kernels this bridge's scalar functions call, so the two
+    implementations run the same search over the same arithmetic.
+    """
+    spec = _models_gen.model("eos.pure_saturation")
+    result = _core.pure_saturation(
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "Pc", Pc),
+        # A plain float: `omega` is genuinely dimensionless, so it crosses as
+        # the number the caller used - the same rule the other eos calcs follow.
+        omega,
+        input_to_si(spec, "T", T),
+    )
+    return PureSaturationResult(
+        p_sat=from_si(result.p_sat.magnitude_si, result.p_sat.unit),
+        ln_phi=result.ln_phi,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
     """Mass density, computed in Rust.
 
@@ -378,6 +404,15 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.pr_mass_density": pr_mass_density,
 }
 
+#: The same table for *models*, kept separate because the calc table is asserted to
+#: be exactly the calc registry - ``test_registration_completeness`` compares it by
+#: equality in both directions, so a model id in it would break that contract rather
+#: than extend it. Models have their own id list for the same reason, and
+#: ``test_model_contract.py`` holds this table to it.
+_MODEL_IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
+    "eos.pure_saturation": pure_saturation,
+}
+
 
 def resolve(calc_id: str) -> Callable[..., Any]:
     """The bridge function for a calc id.
@@ -391,7 +426,11 @@ def resolve(calc_id: str) -> Callable[..., Any]:
     try:
         return _IMPLEMENTATIONS[calc_id]
     except KeyError:
+        pass
+    try:
+        return _MODEL_IMPLEMENTATIONS[calc_id]
+    except KeyError:
         raise KeyError(
             f"no Rust implementation for {calc_id!r}; the extension covers "
-            f"{sorted(_IMPLEMENTATIONS)}"
+            f"{sorted(_IMPLEMENTATIONS)} and the models {sorted(_MODEL_IMPLEMENTATIONS)}"
         ) from None

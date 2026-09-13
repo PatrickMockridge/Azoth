@@ -113,6 +113,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.rachford_rice_binary` | The vapour fraction that solves Rachford-Rice |
 | `eos.pr_molar_volume` | Molar volume from a compressibility factor |
 | `eos.pr_mass_density` | Mass density from a molar volume |
+| `eos.pure_saturation` | Saturation pressure, by bisection — a *model*, not a calc |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use
