@@ -1,0 +1,132 @@
+id: hydraulics.reynolds_number
+name: Reynolds number for pipe flow
+equation: "Re = rho * v * D / mu"
+
+source:
+  standard: Crane TP-410
+  edition: "2013"
+  equation: "TODO: source needed"
+
+verification:
+  status: unverified
+  notes: >
+    The Reynolds number originates with Reynolds (1883) and is reproduced in
+    every fluid mechanics text; the equation itself is not in doubt. What is
+    unconfirmed is the specific Crane TP-410 equation number, so it is marked
+    TODO rather than guessed at. The regime boundaries below are the Crane/Moody
+    convention (laminar < 2000, transitional 2000-4000, turbulent > 4000) and
+    are approximate engineering guidance, not exact physical transitions: the
+    real onset of transition depends on inlet geometry, vibration and roughness.
+
+inputs:
+  rho:
+    unit: kg/m**3
+    description: fluid density
+  v:
+    unit: m/s
+    description: bulk mean velocity
+  D:
+    unit: m
+    description: internal pipe diameter
+  mu:
+    unit: Pa*s
+    description: dynamic viscosity
+
+outputs:
+  re:
+    unit: dimensionless
+    description: Reynolds number
+  regime:
+    type: enum
+    values: [laminar, transitional, turbulent]
+    description: flow regime under the Crane/Moody boundaries
+
+valid_range:
+  - quantity: rho
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: density must be positive; it divides into nothing here but a non-positive value is unphysical
+
+  - quantity: D
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: a zero diameter makes the Reynolds number zero regardless of flow
+
+  - quantity: mu
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: zero viscosity makes the Reynolds number undefined rather than large
+
+  - quantity: v
+    min: 0
+    severity: error
+    rationale: speed is non-negative; flow direction is not modelled by this calc
+
+  - quantity: re
+    min: 2000
+    max: 4000
+    when: inside
+    severity: warning
+    rationale: >
+      Transitional flow. Downstream friction-factor correlations are indeterminate
+      in this band and the two branches disagree by design, so any pressure drop
+      computed from this Reynolds number should be treated as unreliable. This is
+      a warning rather than an error because the Reynolds number itself is
+      perfectly well defined here - it is the correlations that are not.
+
+assumptions:
+  - Newtonian fluid
+  - single-phase flow
+  - constant density and viscosity across the pipe cross-section
+  - circular pipe running full
+  - fully developed flow
+
+references:
+  - Reynolds, O. (1883). "An experimental investigation of the circumstances which determine whether the motion of water shall be direct or sinuous, and of the law of resistance in parallel channels." Philosophical Transactions of the Royal Society of London, 174, 935-982. DOI 10.1098/rstl.1883.0029
+  - Crane Technical Paper No. 410, "Flow of Fluids Through Valves, Fittings and Pipe" (2013), chapter 1 - regime boundaries as conventionally used with the Darcy-Weisbach equation.
+
+worked_example:
+  source: derived from the equation above
+  derivation: >
+    Using the fluid of the Darcy-Weisbach example in this slice
+    (water, rho = 998 kg/m**3, mu = 1.002e-3 Pa*s) in a 0.1 m pipe at 1.5 m/s:
+    Re = 998 * 1.5 * 0.1 / 1.002e-3 = 149.7 / 1.002e-3 = 149401.1976...
+    Rounded to 149401.2. Turbulent (> 4000), so no regime warning.
+  inputs: { rho: 998.0, v: 1.5, D: 0.1, mu: 1.002e-3 }
+  expected: { re: 149401.2 }
+  tolerance: 1.0e-6
+
+implementations:
+  python: chemeng.hydraulics.reynolds_number
+  rust: chemeng_hydraulics::reynolds_number
+
+tests:
+  - id: water_pipe_worked_example
+    type: worked_example
+    status: active
+
+  - id: transitional_warning
+    type: reference
+    status: active
+    source: derived from the equation above; exercises the transitional-flow warning path
+    note: >
+      Chosen so Re lands squarely inside the 2000-4000 band. The test asserts the
+      numeric result AND that a TRANSITIONAL_FLOW warning is emitted, because a
+      silently unwarned transitional result is the failure mode this warning exists
+      to prevent.
+    inputs: { rho: 1000.0, v: 0.1, D: 0.05, mu: 1.5e-3 }
+    expected: { re: 3333.333333 }
+    tolerance: 1.0e-6
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: active
+    note: >
+      Builds the same physical state in SI and in US customary units and asserts
+      the Reynolds number is identical. Reynolds number is dimensionless, so this
+      is the sharpest available check that unit handling is correct and not
+      accidentally absorbing a conversion factor.

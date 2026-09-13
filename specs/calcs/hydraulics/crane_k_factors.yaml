@@ -1,0 +1,137 @@
+id: hydraulics.crane_k_factors
+name: Fitting resistance coefficients by the equivalent-length method
+equation: "K = f_t * sum(n_ld for each fitting)"
+
+source:
+  standard: Crane TP-410
+  edition: "2013"
+  equation: "TODO: source needed"
+
+verification:
+  status: unverified
+  notes: >
+    The equivalent-length METHOD (K = f_t * L_eq/D) is the contribution here and
+    is standard practice; the specific Crane equation number is unconfirmed and
+    marked TODO rather than guessed. The per-fitting numbers live in
+    data/fittings/crane_k_factors.csv and carry their own per-row provenance and
+    verify_status. That file is NOT a transcription of any published table - see
+    its header. As of writing every row is `unverified`, meaning values were read
+    from secondary public references and have not been checked against the primary
+    standard by a competent engineer. The worked example below therefore tests the
+    ARITHMETIC (that K is computed correctly from the coefficients), not the
+    provenance of the coefficients themselves.
+
+inputs:
+  fittings:
+    type: fitting_list
+    description: >
+      One or more fitting ids, resolved against data/fittings/crane_k_factors.csv.
+      An unknown id is a caller error and raises, rather than being skipped or
+      treated as zero loss.
+
+  f_t:
+    unit: dimensionless
+    description: >
+      Darcy friction factor used as the basis for the resistance coefficients.
+      Crane specifies f_T, the fully turbulent friction factor at the nominal
+      fitting size. Using the actual friction factor at the flow Reynolds number
+      instead is a common and slightly more accurate variant, and is what the
+      `chemeng pipe` CLI does. Either is defensible; both must be stated, because
+      they give different answers.
+
+outputs:
+  k_total:
+    unit: dimensionless
+    description: >
+      Total resistance coefficient for the listed fittings, to be used in
+      K * (rho * v**2 / 2). Equivalent to the Darcy-Weisbach friction loss over an
+      added length of pipe equal to sum(n_ld) * D.
+
+valid_range:
+  - quantity: f_t
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: a non-positive friction factor gives a negative loss
+
+  - quantity: n_fittings
+    computed_from: [fittings]
+    min: 1
+    severity: error
+    rationale: >
+      An empty fitting list is a caller error rather than a physical state - the
+      calculation would silently return zero loss, which reads as "no fittings"
+      when the caller may have meant to pass some.
+
+assumptions:
+  - fully turbulent flow in the fittings, which is what the tabulated coefficients describe
+  - valves are fully open; a throttled or partly open valve has a much higher coefficient and should be sized by its flow coefficient instead
+  - fittings are separated by enough straight pipe that their losses do not interact
+  - the fitting and the pipe are the same nominal size
+  - single-phase, incompressible flow
+
+data:
+  fittings: data/fittings/crane_k_factors.csv
+
+references:
+  - Crane Technical Paper No. 410, "Flow of Fluids Through Valves, Fittings and Pipe" (2013) - the equivalent-length method and the L_eq/D approach.
+  - "Note on copyright: the coefficients used by this calc are recorded in data/fittings/crane_k_factors.csv with per-row citations. They are not reproduced from any copyrighted table."
+
+worked_example:
+  source: derived from the equation above
+  derivation: >
+    The CLI example from the project brief: a 90 degree standard elbow plus a fully
+    open gate valve, with f_t = 0.018 (a typical fully turbulent friction factor for
+    a 100 mm pipe).
+      n_ld(90_elbow)       = 30
+      n_ld(gate_valve_open) = 8
+      sum(n_ld)             = 38
+      K = f_t * sum(n_ld)   = 0.018 * 38 = 0.684
+    This is a pure multiplication of the coefficients in
+    data/fittings/crane_k_factors.csv, so the example validates the arithmetic and
+    the data lookup, not the provenance of the coefficients.
+  inputs:
+    f_t: 0.018
+    fittings: [90_elbow, gate_valve_open]
+  expected: { k_total: 0.684 }
+  tolerance: 1.0e-9
+
+implementations:
+  python: chemeng.hydraulics.crane_k_factors
+  rust: chemeng_hydraulics::crane_k_factors
+
+tests:
+  - id: elbow_and_gate_valve_worked_example
+    type: worked_example
+    status: active
+    note: >
+      The worked_example block above lists the coefficients explicitly rather than
+      as a fitting list, because the expected value must be checkable by hand. The
+      test generated from it passes the fitting ids through the real lookup path,
+      so it additionally proves the CSV lookup returns those coefficients.
+
+  - id: single_fitting_matches_coefficient
+    type: reference
+    status: active
+    source: >
+      Derived: a single 90 degree standard elbow at f_t = 0.019 must give exactly
+      K = 0.019 * 30 = 0.57. Chosen with a different f_t from the worked example so
+      a bug that hardcoded the worked example's answer would be caught.
+    inputs: { f_t: 0.019, fittings: [90_elbow] }
+    expected: { k_total: 0.57 }
+    tolerance: 1.0e-9
+
+  - id: scaling_is_linear_in_f_t
+    type: property
+    property: symmetry
+    status: active
+    note: >
+      K is linear in f_t and additive over fittings, so doubling f_t must exactly
+      double K, and the fitting list must be order-independent. Both are checked:
+      they are the two invariants that would break if the summation or the data
+      lookup were subtly wrong.
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: active

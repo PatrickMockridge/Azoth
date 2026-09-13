@@ -1,0 +1,143 @@
+id: hydraulics.friction_factor_colebrook
+name: Colebrook-White friction factor (implicit)
+equation: "1 / f**0.5 = -2 * log10(relative_roughness / 3.7 + 2.51 / (Re * f**0.5))"
+
+source:
+  standard: Colebrook, C. F. (1939)
+  edition: "Journal of the Institution of Civil Engineers, 11(4), 133-156"
+  equation: "the Colebrook-White transition equation"
+  doi: "10.1680/ijoti.1939.13150"
+
+verification:
+  status: verified
+  notes: >
+    Citation confirmed: Colebrook, C.F. (1939), "Turbulent flow in pipes, with
+    particular reference to the transition region between the smooth and rough
+    pipe laws", J. Inst. Civil Engineers 11(4), 133-156, DOI 10.1680/ijoti.1939.13150.
+    The equation is implicit in f and has no closed-form solution, hence the
+    solver block below.
+
+inputs:
+  re:
+    unit: dimensionless
+    description: Reynolds number
+  relative_roughness:
+    unit: dimensionless
+    description: "absolute roughness divided by internal diameter (epsilon / D)"
+
+outputs:
+  f:
+    unit: dimensionless
+    description: Darcy-Weisbach friction factor
+
+solver:
+  kind: fixed_point
+  tolerance: 1.0e-12
+  max_iterations: 100
+  initial_guess: 0.02
+  convergence: relative
+
+valid_range:
+  - quantity: re
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: the 2.51/(Re*sqrt(f)) term is singular at Re = 0
+
+  - quantity: relative_roughness
+    min: 0
+    severity: error
+    rationale: negative roughness is unphysical
+
+  - quantity: re
+    max: 4000
+    max_inclusive: true
+    severity: warning
+    rationale: >
+      Below Re ~ 4000 the Colebrook equation is outside the range it was fitted
+      to; it is a transition-region correlation for turbulent flow. The iteration
+      still converges to a number, so this is a warning rather than an error, but
+      the number should not be used. For laminar flow use f = 64/Re instead, which
+      is a different equation and deliberately not part of this calc.
+
+  - quantity: relative_roughness
+    max: 0.05
+    max_inclusive: true
+    severity: warning
+    rationale: >
+      Above epsilon/D ~ 0.05 the Moody/Colebrook framework is no longer
+      meaningful, and this library also does not carry roughness data that large.
+
+assumptions:
+  - fully turbulent flow, Re > 4000
+  - circular pipe running full
+  - steady, fully developed, single-phase, incompressible flow
+  - uniform sand-grain roughness of height epsilon
+  - Newtonian fluid
+
+references:
+  - Colebrook, C. F. (1939). "Turbulent flow in pipes, with particular reference to the transition region between the smooth and rough pipe laws." Journal of the Institution of Civil Engineers, 11(4), 133-156. DOI 10.1680/ijoti.1939.13150
+  - Moody, L. F. (1944). "Friction factors for pipe flow." Transactions of the ASME, 66, 671-684. (source of the graphical form this equation replaced)
+
+worked_example:
+  source: derived by the fixed-point solver named in `solver` above
+  derivation: >
+    The equation is implicit, so the example is not obtained by direct
+    substitution. Taking x = 1/sqrt(f), the equation becomes the fixed point
+    x = -2 * log10(relative_roughness/3.7 + 2.51*x/Re), iterated from
+    x0 = 1/sqrt(0.02) until |x_{k+1} - x_k| <= 1e-12 * |x_{k+1}|, then f = 1/x**2.
+    For Re = 1.0e5 and relative_roughness = 4.6e-4 (commercial steel,
+    epsilon = 0.046 mm in a 100 mm pipe) this converges in 10 iterations to
+    x = 7.04259719938201, giving f = 0.02016203204441411.
+    Sanity check: at relative_roughness = 0 the same solver returns f = 0.017990
+    at Re = 1e5, against the textbook smooth-pipe value of about 0.0180.
+  inputs: { re: 100000.0, relative_roughness: 4.6e-4 }
+  expected: { f: 0.0201620320 }
+  tolerance: 1.0e-6
+
+implementations:
+  python: chemeng.hydraulics.friction_factor_colebrook
+  rust: chemeng_hydraulics::friction_factor_colebrook
+
+tests:
+  - id: commercial_steel_worked_example
+    type: worked_example
+    status: active
+
+  - id: smooth_pipe_agrees_with_textbook
+    type: reference
+    status: active
+    source: >
+      Smooth-pipe limit. The Colebrook equation with relative_roughness = 0
+      degenerates to the smooth-pipe correlation, for which the accepted value
+      at Re = 1e5 is f ~ 0.0180 (the Blasius correlation, 0.316*Re**-0.25,
+      gives 0.017770; the Prandtl-von Karman smooth-pipe form gives 0.0180).
+      This test pins the solver against an independent smooth-pipe value rather
+      than against itself.
+    inputs: { re: 100000.0, relative_roughness: 0.0 }
+    expected: { f: 0.0179898 }
+    tolerance: 1.0e-3
+
+  - id: fully_rough_limit
+    type: reference
+    status: active
+    source: >
+      Fully-rough (von Karman) limit. As Re -> infinity the Colebrook equation
+      tends to 1/sqrt(f) = -2*log10(relative_roughness/3.7), which is explicit.
+      Evaluated at relative_roughness = 0.01 the asymptote is f = 0.03790371
+      (from 1/sqrt(f) = 5.13640344813399), and the solver reaches it to within
+      2e-9 relative at Re = 1e12. The test uses a very large Reynolds number to
+      confirm the solver converges to the correct asymptote rather than to a
+      nearby fixed point.
+    inputs: { re: 1.0e+12, relative_roughness: 0.01 }
+    expected: { f: 0.03790371 }
+    tolerance: 1.0e-6
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: active
+    note: >
+      Both inputs are dimensionless, so the round-trip here checks that a
+      dimensionless quantity survives unit conversion untouched rather than
+      picking up a scale factor.

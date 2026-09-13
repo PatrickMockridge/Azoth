@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chemeng.dev/schema/calc.schema.json",
+  "title": "ChemEng calculation spec",
+  "description": "A single calculation in the ChemEng registry. Every calc must declare its equation, a source, the range in which it is validated, its assumptions, a worked example, and the tests that exercise it. Docs and tests are generated from these files, so this schema is the single source of truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "equation",
+    "source",
+    "verification",
+    "inputs",
+    "outputs",
+    "valid_range",
+    "assumptions",
+    "references",
+    "worked_example",
+    "implementations",
+    "tests"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "description": "Dotted identifier, e.g. hydraulics.darcy_weisbach. Must match the module and function names in both implementations."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable name, used as the doc page title."
+    },
+    "equation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The equation. Written in Python expression syntax where the equation is explicit, so the worked example can be independently re-derived from it. For implicit equations (e.g. Colebrook) it is the defining relation and the worked example is derived by the solver named in `solver`. Rendered as LaTeX in the generated docs.",
+      "examples": ["dP = f * (L / D) * (rho * v**2 / 2)"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["standard"],
+      "description": "Where the equation comes from. The `equation` field here is the source's own equation number and may be 'TODO: source needed' when it cannot be verified.",
+      "properties": {
+        "standard": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the standard, textbook, or paper."
+        },
+        "edition": { "type": "string" },
+        "equation": {
+          "type": "string",
+          "description": "Equation number within the source. Use 'TODO: source needed' if unverified."
+        },
+        "doi": { "type": "string" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "description": "Whether a human has verified this spec against its primary source. Drives whether tests may run (enforced by tools/spec_lint.py).",
+      "properties": {
+        "status": {
+          "enum": ["verified", "unverified", "source_needed"],
+          "description": "verified = checked against the primary source. unverified = equation is standard but the citation is not confirmed. source_needed = no adequate source found; the worked_example test must be skipped."
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Input quantities, keyed by parameter name. Key names must match the function signatures in both implementations exactly.",
+      "additionalProperties": { "$ref": "#/$defs/quantity" }
+    },
+    "outputs": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Output quantities, keyed by result field name. Key names must match the result struct fields in both implementations exactly.",
+      "additionalProperties": { "$ref": "#/$defs/quantity" }
+    },
+    "valid_range": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Bounds on the range in which the calc is validated. Typed bounds rather than free-form expressions, so they are machine-checkable and need no expression parser.",
+      "items": { "$ref": "#/$defs/range_check" }
+    },
+    "assumptions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Physical assumptions the calc relies on that are NOT checked at runtime. Documented, not enforced - keep checked constraints in valid_range."
+    },
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Citations. Cite equations and papers; never reproduce copyrighted tables or text."
+    },
+    "solver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "tolerance", "max_iterations", "initial_guess", "convergence"],
+      "description": "Required for implicit equations. Encoding the solver in the spec is what keeps the Python and Rust implementations numerically comparable: a different-but-valid solver, or the same solver with a different stopping rule, would diverge in the last bits and fail the agreement test. Both implementations must implement exactly this scheme - see docs/src/theory/solvers.md.",
+      "properties": {
+        "kind": { "enum": ["fixed_point", "bisection", "newton"] },
+        "tolerance": { "type": "number", "exclusiveMinimum": 0 },
+        "max_iterations": { "type": "integer", "minimum": 1 },
+        "initial_guess": { "type": "number", "exclusiveMinimum": 0 },
+        "convergence": {
+          "enum": ["absolute", "relative"],
+          "description": "Stopping rule applied to successive iterates x_k. `relative` means |x_{k+1} - x_k| <= tolerance * |x_{k+1}|; `absolute` means |x_{k+1} - x_k| <= tolerance. Naming this explicitly matters: the same tolerance means different things under the two rules, and the two implementations must agree on which one is meant."
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Repo-relative paths to data files this calc reads. One key per dataset.",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]*$"
+      }
+    },
+    "worked_example": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "inputs", "expected", "tolerance"],
+      "description": "A fully specified example whose expected outputs are independently reproducible from the equation. This is the primary validation artefact.",
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Where the example comes from. Use 'derived from the equation above' when we computed it ourselves, and say so in `derivation`."
+        },
+        "derivation": {
+          "type": "string",
+          "description": "How the expected values were obtained. Required when source is our own derivation, so a reviewer can retrace it."
+        },
+        "inputs": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/value" },
+          "description": "Input values in the units declared in `inputs`. Keys must be exactly the calc's input names, so the generated test can call the implementation directly."
+        },
+        "expected": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/value" },
+          "description": "Expected output values in the units declared in `outputs`."
+        },
+        "tolerance": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Relative tolerance for comparison."
+        }
+      }
+    },
+    "implementations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["python", "rust"],
+      "properties": {
+        "python": { "type": "string", "minLength": 1 },
+        "rust": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tests": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Tests to generate and run. Every calc needs at least a worked_example; reference and property tests are strongly encouraged.",
+      "items": { "$ref": "#/$defs/test" }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-form reviewer notes. Not rendered in the docs."
+    }
+  },
+
+  "$defs": {
+    "value": {
+      "description": "A scalar quantity, or a list of identifiers for list-valued inputs such as a fitting list.",
+      "oneOf": [
+        { "type": "number" },
+        { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      ]
+    },
+
+    "unit": {
+      "enum": ["dimensionless", "m", "mm", "kg/m**3", "m/s", "Pa", "Pa*s", "K"],
+      "description": "Canonical unit of a quantity in the equation. SI-first. API callers may pass any convertible unit; this is the unit the spec and generated docs speak in. Extend deliberately, with a conversion path in both languages."
+    },
+
+    "quantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description"],
+      "properties": {
+        "type": {
+          "enum": ["quantity", "enum", "fitting_list"],
+          "default": "quantity",
+          "description": "quantity = a physical quantity carrying a unit. enum = a symbolic result such as a flow regime. fitting_list = one or more fitting ids resolved against the spec's `data.fittings` file."
+        },
+        "unit": { "$ref": "#/$defs/unit" },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Allowed values when type is enum."
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "optional": {
+          "type": "boolean",
+          "default": false,
+          "description": "Optional inputs may be omitted; the implementation must then emit a RANGE_CHECK_SKIPPED warning for any range check that depends on them, rather than silently passing."
+        },
+        "default": { "type": "number" }
+      },
+      "allOf": [
+        {
+          "comment": "quantity (the default) requires a unit",
+          "if": {
+            "anyOf": [
+              { "not": { "required": ["type"] } },
+              { "properties": { "type": { "const": "quantity" } }, "required": ["type"] }
+            ]
+          },
+          "then": { "required": ["unit"] }
+        },
+        {
+          "comment": "enum requires its allowed values",
+          "if": { "properties": { "type": { "const": "enum" } }, "required": ["type"] },
+          "then": {
+            "required": ["values"],
+            "not": { "required": ["unit"] }
+          }
+        }
+      ]
+    },
+
+    "range_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quantity", "severity"],
+      "properties": {
+        "quantity": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the quantity being bounded. Must be an input, an output, a derived quantity, or a state keyword such as `phase`."
+        },
+        "computed_from": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "For derived quantities (e.g. Re), the inputs it is computed from. spec_lint uses this to prove the check is actually evaluable - a range check that cannot run is worse than none, because it looks like validation.",
+          "examples": [["rho", "v", "D", "mu"]]
+        },
+        "min": { "type": "number", "description": "Lower bound of the interval described by min/max." },
+        "min_inclusive": { "type": "boolean", "default": true },
+        "max": { "type": "number", "description": "Upper bound of the interval described by min/max." },
+        "max_inclusive": { "type": "boolean", "default": true },
+        "equals": { "type": ["string", "number", "boolean"] },
+        "enum": { "type": "array", "minItems": 1 },
+        "when": {
+          "enum": ["outside", "inside"],
+          "default": "outside",
+          "description": "Which side of the min/max interval counts as a violation. 'outside' (the default) means the interval is the ALLOWED range, so values beyond it trigger the severity. 'inside' inverts this, for conditions that are only a problem within a band - e.g. transitional flow between Re 2000 and 4000. Only meaningful with min/max."
+        },
+        "severity": {
+          "enum": ["warning", "error"],
+          "description": "error = mathematically undefined or invalid input, the implementation raises. warning = defined but outside the validated range, the implementation returns a value carrying a warning. Only evaluation of a test case may turn a `warning` range violation into a hard failure."
+        },
+        "rationale": { "type": "string" }
+      },
+      "anyOf": [
+        { "required": ["min"] },
+        { "required": ["max"] },
+        { "required": ["equals"] },
+        { "required": ["enum"] }
+      ],
+      "dependentRequired": {
+        "min_inclusive": ["min"],
+        "max_inclusive": ["max"],
+        "when": ["min", "max"]
+      }
+    },
+
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "type": {
+          "enum": ["worked_example", "reference", "property"],
+          "description": "worked_example = the example above, re-generated into both languages. reference = an independent published or cross-method value. property = an invariant such as unit round-trip or symmetry."
+        },
+        "status": {
+          "enum": ["active", "skipped"],
+          "description": "skipped requires skip_reason. A skipped test is still generated, marked and reported - it is never silently dropped."
+        },
+        "skip_reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why this test does not run, e.g. 'source_needed: citation could not be verified'."
+        },
+        "property": {
+          "enum": ["unit_round_trip", "symmetry", "monotonic", "consistency_with"],
+          "description": "Which invariant to check, when type is property."
+        },
+        "source": {
+          "type": "string",
+          "description": "Citation for the expected values, when type is reference."
+        },
+        "inputs": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/value" }
+        },
+        "expected": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/value" }
+        },
+        "tolerance": { "type": "number", "exclusiveMinimum": 0 },
+        "note": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "comment": "skipped tests must say why",
+          "if": { "properties": { "status": { "const": "skipped" } }, "required": ["status"] },
+          "then": { "required": ["skip_reason"] }
+        },
+        {
+          "comment": "reference tests carry their own inputs and expected values, but only when they actually run - a skipped reference test has no expected values to state",
+          "if": {
+            "properties": {
+              "type": { "const": "reference" },
+              "status": { "const": "active" }
+            },
+            "required": ["type", "status"]
+          },
+          "then": { "required": ["source", "inputs", "expected", "tolerance"] }
+        },
+        {
+          "comment": "property tests name the invariant they check",
+          "if": { "properties": { "type": { "const": "property" } }, "required": ["type"] },
+          "then": { "required": ["property"] }
+        }
+      ]
+    }
+  }
+}

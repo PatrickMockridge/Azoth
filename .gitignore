@@ -1,0 +1,48 @@
+# --- Rust ---
+/target/
+**/*.rs.bk
+*.pdb
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+# The compiled extension module is a build artifact, never committed.
+*.so
+*.pyd
+*.dylib
+
+# --- maturin / uv ---
+# uv.lock and Cargo.lock ARE committed - reproducible builds need them.
+# build/ and dist/ are not.
+/build/
+/dist/
+/wheels/
+
+# --- mdBook ---
+docs/book/
+
+# --- editors / OS ---
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# --- release artifacts ---
+# provenance.json is generated per release and attached to the release, not
+# committed at the repo root where it would go stale immediately. Released
+# copies live under provenance/<tag>.json and ARE committed.
+/provenance.json
+!provenance/
+
+# --- local scratch ---
+/tmp/
+*.local.*

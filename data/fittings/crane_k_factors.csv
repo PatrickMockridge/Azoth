@@ -1,0 +1,36 @@
+# chemeng fittings registry
+#
+# Resistance coefficients for the equivalent-length method:
+#
+#     K = n_ld * f_t
+#
+# where n_ld is the equivalent length ratio (L_eq / D) and f_t is the Darcy
+# friction factor for fully turbulent flow at the nominal fitting size. This is
+# a METHOD, not a table: the equation is the contribution, the numbers below are
+# inputs to it.
+#
+# COPYRIGHT: this file is NOT a transcription of any table from Crane TP-410 or
+# any other copyrighted source. Each row records where its value was read and
+# whether a human has checked it against the primary standard. Nothing here was
+# copied cell-for-cell from a published table; values are the widely republished
+# engineering consensus for these fittings.
+#
+# READ THIS BEFORE USE: every row is currently marked `unverified`, which means
+# the value has been read from secondary public references but has NOT been
+# checked against the primary standard by a competent engineer. Do not use this
+# library for design work on the strength of these numbers alone. To verify a
+# row, check it against your own copy of the standard, then change its
+# verify_status to `verified` and put your name and the date in citation.
+#
+# verify_status values:
+#   unverified  - read from secondary public references, not checked against the standard
+#   verified    - checked against the primary standard by a named human
+#
+fitting_id,family,name,n_ld,f_t_basis,citation,verify_status
+90_elbow,bend,90 degree standard elbow,30,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
+90_elbow_long_radius,bend,90 degree long-radius elbow,16,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
+45_elbow,bend,45 degree standard elbow,16,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
+gate_valve_open,valve,gate valve fully open,8,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
+ball_valve_open,valve,ball valve full bore,3,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
+plug_valve_straightway,valve,plug valve straightway,18,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified
+globe_valve_open,valve,globe valve fully open,340,f_t,Widely republished equivalent-length value for fully turbulent flow; underlying standard Crane TP-410 (2013),unverified

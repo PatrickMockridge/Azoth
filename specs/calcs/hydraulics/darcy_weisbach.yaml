@@ -1,0 +1,197 @@
+id: hydraulics.darcy_weisbach
+name: Darcy-Weisbach pressure drop
+equation: "dP = f * (L / D) * (rho * v**2 / 2)"
+
+source:
+  standard: Crane TP-410
+  edition: "2013"
+  equation: "TODO: source needed"
+
+verification:
+  status: unverified
+  notes: >
+    The Darcy-Weisbach equation itself is entirely standard and is not in doubt -
+    it appears in every fluid mechanics text and is the basis of the L_eq/D method
+    Crane uses. What is unconfirmed is the specific equation number. The project
+    brief cited "Crane Eq. 3-2", but Crane TP-410's publicly documented numbering
+    for this relation is Eq. 1-6 / 1-7 (and the resistance-of-bends equation 2-20),
+    not 3-2, so the number is marked TODO rather than repeated. This spec is
+    therefore `unverified`: usable, but the citation needs a human with a copy of
+    the standard. See also the note on the worked example below.
+
+inputs:
+  f:
+    unit: dimensionless
+    description: Darcy friction factor, from the Colebrook or Swamee-Jain calc in this slice
+  L:
+    unit: m
+    description: pipe length
+  D:
+    unit: m
+    description: internal pipe diameter
+  rho:
+    unit: kg/m**3
+    description: fluid density
+  v:
+    unit: m/s
+    description: bulk mean velocity
+  mu:
+    unit: Pa*s
+    optional: true
+    description: >
+      dynamic viscosity. Optional, and present only so the Reynolds-number range
+      check below can actually run. When it is omitted the calc still computes dP
+      but cannot verify the flow regime, so it emits a RANGE_CHECK_SKIPPED warning
+      instead of silently passing. Withholding it is a legitimate choice; having
+      the library pretend it checked is not.
+
+outputs:
+  dP:
+    unit: Pa
+    description: pressure drop over the pipe length
+  re:
+    unit: dimensionless
+    optional: true
+    description: Reynolds number, returned only when mu is supplied
+
+valid_range:
+  - quantity: f
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: a non-positive friction factor is unphysical and would give a negative or zero loss
+
+  - quantity: L
+    min: 0
+    severity: error
+    rationale: negative length is unphysical; zero length correctly gives zero drop
+
+  - quantity: D
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: L/D is singular at D = 0
+
+  - quantity: rho
+    min: 0
+    min_inclusive: false
+    severity: error
+    rationale: pressure drop scales with density, which must be positive
+
+  - quantity: v
+    min: 0
+    severity: error
+    rationale: speed is non-negative; the sign of the drop is not modelled
+
+  - quantity: re
+    computed_from: [rho, v, D, mu]
+    min: 2000
+    max: 4000
+    when: inside
+    severity: warning
+    rationale: >
+      Transitional flow, where the friction factor - and therefore this pressure
+      drop - is genuinely indeterminate rather than merely uncertain. The value
+      returned is trustworthy arithmetic applied to an untrustworthy f. This check
+      is only evaluable when mu is supplied; when it is not, the implementation
+      must emit RANGE_CHECK_SKIPPED so an unchecked result is distinguishable from
+      a checked one.
+
+assumptions:
+  - constant density along the pipe
+  - fully developed flow
+  - negligible elevation change and no shaft work between the two points
+  - steady, single-phase, incompressible flow
+  - Mach number below about 0.3; above that the incompressible form is not valid and the density change matters. NOT CHECKED - it cannot be, because this calc has no speed of sound. It is an assumption the caller must satisfy, not a validated range.
+  - the friction factor f corresponds to the actual flow regime; this calc does not verify that
+  - for a pipe with fittings, the fittings' resistance must be added separately - see hydraulics.crane_k_factors. This calc covers straight pipe only.
+
+references:
+  - Darcy, H. (1857). "Recherches experimentales relatives au mouvement de l'eau dans les tuyaux." Mallet-Bachelier, Paris.
+  - Weisbach, J. (1845). "Lehrbuch der Ingenieur- und Maschinen-Mechanik." Vieweg, Braunschweig.
+  - Crane Technical Paper No. 410, "Flow of Fluids Through Valves, Fittings and Pipe" (2013) - uses the Darcy-Weisbach basis in its Eq. 1-6. The specific equation number cited by the project brief (3-2) could not be verified; see `verification` above.
+
+worked_example:
+  source: derived from the equation above
+  derivation: >
+    The inputs are those given in the project brief. The expected value is NOT the
+    one the brief gave: the brief listed dP = 2245.5 Pa, which is exactly 10x too
+    small. Evaluating the stated equation:
+      L/D         = 100 / 0.1          = 1000
+      rho*v**2/2  = 998 * 1.5**2 / 2   = 1122.75
+      dP          = 0.02 * 1000 * 1122.75 = 22455.0 Pa
+    The brief's 2245.5 Pa is exactly rho*v**2, the dynamic pressure (twice the
+    velocity head), which appears nowhere in the equation - so it looks like a
+    dropped factor rather than a different convention. 22455.0 Pa is used here
+    because it is what the equation this library publishes actually yields, and a
+    library whose worked example disagrees with its own equation is worse than one
+    with no example at all. See validation/crane_tp410/example_3_5.json, which
+    carries the same correction and is run by CI.
+  inputs: { f: 0.02, L: 100.0, D: 0.1, rho: 998.0, v: 1.5 }
+  expected: { dP: 22455.0 }
+  tolerance: 1.0e-9
+
+implementations:
+  python: chemeng.hydraulics.darcy_weisbach
+  rust: chemeng_hydraulics::darcy_weisbach
+
+tests:
+  - id: derived_worked_example
+    type: worked_example
+    status: active
+
+  - id: crane_3_5
+    type: reference
+    status: skipped
+    skip_reason: >
+      source_needed: the brief attributed this worked example to "Crane TP-410
+      Example 3-5", but the example could not be located or verified, and the
+      expected value supplied with it was inconsistent with the stated equation by
+      a factor of 10. Reproducing a worked example from the standard is also
+      exactly what the project's copyright rule forbids. Skipped rather than
+      guessed: the equivalent validation is covered by derived_worked_example and
+      public_water_steel_example.
+
+  - id: perry_6_42
+    type: reference
+    status: skipped
+    skip_reason: >
+      source_needed: "Perry's 8th ed. Eq. 6-42" could not be verified, and
+      reproducing text or tables from Perry's is prohibited by the project's
+      copyright rule. Skipped rather than fabricated.
+
+  - id: reynolds_reported_when_mu_supplied
+    type: reference
+    status: active
+    source: derived from Re = rho*v*D/mu on the worked example's inputs
+    note: >
+      Same inputs as the worked example plus mu, which exercises the optional-input
+      path and confirms dP is unchanged by supplying mu, while re becomes available
+      and the regime check actually runs.
+    inputs: { f: 0.02, L: 100.0, D: 0.1, rho: 998.0, v: 1.5, mu: 1.002e-3 }
+    expected: { dP: 22455.0, re: 149401.2 }
+    tolerance: 1.0e-9
+
+  - id: public_water_steel_example
+    type: reference
+    status: active
+    source: >
+      Independent public worked example, used as a cross-check of the whole chain
+      (velocity -> Re -> f -> dP) against an outside calculation rather than
+      against ourselves: water at 20 C in 100 m of 100 mm commercial steel pipe at
+      50 m3/h, with rho = 998 kg/m**3, mu = 0.001 Pa*s and epsilon = 0.046 mm. The
+      published figure is approximately 29.6 kPa. Recomputing here with the
+      Colebrook friction factor gives V = 1.768388 m/s, Re = 176485.1,
+      f = 0.01884561 and dP = 29408.04 Pa = 29.41 kPa, i.e. 0.6% below the
+      published value. The tolerance is set to 2% to absorb the source's rounding
+      and its slightly different property values. This is a SECONDARY source: it
+      is used as a sanity cross-check, not as an authority, and it is not a
+      substitute for a human verifying the citation above.
+    inputs: { f: 0.01884561, L: 100.0, D: 0.1, rho: 998.0, v: 1.768388 }
+    expected: { dP: 29600.0 }
+    tolerance: 2.0e-2
+
+  - id: round_trip_units
+    type: property
+    property: unit_round_trip
+    status: active
