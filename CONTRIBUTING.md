@@ -140,6 +140,14 @@ copyrighted, and transcribing its tables is not something this project does. Cit
 the equation, work your own arithmetic. *Facts* are not copyrightable, so a
 single coefficient recorded with a citation is fine; a table is not.
 
+**Read [docs/src/copyright.md](docs/src/copyright.md) before designing a
+calculation around a value you cannot ship.** It lists every place this rule has
+changed what the library does, and the two patterns that resolve all of them so
+far: a *single* coefficient becomes a function argument (`Cd`, `eta`, `f_t` - no
+file, no licensing question), and a *set* of coefficients becomes user-supplied
+data with per-row provenance. A new calculation that needs a standard's table
+should be designed to take the numbers, not to embed them.
+
 **Every number in a worked example must be derivable and shown.** Write the
 substitution out. A worked example nobody can retrace is a number somebody typed.
 

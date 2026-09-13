@@ -164,7 +164,9 @@ follow.
 `data/fittings/crane_k_factors.csv` holds **estimated dummy values** - plausible
 magnitudes chosen so the software has something to run against. They are not from
 Crane TP-410 or any other standard. A pressure drop computed from them can be
-wrong by a factor of two and look entirely reasonable.
+wrong by a factor of two and look entirely reasonable. Supply your own with
+`azoth-data.example.yaml`; see
+[Copyright and licensed data](docs/src/copyright.md).
 
 Every affected result carries an `ESTIMATED_DATA` warning, `tools/spec_lint.py`
 prints the count on every run, and a test fails the day someone populates the
