@@ -122,6 +122,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Models: the same shape, a different spec tree and generator.
     m.add_function(wrap_pyfunction!(eos::pure_saturation, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pt_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::stability_test, m)?)?;
     m.add_function(wrap_pyfunction!(eos::bubble_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::critical_point, m)?)?;
     m.add_function(wrap_pyfunction!(eos::dew_pressure, m)?)?;

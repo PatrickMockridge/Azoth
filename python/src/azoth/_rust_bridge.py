@@ -54,10 +54,12 @@ from azoth.core.result import (
     RachfordRiceBinaryResult,
     ReynoldsNumberResult,
     RootStructure,
+    StabilityTestResult,
     SwameeJainResult,
     Vdw1fMixBinaryResult,
 )
 from azoth.core.result import Phase as _Phase
+from azoth.core.result import StabilityVerdict as _StabilityVerdict
 from azoth.core.units import Q, from_si, input_to_si, to_si
 from azoth.core.warnings import Warning, WarningCode
 
@@ -475,6 +477,38 @@ def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
     )
 
 
+def stability_test(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> StabilityTestResult:
+    """Whether a feed is stable as a single phase, computed in Rust.
+
+    The same seven arguments as `pt_flash` and the same unpacking, because it is the
+    same state asked a different question - which is what makes the two results
+    comparable, and what the cross-model test compares.
+
+    `verdict` crosses as the spec's spelling and is rebuilt here as the enum, so
+    `result.verdict is StabilityVerdict.UNSTABLE` holds whichever backend answered.
+    The `tm` and `w` rows come back in trial order - vapour-like first - and are
+    tuples because every other sequence in a result dataclass is one.
+    """
+    spec = _models_gen.model("eos.stability_test")
+    result = _core.stability_test(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+    )
+    return StabilityTestResult(
+        verdict=_StabilityVerdict(result.verdict),
+        tm=tuple(result.tm),
+        w=tuple(tuple(row) for row in result.w),
+        iterations=tuple(result.iterations),
+        min_t_over_tc=result.min_t_over_tc,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def _boundary_result(raw: Any, result_type: Any, *, liquid_first: bool) -> Any:
     """Shared unpacking for the two phase-boundary models.
 
@@ -606,6 +640,7 @@ _MODEL_IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.dew_pressure": dew_pressure,
     "eos.pure_saturation": pure_saturation,
     "eos.pt_flash": pt_flash,
+    "eos.stability_test": stability_test,
 }
 
 

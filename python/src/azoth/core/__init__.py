@@ -59,6 +59,8 @@ from azoth.core.result import (
     PureSaturationResult,
     ReynoldsNumberResult,
     RootStructure,
+    StabilityTestResult,
+    StabilityVerdict,
     SwameeJainResult,
     Vdw1fMixBinaryResult,
 )
@@ -114,6 +116,8 @@ __all__ = [
     "SolverNotConvergedError",
     "SolverOutcome",
     "SpecChecks",
+    "StabilityTestResult",
+    "StabilityVerdict",
     "SwameeJainResult",
     "UnitMismatchError",
     "UnknownFittingError",

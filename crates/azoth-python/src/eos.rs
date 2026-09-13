@@ -16,7 +16,8 @@ use crate::results::{
     PyCriticalPointResult, PyIdealGasCpResult, PyMolarEnthalpyEntropyResult, PyPhaseBoundaryResult,
     PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
     PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPtFlashResult,
-    PyPureSaturationResult, PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
+    PyPureSaturationResult, PyRachfordRiceBinaryResult, PyStabilityTestResult,
+    PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -254,6 +255,37 @@ pub fn pt_flash(
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
     eos::pt_flash(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyPtFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Whether a feed at a temperature and pressure is stable as a single phase.
+///
+/// The same seven arguments as the flash, because it is the same state asked a
+/// different question, and the two results are meant to be read together: a feed the
+/// flash splits is `unstable` here, and one it reports as a single phase is `stable`.
+///
+/// `verdict` crosses as the spec's spelling and the bridge rebuilds the enum, the
+/// same arrangement `phase` uses. `tm` and `w` are one entry per trial, always two,
+/// in a fixed order - vapour-like first - so a caller reads `tm[0]` as the vapour-like
+/// trial rather than having to look it up.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z)")]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn stability_test(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<PyStabilityTestResult> {
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
+    eos::stability_test(&mixture, kelvins(T), pascals(P), &z)
+        .map(|r| PyStabilityTestResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

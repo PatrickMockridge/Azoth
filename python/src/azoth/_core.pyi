@@ -175,6 +175,18 @@ class PhaseBoundaryResult:
     warnings: list[Warning]
 
 @final
+class StabilityTestResult:
+    # The spec's spelling of the verdict, as `phase` is for the flash: the adapter
+    # rebuilds the enum, so the transport carries a string.
+    verdict: str
+    # Two entries, always, in trial order - the vapour-like trial first.
+    tm: list[float]
+    w: list[list[float]]
+    iterations: list[int]
+    min_t_over_tc: float
+    warnings: list[Warning]
+
+@final
 class PrMolarVolumeResult:
     v: Qty
     warnings: list[Warning]
@@ -337,6 +349,15 @@ def pt_flash(
     P: float,
     z: list[float],
 ) -> PtFlashResult: ...
+def stability_test(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    T: float,
+    P: float,
+    z: list[float],
+) -> StabilityTestResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...

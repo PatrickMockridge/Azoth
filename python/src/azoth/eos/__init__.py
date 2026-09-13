@@ -81,6 +81,7 @@ from azoth.core.result import (
     PtFlashResult,
     PureSaturationResult,
     RachfordRiceBinaryResult,
+    StabilityTestResult,
     Vdw1fMixBinaryResult,
 )
 from azoth.core.units import Q
@@ -107,6 +108,7 @@ __all__ = [
     "pt_flash",
     "pure_saturation",
     "rachford_rice_binary",
+    "stability_test",
     "vdw1f_mix_binary",
 ]
 
@@ -119,6 +121,7 @@ _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
 _PT_FLASH = "eos.pt_flash"
+_STABILITY_TEST = "eos.stability_test"
 _PURE_SATURATION = "eos.pure_saturation"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DEPARTURE = "eos.pr_departure"
@@ -428,6 +431,51 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
     See :func:`azoth.eos.reference.pt_flash`.
     """
     return resolve(_PT_FLASH)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def stability_test(mixture: Mixture, T: Q, P: Q, z: list[float]) -> StabilityTestResult:
+    """Whether a mixture at a temperature and pressure is stable as a single phase.
+
+    The question :func:`pt_flash` cannot ask. Successive substitution finds *a*
+    stationary point; whether the feed was stable to begin with is a different
+    question, and a flash that converges to ``x = y = z`` has demonstrated that its
+    own starting point was not a split - not that the feed is single phase. This is
+    the model that answers it, by Michelsen's tangent-plane criterion: two trial
+    phases, seeded from Wilson K-values, are each iterated to a stationary point of
+    the tangent-plane distance, and the feed is unstable if either lands below the
+    tangent plane through the feed::
+
+        r = azoth.eos.stability_test(fluid, T=q(330, "K"), P=q(25, "bar"), z=[0.6, 0.4])
+        r.verdict, r.tm, r.iterations
+
+    **``stable`` means these two trials found nothing, not that no split exists.**
+    Both trials are placed by a gas-liquid correlation, so a feed unstable to a
+    *liquid-liquid* split comes back ``stable`` and nothing here detects it. And
+    ``unstable`` says a split exists without saying what it is or how many phases it
+    has - that is :func:`pt_flash`'s question, and for three phases neither model
+    answers it.
+
+    ``tm`` and ``w`` are one entry per trial in a fixed order - **vapour-like first**,
+    then liquid-like - and two entries always, so a caller reads ``tm[0]`` as the
+    vapour-like trial. A row of ``w`` equal to the feed is a trivial stationary
+    point: the trial found the feed's own and says nothing about whether another
+    exists. Its ``tm`` is zero to rounding, which is why the instability threshold is
+    ``-1e-8`` rather than zero - and why the verdict cannot be read off a single
+    distance.
+
+    ``z`` is **checked rather than renormalised**, as everywhere in this namespace.
+
+    Raises:
+        InvalidInputError: if ``z`` is the wrong length, has a negative entry, or
+            does not sum to one, or if the mixture's ``kij`` is malformed.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        SolverNotConvergedError: if a trial hits its cap. A tangent-plane distance
+            bounds stability only at a stationary point, so an unconverged trial is
+            an error rather than a trial quietly discarded.
+
+    See :func:`azoth.eos.reference.stability_test`.
+    """
+    return resolve(_STABILITY_TEST)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
 
 
 def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:

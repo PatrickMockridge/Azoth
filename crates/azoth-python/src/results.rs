@@ -20,7 +20,7 @@ use azoth_eos::results::{
     BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
     MolarEnthalpyEntropyResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
     PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
+    PureSaturationResult, RachfordRiceBinaryResult, StabilityTestResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1170,6 +1170,70 @@ impl From<&PtFlashResult> for PyPtFlashResult {
     }
 }
 
+/// Result of `eos.stability_test`, transported.
+///
+/// The first result here whose fields are all vectors or lists, and the first whose
+/// enum is *the* answer rather than a qualifier on one: `verdict` is what the model
+/// was asked, and the two distances are the evidence for it. It crosses as the
+/// spec's spelling, like `phase` does, and the adapter rebuilds the enum - so a
+/// caller compares `StabilityVerdict.UNSTABLE` regardless of which backend answered.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "StabilityTestResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyStabilityTestResult {
+    /// The spec's spelling of the verdict.
+    #[pyo3(get)]
+    pub verdict: String,
+    /// The tangent-plane distance at each trial's stationary point, in trial order.
+    #[pyo3(get)]
+    pub tm: Vec<f64>,
+    /// The stationary-point composition of each trial, in the same order.
+    #[pyo3(get)]
+    pub w: Vec<Vec<f64>>,
+    /// Iterations each trial took, in the same order.
+    #[pyo3(get)]
+    pub iterations: Vec<u32>,
+    /// The smallest `T / Tc_i` over the components.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyStabilityTestResult {
+    fn __repr__(&self) -> String {
+        // The distances first: they are the evidence for the verdict, and a reader
+        // seeing `stable` alone would not know whether the trials found nothing or
+        // found separate stationary points.
+        format!(
+            "StabilityTestResult({}, tm={:?}, {} + {} trial(s))",
+            self.verdict,
+            self.tm,
+            self.iterations.first().copied().unwrap_or_default(),
+            self.iterations.get(1).copied().unwrap_or_default()
+        )
+    }
+}
+
+impl From<&StabilityTestResult> for PyStabilityTestResult {
+    fn from(r: &StabilityTestResult) -> Self {
+        Self {
+            verdict: r.verdict.as_str().to_string(),
+            tm: r.tm.clone(),
+            w: r.w.clone(),
+            iterations: r.iterations.clone(),
+            min_t_over_tc: r.min_t_over_tc,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PrMassDensityResult> for PyPrMassDensityResult {
     fn from(r: &PrMassDensityResult) -> Self {
         Self {
@@ -1425,6 +1489,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         // the model results were covered by no shape check at all.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
         PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
+        StabilityTestResult::CALC_ID => StabilityTestResult::FIELDS.to_vec(),
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),

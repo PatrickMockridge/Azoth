@@ -27,6 +27,7 @@ from azoth.eos.reference.prsv_kappa import prsv_kappa
 from azoth.eos.reference.pt_flash import pt_flash
 from azoth.eos.reference.pure_saturation import pure_saturation
 from azoth.eos.reference.rachford_rice_binary import rachford_rice_binary
+from azoth.eos.reference.stability_test import stability_test
 from azoth.eos.reference.vdw1f_mix_binary import vdw1f_mix_binary
 
 __all__ = [
@@ -50,5 +51,6 @@ __all__ = [
     "pt_flash",
     "pure_saturation",
     "rachford_rice_binary",
+    "stability_test",
     "vdw1f_mix_binary",
 ]
