@@ -236,6 +236,15 @@ pub struct ModelBracket {
 /// and both implementations evaluate it; a model's fixes a *loop*, and a loop that
 /// differs even slightly between two implementations diverges. `scheme` is held to
 /// the implementations by a contract test, the way `SolverKind` is.
+///
+/// # Why this is recursive
+///
+/// [`Self::inner`] is another `ModelAlgorithm`. A nested procedure has the same
+/// shape as an outer one - a scheme, a convergence rule, a tolerance, a cap - so
+/// describing it with a second set of types would be a second definition of what an
+/// algorithm is, free to drift from the first. The PT flash runs a Rachford-Rice
+/// solve every outer iteration, and this is what lets the spec say so without
+/// inventing a vocabulary for it.
 #[derive(Debug, Clone, Copy)]
 pub struct ModelAlgorithm {
     /// The procedure's name, e.g. `saturation_pressure_bisection`.
@@ -246,8 +255,21 @@ pub struct ModelAlgorithm {
     pub tolerance: f64,
     /// Iteration cap.
     pub max_iterations: u32,
-    /// How the starting interval is found.
-    pub bracket: ModelBracket,
+    /// How the starting interval is found, when the scheme brackets anything.
+    ///
+    /// Optional, because an inner scheme need not bracket: Rachford-Rice bisects a
+    /// bracket the K-values define analytically, so there is no search for one and a
+    /// mandatory field would have to be filled with a bracket nobody evaluates.
+    pub bracket: Option<ModelBracket>,
+    /// How the iteration starts, where the scheme needs a starting point.
+    ///
+    /// The analogue of a solver's `initial_guess`, and in the spec for the same
+    /// reason: two implementations that start from different guesses take different
+    /// paths to the same answer, and a convergence claim that holds from one
+    /// starting point need not hold from another.
+    pub initialisation: Option<&'static str>,
+    /// A nested procedure the outer one runs each iteration.
+    pub inner: Option<&'static ModelAlgorithm>,
 }
 
 /// One model, as the generated table carries it.

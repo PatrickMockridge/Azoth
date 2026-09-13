@@ -103,7 +103,20 @@ pub fn pure_saturation(
     )?;
 
     let algorithm = spec.algorithm;
-    let bracket = algorithm.bracket;
+    let Some(bracket) = algorithm.bracket else {
+        // The spec's scheme is `saturation_pressure_bisection`, which searches a
+        // bracket. `bracket` is optional in the schema because a *nested* scheme
+        // need not have one - Rachford-Rice's interval comes from its K-values -
+        // so a top-level scheme that needs one and has none is a generator bug.
+        // Returned rather than panicked, per this library's no-panic rule.
+        return Err(AzothError::InvalidInput {
+            field: "algorithm.bracket".to_string(),
+            reason: format!(
+                "scheme `{}` searches for a bracket but the spec declares none",
+                algorithm.scheme
+            ),
+        });
+    };
     let kappa = pr_kappa(omega)?.kappa;
 
     // The two extreme fugacities at a trial reduced pressure, or `None` when the

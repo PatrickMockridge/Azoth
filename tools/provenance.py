@@ -107,6 +107,12 @@ NAMESPACE_SUPPORT = {
         "crates/azoth-python/src/thermal.rs",
     ),
     "eos": (
+        # The mixture layer is the model layer's own arithmetic - components, the
+        # van der Waals one-fluid mixing rule, and the mixture fugacity coefficient
+        # no registered calc covers. It affects every model in this namespace, so it
+        # is recorded once here rather than once per model. `pt_flash.rs` and
+        # `pure_saturation.rs` are picked up by the per-model naming convention.
+        "crates/azoth-eos/src/mixture.rs",
         "crates/azoth-eos/src/model_gen.rs",
         "crates/azoth-eos/src/spec_gen.rs",
         "crates/azoth-python/src/eos.rs",

@@ -160,3 +160,70 @@ def test_the_bridge_carries_a_model_arm_for_every_model() -> None:
         f"  missing from the bridge: {sorted(schema_model_ids() - set(_MODEL_IMPLEMENTATIONS))}\n"
         f"  not in the registry: {sorted(set(_MODEL_IMPLEMENTATIONS) - schema_model_ids())}"
     )
+
+
+@pytest.mark.requires_rust
+def test_the_result_shapes_agree_across_languages() -> None:
+    """Every model result dataclass must have exactly the fields Rust reports.
+
+    The same check `test_cross_impl.py` runs for the calc registry, which the models
+    were outside of until the flash made it matter: the flash's result has thirteen
+    fields, one of them optional and five of them vectors, and a shape mismatch is
+    invisible to every numerical test - the numbers agree perfectly and only the
+    attribute differs.
+    """
+    import dataclasses
+
+    from azoth.core.result import MODEL_RESULT_TYPES
+
+    core = _extension()
+    assert MODEL_RESULT_TYPES, "no model results to check"
+    for model_id, result_type in MODEL_RESULT_TYPES.items():
+        typed: Any = result_type
+        python_fields = [f.name for f in dataclasses.fields(typed)]
+        rust_fields = list(core.result_fields(model_id))
+        assert python_fields == rust_fields, (
+            f"{model_id}: field mismatch\n  python: {python_fields}\n  rust:   {rust_fields}"
+        )
+
+
+def test_the_model_result_table_covers_every_model() -> None:
+    """`MODEL_RESULT_TYPES` is exactly the model registry.
+
+    Kept separate from the calc table, which is asserted to be exactly the calc
+    registry - so a model result appearing there would break that contract rather
+    than extend it. A model in the registry with no result type would be a shape
+    nothing checks, which is what this table exists to prevent.
+    """
+    from azoth.core.result import MODEL_RESULT_TYPES
+
+    assert set(MODEL_RESULT_TYPES) == schema_model_ids(), (
+        f"the model result table and the registry differ\n"
+        f"  missing: {sorted(schema_model_ids() - set(MODEL_RESULT_TYPES))}\n"
+        f"  extra:   {sorted(set(MODEL_RESULT_TYPES) - schema_model_ids())}"
+    )
+
+
+def test_every_model_scheme_and_inner_scheme_is_named() -> None:
+    """A nested scheme is part of the procedure, so the spec has to declare it.
+
+    The flash runs Rachford-Rice every outer iteration, and the spec says so in
+    `algorithm.inner`. A spec that named only the outer scheme would leave the
+    inner loop's tolerance undocumented and free to differ between implementations -
+    which is the whole failure this tree exists to prevent.
+    """
+    for model in _models_gen.MODELS:
+        algorithm = model["algorithm"]
+        assert "initialisation" in algorithm or algorithm["scheme"].endswith("bisection"), (
+            f"{model['id']}: a scheme that needs a starting point must declare "
+            f"`initialisation`, or two implementations take different paths"
+        )
+        inner = algorithm.get("inner")
+        if inner is not None:
+            assert inner["scheme"] != algorithm["scheme"], (
+                f"{model['id']}: the inner scheme must be a different procedure"
+            )
+            assert inner["tolerance"] < algorithm["tolerance"], (
+                f"{model['id']}: an inner solve must be tighter than the outer loop "
+                f"it feeds, or the outer residual measures the inner tolerance"
+            )

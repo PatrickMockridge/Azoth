@@ -120,6 +120,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Models: the same shape, a different spec tree and generator.
     m.add_function(wrap_pyfunction!(eos::pure_saturation, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pt_flash, m)?)?;
 
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;

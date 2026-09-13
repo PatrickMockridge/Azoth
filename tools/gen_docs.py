@@ -302,7 +302,18 @@ def render_calc(spec: dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
-def render_namespace_index(calcs: list[dict[str, Any]], namespace: str) -> str:
+def render_namespace_index(
+    calcs: list[dict[str, Any]], namespace: str, models: list[dict[str, Any]] | None = None
+) -> str:
+    """The landing page for one namespace: its calculations, then its models.
+
+    The two get separate tables rather than one, because they are different kinds of
+    thing and the difference is the point. A calculation's page shows an equation
+    with a source; a model's shows a *procedure* and a set of settings that were
+    chosen rather than published. Merging them would put "Peng, Robinson (1976)" in
+    the same column as "successive substitution" and invite the reader to compare
+    them.
+    """
     title = namespace_title(namespace)
     out = BANNER.format(source=f"specs/calcs/{namespace}/") + "\n"
     out += f"\n# {title}\n\n"
@@ -319,6 +330,59 @@ def render_namespace_index(calcs: list[dict[str, Any]], namespace: str) -> str:
         out += (
             f"| [`{calc['id']}`](./{calc['id'].split('.')[-1]}.md) | ${equation}$ | {standard} |\n"
         )
+
+    if models:
+        out += (
+            "\n## Models\n\n"
+            "The calculations above are equations; these are *procedures*. A model's "
+            "spec fixes a scheme, a tolerance and an iteration cap rather than a "
+            "formula, and two implementations that differ even slightly in those "
+            "diverge - so each page leads with the algorithm and its settings, and "
+            "the equations below it are the ones it composes rather than its own.\n\n"
+            "| Model | Scheme | Source |\n|---|---|---|\n"
+        )
+        for model in models:
+            scheme = model["algorithm"]["scheme"].replace("|", r"\|")
+            standard = model["source"]["standard"].replace("|", r"\|")
+            out += (
+                f"| [`{model['id']}`](./{model['id'].split('.')[-1]}.md) "
+                f"| `{scheme}` | {standard} |\n"
+            )
+    return out
+
+
+def render_algorithm(algorithm: dict[str, Any], level: int) -> str:
+    """One algorithm block as a table, recursing through `inner`.
+
+    A nested scheme gets its own heading rather than a row, because it is a
+    procedure in its own right with its own tolerances - flattening it into the
+    parent's table would suggest its settings were the parent's. `bracket`,
+    `initialisation` and `inner` are each absent for some schemes, so they are
+    omitted rather than rendered empty.
+    """
+    heading = "#" * level
+    rows = [
+        ("Scheme", f"`{algorithm['scheme']}`"),
+        ("Convergence", f"`{algorithm['convergence']}`"),
+        ("Tolerance", f"`{algorithm['tolerance']}`"),
+        ("Max iterations", f"`{algorithm['max_iterations']}`"),
+    ]
+    if algorithm.get("initialisation"):
+        rows.append(("Initialisation", f"`{algorithm['initialisation']}`"))
+    bracket = algorithm.get("bracket")
+    if bracket:
+        rows.extend(
+            [
+                ("Bracket", f"`{bracket['scheme']}`"),
+                ("Bracket range", f"`{bracket['lower']}` to `{bracket['upper']}`"),
+                ("Bracket steps", f"`{bracket['steps']}`"),
+            ]
+        )
+
+    out = "| Setting | Value |\n|---|---|\n"
+    out += "".join(f"| {name} | {value} |\n" for name, value in rows)
+    if algorithm.get("inner"):
+        out += f"\n{heading} Inner procedure\n\n{render_algorithm(algorithm['inner'], level + 1)}"
     return out
 
 
@@ -331,7 +395,6 @@ def render_model(spec: dict[str, Any]) -> str:
     rendered prominently rather than buried.
     """
     algorithm = spec["algorithm"]
-    bracket = algorithm["bracket"]
 
     parts = [
         f"# {spec['name']}\n\n",
@@ -345,15 +408,7 @@ def render_model(spec: dict[str, Any]) -> str:
         "\n## Algorithm\n\n"
         "A model rather than a calculation: what this page pins down is the procedure,\n"
         "not an equation, and both implementations read it from here.\n\n"
-        "| Setting | Value |\n"
-        "|---|---|\n"
-        f"| Scheme | `{algorithm['scheme']}` |\n"
-        f"| Convergence | `{algorithm['convergence']}` |\n"
-        f"| Tolerance | `{algorithm['tolerance']}` |\n"
-        f"| Max iterations | `{algorithm['max_iterations']}` |\n"
-        f"| Bracket | `{bracket['scheme']}` |\n"
-        f"| Bracket range | `{bracket['lower']}` to `{bracket['upper']}` |\n"
-        f"| Bracket steps | `{bracket['steps']}` |\n"
+        + render_algorithm(algorithm, 2)
     )
 
     for section, key in (("Inputs", "inputs"), ("Outputs", "outputs")):
@@ -510,11 +565,13 @@ def main() -> int:
     ):
         in_namespace = [c for c in calcs if c["id"].split(".")[0] == namespace]
         directory = namespace_dir(namespace)
-        outputs[directory / "index.md"] = render_namespace_index(in_namespace, namespace)
+        mine = sorted(
+            (m for m in models if m["id"].split(".")[0] == namespace), key=lambda m: m["id"]
+        )
+        outputs[directory / "index.md"] = render_namespace_index(in_namespace, namespace, mine)
         for calc in in_namespace:
             outputs[directory / f"{calc['id'].split('.')[-1]}.md"] = render_calc(calc)
-        mine = [m for m in models if m["id"].split(".")[0] == namespace]
-        for model in sorted(mine, key=lambda m: m["id"]):
+        for model in mine:
             outputs[directory / f"{model['id'].split('.')[-1]}.md"] = render_model(model)
 
     stale: list[Path] = []

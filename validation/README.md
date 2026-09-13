@@ -27,9 +27,25 @@ it can disagree with it.
 }
 ```
 
-`calc` must be a calc id from the registry. Inputs are named exactly as the
-spec's `inputs` block and are in the units that block declares, so a validation
-case needs no unit handling of its own - the runner converts using the spec.
+`calc` names an id from **either** registry - a calculation or a model. Inputs are
+named exactly as the spec's `inputs` block and are in the units that block
+declares, so a validation case needs no unit handling of its own - the runner
+converts using the spec.
+
+A model's case is worth having for a different reason than a calc's. A calc's spec
+asserts an *equation*, and a published worked example can check that the equation
+was transcribed correctly. A model's spec asserts a *procedure* - a scheme, a
+tolerance, an iteration cap - none of which any source states, so the only check on
+it that does not come from the spec itself is an external one on where its answer
+lands.
+
+Two things follow. `expected` may be a number, a vector (a composition, or one
+K-value per component), an enum member as its spec spelling, or `null` for an
+output that is genuinely absent - `eos.pt_flash` reports no vapour fraction when a
+feed has no two-phase solution, and a case can assert that. And an input that is an
+*object* rather than a number needs an entry in the runner's `ARGUMENT_BUILDERS`,
+which today holds one: `eos.pt_flash` takes a `Mixture`, so its case states the
+components as vectors and the runner assembles them.
 
 `source.verification` is one of:
 

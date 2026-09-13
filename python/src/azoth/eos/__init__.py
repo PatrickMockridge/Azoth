@@ -73,13 +73,18 @@ from azoth.core.result import (
     PrMolarVolumeResult,
     PrsvKappaResult,
     PrZFactorResult,
+    PtFlashResult,
     PureSaturationResult,
     RachfordRiceBinaryResult,
     Vdw1fMixBinaryResult,
 )
 from azoth.core.units import Q
+from azoth.eos.mixture import Component, Mixture, mixture
 
 __all__ = [
+    "Component",
+    "Mixture",
+    "mixture",
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
@@ -87,6 +92,7 @@ __all__ = [
     "pr_molar_volume",
     "pr_z_factor",
     "prsv_kappa",
+    "pt_flash",
     "pure_saturation",
     "rachford_rice_binary",
     "vdw1f_mix_binary",
@@ -95,6 +101,7 @@ __all__ = [
 _PR_KAPPA = "eos.pr_kappa"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
+_PT_FLASH = "eos.pt_flash"
 _PURE_SATURATION = "eos.pure_saturation"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DEPARTURE = "eos.pr_departure"
@@ -244,6 +251,44 @@ def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
     See :func:`azoth.eos.reference.pr_mass_density`.
     """
     return resolve(_PR_MASS_DENSITY)(M=M, v=v)  # type: ignore[no-any-return]
+
+
+def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
+    """The two-phase flash of a mixture at a temperature and pressure.
+
+    The deliverable of this namespace: how much of a feed is vapour, what the two
+    phases are made of, and the fugacity coefficients that make it so::
+
+        fluid = azoth.eos.mixture(
+            [propane, butane], kij={(0, 1): 0.0}
+        )
+        r = azoth.eos.pt_flash(fluid, T=q(330, "K"), P=q(2.5e6, "Pa"), z=[0.6, 0.4])
+        r.beta, r.x, r.y, r.phase
+
+    ``z`` is **checked rather than renormalised** - a composition that does not sum
+    to one is a mistake, and silently correcting it would make it invisible in every
+    number downstream.
+
+    **Read ``phase``, not ``beta``.** ``beta`` is ``None`` where there is no vapour
+    fraction to report, which is one of two things: the feed has no two-phase
+    solution at all (every K-value on the same side of one, and the result says
+    ``all_liquid`` or ``all_vapour``), or the iteration converged to ``x = y = z``
+    and the model cannot tell which single phase the feed is (``TRIVIAL``). A
+    ``beta`` outside ``[0, 1]`` but present is the negative flash - a real reading,
+    reported with ``OUT_OF_VALID_RANGE``.
+
+    There is **no stability test**: a converged split is a stationary point of the
+    flash equations, not a proof that the feed was unstable. See the model spec.
+
+    Raises:
+        InvalidInputError: if ``z`` is the wrong length, has a negative entry, or
+            does not sum to one, or if the mixture's ``kij`` is malformed.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        SolverNotConvergedError: if the iteration hits its cap.
+
+    See :func:`azoth.eos.reference.pt_flash`.
+    """
+    return resolve(_PT_FLASH)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
 
 
 def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:

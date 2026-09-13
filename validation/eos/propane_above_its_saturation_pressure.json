@@ -1,0 +1,21 @@
+{
+  "id": "propane_above_its_saturation_pressure",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "Propane vapour pressure at 300 K: 9.974 bar, as cited in specs/models/eos/pure_saturation.yaml",
+    "verification": "unverified",
+    "notes": "The same inherited attribution and the same caveat as the case below the saturation pressure: the boundary is external only as far as the published vapour pressure is. Paired with its opposite so that a flash which reported one phase unconditionally would fail one of the two - a single case would pass on a function that always answered the same way."
+  },
+  "derivation": "The companion to propane_below_its_saturation_pressure.json, at 11.0 bar - about 10% above the 9.9767 bar the kernels give and the 9.974 bar published. Above the saturation pressure the same single K-value falls below one, and the flash reports the liquid. The pair brackets the externally-validated boundary from both sides.",
+  "inputs": {
+    "Tc": [369.83],
+    "Pc": [4248000.0],
+    "omega": [0.1523],
+    "kij": [[0.0]],
+    "T": 300.0,
+    "P": 1100000.0,
+    "z": [1.0]
+  },
+  "expected": { "phase": "all_liquid" },
+  "tolerance": 1.0e-09
+}

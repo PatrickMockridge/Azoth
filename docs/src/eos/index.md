@@ -15,3 +15,12 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.prsv_kappa`](./prsv_kappa.md) | $\kappa = 0.378893 + 1.4897153\,\omega - 0.17131848\,\omega^{2} + 0.0196554\,\omega^{3} + \kappa_{1}\left(1 + \sqrt{T_{r}}\right)\left(0.7 - T_{r}\right)$ | Stryjek, R.; Vera, J. H. (1986) |
 | [`eos.rachford_rice_binary`](./rachford_rice_binary.md) | $\beta = -\frac{z_{1}\left(K_{1} - 1\right) + z_{2}\left(K_{2} - 1\right)}{\left(K_{1} - 1\right)\left(K_{2} - 1\right)}$ | Rachford, H. H.; Rice, J. D. (1952) |
 | [`eos.vdw1f_mix_binary`](./vdw1f_mix_binary.md) | $a_{\mathrm{mix}} = z_{1}^{2}a_{1} + 2z_{1}z_{2}\left(1 - k_{12}\right)\sqrt{a_{1}a_{2}} + z_{2}^{2}a_{2}, \qquad b_{\mathrm{mix}} = z_{1}b_{1} + z_{2}b_{2}$ | van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text |
+
+## Models
+
+The calculations above are equations; these are *procedures*. A model's spec fixes a scheme, a tolerance and an iteration cap rather than a formula, and two implementations that differ even slightly in those diverge - so each page leads with the algorithm and its settings, and the equations below it are the ones it composes rather than its own.
+
+| Model | Scheme | Source |
+|---|---|---|
+| [`eos.pt_flash`](./pt_flash.md) | `successive_substitution_flash` | Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982) |
+| [`eos.pure_saturation`](./pure_saturation.md) | `saturation_pressure_bisection` | Peng, D. Y.; Robinson, D. B. (1976) |

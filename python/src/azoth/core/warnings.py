@@ -45,6 +45,11 @@ class WarningCode(StrEnum):
     #: data. Nothing computed from it should be used for design.
     ESTIMATED_DATA = "ESTIMATED_DATA"
 
+    #: An iterative phase-equilibrium calculation converged to the trivial
+    #: solution, ``x = y = z``. Distinct from ``SOLVER_NOT_CONVERGED``: this one
+    #: *did* converge, and what it converged to is not a phase split.
+    TRIVIAL_SOLUTION = "TRIVIAL_SOLUTION"
+
 
 @dataclass(frozen=True, slots=True)
 class Warning:

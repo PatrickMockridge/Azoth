@@ -34,6 +34,15 @@ pub enum WarningCode {
     /// The calculation depends on data that is a placeholder, not engineering
     /// data. Nothing computed from it should be used for design.
     EstimatedData,
+    /// An iterative phase-equilibrium calculation converged to the trivial
+    /// solution, `x = y = z`.
+    ///
+    /// Distinct from [`Self::SolverNotConverged`], which says the iteration failed:
+    /// this one converged, and what it converged to is not the thing the caller
+    /// asked for. A phase split that is not a phase split cannot be reported as an
+    /// out-of-range number, because at the trivial solution the number is not out of
+    /// range - it is undetermined.
+    TrivialSolution,
 }
 
 impl WarningCode {
@@ -49,6 +58,7 @@ impl WarningCode {
             Self::SolverNotConverged => "SOLVER_NOT_CONVERGED",
             Self::UnverifiedSource => "UNVERIFIED_SOURCE",
             Self::EstimatedData => "ESTIMATED_DATA",
+            Self::TrivialSolution => "TRIVIAL_SOLUTION",
         }
     }
 
@@ -62,6 +72,7 @@ impl WarningCode {
             Self::SolverNotConverged,
             Self::UnverifiedSource,
             Self::EstimatedData,
+            Self::TrivialSolution,
         ]
     }
 }

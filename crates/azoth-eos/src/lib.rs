@@ -46,6 +46,7 @@
 //! why this crate has no `uom` dependency: the dimensional conversion belongs at
 //! the boundary, in one place, where it can be tested once.
 
+pub mod mixture;
 pub mod model_gen;
 pub mod pr_alpha_ab;
 pub mod pr_departure;
@@ -54,12 +55,14 @@ pub mod pr_mass_density;
 pub mod pr_molar_volume;
 pub mod pr_z_factor;
 pub mod prsv_kappa;
+pub mod pt_flash;
 pub mod pure_saturation;
 pub mod rachford_rice_binary;
 pub mod results;
 pub mod spec_gen;
 pub mod vdw1f_mix_binary;
 
+pub use mixture::{Component, Mixture, PhaseState, ReducedParameters, RootSide};
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
 pub use pr_departure::pr_departure;
 pub use pr_kappa::pr_kappa;
@@ -67,11 +70,12 @@ pub use pr_mass_density::pr_mass_density;
 pub use pr_molar_volume::{MOLAR_GAS_CONSTANT, pr_molar_volume};
 pub use pr_z_factor::pr_z_factor;
 pub use prsv_kappa::prsv_kappa;
+pub use pt_flash::pt_flash;
 pub use pure_saturation::pure_saturation;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use results::{
-    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrZFactorResult, PrsvKappaResult, PureSaturationResult, RachfordRiceBinaryResult,
-    RootStructure, Vdw1fMixBinaryResult,
+    Phase, PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, RootStructure, Vdw1fMixBinaryResult,
 };
 pub use vdw1f_mix_binary::vdw1f_mix_binary;

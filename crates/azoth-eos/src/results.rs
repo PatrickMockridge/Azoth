@@ -182,6 +182,116 @@ impl CalcResult for PureSaturationResult {
     }
 }
 
+/// What a converged flash turned out to be.
+///
+/// A separate type from [`RootStructure`], which counts the roots of a *pure*
+/// component's cubic and says nothing about phases. The two are easy to confuse and
+/// mean different things: three roots is a mathematical fact about a polynomial,
+/// `two_phase` is a physical claim about a mixture.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Phase {
+    /// A genuine split: `beta` in `[0, 1]` and the two compositions differ.
+    TwoPhase,
+    /// The feed is subcooled liquid.
+    ///
+    /// Reached two ways, and `beta` distinguishes them: either the converged
+    /// Rachford-Rice root is negative, in which case `beta` is present as the
+    /// negative-flash value and the result carries `OutOfValidRange`; or every
+    /// K-value is below one, in which case **no root exists at all** and `beta` is
+    /// absent.
+    AllLiquid,
+    /// The feed is superheated vapour. The same two routes as [`Self::AllLiquid`].
+    AllVapour,
+    /// The iteration converged to `x = y = z`.
+    ///
+    /// The feed is single phase, and **this does not say which one** - the
+    /// K-values straddled one throughout, so nothing in the model ever proved which
+    /// phase the feed is. That is what a tangent-plane stability analysis decides,
+    /// and this model has none; see the model spec's assumptions. `beta` is absent,
+    /// because at the trivial solution it is indeterminate rather than out of range.
+    Trivial,
+}
+
+impl Phase {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::TwoPhase => "two_phase",
+            Self::AllLiquid => "all_liquid",
+            Self::AllVapour => "all_vapour",
+            Self::Trivial => "trivial",
+        }
+    }
+}
+
+/// Result of `eos.pt_flash`.
+///
+/// # Why `beta` is optional here and nowhere else in this crate
+///
+/// At a trivial solution every `K_i` is 1, the Rachford-Rice function is identically
+/// zero, and the vapour fraction is **indeterminate** rather than merely outside
+/// `[0, 1]`. Successive substitution approaches the point through geometrically
+/// growing `beta`, and where a bisection stops on an identically-zero function is a
+/// ratio of round-off - measured at `-7.7e10` for one feed and `-2.2e11` for
+/// another, neither reproducible across implementations.
+///
+/// Reporting a number there would be reporting a fabrication that looks exactly like
+/// a real vapour fraction. `None` is the honest answer, and it is type-level: a
+/// caller cannot read it without noticing.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PtFlashResult {
+    /// The vapour fraction, or `None` when the solution is trivial.
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`, the iterate the loop converges on.
+    pub k: Vec<f64>,
+    /// `ln phi_i` in the liquid phase.
+    pub ln_phi_liquid: Vec<f64>,
+    /// `ln phi_i` in the vapour phase.
+    pub ln_phi_vapour: Vec<f64>,
+    /// The liquid root of the cubic, the smallest admissible one.
+    pub z_liquid: f64,
+    /// The vapour root, the largest admissible one.
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components.
+    pub min_t_over_tc: f64,
+    /// What the converged state is.
+    pub phase: Phase,
+    /// Successive-substitution steps taken.
+    pub iterations: u32,
+    /// `rms_i |ln K_i - ln K_i_previous|` at the step that met the tolerance.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PtFlashResult {
+    const CALC_ID: &'static str = "eos.pt_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "beta",
+        "x",
+        "y",
+        "k",
+        "ln_phi_liquid",
+        "ln_phi_vapour",
+        "z_liquid",
+        "z_vapour",
+        "min_t_over_tc",
+        "phase",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for PrMolarVolumeResult {
     const CALC_ID: &'static str = "eos.pr_molar_volume";
     const FIELDS: &'static [&'static str] = &["v", "warnings"];

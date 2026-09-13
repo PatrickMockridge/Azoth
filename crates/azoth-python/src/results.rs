@@ -18,8 +18,8 @@ use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrZFactorResult, PrsvKappaResult, PureSaturationResult, RachfordRiceBinaryResult,
-    Vdw1fMixBinaryResult,
+    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -881,6 +881,97 @@ impl From<&PureSaturationResult> for PyPureSaturationResult {
     }
 }
 
+/// Result of `eos.pt_flash`, transported.
+///
+/// The first result here whose fields are vectors, and the first with an optional
+/// scalar. `beta` crosses as `Option<f64>` and arrives as `None` - that is the whole
+/// point of it being optional, so flattening it to a sentinel number at the boundary
+/// would undo the design one layer below where it was made.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PtFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPtFlashResult {
+    /// The vapour fraction, or `None` when there is none to report.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// `ln phi_i` in the liquid phase.
+    #[pyo3(get)]
+    pub ln_phi_liquid: Vec<f64>,
+    /// `ln phi_i` in the vapour phase.
+    #[pyo3(get)]
+    pub ln_phi_vapour: Vec<f64>,
+    /// The liquid root of the cubic.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Successive-substitution steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The rms change in `ln K` at the last completed step, or `NaN`.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPtFlashResult {
+    fn __repr__(&self) -> String {
+        match self.beta {
+            Some(beta) => format!(
+                "PtFlashResult(phase={}, beta={beta}, z_liquid={}, z_vapour={})",
+                self.phase, self.z_liquid, self.z_vapour
+            ),
+            None => format!(
+                "PtFlashResult(phase={}, beta=None, {} iteration(s))",
+                self.phase, self.iterations
+            ),
+        }
+    }
+}
+
+impl From<&PtFlashResult> for PyPtFlashResult {
+    fn from(r: &PtFlashResult) -> Self {
+        Self {
+            beta: r.beta,
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            ln_phi_liquid: r.ln_phi_liquid.clone(),
+            ln_phi_vapour: r.ln_phi_vapour.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            phase: r.phase.as_str().to_string(),
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PrMassDensityResult> for PyPrMassDensityResult {
     fn from(r: &PrMassDensityResult) -> Self {
         Self {
@@ -1131,6 +1222,11 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
         PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
         PrMassDensityResult::CALC_ID => PrMassDensityResult::FIELDS.to_vec(),
+        // Models. Present here because a result's *shape* is a cross-language
+        // contract whether or not its spec calls it a calculation, and before this
+        // the model results were covered by no shape check at all.
+        PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
+        PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),

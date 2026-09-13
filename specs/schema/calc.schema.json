@@ -327,7 +327,8 @@
             "TRANSITIONAL_FLOW",
             "SOLVER_NOT_CONVERGED",
             "UNVERIFIED_SOURCE",
-            "ESTIMATED_DATA"
+            "ESTIMATED_DATA",
+            "TRIVIAL_SOLUTION"
           ],
           "default": "OUT_OF_VALID_RANGE",
           "description": "Which warning code a violation emits. Defaults to OUT_OF_VALID_RANGE, which is right for a plain bound. Override it when the violation has a more specific meaning - the transitional-flow band emits TRANSITIONAL_FLOW, so a caller can react to indeterminate friction without string-matching a message. The code is data, not behaviour: naming it here is what keeps the spec and the warning the code raises from drifting apart."

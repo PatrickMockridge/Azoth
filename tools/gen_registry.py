@@ -281,7 +281,9 @@ def emit_test_case(
     def number_slice_pairs(items: list[tuple[str, list[float]]]) -> str:
         if not items:
             return "&[]"
-        inner = ", ".join(f"({rust_str(k)}, &[{', '.join(rust_f64(x) for x in v)}])" for k, v in items)
+        inner = ", ".join(
+            f"({rust_str(k)}, &[{', '.join(rust_f64(x) for x in v)}])" for k, v in items
+        )
         return f"&[{inner}]"
 
     prop = f"Some({rust_str(property_name)})" if property_name else "None"

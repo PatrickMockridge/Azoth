@@ -329,8 +329,7 @@ def check_identity_model(report: Report, rel: Path, spec: dict[str, Any]) -> Non
         if actual != expected:
             report.error(
                 str(rel),
-                f"implementations.{language} is '{actual}' but the id implies "
-                f"'{expected}'.",
+                f"implementations.{language} is '{actual}' but the id implies '{expected}'.",
             )
 
 

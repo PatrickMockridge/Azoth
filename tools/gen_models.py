@@ -114,10 +114,63 @@ def load_models() -> list[dict[str, Any]]:
     return models
 
 
+def emit_rust_algorithm(algorithm: dict[str, Any], inner_ref: str, indent: str) -> str:
+    """One `ModelAlgorithm` literal.
+
+    `inner_ref` is the Rust expression for this scheme's `inner` field. A nested
+    scheme is a `static` of its own rather than a literal inlined here, because a
+    `ModelAlgorithm` refers to its inner one by `&'static`, so it has to have
+    somewhere to live. Passing the reference in rather than patching a placeholder
+    afterwards keeps the two callers - leaf and parent - from having to agree about
+    the shape of the text.
+    """
+    bracket = algorithm.get("bracket")
+    if bracket is None:
+        bracket_literal = "None"
+    else:
+        bracket_literal = (
+            "Some(ModelBracket {\n"
+            f"{indent}    scheme: {rust_str(bracket['scheme'])},\n"
+            f"{indent}    lower: {rust_f64(bracket['lower'])},\n"
+            f"{indent}    upper: {rust_f64(bracket['upper'])},\n"
+            f"{indent}    steps: {bracket['steps']},\n"
+            f"{indent}}})"
+        )
+    initialisation = algorithm.get("initialisation")
+    initialisation_literal = (
+        "None" if initialisation is None else f"Some({rust_str(initialisation)})"
+    )
+    return (
+        "ModelAlgorithm {\n"
+        f"{indent}    scheme: {rust_str(algorithm['scheme'])},\n"
+        f"{indent}    convergence: {rust_str(algorithm['convergence'])},\n"
+        f"{indent}    tolerance: {rust_f64(algorithm['tolerance'])},\n"
+        f"{indent}    max_iterations: {algorithm['max_iterations']},\n"
+        f"{indent}    bracket: {bracket_literal},\n"
+        f"{indent}    initialisation: {initialisation_literal},\n"
+        f"{indent}    inner: {inner_ref},\n"
+        f"{indent}}}"
+    )
+
+
 def emit_rust_model(model: dict[str, Any]) -> str:
     ident_ = ident(model["id"])
     algorithm = model["algorithm"]
-    bracket = algorithm["bracket"]
+
+    # A nested scheme becomes its own `static`, emitted before the spec that points
+    # at it. One level is all any spec here uses today; the recursion in
+    # `emit_rust_algorithm` costs nothing and means a second level is a spec change
+    # rather than a generator change.
+    inner = algorithm.get("inner")
+    inner_static = ""
+    if inner is None:
+        outer_algorithm = emit_rust_algorithm(algorithm, "None", "        ")
+    else:
+        inner_static = (
+            f"static {ident_}_INNER: ModelAlgorithm = "
+            f"{emit_rust_algorithm(inner, 'None', '    ')};\n\n"
+        )
+        outer_algorithm = emit_rust_algorithm(algorithm, f"Some(&{ident_}_INNER)", "        ")
 
     checks = "".join(
         f"        SpecCheck {{\n"
@@ -145,22 +198,11 @@ static {ident_}_CHECKS: &[SpecCheck] = &[
 static {ident_}_CASES: &[TestCase] = &[
 {cases}];
 
-/// Registry entry for `{model["id"]}`.
+{inner_static}/// Registry entry for `{model["id"]}`.
 pub static {ident_}_SPEC: ModelSpec = ModelSpec {{
     id: {rust_str(model["id"])},
     verification: {rust_str(model["verification"]["status"])},
-    algorithm: ModelAlgorithm {{
-        scheme: {rust_str(algorithm["scheme"])},
-        convergence: {rust_str(algorithm["convergence"])},
-        tolerance: {rust_f64(algorithm["tolerance"])},
-        max_iterations: {algorithm["max_iterations"]},
-        bracket: ModelBracket {{
-            scheme: {rust_str(bracket["scheme"])},
-            lower: {rust_f64(bracket["lower"])},
-            upper: {rust_f64(bracket["upper"])},
-            steps: {bracket["steps"]},
-        }},
-    }},
+    algorithm: {outer_algorithm},
     checks: {ident_}_CHECKS,
     cases: {ident_}_CASES,
 }};

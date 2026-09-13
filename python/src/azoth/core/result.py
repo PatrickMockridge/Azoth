@@ -100,6 +100,41 @@ class RootStructure(StrEnum):
     THREE_ROOTS = "three_roots"
 
 
+class Phase(StrEnum):
+    """What a converged flash turned out to be.
+
+    A separate type from :class:`RootStructure`, which counts the roots of a *pure*
+    component's cubic and says nothing about phases. The two are easy to confuse and
+    mean different things: three roots is a mathematical fact about a polynomial,
+    ``TWO_PHASE`` is a physical claim about a mixture.
+
+    All four values are reachable, and each is covered by a test - a variant a caller
+    branches on and never sees is worse than an absent one, which is the same
+    argument that removed ``TWO_ROOTS``.
+    """
+
+    #: A genuine split: ``beta`` in ``[0, 1]`` and the two compositions differ.
+    TWO_PHASE = "two_phase"
+
+    #: The feed is subcooled liquid. Reached two ways, and ``beta`` distinguishes
+    #: them: either the converged Rachford-Rice root is negative, in which case
+    #: ``beta`` is present as the negative-flash value; or every K-value is below
+    #: one, in which case no root exists at all and ``beta`` is absent.
+    ALL_LIQUID = "all_liquid"
+
+    #: The feed is superheated vapour. The same two routes as ``ALL_LIQUID``.
+    ALL_VAPOUR = "all_vapour"
+
+    #: The iteration converged to ``x = y = z``.
+    #:
+    #: The feed is single phase, and **this does not say which one** - the K-values
+    #: straddled one throughout, so nothing in the model ever proved which phase the
+    #: feed is. That is what a tangent-plane stability analysis decides, and this
+    #: model has none. ``beta`` is absent, because at the trivial solution it is
+    #: indeterminate rather than out of range.
+    TRIVIAL = "trivial"
+
+
 class _HasWarnings:
     """Shared warning accessors, mirroring ``CalcResult`` on the Rust side.
 
@@ -483,6 +518,57 @@ class DarcyWeisbachResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class PtFlashResult(_HasWarnings):
+    """Result of ``eos.pt_flash``.
+
+    The first result in this library whose shape is not a fixed set of scalars: a
+    flash's answer is a composition vector, and a mixture has as many of them as it
+    has components.
+
+    ``beta`` is ``None`` in the two cases where there is genuinely no vapour
+    fraction, and that is deliberate rather than a convenience. At a trivial
+    solution every K-value is 1, ``g(beta)`` is identically zero, and ``beta`` is
+    *indeterminate* - successive substitution approaches the point through
+    geometrically growing ``beta``, and where a bisection stops on an identically
+    zero function is a ratio of round-off. Measured at ``-7.7e10`` for one feed and
+    ``-2.2e11`` for another, neither reproducible across implementations. A number
+    there would be a fabrication indistinguishable from a real vapour fraction; the
+    same reasoning applies to a feed with no Rachford-Rice root at all.
+
+    Branch on ``phase`` and on presence, never on whether the number looks
+    plausible.
+    """
+
+    #: The vapour fraction, or ``None`` when there is no vapour fraction to report.
+    beta: float | None
+    #: Liquid-phase mole fractions.
+    x: tuple[float, ...]
+    #: Vapour-phase mole fractions.
+    y: tuple[float, ...]
+    #: ``K_i = y_i / x_i``, the iterate the loop converges on.
+    k: tuple[float, ...]
+    #: ``ln phi_i`` in the liquid phase.
+    ln_phi_liquid: tuple[float, ...]
+    #: ``ln phi_i`` in the vapour phase.
+    ln_phi_vapour: tuple[float, ...]
+    #: The liquid root of the cubic, the smallest admissible one.
+    z_liquid: float
+    #: The vapour root, the largest admissible one.
+    z_vapour: float
+    #: The smallest ``T / Tc_i`` over the components.
+    min_t_over_tc: float
+    #: What the converged state is.
+    phase: Phase
+    #: Successive-substitution steps taken.
+    iterations: int
+    #: ``rms_i |ln K_i - ln K_i_previous|`` at the last step the loop completed, or
+    #: ``NaN`` when no step completed.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 #: Calc id -> the result dataclass it produces. Used by the contract test to
 #: check each shape against the Rust side without importing every name by hand.
 RESULT_TYPES: dict[str, type[object]] = {
@@ -506,4 +592,17 @@ RESULT_TYPES: dict[str, type[object]] = {
     "eos.rachford_rice_binary": RachfordRiceBinaryResult,
     "eos.pr_molar_volume": PrMolarVolumeResult,
     "eos.pr_mass_density": PrMassDensityResult,
+}
+
+#: Model id -> the result dataclass it produces.
+#:
+#: A separate table from ``RESULT_TYPES`` for the same reason
+#: ``_MODEL_IMPLEMENTATIONS`` is separate from ``_IMPLEMENTATIONS``: the calc table
+#: is asserted to be exactly the calc registry, so a model appearing there would
+#: break that contract rather than extend it. Before this existed the model results
+#: were covered by no shape check at all, which the flash - thirteen fields and an
+#: optional one - is a good reason to fix.
+MODEL_RESULT_TYPES: dict[str, type[object]] = {
+    "eos.pure_saturation": PureSaturationResult,
+    "eos.pt_flash": PtFlashResult,
 }

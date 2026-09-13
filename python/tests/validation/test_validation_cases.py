@@ -7,10 +7,20 @@ disagree with it. See ``validation/README.md``.
 
 A mismatch fails the build. That is the whole point: a validation case nobody
 runs is a claim in a JSON file.
+
+# Models as well as calculations
+
+``calc`` names an id in *either* registry. A model needs this at least as much as
+a calculation does: what a model's spec pins down is a procedure, and a procedure
+is not something a published source states - so an external case is the only kind
+of check on it that does not come from the spec itself. It also means a case's
+``expected`` may be a vector, an enum member, or absent (for a model whose answer
+is ``None``), so the comparison handles all four shapes rather than only floats.
 """
 
 from __future__ import annotations
 
+import importlib
 import json
 from pathlib import Path
 from typing import Any
@@ -18,8 +28,7 @@ from typing import Any
 import pytest
 
 import _helpers as h
-from azoth import hydraulics
-from azoth._registry_gen import BY_ID
+from azoth import _models_gen, _registry_gen
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 VALIDATION_DIR = REPO_ROOT / "validation"
@@ -42,6 +51,107 @@ def _load(path: Path) -> dict[str, Any]:
     return case
 
 
+def _spec(calc_id: str) -> dict[str, Any] | None:
+    """The spec behind an id, from whichever registry declares it."""
+    if calc_id in _registry_gen.BY_ID:
+        return _registry_gen.BY_ID[calc_id]
+    return _models_gen.model(calc_id) or None
+
+
+def _mixture_kwargs(case: dict[str, Any]) -> dict[str, Any]:
+    """Pack a case's component vectors into the mixture a flash takes.
+
+    The one place a case's JSON does not map straight onto a call. A mixture is an
+    object, and JSON has no way to hold one - so `eos.pt_flash` is called with the
+    three per-component vectors and the interaction matrix *the spec declares*, and
+    the adapter builds the object here.
+
+    That keeps the case in the spec's own vocabulary: the names in `inputs` are the
+    ones `specs/models/eos/pt_flash.yaml` declares, so the "inputs name declared
+    quantities" check below still means something, and a reader of the JSON can look
+    each one up in the model's documentation.
+    """
+    from azoth import ureg
+    from azoth.eos import Component, Mixture
+
+    q = ureg.Quantity
+    inputs = case["inputs"]
+    components = tuple(
+        Component(q(tc, "K"), q(pc, "Pa"), omega)
+        for tc, pc, omega in zip(inputs["Tc"], inputs["Pc"], inputs["omega"], strict=True)
+    )
+    return {
+        "mixture": Mixture(components=components, kij=tuple(tuple(r) for r in inputs["kij"])),
+        "T": q(inputs["T"], "K"),
+        "P": q(inputs["P"], "Pa"),
+        "z": list(inputs["z"]),
+    }
+
+
+#: Ids whose call arguments are not a straight copy of the case's `inputs`.
+#:
+#: One entry today. It grows by one line per model whose arguments are objects
+#: rather than numbers, which is the point of it being a table rather than a branch
+#: buried in `_call` - a reader can see the whole of the exception list at once.
+ARGUMENT_BUILDERS = {
+    "eos.pt_flash": _mixture_kwargs,
+}
+
+
+def _call(case: dict[str, Any]) -> Any:
+    """Run a case through the public API of its own namespace.
+
+    The module is derived from the id rather than imported by hand, so a case in a
+    namespace this file has never heard of still runs - which is what makes adding
+    one a data change rather than a code change.
+    """
+    namespace = case["calc"].split(".")[0]
+    function_name = case["calc"].rpartition(".")[2]
+    module = importlib.import_module(f"azoth.{namespace}")
+    builder = ARGUMENT_BUILDERS.get(case["calc"])
+    if builder is not None:
+        kwargs = builder(case)
+    else:
+        # A bare number becomes a quantity in the unit the spec declares, the same
+        # conversion every other test in the suite uses. Doing it here rather than in
+        # the case means a validation case states numbers in the spec's units and
+        # needs no unit handling of its own.
+        spec = _spec(case["calc"])
+        assert spec is not None
+        kwargs = h.kwargs_for(spec, case["inputs"])
+    return getattr(module, function_name)(**kwargs)
+
+
+def _compare(got: Any, want: Any, tolerance: float, where: str, name: str) -> None:
+    """Compare one expected output against one actual one, whatever shape it is."""
+    if want is None:
+        assert got is None, f"{where} ({name}): expected no value, got {got!r}"
+        return
+
+    if isinstance(want, list):
+        # A vector output - a composition, or one K-value per component.
+        actual = [float(v) for v in got]
+        assert len(actual) == len(want), (
+            f"{where} ({name}): got {len(actual)} entries, expected {len(want)}"
+        )
+        for i, (a, w) in enumerate(zip(actual, want, strict=True)):
+            h.assert_close(a, float(w), tolerance, f"{where} ({name}[{i}])")
+        return
+
+    if isinstance(want, str):
+        # An enum output, compared by its spec spelling.
+        value = getattr(got, "value", got)
+        assert value == want, f"{where} ({name}): got {value!r}, expected {want!r}"
+        return
+
+    if isinstance(want, bool):
+        assert bool(got) is want, f"{where} ({name}): got {got!r}"
+        return
+
+    value = getattr(got, "magnitude", got)
+    h.assert_close(float(value), float(want), tolerance, f"{where} ({name})")
+
+
 CASES = _case_paths()
 
 
@@ -52,7 +162,7 @@ def test_there_is_at_least_one_case() -> None:
 
 @pytest.mark.parametrize("path", CASES, ids=lambda p: p.stem)
 def test_case_is_well_formed(path: Path) -> None:
-    """A case must carry what the runner needs, and name a real calc.
+    """A case must carry what the runner needs, and name a real id.
 
     Checked separately from running it, so a malformed case reports as a
     malformed case rather than as an arithmetic failure.
@@ -62,8 +172,8 @@ def test_case_is_well_formed(path: Path) -> None:
 
     missing = REQUIRED_KEYS - set(case)
     assert not missing, f"{where} is missing {sorted(missing)}"
-    assert case["calc"] in BY_ID, (
-        f"{where} names calc {case['calc']!r}, which is not in the registry"
+    assert _spec(case["calc"]) is not None, (
+        f"{where} names {case['calc']!r}, which is in neither the calc nor the model registry"
     )
     assert case["tolerance"] > 0, f"{where} has a non-positive tolerance"
 
@@ -95,6 +205,26 @@ def test_unconfirmed_sources_are_explained(path: Path) -> None:
 
 
 @pytest.mark.parametrize("path", CASES, ids=lambda p: p.stem)
+def test_the_inputs_name_declared_quantities(path: Path) -> None:
+    """Every input a case supplies must be one the spec declares.
+
+    A case passing an input the implementation does not take would otherwise fail
+    as a `TypeError` from inside the call, which reads as a broken function rather
+    than as a broken case.
+    """
+    case = _load(path)
+    spec = _spec(case["calc"])
+    assert spec is not None
+    where = path.relative_to(REPO_ROOT)
+
+    unknown = sorted(set(case["inputs"]) - set(spec["inputs"]))
+    assert not unknown, (
+        f"{where}: passes {unknown}, which {case['calc']} does not declare. "
+        f"Declared: {sorted(spec['inputs'])}"
+    )
+
+
+@pytest.mark.parametrize("path", CASES, ids=lambda p: p.stem)
 def test_case_matches_implementation(path: Path) -> None:
     """Run the case and compare, output by output.
 
@@ -105,17 +235,11 @@ def test_case_matches_implementation(path: Path) -> None:
     report a case that ran as one that did not.
     """
     case = _load(path)
-    calc = BY_ID[case["calc"]]
     where = path.relative_to(REPO_ROOT)
-
-    _, _, function_name = case["calc"].rpartition(".")
-    result = getattr(hydraulics, function_name)(**h.kwargs_for(calc, case["inputs"]))
+    result = _call(case)
 
     for name, want in case["expected"].items():
         assert hasattr(result, name), (
             f"{where}: expected output {name!r} is not a field of {type(result).__name__}"
         )
-        got = getattr(result, name)
-        if hasattr(got, "magnitude"):
-            got = got.magnitude
-        h.assert_close(float(got), float(want), float(case["tolerance"]), f"{where} ({name})")
+        _compare(getattr(result, name), want, float(case["tolerance"]), str(where), name)

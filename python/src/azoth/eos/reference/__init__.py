@@ -19,6 +19,7 @@ from azoth.eos.reference.pr_mass_density import pr_mass_density
 from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT, pr_molar_volume
 from azoth.eos.reference.pr_z_factor import pr_z_factor
 from azoth.eos.reference.prsv_kappa import prsv_kappa
+from azoth.eos.reference.pt_flash import pt_flash
 from azoth.eos.reference.pure_saturation import pure_saturation
 from azoth.eos.reference.rachford_rice_binary import rachford_rice_binary
 from azoth.eos.reference.vdw1f_mix_binary import vdw1f_mix_binary
@@ -34,6 +35,7 @@ __all__ = [
     "pr_molar_volume",
     "pr_z_factor",
     "prsv_kappa",
+    "pt_flash",
     "pure_saturation",
     "rachford_rice_binary",
     "vdw1f_mix_binary",

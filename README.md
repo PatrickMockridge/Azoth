@@ -114,6 +114,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.pr_molar_volume` | Molar volume from a compressibility factor |
 | `eos.pr_mass_density` | Mass density from a molar volume |
 | `eos.pure_saturation` | Saturation pressure, by bisection — a *model*, not a calc |
+| `eos.pt_flash` | Two-phase flash at a fixed temperature and pressure — a *model* |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use

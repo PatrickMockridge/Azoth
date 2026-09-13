@@ -102,7 +102,10 @@ fn the_answer_is_below_the_spinodal() {
     let kappa = azoth_eos::pr_kappa(w).unwrap().kappa;
 
     // Walk up until the cubic stops having a liquid branch, which is the spinodal.
-    let bracket = model_gen::PURE_SATURATION_SPEC.algorithm.bracket;
+    let bracket = model_gen::PURE_SATURATION_SPEC
+        .algorithm
+        .bracket
+        .expect("this model's scheme brackets");
     let mut spinodal = bracket.lower;
     for step in 0..bracket.steps {
         let fraction = f64::from(step) / f64::from(bracket.steps - 1);

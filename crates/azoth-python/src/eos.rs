@@ -14,8 +14,8 @@ use pyo3::prelude::*;
 use crate::errors::to_pyerr;
 use crate::results::{
     PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPureSaturationResult,
-    PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
+    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPtFlashResult,
+    PyPureSaturationResult, PyRachfordRiceBinaryResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -186,6 +186,58 @@ pub fn pure_saturation(
 ) -> PyResult<PyPureSaturationResult> {
     eos::pure_saturation(kelvins(Tc), pascals(Pc), omega, kelvins(T))
         .map(|r| PyPureSaturationResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The two-phase flash of a mixture at a temperature and pressure.
+///
+/// The first function here whose arguments are vectors, and the first whose result
+/// has any. That is the whole reason the flash is a *model* rather than a
+/// calculation: the registry is scalar, so a composition vector has nowhere to live
+/// in a spec's `inputs` - and even if it did, a registered calc's guarantee is a
+/// worked example a human can retrace, which "40 components, converged in 21
+/// iterations" is not.
+///
+/// `kij` crosses flattened row-major, with `N = Tc.len()`. The Python side builds
+/// the nested shape the caller wrote and flattens it here, so the boundary carries
+/// one list rather than a list of lists, and the component order is the one thing
+/// the two sides have to agree about.
+///
+/// `beta` is `Option<f64>` on purpose: `None` crosses as `None`. A sentinel number
+/// at this boundary would undo, one layer below where it was decided, the design
+/// that stops a caller mistaking a trivial solution for a phase split.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z)")]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pt_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<PyPtFlashResult> {
+    let n = Tc.len();
+    if Pc.len() != n || omega.len() != n {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "Tc, Pc and omega must be the same length; got {}, {} and {}",
+            Tc.len(),
+            Pc.len(),
+            omega.len()
+        )));
+    }
+    let components = (0..n)
+        .map(|i| eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i]))
+        .collect::<azoth_core::Result<Vec<_>>>()
+        .map_err(|e| to_pyerr(py, e))?;
+    let mixture = eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))?;
+
+    eos::pt_flash(&mixture, kelvins(T), pascals(P), &z)
+        .map(|r| PyPtFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

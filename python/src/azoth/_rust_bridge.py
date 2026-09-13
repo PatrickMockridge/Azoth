@@ -43,6 +43,7 @@ from azoth.core.result import (
     PrMolarVolumeResult,
     PrsvKappaResult,
     PrZFactorResult,
+    PtFlashResult,
     PumpPowerResult,
     PureSaturationResult,
     RachfordRiceBinaryResult,
@@ -51,6 +52,7 @@ from azoth.core.result import (
     SwameeJainResult,
     Vdw1fMixBinaryResult,
 )
+from azoth.core.result import Phase as _Phase
 from azoth.core.units import Q, from_si, input_to_si, to_si
 from azoth.core.warnings import Warning, WarningCode
 
@@ -404,13 +406,56 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.pr_mass_density": pr_mass_density,
 }
 
+
 #: The same table for *models*, kept separate because the calc table is asserted to
 #: be exactly the calc registry - ``test_registration_completeness`` compares it by
 #: equality in both directions, so a model id in it would break that contract rather
 #: than extend it. Models have their own id list for the same reason, and
 #: ``test_model_contract.py`` holds this table to it.
+def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
+    """The two-phase flash of a mixture, computed in Rust.
+
+    The first function here whose arguments are not all scalars: the mixture's
+    components cross as three parallel lists and its interaction matrix flattened
+    row-major, and the feed as a list. The component order is the one thing the two
+    sides have to agree about, and it is the caller's - both implementations are
+    handed the same order and produce the same order back.
+
+    `beta` crosses as `Option<f64>` and becomes `None`, not a sentinel. That is the
+    design, and flattening it here would undo it one layer above where it was made.
+    """
+    spec = _models_gen.model("eos.pt_flash")
+    result = _core.pt_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        # Plain floats: an acentric factor is genuinely dimensionless, so it
+        # crosses as the number the caller used.
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+    )
+    return PtFlashResult(
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        ln_phi_liquid=tuple(result.ln_phi_liquid),
+        ln_phi_vapour=tuple(result.ln_phi_vapour),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        min_t_over_tc=result.min_t_over_tc,
+        phase=_Phase(result.phase),
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
 _MODEL_IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "eos.pure_saturation": pure_saturation,
+    "eos.pt_flash": pt_flash,
 }
 
 
