@@ -82,6 +82,8 @@ FLUID_COLUMNS = (
     "dynamic_viscosity_pa_s",
     "citation",
     "verify_status",
+    "source_ref",
+    "source_locator",
 )
 
 #: Where a new fluid has to be registered before its table can be read. Listed

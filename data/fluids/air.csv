@@ -12,10 +12,11 @@
 # Licence: CC-BY-4.0. This data is deliberately not AGPL: the reference
 # values are meant to be reusable and citable without a copyleft
 # obligation. See LICENSE-CC-BY-4.0.
-temperature_c,density_kg_m3,dynamic_viscosity_pa_s,citation,verify_status
-0,1.292,0.0000172,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
-20,1.204,0.0000181,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
-40,1.127,0.0000191,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
-60,1.060,0.0000200,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
-80,1.000,0.0000209,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
-100,0.946,0.0000217,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified
+
+temperature_c,density_kg_m3,dynamic_viscosity_pa_s,citation,verify_status,source_ref,source_locator
+0,1.292,0.0000172,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified,https://webbook.nist.gov/chemistry/fluid/,"dry air at 0.101325 MPa; values consistent with the published tables, not read off them"
+20,1.204,0.0000181,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified,https://webbook.nist.gov/chemistry/fluid/,"dry air at 0.101325 MPa; values consistent with the published tables, not read off them"
+40,1.127,0.0000191,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified,https://webbook.nist.gov/chemistry/fluid/,"dry air at 0.101325 MPa; values consistent with the published tables, not read off them"
+60,1.060,0.0000200,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified,https://webbook.nist.gov/chemistry/fluid/,"dry air at 0.101325 MPa; values consistent with the published tables, not read off them"
+80,1.000,0.0000209,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified,https://webbook.nist.gov/chemistry/fluid/,"dry air at 0.101325 MPa; values consistent with the published tables, not read off them"
+100,0.946,0.0000217,Widely published dry-air property tables at 1 atm; consistent with ideal-gas density,unverified,https://webbook.nist.gov/chemistry/fluid/,"dry air at 0.101325 MPa; values consistent with the published tables, not read off them"

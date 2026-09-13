@@ -38,6 +38,7 @@ use std::sync::OnceLock;
 use azoth_core::units::{DynamicViscosity, MassDensity, kilograms_per_cubic_meter, pascal_seconds};
 use azoth_core::{AzothError, Result};
 
+use crate::csv_text::{body, optional};
 use crate::provenance::VerifyStatus;
 
 const WATER_CSV: &str = include_str!("../../../data/fluids/water.csv");
@@ -56,6 +57,13 @@ pub struct FluidPoint {
     pub citation: String,
     /// How far it can be trusted.
     pub status: VerifyStatus,
+    /// The document the value was read from, in a form a tool can fetch.
+    ///
+    /// `None` for a placeholder row, which is invented and so cannot also be
+    /// sourced - the same contradiction the checker rejects in a file.
+    pub source_ref: Option<String>,
+    /// Where inside that document to look, e.g. "Table 5, viscosity".
+    pub source_locator: Option<String>,
 }
 
 /// A named fluid's property table.
@@ -156,13 +164,8 @@ fn field_of(point: &FluidPoint, attribute: &str) -> f64 {
 }
 
 fn parse(name: &str, raw: &str) -> Result<FluidTable> {
-    let body: String = raw
-        .lines()
-        .filter(|line| !line.trim_start().starts_with('#') && !line.trim().is_empty())
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    let mut reader = csv::Reader::from_reader(body.as_bytes());
+    let text = body(raw);
+    let mut reader = csv::Reader::from_reader(text.as_bytes());
     let mut points = Vec::new();
     for record in reader.records() {
         let record = record.map_err(|e| {
@@ -187,6 +190,8 @@ fn parse(name: &str, raw: &str) -> Result<FluidTable> {
             dynamic_viscosity_pa_s: number(2, "dynamic_viscosity_pa_s")?,
             citation: get(3, "citation")?.to_string(),
             status: VerifyStatus::parse(get(4, "verify_status")?)?,
+            source_ref: optional(get(5, "source_ref")?),
+            source_locator: optional(get(6, "source_locator")?),
         });
     }
 

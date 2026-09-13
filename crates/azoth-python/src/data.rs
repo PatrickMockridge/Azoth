@@ -117,6 +117,12 @@ pub struct PyFluidRow {
     /// `verified`, `unverified` or `estimated_dummy`.
     #[pyo3(get)]
     pub verify_status: String,
+    /// The document the value was read from, if the row is not a placeholder.
+    #[pyo3(get)]
+    pub source_ref: Option<String>,
+    /// Where inside that document to look.
+    #[pyo3(get)]
+    pub source_locator: Option<String>,
 }
 
 /// Every data file this build embeds, with its bytes.
@@ -188,6 +194,8 @@ pub fn fluid_rows(py: Python<'_>, name: &str) -> PyResult<Vec<PyFluidRow>> {
             dynamic_viscosity_pa_s: point.dynamic_viscosity_pa_s,
             citation: point.citation.clone(),
             verify_status: point.status.as_str().to_string(),
+            source_ref: point.source_ref.clone(),
+            source_locator: point.source_locator.clone(),
         })
         .collect())
 }

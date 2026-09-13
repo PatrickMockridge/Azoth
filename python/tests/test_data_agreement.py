@@ -64,6 +64,8 @@ FLUID_FIELDS = (
     "dynamic_viscosity_pa_s",
     "citation",
     "verify_status",
+    "source_ref",
+    "source_locator",
 )
 
 
@@ -110,6 +112,8 @@ def python_fluid_rows(name: str) -> list[dict[str, Any]]:
             "dynamic_viscosity_pa_s": point.dynamic_viscosity_pa_s,
             "citation": point.citation,
             "verify_status": point.verify_status,
+            "source_ref": point.source_ref,
+            "source_locator": point.source_locator,
         }
         for point in provider.points
     ]

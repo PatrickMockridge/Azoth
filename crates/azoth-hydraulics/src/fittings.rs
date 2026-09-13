@@ -20,6 +20,7 @@
 
 use azoth_core::{AzothError, Result};
 
+use crate::csv_text::{body, optional};
 use crate::provenance::VerifyStatus;
 
 /// The embedded registry. Path is relative to this source file.
@@ -67,13 +68,8 @@ impl Fitting {
 /// Parse the embedded registry. Comments and blank lines are skipped; the
 /// header block is documentation and provenance, not decoration.
 fn parse() -> Result<Vec<Fitting>> {
-    let body: String = FITTINGS_CSV
-        .lines()
-        .filter(|line| !line.trim_start().starts_with('#') && !line.trim().is_empty())
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    let mut reader = csv::Reader::from_reader(body.as_bytes());
+    let text = body(FITTINGS_CSV);
+    let mut reader = csv::Reader::from_reader(text.as_bytes());
     let mut out = Vec::new();
     for record in reader.records() {
         let record = record.map_err(|e| {
@@ -115,12 +111,6 @@ const COLUMNS: [&str; 9] = [
     "source_ref",
     "source_locator",
 ];
-
-/// An empty CSV field means absent, not an empty string.
-fn optional(raw: &str) -> Option<String> {
-    let trimmed = raw.trim();
-    (!trimmed.is_empty()).then(|| trimmed.to_string())
-}
 
 fn record_field_index(name: &str) -> usize {
     COLUMNS.iter().position(|c| *c == name).unwrap_or(0)

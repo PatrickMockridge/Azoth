@@ -151,9 +151,13 @@ fluids:
       dynamic_viscosity_pa_s: 0.0018
       citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard."
       verify_status: estimated_dummy
+      source_ref: ""
+      source_locator: ""
 
     - temperature_c: 100.0
       density_kg_m3: 958.0
       dynamic_viscosity_pa_s: 0.00028
       citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard."
       verify_status: estimated_dummy
+      source_ref: ""
+      source_locator: ""

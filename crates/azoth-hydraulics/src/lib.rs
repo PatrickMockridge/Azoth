@@ -45,6 +45,11 @@ pub mod results;
 pub mod reynolds_number;
 pub mod spec_gen;
 
+// Reading the shared data files. Private: the format both loaders share - a `#`
+// banner to strip and empty fields that mean absent - written once because it was
+// about to be written twice.
+mod csv_text;
+
 // The solver moved to `azoth-core` once a second namespace needed one: this crate
 // could not have been the home for it without forcing `azoth-eos` to depend on
 // `azoth-hydraulics`, which would be one domain crate depending on another.
