@@ -151,6 +151,23 @@ should be designed to take the numbers, not to embed them.
 **Every number in a worked example must be derivable and shown.** Write the
 substitution out. A worked example nobody can retrace is a number somebody typed.
 
+`spec_lint` enforces the *shown* half — it requires a `derivation` to exist and warns
+when it is missing. It does **not** check that the arithmetic in it is true, and that
+is a known gap rather than an oversight. A checker was written and withdrawn: deciding
+which `=` in a paragraph of prose is a claim turned out to require more discrimination
+than the text carries. `1 US gallon = 3.785411784e-3 m**3` is a unit conversion, not a
+numeric equality; `rho * g = 998 * 9.80665 = 9787.036699999999 W/(m**3/s)` is a claim
+with a unit stuck on the end; and a checker that cannot tell those apart flagged
+thirty-six of them on this registry alone. A check that noisy is worse than none,
+because it teaches people to skim its output.
+
+So the arithmetic in a derivation is a reviewer's job. Two specs were written with
+derivation arithmetic that did not close before anyone noticed. The one mistake that
+landed in an `expected` value rather than in prose would have been caught by the
+generated test — that value is compared against the implementation. The ones in prose
+had nothing checking them at all. Write the substitution out and *recompute it* rather
+than restating what you expect it to be.
+
 **Units-safe signatures, no bare floats for physical quantities.** Genuinely
 dimensionless quantities (`f`, `Re`, `epsilon/D`) are plain floats; everything
 else is a `pint` quantity in Python and a `uom` quantity in Rust.
