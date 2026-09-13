@@ -250,7 +250,7 @@ valid_range:
 
 assumptions:
   - "**`h_ref` and `s_ref` are the caller's datum, and their correctness and consistency are NOT CHECKED.** Two enthalpies computed from different datums are not comparable, and subtracting them gives a plausible number rather than an error. This is the single most likely way to get a wrong answer out of this model."
-  - "**`Tc`, `Pc`, `omega`, `kij` and the four heat-capacity coefficients are the caller's, and their correctness is NOT CHECKED.** This library ships no component data of any kind."
+  - "**`Tc`, `Pc`, `omega`, `kij` and the four heat-capacity coefficients are the caller's, and their correctness is NOT CHECKED.** A databank of critical constants ships with the library; the heat-capacity coefficients are not in it."
   - "the heat-capacity polynomial is valid over the range it was fitted to, and `T`, `T_ref` and the integration path between them all lie in it. The coefficients describe the ideal-gas heat capacity at every temperature on that path, which is an assumption the caller makes and this model cannot."
   - "the departure functions are relative to the ideal-gas *mixture* at the same temperature, pressure and composition, not to the pure ideal gases. The entropy of mixing is therefore in `s_ideal` and not in `s_departure`."
   - "**which root `compressibility` names is the caller's choice and is not checked against the phase it describes.** Passing a liquid root for a vapour state gives a number that is internally consistent and describes a state that does not exist."

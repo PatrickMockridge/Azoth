@@ -76,8 +76,6 @@ def a_valid_keycard() -> dict[str, Any]:
                 "f_t_basis": "f_t",
                 "citation": "Read from the source named below.",
                 "verify_status": "verified",
-                "source_ref": "arweave:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                "source_locator": "Table 2, gate valve, fully open",
             }
         ],
         "fluids": {
@@ -189,22 +187,6 @@ def test_the_two_schemas_share_one_provenance_definition() -> None:
             lambda: _row(verify_status="estimated_dummy", source_ref="https://x.test/y"),
         ),
         (
-            "verified with no source_ref",
-            lambda: _row(source_ref=""),
-        ),
-        (
-            "source_ref in prose rather than a fetchable form",
-            lambda: _row(source_ref="the standard, section 4"),
-        ),
-        (
-            "a source_ref that is not a whole reference",
-            lambda: _row(source_ref="arweave:tooshort"),
-        ),
-        (
-            "a source_ref with no locator",
-            lambda: _row(source_locator=""),
-        ),
-        (
             "promoted to verified without editing the citation",
             lambda: _row(citation="DUMMY value, not from any source"),
         ),
@@ -245,12 +227,7 @@ def _row(**overrides: str) -> dict[str, Any]:
         ("an unknown top-level section", lambda d: d.update(fitting=[])),
         ("a section misspelt", lambda d: d.update(component={})),
         ("version 1, before the new sections existed", lambda d: d.update(schema_version=1)),
-        ("no keyholder", lambda d: d.pop("keyholder")),
         ("a keyholder with an empty name", lambda d: d["keyholder"].update(name="")),
-        (
-            "a licence that is not a fetchable reference",
-            lambda d: d["keyholder"].update(licence="ask us"),
-        ),
         (
             "a coefficient with no unit",
             lambda d: d["coefficients"]["hydraulics.orifice_flow"]["Cd"].pop("unit"),

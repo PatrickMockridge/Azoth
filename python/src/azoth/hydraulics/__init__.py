@@ -26,13 +26,14 @@ Each function below dispatches to the Rust extension when it is built, and to
 :mod:`azoth.hydraulics.reference` otherwise. Both are always reachable - see
 :func:`azoth.backends` and :func:`azoth.use_backend`.
 
-# Warning before use
+# Not for design work yet
 
 :func:`crane_k_factors` reads coefficients from
 ``data/fittings/crane_k_factors.csv``, where every row is currently an **estimated
-dummy value** - a placeholder for software testing, not engineering data. Results
-built from it carry an ``ESTIMATED_DATA`` warning. Nothing in this package should
-be used for design work until that file is populated from a primary standard.
+dummy value** - a placeholder for software testing, not engineering data. Nothing
+in this package should be used for design work until that file is populated from
+a primary standard. The placeholder status is recorded in the data file and in
+the calc's spec, not announced by a warning on the result.
 """
 
 from __future__ import annotations

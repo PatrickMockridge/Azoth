@@ -28,12 +28,6 @@ pub enum WarningCode {
     /// An iterative solver hit its iteration cap without meeting tolerance. The
     /// returned value is the last iterate, not a converged result.
     SolverNotConverged,
-    /// The calculation's source has not been verified against a primary
-    /// reference, so the equation's provenance is unconfirmed.
-    UnverifiedSource,
-    /// The calculation depends on data that is a placeholder, not engineering
-    /// data. Nothing computed from it should be used for design.
-    EstimatedData,
     /// An iterative phase-equilibrium calculation converged to the trivial
     /// solution, `x = y = z`.
     ///
@@ -56,8 +50,6 @@ impl WarningCode {
             Self::RangeCheckSkipped => "RANGE_CHECK_SKIPPED",
             Self::TransitionalFlow => "TRANSITIONAL_FLOW",
             Self::SolverNotConverged => "SOLVER_NOT_CONVERGED",
-            Self::UnverifiedSource => "UNVERIFIED_SOURCE",
-            Self::EstimatedData => "ESTIMATED_DATA",
             Self::TrivialSolution => "TRIVIAL_SOLUTION",
         }
     }
@@ -70,8 +62,6 @@ impl WarningCode {
             Self::RangeCheckSkipped,
             Self::TransitionalFlow,
             Self::SolverNotConverged,
-            Self::UnverifiedSource,
-            Self::EstimatedData,
             Self::TrivialSolution,
         ]
     }

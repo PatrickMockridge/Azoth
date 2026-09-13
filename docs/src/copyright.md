@@ -25,7 +25,7 @@ project does. The same line runs through every entry below.
 
 | What | Why it cannot ship | What it costs | How it is handled |
 |---|---|---|---|
-| **Crane TP-410 fitting coefficients** (the L_eq/D table) | The table is Crane's expression of the facts | `crane_k_factors`, and the fitting share of the `azoth pipe` CLI | `data/fittings/crane_k_factors.csv` ships **estimated dummy values**. Every affected result carries `ESTIMATED_DATA`, `tools/spec_lint.py` prints the row count on every run, and a test fails the day the file is populated |
+| **Crane TP-410 fitting coefficients** (the L_eq/D table) | The table is Crane's expression of the facts | `crane_k_factors`, and the fitting share of the `azoth pipe` CLI | `data/fittings/crane_k_factors.csv` ships **estimated dummy values**, recorded in its `verify_status` column, and a test fails the day the file is populated |
 | **ISO 5167 discharge-coefficient equation** | A long fitted expression whose constants come from a table of experimental results | `orifice_flow` cannot compute `Cd` | `Cd` is a **caller input**. The spec says so, names the convention required, and argues why |
 | **Crane TP-410 equation numbers** | The numbering cannot be confirmed without the standard | `reynolds_number`, `darcy_weisbach` and `crane_k_factors` cite Crane | `source.equation: "TODO: source needed"` and `verification.status: unverified` — a gap that is visible rather than a number that was guessed |
 | **Crane TP-410 Example 3-5** | Reproducing a worked example from the standard is the thing the rule forbids | A `reference` test in `darcy_weisbach` | `status: skipped` with the reason recorded in `skip_reason`; the derived worked example covers the same arithmetic |

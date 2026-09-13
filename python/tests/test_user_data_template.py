@@ -91,20 +91,23 @@ def test_every_row_in_the_template_is_a_placeholder() -> None:
 def test_the_checker_is_not_vacuous(tmp_path: Path) -> None:
     """A broken file must fail, or the passing test above proves nothing.
 
-    Sabotages the template the way a user would break it by accident - promoting a
-    placeholder to `verified` without supplying a source - and asserts the checker
-    says so.
+    Sabotages the template the way a user would break it by accident - a typo in the
+    status column - and asserts the checker says so.
+
+    The sabotage used to be promoting a row to `verified` without a `source_ref`. That
+    requirement is gone: a row now names its source in its citation, in prose, and
+    there is nothing for a tool to check about it. What is still checkable is that the
+    status is one the pipeline understands.
     """
     document = template_document()
-    document["fittings"][0]["verify_status"] = "verified"
-    document["fittings"][0]["citation"] = "read from the standard"
+    document["fittings"][0]["verify_status"] = "probably_fine"
 
     broken = tmp_path / "broken.yaml"
     broken.write_text(yaml.safe_dump(document), encoding="utf-8")
 
     result = run_checker(broken)
-    assert result.returncode != 0, "a verified row with no source_ref must fail"
-    assert "source_ref" in result.stderr
+    assert result.returncode != 0, "an unrecognised verify_status must fail"
+    assert "verify_status" in result.stderr
 
 
 def test_the_checker_rejects_an_unknown_schema_version(tmp_path: Path) -> None:

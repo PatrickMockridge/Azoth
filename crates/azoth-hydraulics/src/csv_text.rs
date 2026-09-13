@@ -1,12 +1,12 @@
-//! Reading the shared data files, where the format is text and empty means absent.
+//! Reading the shared data files, where the format is CSV with a comment banner.
 //!
-//! The fittings registry and the fluid tables are both CSV with `#` comment
-//! banners, and both carry provenance columns that a placeholder row leaves empty.
-//! That makes "empty field" and "absent value" the same thing in both, and it is a
-//! distinction worth having once rather than twice: `Option<String>` says a value
-//! is not there, where `String::new()` would say it is there and says nothing -
-//! which is exactly the difference between a row that has no source and a row
-//! whose source is an empty string.
+//! Written once because it was about to be written twice: the fittings registry and
+//! the fluid tables are both `#`-bannered CSV and both needed the banner stripped.
+//!
+//! It carried an `optional` helper for the provenance columns, which parsed an
+//! empty field as an absent value. Those columns are gone - the databank's
+//! provenance is institutional and a per-row URL was fiction - so the helper went
+//! with them.
 
 /// The leading `#` comment banner and blank lines, removed.
 ///
@@ -19,11 +19,4 @@ pub(crate) fn body(raw: &str) -> String {
         .filter(|line| !line.trim_start().starts_with('#') && !line.trim().is_empty())
         .collect::<Vec<_>>()
         .join("\n")
-}
-
-/// An empty CSV field means absent, not an empty string.
-#[must_use]
-pub(crate) fn optional(raw: &str) -> Option<String> {
-    let trimmed = raw.trim();
-    (!trimmed.is_empty()).then(|| trimmed.to_string())
 }

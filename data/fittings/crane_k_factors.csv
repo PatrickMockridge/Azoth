@@ -16,8 +16,7 @@
 #  Before this library is used for design work every row must be replaced with
 #  values read from a copy of the primary standard by a competent engineer, and
 #  its verify_status changed to `verified` with the source recorded in
-#  `citation`. Until then, `spec_lint.py` reports the estimated-row count on
-#  every run so this cannot be forgotten quietly.
+#  `citation`.
 # ============================================================================
 #
 # The METHOD being implemented (K = n_ld * f_t) is standard and is the actual
@@ -28,21 +27,19 @@
 #   n_ld   = L_eq / D          equivalent length ratio, fully turbulent flow
 #   f_t                        Darcy friction factor for fully turbulent flow
 #
-# verify_status values, and the warning each one raises:
+# verify_status values:
 #   estimated_dummy - placeholder, not from any source. Software testing ONLY.
-#                     Raises ESTIMATED_DATA on every result that uses it.
 #   unverified      - has a citation, but no named person has confirmed it
 #                     against an authoritative copy of the source. This covers
 #                     both "read from a secondary public reference" and "read
 #                     from a copy of the standard that nobody has verified is
-#                     faithful". Raises UNVERIFIED_SOURCE on every result that
-#                     uses it.
+#                     faithful".
 #   verified        - confirmed by a named person against an authoritative
 #                     copy, with their name, the edition, and the date recorded
-#                     in `citation`. Raises nothing.
+#                     in `citation`.
 #
-# Only `verified` is silent. Every other state says so at runtime, on the result
-# itself, rather than relying on a reader to check this file.
+# This column is the record, and it is the only one: nothing warns on it at
+# runtime any more, so it has to be read.
 #
 # source_ref identifies the document a value was read from, in a form anyone can
 # fetch and check. `arweave:<txid>` is the preferred form: an Arweave transaction
@@ -65,11 +62,11 @@
 # Licence: CC-BY-4.0. This data is deliberately not AGPL: the reference
 # values are meant to be reusable and citable without a copyleft
 # obligation. See LICENSE-CC-BY-4.0.
-fitting_id,family,name,n_ld,f_t_basis,citation,verify_status,source_ref,source_locator
-90_elbow,bend,90 degree standard elbow,30,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
-90_elbow_long_radius,bend,90 degree long-radius elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
-45_elbow,bend,45 degree standard elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
-gate_valve_open,valve,gate valve fully open,8,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
-ball_valve_open,valve,ball valve full bore,3,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
-plug_valve_straightway,valve,plug valve straightway,18,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
-globe_valve_open,valve,globe valve fully open,340,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy,,
+fitting_id,family,name,n_ld,f_t_basis,citation,verify_status
+90_elbow,bend,90 degree standard elbow,30,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+90_elbow_long_radius,bend,90 degree long-radius elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+45_elbow,bend,45 degree standard elbow,16,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+gate_valve_open,valve,gate valve fully open,8,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+ball_valve_open,valve,ball valve full bore,3,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+plug_valve_straightway,valve,plug valve straightway,18,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy
+globe_valve_open,valve,globe valve fully open,340,f_t,ESTIMATED DUMMY VALUE - not from Crane TP-410 or any standard; placeholder of plausible magnitude for software testing only,estimated_dummy

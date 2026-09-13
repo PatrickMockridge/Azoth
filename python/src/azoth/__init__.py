@@ -44,8 +44,8 @@ different states and the API keeps them different.
 # Not for design work yet
 
 The fitting coefficients in ``data/fittings/crane_k_factors.csv`` are estimated
-placeholder values, not engineering data. Results that use them carry an
-``ESTIMATED_DATA`` warning. See that file's header.
+placeholder values, not engineering data. See that file's header; no warning on a
+result announces the placeholder status.
 """
 
 from __future__ import annotations

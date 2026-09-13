@@ -22,8 +22,8 @@ verification:
     are placeholders of plausible magnitude so that the software pipeline can be
     built and tested end to end. They are not engineering data and nothing
     computed from them should be used to size equipment. Every row is marked
-    `estimated_dummy` and tools/spec_lint.py prints the count on every run so the
-    placeholder status cannot be forgotten.
+    `estimated_dummy` in the verify_status column, which is the record a reader
+    has to consult; nothing warns on it at runtime.
 
     Consequence for testing: because the coefficients are placeholders, there is
     no correct value for the calc to be checked against, so no test in this

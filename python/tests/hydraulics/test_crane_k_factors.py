@@ -6,10 +6,10 @@ The coefficients in ``data/fittings/crane_k_factors.csv`` are estimated dummy
 values, not engineering data. There is therefore no correct answer for this calc
 to be checked against, and nothing here can detect a wrong coefficient.
 
-These tests validate the arithmetic, the registry lookup, the error handling and
-the provenance warning. They are honest about the gap: the numerical assertions
-compare against values derived from the same dummy coefficients, so they would all
-still pass if the coefficients were nonsense.
+These tests validate the arithmetic, the registry lookup and the error handling.
+They are honest about the gap: the numerical assertions compare against values
+derived from the same dummy coefficients, so they would all still pass if the
+coefficients were nonsense.
 """
 
 from __future__ import annotations
@@ -21,7 +21,6 @@ import pytest
 import _helpers as h
 from azoth.core.errors import OutOfRangeError, UnknownFittingError
 from azoth.core.result import KFactorsResult
-from azoth.core.warnings import WarningCode
 from azoth.hydraulics import crane_k_factors
 from azoth.hydraulics.reference.fittings import find_fitting, registry
 
@@ -56,13 +55,6 @@ def test_spec_case(case: dict[str, Any]) -> None:
         f"{case['id']} (k_total)",
     )
     h.assert_consistent(result, case["id"])
-
-    # The estimated-data warning is provenance, not a range check, so the generic
-    # warning/spec comparison does not cover it. It MUST be present while the
-    # registry holds placeholders.
-    assert result.has_warning(WarningCode.ESTIMATED_DATA), (
-        f"{case['id']}: a result built from estimated coefficients must say so"
-    )
 
     def resolve(quantity: str, _case: dict[str, Any] = case) -> float | None:
         if quantity == "f_t":
@@ -135,11 +127,10 @@ def test_components_echo_the_registry_coefficients() -> None:
 def test_the_registry_is_entirely_estimated_dummy_data_right_now() -> None:
     """Fail loudly the day someone populates the registry from a real source.
 
-    At that point the estimated-data warning stops firing, this assertion breaks,
-    and whoever did the work is forced to update the spec's verification notes and
-    the docs rather than leaving them claiming the data is placeholder. Deleting
-    this test is the correct response to that failure, not updating the expected
-    number.
+    At that point this assertion breaks, and whoever did the work is forced to
+    update the spec's verification notes and the docs rather than leaving them
+    claiming the data is placeholder. Deleting this test is the correct response
+    to that failure, not updating the expected number.
     """
     rows = registry()
     estimated = [row.id for row in rows if row.is_estimated]

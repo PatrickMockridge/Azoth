@@ -52,7 +52,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `Tc` | K | critical temperature of the pure component |
 | `Pc` | Pa | critical pressure of the pure component |
-| `omega` | dimensionless | acentric factor, as in `eos.pr_kappa`. All three of these are the caller's - this library ships no component databank. |
+| `omega` | dimensionless | acentric factor, as in `eos.pr_kappa`. All three of these are the caller's; `azoth.eos.component(name)` looks them up in the databank the library ships. |
 | `T` | K | absolute temperature at which the saturation pressure is wanted. Must be below `Tc`: above the critical temperature a pure component has no saturation pressure, and the model refuses rather than returning the critical pressure or a plausible-looking extrapolation. |
 
 
@@ -74,7 +74,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- the component's `Tc`, `Pc` and `omega` are correct and mutually consistent. NOT CHECKED - they are the caller's, and this library ships no component data.
+- the component's `Tc`, `Pc` and `omega` are correct and mutually consistent. NOT CHECKED - they are the caller's. A databank ships with the library, so they can come from there.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes. PRSV, with `eos.prsv_kappa`, would give a different saturation pressure from the same inputs, and this model does not accept a coefficient.
 - **`p_sat` is the pressure where the two *roots* agree, not necessarily the pressure where the component really saturates.** The cubic has three real roots below the spinodal at every pressure, including pressures so low that the liquid root describes an impossible molar volume; the bisection finds where their fugacities cross, which is the model's saturation pressure by definition and is a property of the equation rather than of the substance.
 - **near the critical temperature the answer degrades sharply**, and the model cannot tell. The roots coalesce as `Tr -> 1`, the residual flattens, and the last digits of `p_sat` stop being determined by the equation - the same ill-conditioning `eos.pr_z_factor` records. A caller working close to the critical point should read `residual` and `iterations` rather than trusting the digits.

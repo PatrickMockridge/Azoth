@@ -59,7 +59,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `Tc` | K | critical temperatures, in the mixture's component order |
 | `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order. All three vectors are the caller's - this library ships no component databank - and they must be mutually consistent, which is not checked. |
+| `omega` | dimensionless | acentric factors, in the same order. All three vectors are the caller's - this library ships a databank of them (`azoth.eos.component`) - and they must be mutually consistent, which is not checked. |
 | `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
 | `T` | K | absolute temperature. The bubble point is sought at this temperature; the pressure is what is solved for. |
 | `x` | dimensionless | the liquid's mole fractions. Checked rather than renormalised, as the flash's feed is. |
@@ -85,7 +85,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** This library ships no component databank and no binary-interaction table.
+- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses - the same composition-checked form that reduces to `eos.pr_departure` at N = 1 and to `eos.vdw1f_mix_binary` at N = 2.
 - **the model is for mixtures, and refuses a single component.** For one component the two phases have the same composition by construction, and the bubble point is the saturation pressure that `eos.pure_saturation` computes.
 - **the pressure is solved for at a fixed temperature.** A bubble point at a fixed *pressure*, with the temperature as the unknown, is a later milestone - the inner solve then nests inside an outer one and the scheme is not the one named here.

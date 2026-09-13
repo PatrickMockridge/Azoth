@@ -92,9 +92,7 @@ schema_version: 1
 #
 #  Read by `azoth.hydraulics.crane_k_factors` and by the `azoth pipe` CLI, where
 #  it becomes the fitting share of a pressure drop. Until you supply your own,
-#  every row here is a placeholder, every affected result carries an
-#  ESTIMATED_DATA warning, and `tools/spec_lint.py` reports the row count on
-#  every run.
+#  every row here is a placeholder, which the `verify_status` column records.
 #
 #  `n_ld` is the equivalent length ratio L_eq/D for fully turbulent flow, which
 #  is the coefficient such a table expresses. Record which basis you used in

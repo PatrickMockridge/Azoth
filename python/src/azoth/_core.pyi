@@ -397,6 +397,6 @@ class UnknownFittingError(AzothError, LookupError): ...
 
 class UnverifiedCalculationError(AzothError):
     # Declared but never raised, here or in the Rust core. Reserved for an
-    # explicit opt-in strictness gate; a calc with an unconfirmed source warns
-    # (UNVERIFIED_SOURCE) rather than raising, because warnings are not errors.
+    # explicit opt-in strictness gate; a calc with an unconfirmed source does not
+    # raise on that account, because warnings are not errors here.
     ...

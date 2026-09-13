@@ -139,7 +139,8 @@ def test_the_schema_requires_every_field_a_model_needs() -> None:
         "kind",
         "inputs",
         "outputs",
-        "verification",
+        # Not `verification`: it is optional now. A status on every spec was a
+        # mandatory badge on everything, which said nothing about any one of them.
         "implementations",
         "cases",
     }

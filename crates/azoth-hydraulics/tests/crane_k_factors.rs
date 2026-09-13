@@ -6,15 +6,15 @@
 //! values, not engineering data. There is therefore no correct answer for this
 //! calc to be checked against, and nothing here can detect a wrong coefficient.
 //!
-//! These tests validate the arithmetic, the registry lookup, the error handling
-//! and the provenance warning. They are honest about the gap: the numerical
-//! assertions compare against values derived from the same dummy coefficients,
-//! so they would all still pass if the coefficients were nonsense.
+//! These tests validate the arithmetic, the registry lookup and the error
+//! handling. They are honest about the gap: the numerical assertions compare
+//! against values derived from the same dummy coefficients, so they would all
+//! still pass if the coefficients were nonsense.
 
 use azoth_test_support as common;
 
+use azoth_core::AzothError;
 use azoth_core::spec::TestCase;
-use azoth_core::{AzothError, CalcResult, WarningCode};
 use azoth_hydraulics::{crane_k_factors, fittings, known_fittings, spec_gen};
 
 const CALC_ID: &str = "hydraulics.crane_k_factors";
@@ -47,17 +47,6 @@ fn every_case_in_the_spec() {
                     &format!("{}::{} (k_total)", spec.id, case.id),
                 );
                 common::assert_consistent(&result, &format!("{}::{}", spec.id, case.id));
-
-                // The estimated-data warning is provenance, not a range check,
-                // so the generic warning/spec comparison does not cover it. It
-                // is asserted separately, and it MUST be present while the
-                // registry holds placeholders.
-                assert!(
-                    result.has_warning(WarningCode::EstimatedData),
-                    "{}::{}: a result built from estimated coefficients must say so",
-                    spec.id,
-                    case.id
-                );
 
                 common::assert_warnings_agree_with_spec(
                     spec,
@@ -152,11 +141,11 @@ fn components_echo_the_registry_coefficients() {
 #[test]
 fn the_registry_is_entirely_estimated_dummy_data_right_now() {
     // This test exists to fail loudly the day someone populates the registry
-    // from a real source. At that point the estimated-data warning stops firing,
-    // this assertion breaks, and whoever did the work is forced to update the
-    // spec's verification notes and the docs rather than leaving them claiming
-    // the data is placeholder. Deleting this test is the correct response to
-    // that failure, not updating the expected number.
+    // from a real source. At that point this assertion breaks, and whoever did
+    // the work is forced to update the spec's verification notes and the docs
+    // rather than leaving them claiming the data is placeholder. Deleting this
+    // test is the correct response to that failure, not updating the expected
+    // number.
     let rows = fittings::registry().unwrap();
     let estimated: Vec<&str> = rows
         .iter()

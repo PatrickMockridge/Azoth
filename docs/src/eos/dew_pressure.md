@@ -45,7 +45,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `Tc` | K | critical temperatures, in the mixture's component order |
 | `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order. All three vectors are the caller's - this library ships no component databank - and they must be mutually consistent, which is not checked. |
+| `omega` | dimensionless | acentric factors, in the same order. All three vectors are the caller's - this library ships a databank of them (`azoth.eos.component`) - and they must be mutually consistent, which is not checked. |
 | `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
 | `T` | K | absolute temperature. The dew point is sought at this temperature; the pressure is what is solved for. |
 | `y` | dimensionless | the vapour's mole fractions. Checked rather than renormalised, as the flash's feed is. |
@@ -71,7 +71,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** This library ships no component databank and no binary-interaction table.
+- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses.
 - **the model is for mixtures, and refuses a single component.** For one component the dew point is the saturation pressure that `eos.pure_saturation` computes.
 - **the pressure is solved for at a fixed temperature.** A dew point at a fixed pressure, with the temperature as the unknown, is a later milestone.

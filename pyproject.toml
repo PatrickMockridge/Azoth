@@ -61,7 +61,7 @@ features = ["pyo3/extension-module"]
 # redirect that - so the wheel carries `data/...` at the distribution root rather
 # than inside the `azoth` package. `azoth/_data.py` searches both, because the two
 # ways of shipping data land in different places.
-include = ["data/fittings/*.csv", "data/fluids/*.csv"]
+include = ["data/fittings/*.csv", "data/fluids/*.csv", "data/components/*.csv"]
 
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]

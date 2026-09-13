@@ -13,8 +13,7 @@ into a wheel would look exactly like that.
 
 **Every coefficient in that file is currently an estimated dummy value, not
 engineering data.** See the file's header. :attr:`Fitting.is_estimated` reports
-it, and ``crane_k_factors`` turns it into a warning on every affected result so a
-computed pressure drop cannot be mistaken for a design-grade one.
+it, so a computed pressure drop need not be mistaken for a design-grade one.
 """
 
 from __future__ import annotations
@@ -39,8 +38,6 @@ COLUMNS = (
     "f_t_basis",
     "citation",
     "verify_status",
-    "source_ref",
-    "source_locator",
 )
 
 
@@ -87,9 +84,7 @@ class Fitting:
     #: its content, so the document is immutable, independently timestamped, and
     #: fetchable byte-for-byte by anyone. That makes a single number's provenance
     #: auditable rather than a matter of trusting whoever typed it.
-    source_ref: str | None
     #: Where inside that document to look, e.g. "Table 2, 90 deg elbow".
-    source_locator: str | None
 
     @property
     def is_estimated(self) -> bool:
@@ -127,8 +122,6 @@ def _read_rows(lines: list[str]) -> list[Fitting]:
                 f_t_basis=raw["f_t_basis"],
                 citation=raw["citation"],
                 status=status,
-                source_ref=_optional(raw["source_ref"]),
-                source_locator=_optional(raw["source_locator"]),
             )
         )
     return rows

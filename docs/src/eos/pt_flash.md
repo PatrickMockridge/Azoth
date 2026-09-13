@@ -82,7 +82,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `Tc` | K | critical temperatures, in the mixture's component order |
 | `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order. All three of these vectors are the caller's - this library ships no component databank - and they must be mutually consistent, which is not checked. |
+| `omega` | dimensionless | acentric factors, in the same order. All three of these vectors are the caller's, though `azoth.eos.component` will look them up - and they must be mutually consistent, which is not checked. |
 | `kij` | dimensionless | binary interaction parameters. Zero diagonal because a component does not interact with itself, and the implementation reads only the upper triangle - a caller who supplies an asymmetric matrix is not corrected. |
 | `T` | K | absolute temperature |
 | `P` | Pa | absolute pressure |
@@ -114,7 +114,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** This library ships no component databank and no binary-interaction table. A `kij` copied from a table whose convention differs by a sign produces a flash that converges cleanly to a wrong answer; see the same warning in `eos.vdw1f_mix_binary`.
+- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree. A `kij` copied from a table whose convention differs by a sign produces a flash that converges cleanly to a wrong answer; see the same warning in `eos.vdw1f_mix_binary`.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes. PRSV would give different K-values from the same inputs and this model does not accept a coefficient.
 - **the mixture fugacity coefficient is not a registered calculation.** `eos.pr_departure` covers a *pure* component; the mixture form, which carries the sum over `x_j a_ij` and the `b_i / b_mix` term, lives in the model layer. That is the one piece of arithmetic here that no kernel checks, and it is mitigated by composition rather than by assertion: at `N = 1` it must reproduce `eos.pr_departure` exactly (the bracket factor collapses to 1), and at `N = 2` the mixture parameters must reproduce `eos.vdw1f_mix_binary` and the vapour fraction `eos.rachford_rice_binary`. Both are tested, in both languages.
 - **there is no stability test.** Successive substitution finds a stationary point of the flash equations; whether the feed was stable is a different question, and a converged `trivial` is where the difference shows. Which single phase a `trivial` feed is cannot be answered by this model. This is the largest of the model layer's three: `all_liquid` and `all_vapour` are readings of `beta`, not diagnoses.

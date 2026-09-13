@@ -26,10 +26,21 @@ here.
 
 ### What is reused
 
-Nothing yet. This file exists before the first reuse because the obligation is
-easier to discharge with a place to discharge it in than to reconstruct
-afterwards, and because the alternative - a first port arriving with its
-attribution invented on the spot - is how provenance rot starts.
+**The component databank. `data/components/`** is generated from NeqSim's
+`data/COMP.csv` and `data/INTER.csv` by `tools/gen_databank.py`, which converts the
+columns to SI once and records the conversions. 173 substances - NeqSim's
+`COMP.csv` filtered to the component types a cubic equation of state can describe -
+and 516 binary interaction pairs.
+
+Neither file is redistributed as it stands. The ions are excluded, because a cubic
+has no notion of one and NeqSim fills their critical properties with a shared
+default: 29 rows all carrying `Pc = 29.089 MPa`, `omega = 0.344` and
+`Vc = 9.9e-05` is not a coincidence, and shipping them would be shipping
+plausible-looking wrong numbers. `COMP_EXT.csv` is not used at all.
+
+**Algorithms.** `eos.critical_point`, `eos.stability_test` and the models built on
+the same machinery. Each spec's notes record how its implementation differs from
+NeqSim's and why.
 
 ### Why this file exists, and what the obligation is
 
@@ -48,14 +59,19 @@ an **algorithm**, which is not copyrightable in the first place - what is protec
 is the expression, so what is owed is credit and a statement of the differences,
 which is what this file gives.
 
-### What is not reused
+### The data, and the one risk that remains
 
-NeqSim's component databank (`COMP.csv`, `COMP_EXT.csv`) and its binary
-interaction table (`INTER.csv`) are **data**, not code, and data is not covered by
-the paragraph above - a compilation can carry its own copyright even where the
-facts in it do not. If any of it is vendored into this repository, it is entered
-here separately with its own provenance, and `docs/src/copyright.md` records the
-reasoning.
+A compilation can carry its own copyright even where the individual facts in it do
+not, so vendoring NeqSim's tables rests on the grant rather than on the facts:
+`COMP.csv` is part of the work distributed under Apache-2.0, and §4 permits
+redistributing it with attribution. That is the whole basis, and it is why this
+paragraph is not the one that covered the Crane coefficients - those are not
+licensed for redistribution at any price, and these are.
+
+What Apache-2.0 does not establish is that every value inside the compilation was
+cleanly sourced upstream. That is not inspectable from here, and the mitigation is
+attribution rather than inspection: the source is named, so a reader who needs to
+know where a number came from knows where to look.
 
 ### Changes
 

@@ -215,8 +215,7 @@ pub struct KFactorsResult {
     pub f_t: f64,
     /// Per-fitting breakdown, in the order the fittings were supplied.
     pub components: Vec<KComponent>,
-    /// Caveats. Carries [`azoth_core::WarningCode::EstimatedData`] while the
-    /// registry holds placeholder coefficients.
+    /// Caveats.
     pub warnings: Vec<Warning>,
 }
 

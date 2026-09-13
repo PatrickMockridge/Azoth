@@ -85,6 +85,8 @@ from azoth.core.result import (
     Vdw1fMixBinaryResult,
 )
 from azoth.core.units import Q
+from azoth.eos.components import available as available_components
+from azoth.eos.components import component, from_names
 from azoth.eos.mixture import Component, Mixture, mixture
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
@@ -92,9 +94,12 @@ __all__ = [
     "Component",
     "IdealGasModel",
     "Mixture",
+    "available_components",
     "bubble_pressure",
+    "component",
     "critical_point",
     "dew_pressure",
+    "from_names",
     "ideal_gas_cp",
     "mixture",
     "molar_enthalpy_entropy",
@@ -262,7 +267,7 @@ def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:
 def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
     """Mass density from a molar mass and a molar volume.
 
-    ``M`` is the caller's - this library ships no component data - and note the unit
+    ``M`` is the caller's - ``azoth.eos.component(name)`` looks it up - and note the unit
     is ``kg/mol``, not the ``g/mol`` tables usually quote.
 
     Raises:

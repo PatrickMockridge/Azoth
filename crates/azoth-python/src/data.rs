@@ -82,12 +82,6 @@ pub struct PyFittingRow {
     /// `verified`, `unverified` or `estimated_dummy`.
     #[pyo3(get)]
     pub verify_status: String,
-    /// The document the value was read from, if any.
-    #[pyo3(get)]
-    pub source_ref: Option<String>,
-    /// Where inside that document, if any.
-    #[pyo3(get)]
-    pub source_locator: Option<String>,
 }
 
 /// One row of a fluid property table, transported.
@@ -117,12 +111,6 @@ pub struct PyFluidRow {
     /// `verified`, `unverified` or `estimated_dummy`.
     #[pyo3(get)]
     pub verify_status: String,
-    /// The document the value was read from, if the row is not a placeholder.
-    #[pyo3(get)]
-    pub source_ref: Option<String>,
-    /// Where inside that document to look.
-    #[pyo3(get)]
-    pub source_locator: Option<String>,
 }
 
 /// Every data file this build embeds, with its bytes.
@@ -169,8 +157,6 @@ pub fn fittings_rows(py: Python<'_>) -> PyResult<Vec<PyFittingRow>> {
             f_t_basis: row.f_t_basis.clone(),
             citation: row.citation.clone(),
             verify_status: row.status.as_str().to_string(),
-            source_ref: row.source_ref.clone(),
-            source_locator: row.source_locator.clone(),
         })
         .collect())
 }
@@ -194,8 +180,6 @@ pub fn fluid_rows(py: Python<'_>, name: &str) -> PyResult<Vec<PyFluidRow>> {
             dynamic_viscosity_pa_s: point.dynamic_viscosity_pa_s,
             citation: point.citation.clone(),
             verify_status: point.status.as_str().to_string(),
-            source_ref: point.source_ref.clone(),
-            source_locator: point.source_locator.clone(),
         })
         .collect())
 }

@@ -37,9 +37,9 @@ that makes a badly-formed input produce an undefined result rather than an error
 - **Being outside the validated range.** That is what the range is for, and the
   result says so. If the warning is missing, that *is* in scope.
 - **Known placeholder data.** The fitting coefficients are labelled
-  `ESTIMATED_DUMMY` and every result using them carries `ESTIMATED_DATA`. They
-  are not a vulnerability; they are a documented limitation. Using them for
-  design work is a misuse of the library, not a flaw in it.
+  `estimated_dummy` in the data file's `verify_status` column. They are not a
+  vulnerability; they are a documented limitation. Using them for design work is
+  a misuse of the library, not a flaw in it.
 - **The Rust core being slower than Python for a single call.** Stated in the
   README; not a bug.
 - **A dependency's own vulnerability** unless this project's use of it is what

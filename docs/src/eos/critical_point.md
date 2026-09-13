@@ -62,7 +62,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `Tc` | K | critical temperatures, in the mixture's component order |
 | `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order. All three vectors are the caller's - this library ships no component databank - and they must be mutually consistent, which is not checked. |
+| `omega` | dimensionless | acentric factors, in the same order. All three vectors are the caller's - this library ships a databank of them (`azoth.eos.component`) - and they must be mutually consistent, which is not checked. |
 | `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
 | `z` | dimensionless | the composition whose critical point is wanted, checked rather than renormalised. Unlike the flash's `z` this is not a feed being split: it is the composition of the single phase that is about to stop existing. |
 
@@ -84,7 +84,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** This library ships no component databank and no binary-interaction table.
+- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree.
 - **the composition has exactly one critical point.** A mixture can have more than one, and this model finds the one nearest its starting point without any check that there is not another. It is the same limitation `eos.pt_flash` records for a second liquid phase, and it has the same cause: no stability analysis.
 - the critical point found is a *mixture* critical point of the given composition, not a point on the phase envelope of a reservoir fluid. The two coincide for a binary and need not for a fluid with more components.
 - Peng-Robinson's `Z_c` is not the experimental one for any substance. The model reports what the equation of state gives, and the equation of state is the caller's choice.

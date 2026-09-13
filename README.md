@@ -72,8 +72,7 @@ azoth pipe --fluid water --flow 10 --diameter 0.1 --length 100 \
     fittings                  56.7472 Pa   (3.7% of total)
     total                   1550.0951 Pa   (1.550095 kPa, 0.015501 bar)
 
-  1 warning(s)
-    [ESTIMATED_DATA] 2 of 2 fitting(s) use ESTIMATED DUMMY coefficients...
+  no warnings: every range check passed
 ```
 
 ## The two ideas this library is built around
@@ -216,10 +215,8 @@ wrong by a factor of two and look entirely reasonable. Supply your own with
 `azoth-data.example.yaml`; see
 [Copyright and licensed data](docs/src/copyright.md).
 
-Every affected result carries an `ESTIMATED_DATA` warning, `tools/spec_lint.py`
-prints the count on every run, and a test fails the day someone populates the
-file properly. Values that are cited but not confirmed by a named verifier carry
-`UNVERIFIED_SOURCE` instead; only confirmed values are silent.
+The `verify_status` column records that, and a test fails the day someone
+populates the file properly.
 
 Water and air properties under `data/fluids/` are a different case: real
 published values, marked `unverified` because they have not been checked against

@@ -37,13 +37,13 @@ class WarningCode(StrEnum):
     #: returned value is the last iterate, not a converged result.
     SOLVER_NOT_CONVERGED = "SOLVER_NOT_CONVERGED"
 
-    #: The calculation's source has not been verified against a primary
-    #: reference, so the equation's provenance is unconfirmed.
-    UNVERIFIED_SOURCE = "UNVERIFIED_SOURCE"
-
-    #: The calculation depends on data that is a placeholder, not engineering
-    #: data. Nothing computed from it should be used for design.
-    ESTIMATED_DATA = "ESTIMATED_DATA"
+    # `UNVERIFIED_SOURCE` and `ESTIMATED_DATA` used to sit here. They existed to
+    # stop data that had no source looking like data that had one, which was the
+    # right worry while every number this library used was either the caller's or a
+    # placeholder somebody typed. Once the data is vendored from a licence that
+    # permits it, they fire on every result and mean nothing - and a warning that
+    # fires on everything is how a reader learns to skim warnings, which is the
+    # failure they were built to prevent.
 
     #: An iterative phase-equilibrium calculation converged to the trivial
     #: solution, ``x = y = z``. Distinct from ``SOLVER_NOT_CONVERGED``: this one

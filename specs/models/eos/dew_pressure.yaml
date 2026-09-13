@@ -102,7 +102,7 @@ inputs:
     length: one per component
     description: >
       acentric factors, in the same order. All three vectors are the caller's - this
-      library ships no component databank - and they must be mutually consistent,
+      library ships a databank of them (`azoth.eos.component`) - and they must be mutually consistent,
       which is not checked.
   kij:
     type: matrix
@@ -174,7 +174,7 @@ valid_range:
       mixture can still have a dew point where this bound is crossed.
 
 assumptions:
-  - "**`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** This library ships no component databank and no binary-interaction table."
+  - "**`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree."
   - "the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses."
   - "**the model is for mixtures, and refuses a single component.** For one component the dew point is the saturation pressure that `eos.pure_saturation` computes."
   - "**the pressure is solved for at a fixed temperature.** A dew point at a fixed pressure, with the temperature as the unknown, is a later milestone."

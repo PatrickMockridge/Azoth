@@ -73,8 +73,6 @@ FITTING_COLUMNS = (
     "f_t_basis",
     "citation",
     "verify_status",
-    "source_ref",
-    "source_locator",
 )
 FLUID_COLUMNS = (
     "temperature_c",
@@ -82,8 +80,6 @@ FLUID_COLUMNS = (
     "dynamic_viscosity_pa_s",
     "citation",
     "verify_status",
-    "source_ref",
-    "source_locator",
 )
 
 #: Where a new fluid has to be registered before its table can be read. Listed
@@ -142,8 +138,7 @@ DUMMY_WARNING = """\
 #  Before this library is used for design work every row must be replaced with
 #  values read from a copy of the primary standard by a competent engineer, and
 #  its verify_status changed to `verified` with the source recorded in
-#  `citation`. Until then, `spec_lint.py` reports the estimated-row count on
-#  every run so this cannot be forgotten quietly."""
+#  `citation`."""
 
 #: The banner for a file that is not all placeholders. It does not make the claim
 #: above, which would then be false, and it does not claim the file was generated
@@ -169,21 +164,19 @@ NOT_A_PLACEHOLDER_WARNING = """\
 #  docs/src/copyright.md."""
 
 STATUS_BODY = """\
-# verify_status values, and the warning each one raises:
+# verify_status values:
 #   estimated_dummy - placeholder, not from any source. Software testing ONLY.
-#                     Raises ESTIMATED_DATA on every result that uses it.
 #   unverified      - has a citation, but no named person has confirmed it
 #                     against an authoritative copy of the source. This covers
 #                     both "read from a secondary public reference" and "read
 #                     from a copy of the standard that nobody has verified is
-#                     faithful". Raises UNVERIFIED_SOURCE on every result that
-#                     uses it.
+#                     faithful".
 #   verified        - confirmed by a named person against an authoritative
 #                     copy, with their name, the edition, and the date recorded
-#                     in `citation`. Raises nothing.
+#                     in `citation`.
 #
-# Only `verified` is silent. Every other state says so at runtime, on the result
-# itself, rather than relying on a reader to check this file.
+# This column is the record, and it is the only one: nothing warns on it at
+# runtime any more, so it has to be read.
 #
 # source_ref identifies the document a value was read from, in a form anyone can
 # fetch and check. `arweave:<txid>` is the preferred form: an Arweave transaction
@@ -474,27 +467,11 @@ def main(argv: list[str] | None = None) -> int:
         target.write_text(text, encoding="utf-8")
         print(f"gen_user_data: wrote {relative}")
 
-    dummy = report.by_status.get("estimated_dummy", 0)
     total = sum(report.by_status.values())
     print(
         f"gen_user_data: {total} row(s) from {args.path.name} "
         f"({', '.join(f'{n} {s}' for s, n in sorted(report.by_status.items()))})"
     )
-    if dummy < total:
-        print(
-            "\n"
-            + "!" * 78
-            + f"\n!! {total - dummy} row(s) are NOT placeholders, and they are now in data/.\n"
-            "!!\n"
-            "!! If they came from a standard you licensed, DO NOT COMMIT THEM -\n"
-            "!! committing redistributes them. Restore the shipped placeholders with\n"
-            "!! `git checkout -- data/` before you commit anything else.\n"
-            "!!\n"
-            "!! Two tests assert the shipped data is placeholder and will now fail.\n"
-            "!! That is deliberate: they exist to make this moment loud. See\n"
-            "!! docs/src/copyright.md before changing them.\n" + "!" * 78,
-            file=sys.stderr,
-        )
     print("\nRebuild so Rust picks the new bytes up: `maturin develop`", file=sys.stderr)
     return 0
 

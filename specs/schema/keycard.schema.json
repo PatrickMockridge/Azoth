@@ -5,7 +5,7 @@
   "description": "The file a user supplies to carry the values this library will not ship: licensed coefficients, a component databank, a model definition. It is the same mechanism as `azoth-data.example.yaml`, named and specified, and it exists because most of what a calculation needs is not copyrightable and some of it is - see `docs/src/copyright.md`. The provenance rules are `$ref`-ed from `calc.schema.json` rather than restated, so a user's row and the repository's row are one definition of what a valid citation is.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "keyholder"],
+  "required": ["schema_version"],
   "properties": {
     "schema_version": {
       "const": 2,

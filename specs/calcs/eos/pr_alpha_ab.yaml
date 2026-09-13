@@ -82,7 +82,7 @@ inputs:
     unit: dimensionless
     description: >
       Reduced temperature, T / Tc. The critical temperature is the caller's - this
-      library ships no component databank, so Tc comes in with the component.
+      library ships a databank of pure-component constants, but `Tc` still comes in with the component because a reduced temperature is what this calc takes.
   Pr:
     unit: dimensionless
     description: reduced pressure, P / Pc

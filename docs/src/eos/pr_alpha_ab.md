@@ -45,7 +45,7 @@ Nothing here says the paper's alpha function is this one, or that the paper's eq
 | Name | Unit | Description |
 |---|---|---|
 | `kappa` | dimensionless | The Peng-Robinson alpha-function coefficient, from `eos.pr_kappa`. A property of the substance alone - no temperature, no pressure - which is why it is an input here rather than computed: this calc turns it into the temperature-dependent attraction. |
-| `Tr` | dimensionless | Reduced temperature, T / Tc. The critical temperature is the caller's - this library ships no component databank, so Tc comes in with the component. |
+| `Tr` | dimensionless | Reduced temperature, T / Tc. The critical temperature is the caller's - this library ships a databank of pure-component constants, but `Tc` still comes in with the component because a reduced temperature is what this calc takes. |
 | `Pr` | dimensionless | reduced pressure, P / Pc |
 
 

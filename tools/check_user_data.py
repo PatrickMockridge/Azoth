@@ -154,17 +154,6 @@ def report_result(report: Report, path: Path) -> int:
 
     print(f"check_user_data: OK ({path.name}: {counts})")
 
-    # Placeholders are not an error - a file full of them is a valid starting
-    # point - but they are the thing a user most needs to be told about, so they
-    # are stated rather than left in a count.
-    dummy = report.by_status.get("estimated_dummy", 0)
-    if dummy:
-        print(
-            f"\n  NOTE  {dummy} row(s) are placeholders. They are not engineering "
-            f"data; every result computed from them carries an ESTIMATED_DATA "
-            f"warning. Replace them before using this for design work.",
-            file=sys.stderr,
-        )
     return 0
 
 

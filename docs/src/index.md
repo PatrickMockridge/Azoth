@@ -121,7 +121,7 @@ The fitting coefficients in `data/fittings/crane_k_factors.csv` are **estimated
 dummy values** - plausible magnitudes chosen so the software has something to run
 against. They are not from Crane TP-410 or any other standard, and a pressure
 drop computed from them can be wrong by a factor of two while looking entirely
-reasonable. Every affected result carries an `ESTIMATED_DATA` warning, and the
+reasonable. The `verify_status` column records that, and the
 [`crane_k_factors`](./hydraulics/crane_k_factors.md) page says so at the top.
 
 Water and air properties are a different case: real published values, marked

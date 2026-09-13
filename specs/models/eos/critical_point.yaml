@@ -148,7 +148,7 @@ inputs:
     length: one per component
     description: >
       acentric factors, in the same order. All three vectors are the caller's - this
-      library ships no component databank - and they must be mutually consistent, which
+      library ships a databank of them (`azoth.eos.component`) - and they must be mutually consistent, which
       is not checked.
   kij:
     type: matrix
@@ -216,7 +216,7 @@ valid_range:
       negative `Z_c` before it shows up anywhere else.
 
 assumptions:
-  - "**`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** This library ships no component databank and no binary-interaction table."
+  - "**`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree."
   - "**the composition has exactly one critical point.** A mixture can have more than one, and this model finds the one nearest its starting point without any check that there is not another. It is the same limitation `eos.pt_flash` records for a second liquid phase, and it has the same cause: no stability analysis."
   - "the critical point found is a *mixture* critical point of the given composition, not a point on the phase envelope of a reservoir fluid. The two coincide for a binary and need not for a fluid with more components."
   - "Peng-Robinson's `Z_c` is not the experimental one for any substance. The model reports what the equation of state gives, and the equation of state is the caller's choice."

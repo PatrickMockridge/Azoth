@@ -20,14 +20,14 @@
 //! are computed by different methods and adding them is a modelling decision the
 //! caller should be able to see.
 //!
-//! # Warning before use
+//! # Not for design work yet
 //!
 //! `crane_k_factors` reads coefficients from `data/fittings/crane_k_factors.csv`,
 //! where every row is currently an **estimated dummy value** - a placeholder for
-//! software testing, not engineering data. Results built from it carry an
-//! [`azoth_core::WarningCode::EstimatedData`] warning. Nothing in this crate
-//! should be used for design work until that file is populated from a primary
-//! standard.
+//! software testing, not engineering data. Nothing in this crate should be used
+//! for design work until that file is populated from a primary standard. The
+//! placeholder status is recorded in the data file and in the calc's spec; it is
+//! not announced by a warning on the result.
 
 pub mod choked_flow_area;
 pub mod control_valve_cv;
@@ -62,7 +62,7 @@ pub use azoth_core::solver;
 pub use choked_flow_area::choked_flow_area;
 pub use control_valve_cv::{CV_TO_SI, control_valve_cv};
 pub use crane_k_factors::{crane_k_factors, known_fittings};
-pub use darcy_weisbach::{add_fitting_loss, darcy_weisbach, propagate_estimated_data};
+pub use darcy_weisbach::{add_fitting_loss, darcy_weisbach};
 pub use fluids::{available_fluids, provider_for};
 pub use friction_factor_colebrook::{friction_factor_colebrook, fully_rough_limit};
 pub use friction_factor_haaland::friction_factor_haaland;

@@ -199,13 +199,6 @@ pub fn compute(
 
     let mut warnings = Vec::new();
 
-    // The fluid table's own provenance. Every density and viscosity in this run
-    // came out of it, and until now none of that provenance reached the result: a
-    // fitting's status became a warning and the fluid's became nothing, so the
-    // shipped tables being `unverified` was visible only to someone who opened the
-    // CSV. A command-line user is exactly the person least likely to.
-    warnings.extend(table.provenance_warnings());
-
     // Reynolds number. This calc raises on a non-positive density, diameter or
     // viscosity, which is what we want: those make the velocity meaningless too.
     let reynolds = hyd::reynolds_number(density, velocity, diameter, viscosity)?;

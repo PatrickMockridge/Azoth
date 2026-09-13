@@ -53,8 +53,6 @@ FITTING_FIELDS = (
     "f_t_basis",
     "citation",
     "verify_status",
-    "source_ref",
-    "source_locator",
 )
 
 FLUID_FIELDS = (
@@ -64,8 +62,6 @@ FLUID_FIELDS = (
     "dynamic_viscosity_pa_s",
     "citation",
     "verify_status",
-    "source_ref",
-    "source_locator",
 )
 
 
@@ -94,8 +90,6 @@ def python_fitting_rows() -> list[dict[str, Any]]:
             "f_t_basis": row.f_t_basis,
             "citation": row.citation,
             "verify_status": row.status.value,
-            "source_ref": row.source_ref,
-            "source_locator": row.source_locator,
         }
         for row in registry()
     ]
@@ -112,8 +106,6 @@ def python_fluid_rows(name: str) -> list[dict[str, Any]]:
             "dynamic_viscosity_pa_s": point.dynamic_viscosity_pa_s,
             "citation": point.citation,
             "verify_status": point.verify_status,
-            "source_ref": point.source_ref,
-            "source_locator": point.source_locator,
         }
         for point in provider.points
     ]

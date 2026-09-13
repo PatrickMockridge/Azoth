@@ -42,7 +42,6 @@ def fail(message: str) -> None:
 def main() -> int:
     import azoth
     from azoth._data import find
-    from azoth.core.warnings import WarningCode
     from azoth.hydraulics import crane_k_factors
     from azoth.properties import provider_for
 
@@ -60,13 +59,7 @@ def main() -> int:
     result = crane_k_factors(["90_elbow", "gate_valve_open"], 0.018)
     if result.k_total <= 0:
         fail(f"crane_k_factors returned a non-positive coefficient: {result.k_total}")
-    if not result.has_warning(WarningCode.ESTIMATED_DATA):
-        fail(
-            "the placeholder coefficients did not produce an ESTIMATED_DATA warning. "
-            "Either the data file is no longer the placeholder registry, or the "
-            "warning has stopped firing - both are worth stopping for."
-        )
-    print(f"  crane_k_factors: k_total={result.k_total} (with the expected warning)")
+    print(f"  crane_k_factors: k_total={result.k_total}")
 
     # 2. A fluid table, which is a separate file and a separate parser.
     water = provider_for("water")

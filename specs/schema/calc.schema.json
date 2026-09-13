@@ -11,7 +11,6 @@
     "equation",
     "latex",
     "source",
-    "verification",
     "inputs",
     "outputs",
     "valid_range",
@@ -206,52 +205,33 @@
 
   "$defs": {
     "provenance_row": {
-      "description": "One row of a data table: a value, and the claim made about where it came from. Shared with `keycard.schema.json`, which `$ref`s this definition rather than restating it, because a user's data row and the repository's are the same kind of claim and two copies of the rule would be two answers to what a valid citation is. `tools/spec_lint.py::check_source` enforces the same rules on the CSV files, which no JSON Schema sees; the two must agree, and a test asserts the referenced object here is this one rather than a copy.",
+      "description": "One row of a data table: a value, and the claim made about where it came from. Shared with `keycard.schema.json`, which `$ref`s this definition rather than restating it, because a user's data row and the repository's are the same kind of claim. `tools/spec_lint.py::check_source` enforces the same rules on the CSV files, which no JSON Schema sees, and a test asserts the referenced object here is this one rather than a copy.",
       "type": "object",
       "properties": {
         "citation": {
           "type": "string",
           "minLength": 1,
-          "description": "Where the value came from, in prose, for a reader. Not machine-checkable, and not a substitute for `source_ref`."
+          "description": "Where the value came from, in prose, for a reader. This is the whole provenance record: a string naming the source. It used to be split across `citation`, a machine-fetchable `source_ref` in `arweave:`/`doi:`/`https:` form, and a `source_locator` giving the place inside the document - which was built to make a *single transcribed value* auditable, and became fiction when applied to a vendored databank of 258 rows whose provenance is institutional. A vendor, a version and a file name a source well enough."
         },
         "verify_status": {
           "enum": ["verified", "unverified", "estimated_dummy"],
           "description": "How far the value can be trusted. `verified` = read from the primary source by a named person; `unverified` = real and cited, but nobody here has checked it; `estimated_dummy` = a placeholder, not from any source. The middle case is the one that gets lost: 'not a placeholder' and 'trustworthy' are different claims."
-        },
-        "source_ref": {
-          "type": "string",
-          "description": "The document, in a form a tool can fetch. Required and non-empty for anything that is not a placeholder; must be empty for a placeholder, because a value cannot be both invented and sourced."
-        },
-        "source_locator": {
-          "type": "string",
-          "description": "Where inside that document to look, e.g. 'Table 2, 90 deg standard elbow'. A checker needs both the document and the place."
         }
       },
-      "required": ["citation", "verify_status", "source_ref", "source_locator"],
+      "required": ["citation", "verify_status"],
       "allOf": [
         {
-          "comment": "A placeholder must say so, must not claim a source, and its citation must carry the marker the status asserts. The `not` on the citation is the promotion case: editing the status without editing the prose produces a row that claims more than it says, and it is caught here as well as in spec_lint.",
+          "comment": "A placeholder must say so in its own citation, and a citation that still says DUMMY under a status that is not `estimated_dummy` is the promotion case: nobody edited the prose when they edited the status, so the row now claims more than it says.",
           "if": {
             "properties": { "verify_status": { "const": "estimated_dummy" } },
             "required": ["verify_status"]
           },
           "then": {
-            "properties": {
-              "citation": { "type": "string", "pattern": "[Dd][Uu][Mm][Mm][Yy]" },
-              "source_ref": { "type": "string", "maxLength": 0 }
-            }
+            "properties": { "citation": { "type": "string", "pattern": "[Dd][Uu][Mm][Mm][Yy]" } }
           },
           "else": {
             "properties": {
-              "citation": {
-                "type": "string",
-                "not": { "pattern": "[Dd][Uu][Mm][Mm][Yy]" }
-              },
-              "source_ref": {
-                "type": "string",
-                "pattern": "^(arweave:[A-Za-z0-9_-]{43}|doi:10\\.[0-9]{4,9}/\\S+|https://\\S+)$"
-              },
-              "source_locator": { "type": "string", "minLength": 1 }
+              "citation": { "type": "string", "not": { "pattern": "[Dd][Uu][Mm][Mm][Yy]" } }
             }
           }
         }
@@ -380,8 +360,6 @@
             "RANGE_CHECK_SKIPPED",
             "TRANSITIONAL_FLOW",
             "SOLVER_NOT_CONVERGED",
-            "UNVERIFIED_SOURCE",
-            "ESTIMATED_DATA",
             "TRIVIAL_SOLUTION"
           ],
           "default": "OUT_OF_VALID_RANGE",

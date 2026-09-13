@@ -114,7 +114,7 @@ class UnknownFittingError(AzothError, LookupError):
 
 class UnverifiedCalculationError(AzothError):
     """The calculation has no verified source, and the caller asked for that to be
-    a hard failure rather than a warning.
+    a hard failure rather than a caveat.
 
     **Nothing raises this today.** It is defined, exported, and mapped from the
     Rust variant of the same name, but no code path constructs it. It is kept for
@@ -122,14 +122,15 @@ class UnverifiedCalculationError(AzothError):
     ``AZOTH_REQUIRE_RUST``, through which a caller running design work can say "fail
     rather than hand me a number from an unconfirmed source".
 
-    Until that gate exists, an unconfirmed source is reported the way every other
-    caveat is - as a warning on the result, either ``UNVERIFIED_SOURCE`` or
-    ``ESTIMATED_DATA``, with ``result.is_clean`` reporting it.
+    Whether a calc's inputs are placeholders or cited-but-unconfirmed values is
+    recorded in the data files and in the specs, not on the result: no warning
+    announces it, so a strictness gate would have to read the record rather than
+    look for a warning code.
 
     One constraint on any future use: this must never be raised *from inside a
-    calculation* on an ``UNVERIFIED_SOURCE`` condition. Warnings are not errors
-    here, and a calc that raised would break that rule and the cross-language
-    warning-parity test that enforces it.
+    calculation* as a substitute for a caveat. Warnings are not errors here, and a
+    calc that raised on an unconfirmed source would break that rule and the
+    cross-language warning-parity test that enforces it.
     """
 
     def __init__(self, calc_id: str) -> None:

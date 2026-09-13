@@ -24,7 +24,7 @@ use crate::results::DarcyWeisbachResult;
 use crate::reynolds_number::regime_for;
 use crate::spec_gen;
 use azoth_core::units::{DynamicViscosity, Length, MassDensity, Velocity, pascals};
-use azoth_core::{Result, Warning, WarningCode, apply_checks};
+use azoth_core::{Result, apply_checks};
 
 /// Pressure drop over a length of straight pipe.
 ///
@@ -35,7 +35,8 @@ use azoth_core::{Result, Warning, WarningCode, apply_checks};
 /// When `mu` is supplied the result reports `re` and `regime`, and a
 /// transitional flow produces a `TransitionalFlow` warning. When it is omitted
 /// the result reports neither, and carries a
-/// [`WarningCode::RangeCheckSkipped`] warning saying the regime went unchecked.
+/// [`azoth_core::WarningCode::RangeCheckSkipped`] warning saying the regime went
+/// unchecked.
 ///
 /// That last part is the point. "Checked and fine" and "never checked" must not
 /// look the same to a caller, and an omitted optional input is exactly how those
@@ -146,18 +147,4 @@ pub fn darcy_weisbach(
 #[must_use]
 pub fn add_fitting_loss(dp_straight: f64, k_total: f64, rho: f64, v: f64) -> f64 {
     dp_straight + k_total * (rho * v * v / 2.0)
-}
-
-/// A warning to attach when a composed result includes fitting losses based on
-/// estimated data.
-///
-/// Takes the warning the `crane_k_factors` result already carries, so the
-/// provenance is propagated rather than re-derived. Returns `None` when there is
-/// nothing to say.
-#[must_use]
-pub fn propagate_estimated_data(warnings: &[Warning]) -> Option<Warning> {
-    warnings
-        .iter()
-        .find(|w| w.code == WarningCode::EstimatedData)
-        .cloned()
 }

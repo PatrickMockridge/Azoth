@@ -59,16 +59,13 @@ MAX_SENSIBLE_TOLERANCE = 0.05
 # Permitted provenance states for a data row.
 VALID_VERIFY_STATUS = {"verified", "unverified", "estimated_dummy"}
 
-# A source reference has to be fetchable and checkable by tooling, not prose.
-# `arweave:<txid>` is the preferred form: the tx ID is the hash of its content,
-# so the document is immutable, independently timestamped, and fetchable
-# byte-for-byte by anyone who wants to check a value against it.
-SOURCE_REF_PATTERNS = {
-    # Arweave transaction IDs are 43 characters of base64url.
-    "arweave": re.compile(r"^arweave:[A-Za-z0-9_-]{43}$"),
-    "doi": re.compile(r"^doi:10\.\d{4,9}/\S+$"),
-    "https": re.compile(r"^https://\S+$"),
-}
+# A source reference used to have to be machine-fetchable - `arweave:<txid>`,
+# `doi:`, `https://` - with a separate locator giving the place inside the
+# document. That was built to make a *single transcribed value* auditable, which is
+# the case it fits. Against a vendored databank of 258 rows whose provenance is
+# institutional it stops fitting: there is no per-row URL, and inventing one would
+# be a citation-shaped thing that is not a citation. A `citation` naming the source
+# in prose is the whole record now.
 
 
 @dataclass
@@ -77,10 +74,6 @@ class Report:
 
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
-    # Placeholder data rows, keyed by file, counted so the run can shout about
-    # them. Dummy coefficients cannot be caught by a test - there is nothing
-    # correct to compare against - so the only defence is making them loud.
-    estimated_rows: dict[str, int] = field(default_factory=dict)
     # Every status seen, counted. Used by the user-data checker's summary, which
     # reports what it found rather than only what was wrong.
     by_status: dict[str, int] = field(default_factory=dict)
@@ -105,17 +98,14 @@ def check_source(report: Report, where: str, row: dict[str, Any]) -> str | None:
     finds it. The two copies that existed had already diverged: the repository's
     rejected a `verified` row whose citation still said DUMMY, and a user's did not.
 
-    A value that is not a placeholder must name the document it came from, in a
-    form a tool can fetch, and say where inside that document to look. A value that
-    *is* a placeholder must say so and must not also claim a source - being both
-    invented and sourced is a contradiction, and it is the copy-paste that would
-    silently promote dummy data to trusted data.
+    A value that is not a placeholder must name where it came from. A value that
+    *is* a placeholder must say so in its own citation - the marker and the prose
+    are the same claim in two places, and a row where they disagree is a row that
+    has been promoted without being read.
 
     Returns the status when it is one this understands, and `None` when it is not,
-    so the caller can count what it found. Counting is left to the caller because
-    the two callers count different things: `spec_lint` counts placeholder rows per
-    file to shout about them, and `check_user_data` counts every status to report a
-    summary.
+    so the caller can count what it found - `check_user_data` counts every status
+    to report a summary, and to say how many rows are placeholders.
     """
     status = row.get("verify_status")
     if status not in VALID_VERIFY_STATUS:
@@ -126,8 +116,6 @@ def check_source(report: Report, where: str, row: dict[str, Any]) -> str | None:
         return None
 
     citation = str(row.get("citation") or "")
-    source_ref = str(row.get("source_ref") or "").strip()
-    source_locator = str(row.get("source_locator") or "").strip()
 
     if status == "estimated_dummy":
         if "DUMMY" not in citation.upper():
@@ -136,12 +124,6 @@ def check_source(report: Report, where: str, row: dict[str, Any]) -> str | None:
                 "marked estimated_dummy but its citation does not say so. The marker "
                 "and the citation must agree, or a reader skimming the citation will "
                 "not realise the number is a placeholder.",
-            )
-        if source_ref:
-            report.error(
-                where,
-                f"is marked estimated_dummy yet carries source_ref {source_ref!r}. A "
-                f"value cannot be both invented and sourced.",
             )
         return status
 
@@ -153,31 +135,6 @@ def check_source(report: Report, where: str, row: dict[str, Any]) -> str | None:
             where,
             f"is marked {status!r} but its citation still says it is a dummy value. "
             f"Changing the status does not make the citation true.",
-        )
-
-    if not source_ref:
-        report.error(
-            where,
-            f"is marked {status!r} but has no source_ref. A value that is not a "
-            f"placeholder must name the document it came from, in a fetchable form.",
-        )
-    elif not any(pattern.match(source_ref) for pattern in SOURCE_REF_PATTERNS.values()):
-        report.error(
-            where,
-            f"source_ref {source_ref!r} is not a recognised form. Expected "
-            f"arweave:<43-char txid>, doi:<doi>, or https://...",
-        )
-
-    # Only once a document has actually been named does asking for a place inside
-    # it mean anything. Asking unconditionally produced the message "has a
-    # source_ref but no source_locator" on rows that had just been told they had no
-    # source_ref - a report that contradicts itself in two consecutive lines, which
-    # is a good way to teach a reader to skim the output.
-    if source_ref and not source_locator:
-        report.error(
-            where,
-            "has a source_ref but no source_locator. A checker needs both the "
-            "document and the place inside it to look.",
         )
     return status
 
@@ -193,8 +150,6 @@ FITTING_FIELDS = (
     "f_t_basis",
     "citation",
     "verify_status",
-    "source_ref",
-    "source_locator",
 )
 
 FLUID_FIELDS = (
@@ -203,8 +158,6 @@ FLUID_FIELDS = (
     "dynamic_viscosity_pa_s",
     "citation",
     "verify_status",
-    "source_ref",
-    "source_locator",
 )
 
 
@@ -459,7 +412,6 @@ def check_identifier_names(report: Report, rel: Path, spec: dict[str, Any]) -> N
     Names in both sections must additionally not collide with language keywords.
     """
     import keyword
-    import re
 
     legal = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
     snake = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -969,9 +921,7 @@ def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                 # One definition of the provenance rules, shared with
                 # `check_user_data.py` rather than restated there. A user's row and
                 # the repository's row are the same kind of claim.
-                status = check_source(report, f"{raw_path}: fitting '{fid}'", row)
-                if status == "estimated_dummy":
-                    report.estimated_rows[raw_path] = report.estimated_rows.get(raw_path, 0) + 1
+                check_source(report, f"{raw_path}: fitting '{fid}'", row)
 
                 # Coefficients must be exact decimals, not exponent notation, so
                 # that Python and Rust parse identical bit patterns.
@@ -1085,27 +1035,6 @@ def main() -> int:
     # the one committed data in the repository that nothing validated. Both
     # shipped tables had drifted into a state the shared rules reject.
     check_fluid_tables(report, ROOT / "data" / "fluids")
-
-    # Placeholder data is the one defect this tool cannot fail on, because there
-    # is no correct value to compare against. So it is printed loudly instead,
-    # on every run, where it cannot be missed.
-    if report.estimated_rows:
-        total = sum(report.estimated_rows.values())
-        banner = "!" * 78
-        print(f"\n{banner}", file=sys.stderr)
-        print(
-            f"!! NOT ENGINEERING DATA: {total} coefficient row(s) are ESTIMATED DUMMY VALUES.",
-            file=sys.stderr,
-        )
-        for path, count in sorted(report.estimated_rows.items()):
-            print(f"!!   {path}: {count} row(s)", file=sys.stderr)
-        print(
-            "!! These are placeholders for software testing. Do NOT use them to size\n"
-            "!! equipment. Replace with values from the primary standard and set\n"
-            "!! verify_status=verified before any real use.",
-            file=sys.stderr,
-        )
-        print(f"{banner}\n", file=sys.stderr)
 
     for warning in report.warnings:
         print(f"  warning  {warning}", file=sys.stderr)

@@ -497,7 +497,7 @@ class KFactorsResult(_HasWarnings):
     f_t: float
     #: Per-fitting breakdown, in the order the fittings were supplied.
     components: tuple[KComponent, ...]
-    #: Caveats. Carries ``ESTIMATED_DATA`` while the registry holds placeholders.
+    #: Caveats.
     warnings: tuple[Warning, ...]
 
 
