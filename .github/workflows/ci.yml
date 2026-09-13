@@ -65,11 +65,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v5
-      - run: uv venv --python 3.12
-      # Installed explicitly rather than via `pip install -e .`, which would
-      # trigger a maturin build here and needs the Rust toolchain in jobs that
-      # have no use for it.
-      - run: uv pip install maturin pytest "pint>=0.24"
+      # `--no-install-project` skips building the package, which matters because
+      # the build backend is maturin and building here would need the extension
+      # built twice. The extension is built by `maturin develop` below, which
+      # installs the package properly.
+      #
+      # Installing the `dev` extra rather than repeating its contents is what
+      # stops the two drifting. They already did: these jobs installed a
+      # narrower set than the tests import, so mypy could not see pytest's
+      # decorators and the registry-contract test could not shell out to the
+      # generator, neither of which failed locally where the full set is present.
+      - run: uv sync --extra dev --no-install-project
       # Builds the extension against the venv interpreter, so both backends are
       # available and the cross-implementation tests actually run.
       - run: .venv/bin/maturin develop
@@ -88,9 +94,9 @@ jobs:
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v5
-      - run: uv venv --python 3.12
-      # pint is needed for mypy to resolve `azoth.core.units`, not to run.
-      - run: uv pip install ruff mypy "pint>=0.24"
+      # pytest is required here even though nothing is run with it: mypy checks
+      # the tests, and cannot resolve `@pytest.mark.parametrize` without it.
+      - run: uv sync --extra dev --no-install-project
       - run: .venv/bin/ruff check
       - run: .venv/bin/ruff format --check
       # Strict, over both the library and its tests.
@@ -124,10 +130,9 @@ jobs:
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v5
-      - run: uv venv --python 3.12
-      # The generators import the runtime to render bounds, so pint is required
-      # here too - see the note in tools/gen_docs.py.
-      - run: uv pip install pyyaml jsonschema "pint>=0.24"
+      # The generators import the runtime to render bounds, so the full dev set
+      # is needed here - see the note in tools/gen_docs.py.
+      - run: uv sync --extra dev --no-install-project
       # The gate that makes "the docs are generated from the registry" true
       # rather than aspirational. Regenerate everything and fail on any diff:
       # a spec edited without regenerating its docs, registry, or tests is
@@ -200,8 +205,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v5
-      - run: uv venv --python 3.12
-      - run: uv pip install maturin pytest "pint>=0.24"
+      - run: uv sync --extra dev --no-install-project
       - run: .venv/bin/maturin develop
       # A validation case is an external check on a calculation. Anything that
       # disagrees with the recorded numbers fails here.
