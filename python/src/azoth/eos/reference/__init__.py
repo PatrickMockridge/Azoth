@@ -12,8 +12,12 @@ a bug in one of them - and the cross-implementation tests are what catch it.
 
 from __future__ import annotations
 
+from azoth.eos.reference.pr_alpha_ab import OMEGA_A, OMEGA_B, pr_alpha_ab
 from azoth.eos.reference.pr_kappa import pr_kappa
 
 __all__ = [
+    "OMEGA_A",
+    "OMEGA_B",
+    "pr_alpha_ab",
     "pr_kappa",
 ]

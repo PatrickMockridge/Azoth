@@ -6,4 +6,5 @@ Every calculation in this section is generated from its specification. Each page
 
 | Calculation | Equation | Source |
 |---|---|---|
+| [`eos.pr_alpha_ab`](./pr_alpha_ab.md) | $\alpha = \left[1 + \kappa\left(1 - \sqrt{T_{r}}\right)\right]^{2}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pr_kappa`](./pr_kappa.md) | $\kappa = 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2}$ | Peng, D. Y.; Robinson, D. B. (1976) |

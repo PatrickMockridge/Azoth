@@ -27,3 +27,26 @@ impl CalcResult for PrKappaResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.pr_alpha_ab`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrAlphaAbResult {
+    /// The alpha function, where Peng-Robinson's temperature dependence lives.
+    /// A square, so never negative, and exactly 1 at `Tr = 1` whatever `kappa` is.
+    pub alpha: f64,
+    /// `A = a*alpha*P/(R**2*T**2)`, the dimensionless attraction parameter.
+    pub a_reduced: f64,
+    /// `B = b*P/(R*T)`, the dimensionless repulsion parameter.
+    pub b_reduced: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrAlphaAbResult {
+    const CALC_ID: &'static str = "eos.pr_alpha_ab";
+    const FIELDS: &'static [&'static str] = &["alpha", "a_reduced", "b_reduced", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

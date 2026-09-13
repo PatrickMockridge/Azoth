@@ -7,6 +7,7 @@
 //! explicitly, since a wrong coefficient is invisible downstream.
 //!
 //! * [`pr_kappa`] - the Peng-Robinson alpha-function coefficient
+//! * [`pr_alpha_ab`] - the alpha function and the reduced attraction parameters
 //!
 //! # Why the coefficients come first
 //!
@@ -31,9 +32,11 @@
 //! why this crate has no `uom` dependency: the dimensional conversion belongs at
 //! the boundary, in one place, where it can be tested once.
 
+pub mod pr_alpha_ab;
 pub mod pr_kappa;
 pub mod results;
 pub mod spec_gen;
 
+pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
 pub use pr_kappa::pr_kappa;
-pub use results::PrKappaResult;
+pub use results::{PrAlphaAbResult, PrKappaResult};

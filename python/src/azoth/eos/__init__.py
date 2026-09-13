@@ -7,6 +7,7 @@ source and a worked example - and the decomposition is worth having explicitly,
 since a wrong coefficient is invisible downstream.
 
 * :func:`pr_kappa` - the Peng-Robinson alpha-function coefficient
+* :func:`pr_alpha_ab` - the alpha function and the reduced attraction parameters
 
 # Why the coefficients come first
 
@@ -50,13 +51,15 @@ see :func:`azoth.backends` and :func:`azoth.use_backend`.
 from __future__ import annotations
 
 from azoth._dispatch import resolve
-from azoth.core.result import PrKappaResult
+from azoth.core.result import PrAlphaAbResult, PrKappaResult
 
 __all__ = [
+    "pr_alpha_ab",
     "pr_kappa",
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
+_PR_ALPHA_AB = "eos.pr_alpha_ab"
 
 
 def pr_kappa(omega: float) -> PrKappaResult:
@@ -72,3 +75,17 @@ def pr_kappa(omega: float) -> PrKappaResult:
     See :func:`azoth.eos.reference.pr_kappa`.
     """
     return resolve(_PR_KAPPA)(omega=omega)  # type: ignore[no-any-return]
+
+
+def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:
+    """The Peng-Robinson alpha function and the reduced attraction parameters.
+
+    ``a_reduced`` is the cubic's ``A`` and ``b_reduced`` its ``B`` - the form the
+    equation of state is solved in, which needs no gas constant and no unit.
+
+    Raises:
+        OutOfRangeError: if ``Tr <= 0`` or ``Pr <= 0``.
+
+    See :func:`azoth.eos.reference.pr_alpha_ab`.
+    """
+    return resolve(_PR_ALPHA_AB)(kappa=kappa, Tr=Tr, Pr=Pr)  # type: ignore[no-any-return]

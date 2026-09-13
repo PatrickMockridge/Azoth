@@ -243,6 +243,31 @@ class PrKappaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PrAlphaAbResult(_HasWarnings):
+    """Result of ``eos.pr_alpha_ab``.
+
+    Three dimensionless outputs and no ``pint`` quantity, like
+    :class:`PrKappaResult` - this namespace works in reduced variables throughout,
+    so there is no unit anywhere in it to convert or to get wrong.
+
+    ``a_reduced`` and ``b_reduced`` are the ``A`` and ``B`` of the cubic. They are
+    deliberately *not* named ``A`` and ``B``: output names are snake_case, which
+    `spec_lint` enforces, and the conventional symbols appear in the spec's `latex`
+    field instead. That division of labour is the schema's own - `equation` is
+    machine-evaluable, `latex` is typeset for a reader.
+    """
+
+    #: The alpha function, where Peng-Robinson's temperature dependence lives.
+    alpha: float
+    #: ``A = a*alpha*P/(R**2*T**2)``, the dimensionless attraction parameter.
+    a_reduced: float
+    #: ``B = b*P/(R*T)``, the dimensionless repulsion parameter.
+    b_reduced: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """One fitting's contribution to the total resistance coefficient."""
 
@@ -300,4 +325,5 @@ RESULT_TYPES: dict[str, type[object]] = {
     "hydraulics.control_valve_cv": ControlValveCvResult,
     "hydraulics.choked_flow_area": ChokedFlowAreaResult,
     "eos.pr_kappa": PrKappaResult,
+    "eos.pr_alpha_ab": PrAlphaAbResult,
 }

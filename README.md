@@ -105,6 +105,7 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.choked_flow_area` | Throat area for a choked gas flow |
 | `thermal.conduction_plane_wall` | Steady conduction through a slab |
 | `eos.pr_kappa` | The Peng-Robinson alpha-function coefficient |
+| `eos.pr_alpha_ab` | The alpha function and the reduced attraction parameters |
 
 Pipe *with* fittings is a composition of the last two hydraulics calcs, done by the
 `azoth pipe` CLI rather than by a calc of its own, because the two losses use
@@ -114,12 +115,15 @@ Relief valve *sizing* to a standard is not implemented. `hydraulics.choked_flow_
 is the isentropic basis - the throat area a given choked mass flow needs - and the
 de-rating coefficients a standard applies are the caller's to compose.
 
-The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`), not by
-project. They appear in provenance records and citations, so renaming the project
-does not - and should not - invalidate them. Two namespaces exist deliberately:
-the second is what proves the spec pipeline is domain-agnostic rather than shaped
-around pipe flow, since it runs through the same specs, generators, tests and
-documentation with no special case anywhere.
+The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`, `eos.*`),
+not by project. They appear in provenance records and citations, so renaming the
+project does not - and should not - invalidate them. The second namespace is what
+proved the spec pipeline is domain-agnostic rather than shaped around pipe flow,
+since it runs through the same specs, generators, tests and documentation with no
+special case anywhere. The third is where the shapes stop matching: an equation of
+state is written in reduced variables, so it is dimensionless end to end and
+carries no unit at all - which the same pipeline absorbed without a special case
+either.
 
 ## Architecture
 

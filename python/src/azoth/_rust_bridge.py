@@ -36,6 +36,7 @@ from azoth.core.result import (
     KComponent,
     KFactorsResult,
     OrificeFlowResult,
+    PrAlphaAbResult,
     PrKappaResult,
     PumpPowerResult,
     ReynoldsNumberResult,
@@ -171,6 +172,21 @@ def pr_kappa(omega: float) -> PrKappaResult:
     return PrKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
 
 
+def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:
+    """The Peng-Robinson alpha function and reduced parameters, computed in Rust.
+
+    Dimensionless end to end, so like `pr_kappa` there is no conversion in either
+    direction - the numbers that cross are the numbers the callers used.
+    """
+    result = _core.pr_alpha_ab(kappa, Tr, Pr)
+    return PrAlphaAbResult(
+        alpha=result.alpha,
+        a_reduced=result.a_reduced,
+        b_reduced=result.b_reduced,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     """Pump shaft power, computed in Rust."""
     result = _core.pump_power(
@@ -246,6 +262,7 @@ _IMPLEMENTATIONS: dict[str, Callable[..., Any]] = {
     "hydraulics.choked_flow_area": choked_flow_area,
     "thermal.conduction_plane_wall": conduction_plane_wall,
     "eos.pr_kappa": pr_kappa,
+    "eos.pr_alpha_ab": pr_alpha_ab,
 }
 
 

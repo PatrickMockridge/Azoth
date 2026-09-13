@@ -455,6 +455,26 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "kappa", "dimensionless", kappa);
         }
 
+        "eos.pr_alpha_ab" => {
+            let (kappa, tr, pr) = (
+                take(&inputs, "kappa")?,
+                take(&inputs, "Tr")?,
+                take(&inputs, "Pr")?,
+            );
+            let mut alpha = Vec::with_capacity(n);
+            let mut a_reduced = Vec::with_capacity(n);
+            let mut b_reduced = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(py, eos::pr_alpha_ab(kappa[i], tr[i], pr[i]), &mut warnings)?;
+                alpha.push(r.alpha);
+                a_reduced.push(r.a_reduced);
+                b_reduced.push(r.b_reduced);
+            }
+            push_values(&mut columns, "alpha", "dimensionless", alpha);
+            push_values(&mut columns, "a_reduced", "dimensionless", a_reduced);
+            push_values(&mut columns, "b_reduced", "dimensionless", b_reduced);
+        }
+
         other => {
             return Err(pyo3::exceptions::PyNotImplementedError::new_err(format!(
                 "no batch arm for `{other}`"

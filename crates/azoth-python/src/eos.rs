@@ -11,7 +11,7 @@ use azoth_eos as eos;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::results::PyPrKappaResult;
+use crate::results::{PyPrAlphaAbResult, PyPrKappaResult};
 
 /// The Peng-Robinson alpha-function coefficient.
 ///
@@ -24,5 +24,20 @@ use crate::results::PyPrKappaResult;
 pub fn pr_kappa(py: Python<'_>, omega: f64) -> PyResult<PyPrKappaResult> {
     eos::pr_kappa(omega)
         .map(|r| PyPrKappaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Peng-Robinson alpha function and the reduced attraction parameters.
+///
+/// `kappa` comes from `pr_kappa`; `Tr` and `Pr` are reduced against the caller's
+/// critical point. All six quantities are dimensionless, so nothing here touches
+/// units in either direction.
+#[pyfunction]
+#[pyo3(signature = (kappa, Tr, Pr))]
+#[pyo3(text_signature = "(kappa, Tr, Pr)")]
+#[allow(non_snake_case)] // `Tr` and `Pr` are the symbols in the published equation
+pub fn pr_alpha_ab(py: Python<'_>, kappa: f64, Tr: f64, Pr: f64) -> PyResult<PyPrAlphaAbResult> {
+    eos::pr_alpha_ab(kappa, Tr, Pr)
+        .map(|r| PyPrAlphaAbResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

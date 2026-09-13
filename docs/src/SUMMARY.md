@@ -2,6 +2,7 @@
 
 - [azoth](./index.md)
 - [Equations of state](./eos/index.md)
+  - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)
   - [Peng-Robinson attraction-parameter coefficient](./eos/pr_kappa.md)
 - [Hydraulics](./hydraulics/index.md)
   - [Choked-flow throat area for an ideal gas](./hydraulics/choked_flow_area.md)

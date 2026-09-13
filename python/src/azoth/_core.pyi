@@ -112,6 +112,15 @@ class PrKappaResult:
     warnings: list[Warning]
 
 @final
+class PrAlphaAbResult:
+    # All three dimensionless, so bare floats for the same reason `PrKappaResult`
+    # carries one.
+    alpha: float
+    a_reduced: float
+    b_reduced: float
+    warnings: list[Warning]
+
+@final
 class PumpPowerResult:
     power: Qty
     warnings: list[Warning]
@@ -156,6 +165,7 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResult: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
 def pr_kappa(omega: float) -> PrKappaResult: ...
+def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...

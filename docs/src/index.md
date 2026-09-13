@@ -41,9 +41,11 @@ Each page has the same shape, and the order is deliberate:
 
 ## What is implemented
 
-Two namespaces. The first is the hydraulics kernel through Darcy-Weisbach pressure
-drop; the second exists to demonstrate that nothing in the pipeline is shaped
-around it.
+Three namespaces. The first is the hydraulics kernel through Darcy-Weisbach
+pressure drop. The second exists to demonstrate that nothing in the pipeline is
+shaped around it. The third is where the model stops being a correlation over a
+geometry: an equation of state is implicit, mixture-valued, and written in reduced
+variables rather than in quantities with units.
 
 **Hydraulics** - [`hydraulics/index.md`](./hydraulics/index.md):
 
@@ -65,6 +67,7 @@ around it.
 **Equations of state** - [`eos/index.md`](./eos/index.md):
 
 - [`eos.pr_kappa`](./eos/pr_kappa.md)
+- [`eos.pr_alpha_ab`](./eos/pr_alpha_ab.md)
 
 Relief valve *sizing* to a standard is not implemented; `hydraulics.choked_flow_area`
 is the isentropic basis, with the standard's de-rating coefficients left to the caller.

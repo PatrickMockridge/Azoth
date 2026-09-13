@@ -21,9 +21,10 @@ from azoth.batch._core import run, sequence
 from azoth.batch._result import BatchResult
 from azoth.core.warnings import Warning
 
-__all__ = ["PrKappaBatch", "pr_kappa"]
+__all__ = ["PrAlphaAbBatch", "PrKappaBatch", "pr_alpha_ab", "pr_kappa"]
 
 _PR_KAPPA = "eos.pr_kappa"
+_PR_ALPHA_AB = "eos.pr_alpha_ab"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -58,5 +59,55 @@ def pr_kappa(*, omega: Sequence[float]) -> PrKappaBatch:
         _PR_KAPPA,
         {"omega": sequence(omega, "omega")},
         _build,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrAlphaAbBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_alpha_ab`."""
+
+    #: The alpha function per element. Dimensionless.
+    alpha: array[float]
+    #: The cubic's ``A`` per element. Dimensionless.
+    a_reduced: array[float]
+    #: The cubic's ``B`` per element. Dimensionless.
+    b_reduced: array[float]
+
+
+def _build_alpha_ab(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrAlphaAbBatch:
+    return PrAlphaAbBatch(
+        warnings=warnings,
+        units=units,
+        alpha=columns["alpha"],  # type: ignore[arg-type]
+        a_reduced=columns["a_reduced"],  # type: ignore[arg-type]
+        b_reduced=columns["b_reduced"],  # type: ignore[arg-type]
+    )
+
+
+def pr_alpha_ab(
+    *,
+    kappa: Sequence[float],
+    Tr: Sequence[float],
+    Pr: Sequence[float],
+) -> PrAlphaAbBatch:
+    """The alpha function and reduced parameters, over arrays.
+
+    All six quantities are dimensionless, so ``Tr`` and ``Pr`` here are the bare
+    reduced values - not temperatures or pressures in any unit. See
+    :func:`azoth.eos.pr_alpha_ab` for the calculation itself.
+    """
+    result: PrAlphaAbBatch = run(
+        _PR_ALPHA_AB,
+        {
+            "kappa": sequence(kappa, "kappa"),
+            "Tr": sequence(Tr, "Tr"),
+            "Pr": sequence(Pr, "Pr"),
+        },
+        _build_alpha_ab,
     )
     return result

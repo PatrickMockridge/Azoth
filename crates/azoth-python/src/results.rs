@@ -16,7 +16,7 @@ use azoth_core::CalcResult;
 use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
-use azoth_eos::results::PrKappaResult;
+use azoth_eos::results::{PrAlphaAbResult, PrKappaResult};
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -491,6 +491,55 @@ impl From<&PrKappaResult> for PyPrKappaResult {
     }
 }
 
+/// Result of `eos.pr_alpha_ab`, transported.
+///
+/// Three dimensionless outputs, so three bare `f64`s and no [`PyQty`].
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrAlphaAbResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrAlphaAbResult {
+    /// The alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// The cubic's `A`. Dimensionless.
+    #[pyo3(get)]
+    pub a_reduced: f64,
+    /// The cubic's `B`. Dimensionless.
+    #[pyo3(get)]
+    pub b_reduced: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrAlphaAbResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrAlphaAbResult(alpha={}, a_reduced={}, b_reduced={}, {} warning(s))",
+            self.alpha,
+            self.a_reduced,
+            self.b_reduced,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&PrAlphaAbResult> for PyPrAlphaAbResult {
+    fn from(r: &PrAlphaAbResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            a_reduced: r.a_reduced,
+            b_reduced: r.b_reduced,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&ConductionPlaneWallResult> for PyConductionPlaneWallResult {
     fn from(r: &ConductionPlaneWallResult) -> Self {
         Self {
@@ -707,6 +756,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChokedFlowAreaResult::CALC_ID => ChokedFlowAreaResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
+        PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -731,6 +781,7 @@ pub fn calc_ids() -> Vec<String> {
         ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
         PrKappaResult::CALC_ID.to_string(),
+        PrAlphaAbResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),
