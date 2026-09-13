@@ -22,10 +22,15 @@
 //! so the test suite can assert cross-language agreement without parsing Rust
 //! source. They are the mechanism behind the claims that the two implementations
 //! share a warning vocabulary, a unit vocabulary and a result shape.
+//!
+//! `data_files`, `fittings_rows` and `fluid_rows` do the same job for the data the
+//! calcs are built from. See `data.rs` - the claim that both languages read the same
+//! tables was made in four docstrings before anything checked it.
 
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 
+mod data;
 mod errors;
 mod hydraulics;
 mod results;
@@ -57,6 +62,11 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyOrificeFlowResult>()?;
     m.add_class::<PyControlValveCvResult>()?;
     m.add_class::<PyChokedFlowAreaResult>()?;
+
+    // Data transport, for the cross-language data comparison.
+    m.add_class::<data::PyDataFile>()?;
+    m.add_class::<data::PyFittingRow>()?;
+    m.add_class::<data::PyFluidRow>()?;
     m.add_class::<PyKFactorsResult>()?;
     m.add_class::<PyDarcyWeisbachResult>()?;
 
@@ -80,6 +90,9 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(thermal::conduction_plane_wall, m)?)?;
 
     // Introspection.
+    m.add_function(wrap_pyfunction!(data::data_files, m)?)?;
+    m.add_function(wrap_pyfunction!(data::fittings_rows, m)?)?;
+    m.add_function(wrap_pyfunction!(data::fluid_rows, m)?)?;
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;
     m.add_function(wrap_pyfunction!(results::unit_names, m)?)?;
     m.add_function(wrap_pyfunction!(results::result_fields, m)?)?;

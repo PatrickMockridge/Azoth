@@ -12,6 +12,33 @@ below - see `azoth._rust_bridge`.
 from typing import final
 
 @final
+class DataFile:
+    name: str
+    path: str
+    text: str
+
+@final
+class FittingRow:
+    id: str
+    family: str
+    name: str
+    n_ld: float
+    f_t_basis: str
+    citation: str
+    verify_status: str
+    source_ref: str | None
+    source_locator: str | None
+
+@final
+class FluidRow:
+    fluid: str
+    temperature_c: float
+    density_kg_m3: float
+    dynamic_viscosity_pa_s: float
+    citation: str
+    verify_status: str
+
+@final
 class Qty:
     """A physical quantity: always SI magnitude, plus a canonical unit label."""
 
@@ -119,6 +146,9 @@ def darcy_weisbach(
 
 # --- introspection --------------------------------------------------------
 
+def data_files() -> list[DataFile]: ...
+def fittings_rows() -> list[FittingRow]: ...
+def fluid_rows(name: str) -> list[FluidRow]: ...
 def warning_codes() -> list[str]: ...
 def unit_names() -> list[str]: ...
 def result_fields(calc_id: str) -> list[str]: ...

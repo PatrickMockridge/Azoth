@@ -65,6 +65,7 @@ SHARED = (
     # One PyO3 results module for every namespace: the transport types and the
     # introspection functions are shared, and only the per-namespace calc wrappers
     # are not - see NAMESPACE_SUPPORT.
+    "crates/azoth-python/src/data.rs",
     "crates/azoth-python/src/results.rs",
     "python/src/azoth/core/range.py",
     "python/src/azoth/core/units.py",

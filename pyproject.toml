@@ -56,6 +56,12 @@ python-source = "python/src"
 module-name = "azoth._core"
 manifest-path = "crates/azoth-python/Cargo.toml"
 features = ["pyo3/extension-module"]
+# The CSV tables, so an installed wheel can find its own data. `include` copies a
+# file to its path relative to the project root, and maturin 1.15 offers no way to
+# redirect that - so the wheel carries `data/...` at the distribution root rather
+# than inside the `azoth` package. `azoth/_data.py` searches both, because the two
+# ways of shipping data land in different places.
+include = ["data/fittings/*.csv", "data/fluids/*.csv"]
 
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]

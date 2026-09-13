@@ -6,12 +6,12 @@
 //! path from the repository, so the two implementations read one file rather than
 //! two copies that are supposed to match.
 //!
-//! Reading the same bytes is not the same as being checked against each other,
-//! and the parsed coefficients are **not** compared row by row. The Python side
-//! cannot reach this parser: the compiled extension exposes the calcs but not the
-//! registry, so a Python test has no Rust-parsed value to compare against. The
-//! gap is recorded rather than papered over, because a docstring claiming a check
-//! that does not exist is the failure this project exists to prevent.
+//! Reading the same bytes is not the same as being checked against each other, and
+//! the two *are* checked against each other: `python/tests/test_data_agreement.py`
+//! compares every parsed coefficient row by row against `registry()` here, and
+//! compares the embedded bytes against the file the Python side reads. The second
+//! check is why [`embedded_csv`] exists - parsed values can agree across two
+//! different files, and a stale copy in a wheel would look exactly like that.
 //!
 //! **Every coefficient in that file is currently an estimated dummy value, not
 //! engineering data.** See the file's header. [`Fitting::is_estimated`] reports
@@ -124,6 +124,24 @@ fn optional(raw: &str) -> Option<String> {
 
 fn record_field_index(name: &str) -> usize {
     COLUMNS.iter().position(|c| *c == name).unwrap_or(0)
+}
+
+/// The exact CSV text this crate embeds.
+///
+/// Exposed so the Python side can compare the bytes *it* read against the bytes this
+/// crate parsed. Parsed values agreeing is a weaker claim than the same bytes being
+/// read: two different files can parse to the same values, and a stale copy bundled
+/// into a wheel would look exactly like that - an agreement that proves nothing.
+#[must_use]
+pub fn embedded_csv() -> &'static str {
+    FITTINGS_CSV
+}
+
+/// Repo-relative path of the embedded registry, for a caller that wants to find the
+/// same file on disk.
+#[must_use]
+pub fn embedded_path() -> &'static str {
+    "data/fittings/crane_k_factors.csv"
 }
 
 /// The registry, parsed once.

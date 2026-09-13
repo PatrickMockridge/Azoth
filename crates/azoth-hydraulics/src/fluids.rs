@@ -4,19 +4,18 @@
 //! one source of truth, two languages. The Rust side embeds them with
 //! `include_str!`; the Python side locates them at runtime.
 //!
-//! # What the two sides do not check
+//! # The cross-language comparison
 //!
-//! The two parsers are not compared. They read the same bytes, but that is a
-//! fact about the repository rather than a property either implementation
-//! enforces, and the parsers themselves are genuinely different code - Python's
-//! `csv` module and `float()` against the `csv` crate and `f64::from_str`, which
-//! do not have to agree on quoting, byte-order marks or exponent notation.
+//! Both sides *are* compared. `python/tests/test_data_agreement.py` checks every
+//! parsed field row by row against this crate's, and checks that the two sides read
+//! byte-identical files.
 //!
-//! A cross-language comparison cannot be written from here: the compiled
-//! extension exposes the calcs but not these tables, so there is no Rust-parsed
-//! value for a Python test to compare against. This is a known gap rather than an
-//! oversight - it is stated plainly because a docstring claiming a check that
-//! does not exist is the exact failure this project is organised against.
+//! The byte comparison is the stronger of the two and is why [`embedded_csv`] exists.
+//! The parsers are genuinely different code - Python's `csv` module and `float()`
+//! against the `csv` crate and `f64::from_str` - so a field comparison catches a
+//! divergence between them, but two *different files* can parse to the same values,
+//! and a stale copy bundled into a wheel would look exactly like agreement. A hash of
+//! the bytes does not have that blind spot.
 //!
 //! # Provenance
 //!
@@ -196,6 +195,29 @@ fn parse(name: &str, raw: &str) -> Result<FluidTable> {
         name: name.to_string(),
         points,
     })
+}
+
+/// The exact CSV text this crate embeds for a fluid, or `None` if it is not built in.
+///
+/// See [`crate::fittings::embedded_csv`] for why the raw bytes are exposed rather than
+/// only the parsed values.
+#[must_use]
+pub fn embedded_csv(name: &str) -> Option<&'static str> {
+    match name.trim().to_lowercase().as_str() {
+        "water" => Some(WATER_CSV),
+        "air" => Some(AIR_CSV),
+        _ => None,
+    }
+}
+
+/// Repo-relative path of a built-in fluid's embedded table, or `None` if unknown.
+#[must_use]
+pub fn embedded_path(name: &str) -> Option<&'static str> {
+    match name.trim().to_lowercase().as_str() {
+        "water" => Some("data/fluids/water.csv"),
+        "air" => Some("data/fluids/air.csv"),
+        _ => None,
+    }
 }
 
 /// Water at 1 atm, tabulated 0-100 C.

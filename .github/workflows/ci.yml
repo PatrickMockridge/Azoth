@@ -85,6 +85,34 @@ jobs:
           # does not get a different result because their shell sets it.
           PYTHONPATH: ""
 
+  wheel-data:
+    name: wheel-data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: python -m pip install --upgrade pip maturin
+      # A release build, because this job is about the artifact a user installs
+      # rather than about the code.
+      - run: maturin build --release -o dist
+      # A venv of its own, so the wheel is installed rather than the source tree.
+      # `python/src` is deliberately not on the path: the whole point is to run
+      # what a user would get.
+      - run: python -m venv /tmp/wheel-venv
+      - run: /tmp/wheel-venv/bin/pip install dist/*.whl
+      # Run from outside the repository. From inside it, `azoth/_data.py` walks up
+      # and finds `data/` at the repo root, so every check below would pass on a
+      # wheel that shipped no data at all - which is the failure this job exists
+      # for. The script also asserts that the resolved files are not in the repo,
+      # so a run that accidentally had the source tree in reach fails rather than
+      # passing quietly.
+      - name: Resolve the data from an installed wheel
+        run: cd /tmp && /tmp/wheel-venv/bin/python "$GITHUB_WORKSPACE/tools/check_wheel_data.py"
+
   python-lint:
     name: python-lint
     runs-on: ubuntu-latest
