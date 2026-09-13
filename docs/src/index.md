@@ -114,6 +114,19 @@ The documentation, the range checks both implementations enforce, and the test
 cases both implementations run are all generated from that one file. If you can
 write the spec, you have written the calc, the tests and the docs.
 
+A few things are deliberately **not** generated, and a test is what makes
+omitting one fail the build rather than fail at call time: the result dataclasses
+on both sides, which are the cross-language shape contract; the batch wrapper;
+and the two hand-maintained lists of what is implemented.
+
+## The batch API
+
+[`azoth.batch`](./batch.md) evaluates any of these calculations over arrays, with
+one call crossing into the Rust core instead of N. It is a loop over the same
+scalar kernels, not a second implementation, so the cross-language claim is
+unchanged - and it deliberately gives up one thing the scalar API provides, which
+is unit checking. See the [batch page](./batch.md) before using it.
+
 ## Licence
 
 The code is **AGPL-3.0-or-later**. The documentation and the reference data are

@@ -145,9 +145,14 @@ overhead exceeds the cost of the arithmetic. Its value here is being a *second
 independent implementation* to cross-check the first against, plus a path to
 performance that does not require rewriting the maths.
 
-If performance is your goal, the win is a batch API operating on arrays, which is
-not implemented. This section exists so nobody adopts the current design for a
-reason it does not support.
+If performance is your goal, the win is the batch API, which **is** implemented:
+`azoth.batch.hydraulics` and `azoth.batch.thermal` evaluate one calculation over
+arrays, crossing the language boundary once instead of N times. It is a loop over
+the same scalar kernels, not a vectorised second implementation, so it does not
+weaken the two-implementation claim - see `docs/src/batch.md`.
+
+The single-call path is still not the fast one, and this section exists so nobody
+adopts the current design for a reason it does not support.
 
 ## The specs are the source of truth
 

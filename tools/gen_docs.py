@@ -60,7 +60,10 @@ NAMESPACES = {"hydraulics": "Hydraulics", "thermal": "Heat transfer"}
 #: any page under docs/src that is missing from it. So a hand-written page has to
 #: be registered here or it does not appear at all - and the failure is caught
 #: rather than being a page nobody ever reads.
-STATIC_PAGES = (("Copyright and licensed data", "copyright.md"),)
+STATIC_PAGES = (
+    ("Copyright and licensed data", "copyright.md"),
+    ("The batch API", "batch.md"),
+)
 
 
 def namespace_dir(namespace: str) -> Path:

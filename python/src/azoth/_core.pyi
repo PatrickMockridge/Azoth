@@ -55,6 +55,18 @@ class Warning:
     field: str | None
 
 @final
+class BatchColumn:
+    name: str
+    unit: str
+    values: list[float] | None
+    labels: list[str | None] | None
+
+@final
+class BatchResult:
+    columns: list[BatchColumn]
+    warnings: list[list[Warning]]
+
+@final
 class KComponent:
     """One fitting's contribution to the total resistance coefficient."""
 
@@ -146,6 +158,7 @@ def darcy_weisbach(
 
 # --- introspection --------------------------------------------------------
 
+def batch_run(calc_id: str, inputs: dict[str, list[float]]) -> BatchResult: ...
 def data_files() -> list[DataFile]: ...
 def fittings_rows() -> list[FittingRow]: ...
 def fluid_rows(name: str) -> list[FluidRow]: ...

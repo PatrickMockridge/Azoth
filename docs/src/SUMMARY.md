@@ -15,4 +15,5 @@
 - [Heat transfer](./thermal/index.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
 - [Copyright and licensed data](./copyright.md)
+- [The batch API](./batch.md)
 - [Solvers](./theory/solvers.md)

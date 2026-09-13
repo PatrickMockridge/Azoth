@@ -30,6 +30,7 @@
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 
+mod batch;
 mod data;
 mod errors;
 mod hydraulics;
@@ -64,6 +65,8 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyChokedFlowAreaResult>()?;
 
     // Data transport, for the cross-language data comparison.
+    m.add_class::<batch::PyBatchColumn>()?;
+    m.add_class::<batch::PyBatchResult>()?;
     m.add_class::<data::PyDataFile>()?;
     m.add_class::<data::PyFittingRow>()?;
     m.add_class::<data::PyFluidRow>()?;
@@ -90,6 +93,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(thermal::conduction_plane_wall, m)?)?;
 
     // Introspection.
+    m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;
     m.add_function(wrap_pyfunction!(data::data_files, m)?)?;
     m.add_function(wrap_pyfunction!(data::fittings_rows, m)?)?;
     m.add_function(wrap_pyfunction!(data::fluid_rows, m)?)?;
