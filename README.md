@@ -126,6 +126,17 @@ Relief valve *sizing* to a standard is not implemented. `hydraulics.choked_flow_
 is the isentropic basis - the throat area a given choked mass flow needs - and the
 de-rating coefficients a standard applies are the caller's to compose.
 
+A mixture **critical point** is not implemented either, and it is worth saying why
+rather than leaving a gap. The obvious route - solving `dP/dV = d2P/dV2 = 0` at fixed
+composition - is exact for a pure component but predicts the *same* `Z_c` for every
+mixture, because in reduced variables those two conditions have a single universal
+root. That makes it a plausible-looking wrong number for any mixture, which is the
+failure this library is organised against, so it is not shipped. The correct method
+is Heidemann & Khalil (1980), *AIChE Journal* 26(5), 769-779, and its defining
+formulas are not stated in any open source - reading the paper is the work item that
+unblocks it. `eos.bubble_pressure` and `eos.dew_pressure` are implemented and are
+what a phase-boundary calculation usually wants.
+
 The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`, `eos.*`),
 not by project. They appear in provenance records and citations, so renaming the
 project does not - and should not - invalidate them. The second namespace is what
