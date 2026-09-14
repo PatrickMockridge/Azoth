@@ -221,6 +221,15 @@ def test_every_result_carries_the_calc_id(calc: dict[str, Any]) -> None:
     assert callable(reference)
 
 
+#: Parameters a public wrapper may take that are not spec inputs.
+#:
+#: The keycard is not an input to a calculation - it is the authority the call reads
+#: its data under - so it does not belong in a spec's `inputs:` and it does not reach
+#: the kernels. Named rather than matched by a pattern, so adding a second one is a
+#: deliberate edit to this set rather than a name that happens to look like plumbing.
+_CAPABILITY_PARAMETERS = frozenset({"card"})
+
+
 @pytest.mark.parametrize("calc", CALCS, ids=lambda c: c["id"])
 def test_spec_inputs_match_function_signatures(calc: dict[str, Any]) -> None:
     """Spec inputs, the dispatched function's parameters, and the reference
@@ -228,12 +237,19 @@ def test_spec_inputs_match_function_signatures(calc: dict[str, Any]) -> None:
 
     This is the anti-drift check on the *input* side, and it is the one a reviewer
     would otherwise have to do by eye across three files in two languages.
+
+    The public wrapper is allowed the capability parameters above; the **reference
+    implementation is not**, and that asymmetry is the point. A card is resolved at
+    the boundary, so a kernel that took one would be reading the caller's authority
+    itself rather than the values it was handed - which is the thing making the card
+    a parameter is supposed to prevent.
     """
     namespace, _, function_name = calc["id"].rpartition(".")
 
     declared = set(calc["inputs"])
     public = namespace_module(calc["id"])
-    dispatched = set(inspect.signature(getattr(public, function_name)).parameters)
+    signature = inspect.signature(getattr(public, function_name))
+    dispatched = set(signature.parameters) - _CAPABILITY_PARAMETERS
     reference = set(
         inspect.signature(
             getattr(reference_module(calc["id"], function_name), function_name)
@@ -248,6 +264,20 @@ def test_spec_inputs_match_function_signatures(calc: dict[str, Any]) -> None:
         f"{calc['id']}: the reference implementation takes {sorted(reference)} "
         f"but the spec declares {sorted(declared)}"
     )
+
+    # A capability parameter must be keyword-only and defaulted, or it is a
+    # positional argument a caller can shift by accident and a required one that
+    # makes every existing call site fail.
+    for name, parameter in signature.parameters.items():
+        if name not in _CAPABILITY_PARAMETERS:
+            continue
+        assert parameter.kind is inspect.Parameter.KEYWORD_ONLY, (
+            f"{calc['id']}: {name} is not keyword-only, so a caller can pass it "
+            f"positionally and shift the inputs beside it"
+        )
+        assert parameter.default is not inspect.Parameter.empty, (
+            f"{calc['id']}: {name} has no default, so every call must pass it"
+        )
     # The namespace above is derived from the id, so this asserts the derivation
     # agrees with what the spec's own implementation path claims - the check that
     # used to be a hardcoded equality against "hydraulics".

@@ -178,14 +178,18 @@ def _kij() -> dict[tuple[str, str], float]:
     return pairs
 
 
-def available() -> tuple[str, ...]:
-    """Every name available, sorted: the databank plus whatever a keycard adds."""
-    card = keycard.current()
+def available(*, card: keycard.Keycard | None = None) -> tuple[str, ...]:
+    """Every name available, sorted: the databank plus whatever a card adds.
+
+    `card` is the card this call reads; the loaded one is consulted when none is
+    passed. See :func:`azoth.keycard.in_force`.
+    """
+    card = keycard.in_force(card)
     extra = set(card.components) if card is not None else set()
     return tuple(sorted(set(_table()) | extra))
 
 
-def entry(name: str) -> DatabankEntry:
+def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
     """One substance's full record, with any keycard override already applied.
 
     A keycard wins over the databank, by name, parameter by parameter: a card that
@@ -203,7 +207,7 @@ def entry(name: str) -> DatabankEntry:
     """
     key = name.strip().lower()
     base = _table().get(key)
-    card = keycard.current()
+    card = keycard.in_force(card)
     override = card.component(key) if card is not None else None
 
     if override is None:
@@ -270,16 +274,18 @@ def _as_float(value: Q, name: str) -> float:
     return float(value.to("dimensionless").magnitude)
 
 
-def component(name: str) -> Component:
+def component(name: str, *, card: keycard.Keycard | None = None) -> Component:
     """One substance as a calculation takes it - `Tc`, `Pc` and `omega`.
 
     Raises:
         PropertyUnavailableError: as :func:`entry`.
     """
-    return entry(name).component()
+    return entry(name, card=card).component()
 
 
-def kij_for(names: tuple[str, ...]) -> dict[tuple[int, int], float]:
+def kij_for(
+    names: tuple[str, ...], *, card: keycard.Keycard | None = None
+) -> dict[tuple[int, int], float]:
     """The interaction pairs the databank knows, for a list of components.
 
     Only pairs where both names are present are returned, and only where a value
@@ -292,7 +298,7 @@ def kij_for(names: tuple[str, ...]) -> dict[tuple[int, int], float]:
 
     Keyed by index into `names`, which is the form `mixture()` takes.
     """
-    card = keycard.current()
+    card = keycard.in_force(card)
     pairs: dict[tuple[int, int], float] = {}
     for i, a in enumerate(names):
         for j in range(i + 1, len(names)):
@@ -307,7 +313,7 @@ def kij_for(names: tuple[str, ...]) -> dict[tuple[int, int], float]:
     return pairs
 
 
-def from_names(names: list[str]) -> Mixture:
+def from_names(names: list[str], *, card: keycard.Keycard | None = None) -> Mixture:
     """A :class:`~azoth.eos.mixture.Mixture` from a list of databank names.
 
     The interaction parameters come from the databank too, so a caller writing
@@ -323,11 +329,13 @@ def from_names(names: list[str]) -> Mixture:
         InvalidInputError: if the list is empty, or a pair is malformed.
     """
     resolved = [name.strip().lower() for name in names]
-    components = tuple(component(name) for name in resolved)
-    return mixture(components, kij=kij_for(tuple(resolved)))
+    components = tuple(component(name, card=card) for name in resolved)
+    return mixture(components, kij=kij_for(tuple(resolved), card=card))
 
 
-def mixture_of(names: list[str]) -> tuple[Mixture, IdealGasModel]:
+def mixture_of(
+    names: list[str], *, card: keycard.Keycard | None = None
+) -> tuple[Mixture, IdealGasModel]:
     """A mixture and its ideal-gas model, from a list of databank names.
 
     The two come back together because they are one object in practice: a mixture
@@ -355,7 +363,7 @@ def mixture_of(names: list[str]) -> tuple[Mixture, IdealGasModel]:
     if not names:
         raise InvalidInputError("components", "a mixture needs at least one component")
     resolved = [name.strip().lower() for name in names]
-    entries = [entry(name) for name in resolved]
+    entries = [entry(name, card=card) for name in resolved]
 
     missing = [e.name for e in entries if e.cp is None]
     if missing:
@@ -369,7 +377,7 @@ def mixture_of(names: list[str]) -> tuple[Mixture, IdealGasModel]:
     return (
         mixture(
             tuple(e.component() for e in entries),
-            kij=kij_for(tuple(resolved)),
+            kij=kij_for(tuple(resolved), card=card),
         ),
         IdealGasModel(
             cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]
@@ -381,7 +389,7 @@ def mixture_of(names: list[str]) -> tuple[Mixture, IdealGasModel]:
     )
 
 
-def from_model(name: str) -> Mixture:
+def from_model(name: str, *, card: keycard.Keycard | None = None) -> Mixture:
     """A :class:`~azoth.eos.mixture.Mixture` from a model a keycard declares.
 
     A keycard's ``models`` section names a cubic variant and the substances it is for
@@ -400,7 +408,7 @@ def from_model(name: str) -> Mixture:
         PropertyUnavailableError: from :func:`from_names`, if a component of the model
             cannot be resolved.
     """
-    card = keycard.current()
+    card = keycard.in_force(card)
     model = card.model(name) if card is not None else None
     if model is None:
         where = "the loaded keycard" if card is not None else "no keycard is loaded"
@@ -412,7 +420,7 @@ def from_model(name: str) -> Mixture:
             f"keycard's `models` section, not something a calculation resolves on "
             f"its own.",
         )
-    return from_names(list(model.components))
+    return from_names(list(model.components), card=card)
 
 
 # Imported at the bottom because `mixture` lives with the types this module builds

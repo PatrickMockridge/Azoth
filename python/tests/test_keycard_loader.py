@@ -22,6 +22,7 @@ are still hand-written beside this module, and are the ones the comparison prote
 
 from __future__ import annotations
 
+import inspect
 import json
 from pathlib import Path
 from typing import Any
@@ -435,3 +436,106 @@ def test_the_template_is_valid_yaml_with_a_version() -> None:
     """A guard against the file being replaced by prose during an edit."""
     document = yaml.safe_load(TEMPLATE.read_text(encoding="utf-8"))
     assert document["schema_version"] == keycard.SCHEMA_VERSION
+
+
+# ---------------------------------------------------------------------------
+# Which card a call reads
+# ---------------------------------------------------------------------------
+
+
+def a_card(omega: float) -> keycard.Keycard:
+    """A keycard overriding one parameter, so two of them differ observably."""
+    return keycard.use(
+        minimal(components={"methane": {"omega": {"value": omega, "unit": "dimensionless"}}})
+    )
+
+
+def test_an_explicit_card_wins_over_the_loaded_one() -> None:
+    """The precedence `spec.md` states for a coefficient, applied to the card itself.
+
+    Both directions are asserted, and they are different. A call that passes no card
+    reads the loaded one - which is what "one keycard in force" means, and what every
+    existing caller relies on. A call that *does* pass one reads that card and not the
+    loaded one, which is the capability being a value: a caller who hands a card to a
+    call is stating it for that call, and reading a file loaded an hour ago instead
+    would be the surprise the keycard rules exist to prevent.
+
+    A test that only checked the second would pass with the parameter ignored and the
+    global read anyway, so both are here.
+    """
+    loaded = a_card(0.5)
+    explicit = a_card(0.25)
+
+    # No card passed: the loaded one answers. `a_card` sets the global, so the second
+    # call left 0.25 in force and the first card is the one being held explicitly.
+    assert eos.components.entry("methane").omega == pytest.approx(0.25)
+
+    # A card passed: it answers, and the loaded one is not consulted.
+    assert eos.components.entry("methane", card=loaded).omega == pytest.approx(0.5)
+    assert eos.components.entry("methane", card=explicit).omega == pytest.approx(0.25)
+
+    # And the global is unchanged by a call that passed one, which is what makes the
+    # precedence a precedence rather than a mutation.
+    assert eos.components.entry("methane").omega == pytest.approx(0.25)
+
+
+def test_the_card_reaches_the_coefficient_path_too() -> None:
+    """A coefficient, not just a component, comes from the card the call passed.
+
+    The two read different sections of the same object, and the resolver is the same
+    function, so this is a check that the parameter was threaded rather than that the
+    resolver works. `orifice_flow` is the calc with a coefficient a card can supply.
+    """
+    from azoth.core.units import quantity
+    from azoth.hydraulics import orifice_flow
+    from azoth.keycard import coefficient_value
+
+    def a_cd(value: float) -> keycard.Keycard:
+        return keycard.use(
+            minimal(
+                coefficients={
+                    "hydraulics.orifice_flow": {"Cd": {"value": value, "unit": "dimensionless"}}
+                }
+            )
+        )
+
+    # The second `use` leaves 0.61 in force, so `explicit` is also the loaded card and
+    # `loaded` is the one only being held explicitly.
+    loaded = a_cd(0.60)
+    explicit = a_cd(0.61)
+
+    assert coefficient_value("hydraulics.orifice_flow", "Cd", None, card=loaded) == pytest.approx(
+        0.60
+    )
+    assert coefficient_value("hydraulics.orifice_flow", "Cd", None, card=explicit) == pytest.approx(
+        0.61
+    )
+    assert coefficient_value("hydraulics.orifice_flow", "Cd", None) == pytest.approx(0.61)
+
+    # Through the public calc, so the argument is threaded the whole way rather than
+    # only as far as the helper above. `Cd` scales the flow linearly, so the ratio
+    # between two cards is the ratio of their coefficients and nothing else - which is
+    # what makes this a statement about *which* card answered rather than about the
+    # arithmetic.
+    bore = quantity(50.0, "mm")
+    drop = quantity(10_000.0, "Pa")
+    density = quantity(998.0, "kg/m**3")
+    at_60 = orifice_flow(bore, drop, density, card=loaded).q.to("m**3/s").magnitude
+    at_61 = orifice_flow(bore, drop, density, card=explicit).q.to("m**3/s").magnitude
+    assert at_61 == pytest.approx(at_60 * 0.61 / 0.60)
+
+    # And with no card passed, the loaded one answers - `explicit`, since `use` was
+    # called on it last.
+    assert orifice_flow(bore, drop, density).q.to("m**3/s").magnitude == pytest.approx(at_61)
+
+
+def test_a_kernel_does_not_take_a_card() -> None:
+    """The reference implementations take spec inputs only, and no capability.
+
+    A kernel that took a card would be reading the caller's authority itself rather
+    than the values it was handed. The card is resolved at the boundary, and
+    `test_registry_contract.py` asserts the same asymmetry across every calc.
+    """
+    from azoth.hydraulics.reference import orifice_flow as reference
+
+    assert "card" not in inspect.signature(reference).parameters

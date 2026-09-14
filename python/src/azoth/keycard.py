@@ -186,6 +186,22 @@ def current() -> Keycard | None:
     return _current
 
 
+def in_force(card: Keycard | None = None) -> Keycard | None:
+    """The card a call should read, given the one its caller passed.
+
+    **An explicit card wins and the loaded one is not consulted** — the precedence
+    `spec.md` states for a coefficient, applied to the card itself. A caller who
+    hands a card to one call is stating it for that call, and reading a file loaded
+    an hour ago instead would be the same surprise in a worse place.
+
+    Resolved at each read site rather than only at the public boundary, so a call
+    that goes through several of them threads one card down rather than re-resolving
+    at every step — and a card that arrives already resolved passes through
+    unchanged.
+    """
+    return card if card is not None else _current
+
+
 def clear() -> None:
     """Unload the keycard, returning the library to the data it ships."""
     global _current
@@ -497,13 +513,17 @@ def _models(raw: Any, where: str) -> dict[str, Model]:
     return out
 
 
-def coefficient_value(calc_id: str, name: str, given: Any) -> Any:
-    """A coefficient for a calculation: what the caller passed, else the keycard's.
+def coefficient_value(calc_id: str, name: str, given: Any, *, card: Keycard | None = None) -> Any:
+    """A coefficient for a calculation: what the caller passed, else the card's.
 
     The schema states the precedence and this implements it - **an explicit argument
     always wins, and the keycard is not consulted**. That direction matters: a caller
     who writes ``Cd=0.61`` is stating a value for this call, and quietly overriding it
     from a file they loaded an hour ago would be the worst kind of surprise.
+
+    The same precedence applies to `card` itself, one level up: a card passed to this
+    call is the one read, and the loaded one is consulted only when none was. See
+    :func:`in_force`.
 
     The value is converted against the *spec's* declared unit for that input, so a
     keycard coefficient declared in bar and read as pascal is caught here rather than
@@ -522,7 +542,7 @@ def coefficient_value(calc_id: str, name: str, given: Any) -> Any:
     if given is not None:
         return given
 
-    card = current()
+    card = in_force(card)
     supplied = card.coefficient(calc_id, name) if card is not None else None
     if supplied is None:
         holder = f"the keycard from {card.keyholder!r}" if card and card.keyholder else "no keycard"

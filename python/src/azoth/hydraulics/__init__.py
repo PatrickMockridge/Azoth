@@ -55,6 +55,7 @@ from azoth.core.result import (
     SwameeJainResult,
 )
 from azoth.core.units import Q
+from azoth.keycard import Keycard
 
 __all__ = [
     "choked_flow_area",
@@ -153,7 +154,14 @@ def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
     return resolve(_PUMP_POWER)(rho=rho, q=q, H=H, eta=eta)  # type: ignore[no-any-return]
 
 
-def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float | None = None) -> OrificeFlowResult:
+def orifice_flow(
+    d: Q,
+    dP: Q,
+    rho: Q,
+    Cd: float | None = None,
+    *,
+    card: Keycard | None = None,
+) -> OrificeFlowResult:
     """Volumetric flow through an orifice.
 
     ``Cd`` is the discharge coefficient and is supplied rather than computed: the
@@ -166,6 +174,10 @@ def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float | None = None) -> OrificeFlowRes
     ``coefficients.hydraulics.orifice_flow.Cd``. An explicit argument always wins and
     the keycard is not consulted - see :func:`azoth.keycard.coefficient_value`.
 
+    `card` is the keycard this call reads, and the loaded one is consulted when none
+    is passed. The same precedence applies to it as to ``Cd``: a card handed to this
+    call is the one used, and a file loaded an hour ago is not.
+
     ``d`` is the bore and is declared in millimetres, as bores are quoted; any length
     is accepted. ``dP`` is a magnitude and may not be negative.
 
@@ -177,7 +189,10 @@ def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float | None = None) -> OrificeFlowRes
     See :func:`azoth.hydraulics.reference.orifice_flow`.
     """
     return resolve(_ORIFICE_FLOW)(  # type: ignore[no-any-return]
-        d=d, dP=dP, rho=rho, Cd=keycard.coefficient_value(_ORIFICE_FLOW, "Cd", Cd)
+        d=d,
+        dP=dP,
+        rho=rho,
+        Cd=keycard.coefficient_value(_ORIFICE_FLOW, "Cd", Cd, card=card),
     )
 
 
