@@ -5,20 +5,18 @@
 //! cases from those tables rather than restating them. That is what makes a spec
 //! authoritative at runtime instead of merely descriptive.
 //!
-//! # Why these live in `azoth-core` and not in the generated file
+//! # Why these live in `azoth-core` and not in a generated file
 //!
-//! They were generated into `crates/azoth-hydraulics/src/spec_gen.rs`, which was
-//! fine while there was exactly one namespace. With two, each namespace crate would
-//! generate its *own* `CalcSpec`, `TestCase` and `SpecCheck` - distinct types with
-//! the same names, one per crate. Anything taking `&CalcSpec` would then accept only
-//! the copy from its own crate, so a shared helper or a cross-namespace list would
-//! not compile, and the failure would look like a confusing mismatch of otherwise
-//! identical structs.
+//! Every namespace generates its own tables, and a namespace generating its own
+//! `CalcSpec`, `TestCase` and `SpecCheck` would produce distinct types with the same
+//! names, one set per crate. Anything taking `&CalcSpec` would then accept only the copy
+//! from its own crate, so a shared helper or a cross-namespace list would not compile,
+//! and the failure would look like a confusing mismatch of otherwise identical structs.
 //!
-//! Declaring them once here means every namespace's generated tables are built from
-//! the same types, and the only thing a namespace crate generates is its own data.
-//! It also puts them where the rest of the shared vocabulary lives, which is what
-//! this crate is for.
+//! Declaring them once here means every namespace's generated tables are built from the
+//! same types, and the only thing a namespace crate generates is its own data. It also
+//! puts them where the rest of the shared vocabulary lives, which is what this crate is
+//! for.
 //!
 //! # What is checked
 //!
