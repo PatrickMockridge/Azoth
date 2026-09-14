@@ -2346,3 +2346,193 @@ impl From<&CriticalPointResult> for PyCriticalPointResult {
         }
     }
 }
+
+#[cfg(test)]
+mod transport_tests {
+    //! The Rust side of the boundary, exercised without Python's help.
+    //!
+    //! `test_result_shapes_agree_across_languages` compares the *names* the extension
+    //! exposes against the Rust `FIELDS` lists, reading them from Python. It cannot see
+    //! a *mapping* fault: if the conversion wrote `gas_flow: r.liquid_flow`, both names
+    //! would still be present, both would still be `f64`, and every shape check would
+    //! pass while the two outlets reported each other's flow.
+    //!
+    //! So each result below is built with a distinct value in every field and read back
+    //! through its Python attribute. Distinctness is the whole instrument: two fields
+    //! that could be confused must not carry the same number.
+    //!
+    //! Building the struct as a literal is a second check for free. A field added to
+    //! `MixerResult` and not to `PyMixerResult` stops these tests compiling, which is
+    //! the only mechanism that turns a silently unexposed field into a visible one.
+
+    use super::*;
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_eos::Phase;
+
+    /// Read a `f64` attribute from a converted result.
+    fn number(result: &Bound<'_, PyAny>, name: &str) -> f64 {
+        result
+            .getattr(name)
+            .unwrap_or_else(|e| panic!("no attribute {name}: {e}"))
+            .extract()
+            .unwrap_or_else(|e| panic!("{name} is not a number: {e}"))
+    }
+
+    /// Read a nested quantity's magnitude, e.g. `T.magnitude_si`.
+    fn magnitude(result: &Bound<'_, PyAny>, name: &str) -> f64 {
+        result
+            .getattr(name)
+            .unwrap_or_else(|e| panic!("no attribute {name}: {e}"))
+            .getattr("magnitude_si")
+            .unwrap_or_else(|e| panic!("{name}.magnitude_si: {e}"))
+            .extract()
+            .unwrap_or_else(|e| panic!("{name}.magnitude_si is not a number: {e}"))
+    }
+
+    fn text(result: &Bound<'_, PyAny>, name: &str) -> String {
+        result
+            .getattr(name)
+            .unwrap_or_else(|e| panic!("no attribute {name}: {e}"))
+            .extract()
+            .unwrap_or_else(|e| panic!("{name} is not a string: {e}"))
+    }
+
+    fn numbers(result: &Bound<'_, PyAny>, name: &str) -> Vec<f64> {
+        result
+            .getattr(name)
+            .unwrap_or_else(|e| panic!("no attribute {name}: {e}"))
+            .extract()
+            .unwrap_or_else(|e| panic!("{name} is not a list of numbers: {e}"))
+    }
+
+    /// Every name the Rust result declares must be readable on the converted object.
+    fn assert_exposes_all_fields<T: CalcResult>(result: &Bound<'_, PyAny>) {
+        for name in T::FIELDS {
+            assert!(
+                result.hasattr(*name).unwrap_or(false),
+                "{name} is in {}::FIELDS but the converted object has no such \
+                 attribute, so Python cannot see a field the Rust side declares",
+                std::any::type_name::<T>()
+            );
+        }
+    }
+
+    fn separator() -> SeparatorResult {
+        SeparatorResult {
+            temperature: kelvins(321.0),
+            pressure: pascals(1_500_000.0),
+            beta: Some(0.25),
+            gas_flow: 7.0,
+            gas_z: vec![0.11, 0.12],
+            liquid_flow: 3.0,
+            liquid_z: vec![0.21, 0.22],
+            phase: Phase::TwoPhase,
+            iterations: 5,
+            warnings: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn separator_exposes_every_field_under_its_own_name() {
+        Python::attach(|py| {
+            let converted = Py::new(py, PySeparatorResult::from(&separator())).unwrap();
+            let result = converted.bind(py);
+
+            assert_exposes_all_fields::<SeparatorResult>(result);
+            assert_eq!(magnitude(result, "T"), 321.0);
+            assert_eq!(magnitude(result, "P"), 1_500_000.0);
+            assert_eq!(number(result, "beta"), 0.25);
+            assert_eq!(number(result, "gas_flow"), 7.0);
+            assert_eq!(numbers(result, "gas_z"), vec![0.11, 0.12]);
+            assert_eq!(number(result, "liquid_flow"), 3.0);
+            assert_eq!(numbers(result, "liquid_z"), vec![0.21, 0.22]);
+            assert_eq!(text(result, "phase"), "two_phase");
+            assert_eq!(number(result, "iterations"), 5.0);
+        });
+    }
+
+    #[test]
+    fn a_single_phase_split_reports_no_vapour_fraction() {
+        let mut result = separator();
+        result.beta = None;
+        result.gas_flow = 0.0;
+        result.phase = Phase::AllLiquid;
+
+        Python::attach(|py| {
+            let converted = Py::new(py, PySeparatorResult::from(&result)).unwrap();
+            let bound = converted.bind(py);
+
+            assert!(
+                bound.getattr("beta").unwrap().is_none(),
+                "a single-phase feed crosses as None rather than as a number outside \
+                 [0, 1]"
+            );
+            assert_eq!(text(bound, "phase"), "all_liquid");
+        });
+    }
+
+    fn mixer() -> MixerResult {
+        MixerResult {
+            temperature: kelvins(321.0),
+            pressure: pascals(1_500_000.0),
+            flow: 10.0,
+            z_out: vec![0.52, 0.48],
+            beta: Some(0.75),
+            phase: Phase::TwoPhase,
+            iterations: 7,
+            warnings: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn mixer_exposes_every_field_under_its_own_name() {
+        Python::attach(|py| {
+            let converted = Py::new(py, PyMixerResult::from(&mixer())).unwrap();
+            let result = converted.bind(py);
+
+            assert_exposes_all_fields::<MixerResult>(result);
+            assert_eq!(magnitude(result, "T"), 321.0);
+            assert_eq!(magnitude(result, "P"), 1_500_000.0);
+            assert_eq!(number(result, "flow"), 10.0);
+            assert_eq!(numbers(result, "z_out"), vec![0.52, 0.48]);
+            assert_eq!(number(result, "beta"), 0.75);
+            assert_eq!(text(result, "phase"), "two_phase");
+            assert_eq!(number(result, "iterations"), 7.0);
+        });
+    }
+
+    fn ps_flash() -> PsFlashResult {
+        PsFlashResult {
+            temperature: kelvins(311.0),
+            beta: Some(0.5),
+            x: vec![0.31, 0.32],
+            y: vec![0.41, 0.42],
+            k: vec![1.51, 1.52],
+            phase: Phase::TwoPhase,
+            z_liquid: 0.061,
+            z_vapour: 0.062,
+            iterations: 9,
+            residual: 1.5e-11,
+            warnings: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn ps_flash_exposes_every_field_under_its_own_name() {
+        Python::attach(|py| {
+            let converted = Py::new(py, PyPsFlashResult::from(&ps_flash())).unwrap();
+            let result = converted.bind(py);
+
+            assert_exposes_all_fields::<PsFlashResult>(result);
+            assert_eq!(magnitude(result, "T"), 311.0);
+            assert_eq!(number(result, "beta"), 0.5);
+            assert_eq!(numbers(result, "x"), vec![0.31, 0.32]);
+            assert_eq!(numbers(result, "y"), vec![0.41, 0.42]);
+            assert_eq!(numbers(result, "k"), vec![1.51, 1.52]);
+            assert_eq!(number(result, "z_liquid"), 0.061);
+            assert_eq!(number(result, "z_vapour"), 0.062);
+            assert_eq!(number(result, "iterations"), 9.0);
+            assert_eq!(number(result, "residual"), 1.5e-11);
+        });
+    }
+}

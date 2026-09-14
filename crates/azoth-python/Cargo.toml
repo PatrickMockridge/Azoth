@@ -30,5 +30,12 @@ default = []
 # the crate deliberately does not link it, and every test binary fails to build.
 extension-module = ["pyo3/extension-module"]
 
+[dev-dependencies]
+# Starts the interpreter for a test binary that links libpython. Without it
+# `Python::with_gil` refuses to run, which is why the transport tests below the
+# result types could not exist. Only the test build sees this: the wheel is built
+# with `extension-module`, where auto-initializing is wrong.
+pyo3 = { workspace = true, features = ["auto-initialize"] }
+
 [lints]
 workspace = true
