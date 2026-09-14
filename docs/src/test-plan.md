@@ -68,13 +68,13 @@ before the thermodynamics.
 
 | | |
 |---|---|
-| Python | **558** test functions across 56 files |
-| Rust | **302** — 240 in 30 integration files, 62 in 12 `#[cfg(test)]` modules |
-| Spec cases | Every one of the 38 ids has them; 3 to 22 per id |
+| Python | **560** test functions across 56 files |
+| Rust | **308** — 246 in 32 integration files, 62 in 12 `#[cfg(test)]` modules |
+| Spec cases | Every one of the 38 ids has them; 1 to 9 each, median 4 |
 | CI | 10 jobs, all gates, none with `continue-on-error` |
 
-Levels 1, 3, 4, 5, 6 and 8 are covered well. Level 2 is covered well **for calculations
-and unevenly for models** — see the gaps. Levels 7, 9 and 10 are partial.
+Levels 1, 3, 4, 5, 6 and 8 are covered well. Level 2 is covered well for calculations and
+for models. Levels 7, 9 and 10 are partial.
 
 ## The gaps
 
@@ -82,15 +82,20 @@ Ordered by what a test in each place would catch.
 
 | Gap | What a test there would catch |
 |---|---|
-| **`crates/azoth-process` has no Rust tests at all** — no `tests/` directory, no `#[cfg(test)]`. Eight unit operations whose Rust implementations are exercised only indirectly, through Python | A Rust-side defect in the whole process layer. It is the only crate in the tree in this position, and it is the newest code |
-| **`test_cross_impl.py` walks `CALCS` only** | A model whose two implementations diverge. The 17 models rest entirely on per-model files, so a model added without one is covered by nothing |
-| **`test_mixture_layer.py::test_both_implementations_agree_on_the_helmholtz_layer` never calls the Rust backend** — it compares Python against hard-coded literals | A Helmholtz-layer divergence. The test's *name* claims a guarantee its body does not make, which is worse than the gap alone: it reads as covered |
 | **`azoth-cli`'s `main.rs` and `report.rs` untested** — only `pipe::compute` is | An argument-parsing or report-formatting fault. Neither is thermodynamics, and both are what a user actually types |
 | **The PyO3 binding has no Rust tests** | A binding that agrees with Python only because Python is what introspects it |
 | **`UnverifiedCalculationError` is raised by nothing**, in either language | Dead surface: an error a caller can catch and never will |
 | **`InvalidInputError` is missing from the same-class-object identity test** | A second error class that is not the same object across the boundary |
-| **`gen_models.py`, `gen_stub.py`, `gen_databank.py` are checked by no test** — only by CI regenerating and diffing | A generator that fails only for a spec shape not currently in the tree |
-| **`eos.expander` and `process.pump` have one spec case each** | A wrong answer at any state other than the one recorded |
+| **`gen_models.py`, `gen_stub.py` and `gen_databank.py` are exercised by no test** — the first two are gated by the drift job regenerating and diffing, the third by nothing at all | A generator that fails only for a spec shape not currently in the tree. `gen_databank` is the one with no gate anywhere, and it cannot have one in CI: it needs a NeqSim checkout as an argument |
+| **`process.expander` and `process.pump` have one spec case each** | A wrong answer at any state other than the one recorded |
+| **`check_wheel_data.py`, `check_links.py`, `provenance.py` have no test** | A CI-only script that breaks and is noticed only in CI |
+| **`_dispatch.py`, `_rust_bridge.py`, `_data.py` have no dedicated test** | A dispatch fault covered only incidentally by the contract tests |
+
+Three gaps this table used to carry are now closed — the Rust tests for `crates/azoth-process`,
+the model half of the central cross-language check, and a Helmholtz test whose name claimed a
+guarantee its body did not make. [Required improvements](./required-improvements.md) records
+them as closed with the test that closed each, rather than deleting them: a gap covered by a
+test that does not pass is a different fact from a gap that was filled.
 
 ## Entry and exit criteria
 
