@@ -85,12 +85,16 @@ pub fn to_pyerr(py: Python<'_>, error: AzothError) -> PyErr {
 /// ``azoth._core.OutOfRangeError is azoth.core.errors.OutOfRangeError``.
 ///
 /// The identity test in the suite is what makes "both backends raise the same
-/// class" checkable rather than a claim.
+/// class" checkable rather than a claim. It asserts the two name sets are equal
+/// rather than checking a few, because a hand-written list here is exactly the
+/// thing that drifts: `KeycardError` was absent from this one while
+/// `azoth.core.errors` declared it.
 pub fn register(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     let errors = PyModule::import(py, ERRORS_MODULE)?;
     for name in [
         "AzothError",
         "InvalidInputError",
+        "KeycardError",
         "OutOfRangeError",
         "PropertyUnavailableError",
         "SolverNotConvergedError",

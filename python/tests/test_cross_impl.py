@@ -196,11 +196,23 @@ def test_errors_are_the_same_class_object() -> None:
 
     Not merely classes with the same names: the same objects, so that a caller
     writing ``except OutOfRangeError`` catches errors from either backend.
+
+    The names come from ``azoth.core.errors.__all__`` rather than from a list here,
+    and the two sets are asserted equal in both directions. A hand-written list of
+    three names is what this test used to be, and `KeycardError` was exported by the
+    package and missing from the extension the whole time it passed.
     """
     from azoth.core import errors
 
     core = _extension()
-    for name in ("OutOfRangeError", "UnknownFittingError", "SolverNotConvergedError"):
+    declared = set(errors.__all__)
+    missing = sorted(name for name in declared if not hasattr(core, name))
+    assert not missing, (
+        f"azoth.core.errors declares {missing} but azoth._core does not export "
+        f"{'them' if len(missing) > 1 else 'it'}, so `from azoth._core import "
+        f"{missing[0]}` fails and the two backends do not agree on the hierarchy"
+    )
+    for name in sorted(declared):
         assert getattr(errors, name) is getattr(core, name), (
             f"{name} is defined twice, so `except {name}` would catch from one backend "
             f"and not the other"
