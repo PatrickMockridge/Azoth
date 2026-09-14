@@ -13,18 +13,43 @@ slots = [L, M, T, I, Th, N, J]      length, mass, time, current,
                                     amount of substance, luminous intensity
 ```
 
-A **dimension** is a function from `slots` to the integers. Write `D` for the set
-of them. Multiplication of dimensions is addition of exponent vectors, so:
+A **dimension** assigns an exponent to each of the seven. Write `D` for the set of
+them. Multiplication of dimensions is addition of exponent vectors, so:
 
 - the zero vector is the **dimensionless** dimension;
 - `D` is closed under addition, which is associative and commutative;
 - every element has an inverse, the negation of its exponents.
 
 So `D` is an additive abelian group, and it is *free* on `slots`: every element is
-a unique integer combination of the seven, with no relation among them. Freedom is
-what makes the exponents decidable — two dimensions are equal exactly when their
-seven exponents are, and no cleverness about which of them are "really" base is
-required or permitted.
+a unique combination of the seven with no relation among them. Freedom is what
+makes the exponents decidable — two dimensions are equal exactly when their seven
+exponents are, and no cleverness about which of them are "really" base is required
+or permitted.
+
+### Rational exponents, and where the integers are
+
+The exponents are **rationals in the development and integers in the vocabulary**,
+and the difference is not a detail.
+
+`lean-units` carries a dimension as a finitely supported function into `ℚ`, which
+is what a fractional power needs, so the Lean development is over the free
+`ℚ`-module on `slots` rather than over a free abelian group. That is strictly more
+general, and it means `D` is a vector space: `m**0.5` is a dimension, and any
+theorem stated over `ℚ` holds for the integer exponents too.
+
+The **vocabulary's** exponents are integers, because `uom`'s type-level arithmetic
+is over integers — a `uom` quantity's exponents are type parameters like `P1` and
+`N2`, with no fractional member — and a unit whose dimension had a fractional
+exponent would be one no `uom` type could name. `specs/schema/vocabulary.schema.json`
+enforces `integer` for that reason, and the table is therefore a submodule of the
+development's carrier rather than all of it.
+
+So the honest statement is: the development is over `ℚ`; the vocabulary is the
+`ℤ`-sublattice that both implementations can express; and the tables
+[here](./vocabulary.md) and in `specs/` are integers throughout. A future unit
+with a genuinely fractional dimension would be expressible in the calculus and
+unrepresentable in Rust, which is the kind of gap the vocabulary table exists to
+make visible rather than to discover.
 
 **The order matters and is not a convention.** Every exponent vector in this
 repository is written in `slots` order, and the order is `uom::si::ISQ`'s. A

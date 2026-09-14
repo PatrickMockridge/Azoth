@@ -63,8 +63,14 @@ GENERATED_MARKERS: tuple[str, ...] = (
 
 #: Where prose lives. The docs are prose by definition and are not checked; `docs/src`
 #: carries the pages that the standard is *about*.
+#:
+#: `lean/Azoth` and not `lean`: the vendored `lean-units` under `lean/vendor/` is
+#: third-party code that travels unmodified, so a phrase in it is not this
+#: repository's to remove - and a check that demanded an edit there would be a
+#: check that could only be satisfied by untracking the vendor.
 SEARCH: tuple[tuple[str, str], ...] = (
     ("crates", "*.rs"),
+    ("lean/Azoth", "*.lean"),
     ("python/src", "*.py"),
     ("python/tests", "*.py"),
     ("specs", "*.yaml"),

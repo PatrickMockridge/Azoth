@@ -29,6 +29,15 @@ htmlcov/
 # --- mdBook ---
 docs/book/
 
+# --- Lean ---
+# `.lake` holds the compiled oleans and the packages Lake fetched, which for
+# Mathlib is several gigabytes. `lake build` reproduces it from the pins in
+# `lean/lake-manifest.json`, which IS committed - that is what makes the
+# toolchain and the dependency revisions reproducible rather than merely
+# recorded.
+lean/.lake/
+lean/vendor/lean-units/.lake/
+
 # --- editors / OS ---
 .DS_Store
 *.swp

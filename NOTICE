@@ -8,6 +8,32 @@ spec cites the paper its method comes from and says in its own notes what was
 changed, and neither restates the licence terms recorded here.
 
 --------------------------------------------------------------------------------
+lean-units
+--------------------------------------------------------------------------------
+
+  Project:   lean-units - https://github.com/ecyrbe/lean-units
+  Version:   commit 5322fc77dd4e3ec8d31af2c757a47abbeb94d500
+  Licence:   MIT License, Copyright 2025 ecyrbe
+  Vendored:  lean/vendor/lean-units/, unmodified
+
+lean-units is a physical-units system for Lean 4: a dimension is a product of
+base dimensions raised to rational powers, and a unit is a choice of metric in a
+dimension. The calculus in `docs/src/calculus/` is written against it, which is
+why it is vendored rather than fetched - a dimension system whose meaning can
+change under a build is not one a proof should rest on.
+
+The files under `LeanUnits/`, and `LeanUnits.lean`, `lakefile.toml`,
+`lean-toolchain`, `lake-manifest.json` and `LICENSE`, are copied unmodified.
+`Examples/` and `.github/` are not taken, because nothing here builds them. The
+full MIT text is in `lean/vendor/lean-units/LICENSE` and is not reproduced here.
+
+Its own formal-proof side is incomplete upstream, so this development treats it
+as a definitions library: the dimension and unit structures, and the
+`auto_dim`/`auto_equiv` tactics. Nothing here is proved by appealing to one of
+its theorems, and `Azoth/Axioms.lean` enforces that automatically by reporting
+the transitive axiom set of every theorem this project claims.
+
+--------------------------------------------------------------------------------
 NeqSim
 --------------------------------------------------------------------------------
 

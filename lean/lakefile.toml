@@ -1,0 +1,22 @@
+# The Lean development of the calculus in `docs/src/calculus/`.
+#
+# The toolchain is pinned by `lean-toolchain` and the dependencies by
+# `lake-manifest.json`, both committed, so a build here is the same build
+# everywhere. `lean-units` is vendored rather than fetched so that what this
+# development is written against is what is in the tree.
+name = "azoth"
+version = "0.1.0"
+defaultTargets = ["Azoth"]
+keywords = ["chemistry", "thermodynamics", "units"]
+
+[leanOptions]
+autoImplicit = false
+relaxedAutoImplicit = false
+pp.unicode.fun = true
+
+[[require]]
+name = "lean-units"
+path = "vendor/lean-units"
+
+[[lean_lib]]
+name = "Azoth"
