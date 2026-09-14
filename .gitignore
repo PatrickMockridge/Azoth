@@ -38,6 +38,9 @@ docs/book/
 lean/.lake/
 lean/vendor/lean-units/.lake/
 
+# --- Java (the NeqSim oracle driver, compiled by hand, never committed) ---
+*.class
+
 # --- editors / OS ---
 .DS_Store
 *.swp
