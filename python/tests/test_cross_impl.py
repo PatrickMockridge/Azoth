@@ -25,17 +25,11 @@ from typing import Any
 import pytest
 
 import _helpers as h
-from azoth import _models_gen, ureg
+from azoth import _models_gen
 from azoth._dispatch import resolve
 from azoth._registry_gen import CALCS
 
 pytestmark = pytest.mark.requires_rust
-
-#: The declared inputs a model's `mixture` argument is assembled from, and the ones its
-#: `ideal_gas` argument is. They are not parameters of the model, they are what those two
-#: parameters are made of.
-_MIXTURE_INPUTS = ("Tc", "Pc", "omega", "kij")
-_IDEAL_GAS_INPUTS = ("cp_a", "cp_b", "cp_c", "cp_d", "h_ref", "s_ref", "T_ref", "P_ref")
 
 
 def _extension() -> ModuleType:
@@ -81,22 +75,6 @@ def _model_cases() -> list[tuple[dict[str, Any], dict[str, Any]]]:
 MODEL_CASES = _model_cases()
 
 
-def _scalar(unit: str, value: Any) -> Any:
-    """One spec number as the argument the implementation takes."""
-    return float(value) if unit == "dimensionless" else ureg.Quantity(float(value), unit)
-
-
-def _declared(declaration: dict[str, Any], value: Any) -> Any:
-    """One declared input, at the shape and unit the spec gives it."""
-    unit = declaration.get("unit", "dimensionless")
-    kind = declaration.get("type", "quantity")
-    if kind == "vector":
-        return [_scalar(unit, item) for item in value]
-    if kind == "matrix":
-        return [[_scalar(unit, item) for item in row] for row in value]
-    return _scalar(unit, value)
-
-
 def _convergence_tolerance(spec_: dict[str, Any]) -> float | None:
     """The tolerance at which the spec says its solver converged, if it declares one.
 
@@ -108,58 +86,6 @@ def _convergence_tolerance(spec_: dict[str, Any]) -> float | None:
         return None
     tolerance = algorithm.get("tolerance")
     return None if tolerance is None else float(tolerance)
-
-
-def _model_kwargs(model: dict[str, Any], inputs: dict[str, Any]) -> dict[str, Any]:
-    """Turn a model's declared inputs into keyword arguments for the real call.
-
-    Distinct from `kwargs_for`, because a model's arguments are objects: the spec
-    declares `Tc, Pc, omega, kij` flat and the function takes a `mixture`. This rebuilds
-    it, which is the mirror of what `_rust_bridge` does in the other direction.
-    """
-    from azoth.eos import Component, IdealGasModel, mixture
-
-    declared = model["inputs"]
-    kwargs: dict[str, Any] = {}
-    consumed: set[str] = set()
-
-    if "kij" in declared:
-        # The `kij` is what says this is a mixture: it is the only declared input that
-        # cannot be passed through, because it has to become part of the `Mixture` rather
-        # than an argument, and a pure component has no pair to give. `eos.pure_saturation`
-        # declares `Tc`, `Pc` and `omega` as scalars for that reason, and takes them.
-        components = [
-            Component(ureg.Quantity(tc, "K"), ureg.Quantity(pc, "Pa"), omega)
-            for tc, pc, omega in zip(inputs["Tc"], inputs["Pc"], inputs["omega"], strict=True)
-        ]
-        kij = inputs["kij"]
-        # Upper triangle only: `mixture` takes sparse pairs keyed `(i, j)` with `i < j`
-        # and builds the symmetric matrix itself. Passing the whole matrix would name
-        # the diagonal, which is a pair with itself and means nothing.
-        kwargs["mixture"] = mixture(
-            components,
-            kij={(i, j): kij[i][j] for i in range(len(kij)) for j in range(i + 1, len(kij))},
-        )
-        consumed |= set(_MIXTURE_INPUTS)
-
-    if "cp_a" in declared:
-        kwargs["ideal_gas"] = IdealGasModel(
-            cp_a=tuple(inputs["cp_a"]),
-            cp_b=tuple(inputs["cp_b"]),
-            cp_c=tuple(inputs["cp_c"]),
-            cp_d=tuple(inputs["cp_d"]),
-            h_ref=tuple(inputs["h_ref"]),
-            s_ref=tuple(inputs["s_ref"]),
-            T_ref=ureg.Quantity(inputs["T_ref"], "K"),
-            P_ref=ureg.Quantity(inputs["P_ref"], "Pa"),
-        )
-        consumed |= set(_IDEAL_GAS_INPUTS)
-
-    for name, value in inputs.items():
-        if name in consumed:
-            continue
-        kwargs[name] = _declared(declared[name], value)
-    return kwargs
 
 
 @pytest.mark.parametrize(
@@ -175,7 +101,7 @@ def test_python_and_rust_agree_on_models(model: dict[str, Any], case: dict[str, 
     """
     from azoth._dispatch import use_backend
 
-    kwargs = _model_kwargs(model, case["inputs"])
+    kwargs = h.model_kwargs(model, case["inputs"])
     tolerance = float(case["tolerance"])
     context = f"{model['id']}::{case['id']}"
 

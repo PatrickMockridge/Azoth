@@ -25,6 +25,7 @@ from typing import Any
 
 import pytest
 
+import _helpers as h
 from azoth import _models_gen
 from azoth._dispatch import result_types
 from azoth._registry_gen import BY_ID, CALCS, spec
@@ -50,6 +51,53 @@ def reference_module(calc_id: str, function_name: str) -> ModuleType:
     """The pure-Python reference module for a calc, in whichever namespace."""
     namespace, _, _ = calc_id.rpartition(".")
     return importlib.import_module(f"azoth.{namespace}.reference.{function_name}")
+
+
+@pytest.mark.requires_rust
+def test_every_declared_range_check_runs() -> None:
+    """No calc may declare a bound its own cases never evaluate.
+
+    The calc-side half of the same assertion `test_model_contract.py` makes for models,
+    and the reason it is behavioural rather than a name check: a declared quantity whose
+    name resolves proves nothing about whether the implementation's resolver has an arm
+    for it. `process.mixer` is the worked example — `T` was a declared input, and neither
+    implementation's resolver produced it, so the bound was skipped on every call while
+    reading as enforced.
+
+    A calc's bounds are checked statically by `tools/spec_lint.py`, which is stricter here
+    than it is for models: `computed_from` must name declared inputs, so a bound on a
+    derived quantity has to say what it is derived from. What no static check can see is
+    the other end — whether the code that resolves the name actually does.
+    """
+    from azoth._dispatch import resolve, use_backend
+
+    exercised = 0
+    for calc in CALCS:
+        declared = [check["quantity"] for check in calc.get("valid_range", [])]
+        if not declared:
+            continue
+        allowed = h.range_checks_that_may_skip(calc)
+        for case in h.all_tests(calc):
+            if case["status"] != "active" or case["type"] not in ("worked_example", "reference"):
+                continue
+            kwargs = h.kwargs_for(calc, case["inputs"])
+            for backend in ("python", "rust"):
+                with use_backend(backend):
+                    result = resolve(calc["id"])(**kwargs)
+                skipped = {
+                    warning.field
+                    for warning in result.warnings
+                    if warning.code == WarningCode.RANGE_CHECK_SKIPPED
+                }
+                unexpected = sorted(skipped - allowed)
+                assert not unexpected, (
+                    f"{calc['id']}::{case['id']} on {backend}: the spec declares bounds on "
+                    f"{unexpected}, and the implementation reports it could not evaluate "
+                    f"{'them' if len(unexpected) > 1 else 'it'}. Declared: {declared}. "
+                    f"Resolvable: {sorted(set(declared) - skipped)}"
+                )
+                exercised += len(declared) - len(skipped)
+    assert exercised, "no range check was exercised - the loop above proved nothing"
 
 
 def test_every_spec_has_a_result_type() -> None:

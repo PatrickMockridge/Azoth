@@ -30,6 +30,7 @@ from typing import Any
 
 import pytest
 
+import _helpers as h
 from azoth import _models_gen
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -286,6 +287,62 @@ def test_every_result_field_is_declared_in_the_spec() -> None:
             f"{model['id']}: the spec declares {unbacked} but the result has no such "
             f"field, so a declared output is unreachable"
         )
+
+
+@pytest.mark.requires_rust
+def test_every_declared_range_check_runs() -> None:
+    """No model may declare a bound that its own cases never evaluate.
+
+    The sibling of `test_every_result_field_is_declared_in_the_spec`, for the other
+    load-bearing name. `valid_range[].quantity` is what the generated table marks
+    `on_input` and what `apply_checks` resolves to a float, and the implementations
+    resolve it by name against values they compute. A name no resolver can produce
+    yields `RANGE_CHECK_SKIPPED` - a warning that reports a check was *not performed*,
+    which reads as diligence and is the opposite of it.
+
+    `eos.critical_point` is why this is a behavioural test rather than a name check.
+    Its bounds declared `Tc`, `Pc` and `Z_c`, and those are declared *inputs* of the
+    model as well - so a name-level rule sees three resolvable quantities and is
+    satisfied. What actually happened is that the generator classified all three as
+    input checks, `critical_point` applies only `derived_checks()`, and two of the
+    three were never passed to `apply_checks` at all: not skipped, not reported,
+    absent. The third reached a resolver that matches lowercase `z_c` and was skipped.
+    Nothing on the Python side could see any of that, because both implementations
+    did the same thing, and the cross-language comparison compares warnings to each
+    other rather than to the spec.
+
+    So the assertion is on the run: every case, on both backends, must evaluate every
+    bound its spec declares.
+    """
+    from azoth._dispatch import resolve, use_backend
+    from azoth.core.warnings import WarningCode
+
+    exercised = 0
+    for model in _models_gen.MODELS:
+        declared = [check["quantity"] for check in model.get("valid_range", [])]
+        if not declared:
+            continue
+        allowed = h.range_checks_that_may_skip(model)
+        for case in model["cases"]:
+            kwargs = h.model_kwargs(model, case["inputs"])
+            for backend in ("python", "rust"):
+                with use_backend(backend):
+                    result = resolve(model["id"])(**kwargs)
+                skipped = {
+                    warning.field
+                    for warning in result.warnings
+                    if warning.code == WarningCode.RANGE_CHECK_SKIPPED
+                }
+                unexpected = sorted(skipped - allowed)
+                assert not unexpected, (
+                    f"{model['id']}::{case['id']} on {backend}: the spec declares bounds on "
+                    f"{unexpected}, and the implementation reports it could not evaluate "
+                    f"{'them' if len(unexpected) > 1 else 'it'}. A bound that cannot run is "
+                    f"worse than no bound, because it reads as validation. Declared: "
+                    f"{declared}. Resolvable: {sorted(set(declared) - skipped)}"
+                )
+                exercised += len(declared) - len(skipped)
+    assert exercised, "no range check was exercised - the loop above proved nothing"
 
 
 def test_the_model_result_table_covers_every_model() -> None:

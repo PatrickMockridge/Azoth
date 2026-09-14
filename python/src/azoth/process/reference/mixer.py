@@ -101,11 +101,14 @@ def mixer(
         )
 
     # A vector input has no single value for a range check, so the binding one is
-    # reported: the smallest inlet flow and the lowest inlet pressure are the ones that
-    # would produce a meaningless blend, which is what the checks are for.
+    # reported: the smallest inlet flow, the lowest inlet pressure and the lowest inlet
+    # temperature are the ones that would produce a meaningless blend, which is what the
+    # checks are for. All three of the spec's bounds are resolved here, and a fourth
+    # declared bound resolving to nothing would report itself as unevaluated rather than
+    # pass.
     apply_checks(
         checks.on_input,
-        {"n": min(n_si), "P": min(p_si)}.get,
+        {"n": min(n_si), "P": min(p_si), "T": min(t_si)}.get,
         warnings,
     )
 

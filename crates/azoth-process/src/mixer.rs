@@ -109,6 +109,7 @@ pub fn mixer(
         |quantity| match quantity {
             "n" => Some(n_in.iter().copied().fold(f64::INFINITY, f64::min)),
             "P" => Some(p_in.iter().map(|p| p.value).fold(f64::INFINITY, f64::min)),
+            "T" => Some(t_in.iter().map(|t| t.value).fold(f64::INFINITY, f64::min)),
             _ => None,
         },
         &mut warnings,

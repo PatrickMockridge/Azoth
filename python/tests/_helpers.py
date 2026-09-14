@@ -35,6 +35,8 @@ __all__ = [
     "input_",
     "kwargs_for",
     "list_input",
+    "model_kwargs",
+    "range_checks_that_may_skip",
     "spec",
 ]
 
@@ -389,4 +391,105 @@ def kwargs_for(calc: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, 
             kwargs[name] = quantity(float(value), declaration["unit"])
         else:
             kwargs[name] = float(value)
+    return kwargs
+
+
+#: The declared inputs a model's ``mixture`` argument is assembled from, and the ones its
+#: ``ideal_gas`` argument is. They are not parameters of the model, they are what those two
+#: parameters are made of.
+_MODEL_MIXTURE_INPUTS: tuple[str, ...] = ("Tc", "Pc", "omega", "kij")
+_MODEL_IDEAL_GAS_INPUTS: tuple[str, ...] = (
+    "cp_a",
+    "cp_b",
+    "cp_c",
+    "cp_d",
+    "h_ref",
+    "s_ref",
+    "T_ref",
+    "P_ref",
+)
+
+
+def range_checks_that_may_skip(spec_: Mapping[str, Any]) -> set[str]:
+    """Quantities whose bounds a case may legitimately leave unevaluated.
+
+    A check that depends on an *optional* input cannot always run, and the spec says so by
+    naming that input in ``computed_from``. That is the only licence the two
+    range-check tests grant: everything else is a bound that reads as validation and
+    performs none.
+    """
+    optional = {name for name, declared in spec_["inputs"].items() if declared.get("optional")}
+    allowed: set[str] = set()
+    for check in spec_.get("valid_range", []):
+        dependencies = set(check.get("computed_from", [])) | {check["quantity"]}
+        if dependencies & optional:
+            allowed.add(check["quantity"])
+    return allowed
+
+
+def _scalar(unit: str, value: Any) -> Any:
+    """One spec number as the argument the implementation takes."""
+    return float(value) if unit == "dimensionless" else quantity(float(value), unit)
+
+
+def _declared(declaration: Mapping[str, Any], value: Any) -> Any:
+    """One declared input, at the shape and unit the spec gives it."""
+    unit = declaration.get("unit", "dimensionless")
+    kind = declaration.get("type", "quantity")
+    if kind == "vector":
+        return [_scalar(unit, item) for item in value]
+    if kind == "matrix":
+        return [[_scalar(unit, item) for item in row] for row in value]
+    return _scalar(unit, value)
+
+
+def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, Any]:
+    """Turn a model's declared inputs into keyword arguments for the real call.
+
+    Distinct from :func:`kwargs_for`, because a model's arguments are objects: the spec
+    declares `Tc, Pc, omega, kij` flat and the function takes a `mixture`. This rebuilds
+    it, which is the mirror of what `_rust_bridge` does in the other direction.
+    """
+    from azoth.eos import Component, IdealGasModel, mixture
+
+    declared = model["inputs"]
+    kwargs: dict[str, Any] = {}
+    consumed: set[str] = set()
+
+    if "kij" in declared:
+        # The `kij` is what says this is a mixture: it is the only declared input that
+        # cannot be passed through, because it has to become part of the `Mixture` rather
+        # than an argument, and a pure component has no pair to give. `eos.pure_saturation`
+        # declares `Tc`, `Pc` and `omega` as scalars for that reason, and takes them.
+        components = [
+            Component(quantity(tc, "K"), quantity(pc, "Pa"), omega)
+            for tc, pc, omega in zip(inputs["Tc"], inputs["Pc"], inputs["omega"], strict=True)
+        ]
+        kij = inputs["kij"]
+        # Upper triangle only: `mixture` takes sparse pairs keyed `(i, j)` with `i < j`
+        # and builds the symmetric matrix itself. Passing the whole matrix would name
+        # the diagonal, which is a pair with itself and means nothing.
+        kwargs["mixture"] = mixture(
+            components,
+            kij={(i, j): kij[i][j] for i in range(len(kij)) for j in range(i + 1, len(kij))},
+        )
+        consumed |= set(_MODEL_MIXTURE_INPUTS)
+
+    if "cp_a" in declared:
+        kwargs["ideal_gas"] = IdealGasModel(
+            cp_a=tuple(inputs["cp_a"]),
+            cp_b=tuple(inputs["cp_b"]),
+            cp_c=tuple(inputs["cp_c"]),
+            cp_d=tuple(inputs["cp_d"]),
+            h_ref=tuple(inputs["h_ref"]),
+            s_ref=tuple(inputs["s_ref"]),
+            T_ref=quantity(inputs["T_ref"], "K"),
+            P_ref=quantity(inputs["P_ref"], "Pa"),
+        )
+        consumed |= set(_MODEL_IDEAL_GAS_INPUTS)
+
+    for name, value in inputs.items():
+        if name in consumed:
+            continue
+        kwargs[name] = _declared(declared[name], value)
     return kwargs
