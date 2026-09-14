@@ -6,9 +6,9 @@
 
 ## Source
 
-**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.mixer.Mixer`, `run(UUID)` at lines 642-729 of the 3.20.0 source tree, with the material balance in `mixStream()` at `:192-320` and the enthalpy in `calcMixStreamEnthalpy()` at `:537-544`.
-** (Version 3.20.0. Taken from it: the mole accumulation (`:292`), the outlet pressure (`:681`) and `PHflash(sum of inlet enthalpies)` (`:702-711`). Not taken: the component-matching machinery for inlets whose pseudo-fractions have different molar masses (`:285-291`), which cannot arise here, and the zero-flow and single-inlet special cases.
-)
+**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.mixer.Mixer`, `run(UUID)` at lines 642-729 of the 3.20.0 source tree, with the material balance in `mixStream()` at `:192-320` and the enthalpy in `calcMixStreamEnthalpy()` at `:537-544`.**
+
+Version 3.20.0. Taken from it: the mole accumulation (`:292`), the outlet pressure (`:681`) and `PHflash(sum of inlet enthalpies)` (`:702-711`). Not taken: the component-matching machinery for inlets whose pseudo-fractions have different molar masses (`:285-291`), which cannot arise here, and the zero-flow and single-inlet special cases.
 
 
 ## Algorithm

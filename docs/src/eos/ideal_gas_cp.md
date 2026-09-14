@@ -18,8 +18,9 @@ Cp/R = a + b*theta + c*theta**2 + d*theta**3,  theta = T/(1000 K)
 
 ## Source
 
-**The standard four-term ideal-gas heat-capacity polynomial** (The form is the conventional one - `Cp/R` as a cubic in temperature - and is set out in e.g. Poling, Prausnitz & O'Connell, The Properties of Gases and Liquids, 5th ed., ch. 3. The reference temperature is the scale at which the coefficients are quoted, not a fitted quantity.
-)
+**The standard four-term ideal-gas heat-capacity polynomial**
+
+The form is the conventional one - `Cp/R` as a cubic in temperature - and is set out in e.g. Poling, Prausnitz & O'Connell, The Properties of Gases and Liquids, 5th ed., ch. 3. The reference temperature is the scale at which the coefficients are quoted, not a fitted quantity.
 
 ## Inputs
 

@@ -6,9 +6,9 @@
 
 ## Source
 
-**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.pump.Pump`, `run(UUID)` at lines 515-677 of a 1,700-line file, and specifically its default path at `:558-572`.
-** (Version 3.20.0. Taken from it: `PSflash(entropy)` at the outlet pressure (`:563`), `dH = (H_is - H_in) / efficiency` (`:566`) and `PHflash(H_in + dH)` (`:572`). The default path is the one taken when `calculateAsCompressor` is true, which it is by default (`:114`). Not taken: the pump-curve path (`:573-644`), the simple pressure-rise path (`:645-664`) and the fixed-outlet-temperature path (`:549-556`).
-)
+**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.pump.Pump`, `run(UUID)` at lines 515-677 of a 1,700-line file, and specifically its default path at `:558-572`.**
+
+Version 3.20.0. Taken from it: `PSflash(entropy)` at the outlet pressure (`:563`), `dH = (H_is - H_in) / efficiency` (`:566`) and `PHflash(H_in + dH)` (`:572`). The default path is the one taken when `calculateAsCompressor` is true, which it is by default (`:114`). Not taken: the pump-curve path (`:573-644`), the simple pressure-rise path (`:645-664`) and the fixed-outlet-temperature path (`:549-556`).
 
 
 ## Algorithm

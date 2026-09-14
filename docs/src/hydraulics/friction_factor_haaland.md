@@ -18,7 +18,9 @@ f = (1.0 / (-1.8 * log10((relative_roughness / 3.7)**1.11 + 6.9 / Re)))**2
 
 ## Source
 
-**Haaland, S. E. (1983)** (Journal of Fluids Engineering, 105(1), 89-90)
+**Haaland, S. E. (1983)**
+
+Journal of Fluids Engineering, 105(1), 89-90
 
 ## Inputs
 

@@ -18,7 +18,9 @@ Re = rho * v * D / mu
 
 ## Source
 
-**Crane TP-410** (2013)
+**Crane TP-410**
+
+2013
 
 ## Inputs
 

@@ -6,9 +6,9 @@
 
 ## Source
 
-**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.expander.Expander`, `run(UUID)` at lines 608-668 of a 669-line file. `Expander` extends `Compressor` and overrides `run`; its isentropic path at `:646-660` differs from the compressor's in one line.
-** (Version 3.20.0. Taken from it: `PSflash(entropy)` at the outlet pressure (`:650`), `dH = (H_is - H_in) * efficiency` (`:653`) and `PHflash(H_in + dH)` (`:659`). Not taken: the five-step polytropic path (`:620-633`) and the specified-shaft-power branch (`:652`).
-)
+**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.expander.Expander`, `run(UUID)` at lines 608-668 of a 669-line file. `Expander` extends `Compressor` and overrides `run`; its isentropic path at `:646-660` differs from the compressor's in one line.**
+
+Version 3.20.0. Taken from it: `PSflash(entropy)` at the outlet pressure (`:650`), `dH = (H_is - H_in) * efficiency` (`:653`) and `PHflash(H_in + dH)` (`:659`). Not taken: the five-step polytropic path (`:620-633`) and the specified-shaft-power branch (`:652`).
 
 
 ## Algorithm

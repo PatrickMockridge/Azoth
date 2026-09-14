@@ -18,7 +18,11 @@ f = 0.25 / (log10(relative_roughness / 3.7 + 5.74 / Re**0.9))**2
 
 ## Source
 
-**Swamee, P. K.; Jain, A. K. (1976)** (Journal of the Hydraulics Division, ASCE, 102(5), 657-664) - "Explicit equations for pipe-flow problems"
+**Swamee, P. K.; Jain, A. K. (1976)**
+
+Journal of the Hydraulics Division, ASCE, 102(5), 657-664
+
+Equation: "Explicit equations for pipe-flow problems"
 
 ## Inputs
 

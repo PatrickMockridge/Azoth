@@ -6,8 +6,9 @@
 
 ## Source
 
-**Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982)** (The Rachford-Rice equation is Rachford & Rice, Journal of Petroleum Technology 4(10), 19-3, DOI 10.2118/952327-G, the same paper `eos.rachford_rice_binary` cites. Successive substitution with a fugacity-coefficient update is the standard method and is set out in Michelsen, M. L. "The isothermal flash problem. Part I. Stability." Fluid Phase Equilibria 9(1), 1-19 (1982), DOI 10.1016/0378-3812(82)85001-2.
-)
+**Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982)**
+
+The Rachford-Rice equation is Rachford & Rice, Journal of Petroleum Technology 4(10), 19-3, DOI 10.2118/952327-G, the same paper `eos.rachford_rice_binary` cites. Successive substitution with a fugacity-coefficient update is the standard method and is set out in Michelsen, M. L. "The isothermal flash problem. Part I. Stability." Fluid Phase Equilibria 9(1), 1-19 (1982), DOI 10.1016/0378-3812(82)85001-2.
 
 DOI: [10.1016/0378-3812(82)85001-2](https://doi.org/10.1016/0378-3812(82)85001-2)
 

@@ -6,8 +6,9 @@
 
 ## Source
 
-**Michelsen, M. L. (1982)** (The isothermal flash problem. Part II. Phase-split calculation. Fluid Phase Equilibria 9(1), 21-40. The dew-point iteration is the same successive- substitution scheme as the bubble point's with the roles of the two phases exchanged.
-)
+**Michelsen, M. L. (1982)**
+
+The isothermal flash problem. Part II. Phase-split calculation. Fluid Phase Equilibria 9(1), 21-40. The dew-point iteration is the same successive- substitution scheme as the bubble point's with the roles of the two phases exchanged.
 
 DOI: [10.1016/0378-3812(82)85002-4](https://doi.org/10.1016/0378-3812(82)85002-4)
 

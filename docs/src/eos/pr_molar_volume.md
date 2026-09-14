@@ -18,7 +18,9 @@ v = z*R*T/P
 
 ## Source
 
-**The ideal-gas law with the compressibility factor as the departure from it** (Clapeyron, É. (1834); van der Waals, J. D. (1873) for the compressibility factor as the correction)
+**The ideal-gas law with the compressibility factor as the departure from it**
+
+Clapeyron, É. (1834); van der Waals, J. D. (1873) for the compressibility factor as the correction
 
 ## Inputs
 

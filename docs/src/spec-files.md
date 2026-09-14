@@ -123,30 +123,43 @@ number nobody can follow is a number somebody typed.
 | `source` | `standard` (required if present), `edition`, `equation`, `doi`, `url` | no | `gen_docs`, the `## Source` section |
 | `references` | list of strings | no | `gen_docs` |
 
-**A citation, and nothing beyond it.** Attribution for anything ported lives in
+**A citation, and nothing beyond it.** A bibliographic reference, or — for a port — the
+upstream class and the line ranges taken and not taken. That second form is a licence
+obligation and a citation rather than an argument, which is why the line numbers stay
+here. Attribution for anything ported lives in
 [`NOTICE`](https://github.com/PatrickMockridge/Azoth/blob/main/NOTICE), once, rather
 than in a per-calc block — a block repeated in twenty specs is a block nobody reads.
-What a port *changed* is a limitation report and belongs in
-[Required improvements](./required-improvements.md).
+
+**What a port *changed*, and why, is a limitation report** and belongs in
+[Required improvements](./required-improvements.md), not in a citation field. The line
+between the two is whether the sentence identifies a source or argues about it.
 
 ## Fields that are not part of the format
 
-These exist in the tree today and are being removed; a new spec must not add one.
+The schema rejects each of these, because `additionalProperties: false` is set at every
+level — a spec carrying one fails to validate rather than being quietly ignored. They were
+removed at `6ac3c04`, with the entries they generated landing in
+[Required improvements](./required-improvements.md) first.
 
-| Field | Where it goes instead |
+| Field | Where its content belongs instead |
 |---|---|
-| `notes` | this book, per calculation; the defect and limitation parts to Required improvements |
-| `description` | the page's own opening, written as markdown |
-| `source.standard` / `source.edition` as narrative | `NOTICE`, once |
-| `cases[].note`, `tests[].note` | Required improvements, or deleted |
-| Narrative `rationale` beyond one sentence | Required improvements |
+| `notes` | Required improvements, for the parts that report a defect or a limitation. The rest is the code's job, or nothing |
+| `description` | the calculation's page, or this book |
+| `cases[].note`, `cases[].source`, `tests[].note` | Required improvements, or deleted |
+| any `status`, citation-status or provenance field | nowhere — see [S6](./spec.md#s6-the-library-implements-the-engineer-decides) |
 
-The reason they cannot stay is not taste. A spec is YAML, and YAML folded scalars
-cannot carry markdown: the generated page for `process.compressor` currently shows a
-fenced code block flattened onto one line, a bullet list collapsed into ` - `-joined
-text, and a blockquote that emits an unmatched `**` and a stray `)`. All three come from
-prose that was written as markdown inside a `>` scalar. Prose that survives is prose
-that was written as markdown in a markdown file.
+**One field is only partly clean.** `source` is a citation, and for a port it keeps the
+upstream class and the line ranges taken and not taken, because that is what a licence asks
+for. But several `source.edition` values *argue* about the source rather than naming it, and
+an argument is a limitation report. That is the last of it, and the sentence to keep is the
+one that identifies the source.
+
+The reason the removed fields could not stay is not taste. A spec is YAML, and YAML folded
+scalars do not carry markdown: before this, the generated page for `process.compressor` showed
+a fenced code block flattened onto one line, a bullet list collapsed into ` - `-joined text,
+and a blockquote emitting an unmatched `**` and a stray `)`. All three came from prose written
+as markdown inside a `>` scalar. Prose that survives is prose that was written as markdown in
+a markdown file.
 
 ## What a valid sheet looks like
 

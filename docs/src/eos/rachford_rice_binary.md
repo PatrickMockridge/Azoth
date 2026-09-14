@@ -18,7 +18,9 @@ beta = -(z1*(K1 - 1) + (1 - z1)*(K2 - 1)) / ((K1 - 1)*(K2 - 1))
 
 ## Source
 
-**Rachford, H. H.; Rice, J. D. (1952)** (Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium. Journal of Petroleum Technology, 4(10), 19-3)
+**Rachford, H. H.; Rice, J. D. (1952)**
+
+Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium. Journal of Petroleum Technology, 4(10), 19-3
 
 DOI: [10.2118/952327-G](https://doi.org/10.2118/952327-G)
 

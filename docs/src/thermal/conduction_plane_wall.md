@@ -18,7 +18,9 @@ q = k * A * dT / L
 
 ## Source
 
-**Fourier, J. (1822)** (Théorie analytique de la chaleur, Paris: Firmin Didot)
+**Fourier, J. (1822)**
+
+Théorie analytique de la chaleur, Paris: Firmin Didot
 
 ## Inputs
 

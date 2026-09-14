@@ -18,7 +18,11 @@ In the form the library evaluates:
 
 ## Source
 
-**Colebrook, C. F. (1939)** (Journal of the Institution of Civil Engineers, 11(4), 133-156) - the Colebrook-White transition equation
+**Colebrook, C. F. (1939)**
+
+Journal of the Institution of Civil Engineers, 11(4), 133-156
+
+Equation: the Colebrook-White transition equation
 
 DOI: [10.1680/ijoti.1939.13150](https://doi.org/10.1680/ijoti.1939.13150)
 

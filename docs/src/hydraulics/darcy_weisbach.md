@@ -18,7 +18,9 @@ dP = f * (L / D) * (rho * v**2 / 2)
 
 ## Source
 
-**Crane TP-410** (2013)
+**Crane TP-410**
+
+2013
 
 ## Inputs
 

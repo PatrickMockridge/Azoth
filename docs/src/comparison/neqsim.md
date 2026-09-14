@@ -218,12 +218,16 @@ it. Two rules govern what that means, and they are in `CONTRIBUTING.md`:
 
 **A port is never evidence.** Reading someone's Java is not reading the paper it came
 from, and a port is a second implementation of a method rather than a second source for
-it. A port cites the paper for the *method*, the source for the *port*, and records what
-it changed — and nothing in the tree records a status claiming otherwise, because a
-status is a claim about a person having read a source and no tool can check one.
-Attribution itself lives in `NOTICE`, once, rather than restated per spec; the per-port
-`changes` prose stays in the spec's `notes`, where every other design decision in this
-tree already lives.
+it. A port cites the paper for the *method* and the upstream source for the *port*, and
+nothing in the tree records a status claiming otherwise, because a status is a claim
+about a person having read a source and no tool can check one. Attribution itself lives
+in `NOTICE`, once, rather than restated per spec.
+
+**What a port changed is a limitation report**, and it belongs in
+[Required improvements](../required-improvements.md) rather than in the spec — a spec is
+a data sheet ([Spec files](../spec-files.md)). The one thing the spec keeps is the
+*citation*: the upstream class, and the line ranges taken and not taken. That is what a
+licence asks for, and it is a citation rather than an argument.
 
 **A port is accepted on this library's tests, never on its provenance.** That a
 well-known library implements something is evidence that it can be implemented. It is

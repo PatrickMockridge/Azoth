@@ -140,15 +140,18 @@ def describe_source(spec: dict[str, Any]) -> str:
     source = spec.get("source")
     if not source:
         return ""
-    bits = [f"**{source['standard']}**"]
+    # Every field is whitespace-normalised before it is placed. A YAML folded scalar
+    # keeps the author's line breaks, and a `**` opened on one line of a multi-line
+    # value closes on another - which renders as an unmatched bold marker and, where a
+    # parenthesis followed, a stray `)` outside it.
+    parts = [f"**{' '.join(str(source['standard']).split())}**"]
     if source.get("edition"):
-        bits.append(f"({source['edition']})")
+        parts.append(f"\n\n{' '.join(str(source['edition']).split())}")
     if source.get("equation"):
-        bits.append(f"- {source['equation']}")
-    line = " ".join(bits)
+        parts.append(f"\n\nEquation: {source['equation']}")
     if source.get("doi"):
-        line += f"\n\nDOI: [{source['doi']}](https://doi.org/{source['doi']})"
-    return line
+        parts.append(f"\n\nDOI: [{source['doi']}](https://doi.org/{source['doi']})")
+    return "".join(parts)
 
 
 def render_table(rows: list[tuple[str, str, str]], headers: tuple[str, str, str]) -> str:

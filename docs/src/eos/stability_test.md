@@ -6,7 +6,9 @@
 
 ## Source
 
-**Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability"** (Fluid Phase Equilibria 9(1), 1-19)
+**Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability"**
+
+Fluid Phase Equilibria 9(1), 1-19
 
 DOI: [10.1016/0378-3812(82)85001-2](https://doi.org/10.1016/0378-3812(82)85001-2)
 

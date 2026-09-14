@@ -6,8 +6,9 @@
 
 ## Source
 
-**The composition of ideal-gas and residual contributions** (Standard thermodynamics: an absolute enthalpy or entropy is a reference value plus an ideal-gas integral plus a departure, and the split between them is a convention rather than a result. No source states this particular assembly, because the assembly is not a discovery - what matters is that the terms are written down and the datum is the caller's, which is what this spec does.
-)
+**The composition of ideal-gas and residual contributions**
+
+Standard thermodynamics: an absolute enthalpy or entropy is a reference value plus an ideal-gas integral plus a departure, and the split between them is a convention rather than a result. No source states this particular assembly, because the assembly is not a discovery - what matters is that the terms are written down and the datum is the caller's, which is what this spec does.
 
 
 ## What this model is

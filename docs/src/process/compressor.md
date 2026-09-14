@@ -6,9 +6,9 @@
 
 ## Source
 
-**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.compressor.Compressor`, `run(UUID)` at lines 1005-1817 of a 6,593-line file, and specifically its default isentropic path at `:1721-1776`.
-** (Version 3.20.0. Taken from it: `PSflash(entropy)` at the outlet pressure (`:1725`), `dH = (H_is - H_in) / efficiency` (`:1738`) and `PHflash(H_in + dH)` (`:1766`). Not taken: the compressor chart, the speed solve, the anti-surge recycle, the three polytropic paths, the outlet-temperature efficiency solve and the mechanical design.
-)
+**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.compressor.Compressor`, `run(UUID)` at lines 1005-1817 of a 6,593-line file, and specifically its default isentropic path at `:1721-1776`.**
+
+Version 3.20.0. Taken from it: `PSflash(entropy)` at the outlet pressure (`:1725`), `dH = (H_is - H_in) / efficiency` (`:1738`) and `PHflash(H_in + dH)` (`:1766`). Not taken: the compressor chart, the speed solve, the anti-surge recycle, the three polytropic paths, the outlet-temperature efficiency solve and the mechanical design.
 
 
 ## Algorithm

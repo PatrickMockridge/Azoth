@@ -18,7 +18,9 @@ kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2
 
 ## Source
 
-**Peng, D. Y.; Robinson, D. B. (1976)** (A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64)
+**Peng, D. Y.; Robinson, D. B. (1976)**
+
+A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64
 
 DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 

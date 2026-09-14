@@ -6,8 +6,9 @@
 
 ## Source
 
-**Heidemann, R. A.; Khalil, A. M. (1980)** (The calculation of critical points. AIChE Journal 26(5), 769-779. The paper is the method's source and has **not been read**. The implementation follows an open-source one instead, and `notes` records where the two differ.
-)
+**Heidemann, R. A.; Khalil, A. M. (1980)**
+
+The calculation of critical points. AIChE Journal 26(5), 769-779. The paper is the method's source and has **not been read**. The implementation follows an open-source one instead, and `notes` records where the two differ.
 
 
 ## Algorithm

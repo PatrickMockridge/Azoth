@@ -6,8 +6,9 @@
 
 ## Source
 
-**Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup** (The procedure is the ordinary one: the entropy of a mixture at fixed pressure is a strictly increasing function of temperature, so inverting it is well posed, and the entropy of a two-phase state is the phase-fraction weighted sum of the two phase entropies, each evaluated at its own composition. **The specific text has not been read** and no equation number is claimed. What is checked is against this project's own pieces, and the spec's notes say what that does and does not establish.
-)
+**Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup**
+
+The procedure is the ordinary one: the entropy of a mixture at fixed pressure is a strictly increasing function of temperature, so inverting it is well posed, and the entropy of a two-phase state is the phase-fraction weighted sum of the two phase entropies, each evaluated at its own composition. **The specific text has not been read** and no equation number is claimed. What is checked is against this project's own pieces, and the spec's notes say what that does and does not establish.
 
 
 ## Algorithm

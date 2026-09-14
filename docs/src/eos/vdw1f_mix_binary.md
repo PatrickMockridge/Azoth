@@ -20,7 +20,9 @@ b_mix = z1*b1 + (1 - z1)*b2
 
 ## Source
 
-**van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text** (The classical mixing rule. Its modern form, and the role of k12, are set out in e.g. Poling, Prausnitz & O'Connell, The Properties of Gases and Liquids, 5th ed., ch. 5.)
+**van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text**
+
+The classical mixing rule. Its modern form, and the role of k12, are set out in e.g. Poling, Prausnitz & O'Connell, The Properties of Gases and Liquids, 5th ed., ch. 5.
 
 ## Inputs
 

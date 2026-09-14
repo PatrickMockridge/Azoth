@@ -6,8 +6,9 @@
 
 ## Source
 
-**Michelsen, M. L. (1982)** (The isothermal flash problem. Part II. Phase-split calculation. Fluid Phase Equilibria 9(1), 21-40. The bubble- and dew-point iterations are the standard successive-substitution schemes and are set out there and in any cubic-EOS text; the formulation here is the one every implementation uses.
-)
+**Michelsen, M. L. (1982)**
+
+The isothermal flash problem. Part II. Phase-split calculation. Fluid Phase Equilibria 9(1), 21-40. The bubble- and dew-point iterations are the standard successive-substitution schemes and are set out there and in any cubic-EOS text; the formulation here is the one every implementation uses.
 
 DOI: [10.1016/0378-3812(82)85002-4](https://doi.org/10.1016/0378-3812(82)85002-4)
 

@@ -18,7 +18,9 @@ rho = M/v
 
 ## Source
 
-**The definition of molar mass** (Molar mass is the mass per amount of substance, so a mass density is a molar mass divided by a molar volume. There is no paper to cite for that.)
+**The definition of molar mass**
+
+Molar mass is the mass per amount of substance, so a mass density is a molar mass divided by a molar volume. There is no paper to cite for that.
 
 ## Inputs
 

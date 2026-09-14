@@ -6,9 +6,9 @@
 
 ## Source
 
-**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.separator.Separator`, `run(UUID)` at lines 674-782 of the 3.20.0 source tree. See `NOTICE` at the repository root for the attribution.
-** (Version 3.20.0. The thermodynamic sequence taken from it is: `setPressure(P - dP)`; `PHflash(H + Q)` when a heat input is set and `TPflash()` otherwise; then each outlet built from the flashed phase, `setThermoSystemFromPhase`. What is *not* taken is the memoization guard, the low-flow bypass, the internal mixer and the entrainment model - see the notes.
-)
+**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.separator.Separator`, `run(UUID)` at lines 674-782 of the 3.20.0 source tree. See `NOTICE` at the repository root for the attribution.**
+
+Version 3.20.0. The thermodynamic sequence taken from it is: `setPressure(P - dP)`; `PHflash(H + Q)` when a heat input is set and `TPflash()` otherwise; then each outlet built from the flashed phase, `setThermoSystemFromPhase`. What is *not* taken is the memoization guard, the low-flow bypass, the internal mixer and the entrainment model - see the notes.
 
 
 ## Algorithm

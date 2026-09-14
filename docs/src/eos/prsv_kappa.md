@@ -18,7 +18,9 @@ kappa = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3 + 
 
 ## Source
 
-**Stryjek, R.; Vera, J. H. (1986)** (PRSV: An improved Peng-Robinson equation of state for pure compounds and mixtures. The Canadian Journal of Chemical Engineering, 64(2), 323-333)
+**Stryjek, R.; Vera, J. H. (1986)**
+
+PRSV: An improved Peng-Robinson equation of state for pure compounds and mixtures. The Canadian Journal of Chemical Engineering, 64(2), 323-333
 
 DOI: [10.1002/cjce.5450640224](https://doi.org/10.1002/cjce.5450640224)
 

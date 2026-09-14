@@ -6,9 +6,9 @@
 
 ## Source
 
-**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.valve.ThrottlingValve`, `run(UUID)` at lines 363-453 of the 3.20.0 source tree, and the isenthalpic flash inside it at `:467-495`.
-** (Version 3.20.0. Taken from it: the pressure drop (`:407-412`), the clamp that stops a valve raising the pressure unless asked to (`:424-432`), and `PHflash(H_in)` at the outlet pressure (`:470`). Not taken: the IEC 60534 capacity calculation, the fixed-Kv outlet-pressure solve and the transient response.
-)
+**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.valve.ThrottlingValve`, `run(UUID)` at lines 363-453 of the 3.20.0 source tree, and the isenthalpic flash inside it at `:467-495`.**
+
+Version 3.20.0. Taken from it: the pressure drop (`:407-412`), the clamp that stops a valve raising the pressure unless asked to (`:424-432`), and `PHflash(H_in)` at the outlet pressure (`:470`). Not taken: the IEC 60534 capacity calculation, the fixed-Kv outlet-pressure solve and the transient response.
 
 
 ## Algorithm

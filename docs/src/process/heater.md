@@ -6,9 +6,9 @@
 
 ## Source
 
-**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.heatexchanger.Heater`, `run(UUID)` at lines 402-471 of the 3.20.0 source tree. `Cooler` is in the same package and inherits it.
-** (Version 3.20.0. Taken from it: `P_out = P_in - pressureDrop` (`:432-435`), `H_out = H_in + Q` (`:431`) and `PHflash(P_out, H_out)` (`:445-446`). Not taken: the three other specifications the class switches between, the energy port and the caches.
-)
+**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.heatexchanger.Heater`, `run(UUID)` at lines 402-471 of the 3.20.0 source tree. `Cooler` is in the same package and inherits it.**
+
+Version 3.20.0. Taken from it: `P_out = P_in - pressureDrop` (`:432-435`), `H_out = H_in + Q` (`:431`) and `PHflash(P_out, H_out)` (`:445-446`). Not taken: the three other specifications the class switches between, the energy port and the caches.
 
 
 ## Algorithm

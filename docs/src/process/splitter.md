@@ -6,9 +6,9 @@
 
 ## Source
 
-**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.splitter.Splitter`, `run(UUID)` at lines 376-438 of the 3.20.0 source tree.
-** (Version 3.20.0. Taken from it: the component-mole scaling by the split factor (`:420-425`), the inherited temperature and pressure (`:407`), and the flash of each branch (`:427`). Not taken: the conversion of a fixed-flow specification into fractions (`:385`), and the sanitising of the factors (`:388-404`) - see the notes.
-)
+**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.splitter.Splitter`, `run(UUID)` at lines 376-438 of the 3.20.0 source tree.**
+
+Version 3.20.0. Taken from it: the component-mole scaling by the split factor (`:420-425`), the inherited temperature and pressure (`:407`), and the flash of each branch (`:427`). Not taken: the conversion of a fixed-flow specification into fractions (`:385`), and the sanitising of the factors (`:388-404`) - see the notes.
 
 
 ## Algorithm

@@ -104,53 +104,6 @@ a patch.
 
 ## Major
 
-### `tools/prose_lint.py` is wired into nothing
-
-**Severity: major. Status: open.**
-
-**Symptom.** [The process standard](./process.md) P5 states prose rules and names
-`tools/prose_lint.py` as their mechanism. The tool appears in no workflow and no hook, so it
-has never run in CI — and **it cannot pass on this tree anyway**, so wiring it in is not the
-one-line fix it looks like.
-
-**Evidence.**
-
-```
-$ python tools/prose_lint.py ; echo $?
-tools/prose_lint.py:48: history phrase 'formerly'   ...   (7 such lines)
-crates/azoth-process/src/mixer.rs:24: history phrase 'had to change'
-specs/models/process/mixer.yaml:207: history phrase 'had to change'
-prose_lint: 9 line(s) narrate the code's history.
-1
-```
-
-**Seven of the nine hits are the tool matching its own `HISTORY_PHRASES` list** at
-`tools/prose_lint.py:47-53`. `sources()` includes `("tools", "*.py")` and `is_generated()`
-does not exempt it, so the linter reports itself, exits non-zero, and would fail any build it
-were added to. Its docstring's claim that each phrase "occurs zero times in this tree outside
-the change set" is false — the measurement it describes did not count the file doing the
-measuring.
-
-`grep -rn prose_lint .github/` returns nothing; CI runs `spec_lint.py`, `cargo fmt` and
-`ruff check`.
-
-The docstring is self-defeating in a second way: it exempts `deliberately`, `the whole point`
-and `load-bearing` because those occur elsewhere in the tree (`docs/src/spec.md:5,19`). Using
-the corpus as a licence is the scope-shrinking failure in tool form.
-
-**Root cause.** Two, and the second is why the entry is not a formality. The tool was never
-wired in — that is the symptom's cause. But it was also never *run*, which is why nobody
-noticed it fails on itself: a check that is never executed is a check that cannot be
-debugged. The deeper cause is that a phrase list cannot judge prose, which the tool's own
-docstring concedes.
-
-**Remediation.** Three parts, and the first is not optional. Exclude `tools/` from its own
-scan (or the phrase list from the scan), because until that is done the tool reports itself
-and cannot be enabled. Then wire it into `ci.yml` beside `spec_lint.py` and accept it as a
-narrow backstop. Then accept that the phrases that matter most — `deliberately`, `the whole
-point`, `load-bearing` — are not catchable by a list, and that P2's second reader is the real
-mechanism. Deleting the tool and saying so in P5 is the honest alternative to all three.
-
 ### `crates/azoth-python` has no tests
 
 **Severity: major. Status: open.**
@@ -539,9 +492,9 @@ a real machine's data, which this library does not ship and could not check.
 ## Fixed
 
 Entries that have left the sections above. Each names the commit that closed it and the test
-that would have caught it. The first four were closed at `ba98b99`, in the change set that
-first reached a green baseline; the fifth at `f8b5a70`, and it is what makes that baseline
-true rather than merely claimed.
+that would have caught it. Four were closed at `ba98b99`, in the change set that first reached
+a green baseline; `f8b5a70` closed the one that makes that baseline true rather than merely
+claimed; and `01763f5` closed the prose linter's wiring.
 
 **A note on evidence, for the first four.** They were uncommitted work when they were fixed,
 so `ba98b99^` is not their pre-fix state and the failures cannot be re-derived from git. The
@@ -550,6 +503,35 @@ session that made the change, quoted below. Where a fix is checkable from the tr
 `critical_point` names, the mutation test — that is stated and is reproducible. The fifth is
 not in that position: it is reproducible from wheel artifacts at any time, and the
 reproduction is in its own entry below.
+
+### `tools/prose_lint.py` was wired into nothing
+
+**Severity: major while it stood. Status: fixed at `01763f5`.**
+
+**Symptom.** P5 states the prose rules and names `tools/prose_lint.py` as their mechanism. The
+tool appeared in no workflow and no hook, so it had never run in CI — and it could not pass on
+the tree anyway, so wiring it in was not the one-line fix it looked like.
+
+**Evidence.** Before the fix, `python tools/prose_lint.py` exited 1 with nine hits, **seven of
+them the tool matching its own `HISTORY_PHRASES` list**: `sources()` included `("tools",
+"*.py")` and nothing exempted the file doing the measuring. Its docstring claimed each phrase
+"occurs zero times in this tree outside the change set", which was false for the same reason.
+`grep -rn prose_lint .github/` returned nothing.
+
+**Root cause.** Two, and the second is why the entry was not a formality. The tool was never
+wired in — that is the symptom's cause. It was also never *run*, which is why nobody noticed it
+reported itself: **a check that is never executed is a check that cannot be debugged.**
+
+**Remediation, and what it cost.** Excluding the tool's own phrase list from its scan, then
+adding `python tools/prose_lint.py` to the `spec-validate` job beside `spec_lint.py`. It
+passes on this tree and fails the build on a planted violation.
+
+**The part that is not fixed, and why it stays.** A phrase list cannot judge prose, which the
+tool's own docstring concedes. It is a backstop, not the standard — and the phrases that
+matter most (`deliberately`, `the whole point`) are exactly the ones it cannot catch, because
+they are legitimate in some sentences and narration in others. Using the corpus as a licence
+to exempt them is the scope-shrinking failure in tool form. **P2's second reader is the real
+mechanism, and this tool does not substitute for it.**
 
 ### `assert_results_equal` compared a solver diagnostic on an impossible tolerance
 
