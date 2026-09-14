@@ -283,3 +283,44 @@ cases:
       power: -18911.450787166472
       isentropic_temperature: 258.3310657501221
     tolerance: 1.0e-9
+
+  - id: a_superheated_feed_expands_to_vapour
+    note: >
+      The same mixture and the same pressure ratio, expanded from 450 K instead of 300 K,
+      so the feed is superheated vapour and the outlet is vapour too: **320.83 K** against
+      an ideal **308.38 K**, at **-37.08 kW**.
+
+      The case above is two-phase at both ends. Between them the two cover the
+      single-phase and the two-phase branches of the isentropic state, which is what the
+      second case is for - one recorded answer at one state says nothing about the branch
+      the other case does not reach.
+
+      The loss is larger in absolute terms here, 12.4 K against 1.5 K, because the
+      expansion starts further inside the vapour region. What both cases pin is the
+      direction: the real outlet is *above* the ideal one, which is what an efficiency
+      below one does.
+    inputs:
+      Tc: [190.56, 425.12]
+      Pc: [4599000.0, 3796000.0]
+      omega: [0.0115, 0.2002]
+      kij: [[0.0, 0.01289789], [0.01289789, 0.0]]
+      cp_a: [3.0, 5.0]
+      cp_b: [0.0, 0.0]
+      cp_c: [0.0, 0.0]
+      cp_d: [0.0, 0.0]
+      h_ref: [0.0, 0.0]
+      s_ref: [0.0, 0.0]
+      T_ref: 300.0
+      P_ref: 100000.0
+      T: 450.0
+      P: 2000000.0
+      n: 10.0
+      z: [0.6, 0.4]
+      outlet_pressure: 500000.0
+      efficiency: 0.9
+    expected:
+      T: 320.82670307159424
+      P: 500000.0
+      power: -37081.70558078743
+      isentropic_temperature: 308.3776784896851
+    tolerance: 1.0e-9
