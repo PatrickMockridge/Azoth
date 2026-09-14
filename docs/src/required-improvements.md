@@ -187,6 +187,32 @@ parts no numerical test can see.
 **Remediation.** Tests over `main`'s argument handling and `report`'s formatting, plus one
 end-to-end run of the built binary.
 
+### A keycard's `fittings` and `fluids` replace the shipped file instead of extending it
+
+**Severity: major. Status: open.**
+
+**Symptom.** `tools/gen_user_data.py` writes `data/fittings/crane_k_factors.csv` from the
+card's `fittings` section and nothing else, so a card carrying one fitting compiles to a
+one-row file and the seven shipped rows are gone. The same holds for `fluids`. But the
+format's own text says the opposite in two places: `specs/schema/keycard.schema.json`
+describes both sections as "overriding or **extending**", and `docs/src/keycard.md`'s
+section table says "Overrides" beside a paragraph explaining that everything is by name.
+
+**Evidence.** `tools/gen_user_data.py:337-356` — `plan()` calls `render_fittings(document
+["fittings"])`, which renders the card's rows and no others. The file is then written in
+place, so the shipped rows are not merged with the card's, they are replaced by them.
+
+**Root cause.** The section was specified as an overlay and implemented as a whole-file
+substitution. All six other sections are overrides applied *per name* at the point of
+lookup, so nothing in the design anticipated a section whose unit is the file rather than
+the row.
+
+**Remediation.** Merge by `id` for fittings and by name for fluids, so a one-row card
+yields seven rows and the six shipped placeholders keep their `estimated_dummy` status.
+The banner logic already handles a mixed file, and `Fitting::is_estimated()` is per row, so
+the placeholder warning survives the merge. A test asserts that a card with one fitting
+compiles to the shipped count.
+
 ---
 
 ## Minor
@@ -476,6 +502,34 @@ alone makes `import azoth` need yaml, and the first traceback taken only showed 
 
 **`jsonschema` was checked and stays a dev extra.** Nothing under `python/src/azoth` imports
 it; only `tools/check_user_data.py` and the tests do.
+
+### Three `models` fields were accepted by the schema and stored by nothing
+
+**Severity: major. Status: fixed at `fc37cce`.**
+
+**Symptom.** A keycard's `models` section admitted `critical_rule`, `volume_translation` and
+`root_selection`. A card carrying any of them passed the schema, passed the loader, and the
+value was then dropped — `Model` has no field for it and `from_model` reads only
+`components`. A key someone can write and never see again is a promise the format does not
+keep, and it is the same class as the silently-ignored `source_ref` fields removed earlier.
+
+**Evidence.** `specs/schema/keycard.schema.json:159-168` (before the fix) admitted all
+three, each with a one-member enum. `python/src/azoth/keycard.py:448-462` validated
+`kind`/`shape`/`alpha`/`mixing_rule` and read nothing else; `_models` had no unknown-key
+check, so an unrecognised key passed through `body` untouched.
+
+**Root cause.** The model vocabulary was written when the schema listed five cubics and six
+alpha functions, and the extra fields described dimensions of that larger set. They survived
+the narrowing that removed the other members, because a field with one legal value still
+looks meaningful. It is not: it can only ever restate the single behaviour, and
+`root_selection: from_phase` is what `mixture.rs` already does unconditionally.
+
+**Fix and its test.** All three are deleted rather than implemented — the same reasoning the
+schema already applies to the removed Mathias-Copeman branches. The loader now refuses a
+model key it does not know, and
+`test_keycard_loader.py::test_the_model_keys_are_the_schema_s_properties` binds the loader's
+accepted set to the schema's `properties` plus `required`, both directions, so the next
+field added to one and not the other fails the build.
 
 ---
 
