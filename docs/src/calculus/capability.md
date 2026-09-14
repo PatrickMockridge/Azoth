@@ -93,8 +93,8 @@ library rather than by reading the code.
 every call that reads a card is handed one:
 
 ```
-card_a = load("a.yaml")
-card_b = load("b.yaml")
+card_a = load("a.toml")
+card_b = load("b.toml")
 r1 = calc(..., card=card_a)
 r2 = calc(..., card=card_b)
 ```
@@ -108,12 +108,12 @@ module-level card still written and no longer read is the same defect one layer 
 So determinism is a description of the library rather than a requirement on it, for
 the Python half.
 
-**Both halves hold a card.** `azoth_eos::databank::Overlay` is the overlay a caller
-passes to resolve a name, and `entry`, `kij`, `names` and `mixture_of` take one — so a
-Rust-native caller, and Rust's own test harness, can ask for a carded answer.
-`python/src/azoth/keycard.py` is still the only thing that reads a card *file*, because
-a keycard is YAML and this workspace takes no YAML dependency; what crosses is the values
-it resolved to.
+**Both halves read a card.** `azoth_eos::card::Card` parses the document — the same
+TOML `azoth.keycard` reads — and produces the `azoth_eos::databank::Overlay` that
+`entry`, `kij`, `names` and `mixture_of` take. So a Rust-native caller holds a card of
+their own rather than being handed the values Python resolved, and
+`python/tests/test_card_agreement.py` hands one card's text to both readers and compares
+what each resolves it to — name by name, pair by pair.
 
 **A Python caller's card reaches Rust's arithmetic by a different route.** `azoth.eos.
 components.mixture_of` resolves the names and applies the card *in Python*, and

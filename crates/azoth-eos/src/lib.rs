@@ -33,6 +33,7 @@ pub fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
 }
 
 pub mod bubble_pressure;
+pub mod card;
 pub mod critical_point;
 pub mod databank;
 pub mod dew_pressure;

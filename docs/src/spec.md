@@ -142,8 +142,8 @@ supply is a result nobody should have produced, and no schema can discharge that
 
 ## What a keycard is, formally
 
-One YAML file. The format is `specs/schema/keycard.schema.json`; the loader is
-`python/src/azoth/keycard.py`. Its sections are:
+One TOML file. The format is `specs/schema/keycard.schema.json`; the readers are
+`python/src/azoth/keycard.py` and `azoth_eos::card`. Its sections are:
 
 | Section | Stage | Overrides |
 |---|---|---|

@@ -60,7 +60,7 @@ lean/vendor/lean-units/.lake/
 # generated files are NOT listed here: gitignore cannot untrack a file that is
 # already committed, so that rule is `tools/gen_user_data.py`'s to announce and
 # yours to respect rather than something this file can do.
-/azoth-data.yaml
+/azoth-data.toml
 
 # --- local scratch ---
 /tmp/

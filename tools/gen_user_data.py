@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 """Compile a checked user data file into the repository's data files.
 
-`keycard.yaml` at the repository root is a *source*, not a runtime input. This
+`keycard.toml` at the repository root is a *source*, not a runtime input. This
 turns it into the canonical CSVs that both languages read, exactly as
 `specs/calcs/*.yaml` is compiled into two registries. Run it, rebuild, and your
 values are what the calculations use.
 
-    python tools/check_user_data.py keycard.yaml     # check first
-    python tools/gen_user_data.py   keycard.yaml     # then write
-    python tools/gen_user_data.py   keycard.yaml --check
+    python tools/check_user_data.py keycard.toml     # check first
+    python tools/gen_user_data.py   keycard.toml     # then write
+    python tools/gen_user_data.py   keycard.toml --check
 
-# Why files, rather than reading the YAML at runtime
+# Why files, rather than reading the card at runtime
 
 The Rust core embeds its data with `include_str!`, which is what makes the two
 implementations read byte-identical bytes - a property
-`python/tests/test_data_agreement.py` rests on. A file read at runtime from a path
-the user controls would end that guarantee, and giving Rust a runtime data path
-means depending on a YAML parser there, which this project has deliberately
-avoided.
+`python/tests/test_data_agreement.py` rests on. A table read at run time from a path
+the user controls would put a file's *location* into the call path of every
+calculation that reads it, in both languages, and the two could disagree about which
+file they had read. So the sections that are tables rather than values - `fittings`
+and `fluids`, which `specs/schema/keycard.schema.json` marks `compiled` - are written
+into the shipped files instead: one path, named by the code, embedded on both sides.
 
 # Do not commit what this writes
 
@@ -45,13 +47,9 @@ import argparse
 import csv
 import io
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    sys.exit("gen_user_data requires PyYAML: pip install pyyaml")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -94,28 +92,6 @@ FLUID_REGISTRATION = (
 )
 
 
-class TextLoader(yaml.SafeLoader):  # type: ignore[misc]  # pyyaml ships no stubs
-    """A loader that keeps a number's *text* rather than only its value.
-
-    `0.0000200` and `2e-05` are the same float and are not the same statement: the
-    first says three significant figures. A generator that parsed and re-rendered
-    would silently discard that, and an engineer reading the table back would have
-    no way to see it happened. So the scalars are carried through as written.
-
-    Safe: nothing downstream is confused by it. `check_user_data` already calls
-    `float(...)` on every numeric field, so validation is unaffected, and the
-    renderer writes the text out verbatim.
-    """
-
-
-def _scalar_text(loader: Any, node: Any) -> str:
-    return str(loader.construct_scalar(node))
-
-
-TextLoader.add_constructor("tag:yaml.org,2002:int", _scalar_text)
-TextLoader.add_constructor("tag:yaml.org,2002:float", _scalar_text)
-
-
 BOX = "=" * 76
 
 #: The placeholder banner, used when every row is a dummy. Kept word for word from
@@ -143,7 +119,7 @@ DUMMY_WARNING = """\
 #: The banner for a file that is not all placeholders. It does not make the claim
 #: above, which would then be false, and it does not claim the file was generated
 #: either - the shipped water and air tables are real published values that were
-#: never near this tool, and a banner saying "generated from keycard.yaml" would
+#: never near this tool, and a banner saying "generated from keycard.toml" would
 #: be a lie about them. What it says instead is true of both: read the column, and
 #: do not commit licensed values.
 NOT_A_PLACEHOLDER_WARNING = """\
@@ -161,6 +137,17 @@ NOT_A_PLACEHOLDER_WARNING = """\
 #  A table of real published values that this repository ships - the water and air
 #  tables - is a different case and does not carry that restriction. See
 #  see docs/src/spec.md."""
+
+#: How a number reaches the file, which is the one thing about it a reader cannot
+#: recover afterwards. `0.0000200` and `2e-05` are the same float and are not the same
+#: statement about precision, and the second is what a value goes through the generator
+#: as - so the file says so rather than leaving the difference to be discovered by
+#: somebody comparing a table against the standard they took it from.
+NUMBER_NOTE = """\
+# Numbers in these rows are rendered from their values, not from the text written in
+# the source: `0.0000200` in a keycard becomes `2e-05` here. The value is the same and
+# the significant figures are not, so a table whose trailing zeros are meant has to be
+# edited in this file rather than generated into it."""
 
 STATUS_BODY = """\
 # verify_status values:
@@ -234,6 +221,8 @@ def render_header(title: str, *, statuses: dict[str, int], body: str) -> str:
         *warning.splitlines(),
         f"# {BOX}",
         "#",
+        *NUMBER_NOTE.splitlines(),
+        "#",
         *body.splitlines(),
         "#",
         f"# Rows in this file: {counts}.",
@@ -293,9 +282,10 @@ def _write_rows(columns: tuple[str, ...], rows: list[dict[str, Any]]) -> str:
 def _cell(value: Any) -> str:
     """One value as it will appear in the file.
 
-    A number the user wrote is carried through as they wrote it: `TextLoader` kept
-    the text, and re-rendering it through a float would turn `0.0000200` into
-    `2e-05`, which is the same number and not the same claim about precision.
+    A number is rendered from its *value*, so `0.0000200` reaches the file as `2e-05`
+    - the same number and not the same claim about precision, which is why every file
+    this writes says so in its banner (`NUMBER_NOTE`). A text value is passed through
+    untouched, which is what a citation is.
     """
     if value is None:
         return ""
@@ -398,9 +388,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        document = yaml.load(args.path.read_text(encoding="utf-8"), Loader=TextLoader)
-    except yaml.YAMLError as exc:
-        print(f"gen_user_data: {args.path} does not parse: {exc}", file=sys.stderr)
+        document = tomllib.loads(args.path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        print(f"gen_user_data: {args.path} does not parse as TOML: {exc}", file=sys.stderr)
         return 1
 
     if not isinstance(document, dict):
@@ -410,9 +400,9 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # `TextLoader` carries every scalar as text, so the version arrives as `"1"`.
-    # Compared as text rather than coerced, so a version of `1.5` or `two` is still
-    # refused instead of being rounded into acceptance.
+    # Compared as text rather than coerced. The version is an integer in a well-formed
+    # document, so the comparison is exact where it matters, and a version written as
+    # `1.5` or `"two"` is refused rather than rounded into acceptance.
     if str(document.get("schema_version")) != str(SCHEMA_VERSION):
         print(
             f"gen_user_data: {args.path} declares schema_version "

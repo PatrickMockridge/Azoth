@@ -14,7 +14,7 @@ databank/sources/          upstream files, whole, at a named revision      EXIST
         |
         |  derive
         v
-databank/keycard.yaml      the baseline keycard: what azoth ships           NOT BUILT
+databank/keycard.toml      the baseline keycard: what azoth ships           NOT BUILT
         |
         |  compile
         v

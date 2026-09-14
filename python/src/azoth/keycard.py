@@ -7,8 +7,15 @@ library ships, by name. A component you supply with a name the databank already 
 replaces its critical constants; a name it does not have adds one.
 
     >>> import azoth
-    >>> card = azoth.keycard.load("keycard.yaml")
+    >>> card = azoth.keycard.load("keycard.toml")
     >>> azoth.eos.component("methane", card=card)   # the card's values, not the databank's
+
+**A keycard is TOML.** The format is the one the rest of this repository's data is
+written in, so a card and a spec are read by the same rules, and `tomllib` is in the
+standard library, so reading one costs no dependency. It is also a format whose
+numbers are numbers: `1.0e12` and `1.0e+12` are floats, where YAML 1.1 reads the
+first as a *string* - a trap this repository carried a lint rule for and no longer
+needs.
 
 # There is no registration step anywhere, and this is why
 
@@ -58,13 +65,13 @@ its rules.
 
 from __future__ import annotations
 
+import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import pint
-import yaml
 
 from azoth.core._units_gen import UNIT_VOCABULARY as _UNIT_VOCABULARY
 from azoth.core.errors import KeycardError
@@ -199,7 +206,7 @@ class Keycard:
 
 
 def load(path: str | Path) -> Keycard:
-    """Read a keycard from a YAML file.
+    """Read a keycard from a TOML file.
 
     **Returns it and sets nothing.** The card is passed to the calls that should read
     it - ``azoth.eos.component("methane", card=card)`` - and a call with none passed
@@ -215,9 +222,9 @@ def load(path: str | Path) -> Keycard:
     except OSError as exc:
         raise KeycardError(str(where), f"cannot be read: {exc.strerror or exc}") from exc
     try:
-        document = yaml.safe_load(text)
-    except yaml.YAMLError as exc:
-        raise KeycardError(str(where), f"does not parse as YAML: {exc}") from exc
+        document = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        raise KeycardError(str(where), f"does not parse as TOML: {exc}") from exc
     return use(document, path=where)
 
 

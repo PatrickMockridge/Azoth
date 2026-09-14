@@ -25,10 +25,11 @@
 //!
 //! An overlay is a value a caller passes, and not a store: nothing here holds one, so
 //! two cards in one process are two calls and neither answer depends on what was
-//! passed before it. **This crate never parses a card.** A keycard is YAML, the
-//! workspace takes no YAML dependency for the reason `tools/gen_registry.py` gives
-//! about the spec tree, and `python/src/azoth/keycard.py` reads and validates the file -
-//! an [`Overlay`] is built from the values it resolved to.
+//! passed before it. **The card's sections are resolved elsewhere**, in
+//! [`crate::card`], which reads the file and produces the overlay: this module is about
+//! what an overlay *means* to a lookup, and keeping the two apart is what lets a caller
+//! build one directly - a test, a notebook, a service holding a card in memory - without
+//! a file existing at all.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -131,10 +132,11 @@ impl ComponentOverride {
 
 /// A keycard's data, as a value a caller passes.
 ///
-/// **Built from values, never from a file.** A keycard is YAML, this workspace takes no
-/// YAML dependency, and this crate does not read one: `python/src/azoth/keycard.py`
-/// reads and validates the file, and an overlay is built from what it resolved to. A
-/// Rust caller builds one directly.
+/// **A value, not a reader.** An overlay is what the two sections a lookup reads resolve
+/// to - [`crate::card::Card::overlay`] is where a card file becomes one, and a caller
+/// with the values already in hand builds one directly with [`Overlay::new`]. The
+/// distinction matters for tests and for embedding: an overlay needs no file, so a
+/// carded lookup can be asked for without one existing.
 ///
 /// Nothing holds one. Two overlays in one process are two calls, and neither answer
 /// depends on what was passed before it - which is the property a module-level card
@@ -274,8 +276,9 @@ fn number(record: &csv::StringRecord, index: usize, column: &str, row: usize) ->
 /// Unreachable in practice - the table is embedded, so a malformed one is a build
 /// defect rather than a caller condition - and it is a `Result` anyway, because this
 /// crate does not panic on data and because the table is a build artefact whose parse
-/// is fallible in principle. It is not here for a keycard: a keycard is YAML, this
-/// crate never reads one, and an overlay is built from values rather than parsed.
+/// is fallible in principle. It is not here for a keycard: a card is read by
+/// [`crate::card`], which reports what is wrong with the document, and an overlay
+/// arrives here already resolved.
 fn csv_failure(error: csv::Error) -> AzothError {
     AzothError::InvalidInput {
         field: "databank".to_string(),

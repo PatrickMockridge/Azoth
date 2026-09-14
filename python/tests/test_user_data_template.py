@@ -1,6 +1,6 @@
 """The user data template must be valid, and must stay a template.
 
-``keycard.example.yaml`` is the file a user copies to supply values from a
+``keycard.example.toml`` is the file a user copies to supply values from a
 standard they licensed, and ``tools/check_user_data.py`` is what tells them
 whether they filled it in correctly. Both are documentation as much as they are
 code, which is what makes them worth testing.
@@ -14,21 +14,27 @@ The failures these tests exist for are not crashes:
   in the one file whose stated purpose is to make that impossible. The schema and
   the checker both allow ``verified``; only a test can hold the *template* to
   placeholders, because for a real user's file ``verified`` is exactly right.
+
+The sabotaged fixtures below are edits to the template's **text** rather than a
+document rebuilt here. A document written out in this file would drift from the
+template it claims to be sabotaging, and there is no writer to build one with: TOML
+has exactly one reader in this repository and no writer, which is the whole reason
+the conversion tool needed writing.
 """
 
 from __future__ import annotations
 
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CHECKER = REPO_ROOT / "tools" / "check_user_data.py"
-TEMPLATE = REPO_ROOT / "keycard.example.yaml"
+TEMPLATE = REPO_ROOT / "keycard.example.toml"
 
 
 def run_checker(path: Path) -> subprocess.CompletedProcess[str]:
@@ -43,14 +49,29 @@ def run_checker(path: Path) -> subprocess.CompletedProcess[str]:
 
 def template_document() -> dict[str, Any]:
     """The template, parsed."""
-    document: dict[str, Any] = yaml.safe_load(TEMPLATE.read_text(encoding="utf-8"))
+    document: dict[str, Any] = tomllib.loads(TEMPLATE.read_text(encoding="utf-8"))
     return document
+
+
+def sabotaged(replace: str, with_: str) -> str:
+    """The template's text with one string replaced, once.
+
+    The anchor is asserted to be present, because a silent no-op substitution would
+    leave a valid document that the checker accepts - and the test below would then
+    be asserting that a file it never broke is refused.
+    """
+    text = TEMPLATE.read_text(encoding="utf-8")
+    assert text.count(replace) == 1, (
+        f"the template no longer contains exactly one {replace!r}, so this test is "
+        f"sabotaging a file it did not read: {text.count(replace)} occurrence(s)"
+    )
+    return text.replace(replace, with_, 1)
 
 
 def test_the_template_exists() -> None:
     """A missing template is the failure mode this file is named for."""
     assert TEMPLATE.is_file(), (
-        "keycard.example.yaml is missing. It is what README.md tells "
+        "keycard.example.toml is missing. It is what README.md tells "
         "a user to copy; without it that page describes a file that is not there."
     )
 
@@ -97,22 +118,20 @@ def test_every_row_in_the_template_is_a_placeholder() -> None:
 def test_the_checker_is_not_vacuous(tmp_path: Path) -> None:
     """A broken file must fail, or the passing test above proves nothing.
 
-    Sabotages the template the way a user would break it by accident - a typo in the
-    status column - and asserts the checker says so.
+    Sabotages the template the way a user would break it by accident - a column in a
+    row that the format does not define - and asserts the checker says so.
 
-    The sabotage used to be promoting a row to `verified` without a `source_ref`. That
-    requirement is gone: a row now names its source in its citation, in prose, and
-    there is nothing for a tool to check about it. What is still checkable is that the
-    status is one the pipeline understands.
+    The status column is the sabotage because it is the one a user is most likely to
+    add: every other data pipeline has one, and this format deliberately does not.
     """
-    document = template_document()
-    document["fittings"][0]["verify_status"] = "probably_fine"
-
-    broken = tmp_path / "broken.yaml"
-    broken.write_text(yaml.safe_dump(document), encoding="utf-8")
+    broken = tmp_path / "broken.toml"
+    broken.write_text(
+        sabotaged('f_t_basis = "f_t"', 'f_t_basis = "f_t"\nverify_status = "probably_fine"'),
+        encoding="utf-8",
+    )
 
     result = run_checker(broken)
-    assert result.returncode != 0, "an unrecognised verify_status must fail"
+    assert result.returncode != 0, "an undefined column must fail"
     assert "verify_status" in result.stderr
 
 
@@ -122,11 +141,8 @@ def test_the_checker_rejects_an_unknown_schema_version(tmp_path: Path) -> None:
     A future format may mean something different by the same key names, so reading
     it on the assumption that it does not is how a value gets silently reinterpreted.
     """
-    document = template_document()
-    document["schema_version"] = 99
-
-    future = tmp_path / "future.yaml"
-    future.write_text(yaml.safe_dump(document), encoding="utf-8")
+    future = tmp_path / "future.toml"
+    future.write_text(sabotaged("schema_version = 2", "schema_version = 99"), encoding="utf-8")
 
     result = run_checker(future)
     assert result.returncode != 0

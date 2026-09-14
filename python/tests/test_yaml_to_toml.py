@@ -162,8 +162,8 @@ def test_the_corpus_is_the_repositorys_data_files() -> None:
 
     assert {
         "databank/manifest.yaml",
-        "keycard.example.yaml",
         "specs/calcs/eos/pr_departure.yaml",
+        "specs/models/eos/pt_flash.yaml",
         "specs/vocabulary/vocabulary.yaml",
     } <= found
     assert not any(name.startswith(("lean/", ".github/")) for name in found), sorted(found)

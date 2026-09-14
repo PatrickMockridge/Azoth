@@ -19,6 +19,11 @@
 #  `citation`.
 # ============================================================================
 #
+# Numbers in these rows are rendered from their values, not from the text written in
+# the source: `0.0000200` in a keycard becomes `2e-05` here. The value is the same and
+# the significant figures are not, so a table whose trailing zeros are meant has to be
+# edited in this file rather than generated into it.
+#
 # The METHOD being implemented (K = n_ld * f_t) is standard and is the actual
 # contribution; only the coefficients below are placeholders. See
 # specs/calcs/hydraulics/crane_k_factors.yaml for the equation and its status.

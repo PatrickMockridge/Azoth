@@ -1,6 +1,6 @@
 """The user data generator: does what it writes match what the loaders read.
 
-``tools/gen_user_data.py`` compiles a checked ``keycard.yaml`` into the CSVs
+``tools/gen_user_data.py`` compiles a checked ``keycard.toml`` into the CSVs
 under ``data/``. The dangerous property of a generator like that is not that it
 crashes - it is that it writes something *nearly* right: a column renamed, a value
 reformatted, a header line missing. Every one of those produces a file that looks
@@ -16,9 +16,9 @@ So these tests check three things, and none of them is "the tool runs":
 * **The columns are the loaders' contract.** The generator's column tuples are
   compared against the header rows of the committed files, which are what both
   implementations key off.
-* **Numbers keep their text.** ``0.0000200`` and ``2e-05`` are the same float and
-  not the same statement about precision, so a value the user wrote is carried
-  through as written.
+* **Numbers are rendered from their values.** ``0.0000200`` reaches the file as
+  ``2e-05``: the same float and not the same statement about precision. That is a
+  loss, so the file says so in its banner and a test asserts it does.
 """
 
 from __future__ import annotations
@@ -26,15 +26,26 @@ from __future__ import annotations
 import csv
 import importlib.util
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GENERATOR = REPO_ROOT / "tools" / "gen_user_data.py"
 FITTINGS_CSV = REPO_ROOT / "data" / "fittings" / "crane_k_factors.csv"
+TEMPLATE = REPO_ROOT / "keycard.example.toml"
+
+
+def template_document() -> dict[str, Any]:
+    """The template, parsed the way the generator parses it."""
+    return tomllib.loads(TEMPLATE.read_text(encoding="utf-8"))
+
+
+def data_lines(rendered: str) -> list[str]:
+    """A generated file's rows, without the comment banner."""
+    return [line for line in rendered.splitlines() if line and not line.startswith("#")]
 
 
 def _load_generator() -> Any:
@@ -114,30 +125,41 @@ def test_the_generator_writes_the_columns_the_loaders_read() -> None:
         assert tuple(header) == gen.FLUID_COLUMNS, f"{fluid}.csv header differs"
 
 
-def test_a_number_keeps_the_text_the_user_wrote() -> None:
-    """`0.0000200` survives as `0.0000200`, not as `2e-05`.
+def test_a_number_is_rendered_from_its_value() -> None:
+    """`0.0000200` reaches the file as `2e-05`, and the file says so.
 
-    The same float, and a different statement: the first says three significant
-    figures, which is information an engineer reading a property table needs and a
-    tool has no business discarding. This is why the loader keeps scalar text.
+    The same float and not the same statement: the first says three significant
+    figures, which is information an engineer comparing a table against the standard it
+    came from needs. Carrying the text instead took a loader that kept every scalar as
+    it was written, and a format whose numbers are numbers does not have the text to
+    carry - so this is a loss, and the one thing that must not happen to a loss is that
+    it goes unrecorded.
+
+    The banner is checked here rather than in the banner tests because it is the *same*
+    decision: the sentence and the rendering are one change, and a file that rendered
+    from values without saying so is the failure this asserts against.
     """
-    document = gen.yaml.load("t: 0.0000200\nn: 30.0\nb: 2e-05\n", Loader=gen.TextLoader)
-    assert document == {"t": "0.0000200", "n": "30.0", "b": "2e-05"}
-
     rendered = gen.render_fluid(
         "water",
         [
             {
-                "temperature_c": "0.0",
-                "density_kg_m3": "999.8",
-                "dynamic_viscosity_pa_s": "0.0000200",
+                "temperature_c": 0.0,
+                "density_kg_m3": 999.8,
+                "dynamic_viscosity_pa_s": 2e-05,
                 "citation": "x",
-                "verify_status": "unverified",
             }
         ],
     )
-    assert "0.0000200" in rendered, "the significant figures were reformatted away"
-    assert "2e-05" not in rendered
+
+    assert data_lines(rendered)[1].startswith("0.0,999.8,2e-05,"), (
+        "a number must be written as its value; the trailing zeros of the source are "
+        "not available to it"
+    )
+    assert "significant figures are not" in rendered, (
+        "the file does not record that the source's significant figures are lost, so "
+        "somebody comparing a generated table against the standard it came from has no "
+        "way to know which differences are theirs"
+    )
 
 
 def test_the_banner_stops_claiming_every_value_is_a_placeholder() -> None:
@@ -172,7 +194,7 @@ def test_the_banner_stops_claiming_every_value_is_a_placeholder() -> None:
 def test_the_banner_does_not_claim_the_tool_wrote_a_file_it_did_not() -> None:
     """The shipped water table is real data that never went near this tool.
 
-    A banner saying "generated from keycard.yaml" would be false about it, and
+    A banner saying "generated from keycard.toml" would be false about it, and
     the water and air tables are legitimately committed - they are published facts,
     not a licensed table. So the non-placeholder banner has to be true of both
     cases, which means it names the restriction conditionally rather than
@@ -215,9 +237,8 @@ def test_the_generator_agrees_with_the_checker_about_the_template() -> None:
     wherever it appears. The template is the file both are documented against, so
     it is the one to run them both over.
     """
-    template = REPO_ROOT / "keycard.example.yaml"
-    document = gen.yaml.load(template.read_text(encoding="utf-8"), Loader=gen.TextLoader)
-    report = gen.validate(document, template)
+    document = template_document()
+    report = gen.validate(document, TEMPLATE)
     assert not report.errors, (
         f"the template passes tools/check_user_data.py but the generator rejects it: "
         f"{report.errors}. Two definitions of a valid row, which is the drift this "
@@ -236,8 +257,7 @@ def test_the_template_can_be_generated_once_the_fluids_are_registered() -> None:
     that section out leaves a document the tool can write, which is what makes the
     rest of this file's claims reachable rather than hypothetical.
     """
-    template = REPO_ROOT / "keycard.example.yaml"
-    document = gen.yaml.load(template.read_text(encoding="utf-8"), Loader=gen.TextLoader)
+    document = template_document()
     document.pop("fluids")
 
     outputs = gen.plan(document)
@@ -246,12 +266,9 @@ def test_the_template_can_be_generated_once_the_fluids_are_registered() -> None:
     assert relative == Path("data/fittings/crane_k_factors.csv")
 
     # It is a valid registry: strip the banner and parse it back.
-    body = [
-        line for line in text.splitlines() if line.strip() and not line.lstrip().startswith("#")
-    ]
-    rows = list(csv.DictReader(body))
+    rows = list(csv.DictReader(data_lines(text)))
     assert rows and rows[0]["fitting_id"] == "90_elbow"
-    assert rows[0]["n_ld"] == "30.0", "the template's own text was reformatted"
+    assert rows[0]["n_ld"] == "30.0", "the template's own value was reformatted"
 
 
 def test_the_shipped_registry_is_still_all_placeholders() -> None:
@@ -277,35 +294,34 @@ def test_the_shipped_registry_is_still_all_placeholders() -> None:
         assert statuses == {"unverified"}, f"{fluid}.csv statuses changed: {statuses}"
 
 
+#: One fitting row, as a document the generator can be pointed at. Written as TOML text
+#: rather than through a writer: this repository has one TOML reader and no writer, and
+#: a test that needed one would be a test that needed a dependency the pipeline does not
+#: have. The numbers are the caller's, so each test below substitutes them.
+A_ROW = """\
+schema_version = {version}
+[[fittings]]
+id = "x"
+family = "bend"
+name = "x"
+n_ld = {n_ld}
+f_t_basis = "f_t"
+citation = "DUMMY"
+"""
+
+
 def test_an_unknown_schema_version_is_refused(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """A newer document shape is refused rather than guessed at.
 
-    `TextLoader` carries every scalar as text, so a version arrives as a string
-    rather than a number. Reading it as a float or an int would accept `1.5` or
-    reject `"2"`, and either would be a silent decision about a format this tool
-    does not know - so it is compared as text, and anything else is refused.
+    The version is compared as text, so `1.5` or a quoted `"2"` is refused rather than
+    rounded into acceptance. Either would be a silent decision about a format this tool
+    does not know.
     """
-    path = tmp_path / "keycard.yaml"
-    path.write_text(
-        yaml.safe_dump(
-            {
-                "schema_version": 99,
-                "fittings": [
-                    {
-                        "id": "x",
-                        "family": "bend",
-                        "name": "x",
-                        "n_ld": 1.0,
-                        "f_t_basis": "f_t",
-                        "citation": "DUMMY",
-                    }
-                ],
-            }
-        ),
-        encoding="utf-8",
-    )
+    path = tmp_path / "keycard.toml"
+    path.write_text(A_ROW.format(version=99, n_ld=1.0), encoding="utf-8")
+
     assert gen.main([str(path)]) == 1
     assert "schema_version" in capsys.readouterr().err
 
@@ -320,25 +336,10 @@ def test_a_document_that_fails_its_checks_writes_nothing(
     `check_user_data.py` does not write. The failure that motivates it: a partial
     or unchecked file landing in `data/` and being embedded by the next build.
     """
-    path = tmp_path / "keycard.yaml"
-    path.write_text(
-        yaml.safe_dump(
-            {
-                "schema_version": 2,
-                "fittings": [
-                    {
-                        "id": "x",
-                        "family": "bend",
-                        "name": "x",
-                        "n_ld": -1.0,  # non-positive, which the checker refuses
-                        "f_t_basis": "f_t",
-                        "citation": "DUMMY",
-                    }
-                ],
-            }
-        ),
-        encoding="utf-8",
-    )
+    path = tmp_path / "keycard.toml"
+    # `n_ld` non-positive, which the checker refuses.
+    path.write_text(A_ROW.format(version=2, n_ld=-1.0), encoding="utf-8")
+
     assert gen.main([str(path)]) == 1
     err = capsys.readouterr().err
     assert "non-positive equivalent length" in err

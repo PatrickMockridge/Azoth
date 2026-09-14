@@ -1,21 +1,21 @@
 # ============================================================================
-#  keycard.example.yaml - the TEMPLATE for your own keycard
+#  keycard.example.toml - the TEMPLATE for your own keycard
 # ============================================================================
 #
 #  A keycard is how you add to azoth, or override what it ships, **without
 #  writing Rust or Python**. Everything in it is data: a component, a fluid, a
 #  fitting, a coefficient, and a cubic variant.
 #
-#  Copy this to `keycard.yaml` at the repository root, fill in the values you
+#  Copy this to `keycard.toml` at the repository root, fill in the values you
 #  are entitled to use, and load it:
 #
 #      import azoth
-#      card = azoth.keycard.load("keycard.yaml")
+#      card = azoth.keycard.load("keycard.toml")
 #      azoth.eos.component("methane", card=card)   # your values, not the databank's
 #
 #  Check it first, with:
 #
-#      python tools/check_user_data.py keycard.yaml
+#      python tools/check_user_data.py keycard.toml
 #
 #  This template validates as it stands. That is deliberate and a test enforces
 #  it: a template that does not pass its own checker teaches the wrong shape.
@@ -26,13 +26,12 @@
 #
 #  A row may carry a `citation` naming where its values came from. It does not
 #  have to. There is no status field, no requirement and no check: **provenance
-#  is your job, not this library's**, and a YAML linter cannot do it for you.
+#  is your job, not this library's**, and a linter cannot do it for you.
 #
-#  That is the deliberate position, not an omission. An earlier version required
-#  a `verify_status` on every row and a machine-fetchable `source_ref` beside it,
-#  and a rule that the two had to agree. Nobody can check whether a person read a
-#  standard, so the field was a form to fill in rather than a fact - and a form
-#  teaches people to fill it in.
+#  That is the deliberate position, not an omission. A `verify_status` on every
+#  row would be a form to fill in rather than a fact: nobody can check whether a
+#  person read a standard, so the field would record diligence without
+#  establishing any - and a form teaches people to fill it in.
 #
 #  What the library owes you instead is disclosure: it says what it ships and
 #  where that came from (`NOTICE`). Whether a value is right, and whether you may
@@ -54,7 +53,7 @@
 
 # Bump only if the format changes; the checker rejects unknown versions rather
 # than guessing at what a newer shape meant.
-schema_version: 2
+schema_version = 2
 
 # ---------------------------------------------------------------------------
 #  Keyholder
@@ -64,13 +63,13 @@ schema_version: 2
 #  no result carries it and no check requires it. It is here so that the file
 #  says whose it is.
 #
-keyholder:
-  name: Example Engineering Ltd
-  # Optional: a fetchable reference to the licence itself, so a reviewer can see
-  # the terms a value was used under rather than being told they exist. A keycard
-  # carrying only public data has no licence to name.
-  #
-  # licence: https://example.com/licences/iso-5167
+[keyholder]
+name = "Example Engineering Ltd"
+# Optional: a fetchable reference to the licence itself, so a reviewer can see
+# the terms a value was used under rather than being told they exist. A keycard
+# carrying only public data has no licence to name.
+#
+# licence = "https://example.com/licences/iso-5167"
 
 # ---------------------------------------------------------------------------
 #  Components
@@ -91,20 +90,28 @@ keyholder:
 #  `Tc` meant in Celsius being read as kelvin, which would shift every result by
 #  273 and look entirely reasonable.
 #
-components:
-  # An invented value for a substance that ships. The shape is real; this number
-  # is not, and the citation says so. Delete the whole section if you have none.
-  methane:
-    Tc: { value: 190.0, unit: K, citation: "EXAMPLE - not the accepted value." }
+# An invented value for a substance that ships. The shape is real; this number
+# is not, and the citation says so. Delete the whole section if you have none.
+[components.methane.Tc]
+value = 190.0
+unit = "K"
+citation = "EXAMPLE - not the accepted value."
 
-  # A substance the databank does not have. All three parameters are required:
-  # a partial component is refused rather than completed from something similar,
-  # which would be inventing data.
-  #
-  # n-hexadecane:
-  #   Tc: { value: 722.0, unit: K }
-  #   Pc: { value: 1.40e6, unit: Pa }
-  #   omega: { value: 0.717, unit: dimensionless }
+# A substance the databank does not have. All three parameters are required:
+# a partial component is refused rather than completed from something similar,
+# which would be inventing data.
+#
+# [components.n-hexadecane.Tc]
+# value = 722.0
+# unit = "K"
+#
+# [components.n-hexadecane.Pc]
+# value = 1.40e6
+# unit = "Pa"
+#
+# [components.n-hexadecane.omega]
+# value = 0.717
+# unit = "dimensionless"
 
 # ---------------------------------------------------------------------------
 #  Binary interaction parameters
@@ -118,13 +125,13 @@ components:
 #  Ordered pairs are not a thing here: `component_a`/`component_b` may be given in
 #  either order and mean the same pair.
 #
-kij:
-  - component_a: methane
-    component_b: n-butane
-    value: 0.0135
-    citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard. Replace with your own."
-    # `temperature_k` is optional: most published kij are treated as constants,
-    # and recording a temperature where the source gives one is disclosure.
+[[kij]]
+component_a = "methane"
+component_b = "n-butane"
+value = 0.0135
+citation = "EXAMPLE ROW - DUMMY VALUE, not from any standard. Replace with your own."
+# `temperature_k` is optional: most published kij are treated as constants,
+# and recording a temperature where the source gives one is disclosure.
 
 # ---------------------------------------------------------------------------
 #  Coefficients
@@ -143,16 +150,16 @@ kij:
 #  for the case where the same coefficient is used everywhere and belongs in one
 #  place.
 #
-coefficients:
-  hydraulics.orifice_flow:
-    Cd:
-      value: 0.61
-      unit: dimensionless
-      citation: "EXAMPLE - a placeholder, not a value read from ISO 5167."
-      # Which convention the value is stated in, where the quantity is not a true
-      # ratio. `control_valve_cv`'s `Cv` is the case: it is declared dimensionless
-      # because no vocabulary unit can express `gpm/sqrt(psi)`.
-      convention: iso_5167_corner
+# The inner key is quoted because the calculation id contains a dot: unquoted,
+# `hydraulics.orifice_flow` would be read as three levels of table.
+[coefficients."hydraulics.orifice_flow".Cd]
+value = 0.61
+unit = "dimensionless"
+citation = "EXAMPLE - a placeholder, not a value read from ISO 5167."
+# Which convention the value is stated in, where the quantity is not a true
+# ratio. `control_valve_cv`'s `Cv` is the case: it is declared dimensionless
+# because no vocabulary unit can express `gpm/sqrt(psi)`.
+convention = "iso_5167_corner"
 
 # ---------------------------------------------------------------------------
 #  Models
@@ -166,18 +173,17 @@ coefficients:
 #  A definition is a convenience, not a new equation: it names a mixture once so a
 #  caller does not restate it. Use it with `azoth.eos.from_model("name")`.
 #
-# models:
-  # Every member below is the only value each vocabulary currently admits, and
-  # that is deliberate rather than a placeholder. A shape is listed only when both
-  # implementations run it and a test holds the vocabulary to them together;
-  # widening one is a change that happens alongside the implementation.
-  #
-  # vendor_gas:
-  #   kind: cubic_eos
-  #   shape: peng_robinson
-  #   alpha: peng_robinson
-  #   mixing_rule: classical_kij
-  #   components: [methane, n-butane]
+# Every member below is the only value each vocabulary currently admits, and
+# that is deliberate rather than a placeholder. A shape is listed only when both
+# implementations run it and a test holds the vocabulary to them together;
+# widening one is a change that happens alongside the implementation.
+#
+# [models.vendor_gas]
+# kind = "cubic_eos"
+# shape = "peng_robinson"
+# alpha = "peng_robinson"
+# mixing_rule = "classical_kij"
+# components = ["methane", "n-butane"]
 
 # ---------------------------------------------------------------------------
 #  Fittings
@@ -194,15 +200,15 @@ coefficients:
 #  instead of the fully turbulent f_T is a defensible variant that gives a
 #  different answer, so the basis has to travel with the number.
 #
-fittings:
-  # An invented row. The id and the shape are real; the number is not, and the
-  # citation says so. Replace the whole list with your own.
-  - id: 90_elbow
-    family: bend
-    name: 90 degree standard elbow
-    n_ld: 30.0
-    f_t_basis: f_t
-    citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard. Replace with your own data."
+# An invented row. The id and the shape are real; the number is not, and the
+# citation says so. Replace the whole list with your own.
+[[fittings]]
+id = "90_elbow"
+family = "bend"
+name = "90 degree standard elbow"
+n_ld = 30.0
+f_t_basis = "f_t"
+citation = "EXAMPLE ROW - DUMMY VALUE, not from any standard. Replace with your own data."
 
 # ---------------------------------------------------------------------------
 #  Fluid properties
@@ -217,16 +223,16 @@ fittings:
 #  Keys are fluid names and each becomes a table. Tabulate over a range that
 #  covers the temperatures you will ask for, and in ascending temperature order.
 #
-fluids:
-  # An example fluid, deliberately not water: the repository already carries
-  # water and air, and this is here to show the shape rather than to be used.
-  example_fluid:
-    - temperature_c: 0.0
-      density_kg_m3: 1000.0
-      dynamic_viscosity_pa_s: 0.0018
-      citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard."
+# An example fluid, deliberately not water: the repository already carries
+# water and air, and this is here to show the shape rather than to be used.
+[[fluids.example_fluid]]
+temperature_c = 0.0
+density_kg_m3 = 1000.0
+dynamic_viscosity_pa_s = 0.0018
+citation = "EXAMPLE ROW - DUMMY VALUE, not from any standard."
 
-    - temperature_c: 100.0
-      density_kg_m3: 958.0
-      dynamic_viscosity_pa_s: 0.00028
-      citation: "EXAMPLE ROW - DUMMY VALUE, not from any standard."
+[[fluids.example_fluid]]
+temperature_c = 100.0
+density_kg_m3 = 958.0
+dynamic_viscosity_pa_s = 0.00028
+citation = "EXAMPLE ROW - DUMMY VALUE, not from any standard."

@@ -25,9 +25,8 @@ pub type ComponentArguments = (String, Option<f64>, Option<f64>, Option<f64>);
 
 /// A keycard's sections, as this crate can read them.
 ///
-/// A card is built here entry by entry rather than parsed from a file: a keycard is
-/// YAML, this workspace takes no YAML dependency, and `python/src/azoth/keycard.py`
-/// does the reading. What crosses is the values it resolved to.
+/// Built either entry by entry, from the values `azoth.keycard` resolved to, or by
+/// reading a card's text with [`card_overlay`].
 /// Opaque on purpose: a card crosses as a value and *what it resolves to* is read
 /// through the functions below, so there is nothing about it Python can inspect
 /// directly and nothing here for the stub to describe.
@@ -132,4 +131,25 @@ pub fn overlay_kij_rows(overlay: &PyOverlay) -> Vec<(String, String, f64)> {
             (first, second, value)
         })
         .collect()
+}
+
+/// A card read by **Rust**, as the overlay it resolves to.
+///
+/// The second reader of one document. `python/tests/test_card_agreement.py` hands one
+/// card's text to both this and `azoth.keycard`, and compares what each says - one case
+/// per rule, on the shipped template. That is the arrangement
+/// `python/tests/test_data_agreement.py` already uses for the merge rule, and the reason
+/// is the same: two implementations of one document are only worth having if something
+/// holds them to each other on real data.
+///
+/// # Errors
+/// * `InvalidInputError` if the text is not a card this build reads, naming the section,
+///   parameter, unit or model choice that was refused.
+#[pyfunction]
+pub fn card_overlay(py: Python<'_>, text: &str) -> PyResult<PyOverlay> {
+    let card = azoth_eos::card::Card::from_toml(text)
+        .map_err(|error| crate::errors::to_pyerr(py, error))?;
+    Ok(PyOverlay {
+        inner: card.overlay().clone(),
+    })
 }

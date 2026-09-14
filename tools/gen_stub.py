@@ -118,9 +118,10 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
     ),
     (
         "Overlay",
-        "A keycard's sections, as the extension reads them. Built entry by entry from "
-        "the values `azoth.keycard` resolved to, never parsed from a file, and opaque: "
-        "what it resolves to is read through `overlay_entry_row` and its siblings.",
+        "A keycard's sections, as the extension reads them. Built either entry by entry "
+        "from the values `azoth.keycard` resolved to or by reading a card's text with "
+        "`card_overlay`, and opaque: what it resolves to is read through "
+        "`overlay_entry_row` and its siblings.",
         (),
     ),
     (
@@ -164,6 +165,7 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
         " kij: list[tuple[str, str, float]])",
         "Overlay",
     ),
+    ("card_overlay(text: str)", "Overlay"),
     ("overlay_entry_row(name: str, overlay: Overlay)", "ComponentRow"),
     ("overlay_component_rows(overlay: Overlay)", "list[ComponentRow]"),
     ("overlay_kij_rows(overlay: Overlay)", "list[tuple[str, str, float]]"),

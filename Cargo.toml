@@ -42,6 +42,14 @@ thiserror = "2"
 # one small, ubiquitous dependency.
 csv = "1"
 
+# Reading a user's keycard. `toml` is the reference implementation of the format
+# the rest of this repository's data is written in, and reading a card is the one
+# place Rust needs a data format it did not generate itself. `serde` derive is what
+# makes a card a typed document - a section the reader does not know is a field it
+# does not have, rather than a key it walked past.
+serde = { version = "1", features = ["derive"] }
+toml = "1"
+
 # The Python extension. abi3-py312 gives one wheel tag covering CPython
 # 3.12 and later, so the release matrix does not need a wheel per version.
 pyo3 = { version = "0.29", features = ["abi3-py312"] }

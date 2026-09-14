@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check a user data file before it is used to generate the repository's data.
 
-`keycard.example.yaml` at the repository root describes the format. A user
+`keycard.example.toml` at the repository root describes the format. A user
 fills in the values they are entitled to use, and this checks the result.
 
 It checks *provenance*, not values. Nothing here can tell whether a coefficient
@@ -31,7 +31,7 @@ checked file is a separate tool, so that checking and writing cannot become one
 step that does both when one of them fails.
 
 Usage:
-    python tools/check_user_data.py keycard.yaml
+    python tools/check_user_data.py keycard.toml
 
 Exit status is non-zero if any error is found.
 
@@ -45,13 +45,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    sys.exit("check_user_data requires PyYAML: pip install pyyaml")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -179,9 +175,9 @@ def check_with_loader(report: Report, document: dict[str, Any], where: str) -> N
 def check(path: Path) -> int:
     """Load and check a user data file. Returns a process exit status."""
     try:
-        document = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except yaml.YAMLError as exc:
-        print(f"check_user_data: {path} does not parse: {exc}", file=sys.stderr)
+        document = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        print(f"check_user_data: {path} does not parse as TOML: {exc}", file=sys.stderr)
         return 1
 
     if not isinstance(document, dict):

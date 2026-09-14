@@ -205,7 +205,7 @@ specs/models/**/*.yaml    one file per procedure
         └─► tools/provenance.py   ─► provenance.json
 
 a NeqSim checkout ──► tools/gen_databank.py ──► data/components/*.csv
-keycard.yaml ───────► tools/gen_user_data.py ─► data/fittings/*.csv
+keycard.toml ───────► tools/gen_user_data.py ─► data/fittings/*.csv
                                                data/fluids/*.csv
 ```
 
@@ -270,14 +270,14 @@ language, as the two-implementation rule requires.
 [the specification](docs/src/spec.md) has the three.
 
 Most of what you would want to change is **data, not arithmetic**. A **keycard** is one
-YAML file that overrides or extends what the library ships — a component's critical
+TOML file that overrides or extends what the library ships — a component's critical
 constants, a binary interaction parameter, a fluid's property table, a fitting's
 equivalent length, a coefficient a calculation takes, or a named model variant:
 
 ```python
 import azoth
 
-card = azoth.keycard.load("keycard.yaml")
+card = azoth.keycard.load("keycard.toml")
 azoth.eos.component("methane", card=card)  # your values, not the databank's
 ```
 
@@ -287,7 +287,7 @@ library ships. A process-wide card would give two answers for one calculation as
 as somebody loaded a file between the two calls, and which is which would depend on
 when they did it.
 
-Nothing needs registering to make it apply, in either language. `keycard.example.yaml`
+Nothing needs registering to make it apply, in either language. `keycard.example.toml`
 is the template, `python tools/check_user_data.py` checks yours, and
 [the specification](docs/src/spec.md) documents every section - including the two sections
 that are compiled into the shipped data files by `tools/gen_user_data.py` rather than
@@ -306,7 +306,7 @@ ship.
 magnitudes chosen so the software has something to run against. They are not from
 Crane TP-410 or any other standard. A pressure drop computed from them can be
 wrong by a factor of two and look entirely reasonable. Supply your own with
-`keycard.example.yaml`; the attribution obligations are in [`NOTICE`](NOTICE).
+`keycard.example.toml`; the attribution obligations are in [`NOTICE`](NOTICE).
 
 The `verify_status` column records that, and a test fails the day someone populates
 the file properly. Water and air under `data/fluids/` are a different case: real

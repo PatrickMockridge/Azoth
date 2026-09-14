@@ -146,6 +146,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;
     m.add_class::<overlay::PyOverlay>()?;
     m.add_function(wrap_pyfunction!(overlay::overlay, m)?)?;
+    m.add_function(wrap_pyfunction!(overlay::card_overlay, m)?)?;
     m.add_function(wrap_pyfunction!(overlay::overlay_entry_row, m)?)?;
     m.add_function(wrap_pyfunction!(overlay::overlay_component_rows, m)?)?;
     m.add_function(wrap_pyfunction!(overlay::overlay_kij_rows, m)?)?;

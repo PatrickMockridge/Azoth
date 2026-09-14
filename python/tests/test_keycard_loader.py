@@ -24,11 +24,11 @@ from __future__ import annotations
 
 import inspect
 import json
+import tomllib
 from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
 
 from azoth import eos, hydraulics, keycard
 from azoth.core.errors import InvalidInputError, KeycardError, PropertyUnavailableError
@@ -41,7 +41,7 @@ CALC_SCHEMA = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
 #: The unit enum lives in its own schema, which `calc.schema.json` `$ref`s. It is
 #: generated from `specs/vocabulary/vocabulary.yaml` by `tools/gen_vocabulary.py`.
 UNIT_SCHEMA = REPO_ROOT / "specs" / "schema" / "unit.schema.json"
-TEMPLATE = REPO_ROOT / "keycard.example.yaml"
+TEMPLATE = REPO_ROOT / "keycard.example.toml"
 
 q = ureg.Quantity
 
@@ -437,7 +437,7 @@ def test_a_document_that_is_not_a_mapping_is_refused() -> None:
 
 
 def test_the_template_is_a_keycard_this_build_loads() -> None:
-    """`keycard.example.yaml` must pass its own loader, not just its checker.
+    """`keycard.example.toml` must pass its own loader, not just its checker.
 
     Same argument as the template passing `check_user_data.py`: a template that does
     not load teaches the wrong shape, and it is the file a user copies.
@@ -449,10 +449,28 @@ def test_the_template_is_a_keycard_this_build_loads() -> None:
     assert card.coefficient("hydraulics.orifice_flow", "Cd") is not None
 
 
-def test_the_template_is_valid_yaml_with_a_version() -> None:
-    """A guard against the file being replaced by prose during an edit."""
-    document = yaml.safe_load(TEMPLATE.read_text(encoding="utf-8"))
+def test_the_template_parses_as_toml_with_a_version() -> None:
+    """A guard against the file being replaced by prose during an edit.
+
+    Parsed rather than read as text, so a template that stopped being a TOML document
+    while still containing the right words fails here.
+    """
+    document = tomllib.loads(TEMPLATE.read_text(encoding="utf-8"))
     assert document["schema_version"] == keycard.SCHEMA_VERSION
+
+
+def test_a_file_that_is_not_toml_is_refused_as_such(tmp_path: Path) -> None:
+    """The parse failure names the format it tried.
+
+    The message is the whole of what a user gets when their file does not parse, so it
+    has to name what was expected. The fixture is a keycard written in the format this
+    repository read before TOML, which is the document most likely to be lying around.
+    """
+    stale = tmp_path / "keycard.toml"
+    stale.write_text("schema_version: 2\n", encoding="utf-8")
+
+    with pytest.raises(KeycardError, match="does not parse as TOML"):
+        keycard.load(stale)
 
 
 # ---------------------------------------------------------------------------

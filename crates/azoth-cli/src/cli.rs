@@ -6,29 +6,24 @@
 //!
 //! # Why there is no `--keycard`
 //!
-//! A keycard is a value this library can be handed, and `azoth_eos::databank::Overlay`
-//! is that value in Rust. A flag reading one from a *file* would be worth nothing here
-//! yet, for two reasons that are worth writing down before somebody adds it anyway.
+//! A keycard is a value this library can be handed, and a card file can now be read
+//! here: `azoth_eos::card::Card` parses one and produces the
+//! `azoth_eos::databank::Overlay` a lookup takes. What is missing is not a reader but a
+//! *consumer*, and that is worth writing down before somebody adds the flag anyway.
 //!
 //! **Nothing this binary does would consult it.** The two subcommands read
 //! `azoth_hydraulics::{fluids, fittings}`, and the card sections that could feed them -
 //! `fluids` and `fittings` - are `compiled`-stage in `specs/schema/keycard.schema.json`:
 //! they are inputs to `tools/gen_user_data.py`, and **nothing reads them at run time in
-//! either language**. A `--keycard` added now would accept a file, change no answer, and
-//! report success, which is the accepted-and-read-by-nothing failure this repository
-//! refuses everywhere else.
+//! either language**. A card's `components` and `kij` are the runtime sections, and
+//! neither subcommand resolves a substance. So a `--keycard` added now would accept a
+//! file, change no answer, and report success, which is the accepted-and-read-by-nothing
+//! failure this repository refuses everywhere else.
 //!
-//! **A keycard is YAML and this crate will not parse one.** The workspace takes no YAML
-//! dependency, for the reason `tools/gen_registry.py` gives about the spec tree:
-//! `serde_yaml` is deprecated and `serde_yml` is an unrelated low-trust fork. A
-//! hand-rolled partial reader would be worse than the crate it avoided - one that read
-//! `components` and skipped what it did not understand would be a card with sections
-//! silently dropped.
-//!
-//! The trigger is an eos subcommand: something that reads a component or a mixture, at
-//! which point `--keycard` reads a **compiled overlay** with the `csv` crate this
-//! workspace already depends on, in the same shape as `data/components/*.csv`. Until
-//! there is such a subcommand the flag has nothing to deliver.
+//! The trigger is an eos subcommand: something that names a component or a mixture, at
+//! which point `--keycard` reads the card with `azoth_eos::card` and hands the overlay
+//! to the lookup. Until there is such a subcommand the flag has nothing to deliver -
+//! and the reader it would need is already written.
 
 use clap::{Parser, Subcommand};
 
