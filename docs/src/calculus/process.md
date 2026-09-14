@@ -77,9 +77,11 @@ the pure evaluation of `f`:
 U  ≅  f(x₁, …, xₘ)
 ```
 
-*Status: **specified**. The eight unit operations are pure functions in both
-languages, but nothing declares that as a property rather than implementing it, so
-there is nothing yet for `Azoth.Process.unit_op_is_extensional` to be about.*
+*Status: **specified**, and this page's subject is further away than the others.
+There is no unit-operation tier in this repository: the eight that existed were
+deleted pending tranche P11, so the claim is not that an implementation is
+unchecked but that there is no implementation to check.
+`Azoth.Process.unit_op_is_extensional` is for the tier that returns.*
 
 Three hypotheses, and each is doing work: *only its declared channels*, so `U`
 cannot read anything the caller did not supply; *total*, so it cannot fail on a

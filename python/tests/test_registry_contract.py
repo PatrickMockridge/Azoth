@@ -17,6 +17,7 @@ import dataclasses
 import importlib
 import inspect
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -33,6 +34,12 @@ from azoth.core.warnings import WarningCode
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
+SPEC_PAGE = REPO_ROOT / "docs" / "src" / "spec.md"
+
+#: `azoth has **30 ids** — 21 calculations and 9 models.`
+_COUNT_CLAIM = re.compile(
+    r"\*\*(?P<ids>\d+) ids\*\* — (?P<calcs>\d+) calculations and (?P<models>\d+) models"
+)
 
 
 def namespace_module(calc_id: str) -> ModuleType:
@@ -51,6 +58,38 @@ def reference_module(calc_id: str, function_name: str) -> ModuleType:
     """The pure-Python reference module for a calc, in whichever namespace."""
     namespace, _, _ = calc_id.rpartition(".")
     return importlib.import_module(f"azoth.{namespace}.reference.{function_name}")
+
+
+def test_the_specification_states_the_real_number_of_ids() -> None:
+    """`spec.md` says how many ids there are, and the registry is the authority.
+
+    The page is normative and a reader arriving at it takes the count as a fact
+    about the library. Nothing checked it, and it went stale: the unit-operation
+    tier was deleted and the page went on saying **38 ids — 21 calculations and 17
+    models** with 21 and 9 in the registry. A count is cheap to check and expensive
+    to notice.
+
+    The three numbers are compared separately rather than by their sum, because a
+    change that moved one calc to the model tree would leave the total right and the
+    page wrong.
+    """
+    page = SPEC_PAGE.read_text(encoding="utf-8")
+    match = _COUNT_CLAIM.search(page)
+    assert match, (
+        f"{SPEC_PAGE.relative_to(REPO_ROOT)} no longer states an id count in the form "
+        f"this test reads. Either the page changed and this regex did not, or the "
+        f"count was removed - and a claim nothing checks is the one that goes stale."
+    )
+    assert int(match.group("calcs")) == len(CALCS), (
+        f"spec.md says {match.group('calcs')} calculations; the registry has {len(CALCS)}"
+    )
+    assert int(match.group("models")) == len(_models_gen.MODELS), (
+        f"spec.md says {match.group('models')} models; the registry has {len(_models_gen.MODELS)}"
+    )
+    assert int(match.group("ids")) == len(CALCS) + len(_models_gen.MODELS), (
+        f"spec.md says {match.group('ids')} ids, which is not the "
+        f"{len(CALCS) + len(_models_gen.MODELS)} the two numbers beside it give"
+    )
 
 
 @pytest.mark.requires_rust
