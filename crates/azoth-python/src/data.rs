@@ -224,20 +224,26 @@ pub fn fittings_rows(py: Python<'_>) -> PyResult<Vec<PyFittingRow>> {
 #[pyfunction]
 #[must_use]
 pub fn component_rows() -> Vec<PyComponentRow> {
-    databank::all_entries()
-        .into_iter()
-        .map(|entry| PyComponentRow {
-            name: entry.name.clone(),
-            tc_k: entry.tc,
-            pc_pa: entry.pc,
-            acentric_factor: entry.omega,
-            cp_a: entry.cp.map(|cp| cp[0]),
-            cp_b: entry.cp.map(|cp| cp[1]),
-            cp_c: entry.cp.map(|cp| cp[2]),
-            cp_d: entry.cp.map(|cp| cp[3]),
-            cp_e: entry.cp.map(|cp| cp[4]),
-        })
-        .collect()
+    databank::all_entries().into_iter().map(row_of).collect()
+}
+
+/// One entry in the table's own row shape.
+///
+/// One definition, used by the table and by an overlay's rows as well: the two are
+/// compared field by field in `python/tests/test_data_agreement.py`, and a second
+/// builder would be a second place the shape can differ.
+pub(crate) fn row_of(entry: &databank::Entry) -> PyComponentRow {
+    PyComponentRow {
+        name: entry.name.clone(),
+        tc_k: entry.tc,
+        pc_pa: entry.pc,
+        acentric_factor: entry.omega,
+        cp_a: entry.cp.map(|cp| cp[0]),
+        cp_b: entry.cp.map(|cp| cp[1]),
+        cp_c: entry.cp.map(|cp| cp[2]),
+        cp_d: entry.cp.map(|cp| cp[3]),
+        cp_e: entry.cp.map(|cp| cp[4]),
+    }
 }
 
 /// Every row of the interaction table, as the `azoth-eos` crate parsed it.

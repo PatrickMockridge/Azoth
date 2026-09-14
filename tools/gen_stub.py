@@ -117,6 +117,13 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
         (("component_a", "str"), ("component_b", "str"), ("kij_pr", "float")),
     ),
     (
+        "Overlay",
+        "A keycard's sections, as the extension reads them. Built entry by entry from "
+        "the values `azoth.keycard` resolved to, never parsed from a file, and opaque: "
+        "what it resolves to is read through `overlay_entry_row` and its siblings.",
+        (),
+    ),
+    (
         "Qty",
         "A physical quantity: always SI magnitude, plus a canonical unit label.",
         (("magnitude_si", "float"), ("unit", "str")),
@@ -152,6 +159,14 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     ("fluid_rows(name: str)", "list[FluidRow]"),
     ("component_rows()", "list[ComponentRow]"),
     ("kij_rows()", "list[KijRow]"),
+    (
+        "overlay(components: list[tuple[str, float | None, float | None, float | None]],"
+        " kij: list[tuple[str, str, float]])",
+        "Overlay",
+    ),
+    ("overlay_entry_row(name: str, overlay: Overlay)", "ComponentRow"),
+    ("overlay_component_rows(overlay: Overlay)", "list[ComponentRow]"),
+    ("overlay_kij_rows(overlay: Overlay)", "list[tuple[str, str, float]]"),
     ("warning_codes()", "list[str]"),
     ("unit_names()", "list[str]"),
     ("solver_kinds()", "list[str]"),

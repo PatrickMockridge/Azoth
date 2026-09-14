@@ -702,6 +702,41 @@ def molar_enthalpy_entropy(
     )
 
 
+def overlay_from(card: Any) -> Any:
+    """A keycard as the extension reads it.
+
+    The card's ``pint`` quantities become SI magnitudes here, the way every other
+    dimensioned value crosses - the extension takes numbers, and one conversion site is
+    what keeps the two languages working in the same units.
+
+    **Nothing is resolved here.** This hands the card over as data; what a name resolves
+    to is `azoth_eos::databank`'s answer, and `python/tests/test_data_agreement.py`
+    compares it against `azoth.eos.components`' answer for the same card. Two
+    implementations of one merge rule, held to each other the way the two kernels are.
+    """
+    components = [
+        (
+            name,
+            _si_of(parameters.get("Tc")),
+            _si_of(parameters.get("Pc")),
+            _plain(parameters.get("omega")),
+        )
+        for name, parameters in sorted(card.components.items())
+    ]
+    kij = [(a, b, value) for (a, b), value in sorted(card.kij.items())]
+    return _core.overlay(components, kij)
+
+
+def _si_of(value: Q | None) -> float | None:
+    """A dimensioned card value as an SI magnitude, or ``None`` if the card omits it."""
+    return None if value is None else float(value.to_base_units().magnitude)
+
+
+def _plain(value: Q | None) -> float | None:
+    """A dimensionless card value as a bare float, or ``None`` if the card omits it."""
+    return None if value is None else float(value.to("dimensionless").magnitude)
+
+
 def resolve(calc_id: str) -> Callable[..., Any]:
     """The bridge function for a calc id, derived from the id rather than listed.
 

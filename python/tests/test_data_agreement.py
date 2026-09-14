@@ -354,3 +354,199 @@ def test_the_data_files_are_where_the_report_says_they_are() -> None:
         resolved = find(data_file.path)
         assert isinstance(resolved, Path)
         assert resolved.is_file(), f"{data_file.path} did not resolve to a file"
+
+
+# ---------------------------------------------------------------------------
+# A keycard, which is the other half of the data
+# ---------------------------------------------------------------------------
+#
+# The comparison above is over the *file*. A keycard is the other thing that decides
+# what a calculation runs on, and until an overlay existed in Rust there was nothing to
+# compare it against: the merge rule - a card naming only `omega` keeps the shipped `Tc`
+# and `Pc` - had one implementation, in `azoth.eos.components`, and a rule with one
+# implementation has nothing to be held to.
+#
+# The cases below are one per *rule* rather than per value, because the rules are what a
+# keycard is. Nothing here re-implements the merge: both sides are asked the same
+# question and their answers are compared, which is the arrangement the two kernels use.
+
+
+def _card(**sections: Any) -> Any:
+    """A keycard built from a mapping, through the loader's own validation."""
+    from azoth import keycard
+
+    return keycard.use({"schema_version": 2, **sections})
+
+
+def _overlay(card: Any) -> Any:
+    """The same card, as the extension reads it."""
+    import azoth._rust_bridge as bridge
+
+    return bridge.overlay_from(card)
+
+
+def python_carded_rows(card: Any) -> list[dict[str, Any]]:
+    """Every name the card states, as the Python reference resolves it, by name."""
+    rows = []
+    for name in sorted(card.components):
+        record = components.entry(name, card=card)
+        cp = record.cp
+        rows.append(
+            {
+                "name": record.name.lower(),
+                "tc_k": record.Tc.to("K").magnitude,
+                "pc_pa": record.Pc.to("Pa").magnitude,
+                "acentric_factor": record.omega,
+                "cp_a": None if cp is None else cp[0],
+                "cp_b": None if cp is None else cp[1],
+                "cp_c": None if cp is None else cp[2],
+                "cp_d": None if cp is None else cp[3],
+                "cp_e": None if cp is None else cp[4],
+            }
+        )
+    return rows
+
+
+def rust_carded_rows(card: Any) -> list[dict[str, Any]]:
+    """The same names, as the core resolves them.
+
+    `COMPONENT_FIELDS` and not a set of its own: a card can change `Tc`, `Pc`, `omega`
+    and nothing else, and the fields the row carries are the same fields either way. A
+    separate tuple would be a second place the row's shape is written down.
+    """
+    rows = extension().overlay_component_rows(_overlay(card))
+    return rust_rows(rows, COMPONENT_FIELDS)
+
+
+def assert_carded_rows_agree(card: Any) -> None:
+    """Both implementations, asked about one card, must answer the same thing."""
+    rust = rust_carded_rows(card)
+    python = python_carded_rows(card)
+    assert rust == python, (
+        f"the two merge rules disagree about {sorted(card.components)}\n"
+        f"  rust:   {rust}\n  python: {python}"
+    )
+
+
+def test_an_empty_card_resolves_to_nothing() -> None:
+    """The guard that makes every case below readable, and the reason it exists.
+
+    A comparison that ignored its argument would pass this case and fail every other
+    one. Without it, the others could be green because both sides were shown the same
+    empty answer.
+    """
+    card = _card()
+    assert python_carded_rows(card) == []
+    assert rust_carded_rows(card) == []
+
+
+def test_a_parameter_override_keeps_the_parameters_it_does_not_name() -> None:
+    """The rule a keycard is built on, compared rather than asserted twice."""
+    assert_carded_rows_agree(
+        _card(components={"methane": {"omega": {"value": 0.5, "unit": "dimensionless"}}})
+    )
+
+    # And both sides kept the shipped `Tc`: a card that replaced the record whole would
+    # make a user correcting one value restate the others.
+    shipped = components.entry("methane").Tc.to("K").magnitude
+    assert (
+        python_carded_rows(
+            _card(components={"methane": {"omega": {"value": 0.5, "unit": "dimensionless"}}})
+        )[0]["tc_k"]
+        == shipped
+    )
+
+
+def test_a_full_override_of_a_shipped_substance_agrees() -> None:
+    assert_carded_rows_agree(
+        _card(
+            components={
+                "methane": {
+                    "Tc": {"value": 190.0, "unit": "K"},
+                    "Pc": {"value": 4.599e6, "unit": "Pa"},
+                    "omega": {"value": 0.0115, "unit": "dimensionless"},
+                }
+            }
+        )
+    )
+
+
+def test_an_added_substance_has_no_polynomial_on_either_side() -> None:
+    """The case that forced `Entry.cp` to be optional in Rust.
+
+    A card supplies the parameters a *cubic* reads, and a heat-capacity polynomial is
+    not one of them - so a substance a card adds has none, on both sides, and the
+    comparison has to be able to say so.
+    """
+    card = _card(
+        components={
+            "unobtainium": {
+                "Tc": {"value": 500.0, "unit": "K"},
+                "Pc": {"value": 2.0e6, "unit": "Pa"},
+                "omega": {"value": 0.3, "unit": "dimensionless"},
+            }
+        }
+    )
+    assert_carded_rows_agree(card)
+
+    row = rust_carded_rows(card)[0]
+    assert row["cp_a"] is None, "an added substance has no polynomial on the Rust side"
+    assert python_carded_rows(card)[0]["cp_a"] is None
+
+
+def test_a_name_in_neither_source_is_refused_by_the_same_class() -> None:
+    """The class matters as much as the refusal.
+
+    Python raises `PropertyUnavailableError` here and Rust has to raise the same thing,
+    or one lookup reports itself two ways depending on which backend answered. The
+    Python exception is a `LookupError` and the Rust variant is not an `InvalidInput`,
+    which is the distinction: "you gave me nonsense" is a different answer from "I do
+    not have that substance".
+    """
+    from azoth.core.errors import PropertyUnavailableError
+
+    card = _card()
+    with pytest.raises(PropertyUnavailableError):
+        components.entry("unobtainium", card=card)
+    with pytest.raises(PropertyUnavailableError):
+        extension().overlay_entry_row("unobtainium", _overlay(card))
+
+
+def test_a_partial_new_substance_is_refused_by_the_same_class() -> None:
+    """Completing it from a similar substance would be inventing data, on both sides."""
+    from azoth.core.errors import PropertyUnavailableError
+
+    card = _card(components={"unobtainium": {"Tc": {"value": 500.0, "unit": "K"}}})
+    with pytest.raises(PropertyUnavailableError):
+        components.entry("unobtainium", card=card)
+    with pytest.raises(PropertyUnavailableError):
+        extension().overlay_entry_row("unobtainium", _overlay(card))
+
+
+@pytest.mark.parametrize("value", [0.5, 0.0])
+def test_a_kij_override_agrees(value: float) -> None:
+    """Including a zero, which is the case that reads as "nothing stated".
+
+    Overriding a fitted pair back to ideal mixing is a caller stating something, and
+    a lookup that drops the zero silently undoes it. Both sides have to mean the same
+    thing by it - Python omits the pair from `kij_for` and Rust resolves it to zero,
+    and both mean ideal mixing.
+    """
+    card = _card(kij=[{"component_a": "methane", "component_b": "n-butane", "value": value}])
+
+    resolved = extension().overlay_kij_rows(_overlay(card))
+    assert resolved == [("methane", "n-butane", value)], (
+        f"the core resolved the pair to {resolved}, not to the card's {value}"
+    )
+
+    # Python's effective value for the pair, with an absent pair meaning ideal mixing.
+    python_side = components.kij_for(("methane", "n-butane"), card=card).get((0, 1), 0.0)
+    assert python_side == value
+
+
+def test_the_shipped_pair_is_still_there_without_a_card() -> None:
+    """The other direction: a card changes the pair and nothing else does."""
+    shipped = components.kij_for(("methane", "n-butane"))[(0, 1)]
+    assert shipped != 0.0, "the fixture needs a fitted non-zero pair"
+    card = _card(kij=[{"component_a": "methane", "component_b": "n-butane", "value": 0.0}])
+    assert components.kij_for(("methane", "n-butane"), card=card).get((0, 1), 0.0) == 0.0

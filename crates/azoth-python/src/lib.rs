@@ -36,6 +36,7 @@ mod data;
 mod eos;
 mod errors;
 mod hydraulics;
+mod overlay;
 mod results;
 mod thermal;
 
@@ -143,6 +144,11 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(data::component_rows, m)?)?;
     m.add_function(wrap_pyfunction!(data::kij_rows, m)?)?;
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;
+    m.add_class::<overlay::PyOverlay>()?;
+    m.add_function(wrap_pyfunction!(overlay::overlay, m)?)?;
+    m.add_function(wrap_pyfunction!(overlay::overlay_entry_row, m)?)?;
+    m.add_function(wrap_pyfunction!(overlay::overlay_component_rows, m)?)?;
+    m.add_function(wrap_pyfunction!(overlay::overlay_kij_rows, m)?)?;
     m.add_function(wrap_pyfunction!(results::unit_names, m)?)?;
     m.add_function(wrap_pyfunction!(results::unit_dimensions, m)?)?;
     m.add_function(wrap_pyfunction!(results::unit_si_factor, m)?)?;

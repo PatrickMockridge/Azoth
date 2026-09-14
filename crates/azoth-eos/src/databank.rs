@@ -202,6 +202,23 @@ impl Overlay {
             .copied()
     }
 
+    /// Every pair this overlay states, each once, with the lower name first.
+    ///
+    /// The de-duplication is the opposite of the *storage*, which keeps both orderings
+    /// so a caller need not know which name came first. This is the display direction:
+    /// one row per pair.
+    #[must_use]
+    pub fn kij_pairs(&self) -> Vec<(String, String)> {
+        let mut out: Vec<(String, String)> = self
+            .kij
+            .keys()
+            .filter(|(first, second)| first < second)
+            .cloned()
+            .collect();
+        out.sort();
+        out
+    }
+
     /// The names this overlay adds to the table, in no particular order.
     #[must_use]
     pub fn component_names(&self) -> Vec<&str> {

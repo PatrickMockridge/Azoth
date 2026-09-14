@@ -108,26 +108,26 @@ module-level card still written and no longer read is the same defect one layer 
 So determinism is a description of the library rather than a requirement on it, for
 the Python half.
 
-**The Rust half cannot express a card — which is not the same as ignoring one.**
-`crates/azoth-eos/src/databank.rs` reads only the files compiled into the binary, and
-there is no type for an overlay: `entry`, `kij` and `mixture_of` take a name and
-nothing else, and `Mixture`'s components deliberately carry no name, so a name cannot
-be resolved inside the core at all. A Rust-native caller — someone writing Rust against
-`azoth-eos`, or anything built on it — therefore cannot ask for a carded answer.
+**Both halves hold a card.** `azoth_eos::databank::Overlay` is the overlay a caller
+passes to resolve a name, and `entry`, `kij`, `names` and `mixture_of` take one — so a
+Rust-native caller, and Rust's own test harness, can ask for a carded answer.
+`python/src/azoth/keycard.py` is still the only thing that reads a card *file*, because
+a keycard is YAML and this workspace takes no YAML dependency; what crosses is the values
+it resolved to.
 
-**A Python caller's card does reach Rust's arithmetic.** `azoth.eos.components.mixture_of`
-resolves the names and applies the card *in Python*, and `azoth._rust_bridge` crosses the
-boundary with the numbers, so the flash that runs in Rust runs on the card's values.
-Measured, not reasoned about: a card shifting methane's `Tc` to 300 K gives
-`beta = 0.2870200723305141` on the Python backend and `0.2870200723305131` on the Rust
-one, against a baseline of `0.6824887179287704`. What is absent is not the card's
-*effect* but its *expressibility* inside the core.
+**A Python caller's card reaches Rust's arithmetic by a different route.** `azoth.eos.
+components.mixture_of` resolves the names and applies the card *in Python*, and
+`azoth._rust_bridge` crosses the boundary with the numbers, so the flash that runs in
+Rust runs on the card's values. Measured rather than reasoned about: a card shifting
+methane's `Tc` to 300 K gives `beta = 0.2870200723305141` on the Python backend and
+`0.2870200723305131` on the Rust one, against a baseline of `0.6824887179287704`.
 
-That distinction is worth the paragraph because it is what the two-implementations rule
-is for. A card naming only `omega` keeps the shipped `Tc` and `Pc` — and that merge rule
-has **one implementation**, in Python, with nothing to be compared against. An overlay
-in Rust gives the rule a second implementation, and gives the comparison something to
-compare. Until then this claim is true of one language and unstatable in the other.
+**Two routes, one rule, and the rule is compared.** A card naming only `omega` keeps the
+shipped `Tc` and `Pc`; that merge is implemented twice now, in `azoth.eos.components`
+and in `azoth-eos::databank`, and `python/tests/test_data_agreement.py` asks both the
+same question and compares the answers — one case per rule rather than per value.
+That test's empty-card case is the guard that makes the rest readable: a comparison
+that ignored its argument would pass it and fail every other one.
 
 ## Disclosure, which is the other half
 
