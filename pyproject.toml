@@ -27,6 +27,10 @@ classifiers = [
 dependencies = [
   # Units. The whole public API speaks pint quantities, so this is not optional.
   "pint>=0.24",
+  # `azoth.keycard` parses YAML, and `azoth/__init__.py` imports it at module
+  # scope, so `import azoth` does too. Not optional for the same reason pint is
+  # not: a dependency of the package as it is imported rather than of the tools.
+  "pyyaml>=6",
 ]
 
 [project.optional-dependencies]
@@ -37,10 +41,12 @@ dev = [
   # Needed to build the extension, so it is part of developing rather than an
   # optional extra. CI installs this list and nothing else - see the note there.
   "maturin>=1.15",
-  # The spec tools read YAML and validate against the JSON Schema. Listed here
-  # because the test suite shells out to `tools/gen_registry.py --check`, so a
-  # dev environment without them fails a test rather than skipping one.
-  "pyyaml>=6",
+  # The spec tools validate against the JSON Schema, and the test suite shells out
+  # to them, so a dev environment without this fails a test rather than skipping
+  # one. Dev-only because nothing under `python/src/azoth` imports it: the schema
+  # is a dev-time artefact and `azoth.keycard` checks only what it needs to build
+  # objects safely. `pyyaml` used to be listed here for the same reason and is now
+  # a runtime dependency above, because the package itself imports it.
   "jsonschema>=4.20",
 ]
 

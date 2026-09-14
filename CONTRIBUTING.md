@@ -29,7 +29,7 @@ git clone https://github.com/PatrickMockridge/Azoth
 cd Azoth
 
 uv venv --python 3.12
-uv pip install maturin pytest ruff mypy pyyaml jsonschema "pint>=0.24"
+uv sync --extra dev --no-install-project   # the list is `pyproject.toml`'s, not this file's
 maturin develop                 # builds the Rust extension into the venv
 ```
 
