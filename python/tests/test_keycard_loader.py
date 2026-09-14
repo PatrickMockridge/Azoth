@@ -528,3 +528,41 @@ def test_a_kernel_does_not_take_a_card() -> None:
     from azoth.hydraulics.reference import orifice_flow as reference
 
     assert "card" not in inspect.signature(reference).parameters
+
+
+def test_a_card_reaches_the_physics() -> None:
+    """Not just a lookup: a card changes what a calculation answers.
+
+    Everything else in this file is about the loader and the data layer. This is the
+    claim the mechanism exists for - **that the values a card supplies are the values
+    a calculation runs on** - and it is checkable end to end, because a calculation
+    names its components and resolves them through `mixture_of`.
+
+    A `Tc` shifted by a hundred kelvin moves a flash's vapour fraction by a lot, so
+    the assertion below is about arithmetic rather than about plumbing. Both
+    directions: the card's answer differs from the shipped one, and the shipped
+    answer is unchanged by a card the call was not given.
+    """
+    names = ["methane", "n-butane"]
+    feed = [0.6, 0.4]
+    T = q(300.0, "K")
+    P = q(2_000_000.0, "Pa")
+
+    shipped_mixture, shipped_gas = eos.components.mixture_of(names)
+    baseline = eos.pt_flash(shipped_mixture, T, P, feed)
+
+    card = a_card(components={"methane": {"Tc": {"value": 300.0, "unit": "K"}}})
+    shifted_mixture, shifted_gas = eos.components.mixture_of(names, card=card)
+    shifted = eos.pt_flash(shifted_mixture, T, P, feed)
+
+    assert shifted.beta != pytest.approx(baseline.beta), (
+        "a card that shifts methane's critical temperature by 110 K left the vapour "
+        "fraction where it was, so the card is not reaching the calculation"
+    )
+
+    # The card is not sticky: the same call without it answers as it did before.
+    again = eos.pt_flash(eos.components.mixture_of(names)[0], T, P, feed)
+    assert again.beta == pytest.approx(baseline.beta)
+
+    # And the ideal-gas model came from the same card, so an enthalpy would move too.
+    assert shifted_gas.cp_a == shipped_gas.cp_a
