@@ -25,12 +25,14 @@ either time.
 
 from __future__ import annotations
 
+import math
 from typing import Any, Literal
 
 from azoth.core.errors import InvalidInputError, OutOfRangeError, SolverNotConvergedError
 from azoth.core.units import Q, from_si
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
+from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel, molar_enthalpy_entropy
 from azoth.eos.reference.pt_flash import pt_flash
 
@@ -81,9 +83,16 @@ def property_at(
         )
         value = (1.0 - beta) * liquid + beta * vapour
     else:
-        # One phase, so the whole feed is in it and its own root describes it. `beta`
-        # is deliberately not used - see the module docstring.
-        root = flash.z_liquid if phase == ALL_LIQUID else flash.z_vapour
+        # One phase, so the whole feed is in it and *its* root describes it. `beta` is
+        # deliberately not used - see the module docstring - and neither are
+        # `z_liquid`/`z_vapour`, which belong to the extrapolated phase compositions.
+        # Reading the root from one of those is what made `H(T)` discontinuous: where the
+        # flash reports a negative flash its phase composition is not a state, its cubic
+        # root is a different number from the feed's, and the step between the two showed
+        # up as a hundred kelvin's worth of enthalpy - so `eos.ph_flash` inverted a
+        # function with a jump in it and `process.heater` returned a wrong temperature.
+        reduced = reduced_parameters(mixture, t_si, p_si)
+        root = phase_state(reduced, mixture.kij, z, liquid=(phase == ALL_LIQUID)).z
         value = _phase_property(mixture, ideal_gas, t_si, p_si, z, root, which)
 
     return value, {"phase": phase, "flash": flash, "warnings": list(flash.warnings)}
@@ -143,6 +152,7 @@ def solve_temperature(
     iterations = 0
     mid = lo
     mid_value = lo_value
+    residual = math.inf
     mid_state: dict[str, Any] = {}
     while iterations < max_iterations:
         iterations += 1
@@ -150,27 +160,27 @@ def solve_temperature(
         mid_value, mid_state = property_at(mixture, ideal_gas, mid, p_si, z, which)
         warnings.extend(mid_state["warnings"])
 
-        # The bracket is narrowed on the *temperature*, not on the property. Relative
-        # convergence on a property that crosses zero is ill-conditioned - an enthalpy
-        # is genuinely zero at some temperature for a datum that puts it there - while
-        # the temperature interval is well behaved and is what the answer is.
-        if (hi - lo) <= tolerance * mid:
+        # Convergence is declared on the *residual*, not on the width of the temperature
+        # bracket. The bracket bounds the residual through `|H'| * (hi - lo) / 2` only
+        # while `H(T)` is continuous; where it is not, the bisection collapses onto the
+        # jump and returns a temperature whose enthalpy is not the one asked for, with no
+        # error. It did exactly that for 105 of 111 enthalpy targets before
+        # `eos.pt_flash` stopped handing back an extrapolated vapour fraction.
+        residual = abs(mid_value - target) / max(abs(target), 1.0)
+        if residual <= tolerance:
             break
 
         if (mid_value - target) * (lo_value - target) <= 0.0:
             hi = mid
         else:
             lo, lo_value = mid, mid_value
-    else:
-        # The cap is reached without the bracket meeting its tolerance. The residual
-        # reported is the one a caller can act on.
-        raise SolverNotConvergedError(
-            iterations, abs(mid_value - target) / max(abs(target), 1.0), tolerance
-        )
+
+    if residual > tolerance:
+        raise SolverNotConvergedError(iterations, residual, tolerance)
 
     return {
         "T": mid,
-        "residual": abs(mid_value - target) / max(abs(target), 1.0),
+        "residual": residual,
         "state": mid_state,
         "iterations": iterations,
         "warnings": warnings,

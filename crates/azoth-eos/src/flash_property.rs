@@ -16,7 +16,7 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature, kelvins};
 use azoth_core::{AzothError, Result, Warning};
 
-use crate::mixture::Mixture;
+use crate::mixture::{Mixture, RootSide};
 use crate::molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
 use crate::pt_flash::pt_flash;
 use crate::results::{Phase, PtFlashResult};
@@ -73,14 +73,22 @@ pub fn property_at(
             let beta = flash.beta.unwrap_or(0.0);
             (1.0 - beta) * which.of(&liquid) + beta * which.of(&vapour)
         }
-        // One phase, so the whole feed is in it and its own root describes it. `beta`
-        // is deliberately unused - the flash's value there is an extrapolation.
+        // One phase, so the whole feed is in it and *its* root describes it. `beta` is
+        // deliberately unused - the flash's value there is an extrapolation - and so are
+        // `z_liquid`/`z_vapour`, which belong to the extrapolated phase compositions.
+        // Reading the root from one of those is what made `H(T)` discontinuous: where the
+        // flash reports a negative flash its phase composition is not a state, its cubic
+        // root is a different number from the feed's, and the step between the two showed
+        // up as a hundred kelvin's worth of enthalpy - so `eos.ph_flash` inverted a
+        // function with a jump in it and `process.heater` returned a wrong temperature.
         _ => {
-            let root = if flash.phase == Phase::AllLiquid {
-                flash.z_liquid
+            let side = if flash.phase == Phase::AllLiquid {
+                RootSide::Liquid
             } else {
-                flash.z_vapour
+                RootSide::Vapour
             };
+            let reduced = mixture.reduced_parameters(t, p)?;
+            let root = mixture.phase_state(&reduced, z, side)?.z;
             which.of(&molar_enthalpy_entropy(mixture, ideal_gas, t, p, z, root)?)
         }
     };
@@ -237,23 +245,25 @@ pub fn solve_temperature(
 
     let mut iterations: u32 = 0;
     let mut mid = lo;
-    let mut mid_value = lo_value;
+    let mut residual = f64::INFINITY;
     let mut warnings: Vec<Warning> = Vec::new();
     let mut state = None;
 
     while iterations < algorithm.max_iterations {
         iterations += 1;
         mid = 0.5 * (lo + hi);
-        let (evaluated, flash) = property_at(mixture, ideal_gas, kelvins(mid), p, z, which)?;
-        mid_value = evaluated;
+        let (mid_value, flash) = property_at(mixture, ideal_gas, kelvins(mid), p, z, which)?;
         warnings.extend(flash.warnings.iter().cloned());
         state = Some(flash);
 
-        // The bracket is narrowed on the *temperature*, not on the property. Relative
-        // convergence on a property that crosses zero is ill-conditioned - an enthalpy
-        // is genuinely zero at some temperature for a datum that puts it there - while
-        // the temperature interval is well behaved and is what the answer is.
-        if (hi - lo) <= algorithm.tolerance * mid {
+        // Convergence is declared on the *residual*, not on the width of the temperature
+        // bracket. The bracket bounds the residual through `|H'| * (hi - lo) / 2` only
+        // while `H(T)` is continuous; where it is not, the bisection collapses onto the
+        // jump and returns a temperature whose enthalpy is not the one asked for, with no
+        // error. It did exactly that for 105 of 111 enthalpy targets before
+        // `eos.pt_flash` stopped handing back an extrapolated vapour fraction.
+        residual = (mid_value - target).abs() / target.abs().max(1.0);
+        if residual <= algorithm.tolerance {
             break;
         }
 
@@ -265,10 +275,10 @@ pub fn solve_temperature(
         }
     }
 
-    if iterations >= algorithm.max_iterations && (hi - lo) > algorithm.tolerance * mid {
+    if residual > algorithm.tolerance {
         return Err(AzothError::SolverNotConverged {
             iterations,
-            residual: (mid_value - target).abs() / target.abs().max(1.0),
+            residual,
             tolerance: algorithm.tolerance,
         });
     }
@@ -283,7 +293,7 @@ pub fn solve_temperature(
 
     Ok(Solved {
         temperature: mid,
-        residual: (mid_value - target).abs() / target.abs().max(1.0),
+        residual,
         flash,
         iterations,
         warnings: distinct(&warnings),

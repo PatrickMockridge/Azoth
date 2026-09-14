@@ -261,7 +261,7 @@ cases:
       outlet_pressure: 3000000.0
       efficiency: 0.8
     expected:
-      T: 315.6004285812378
+      T: 315.60042991638187
       P: 3000000.0
       power: 8294.833590884116
       isentropic_temperature: 314.25679302215576

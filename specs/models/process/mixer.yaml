@@ -250,8 +250,14 @@ cases:
     note: >
       Six moles per second of methane-rich gas at 300 K and 20 bar, four at 350 K and
       15 bar with the composition reversed, blended into ten. The outlet is at **15 bar**
-      - the lower of the two, not the higher - at **320.92 K**, with
+      - the lower of the two, not the higher - at **321.11 K**, with
       `z_out = [0.52, 0.48]`.
+
+      The second inlet is superheated vapour at 15 bar, which is where this case stopped
+      being a rounding exercise: its enthalpy used to be evaluated at the cubic root of
+      the flash's extrapolated phase composition rather than at the feed's own root, and
+      the blend came out 50.6 J/mol away from the energy balance. The same case now closes
+      it to 1.2e-05 J/mol, and the recorded temperature moved by 0.19 K.
 
       The composition is the part worth reading and it is arithmetic a human can redo:
       `(6*0.6 + 4*0.4)/10 = 0.52` and `(6*0.4 + 4*0.6)/10 = 0.48`. Nothing about it needs
@@ -277,7 +283,7 @@ cases:
       n: [6.0, 4.0]
       z: [[0.6, 0.4], [0.4, 0.6]]
     expected:
-      T: 320.9187719345093
+      T: 321.10986042022694
       P: 1500000.0
       flow: 10.0
       z_out: [0.52, 0.48]

@@ -259,7 +259,7 @@ cases:
       pressure_drop: 0.0
       heat_duty: 50000.0
     expected:
-      T: 328.5648187637329
+      T: 328.5648195981979
       P: 2000000.0
     tolerance: 1.0e-9
 

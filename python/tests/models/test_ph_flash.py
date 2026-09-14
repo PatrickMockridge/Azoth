@@ -230,6 +230,47 @@ def test_a_single_phase_feed_reports_no_vapour_fraction() -> None:
     h.assert_close(result.T.to("K").magnitude, 450.0, TOLERANCE, "single-phase round trip")
 
 
+def test_the_inversion_holds_across_the_whole_range() -> None:
+    """Swept, not spot-checked, and that is the whole point of the test.
+
+    The four temperatures in the round trip above are `[220, 300, 360, 450]`, and every
+    one of them passed while this model was wrong for **105 of 111** enthalpy targets
+    between 800 and 1900 J/mol. They sat either side of the damaged band rather than in
+    it: at 20 bar the flash switched between a negative flash and no root at about
+    386.7 K, the enthalpy of the feed jumped across that switch, and the bisection
+    collapsed onto the jump and returned 386.6944 K for every target inside it - with
+    residuals up to 1.275 against a declared tolerance of 1e-8, and no error.
+
+    So what is asserted is the claim itself, at every point rather than at four: the
+    temperature that comes back has the enthalpy that was asked for. A target this
+    model genuinely cannot reach is allowed to raise; returning a wrong number is not.
+    """
+    import azoth
+    from azoth.core.errors import SolverNotConvergedError
+
+    fluid, ideal_gas = a_mixture(), an_ideal_gas()
+    z = [0.6, 0.4]
+    P = Q(20.0, "bar")
+
+    unreachable = 0
+    for step in range(111):
+        target = 800.0 + 10.0 * step
+        try:
+            result = azoth.eos.ph_flash(fluid, ideal_gas, P, Q(target, "J/mol"), z)
+        except SolverNotConvergedError:
+            unreachable += 1
+            continue
+        achieved, _ = enthalpy_at(fluid, ideal_gas, result.T.to("K").magnitude, 20.0e5, z)
+        residual = abs(achieved - target) / max(abs(target), 1.0)
+        assert residual <= TOLERANCE, (
+            f"H = {target}: the flash returned {result.T.to('K').magnitude} K, whose "
+            f"enthalpy is {achieved}, a residual of {residual:.3e} against the declared "
+            f"tolerance {TOLERANCE:.0e}"
+        )
+
+    assert unreachable < 111, "every target raised - the sweep proved nothing"
+
+
 def test_an_enthalpy_no_temperature_produces_is_a_solver_failure() -> None:
     """Outside the bracket is a failure, not a number.
 

@@ -118,7 +118,7 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `twenty_to_five_bar_at_ninety_percent` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 300.0, P_ref = 100000.0, T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 500000.0, efficiency = 0.9 | T = 259.83556680679334, P = 500000.0, power = -18911.45160847416, isentropic_temperature = 258.3310650825501 |
+| `twenty_to_five_bar_at_ninety_percent` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 300.0, P_ref = 100000.0, T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 500000.0, efficiency = 0.9 | T = 259.83556747436535, P = 500000.0, power = -18911.450787166472, isentropic_temperature = 258.3310657501221 |
 
 ## References
 

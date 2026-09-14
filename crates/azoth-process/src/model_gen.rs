@@ -112,10 +112,10 @@ static COMPRESSOR_CASES: &[TestCase] = &[
         ],
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
         expected: &[
-            ("T", 328.0895208358763),
+            ("T", 328.0895195007323),
             ("P", 4000000.0),
-            ("power", 15274.143419849279),
-            ("isentropic_temperature", 324.9618257522583),
+            ("power", 15274.141294383553),
+            ("isentropic_temperature", 324.9618244171142),
         ],
         expected_vectors: &[],
     },
@@ -151,7 +151,7 @@ static COMPRESSOR_CASES: &[TestCase] = &[
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
         expected: &[
             ("P", 4000000.0),
-            ("isentropic_temperature", 324.9618257522583),
+            ("isentropic_temperature", 324.9618244171142),
         ],
         expected_vectors: &[],
     },
@@ -280,10 +280,10 @@ static EXPANDER_CASES: &[TestCase] = &[TestCase {
     ],
     matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
     expected: &[
-        ("T", 259.83556680679334),
+        ("T", 259.83556747436535),
         ("P", 500000.0),
-        ("power", -18911.45160847416),
-        ("isentropic_temperature", 258.3310650825501),
+        ("power", -18911.450787166472),
+        ("isentropic_temperature", 258.3310657501221),
     ],
     expected_vectors: &[],
 }];
@@ -396,7 +396,7 @@ static HEATER_CASES: &[TestCase] = &[
             ("z", &[0.6, 0.4]),
         ],
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
-        expected: &[("T", 328.5648187637329), ("P", 2000000.0)],
+        expected: &[("T", 328.5648195981979), ("P", 2000000.0)],
         expected_vectors: &[],
     },
     TestCase {
@@ -539,7 +539,7 @@ static MIXER_CASES: &[TestCase] = &[
             ("kij", &[0.0, 0.01289789, 0.01289789, 0.0]),
             ("z", &[0.6, 0.4, 0.4, 0.6]),
         ],
-        expected: &[("T", 320.9187719345093), ("P", 1500000.0), ("flow", 10.0)],
+        expected: &[("T", 321.10986042022694), ("P", 1500000.0), ("flow", 10.0)],
         expected_vectors: &[("z_out", &[0.52, 0.48])],
     },
     TestCase {
@@ -697,7 +697,7 @@ static PUMP_CASES: &[TestCase] = &[TestCase {
     ],
     matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
     expected: &[
-        ("T", 315.6004285812378),
+        ("T", 315.60042991638187),
         ("P", 3000000.0),
         ("power", 8294.833590884116),
         ("isentropic_temperature", 314.25679302215576),
@@ -1136,7 +1136,7 @@ static THROTTLING_VALVE_CASES: &[TestCase] = &[
             ("z", &[0.6, 0.4]),
         ],
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
-        expected: &[("T", 293.9107706069947), ("P", 1500000.0)],
+        expected: &[("T", 293.9107699394226), ("P", 1500000.0)],
         expected_vectors: &[],
     },
     TestCase {
