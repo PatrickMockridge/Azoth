@@ -227,7 +227,7 @@
       "required": ["description"],
       "properties": {
         "type": {
-          "enum": ["quantity", "enum", "fitting_list"],
+          "enum": ["quantity", "enum", "fitting_list", "boolean", "string", "record_list"],
           "default": "quantity",
           "description": "quantity = a physical quantity carrying a unit. enum = a symbolic result such as a flow regime. fitting_list = one or more fitting ids resolved against the spec's `data.fittings` file."
         },
@@ -237,6 +237,12 @@
           "minItems": 1,
           "items": { "type": "string" },
           "description": "Allowed values when type is enum."
+        },
+        "fields": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/quantity" },
+          "description": "The named sub-quantities of one record, for `record_list`. A result that returns structured rows - one per fitting, per component, per phase - needs its row shape declared, or a generator emitting the result struct has no way to know the row's fields."
         },
         "description": { "type": "string", "minLength": 1 },
         "optional": {
@@ -267,6 +273,22 @@
           "if": { "properties": { "type": { "const": "enum" } }, "required": ["type"] },
           "then": {
             "required": ["values"],
+            "not": { "required": ["unit"] }
+          }
+        },
+        {
+          "comment": "boolean and string carry no unit",
+          "if": {
+            "properties": { "type": { "enum": ["boolean", "string"] } },
+            "required": ["type"]
+          },
+          "then": { "not": { "required": ["unit"] } }
+        },
+        {
+          "comment": "record_list requires the shape of one row",
+          "if": { "properties": { "type": { "const": "record_list" } }, "required": ["type"] },
+          "then": {
+            "required": ["fields"],
             "not": { "required": ["unit"] }
           }
         }

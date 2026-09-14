@@ -63,6 +63,15 @@ outputs:
       "looks like validation, does nothing" failure this schema is written against,
       so it was removed rather than kept for symmetry. The property test
       `the_admissible_count_is_never_two` asserts it across a parameter sweep.
+  iterations:
+    unit: dimensionless
+    description: solver iterations performed
+  converged:
+    type: boolean
+    description: whether the iteration met the tolerance the solver block declares
+  residual:
+    unit: dimensionless
+    description: the residual at the final iterate
 
 valid_range:
   - quantity: b_reduced

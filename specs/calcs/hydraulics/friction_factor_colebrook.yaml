@@ -21,6 +21,15 @@ outputs:
   f:
     unit: dimensionless
     description: Darcy-Weisbach friction factor
+  iterations:
+    unit: dimensionless
+    description: solver iterations performed
+  converged:
+    type: boolean
+    description: whether the iteration met the tolerance the solver block declares
+  residual:
+    unit: dimensionless
+    description: the residual at the final iterate
 
 solver:
   kind: fixed_point

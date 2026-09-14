@@ -41,6 +41,14 @@ outputs:
     unit: dimensionless
     optional: true
     description: Reynolds number, returned only when mu is supplied
+  f:
+    unit: dimensionless
+    description: the Darcy friction factor the drop was computed with
+  regime:
+    type: enum
+    values: [laminar, transitional, turbulent]
+    optional: true
+    description: flow regime under the Crane/Moody boundaries; present only when mu is supplied
 
 valid_range:
   - quantity: f

@@ -119,9 +119,10 @@ def test_every_spec_has_a_result_type() -> None:
 def test_declared_outputs_are_result_fields(calc: dict[str, Any]) -> None:
     """Every declared output must exist as a field on the result dataclass.
 
-    The contract is one-directional: a result may carry diagnostic fields the spec
-    does not declare (``iterations``, ``components``), but a declared output that
-    is not a field means the spec promises something the code cannot deliver.
+    A declared output that is not a field is a spec promising something the code
+    cannot deliver. The converse is checked by
+    ``test_every_result_field_is_declared_in_the_spec`` below; both directions are
+    required, so a field and a declared output are the same set.
     """
     # Any rather than a parameterised type: the registry maps ids to a
     # heterogeneous set of dataclasses, and `dataclasses.fields` is
@@ -135,6 +136,34 @@ def test_declared_outputs_are_result_fields(calc: dict[str, Any]) -> None:
         f"on {result_type.__name__} (has {sorted(fields)})"
     )
     assert "warnings" in fields, f"{calc['id']}: result has no warnings field"
+
+
+#: Fields every result carries that no spec declares. The caveats channel is framework
+#: rather than physics: `Warning` is its own cross-language contract, asserted
+#: structurally in `python/tests/_helpers.py`, and restating it in 38 specs would be 38
+#: copies of one fact.
+FRAMEWORK_FIELDS = frozenset({"warnings"})
+
+
+@pytest.mark.parametrize("calc", CALCS, ids=lambda c: c["id"])
+def test_every_result_field_is_declared_in_the_spec(calc: dict[str, Any]) -> None:
+    """The reverse of the test above: every field is a declared output.
+
+    A field with no declared output is a value the spec does not name, so nothing
+    holds it to anything - it is compared across the two languages without a spec
+    saying it should exist, and a result struct emitted from ``outputs`` would drop
+    it. Four calcs carried one before this test existed: ``iterations``,
+    ``converged`` and ``residual`` on the two solvers, ``f`` and ``regime`` on
+    darcy_weisbach, and crane_k_factors' per-fitting ``components``.
+    """
+    result_type: Any = result_types()[calc["id"]]
+    fields = {f.name for f in dataclasses.fields(result_type)} - FRAMEWORK_FIELDS
+    declared = set(calc["outputs"])
+    undeclared = sorted(fields - declared)
+    assert not undeclared, (
+        f"{calc['id']}: {undeclared} appear on {result_type.__name__} but the spec "
+        f"declares no such output, so nothing holds them to anything"
+    )
 
 
 @pytest.mark.parametrize("calc", CALCS, ids=lambda c: c["id"])

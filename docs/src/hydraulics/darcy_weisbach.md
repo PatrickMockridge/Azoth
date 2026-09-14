@@ -40,6 +40,8 @@ dP = f * (L / D) * (rho * v**2 / 2)
 |---|---|---|
 | `dp` | Pa | pressure drop over the pipe length |
 | `re` | dimensionless | *Optional.* Reynolds number, returned only when mu is supplied |
+| `f` | dimensionless | the Darcy friction factor the drop was computed with |
+| `regime` | laminar / transitional / turbulent | *Optional.* flow regime under the Crane/Moody boundaries; present only when mu is supplied |
 
 
 ## Valid range

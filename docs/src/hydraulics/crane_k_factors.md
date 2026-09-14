@@ -35,6 +35,8 @@ K = f_t * sum(n_ld for each fitting)
 | Name | Unit | Description |
 |---|---|---|
 | `k_total` | dimensionless | Total resistance coefficient for the listed fittings, to be used in K * (rho * v**2 / 2). Equivalent to the Darcy-Weisbach friction loss over an added length of pipe equal to sum(n_ld) * D. |
+| `f_t` | dimensionless | the friction factor the coefficients were based on |
+| `components` | - | one row per fitting supplied, in the order they were listed |
 
 
 ## Valid range

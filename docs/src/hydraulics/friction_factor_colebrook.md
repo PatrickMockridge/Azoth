@@ -39,6 +39,9 @@ DOI: [10.1680/ijoti.1939.13150](https://doi.org/10.1680/ijoti.1939.13150)
 | Name | Unit | Description |
 |---|---|---|
 | `f` | dimensionless | Darcy-Weisbach friction factor |
+| `iterations` | dimensionless | solver iterations performed |
+| `converged` | - | whether the iteration met the tolerance the solver block declares |
+| `residual` | dimensionless | the residual at the final iterate |
 
 
 ## Valid range

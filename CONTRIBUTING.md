@@ -124,7 +124,7 @@ belongs there, and it costs a file rather than a contribution. See
 
 ## Adding a calculation
 
-**Five new files, and nine edits to existing ones** — plus eight more if the calc is
+**Five new files, and eleven edits to existing ones** — plus eight more if the calc is
 the first in a new namespace.
 
 That number is smaller than it was, and it is still falling. It was fourteen. Five of
@@ -167,7 +167,7 @@ that are *not* checked, a worked example, and the tests.
 Both test files are driven by the spec's `tests` list, so they follow from the
 spec's contents rather than being written against the implementation.
 
-### The nine edits
+### The eleven edits
 
 Listed because "the rest follows" was a claim nobody had checked, and because a
 forgotten one fails in a different way in each case:
@@ -182,14 +182,21 @@ forgotten one fails in a different way in each case:
 | `crates/azoth-python/src/batch.rs` | the batch arm — the Rust half of the batch API |
 | `python/src/azoth/<ns>/__init__.py` | the dispatch wrapper, `__all__`, the id constant, the docstring list |
 | `python/src/azoth/<ns>/reference/__init__.py` | the import and `__all__` |
+| `python/src/azoth/_rust_bridge.py` | the bridge function |
+| `python/src/azoth/core/result.py` | the result dataclass |
 | `python/src/azoth/batch/<ns>.py` | the batch wrapper — the Python half of the batch API |
 
-Five of the files that used to appear here no longer do. `_rust_bridge.py` and
-`core/result.py` are unchanged by a new calculation, because the tables that lived in
-them are derived from the id and from the return annotation. `_core.pyi` is generated
-by `tools/gen_stub.py`. `README.md` and `docs/src/index.md` *are* changed by one — but
-by `tools/gen_docs.py`, into a marked block, and a hand-edit there fails the drift
-check.
+**The last three of those were missing from this table, and the paragraph that
+explained their absence was wrong.** It said `_rust_bridge.py` and `core/result.py`
+are "unchanged by a new calculation, because the tables that lived in them are
+derived". The *tables* were derived away; the per-calc bridge function and the
+per-calc result dataclass were not. `core/result.py` carries 38 of the latter, and
+`test_registration_completeness.py` fails with *"Add one named after the id's last
+segment"* when the former is absent. Eleven, not nine.
+
+`_core.pyi` no longer appears here: `tools/gen_stub.py` generates it. `README.md` and
+`docs/src/index.md` *are* changed by a new calculation — but by `tools/gen_docs.py`,
+into a marked block, and a hand-edit there fails the drift check.
 
 **The batch API is two edits, in two languages, and it is not optional.** There is
 a Rust arm and a Python module because the batch path loops over the *scalar*
