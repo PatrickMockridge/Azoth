@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Generate `data/components/` from a NeqSim checkout.
+"""Generate `data/components/` from NeqSim's component and interaction tables.
 
-    python tools/gen_databank.py /tmp/neqsim-check/neqsim
-    python tools/gen_databank.py /tmp/neqsim-check/neqsim --check
+    python tools/gen_databank.py --check                     # against the vendored copies
+    python tools/gen_databank.py /tmp/neqsim-check/neqsim    # against a fresh checkout
+
+The default argument is `databank/sources/neqsim/`, which holds NeqSim's `COMP.csv`
+and `INTER.csv` verbatim. That is what a checkout is for: refreshing those two files
+when NeqSim is bumped. Every other run reads what is committed, so this tool has no
+dependency CI cannot satisfy, and `--check` reproduces the shipped files from the
+vendored sources on every build.
 
 # What this is
 
@@ -38,16 +44,17 @@ which is what fixes those two and rules out Pa, kPa and m**3/mol.
 
 # What is kept, and what is not
 
-Only the columns the calculations use: identity, critical properties, acentric
-factor, and the binary interaction parameters. `COMP.csv` has 170 columns and most
-of them are hydrate, wax, electrolyte and SAFT data for physics this library does not
-have; shipping them would be shipping data nothing reads. The association columns
-the CPA and PC-SAFT models will need are a later addition, and they are left out
-until those models exist and their units can be read the same way these were.
+# Which columns are carried across, and why the rest are not
 
-`COMP_EXT.csv` (86 MB, 76,705 rows) is not vendored at all. Nearly all of it is heavy
-and characterised fluids, which azoth cannot use: it has no TBP or plus-fraction
-characterisation.
+`COMPONENT_COLUMNS` below is the list. The *reasons* are not here: every one of
+`COMP.csv`'s 170 columns and `INTER.csv`'s 39 is dispositioned in
+`databank/manifest.yaml`, with a reason from a closed vocabulary, and this tool
+asserts at startup that the two agree. So the answer to "why is this column absent"
+has one home rather than two, and adding a column here without recording it there is
+a failure rather than an oversight.
+
+`COMP_EXT.csv` (86 MB, 76,705 rows) is not vendored at all; the manifest carries that
+reason too.
 """
 
 from __future__ import annotations
@@ -58,7 +65,12 @@ import io
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import manifest as manifest_module
+
 ROOT = Path(__file__).resolve().parent.parent
+SOURCES = ROOT / "databank" / "sources" / "neqsim"
 OUT_DIR = ROOT / "data" / "components"
 
 #: The NeqSim release this was generated from, for the `citation` column and for
@@ -124,18 +136,77 @@ def resource_dir(checkout: Path) -> Path:
 
     Its loader asks the classpath for `data/COMP.csv`. On disk that is
     `src/main/resources/data/` in a source checkout and `data/` in a packaged one,
-    so both are tried rather than one assumed.
+    so both are tried rather than one assumed. The path itself is tried too, so the
+    vendored copies under `databank/sources/neqsim/` - which hold the two files
+    directly - work as an argument.
     """
-    for candidate in (checkout / "src" / "main" / "resources" / "data", checkout / "data"):
+    for candidate in (
+        checkout / "src" / "main" / "resources" / "data",
+        checkout / "data",
+        checkout,
+    ):
         if (candidate / "COMP.csv").is_file():
             return candidate
     raise FileNotFoundError(f"no COMP.csv under {checkout}")
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
-    """Rows of a NeqSim resource CSV."""
-    with path.open(newline="", encoding="utf-8", errors="replace") as handle:
-        return [row for row in csv.DictReader(handle) if row.get("NAME") or row.get("COMP1")]
+    """Rows of a NeqSim resource CSV, decoded strictly.
+
+    Strictly rather than with `errors="replace"`, which is what this did. A replaced
+    byte is silent: a name or a formula arrives with U+FFFD in it and the row parses
+    anyway, so the corruption ships. The unit conversions are guarded by `ROUND_TRIP`
+    and the encoding was guarded by nothing.
+    """
+    try:
+        with path.open(newline="", encoding="utf-8") as handle:
+            return [row for row in csv.DictReader(handle) if row.get("NAME") or row.get("COMP1")]
+    except UnicodeDecodeError as error:
+        raise ValueError(
+            f"{path}: not valid UTF-8 (byte {error.start}). Read strictly because a "
+            f"replaced byte is an undetectable corruption in a shipped component row."
+        ) from error
+
+
+def manifest_disagreements() -> list[str]:
+    """Where this script's `used` columns and `databank/manifest.yaml` differ.
+
+    The rule that keeps the manifest a record of a decision rather than a description
+    of this file. Checked before anything is built, so a column added to
+    `COMPONENT_COLUMNS` without a manifest row fails here instead of quietly
+    producing a file the manifest does not describe - and so does a column dropped
+    from the manifest and left in the script.
+    """
+    found, problems = manifest_module.read()
+    if problems:
+        return problems
+
+    ours = {
+        "neqsim/COMP.csv": {out_name for out_name, _, _ in COMPONENT_COLUMNS},
+        "neqsim/INTER.csv": set(KIJ_HEADER),
+    }
+
+    messages: list[str] = []
+    for file_id, produced in ours.items():
+        declared = {
+            column.as_field
+            for column in found.file(file_id).columns
+            if column.disposition == "used"
+        }
+        extra = sorted(produced - declared)
+        if extra:
+            messages.append(
+                f"{file_id}: this script produces {extra}, which the manifest does not "
+                f"declare `used`. Add the column to databank/manifest.yaml with the "
+                f"reason it is carried across."
+            )
+        missing = sorted(declared - produced)
+        if missing:
+            messages.append(
+                f"{file_id}: the manifest declares {missing} `used` and this script does "
+                f"not produce them. One of the two has changed and the other has not."
+            )
+    return messages
 
 
 def build_components(source: Path) -> list[dict[str, str]]:
@@ -211,7 +282,17 @@ def check_round_trip(rows: list[dict[str, str]]) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("neqsim", type=Path, help="path to a NeqSim checkout")
+    parser.add_argument(
+        "neqsim",
+        type=Path,
+        nargs="?",
+        default=SOURCES,
+        help=(
+            "path to a NeqSim checkout, or to a directory holding COMP.csv and "
+            f"INTER.csv directly. Defaults to {SOURCES.relative_to(ROOT)}, the vendored "
+            f"copies, which is what makes --check runnable without a checkout."
+        ),
+    )
     parser.add_argument("--check", action="store_true", help="report drift; write nothing")
     args = parser.parse_args(argv)
 
@@ -220,12 +301,28 @@ def main(argv: list[str] | None = None) -> int:
     except FileNotFoundError:
         print(
             f"gen_databank: no COMP.csv under {args.neqsim}. Point this at a NeqSim "
-            f"checkout - the repository does not vendor one.",
+            f"checkout, or at {SOURCES.relative_to(ROOT)}.",
             file=sys.stderr,
         )
         return 1
 
-    components = build_components(resources)
+    disagreements = manifest_disagreements()
+    if disagreements:
+        print(
+            "gen_databank: this script and databank/manifest.yaml disagree about which "
+            "columns are vendored. Nothing has been written:",
+            file=sys.stderr,
+        )
+        for disagreement in disagreements:
+            print(f"  {disagreement}", file=sys.stderr)
+        return 1
+
+    try:
+        components = build_components(resources)
+    except ValueError as error:
+        print(f"gen_databank: {error}", file=sys.stderr)
+        return 1
+
     problems = check_round_trip(components)
     if problems:
         print(

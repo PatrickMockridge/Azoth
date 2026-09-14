@@ -36,6 +36,14 @@ jobs:
       # schema can carry a duplicated keyword and pass every other gate here.
       # keycard.schema.json did, in two places.
       - run: python tools/check_json_keys.py
+      # The vendoring record: every column of every vendored upstream, and what was
+      # done with it. It also prints the tally, because the interesting number is how
+      # many columns are absent because the model does not exist yet.
+      - run: python tools/check_manifest.py
+      # The shipped data files against the vendored copies of NeqSim's tables. Needs
+      # no NeqSim checkout, because the sources are committed - which is what lets
+      # this run here rather than only on a machine that has one.
+      - run: python tools/gen_databank.py --check
 
   rust-test:
     name: rust-test

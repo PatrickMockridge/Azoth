@@ -44,6 +44,7 @@ ROOT_PAGES = (
     "SECURITY.md",
     "TRUST.md",
     "validation/README.md",
+    "databank/README.md",
 )
 
 #: Markdown inline links and images: `[text](target)` and `![alt](target)`.

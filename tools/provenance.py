@@ -51,6 +51,7 @@ except ImportError:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
+DATA_DIR = ROOT / "data"
 
 SCHEMA_VERSION = 1
 
@@ -146,12 +147,25 @@ NAMESPACE_SUPPORT = {
     ),
 }
 
-#: Data files whose contents change results.
-DATA = (
-    "data/fittings/crane_k_factors.csv",
-    "data/fluids/water.csv",
-    "data/fluids/air.csv",
-)
+
+def _data_files() -> tuple[str, ...]:
+    """Every shipped data file, found by walking the data directory.
+
+    Walked rather than listed, because the list that was here was wrong: it named the
+    fittings and fluid tables and omitted `data/components/components.csv` and
+    `data/components/kij.csv` - the two largest shipped data files and the two every
+    `eos` calculation depends on. A provenance record that does not hash them does not
+    describe the release, and nothing said so.
+
+    Walking cannot go stale. Whether each file *should* be shipped is a different
+    question, and `databank/manifest.yaml` is where it is answered: a data file the
+    manifest does not declare fails `tools/check_manifest.py`.
+    """
+    return tuple(sorted(str(path.relative_to(ROOT)) for path in DATA_DIR.rglob("*.csv")))
+
+
+#: Derived at import; see `_data_files`.
+DATA = _data_files()
 
 LOCK_FILES = ("Cargo.lock", "uv.lock")
 
