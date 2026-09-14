@@ -277,9 +277,15 @@ equivalent length, a coefficient a calculation takes, or a named model variant:
 ```python
 import azoth
 
-azoth.keycard.load("keycard.yaml")
-azoth.eos.component("methane")  # your values, not the databank's
+card = azoth.keycard.load("keycard.yaml")
+azoth.eos.component("methane", card=card)  # your values, not the databank's
 ```
+
+**The card is a value you pass, not a setting you make.** `load` reads a file and
+returns what it says; it stores nothing, and a call handed no card reads what the
+library ships. A process-wide card would give two answers for one calculation as soon
+as somebody loaded a file between the two calls, and which is which would depend on
+when they did it.
 
 Nothing needs registering to make it apply, in either language. `keycard.example.yaml`
 is the template, `python tools/check_user_data.py` checks yours, and

@@ -86,33 +86,33 @@ library rather than by reading the code.
 
 ## What the implementation does today
 
-Two facts, each stated because the claims above are about a design the code does
-not yet have.
-
-**The card is a module-level global in Python.** `azoth.keycard.load(path)` sets a
-process-wide value, and every calculation reads it. So in one process:
+**Python holds no card, and the precedence the claim above needs is in force.**
+`azoth.keycard.load` reads a file and returns what it says; it stores nothing, and
+every call that reads a card is handed one:
 
 ```
-load("a.yaml"); r1 = calc(...)
-load("b.yaml"); r2 = calc(...)
+card_a = load("a.yaml")
+card_b = load("b.yaml")
+r1 = calc(..., card=card_a)
+r2 = calc(..., card=card_b)
 ```
 
-gives two different answers to one calculation, decided by call order. That is
-exactly the state `spec.md` names as the thing a keycard must not be, and the two
-are not reconcilable by reading the sentence differently: a mutable that a caller
-sets between two calls *is* an answer that depends on call order. Closing this is
-what makes the determinism claim above a description of the library rather than a
-requirement on it.
+Two datasets, two answers, one process, and neither call depends on the other having
+happened. `python/tests/test_keycard_loader.py` asserts the absence directly - that
+no `Keycard` is bound at module scope, and that there is no `current` or `clear` to
+reach for - rather than asserting that a missing accessor raises, because a
+module-level card still written and no longer read is the same defect one layer down.
 
-**The Rust side has no card at all.** `crates/azoth-eos/src/databank.rs` reads
-only the files compiled into the binary, and a user's overlay never reaches it. So
-a Rust caller and a Python caller with the same card get different physics from
-the same inputs — which is the one thing the two-implementations rule exists to
-prevent. The capability is what closes it: an overlay is a value passed in, and a
-value passed in is the thing a compile-time embed cannot be.
+So determinism is a description of the library rather than a requirement on it, for
+the Python half.
 
-Neither fact is a claim about the calculus; both are reasons the calculus is
-stated now rather than after more calculations land on top of them.
+**The Rust side still has no card at all.** `crates/azoth-eos/src/databank.rs` reads
+only the files compiled into the binary, and a user's overlay never reaches it. So a
+Rust caller and a Python caller with the same card get different physics from the
+same inputs — which is the one thing the two-implementations rule exists to prevent.
+The capability is what closes it: an overlay is a value passed in, and a value passed
+in is the thing a compile-time embed cannot be. That is the next piece of this
+tranche, and until it lands the non-amplification claim is half true at best.
 
 ## Disclosure, which is the other half
 

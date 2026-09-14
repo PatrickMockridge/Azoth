@@ -176,9 +176,13 @@ rule that the two agree. Nobody can check whether a person read a standard, so t
 was a form to fill in rather than a fact — and a form teaches people to fill it in, which
 manufactures confidence rather than producing it.
 
-**It is not shared.** One keycard per process, set by `azoth.keycard.load`. A library
-whose answers depend on call order is a library that returns two results for one
-calculation.
+**It is not shared, and it is not stored.** `azoth.keycard.load` reads a file and
+returns what it says; the calls that should read it are handed it, and a call handed
+none reads the data this library ships. A library whose answers depend on call order
+is a library that returns two results for one calculation, and a card in force is
+exactly that — so there is no card in force, no `current()` to read one and no
+`clear()` to undo one. A caller with two datasets passes a different card to each
+call rather than running two processes.
 
 ## What the library owes instead of a status field
 

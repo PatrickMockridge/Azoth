@@ -10,7 +10,8 @@
 #  are entitled to use, and load it:
 #
 #      import azoth
-#      azoth.keycard.load("keycard.yaml")
+#      card = azoth.keycard.load("keycard.yaml")
+#      azoth.eos.component("methane", card=card)   # your values, not the databank's
 #
 #  Check it first, with:
 #

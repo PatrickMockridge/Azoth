@@ -168,11 +168,12 @@ def check_with_loader(report: Report, document: dict[str, Any], where: str) -> N
         report.warn(where, "azoth is not importable, so the loader was not run")
         return
     try:
+        # The result is discarded: this is a check that the loader *accepts* the
+        # document, not a step that makes it the card in force. There is nothing to
+        # undo afterwards, because `use` stores nothing.
         keycard.use(document, path=Path(where))
     except Exception as exc:  # the loader raises KeycardError; anything else is a bug
         report.error(where, f"the loader refuses it: {exc}")
-    finally:
-        keycard.clear()
 
 
 def check(path: Path) -> int:

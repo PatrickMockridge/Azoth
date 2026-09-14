@@ -46,22 +46,20 @@ TEMPLATE = REPO_ROOT / "keycard.example.yaml"
 q = ureg.Quantity
 
 
-@pytest.fixture(autouse=True)
-def _no_keycard_left_loaded() -> Any:
-    """Every test starts and ends with the library on the data it ships.
-
-    Not a convenience: `load()` sets a process-wide keycard, so a test that leaves one
-    behind changes the answer every later test gets, and the failure appears in
-    whichever test happens to run next.
-    """
-    keycard.clear()
-    yield
-    keycard.clear()
-
-
 def minimal(**sections: Any) -> dict[str, Any]:
     """The smallest keycard carrying the given sections."""
     return {"schema_version": 2, **sections}
+
+
+def a_card(**sections: Any) -> keycard.Keycard:
+    """A keycard for a call to read, built from the given sections.
+
+    A helper rather than a fixture, and there is no autouse fixture here at all: the
+    card is a value, so a test that wants one holds it and passes it. There is
+    nothing a test could leave behind for the next test to inherit, which is what the
+    fixture this replaced existed to clean up.
+    """
+    return keycard.use(minimal(**sections))
 
 
 # ---------------------------------------------------------------------------
@@ -143,8 +141,8 @@ def test_the_component_parameters_are_what_the_implementation_reads() -> None:
 def test_a_component_override_wins_over_the_databank() -> None:
     """The point of the section: a user's value replaces the shipped one."""
     shipped = eos.components.entry("methane").Pc
-    keycard.use(minimal(components={"methane": {"Pc": {"value": 4_600_000.0, "unit": "Pa"}}}))
-    overridden = eos.components.entry("methane")
+    card = a_card(components={"methane": {"Pc": {"value": 4_600_000.0, "unit": "Pa"}}})
+    overridden = eos.components.entry("methane", card=card)
     assert overridden.Pc.to("Pa").magnitude == pytest.approx(4_600_000.0)
     assert overridden.Pc != shipped
     assert overridden.source == "keycard"
@@ -157,8 +155,8 @@ def test_an_override_keeps_the_parameters_it_does_not_name() -> None:
     the point, should not silently lose them if they do not.
     """
     shipped = eos.components.entry("methane")
-    keycard.use(minimal(components={"methane": {"omega": {"value": 0.5, "unit": "dimensionless"}}}))
-    now = eos.components.entry("methane")
+    card = a_card(components={"methane": {"omega": {"value": 0.5, "unit": "dimensionless"}}})
+    now = eos.components.entry("methane", card=card)
     assert now.omega == pytest.approx(0.5)
     assert now.Tc == shipped.Tc
     assert now.Pc == shipped.Pc
@@ -169,18 +167,16 @@ def test_a_component_is_converted_not_assumed() -> None:
 
     This is the whole reason a keycard declares units rather than bare numbers.
     """
-    keycard.use(
-        minimal(
-            components={
-                "methane": {
-                    "Tc": {"value": 190.0, "unit": "K"},
-                    "Pc": {"value": 4.599e6, "unit": "Pa"},
-                    "omega": {"value": 0.0115, "unit": "dimensionless"},
-                }
+    card = a_card(
+        components={
+            "methane": {
+                "Tc": {"value": 190.0, "unit": "K"},
+                "Pc": {"value": 4.599e6, "unit": "Pa"},
+                "omega": {"value": 0.0115, "unit": "dimensionless"},
             }
-        )
+        }
     )
-    resolved = eos.components.entry("methane")
+    resolved = eos.components.entry("methane", card=card)
     assert resolved.Tc.to("K").magnitude == pytest.approx(190.0)
     assert resolved.Pc.to("Pa").magnitude == pytest.approx(4.599e6)
 
@@ -191,19 +187,17 @@ def test_a_component_the_databank_lacks_is_added() -> None:
     Filling those fields from a similar substance would be inventing data, which is
     what this module is arranged against.
     """
-    keycard.use(
-        minimal(
-            components={
-                "unobtainium": {
-                    "Tc": {"value": 500.0, "unit": "K"},
-                    "Pc": {"value": 2.0e6, "unit": "Pa"},
-                    "omega": {"value": 0.3, "unit": "dimensionless"},
-                }
+    card = a_card(
+        components={
+            "unobtainium": {
+                "Tc": {"value": 500.0, "unit": "K"},
+                "Pc": {"value": 2.0e6, "unit": "Pa"},
+                "omega": {"value": 0.3, "unit": "dimensionless"},
             }
-        )
+        }
     )
-    assert "unobtainium" in eos.components.available()
-    added = eos.components.entry("unobtainium")
+    assert "unobtainium" in eos.components.available(card=card)
+    added = eos.components.entry("unobtainium", card=card)
     assert added.cas is None
     assert added.molar_mass is None
     assert added.source == "keycard"
@@ -211,9 +205,9 @@ def test_a_component_the_databank_lacks_is_added() -> None:
 
 def test_a_partial_new_component_is_refused() -> None:
     """Missing a parameter a cubic reads is an error, not a default."""
-    keycard.use(minimal(components={"unobtainium": {"Tc": {"value": 500.0, "unit": "K"}}}))
+    card = a_card(components={"unobtainium": {"Tc": {"value": 500.0, "unit": "K"}}})
     with pytest.raises(PropertyUnavailableError, match="is missing"):
-        eos.components.entry("unobtainium")
+        eos.components.entry("unobtainium", card=card)
 
 
 def test_a_parameter_nothing_reads_is_refused() -> None:
@@ -238,8 +232,8 @@ def test_an_unknown_unit_is_refused() -> None:
 def test_a_keycard_kij_wins_over_the_databank() -> None:
     """The parameters a mixing rule actually reads."""
     databank_value = eos.components.kij_for(("methane", "n-butane"))[(0, 1)]
-    keycard.use(minimal(kij=[{"component_a": "methane", "component_b": "n-butane", "value": 0.5}]))
-    assert eos.components.kij_for(("methane", "n-butane"))[(0, 1)] == pytest.approx(0.5)
+    card = a_card(kij=[{"component_a": "methane", "component_b": "n-butane", "value": 0.5}])
+    assert eos.components.kij_for(("methane", "n-butane"), card=card)[(0, 1)] == pytest.approx(0.5)
     assert databank_value != pytest.approx(0.5)
 
 
@@ -272,28 +266,22 @@ def test_an_explicit_coefficient_wins_and_the_keycard_is_not_consulted() -> None
     Overriding it from a file they loaded an hour ago would be the worst kind of
     surprise, so the keycard is not merely outranked here - it is not read.
     """
-    keycard.use(
-        minimal(
-            coefficients={
-                "hydraulics.orifice_flow": {"Cd": {"value": 0.1, "unit": "dimensionless"}}
-            }
-        )
+    card = a_card(
+        coefficients={"hydraulics.orifice_flow": {"Cd": {"value": 0.1, "unit": "dimensionless"}}}
     )
-    explicit = hydraulics.orifice_flow(q(50, "mm"), q(20, "kPa"), q(998, "kg/m**3"), 0.61)
-    from_keycard = hydraulics.orifice_flow(q(50, "mm"), q(20, "kPa"), q(998, "kg/m**3"))
-    assert explicit.q != from_keycard.q
+    explicit = hydraulics.orifice_flow(
+        q(50, "mm"), q(20, "kPa"), q(998, "kg/m**3"), 0.61, card=card
+    )
+    from_card = hydraulics.orifice_flow(q(50, "mm"), q(20, "kPa"), q(998, "kg/m**3"), card=card)
+    assert explicit.q != from_card.q
 
 
 def test_a_coefficient_the_keycard_supplies_is_used_when_omitted() -> None:
     """The positive half: omitting it picks up the keycard's value."""
-    keycard.use(
-        minimal(
-            coefficients={
-                "hydraulics.orifice_flow": {"Cd": {"value": 0.61, "unit": "dimensionless"}}
-            }
-        )
+    card = a_card(
+        coefficients={"hydraulics.orifice_flow": {"Cd": {"value": 0.61, "unit": "dimensionless"}}}
     )
-    omitted = hydraulics.orifice_flow(q(50, "mm"), q(20, "kPa"), q(998, "kg/m**3"))
+    omitted = hydraulics.orifice_flow(q(50, "mm"), q(20, "kPa"), q(998, "kg/m**3"), card=card)
     explicit = hydraulics.orifice_flow(q(50, "mm"), q(20, "kPa"), q(998, "kg/m**3"), 0.61)
     assert omitted.q == explicit.q
 
@@ -342,21 +330,20 @@ def a_model(**overrides: Any) -> dict[str, Any]:
 
 def test_a_model_resolves_to_a_mixture() -> None:
     """The positive half, and the reason the section exists: name a mixture once."""
-    keycard.use(minimal(models={"vendor_gas": a_model()}))
-    fluid = eos.from_model("vendor_gas")
+    card = a_card(models={"vendor_gas": a_model()})
+    fluid = eos.from_model("vendor_gas", card=card)
     assert len(fluid) == 2
     assert fluid.kij[0][1] == pytest.approx(eos.components.kij_for(("methane", "n-butane"))[(0, 1)])
 
 
 def test_a_model_sees_the_keycard_s_component_overrides() -> None:
     """The sections compose, which is the point of resolving components by name."""
-    keycard.use(
-        minimal(
-            components={"methane": {"Tc": {"value": 123.0, "unit": "K"}}},
-            models={"vendor_gas": a_model()},
-        )
+    card = a_card(
+        components={"methane": {"Tc": {"value": 123.0, "unit": "K"}}},
+        models={"vendor_gas": a_model()},
     )
-    assert eos.from_model("vendor_gas").components[0].Tc.to("K").magnitude == pytest.approx(123.0)
+    resolved = eos.from_model("vendor_gas", card=card)
+    assert resolved.components[0].Tc.to("K").magnitude == pytest.approx(123.0)
 
 
 @pytest.mark.parametrize("field", ["kind", "shape", "alpha", "mixing_rule"])
@@ -379,9 +366,9 @@ def test_a_fitted_alpha_parameter_is_refused() -> None:
 
 def test_an_undeclared_model_names_what_is_declared() -> None:
     """The error has to say what exists, or it is a puzzle rather than a message."""
-    keycard.use(minimal(models={"vendor_gas": a_model()}))
+    card = a_card(models={"vendor_gas": a_model()})
     with pytest.raises(PropertyUnavailableError, match="vendor_gas"):
-        eos.from_model("something_else")
+        eos.from_model("something_else", card=card)
 
 
 # ---------------------------------------------------------------------------
@@ -389,12 +376,42 @@ def test_an_undeclared_model_names_what_is_declared() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_a_component_override_is_undone_by_clear() -> None:
-    """`clear()` returns the library to the data it ships, with no residue."""
+def test_there_is_no_card_in_force() -> None:
+    """The module holds no card, and offers no way to set one.
+
+    This is the property, asserted rather than assumed. `load` and `use` return what
+    they read and store nothing, so there is no global for a second call to inherit -
+    and the `clear()` that used to undo one is gone with it, because a function whose
+    only job is to unset a global exists only because the global does.
+
+    Checked by *building a card and looking* rather than by asserting that `current`
+    raises. Two weaker tests are passed by defects this one catches:
+    asserting only for the missing accessor passes with a `_current` still being
+    written and never read; and looking for a bound card *without* building one first
+    passes with a `_current` declared and left `None`, which is the same dead binding
+    one step earlier. So a card is built here, and then the module is inspected.
+    """
+    keycard.use(minimal(components={"methane": {"omega": {"value": 0.5, "unit": "dimensionless"}}}))
+
+    live = [name for name, value in vars(keycard).items() if isinstance(value, keycard.Keycard)]
+    assert not live, (
+        f"azoth.keycard holds {live} at module scope. A card in force is a card whose "
+        f"answer depends on what somebody loaded before the call."
+    )
+    assert not hasattr(keycard, "current"), "azoth.keycard still offers `current`"
+    assert not hasattr(keycard, "clear"), "azoth.keycard still offers `clear`"
+
+
+def test_a_call_with_no_card_reads_what_the_library_ships() -> None:
+    """The baseline is the databank, and it is what a cardless call reads.
+
+    Both directions, again: a card changes the answer, and without one the answer is
+    the shipped one. A test that only checked the first would pass if a card leaked
+    into a later call.
+    """
     shipped = eos.components.entry("methane").Pc
-    keycard.use(minimal(components={"methane": {"Pc": {"value": 1.0, "unit": "Pa"}}}))
-    assert eos.components.entry("methane").Pc != shipped
-    keycard.clear()
+    card = a_card(components={"methane": {"Pc": {"value": 1.0, "unit": "Pa"}}})
+    assert eos.components.entry("methane", card=card).Pc != shipped
     assert eos.components.entry("methane").Pc == shipped
     assert eos.components.entry("methane").source == "databank"
 
@@ -443,90 +460,62 @@ def test_the_template_is_valid_yaml_with_a_version() -> None:
 # ---------------------------------------------------------------------------
 
 
-def a_card(omega: float) -> keycard.Keycard:
-    """A keycard overriding one parameter, so two of them differ observably."""
-    return keycard.use(
-        minimal(components={"methane": {"omega": {"value": omega, "unit": "dimensionless"}}})
-    )
+def test_two_cards_in_one_process_are_two_answers() -> None:
+    """A card is a value, so two datasets are two calls rather than two processes.
 
+    This is the property `spec.md` states as a rule and that a process-wide card
+    cannot have: *"a library whose answers depend on call order is a library that
+    returns two results for one calculation."* With the card as an argument the two
+    results are asked for explicitly and in one process, and the second call does not
+    depend on the first having happened.
 
-def test_an_explicit_card_wins_over_the_loaded_one() -> None:
-    """The precedence `spec.md` states for a coefficient, applied to the card itself.
-
-    Both directions are asserted, and they are different. A call that passes no card
-    reads the loaded one - which is what "one keycard in force" means, and what every
-    existing caller relies on. A call that *does* pass one reads that card and not the
-    loaded one, which is the capability being a value: a caller who hands a card to a
-    call is stating it for that call, and reading a file loaded an hour ago instead
-    would be the surprise the keycard rules exist to prevent.
-
-    A test that only checked the second would pass with the parameter ignored and the
-    global read anyway, so both are here.
+    Both directions are asserted, and a test that checked only one would pass with the
+    card ignored: the two cards must give *different* answers, and each must give its
+    own answer whatever order they are asked in.
     """
-    loaded = a_card(0.5)
-    explicit = a_card(0.25)
+    lean = a_card(components={"methane": {"omega": {"value": 0.5, "unit": "dimensionless"}}})
+    rich = a_card(components={"methane": {"omega": {"value": 0.25, "unit": "dimensionless"}}})
 
-    # No card passed: the loaded one answers. `a_card` sets the global, so the second
-    # call left 0.25 in force and the first card is the one being held explicitly.
-    assert eos.components.entry("methane").omega == pytest.approx(0.25)
-
-    # A card passed: it answers, and the loaded one is not consulted.
-    assert eos.components.entry("methane", card=loaded).omega == pytest.approx(0.5)
-    assert eos.components.entry("methane", card=explicit).omega == pytest.approx(0.25)
-
-    # And the global is unchanged by a call that passed one, which is what makes the
-    # precedence a precedence rather than a mutation.
-    assert eos.components.entry("methane").omega == pytest.approx(0.25)
+    assert eos.components.entry("methane", card=lean).omega == pytest.approx(0.5)
+    assert eos.components.entry("methane", card=rich).omega == pytest.approx(0.25)
+    # Reversed, to show the first call did not leave anything behind for the second.
+    assert eos.components.entry("methane", card=rich).omega == pytest.approx(0.25)
+    assert eos.components.entry("methane", card=lean).omega == pytest.approx(0.5)
 
 
 def test_the_card_reaches_the_coefficient_path_too() -> None:
     """A coefficient, not just a component, comes from the card the call passed.
 
-    The two read different sections of the same object, and the resolver is the same
-    function, so this is a check that the parameter was threaded rather than that the
-    resolver works. `orifice_flow` is the calc with a coefficient a card can supply.
+    The two read different sections of the same object, so this is a check that the
+    parameter is threaded to both rather than that either works. `orifice_flow` is the
+    calc with a coefficient a card can supply.
     """
     from azoth.core.units import quantity
-    from azoth.hydraulics import orifice_flow
-    from azoth.keycard import coefficient_value
 
     def a_cd(value: float) -> keycard.Keycard:
-        return keycard.use(
-            minimal(
-                coefficients={
-                    "hydraulics.orifice_flow": {"Cd": {"value": value, "unit": "dimensionless"}}
-                }
-            )
+        return a_card(
+            coefficients={
+                "hydraulics.orifice_flow": {"Cd": {"value": value, "unit": "dimensionless"}}
+            }
         )
 
-    # The second `use` leaves 0.61 in force, so `explicit` is also the loaded card and
-    # `loaded` is the one only being held explicitly.
-    loaded = a_cd(0.60)
-    explicit = a_cd(0.61)
+    at_60 = a_cd(0.60)
+    at_61 = a_cd(0.61)
 
-    assert coefficient_value("hydraulics.orifice_flow", "Cd", None, card=loaded) == pytest.approx(
-        0.60
-    )
-    assert coefficient_value("hydraulics.orifice_flow", "Cd", None, card=explicit) == pytest.approx(
-        0.61
-    )
-    assert coefficient_value("hydraulics.orifice_flow", "Cd", None) == pytest.approx(0.61)
-
-    # Through the public calc, so the argument is threaded the whole way rather than
-    # only as far as the helper above. `Cd` scales the flow linearly, so the ratio
-    # between two cards is the ratio of their coefficients and nothing else - which is
-    # what makes this a statement about *which* card answered rather than about the
-    # arithmetic.
+    # Through the public calc, so the card is threaded the whole way. `Cd` scales the
+    # flow linearly, so the ratio between two cards is the ratio of their coefficients
+    # and nothing else - which makes this a statement about *which* card answered
+    # rather than about the arithmetic.
     bore = quantity(50.0, "mm")
     drop = quantity(10_000.0, "Pa")
     density = quantity(998.0, "kg/m**3")
-    at_60 = orifice_flow(bore, drop, density, card=loaded).q.to("m**3/s").magnitude
-    at_61 = orifice_flow(bore, drop, density, card=explicit).q.to("m**3/s").magnitude
-    assert at_61 == pytest.approx(at_60 * 0.61 / 0.60)
+    sixty = hydraulics.orifice_flow(bore, drop, density, card=at_60).q.to("m**3/s").magnitude
+    sixty_one = hydraulics.orifice_flow(bore, drop, density, card=at_61).q.to("m**3/s").magnitude
+    assert sixty_one == pytest.approx(sixty * 0.61 / 0.60)
 
-    # And with no card passed, the loaded one answers - `explicit`, since `use` was
-    # called on it last.
-    assert orifice_flow(bore, drop, density).q.to("m**3/s").magnitude == pytest.approx(at_61)
+    # And with no card, no coefficient is supplied: an error rather than a default.
+    with pytest.raises(InvalidInputError, match="needs a value"):
+        hydraulics.orifice_flow(bore, drop, density)
 
 
 def test_a_kernel_does_not_take_a_card() -> None:

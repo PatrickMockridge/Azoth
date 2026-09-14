@@ -7,8 +7,8 @@ library ships, by name. A component you supply with a name the databank already 
 replaces its critical constants; a name it does not have adds one.
 
     >>> import azoth
-    >>> azoth.keycard.load("keycard.yaml")
-    >>> azoth.eos.component("methane")      # the keycard's values, not the databank's
+    >>> card = azoth.keycard.load("keycard.yaml")
+    >>> azoth.eos.component("methane", card=card)   # the card's values, not the databank's
 
 # There is no registration step anywhere, and this is why
 
@@ -26,13 +26,22 @@ what its holder may compute with, and the accountability for that is theirs - a
 machine cannot discharge it and a field asking them to assert it only manufactures
 confidence. Adding a calculation is files, not a registration; the id is the address.
 
-# One keycard at a time, process-wide
+# The card is a value, and there is no card in force
 
-:func:`load` sets *the* keycard. There is one, not a stack and not a registry of
-several, because the alternative is a library whose answers depend on call order -
-the same calculation giving two results in one process because someone loaded a
-keycard between them. A caller who wants two datasets compares two processes, which
-is also the only way to compare them honestly.
+:func:`load` reads a file and returns what it says. It stores nothing, and nothing
+in this library consults a store: every call that reads a card is handed one, and a
+call handed none reads the data this library ships.
+
+That is the difference between a library whose answers depend on call order and one
+whose answers do not. A process-wide card set by `load` gives two results for one
+calculation when somebody loads a file between the two calls, whoever they are and
+whatever they meant - which is the state `spec.md` names as the thing a keycard must
+not be. There is deliberately no `current()` to read and no `clear()` to undo,
+because both of those exist only to manage a global.
+
+A caller with two datasets passes a different card to each call, or runs two
+processes; the second is still the only way to compare them for a *reason*, and the
+first is now possible at all.
 
 # What this module does not do
 
@@ -176,40 +185,25 @@ class Keycard:
         )
 
 
-#: The loaded keycard, if any. Module-level because the point of a keycard is that
-#: it applies to the process, not to a call.
-_current: Keycard | None = None
-
-
-def current() -> Keycard | None:
-    """The loaded keycard, or ``None`` when the library is running on what it ships."""
-    return _current
-
-
-def in_force(card: Keycard | None = None) -> Keycard | None:
-    """The card a call should read, given the one its caller passed.
-
-    **An explicit card wins and the loaded one is not consulted** — the precedence
-    `spec.md` states for a coefficient, applied to the card itself. A caller who
-    hands a card to one call is stating it for that call, and reading a file loaded
-    an hour ago instead would be the same surprise in a worse place.
-
-    Resolved at each read site rather than only at the public boundary, so a call
-    that goes through several of them threads one card down rather than re-resolving
-    at every step — and a card that arrives already resolved passes through
-    unchanged.
-    """
-    return card if card is not None else _current
-
-
-def clear() -> None:
-    """Unload the keycard, returning the library to the data it ships."""
-    global _current
-    _current = None
+#: There is deliberately no module-level card here, and no accessor for one.
+#:
+#: A card is a value a caller passes, so a library reading one out of a global is a
+#: library whose answer depends on what somebody loaded before the call - which
+#: `spec.md` states as the thing a keycard must not be: *"a library whose answers
+#: depend on call order is a library that returns two results for one calculation."*
+#: A global set by `load` is exactly that, whoever set it.
+#:
+#: `python/tests/test_keycard_loader.py` asserts this module holds no `Keycard`, in
+#: both directions: that no module-level binding of one exists, and that there is no
+#: `current` or `clear` for a caller to reach for.
 
 
 def load(path: str | Path) -> Keycard:
-    """Load a keycard from a YAML file and make it the one in force.
+    """Read a keycard from a YAML file.
+
+    **Returns it and sets nothing.** The card is passed to the calls that should read
+    it - ``azoth.eos.component("methane", card=card)`` - and a call with none passed
+    reads the data this library ships.
 
     Raises:
         KeycardError: if the file cannot be read, does not parse, or does not
@@ -228,12 +222,12 @@ def load(path: str | Path) -> Keycard:
 
 
 def use(document: Any, *, path: Path | None = None) -> Keycard:
-    """Make an already-parsed document the keycard in force.
+    """Build a keycard from an already-parsed document.
 
-    The same validation as :func:`load`, separated so a caller holding a mapping -
-    a notebook, a test, a config service - does not have to write it to disk first.
+    The same validation as :func:`load`, separated so a caller holding a mapping - a
+    notebook, a test, a config service - does not have to write it to disk first.
+    Like :func:`load` it returns the card and sets nothing.
     """
-    global _current
     where = str(path) if path is not None else "<mapping>"
 
     if not isinstance(document, Mapping):
@@ -268,7 +262,7 @@ def use(document: Any, *, path: Path | None = None) -> Keycard:
             f"is data that looks in use and is not.",
         )
 
-    keycard = Keycard(
+    return Keycard(
         keyholder=_keyholder(document, where),
         licence=_licence(document),
         components=_components(document.get("components"), where),
@@ -280,8 +274,6 @@ def use(document: Any, *, path: Path | None = None) -> Keycard:
         fluids={name: tuple(rows) for name, rows in (document.get("fluids") or {}).items()},
         path=path,
     )
-    _current = keycard
-    return keycard
 
 
 def _keyholder(document: Mapping[str, Any], where: str) -> str | None:
@@ -521,9 +513,8 @@ def coefficient_value(calc_id: str, name: str, given: Any, *, card: Keycard | No
     who writes ``Cd=0.61`` is stating a value for this call, and quietly overriding it
     from a file they loaded an hour ago would be the worst kind of surprise.
 
-    The same precedence applies to `card` itself, one level up: a card passed to this
-    call is the one read, and the loaded one is consulted only when none was. See
-    :func:`in_force`.
+    `card` is the card this call reads: with none passed, no card supplies anything
+    and a coefficient the caller omitted is an error.
 
     The value is converted against the *spec's* declared unit for that input, so a
     keycard coefficient declared in bar and read as pascal is caught here rather than
@@ -542,7 +533,6 @@ def coefficient_value(calc_id: str, name: str, given: Any, *, card: Keycard | No
     if given is not None:
         return given
 
-    card = in_force(card)
     supplied = card.coefficient(calc_id, name) if card is not None else None
     if supplied is None:
         holder = f"the keycard from {card.keyholder!r}" if card and card.keyholder else "no keycard"
@@ -563,9 +553,7 @@ __all__ = [
     "SCHEMA_VERSION",
     "Keycard",
     "Model",
-    "clear",
     "coefficient_value",
-    "current",
     "load",
     "use",
 ]

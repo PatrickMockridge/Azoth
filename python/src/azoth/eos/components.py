@@ -181,10 +181,9 @@ def _kij() -> dict[tuple[str, str], float]:
 def available(*, card: keycard.Keycard | None = None) -> tuple[str, ...]:
     """Every name available, sorted: the databank plus whatever a card adds.
 
-    `card` is the card this call reads; the loaded one is consulted when none is
-    passed. See :func:`azoth.keycard.in_force`.
+    `card` is the card this call reads; with none passed the library reads the data
+    it ships.
     """
-    card = keycard.in_force(card)
     extra = set(card.components) if card is not None else set()
     return tuple(sorted(set(_table()) | extra))
 
@@ -207,7 +206,6 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
     """
     key = name.strip().lower()
     base = _table().get(key)
-    card = keycard.in_force(card)
     override = card.component(key) if card is not None else None
 
     if override is None:
@@ -298,7 +296,6 @@ def kij_for(
 
     Keyed by index into `names`, which is the form `mixture()` takes.
     """
-    card = keycard.in_force(card)
     pairs: dict[tuple[int, int], float] = {}
     for i, a in enumerate(names):
         for j in range(i + 1, len(names)):
@@ -408,7 +405,6 @@ def from_model(name: str, *, card: keycard.Keycard | None = None) -> Mixture:
         PropertyUnavailableError: from :func:`from_names`, if a component of the model
             cannot be resolved.
     """
-    card = keycard.in_force(card)
     model = card.model(name) if card is not None else None
     if model is None:
         where = "the loaded keycard" if card is not None else "no keycard is loaded"
