@@ -20,7 +20,9 @@ recorded as determined. A refuted cause is re-derived. A cause neither can settl
 recorded as unresolved **and names the experiment that would settle it**. Where the two
 readings genuinely differ, both are recorded and the entry says so.
 
-An entry leaves this page when it is fixed, and the fix carries a test.
+An entry leaves its severity section when it is fixed, and the fix carries a test. It moves to
+"Fixed" rather than being deleted: a defect that was real and is closed is a different fact
+from one that was never recorded.
 
 See [Test plan](./test-plan.md) for what is tested and how a run is performed.
 
@@ -97,49 +99,6 @@ must test the residual against `algorithm.tolerance` before declaring convergenc
 case like this fails loudly instead of quietly. The first is the real fix and needs a decision
 on what the flash should return across the Wilson threshold — which is a modelling choice, not
 a patch.
-
-### An installed azoth cannot be imported
-
-**Severity: blocking. Status: open.**
-
-**Symptom.** `pip install azoth` succeeds, and the first `import azoth` raises
-`ModuleNotFoundError`. The package imports `keycard` at module scope, `keycard` imports
-`yaml` at module scope, and `pyyaml` is declared only as a development extra.
-
-**Evidence.** Reproduced on a wheel built from this commit and installed into a fresh venv:
-
-```
-$ maturin build -o /tmp/dist && python -m venv /tmp/wv
-$ /tmp/wv/bin/pip install /tmp/dist/*.whl
-$ cd /tmp && /tmp/wv/bin/python -c "import azoth"
-  File ".../azoth/keycard.py", line 50, in <module>
-    import yaml
-ModuleNotFoundError: No module named 'yaml'
-```
-
-`python/src/azoth/__init__.py:78` imports `keycard` in the module-scope list;
-`python/src/azoth/keycard.py:50` is a top-level `import yaml`; `pyproject.toml:43` lists
-`pyyaml>=6` under `[project.optional-dependencies]` `dev`, while `[project] dependencies`
-holds only `pint`.
-
-**This makes CI red at `ba98b99`.** The gate that catches it exists and is not weak:
-`tools/check_wheel_data.py:43` does `import azoth` and `from azoth.hydraulics import …` from
-outside the repository, and the `wheel-data` job builds a wheel, installs it into
-`/tmp/wheel-venv` with **no dev extras**, and runs that script from `/tmp`. The run is red
-there, so the baseline commit is not a baseline — see the note under "Reconciled at
-`ba98b99`".
-
-**Root cause.** The defect was fixed in `aa4a705` ("Declare pyyaml, because the wheel could
-not be imported") and reverted by `37e6a34`, whose entire message is the stock two-line
-revert text — it does not say why. The revert also carried `ruff format` line-wrapping into
-`python/tests/test_registration_completeness.py`, verified as pure `re.compile` reflowing, so
-a formatter was allowed to move a correctness fix. The cause of the *revert* is not recorded
-anywhere and is not recoverable from the commit.
-
-**Remediation.** Put `pyyaml` (and `jsonschema`, if `keycard` or the schema tools need it at
-import time) into `[project] dependencies`, not the dev extra. A lazy `import yaml` inside
-`keycard.load()` is possible but weak — `load` is documented public API, so a lazy import
-only moves the failure to the user's first call.
 
 ---
 
@@ -354,16 +313,20 @@ fourteen tests.
 
 ---
 
-## Fixed in this change set
+## Fixed
 
-All four were closed at `ba98b99`, in the change set that first reached a green baseline. Each
-names the test that would have caught it.
+Entries that have left the sections above. Each names the commit that closed it and the test
+that would have caught it. The first four were closed at `ba98b99`, in the change set that
+first reached a green baseline; the fifth at `f8b5a70`, and it is what makes that baseline
+true rather than merely claimed.
 
-**A note on evidence.** These four were uncommitted work when they were fixed, so `ba98b99^`
-is not their pre-fix state and the failures cannot be re-derived from git. The evidence for
-each is the captured run: the exact assertion messages and exit codes from the session that
-made the change, quoted below. Where a fix is checkable from the tree — the `critical_point`
-names, the mutation test — that is stated and is reproducible.
+**A note on evidence, for the first four.** They were uncommitted work when they were fixed,
+so `ba98b99^` is not their pre-fix state and the failures cannot be re-derived from git. The
+evidence for each is the captured run: the exact assertion messages and exit codes from the
+session that made the change, quoted below. Where a fix is checkable from the tree — the
+`critical_point` names, the mutation test — that is stated and is reproducible. The fifth is
+not in that position: it is reproducible from wheel artifacts at any time, and the
+reproduction is in its own entry below.
 
 ### `assert_results_equal` compared a solver diagnostic on an impossible tolerance
 
@@ -453,6 +416,67 @@ found this. **What it does not yet cover** is the `valid_range`-to-result-name a
 was the other half, which is why the skipped-check warning went unnoticed; that is an open
 remediation item.
 
+### An installed azoth cannot be imported
+
+**Severity: blocking. Status: fixed at `f8b5a70`.**
+
+**Symptom.** `pip install azoth` succeeded, and the first `import azoth` raised
+`ModuleNotFoundError`. The package imports `keycard` at module scope, `keycard` imports
+`yaml` at module scope, and `pyyaml` was declared only as a development extra.
+
+**Evidence.** Reproduced on a wheel built at `65c2c67` and installed into a fresh venv:
+
+```
+$ maturin build --release -o /tmp/dist && python -m venv /tmp/wv
+$ /tmp/wv/bin/pip install /tmp/dist/*.whl
+$ cd /tmp && /tmp/wv/bin/python -c "import azoth"
+  File ".../azoth/eos/components.py", line 49, in <module>
+    from azoth import keycard
+  File ".../azoth/keycard.py", line 50, in <module>
+    import yaml
+ModuleNotFoundError: No module named 'yaml'
+```
+
+`python/src/azoth/__init__.py:78` imports `keycard` in the module-scope list;
+`python/src/azoth/keycard.py:50` is a top-level `import yaml`; `pyproject.toml:43` listed
+`pyyaml>=6` under `[project.optional-dependencies]` `dev`, while `[project] dependencies`
+held only `pint`.
+
+**This made CI red at `ba98b99`.** The gate that catches it exists and is not weak:
+`tools/check_wheel_data.py:43` does `import azoth` and `from azoth.hydraulics import …` from
+outside the repository, and the `wheel-data` job builds a wheel, installs it into
+`/tmp/wheel-venv` with **no dev extras**, and runs that script from `/tmp`. The run was red
+there, so the baseline commit was not a baseline — see the note under "Reconciled at
+`ba98b99`".
+
+**Root cause.** The defect was fixed in `aa4a705` ("Declare pyyaml, because the wheel could
+not be imported") and reverted by `37e6a34`, whose entire message is the stock two-line
+revert text — it does not say why. The revert also carried `ruff format` line-wrapping into
+`python/tests/test_registration_completeness.py`, verified as pure `re.compile` reflowing, so
+a formatter was allowed to move a correctness fix. The cause of the *revert* is not recorded
+anywhere and is not recoverable from the commit.
+
+**Fix and its test.** `pyyaml` moved into `[project] dependencies`. The test is the gate that
+was already red and is not new: a wheel built from the fix, installed into a clean venv with
+no extras, with `check_wheel_data.py` run from `/tmp`, which reports OK and resolves both
+CSVs out of `site-packages`. The pre-fix wheel was also rebuilt from `65c2c67`'s manifest and
+the failure reproduced from that artifact, so the reproduction is a property of the wheel
+rather than of a session's environment.
+
+Two things travelled with it, both instances of the same defect — a list written down twice.
+`uv.lock` records the resolved graph, so it was stale the moment `pyyaml` changed sections;
+CI's `uv sync` would have rewritten it in place instead of failing, which is how a stale lock
+survives. And `CONTRIBUTING.md` hand-enumerated the dependency list and disagreed with the
+manifest in two places; it now runs `uv sync --extra dev --no-install-project`, the command
+the CI jobs run, so the list has one home.
+
+**A second route into the same import.** The traceback reaches `keycard` through
+`azoth/eos/components.py:49`, not only through `__init__.py:78`. Both were checked; either
+alone makes `import azoth` need yaml, and the first traceback taken only showed the first.
+
+**`jsonschema` was checked and stays a dev extra.** Nothing under `python/src/azoth` imports
+it; only `tools/check_user_data.py` and the tests do.
+
 ---
 
 ## Source prose that is a report rather than a comment
@@ -521,8 +545,14 @@ passed. One gate could not be run from inside the repository — `check_wheel_da
 to report anything when `azoth` resolves to the source tree, which it did — and that refusal
 was recorded and then treated as satisfied. It is not: the wheel job installs a wheel into a
 venv with no dev extras and imports the package, and **that job is red**, for the `pyyaml`
-defect above. The test was run afterwards and reproduces `ModuleNotFoundError` from a clean
-venv. A gate that declines to prove something has proved nothing.
+defect now closed at `f8b5a70`. The test was run afterwards and reproduces `ModuleNotFoundError`
+from a clean venv. A gate that declines to prove something has proved nothing.
+
+**`main` was knowingly red between `65c2c67` and `f8b5a70`.** The fix was held while the
+remediation plan was written, by the owner's decision, so that the plan existed before any of
+it was executed. The interim is recorded here rather than left to be inferred from the
+history: for three commits this page described a red baseline and the tree did not disagree
+with it.
 
 **Every root cause on this page was attacked by a second reader, and five were refuted.**
 

@@ -47,6 +47,11 @@ repository.
 at all, and because the process that let it through — a gate that declined to prove something
 being read as a pass — is `R4.1`'s subject.
 
+**Status: done at `f8b5a70`.** `jsonschema` was checked and does **not** follow it: nothing
+under `python/src/azoth` imports it, so it stays a dev extra. Two other instances of the same
+defect — a list written down twice — were fixed in the same change set: `uv.lock` was stale
+the moment the manifest moved, and `CONTRIBUTING.md` hand-enumerated the dependencies.
+
 ---
 
 ## R2. Correctness
