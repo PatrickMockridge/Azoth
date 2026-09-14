@@ -506,6 +506,90 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "residual", "dimensionless", residual);
         }
 
+        "eos.srk_kappa" => {
+            let omega = take(&inputs, "omega")?;
+            let mut kappa = Vec::with_capacity(n);
+            for value in &omega {
+                let r = element(py, eos::srk_kappa(*value), &mut warnings)?;
+                kappa.push(r.kappa);
+            }
+            push_values(&mut columns, "kappa", "dimensionless", kappa);
+        }
+
+        "eos.srk_alpha_ab" => {
+            let (kappa, tr, pr) = (
+                take(&inputs, "kappa")?,
+                take(&inputs, "Tr")?,
+                take(&inputs, "Pr")?,
+            );
+            let mut alpha = Vec::with_capacity(n);
+            let mut a_reduced = Vec::with_capacity(n);
+            let mut b_reduced = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(py, eos::srk_alpha_ab(kappa[i], tr[i], pr[i]), &mut warnings)?;
+                alpha.push(r.alpha);
+                a_reduced.push(r.a_reduced);
+                b_reduced.push(r.b_reduced);
+            }
+            push_values(&mut columns, "alpha", "dimensionless", alpha);
+            push_values(&mut columns, "a_reduced", "dimensionless", a_reduced);
+            push_values(&mut columns, "b_reduced", "dimensionless", b_reduced);
+        }
+
+        "eos.srk_z_factor" => {
+            let (a, b) = (take(&inputs, "a_reduced")?, take(&inputs, "b_reduced")?);
+            let mut z_min = Vec::with_capacity(n);
+            let mut z_max = Vec::with_capacity(n);
+            let mut root_structure = Vec::with_capacity(n);
+            let mut iterations = Vec::with_capacity(n);
+            let mut converged = Vec::with_capacity(n);
+            let mut residual = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(py, eos::srk_z_factor(a[i], b[i]), &mut warnings)?;
+                z_min.push(r.z_min);
+                z_max.push(r.z_max);
+                root_structure.push(Some(r.root_structure.as_str().to_string()));
+                iterations.push(f64::from(r.iterations));
+                converged.push(flag(r.converged));
+                residual.push(r.residual);
+            }
+            push_values(&mut columns, "z_min", "dimensionless", z_min);
+            push_values(&mut columns, "z_max", "dimensionless", z_max);
+            push_labels(&mut columns, "root_structure", root_structure);
+            push_values(&mut columns, "iterations", "dimensionless", iterations);
+            push_values(&mut columns, "converged", "dimensionless", converged);
+            push_values(&mut columns, "residual", "dimensionless", residual);
+        }
+
+        "eos.srk_departure" => {
+            let (a, b, z, kappa, tr) = (
+                take(&inputs, "a_reduced")?,
+                take(&inputs, "b_reduced")?,
+                take(&inputs, "z")?,
+                take(&inputs, "kappa")?,
+                take(&inputs, "Tr")?,
+            );
+            let mut ln_phi = Vec::with_capacity(n);
+            let mut h_dep_rt = Vec::with_capacity(n);
+            let mut s_dep_r = Vec::with_capacity(n);
+            let mut cp_dep_r = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::srk_departure(a[i], b[i], z[i], kappa[i], tr[i]),
+                    &mut warnings,
+                )?;
+                ln_phi.push(r.ln_phi);
+                h_dep_rt.push(r.h_dep_rt);
+                s_dep_r.push(r.s_dep_r);
+                cp_dep_r.push(r.cp_dep_r);
+            }
+            push_values(&mut columns, "ln_phi", "dimensionless", ln_phi);
+            push_values(&mut columns, "h_dep_rt", "dimensionless", h_dep_rt);
+            push_values(&mut columns, "s_dep_r", "dimensionless", s_dep_r);
+            push_values(&mut columns, "cp_dep_r", "dimensionless", cp_dep_r);
+        }
+
         "eos.prsv_kappa" => {
             let (omega, tr, kappa1) = (
                 take(&inputs, "omega")?,

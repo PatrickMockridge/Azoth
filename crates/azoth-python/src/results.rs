@@ -20,7 +20,8 @@ use azoth_eos::results::{
     BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
     MolarEnthalpyEntropyResult, PhFlashResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
     PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, StabilityTestResult,
+    PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, SrkAlphaAbResult,
+    SrkDepartureResult, SrkKappaResult, SrkZFactorResult, StabilityTestResult,
     Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
@@ -675,6 +676,201 @@ impl PyPrDepartureResult {
 
 impl From<&PrDepartureResult> for PyPrDepartureResult {
     fn from(r: &PrDepartureResult) -> Self {
+        Self {
+            ln_phi: r.ln_phi,
+            h_dep_rt: r.h_dep_rt,
+            s_dep_r: r.s_dep_r,
+            cp_dep_r: r.cp_dep_r,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.srk_kappa`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SrkKappaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySrkKappaResult {
+    /// The Soave-Redlich-Kwong alpha-function coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub kappa: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySrkKappaResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SrkKappaResult(kappa={}, {} warning(s))",
+            self.kappa,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&SrkKappaResult> for PySrkKappaResult {
+    fn from(r: &SrkKappaResult) -> Self {
+        Self {
+            kappa: r.kappa,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.srk_alpha_ab`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SrkAlphaAbResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySrkAlphaAbResult {
+    /// The Soave alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// `A = a*alpha*P/(R**2*T**2)`. Dimensionless.
+    #[pyo3(get)]
+    pub a_reduced: f64,
+    /// `B = b*P/(R*T)`. Dimensionless.
+    #[pyo3(get)]
+    pub b_reduced: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySrkAlphaAbResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SrkAlphaAbResult(alpha={}, a_reduced={}, b_reduced={}, {} warning(s))",
+            self.alpha,
+            self.a_reduced,
+            self.b_reduced,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&SrkAlphaAbResult> for PySrkAlphaAbResult {
+    fn from(r: &SrkAlphaAbResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            a_reduced: r.a_reduced,
+            b_reduced: r.b_reduced,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.srk_z_factor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SrkZFactorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySrkZFactorResult {
+    /// The smallest admissible root. Dimensionless.
+    #[pyo3(get)]
+    pub z_min: f64,
+    /// The largest admissible root. Dimensionless.
+    #[pyo3(get)]
+    pub z_max: f64,
+    /// `one_root` or `three_roots`.
+    #[pyo3(get)]
+    pub root_structure: String,
+    /// Newton steps the polish took.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Whether the polish met its stopping rule.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// The largest `|x_k - x_{k-1}|` at the final polish step.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySrkZFactorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SrkZFactorResult(z_min={}, z_max={}, root_structure={}, {} warning(s))",
+            self.z_min,
+            self.z_max,
+            self.root_structure,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&SrkZFactorResult> for PySrkZFactorResult {
+    fn from(r: &SrkZFactorResult) -> Self {
+        Self {
+            z_min: r.z_min,
+            z_max: r.z_max,
+            root_structure: r.root_structure.as_str().to_string(),
+            iterations: r.iterations,
+            converged: r.converged,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.srk_departure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SrkDepartureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySrkDepartureResult {
+    /// The logarithm of the fugacity coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub ln_phi: f64,
+    /// The departure enthalpy over `R*T`. Dimensionless.
+    #[pyo3(get)]
+    pub h_dep_rt: f64,
+    /// The departure entropy over `R`. Dimensionless.
+    #[pyo3(get)]
+    pub s_dep_r: f64,
+    /// The departure heat capacity over `R`. Dimensionless.
+    #[pyo3(get)]
+    pub cp_dep_r: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySrkDepartureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SrkDepartureResult(ln_phi={}, h_dep_rt={}, s_dep_r={}, cp_dep_r={}, {} warning(s))",
+            self.ln_phi,
+            self.h_dep_rt,
+            self.s_dep_r,
+            self.cp_dep_r,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&SrkDepartureResult> for PySrkDepartureResult {
+    fn from(r: &SrkDepartureResult) -> Self {
         Self {
             ln_phi: r.ln_phi,
             h_dep_rt: r.h_dep_rt,
@@ -1707,6 +1903,10 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
         PrsvKappaResult::CALC_ID => PrsvKappaResult::FIELDS.to_vec(),
         PrDepartureResult::CALC_ID => PrDepartureResult::FIELDS.to_vec(),
+        SrkKappaResult::CALC_ID => SrkKappaResult::FIELDS.to_vec(),
+        SrkAlphaAbResult::CALC_ID => SrkAlphaAbResult::FIELDS.to_vec(),
+        SrkZFactorResult::CALC_ID => SrkZFactorResult::FIELDS.to_vec(),
+        SrkDepartureResult::CALC_ID => SrkDepartureResult::FIELDS.to_vec(),
         Vdw1fMixBinaryResult::CALC_ID => Vdw1fMixBinaryResult::FIELDS.to_vec(),
         RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
         PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
@@ -1754,6 +1954,10 @@ pub fn calc_ids() -> Vec<String> {
         PrZFactorResult::CALC_ID.to_string(),
         PrsvKappaResult::CALC_ID.to_string(),
         PrDepartureResult::CALC_ID.to_string(),
+        SrkKappaResult::CALC_ID.to_string(),
+        SrkAlphaAbResult::CALC_ID.to_string(),
+        SrkZFactorResult::CALC_ID.to_string(),
+        SrkDepartureResult::CALC_ID.to_string(),
         Vdw1fMixBinaryResult::CALC_ID.to_string(),
         RachfordRiceBinaryResult::CALC_ID.to_string(),
         PrMolarVolumeResult::CALC_ID.to_string(),

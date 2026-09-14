@@ -480,6 +480,66 @@ class PrZFactorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SrkKappaResult(_HasWarnings):
+    """Result of ``eos.srk_kappa``."""
+
+    #: The Soave-Redlich-Kwong alpha-function coefficient. Dimensionless.
+    kappa: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SrkAlphaAbResult(_HasWarnings):
+    """Result of ``eos.srk_alpha_ab``."""
+
+    #: The Soave alpha function.
+    alpha: float
+    #: ``A = a*alpha*P/(R**2*T**2)``, the dimensionless attraction parameter.
+    a_reduced: float
+    #: ``B = b*P/(R*T)``, the dimensionless repulsion parameter.
+    b_reduced: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SrkZFactorResult(_HasWarnings):
+    """Result of ``eos.srk_z_factor``."""
+
+    #: The smallest admissible root.
+    z_min: float
+    #: The largest admissible root. Equal to ``z_min`` when only one is admissible.
+    z_max: float
+    #: How many admissible roots there were.
+    root_structure: RootStructure
+    #: Newton steps the polish took, summed over the roots.
+    iterations: int
+    #: Whether the polish met its stopping rule.
+    converged: bool
+    #: The largest ``|x_k - x_{k-1}|`` at the final polish step.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SrkDepartureResult(_HasWarnings):
+    """Result of ``eos.srk_departure``."""
+
+    #: The logarithm of the fugacity coefficient.
+    ln_phi: float
+    #: The departure enthalpy over ``R*T``.
+    h_dep_rt: float
+    #: The departure entropy over ``R``.
+    s_dep_r: float
+    #: The departure heat capacity over ``R``.
+    cp_dep_r: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """One fitting's contribution to the total resistance coefficient."""
 

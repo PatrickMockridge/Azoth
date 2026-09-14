@@ -24,6 +24,13 @@ pub enum Cubic {
     /// [`crate::pr_alpha_ab::OMEGA_A`] for the argument.
     #[default]
     Pr,
+    /// Soave-Redlich-Kwong: `omega = (1/(9(2^(1/3) - 1)), (2^(1/3) - 1)/3)`, `delta = (1, 0)`.
+    ///
+    /// NeqSim's `ComponentSrk` computes the pair from `Math.pow(2.0, 1.0/3.0)` at
+    /// construction rather than carrying literals; the two decimals below are that
+    /// expression to full double precision, and the test
+    /// `a_soave_redlich_kwong_recomputes_its_omegas` re-derives them.
+    Srk,
 }
 
 impl Cubic {
@@ -32,6 +39,7 @@ impl Cubic {
     pub const fn omega_a(self) -> f64 {
         match self {
             Cubic::Pr => 0.45724333333,
+            Cubic::Srk => 0.4274802335403413,
         }
     }
 
@@ -40,6 +48,7 @@ impl Cubic {
     pub const fn omega_b(self) -> f64 {
         match self {
             Cubic::Pr => 0.077803333,
+            Cubic::Srk => 0.08664034996495773,
         }
     }
 
@@ -48,6 +57,7 @@ impl Cubic {
     pub const fn delta1(self) -> f64 {
         match self {
             Cubic::Pr => 1.0 + std::f64::consts::SQRT_2,
+            Cubic::Srk => 1.0,
         }
     }
 
@@ -56,6 +66,7 @@ impl Cubic {
     pub const fn delta2(self) -> f64 {
         match self {
             Cubic::Pr => 1.0 - std::f64::consts::SQRT_2,
+            Cubic::Srk => 0.0,
         }
     }
 
@@ -64,6 +75,7 @@ impl Cubic {
     pub const fn delta_diff(self) -> f64 {
         match self {
             Cubic::Pr => 2.0 * std::f64::consts::SQRT_2,
+            Cubic::Srk => 1.0,
         }
     }
 
@@ -72,6 +84,7 @@ impl Cubic {
     pub const fn delta_sum(self) -> f64 {
         match self {
             Cubic::Pr => 2.0,
+            Cubic::Srk => 1.0,
         }
     }
 
@@ -80,6 +93,7 @@ impl Cubic {
     pub const fn delta_prod(self) -> f64 {
         match self {
             Cubic::Pr => -1.0,
+            Cubic::Srk => 0.0,
         }
     }
 
@@ -156,5 +170,27 @@ impl Cubic {
     pub fn helmholtz_g_second(self, b: f64) -> f64 {
         let q = self.helmholtz_q(b);
         -self.delta_diff() * (self.delta_sum() + 2.0 * self.delta_prod() * b) / (q * q)
+    }
+
+    /// The short name that crosses the Python boundary, and the spelling a keycard
+    /// would use.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Cubic::Pr => "pr",
+            Cubic::Srk => "srk",
+        }
+    }
+}
+
+impl std::str::FromStr for Cubic {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "pr" => Ok(Cubic::Pr),
+            "srk" => Ok(Cubic::Srk),
+            other => Err(format!("unknown cubic `{other}`; expected `pr` or `srk`")),
+        }
     }
 }

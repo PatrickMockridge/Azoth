@@ -721,6 +721,107 @@ impl CalcResult for PrZFactorResult {
     }
 }
 
+/// Result of `eos.srk_kappa`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SrkKappaResult {
+    /// The Soave-Redlich-Kwong alpha-function coefficient. Dimensionless.
+    pub kappa: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SrkKappaResult {
+    const CALC_ID: &'static str = "eos.srk_kappa";
+    const FIELDS: &'static [&'static str] = &["kappa", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.srk_alpha_ab`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SrkAlphaAbResult {
+    /// The Soave alpha function.
+    pub alpha: f64,
+    /// `A = a*alpha*P/(R**2*T**2)`, the dimensionless attraction parameter.
+    pub a_reduced: f64,
+    /// `B = b*P/(R*T)`, the dimensionless repulsion parameter.
+    pub b_reduced: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SrkAlphaAbResult {
+    const CALC_ID: &'static str = "eos.srk_alpha_ab";
+    const FIELDS: &'static [&'static str] = &["alpha", "a_reduced", "b_reduced", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.srk_z_factor`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SrkZFactorResult {
+    /// The smallest admissible root.
+    pub z_min: f64,
+    /// The largest admissible root.
+    pub z_max: f64,
+    /// How many admissible roots there were.
+    pub root_structure: RootStructure,
+    /// Newton steps the polish took.
+    pub iterations: u32,
+    /// Whether the polish met its stopping rule.
+    pub converged: bool,
+    /// The largest `|x_k - x_{k-1}|` at the final polish step.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SrkZFactorResult {
+    const CALC_ID: &'static str = "eos.srk_z_factor";
+    const FIELDS: &'static [&'static str] = &[
+        "z_min",
+        "z_max",
+        "root_structure",
+        "iterations",
+        "converged",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.srk_departure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SrkDepartureResult {
+    /// The logarithm of the fugacity coefficient.
+    pub ln_phi: f64,
+    /// The departure enthalpy over `R*T`.
+    pub h_dep_rt: f64,
+    /// The departure entropy over `R`.
+    pub s_dep_r: f64,
+    /// The departure heat capacity over `R`.
+    pub cp_dep_r: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SrkDepartureResult {
+    const CALC_ID: &'static str = "eos.srk_departure";
+    const FIELDS: &'static [&'static str] =
+        &["ln_phi", "h_dep_rt", "s_dep_r", "cp_dep_r", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.critical_point`.
 ///
 /// The four state variables of a mixture critical point. `z_c` is here because it is the

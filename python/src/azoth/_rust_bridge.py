@@ -56,6 +56,10 @@ from azoth.core.result import (
     RachfordRiceBinaryResult,
     ReynoldsNumberResult,
     RootStructure,
+    SrkAlphaAbResult,
+    SrkDepartureResult,
+    SrkKappaResult,
+    SrkZFactorResult,
     StabilityTestResult,
     SwameeJainResult,
     Vdw1fMixBinaryResult,
@@ -245,6 +249,51 @@ def pr_departure(
     """
     result = _core.pr_departure(a_reduced, b_reduced, z, kappa, Tr)
     return PrDepartureResult(
+        ln_phi=result.ln_phi,
+        h_dep_rt=result.h_dep_rt,
+        s_dep_r=result.s_dep_r,
+        cp_dep_r=result.cp_dep_r,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def srk_kappa(omega: float) -> SrkKappaResult:
+    """The Soave-Redlich-Kwong attraction-parameter coefficient, computed in Rust."""
+    result = _core.srk_kappa(omega)
+    return SrkKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
+
+
+def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult:
+    """The Soave-Redlich-Kwong alpha function and reduced parameters, in Rust."""
+    result = _core.srk_alpha_ab(kappa, Tr, Pr)
+    return SrkAlphaAbResult(
+        alpha=result.alpha,
+        a_reduced=result.a_reduced,
+        b_reduced=result.b_reduced,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def srk_z_factor(a_reduced: float, b_reduced: float) -> SrkZFactorResult:
+    """The Soave-Redlich-Kwong compressibility factor, computed in Rust."""
+    result = _core.srk_z_factor(a_reduced, b_reduced)
+    return SrkZFactorResult(
+        z_min=result.z_min,
+        z_max=result.z_max,
+        root_structure=RootStructure(result.root_structure),
+        iterations=result.iterations,
+        converged=result.converged,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def srk_departure(
+    a_reduced: float, b_reduced: float, z: float, kappa: float, Tr: float
+) -> SrkDepartureResult:
+    """The Soave-Redlich-Kwong fugacity coefficient and departures, in Rust."""
+    result = _core.srk_departure(a_reduced, b_reduced, z, kappa, Tr)
+    return SrkDepartureResult(
         ln_phi=result.ln_phi,
         h_dep_rt=result.h_dep_rt,
         s_dep_r=result.s_dep_r,
@@ -449,6 +498,7 @@ def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),
+        mixture.cubic.name,
     )
     return PtFlashResult(
         beta=result.beta,
@@ -494,6 +544,7 @@ def ph_flash(mixture: Any, ideal_gas: Any, P: Q, H: Q, z: Sequence[float]) -> Ph
         input_to_si(spec, "P", P),
         input_to_si(spec, "H", H),
         list(z),
+        mixture.cubic.name,
     )
     return PhFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
@@ -530,6 +581,7 @@ def ps_flash(mixture: Any, ideal_gas: Any, P: Q, S: Q, z: Sequence[float]) -> Ps
         input_to_si(spec, "P", P),
         input_to_si(spec, "S", S),
         list(z),
+        mixture.cubic.name,
     )
     return PsFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
@@ -567,6 +619,7 @@ def stability_test(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> StabilityTes
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),
+        mixture.cubic.name,
     )
     return StabilityTestResult(
         verdict=_StabilityVerdict(result.verdict),
@@ -614,6 +667,7 @@ def bubble_pressure(mixture: Any, T: Q, x: Sequence[float]) -> BubblePressureRes
         mixture.flattened_kij(),
         input_to_si(spec, "T", T),
         list(x),
+        mixture.cubic.name,
     )
     return _boundary_result(raw, BubblePressureResult, liquid_first=True)  # type: ignore[no-any-return]
 
@@ -631,6 +685,7 @@ def critical_point(mixture: Any, z: Sequence[float]) -> CriticalPointResult:
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
         list(z),
+        mixture.cubic.name,
     )
     return CriticalPointResult(
         tc=from_si(raw.tc.magnitude_si, "K"),
@@ -658,6 +713,7 @@ def dew_pressure(mixture: Any, T: Q, y: Sequence[float]) -> DewPressureResult:
         mixture.flattened_kij(),
         input_to_si(spec, "T", T),
         list(y),
+        mixture.cubic.name,
     )
     return _boundary_result(raw, DewPressureResult, liquid_first=False)  # type: ignore[no-any-return]
 
@@ -686,6 +742,7 @@ def molar_enthalpy_entropy(
         input_to_si(spec, "P", P),
         list(z),
         compressibility,
+        mixture.cubic.name,
     )
     return MolarEnthalpyEntropyResult(
         h=from_si(result.h.magnitude_si, result.h.unit),

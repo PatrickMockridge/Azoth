@@ -82,7 +82,7 @@ def _mixture_kwargs(case: dict[str, Any]) -> dict[str, Any]:
     q = ureg.Quantity
     inputs = case["inputs"]
     return {
-        "mixture": mixture_of(list(inputs["components"]))[0],
+        "mixture": mixture_of(list(inputs["components"]), eos=case.get("eos", "pr"))[0],
         "T": q(inputs["T"], "K"),
         "P": q(inputs["P"], "Pa"),
         "z": list(inputs["z"]),
@@ -103,7 +103,7 @@ def _enthalpy_kwargs(case: dict[str, Any]) -> dict[str, Any]:
 
     q = ureg.Quantity
     inputs = case["inputs"]
-    mixture, ideal_gas = mixture_of(list(inputs["components"]))
+    mixture, ideal_gas = mixture_of(list(inputs["components"]), eos=case.get("eos", "pr"))
     return {
         "mixture": mixture,
         "ideal_gas": ideal_gas,

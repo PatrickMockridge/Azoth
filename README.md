@@ -144,6 +144,10 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.pt_flash` | Pressure-temperature flash — a *model* |
 | `eos.pure_saturation` | Pure-component saturation pressure — a *model* |
 | `eos.rachford_rice_binary` | Rachford-Rice vapour fraction, for a binary |
+| `eos.srk_alpha_ab` | Soave-Redlich-Kwong alpha function and reduced attraction parameters |
+| `eos.srk_departure` | Soave-Redlich-Kwong fugacity coefficient and departure functions |
+| `eos.srk_kappa` | Soave-Redlich-Kwong attraction-parameter coefficient |
+| `eos.srk_z_factor` | Soave-Redlich-Kwong compressibility factor |
 | `eos.stability_test` | Tangent-plane stability test — a *model* |
 | `eos.vdw1f_mix_binary` | van der Waals one-fluid mixing, for a binary |
 | `hydraulics.choked_flow_area` | Choked-flow throat area for an ideal gas |

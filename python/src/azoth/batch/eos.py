@@ -32,6 +32,10 @@ __all__ = [
     "PrZFactorBatch",
     "PrsvKappaBatch",
     "RachfordRiceBinaryBatch",
+    "SrkAlphaAbBatch",
+    "SrkDepartureBatch",
+    "SrkKappaBatch",
+    "SrkZFactorBatch",
     "Vdw1fMixBinaryBatch",
     "ideal_gas_cp",
     "pr_alpha_ab",
@@ -42,6 +46,10 @@ __all__ = [
     "pr_z_factor",
     "prsv_kappa",
     "rachford_rice_binary",
+    "srk_alpha_ab",
+    "srk_departure",
+    "srk_kappa",
+    "srk_z_factor",
     "vdw1f_mix_binary",
 ]
 
@@ -55,6 +63,10 @@ _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
+_SRK_KAPPA = "eos.srk_kappa"
+_SRK_ALPHA_AB = "eos.srk_alpha_ab"
+_SRK_Z_FACTOR = "eos.srk_z_factor"
+_SRK_DEPARTURE = "eos.srk_departure"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -514,5 +526,188 @@ def ideal_gas_cp(
             "T": sequence(T, "T"),
         },
         _build_ideal_gas_cp,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class SrkKappaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.srk_kappa`."""
+
+    #: The Soave-Redlich-Kwong alpha-function coefficient per element. Dimensionless.
+    kappa: array[float]
+
+
+def _build_srk_kappa(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> SrkKappaBatch:
+    return SrkKappaBatch(warnings=warnings, units=units, kappa=columns["kappa"])  # type: ignore[arg-type]
+
+
+def srk_kappa(*, omega: Sequence[float]) -> SrkKappaBatch:
+    """The Soave-Redlich-Kwong alpha-function coefficient, over an array.
+
+    See :func:`azoth.eos.srk_kappa` for the calculation itself.
+    """
+    result: SrkKappaBatch = run(
+        _SRK_KAPPA,
+        {"omega": sequence(omega, "omega")},
+        _build_srk_kappa,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class SrkAlphaAbBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.srk_alpha_ab`."""
+
+    #: The alpha function per element. Dimensionless.
+    alpha: array[float]
+    #: The cubic's ``A`` per element. Dimensionless.
+    a_reduced: array[float]
+    #: The cubic's ``B`` per element. Dimensionless.
+    b_reduced: array[float]
+
+
+def _build_srk_alpha_ab(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> SrkAlphaAbBatch:
+    return SrkAlphaAbBatch(
+        warnings=warnings,
+        units=units,
+        alpha=columns["alpha"],  # type: ignore[arg-type]
+        a_reduced=columns["a_reduced"],  # type: ignore[arg-type]
+        b_reduced=columns["b_reduced"],  # type: ignore[arg-type]
+    )
+
+
+def srk_alpha_ab(
+    *,
+    kappa: Sequence[float],
+    Tr: Sequence[float],
+    Pr: Sequence[float],
+) -> SrkAlphaAbBatch:
+    """The Soave-Redlich-Kwong alpha function and reduced parameters, over arrays.
+
+    See :func:`azoth.eos.srk_alpha_ab` for the calculation itself.
+    """
+    result: SrkAlphaAbBatch = run(
+        _SRK_ALPHA_AB,
+        {
+            "kappa": sequence(kappa, "kappa"),
+            "Tr": sequence(Tr, "Tr"),
+            "Pr": sequence(Pr, "Pr"),
+        },
+        _build_srk_alpha_ab,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class SrkZFactorBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.srk_z_factor`."""
+
+    #: Smallest admissible root per element. Dimensionless.
+    z_min: array[float]
+    #: Largest admissible root per element. Dimensionless.
+    z_max: array[float]
+    #: How many admissible roots each element had.
+    root_structure: tuple[RootStructure | None, ...]
+    #: Newton steps the polish took per element.
+    iterations: array[float]
+    #: Whether each element's polish met its tolerance, as ``1.0`` or ``0.0``.
+    converged: array[float]
+    #: Final change between iterates per element.
+    residual: array[float]
+
+
+def _build_srk_z_factor(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> SrkZFactorBatch:
+    return SrkZFactorBatch(
+        warnings=warnings,
+        units=units,
+        z_min=columns["z_min"],  # type: ignore[arg-type]
+        z_max=columns["z_max"],  # type: ignore[arg-type]
+        root_structure=_structures(columns["root_structure"]),  # type: ignore[arg-type]
+        iterations=columns["iterations"],  # type: ignore[arg-type]
+        converged=columns["converged"],  # type: ignore[arg-type]
+        residual=columns["residual"],  # type: ignore[arg-type]
+    )
+
+
+def srk_z_factor(*, a_reduced: Sequence[float], b_reduced: Sequence[float]) -> SrkZFactorBatch:
+    """The Soave-Redlich-Kwong compressibility factor, over arrays.
+
+    See :func:`azoth.eos.srk_z_factor` for the calculation itself.
+    """
+    result: SrkZFactorBatch = run(
+        _SRK_Z_FACTOR,
+        {
+            "a_reduced": sequence(a_reduced, "a_reduced"),
+            "b_reduced": sequence(b_reduced, "b_reduced"),
+        },
+        _build_srk_z_factor,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class SrkDepartureBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.srk_departure`."""
+
+    #: Logarithm of the fugacity coefficient per element. Dimensionless.
+    ln_phi: array[float]
+    #: Departure enthalpy over ``R*T`` per element. Dimensionless.
+    h_dep_rt: array[float]
+    #: Departure entropy over ``R`` per element. Dimensionless.
+    s_dep_r: array[float]
+    #: Departure heat capacity over ``R`` per element. Dimensionless.
+    cp_dep_r: array[float]
+
+
+def _build_srk_departure(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> SrkDepartureBatch:
+    return SrkDepartureBatch(
+        warnings=warnings,
+        units=units,
+        ln_phi=columns["ln_phi"],  # type: ignore[arg-type]
+        h_dep_rt=columns["h_dep_rt"],  # type: ignore[arg-type]
+        s_dep_r=columns["s_dep_r"],  # type: ignore[arg-type]
+        cp_dep_r=columns["cp_dep_r"],  # type: ignore[arg-type]
+    )
+
+
+def srk_departure(
+    *,
+    a_reduced: Sequence[float],
+    b_reduced: Sequence[float],
+    z: Sequence[float],
+    kappa: Sequence[float],
+    Tr: Sequence[float],
+) -> SrkDepartureBatch:
+    """The Soave-Redlich-Kwong fugacity coefficient and departures, over arrays.
+
+    See :func:`azoth.eos.srk_departure` for the calculation itself.
+    """
+    result: SrkDepartureBatch = run(
+        _SRK_DEPARTURE,
+        {
+            "a_reduced": sequence(a_reduced, "a_reduced"),
+            "b_reduced": sequence(b_reduced, "b_reduced"),
+            "z": sequence(z, "z"),
+            "kappa": sequence(kappa, "kappa"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_srk_departure,
     )
     return result

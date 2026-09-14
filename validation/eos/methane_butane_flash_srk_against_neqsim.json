@@ -1,0 +1,26 @@
+{
+  "id": "methane_butane_flash_srk_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemSrkEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Same driver as the Peng-Robinson cases, on SystemSrkEos. The pair's KIJSRK equals its KIJPR (0.01289789), so azoth's kij lookup - which reads the `kij_pr` column for every cubic - is not a source of error on this case; reading `kijsrk` for SRK is a recorded follow-up, not a divergence this case is hiding."
+  },
+  "derivation": "The driver was run with SystemSrkEos at 330 K and 25 bar, methane 0.6 and n-butane 0.4, mixing rule 'classic'. It printed:\n\n  beta 0.8408248644150572\n  k    [7.383091811917651, 0.33590884178592667]\n  x    [0.09423498169817808, 0.905765018301822]\n  y    [0.6957455217720269, 0.30425447822797314]\n  Zl   0.10546515536810588\n  Zv   0.8852390673477065\n\nazoth reproduces all six to 3.3e-12 on beta and at or better on the rest, which is the same residue the Peng-Robinson case shows and the same cause: both implementations stop on an rms change in ln K rather than iterating to the last bit. The tolerance is 1e-10, two orders above the measured floor.\n\n# The Soave constants\n\nWhere the Peng-Robinson case found a transcription artefact (NeqSim's `ComponentPR` sets a pair that is the paper's plus 3.3333e-06), the Soave pair is structural: NeqSim's `ComponentSrk` computes `a = 1/(9 (2^(1/3) - 1)) R^2 Tc^2 / Pc` and `b = (2^(1/3) - 1)/3 R Tc / Pc`, with `Math.pow(2.0, 1.0/3.0)`. azoth's `Cubic::Srk` carries those two expressions to full double precision (0.4274802335403413 and 0.08664034996495773), so there is no offset to explain away - the agreement is the whole agreement.",
+  "eos": "srk",
+  "inputs": {
+    "components": ["methane", "n-butane"],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [0.6, 0.4]
+  },
+  "expected": {
+    "beta": 0.8408248644150572,
+    "k": [7.383091811917651, 0.33590884178592667],
+    "x": [0.09423498169817808, 0.905765018301822],
+    "y": [0.6957455217720269, 0.30425447822797314],
+    "z_liquid": 0.10546515536810588,
+    "z_vapour": 0.8852390673477065
+  },
+  "tolerance": 1.0e-10
+}

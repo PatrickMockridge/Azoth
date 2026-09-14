@@ -8,7 +8,7 @@ P = R T/(v - b) - a/((v + delta1 b)(v + delta2 b))
 
 is fixed by four numbers - ``omega_a``, ``omega_b``, ``delta1``, ``delta2`` - and the
 three models this library ports are three settings of them. The temperature
-dependence of ``a`` is a separate axis, in :mod:`azoth.eos.reference.alpha_term`.
+dependence of ``a`` is a separate axis, in :mod:`azoth.eos.alpha_term`.
 """
 
 from __future__ import annotations
@@ -28,6 +28,8 @@ class Cubic:
     new instance rather than a new branch in every fugacity and Helmholtz expression.
     """
 
+    #: The short name that crosses the Python boundary: ``"pr"`` or ``"srk"``.
+    name: str
     omega_a: float
     omega_b: float
     delta1: float
@@ -96,6 +98,7 @@ class Cubic:
 #: Peng-Robinson: ``delta = (1 + sqrt(2), 1 - sqrt(2))``. The ``omega`` pair is NeqSim
 #: 3.20.0's, not the paper's - see ``azoth.eos.reference.pr_alpha_ab.OMEGA_A``.
 PR = Cubic(
+    name="pr",
     omega_a=0.45724333333,
     omega_b=0.077803333,
     delta1=1.0 + _SQRT_2,
@@ -104,3 +107,20 @@ PR = Cubic(
     delta_prod=-1.0,
     delta_diff=2.0 * _SQRT_2,
 )
+
+#: Soave-Redlich-Kwong: ``delta = (1, 0)``. NeqSim's ``ComponentSrk`` computes the
+#: ``omega`` pair from ``Math.pow(2.0, 1.0/3.0)`` at construction; the two decimals are
+#: that expression to full double precision.
+SRK = Cubic(
+    name="srk",
+    omega_a=0.4274802335403413,
+    omega_b=0.08664034996495773,
+    delta1=1.0,
+    delta2=0.0,
+    delta_sum=1.0,
+    delta_prod=0.0,
+    delta_diff=1.0,
+)
+
+#: The cubics this library runs, keyed by the short name that crosses the boundary.
+CUBICS: dict[str, Cubic] = {"pr": PR, "srk": SRK}

@@ -1,7 +1,7 @@
 """The temperature dependence of the attraction term, as a strategy object.
 
 NeqSim's ``AttractiveTerm*`` classes own ``alpha(T)`` and its derivatives; this is the
-port of that seam. A cubic's shape is in :mod:`azoth.eos.reference.cubic` and its
+port of that seam. A cubic's shape is in :mod:`azoth.eos.cubic` and its
 temperature dependence is here, so a new alpha correlation is a new type rather than a
 new branch in the model layer.
 """

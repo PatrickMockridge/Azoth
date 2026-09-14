@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from azoth.core.errors import InvalidInputError
+from azoth.eos.cubic import PR, Cubic
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -74,6 +75,7 @@ class Mixture:
 
     components: tuple[Component, ...]
     kij: tuple[tuple[float, ...], ...] = field(default=())
+    cubic: Cubic = field(default=PR)
 
     def __post_init__(self) -> None:
         if not self.components:
@@ -118,6 +120,7 @@ class Mixture:
 def mixture(
     components: Iterable[Component],
     kij: Mapping[tuple[int, int], float] | None = None,
+    cubic: Cubic = PR,
 ) -> Mixture:
     """A :class:`Mixture` from a component list and sparse interaction pairs.
 
@@ -130,6 +133,8 @@ def mixture(
             ``z`` will be indexed by.
         kij: interaction parameters keyed by ``(i, j)`` with ``i < j``. Each pair may
             be given in either order. Omitted pairs are zero.
+        cubic: the cubic the mixture is evaluated under, from
+            :mod:`azoth.eos.cubic`. Defaults to Peng-Robinson.
 
     Returns:
         The mixture, with a full symmetric matrix built from the pairs.
@@ -154,4 +159,8 @@ def mixture(
             )
         matrix[i][j] = value
         matrix[j][i] = value
-    return Mixture(components=resolved, kij=tuple(tuple(row) for row in matrix))
+    return Mixture(
+        components=resolved,
+        kij=tuple(tuple(row) for row in matrix),
+        cubic=cubic,
+    )

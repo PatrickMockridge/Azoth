@@ -39,6 +39,7 @@ from azoth.eos.reference._mixture_state import (
     wilson_k,
 )
 from azoth.eos.reference.pr_z_factor import pr_z_factor
+from azoth.eos.reference.srk_z_factor import srk_z_factor
 
 CALC_ID = "eos.stability_test"
 
@@ -79,7 +80,8 @@ def _feed_state(
 
     A single admissible root is the common case and is taken directly.
     """
-    roots = pr_z_factor(*mixture_parameters(reduced.a, reduced.b, kij, z))
+    a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, kij, z)
+    roots = srk_z_factor(a_mix, b_mix) if reduced.cubic.name == "srk" else pr_z_factor(a_mix, b_mix)
     candidates = [roots.z_min] if roots.z_min == roots.z_max else [roots.z_min, roots.z_max]
 
     best = None

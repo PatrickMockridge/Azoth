@@ -83,6 +83,10 @@ from azoth.core.result import (
     PtFlashResult,
     PureSaturationResult,
     RachfordRiceBinaryResult,
+    SrkAlphaAbResult,
+    SrkDepartureResult,
+    SrkKappaResult,
+    SrkZFactorResult,
     StabilityTestResult,
     Vdw1fMixBinaryResult,
 )
@@ -117,6 +121,10 @@ __all__ = [
     "pt_flash",
     "pure_saturation",
     "rachford_rice_binary",
+    "srk_alpha_ab",
+    "srk_departure",
+    "srk_kappa",
+    "srk_z_factor",
     "stability_test",
     "vdw1f_mix_binary",
 ]
@@ -140,6 +148,10 @@ _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
+_SRK_KAPPA = "eos.srk_kappa"
+_SRK_ALPHA_AB = "eos.srk_alpha_ab"
+_SRK_Z_FACTOR = "eos.srk_z_factor"
+_SRK_DEPARTURE = "eos.srk_departure"
 
 
 def pr_kappa(omega: float) -> PrKappaResult:
@@ -217,6 +229,54 @@ def pr_departure(
     See :func:`azoth.eos.reference.pr_departure`.
     """
     return resolve(_PR_DEPARTURE)(  # type: ignore[no-any-return]
+        a_reduced=a_reduced, b_reduced=b_reduced, z=z, kappa=kappa, Tr=Tr
+    )
+
+
+def srk_kappa(omega: float) -> SrkKappaResult:
+    """The Soave-Redlich-Kwong alpha-function coefficient for a pure component.
+
+    Soave's coefficient, the same *form* as Peng-Robinson's with different constants:
+    ``0.48 + 1.574*omega - 0.176*omega**2``.
+
+    See :func:`azoth.eos.reference.srk_kappa`.
+    """
+    return resolve(_SRK_KAPPA)(omega=omega)  # type: ignore[no-any-return]
+
+
+def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult:
+    """The Soave-Redlich-Kwong alpha function and the reduced attraction parameters.
+
+    Raises:
+        OutOfRangeError: if ``Tr <= 0`` or ``Pr <= 0``.
+
+    See :func:`azoth.eos.reference.srk_alpha_ab`.
+    """
+    return resolve(_SRK_ALPHA_AB)(kappa=kappa, Tr=Tr, Pr=Pr)  # type: ignore[no-any-return]
+
+
+def srk_z_factor(a_reduced: float, b_reduced: float) -> SrkZFactorResult:
+    """The Soave-Redlich-Kwong compressibility factor, for one state.
+
+    Raises:
+        OutOfRangeError: if ``b_reduced <= 0`` or ``a_reduced < 0``.
+
+    See :func:`azoth.eos.reference.srk_z_factor`.
+    """
+    return resolve(_SRK_Z_FACTOR)(a_reduced=a_reduced, b_reduced=b_reduced)  # type: ignore[no-any-return]
+
+
+def srk_departure(
+    a_reduced: float, b_reduced: float, z: float, kappa: float, Tr: float
+) -> SrkDepartureResult:
+    """The Soave-Redlich-Kwong fugacity coefficient and departure functions.
+
+    Raises:
+        OutOfRangeError: if ``b_reduced <= 0`` or ``z <= b_reduced``.
+
+    See :func:`azoth.eos.reference.srk_departure`.
+    """
+    return resolve(_SRK_DEPARTURE)(  # type: ignore[no-any-return]
         a_reduced=a_reduced, b_reduced=b_reduced, z=z, kappa=kappa, Tr=Tr
     )
 

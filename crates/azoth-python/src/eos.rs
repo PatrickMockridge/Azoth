@@ -11,7 +11,6 @@ use azoth_core::units::{
     cubic_meters_per_mole, joules_per_mole, joules_per_mole_kelvin, kelvins, kilograms_per_mole,
     pascals,
 };
-use azoth_eos as eos;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
@@ -20,6 +19,7 @@ use crate::results::{
     PyPhaseBoundaryResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
     PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
     PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
+    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkZFactorResult,
     PyStabilityTestResult, PyVdw1fMixBinaryResult,
 };
 
@@ -32,7 +32,7 @@ use crate::results::{
 #[pyo3(signature = (omega))]
 #[pyo3(text_signature = "(omega)")]
 pub fn pr_kappa(py: Python<'_>, omega: f64) -> PyResult<PyPrKappaResult> {
-    eos::pr_kappa(omega)
+    azoth_eos::pr_kappa(omega)
         .map(|r| PyPrKappaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -47,7 +47,7 @@ pub fn pr_kappa(py: Python<'_>, omega: f64) -> PyResult<PyPrKappaResult> {
 #[pyo3(text_signature = "(kappa, Tr, Pr)")]
 #[allow(non_snake_case)] // `Tr` and `Pr` are the symbols in the published equation
 pub fn pr_alpha_ab(py: Python<'_>, kappa: f64, Tr: f64, Pr: f64) -> PyResult<PyPrAlphaAbResult> {
-    eos::pr_alpha_ab(kappa, Tr, Pr)
+    azoth_eos::pr_alpha_ab(kappa, Tr, Pr)
         .map(|r| PyPrAlphaAbResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -61,7 +61,7 @@ pub fn pr_alpha_ab(py: Python<'_>, kappa: f64, Tr: f64, Pr: f64) -> PyResult<PyP
 #[pyo3(signature = (a_reduced, b_reduced))]
 #[pyo3(text_signature = "(a_reduced, b_reduced)")]
 pub fn pr_z_factor(py: Python<'_>, a_reduced: f64, b_reduced: f64) -> PyResult<PyPrZFactorResult> {
-    eos::pr_z_factor(a_reduced, b_reduced)
+    azoth_eos::pr_z_factor(a_reduced, b_reduced)
         .map(|r| PyPrZFactorResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -76,7 +76,7 @@ pub fn pr_z_factor(py: Python<'_>, a_reduced: f64, b_reduced: f64) -> PyResult<P
 #[pyo3(text_signature = "(omega, Tr, kappa1)")]
 #[allow(non_snake_case)] // `Tr` is the symbol in the published equation
 pub fn prsv_kappa(py: Python<'_>, omega: f64, Tr: f64, kappa1: f64) -> PyResult<PyPrsvKappaResult> {
-    eos::prsv_kappa(omega, Tr, kappa1)
+    azoth_eos::prsv_kappa(omega, Tr, kappa1)
         .map(|r| PyPrsvKappaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -98,8 +98,61 @@ pub fn pr_departure(
     kappa: f64,
     Tr: f64,
 ) -> PyResult<PyPrDepartureResult> {
-    eos::pr_departure(a_reduced, b_reduced, z, kappa, Tr)
+    azoth_eos::pr_departure(a_reduced, b_reduced, z, kappa, Tr)
         .map(|r| PyPrDepartureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Soave-Redlich-Kwong alpha-function coefficient.
+#[pyfunction]
+#[pyo3(signature = (omega))]
+#[pyo3(text_signature = "(omega)")]
+pub fn srk_kappa(py: Python<'_>, omega: f64) -> PyResult<PySrkKappaResult> {
+    azoth_eos::srk_kappa(omega)
+        .map(|r| PySrkKappaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Soave-Redlich-Kwong alpha function and the reduced attraction parameters.
+#[pyfunction]
+#[pyo3(signature = (kappa, Tr, Pr))]
+#[pyo3(text_signature = "(kappa, Tr, Pr)")]
+#[allow(non_snake_case)] // `Tr` and `Pr` are the symbols in the published equation
+pub fn srk_alpha_ab(py: Python<'_>, kappa: f64, Tr: f64, Pr: f64) -> PyResult<PySrkAlphaAbResult> {
+    azoth_eos::srk_alpha_ab(kappa, Tr, Pr)
+        .map(|r| PySrkAlphaAbResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Soave-Redlich-Kwong compressibility factor.
+#[pyfunction]
+#[pyo3(signature = (a_reduced, b_reduced))]
+#[pyo3(text_signature = "(a_reduced, b_reduced)")]
+pub fn srk_z_factor(
+    py: Python<'_>,
+    a_reduced: f64,
+    b_reduced: f64,
+) -> PyResult<PySrkZFactorResult> {
+    azoth_eos::srk_z_factor(a_reduced, b_reduced)
+        .map(|r| PySrkZFactorResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Soave-Redlich-Kwong fugacity coefficient and departure functions.
+#[pyfunction]
+#[pyo3(signature = (a_reduced, b_reduced, z, kappa, Tr))]
+#[pyo3(text_signature = "(a_reduced, b_reduced, z, kappa, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn srk_departure(
+    py: Python<'_>,
+    a_reduced: f64,
+    b_reduced: f64,
+    z: f64,
+    kappa: f64,
+    Tr: f64,
+) -> PyResult<PySrkDepartureResult> {
+    azoth_eos::srk_departure(a_reduced, b_reduced, z, kappa, Tr)
+        .map(|r| PySrkDepartureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -119,7 +172,7 @@ pub fn vdw1f_mix_binary(
     b2: f64,
     k12: f64,
 ) -> PyResult<PyVdw1fMixBinaryResult> {
-    eos::vdw1f_mix_binary(z1, a1, a2, b1, b2, k12)
+    azoth_eos::vdw1f_mix_binary(z1, a1, a2, b1, b2, k12)
         .map(|r| PyVdw1fMixBinaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -139,7 +192,7 @@ pub fn rachford_rice_binary(
     K1: f64,
     K2: f64,
 ) -> PyResult<PyRachfordRiceBinaryResult> {
-    eos::rachford_rice_binary(z1, K1, K2)
+    azoth_eos::rachford_rice_binary(z1, K1, K2)
         .map(|r| PyRachfordRiceBinaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -154,7 +207,7 @@ pub fn rachford_rice_binary(
 #[pyo3(text_signature = "(z, T, P)")]
 #[allow(non_snake_case)] // `T` and `P` are the symbols in the published equation
 pub fn pr_molar_volume(py: Python<'_>, z: f64, T: f64, P: f64) -> PyResult<PyPrMolarVolumeResult> {
-    eos::pr_molar_volume(z, kelvins(T), pascals(P))
+    azoth_eos::pr_molar_volume(z, kelvins(T), pascals(P))
         .map(|r| PyPrMolarVolumeResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -168,7 +221,7 @@ pub fn pr_molar_volume(py: Python<'_>, z: f64, T: f64, P: f64) -> PyResult<PyPrM
 #[pyo3(text_signature = "(M, v)")]
 #[allow(non_snake_case)] // `M` is the symbol in the equation
 pub fn pr_mass_density(py: Python<'_>, M: f64, v: f64) -> PyResult<PyPrMassDensityResult> {
-    eos::pr_mass_density(kilograms_per_mole(M), cubic_meters_per_mole(v))
+    azoth_eos::pr_mass_density(kilograms_per_mole(M), cubic_meters_per_mole(v))
         .map(|r| PyPrMassDensityResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -189,7 +242,7 @@ pub fn pure_saturation(
     omega: f64,
     T: f64,
 ) -> PyResult<PyPureSaturationResult> {
-    eos::pure_saturation(kelvins(Tc), pascals(Pc), omega, kelvins(T))
+    azoth_eos::pure_saturation(kelvins(Tc), pascals(Pc), omega, kelvins(T))
         .map(|r| PyPureSaturationResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -227,7 +280,8 @@ pub(crate) fn build_mixture(
     Pc: &[f64],
     omega: &[f64],
     kij: Vec<f64>,
-) -> PyResult<eos::Mixture> {
+    eos: &str,
+) -> PyResult<azoth_eos::Mixture> {
     let n = Tc.len();
     if Pc.len() != n || omega.len() != n {
         return Err(pyo3::exceptions::PyValueError::new_err(format!(
@@ -238,15 +292,20 @@ pub(crate) fn build_mixture(
         )));
     }
     let components = (0..n)
-        .map(|i| eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i]))
+        .map(|i| azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i]))
         .collect::<azoth_core::Result<Vec<_>>>()
         .map_err(|e| to_pyerr(py, e))?;
-    eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))
+    let cubic: azoth_eos::Cubic = eos
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::Mixture::new(components, kij)
+        .map(|m| m.with_cubic(cubic))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z)")]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z, eos = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z, eos = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn pt_flash(
@@ -258,9 +317,10 @@ pub fn pt_flash(
     T: f64,
     P: f64,
     z: Vec<f64>,
+    eos: &str,
 ) -> PyResult<PyPtFlashResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    eos::pt_flash(&mixture, kelvins(T), pascals(P), &z)
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    azoth_eos::pt_flash(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyPtFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -274,8 +334,10 @@ pub fn pt_flash(
 /// isenthalpic flash does not need an entropy - and are taken because they belong to
 /// the same model.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z)")]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = "pr"))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = \"pr\")"
+)]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T_ref` and the rest are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn ph_flash(
@@ -292,16 +354,17 @@ pub fn ph_flash(
     P: f64,
     H: f64,
     z: Vec<f64>,
+    eos: &str,
 ) -> PyResult<PyPhFlashResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos::IdealGasModel {
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let ideal_gas = azoth_eos::IdealGasModel {
         cp_a,
         cp_b,
         cp_c,
         cp_d,
         cp_e,
     };
-    eos::ph_flash(&mixture, &ideal_gas, pascals(P), joules_per_mole(H), &z)
+    azoth_eos::ph_flash(&mixture, &ideal_gas, pascals(P), joules_per_mole(H), &z)
         .map(|r| PyPhFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -312,8 +375,10 @@ pub fn ph_flash(
 /// or an expander assumed ideal knows the pressure it leaves at and the entropy it
 /// arrived with, and not the temperature that results.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z)")]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = "pr"))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = \"pr\")"
+)]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T_ref` and the rest are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn ps_flash(
@@ -330,16 +395,17 @@ pub fn ps_flash(
     P: f64,
     S: f64,
     z: Vec<f64>,
+    eos: &str,
 ) -> PyResult<PyPsFlashResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos::IdealGasModel {
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let ideal_gas = azoth_eos::IdealGasModel {
         cp_a,
         cp_b,
         cp_c,
         cp_d,
         cp_e,
     };
-    eos::ps_flash(
+    azoth_eos::ps_flash(
         &mixture,
         &ideal_gas,
         pascals(P),
@@ -361,8 +427,8 @@ pub fn ps_flash(
 /// in a fixed order - vapour-like first - so a caller reads `tm[0]` as the vapour-like
 /// trial rather than having to look it up.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z)")]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z, eos = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z, eos = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn stability_test(
@@ -374,9 +440,10 @@ pub fn stability_test(
     T: f64,
     P: f64,
     z: Vec<f64>,
+    eos: &str,
 ) -> PyResult<PyStabilityTestResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    eos::stability_test(&mixture, kelvins(T), pascals(P), &z)
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    azoth_eos::stability_test(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyStabilityTestResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -388,8 +455,8 @@ pub fn stability_test(
 /// temperature and a composition - and differ only in which composition it is,
 /// which is why they are two functions rather than one with a switch.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, T, held))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held)")]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, held, eos = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held, eos = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn bubble_pressure(
@@ -400,9 +467,10 @@ pub fn bubble_pressure(
     kij: Vec<f64>,
     T: f64,
     held: Vec<f64>,
+    eos: &str,
 ) -> PyResult<PyPhaseBoundaryResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    eos::bubble_pressure(&mixture, kelvins(T), &held)
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    azoth_eos::bubble_pressure(&mixture, kelvins(T), &held)
         .map(|r| PyPhaseBoundaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -414,8 +482,8 @@ pub fn bubble_pressure(
 /// the same six arguments as the boundary models and returns four state variables
 /// instead of one pressure.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, z))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, z)")]
+#[pyo3(signature = (Tc, Pc, omega, kij, z, eos = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, z, eos = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `z` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn critical_point(
@@ -425,17 +493,18 @@ pub fn critical_point(
     omega: Vec<f64>,
     kij: Vec<f64>,
     z: Vec<f64>,
+    eos: &str,
 ) -> PyResult<PyCriticalPointResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    eos::critical_point(&mixture, &z)
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    azoth_eos::critical_point(&mixture, &z)
         .map(|r| PyCriticalPointResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
 /// The pressure at which a vapour of composition `held` first condenses.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, T, held))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held)")]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, held, eos = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held, eos = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn dew_pressure(
@@ -446,9 +515,10 @@ pub fn dew_pressure(
     kij: Vec<f64>,
     T: f64,
     held: Vec<f64>,
+    eos: &str,
 ) -> PyResult<PyPhaseBoundaryResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    eos::dew_pressure(&mixture, kelvins(T), &held)
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    azoth_eos::dew_pressure(&mixture, kelvins(T), &held)
         .map(|r| PyPhaseBoundaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -473,7 +543,7 @@ pub fn ideal_gas_cp(
     cp_e: f64,
     T: f64,
 ) -> PyResult<PyIdealGasCpResult> {
-    eos::ideal_gas_cp(cp_a, cp_b, cp_c, cp_d, cp_e, kelvins(T))
+    azoth_eos::ideal_gas_cp(cp_a, cp_b, cp_c, cp_d, cp_e, kelvins(T))
         .map(|r| PyIdealGasCpResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -488,11 +558,11 @@ pub fn ideal_gas_cp(
 #[pyfunction]
 #[pyo3(signature = (
     Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z,
-    compressibility
+    compressibility, eos = "pr"
 ))]
 #[pyo3(text_signature = "(
     Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z,
-    compressibility
+    compressibility, eos = \"pr\"
 )")]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -511,16 +581,17 @@ pub fn molar_enthalpy_entropy(
     P: f64,
     z: Vec<f64>,
     compressibility: f64,
+    eos: &str,
 ) -> PyResult<PyMolarEnthalpyEntropyResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos::IdealGasModel {
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let ideal_gas = azoth_eos::IdealGasModel {
         cp_a,
         cp_b,
         cp_c,
         cp_d,
         cp_e,
     };
-    eos::molar_enthalpy_entropy(
+    azoth_eos::molar_enthalpy_entropy(
         &mixture,
         &ideal_gas,
         kelvins(T),
@@ -540,10 +611,10 @@ pub fn molar_enthalpy_entropy(
 /// deleted rather than repaired; `eos` is the whole of what remains.
 ///
 /// **This is the function that has to change when a namespace is added.** It read
-/// `eos::model_gen` alone until `process` arrived, and the three `model_*` functions
+/// `azoth_eos::model_gen` alone until `process` arrived, and the three `model_*` functions
 /// below stayed green for exactly as long as nobody asked them about a unit operation.
 fn all_models() -> impl Iterator<Item = &'static azoth_core::ModelSpec> {
-    eos::model_gen::models().iter().copied()
+    azoth_eos::model_gen::models().iter().copied()
 }
 
 /// Every model id this extension implements.

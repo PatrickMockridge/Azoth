@@ -1,0 +1,23 @@
+{
+  "id": "propane_flash_srk_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemSrkEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Same jar and driver as the other SRK case. A pure component below its dew point, which exercises the branch the binary one does not: NeqSim reports a vapour fraction of 1.0 and azoth reports none at all, exactly as the Peng-Robinson pure-propane case does. Read the derivation before treating that as a disagreement."
+  },
+  "derivation": "The driver was run for propane at 300 K and 9 bar on SystemSrkEos - one component, so no split possible. NeqSim printed:\n\n  beta 1.0\n  k    [1.1170359426451537]\n  Zl   0.03556794759077136\n  Zv   0.8456343105858921\n\nazoth agrees on the three that are the equation's to 1e-15. `beta` is deliberately **not** in `expected` for the same reason the Peng-Robinson pure-propane case omits it: NeqSim reports 1.0 for a single-phase feed and azoth reports the absence, because a vapour fraction of a split that does not exist is an extrapolation rather than a reading. The K-value and the two roots are the physics, and they match.",
+  "eos": "srk",
+  "inputs": {
+    "components": ["propane"],
+    "T": 300.0,
+    "P": 900000.0,
+    "z": [1.0]
+  },
+  "expected": {
+    "k": [1.1170359426451537],
+    "z_liquid": 0.03556794759077136,
+    "z_vapour": 0.8456343105858921
+  },
+  "tolerance": 1.0e-10
+}

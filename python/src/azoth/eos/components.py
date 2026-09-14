@@ -50,6 +50,7 @@ from azoth import keycard
 from azoth._data import find
 from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 from azoth.core.units import Q, ureg
+from azoth.eos.cubic import CUBICS, Cubic
 from azoth.eos.mixture import Component, Mixture
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
@@ -330,7 +331,17 @@ def kij_for(
     return pairs
 
 
-def from_names(names: list[str], *, card: keycard.Keycard | None = None) -> Mixture:
+def _cubic(name: str) -> Cubic:
+    """The cubic named by its short name, ``"pr"`` or ``"srk"``."""
+    try:
+        return CUBICS[name]
+    except KeyError:
+        raise InvalidInputError("eos", f"unknown cubic {name!r}; expected 'pr' or 'srk'") from None
+
+
+def from_names(
+    names: list[str], *, card: keycard.Keycard | None = None, eos: str = "pr"
+) -> Mixture:
     """A :class:`~azoth.eos.mixture.Mixture` from a list of databank names.
 
     The interaction parameters come from the databank too, so a caller writing
@@ -345,13 +356,14 @@ def from_names(names: list[str], *, card: keycard.Keycard | None = None) -> Mixt
         PropertyUnavailableError: if any name is not in the databank.
         InvalidInputError: if the list is empty, or a pair is malformed.
     """
+    cubic = _cubic(eos)
     resolved = [name.strip().lower() for name in names]
     components = tuple(component(name, card=card) for name in resolved)
-    return mixture(components, kij=kij_for(tuple(resolved), card=card))
+    return mixture(components, kij=kij_for(tuple(resolved), card=card), cubic=cubic)
 
 
 def mixture_of(
-    names: list[str], *, card: keycard.Keycard | None = None
+    names: list[str], *, card: keycard.Keycard | None = None, eos: str = "pr"
 ) -> tuple[Mixture, IdealGasModel]:
     """A mixture and its ideal-gas model, from a list of databank names.
 
@@ -395,6 +407,7 @@ def mixture_of(
         mixture(
             tuple(e.component() for e in entries),
             kij=kij_for(tuple(resolved), card=card),
+            cubic=_cubic(eos),
         ),
         IdealGasModel(
             cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]

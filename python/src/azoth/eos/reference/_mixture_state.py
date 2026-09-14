@@ -26,12 +26,15 @@ from typing import Any, NamedTuple
 
 from azoth.core.errors import OutOfRangeError
 from azoth.core.warnings import Warning
+from azoth.eos.alpha_term import Soave
+from azoth.eos.cubic import PR, Cubic
 from azoth.eos.mixture import Mixture
-from azoth.eos.reference.alpha_term import Soave
-from azoth.eos.reference.cubic import PR
 from azoth.eos.reference.pr_alpha_ab import pr_alpha_ab
 from azoth.eos.reference.pr_kappa import pr_kappa
 from azoth.eos.reference.pr_z_factor import pr_z_factor
+from azoth.eos.reference.srk_alpha_ab import srk_alpha_ab
+from azoth.eos.reference.srk_kappa import srk_kappa
+from azoth.eos.reference.srk_z_factor import srk_z_factor
 
 #: Wilson's constant. Some sources print 5.37 and the paper is dated 1968 in some
 #: and 1969 in others; the discrepancy is recorded in the model specs' references
@@ -96,6 +99,10 @@ class ReducedParameters(NamedTuple):
     #: local to :func:`reduced_parameters`.
     psi_t: list[float]
     warnings: list[Warning]
+    #: The cubic these were reduced under, so the geometry functions downstream read
+    #: the right delta pair without a second dispatch. Defaults to Peng-Robinson, which
+    #: is what a caller who built a `ReducedParameters` by hand gets.
+    cubic: Cubic = PR
 
 
 class PhaseState(NamedTuple):
@@ -127,23 +134,35 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
     psi_t: list[float] = []
     warnings: list[Warning] = []
     for component in mixture.components:
-        kappa = pr_kappa(component.omega)
-        warnings.extend(kappa.warnings)
         reduced_temperature = temperature / component.Tc.to_base_units().magnitude
-        ab = pr_alpha_ab(
-            kappa.kappa,
-            reduced_temperature,
-            pressure / component.Pc.to_base_units().magnitude,
-        )
-        warnings.extend(ab.warnings)
+        reduced_pressure = pressure / component.Pc.to_base_units().magnitude
+        # The kappa correlation and the reduced parameters belong to the cubic this
+        # mixture is: SRK and PR share the Soave alpha form but differ in both the
+        # coefficient and the Omega constants.
+        if mixture.cubic.name == "srk":
+            srk_result = srk_kappa(component.omega)
+            srk_ab = srk_alpha_ab(srk_result.kappa, reduced_temperature, reduced_pressure)
+            warnings.extend(srk_result.warnings)
+            warnings.extend(srk_ab.warnings)
+            kappa = srk_result.kappa
+            a_reduced = srk_ab.a_reduced
+            b_reduced = srk_ab.b_reduced
+        else:
+            pr_result = pr_kappa(component.omega)
+            pr_ab = pr_alpha_ab(pr_result.kappa, reduced_temperature, reduced_pressure)
+            warnings.extend(pr_result.warnings)
+            warnings.extend(pr_ab.warnings)
+            kappa = pr_result.kappa
+            a_reduced = pr_ab.a_reduced
+            b_reduced = pr_ab.b_reduced
         # The alpha term's own two derivatives, so the Soave form lives in one place
         # rather than being restated per call site.
-        term = Soave(kappa=kappa.kappa)
-        a.append(ab.a_reduced)
-        b.append(ab.b_reduced)
+        term = Soave(kappa=kappa)
+        a.append(a_reduced)
+        b.append(b_reduced)
         psi.append(term.psi(reduced_temperature))
         psi_t.append(term.psi_t(reduced_temperature))
-    return ReducedParameters(a=a, b=b, psi=psi, psi_t=psi_t, warnings=warnings)
+    return ReducedParameters(a=a, b=b, psi=psi, psi_t=psi_t, cubic=mixture.cubic, warnings=warnings)
 
 
 def mixture_parameters(
@@ -174,7 +193,7 @@ def phase_state(
     :func:`phase_state_at` instead, which does not re-derive it.
     """
     a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, kij, x)
-    roots = pr_z_factor(a_mix, b_mix)
+    roots = srk_z_factor(a_mix, b_mix) if reduced.cubic.name == "srk" else pr_z_factor(a_mix, b_mix)
     return phase_state_at(reduced, kij, x, roots.z_min if liquid else roots.z_max)
 
 
@@ -192,6 +211,7 @@ def phase_state_at(
     would silently overrule them.
     """
     a, b = reduced.a, reduced.b
+    c = reduced.cubic
     n = len(x)
     a_mix, b_mix = mixture_parameters(a, b, kij, x)
     if not z > b_mix:
@@ -206,8 +226,8 @@ def phase_state_at(
     cross = [
         sum(x[j] * (1.0 - kij[i][j]) * math.sqrt(a[i] * a[j]) for j in range(n)) for i in range(n)
     ]
-    i_term = PR.i_term(z, b_mix)
-    coefficient = PR.coefficient(a_mix, b_mix)
+    i_term = c.i_term(z, b_mix)
+    coefficient = c.coefficient(a_mix, b_mix)
     ln_z_minus_b = math.log(z - b_mix)
 
     ln_phi = []
@@ -249,12 +269,12 @@ def phase_state_at(
     t_da = a_mix * (psi_bar - 2.0)
     t_db = -b_mix
     t_dc = coefficient * (psi_bar - 1.0)
-    d_f_dz = PR.df_dz(z, a_mix, b_mix)
-    t_dfdt = PR.t_dfdt(z, a_mix, b_mix, t_da, t_db)
+    d_f_dz = c.df_dz(z, a_mix, b_mix)
+    t_dfdt = c.t_dfdt(z, a_mix, b_mix, t_da, t_db)
     t_dz = -t_dfdt / d_f_dz
-    n_plus = z + PR.delta1 * b_mix
-    n_minus = z + PR.delta2 * b_mix
-    t_di = (t_dz + PR.delta1 * t_db) / n_plus - (t_dz + PR.delta2 * t_db) / n_minus
+    n_plus = z + c.delta1 * b_mix
+    n_minus = z + c.delta2 * b_mix
+    t_di = (t_dz + c.delta1 * t_db) / n_plus - (t_dz + c.delta2 * t_db) / n_minus
     cp_dep_r = (
         h_dep_rt
         + t_dz
@@ -328,8 +348,8 @@ def helmholtz_energy(
             f"rather than a compressibility that is out of range",
         )
     a_sum = sum(n[i] * n[j] * a_ij[i][j] for i in range(count) for j in range(count))
-    g = PR.helmholtz_g(b_sum)
-    return -total * math.log(1.0 - b_sum) - (a_sum / (PR.delta_diff * b_sum)) * g
+    g = reduced.cubic.helmholtz_g(b_sum)
+    return -total * math.log(1.0 - b_sum) - (a_sum / (reduced.cubic.delta_diff * b_sum)) * g
 
 
 def helmholtz_hessian(
@@ -399,11 +419,11 @@ def helmholtz_hessian(
     # L(b) = ln(1 - b), G(b) = ln((1 + delta1 b)/(1 + delta2 b)).
     l_prime = -1.0 / d
     l_second = -1.0 / (d * d)
-    g = PR.helmholtz_g(b_sum)
-    g_prime = PR.helmholtz_g_prime(b_sum)
-    g_second = PR.helmholtz_g_second(b_sum)
-    half_delta_diff = PR.half_delta_diff
-    delta_diff = PR.delta_diff
+    g = reduced.cubic.helmholtz_g(b_sum)
+    g_prime = reduced.cubic.helmholtz_g_prime(b_sum)
+    g_second = reduced.cubic.helmholtz_g_second(b_sum)
+    half_delta_diff = reduced.cubic.half_delta_diff
+    delta_diff = reduced.cubic.delta_diff
 
     a_bar = [sum(n[j] * a_ij[i][j] for j in range(count)) for i in range(count)]
     a_sum = sum(n[i] * n[j] * a_ij[i][j] for i in range(count) for j in range(count))

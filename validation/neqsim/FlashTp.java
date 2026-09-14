@@ -17,19 +17,26 @@
 
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
+import neqsim.thermo.system.SystemSrkEos;
 import neqsim.thermodynamicoperations.ThermodynamicOperations;
 
 public class FlashTp {
+  /** The cubic `srk` selects, else Peng-Robinson. */
+  static SystemInterface system(boolean srk, double temperatureK, double pressureBar) {
+    return srk
+        ? new SystemSrkEos(temperatureK, pressureBar)
+        : new SystemPrEos(temperatureK, pressureBar);
+  }
+
   /** One PT flash, printed in the fields azoth's `eos.pt_flash` reports. */
   static void flash(String label, double temperatureK, double pressureBar, String[] names,
-      double[] moles) {
-    SystemInterface fluid = new SystemPrEos(temperatureK, pressureBar);
+      double[] moles, boolean srk) {
+    SystemInterface fluid = system(srk, temperatureK, pressureBar);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], moles[i]);
     }
     // "classic" is the van der Waals one-fluid mixing rule with the database's
-    // Peng-Robinson `kij` - NeqSim's default for this system, and what `INTER.csv`
-    // carries a value for.
+    // interaction parameters - NeqSim's default for both systems.
     fluid.setMixingRule("classic");
 
     new ThermodynamicOperations(fluid).TPflash();
@@ -59,8 +66,8 @@ public class FlashTp {
 
   /** One PT flash with its molar enthalpy and entropy, for `eos.molar_enthalpy_entropy`. */
   static void enthalpy(String label, double temperatureK, double pressureBar, String[] names,
-      double[] moles) {
-    SystemInterface fluid = new SystemPrEos(temperatureK, pressureBar);
+      double[] moles, boolean srk) {
+    SystemInterface fluid = system(srk, temperatureK, pressureBar);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], moles[i]);
     }
@@ -77,10 +84,14 @@ public class FlashTp {
 
   public static void main(String[] args) {
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
-        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4});
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, false);
     flash("propane, 1.0, 300 K, 9 bar",
-        300.0, 9.0, new String[] {"propane"}, new double[] {1.0});
+        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, false);
     enthalpy("propane, 1.0, 300 K, 9 bar",
-        300.0, 9.0, new String[] {"propane"}, new double[] {1.0});
+        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, false);
+    flash("SRK methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, true);
+    flash("SRK propane, 1.0, 300 K, 9 bar",
+        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, true);
   }
 }

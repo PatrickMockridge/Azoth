@@ -1,56 +1,48 @@
-"""``eos.pr_z_factor`` - the Peng-Robinson compressibility factor.
+"""``eos.srk_z_factor`` - the Soave-Redlich-Kwong compressibility factor.
 
 ```text
-z**3 - (1 - B)*z**2 + (A - 3*B**2 - 2*B)*z - (A*B - B**2 - B**3) = 0
+z**3 - z**2 + (a_reduced - b_reduced - b_reduced**2)*z - a_reduced*b_reduced = 0
 ```
 
-Spec: ``specs/calcs/eos/pr_z_factor.toml``, which carries the provenance, the proof
-that the admissible root count is one or three, and what the answer does near the
-critical point.
+Spec: ``specs/calcs/eos/srk_z_factor.toml``, which carries the provenance and the same
+admissible-root theorem as the Peng-Robinson form.
 
 This calc returns the outermost two roots that are admissible - ``z > B`` - and
-discards the middle one, which lies on the unstable branch between the spinodals.
+discards the middle one, exactly as ``eos.pr_z_factor`` does.
 """
 
 from __future__ import annotations
 
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.range import apply_checks, checks_for
-from azoth.core.result import PrZFactorResult, RootStructure
+from azoth.core.result import RootStructure, SrkZFactorResult
 from azoth.core.solver import (
     Convergence,
     cubic_roots,
     require_cubic_converged,
 )
 from azoth.core.warnings import Warning
-from azoth.eos.cubic import PR
+from azoth.eos.cubic import SRK
 
-CALC_ID = "eos.pr_z_factor"
+CALC_ID = "eos.srk_z_factor"
 
 
-def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
-    """The Peng-Robinson compressibility factor, for one state.
+def srk_z_factor(a_reduced: float, b_reduced: float) -> SrkZFactorResult:
+    """The Soave-Redlich-Kwong compressibility factor, for one state.
 
     Args:
         a_reduced: the cubic's attraction parameter ``A``, from
-            :func:`azoth.eos.pr_alpha_ab`. Dimensionless, and already carrying the
-            composition - this calc does not apply a mixing rule.
+            :func:`azoth.eos.srk_alpha_ab`.
         b_reduced: the cubic's repulsion parameter ``B``, likewise.
 
-    Returns:
-        The smallest and largest admissible roots, and how many there were. The
-        middle root is deliberately not returned; see the module documentation.
-
     Raises:
-        OutOfRangeError: if ``b_reduced <= 0`` (the cubic degenerates to a trivial
-            double root at zero pressure) or ``a_reduced < 0`` (which no
-            Peng-Robinson state produces).
+        OutOfRangeError: if ``b_reduced <= 0`` or ``a_reduced < 0``.
         SolverNotConvergedError: if the polish hits its cap.
 
     Example:
-        >>> r = pr_z_factor(0.20206500174625697, 0.02431127309496514)
+        >>> r = srk_z_factor(0.19315231739218255, 0.02707510936404929)
         >>> round(r.z_max, 12)
-        0.790778966297
+        0.801955197256
         >>> str(r.root_structure)
         'three_roots'
     """
@@ -65,9 +57,7 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
     solver = spec["solver"]
     convergence = Convergence.parse(solver["convergence"])
 
-    # The monic cubic z**3 + c2*z**2 + c1*z + c0, coefficients straight from the
-    # cubic's geometry so a reader can check them against the equation above.
-    c2, c1, c0 = PR.z_coefficients(a_reduced, b_reduced)
+    c2, c1, c0 = SRK.z_coefficients(a_reduced, b_reduced)
 
     outcome = cubic_roots(
         c2,
@@ -79,11 +69,6 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
     )
     outcome = require_cubic_converged(outcome, solver["tolerance"])
 
-    # Admissible roots only. For B > 0 there is always at least one: the polynomial
-    # equals -2*B**2 at z = B and tends to positive infinity, so it crosses zero
-    # above B. `min`/`max` rather than the first and last element, so that the
-    # filter's correctness does not depend on an ordering the solver happens to
-    # guarantee.
     admissible = [z for z in outcome.roots if z > b_reduced]
     if not admissible:  # pragma: no cover - guarded by the input checks
         raise AssertionError(
@@ -98,7 +83,7 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
     computed = {"z_min": z_min, "z_max": z_max}
     apply_checks(checks.derived, computed.get, warnings)
 
-    return PrZFactorResult(
+    return SrkZFactorResult(
         z_min=z_min,
         z_max=z_max,
         root_structure=root_structure,

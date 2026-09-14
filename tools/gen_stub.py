@@ -278,6 +278,10 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
         if parameter == "components":
             continue
         params.append(render_parameter(parameter, declaration))
+    if "mixture" in taken:
+        # The cubic the mixture is evaluated under, the one boundary argument the
+        # spec does not declare (it travels *inside* the mixture, not beside it).
+        params.append('eos: str = "pr"')
     return params
 
 

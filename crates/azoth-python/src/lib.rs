@@ -46,7 +46,8 @@ use results::{
     PyOrificeFlowResult, PyPhFlashResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
     PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
     PyPsFlashResult, PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
-    PyReynoldsNumberResult, PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
+    PyReynoldsNumberResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
+    PySrkZFactorResult, PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
 };
 
 #[pymodule]
@@ -70,6 +71,10 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPrZFactorResult>()?;
     m.add_class::<PyPrsvKappaResult>()?;
     m.add_class::<PyPrDepartureResult>()?;
+    m.add_class::<PySrkKappaResult>()?;
+    m.add_class::<PySrkAlphaAbResult>()?;
+    m.add_class::<PySrkZFactorResult>()?;
+    m.add_class::<PySrkDepartureResult>()?;
     m.add_class::<PyVdw1fMixBinaryResult>()?;
     m.add_class::<PyRachfordRiceBinaryResult>()?;
     m.add_class::<PyPrMolarVolumeResult>()?;
@@ -119,6 +124,10 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pr_z_factor, m)?)?;
     m.add_function(wrap_pyfunction!(eos::prsv_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_departure, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::srk_kappa, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::srk_alpha_ab, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::srk_z_factor, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::srk_departure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::vdw1f_mix_binary, m)?)?;
     m.add_function(wrap_pyfunction!(eos::rachford_rice_binary, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_molar_volume, m)?)?;

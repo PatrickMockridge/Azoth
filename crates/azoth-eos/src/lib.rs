@@ -59,6 +59,10 @@ pub mod pure_saturation;
 pub mod rachford_rice_binary;
 pub mod results;
 pub mod spec_gen;
+pub mod srk_alpha_ab;
+pub mod srk_departure;
+pub mod srk_kappa;
+pub mod srk_z_factor;
 pub mod stability_test;
 pub mod vdw1f_mix_binary;
 
@@ -86,8 +90,13 @@ pub use results::{
     BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
     MolarEnthalpyEntropyResult, Phase, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
     PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, RootStructure, StabilityTestResult,
-    StabilityVerdict, Vdw1fMixBinaryResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RootStructure, SrkAlphaAbResult,
+    SrkDepartureResult, SrkKappaResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict,
+    Vdw1fMixBinaryResult,
 };
+pub use srk_alpha_ab::srk_alpha_ab;
+pub use srk_departure::srk_departure;
+pub use srk_kappa::srk_kappa;
+pub use srk_z_factor::srk_z_factor;
 pub use stability_test::stability_test;
 pub use vdw1f_mix_binary::vdw1f_mix_binary;

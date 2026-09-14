@@ -265,6 +265,36 @@ class RachfordRiceBinaryResult:
     warnings: list[Warning]
 
 @final
+class SrkAlphaAbResult:
+    alpha: float
+    a_reduced: float
+    b_reduced: float
+    warnings: list[Warning]
+
+@final
+class SrkDepartureResult:
+    ln_phi: float
+    h_dep_rt: float
+    s_dep_r: float
+    cp_dep_r: float
+    warnings: list[Warning]
+
+@final
+class SrkKappaResult:
+    kappa: float
+    warnings: list[Warning]
+
+@final
+class SrkZFactorResult:
+    z_min: float
+    z_max: float
+    root_structure: str
+    iterations: int
+    converged: bool
+    residual: float
+    warnings: list[Warning]
+
+@final
 class StabilityTestResult:
     verdict: str
     tm: list[float]
@@ -354,6 +384,7 @@ def bubble_pressure(
     kij: list[float],
     T: float,
     x: list[float],
+    eos: str = "pr",
 ) -> BubblePressureResult: ...
 def critical_point(
     Tc: list[float],
@@ -361,6 +392,7 @@ def critical_point(
     omega: list[float],
     kij: list[float],
     z: list[float],
+    eos: str = "pr",
 ) -> CriticalPointResult: ...
 def dew_pressure(
     Tc: list[float],
@@ -369,6 +401,7 @@ def dew_pressure(
     kij: list[float],
     T: float,
     y: list[float],
+    eos: str = "pr",
 ) -> DewPressureResult: ...
 def ideal_gas_cp(
     cp_a: float,
@@ -392,6 +425,7 @@ def molar_enthalpy_entropy(
     P: float,
     z: list[float],
     compressibility: float,
+    eos: str = "pr",
 ) -> MolarEnthalpyEntropyResult: ...
 def ph_flash(
     Tc: list[float],
@@ -406,6 +440,7 @@ def ph_flash(
     P: float,
     H: float,
     z: list[float],
+    eos: str = "pr",
 ) -> PhFlashResult: ...
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
 def pr_departure(
@@ -433,6 +468,7 @@ def ps_flash(
     P: float,
     S: float,
     z: list[float],
+    eos: str = "pr",
 ) -> PsFlashResult: ...
 def pt_flash(
     Tc: list[float],
@@ -442,9 +478,20 @@ def pt_flash(
     T: float,
     P: float,
     z: list[float],
+    eos: str = "pr",
 ) -> PtFlashResult: ...
 def pure_saturation(Tc: float, Pc: float, omega: float, T: float) -> PureSaturationResult: ...
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
+def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult: ...
+def srk_departure(
+    a_reduced: float,
+    b_reduced: float,
+    z: float,
+    kappa: float,
+    Tr: float,
+) -> SrkDepartureResult: ...
+def srk_kappa(omega: float) -> SrkKappaResult: ...
+def srk_z_factor(a_reduced: float, b_reduced: float) -> SrkZFactorResult: ...
 def stability_test(
     Tc: list[float],
     Pc: list[float],
@@ -453,6 +500,7 @@ def stability_test(
     T: float,
     P: float,
     z: list[float],
+    eos: str = "pr",
 ) -> StabilityTestResult: ...
 def vdw1f_mix_binary(
     z1: float,

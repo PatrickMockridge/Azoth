@@ -1,0 +1,55 @@
+id = "eos.srk_kappa"
+name = "Soave-Redlich-Kwong attraction-parameter coefficient"
+equation = "kappa = 0.48 + 1.574*omega - 0.176*omega**2"
+latex = '''\kappa = 0.48 + 1.574\,\omega - 0.176\,\omega^{2}'''
+assumptions = ["the acentric factor supplied is correct for the component intended. NOT CHECKED - this calc has no databank and no second source; omega comes from the caller and is taken at face value.\n", "omega is taken as the constant Pitzer acentric factor evaluated at Tr = 0.7.\n", "the coefficient applies to the Soave (1972) alpha function and to nothing else; a kappa from here is not comparable with one from Peng-Robinson's correlation.\n", "the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.\n", "this calc returns a coefficient, not an equation of state.\n"]
+references = ["Soave, G. (1972). \\\"Equilibrium constants from a modified Redlich-Kwong equation of state.\\\" Chemical Engineering Science 27(6), 1197-1203. DOI 10.1016/0009-2509(72)80096-4.", "Pitzer, K. S. (1955). \\\"The Volumetric and Thermodynamic Properties of Fluids. I. Theoretical Basis and Virial Coefficients.\\\" J. Am. Chem. Soc. 77(13), 3427-3433. DOI 10.1021/ja01618a002."]
+[source]
+standard = "Soave, G. (1972)"
+edition = "Equilibrium constants from a modified Redlich-Kwong equation of state. Chemical Engineering Science, 27(6), 1197-1203"
+doi = "10.1016/0009-2509(72)80096-4"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "Acentric factor of the pure component, as defined by Pitzer at a reduced temperature of 0.7.\n"
+[outputs]
+[outputs.kappa]
+unit = "dimensionless"
+description = "The coefficient in Soave's alpha function, alpha = (1 + kappa*(1 - sqrt(Tr)))**2. A property of the substance alone, with no temperature or pressure dependence.\n"
+[[valid_range]]
+quantity = "kappa"
+min = 0
+min_inclusive = false
+severity = "warning"
+rationale = "The polynomial passes through zero at omega = -0.29521 and omega = 9.23840, and kappa is negative below the lower one.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "Propane-like, omega = 0.152:\n\n  1.574 * omega    = 1.574 * 0.152            = 0.239248\n  omega**2         = 0.152 * 0.152            = 0.023104\n  0.176 * omega**2 = 0.176 * 0.023104         = 0.004066304\n  0.48 + 0.239248  = 0.719248\n  0.719248 - 0.004066304 = 0.715181696\n\nkappa = 0.715181696.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.152
+[worked_example.expected]
+kappa = 0.715181696
+[implementations]
+python = "azoth.eos.srk_kappa"
+rust = "azoth_eos::srk_kappa"
+[[tests]]
+id = "propane_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "methane_at_a_very_different_acentric_factor"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at methane's acentric factor, omega = 0.01142:\n\n  1.574 * 0.01142      = 0.01797508\n  0.01142**2           = 0.0001304164\n  0.176 * 0.0001304164 = 0.0000229532864\n  0.48 + 0.01797508    = 0.49797508\n  0.49797508 - 0.0000229532864 = 0.4979521267136\n\nkappa = 0.49795212671359995, the exact decimal value.\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.01142
+[tests.expected]
+kappa = 0.49795212671359995
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "skipped"
+skip_reason = "Both the input and the output are dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.\n"

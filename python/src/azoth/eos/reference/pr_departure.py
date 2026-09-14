@@ -21,8 +21,8 @@ from azoth._registry_gen import spec as _spec_for
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import PrDepartureResult
 from azoth.core.warnings import Warning
-from azoth.eos.reference.alpha_term import Soave
-from azoth.eos.reference.cubic import PR
+from azoth.eos.alpha_term import Soave
+from azoth.eos.cubic import PR
 
 CALC_ID = "eos.pr_departure"
 

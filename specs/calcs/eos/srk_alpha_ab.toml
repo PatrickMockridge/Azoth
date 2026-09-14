@@ -1,0 +1,88 @@
+id = "eos.srk_alpha_ab"
+name = "Soave-Redlich-Kwong alpha function and reduced attraction parameters"
+equation = """\
+    alpha = (1 + kappa*(1 - Tr**0.5))**2\n\
+    a_reduced = 0.4274802335403413*alpha*Pr/Tr**2\n\
+    b_reduced = 0.08664034996495773*Pr/Tr\n\
+    """
+latex = """\
+    \\alpha = \\left[1 + \\kappa\\left(1 - \\sqrt{T_{r}}\\right)\\right]^{2}, \\qquad A = \
+    \\frac{\\Omega_{a}\\,\\alpha\\,P_{r}}{T_{r}^{2}}, \\qquad B = \
+    \\frac{\\Omega_{b}\\,P_{r}}{T_{r}}"""
+assumptions = ["the alpha function is Soave's (1972) form, which shares its shape with Peng-Robinson's but takes a different coefficient.\n", "kappa is positive, so alpha rises as Tr falls. It is not checked here; `eos.srk_kappa` warns when the coefficient comes out negative.\n", "`Tr` and `Pr` are reduced against a critical point that is correct for the component intended. NOT CHECKED.\n", "the range of reduced temperature over which the alpha function's fit holds is NOT established, and no bound asserts one.\n", "A and B are the reduced parameters of the Soave-Redlich-Kwong cubic and go with that cubic's mixing rules, not with another equation of state's.\n", "**`Omega_a` and `Omega_b` are Redlich-Kwong's**, `1/(9*(2**(1/3) - 1))` and `(2**(1/3) - 1)/3`, which NeqSim's `ComponentSrk` computes from `Math.pow(2.0, 1.0/3.0)`.\n"]
+references = ["Soave, G. (1972). \\\"Equilibrium constants from a modified Redlich-Kwong equation of state.\\\" Chemical Engineering Science 27(6), 1197-1203. DOI 10.1016/0009-2509(72)80096-4.", "Redlich, O.; Kwong, J. N. S. (1949). \\\"On the Thermodynamics of Solutions. V.\\\" Chemical Reviews 44(1), 233-244. DOI 10.1021/cr60137a013.", "NeqSim 3.20.0, `neqsim.thermo.component.ComponentSrk`, constructor."]
+[source]
+standard = "Soave, G. (1972)"
+edition = "Equilibrium constants from a modified Redlich-Kwong equation of state. Chemical Engineering Science, 27(6), 1197-1203"
+doi = "10.1016/0009-2509(72)80096-4"
+[inputs]
+[inputs.kappa]
+unit = "dimensionless"
+description = "The Soave-Redlich-Kwong alpha-function coefficient, from `eos.srk_kappa`.\n"
+[inputs.Tr]
+unit = "dimensionless"
+description = "Reduced temperature, T / Tc, against the critical temperature the caller supplies.\n"
+[inputs.Pr]
+unit = "dimensionless"
+description = "reduced pressure, P / Pc"
+[outputs]
+[outputs.alpha]
+unit = "dimensionless"
+description = "The alpha function, where all of the cubic's temperature dependence lives: a square, so never negative, and 1 at Tr = 1 whatever kappa is.\n"
+[outputs.a_reduced]
+unit = "dimensionless"
+description = "A = a*alpha*P/(R**2*T**2), the dimensionless attraction parameter called `A` in the cubic.\n"
+[outputs.b_reduced]
+unit = "dimensionless"
+description = "B = b*P/(R*T), the dimensionless repulsion parameter, called `B` in the cubic"
+[[valid_range]]
+quantity = "Tr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Tr` appears as a square root in alpha and as a squared divisor in `a_reduced`; Tr = 0 is singular, a negative Tr leaves the square root undefined, and neither is a state.\n"
+[[valid_range]]
+quantity = "Pr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "Pr = 0 drives both A and B to zero, and B is a divisor in the fugacity-coefficient expression that consumes this calc's output.\n"
+[worked_example]
+source = "derived from the equations above"
+derivation = "A propane-like component at Tr = 0.8, Pr = 0.25, with the coefficient `eos.srk_kappa` gives for omega = 0.152:\n\n  sqrt(Tr)        = sqrt(0.8)                        = 0.8944271909999159\n  1 - sqrt(Tr)    = 0.10557280900008414\n  kappa * that    = 0.715181696 * 0.10557280900008414 = 0.07550362656900507\n  1 + that                                           = 1.075503626569005\n  alpha           = 1.075503626569005**2              = 1.1567082960277375\n\n  Omega_a * alpha = 0.4274802335403413 * 1.1567082960277375 = 0.4944699331940622\n  * Pr / Tr**2    = 0.4944699331940622 * 0.25 / 0.64  = 0.19315231739218255\n  a_reduced                                          = 0.19315231739218255\n\n  Omega_b * Pr / Tr = 0.08664034996495773 * 0.25 / 0.8 = 0.02707510936404929\n  b_reduced                                          = 0.02707510936404929\n\n"
+tolerance = 1e-12
+[worked_example.inputs]
+kappa = 0.715181696
+Tr = 0.8
+Pr = 0.25
+[worked_example.expected]
+alpha = 1.1567082960277375
+a_reduced = 0.19315231739218255
+b_reduced = 0.02707510936404929
+[implementations]
+python = "azoth.eos.srk_alpha_ab"
+rust = "azoth_eos::srk_alpha_ab"
+[[tests]]
+id = "propane_at_tr_0_8_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "at_the_critical_point_the_parameters_are_the_omegas"
+type = "reference"
+status = "active"
+source = "Derived from the equations above, at Tr = Pr = 1, where `1 - sqrt(Tr)` is exactly zero, so alpha is exactly 1 whatever kappa is and A and B collapse to Omega_a and Omega_b:\n\n  alpha     = (1 + kappa*0)**2 = 1.0    exactly\n  a_reduced = 0.4274802335403413 * 1 * 1 / 1 = 0.4274802335403413\n  b_reduced = 0.08664034996495773 * 1 / 1    = 0.08664034996495773\n"
+tolerance = 1e-15
+[tests.inputs]
+kappa = 0.715181696
+Tr = 1.0
+Pr = 1.0
+[tests.expected]
+alpha = 1.0
+a_reduced = 0.4274802335403413
+b_reduced = 0.08664034996495773
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "skipped"
+skip_reason = "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.\n"
