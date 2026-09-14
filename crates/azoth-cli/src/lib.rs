@@ -6,5 +6,6 @@
 //! fitting loss, and deciding which warnings survive to the report. None of that
 //! is reachable from an integration test against a binary.
 
+pub mod cli;
 pub mod pipe;
 pub mod report;

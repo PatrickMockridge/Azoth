@@ -20,6 +20,24 @@ const LABEL: usize = 20;
 
 /// Print the pipe report.
 pub fn print_pipe(result: &PipeResult, flow_unit: FlowUnit, flow: f64, roughness_supplied: bool) {
+    print!(
+        "{}",
+        render_pipe(result, flow_unit, flow, roughness_supplied)
+    );
+}
+
+/// The pipe report, as text.
+///
+/// Separate from [`print_pipe`] so the report can be asserted on rather than read
+/// off a terminal. What the output *says* is the whole of this module's job - the
+/// assumptions it prints and the warnings it refuses to summarise - and none of
+/// that was checkable while the only way to see it was stdout.
+pub fn render_pipe(
+    result: &PipeResult,
+    flow_unit: FlowUnit,
+    flow: f64,
+    roughness_supplied: bool,
+) -> String {
     let mut out = String::new();
 
     out.push_str("\nazoth pipe\n\n");
@@ -144,8 +162,8 @@ pub fn print_pipe(result: &PipeResult, flow_unit: FlowUnit, flow: f64, roughness
         ),
     );
 
-    print!("{out}");
-    print_warnings(&result.warnings);
+    out.push_str(&render_warnings(&result.warnings));
+    out
 }
 
 fn section(out: &mut String, title: &str) {
@@ -161,22 +179,29 @@ fn row(out: &mut String, label: &str, value: &str) {
 /// The whole list, not a count and not a summary. A caveat the user did not read
 /// is a caveat that was not given.
 pub fn print_warnings(warnings: &[Warning]) {
+    print!("{}", render_warnings(warnings));
+}
+
+/// The warnings, as text. See [`print_warnings`].
+pub fn render_warnings(warnings: &[Warning]) -> String {
+    let mut out = String::new();
     if warnings.is_empty() {
-        println!("\n  no warnings: every range check passed\n");
-        return;
+        out.push_str("\n  no warnings: every range check passed\n\n");
+        return out;
     }
 
-    println!("\n  {} warning(s)", warnings.len());
+    out.push_str(&format!("\n  {} warning(s)\n", warnings.len()));
     for warning in warnings {
-        println!("    [{}] {}", warning.code, warning.message);
+        out.push_str(&format!("    [{}] {}\n", warning.code, warning.message));
         if let Some(field) = &warning.field {
-            println!("      about: {field}");
+            out.push_str(&format!("      about: {field}\n"));
         }
     }
-    println!(
+    out.push_str(
         "\n  A value outside its validated range is still a value, but it has not been\n  \
-         checked the way an in-range one has. Read the above before using this number.\n"
+         checked the way an in-range one has. Read the above before using this number.\n\n",
     );
+    out
 }
 
 /// Print the known fitting ids.
@@ -184,22 +209,32 @@ pub fn print_warnings(warnings: &[Warning]) {
 /// # Errors
 /// Propagates a malformed embedded registry.
 pub fn list_fittings() -> Result<()> {
+    print!("{}", render_fittings()?);
+    Ok(())
+}
+
+/// The fitting registry, as text. See [`list_fittings`].
+///
+/// # Errors
+/// Propagates a malformed embedded registry.
+pub fn render_fittings() -> Result<String> {
     let ids = known_fittings()?;
-    println!("\nknown fitting ids ({}):\n", ids.len());
+    let mut out = String::new();
+    out.push_str(&format!("\nknown fitting ids ({}):\n\n", ids.len()));
     for fitting in azoth_hydraulics::fittings::registry()? {
         let marker = if fitting.is_estimated() {
             "  [ESTIMATED DUMMY - not engineering data]"
         } else {
             ""
         };
-        println!(
-            "  {:<26} {:<28} n_ld = {:<6}{marker}",
+        out.push_str(&format!(
+            "  {:<26} {:<28} n_ld = {:<6}{marker}\n",
             fitting.id, fitting.name, fitting.n_ld
-        );
+        ));
     }
-    println!(
+    out.push_str(
         "\nEvery coefficient above is a placeholder for software testing. See\n\
-         data/fittings/crane_k_factors.csv. Do not size equipment with them.\n"
+         data/fittings/crane_k_factors.csv. Do not size equipment with them.\n\n",
     );
-    Ok(())
+    Ok(out)
 }

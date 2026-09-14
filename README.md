@@ -10,12 +10,13 @@ simulator, under Apache-2.0 and credited in [`NOTICE`](NOTICE) rather than re-de
 What is azoth's own is the structure around them, and that is where the opinions are:
 
 - **A small core, and no cross-dependency.** `azoth-core` is units, errors, warnings,
-  the spec runtime and the solvers, and no engineering calculation. Every domain crate
-  depends on it and on no sibling, so a new domain is a new crate and the boundary is
-  checked by the compiler rather than by review.
-- **Four levels, each composing the one below.** A calculation, a model, a unit
-  operation, a flowsheet. Nothing is replaced on the way up, and every level is useful
-  on its own.
+  results, range checks, the spec runtime and the solvers, and no engineering
+  calculation. A domain crate depends on it and on no sibling, with one exception:
+  `azoth-process` calls the equation-of-state crate, because a unit operation is a flash
+  call plus arithmetic. So a new domain is a new crate.
+- **Four levels.** A calculation, a model, a unit operation, a flowsheet. The first three
+  are built; the fourth is a design in the specification rather than a schema, a format
+  or any code.
 - **The keycard.** A component, an interaction parameter, a fluid table, a fitting
   coefficient or a model variant overrides what ships, by name, without writing Rust or
   Python. What azoth ships is a vendored slice of NeqSim's databank and equations; what
@@ -32,9 +33,10 @@ document disagrees with the specification, that document is wrong.
 **Status: early.** What is implemented is the table below, and it is generated from the
 specs rather than maintained by hand: a hydraulics kernel through Darcy-Weisbach
 pressure drop, steady conduction, the Peng-Robinson equation of state through a
-two-phase flash, stability testing and mixture critical points, and the beginnings of a
-process layer over the top. The fourth level - a **flowsheet** - is specified and not
-built. The fitting coefficients azoth ships are **placeholders, not engineering data**;
+two-phase flash, stability testing and mixture critical points, and a process layer of
+unit operations over the top. The fourth level - a **flowsheet** - is designed in
+[the specification](docs/src/spec.md) and not built. The fitting coefficients azoth
+ships are **placeholders, not engineering data**;
 see [Not for design work yet](#not-for-design-work-yet), and
 [Roadmap](docs/src/roadmap.md) has the programme.
 
@@ -188,7 +190,7 @@ The ids are namespaced by **domain** - `hydraulics.*`, `thermal.*`, `eos.*` - no
 project. They appear in provenance records and citations, so renaming the project does
 not, and should not, invalidate them. `process.*` is named differently on purpose: the
 process layer is not a fourth domain sitting beside the others but the composition tier
-above them, and [How azoth is put together](docs/src/architecture.md) draws it that way.
+above them, and [How azoth is put together](docs/src/architecture.md) sets out why.
 
 The namespaces are also what proved the pipeline is domain-agnostic rather than shaped
 around pipe flow. `eos` is where the shapes stop matching: an equation of state is
@@ -207,14 +209,17 @@ specs/models/**/*.yaml    one file per procedure
         ├─► tools/gen_models.py   ─► crates/azoth-*/src/model_gen.rs
         │                         └► python/src/azoth/_models_gen.py
         ├─► tools/gen_stub.py     ─► python/src/azoth/_core.pyi
-        └─► tools/gen_docs.py     ─► docs/src/**, and the list below
-
-data/components/*.csv     the vendored NeqSim databank
-data/fittings/*.csv       the registry, compiled from a keycard by
-data/fluids/*.csv         tools/gen_user_data.py
-        │
+        ├─► tools/gen_docs.py     ─► docs/src/**, and the list below
         └─► tools/provenance.py   ─► provenance.json
+
+a NeqSim checkout ──► tools/gen_databank.py ──► data/components/*.csv
+keycard.yaml ───────► tools/gen_user_data.py ─► data/fittings/*.csv
+                                               data/fluids/*.csv
 ```
+
+`tools/` also holds the checkers - `check_links`, `check_user_data`,
+`check_wheel_data`, `spec_lint` and `prose_lint` - which generate nothing and are
+what fail the build.
 
 The layering, the four levels, and where a new piece of your own belongs are on
 [How azoth is put together](docs/src/architecture.md) rather than repeated here.
@@ -223,8 +228,11 @@ Python is the reference implementation and Rust the core, with PyO3 binding them
 Units cross the public API as `pint` quantities and become plain floats inside;
 the Rust side does the same with `uom`. Both implementations therefore run the
 same arithmetic on the same numbers rather than each trusting its units library
-to arrive there by a different route, and they agree bit-for-bit on the worked
-examples. The test suite runs every spec case through both.
+to arrive there by a different route. The test suite runs every spec case through
+both and compares them **by tolerance, not bit-equality** - `log10` and `sqrt` are
+not correctly-rounded in general and `libm` differs between platforms - and where
+a procedure iterates, the iteration counts are required to match. Bit-equality is
+asserted separately, and only for the same platform and build.
 
 ### Why Rust, if not for speed
 
@@ -264,10 +272,10 @@ contract, and S5 says why registration was deleted rather than automated.
 
 ## Extending it
 
-There are three ways, and [How azoth is put together](docs/src/architecture.md) sets out
-why there is deliberately no fourth: no runtime plugin registry, because a plugin
-written in one language would be a calculation that exists in one implementation, which
-is the class of thing the two-implementation rule exists to exclude.
+There are three ways in. There is no runtime plugin registry - no `register()` call and
+no loading at run time - which means a calculation always exists twice, once in each
+language, as the two-implementation rule requires.
+[How azoth is put together](docs/src/architecture.md) has the three.
 
 Most of what you would want to change is **data, not arithmetic**. A **keycard** is one
 YAML file that overrides or extends what the library ships — a component's critical
@@ -283,13 +291,16 @@ azoth.eos.component("methane")  # your values, not the databank's
 
 Nothing needs registering to make it apply, in either language. `keycard.example.yaml`
 is the template, `python tools/check_user_data.py` checks yours, and
-[The keycard](docs/src/keycard.md) documents every section. What the library ships and
-where it came from is on [What ships](docs/src/data.md).
+[The keycard](docs/src/keycard.md) documents every section - including the two sections
+that are compiled into the shipped data files by `tools/gen_user_data.py` rather than
+read at run time, and so need a rebuild. What the library ships and where it came from
+is on [What ships](docs/src/data.md).
 
 **A new equation or procedure is code**, and it is a spec plus one Rust file and one
 Python file — the section below is the whole contract. **A new source of fluid
-properties** is a two-method `PropertyProvider` on the Python side, for the one case
-where the right answer depends on data this library cannot ship.
+properties** is a `PropertyProvider` on the Python side — a name, a density and a
+viscosity — for the one case where the right answer depends on data this library cannot
+ship.
 
 ## Not for design work yet
 

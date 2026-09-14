@@ -33,9 +33,9 @@ different language. They are:
 |---|---|---|
 | Truth lives in | the Java source | `specs/**/*.yaml`, which generates the code and the docs |
 | Nothing is registered by | — | anyone; the id is the address (S5) |
-| Data ships as | a bundled databank | the same databank, vendored, plus the keycard |
+| Data ships as | a bundled databank | the same databank, vendored; the keycard is the user's |
 | Correctness is claimed by | a test suite | two implementations that must agree case by case |
-| The unit of composition is | an object graph of units | a document (S4) |
+| The unit of composition is | an object graph of units | a document (S4) — designed, not built |
 
 ## S2. Why Rust, and not Java
 
@@ -125,17 +125,21 @@ useful on its own, and the API at each level is the one below plus structure.
 
 1. **A calculation** — one equation, scalars in, a result out. `darcy_weisbach`.
 2. **A model** — a *procedure*, or a computation over vectors. A PT flash iterates; a
-   critical point searches. These are not calcs because a calc's spec fixes an
-   equation and a model's spec fixes a **loop**, and two implementations that run
-   different loops diverge.
+   critical point searches. These are not calcs because a model's spec is where a
+   procedure over **vectors** lives: a composition vector and a matrix of interaction
+   parameters have nowhere to go in the calc registry, whose inputs are scalars. Where
+   either kind of spec iterates, it names the scheme, the convergence rule and the
+   tolerance, because two implementations that run different loops diverge.
 3. **A unit operation** — a transformation of streams. A separator takes one stream and
    gives two; a compressor takes a stream and a duty.
 4. **A flowsheet** — units, connections, and a solver over them.
 
-**A flowsheet is a document.** It is YAML: units, their connections, and the solver.
-Both implementations execute the same document, which means a flowsheet is diffable,
-hashable, reviewable in a pull request and reproducible from a file rather than
-reconstructible from a script.
+**A flowsheet will be a document, and it is designed rather than built.** There is no
+flowsheet schema, no format and no code for one in this tree; [Roadmap](./roadmap.md)
+records it as not started. The design is YAML: units, their connections, and the solver.
+Both implementations would execute the same document, which is what would make a
+flowsheet diffable, hashable, reviewable in a pull request and reproducible from a file
+rather than reconstructible from a script.
 
 This is a deliberate refusal, and S2 is where the reason lives: the obvious design — a
 mutable graph of units holding references to each other — is exactly the shape Rust is
@@ -153,13 +157,15 @@ hand-computable case plus conservation checks that hold at every answer.
 
 **What ships: the vendored NeqSim databank.** 173 components and 516 binary interaction
 parameters, generated into `data/components/` from NeqSim's `COMP.csv` and `INTER.csv`
-by `tools/gen_databank.py`, with NeqSim v3.20.0 named as the source in every row and in
-`NOTICE`. It is vendored rather than depended upon, because NeqSim is Apache-2.0,
+by `tools/gen_databank.py`. Each component row carries its citation verbatim — NeqSim
+v3.20.0, Equinor and NTNU, Apache-2.0 — and the interaction-parameter table carries none,
+because `COMP.csv` has no citation column to copy; that attribution lives in `NOTICE`.
+It is vendored rather than depended upon, because NeqSim is Apache-2.0,
 because the data is the output of work at Equinor and NTNU rather than something
 invented, and because a calculation library that ships no components is a calculator.
 
 **What a user adds: the keycard.** One YAML file. Its sections are `keyholder`,
-`components`, `fluids`, `fittings`, `coefficients` and `models`. Everything in it
+`components`, `kij`, `fluids`, `fittings`, `coefficients` and `models`. Everything in it
 overrides or extends what ships, by name. A keycard is how a user adds to azoth
 **without writing Rust or Python** — a component parameter, a fluid property table, a
 fitting coefficient, a discharge coefficient and a cubic-EOS variant are all data.
@@ -174,8 +180,8 @@ its address:
 ```
 
 The module path and the function name **follow from the id**. Adding a calculation adds
-files and edits no list, because there is no list. What enumeration exists — for
-`azoth describe` and the CLI to say what is available — is a build artefact the
+files and requires no registration step. What enumeration exists — the generated
+registries, and the list of what is implemented in this book — is a build artefact a
 generator emits, not a list a person maintains. Deleting registration rather than
 generating it is deliberate: a generated list is still a list that can be wrong.
 
@@ -280,13 +286,20 @@ acceptable to a detailed-design review, and that is a different product.
 
 | To add | You write | You edit |
 |---|---|---|
-| A calculation | the spec, one Rust file, one Python file | nothing |
-| A unit operation | the same, over streams | nothing |
-| A component, fluid, fitting, coefficient or model variant | a keycard | **no code at all** |
-| A flowsheet | a document | no code at all |
+| A calculation | the spec, one Rust file, one Python file | the glue that names them, below |
+| A unit operation | the same, over streams | the same |
+| A component, `kij` pair, coefficient or model variant | a keycard | **no code at all** |
+| A fluid table or a fitting coefficient | a keycard | re-run `tools/gen_user_data.py`, then rebuild |
+| A flowsheet | nothing yet — it is designed, not built | — |
 
-**"You edit nothing" is the point of S5 and it is enforced.** There is no dispatch table,
-no `__all__`, no registration call, no result-class declaration per calculation.
+**No registry decides what exists.** There is no dispatch table and no registration
+call, because a calculation's id *is* its address. What is **not** free is the glue that
+attaches the two implementations to their names in each language — the PyO3 wrapper, the
+transport class, the namespace's `__all__` and the two batch arms — which is typed by
+hand, and which `python/tests/test_registration_completeness.py` and the batch coverage
+test fail loudly on when one is missed, naming the file to go and edit.
+[CONTRIBUTING.md](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md)
+has the current list, measured rather than remembered.
 
 What is *not* free, and is not meant to be:
 
