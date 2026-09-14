@@ -244,9 +244,10 @@ page:
   both, and it is why `mm` once put a factor of a thousand between the two
   implementations while every test passed.
 
-- **A unit operation's channels are declared, and they are a signature rather
-  than a program.** A model declares its ports, their polarity, their multiplicity
-  and the fields that cross them, and a lint rule holds that declaration against
-  the inputs and outputs in both directions. Pi and rho are the language the
-  process layer is *stated in* — they are not spec fields, and there is no
-  interpreter for them. See [Processes and channels](./calculus/process.md).
+- **Pi and rho are a language, not a spec field.** The calculus at
+  [Processes and channels](./calculus/process.md) states a unit operation as a
+  process on typed, directional channels, and that statement is what tranche P11
+  will build the tier against. **Nothing declares a port today**: the unit-operation
+  tier was deleted rather than repaired, so there is no model carrying a port, no
+  lint rule holding one against its inputs and outputs, and no interpreter for the
+  calculus. A page describing a port is a specification, and it is marked as one.
