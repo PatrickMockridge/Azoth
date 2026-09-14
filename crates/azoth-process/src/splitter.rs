@@ -1,41 +1,12 @@
 //! `process.splitter` - one feed divided into branches.
 //!
-//! Spec: `specs/models/process/splitter.yaml`
+//! Spec: `specs/models/process/splitter.yaml`, which carries the provenance, the reason
+//! there is no ideal-gas block, and the divergence over normalising the fractions.
 //!
-//! # The port
-//!
-//! NeqSim's `Splitter.run` is lines 376-438 of an 827-line file, and its physics:
-//!
-//! ```text
-//! n_k = f_k * n_in                   (Splitter.java:420-425, addComponent per component)
-//! T_k = T_in, P_k = P_in             (copied by the clone at :407, never set)
-//! state_k = TPflash(T_k, P_k)        (:427)
-//! ```
-//!
-//! The rest of the file is the split-factor bookkeeping (`:385-404`, which converts a
-//! fixed-flow specification into fractions and normalises them) and the transient mixer
-//! path.
-//!
-//! # One flash, not `S` flashes
-//!
-//! NeqSim flashes every branch (`:427`), and it has to: its streams are mutable objects
-//! that a caller may have written to between the split and the flash. Here every branch
-//! is at the **same** temperature, pressure and composition by construction, and an
-//! isothermal flash is a function of exactly those three - so `S` flashes would return
-//! `S` copies of one answer.
-//!
-//! This model runs the flash **once** and reports one `phase` and one `beta`, with the
-//! branch flows as a vector. That is not a shortcut: it is the same answer, stated in a
-//! form that cannot disagree with itself. A splitter whose branches were at different
-//! states would be `S` separators, not one splitter.
-//!
-//! # No ideal-gas model
-//!
-//! This is the one unit operation whose spec carries no `cp_a`..`P_ref` block, and the
-//! reason is that it needs none: a splitter does no energy balance. Its only
-//! thermodynamic call is a `TPflash`, which is a function of the temperature, the
-//! pressure and the composition. Carrying an ideal-gas datum nothing reads would be a
-//! field a caller has to supply and no test could justify.
+//! Every branch leaves at the feed's own temperature, pressure and composition, so one
+//! isothermal flash describes all of them. The model runs it **once** and reports one
+//! `phase` and one `beta`, with the branch flows as a vector - not a shortcut, but the
+//! same answer stated in a form that cannot disagree with itself.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, apply_checks};
@@ -47,15 +18,9 @@ use crate::results::SplitterResult;
 
 /// One feed divided into branches at the feed's own temperature and pressure.
 ///
-/// `fractions` is the share of the feed each branch takes. They must **sum to one**,
-/// and that is checked rather than corrected - the rule everywhere else in this
-/// library, and the reason is the same here: silently rescaling a caller's fractions
-/// would make their error invisible while changing every number downstream.
-///
-/// NeqSim normalises instead (`Splitter.java:388-404`), and its own guard is worth
-/// reading: it zeroes negatives, and if the total is not positive it sets every factor
-/// to zero and the first to one. Both are defensible for a transient solver that must
-/// keep running; neither is defensible for a model whose whole output is those numbers.
+/// `fractions` is the share of the feed each branch takes. They must **sum to one**, and
+/// that is checked rather than corrected: silently rescaling a caller's fractions would
+/// make their error invisible while changing every number downstream.
 ///
 /// # Errors
 /// * [`azoth_core::AzothError::InvalidInput`] if `fractions` is empty, holds a negative

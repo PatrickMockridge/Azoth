@@ -1,46 +1,11 @@
 //! `process.mixer` - several feeds blended into one.
 //!
-//! Spec: `specs/models/process/mixer.yaml`
+//! Spec: `specs/models/process/mixer.yaml`, which carries this model's provenance and the
+//! two places its arithmetic diverges from NeqSim's.
 //!
-//! # The port
-//!
-//! NeqSim's `Mixer.run` is lines 642-729 of a 1,235-line `Mixer.java`, and its physics
-//! is four statements:
-//!
-//! ```text
-//! n_out = sum_s n_s                              (mixStream, :192-320)
-//! z_out = sum_s (n_s * z_s) / n_out              (:292, addComponent accumulating moles)
-//! P_out = min_s(P_s)                             (:681)
-//! T_out = PHflash(P_out, sum_s H_s)              (:702-711)
-//! ```
-//!
-//! The rest of the file is the component-matching machinery - NeqSim accumulates moles
-//! component by component and has to handle an inlet whose pseudo-fraction has a
-//! different molar mass from the destination's (`:285-291`), and an inlet carrying a
-//! component the others do not. None of that exists here: azoth takes one `Mixture` for
-//! every stream, so all the inlets already share a component set and the accumulation is
-//! a vector sum.
-//!
-//! # Why the blend is a flow-weighted mean
-//!
-//! NeqSim's `calcMixStreamEnthalpy` (`:537-544`) sums **total** enthalpies in joules,
-//! and its `PHflash` takes joules, so the sum is the whole story. `eos.ph_flash` takes a
-//! **molar** enthalpy, so the translation is the flow-weighted *mean*:
-//! `H = sum(n_s H_s) / sum(n_s)`. Same physics - an energy balance on an open system
-//! with no heat and no work - and a different expression.
-//!
-//! **This is the one place in the port where a formula looks different from the source
-//! it came from**, which is why it is written down rather than left to look like a
-//! transcription error. It is also worth knowing that the two are equal when the flows
-//! are: the mean and the sum differ only by the factor `sum(n_s)` that divides out
-//! again when the flash is given a molar enthalpy.
-//!
-//! # The outlet pressure is the lowest inlet pressure
-//!
-//! Not the highest and not an average. A mixer is a vessel: nothing in it can be above
-//! the lowest pressure any feed arrives at, and a feed arriving at 20 bar into a vessel
-//! held at 5 bar flashes as it enters. Taking the maximum, or the arithmetic mean, would
-//! give an answer that is arithmetically fine and describes a pump.
+//! The outlet is at the **lowest** inlet pressure - a mixer is a vessel, and nothing in it
+//! can be above the pressure any feed arrives at - and its temperature is an isenthalpic
+//! flash of the flow-weighted blend.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{AzothError, Result, apply_checks};

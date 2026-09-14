@@ -1,35 +1,12 @@
 //! The procedure a compressor, a pump and an expander have in common.
 //!
-//! NeqSim has three classes for the three machines and the same eleven lines in each.
-//! Read out of `Compressor.java:1721-1776`, `Pump.java:558-572` and
-//! `Expander.java:646-660`, all three do:
+//! The three machines are the same eleven statements with one difference: which way the
+//! efficiency scales the ideal enthalpy change, which is what [`Direction`] names.
+//! Dividing puts the outlet further from the inlet than ideal - a machine consuming work;
+//! multiplying puts it closer - a machine producing it.
 //!
-//! ```text
-//! s_in    = S(T_in, P_in)                        the entropy the fluid arrives with
-//! T_is    = PSflash(P_out, s_in)                 where it would get to ideally
-//! h_is    = H(T_is, P_out)                       the ideal outlet enthalpy
-//! h_out   = h_in + (h_is - h_in) / eta           compressor and pump  (Compressor.java:1738)
-//! h_out   = h_in + (h_is - h_in) * eta           expander             (Expander.java:653)
-//! T_out   = PHflash(P_out, h_out)                the real outlet state
-//! ```
-//!
-//! The only difference between the three is **which way the efficiency scales the
-//! ideal enthalpy change**, and that is what [`Direction`] names. Dividing gives an
-//! outlet further from the inlet than ideal, which is a machine consuming work;
-//! multiplying gives one closer to the inlet, which is a machine producing it.
-//!
-//! # What is not ported
-//!
-//! NeqSim's polytropic paths are not: the 40-step numerical integration
-//! (`Compressor.java:1550-1616`), the Schultz volume-exponent correlation
-//! (`:1617-1668`) and the simplified exponent (`:1669-1719`). Nor is the pump curve,
-//! the compressor chart, the speed solve, the anti-surge recycle or the outlet-
-//! temperature efficiency solve. Each is a real capability and each is a *performance*
-//! model rather than the thermodynamics - it needs a machine's measured curve, which is
-//! data this library does not ship and cannot check.
-//!
-//! What that means for a caller: this is the isentropic-efficiency model, which is what
-//! NeqSim does by default on all three classes (`usePolytropicCalc` defaults to false).
+//! Each machine's spec carries its own provenance and its own list of what is not
+//! ported: `specs/models/process/compressor.yaml`, `pump.yaml` and `expander.yaml`.
 
 use azoth_core::units::{
     Pressure, ThermodynamicTemperature, joules_per_mole, joules_per_mole_kelvin,
@@ -75,10 +52,9 @@ pub struct Solved {
 
 /// Run one machine: a stated pressure change at a stated isentropic efficiency.
 ///
-/// `efficiency` is the **isentropic** efficiency, in `(0, 1]`. NeqSim allows exactly
-/// that range too, clamped rather than refused (`Compressor.java:2118`); here the spec's
-/// range check refuses it, because a clamp turns a caller's mistake into a slightly
-/// different answer that looks deliberate.
+/// `efficiency` is the **isentropic** efficiency, in `(0, 1]`. The spec's range check
+/// refuses a value outside it rather than clamping, because a clamp turns a caller's
+/// mistake into a slightly different answer.
 ///
 /// # Errors
 /// * [`azoth_core::AzothError::InvalidInput`] if the pressure moves the wrong way for
@@ -130,7 +106,7 @@ pub fn run(
     let ideal = ps_flash(mixture, ideal_gas, p_out, joules_per_mole_kelvin(s_in), z)?;
     let (h_ideal, _) = enthalpy_at(mixture, ideal_gas, ideal.temperature, p_out, z)?;
 
-    // The whole difference between the three machines, at NeqSim's own line numbers.
+    // The one expression that differs between the three machines.
     let d_h = match direction {
         Direction::Consuming => (h_ideal - h_in) / efficiency,
         Direction::Producing => (h_ideal - h_in) * efficiency,

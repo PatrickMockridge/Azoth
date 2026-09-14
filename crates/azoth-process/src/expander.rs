@@ -1,35 +1,13 @@
 //! `process.expander` - a pressure drop that produces work.
 //!
-//! Spec: `specs/models/process/expander.yaml`
+//! Spec: `specs/models/process/expander.yaml`, which carries the provenance and what is
+//! not ported. The procedure is [`crate::isentropic`]'s.
 //!
-//! Physics, and everything not ported, is in [`crate::isentropic`].
-//!
-//! # The one line that makes it an expander
-//!
-//! NeqSim's `Expander` **extends `Compressor`** and overrides `run` - `Expander.java` is
-//! 669 lines, of which `run` is 61 (`:608-668`). Its isentropic path differs from the
-//! compressor's in exactly one expression:
-//!
-//! ```text
-//! Compressor.java:1738   dH = (H(P_out, s_in) - H_in) / isentropicEfficiency
-//! Expander.java:653      dH = (H(P_out, s_in) - H_in) * isentropicEfficiency
-//! ```
-//!
-//! Dividing gives an outlet further from the inlet than the ideal one, which is a machine
-//! that consumes work; multiplying gives one closer to it, which is a machine that
-//! produces it. The enthalpy change is negative for an expansion, so the multiplication
-//! makes it *less* negative - the real outlet is warmer than the ideal one, which is the
+//! What this model adds is the one expression that makes it an expander rather than a
+//! compressor: [`Direction::Producing`] **multiplies** the ideal enthalpy change where the
+//! compressor divides it. An expansion's enthalpy change is negative, so multiplying makes
+//! it less negative - the real outlet is warmer than the ideal one, which is the
 //! irreversibility the efficiency stands for.
-//!
-//! That difference is the whole of this file. [`crate::isentropic::Direction`] names it.
-//!
-//! # The polytropic path is not ported
-//!
-//! `Expander.java:620-633` steps the pressure in five stages and applies the polytropic
-//! efficiency to each. It is a different model of the same machine rather than a more
-//! accurate one, and like the compressor's polytropic paths it needs `usePolytropicCalc`
-//! set. The default is the isentropic path (`usePolytropicCalc = false`, inherited from
-//! `Compressor.java:111`) and that is what is here.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature, pascals};
 use azoth_core::{Result, apply_checks};
@@ -47,10 +25,7 @@ use crate::results::ExpanderResult;
 ///
 /// `power` on the result is **negative**, because the fluid is doing the work: the
 /// convention across all three machines is that the shaft power is positive into the
-/// fluid. NeqSim's expander reports the opposite sign on its energy port
-/// (`Expander.java:661`, `setDuty(-dH)`), so a duty read from here and a duty read from
-/// there differ by a sign - which is exactly the kind of difference worth stating rather
-/// than discovering.
+/// fluid.
 ///
 /// # Errors
 /// * [`azoth_core::AzothError::InvalidInput`] if `outlet_pressure` is not below the inlet

@@ -13,12 +13,6 @@
 //! implementations and a worked example. What differs from `azoth-eos` is only what the
 //! procedure is *over*: a mixture state that carries a molar flow and a composition.
 //!
-//! That is the whole of the port's Pareto argument, and it is measurable rather than
-//! asserted. NeqSim's `Separator.run` is 109 lines of a 4,511-line file and its physics
-//! is one `TPflash` followed by a phase split; its `ThrottlingValve.run` is 91 lines of
-//! 1,894 and its physics is an isenthalpic flash. The rest of each file is performance
-//! charts, entrainment models, geometry and mechanical design, none of which is here.
-//!
 //! # Why this crate depends on another
 //!
 //! [`azoth-eos`] is a sibling domain, and the rule stated in `docs/src/spec.md` S3 is

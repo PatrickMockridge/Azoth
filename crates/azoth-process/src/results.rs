@@ -263,9 +263,8 @@ impl CalcResult for CompressorResult {
 /// Result of `process.pump`.
 ///
 /// The same procedure as [`CompressorResult`]'s and a separate struct for the same
-/// reason [`HeaterResult`] gives. A pump is a compressor for a liquid, and NeqSim's
-/// default path for one is literally the isentropic flash pair; the difference that
-/// matters is that a liquid's temperature rise is small and its volume is nearly
+/// reason [`HeaterResult`] gives. A pump is a compressor for a liquid: the difference
+/// that matters is that a liquid's temperature rise is small and its volume is nearly
 /// constant, which is a property of the state and not of the model.
 #[derive(Debug, Clone)]
 pub struct PumpResult {
@@ -308,8 +307,7 @@ impl CalcResult for PumpResult {
 /// Result of `process.expander`.
 ///
 /// The same procedure again, with the efficiency multiplying rather than dividing -
-/// which is what makes `power` negative. NeqSim's `Expander` inherits from its
-/// `Compressor` and makes exactly that change, at `Expander.java:653`.
+/// which is what makes `power` negative.
 #[derive(Debug, Clone)]
 pub struct ExpanderResult {
     /// The outlet temperature, from the flash at the actual outlet enthalpy.

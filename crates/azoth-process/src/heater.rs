@@ -1,39 +1,9 @@
 //! `process.heater` - a duty applied at a fixed pressure.
 //!
-//! Spec: `specs/models/process/heater.yaml`
+//! Spec: `specs/models/process/heater.yaml`, which carries the provenance and the reason
+//! one of the four specifications is ported and the others are not.
 //!
-//! # The port, and the unit it replaces
-//!
-//! NeqSim has `Heater` and `Cooler` as two classes, and **`Cooler` has no `run()` of its
-//! own** - `Cooler.java` is 258 lines and inherits `Heater.run` for its steady state.
-//! The two differ only in the sign of the duty and in what their dynamics do. So a
-//! cooler here is this model with a negative `heat_duty`, which is what NeqSim's own
-//! code says and is one fewer unit operation to wire, spec and test.
-//!
-//! `Heater.run` is lines 402-471 of a 1,113-line file, and its physics:
-//!
-//! ```text
-//! P_out   = P_in - pressureDrop                  (Heater.java:432-435)
-//! H_out   = H_in + energyInput                   (:431)
-//! T_out   = PHflash(P_out, H_out)                (:445-446)
-//! Q       = H_out - H_in                         (:457)
-//! ```
-//!
-//! Everything else in the file is the specification switch (`out stream`,
-//! `setTemperature`, `setEnergyInput`, `deltaT` - `:437-450`), the energy port and the
-//! caches.
-//!
-//! # Why only the duty specification is ported
-//!
-//! NeqSim's other three specifications are not here, and the reason is that **none of
-//! them is a unit operation**. A heater with a specified outlet temperature is a
-//! `TPflash`, which is `eos.pt_flash` - the temperature is already an input there and
-//! there is no energy balance to solve. A specified `deltaT` is the same call with the
-//! temperature added first. This model exists to answer the question those cannot: given
-//! the duty, what temperature results.
-//!
-//! So the Pareto set is one specification, and the other two are compositions of models
-//! this library already has.
+//! A cooler is this model with a negative `heat_duty`; the sign is the whole difference.
 
 use azoth_core::units::{Power, Pressure, ThermodynamicTemperature, joules_per_mole, pascals};
 use azoth_core::{Result, apply_checks};
