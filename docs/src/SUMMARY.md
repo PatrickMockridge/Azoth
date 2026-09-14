@@ -50,6 +50,7 @@
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
 - [Test plan](./test-plan.md)
 - [Required improvements](./required-improvements.md)
+- [Remediation plan](./remediation.md)
 - [Copyright and licensed data](./copyright.md)
 - [The batch API](./batch.md)
 - [azoth and NeqSim](./comparison/neqsim.md)
