@@ -39,6 +39,13 @@ __all__ = [
 ]
 
 
+#: Result fields that report a solver's own convergence residual rather than a physical
+#: answer. They are the one kind of field whose cross-language agreement is bounded by the
+#: model's declared ``algorithm.tolerance`` and not by the case's answer tolerance. The name
+#: is the one this spec system uses for that quantity throughout ``specs/models/``.
+_DIAGNOSTIC_FIELDS: frozenset[str] = frozenset({"residual"})
+
+
 def spec(calc_id: str) -> dict[str, Any]:
     """Fetch a spec, failing loudly if the id is wrong."""
     assert calc_id in BY_ID, f"no spec for {calc_id!r}; registry has {sorted(BY_ID)}"
@@ -207,7 +214,13 @@ def assert_consistent(result: Any, context: str) -> None:
         assert warning.message.strip(), f"{context}: warning {warning.code} has an empty message"
 
 
-def assert_results_equal(left: Any, right: Any, tolerance: float, context: str) -> None:
+def assert_results_equal(
+    left: Any,
+    right: Any,
+    tolerance: float,
+    context: str,
+    diagnostic_bound: float | None = None,
+) -> None:
     """Assert two results agree, field by field, within a tolerance.
 
     Used by the cross-implementation tests. Compares in three passes, because the
@@ -219,6 +232,12 @@ def assert_results_equal(left: Any, right: Any, tolerance: float, context: str) 
     Rust implementation that forgot to emit RANGE_CHECK_SKIPPED would produce
     identical numbers and a different warning list, and a numeric-only comparison
     would call that a pass.
+
+    ``diagnostic_bound`` is the absolute bound applied to a solver diagnostic (see
+    ``_DIAGNOSTIC_FIELDS``). It is the model's own declared convergence tolerance,
+    not the case's answer tolerance: a residual is meaningful only to the precision
+    at which the solver declared it converged, and comparing it relatively is not a
+    stricter test but an impossible one.
     """
     assert type(left).__name__ == type(right).__name__, (
         f"{context}: different result types: {type(left).__name__} vs {type(right).__name__}"
@@ -238,8 +257,8 @@ def assert_results_equal(left: Any, right: Any, tolerance: float, context: str) 
             a_base = a.to_base_units().magnitude
             b_base = b.to_base_units().magnitude
             assert_close(float(a_base), float(b_base), tolerance, f"{context}.{field}")
-        elif isinstance(a, (int, float)) and isinstance(b, (int, float)):
-            assert_close(float(a), float(b), tolerance, f"{context}.{field}")
+        elif field in _DIAGNOSTIC_FIELDS and diagnostic_bound is not None:
+            _assert_diagnostic(a, b, diagnostic_bound, f"{context}.{field}")
         elif isinstance(a, tuple) and a and isinstance(a[0], Warning):
             assert _warnings_equal(a, b), (
                 f"{context}.{field}: warnings differ\n  python: {a}\n  rust:   {b}"
@@ -249,8 +268,66 @@ def assert_results_equal(left: Any, right: Any, tolerance: float, context: str) 
                 assert ca.fitting_id == cb.fitting_id, f"{context}.{field}[{index}] id"
                 assert_close(ca.n_ld, cb.n_ld, tolerance, f"{context}.{field}[{index}].n_ld")
                 assert_close(ca.k, cb.k, tolerance, f"{context}.{field}[{index}].k")
+        elif isinstance(a, (tuple, list)) and _is_numeric_nested(a):
+            # A vector or matrix output - a composition, a set of K-values, the stationary
+            # compositions of a stability trial - compared entry by entry within the
+            # tolerance, at any nesting depth. Two implementations agree to the last bit
+            # only by luck, so exact equality here reports a rounding difference as a
+            # divergence in the physics.
+            _assert_nested(a, b, tolerance, f"{context}.{field}")
+        elif isinstance(a, (int, float)) and isinstance(b, (int, float)):
+            assert_close(float(a), float(b), tolerance, f"{context}.{field}")
         else:
             assert a == b, f"{context}.{field}: {a!r} != {b!r}"
+
+
+def _is_numeric_nested(value: Any) -> bool:
+    """Whether a sequence is numbers all the way down, at any depth.
+
+    A vector is one level; a matrix is two. Both are compared entry by entry rather
+    than by equality, so both have to be recognised here.
+    """
+    if isinstance(value, (tuple, list)):
+        return len(value) == 0 or all(_is_numeric_nested(item) for item in value)
+    return isinstance(value, (int, float))
+
+
+def _assert_nested(a: Any, b: Any, tolerance: float, context: str) -> None:
+    """Compare two nested numeric sequences entry by entry."""
+    assert len(a) == len(b), f"{context}: {len(a)} entries against {len(b)}"
+    for index, (ca, cb) in enumerate(zip(a, b, strict=True)):
+        if _is_numeric_nested(ca) and isinstance(ca, (tuple, list)):
+            _assert_nested(ca, cb, tolerance, f"{context}[{index}]")
+        else:
+            assert_close(float(ca), float(cb), tolerance, f"{context}[{index}]")
+
+
+def _assert_diagnostic(a: Any, b: Any, bound: float, context: str) -> None:
+    """Compare a solver diagnostic on an absolute bound.
+
+    A residual is not a result, it is the solver's evidence that it converged, and it
+    is meaningful only down to the tolerance the solver declares. It is near zero by
+    construction, so a relative comparison divides by the thing that is vanishing:
+    for ``residual = |S - 1|`` with ``S`` near 1, the subtraction pins the absolute
+    error at the rounding of ``S`` (~1e-16) however small the residual becomes, and
+    the attainable relative accuracy ``1e-16 / residual`` diverges as the residual
+    falls. No relative tolerance can be met here, at any value.
+
+    Both sides failing to converge is agreement, so NaN equals NaN.
+    """
+    a_nan = a != a
+    b_nan = b != b
+    if a_nan or b_nan:
+        assert a_nan and b_nan, (
+            f"{context}: one implementation did not converge and the other did "
+            f"({a!r} against {b!r})"
+        )
+        return
+    difference = abs(float(a) - float(b))
+    assert difference <= bound, (
+        f"{context}: residuals differ by {difference:.3e}, beyond the model's own "
+        f"declared convergence tolerance {bound:.3e} ({a!r} against {b!r})"
+    )
 
 
 def _warnings_equal(left: tuple[Warning, ...], right: Any) -> bool:

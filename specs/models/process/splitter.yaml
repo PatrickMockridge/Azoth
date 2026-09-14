@@ -1,0 +1,224 @@
+id: process.splitter
+name: Splitter
+kind: procedure
+
+description: >
+  One feed divided into branches at the feed's own temperature and pressure.
+
+  The branches differ only in how much of the feed each carries. Every one of them is at
+  the same temperature, the same pressure and the same composition, so the phase state is
+  a property of the *feed* rather than of any branch, and this model reports it once.
+
+  This is the only unit operation in the port whose spec carries no ideal-gas block. The
+  reason is that it needs none: a splitter does no energy balance, and its single
+  thermodynamic call is a `TPflash`, which is a function of the temperature, the pressure
+  and the composition.
+
+source:
+  standard: >
+    NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is
+    `neqsim.process.equipment.splitter.Splitter`, `run(UUID)` at lines 376-438 of the
+    3.20.0 source tree.
+  edition: >
+    Version 3.20.0. Taken from it: the component-mole scaling by the split factor
+    (`:420-425`), the inherited temperature and pressure (`:407`), and the flash of each
+    branch (`:427`). Not taken: the conversion of a fixed-flow specification into
+    fractions (`:385`), and the sanitising of the factors (`:388-404`) - see the notes.
+
+references:
+  - 'NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `Splitter.java` lines
+    376-438.'
+  - '`eos.pt_flash` - the isothermal flash this model runs, once.'
+
+algorithm:
+  scheme: flow_scaled_isothermal_flash
+  initialisation: wilson
+  convergence: absolute
+  tolerance: 1.0e-10
+  max_iterations: 300
+  inner:
+    scheme: rachford_rice_bisection
+    convergence: absolute
+    tolerance: 1.0e-14
+    max_iterations: 200
+
+inputs:
+  Tc:
+    type: vector
+    unit: K
+    length: one per component
+    description: critical temperatures, in the mixture's component order
+  Pc:
+    type: vector
+    unit: Pa
+    length: one per component
+    description: critical pressures, in the same order
+  omega:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: acentric factors, in the same order
+  kij:
+    type: matrix
+    unit: dimensionless
+    shape: N x N, symmetric, zero diagonal
+    description: binary interaction parameters, as in `eos.pt_flash`
+  T:
+    unit: K
+    description: the feed's absolute temperature, and every branch's
+  P:
+    unit: Pa
+    description: the feed's absolute pressure, and every branch's
+  n:
+    unit: mol/s
+    description: the feed's molar flow rate, which the fractions divide
+  z:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the feed's mole fractions, and every branch's
+  fractions:
+    type: vector
+    unit: dimensionless
+    length: one per branch
+    description: >
+      the share of the feed each branch takes, **summing to one**. Checked rather than
+      corrected - see the notes for why NeqSim's normalising is right for its context and
+      wrong here.
+
+outputs:
+  T:
+    unit: K
+    description: the temperature every branch leaves at - the feed's
+  P:
+    unit: Pa
+    description: the pressure every branch leaves at - the feed's
+  phase:
+    type: enum
+    values: [all_liquid, two_phase, all_vapour, trivial]
+    description: which phase the feed is in, and so the phase of every branch
+  beta:
+    unit: dimensionless
+    description: the vapour fraction, absent for a single-phase feed
+  flows:
+    type: vector
+    unit: mol/s
+    length: one per branch
+    description: each branch's molar flow, in the order the fractions were given
+  iterations:
+    unit: dimensionless
+    description: flash iterations taken
+
+valid_range:
+  - quantity: n
+    min: 0.0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      a flow of zero moles has nothing to divide. The branches would all be zero and the
+      fractions would have nothing to act on - a splitter with no feed is not a splitter.
+  - quantity: T
+    min: 0.0
+    min_inclusive: false
+    severity: error
+    rationale: an absolute temperature; zero and below are not states
+  - quantity: P
+    min: 0.0
+    min_inclusive: false
+    severity: error
+    rationale: an absolute pressure; zero and below are not states
+
+assumptions:
+  - '**one flash, not one per branch.** NeqSim flashes each branch (`Splitter.java:427`)
+    and has to, because its streams are mutable objects a caller may have written to
+    between the split and the flash. Here every branch is at the same temperature,
+    pressure and composition by construction, and an isothermal flash is a function of
+    exactly those three - so `S` flashes would return `S` copies of one answer. This runs
+    it once. A splitter whose branches were at different states would be `S` separators,
+    not one splitter.'
+  - '**the fractions are exact, not normalised.** See the notes.'
+  - '**no pressure drop.** Each branch leaves at the feed pressure. A splitter with a
+    drop on a branch is this model with a `process.throttling_valve` after it.'
+  - '**no ideal-gas block**, because no energy balance is done. A caller supplies no
+    `Cp/R` polynomial and no reference state, and that is a statement about the model
+    rather than an omission.'
+  - '**the cubic is Peng-Robinson**, as throughout this workspace.'
+
+notes: >
+  # The fractions are checked, not corrected
+
+  NeqSim sanitises its split factors before using them (`:388-404`): negatives are zeroed,
+  and if the total is not positive it sets every factor to zero and the first to one.
+  That is defensible for a solver that must keep running inside a transient loop.
+
+  It is not defensible here. A splitter's entire output *is* those numbers, and a model
+  that silently rescales a caller's fractions makes their arithmetic error invisible while
+  changing every number downstream - which is the failure this library is organised
+  against, stated in `eos.pt_flash` about compositions and applied here to splits. A
+  fraction set that does not sum to one is refused, naming the total it did sum to.
+
+  # What is checked, and what is not
+
+  Two things, neither of which needs a recorded number:
+
+  - **Material is conserved**: `sum(flows) == n`. The analogue of the separator's mole
+    balance, and the check that catches a fraction set applied twice or not at all.
+  - **Each branch is its fraction of the feed**: `flows[k] == fractions[k] * n`, which is
+    the definition and is arithmetic rather than physics.
+
+  The recorded case is the second check and it is weaker. **Nothing here checks the
+  flash** - the `beta` in the case is `eos.pt_flash`'s and the confidence in it is
+  whatever that model's notes support.
+
+implementations:
+  python: azoth.process.splitter
+  rust: azoth_process::splitter
+
+cases:
+  - id: thirty_seventy_split_of_a_two_phase_feed
+    note: >
+      Ten moles per second of methane/n-butane at 300 K and 20 bar, split 30/70. The
+      branches carry **3.0** and **7.0** mol/s - arithmetic a reader can do without the
+      equation of state, and the whole of what this model computes that is not copied
+      from its input.
+
+      The feed is two-phase at that state, so the case also records the vapour fraction
+      the flash reports and pins that every branch is in the same phase. That number is
+      `eos.pt_flash`'s and not this model's.
+    inputs:
+      Tc: [190.56, 425.12]
+      Pc: [4599000.0, 3796000.0]
+      omega: [0.0115, 0.2002]
+      kij: [[0.0, 0.01289789], [0.01289789, 0.0]]
+      T: 300.0
+      P: 2000000.0
+      n: 10.0
+      z: [0.6, 0.4]
+      fractions: [0.3, 0.7]
+    expected:
+      T: 300.0
+      P: 2000000.0
+      beta: 0.6824390296509166
+      flows: [3.0, 7.0]
+    tolerance: 1.0e-9
+
+  - id: a_single_branch_takes_everything
+    note: >
+      The same feed through one branch at a fraction of one. Every mole leaves in the one
+      stream and none is lost, which is the degenerate case a splitter that scaled by the
+      wrong index would fail.
+    inputs:
+      Tc: [190.56, 425.12]
+      Pc: [4599000.0, 3796000.0]
+      omega: [0.0115, 0.2002]
+      kij: [[0.0, 0.01289789], [0.01289789, 0.0]]
+      T: 300.0
+      P: 2000000.0
+      n: 10.0
+      z: [0.6, 0.4]
+      fractions: [1.0]
+    expected:
+      T: 300.0
+      P: 2000000.0
+      flows: [10.0]
+    tolerance: 1.0e-9

@@ -49,27 +49,27 @@ fn every_case_in_the_spec() {
         let result = call(case);
         common::assert_close(
             result.tc.value,
-            common::expected(case, "Tc"),
+            common::expected(case, "tc"),
             case.tolerance,
-            &format!("{}::{} (Tc)", spec.id, case.id),
+            &format!("{}::{} (tc)", spec.id, case.id),
         );
         common::assert_close(
             result.pc.value,
-            common::expected(case, "Pc"),
+            common::expected(case, "pc"),
             case.tolerance,
-            &format!("{}::{} (Pc)", spec.id, case.id),
+            &format!("{}::{} (pc)", spec.id, case.id),
         );
         common::assert_close(
             result.vc.value,
-            common::expected(case, "Vc"),
+            common::expected(case, "vc"),
             case.tolerance,
-            &format!("{}::{} (Vc)", spec.id, case.id),
+            &format!("{}::{} (vc)", spec.id, case.id),
         );
         common::assert_close(
             result.z_c,
-            common::expected(case, "Z_c"),
+            common::expected(case, "z_c"),
             case.tolerance,
-            &format!("{}::{} (Z_c)", spec.id, case.id),
+            &format!("{}::{} (z_c)", spec.id, case.id),
         );
         assert!(
             result.iterations > 0,

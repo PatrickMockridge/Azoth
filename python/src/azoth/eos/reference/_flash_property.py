@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from azoth.core.errors import InvalidInputError, SolverNotConvergedError
+from azoth.core.errors import InvalidInputError, OutOfRangeError, SolverNotConvergedError
 from azoth.core.units import Q, from_si
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
@@ -194,21 +194,43 @@ def bracket_by_scan(
     is determined by the bracket alone rather than by where a search happened to start
     - which is what lets the two implementations agree on the iteration count.
 
+    **A temperature with no state is skipped rather than fatal.** Some ``(T, P)`` pairs
+    on the scan have no admissible liquid root - the cubic's smallest root falls below
+    the mixture's ``B``, so ``ln(Z - B)`` is the logarithm of a negative number - and
+    that is not confined to the ends of the range: on methane/n-butane at 15 bar it
+    happens at 160 K and nowhere else between 100 K and 400 K. Such a point has no
+    property, so it cannot bracket anything. Aborting the search on one - which this did
+    until the process layer needed a valve at 15 bar - made ``eos.ph_flash`` unusable at
+    ordinary states, and the failure looked like a caller's mistake.
+
+    **Only an out-of-range state is skipped.** An :class:`InvalidInputError` - a
+    composition that is not a composition, a vector of the wrong length - does not depend
+    on the temperature, so it is the caller's error at every point and it propagates
+    immediately. Skipping those too would turn "your ``z`` is wrong" into "the solver did
+    not converge", which reports a failure of the search where the search was never the
+    problem.
+
     Raises:
-        SolverNotConvergedError: if no sign change is found on the scan.
+        SolverNotConvergedError: if no sign change is found between two temperatures that
+            both have states. The residual is infinite when nothing on the scan was
+            evaluable at all, which is the honest reading rather than a number.
+        InvalidInputError: from :func:`property_at`, for arguments that are the caller's
+            error at every temperature.
     """
-    previous_t = lower
-    previous_value, _ = property_at(mixture, ideal_gas, previous_t, p_si, z, which)
-    for index in range(1, steps + 1):
+    previous: tuple[float, float] | None = None
+    for index in range(steps + 1):
         t = lower + (upper - lower) * index / steps
-        value, _ = property_at(mixture, ideal_gas, t, p_si, z, which)
-        if (value - target) * (previous_value - target) <= 0.0:
-            return previous_t, t
-        previous_t, previous_value = t, value
+        try:
+            value, _ = property_at(mixture, ideal_gas, t, p_si, z, which)
+        except OutOfRangeError:
+            continue
+        if previous is not None and (value - target) * (previous[1] - target) <= 0.0:
+            return previous[0], t
+        previous = (t, value)
 
     raise SolverNotConvergedError(
         steps,
-        abs(previous_value - target) / max(abs(target), 1.0),
+        float("inf") if previous is None else abs(previous[1] - target) / max(abs(target), 1.0),
         0.0,
     )
 

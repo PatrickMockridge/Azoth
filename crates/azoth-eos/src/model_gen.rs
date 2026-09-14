@@ -138,9 +138,9 @@ pub static BUBBLE_PRESSURE_SPEC: ModelSpec = ModelSpec {
 
 static CRITICAL_POINT_CHECKS: &[SpecCheck] = &[
     SpecCheck {
-        on_input: true,
+        on_input: false,
         check: RangeCheck {
-            quantity: "Tc",
+            quantity: "tc",
             min: Some(0.0),
             min_inclusive: false,
             max: None,
@@ -153,9 +153,9 @@ static CRITICAL_POINT_CHECKS: &[SpecCheck] = &[
         },
     },
     SpecCheck {
-        on_input: true,
+        on_input: false,
         check: RangeCheck {
-            quantity: "Pc",
+            quantity: "pc",
             min: Some(0.0),
             min_inclusive: false,
             max: None,
@@ -170,7 +170,7 @@ static CRITICAL_POINT_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: false,
         check: RangeCheck {
-            quantity: "Z_c",
+            quantity: "z_c",
             min: Some(0.0),
             min_inclusive: false,
             max: None,
@@ -179,7 +179,7 @@ static CRITICAL_POINT_CHECKS: &[SpecCheck] = &[
             band: Band::Outside,
             severity: Severity::Error,
             code: WarningCode::OutOfValidRange,
-            rationale: "`Pc Vc/(R Tc)`. **Not an accuracy bound and not a physical range check** - a cubic's critical compressibility is the equation's, not the substance's. It is here because a sign error in any of the three quantities above shows up as a negative `Z_c` before it shows up anywhere else.",
+            rationale: "`pc vc/(R tc)`. **Not an accuracy bound and not a physical range check** - a cubic's critical compressibility is the equation's, not the substance's. It is here because a sign error in any of the three quantities above shows up as a negative `z_c` before it shows up anywhere else.",
         },
     },
 ];
@@ -202,10 +202,10 @@ static CRITICAL_POINT_CASES: &[TestCase] = &[
         ],
         matrices: &[("kij", &[0.0])],
         expected: &[
-            ("Tc", 369.83000000000004),
-            ("Pc", 4248000.000000011),
-            ("Vc", 0.00022251409546288967),
-            ("Z_c", 0.3074013091160614),
+            ("tc", 369.83000000000004),
+            ("pc", 4248000.000000011),
+            ("vc", 0.00022251409546288967),
+            ("z_c", 0.3074013091160614),
         ],
         expected_vectors: &[],
     },
@@ -226,10 +226,10 @@ static CRITICAL_POINT_CASES: &[TestCase] = &[
         ],
         matrices: &[("kij", &[0.0, 0.05, 0.05, 0.0])],
         expected: &[
-            ("Tc", 389.60393756196225),
-            ("Pc", 8496149.7632273),
-            ("Vc", 0.00018249737998221664),
-            ("Z_c", 0.4786535349108495),
+            ("tc", 389.60393756196225),
+            ("pc", 8496149.7632273),
+            ("vc", 0.00018249737998221664),
+            ("z_c", 0.4786535349108495),
         ],
         expected_vectors: &[],
     },

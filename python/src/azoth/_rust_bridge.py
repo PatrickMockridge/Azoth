@@ -29,16 +29,20 @@ from azoth.core.result import (
     BubblePressureResult,
     ChokedFlowAreaResult,
     ColebrookResult,
+    CompressorResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
     CriticalPointResult,
     DarcyWeisbachResult,
     DewPressureResult,
+    ExpanderResult,
     FlowRegime,
     HaalandResult,
+    HeaterResult,
     IdealGasCpResult,
     KComponent,
     KFactorsResult,
+    MixerResult,
     MolarEnthalpyEntropyResult,
     OrificeFlowResult,
     PhFlashResult,
@@ -52,13 +56,16 @@ from azoth.core.result import (
     PsFlashResult,
     PtFlashResult,
     PumpPowerResult,
+    PumpResult,
     PureSaturationResult,
     RachfordRiceBinaryResult,
     ReynoldsNumberResult,
     RootStructure,
     SeparatorResult,
+    SplitterResult,
     StabilityTestResult,
     SwameeJainResult,
+    ThrottlingValveResult,
     Vdw1fMixBinaryResult,
 )
 from azoth.core.result import Phase as _Phase
@@ -716,18 +723,7 @@ def separator(
     """
     spec = _models_gen.model("process.separator")
     result = _core.separator(
-        [c.Tc.to_base_units().magnitude for c in mixture.components],
-        [c.Pc.to_base_units().magnitude for c in mixture.components],
-        [c.omega for c in mixture.components],
-        mixture.flattened_kij(),
-        list(ideal_gas.cp_a),
-        list(ideal_gas.cp_b),
-        list(ideal_gas.cp_c),
-        list(ideal_gas.cp_d),
-        [v for v in ideal_gas.h_ref],
-        [v for v in ideal_gas.s_ref],
-        input_to_si(spec, "T_ref", ideal_gas.T_ref),
-        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+        *_model_arguments(mixture, spec, ideal_gas),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         input_to_si(spec, "n", n),
@@ -744,6 +740,313 @@ def separator(
         liquid_flow=result.liquid_flow,
         liquid_z=tuple(result.liquid_z),
         phase=_Phase(result.phase),
+        iterations=result.iterations,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def _mixture_arguments(
+    mixture: Any,
+) -> tuple[list[float], list[float], list[float], list[float]]:
+    """The four vectors every model's mixture crosses as.
+
+    One function rather than four lines repeated in eight unit operations. It is the same
+    argument the crate's `build_mixture` makes on the Rust side: the component order is
+    one thing to agree about, so it should be decided in one place.
+
+    A fixed-length tuple rather than a list, because the caller splats it into a function
+    of known arity: a list would leave the argument count unchecked at the call site.
+    """
+    return (
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+    )
+
+
+def _ideal_gas_arguments(
+    spec: Any, ideal_gas: Any
+) -> tuple[
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    float,
+    float,
+]:
+    """The six vectors and two reference states an ideal-gas model crosses as."""
+    return (
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.h_ref),
+        list(ideal_gas.s_ref),
+        input_to_si(spec, "T_ref", ideal_gas.T_ref),
+        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+    )
+
+
+def _model_arguments(
+    mixture: Any, spec: Any, ideal_gas: Any
+) -> tuple[
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    float,
+    float,
+]:
+    """The twelve leading arguments every unit operation takes, as one tuple.
+
+    The concatenation of the two above, and not two separate unpacks at the call site:
+    a call written `f(*a, *b, ...)` with both `a` and `b` of known length is one mypy
+    cannot check the arity of - it aligns the first tuple and gives up on the second,
+    reporting a mismatch that is not there. One tuple is checked correctly, so the
+    argument count at the call site is verified rather than assumed.
+    """
+    return _mixture_arguments(mixture) + _ideal_gas_arguments(spec, ideal_gas)
+
+
+def mixer(
+    mixture: Any,
+    ideal_gas: Any,
+    T: Sequence[Q],
+    P: Sequence[Q],
+    n: Sequence[Q],
+    z: Sequence[Sequence[float]],
+) -> MixerResult:
+    """Several feeds blended into one, run in Rust.
+
+    The first bridge function whose arguments are *vectors*: one entry per inlet, and a
+    composition per inlet. `z` crosses flattened row-major, exactly as `kij` does and for
+    the same reason - the boundary carries one list rather than a list of lists, and the
+    Rust side derives the stream count from how many temperatures it was given.
+    """
+    spec = _models_gen.model("process.mixer")
+    result = _core.mixer(
+        *_model_arguments(mixture, spec, ideal_gas),
+        [input_to_si(spec, "T", value) for value in T],
+        [input_to_si(spec, "P", value) for value in P],
+        [input_to_si(spec, "n", value) for value in n],
+        [float(value) for row in z for value in row],
+    )
+    return MixerResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        flow=result.flow,
+        z_out=tuple(result.z_out),
+        beta=result.beta,
+        phase=_Phase(result.phase),
+        iterations=result.iterations,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def splitter(
+    mixture: Any,
+    T: Q,
+    P: Q,
+    n: Q,
+    z: Sequence[float],
+    fractions: Sequence[float],
+) -> SplitterResult:
+    """One feed divided into branches, run in Rust.
+
+    The only bridge function that sends no ideal-gas block, because the only unit
+    operation that takes none - a splitter does no energy balance.
+    """
+    spec = _models_gen.model("process.splitter")
+    result = _core.splitter(
+        *_mixture_arguments(mixture),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "n", n),
+        list(z),
+        list(fractions),
+    )
+    return SplitterResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        phase=_Phase(result.phase),
+        beta=result.beta,
+        flows=tuple(result.flows),
+        iterations=result.iterations,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def throttling_valve(
+    mixture: Any,
+    ideal_gas: Any,
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+    pressure_drop: Q,
+) -> ThrottlingValveResult:
+    """A stream's pressure dropped at constant enthalpy, run in Rust.
+
+    No flow rate crosses, because the model takes none: an isenthalpic flash is a molar
+    property.
+    """
+    spec = _models_gen.model("process.throttling_valve")
+    result = _core.throttling_valve(
+        *_model_arguments(mixture, spec, ideal_gas),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        input_to_si(spec, "pressure_drop", pressure_drop),
+    )
+    return ThrottlingValveResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        phase=_Phase(result.phase),
+        beta=result.beta,
+        iterations=result.iterations,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def heater(
+    mixture: Any,
+    ideal_gas: Any,
+    T: Q,
+    P: Q,
+    n: Q,
+    z: Sequence[float],
+    pressure_drop: Q,
+    heat_duty: Q,
+) -> HeaterResult:
+    """A duty applied at a fixed pressure, run in Rust. A negative duty is a cooler."""
+    spec = _models_gen.model("process.heater")
+    result = _core.heater(
+        *_model_arguments(mixture, spec, ideal_gas),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "n", n),
+        list(z),
+        input_to_si(spec, "pressure_drop", pressure_drop),
+        input_to_si(spec, "heat_duty", heat_duty),
+    )
+    return HeaterResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        phase=_Phase(result.phase),
+        beta=result.beta,
+        iterations=result.iterations,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def compressor(
+    mixture: Any,
+    ideal_gas: Any,
+    T: Q,
+    P: Q,
+    n: Q,
+    z: Sequence[float],
+    outlet_pressure: Q,
+    efficiency: float,
+) -> CompressorResult:
+    """A pressure rise at a stated isentropic efficiency, run in Rust."""
+    spec = _models_gen.model("process.compressor")
+    result = _core.compressor(
+        *_model_arguments(mixture, spec, ideal_gas),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "n", n),
+        list(z),
+        input_to_si(spec, "outlet_pressure", outlet_pressure),
+        efficiency,
+    )
+    return CompressorResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        power=result.power,
+        beta=result.beta,
+        phase=_Phase(result.phase),
+        isentropic_temperature=from_si(
+            result.isentropic_temperature.magnitude_si, result.isentropic_temperature.unit
+        ),
+        iterations=result.iterations,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pump(
+    mixture: Any,
+    ideal_gas: Any,
+    T: Q,
+    P: Q,
+    n: Q,
+    z: Sequence[float],
+    outlet_pressure: Q,
+    efficiency: float,
+) -> PumpResult:
+    """A pressure rise in a liquid, run in Rust."""
+    spec = _models_gen.model("process.pump")
+    result = _core.pump(
+        *_model_arguments(mixture, spec, ideal_gas),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "n", n),
+        list(z),
+        input_to_si(spec, "outlet_pressure", outlet_pressure),
+        efficiency,
+    )
+    return PumpResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        power=result.power,
+        beta=result.beta,
+        phase=_Phase(result.phase),
+        isentropic_temperature=from_si(
+            result.isentropic_temperature.magnitude_si, result.isentropic_temperature.unit
+        ),
+        iterations=result.iterations,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def expander(
+    mixture: Any,
+    ideal_gas: Any,
+    T: Q,
+    P: Q,
+    n: Q,
+    z: Sequence[float],
+    outlet_pressure: Q,
+    efficiency: float,
+) -> ExpanderResult:
+    """A pressure drop that produces work, run in Rust. `power` crosses negative."""
+    spec = _models_gen.model("process.expander")
+    result = _core.expander(
+        *_model_arguments(mixture, spec, ideal_gas),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "n", n),
+        list(z),
+        input_to_si(spec, "outlet_pressure", outlet_pressure),
+        efficiency,
+    )
+    return ExpanderResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        power=result.power,
+        beta=result.beta,
+        phase=_Phase(result.phase),
+        isentropic_temperature=from_si(
+            result.isentropic_temperature.magnitude_si, result.isentropic_temperature.unit
+        ),
         iterations=result.iterations,
         warnings=_warnings(result.warnings),
     )

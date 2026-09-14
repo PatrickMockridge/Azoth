@@ -18,7 +18,7 @@ scheme in the spec is what makes the comparison mean something.
 
 | Calculation | Kind | Tolerance | Convergence | Max iterations | Initial guess |
 |---|---|---|---|---|---|
-| [`eos.pr_z_factor`](../eos/pr_z_factor.md) | `cubic_roots` | `1e-14` | `relative` | `50` | — |
+| [`eos.pr_z_factor`](../eos/pr_z_factor.md) | `cubic_roots` | `1e-12` | `relative` | `50` | — |
 | [`hydraulics.friction_factor_colebrook`](../hydraulics/friction_factor_colebrook.md) | `fixed_point` | `1e-12` | `relative` | `100` | `0.02` |
 
 ## Convergence

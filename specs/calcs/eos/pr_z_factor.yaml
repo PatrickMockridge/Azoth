@@ -9,6 +9,12 @@ source:
   doi: "10.1021/i160057a011"
 
 notes: >
+  The polish tolerance is `1e-12` and was `1e-14`. The old value asked for a Newton
+  step below `1e-14 * |x|`, which for a root of order 0.04 is a couple of ulps and
+  which a near-double root therefore never meets - it stalls at 5.2e-15 and reports
+  failure however many iterations it is given. See
+  `python/tests/models/test_mixer.py` carries the state that exposed it.
+
   The cubic is the 1976 Peng-Robinson equation written in reduced variables. The
   citation is confirmed; the form of the equation is not in doubt - it is one of
   the two or three most widely implemented in chemical engineering, and this
@@ -132,7 +138,7 @@ references:
 
 solver:
   kind: cubic_roots
-  tolerance: 1.0e-14
+  tolerance: 1.0e-12
   max_iterations: 50
   convergence: relative
 

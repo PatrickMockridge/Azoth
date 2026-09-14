@@ -94,10 +94,32 @@ pub fn property_at(
 /// determined by the bracket alone rather than by where a search happened to start -
 /// which is what lets the two implementations agree on the iteration count.
 ///
+/// # A temperature with no state is skipped, not fatal
+///
+/// Some `(T, P)` pairs on the scan have no admissible liquid root: the cubic's smallest
+/// root falls below the mixture's `B`, so `ln(Z - B)` is the logarithm of a negative
+/// number and the state does not exist. That is not rare and it is not confined to the
+/// ends of the range - on methane/n-butane at 15 bar it happens at 160 K and nowhere
+/// else between 100 K and 400 K.
+///
+/// Such a point has no property, so it cannot bracket anything and cannot be compared
+/// against the target. Aborting the whole search on one - which this did until the
+/// process layer needed a valve at 15 bar - made `eos.ph_flash` unusable at ordinary
+/// states, and the failure looked like a caller's error rather than a gap in the scan.
+///
+/// **Only an out-of-range state is skipped.** An [`AzothError::InvalidInput`] - a
+/// composition that is not a composition, a vector of the wrong length - does not depend
+/// on the temperature, so it is the caller's error at every point and it propagates
+/// immediately. Skipping those too would turn "your `z` is wrong" into "the solver did
+/// not converge", which is a worse answer to a question nobody asked: it reports a
+/// failure of the search where the search was never the problem.
+///
 /// # Errors
 /// * [`AzothError::SolverNotConverged`] if no temperature on the scan produces a
 ///   property on the other side of the target, which means the requested state is
-///   outside the range this model covers.
+///   outside the range this model covers. When nothing on the scan was evaluable at all
+///   the residual is infinite, which is the honest reading rather than a number.
+/// * Anything [`property_at`] raises that is not an out-of-range state.
 #[allow(clippy::too_many_arguments)] // The three bracket values are the spec's, passed
 // separately so the signature reads like the block it mirrors.
 pub fn bracket_by_scan(
@@ -111,23 +133,28 @@ pub fn bracket_by_scan(
     upper: f64,
     steps: u32,
 ) -> Result<(f64, f64)> {
-    let mut previous_t = lower;
-    let (mut previous_value, _) =
-        property_at(mixture, ideal_gas, kelvins(previous_t), p, z, which)?;
+    let mut previous: Option<(f64, f64)> = None;
 
-    for index in 1..=steps {
+    for index in 0..=steps {
         let t = lower + (upper - lower) * f64::from(index) / f64::from(steps);
-        let (value, _) = property_at(mixture, ideal_gas, kelvins(t), p, z, which)?;
-        if (value - target) * (previous_value - target) <= 0.0 {
+        let value = match property_at(mixture, ideal_gas, kelvins(t), p, z, which) {
+            Ok((value, _)) => value,
+            Err(AzothError::OutOfRange { .. }) => continue,
+            Err(other) => return Err(other),
+        };
+        if let Some((previous_t, previous_value)) = previous
+            && (value - target) * (previous_value - target) <= 0.0
+        {
             return Ok((previous_t, t));
         }
-        previous_t = t;
-        previous_value = value;
+        previous = Some((t, value));
     }
 
     Err(AzothError::SolverNotConverged {
         iterations: steps,
-        residual: (previous_value - target).abs() / target.abs().max(1.0),
+        residual: previous.map_or(f64::INFINITY, |(_, value)| {
+            (value - target).abs() / target.abs().max(1.0)
+        }),
         tolerance: 0.0,
     })
 }

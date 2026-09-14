@@ -108,7 +108,14 @@ Four sections, and the difference between them is the point:
 
 *Models* — whose specs fix a procedure rather than an equation:
 
+- [`process.compressor`](./process/compressor.md) — Compressor
+- [`process.expander`](./process/expander.md) — Expander
+- [`process.heater`](./process/heater.md) — Heater and cooler
+- [`process.mixer`](./process/mixer.md) — Mixer
+- [`process.pump`](./process/pump.md) — Pump
 - [`process.separator`](./process/separator.md) — Separator
+- [`process.splitter`](./process/splitter.md) — Splitter
+- [`process.throttling_valve`](./process/throttling_valve.md) — Throttling valve
 
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 

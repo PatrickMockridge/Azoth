@@ -249,6 +249,45 @@ def test_the_result_shapes_agree_across_languages() -> None:
         )
 
 
+#: Result fields every result carries whatever the model computes. No spec declares them,
+#: in either registry, because the model does not choose them.
+FRAMEWORK_FIELDS = frozenset({"warnings"})
+
+
+def test_every_result_field_is_declared_in_the_spec() -> None:
+    """The spec's `outputs` and the result dataclass name the same fields.
+
+    `test_the_result_shapes_agree_across_languages` holds Python's fields to *Rust's*
+    fields, which leaves the spec out of the comparison entirely - and the spec is what
+    says a model has an output at all. `eos.critical_point` declared `Tc`, `Pc`, `Vc` and
+    `Z_c`, which match no field on `CriticalPointResult` (`tc`, `pc`, `vc`, `z_c`), while
+    its `iterations` and `residual` were compared by nothing and declared nowhere.
+
+    Checked in both directions, because the two failures are different: an undeclared
+    field is compared without being specified, and an unbacked output is specified
+    without being testable.
+    """
+    import dataclasses
+
+    results = model_result_types()
+    assert results, "no model results to check"
+    for model in _models_gen.MODELS:
+        declared = set(model["outputs"])
+        fields = {field.name for field in dataclasses.fields(results[model["id"]])} - (
+            FRAMEWORK_FIELDS
+        )
+        undeclared = sorted(fields - declared)
+        assert not undeclared, (
+            f"{model['id']}: {undeclared} appear on the result but the spec declares no "
+            f"such output, so nothing holds them to anything"
+        )
+        unbacked = sorted(declared - fields)
+        assert not unbacked, (
+            f"{model['id']}: the spec declares {unbacked} but the result has no such "
+            f"field, so a declared output is unreachable"
+        )
+
+
 def test_the_model_result_table_covers_every_model() -> None:
     """Every model resolves to a result type, and nothing else does.
 

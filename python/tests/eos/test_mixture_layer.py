@@ -296,13 +296,14 @@ def test_the_criticality_matrix_is_minimised_at_the_critical_temperature() -> No
         )
 
 
-def test_both_implementations_agree_on_the_helmholtz_layer() -> None:
-    """The same numbers the Rust tests pin, to the last few digits.
+def test_the_helmholtz_layer_matches_its_recorded_values() -> None:
+    """A change detector: the Python results against recorded values, at 1e-12.
 
-    Two languages, the same algebra written out separately, one set of values. The
-    tolerance is ``1e-12`` rather than bit-equality because ``ln`` is not correctly
-    rounded in either language; the arithmetic other than that is ``+ - * /`` and
-    ``sqrt``, which would have permitted a bit comparison.
+    The tolerance is not bit-equality because ``ln`` is not correctly rounded; the
+    arithmetic other than that is ``+ - * /`` and ``sqrt``, which would have permitted
+    one.
+
+    This is not a cross-language test. It calls one implementation.
     """
     fluid = methane_butane()
     reduced = reduced_parameters(fluid, 330.0, 2_500_000.0)

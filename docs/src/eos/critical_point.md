@@ -89,16 +89,18 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `Tc` | K | the critical temperature |
-| `Pc` | Pa | the critical pressure, evaluated from the equation of state at the returned volume |
-| `Vc` | m**3/mol | the critical molar volume |
-| `Z_c` | dimensionless | `Pc Vc/(R Tc)`. Reported because it is the quantity that distinguishes this model from the mechanical route: a pure component's is `(1 - omega_b)/3` and a mixture's varies with composition, which the mechanical conditions cannot produce. |
+| `tc` | K | the critical temperature |
+| `pc` | Pa | the critical pressure, evaluated from the equation of state at the returned volume |
+| `vc` | m**3/mol | the critical molar volume |
+| `z_c` | dimensionless | `pc vc/(R tc)`. Reported because it is the quantity that distinguishes this model from the mechanical route: a pure component's is `(1 - omega_b)/3` and a mixture's varies with composition, which the mechanical conditions cannot produce. |
+| `iterations` | dimensionless | outer iterations the critical-point search took. Reported because it bounds how much the returned state can be trusted, and because this scheme's convergence near a mixture's critical point is not uniform across compositions. |
+| `residual` | dimensionless | the convergence residual at the returned state, against `algorithm.tolerance`. Not a physical quantity: it is the solver's evidence that it converged, and it is compared between implementations on that tolerance rather than on the case's answer tolerance. |
 
 | Bound | On violation | Why |
 |---|---|---|
-| `Tc > 0` | raises | the critical temperature of the composition searched for. The iteration is perfectly capable of leaving the region where the equation of state has a critical point and converging on a temperature that is not a state, and this is the check that says so rather than returning it. |
-| `Pc > 0` | raises | the pressure at the returned volume. It is evaluated from the explicit equation of state rather than solved for, so a non-positive value means the volume is inside the co-volume and the state is not one. |
-| `Z_c > 0` | raises | `Pc Vc/(R Tc)`. **Not an accuracy bound and not a physical range check** - a cubic's critical compressibility is the equation's, not the substance's. It is here because a sign error in any of the three quantities above shows up as a negative `Z_c` before it shows up anywhere else. |
+| `tc > 0` | raises | the critical temperature of the composition searched for. The iteration is perfectly capable of leaving the region where the equation of state has a critical point and converging on a temperature that is not a state, and this is the check that says so rather than returning it. |
+| `pc > 0` | raises | the pressure at the returned volume. It is evaluated from the explicit equation of state rather than solved for, so a non-positive value means the volume is inside the co-volume and the state is not one. |
+| `z_c > 0` | raises | `pc vc/(R tc)`. **Not an accuracy bound and not a physical range check** - a cubic's critical compressibility is the equation's, not the substance's. It is here because a sign error in any of the three quantities above shows up as a negative `z_c` before it shows up anywhere else. |
 
 ## Assumptions
 
@@ -112,8 +114,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `pure_propane` | Tc = [369.83], Pc = [4248000.0], omega = [0.1523], kij = [[0.0]], z = [1.0] | Tc = 369.83000000000004, Pc = 4248000.000000011, Vc = 0.00022251409546288967, Z_c = 0.3074013091160614 |
-| `methane_and_butane` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], z = [0.4, 0.6] | Tc = 389.60393756196225, Pc = 8496149.7632273, Vc = 0.00018249737998221664, Z_c = 0.4786535349108495 |
+| `pure_propane` | Tc = [369.83], Pc = [4248000.0], omega = [0.1523], kij = [[0.0]], z = [1.0] | tc = 369.83000000000004, pc = 4248000.000000011, vc = 0.00022251409546288967, z_c = 0.3074013091160614 |
+| `methane_and_butane` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], z = [0.4, 0.6] | tc = 389.60393756196225, pc = 8496149.7632273, vc = 0.00018249737998221664, z_c = 0.4786535349108495 |
 
 ## References
 

@@ -46,12 +46,30 @@ use azoth_core::{AzothError, ModelSpec, Result};
 /// drift - which is the same argument that put it in one place there.
 pub use azoth_eos::algorithm_of;
 
+pub mod compressor;
+pub mod expander;
+pub mod heater;
+pub mod isentropic;
+pub mod mixer;
 pub mod model_gen;
+pub mod pump;
 pub mod results;
 pub mod separator;
+pub mod splitter;
+pub mod throttling_valve;
 
-pub use results::SeparatorResult;
+pub use compressor::compressor;
+pub use expander::expander;
+pub use heater::heater;
+pub use mixer::mixer;
+pub use pump::pump;
+pub use results::{
+    CompressorResult, ExpanderResult, HeaterResult, MixerResult, PumpResult, SeparatorResult,
+    SplitterResult, ThrottlingValveResult,
+};
 pub use separator::separator;
+pub use splitter::splitter;
+pub use throttling_valve::throttling_valve;
 
 /// Reported when a flash reports a phase that contradicts its own vapour fraction.
 ///

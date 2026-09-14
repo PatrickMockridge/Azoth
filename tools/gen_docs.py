@@ -65,6 +65,7 @@ NAMESPACES = {
 #: needs next. They used to sit after every calculation page, in the order the
 #: book happened to grow rather than the order it is read.
 FRONT_PAGES = (
+    ("Process", "process.md"),
     ("How azoth is put together", "architecture.md"),
     ("The keycard", "keycard.md"),
     ("What ships", "data.md"),
@@ -79,6 +80,8 @@ FRONT_PAGES = (
 #: page has to be registered in one of them or it does not appear at all - and
 #: the failure is caught rather than being a page nobody ever reads.
 STATIC_PAGES = (
+    ("Test plan", "test-plan.md"),
+    ("Required improvements", "required-improvements.md"),
     ("Copyright and licensed data", "copyright.md"),
     ("The batch API", "batch.md"),
     ("azoth and NeqSim", "comparison/neqsim.md"),

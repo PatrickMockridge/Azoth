@@ -41,13 +41,14 @@ mod results;
 mod thermal;
 
 use results::{
-    PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
-    PyCriticalPointResult, PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult,
+    PyChokedFlowAreaResult, PyColebrookResult, PyCompressorResult, PyConductionPlaneWallResult,
+    PyControlValveCvResult, PyCriticalPointResult, PyDarcyWeisbachResult, PyExpanderResult,
+    PyHaalandResult, PyHeaterResult, PyKComponent, PyKFactorsResult, PyMixerResult,
     PyOrificeFlowResult, PyPhFlashResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
     PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
-    PyReynoldsNumberResult, PySeparatorResult, PySwameeJainResult, PyVdw1fMixBinaryResult,
-    PyWarning,
+    PyPsFlashResult, PyPumpPowerResult, PyPumpResult, PyPureSaturationResult, PyQty,
+    PyRachfordRiceBinaryResult, PyReynoldsNumberResult, PySeparatorResult, PySplitterResult,
+    PySwameeJainResult, PyThrottlingValveResult, PyVdw1fMixBinaryResult, PyWarning,
 };
 
 #[pymodule]
@@ -84,6 +85,13 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyControlValveCvResult>()?;
     m.add_class::<PyChokedFlowAreaResult>()?;
     m.add_class::<PySeparatorResult>()?;
+    m.add_class::<PyMixerResult>()?;
+    m.add_class::<PySplitterResult>()?;
+    m.add_class::<PyThrottlingValveResult>()?;
+    m.add_class::<PyHeaterResult>()?;
+    m.add_class::<PyCompressorResult>()?;
+    m.add_class::<PyPumpResult>()?;
+    m.add_class::<PyExpanderResult>()?;
 
     // Data transport, for the cross-language data comparison.
     m.add_class::<batch::PyBatchColumn>()?;
@@ -139,6 +147,13 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Unit operations. The process layer, and the first thing in this extension that
     // takes a *stream* rather than a state.
     m.add_function(wrap_pyfunction!(process::separator, m)?)?;
+    m.add_function(wrap_pyfunction!(process::mixer, m)?)?;
+    m.add_function(wrap_pyfunction!(process::splitter, m)?)?;
+    m.add_function(wrap_pyfunction!(process::throttling_valve, m)?)?;
+    m.add_function(wrap_pyfunction!(process::heater, m)?)?;
+    m.add_function(wrap_pyfunction!(process::compressor, m)?)?;
+    m.add_function(wrap_pyfunction!(process::pump, m)?)?;
+    m.add_function(wrap_pyfunction!(process::expander, m)?)?;
 
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;

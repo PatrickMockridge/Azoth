@@ -63,18 +63,14 @@ def call(case: dict[str, Any]) -> CriticalPointResult:
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])
 def test_spec_case(case: dict[str, Any]) -> None:
     result = call(case)
-    for name, attribute, unit in (
-        ("Tc", "tc", "K"),
-        ("Pc", "pc", "Pa"),
-        ("Vc", "vc", "m**3/mol"),
-    ):
+    for attribute, unit in (("tc", "K"), ("pc", "Pa"), ("vc", "m**3/mol")):
         h.assert_close(
             getattr(result, attribute).to(unit).magnitude,
-            case["expected"][name],
+            case["expected"][attribute],
             case["tolerance"],
-            f"{case['id']} ({name})",
+            f"{case['id']} ({attribute})",
         )
-    h.assert_close(result.z_c, case["expected"]["Z_c"], case["tolerance"], f"{case['id']} (Z_c)")
+    h.assert_close(result.z_c, case["expected"]["z_c"], case["tolerance"], f"{case['id']} (z_c)")
     h.assert_consistent(result, case["id"])
 
 

@@ -1004,7 +1004,7 @@ pub static PR_Z_FACTOR_SPEC: CalcSpec = CalcSpec {
     checks: PR_Z_FACTOR_CHECKS,
     solver: Some(SolverSpec {
         kind: "cubic_roots",
-        tolerance: 1e-14,
+        tolerance: 1e-12,
         max_iterations: 50,
         initial_guess: None,
         convergence: "relative",

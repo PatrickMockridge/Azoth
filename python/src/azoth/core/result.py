@@ -838,3 +838,192 @@ class SeparatorResult(_HasWarnings):
     iterations: int
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class MixerResult(_HasWarnings):
+    """Result of ``process.mixer``.
+
+    Several feeds blended into one. The outlet pressure is the lowest inlet pressure - a
+    mixer cannot deliver a stream at a pressure nobody supplied - and the temperature is
+    solved for rather than averaged, because the energy balance is at constant enthalpy
+    and the enthalpy of a mixture is not linear in its temperature.
+    """
+
+    #: The outlet temperature, from the isenthalpic flash.
+    T: Q
+    #: The outlet pressure: the lowest of the inlet pressures.
+    P: Q
+    #: The outlet molar flow, in mol/s. The sum of the inlets'.
+    flow: float
+    #: The outlet mole fractions - the flow-weighted blend of the inlets'.
+    z_out: tuple[float, ...]
+    #: The vapour fraction at the outlet, or ``None`` for a single-phase blend.
+    beta: float | None
+    #: Which phase the blend is in.
+    phase: Phase
+    #: Flash iterations taken.
+    iterations: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ThrottlingValveResult(_HasWarnings):
+    """Result of ``process.throttling_valve``.
+
+    A stream's pressure dropped at constant enthalpy, so the temperature is an answer
+    rather than an input - and for a real gas it is below the inlet temperature, which is
+    the Joule-Thomson effect. No flow and no composition are reported: a valve changes
+    neither, and reporting an input back as a result invites a caller to treat it as one.
+    """
+
+    #: The outlet temperature, from the isenthalpic flash.
+    T: Q
+    #: The outlet pressure: the inlet pressure less the drop.
+    P: Q
+    #: Which phase the stream is in at the outlet.
+    phase: Phase
+    #: The vapour fraction at the outlet, or ``None`` for a single-phase stream.
+    beta: float | None
+    #: Flash iterations taken.
+    iterations: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HeaterResult(_HasWarnings):
+    """Result of ``process.heater``.
+
+    A duty applied at a fixed pressure, so the temperature is an answer. A cooler is the
+    same unit with a negative duty.
+
+    The shape is deliberately identical to :class:`ThrottlingValveResult`'s and the class
+    is deliberately not shared with it: one result type per calculation is the rule
+    everywhere in this library, and a shared class would leave the cross-language shape
+    check with no answer for one of the two.
+    """
+
+    #: The outlet temperature, from the isenthalpic flash.
+    T: Q
+    #: The outlet pressure: the inlet pressure less the drop.
+    P: Q
+    #: Which phase the stream is in at the outlet.
+    phase: Phase
+    #: The vapour fraction at the outlet, or ``None`` for a single-phase stream.
+    beta: float | None
+    #: Flash iterations taken.
+    iterations: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SplitterResult(_HasWarnings):
+    """Result of ``process.splitter``.
+
+    One feed divided into branches at the same temperature, pressure and composition. The
+    only thing that differs between them is how much of the feed each carries, which is
+    why ``flows`` is a vector and ``beta`` is a single number.
+    """
+
+    #: The temperature every branch leaves at - the feed's.
+    T: Q
+    #: The pressure every branch leaves at - the feed's.
+    P: Q
+    #: The phase the feed is in, and so the phase of every branch.
+    phase: Phase
+    #: The vapour fraction, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: Each branch's molar flow, in mol/s, in the order the fractions were given.
+    flows: tuple[float, ...]
+    #: Flash iterations taken.
+    iterations: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class CompressorResult(_HasWarnings):
+    """Result of ``process.compressor``.
+
+    A pressure rise at a stated isentropic efficiency. See
+    :mod:`azoth.process.reference.compressor` for the procedure - a compressor, a pump
+    and an expander run the same one and differ only in which way the efficiency scales
+    the ideal enthalpy change.
+    """
+
+    #: The outlet temperature, above the ideal one - which is what the loss means.
+    T: Q
+    #: The outlet pressure - the specification, not an answer.
+    P: Q
+    #: The shaft power in watts, signed: positive here, because the fluid receives it.
+    power: float
+    #: The vapour fraction at the outlet, or ``None`` for a single-phase stream.
+    beta: float | None
+    #: Which phase the stream is in at the outlet.
+    phase: Phase
+    #: The temperature the fluid would have reached at unit efficiency.
+    isentropic_temperature: Q
+    #: Flash iterations taken, summed over this model's flashes.
+    iterations: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PumpResult(_HasWarnings):
+    """Result of ``process.pump``.
+
+    The same procedure as :class:`CompressorResult`'s and a separate class for the reason
+    :class:`HeaterResult` gives. What differs is the answer rather than the arithmetic: a
+    liquid is nearly incompressible, so the temperature barely moves and the power is not
+    small at all.
+    """
+
+    #: The outlet temperature, above the inlet by a small amount.
+    T: Q
+    #: The outlet pressure - the specification, not an answer.
+    P: Q
+    #: The shaft power in watts, signed: positive here.
+    power: float
+    #: The vapour fraction at the outlet, or ``None`` for a single-phase stream.
+    beta: float | None
+    #: Which phase the stream is in at the outlet.
+    phase: Phase
+    #: The temperature the fluid would have reached at unit efficiency.
+    isentropic_temperature: Q
+    #: Flash iterations taken, summed over this model's flashes.
+    iterations: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ExpanderResult(_HasWarnings):
+    """Result of ``process.expander``.
+
+    The same procedure again, with the efficiency multiplying rather than dividing -
+    which is what makes ``power`` negative and ``T`` warmer than
+    ``isentropic_temperature``.
+    """
+
+    #: The outlet temperature, **above** ``isentropic_temperature``: a real expander
+    #: delivers less work than an ideal one and leaves the fluid warmer.
+    T: Q
+    #: The outlet pressure - the specification, not an answer.
+    P: Q
+    #: The shaft power in watts, **negative**, because the fluid is doing the work.
+    power: float
+    #: The vapour fraction at the outlet, or ``None`` for a single-phase stream.
+    beta: float | None
+    #: Which phase the stream is in at the outlet.
+    phase: Phase
+    #: The temperature the fluid would have reached at unit efficiency - the coldest it
+    #: could reach for this pressure drop.
+    isentropic_temperature: Q
+    #: Flash iterations taken, summed over this model's flashes.
+    iterations: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]

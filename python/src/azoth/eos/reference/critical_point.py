@@ -408,9 +408,9 @@ def critical_point(mixture: Mixture, z: list[float]) -> CriticalPointResult:
     # vector or a matrix, so there is no scalar argument whose range a caller could
     # violate. What can go wrong is the iteration, and these are how a diverged one
     # announces itself.
-    computed = {"Tc": temperature, "Pc": pressure, "Z_c": compressibility}
+    computed = {"tc": temperature, "pc": pressure, "z_c": compressibility}
     apply_checks(checks.derived, computed.get, warnings)
-    for field, value in (("Tc", temperature), ("Pc", pressure), ("Z_c", compressibility)):
+    for field, value in (("tc", temperature), ("pc", pressure), ("z_c", compressibility)):
         if not value > 0.0:
             raise OutOfRangeError(
                 field,

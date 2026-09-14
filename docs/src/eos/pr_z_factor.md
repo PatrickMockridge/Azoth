@@ -24,6 +24,8 @@ DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 
 ## Notes
 
+The polish tolerance is `1e-12` and was `1e-14`. The old value asked for a Newton step below `1e-14 * |x|`, which for a root of order 0.04 is a couple of ulps and which a near-double root therefore never meets - it stalls at 5.2e-15 and reports failure however many iterations it is given. See `python/tests/models/test_mixer.py` carries the state that exposed it.
+
 The cubic is the 1976 Peng-Robinson equation written in reduced variables. The citation is confirmed; the form of the equation is not in doubt - it is one of the two or three most widely implemented in chemical engineering, and this rearrangement is algebra rather than a separate result.
 
 What is NOT confirmed: the equation number in the paper (so none is given above), the constants A and B are built from - see `eos.pr_alpha_ab`, which records that the paper's printed Omega values are deliberately not the ones shipped - and that the paper writes the cubic in this reduced form at all, rather than only in the pressure-explicit form from which it follows.
@@ -79,7 +81,7 @@ part of the specification because both implementations must run the *same* one:
 | Setting | Value |
 |---|---|
 | Kind | `cubic_roots` |
-| Tolerance | `1e-14` |
+| Tolerance | `1e-12` |
 | Convergence | `relative` |
 | Max iterations | `50` |
 

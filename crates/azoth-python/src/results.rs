@@ -23,7 +23,10 @@ use azoth_eos::results::{
     PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, StabilityTestResult,
     Vdw1fMixBinaryResult,
 };
-use azoth_process::results::SeparatorResult;
+use azoth_process::results::{
+    CompressorResult, ExpanderResult, HeaterResult, MixerResult, PumpResult, SeparatorResult,
+    SplitterResult, ThrottlingValveResult,
+};
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -1713,6 +1716,473 @@ impl From<&SeparatorResult> for PySeparatorResult {
     }
 }
 
+/// Result of `process.mixer`, transported.
+///
+/// Several feeds blended into one. `z_out` crosses as one list and the flows as
+/// plain `f64` in mol/s, for the reason `PySeparatorResult` records.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MixerResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` and `P` are the symbols the spec and the Python result use
+pub struct PyMixerResult {
+    /// The outlet temperature, from the isenthalpic flash.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The outlet pressure: the lowest of the inlet pressures.
+    #[pyo3(get)]
+    pub P: PyQty,
+    /// The outlet molar flow, in mol/s.
+    #[pyo3(get)]
+    pub flow: f64,
+    /// The outlet mole fractions.
+    #[pyo3(get)]
+    pub z_out: Vec<f64>,
+    /// The vapour fraction, or `None` for a single-phase blend.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Flash iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMixerResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MixerResult(T={} K, P={} Pa, flow={} mol/s, phase={})",
+            self.T.magnitude_si, self.P.magnitude_si, self.flow, self.phase
+        )
+    }
+}
+
+impl From<&MixerResult> for PyMixerResult {
+    fn from(r: &MixerResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            P: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            flow: r.flow,
+            z_out: r.z_out.clone(),
+            beta: r.beta,
+            phase: r.phase.as_str().to_string(),
+            iterations: r.iterations,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.splitter`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SplitterResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` and `P` are the symbols the spec and the Python result use
+pub struct PySplitterResult {
+    /// The temperature every branch leaves at.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The pressure every branch leaves at.
+    #[pyo3(get)]
+    pub P: PyQty,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The vapour fraction, or `None`.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Each branch's molar flow, in mol/s.
+    #[pyo3(get)]
+    pub flows: Vec<f64>,
+    /// Flash iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySplitterResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SplitterResult(T={} K, P={} Pa, {} branch(es), phase={})",
+            self.T.magnitude_si,
+            self.P.magnitude_si,
+            self.flows.len(),
+            self.phase
+        )
+    }
+}
+
+impl From<&SplitterResult> for PySplitterResult {
+    fn from(r: &SplitterResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            P: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            phase: r.phase.as_str().to_string(),
+            beta: r.beta,
+            flows: r.flows.clone(),
+            iterations: r.iterations,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.throttling_valve`, transported.
+///
+/// No flow and no composition: a valve computes neither, and reporting an input back as
+/// a result invites a caller to treat it as one.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ThrottlingValveResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` and `P` are the symbols the spec and the Python result use
+pub struct PyThrottlingValveResult {
+    /// The outlet temperature, from the isenthalpic flash.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The outlet pressure.
+    #[pyo3(get)]
+    pub P: PyQty,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The vapour fraction, or `None`.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Flash iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyThrottlingValveResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ThrottlingValveResult(T={} K, P={} Pa, phase={})",
+            self.T.magnitude_si, self.P.magnitude_si, self.phase
+        )
+    }
+}
+
+impl From<&ThrottlingValveResult> for PyThrottlingValveResult {
+    fn from(r: &ThrottlingValveResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            P: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            phase: r.phase.as_str().to_string(),
+            beta: r.beta,
+            iterations: r.iterations,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.heater`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HeaterResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` and `P` are the symbols the spec and the Python result use
+pub struct PyHeaterResult {
+    /// The outlet temperature, from the isenthalpic flash.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The outlet pressure.
+    #[pyo3(get)]
+    pub P: PyQty,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The vapour fraction, or `None`.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Flash iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHeaterResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HeaterResult(T={} K, P={} Pa, phase={})",
+            self.T.magnitude_si, self.P.magnitude_si, self.phase
+        )
+    }
+}
+
+impl From<&HeaterResult> for PyHeaterResult {
+    fn from(r: &HeaterResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            P: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            phase: r.phase.as_str().to_string(),
+            beta: r.beta,
+            iterations: r.iterations,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.compressor`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CompressorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` and `P` are the symbols the spec and the Python result use
+pub struct PyCompressorResult {
+    /// The outlet temperature, above the ideal one.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The outlet pressure - the specification.
+    #[pyo3(get)]
+    pub P: PyQty,
+    /// The shaft power, signed: positive into the fluid.
+    #[pyo3(get)]
+    pub power: f64,
+    /// The vapour fraction, or `None`.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The temperature at unit efficiency.
+    #[pyo3(get)]
+    pub isentropic_temperature: PyQty,
+    /// Flash iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCompressorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CompressorResult(T={} K, T_isentropic={} K, power={} W)",
+            self.T.magnitude_si, self.isentropic_temperature.magnitude_si, self.power
+        )
+    }
+}
+
+impl From<&CompressorResult> for PyCompressorResult {
+    fn from(r: &CompressorResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            P: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            power: r.power,
+            beta: r.beta,
+            phase: r.phase.as_str().to_string(),
+            isentropic_temperature: PyQty {
+                magnitude_si: r.isentropic_temperature.value,
+                unit: "K".to_string(),
+            },
+            iterations: r.iterations,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.pump`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PumpResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` and `P` are the symbols the spec and the Python result use
+pub struct PyPumpResult {
+    /// The outlet temperature.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The outlet pressure - the specification.
+    #[pyo3(get)]
+    pub P: PyQty,
+    /// The shaft power, signed: positive into the fluid.
+    #[pyo3(get)]
+    pub power: f64,
+    /// The vapour fraction, or `None`.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The temperature at unit efficiency.
+    #[pyo3(get)]
+    pub isentropic_temperature: PyQty,
+    /// Flash iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPumpResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PumpResult(T={} K, power={} W, phase={})",
+            self.T.magnitude_si, self.power, self.phase
+        )
+    }
+}
+
+impl From<&PumpResult> for PyPumpResult {
+    fn from(r: &PumpResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            P: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            power: r.power,
+            beta: r.beta,
+            phase: r.phase.as_str().to_string(),
+            isentropic_temperature: PyQty {
+                magnitude_si: r.isentropic_temperature.value,
+                unit: "K".to_string(),
+            },
+            iterations: r.iterations,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.expander`, transported. `power` crosses negative.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ExpanderResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` and `P` are the symbols the spec and the Python result use
+pub struct PyExpanderResult {
+    /// The outlet temperature, above the isentropic one.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The outlet pressure - the specification.
+    #[pyo3(get)]
+    pub P: PyQty,
+    /// The shaft power, signed: **negative**, because the fluid is doing the work.
+    #[pyo3(get)]
+    pub power: f64,
+    /// The vapour fraction, or `None`.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The temperature at unit efficiency - the coldest reachable.
+    #[pyo3(get)]
+    pub isentropic_temperature: PyQty,
+    /// Flash iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyExpanderResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ExpanderResult(T={} K, T_isentropic={} K, power={} W)",
+            self.T.magnitude_si, self.isentropic_temperature.magnitude_si, self.power
+        )
+    }
+}
+
+impl From<&ExpanderResult> for PyExpanderResult {
+    fn from(r: &ExpanderResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            P: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            power: r.power,
+            beta: r.beta,
+            phase: r.phase.as_str().to_string(),
+            isentropic_temperature: PyQty {
+                magnitude_si: r.isentropic_temperature.value,
+                unit: "K".to_string(),
+            },
+            iterations: r.iterations,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// The public field names of a calc's result, in declaration order.
 ///
 /// Returns an empty list for an unknown id rather than raising: this is an
@@ -1756,6 +2226,13 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         // result's shape is a cross-language contract whether or not its spec calls it
         // a calculation.
         SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),
+        MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
+        SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
+        ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
+        HeaterResult::CALC_ID => HeaterResult::FIELDS.to_vec(),
+        CompressorResult::CALC_ID => CompressorResult::FIELDS.to_vec(),
+        PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
+        ExpanderResult::CALC_ID => ExpanderResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),

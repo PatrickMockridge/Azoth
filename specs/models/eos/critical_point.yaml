@@ -162,28 +162,40 @@ inputs:
       single phase that is about to stop existing.
 
 outputs:
-  Tc:
+  tc:
     unit: K
     description: the critical temperature
-  Pc:
+  pc:
     unit: Pa
     description: the critical pressure, evaluated from the equation of state at the returned volume
-  Vc:
+  vc:
     unit: m**3/mol
     description: the critical molar volume
-  Z_c:
+  z_c:
     unit: dimensionless
     description: >
-      `Pc Vc/(R Tc)`. Reported because it is the quantity that distinguishes this model
+      `pc vc/(R tc)`. Reported because it is the quantity that distinguishes this model
       from the mechanical route: a pure component's is `(1 - omega_b)/3` and a mixture's
       varies with composition, which the mechanical conditions cannot produce.
+  iterations:
+    unit: dimensionless
+    description: >
+      outer iterations the critical-point search took. Reported because it bounds how much
+      the returned state can be trusted, and because this scheme's convergence near a
+      mixture's critical point is not uniform across compositions.
+  residual:
+    unit: dimensionless
+    description: >
+      the convergence residual at the returned state, against `algorithm.tolerance`. Not a
+      physical quantity: it is the solver's evidence that it converged, and it is compared
+      between implementations on that tolerance rather than on the case's answer tolerance.
 
 valid_range:
   # Bounds on the *result*, which is unusual for this tree and is the honest shape
   # here: every input is a vector or a matrix, so there is no scalar argument whose
   # range a caller could violate. What can go wrong is the iteration, and a
   # negative critical temperature is how a diverged one would announce itself.
-  - quantity: Tc
+  - quantity: tc
     min: 0
     min_inclusive: false
     severity: error
@@ -193,7 +205,7 @@ valid_range:
       critical point and converging on a temperature that is not a state, and this is
       the check that says so rather than returning it.
 
-  - quantity: Pc
+  - quantity: pc
     min: 0
     min_inclusive: false
     severity: error
@@ -202,15 +214,15 @@ valid_range:
       of state rather than solved for, so a non-positive value means the volume is
       inside the co-volume and the state is not one.
 
-  - quantity: Z_c
+  - quantity: z_c
     min: 0
     min_inclusive: false
     severity: error
     rationale: >
-      `Pc Vc/(R Tc)`. **Not an accuracy bound and not a physical range check** - a
+      `pc vc/(R tc)`. **Not an accuracy bound and not a physical range check** - a
       cubic's critical compressibility is the equation's, not the substance's. It is
       here because a sign error in any of the three quantities above shows up as a
-      negative `Z_c` before it shows up anywhere else.
+      negative `z_c` before it shows up anywhere else.
 
 assumptions:
   - "**`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree."
@@ -238,10 +250,10 @@ cases:
       kij: [[0.0]]
       z: [1.0]
     expected:
-      Tc: 369.83000000000004
-      Pc: 4248000.000000011
-      Vc: 0.00022251409546288967
-      Z_c: 0.3074013091160614
+      tc: 369.83000000000004
+      pc: 4248000.000000011
+      vc: 0.00022251409546288967
+      z_c: 0.3074013091160614
     tolerance: 1.0e-09
     source: >
       Derived by running the specified composition in two independent implementations
@@ -264,10 +276,10 @@ cases:
       kij: [[0.0, 0.05], [0.05, 0.0]]
       z: [0.4, 0.6]
     expected:
-      Tc: 389.60393756196225
-      Pc: 8496149.7632273
-      Vc: 0.00018249737998221664
-      Z_c: 0.4786535349108495
+      tc: 389.60393756196225
+      pc: 8496149.7632273
+      vc: 0.00018249737998221664
+      z_c: 0.4786535349108495
     tolerance: 1.0e-09
     source: >
       Derived by running the specified composition in two independent implementations

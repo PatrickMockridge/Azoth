@@ -8,19 +8,32 @@ checked against, and the test suite runs both against every case in the specs. S
 A unit operation is a *model*, so its reference has the same standing as
 ``azoth.eos.reference``'s and is held to the same contract - except for one thing worth
 knowing before reading one: these take a whole stream rather than a mixture state, so
-they carry a molar flow and return two streams where the equation-of-state models carry
-one and return a state.
+they carry a molar flow and return one or two streams where the equation-of-state models
+carry one and return a state.
 
-The bodies here are written to mirror the Rust line for line, so a reviewer can read
-the two side by side against the NeqSim source they were ported from. Where they
-diverge, it is a bug in one of them - and the cross-implementation tests are what catch
-it.
+The bodies here are written to mirror the Rust line for line, so a reviewer can read the
+two side by side against the NeqSim source they were ported from. Where they diverge, it
+is a bug in one of them - and the cross-implementation tests are what catch it.
 """
 
 from __future__ import annotations
 
+from azoth.process.reference.compressor import compressor
+from azoth.process.reference.expander import expander
+from azoth.process.reference.heater import heater
+from azoth.process.reference.mixer import mixer
+from azoth.process.reference.pump import pump
 from azoth.process.reference.separator import separator
+from azoth.process.reference.splitter import splitter
+from azoth.process.reference.throttling_valve import throttling_valve
 
 __all__ = [
+    "compressor",
+    "expander",
+    "heater",
+    "mixer",
+    "pump",
     "separator",
+    "splitter",
+    "throttling_valve",
 ]

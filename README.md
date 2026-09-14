@@ -146,7 +146,14 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.orifice_flow` | Flow through an orifice from the pressure difference across it |
 | `hydraulics.pump_power` | Pump shaft power from flow, head and efficiency |
 | `hydraulics.reynolds_number` | Reynolds number for pipe flow |
+| `process.compressor` | Compressor — a *model* |
+| `process.expander` | Expander — a *model* |
+| `process.heater` | Heater and cooler — a *model* |
+| `process.mixer` | Mixer — a *model* |
+| `process.pump` | Pump — a *model* |
 | `process.separator` | Separator — a *model* |
+| `process.splitter` | Splitter — a *model* |
+| `process.throttling_valve` | Throttling valve — a *model* |
 | `thermal.conduction_plane_wall` | Steady conduction through a plane wall |
 <!-- END GENERATED: implemented -->
 

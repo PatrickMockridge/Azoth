@@ -415,18 +415,18 @@ pub fn critical_point(mixture: &Mixture, z: &[f64]) -> Result<CriticalPointResul
     apply_checks(
         spec.derived_checks(),
         |quantity| match quantity {
-            "Tc" => Some(temperature),
-            "Pc" => Some(pressure),
-            "Z_c" => Some(compressibility),
+            "tc" => Some(temperature),
+            "pc" => Some(pressure),
+            "z_c" => Some(compressibility),
             _ => None,
         },
         &mut warnings,
     )?;
 
     for (field, value) in [
-        ("Tc", temperature),
-        ("Pc", pressure),
-        ("Z_c", compressibility),
+        ("tc", temperature),
+        ("pc", pressure),
+        ("z_c", compressibility),
     ] {
         // Written as an explicit finiteness-and-positivity test rather than
         // `!(value > 0.0)`, which reads as a double negative and is the shape clippy

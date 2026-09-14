@@ -1,0 +1,298 @@
+id: process.heater
+name: Heater and cooler
+kind: procedure
+
+description: >
+  A duty applied to a stream at a fixed pressure.
+
+  One model for both a heater and a cooler, with the sign of `heat_duty` distinguishing
+  them, because that is what NeqSim's own code says: **`Cooler` has no `run()` of its
+  own**. It is a 258-line class that inherits `Heater.run` for its steady state, and the
+  two differ only in the sign of the duty and in what their dynamics do.
+
+  The physics is one `PHflash` at the outlet pressure and the enthalpy the duty produces,
+  which is why `eos.ph_flash` exists.
+
+source:
+  standard: >
+    NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is
+    `neqsim.process.equipment.heatexchanger.Heater`, `run(UUID)` at lines 402-471 of the
+    3.20.0 source tree. `Cooler` is in the same package and inherits it.
+  edition: >
+    Version 3.20.0. Taken from it: `P_out = P_in - pressureDrop` (`:432-435`),
+    `H_out = H_in + Q` (`:431`) and `PHflash(P_out, H_out)` (`:445-446`). Not taken: the
+    three other specifications the class switches between, the energy port and the
+    caches.
+
+references:
+  - 'NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `Heater.java` lines
+    402-471; `Cooler.java` for the inheritance.'
+  - '`eos.ph_flash` - the isenthalpic flash this model is.'
+  - '`eos.pt_flash` - what the two specifications this model does not carry would reduce
+    to; see the notes.'
+
+algorithm:
+  scheme: duty_enthalpy_flash
+  initialisation: wilson
+  convergence: relative
+  tolerance: 1.0e-8
+  max_iterations: 200
+  inner:
+    scheme: successive_substitution_flash
+    initialisation: wilson
+    convergence: absolute
+    tolerance: 1.0e-10
+    max_iterations: 300
+    inner:
+      scheme: rachford_rice_bisection
+      convergence: absolute
+      tolerance: 1.0e-14
+      max_iterations: 200
+
+inputs:
+  Tc:
+    type: vector
+    unit: K
+    length: one per component
+    description: critical temperatures, in the mixture's component order
+  Pc:
+    type: vector
+    unit: Pa
+    length: one per component
+    description: critical pressures, in the same order
+  omega:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: acentric factors, in the same order
+  kij:
+    type: matrix
+    unit: dimensionless
+    shape: N x N, symmetric, zero diagonal
+    description: binary interaction parameters, as in `eos.pt_flash`
+  cp_a:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the constant term of each component's `Cp/R` polynomial
+  cp_b:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the coefficient of `theta` in each component's polynomial
+  cp_c:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the coefficient of `theta**2`
+  cp_d:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the coefficient of `theta**3`
+  h_ref:
+    type: vector
+    unit: J/mol
+    length: one per component
+    description: each component's ideal-gas molar enthalpy at `T_ref`. The datum.
+  s_ref:
+    type: vector
+    unit: J/(mol*K)
+    length: one per component
+    description: >
+      each component's ideal-gas molar entropy at `T_ref` and `P_ref`. **Not used** - an
+      isenthalpic flash needs no entropy - and required because it belongs to the same
+      ideal-gas model the enthalpy comes from.
+  T_ref:
+    unit: K
+    description: the temperature the reference values are given at
+  P_ref:
+    unit: Pa
+    description: the pressure `s_ref` is given at
+  T:
+    unit: K
+    description: the feed's absolute temperature
+  P:
+    unit: Pa
+    description: the feed's absolute pressure, before the drop
+  n:
+    unit: mol/s
+    description: >
+      the feed's molar flow rate. Needed rather than decorative: the duty is an
+      *extensive* quantity and the flash inverts a *molar* enthalpy, so the conversion
+      `Q / n` is part of the model. Must be positive, which the range check enforces
+      because that division is what the check protects.
+  z:
+    type: vector
+    unit: dimensionless
+    length: one per component
+    description: the feed's mole fractions. Checked rather than renormalised.
+  pressure_drop:
+    unit: Pa
+    description: the pressure the exchanger drops, subtracted from `P` first
+  heat_duty:
+    unit: W
+    description: >
+      the duty, **signed**. Positive adds energy and raises the temperature; negative
+      removes it and is a cooler. Zero is the identity, and the case that pins it.
+
+outputs:
+  T:
+    unit: K
+    description: the outlet temperature. This is the model's answer.
+  P:
+    unit: Pa
+    description: the outlet pressure, `P - pressure_drop`
+  phase:
+    type: enum
+    values: [all_liquid, two_phase, all_vapour, trivial]
+    description: which phase the stream is in at the outlet
+  beta:
+    unit: dimensionless
+    description: the vapour fraction at the outlet, absent for a single-phase stream
+  iterations:
+    unit: dimensionless
+    description: flash iterations taken
+
+valid_range:
+  - quantity: n
+    min: 0.0
+    min_inclusive: false
+    severity: error
+    rationale: >
+      the model divides the duty by the flow. A zero would reach the arithmetic as a
+      division by zero, and a negative would give a temperature change of the wrong sign
+      for a stream flowing the other way.
+  - quantity: T
+    min: 0.0
+    min_inclusive: false
+    severity: error
+    rationale: an absolute temperature; zero and below are not states
+  - quantity: P
+    min: 0.0
+    min_inclusive: false
+    severity: error
+    rationale: an absolute pressure; zero and below are not states
+
+assumptions:
+  - '**the duty is the specification**, and the temperature is the answer. That is the
+    direction this model exists to serve. See the notes for why the opposite direction is
+    not a unit operation.'
+  - '**the composition and the flow are unchanged.** A heater does not add or remove
+    material, and nothing here reports either back.'
+  - '**no pressure drop unless asked for.** `pressure_drop` defaults to nothing in the
+    sense that zero is an ordinary value; a heat exchanger that drops pressure is the
+    same model with the drop given.'
+  - '**no heat-transfer calculation.** How much area, at what overall coefficient, for
+    what approach temperature: that is heat-exchanger design, and this model is told the
+    duty rather than computing it. `thermal.conduction_plane_wall` is the library''s only
+    heat-transfer calculation and it is a wall, not an exchanger.'
+  - '**the cubic is Peng-Robinson**, as throughout this workspace.'
+
+notes: >
+  # Why only one of NeqSim's four specifications is ported
+
+  `Heater.run` switches on how the outlet is specified (`Heater.java:437-450`): an
+  outlet *stream* to read a temperature from, a specified outlet temperature, a specified
+  energy input, or a specified `deltaT`. **Only the energy input is here**, and the
+  reason is that the other three are not unit operations at all.
+
+  A heater with a specified outlet temperature is `TPflash(T_out, P_out)` - which is
+  `eos.pt_flash`, a model this library already has, where the temperature is an input
+  rather than something to solve for. A specified `deltaT` is that same call with the
+  temperature added first. An outlet stream read back is a flowsheet connection, which is
+  a different level of composition entirely.
+
+  So the Pareto set is one specification: the one where the energy balance has to be
+  solved. The model is named `heater` rather than `heater_cooler` because that is what
+  NeqSim calls the class the procedure lives in, and `Cooler` is this with a negative
+  duty.
+
+  # The duty is extensive and the flash is molar
+
+  NeqSim sums joules directly (`:431`, `H_out = H_in + Q`), because its `PHflash` takes
+  joules. `eos.ph_flash` takes a molar enthalpy, so the port is `h_out = h_in + Q/n`.
+  Same physics, and the one place in this model where the expression changed - written
+  down here so it does not read as a transcription error.
+
+  # What is checked, and what is not
+
+  The identity is the check: `n * (H_out - H_in) == Q`, with both enthalpies computed
+  from `eos.molar_enthalpy_entropy` independently of this model. It is asserted at
+  several duties and flows, including flows that differ by a factor of ten at the same
+  duty - which is the test that catches a model that forgot to divide by `n`.
+
+  The recorded case is the second check and it is weaker: it says the model still does
+  what it did when the number was written. **The citations are unconfirmed** - no
+  equation number is claimed and the file has been read rather than the standard.
+
+implementations:
+  python: azoth.process.heater
+  rust: azoth_process::heater
+
+cases:
+  - id: fifty_kilowatts_on_ten_moles_per_second
+    note: >
+      Methane/n-butane at 300 K and 20 bar, given 50 kW while flowing at 10 mol/s. That is
+      5000 J/mol, and the outlet is **328.56 K**.
+
+      The flow is in this case on purpose, because the duty alone does not fix the
+      answer: the same 50 kW on 1 mol/s would be ten times the temperature rise. The
+      test beside this one runs exactly that pair.
+    inputs:
+      Tc: [190.56, 425.12]
+      Pc: [4599000.0, 3796000.0]
+      omega: [0.0115, 0.2002]
+      kij: [[0.0, 0.01289789], [0.01289789, 0.0]]
+      cp_a: [3.0, 5.0]
+      cp_b: [0.0, 0.0]
+      cp_c: [0.0, 0.0]
+      cp_d: [0.0, 0.0]
+      h_ref: [0.0, 0.0]
+      s_ref: [0.0, 0.0]
+      T_ref: 300.0
+      P_ref: 100000.0
+      T: 300.0
+      P: 2000000.0
+      n: 10.0
+      z: [0.6, 0.4]
+      pressure_drop: 0.0
+      heat_duty: 50000.0
+    expected:
+      T: 328.5648187637329
+      P: 2000000.0
+    tolerance: 1.0e-9
+
+  - id: no_duty_is_the_identity
+    note: >
+      The same feed with no duty. The outlet is the inlet, at 300 K **exactly** - an
+      isenthalpic flash at the pressure the enthalpy was measured at is a round trip. The
+      case catches a model that adds a duty it was not given, or that divides by a flow
+      and loses the zero.
+
+      A **negative** duty is a cooler and is not a separate case here: it is the same
+      arithmetic with the other sign, and the test suite runs one rather than recording a
+      second number.
+    inputs:
+      Tc: [190.56, 425.12]
+      Pc: [4599000.0, 3796000.0]
+      omega: [0.0115, 0.2002]
+      kij: [[0.0, 0.01289789], [0.01289789, 0.0]]
+      cp_a: [3.0, 5.0]
+      cp_b: [0.0, 0.0]
+      cp_c: [0.0, 0.0]
+      cp_d: [0.0, 0.0]
+      h_ref: [0.0, 0.0]
+      s_ref: [0.0, 0.0]
+      T_ref: 300.0
+      P_ref: 100000.0
+      T: 300.0
+      P: 2000000.0
+      n: 10.0
+      z: [0.6, 0.4]
+      pressure_drop: 0.0
+      heat_duty: 0.0
+    expected:
+      T: 300.0
+      P: 2000000.0
+    tolerance: 1.0e-7
