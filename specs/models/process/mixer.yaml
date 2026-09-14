@@ -204,7 +204,7 @@ assumptions:
   - '**the cubic is Peng-Robinson**, as throughout this workspace.'
 
 notes: >
-  # The one expression that had to change
+  # Why the blend is a flow-weighted mean
 
   NeqSim sums **total** enthalpies in joules (`calcMixStreamEnthalpy`, `:537-544`) and its
   `PHflash` takes joules, so the sum is the whole energy balance. `eos.ph_flash` takes a

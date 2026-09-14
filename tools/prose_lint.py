@@ -6,17 +6,19 @@ reader, or reports something that belongs in `required-improvements.md`, or narr
 code's history or the author's process. The last of those is the one this catches.
 
 **This is a backstop and it is deliberately narrow.** The phrase list below is every
-candidate phrasing that occurs **zero times** in this tree outside the change set that
-prompted this tool - measured with:
+candidate phrasing that occurs **zero times** in the files this tool reads. The
+measurement has to exclude `tools/prose_lint.py` itself, which is a literal list of the
+phrases and therefore matches all of them - a detail the first version of this paragraph
+left out, and the reason the tool shipped failing on its own tree:
 
     grep -rniI --include='*.rs' --include='*.py' --include='*.yaml' -- '<phrase>' \\
-        crates python/src python/tests specs
+        crates python/src python/tests specs tools --exclude=prose_lint.py
 
 Phrasings that occur in the existing tree are **not** here, however much they read like
-spam, because they are part of how this repository writes: `deliberately` occurs 105 times
-outside the change set, `no longer` 31, `the whole point` 11, and `load-bearing` 9 -
-including twice in `docs/src/spec.md`. A check that fires on those would be a check that
-has to be switched off, which is worse than no check.
+spam, because they are part of how this repository writes: `deliberately` occurs 105
+times, `no longer` 31, `the whole point` 11, and `load-bearing` 9 - including twice in
+`docs/src/spec.md`. A check that fires on those would be a check that has to be switched
+off, which is worse than no check.
 
 **What that leaves out is the point.** The phrases that actually needed catching -
 `deliberately`, `the whole point`, `the load-bearing` - cannot be caught by a phrase list
@@ -79,14 +81,29 @@ def is_generated(path: Path) -> bool:
     return any(marker in head for marker in GENERATED_MARKERS)
 
 
+#: This file, resolved, so it can be excluded from its own scan.
+SELF = Path(__file__).resolve()
+
+
 def sources(root: Path) -> list[Path]:
-    """Every file the standard applies to, in a stable order."""
+    """Every file the standard applies to, in a stable order.
+
+    `prose_lint.py` is skipped: `HISTORY_PHRASES` is a literal list of the phrases being
+    searched for, so the file matches every entry in it. That list is the tool's data
+    rather than its prose, and there is no way to state it without writing the phrases
+    down. Until this exclusion existed the tool reported itself seven times, exited 1 on
+    every tree, and could not have been wired into anything.
+    """
     found: list[Path] = []
     for directory, pattern in SEARCH:
         base = root / directory
         if not base.is_dir():
             continue
-        found.extend(path for path in base.rglob(pattern) if not is_generated(path))
+        found.extend(
+            path
+            for path in base.rglob(pattern)
+            if not is_generated(path) and path.resolve() != SELF
+        )
     return sorted(found)
 
 

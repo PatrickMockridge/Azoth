@@ -21,7 +21,7 @@
 //! every stream, so all the inlets already share a component set and the accumulation is
 //! a vector sum.
 //!
-//! # One expression that had to change, and why
+//! # Why the blend is a flow-weighted mean
 //!
 //! NeqSim's `calcMixStreamEnthalpy` (`:537-544`) sums **total** enthalpies in joules,
 //! and its `PHflash` takes joules, so the sum is the whole story. `eos.ph_flash` takes a

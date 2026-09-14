@@ -16,7 +16,7 @@ This is the first unit operation in the port whose state is a *set* of streams r
 
 ## Notes
 
-#### The one expression that had to change
+#### Why the blend is a flow-weighted mean
 
 NeqSim sums **total** enthalpies in joules (`calcMixStreamEnthalpy`, `:537-544`) and its `PHflash` takes joules, so the sum is the whole energy balance. `eos.ph_flash` takes a **molar** enthalpy, so the port is the flow-weighted mean:
 

@@ -26,6 +26,11 @@ jobs:
       # count of estimated-dummy data rows, so placeholder data is visible in
       # every build log rather than only where it is used.
       - run: python tools/spec_lint.py
+      # The mechanism P5 names for the prose standard, which until now was named by
+      # nothing that ran. It needs no dependencies beyond the standard library, and it
+      # did not pass on this tree when it was first run: it was reporting its own phrase
+      # list, seven of its nine hits.
+      - run: python tools/prose_lint.py
 
   rust-test:
     name: rust-test
