@@ -86,8 +86,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `twenty_to_five_bar_at_ninety_percent` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 500000.0, efficiency = 0.9 | T = 265.521523500471, P = 500000.0, power = -19561.71003848759, isentropic_temperature = 264.39056768380897 |
-| `a_superheated_feed_expands_to_vapour` | components = ['methane', 'n-butane'], T = 450.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 500000.0, efficiency = 0.9 | T = 389.72289777975766, P = 500000.0, power = -41743.592213534874, isentropic_temperature = 383.3906409835496 |
+| `twenty_to_five_bar_at_ninety_percent` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 500000.0, efficiency = 0.9 | T = 265.5189385513854, P = 500000.0, power = -19562.670287154528, isentropic_temperature = 264.38812613858266 |
+| `a_superheated_feed_expands_to_vapour` | components = ['methane', 'n-butane'], T = 450.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 500000.0, efficiency = 0.9 | T = 389.722872629469, P = 500000.0, power = -41743.62329512539, isentropic_temperature = 383.3906120050815 |
 
 ## References
 

@@ -137,35 +137,61 @@ def test_monotonic() -> None:
             h.assert_close(getattr(scaled, field), expected, 1e-12, f"{field} at Pr={pr}")
 
 
-def test_the_omegas_make_the_critical_point_a_triple_root() -> None:
-    """The constants are the triple-root solution, not an arbitrary pair.
+def depressed(omega_a: float, omega_b: float) -> tuple[float, float]:
+    """`(p, q)` of the depressed reduced cubic at `A = omega_a`, `B = omega_b`.
 
-    The same claim the Rust half asserts, checked here so a change to the Python
-    constants alone cannot pass. `p` and `q` are the coefficients of the depressed
-    cubic; a triple root leaves both zero and nothing else does.
+    `z**3 - (1-B)z**2 + (A - 3B**2 - 2B)z - (A*B - B**2 - B**3)` written as
+    `z**3 + c2*z**2 + c1*z + c0` and depressed by `z = w - c2/3`. A triple root
+    leaves both zero and nothing else does.
     """
-    c2 = -(1.0 - OMEGA_B)
-    c1 = OMEGA_A - 3.0 * OMEGA_B**2 - 2.0 * OMEGA_B
-    c0 = -(OMEGA_A * OMEGA_B - OMEGA_B**2 - OMEGA_B**3)
-    p = c1 - c2 * c2 / 3.0
-    q = 2.0 * c2**3 / 27.0 - c2 * c1 / 3.0 + c0
-    assert abs(p) < 1e-12, f"not a triple root: p = {p:e}"
-    assert abs(q) < 1e-12, f"not a triple root: q = {q:e}"
+    c2 = -(1.0 - omega_b)
+    c1 = omega_a - 3.0 * omega_b**2 - 2.0 * omega_b
+    c0 = -(omega_a * omega_b - omega_b**2 - omega_b**3)
+    return c1 - c2 * c2 / 3.0, 2.0 * c2**3 / 27.0 - c2 * c1 / 3.0 + c0
 
 
-def test_the_printed_omegas_do_not_satisfy_it_and_that_is_why_they_are_not_used() -> None:
-    """0.45724 and 0.07780 are roundings, and the rounding is not harmless.
+def test_the_exact_omegas_are_the_triple_root_solution() -> None:
+    """The pair the cubic's condition gives, which this library does *not* ship.
 
-    Asserting the failure pins *how* wrong the printed pair is, so an implementer
-    who "corrects" the constants to match the paper is told why rather than left to
-    discover a 4.55% shift at the critical point.
+    Asserted because it is where the constants come from and what the departure
+    below is measured against - not because it is what the library uses.
     """
-    c2 = -(1.0 - 0.07780)
-    c1 = 0.45724 - 3.0 * 0.07780**2 - 2.0 * 0.07780
-    c0 = -(0.45724 * 0.07780 - 0.07780**2 - 0.07780**3)
-    p = c1 - c2 * c2 / 3.0
-    q = 2.0 * c2**3 / 27.0 - c2 * c1 / 3.0 + c0
-    assert abs(p) > 1e-9 and abs(q) > 1e-9, "the printed pair was expected to break it"
+    p, q = depressed(0.4572355289213822, 0.07779607390388846)
+    assert abs(p) < 1e-12, f"the exact pair should be a triple root: p = {p:e}"
+    assert abs(q) < 1e-12, f"the exact pair should be a triple root: q = {q:e}"
+
+
+def test_the_shipped_omegas_are_neqsims_and_are_not_the_triple_root_solution() -> None:
+    """NeqSim's literals, deliberately, and the departure is on record.
+
+    The port rule settles it: azoth is a port of NeqSim 3.20.0, NeqSim's
+    `ComponentPR` constructor sets these two, and carrying them is what makes the
+    two agree - see
+    `validation/eos/methane_butane_flash_against_neqsim.json`. Asserted rather than
+    commented because "correcting" them back to the exact pair is the most natural
+    edit a reader could make, and the one that would end the agreement.
+    """
+    assert (OMEGA_A, OMEGA_B) == (0.45724333333, 0.077803333)
+    p, q = depressed(OMEGA_A, OMEGA_B)
+    assert abs(p) > 1e-9 and abs(q) > 1e-9, (
+        f"the shipped pair was expected to depart from the triple root; p = {p:e}, q = {q:e}"
+    )
+    assert abs(p) < 1e-5 and abs(q) < 1e-5, (
+        f"the departure is larger than NeqSim's literals explain; p = {p:e}, q = {q:e}"
+    )
+
+
+def test_the_printed_omegas_depart_from_the_triple_root_too() -> None:
+    """The paper's five digits are a third pair, and they break it as well.
+
+    Not the test that keeps the constants honest - the equality above is. This
+    records why the printed pair is not an option either, and it is the same reason
+    in kind: a triple root is cubically ill-conditioned.
+    """
+    p, q = depressed(0.45724, 0.07780)
+    assert abs(p) > 1e-9 and abs(q) > 1e-9, (
+        f"the printed pair was expected to break it; p = {p:e}, q = {q:e}"
+    )
 
 
 def test_alpha_is_exactly_one_at_the_critical_temperature() -> None:

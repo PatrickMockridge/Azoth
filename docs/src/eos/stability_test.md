@@ -68,8 +68,8 @@ NeqSim carries a supplementary `pureComponentStabilityTrials` for exactly this, 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `a_two_phase_feed_is_unstable` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4] | tm = [4.440892098500626e-16, -0.21428474257353658], w = [[0.6000000000028418, 0.3999999999971582], [0.06787627290819705, 0.9321237270918029]], iterations = [16, 9] |
-| `a_trivial_flash_is_not_a_stable_feed` | components = ['methane', 'n-butane'], T = 430.0, P = 6000000.0, z = [0.6, 0.4] | tm = [0.0, 2.220446049250313e-16], w = [[0.6000000000116659, 0.39999999998833413], [0.5999999999966463, 0.40000000000335373]], iterations = [15, 17] |
+| `a_two_phase_feed_is_unstable` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4] | tm = [-2.220446049250313e-16, -0.21403386436968574], w = [[0.6000000000028413, 0.3999999999971587], [0.06789944155312776, 0.9321005584468723]], iterations = [16, 9] |
+| `a_trivial_flash_is_not_a_stable_feed` | components = ['methane', 'n-butane'], T = 430.0, P = 6000000.0, z = [0.6, 0.4] | tm = [-2.220446049250313e-16, -2.220446049250313e-16], w = [[0.6000000000116592, 0.39999999998834085], [0.59999999999665, 0.40000000000334995]], iterations = [15, 17] |
 
 ## References
 

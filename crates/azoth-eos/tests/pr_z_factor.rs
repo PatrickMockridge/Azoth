@@ -304,7 +304,12 @@ fn zero_a_reduced_is_the_hard_sphere_limit_and_is_allowed() {
 /// cannot know, this asserts the *window*, which it can.
 #[test]
 fn the_critical_point_is_only_determined_to_about_one_part_in_ten_thousand() {
-    let (a, b) = (azoth_eos::OMEGA_A, azoth_eos::OMEGA_B);
+    // The pair that places a triple root at the cubic's own critical point, which is
+    // what this test is about. **Not the pair the crate ships**: NeqSim's literals are
+    // 5.6e-6 off it, deliberately, so `(1 - B)/3` is no longer the triple root of the
+    // cubic `OMEGA_A`/`OMEGA_B` build - it is 4.8e-5 away, which is thirty times this
+    // test's tolerance. See `eos.pr_alpha_ab`'s assumptions.
+    let (a, b) = (0.4572355289213822, 0.07779607390388846);
     // c2 = -(1 - B), and the triple root of `w**3 + c2*w**2 + c1*w + c0` sits at
     // -c2/3 = (1 - B)/3 when the constants are the ones that place it there.
     let analytic_triple_root = (1.0 - b) / 3.0;

@@ -11,22 +11,19 @@
 //! form against values it produced itself, would check nothing.
 
 use azoth_core::units::{kelvins, pascals};
-use azoth_eos::mixture::{Component, Mixture, RootSide};
+use azoth_eos::databank;
+use azoth_eos::mixture::{Mixture, ReducedParameters, RootSide};
 
-fn mix(tc: &[f64], pc: &[f64], omega: &[f64], kij: Vec<f64>) -> Mixture {
-    let components = (0..tc.len())
-        .map(|i| Component::new(kelvins(tc[i]), pascals(pc[i]), omega[i]).expect("valid"))
-        .collect();
-    Mixture::new(components, kij).expect("a valid mixture")
-}
-
+/// The pair, with the interaction parameter NeqSim fits for it.
+///
+/// Resolved through the databank rather than typed here, like every other fixture in
+/// this tree. The literals this function used to carry had drifted from NeqSim's
+/// `COMP.csv`: methane is 0.0115 and 4 599 000 Pa in the table, not 0.01142 and
+/// 4 599 200, and the `kij` was an illustrative 0.05 where `INTER.csv` fits 0.01289789.
 fn methane_butane() -> Mixture {
-    mix(
-        &[190.56, 425.12],
-        &[4_599_200.0, 3_796_000.0],
-        &[0.01142, 0.2002],
-        vec![0.0, 0.05, 0.05, 0.0],
-    )
+    databank::mixture_of(&["methane", "n-butane"])
+        .expect("the pair resolves")
+        .0
 }
 
 /// At one component the mixture's departure functions *are* `eos.pr_departure`.
@@ -39,13 +36,17 @@ fn methane_butane() -> Mixture {
 /// order and nothing more.
 #[test]
 fn the_departures_reduce_to_pr_departure_at_one_component() {
-    for (tc, pc, omega, t, p) in [
-        (369.83, 4_248_000.0, 0.1523, 300.0, 1_000_000.0),
-        (369.83, 4_248_000.0, 0.1523, 350.0, 2_000_000.0),
-        (425.12, 3_796_000.0, 0.2002, 350.0, 1_000_000.0),
-        (190.56, 4_599_200.0, 0.01142, 200.0, 3_000_000.0),
+    for (name, t, p) in [
+        ("propane", 300.0, 1_000_000.0),
+        ("propane", 350.0, 2_000_000.0),
+        ("n-butane", 350.0, 1_000_000.0),
+        ("methane", 200.0, 3_000_000.0),
     ] {
-        let mixture = mix(&[tc], &[pc], &[omega], vec![0.0]);
+        let entry = databank::entry(name).expect("the databank has it");
+        let (tc, omega) = (entry.tc, entry.omega);
+        let mixture = databank::mixture_of(&[name])
+            .expect("the substance resolves")
+            .0;
         let reduced = mixture
             .reduced_parameters(kelvins(t), pascals(p))
             .expect("a state");
@@ -59,15 +60,15 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
 
         assert_eq!(
             state.psi_bar, reduced.psi[0],
-            "Tc={tc}, T={t}: psi_bar should be the component's own psi"
+            "{name}, T={t}: psi_bar should be the component's own psi"
         );
         assert_eq!(
             state.h_dep_rt, pure.h_dep_rt,
-            "Tc={tc}, T={t}: the mixture departure enthalpy should be bit-identical"
+            "{name}, T={t}: the mixture departure enthalpy should be bit-identical"
         );
         assert!(
             (state.s_dep_r - pure.s_dep_r).abs() < 1e-15,
-            "Tc={tc}, T={t}: the entropy departures differ by {:e}, more than the \
+            "{name}, T={t}: the entropy departures differ by {:e}, more than the \
              one ulp a different summation order explains",
             state.s_dep_r - pure.s_dep_r
         );
@@ -83,12 +84,9 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
 /// `N = 1` the reduction test above already covers it.
 #[test]
 fn the_gibbs_identity_holds_for_a_mixture() {
-    let ternary = mix(
-        &[190.56, 369.83, 425.12],
-        &[4_599_200.0, 4_248_000.0, 3_796_000.0],
-        &[0.01142, 0.1523, 0.2002],
-        vec![0.0; 9],
-    );
+    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"])
+        .expect("the three resolve")
+        .0;
     for (mixture, t, p, z) in [
         (methane_butane(), 330.0, 2_500_000.0, vec![0.6, 0.4]),
         (methane_butane(), 300.0, 3_000_000.0, vec![0.1, 0.9]),
@@ -122,12 +120,9 @@ fn the_gibbs_identity_holds_for_a_mixture() {
 /// the same statement as the reduction test above, read as an inequality.
 #[test]
 fn psi_bar_lies_between_the_components_psi() {
-    let ternary = mix(
-        &[190.56, 369.83, 425.12],
-        &[4_599_200.0, 4_248_000.0, 3_796_000.0],
-        &[0.01142, 0.1523, 0.2002],
-        vec![0.0; 9],
-    );
+    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"])
+        .expect("the three resolve")
+        .0;
     for (t, p, z) in [
         (320.0, 2_000_000.0, vec![0.5, 0.3, 0.2]),
         (350.0, 5_000_000.0, vec![0.2, 0.3, 0.5]),
@@ -157,8 +152,8 @@ fn psi_bar_lies_between_the_components_psi() {
 /// At low pressure a fluid approaches the ideal gas and its departure functions go to
 /// zero - and the *shape* of that approach is the checkable part, so this asserts the
 /// shape rather than an arbitrary smallness. Measured on methane/n-butane at 330 K,
-/// `h_dep_rt` is `-1.926095e-04` at 1 kPa and `-1.926771e-03` at 10 kPa, a ratio of
-/// **10.0035**; at 100 kPa and 1 MPa the ratios are 10.035 and 10.382, drifting up as
+/// `h_dep_rt` is `-1.961381e-04` at 1 kPa and `-1.962095e-03` at 10 kPa, a ratio of
+/// **10.0036**; at 100 kPa and 1 MPa the ratios are 10.037 and 10.397, drifting up as
 /// the ideal-gas limit is left behind. The first ratio is the one asserted, at one per
 /// cent, because it is the one that is still in the linear regime.
 ///
@@ -192,6 +187,22 @@ fn the_departures_are_proportional_to_pressure_at_low_pressure() {
     }
 }
 
+/// The mixture's own root at a state and composition.
+///
+/// Computed rather than written down. Two tests below took a literal `Z`, and it was a
+/// literal for a fluid that no longer exists: `0.8274482588400789` belonged to the
+/// hand-typed methane/n-butane with an illustrative `kij` of 0.05, and the fixture now
+/// resolves that pair through the databank. The energy identity is a statement about
+/// the *state*, so a `Z` that is not that state's makes it fail by percent for a reason
+/// that looks like a defect.
+fn compressibility_of(mixture: &Mixture, t: f64, p: f64, n: &[f64]) -> f64 {
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("a state");
+    let (a_mix, b_mix) = mixture.mixture_parameters(&reduced, n);
+    azoth_eos::pr_z_factor(a_mix, b_mix).expect("a cubic").z_max
+}
+
 /// The Helmholtz energy's gradient *is* the fugacity coefficient, by a different route.
 ///
 /// `d(A^R/RT)/dn_i` must equal `ln phi_i + ln Z`. The right-hand side comes from
@@ -206,7 +217,7 @@ fn the_energy_differentiates_to_the_fugacity_coefficient() {
     let reduced = mixture
         .reduced_parameters(kelvins(t), pascals(p))
         .expect("a state");
-    let z = 0.827_448_258_840_078_9;
+    let z = compressibility_of(&mixture, t, p, &n);
     let state = mixture.phase_state_at(&reduced, &n, z).expect("a phase");
 
     let h = 1e-6;
@@ -286,7 +297,7 @@ fn the_hessian_and_the_criticality_matrix_are_exactly_symmetric() {
         .reduced_parameters(kelvins(330.0), pascals(2_500_000.0))
         .expect("a state");
     let n = [0.6, 0.4];
-    let z = 0.827_448_258_840_078_9;
+    let z = compressibility_of(&mixture, 330.0, 2_500_000.0, &n);
 
     let hessian = mixture
         .helmholtz_hessian(&reduced, &n, z)
@@ -299,88 +310,145 @@ fn the_hessian_and_the_criticality_matrix_are_exactly_symmetric() {
     assert_eq!(q[0][1], q[1][0], "Q is not symmetric");
 }
 
-/// `Q` vanishes at a pure component's critical point - the check a port cannot inherit.
+/// The triple-root solution of the Peng-Robinson cubic, which this library does *not*
+/// ship - see `eos.pr_alpha_ab`'s assumptions and the constants' own comments.
 ///
-/// Heidemann & Khalil's first condition is that the smallest eigenvalue of `Q` reach
-/// zero. For one component `Q` is `1 x 1` and equals `H_11 + 1`, and PR's critical
-/// point is known in closed form: `Tr = Pr = 1, Z_c = (1 - omega_b)/3`. So the whole
-/// construction - the constant-volume Hessian, the ideal part, the scaling - is
-/// checked against an analytic answer rather than against another implementation.
-///
-/// **Every component gives the same number**, because at `Tr = Pr = 1` they all have
-/// the same reduced state `(A, B) = (omega_a, omega_b)`. That is worth asserting
-/// separately: it is the statement that this construction depends on `(A, B, Z)` and
-/// on nothing else, which is what "the eos core carries no dimensioned quantity"
-/// means in practice.
-#[test]
-fn the_criticality_matrix_vanishes_at_a_pure_components_critical_point() {
-    let z_critical = (1.0 - azoth_eos::OMEGA_B) / 3.0;
-    let mut seen: Option<f64> = None;
-    for (tc, pc, omega) in [
-        (369.83, 4_248_000.0, 0.1523),
-        (190.56, 4_599_200.0, 0.01142),
-        (425.12, 3_796_000.0, 0.2002),
-        (304.13, 7_377_000.0, 0.2239),
-    ] {
-        let mixture = mix(&[tc], &[pc], &[omega], vec![0.0]);
-        // `Tr = Pr = 1` is the critical state, so the reduced parameters are the
-        // universal `(omega_a, omega_b)` and are the same for every component here.
-        let reduced = mixture
-            .reduced_parameters(kelvins(tc), pascals(pc))
-            .expect("a state");
-        assert!((reduced.a[0] - azoth_eos::OMEGA_A).abs() < 1e-15);
-        assert!((reduced.b[0] - azoth_eos::OMEGA_B).abs() < 1e-15);
+/// Named here because the tests below are statements about the cubic rather than about
+/// the constants: `Q` vanishes, and is minimised, at the critical point of a cubic whose
+/// `Omega` pair satisfies the triple-root condition. NeqSim's pair does not, so the
+/// shipped cubic's critical point is 4.8e-5 away from `Tr = Pr = 1` and its `Q` there is
+/// 1.37e-4 rather than zero.
+const TRIPLE_ROOT_A: f64 = 0.457_235_528_921_382_2;
+const TRIPLE_ROOT_B: f64 = 0.077_796_073_903_888_46;
 
-        let q = mixture
-            .criticality_matrix(&reduced, &[1.0], z_critical)
-            .expect("a matrix");
-        assert!(
-            q[0][0].abs() < 1e-14,
-            "Tc={tc}: Q is {} at the critical point, and it must be zero",
-            q[0][0]
-        );
-        match seen {
-            None => seen = Some(q[0][0]),
-            Some(first) => assert_eq!(first, q[0][0], "Tc={tc}: Q differs between components"),
-        }
+/// A one-component reduced state at a chosen `(A, B)`, built by hand.
+///
+/// Built directly rather than reached through a substance: the claim is about
+/// `(A, B, Z)`, which is the point the rest of this file makes about the construction
+/// carrying no dimensioned quantity. The `psi` fields are zero because nothing here
+/// differentiates the alpha function - `Q` is a statement about `(A, B, Z)` alone.
+///
+/// The mixture a caller passes alongside this to `criticality_matrix` is a carrier and
+/// nothing more: at one component there is no interaction parameter for it to hold.
+fn one_component_state(a: f64, b: f64) -> ReducedParameters {
+    ReducedParameters {
+        a: vec![a],
+        b: vec![b],
+        psi: vec![0.0],
+        psi_t: vec![0.0],
+        warnings: Vec::new(),
     }
 }
 
-/// And the zero is a minimum, not a small number that happens to be near one.
+/// The check a port cannot inherit, against an answer known in closed form.
 ///
-/// Along `P = Pc` the critical point is the temperature at which `Q` reaches zero,
-/// and it is positive on both sides. Without this, `Q = 1e-16` at one state would be
-/// equally consistent with a construction that is uniformly near zero everywhere -
-/// which is what a missing diagonal term would give.
+/// Heidemann & Khalil's first condition is that the smallest eigenvalue of `Q` reach
+/// zero. For one component `Q` is `1 x 1` and equals `H_11 + 1`, and the critical point
+/// of a Peng-Robinson cubic is analytic: `Tr = Pr = 1`, `A = Omega_a`, `B = Omega_b`,
+/// `Z_c = (1 - Omega_b)/3`. So the whole construction - the constant-volume Hessian,
+/// the ideal part, the scaling - is checked against a closed form rather than against
+/// another implementation.
+///
+/// **At the triple-root pair, which is what makes the closed form hold.** The state is
+/// built directly rather than reached through a substance at its own tabulated `Tc` and
+/// `Pc`, because the substance route lands on the cubic's critical point only for as
+/// long as the library ships the triple-root `Omega` pair. It does not - it ships
+/// NeqSim's, deliberately, and `eos.pr_alpha_ab`'s assumptions record why - so a
+/// substance at `Tr = Pr = 1` is 4.8e-5 off it and `Q` there is 1.37e-4. Asserting the
+/// closed form requires the pair the closed form is about, and building the reduced
+/// state directly is the honest way to ask for it.
+#[test]
+fn the_criticality_matrix_vanishes_at_the_cubics_critical_point() {
+    let mixture = databank::mixture_of(&["propane"])
+        .expect("propane resolves")
+        .0;
+    let q = mixture
+        .criticality_matrix(
+            &one_component_state(TRIPLE_ROOT_A, TRIPLE_ROOT_B),
+            &[1.0],
+            (1.0 - TRIPLE_ROOT_B) / 3.0,
+        )
+        .expect("a matrix");
+    assert!(
+        q[0][0].abs() < 1e-14,
+        "Q is {} at the critical point, and it must be zero",
+        q[0][0]
+    );
+}
+
+/// How far the shipped pair puts the cubic's critical point from `Tr = Pr = 1`.
+///
+/// Recorded rather than asserted loosely, because it is the one number that says what
+/// carrying NeqSim's literals costs: at the shipped pair the same construction gives
+/// `Q` on the order of 1e-4 at `(A, B) = (Omega_a, Omega_b)`, and the cubic is at a
+/// triple root at `Tr = 1 + 4.8e-5` instead. Bounded on both sides so a change to the
+/// constants is visible here as well as in `eos.pr_alpha_ab`.
+#[test]
+fn the_shipped_omegas_leave_a_critical_point_residue() {
+    let mixture = databank::mixture_of(&["propane"])
+        .expect("propane resolves")
+        .0;
+    let q = mixture
+        .criticality_matrix(
+            &one_component_state(azoth_eos::OMEGA_A, azoth_eos::OMEGA_B),
+            &[1.0],
+            (1.0 - azoth_eos::OMEGA_B) / 3.0,
+        )
+        .expect("a matrix");
+    assert!(
+        1e-5 < q[0][0] && q[0][0] < 1e-3,
+        "Q at the shipped pair's Tr = Pr = 1 is {}",
+        q[0][0]
+    );
+}
+
+/// The residue is a minimum, and clearly positive on both sides of it.
+///
+/// Along `P = Pc` the critical point is the temperature at which `Q` reaches its least
+/// value, and it is orders of magnitude larger either side. Without this, a `Q` that
+/// was uniformly near zero everywhere would pass the test above - which is what a
+/// missing diagonal term would give.
+///
+/// **The minimum is not zero, because the shipped `Omega` pair is not the triple-root
+/// one** - measured at 2.5e-3 for propane at `T/Tc = 1`. What survives the port is
+/// where the minimum sits (`T/Tc = 1`, to five figures) and how sharply it rises away
+/// from it.
 #[test]
 fn the_criticality_matrix_is_minimised_at_the_critical_temperature() {
-    let z_critical = (1.0 - azoth_eos::OMEGA_B) / 3.0;
-    let (tc, pc, omega) = (369.83, 4_248_000.0, 0.1523);
-    let mixture = mix(&[tc], &[pc], &[omega], vec![0.0]);
+    let entry = databank::entry("propane").expect("the databank has propane");
+    let (tc, pc) = (entry.tc, entry.pc);
+    let mixture = databank::mixture_of(&["propane"])
+        .expect("propane resolves")
+        .0;
 
-    let at_critical = {
-        let reduced = mixture
-            .reduced_parameters(kelvins(tc), pascals(pc))
-            .expect("a state");
-        mixture
-            .criticality_matrix(&reduced, &[1.0], z_critical)
-            .expect("a matrix")[0][0]
-    };
-    assert!(at_critical.abs() < 1e-14);
-
-    for offset in [0.98, 0.99, 0.999, 1.001, 1.01, 1.02] {
+    let q_at = |offset: f64| {
         let reduced = mixture
             .reduced_parameters(kelvins(tc * offset), pascals(pc))
             .expect("a state");
         let root = azoth_eos::pr_z_factor(reduced.a[0], reduced.b[0]).expect("a cubic");
         let z = if offset < 1.0 { root.z_min } else { root.z_max };
-        let q = mixture
+        mixture
             .criticality_matrix(&reduced, &[1.0], z)
-            .expect("a matrix")[0][0];
+            .expect("a matrix")[0][0]
+    };
+
+    let at_critical = q_at(1.0);
+    assert!(
+        1e-3 < at_critical && at_critical < 1e-2,
+        "Q at T/Tc = 1 is {at_critical}"
+    );
+
+    for offset in [0.98, 0.99, 0.999, 1.001, 1.01, 1.02] {
+        let value = q_at(offset);
         assert!(
-            q > 1e-4,
-            "T/Tc = {offset}: Q is {q}, but away from the critical point it must be \
-             clearly positive"
+            value > 1e-2,
+            "T/Tc = {offset}: Q is {value}, but away from the critical point it must \
+             be clearly positive"
+        );
+        assert!(
+            value > at_critical,
+            "T/Tc = {offset}: Q is {value}, below the value at the critical point - \
+             the critical temperature is not the minimum"
         );
     }
 }
@@ -399,22 +467,22 @@ fn both_implementations_agree_on_the_helmholtz_layer() {
         .reduced_parameters(kelvins(330.0), pascals(2_500_000.0))
         .expect("a state");
     let n = [0.6, 0.4];
-    let z = 0.827_448_258_840_078_9;
+    let z = compressibility_of(&mixture, 330.0, 2_500_000.0, &n);
 
     let energy = mixture
         .helmholtz_energy(&reduced, &n, z)
         .expect("an energy");
     assert!(
-        (energy + 0.184_316_374_846_176_38).abs() < 1e-12,
-        "the energy is {energy}"
+        (energy + 0.189_257_994_678_617_87).abs() < 1e-12,
+        "the energy is {energy}, z is {z}, a_mix/b_mix check follows"
     );
 
     let hessian = mixture
         .helmholtz_hessian(&reduced, &n, z)
         .expect("a hessian");
     let wanted = [
-        [-0.070_616_465_542_426_04, -0.266_557_518_655_936_9],
-        [-0.266_557_518_655_936_9, -1.060_519_445_307_295_5],
+        [-0.070_535_600_455_860_16, -0.283_559_373_215_204_75],
+        [-0.283_559_373_215_204_75, -1.064_193_906_442_352_5],
     ];
     for i in 0..2 {
         for j in 0..2 {
@@ -431,8 +499,8 @@ fn both_implementations_agree_on_the_helmholtz_layer() {
         .criticality_matrix(&reduced, &n, z)
         .expect("a matrix");
     let wanted = [
-        [0.957_630_120_674_544_4, -0.130_585_981_561_890_6],
-        [-0.130_585_981_561_890_6, 0.575_792_221_877_081_8],
+        [0.957_678_639_726_483_9, -0.138_915_155_232_134_2],
+        [-0.138_915_155_232_134_2, 0.574_322_437_423_059],
     ];
     for i in 0..2 {
         for j in 0..2 {

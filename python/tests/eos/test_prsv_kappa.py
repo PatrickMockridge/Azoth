@@ -12,6 +12,7 @@ import _helpers as h
 from azoth.core.errors import OutOfRangeError
 from azoth.core.result import PrsvKappaResult
 from azoth.eos import pr_alpha_ab, prsv_kappa
+from azoth.eos.reference.pr_alpha_ab import OMEGA_A
 
 CALC_ID = "eos.prsv_kappa"
 
@@ -149,10 +150,10 @@ def test_consistency_with() -> None:
         expected_alpha = (1.0 + kappa * (1.0 - tr**0.5)) ** 2
         h.assert_close(ab.alpha, expected_alpha, 1e-12, "alpha from the PRSV coefficient")
         # And the reduced parameters must be built from *that* alpha - a calc that
-        # took the coefficient and ignored it would pass the line above.
-        h.assert_close(
-            ab.a_reduced, 0.4572355289213822 * expected_alpha * 0.25 / tr**2, 1e-12, "a_reduced"
-        )
+        # took the coefficient and ignored it would pass the line above. The Omega
+        # is imported rather than retyped: a second copy of a constant is a second
+        # thing to keep in step, and this one has already moved once.
+        h.assert_close(ab.a_reduced, OMEGA_A * expected_alpha * 0.25 / tr**2, 1e-12, "a_reduced")
 
 
 def test_monotonic() -> None:

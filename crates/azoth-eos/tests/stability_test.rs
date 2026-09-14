@@ -319,17 +319,17 @@ fn the_feed_is_placed_on_its_lower_gibbs_root() {
     let (liquid_a, liquid_naive, liquid_right) = gibbs(roots.z_min);
     let (vapour_a, vapour_naive, vapour_right) = gibbs(roots.z_max);
 
-    common::assert_close(liquid_a, -2.558159759861873, 1e-9, "liquid A^R/RT");
-    common::assert_close(vapour_a, -0.015548831218595781, 1e-9, "vapour A^R/RT");
+    common::assert_close(liquid_a, -2.5578138051194212, 1e-9, "liquid A^R/RT");
+    common::assert_close(vapour_a, -0.015548927641895367, 1e-9, "vapour A^R/RT");
     common::assert_close(
         liquid_right,
-        3.1456610060268475,
+        3.1458414529963945,
         1e-9,
         "liquid A^R/RT - ln Z + Z",
     );
     common::assert_close(
         vapour_right,
-        0.9845726745266656,
+        0.9845725795485407,
         1e-9,
         "vapour A^R/RT - ln Z + Z",
     );

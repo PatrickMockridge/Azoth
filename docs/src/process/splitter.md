@@ -74,7 +74,7 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `thirty_seventy_split_of_a_two_phase_feed` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], fractions = [0.3, 0.7] | T = 300.0, P = 2000000.0, beta = 0.6824390296509162, flows = [3.0, 7.0] |
+| `thirty_seventy_split_of_a_two_phase_feed` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], fractions = [0.3, 0.7] | T = 300.0, P = 2000000.0, beta = 0.6824887179287704, flows = [3.0, 7.0] |
 | `a_single_branch_takes_everything` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], fractions = [1.0] | T = 300.0, P = 2000000.0, flows = [10.0] |
 
 ## References

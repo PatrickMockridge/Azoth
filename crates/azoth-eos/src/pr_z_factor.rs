@@ -40,8 +40,8 @@ use crate::spec_gen;
 /// let kappa = pr_kappa(0.152)?.kappa;
 /// let ab = pr_alpha_ab(kappa, 0.8, 0.25)?;
 /// let z = pr_z_factor(ab.a_reduced, ab.b_reduced)?;
-/// assert!((z.z_min - 0.036765449656896015).abs() < 1e-12);
-/// assert!((z.z_max - 0.7907789662973796).abs() < 1e-12);
+/// assert!((z.z_min - 0.036771130006003336).abs() < 1e-12);
+/// assert!((z.z_max - 0.7907792374136378).abs() < 1e-12);
 /// assert_eq!(z.root_structure, azoth_eos::RootStructure::Three);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```

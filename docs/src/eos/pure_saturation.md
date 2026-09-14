@@ -64,8 +64,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `propane_at_300_k` | components = ['propane'], T = 300.0 | p_sat = 997667.7436544185 |
-| `carbon_dioxide_at_280_k` | components = ['co2'], T = 280.0 | p_sat = 4149661.721350788 |
+| `propane_at_300_k` | components = ['propane'], T = 300.0 | p_sat = 997905.585109325 |
+| `carbon_dioxide_at_280_k` | components = ['co2'], T = 280.0 | p_sat = 4150449.601020932 |
 
 ## References
 

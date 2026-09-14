@@ -12,7 +12,7 @@ cases:
     - propane
     T: 300.0
   expected:
-    p_sat: 997667.7436544185
+    p_sat: 997905.585109325
   tolerance: 1.0e-09
 - id: carbon_dioxide_at_280_k
   inputs:
@@ -20,5 +20,5 @@ cases:
     - co2
     T: 280.0
   expected:
-    p_sat: 4149661.721350788
+    p_sat: 4150449.601020932
   tolerance: 1.0e-09

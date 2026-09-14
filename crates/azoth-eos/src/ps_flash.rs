@@ -51,30 +51,16 @@ pub fn entropy_at(
 ///
 /// # Example
 /// ```
-/// use azoth_core::units::{joules_per_mole_kelvin, pascals, kelvins};
-/// use azoth_eos::mixture::{Component, Mixture};
-/// use azoth_eos::molar_enthalpy_entropy::IdealGasModel;
-/// use azoth_eos::ps_flash;
+/// use azoth_core::units::{joules_per_mole_kelvin, pascals};
+/// use azoth_eos::{databank, ps_flash};
 ///
-/// let mixture = Mixture::new(
-///     vec![
-///         Component::new(kelvins(190.56), pascals(4_599_000.0), 0.0115)?,
-///         Component::new(kelvins(425.12), pascals(3_796_000.0), 0.2002)?,
-///     ],
-///     vec![0.0, 0.01289789, 0.01289789, 0.0],
-/// )?;
-/// let ideal_gas = IdealGasModel {
-///     cp_a: vec![3.0, 5.0],
-///     cp_b: vec![0.0, 0.0],
-///     cp_c: vec![0.0, 0.0],
-///     cp_d: vec![0.0, 0.0],
-///     cp_e: vec![0.0, 0.0],
-/// };
+/// let (mixture, ideal_gas) = databank::mixture_of(&["methane", "n-butane"])
+///     .expect("the pair resolves");
 /// let r = ps_flash::ps_flash(
 ///     &mixture,
 ///     &ideal_gas,
 ///     pascals(2_000_000.0),
-///     joules_per_mole_kelvin(-38.61276026788922),
+///     joules_per_mole_kelvin(-33.379248083182766),
 ///     &[0.6, 0.4],
 /// )?;
 /// assert!((r.temperature.value - 300.0).abs() < 1.0e-6);

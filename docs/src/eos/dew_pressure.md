@@ -66,8 +66,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_and_butane_at_300_k` | components = ['methane', 'n-butane'], T = 300.0, y = [0.8, 0.2] | pressure = 1566700.797120122, incipient = [0.07352842775472282, 0.9264715722452772], k = [10.880145603945977, 0.21587278659339484], z_liquid = 0.059259442820618104, z_vapour = 0.9218550564115487, min_t_over_tc = 0.7056831012420023, iterations = 25 |
-| `methane_propane_and_butane_at_300_k` | components = ['methane', 'propane', 'n-butane'], T = 300.0, y = [0.5, 0.3, 0.2] | pressure = 1036194.7807690058, incipient = [0.032539210701323235, 0.30975264410484415, 0.6577081451938326], k = [15.366076472774441, 0.9685147349334937, 0.30408624472965823], z_liquid = 0.03828253071729328, z_vapour = 0.9031777319424645, min_t_over_tc = 0.7056831012420023, iterations = 20 |
+| `methane_and_butane_at_300_k` | components = ['methane', 'n-butane'], T = 300.0, y = [0.8, 0.2] | pressure = 1567347.3649394324, incipient = [0.07356449482911534, 0.9264355051708847], k = [10.87481130481427, 0.2158811907400535], z_liquid = 0.059290858273984295, z_vapour = 0.9218236006325037, min_t_over_tc = 0.7056831012420023, iterations = 25 |
+| `methane_propane_and_butane_at_300_k` | components = ['methane', 'propane', 'n-butane'], T = 300.0, y = [0.5, 0.3, 0.2] | pressure = 1036545.9819627925, incipient = [0.032553403623117455, 0.3097785922682522, 0.6576680041086302], k = [15.359377034393615, 0.9684336086735432, 0.304104804780905], z_liquid = 0.038300378343920416, z_vapour = 0.9031435583011436, min_t_over_tc = 0.7056831012420023, iterations = 20 |
 
 ## References
 

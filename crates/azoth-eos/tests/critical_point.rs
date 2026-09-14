@@ -101,17 +101,22 @@ fn a_pure_component_reproduces_the_analytic_critical_point() {
         let mixture = databank::mixture_of(&[name]).expect("resolves").0;
         let r = critical_point(&mixture, &[1.0]).expect("a critical point");
 
-        // Measured, on both implementations: Tc to 2.5e-12 relative, Pc to 1.6e-11,
-        // Z_c to 5.2e-10 absolute - and the same four figures for all four components,
-        // which is the signature of a systematic floor rather than of noise. The floor
-        // is the finite-difference step the cubic form is evaluated over; see the
-        // spec's notes. The tolerances below are that floor with room for a different
-        // `ln` on another platform, and they are still four orders tighter than the
-        // error the mechanical conditions would produce.
-        common::assert_close(r.tc.value, tc, 1e-10, &format!("{name}: Tc"));
-        common::assert_close(r.pc.value, pc, 1e-10, &format!("{name}: Pc"));
+        // Measured, on both implementations: Tc to 5.5e-05 relative, Pc to 1.5e-04,
+        // Z_c to 2.4e-06 absolute - and the same four figures for all four components,
+        // which is the signature of a systematic departure rather than of noise.
+        //
+        // The departure is the port's, and it is understood: `(1 - omega_b)/3` is the
+        // critical compressibility of a cubic whose Omega pair satisfies the
+        // triple-root condition, and NeqSim's does not - it is 5.6e-06 off it. So
+        // NeqSim's cubic reaches its triple root at `Tr = 1 + 4.8e-05` rather than at
+        // `Tr = 1`, and the construction lands there exactly as it should. The
+        // tolerances below were 1e-10 and 1e-08 before the port adopted NeqSim's
+        // constants. See `eos.pr_alpha_ab`'s assumptions and
+        // `validation/eos/methane_butane_flash_against_neqsim.json`.
+        common::assert_close(r.tc.value, tc, 2e-4, &format!("{name}: Tc"));
+        common::assert_close(r.pc.value, pc, 2e-4, &format!("{name}: Pc"));
         assert!(
-            (r.z_c - expected_z_c).abs() < 1e-8,
+            (r.z_c - expected_z_c).abs() < 5e-6,
             "{name}: Z_c is {} against the analytic {expected_z_c}",
             r.z_c
         );

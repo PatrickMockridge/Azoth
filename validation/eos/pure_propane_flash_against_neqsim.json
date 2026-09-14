@@ -1,0 +1,22 @@
+{
+  "id": "pure_propane_flash_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Same jar and same driver as methane_butane_flash_against_neqsim. This case is a pure component below its dew point, which exercises the branch the other one does not: NeqSim reports a vapour fraction of 1.0 here and azoth reports none at all. Read the derivation before treating that as a disagreement."
+  },
+  "derivation": "The driver was run for propane at 300 K and 9 bar - one component, so no Rachford-Rice sum and no split possible. NeqSim printed:\n\n  beta 1.0\n  k    [1.1170359426451537]\n  Zl   0.03134169806846719\n  Zv   0.8361687756707147\n\nazoth agrees exactly on the three that are the equation's: `k` is 1.1170359426451537 to the last printed digit, `z_liquid` 0.0313416980684672 against 0.03134169806846719, `z_vapour` identical. The gas and liquid roots and the K-value are the physics, and they match to the full precision NeqSim printed.\n\n# `beta`, where the two deliberately differ\n\nNeqSim reports `beta = 1.0` for this state. azoth reports `beta` as **absent**, with `phase = all_vapour` and a `TRIVIAL_SOLUTION` warning.\n\nThat is not a defect in either. `beta` is the vapour fraction of a two-phase split, and this feed has no split: a single component cannot have one, because a split needs `K > 1` and `K < 1` simultaneously and there is one K. NeqSim's 1.0 is a convention for \"one phase and it is the vapour\"; azoth's spec takes the position that the number is then an extrapolation rather than a reading, and that reporting 1.0 hands a caller a figure that looks like a vapour fraction and is not. Its contract is that a caller branches on `phase` and on presence, never on whether the number looks plausible - see `eos.pt_flash`'s `beta` output, which states the two cases where it is genuinely absent.\n\nWhere this bites is a separator or a splitter: a model that routed moles on `beta` without checking `phase` would move the whole feed into the vapour outlet on azoth and 100% of it on NeqSim, and would be right on both by accident. The spec's design is to make that branch unavoidable rather than to be compatible with a convention.\n\nSo this case asserts the three fields that are the equation's, and records the fourth as a deliberate difference. `beta` is deliberately **not** in `expected`: pinning `null` would be asserting the absence as a value, and the absence is asserted where it means something - `python/tests/models/test_pt_flash.py`'s no-root and trivial-solution tests.",
+  "inputs": {
+    "components": ["propane"],
+    "T": 300.0,
+    "P": 900000.0,
+    "z": [1.0]
+  },
+  "expected": {
+    "k": [1.1170359426451537],
+    "z_liquid": 0.03134169806846719,
+    "z_vapour": 0.8361687756707147
+  },
+  "tolerance": 1.0e-10
+}

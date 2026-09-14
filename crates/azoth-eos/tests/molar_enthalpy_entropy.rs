@@ -111,7 +111,7 @@ fn the_enthalpy_is_the_departure_when_the_ideal_gas_terms_are_off() {
     );
     assert_eq!(result.h.value, result.h_departure.value);
     assert!(
-        (result.h.value / (MOLAR_GAS_CONSTANT * 330.0) - -0.5461395392187062).abs() < 1e-12,
+        (result.h.value / (MOLAR_GAS_CONSTANT * 330.0) - -0.5461443674029838).abs() < 1e-12,
         "h/(R T) is {}, not the departure the mixture module computes",
         result.h.value / (MOLAR_GAS_CONSTANT * 330.0)
     );

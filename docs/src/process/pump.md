@@ -86,8 +86,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `twenty_to_thirty_bar_at_eighty_percent` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 3000000.0, efficiency = 0.8 | T = 312.4165147182354, P = 3000000.0, power = 8194.771204505514, isentropic_temperature = 311.3153978294822 |
-| `a_liquid_feed_is_pumped` | components = ['methane', 'n-butane'], T = 300.0, P = 4000000.0, n = 10.0, z = [0.2, 0.8], outlet_pressure = 5000000.0, efficiency = 0.8 | T = 300.79281733102846, P = 5000000.0, power = 1123.8593619733592, isentropic_temperature = 300.61769035219305 |
+| `twenty_to_thirty_bar_at_eighty_percent` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 3000000.0, efficiency = 0.8 | T = 312.41727762744597, P = 3000000.0, power = 8195.195890579158, isentropic_temperature = 311.3162271821248 |
+| `a_liquid_feed_is_pumped` | components = ['methane', 'n-butane'], T = 300.0, P = 4000000.0, n = 10.0, z = [0.2, 0.8], outlet_pressure = 5000000.0, efficiency = 0.8 | T = 300.79302232021286, P = 5000000.0, power = 1124.010011876885, isentropic_temperature = 300.61787326384484 |
 
 ## References
 

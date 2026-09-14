@@ -20,8 +20,10 @@ use crate::{pr_alpha_ab, pr_departure, pr_kappa, pr_z_factor};
 
 /// The saturation pressure of a pure component at a temperature.
 ///
-/// `Tc`, `Pc` and `omega` are the caller's - this library ships no component
-/// databank - and `T` must be below `Tc`.
+/// `Tc`, `Pc` and `omega` are the caller's. A caller who wants them from a name
+/// takes them off `crate::databank::entry`, the same lookup `databank::mixture_of`
+/// performs on the mixture path; this function is the scalar kernel underneath and
+/// has no opinion about where its numbers came from. `T` must be below `Tc`.
 ///
 /// # Errors
 /// * [`AzothError::OutOfRange`] if `T`, `Tc` or `Pc` is not positive, or if
@@ -39,7 +41,7 @@ use crate::{pr_alpha_ab, pr_departure, pr_kappa, pr_z_factor};
 /// use azoth_eos::pure_saturation;
 ///
 /// let r = pure_saturation(kelvins(369.83), pascals(4_248_000.0), 0.1523, kelvins(300.0))?;
-/// assert!((r.p_sat.value / 1e5 - 9.9767).abs() < 1e-3);
+/// assert!((r.p_sat.value / 1e5 - 9.9791).abs() < 1e-3);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the chemistry

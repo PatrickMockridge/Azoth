@@ -272,10 +272,10 @@ def test_the_feed_is_placed_on_its_lower_gibbs_root() -> None:
     liquid_residual, liquid_naive, liquid_right = forms(roots.z_min)
     vapour_residual, vapour_naive, vapour_right = forms(roots.z_max)
 
-    h.assert_close(liquid_residual, -2.558159759861873, 1e-9, "liquid A^R/RT")
-    h.assert_close(vapour_residual, -0.015548831218595781, 1e-9, "vapour A^R/RT")
-    h.assert_close(liquid_right, 3.1456610060268475, 1e-9, "liquid A^R/RT - ln Z + Z")
-    h.assert_close(vapour_right, 0.9845726745266656, 1e-9, "vapour A^R/RT - ln Z + Z")
+    h.assert_close(liquid_residual, -2.5578138051194212, 1e-9, "liquid A^R/RT")
+    h.assert_close(vapour_residual, -0.015548927641895367, 1e-9, "vapour A^R/RT")
+    h.assert_close(liquid_right, 3.1458414529963945, 1e-9, "liquid A^R/RT - ln Z + Z")
+    h.assert_close(vapour_right, 0.9845725795485407, 1e-9, "vapour A^R/RT - ln Z + Z")
 
     assert liquid_naive < vapour_naive, (
         "the wrong comparison is only worth recording if it picks the other root"

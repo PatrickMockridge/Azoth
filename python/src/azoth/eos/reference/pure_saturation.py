@@ -37,8 +37,9 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
     Args:
         Tc: critical temperature.
         Pc: critical pressure.
-        omega: acentric factor. All three are the caller's - this library ships no
-            component databank.
+        omega: acentric factor. All three are the caller's; `azoth.eos.components.entry`
+            resolves them from the databank by name, and this function is the scalar
+            kernel underneath.
         T: absolute temperature. Must be below ``Tc``: above the critical temperature
             a pure component has no saturation pressure, and this refuses rather than
             returning a plausible-looking extrapolation.
@@ -58,7 +59,7 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
         >>> q = azoth.ureg.Quantity
         >>> r = pure_saturation(q(369.83, "K"), q(4_248_000.0, "Pa"), 0.1523, q(300.0, "K"))
         >>> round(r.p_sat.magnitude / 1e5, 4)
-        9.9767
+        9.9791
     """
     spec = _models_gen.model(MODEL_ID)
     checks = checks_for(spec)

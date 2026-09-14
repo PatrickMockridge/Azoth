@@ -88,9 +88,17 @@ def test_a_pure_component_reproduces_the_analytic_critical_point() -> None:
 
     At ``Tr = Pr = 1`` a pure Peng-Robinson fluid's critical compressibility is
     ``(1 - omega_b)/3`` in closed form, so the whole construction has an independent
-    answer to be compared against. The tolerances are the iteration's residual floor
-    rather than the arithmetic's limit - see the spec's notes - and they are the same
-    four figures for every component, which is what a systematic floor looks like.
+    answer to be compared against.
+
+    **The tolerances are 2e-04 and 5e-06, not the 1e-10 and 1e-08 they used to be,
+    and that is the price of the port.** ``(1 - omega_b)/3`` is the critical point of
+    a cubic whose ``Omega_a`` and ``Omega_b`` satisfy the triple-root condition.
+    NeqSim's do not - they depart by p = -5.6e-6 - so its cubic is at a triple root
+    at ``Tr = 1 + 4.8e-05`` rather than at ``Tr = 1``, and that is exactly the
+    residue this test now measures. It is four or five figures for every component,
+    which is what a systematic departure looks like rather than an iteration that
+    has not finished. See ``eos.pr_alpha_ab``'s assumptions and
+    ``validation/eos/methane_butane_flash_against_neqsim.json``.
     """
     for name, substance in (
         ("propane", PROPANE),
@@ -102,9 +110,10 @@ def test_a_pure_component_reproduces_the_analytic_critical_point() -> None:
         p_c = substance.Pc.to_base_units().magnitude
         result = critical_point(pure(substance), [1.0])
 
-        h.assert_close(result.tc.to("K").magnitude, t_c, 1e-10, f"{name}: Tc")
-        h.assert_close(result.pc.to("Pa").magnitude, p_c, 1e-10, f"{name}: Pc")
-        assert abs(result.z_c - PURE_COMPRESSIBILITY) < 1e-8, (
+        h.assert_close(result.tc.to("K").magnitude, t_c, 2e-4, f"{name}: Tc")
+        h.assert_close(result.pc.to("Pa").magnitude, p_c, 2e-4, f"{name}: Pc")
+        # Measured at 2.4e-6 for all four, against an analytic 0.307398889.
+        assert abs(result.z_c - PURE_COMPRESSIBILITY) < 5e-6, (
             f"{name}: Z_c is {result.z_c!r} against the analytic {PURE_COMPRESSIBILITY!r}"
         )
 

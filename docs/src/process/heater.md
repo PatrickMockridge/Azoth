@@ -84,7 +84,7 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `fifty_kilowatts_on_ten_moles_per_second` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 50000.0 | T = 325.2262607503454, P = 2000000.0 |
+| `fifty_kilowatts_on_ten_moles_per_second` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 50000.0 | T = 325.2228807117493, P = 2000000.0 |
 | `no_duty_is_the_identity` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 0.0 | T = 300.0, P = 2000000.0 |
 
 ## References

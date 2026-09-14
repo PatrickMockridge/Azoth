@@ -70,8 +70,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `pure_propane` | components = ['propane'], z = [1.0] | tc = 369.8299999990743, pc = 4247999.999932174, vc = 0.0002225140955403989, z_c = 0.3074013092190002 |
-| `methane_and_butane` | components = ['methane', 'n-butane'], z = [0.4, 0.6] | tc = 389.7426334217613, pc = 8224619.579449218, vc = 0.0001852334599580244, z_c = 0.4701356210492527 |
+| `pure_propane` | components = ['propane'], z = [1.0] | tc = 369.8124146141963, pc = 4247401.68587663, vc = 0.00022253485817164885, z_c = 0.3074013092188133 |
+| `methane_and_butane` | components = ['methane', 'n-butane'], z = [0.4, 0.6] | tc = 389.72436734238954, pc = 8223457.654726913, vc = 0.00018525082354388668, z_c = 0.4701353007478311 |
 
 ## References
 

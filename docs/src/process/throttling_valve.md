@@ -82,7 +82,7 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `a_five_bar_drop_cools_the_stream` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, z = [0.6, 0.4], pressure_drop = 500000.0 | T = 294.9665142143329, P = 1500000.0 |
+| `a_five_bar_drop_cools_the_stream` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, z = [0.6, 0.4], pressure_drop = 500000.0 | T = 294.96569012703566, P = 1500000.0 |
 | `no_drop_leaves_the_stream_alone` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, z = [0.6, 0.4], pressure_drop = 0.0 | T = 300.0, P = 2000000.0 |
 
 ## References

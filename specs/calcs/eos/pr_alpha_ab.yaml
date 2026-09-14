@@ -2,8 +2,8 @@ id: eos.pr_alpha_ab
 name: Peng-Robinson alpha function and reduced attraction parameters
 equation: |
   alpha = (1 + kappa*(1 - Tr**0.5))**2
-  a_reduced = 0.4572355289213822*alpha*Pr/Tr**2
-  b_reduced = 0.07779607390388846*Pr/Tr
+  a_reduced = 0.45724333333*alpha*Pr/Tr**2
+  b_reduced = 0.077803333*Pr/Tr
 latex: '\alpha = \left[1 + \kappa\left(1 - \sqrt{T_{r}}\right)\right]^{2}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}'
 
 source:
@@ -78,9 +78,13 @@ assumptions:
   - "`Tr` and `Pr` are reduced against a critical point that is correct for the component intended. NOT CHECKED - Tc and Pc are the caller's, and this calc has no second source for them."
   - the range of reduced temperature over which the alpha function's fit holds is NOT established, and no bound asserts one. The fitted range is unconfirmed - see `eos.pr_kappa`'s notes - so a warning bound here would be inventing a number. This calc is smooth and well conditioned at every Tr it accepts; whether its *result* is right is the fit's question, not this calc's.
   - A and B are the reduced parameters of the Peng-Robinson cubic and are used with that cubic's mixing rules. They are not interchangeable with another equation of state's reduced parameters, even where the symbols coincide.
+  - "**`Omega_a` and `Omega_b` are NeqSim 3.20.0's, not the paper's.** NeqSim's `ComponentPR` constructor sets `a = .45724333333*R**2*Tc**2/Pc` and `b = .077803333*R*Tc/Pc`, so the pair here is 0.45724333333 and 0.077803333. The paper prints `0.45724` and `0.07780`; the cubic's triple-root condition gives 0.4572355289213822 and 0.07779607390388846 exactly. All three differ, and NeqSim's is the paper's printed value plus 3.3333e-6 in both constants - a constant offset, which is what makes it read as a transcription artefact carried forward rather than a refit.
+
+    **The port rule decides it, and the measurement is what makes that concrete.** Substituting NeqSim's pair into the reference implementation reproduces NeqSim's own `TPflash` to twelve significant figures: beta 0.8422055475803881 against 0.842205547583653 for methane/n-butane at 330 K and 25 bar. The exact pair leaves a residue of 1.4e-4 on the same state - see `validation/eos/methane_butane_flash_against_neqsim.json`, which records the fluid, the state and the driver that printed NeqSim's answer. Carrying NeqSim's literals is what makes azoth a port of NeqSim rather than a reimplementation of Peng-Robinson that resembles it; a version that corrected the upstream would disagree with it by 1.4e-4 everywhere, forever, and could never be validated against it at all."
 
 references:
-  - 'Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011. (the origin of the alpha function; the citation is confirmed, the printed coefficients are not read - see `notes` for why this spec uses the full-precision pair instead)'
+  - 'Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011. (the origin of the alpha function. Its printed coefficients are NOT the ones this calc uses: `assumptions` records why, and what the pair in the equations above is.)'
+  - 'NeqSim 3.20.0, `neqsim.thermo.component.ComponentPR`, constructor: the source of the two `Omega` constants this calc uses. Not a peer-reviewed source - it is the upstream being ported, which is a different kind of authority and the one that settles the question here.'
 
 worked_example:
   source: derived from the equations above
@@ -96,15 +100,15 @@ worked_example:
       1 + that                                           = 1.063642170169846
       alpha = 1.063642170169846**2                       = 1.1313346661636197
 
-      Omega_a * alpha = 0.4572355289213822 * 1.1313346661636197
-                                                         = 0.517286404470418
-      * Pr            = 0.517286404470418 * 0.25         = 0.1293216011176045
-      / Tr**2         = 0.1293216011176045 / 0.64        = 0.20206500174625697
-      a_reduced                                          = 0.20206500174625697
+      Omega_a * alpha = 0.45724333333 * 1.1313346661636197
+                                                         = 0.5172952338684362
+      * Pr            = 0.5172952338684362 * 0.25        = 0.12932380846710906
+      / Tr**2         = 0.12932380846710906 / 0.64       = 0.20206845072985785
+      a_reduced                                          = 0.20206845072985785
 
-      Omega_b * Pr    = 0.07779607390388846 * 0.25       = 0.019449018475972114
-      / Tr            = 0.019449018475972114 / 0.8       = 0.02431127309496514
-      b_reduced                                          = 0.02431127309496514
+      Omega_b * Pr    = 0.077803333 * 0.25               = 0.01945083325
+      / Tr            = 0.01945083325 / 0.8              = 0.0243135415625
+      b_reduced                                          = 0.0243135415625
 
     Every value above was checked against exact decimal arithmetic in
     arbitrary-precision arithmetic rather than against a second run of the same
@@ -118,14 +122,15 @@ worked_example:
     binary - so that a discrepancy in the output is the arithmetic's and not the
     inputs'.
 
-    Note that these are NOT the values the printed Omega constants would give.
-    Substituting 0.45724 and 0.07780 gives a_reduced = 0.2020669776393177 and
+    Note that these are NOT the values the paper's printed Omega constants would
+    give. Substituting 0.45724 and 0.07780 gives a_reduced = 0.2020669776393177 and
     b_reduced = 0.024312499999999997, which differ in the sixth and fifth
-    significant figures respectively. The distances are small at ordinary
-    conditions; at the critical point they are not, and `notes` explains
-    why.
+    significant figures respectively - 7.3e-6 and 4.3e-5 relative. The distances are
+    small at ordinary conditions; near the critical point they are what the cubic's
+    critical compressibility is made of, and `assumptions` records why this spec
+    uses NeqSim's pair rather than either the printed one or the exact one.
   inputs: { kappa: 0.60282728832, Tr: 0.8, Pr: 0.25 }
-  expected: { alpha: 1.1313346661636197, a_reduced: 0.20206500174625697, b_reduced: 0.02431127309496514 }
+  expected: { alpha: 1.1313346661636197, a_reduced: 0.20206845072985785, b_reduced: 0.0243135415625 }
   tolerance: 1.0e-12
 
 implementations:
@@ -149,16 +154,19 @@ tests:
         sqrt(1)  = 1
         1 - 1    = 0
         alpha    = (1 + kappa*0)**2 = 1.0    exactly, for any kappa
-        a_reduced = Omega_a * 1 * 1 / 1**2 = 0.4572355289213822
-        b_reduced = Omega_b * 1 / 1        = 0.07779607390388846
+        a_reduced = Omega_a * 1 * 1 / 1**2 = 0.45724333333
+        b_reduced = Omega_b * 1 / 1        = 0.077803333
 
       A test that asserts the constants are what they are, in the one place the
-      equation exposes them with nothing else in the way. It also catches the
-      rounded pair: an implementation using 0.45724 and 0.07780 fails this by
-      more than 1e-5 relative, which is why it is asserted at 1e-15 rather than
-      loosely.
+      equation exposes them with nothing else in the way. It also catches both
+      other pairs: an implementation using the paper's printed 0.45724 and
+      0.07780 fails this by 7.3e-6 and 4.3e-5 relative, and one using the exact
+      values the triple-root condition gives, 0.4572355289213822 and
+      0.07779607390388846, fails it by 1.7e-5 and 9.3e-5. Which pair is in the
+      source is the whole of the difference between agreeing with NeqSim and not,
+      so it is asserted at 1e-15 rather than loosely.
     inputs: { kappa: 0.60282728832, Tr: 1.0, Pr: 1.0 }
-    expected: { alpha: 1.0, a_reduced: 0.4572355289213822, b_reduced: 0.07779607390388846 }
+    expected: { alpha: 1.0, a_reduced: 0.45724333333, b_reduced: 0.077803333 }
     tolerance: 1.0e-15
 
   - id: supercritical_and_a_different_kappa
@@ -175,10 +183,10 @@ tests:
                                                    = -0.08814885073990032
         alpha         = (1 - 0.08814885073990032)**2 = 0.8314725184069646
 
-        a_reduced     = 0.4572355289213822 * 0.8314725184069646 * 0.5 / 2.25
-                      = 0.08448417260831159
-        b_reduced     = 0.07779607390388846 * 0.5 / 1.5
-                      = 0.025932024634629486
+        a_reduced     = 0.45724333333 * 0.8314725184069646 * 0.5 / 2.25
+                      = 0.08448561464193118
+        b_reduced     = 0.077803333 * 0.5 / 1.5
+                      = 0.025934444333333334
 
       Worth having for three reasons. It exercises the branch where
       `1 - sqrt(Tr)` is negative and kappa reduces the attraction rather than
@@ -188,7 +196,7 @@ tests:
       And it is above the critical temperature, which is where a cubic equation
       of state is most used and least tested.
     inputs: { kappa: 0.392217407205312, Tr: 1.5, Pr: 0.5 }
-    expected: { alpha: 0.8314725184069646, a_reduced: 0.08448417260831159, b_reduced: 0.025932024634629486 }
+    expected: { alpha: 0.8314725184069646, a_reduced: 0.08448561464193118, b_reduced: 0.025934444333333334 }
     tolerance: 1.0e-12
 
   - id: monotonic

@@ -30,19 +30,14 @@ use crate::{model_gen, phase_boundary};
 ///
 /// # Example
 /// ```
-/// use azoth_core::units::{kelvins, pascals};
-/// use azoth_eos::mixture::{Component, Mixture};
-/// use azoth_eos::bubble_pressure;
+/// use azoth_core::units::kelvins;
+/// use azoth_eos::{bubble_pressure, databank};
 ///
-/// let mixture = Mixture::new(
-///     vec![
-///         Component::new(kelvins(190.56), pascals(4_599_200.0), 0.01142)?,
-///         Component::new(kelvins(425.12), pascals(3_796_000.0), 0.2002)?,
-///     ],
-///     vec![0.0, 0.05, 0.05, 0.0],
-/// )?;
+/// let mixture = databank::mixture_of(&["methane", "n-butane"])
+///     .expect("the pair resolves")
+///     .0;
 /// let r = bubble_pressure(&mixture, kelvins(300.0), &[0.2, 0.8])?;
-/// assert!((r.pressure.value / 1e6 - 4.40597188524195).abs() < 1e-9);
+/// assert!((r.pressure.value / 1e6 - 3.9509604937437346).abs() < 1e-9);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 pub fn bubble_pressure(

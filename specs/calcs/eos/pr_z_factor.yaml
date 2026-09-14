@@ -221,9 +221,14 @@ tests:
     type: reference
     status: active
     source: >
-      Derived from the equation above, at A = Omega_a and B = Omega_b - the critical
-      point by construction, since those are the constants chosen to place a triple
-      root there.
+      Derived from the equation above, at A = 0.4572355289213822 and
+      B = 0.07779607390388846 - the pair that places a triple root at the cubic's own
+      critical point, and therefore the pair for which this case's premise holds
+      exactly. It is *not* the pair `eos.pr_alpha_ab` ships: NeqSim's literals, which
+      this library carries deliberately, depart from it by 5.6e-6 and put the cubic's
+      triple root at `Tr = 1 + 4.8e-5` instead. A case is an instance, so it states
+      the `A` and `B` it means rather than borrowing whatever the constants happen to
+      be - see `eos.pr_alpha_ab`'s assumptions.
 
       This case is deliberately asserted **loosely**, at 1e-3 rather than 1e-12, and
       the reason is the substance of the test. The cubic here is

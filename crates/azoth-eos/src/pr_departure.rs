@@ -42,7 +42,7 @@ use crate::spec_gen;
 /// let ab = pr_alpha_ab(kappa, 0.8, 0.25)?;
 /// let z = pr_z_factor(ab.a_reduced, ab.b_reduced)?;
 /// let d = pr_departure(ab.a_reduced, ab.b_reduced, z.z_max, kappa, 0.8)?;
-/// assert!((d.ln_phi + 0.19131055684257678).abs() < 1e-12);
+/// assert!((d.ln_phi + 0.19131116744197554).abs() < 1e-12);
 /// // The identity, which is what ties the three together.
 /// assert!((d.h_dep_rt - d.s_dep_r - d.ln_phi).abs() < 1e-12);
 /// # Ok::<(), azoth_core::AzothError>(())

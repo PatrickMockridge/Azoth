@@ -89,47 +89,72 @@ fn depressed(a: f64, b: f64) -> (f64, f64) {
     (p, q)
 }
 
-/// The Omega constants are the values that make the critical point a triple root.
+/// The pair the cubic's triple-root condition gives, which this crate does *not* ship.
 ///
-/// This is the claim the whole spec rests on, and it is a *derivable* one: the two
-/// constants must satisfy `Omega_a = 3u**2 + 2u + (1-u)**2/3` and
-/// `Omega_a*u - u**2 - u**3 = (1-u)**3/27` simultaneously, which fixes them. The
-/// spec states the pair in full so the worked example is retraceable without the
-/// paper, and this test is what makes that claim checkable rather than asserted.
+/// A *derivable* claim: the two constants must satisfy
+/// `Omega_a = 3u**2 + 2u + (1-u)**2/3` and `Omega_a*u - u**2 - u**3 = (1-u)**3/27`
+/// simultaneously, which fixes them at 0.4572355289213822 and 0.07779607390388846.
+/// Asserted here because it is where the pair comes from and because it is what the
+/// departure below is measured against - not because it is what the library uses.
 ///
-/// Measured, not assumed: with the constants this crate ships, `p` comes out
-/// **exactly zero** in f64 and `q` is 6.9e-18 - one ulp of the coefficient scale.
+/// Measured: `p` comes out **exactly zero** in f64 and `q` is 6.9e-18, one ulp of
+/// the coefficient scale.
 #[test]
-fn the_omegas_make_the_critical_point_a_triple_root() {
-    let (p, q) = depressed(OMEGA_A, OMEGA_B);
+fn the_exact_omegas_are_the_triple_root_solution() {
+    let (p, q) = depressed(0.4572355289213822, 0.07779607390388846);
     assert!(
         p.abs() < 1e-12 && q.abs() < 1e-12,
-        "the critical point is not a triple root: p = {p:e}, q = {q:e}"
+        "the exact pair should be a triple root: p = {p:e}, q = {q:e}"
     );
 }
 
-/// ...and the values the paper *prints* do not, which is why this crate does not use them.
+/// The pair this crate ships is NeqSim's, and it is deliberately not that solution.
 ///
-/// This is the trap the spec's `notes` exist for. `0.45724` and
-/// `0.07780` are roundings of the pair above, and rounding them breaks the
-/// condition by three orders of magnitude more than the tolerance - because a
-/// triple root is cubically ill-conditioned, so a 5e-6 error in the coefficient
-/// moves the root by about its cube root, 1.7e-2.
+/// The port rule settles it: azoth is a port of NeqSim 3.20.0, NeqSim's
+/// `ComponentPR` constructor sets these two literals, and carrying them is what
+/// makes the two agree. Asserted rather than merely stated in a comment, because
+/// "correcting" them back to the exact pair is the single most natural edit a
+/// reader could make - and it is the one that would end the agreement.
 ///
-/// Asserting the failure rather than only the success is the point: it pins *how*
-/// wrong the printed pair is, so an implementer who "corrects" the constants to
-/// match the paper makes this test fail and is told why, instead of silently
-/// shifting every downstream number by 4.55% at the critical point.
+/// Measured, so the size of the departure is on record: `p` = -5.64e-6 and
+/// `q` = -5.08e-6, against the exact pair's zero. That is a *larger* departure than
+/// the paper's printed five digits leave (2.80e-6), because NeqSim's pair is the
+/// printed pair plus 3.3333e-6 in both constants and the printed pair is already
+/// below the exact one. See the spec's `assumptions`.
 #[test]
-fn the_printed_omegas_do_not_and_that_is_why_they_are_not_used() {
+fn the_shipped_omegas_are_neqsims_and_are_not_the_triple_root_solution() {
+    assert_eq!(
+        (OMEGA_A, OMEGA_B),
+        (0.45724333333, 0.077803333),
+        "these are NeqSim 3.20.0's ComponentPR literals; see the spec's assumptions"
+    );
+    let (p, q) = depressed(OMEGA_A, OMEGA_B);
+    assert!(
+        p.abs() > 1e-9 && q.abs() > 1e-9,
+        "the shipped pair was expected to depart from the triple root; p = {p:e}, q = {q:e}"
+    );
+    // Bounded as well as non-zero, so a typo in the literals fails here rather than
+    // quietly moving every number downstream.
+    assert!(
+        p.abs() < 1e-5 && q.abs() < 1e-5,
+        "the departure is larger than NeqSim's literals explain; p = {p:e}, q = {q:e}"
+    );
+}
+
+/// The pair the paper *prints* departs too, and further than a rounding would.
+///
+/// The widest of the three departures is the one this crate ships, so this is not
+/// the test that keeps the constants honest - that is the equality above. What it
+/// records is why the printed pair is not an option either, and it is the same
+/// reason in kind: a triple root is cubically ill-conditioned, so the square root
+/// of a 5e-6 error in the coefficient moves the root by about 1.7e-2.
+#[test]
+fn the_printed_omegas_depart_from_the_triple_root_too() {
     let (p, q) = depressed(0.45724, 0.07780);
     assert!(
-        p.abs() > 1e-9,
-        "expected the printed Omegas to break the triple-root condition; p = {p:e}"
-    );
-    assert!(
-        q.abs() > 1e-9,
-        "expected the printed Omegas to break the triple-root condition; q = {q:e}"
+        p.abs() > 1e-9 && q.abs() > 1e-9,
+        "expected the printed Omegas to break the triple-root condition; \
+         p = {p:e}, q = {q:e}"
     );
 }
 

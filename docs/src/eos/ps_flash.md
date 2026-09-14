@@ -84,8 +84,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `two_phase_round_trip` | components = ['methane', 'n-butane'], P = 2000000.0, S = -38.61276026788922, z = [0.6, 0.4] | T = 289.29650957271576, beta = 0.6382220605666094 |
-| `single_phase_vapour_round_trip` | components = ['methane', 'n-butane'], P = 2000000.0, S = -18.372548072123493, z = [0.6, 0.4] | T = 324.02459815787086 |
+| `two_phase_round_trip` | components = ['methane', 'n-butane'], P = 2000000.0, S = -33.37924808318274, z = [0.6, 0.4] | T = 300.00000000000006, beta = 0.6824887179287709 |
+| `single_phase_vapour_round_trip` | components = ['methane', 'n-butane'], P = 2000000.0, S = 4.29557591174716, z = [0.6, 0.4] | T = 400.0 |
 
 ## References
 

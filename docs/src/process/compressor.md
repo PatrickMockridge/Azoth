@@ -87,8 +87,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `a_two_to_one_pressure_rise_at_three_quarters_efficiency` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 4000000.0, efficiency = 0.75 | T = 322.09501753909615, P = 4000000.0, power = 14950.70966597624, isentropic_temperature = 319.51928970913815 |
-| `unit_efficiency_reaches_the_ideal_temperature` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 4000000.0, efficiency = 1.0 | P = 4000000.0, isentropic_temperature = 319.51928970913815 |
+| `a_two_to_one_pressure_rise_at_three_quarters_efficiency` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 4000000.0, efficiency = 0.75 | T = 322.096301712808, P = 4000000.0, power = 14951.486632779171, isentropic_temperature = 319.5206991094713 |
+| `unit_efficiency_reaches_the_ideal_temperature` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 4000000.0, efficiency = 1.0 | P = 4000000.0, isentropic_temperature = 319.5206991094713 |
 
 ## References
 

@@ -83,7 +83,7 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `two_different_feeds_blend` | components = ['methane', 'n-butane'], T = [300.0, 350.0], P = [2000000.0, 1500000.0], n = [6.0, 4.0], z = [[0.6, 0.4], [0.4, 0.6]] | T = 321.5288782883907, P = 1500000.0, flow = 10.0, z_out = [0.5199999999999999, 0.4800000000000001] |
+| `two_different_feeds_blend` | components = ['methane', 'n-butane'], T = [300.0, 350.0], P = [2000000.0, 1500000.0], n = [6.0, 4.0], z = [[0.6, 0.4], [0.4, 0.6]] | T = 321.5223651426448, P = 1500000.0, flow = 10.0, z_out = [0.5199999999999999, 0.4800000000000001] |
 | `two_identical_feeds_double_the_flow_and_change_nothing_else` | components = ['methane', 'n-butane'], T = [300.0, 300.0], P = [2000000.0, 2000000.0], n = [6.0, 4.0], z = [[0.6, 0.4], [0.6, 0.4]] | T = 300.0, P = 2000000.0, flow = 10.0, z_out = [0.6, 0.4] |
 
 ## References

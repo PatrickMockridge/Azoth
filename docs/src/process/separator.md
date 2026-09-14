@@ -80,7 +80,7 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `a_two_phase_feed_splits_by_the_flash_vapour_fraction` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 0.0 | T = 300.0, P = 2000000.0, beta = 0.6824390296509162, gas_flow = 6.824390296509161, liquid_flow = 3.175609703490838 |
+| `a_two_phase_feed_splits_by_the_flash_vapour_fraction` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 0.0 | T = 300.0, P = 2000000.0, beta = 0.6824887179287704, gas_flow = 6.824887179287704, liquid_flow = 3.175112820712296 |
 | `a_pressure_drop_leaves_the_temperature_alone` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 500000.0, heat_duty = 0.0 | T = 300.0, P = 1500000.0 |
 | `a_single_phase_feed_leaves_one_outlet_empty` | components = ['methane', 'n-butane'], T = 450.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 0.0 | T = 450.0, P = 2000000.0, gas_flow = 10.0, liquid_flow = 0.0 |
 

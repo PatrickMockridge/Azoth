@@ -22,9 +22,9 @@ cases:
   expected:
     T: 300.0
     P: 2000000.0
-    beta: 0.6824390296509162
-    gas_flow: 6.824390296509161
-    liquid_flow: 3.175609703490838
+    beta: 0.6824887179287704
+    gas_flow: 6.824887179287704
+    liquid_flow: 3.175112820712296
   tolerance: 1.0e-09
 - id: a_pressure_drop_leaves_the_temperature_alone
   inputs:

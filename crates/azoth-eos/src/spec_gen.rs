@@ -217,8 +217,8 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         matrices: &[],
         expected: &[
             ("alpha", 1.0),
-            ("a_reduced", 0.4572355289213822),
-            ("b_reduced", 0.07779607390388846),
+            ("a_reduced", 0.45724333333),
+            ("b_reduced", 0.077803333),
         ],
         expected_vectors: &[],
     },
@@ -235,8 +235,8 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         matrices: &[],
         expected: &[
             ("alpha", 0.8314725184069646),
-            ("a_reduced", 0.08448417260831159),
-            ("b_reduced", 0.025932024634629486),
+            ("a_reduced", 0.08448561464193118),
+            ("b_reduced", 0.025934444333333334),
         ],
         expected_vectors: &[],
     },
@@ -295,8 +295,8 @@ pub static PR_ALPHA_AB_SPEC: CalcSpec = CalcSpec {
         matrices: &[],
         expected: &[
             ("alpha", 1.1313346661636197),
-            ("a_reduced", 0.20206500174625697),
-            ("b_reduced", 0.02431127309496514),
+            ("a_reduced", 0.20206845072985785),
+            ("b_reduced", 0.0243135415625),
         ],
         expected_vectors: &[],
     },

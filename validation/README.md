@@ -44,8 +44,24 @@ K-value per component), an enum member as its spec spelling, or `null` for an
 output that is genuinely absent - `eos.pt_flash` reports no vapour fraction when a
 feed has no two-phase solution, and a case can assert that. And an input that is an
 *object* rather than a number needs an entry in the runner's `ARGUMENT_BUILDERS`,
-which today holds one: `eos.pt_flash` takes a `Mixture`, so its case states the
-components as vectors and the runner assembles them.
+which today holds one: `eos.pt_flash` takes a `Mixture`, so its case names its
+components and the runner resolves them through the databank.
+
+## NeqSim is the ground truth, and `neqsim/` is how to reach it
+
+This library is a port of NeqSim 3.20.0. Where a published source and NeqSim
+disagree about what a calculation does, NeqSim is what azoth is trying to be, so a
+disagreement with NeqSim is the more interesting failure.
+
+`validation/neqsim/` holds a small Java driver that builds a system in NeqSim and
+prints a flash's answer in the fields azoth reports. It is not built by CI - it needs
+a JVM and NeqSim's jar - so the numbers it prints are recorded in the cases beside
+it, with the fluid and the state written down so anyone can run it again. `FlashTp`
+carries the two commands at the top.
+
+The jar is not vendored. `databank/sources/neqsim/` carries NeqSim's *data files*,
+because those are what the databank is compiled from and they are small; the jar is
+20 MB of compiled Java that nothing here links against.
 
 `source.verification` is one of:
 

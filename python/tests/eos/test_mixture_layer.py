@@ -18,35 +18,44 @@ import pytest
 
 import _helpers as h
 from azoth import ureg
-from azoth.eos import Component, mixture, pr_departure, pr_kappa
+from azoth.eos import Component, from_names, mixture, pr_departure, pr_kappa
+from azoth.eos.components import component
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import (
     PhaseState,
+    ReducedParameters,
     criticality_matrix,
     helmholtz_energy,
     helmholtz_hessian,
+    mixture_parameters,
     phase_state,
     phase_state_at,
     reduced_parameters,
 )
+from azoth.eos.reference.pr_z_factor import pr_z_factor
 
 Q = ureg.Quantity
 
-PROPANE = Component(Q(369.83, "K"), Q(4_248_000.0, "Pa"), 0.1523)
-BUTANE = Component(Q(425.12, "K"), Q(3_796_000.0, "Pa"), 0.2002)
-METHANE = Component(Q(190.56, "K"), Q(4_599_200.0, "Pa"), 0.01142)
+# Resolved through the databank rather than typed here, like every other fixture in
+# this test tree. The three written out longhand had drifted from NeqSim's COMP.csv:
+# methane at 0.01142 and 4 599 200 Pa, where the table says 0.0115 and 4 599 000.
+PROPANE = component("propane")
+BUTANE = component("n-butane")
+METHANE = component("methane")
 
 
 def methane_butane() -> Mixture:
-    return mixture([METHANE, BUTANE], kij={(0, 1): 0.05})
+    """The pair, with the interaction parameter NeqSim fits for it."""
+    return from_names(["methane", "n-butane"])
 
 
 def ternary() -> Mixture:
-    return mixture([METHANE, PROPANE, BUTANE])
+    """Three components, their interaction parameters from the same table."""
+    return from_names(["methane", "propane", "n-butane"])
 
 
 @pytest.mark.parametrize(
-    ("component", "t_c", "p_pa"),
+    ("substance", "t_c", "p_pa"),
     [
         (PROPANE, 300.0, 1.0e6),
         (PROPANE, 350.0, 2.0e6),
@@ -56,7 +65,7 @@ def ternary() -> Mixture:
     ids=["propane-300", "propane-350", "butane-350", "methane-200"],
 )
 def test_the_departures_reduce_to_pr_departure_at_one_component(
-    component: Component, t_c: float, p_pa: float
+    substance: Component, t_c: float, p_pa: float
 ) -> None:
     """At one component the mixture's departure functions *are* ``eos.pr_departure``.
 
@@ -67,13 +76,13 @@ def test_the_departures_reduce_to_pr_departure_at_one_component(
     formed by subtracting the Gibbs term and the pure calc forms it by adding two
     others - a different summation order and nothing more.
     """
-    fluid = mixture([component])
+    fluid = mixture([substance])
     reduced = reduced_parameters(fluid, t_c, p_pa)
     state = phase_state(reduced, fluid.kij, [1.0], liquid=False)
 
-    kappa = pr_kappa(component.omega).kappa
+    kappa = pr_kappa(substance.omega).kappa
     pure = pr_departure(
-        reduced.a[0], reduced.b[0], state.z, kappa, t_c / component.Tc.to_base_units().magnitude
+        reduced.a[0], reduced.b[0], state.z, kappa, t_c / substance.Tc.to_base_units().magnitude
     )
 
     assert state.psi_bar == reduced.psi[0], f"T={t_c}: psi_bar should be the component's own psi"
@@ -128,9 +137,9 @@ def test_psi_bar_lies_between_the_components_psi() -> None:
 def test_the_departures_are_proportional_to_pressure_at_low_pressure() -> None:
     """At low pressure the departure goes to zero, and the *shape* is the check.
 
-    Measured on methane/n-butane at 330 K, ``h_dep_rt`` is ``-1.926095e-04`` at 1 kPa
-    and ``-1.926771e-03`` at 10 kPa, a ratio of **10.0035**; at 100 kPa and 1 MPa the
-    ratios are 10.035 and 10.382, drifting up as the ideal-gas limit is left behind.
+    Measured on methane/n-butane at 330 K, ``h_dep_rt`` is ``-1.961381e-04`` at 1 kPa
+    and ``-1.962095e-03`` at 10 kPa, a ratio of **10.0036**; at 100 kPa and 1 MPa the
+    ratios are 10.037 and 10.397, drifting up as the ideal-gas limit is left behind.
     Asserting the shape rather than an arbitrary smallness is what makes this a check
     rather than a tolerance.
     """
@@ -146,6 +155,21 @@ def test_the_departures_are_proportional_to_pressure_at_low_pressure() -> None:
         h.assert_close(ratio, 10.0, 1e-2, f"{name} ratio over a tenfold pressure rise")
 
 
+def compressibility_of(fluid: Mixture, t_c: float, p_pa: float, n: list[float]) -> float:
+    """The mixture's own root at a state and composition.
+
+    Computed rather than written down. Both tests below took a literal ``Z``, and it
+    was a literal for a fluid that no longer exists: 0.8274482588400789 belonged to
+    the hand-typed methane/n-butane with an illustrative ``kij`` of 0.05, and the
+    fixture now resolves that pair through the databank. The energy identity below is
+    a statement about the *state*, so a ``Z`` that is not that state's makes it fail by
+    percent for a reason that looks like a defect.
+    """
+    reduced = reduced_parameters(fluid, t_c, p_pa)
+    a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, fluid.kij, n)
+    return pr_z_factor(a_mix, b_mix).z_max
+
+
 def test_the_energy_differentiates_to_the_fugacity_coefficient() -> None:
     """``d(A^R/RT)/dn_i`` must be ``ln phi_i + ln Z``.
 
@@ -157,7 +181,8 @@ def test_the_energy_differentiates_to_the_fugacity_coefficient() -> None:
     """
     fluid = methane_butane()
     reduced = reduced_parameters(fluid, 330.0, 2_500_000.0)
-    n, z = [0.6, 0.4], 0.8274482588400789
+    n = [0.6, 0.4]
+    z = compressibility_of(fluid, 330.0, 2_500_000.0, n)
     state = phase_state_at(reduced, fluid.kij, n, z)
 
     step = 1e-6
@@ -229,70 +254,112 @@ def test_the_hessian_and_the_criticality_matrix_are_exactly_symmetric() -> None:
     assert matrix[0][1] == matrix[1][0], "Q is not symmetric"
 
 
-def test_the_criticality_matrix_vanishes_at_a_pure_components_critical_point() -> None:
+#: The triple-root solution of the Peng-Robinson cubic, which this library does *not*
+#: ship - see `eos.pr_alpha_ab`'s assumptions and the constants' own comments.
+#:
+#: Named here because these two tests are statements about the cubic rather than about
+#: the constants: `Q` vanishes, and is minimised, at the critical point of a cubic whose
+#: `Omega` pair satisfies the triple-root condition. NeqSim's pair does not, so the
+#: shipped cubic's critical point is 4.8e-5 away from `Tr = Pr = 1` and its `Q` there is
+#: 1.37e-4 rather than zero.
+TRIPLE_ROOT_A = 0.4572355289213822
+TRIPLE_ROOT_B = 0.07779607390388846
+
+
+def triple_root_state() -> ReducedParameters:
+    """A one-component reduced state at the cubic's own critical point.
+
+    Built directly rather than through a substance: the claim is about ``(A, B, Z)``,
+    which is the point the other tests in this file make about the construction
+    carrying no dimensioned quantity.
+    """
+    return ReducedParameters(
+        a=[TRIPLE_ROOT_A],
+        b=[TRIPLE_ROOT_B],
+        psi=[0.0],
+        psi_t=[0.0],
+        warnings=[],
+    )
+
+
+def test_the_criticality_matrix_vanishes_at_the_cubics_critical_point() -> None:
     """The check a port cannot inherit, against an answer known in closed form.
 
     Heidemann & Khalil's first condition is that the smallest eigenvalue of ``Q``
     reaches zero. For one component ``Q`` is ``1 x 1`` and equals ``H_11 + 1``, and
-    Peng-Robinson's critical point is analytic: ``Tr = Pr = 1``, ``Z_c = (1 - omega_b)/3``.
-    So the whole construction - the constant-volume Hessian, the ideal part, the
-    scaling - is checked against a closed form rather than against another
-    implementation.
+    the critical point of a Peng-Robinson cubic is analytic: ``Tr = Pr = 1``,
+    ``A = Omega_a``, ``B = Omega_b``, ``Z_c = (1 - Omega_b)/3``. So the whole
+    construction - the constant-volume Hessian, the ideal part, the scaling - is
+    checked against a closed form rather than against another implementation.
 
-    **Every component gives the same number**, because at ``Tr = Pr = 1`` they all
-    share the reduced state ``(A, B) = (omega_a, omega_b)``. That is the statement
-    that the construction depends on ``(A, B, Z)`` and nothing else, which is what
-    "the eos core carries no dimensioned quantity" means in practice.
+    **At the triple-root pair, which is what makes the closed form hold.** This test
+    used to reach that state through a real substance at its own tabulated ``Tc`` and
+    ``Pc``, which was the same state only for as long as the library shipped the
+    triple-root ``Omega`` pair. It does not - it ships NeqSim's, deliberately, and
+    `eos.pr_alpha_ab`'s assumptions record why - so the substance route now lands
+    4.8e-5 off the cubic's critical point and ``Q`` there is 1.37e-4. Asserting the
+    closed form requires the pair the closed form is about, and building the reduced
+    state directly is the honest way to ask for it.
+    """
+    value = criticality_matrix(triple_root_state(), ((0.0,),), [1.0], (1.0 - TRIPLE_ROOT_B) / 3.0)[
+        0
+    ][0]
+    assert abs(value) < 1e-14, f"Q is {value!r} at the critical point, and it must be zero"
+
+
+def test_the_shipped_omegas_leave_a_critical_point_residue() -> None:
+    """How far the shipped pair puts the cubic's critical point from ``Tr = Pr = 1``.
+
+    Recorded rather than asserted loosely, because it is the one number that says what
+    carrying NeqSim's literals costs: at the shipped pair the same construction gives
+    ``Q = 1.37e-4`` at ``(A, B) = (Omega_a, Omega_b)``, and the cubic is at a triple
+    root at ``Tr = 1 + 4.8e-5`` instead. Bounded on both sides so a change to the
+    constants is visible here as well as in `eos.pr_alpha_ab`.
     """
     from azoth.eos.reference.pr_alpha_ab import OMEGA_A, OMEGA_B
 
-    z_critical = (1.0 - OMEGA_B) / 3.0
-    seen: list[float] = []
-    carbon_dioxide = Component(Q(304.13, "K"), Q(7_377_000.0, "Pa"), 0.2239)
-    for component in (PROPANE, METHANE, BUTANE, carbon_dioxide):
-        pure = mixture([component])
-        t_c = component.Tc.to_base_units().magnitude
-        p_c = component.Pc.to_base_units().magnitude
-        reduced = reduced_parameters(pure, t_c, p_c)
-        assert abs(reduced.a[0] - OMEGA_A) < 1e-15
-        assert abs(reduced.b[0] - OMEGA_B) < 1e-15
-
-        value = criticality_matrix(reduced, pure.kij, [1.0], z_critical)[0][0]
-        assert abs(value) < 1e-14, f"Q is {value!r} at the critical point, and it must be zero"
-        seen.append(value)
-
-    assert len(set(seen)) == 1, f"Q differs between components: {seen}"
+    state = ReducedParameters(a=[OMEGA_A], b=[OMEGA_B], psi=[0.0], psi_t=[0.0], warnings=[])
+    value = criticality_matrix(state, ((0.0,),), [1.0], (1.0 - OMEGA_B) / 3.0)[0][0]
+    assert 1e-5 < value < 1e-3, f"Q at the shipped pair's Tr = Pr = 1 is {value!r}"
 
 
 def test_the_criticality_matrix_is_minimised_at_the_critical_temperature() -> None:
-    """The zero is a minimum, not a small number that happens to be near one.
+    """The residue is a minimum, and clearly positive on both sides of it.
 
-    Along ``P = Pc`` the critical point is the temperature at which ``Q`` reaches
-    zero, and it is clearly positive on both sides. Without this, ``Q = 1e-16`` at one
-    state would be equally consistent with a construction that is uniformly near zero
-    everywhere - which is what a missing diagonal term would give.
+    Along ``P = Pc`` the critical point is the temperature at which ``Q`` reaches its
+    least value, and it is orders of magnitude larger either side. Without this, a
+    ``Q`` that was uniformly near zero everywhere would pass the test above - which is
+    what a missing diagonal term would give.
+
+    **The minimum is not zero, because the shipped ``Omega`` pair is not the
+    triple-root one** - measured at 2.5e-3 for propane at ``T/Tc = 1``. What survives
+    the port is where the minimum sits (``T/Tc = 1``, to five figures) and how sharply
+    it rises away from it.
     """
-    from azoth.eos.reference.pr_alpha_ab import OMEGA_B
     from azoth.eos.reference.pr_z_factor import pr_z_factor
 
-    z_critical = (1.0 - OMEGA_B) / 3.0
     fluid = mixture([PROPANE])
     t_c = PROPANE.Tc.to_base_units().magnitude
     p_c = PROPANE.Pc.to_base_units().magnitude
 
-    at_critical = criticality_matrix(
-        reduced_parameters(fluid, t_c, p_c), fluid.kij, [1.0], z_critical
-    )[0][0]
-    assert abs(at_critical) < 1e-14
-
-    for offset in (0.98, 0.99, 0.999, 1.001, 1.01, 1.02):
+    def q_at(offset: float) -> float:
         reduced = reduced_parameters(fluid, t_c * offset, p_c)
         roots = pr_z_factor(reduced.a[0], reduced.b[0])
         root = roots.z_min if offset < 1.0 else roots.z_max
-        value = criticality_matrix(reduced, fluid.kij, [1.0], root)[0][0]
-        assert value > 1e-4, (
+        return criticality_matrix(reduced, fluid.kij, [1.0], root)[0][0]
+
+    at_critical = q_at(1.0)
+    assert 1e-3 < at_critical < 1e-2, f"Q at T/Tc = 1 is {at_critical!r}"
+
+    for offset in (0.98, 0.99, 0.999, 1.001, 1.01, 1.02):
+        value = q_at(offset)
+        assert value > 1e-2, (
             f"T/Tc = {offset}: Q is {value}, but away from the critical point it must "
             f"be clearly positive"
+        )
+        assert value > at_critical, (
+            f"T/Tc = {offset}: Q is {value}, below the value at the critical point - "
+            f"the critical temperature is not the minimum"
         )
 
 
@@ -307,28 +374,29 @@ def test_the_helmholtz_layer_matches_its_recorded_values() -> None:
     """
     fluid = methane_butane()
     reduced = reduced_parameters(fluid, 330.0, 2_500_000.0)
-    n, z = [0.6, 0.4], 0.8274482588400789
+    n = [0.6, 0.4]
+    z = compressibility_of(fluid, 330.0, 2_500_000.0, n)
 
     h.assert_close(
         helmholtz_energy(reduced, fluid.kij, n, z),
-        -0.18431637484617638,
+        -0.18925799467861787,
         1e-12,
         "the residual Helmholtz energy",
     )
     hessian = helmholtz_hessian(reduced, fluid.kij, n, z)
     for (i, j), wanted in {
-        (0, 0): -0.07061646554242604,
-        (0, 1): -0.2665575186559369,
-        (1, 0): -0.2665575186559369,
-        (1, 1): -1.0605194453072955,
+        (0, 0): -0.07053560045586016,
+        (0, 1): -0.28355937321520475,
+        (1, 0): -0.28355937321520475,
+        (1, 1): -1.0641939064423525,
     }.items():
         h.assert_close(hessian[i][j], wanted, 1e-12, f"the Hessian at {i},{j}")
 
     matrix = criticality_matrix(reduced, fluid.kij, n, z)
     for (i, j), wanted in {
-        (0, 0): 0.9576301206745444,
-        (0, 1): -0.1305859815618906,
-        (1, 0): -0.1305859815618906,
-        (1, 1): 0.5757922218770818,
+        (0, 0): 0.9576786397264839,
+        (0, 1): -0.1389151552321342,
+        (1, 0): -0.1389151552321342,
+        (1, 1): 0.574322437423059,
     }.items():
         h.assert_close(matrix[i][j], wanted, 1e-12, f"Q at {i},{j}")

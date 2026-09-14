@@ -17,20 +17,37 @@ use crate::spec_gen;
 
 /// `Omega_a`, the attraction constant of the Peng-Robinson cubic.
 ///
-/// Full precision, and load-bearing: the paper prints `0.45724`, which is this
-/// rounded, and which puts the cubic's critical point 4.55% out. See the spec's
-/// `notes`.
-pub const OMEGA_A: f64 = 0.4572355289213822;
+/// **NeqSim 3.20.0's value, not the paper's, and carrying it is the point.** This
+/// library is a port, and NeqSim's `ComponentPR` constructor sets
+/// `a = .45724333333 * R**2 * Tc**2 / Pc`. The Peng-Robinson paper prints `0.45724`
+/// and the cubic's triple-root condition gives `0.4572355289213822` exactly;
+/// NeqSim's is neither. It is the paper's printed value plus 3.3333e-6 - and so is
+/// its `Omega_b`, by the same offset - which is what makes the pair read as a
+/// transcription artefact carried forward rather than as a refit.
+///
+/// Substituting NeqSim's pair for the exact one reproduces NeqSim's own `TPflash` to
+/// twelve significant figures, where the exact pair leaves a 1.4e-4 residue - see
+/// `validation/eos/methane_butane_flash_against_neqsim.json`, which records both the
+/// measurement and how to repeat it. A port that corrected its upstream would
+/// disagree with it by 1.4e-4 forever, and could never be validated against it at
+/// all. The spec's `assumptions` carries the argument in full.
+pub const OMEGA_A: f64 = 0.45724333333;
 
 /// `Omega_b`, the repulsion constant of the Peng-Robinson cubic.
 ///
-/// Full precision. The paper prints `0.07780`.
-pub const OMEGA_B: f64 = 0.07779607390388846;
+/// NeqSim's value, for the reason [`OMEGA_A`] gives: `ComponentPR` sets
+/// `b = .077803333 * R * Tc / Pc`, against the cubic's exact `0.07779607390388846`
+/// and the paper's printed `0.07780`. It is 7.26e-6 above the exact value and 3.3333e-6
+/// above the printed one - the same offset `Omega_a` carries, and the larger of the
+/// two departures from the exact pair.
+pub const OMEGA_B: f64 = 0.077803333;
 
 /// The Peng-Robinson alpha function and the reduced attraction parameters.
 ///
 /// `kappa` comes from [`crate::pr_kappa`]; `Tr` and `Pr` are reduced against the
-/// caller's critical point, because this library ships no component databank.
+/// caller's critical point. The library does ship a component databank
+/// ([`crate::databank`]) - this kernel takes reduced variables, so a caller holding
+/// a name reduces there first.
 ///
 /// All three inputs and all three outputs are dimensionless, so nothing here
 /// touches units - which is the point of writing the cubic in `A` and `B` rather
@@ -48,8 +65,8 @@ pub const OMEGA_B: f64 = 0.07779607390388846;
 /// let kappa = pr_kappa(0.152)?.kappa;
 /// let r = pr_alpha_ab(kappa, 0.8, 0.25)?;
 /// assert!((r.alpha - 1.1313346661636197).abs() < 1e-15);
-/// assert!((r.a_reduced - 0.20206500174625697).abs() < 1e-15);
-/// assert!((r.b_reduced - 0.02431127309496514).abs() < 1e-15);
+/// assert!((r.a_reduced - 0.20206845072985785).abs() < 1e-15);
+/// assert!((r.b_reduced - 0.0243135415625).abs() < 1e-15);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 #[allow(non_snake_case)] // `Tr` and `Pr` are the symbols in the published equation

@@ -20,10 +20,10 @@ cases:
     outlet_pressure: 3000000.0
     efficiency: 0.8
   expected:
-    T: 312.4165147182354
+    T: 312.41727762744597
     P: 3000000.0
-    power: 8194.771204505514
-    isentropic_temperature: 311.3153978294822
+    power: 8195.195890579158
+    isentropic_temperature: 311.3162271821248
   tolerance: 1.0e-09
 - id: a_liquid_feed_is_pumped
   inputs:
@@ -39,8 +39,8 @@ cases:
     outlet_pressure: 5000000.0
     efficiency: 0.8
   expected:
-    T: 300.79281733102846
+    T: 300.79302232021286
     P: 5000000.0
-    power: 1123.8593619733592
-    isentropic_temperature: 300.61769035219305
+    power: 1124.010011876885
+    isentropic_temperature: 300.61787326384484
   tolerance: 1.0e-09
