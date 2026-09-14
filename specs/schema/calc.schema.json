@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/calc.schema.json",
   "title": "Azoth calculation spec",
-  "description": "A single calculation in the Azoth registry. A calc must declare what it is called, the equation, its inputs and outputs, where the two implementations live, a worked example and the tests that exercise it. Docs and the registries are generated from these files, so this schema is the single source of truth. Everything else - a citation, a validated range, the assumptions, the LaTeX form - is **optional**, and a calc that has nothing to say about one of them simply omits it.",
+  "description": "**A data sheet, not a document.** A calc declares what it is called, the equation, its inputs and outputs, where the two implementations live, a worked example and the tests that exercise it. The registries and the generated reference tables are produced from these files; the *specification* of what a calculation is - its contract, its domains, why a bound takes the value it does - belongs in `docs/src/`, and `docs/src/specs.md` specifies this format. `additionalProperties: false` is the mechanism that keeps a status, citation-status or provenance field out of a spec: one cannot appear without a deliberate edit here. See `docs/src/spec.md` S6, \"The library implements; the engineer decides\" - the library implements and reports, and it does not grade an engineer's judgement about which equation of state or which data applies.",
   "type": "object",
   "additionalProperties": false,
   "required": [

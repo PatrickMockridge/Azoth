@@ -67,6 +67,7 @@ NAMESPACES = {
 FRONT_PAGES = (
     ("Process", "process.md"),
     ("How azoth is put together", "architecture.md"),
+    ("Spec files", "spec-files.md"),
     ("The keycard", "keycard.md"),
     ("What ships", "data.md"),
 )

@@ -59,6 +59,16 @@ MAX_SENSIBLE_TOLERANCE = 0.05
 # Permitted provenance states for a data row. **Optional**: a row may carry one
 # to say what the library knows about its own shipped data, and a user's row need
 # not carry one at all.
+#
+# This vocabulary is for the CSVs in `data/` and for nothing else. **There is no
+# equivalent for a spec file, and there must not be one.** A spec declaring whether
+# it is verified would be the library grading the engineer's judgement, which is not
+# its job: the choice of which equation of state and which data apply to a situation
+# belongs to the engineer and to their keycard. See `docs/src/spec.md` S6, "The
+# library implements; the engineer decides". A schema edit is the only way a new
+# spec field can appear at all - every spec schema sets `additionalProperties: false`
+# - so if you are here to add a `status` or a `provenance` key to one, that edit is
+# the thing to not make.
 VALID_VERIFY_STATUS = {"verified", "unverified", "estimated_dummy"}
 
 # A source reference used to have to be machine-fetchable - `arweave:<txid>`,

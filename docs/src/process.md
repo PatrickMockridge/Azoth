@@ -86,12 +86,14 @@ achieve, what the author thinks is important about it.
 
 Three specifics, because they are where this has gone wrong:
 
-- **Provenance has one home: the spec's `source:` block**, which renders onto the model's
-  page. Rust doc comments, Python docstrings and test docstrings are not further places to
-  cite NeqSim line numbers.
-- **"NeqSim does X, this does Y" is a MOVE.** A divergence belongs in the defect log, or in
-  the spec's `assumptions` — which is where a model declares what it does not do, and which
-  renders into the model's page.
+- **Attribution for anything ported lives in `NOTICE`, once.** Not per calc, and not in a
+  spec field: a block repeated in twenty specs is a block nobody reads. A spec carries a
+  citation (a standard, a DOI, a URL) and nothing beyond it. Rust doc comments, Python
+  docstrings and test docstrings are not further places to cite upstream line numbers. This
+  is the rule in [S6](./spec.md#s6-the-library-implements-the-engineer-decides), applied to
+  prose.
+- **"NeqSim does X, this does Y" is a MOVE.** A divergence belongs in the defect log. It is
+  a limitation report, and a spec is a data sheet — see [Spec files](./spec-files.md).
 - **A test docstring says what the test asserts.** Not why it is valuable, not what it would
   catch, not what it catches that another test does not.
 

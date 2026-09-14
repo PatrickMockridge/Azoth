@@ -18,6 +18,14 @@ comes from the vendored databank, overridden by whatever keycard is loaded. The
 burden and the responsibility both sit with that data: the shipped values are
 Equinor's and NTNU's, and the ones you supply are yours.
 
+**The library implements; the engineer decides.** That is `docs/src/spec.md` S6, and
+this module is where it is most tempting to break it. Do not add, here or anywhere
+downstream: a check that a `citation` is real or matches a status; a `verify_status`
+on a user's row; a list of what components or calculations exist. A keycard states
+what its holder may compute with, and the accountability for that is theirs - a
+machine cannot discharge it and a field asking them to assert it only manufactures
+confidence. Adding a calculation is files, not a registration; the id is the address.
+
 # One keycard at a time, process-wide
 
 :func:`load` sets *the* keycard. There is one, not a stack and not a registry of

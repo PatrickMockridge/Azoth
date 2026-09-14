@@ -31,7 +31,7 @@ different language. They are:
 
 | | NeqSim | azoth |
 |---|---|---|
-| Truth lives in | the Java source | `specs/**/*.yaml`, which generates the code and the docs |
+| Truth lives in | the Java source | `specs/**/*.yaml` for the interface, which generates the code; [the book](./spec-files.md) for what a calculation is |
 | Nothing is registered by | — | anyone; the id is the address (S5) |
 | Data ships as | a bundled databank | the same databank, vendored; the keycard is the user's |
 | Correctness is claimed by | a test suite | two implementations that must agree case by case |
@@ -259,7 +259,23 @@ in the vendored databank or in a keycard. Equinor and NTNU are accountable for t
 first; the engineer holding the keycard is accountable for the second, and for their
 right to use it. Not the library, and not a schema.
 
-## S6. Provenance is the engineer's job, not the library's
+## S6. The library implements; the engineer decides
+
+**Which equation of state, which data and which model variant applies to a situation is the
+engineer's decision, recorded in their keycard.** The library's job is to implement the
+calculation and to report what it did. It does not ask where a value came from, does not
+validate a citation, does not record a status, and does not register a calculation.
+
+Two consequences follow.
+
+**A value that is wrong is wrong in the databank or in the keycard.** Equinor and NTNU are
+accountable for the first; the engineer holding the card is accountable for the second, and
+for their right to use it. **Not the library, and not a schema** — which is the sentence
+[S5.3](#s53-the-keycard-is-the-capability-declaration) already ends on, and this section is
+its other half.
+
+**Adding a calculation requires no registration step.** Its id is its address, and
+[S5](#s5-it-ships-data-and-the-keycard-extends-it) is where that is spelled out.
 
 A keycard **may** carry a citation. Nothing requires one, nothing validates one, and no
 field records a status.
@@ -271,13 +287,21 @@ check whether a person read a standard. So the field was a form to fill in rathe
 fact, and a form teaches people to fill it in — which is worse than having no field at
 all, because it manufactures confidence.
 
+**Nothing above is enforced by a check, and that is deliberate.** A spec is validated
+against a schema that sets `additionalProperties: false` at every level, so a status, a
+citation-status or a provenance field cannot appear in one without a deliberate edit to the
+schema. The schema is the mechanism; a linter that graded a citation would be a machine
+doing a job that belongs to an engineer.
+
 **What the library owes instead is disclosure, and it is specific:**
 
-- `NOTICE` says what ships and where it came from.
-- Every calculation's page names its source and states, in plain words, what has and
-  has not been confirmed — see [S7](#s7-every-rust-calculation-is-mirrored-in-python)
-  on how that is checked, and the `## Notes` section on any calculation page for what
-  it looks like.
+- `NOTICE` says what ships and where it came from, **once**. Attribution is not a per-calc
+  field: a block repeated in twenty specs is a block nobody reads.
+- What a calculation has *not* had confirmed is recorded in
+  [Required improvements](./required-improvements.md), next to the thing it is about.
+- A calculation's page is a data sheet — the equation, the interface, the bounds, the cases
+  — and the specification of what the calculation *is* belongs in the book, not in the YAML.
+  See [Spec files](./spec-files.md).
 
 The rest is engineering judgement, which is a professional responsibility and not one a
 YAML linter can discharge.

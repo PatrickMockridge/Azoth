@@ -251,8 +251,8 @@ Read an existing calc end to end first — `reynolds_number` is the simplest, an
 
 ## The rules that are not negotiable
 
-Seven, and each is either enforced by a test or is a constraint from outside the
-project. Anything that is merely good advice is under
+Eight, and each is either enforced by a test, checked by the schema, or is a constraint from
+outside the project. Anything that is merely good advice is under
 [What reviewers will look at](#what-reviewers-will-look-at) instead, so that this
 list stays short enough to actually read.
 
@@ -278,10 +278,19 @@ implements Heidemann & Khalil correctly by inspection and validates the result
 needs a test that would fail if the port were wrong, and that test has to be ours.
 
 Attribution for anything ported lives in [`NOTICE`](NOTICE), once, rather than in a
-per-calc field — a block repeated in twenty specs is a block nobody reads. The spec
-still cites two things: its `references` name the paper the method comes from, and its
-`notes` say what was **changed** and why, because a port is never a transcription and
-the differences are the part a reader cannot recover from either source.
+per-calc field — a block repeated in twenty specs is a block nobody reads. A spec
+carries a citation and nothing beyond it. What a port **changed** is a limitation
+report, and it goes in [Required improvements](docs/src/required-improvements.md).
+
+**The library implements; the engineer decides.** Which equation of state, which data and
+which model variant applies to a situation is the engineer's decision, recorded in their
+keycard. The library implements the calculation and reports what it did. It does not ask
+where a value came from, does not validate a citation, does not record a status, and does
+not register a calculation. This is [S6](docs/src/spec.md#s6-the-library-implements-the-engineer-decides),
+and it is the entry in this list that is most often re-argued and least often needed: if you
+are about to add a check that a citation is real, a field that records a status, or a table
+that lists what exists, stop — the responsibility is not the library's, and the id is the
+address.
 
 **A worked example must be retraceable by hand.** Write the substitution out. An
 example nobody can follow is a number somebody typed.

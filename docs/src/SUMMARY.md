@@ -4,6 +4,7 @@
 - [Specification](./spec.md)
 - [Process](./process.md)
 - [How azoth is put together](./architecture.md)
+- [Spec files](./spec-files.md)
 - [The keycard](./keycard.md)
 - [What ships](./data.md)
 - [Equations of state](./eos/index.md)

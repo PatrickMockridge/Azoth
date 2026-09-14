@@ -108,6 +108,13 @@ What the library owes you instead is disclosure: [What ships](./data.md) says wh
 library carries and where it came from. The rest — whether a value is right, and whether
 you may use it — is engineering judgement, and it is yours.
 
+**And that is the point of the file, not a gap in it.** The card is the capability
+declaration: it records what you are entitled to compute with, which is why the
+accountability sits with you rather than with the library. [S6](./spec.md#s6-the-library-implements-the-engineer-decides)
+is where that is stated — *the library implements; the engineer decides*. A row is right
+or wrong in the databank or in your card, and no check in this library can make it
+otherwise. If you are adding to azoth, that section is also the reason not to build one.
+
 **It is not shared.** A keycard is per-process and per-caller. Passing one around
 between threads that expect different data is not supported, and the answer is one
 keycard per process.
