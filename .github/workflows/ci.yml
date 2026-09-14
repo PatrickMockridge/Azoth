@@ -170,11 +170,13 @@ jobs:
           .venv/bin/python tools/gen_docs.py
           .venv/bin/python tools/gen_registry.py
           .venv/bin/python tools/gen_models.py
+          .venv/bin/python tools/gen_stub.py
       - name: Fail if anything drifted
         run: |
           if ! git diff --exit-code; then
             echo "::error::Generated files are out of date. Run:"
             echo "::error::  python tools/gen_docs.py && python tools/gen_registry.py"
+            echo "::error::  python tools/gen_models.py && python tools/gen_stub.py"
             exit 1
           fi
 

@@ -91,7 +91,9 @@ env -u PYTHONPATH AZOTH_REQUIRE_RUST=1 .venv/bin/python -m pytest
 
 .venv/bin/python tools/spec_lint.py
 .venv/bin/python tools/gen_registry.py --check
+.venv/bin/python tools/gen_models.py --check
 .venv/bin/python tools/gen_docs.py --check
+.venv/bin/python tools/gen_stub.py --check
 .venv/bin/python tools/check_links.py
 mdbook build docs
 ```
@@ -122,18 +124,19 @@ belongs there, and it costs a file rather than a contribution. See
 
 ## Adding a calculation
 
-**Five new files, and ten edits to existing ones** — plus eight more if the calc is
+**Five new files, and nine edits to existing ones** — plus eight more if the calc is
 the first in a new namespace.
 
-That number is smaller than it was, and it is still falling. It was fourteen. Four of
-those are now gone by *deletion* rather than code generation, which is the better fix
-and worth naming:
+That number is smaller than it was, and it is still falling. It was fourteen. Five of
+those are gone, and the shape of how they went is worth naming:
 
 - the bridge's `id → function` table and the `RESULT_TYPES` table are both **derived**
   — from the id, and from each implementation's return annotation — so there is no list
   to keep in step with another list;
 - the README's table and this book's index are **generated into marked blocks**, so the
-  two places a *reader* meets a new calculation no longer need editing.
+  two places a *reader* meets a new calculation no longer need editing;
+- `_core.pyi` is **generated** by `tools/gen_stub.py` from the result dataclasses and
+  the specs, so the type stub is no longer a second place to declare a function by hand.
 
 What remains is mostly the Rust boilerplate: a name has to be attached to a function
 before a Python caller can reach it, and that attachment is still typed by hand.
@@ -164,7 +167,7 @@ that are *not* checked, a worked example, and the tests.
 Both test files are driven by the spec's `tests` list, so they follow from the
 spec's contents rather than being written against the implementation.
 
-### The ten edits
+### The nine edits
 
 Listed because "the rest follows" was a claim nobody had checked, and because a
 forgotten one fails in a different way in each case:
@@ -177,16 +180,16 @@ forgotten one fails in a different way in each case:
 | `crates/azoth-python/src/results.rs` | the `Py*Result` transport class, `result_fields`, `calc_ids` |
 | `crates/azoth-python/src/lib.rs` | `add_class`, `add_function` |
 | `crates/azoth-python/src/batch.rs` | the batch arm — the Rust half of the batch API |
-| `python/src/azoth/_core.pyi` | the function signature and the result class |
 | `python/src/azoth/<ns>/__init__.py` | the dispatch wrapper, `__all__`, the id constant, the docstring list |
 | `python/src/azoth/<ns>/reference/__init__.py` | the import and `__all__` |
 | `python/src/azoth/batch/<ns>.py` | the batch wrapper — the Python half of the batch API |
 
-Three of the files that used to appear here no longer do. `_rust_bridge.py` and
+Five of the files that used to appear here no longer do. `_rust_bridge.py` and
 `core/result.py` are unchanged by a new calculation, because the tables that lived in
-them are derived from the id and from the return annotation. `README.md` and
-`docs/src/index.md` *are* changed by one — but by `tools/gen_docs.py`, into a marked
-block, and a hand-edit there fails the drift check.
+them are derived from the id and from the return annotation. `_core.pyi` is generated
+by `tools/gen_stub.py`. `README.md` and `docs/src/index.md` *are* changed by one — but
+by `tools/gen_docs.py`, into a marked block, and a hand-edit there fails the drift
+check.
 
 **The batch API is two edits, in two languages, and it is not optional.** There is
 a Rust arm and a Python module because the batch path loops over the *scalar*

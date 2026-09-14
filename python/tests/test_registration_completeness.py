@@ -38,6 +38,7 @@ from __future__ import annotations
 import ast
 import dataclasses
 import importlib
+import re
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -180,6 +181,95 @@ def test_the_bridge_covers_exactly_the_registry() -> None:
 
 
 # --- the type stub ------------------------------------------------------
+
+
+def _rust_pyclasses() -> dict[str, tuple[str, ...]]:
+    """Every `#[pyclass]` struct in the binding, by its Python-visible name.
+
+    Read from the Rust *source* rather than from the compiled module, because a
+    `#[pyclass]` with no `#[new]` cannot be constructed from Python and its fields
+    therefore cannot be introspected - `dir()` on the class shows methods, not
+    attributes. The source is the only place the fields are visible, and it is also the
+    thing the stub is supposed to describe.
+
+    The struct body is found by **counting braces** rather than by a regex. The first
+    version of this used `[^}]*` and silently truncated any struct whose doc comments
+    contained a `}` - and one does: `|x_k - x_{k-1}|`, in `PrZFactorResult`'s own
+    comment. The fields after it were reported as missing from a struct that has them,
+    which is a test that fails for a reason the reader cannot see.
+    """
+    source_dir = REPO_ROOT / "crates" / "azoth-python" / "src"
+    attribute = re.compile(
+        r'#\[pyclass\([^)]*?name\s*=\s*"(?P<name>\w+)"', re.DOTALL
+    )
+    struct = re.compile(r"pub struct \w+ \{")
+
+    found: dict[str, tuple[str, ...]] = {}
+    for path in sorted(source_dir.glob("*.rs")):
+        text = path.read_text(encoding="utf-8")
+        for match in attribute.finditer(text):
+            opening = struct.search(text, match.end())
+            if opening is None:  # pragma: no cover - a pyclass with no struct
+                continue
+            depth = 0
+            end = opening.end() - 1
+            for index in range(end, len(text)):
+                if text[index] == "{":
+                    depth += 1
+                elif text[index] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end = index
+                        break
+            body = text[opening.end() : end]
+            found[match.group("name")] = tuple(
+                re.findall(r"#\[pyo3\(get\)\]\s*pub (\w+):", body)
+            )
+    return found
+
+
+def test_the_stub_matches_the_rust_transport_types() -> None:
+    """Every field the stub declares for a transport type exists in the Rust struct.
+
+    **This test exists because the drift it catches had already happened.** `FittingRow`
+    declared `source_ref` and `source_locator` in the stub for as long as it took someone
+    to read it, and both fields had been deleted from the Rust struct and from the
+    project. The completeness test checked that the stub declares each *name*; nothing
+    checked a field, so a stub describing attributes no object has type-checked clean and
+    failed at the first attribute access.
+
+    One-directional on purpose: the Rust struct may carry fields the stub omits only if
+    they are not `#[pyo3(get)]`, which this parses for. A field the stub *declares* and
+    the Rust does not have is the failure that shipped.
+    """
+    rust = _rust_pyclasses()
+    assert rust, "the Rust source parser found no pyclasses, so it is broken not empty"
+
+    stub = _stub_tree()
+    checked = 0
+    for node in stub.body:
+        if not isinstance(node, ast.ClassDef) or node.name not in rust:
+            continue
+        declared = {
+            statement.target.id
+            for statement in node.body
+            if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name)
+        }
+        missing = sorted(declared - set(rust[node.name]))
+        assert not missing, (
+            f"_core.pyi declares {node.name}.{missing}, which the Rust struct does not "
+            f"have. The stub is describing attributes no object carries - run "
+            f"`python tools/gen_stub.py` if the field was removed, or add it to the Rust "
+            f"struct with `#[pyo3(get)]`."
+        )
+        checked += 1
+
+    # A guard against the regex silently matching nothing, which would make every
+    # assertion above vacuous and this test pass while checking nothing at all.
+    assert checked >= 8, (
+        f"only {checked} transport type(s) were compared against the Rust source, but "
+        f"the stub declares more. The parser is matching less than it should."
+    )
 
 
 @pytest.mark.parametrize("calc_id", CALC_IDS)
