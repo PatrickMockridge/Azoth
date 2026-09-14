@@ -340,16 +340,29 @@ port this?" has an answer that does not have to be re-argued each time.
 - Reports, the command line, the agent surface.
 - Data and the keycard.
 
-**Out of scope**, recorded with reasons in [Roadmap](./roadmap.md): distillation
-columns, transient pipeline simulation, reactors, networks, power systems, CPA and SAFT
-and GERG and electrolytes, mechanical design, cost estimation, safety systems, PVT
-laboratory analysis, hydrates, wax and asphaltene.
+**Not yet ported**, and this is a backlog rather than a boundary: CPA, PC-SAFT,
+SAFT-VR-Mie, UMR-CPA, GERG-2004 and GERG-2008, the rest of the cubic family and the
+fitted alpha functions, the activity models (NRTL, UNIFAC, UNIQUAC, Wilson, Huron-Vidal,
+Wong-Sandler), electrolytes, hydrates, wax, asphaltene, solids, reactions, adsorption,
+distillation, transient pipeline simulation, networks, power systems, mechanical design,
+cost estimation, safety systems and PVT laboratory analysis.
 
-The boundary is drawn on a Pareto argument rather than on difficulty: **nearly every
-NeqSim unit operation is a flash call plus arithmetic**, and the surrounding thousands
-of lines are performance charts, entrainment models, geometry sizing and mechanical
-design. What is in scope is what makes a flowsheet run. What is out is what makes one
-acceptable to a detailed-design review, and that is a different product.
+Every one of those is work NeqSim has done and this library has not.
+`databank/manifest.yaml` carries the per-column account of it: **139 of the 209 columns**
+vendored from NeqSim's component and interaction tables belong to a model that is not
+ported here, and each entry names the class that would close it — `PhaseHydrate`,
+`CPAMixingRuleHandler`, `PhasePCSAFTa`, `SolidFlash1` and the rest.
+
+**An earlier version of this section called that list "out of scope". It was wrong, and
+wrong in the way that costs work: it made an incomplete port look like a decision, and a
+decision needs nothing done to it.** Physics is not out of scope for a chemical
+engineering calculation library; it is either ported or it is outstanding.
+
+The order is drawn on a Pareto argument rather than on difficulty: **nearly every NeqSim
+unit operation is a flash call plus arithmetic**, and the surrounding thousands of lines
+are performance charts, entrainment models, geometry sizing and mechanical design. What
+comes first is what makes a flowsheet run. What follows is what makes one acceptable to
+a detailed-design review.
 
 ## S9. What a contribution costs
 

@@ -27,15 +27,16 @@ against a 170-column file that is actually present.
 # The reason vocabulary, and why it is closed
 
 A free-text reason cannot be counted, and counting is the point: the interesting
-number is how many columns are absent because a model does not exist yet, because
-that number is a roadmap. A closed prefix makes it `grep -c 'reason: not-yet'`.
+number is how many columns are absent because a model is not ported, because that
+number is the porting backlog. `tools/check_manifest.py` prints the tally.
 
-  no-implementation   a physical property, and the physics it belongs to is out of
-                      scope for a cubic-EOS library
-  not-yet             a physical property, the physics is in scope, and a model or
-                      its wiring is missing. Names the `consumer` that would read it.
-  not-a-cubic-input   not a property of a substance at all - an identifier, an
-                      index, or a selector naming a model
+  not-ported          a physical property whose model exists in NeqSim and is not
+                      ported here. Names the class or package that would close it,
+                      so the count is a work list rather than a boundary.
+  not-yet             the model exists here and the data does not reach it yet.
+                      Names the `consumer` - a registered id - that would read it.
+  not-a-value         not a property of a substance at all: an identifier, an index,
+                      or a selector naming a model
   empty-upstream      the column carries nothing over the rows this project keeps,
                       so there was no decision to make
   licence             a source that may not be redistributed
@@ -62,9 +63,9 @@ SCHEMA_VERSION = 1
 #: The closed reason vocabulary. A reason is `<prefix>: <free text>`, and the prefix
 #: is what makes the list countable. See the module docstring.
 REASON_PREFIXES = (
-    "no-implementation",
+    "not-ported",
     "not-yet",
-    "not-a-cubic-input",
+    "not-a-value",
     "empty-upstream",
     "licence",
     "superseded-by",
@@ -189,6 +190,12 @@ def _column(raw: dict[str, Any], where: str, problems: list[str]) -> Column:
         problems.append(
             f"{where}.{name}: a `not-yet` column names the `consumer` that would read "
             f"it, or it is a parking space rather than a plan."
+        )
+    if prefix == "not-ported" and "`" not in reason:
+        problems.append(
+            f"{where}.{name}: a `not-ported` reason names the NeqSim class or package "
+            f"that would close it, in backticks. Without one this list stops being a "
+            f"porting backlog and becomes somewhere to put a column."
         )
     if disposition == "used" and not as_field:
         problems.append(

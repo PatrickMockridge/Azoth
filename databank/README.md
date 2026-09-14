@@ -40,26 +40,33 @@ NeqSim is Apache-2.0; the attribution is in [`NOTICE`](../NOTICE).
 ## `manifest.yaml` is the record of what was taken
 
 Every column of `COMP.csv` (170) and `INTER.csv` (39) is listed once, with what was
-done with it and a reason. The reasons use a closed prefix vocabulary, so the list is
-countable - which is the point, because the interesting number is how many columns are
-absent *because the model does not exist yet*, and that number is a roadmap.
-`tools/check_manifest.py` prints the tally:
+done with it and a reason. `tools/check_manifest.py` prints the tally:
 
 ```
 check_manifest: OK (2 vendored file(s), 209 column(s), 12 used, 17 not-vendored entr(ies))
-  139  no-implementation
+  139  not-ported
    21  not-yet
-   10  not-a-cubic-input
+   10  not-a-value
    22  empty-upstream
     5  superseded-by
 ```
 
-Grep does not work here and is not documented as a way in: a reason is a quoted flow
-mapping, so the line reads `reason: "not-yet: ..."` and the obvious pattern matches
-nothing.
+**`not-ported` is the porting backlog, and it is the number that matters.** NeqSim is
+the target, not a reference: 139 of these columns are a physical property whose model
+NeqSim implements and azoth has not ported, and each entry names the class that would
+close it — `PhaseHydrate`, `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`,
+`ParachorSurfaceTension` and the rest. The check refuses a `not-ported` reason with no
+NeqSim name in it, so the list cannot drift back into being somewhere to put a column.
 
-The `not-yet` columns are the ones with a named consumer: a specification id that would
-read the column once it exists, or a roadmap tranche for a model that has no spec yet.
+Nothing here is "out of scope". That word was in an earlier draft of this vocabulary
+and it was wrong: a file it labelled out of scope was work not yet done, and filing it
+as a decision made an incomplete port look like a boundary.
+
+`not-yet` is the smaller and nearer list: the model exists here and the data does not
+reach it. Those entries name a registered id that would read the column once it does.
+
+A reason is a quoted flow mapping, so `grep 'reason: not-ported'` matches nothing.
+Read the tally the check prints; there is no grep for it.
 
 A reader asking "is this databank thin because we decided, or because nobody looked?"
 should be able to answer it from this file alone. That is the whole of its purpose.

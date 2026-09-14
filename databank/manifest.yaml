@@ -7,8 +7,9 @@
 #
 # A reason is `<prefix>: <text>` from a closed list. The prefixes, and what each one
 # is for, are in `tools/manifest.py`'s docstring. The counting matters: the number of
-# columns marked `not-yet` is a roadmap, and `grep -c 'reason: not-yet'` is how it is
-# read.
+# columns marked `not-ported` is the porting backlog, and each one names the NeqSim
+# model that would close it. `tools/check_manifest.py` prints the tally - a grep does
+# not work, because a reason is a quoted flow mapping.
 schema_version: 1
 
 upstreams:
@@ -33,33 +34,37 @@ upstreams:
           - selector: "COMPTYPE == 'ion'"
             count: 62
             reason: >-
-              no-implementation: a cubic equation of state has no notion of an ion, and
-              NeqSim fills these rows' critical columns with one shared default - 29 rows
-              carrying the same Pc, omega and Vc is not a coincidence.
+              not-ported: the electrolyte models; NeqSim's `PhaseDesmukhMather` and
+              `PitzerScaleActivityModel`. NeqSim fills these rows' critical columns with
+              one shared default, because a cubic has no notion of an ion - 29 rows
+              carrying the same Pc, omega and Vc is not a coincidence - so vendoring them
+              before the electrolyte model exists would ship filler as data.
           - selector: "COMPTYPE == '0' (the column is empty)"
             count: 18
             reason: >-
-              not-a-cubic-input: a row with no type has no critical constants to read
+              not-a-value: a row with no type has no critical constants to read
               either, so there is nothing to carry across.
           - selector: "COMPTYPE in {ice, salt, seawater, asphaltene}"
             count: 4
             reason: >-
-              no-implementation: each is a phase or a mixture rather than a substance a
-              cubic describes.
+              not-ported: hydrate, electrolyte and asphaltene models; NeqSim's
+              `PhaseHydrate`, `ComponentSalt` and `pvtsimulation/flowassurance/`. Each is
+              a phase or a mixture rather than a substance, and the model that would read
+              the row is not ported.
         columns:
-          - {name: ID, disposition: dropped, reason: "not-a-cubic-input: the row's ordinal in the upstream file"}
+          - {name: ID, disposition: dropped, reason: "not-a-value: the row's ordinal in the upstream file"}
           - {name: NAME, disposition: used, as: name}
           - {name: CASnumber, disposition: used, as: cas}
-          - {name: COMPTYPE, disposition: filter, reason: "not-a-cubic-input: a substance class, read to select rows and never carried as a value"}
-          - {name: COMPINDEX, disposition: dropped, reason: "not-a-cubic-input: an index into another upstream table"}
+          - {name: COMPTYPE, disposition: filter, reason: "not-a-value: a substance class, read to select rows and never carried as a value"}
+          - {name: COMPINDEX, disposition: dropped, reason: "not-a-value: an index into another upstream table"}
           - {name: FORMULA, disposition: used, as: formula}
           - {name: MOLARMASS, disposition: used, as: molar_mass_kg_per_mol}
           - {name: LIQDENS, disposition: used, as: liquid_density_kg_per_m3}
           - {name: TC, disposition: used, as: tc_k}
           - {name: PC, disposition: used, as: pc_pa}
           - {name: ACSFACT, disposition: used, as: acentric_factor}
-          - {name: NORMBOIL, disposition: dropped, reason: "no-implementation: no boiling-point calculation exists, and no model here takes one as an input"}
-          - {name: MWAVG, disposition: dropped, reason: "no-implementation: an average molar mass for a petroleum fraction, which is a plus-fraction characterisation this library has none of"}
+          - {name: NORMBOIL, disposition: dropped, reason: "not-ported: the normal boiling point; NeqSim reads `NORMBOIL` in `thermo/component/`"}
+          - {name: MWAVG, disposition: dropped, reason: "not-ported: plus-fraction characterisation; NeqSim's `pvtsimulation/`"}
           - {name: CRITVOL, disposition: used, as: critical_volume_m3_per_mol}
           - {name: PVMODEL, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
           - {name: Href, disposition: dropped, reason: "not-yet: eos.molar_enthalpy_entropy takes its reference state from the caller and would read a shipped one", consumer: eos.molar_enthalpy_entropy}
@@ -69,153 +74,153 @@ upstreams:
           - {name: CPD, disposition: dropped, reason: "not-yet: eos.ideal_gas_cp takes the polynomial from the caller today, so every caller retypes a published table", consumer: eos.ideal_gas_cp}
           - {name: CPE, disposition: dropped, reason: "not-yet: eos.ideal_gas_cp takes the polynomial from the caller today, so every caller retypes a published table", consumer: eos.ideal_gas_cp}
           - {name: AntoineVapPresLiqType, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
-          - {name: ANTOINEA, disposition: dropped, reason: "no-implementation: no Antoine correlation is implemented, and eos.pure_saturation inverts the cubic rather than reading one"}
-          - {name: ANTOINEB, disposition: dropped, reason: "no-implementation: no Antoine correlation is implemented, and eos.pure_saturation inverts the cubic rather than reading one"}
-          - {name: ANTOINEC, disposition: dropped, reason: "no-implementation: no Antoine correlation is implemented, and eos.pure_saturation inverts the cubic rather than reading one"}
-          - {name: ANTOINED, disposition: dropped, reason: "no-implementation: no Antoine correlation is implemented, and eos.pure_saturation inverts the cubic rather than reading one"}
-          - {name: ANTOINEE, disposition: dropped, reason: "no-implementation: no Antoine correlation is implemented, and eos.pure_saturation inverts the cubic rather than reading one"}
-          - {name: DIPOLEMOMENT, disposition: dropped, reason: "no-implementation: a cubic has no polar term, and nothing here computes a dipole moment"}
+          - {name: ANTOINEA, disposition: dropped, reason: "not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` in `thermo/component/`"}
+          - {name: ANTOINEB, disposition: dropped, reason: "not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` in `thermo/component/`"}
+          - {name: ANTOINEC, disposition: dropped, reason: "not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` in `thermo/component/`"}
+          - {name: ANTOINED, disposition: dropped, reason: "not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` in `thermo/component/`"}
+          - {name: ANTOINEE, disposition: dropped, reason: "not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` in `thermo/component/`"}
+          - {name: DIPOLEMOMENT, disposition: dropped, reason: "not-ported: the polar models; NeqSim's `PhaseDesmukhMather`"}
           - {name: VISCFACT, disposition: dropped, reason: "not-yet: the viscosity correction a cubic's viscosity correlation reads; eos.viscosity is planned and unimplemented", consumer: "roadmap:2b"}
           - {name: RACKETZ, disposition: dropped, reason: "superseded-by: LIQDENS, which is carried across directly rather than through a Rackett correlation"}
           - {name: volcorrSRK_T, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
           - {name: LJDIAMETER, disposition: dropped, reason: "not-yet: the collision diameter eos.viscosity's model reads; eos.viscosity is planned and unimplemented", consumer: "roadmap:2b"}
           - {name: LJEPS, disposition: dropped, reason: "not-yet: the Lennard-Jones energy eos.viscosity's model reads; eos.viscosity is planned and unimplemented", consumer: "roadmap:2b"}
           - {name: SphericalCoreRadius, disposition: dropped, reason: "not-yet: the collision model's core radius; eos.viscosity is planned and unimplemented", consumer: "roadmap:2b"}
-          - {name: LIQVISCMODEL, disposition: dropped, reason: "not-a-cubic-input: a selector naming which viscosity correlation the following columns belong to"}
+          - {name: LIQVISCMODEL, disposition: dropped, reason: "not-a-value: a selector naming which viscosity correlation the following columns belong to"}
           - {name: LIQVISC1, disposition: dropped, reason: "not-yet: liquid viscosity; eos.viscosity is planned and unimplemented", consumer: "roadmap:2b"}
           - {name: LIQVISC2, disposition: dropped, reason: "not-yet: liquid viscosity; eos.viscosity is planned and unimplemented", consumer: "roadmap:2b"}
           - {name: LIQVISC3, disposition: dropped, reason: "not-yet: liquid viscosity; eos.viscosity is planned and unimplemented", consumer: "roadmap:2b"}
           - {name: LIQVISC4, disposition: dropped, reason: "not-yet: liquid viscosity; eos.viscosity is planned and unimplemented", consumer: "roadmap:2b"}
           - {name: GIBBSENERGYOFFORMATION, disposition: dropped, reason: "not-yet: a reference-state quantity eos.molar_enthalpy_entropy would read instead of taking one from the caller", consumer: eos.molar_enthalpy_entropy}
-          - {name: DIELECTRICPARAMETER1, disposition: dropped, reason: "no-implementation: the dielectric constant belongs to the electrolyte and polar models this library does not have"}
-          - {name: DIELECTRICPARAMETER2, disposition: dropped, reason: "no-implementation: the dielectric constant belongs to the electrolyte and polar models this library does not have"}
-          - {name: DIELECTRICPARAMETER3, disposition: dropped, reason: "no-implementation: the dielectric constant belongs to the electrolyte and polar models this library does not have"}
-          - {name: DIELECTRICPARAMETER4, disposition: dropped, reason: "no-implementation: the dielectric constant belongs to the electrolyte and polar models this library does not have"}
-          - {name: DIELECTRICPARAMETER5, disposition: dropped, reason: "no-implementation: the dielectric constant belongs to the electrolyte and polar models this library does not have"}
-          - {name: IONICCHARGE, disposition: dropped, reason: "no-implementation: an ionic charge is a property of an ion, and the ions are excluded from the rows kept"}
+          - {name: DIELECTRICPARAMETER1, disposition: dropped, reason: "not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and `PitzerScaleActivityModel`"}
+          - {name: DIELECTRICPARAMETER2, disposition: dropped, reason: "not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and `PitzerScaleActivityModel`"}
+          - {name: DIELECTRICPARAMETER3, disposition: dropped, reason: "not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and `PitzerScaleActivityModel`"}
+          - {name: DIELECTRICPARAMETER4, disposition: dropped, reason: "not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and `PitzerScaleActivityModel`"}
+          - {name: DIELECTRICPARAMETER5, disposition: dropped, reason: "not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and `PitzerScaleActivityModel`"}
+          - {name: IONICCHARGE, disposition: dropped, reason: "not-ported: the electrolyte models; NeqSim's `PhaseDesmukhMather` and `PitzerScaleActivityModel`"}
           - {name: REFERENCESTATETYPE, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
-          - {name: HenryCoef1, disposition: dropped, reason: "no-implementation: no Henry's law model exists here; dissolving a gas in a liquid is a different calculation from a flash"}
-          - {name: HenryCoef2, disposition: dropped, reason: "no-implementation: no Henry's law model exists here; dissolving a gas in a liquid is a different calculation from a flash"}
-          - {name: HenryCoef3, disposition: dropped, reason: "no-implementation: no Henry's law model exists here; dissolving a gas in a liquid is a different calculation from a flash"}
-          - {name: HenryCoef4, disposition: dropped, reason: "no-implementation: no Henry's law model exists here; dissolving a gas in a liquid is a different calculation from a flash"}
-          - {name: SCHWARTZENTRUBER1, disposition: dropped, reason: "no-implementation: a solubility correlation for a model this library does not have"}
-          - {name: SCHWARTZENTRUBER2, disposition: dropped, reason: "no-implementation: a solubility correlation for a model this library does not have"}
-          - {name: SCHWARTZENTRUBER3, disposition: dropped, reason: "no-implementation: a solubility correlation for a model this library does not have"}
+          - {name: HenryCoef1, disposition: dropped, reason: "not-ported: Henry's law; NeqSim's `IapwsHenryLaw`"}
+          - {name: HenryCoef2, disposition: dropped, reason: "not-ported: Henry's law; NeqSim's `IapwsHenryLaw`"}
+          - {name: HenryCoef3, disposition: dropped, reason: "not-ported: Henry's law; NeqSim's `IapwsHenryLaw`"}
+          - {name: HenryCoef4, disposition: dropped, reason: "not-ported: Henry's law; NeqSim's `IapwsHenryLaw`"}
+          - {name: SCHWARTZENTRUBER1, disposition: dropped, reason: "not-ported: the Schwartz-Entruber solubility correlation; NeqSim reads `SCHWARTZENTRUBER1`-`3` in `thermo/component/`"}
+          - {name: SCHWARTZENTRUBER2, disposition: dropped, reason: "not-ported: the Schwartz-Entruber solubility correlation; NeqSim reads `SCHWARTZENTRUBER1`-`3` in `thermo/component/`"}
+          - {name: SCHWARTZENTRUBER3, disposition: dropped, reason: "not-ported: the Schwartz-Entruber solubility correlation; NeqSim reads `SCHWARTZENTRUBER1`-`3` in `thermo/component/`"}
           - {name: LIQUIDCONDUCTIVITY1, disposition: dropped, reason: "not-yet: liquid thermal conductivity; eos.thermal_conductivity is planned and unimplemented", consumer: "roadmap:2b"}
           - {name: LIQUIDCONDUCTIVITY2, disposition: dropped, reason: "not-yet: liquid thermal conductivity; eos.thermal_conductivity is planned and unimplemented", consumer: "roadmap:2b"}
           - {name: LIQUIDCONDUCTIVITY3, disposition: dropped, reason: "not-yet: liquid thermal conductivity; eos.thermal_conductivity is planned and unimplemented", consumer: "roadmap:2b"}
-          - {name: PARACHOR, disposition: dropped, reason: "no-implementation: surface tension, which no model here computes"}
-          - {name: HEATOFFUSION, disposition: dropped, reason: "no-implementation: solid formation is out of scope, so no enthalpy of fusion is read"}
-          - {name: TRIPLEPOINTDENSITY, disposition: dropped, reason: "no-implementation: solid formation is out of scope, so no triple point is read"}
-          - {name: TRIPLEPOINTPRESSURE, disposition: dropped, reason: "no-implementation: solid formation is out of scope, so no triple point is read"}
-          - {name: TRIPLEPOINTTEMPERATURE, disposition: dropped, reason: "no-implementation: solid formation is out of scope, so no triple point is read"}
-          - {name: MELTINGPOINTTEMPERATURE, disposition: dropped, reason: "no-implementation: solid formation is out of scope, so no melting point is read"}
+          - {name: PARACHOR, disposition: dropped, reason: "not-ported: surface tension; NeqSim's `ParachorSurfaceTension`"}
+          - {name: HEATOFFUSION, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: TRIPLEPOINTDENSITY, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: TRIPLEPOINTPRESSURE, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: TRIPLEPOINTTEMPERATURE, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: MELTINGPOINTTEMPERATURE, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
           - {name: ENTHALPYOFFORMATION, disposition: dropped, reason: "not-yet: a reference-state quantity eos.molar_enthalpy_entropy would read instead of taking one from the caller", consumer: eos.molar_enthalpy_entropy}
           - {name: ABSOLUTEENTROPY, disposition: dropped, reason: "not-yet: a reference-state quantity eos.molar_enthalpy_entropy would read instead of taking one from the caller", consumer: eos.molar_enthalpy_entropy}
-          - {name: SOLIDDENSITYCOEFS1, disposition: dropped, reason: "no-implementation: a solid-phase correlation, and no solid phase is modelled"}
-          - {name: SOLIDDENSITYCOEFS2, disposition: dropped, reason: "no-implementation: a solid-phase correlation, and no solid phase is modelled"}
-          - {name: SOLIDDENSITYCOEFS3, disposition: dropped, reason: "no-implementation: a solid-phase correlation, and no solid phase is modelled"}
-          - {name: SOLIDDENSITYCOEFS4, disposition: dropped, reason: "no-implementation: a solid-phase correlation, and no solid phase is modelled"}
+          - {name: SOLIDDENSITYCOEFS1, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: SOLIDDENSITYCOEFS2, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: SOLIDDENSITYCOEFS3, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: SOLIDDENSITYCOEFS4, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
           - {name: SOLIDDENSITYCOEFS5, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
           - {name: LIQUIDDENSITYCOEFS1, disposition: dropped, reason: "superseded-by: LIQDENS, which is carried across directly rather than through a five-term correlation"}
           - {name: LIQUIDDENSITYCOEFS2, disposition: dropped, reason: "superseded-by: LIQDENS, which is carried across directly rather than through a five-term correlation"}
           - {name: LIQUIDDENSITYCOEFS3, disposition: dropped, reason: "superseded-by: LIQDENS, which is carried across directly rather than through a five-term correlation"}
           - {name: LIQUIDDENSITYCOEFS4, disposition: dropped, reason: "superseded-by: LIQDENS, which is carried across directly rather than through a five-term correlation"}
           - {name: LIQUIDDENSITYCOEFS5, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
-          - {name: HEATOFVAPORIZATIONCOEFS1, disposition: dropped, reason: "no-implementation: no correlation for the enthalpy of vaporisation is implemented"}
-          - {name: HEATOFVAPORIZATIONCOEFS2, disposition: dropped, reason: "no-implementation: no correlation for the enthalpy of vaporisation is implemented"}
-          - {name: HEATOFVAPORIZATIONCOEFS3, disposition: dropped, reason: "no-implementation: no correlation for the enthalpy of vaporisation is implemented"}
-          - {name: HEATOFVAPORIZATIONCOEFS4, disposition: dropped, reason: "no-implementation: no correlation for the enthalpy of vaporisation is implemented"}
+          - {name: HEATOFVAPORIZATIONCOEFS1, disposition: dropped, reason: "not-ported: the enthalpy of vaporisation; NeqSim reads `HEATOFVAPORIZATIONCOEFS1`-`5` in `physicalproperties/`"}
+          - {name: HEATOFVAPORIZATIONCOEFS2, disposition: dropped, reason: "not-ported: the enthalpy of vaporisation; NeqSim reads `HEATOFVAPORIZATIONCOEFS1`-`5` in `physicalproperties/`"}
+          - {name: HEATOFVAPORIZATIONCOEFS3, disposition: dropped, reason: "not-ported: the enthalpy of vaporisation; NeqSim reads `HEATOFVAPORIZATIONCOEFS1`-`5` in `physicalproperties/`"}
+          - {name: HEATOFVAPORIZATIONCOEFS4, disposition: dropped, reason: "not-ported: the enthalpy of vaporisation; NeqSim reads `HEATOFVAPORIZATIONCOEFS1`-`5` in `physicalproperties/`"}
           - {name: HEATOFVAPORIZATIONCOEFS5, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
-          - {name: STDDENS, disposition: dropped, reason: "no-implementation: a standard density is a reporting convention, and nothing here reports one"}
-          - {name: MC1, disposition: dropped, reason: "no-implementation: a Mathias-Copeman alpha coefficient, and the alpha vocabulary admits only Peng-Robinson"}
-          - {name: MC2, disposition: dropped, reason: "no-implementation: a Mathias-Copeman alpha coefficient, and the alpha vocabulary admits only Peng-Robinson"}
-          - {name: MC3, disposition: dropped, reason: "no-implementation: a Mathias-Copeman alpha coefficient, and the alpha vocabulary admits only Peng-Robinson"}
+          - {name: STDDENS, disposition: dropped, reason: "not-ported: the standard-density convention; NeqSim's `physicalproperties/`"}
+          - {name: MC1, disposition: dropped, reason: "not-ported: the Mathias-Copeman alpha function; NeqSim's `SystemPrMathiasCopeman`"}
+          - {name: MC2, disposition: dropped, reason: "not-ported: the Mathias-Copeman alpha function; NeqSim's `SystemPrMathiasCopeman`"}
+          - {name: MC3, disposition: dropped, reason: "not-ported: the Mathias-Copeman alpha function; NeqSim's `SystemPrMathiasCopeman`"}
           - {name: MC1Solid, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
           - {name: MC2Solid, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
           - {name: MC3Solid, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
-          - {name: TwuCoon1, disposition: dropped, reason: "no-implementation: a Twu alpha coefficient, and the alpha vocabulary admits only Peng-Robinson"}
-          - {name: TwuCoon2, disposition: dropped, reason: "no-implementation: a Twu alpha coefficient, and the alpha vocabulary admits only Peng-Robinson"}
-          - {name: TwuCoon3, disposition: dropped, reason: "no-implementation: a Twu alpha coefficient, and the alpha vocabulary admits only Peng-Robinson"}
-          - {name: associationsites, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
+          - {name: TwuCoon1, disposition: dropped, reason: "not-ported: the Twu alpha function; NeqSim's `SystemSrkTwuCoonEos` and `AttractiveTermTwuCoonStatoil`"}
+          - {name: TwuCoon2, disposition: dropped, reason: "not-ported: the Twu alpha function; NeqSim's `SystemSrkTwuCoonEos` and `AttractiveTermTwuCoonStatoil`"}
+          - {name: TwuCoon3, disposition: dropped, reason: "not-ported: the Twu alpha function; NeqSim's `SystemSrkTwuCoonEos` and `AttractiveTermTwuCoonStatoil`"}
+          - {name: associationsites, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
           - {name: associationscheme, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
-          - {name: racketZCPA, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: volcorrCPA_T, disposition: dropped, reason: "no-implementation: CPA volume translation, and no associating model exists here"}
-          - {name: associationboundingvolume_SRK, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: associationenergy, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: aCPA_SRK, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: bCPA_SRK, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: mCPA_SRK, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: aCPA_PR, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: bCPA_PR, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: mCPA_PR, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: associationboundingvolume_PR, disposition: dropped, reason: "no-implementation: CPA association, and no associating model exists here"}
-          - {name: calcActivity, disposition: dropped, reason: "not-a-cubic-input: a flag selecting an activity-coefficient model, which is a different kind of model from a cubic"}
-          - {name: ANTOINESolidA, disposition: dropped, reason: "no-implementation: a solid-vapour correlation, and no solid phase is modelled"}
-          - {name: ANTOINESolidB, disposition: dropped, reason: "no-implementation: a solid-vapour correlation, and no solid phase is modelled"}
-          - {name: ANTOINESolidC, disposition: dropped, reason: "no-implementation: a solid-vapour correlation, and no solid phase is modelled"}
-          - {name: Hsub, disposition: dropped, reason: "no-implementation: an enthalpy of sublimation, for a solid phase this library does not model"}
+          - {name: racketZCPA, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: volcorrCPA_T, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: associationboundingvolume_SRK, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: associationenergy, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: aCPA_SRK, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: bCPA_SRK, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: mCPA_SRK, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: aCPA_PR, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: bCPA_PR, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: mCPA_PR, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: associationboundingvolume_PR, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: calcActivity, disposition: dropped, reason: "not-a-value: a flag selecting an activity-coefficient model, which is a different kind of model from a cubic"}
+          - {name: ANTOINESolidA, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: ANTOINESolidB, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: ANTOINESolidC, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: Hsub, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
           - {name: criticalViscosity, disposition: dropped, reason: "not-yet: a dilute-gas viscosity anchor; eos.viscosity is planned and unimplemented", consumer: "roadmap:2b"}
-          - {name: HydrateA1Small, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: HydrateB1Small, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: HydrateA1Large, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: HydrateB1Large, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: HydrateA2Small, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: HydrateB2Small, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: HydrateA2Large, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: HydrateB2Large, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
+          - {name: HydrateA1Small, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: HydrateB1Small, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: HydrateA1Large, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: HydrateB1Large, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: HydrateA2Small, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: HydrateB2Small, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: HydrateA2Large, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: HydrateB2Large, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
           - {name: HydrateFormer, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
-          - {name: mSAFT, disposition: dropped, reason: "no-implementation: a PC-SAFT segment count, and a cubic is the only equation of state here"}
-          - {name: sigmaSAFT, disposition: dropped, reason: "no-implementation: a PC-SAFT segment diameter, and a cubic is the only equation of state here"}
-          - {name: epsikSAFT, disposition: dropped, reason: "no-implementation: a PC-SAFT energy parameter, and a cubic is the only equation of state here"}
-          - {name: associationboundingvolume_PCSAFT, disposition: dropped, reason: "no-implementation: PC-SAFT association, and a cubic is the only equation of state here"}
-          - {name: associationenergy_PCSAFT, disposition: dropped, reason: "no-implementation: PC-SAFT association, and a cubic is the only equation of state here"}
-          - {name: LJDIAMETERHYDRATE, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: LJEPSHYDRATE, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: SphericalCoreRadiusHYDRATE, disposition: dropped, reason: "no-implementation: hydrates are a separate programme, and nothing here models one"}
-          - {name: DeshMatIonicDiameter, disposition: dropped, reason: "no-implementation: an ionic diameter belongs to the electrolyte models this library does not have"}
-          - {name: waxformer, disposition: dropped, reason: "not-a-cubic-input: a flag marking a wax-forming substance, and no wax model exists here"}
-          - {name: B2_largeGF, disposition: dropped, reason: "no-implementation: a hydrate Gibbs-energy parameter, and nothing here models a hydrate"}
-          - {name: A1_smallGF, disposition: dropped, reason: "no-implementation: a hydrate Gibbs-energy parameter, and nothing here models a hydrate"}
-          - {name: B1_smallGF, disposition: dropped, reason: "no-implementation: a hydrate Gibbs-energy parameter, and nothing here models a hydrate"}
-          - {name: A1_largeGF, disposition: dropped, reason: "no-implementation: a hydrate Gibbs-energy parameter, and nothing here models a hydrate"}
-          - {name: B1_largeGF, disposition: dropped, reason: "no-implementation: a hydrate Gibbs-energy parameter, and nothing here models a hydrate"}
-          - {name: A2_smallGF, disposition: dropped, reason: "no-implementation: a hydrate Gibbs-energy parameter, and nothing here models a hydrate"}
-          - {name: B2_smallGF, disposition: dropped, reason: "no-implementation: a hydrate Gibbs-energy parameter, and nothing here models a hydrate"}
-          - {name: A2_largeGF, disposition: dropped, reason: "no-implementation: a hydrate Gibbs-energy parameter, and nothing here models a hydrate"}
-          - {name: CPsolid1, disposition: dropped, reason: "no-implementation: a solid heat-capacity correlation, and no solid phase is modelled"}
-          - {name: CPsolid2, disposition: dropped, reason: "no-implementation: a solid heat-capacity correlation, and no solid phase is modelled"}
-          - {name: CPsolid3, disposition: dropped, reason: "no-implementation: a solid heat-capacity correlation, and no solid phase is modelled"}
-          - {name: CPsolid4, disposition: dropped, reason: "no-implementation: a solid heat-capacity correlation, and no solid phase is modelled"}
+          - {name: mSAFT, disposition: dropped, reason: "not-ported: PC-SAFT; NeqSim's `PhasePCSAFTa` and `ComponentPCSAFT`"}
+          - {name: sigmaSAFT, disposition: dropped, reason: "not-ported: PC-SAFT; NeqSim's `PhasePCSAFTa` and `ComponentPCSAFT`"}
+          - {name: epsikSAFT, disposition: dropped, reason: "not-ported: PC-SAFT; NeqSim's `PhasePCSAFTa` and `ComponentPCSAFT`"}
+          - {name: associationboundingvolume_PCSAFT, disposition: dropped, reason: "not-ported: PC-SAFT; NeqSim's `PhasePCSAFTa` and `ComponentPCSAFT`"}
+          - {name: associationenergy_PCSAFT, disposition: dropped, reason: "not-ported: PC-SAFT; NeqSim's `PhasePCSAFTa` and `ComponentPCSAFT`"}
+          - {name: LJDIAMETERHYDRATE, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: LJEPSHYDRATE, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: SphericalCoreRadiusHYDRATE, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: DeshMatIonicDiameter, disposition: dropped, reason: "not-ported: the electrolyte models; NeqSim's `PhaseDesmukhMather` and `PitzerScaleActivityModel`"}
+          - {name: waxformer, disposition: dropped, reason: "not-a-value: a flag marking a wax-forming substance, and no wax model exists here"}
+          - {name: B2_largeGF, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: A1_smallGF, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: B1_smallGF, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: A1_largeGF, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: B1_largeGF, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: A2_smallGF, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: B2_smallGF, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: A2_largeGF, disposition: dropped, reason: "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"}
+          - {name: CPsolid1, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: CPsolid2, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: CPsolid3, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
+          - {name: CPsolid4, disposition: dropped, reason: "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"}
           - {name: CPsolid5, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
-          - {name: CPliquid1, disposition: dropped, reason: "no-implementation: a liquid heat-capacity correlation, and eos.ideal_gas_cp works from the ideal-gas polynomial instead"}
-          - {name: CPliquid2, disposition: dropped, reason: "no-implementation: a liquid heat-capacity correlation, and eos.ideal_gas_cp works from the ideal-gas polynomial instead"}
-          - {name: CPliquid3, disposition: dropped, reason: "no-implementation: a liquid heat-capacity correlation, and eos.ideal_gas_cp works from the ideal-gas polynomial instead"}
-          - {name: CPliquid4, disposition: dropped, reason: "no-implementation: a liquid heat-capacity correlation, and eos.ideal_gas_cp works from the ideal-gas polynomial instead"}
-          - {name: CPliquid5, disposition: dropped, reason: "no-implementation: a liquid heat-capacity correlation, and eos.ideal_gas_cp works from the ideal-gas polynomial instead"}
-          - {name: MCPR1, disposition: dropped, reason: "no-implementation: a Mathias-Copeman alpha coefficient for Peng-Robinson, and the alpha vocabulary admits only the unfitted form"}
-          - {name: MCPR2, disposition: dropped, reason: "no-implementation: a Mathias-Copeman alpha coefficient for Peng-Robinson, and the alpha vocabulary admits only the unfitted form"}
-          - {name: MCPR3, disposition: dropped, reason: "no-implementation: a Mathias-Copeman alpha coefficient for Peng-Robinson, and the alpha vocabulary admits only the unfitted form"}
-          - {name: PARACHOR_CPA, disposition: dropped, reason: "no-implementation: surface tension for an associating model, and neither exists here"}
-          - {name: lambdaRSAFTVRMie, disposition: dropped, reason: "no-implementation: a SAFT-VR-Mie repulsive exponent, and a cubic is the only equation of state here"}
-          - {name: lambdaASAFTVRMie, disposition: dropped, reason: "no-implementation: a SAFT-VR-Mie attractive exponent, and a cubic is the only equation of state here"}
-          - {name: mSAFTVRMie, disposition: dropped, reason: "no-implementation: a SAFT-VR-Mie segment count, and a cubic is the only equation of state here"}
-          - {name: sigmaSAFTVRMie, disposition: dropped, reason: "no-implementation: a SAFT-VR-Mie segment diameter, and a cubic is the only equation of state here"}
-          - {name: epsikSAFTVRMie, disposition: dropped, reason: "no-implementation: a SAFT-VR-Mie energy parameter, and a cubic is the only equation of state here"}
-          - {name: associationenergy_SAFTVRMie, disposition: dropped, reason: "no-implementation: a SAFT-VR-Mie association parameter, and a cubic is the only equation of state here"}
-          - {name: associationvolume_SAFTVRMie, disposition: dropped, reason: "no-implementation: a SAFT-VR-Mie association parameter, and a cubic is the only equation of state here"}
-          - {name: UMRCPA_MC1, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
-          - {name: UMRCPA_MC2, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
-          - {name: UMRCPA_MC3, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
-          - {name: UMRCPA_MC4, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
-          - {name: UMRCPA_MC5, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
-          - {name: UMRCPA_a0, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
-          - {name: UMRCPA_b, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
-          - {name: UMRCPA_assocEnergy, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
-          - {name: UMRCPA_assocVolume, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
+          - {name: CPliquid1, disposition: dropped, reason: "not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in `physicalproperties/`"}
+          - {name: CPliquid2, disposition: dropped, reason: "not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in `physicalproperties/`"}
+          - {name: CPliquid3, disposition: dropped, reason: "not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in `physicalproperties/`"}
+          - {name: CPliquid4, disposition: dropped, reason: "not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in `physicalproperties/`"}
+          - {name: CPliquid5, disposition: dropped, reason: "not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in `physicalproperties/`"}
+          - {name: MCPR1, disposition: dropped, reason: "not-ported: the Mathias-Copeman alpha function; NeqSim's `SystemPrMathiasCopeman`"}
+          - {name: MCPR2, disposition: dropped, reason: "not-ported: the Mathias-Copeman alpha function; NeqSim's `SystemPrMathiasCopeman`"}
+          - {name: MCPR3, disposition: dropped, reason: "not-ported: the Mathias-Copeman alpha function; NeqSim's `SystemPrMathiasCopeman`"}
+          - {name: PARACHOR_CPA, disposition: dropped, reason: "not-ported: surface tension; NeqSim's `ParachorSurfaceTension`"}
+          - {name: lambdaRSAFTVRMie, disposition: dropped, reason: "not-ported: SAFT-VR-Mie; NeqSim's `PhaseSAFTVRMie` and `ComponentSAFTVRMie`"}
+          - {name: lambdaASAFTVRMie, disposition: dropped, reason: "not-ported: SAFT-VR-Mie; NeqSim's `PhaseSAFTVRMie` and `ComponentSAFTVRMie`"}
+          - {name: mSAFTVRMie, disposition: dropped, reason: "not-ported: SAFT-VR-Mie; NeqSim's `PhaseSAFTVRMie` and `ComponentSAFTVRMie`"}
+          - {name: sigmaSAFTVRMie, disposition: dropped, reason: "not-ported: SAFT-VR-Mie; NeqSim's `PhaseSAFTVRMie` and `ComponentSAFTVRMie`"}
+          - {name: epsikSAFTVRMie, disposition: dropped, reason: "not-ported: SAFT-VR-Mie; NeqSim's `PhaseSAFTVRMie` and `ComponentSAFTVRMie`"}
+          - {name: associationenergy_SAFTVRMie, disposition: dropped, reason: "not-ported: SAFT-VR-Mie; NeqSim's `PhaseSAFTVRMie` and `ComponentSAFTVRMie`"}
+          - {name: associationvolume_SAFTVRMie, disposition: dropped, reason: "not-ported: SAFT-VR-Mie; NeqSim's `PhaseSAFTVRMie` and `ComponentSAFTVRMie`"}
+          - {name: UMRCPA_MC1, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
+          - {name: UMRCPA_MC2, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
+          - {name: UMRCPA_MC3, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
+          - {name: UMRCPA_MC4, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
+          - {name: UMRCPA_MC5, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
+          - {name: UMRCPA_a0, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
+          - {name: UMRCPA_b, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
+          - {name: UMRCPA_assocEnergy, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
+          - {name: UMRCPA_assocVolume, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
           - {name: UMRCPA_assocScheme, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
-          - {name: UMRCPA_associating, disposition: dropped, reason: "no-implementation: a UMR-CPA flag, and no associating or universal-mixing model exists here"}
-          - {name: UMRCPA_racketZ, disposition: dropped, reason: "no-implementation: a UMR-CPA parameter, and no associating or universal-mixing model exists here"}
+          - {name: UMRCPA_associating, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
+          - {name: UMRCPA_racketZ, disposition: dropped, reason: "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"}
           - {name: UMRCPA_volcorr_T, disposition: dropped, reason: "empty-upstream: zero over all 173 rows kept"}
 
       - id: neqsim/INTER.csv
@@ -228,87 +233,89 @@ upstreams:
           - selector: "either component outside the 173 substances COMP.csv leaves after filtering"
             count: 786
             reason: >-
-              not-a-cubic-input: an interaction parameter between a pair where one member
+              not-a-value: an interaction parameter between a pair where one member
               is not vendored cannot be looked up, and shipping it would be a row nothing
               can reach.
         columns:
-          - {name: ID, disposition: dropped, reason: "not-a-cubic-input: the row's ordinal in the upstream file"}
+          - {name: ID, disposition: dropped, reason: "not-a-value: the row's ordinal in the upstream file"}
           - {name: COMP1, disposition: used, as: component_a}
           - {name: COMP2, disposition: used, as: component_b}
-          - {name: HVTYPE, disposition: dropped, reason: "not-a-cubic-input: a selector naming the Huron-Vidal variant the neighbouring columns belong to"}
-          - {name: KIJSRK, disposition: dropped, reason: "no-implementation: Soave-Redlich-Kwong interaction parameters, and Peng-Robinson is the only cubic here. Present for 310 of the 516 in-scope pairs."}
-          - {name: KIJTSRK, disposition: dropped, reason: "no-implementation: the temperature-dependent SRK term, and the mixing rule here reads a constant"}
+          - {name: HVTYPE, disposition: dropped, reason: "not-a-value: a selector naming the Huron-Vidal variant the neighbouring columns belong to"}
+          - {name: KIJSRK, disposition: dropped, reason: "not-ported: Soave-Redlich-Kwong; NeqSim's `SystemSrk*` family. Present for 310 of the 516 in-scope pairs."}
+          - {name: KIJTSRK, disposition: dropped, reason: "not-ported: temperature-dependent SRK parameters; NeqSim's `thermo/mixingrule/`"}
           - {name: KIJTType, disposition: dropped, reason: "empty-upstream: populated for 1 of the 516 in-scope pairs"}
           - {name: KIJPR, disposition: used, as: kij_pr}
-          - {name: KIJTPR, disposition: dropped, reason: "no-implementation: the temperature-dependent PR term, and the mixing rule here reads a constant `kij`"}
-          - {name: KIJPCSAFT, disposition: dropped, reason: "no-implementation: PC-SAFT interaction parameters, and a cubic is the only equation of state here"}
-          - {name: HVALPHA, disposition: dropped, reason: "no-implementation: a Huron-Vidal mixing-rule parameter, and the only mixing rule here is classical van der Waals one-fluid"}
-          - {name: HVGIJ, disposition: dropped, reason: "no-implementation: a Huron-Vidal mixing-rule parameter, and the only mixing rule here is classical van der Waals one-fluid"}
-          - {name: HVGJI, disposition: dropped, reason: "no-implementation: a Huron-Vidal mixing-rule parameter, and the only mixing rule here is classical van der Waals one-fluid"}
+          - {name: KIJTPR, disposition: dropped, reason: "not-ported: temperature-dependent `kij`; NeqSim's `thermo/mixingrule/`"}
+          - {name: KIJPCSAFT, disposition: dropped, reason: "not-ported: PC-SAFT; NeqSim's `PhasePCSAFTa` and `ComponentPCSAFT`"}
+          - {name: HVALPHA, disposition: dropped, reason: "not-ported: the Huron-Vidal mixing rule; NeqSim's `PhaseGENRTLmodifiedHV`"}
+          - {name: HVGIJ, disposition: dropped, reason: "not-ported: the Huron-Vidal mixing rule; NeqSim's `PhaseGENRTLmodifiedHV`"}
+          - {name: HVGJI, disposition: dropped, reason: "not-ported: the Huron-Vidal mixing rule; NeqSim's `PhaseGENRTLmodifiedHV`"}
           - {name: CalcWij, disposition: dropped, reason: "empty-upstream: zero over the 516 in-scope pairs"}
           - {name: W1, disposition: dropped, reason: "empty-upstream: zero over the 516 in-scope pairs"}
           - {name: W2, disposition: dropped, reason: "empty-upstream: zero over the 516 in-scope pairs"}
           - {name: W3, disposition: dropped, reason: "empty-upstream: zero over the 516 in-scope pairs"}
-          - {name: WSTYPE, disposition: dropped, reason: "not-a-cubic-input: a selector naming the Wong-Sandler variant"}
-          - {name: KIJWS, disposition: dropped, reason: "no-implementation: Wong-Sandler interaction parameters, and the only mixing rule here is classical van der Waals one-fluid. Present for 359 of the 516 in-scope pairs."}
-          - {name: NRTLALPHA, disposition: dropped, reason: "no-implementation: an NRTL activity-model parameter, and no activity model exists here"}
-          - {name: NRTLGIJ, disposition: dropped, reason: "no-implementation: an NRTL activity-model parameter, and no activity model exists here"}
-          - {name: NRTLGJI, disposition: dropped, reason: "no-implementation: an NRTL activity-model parameter, and no activity model exists here"}
-          - {name: GIJVISC, disposition: dropped, reason: "no-implementation: an NRTL parameter for a viscosity model this library does not have"}
-          - {name: HVGIJT, disposition: dropped, reason: "no-implementation: a Huron-Vidal parameter, and the only mixing rule here is classical van der Waals one-fluid"}
-          - {name: HVGJIT, disposition: dropped, reason: "no-implementation: a Huron-Vidal parameter, and the only mixing rule here is classical van der Waals one-fluid"}
-          - {name: WSGIJT, disposition: dropped, reason: "no-implementation: a Wong-Sandler parameter, and the only mixing rule here is classical van der Waals one-fluid"}
-          - {name: WSGJIT, disposition: dropped, reason: "no-implementation: a Wong-Sandler parameter, and the only mixing rule here is classical van der Waals one-fluid"}
-          - {name: cpakij_SRK, disposition: dropped, reason: "no-implementation: a CPA interaction parameter, and no associating model exists here"}
-          - {name: cpakijT_SRK, disposition: dropped, reason: "no-implementation: a CPA interaction parameter, and no associating model exists here"}
-          - {name: cpakijx_SRK, disposition: dropped, reason: "no-implementation: a CPA interaction parameter, and no associating model exists here"}
-          - {name: cpakjix_SRK, disposition: dropped, reason: "no-implementation: a CPA interaction parameter, and no associating model exists here"}
-          - {name: cpakij_PR, disposition: dropped, reason: "no-implementation: a CPA interaction parameter, and no associating model exists here. Present for 132 of the 516 in-scope pairs."}
-          - {name: KIJWSunifac, disposition: dropped, reason: "no-implementation: a UNIFAC-derived parameter, and no activity model exists here"}
+          - {name: WSTYPE, disposition: dropped, reason: "not-a-value: a selector naming the Wong-Sandler variant"}
+          - {name: KIJWS, disposition: dropped, reason: "not-ported: the Wong-Sandler mixing rule; NeqSim's `PhaseGENRTLmodifiedWS`. Present for 359 of the 516 in-scope pairs."}
+          - {name: NRTLALPHA, disposition: dropped, reason: "not-ported: the NRTL activity model; NeqSim's `PhaseGENRTL`"}
+          - {name: NRTLGIJ, disposition: dropped, reason: "not-ported: the NRTL activity model; NeqSim's `PhaseGENRTL`"}
+          - {name: NRTLGJI, disposition: dropped, reason: "not-ported: the NRTL activity model; NeqSim's `PhaseGENRTL`"}
+          - {name: GIJVISC, disposition: dropped, reason: "not-ported: NRTL with a viscosity model; NeqSim's `PhaseGENRTL` and `physicalproperties/`"}
+          - {name: HVGIJT, disposition: dropped, reason: "not-ported: the Huron-Vidal mixing rule; NeqSim's `PhaseGENRTLmodifiedHV`"}
+          - {name: HVGJIT, disposition: dropped, reason: "not-ported: the Huron-Vidal mixing rule; NeqSim's `PhaseGENRTLmodifiedHV`"}
+          - {name: WSGIJT, disposition: dropped, reason: "not-ported: the Wong-Sandler mixing rule; NeqSim's `PhaseGENRTLmodifiedWS`"}
+          - {name: WSGJIT, disposition: dropped, reason: "not-ported: the Wong-Sandler mixing rule; NeqSim's `PhaseGENRTLmodifiedWS`"}
+          - {name: cpakij_SRK, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: cpakijT_SRK, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: cpakijx_SRK, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: cpakjix_SRK, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: cpakij_PR, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`. Present for 132 of the 516 in-scope pairs."}
+          - {name: KIJWSunifac, disposition: dropped, reason: "not-ported: UNIFAC; NeqSim's `PhaseGEUnifac`"}
           - {name: aijDesMath, disposition: dropped, reason: "empty-upstream: zero over the 516 in-scope pairs"}
           - {name: bijDesMath, disposition: dropped, reason: "empty-upstream: zero over the 516 in-scope pairs"}
-          - {name: cpaAssosiationType, disposition: dropped, reason: "not-a-cubic-input: a selector naming the CPA association scheme. The upstream spelling is misspelled, and it is kept verbatim so the column can be found."}
-          - {name: cpaBetaCross, disposition: dropped, reason: "no-implementation: a CPA cross-association parameter, and no associating model exists here"}
-          - {name: cpaEpsCross, disposition: dropped, reason: "no-implementation: a CPA cross-association parameter, and no associating model exists here"}
-          - {name: KIJWhitsonSoriede, disposition: dropped, reason: "no-implementation: a Whitson-Soriede interaction parameter, and the only mixing rule here is classical van der Waals one-fluid. Present for 235 of the 516 in-scope pairs."}
+          - {name: cpaAssosiationType, disposition: dropped, reason: "not-a-value: a selector naming the CPA association scheme. The upstream spelling is misspelled, and it is kept verbatim so the column can be found."}
+          - {name: cpaBetaCross, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: cpaEpsCross, disposition: dropped, reason: "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"}
+          - {name: KIJWhitsonSoriede, disposition: dropped, reason: "not-ported: the Whitson-Soriede mixing rule; NeqSim's `thermo/mixingrule/`. Present for 235 of the 516 in-scope pairs."}
 
 not_vendored:
+  # Files NeqSim ships that azoth does not vendor, each with the model that would
+  # read it. `not-ported` here means the same thing it means for a column: NeqSim has
+  # the capability and this library has not ported it, so the entry names where.
   - id: neqsim/COMP_EXT.csv
     reason: >-
-      no-implementation: 86 MB and 76,705 rows of heavy and characterised fluids. A
-      plus-fraction needs a characterisation method - a distillation curve, a set of
-      pseudo-components - and this library has none, so the rows would be unreachable.
+      not-ported: plus-fraction characterisation; NeqSim's `pvtsimulation/`. 86 MB and
+      76,705 rows of heavy and characterised fluids, and a plus-fraction is a
+      distillation curve and a set of pseudo-components rather than a critical
+      constant. Unreachable until that characterisation exists.
   - id: "neqsim/UNIFAC*.csv"
-    reason: >-
-      no-implementation: activity-coefficient group contributions, twelve files. An
-      activity model is a different kind of calculation from an equation of state.
+    reason: "not-ported: UNIFAC group contributions, twelve files; NeqSim's `PhaseGEUnifac`."
   - id: neqsim/PitzerParameters.csv
-    reason: "no-implementation: electrolyte activity coefficients, and the ions are excluded from the component rows."
+    reason: "not-ported: electrolyte activity coefficients; NeqSim's `PitzerScaleActivityModel`."
   - id: neqsim/COMPSALT.csv
-    reason: "no-implementation: salt solubility products, and no electrolyte model exists here."
+    reason: "not-ported: salt solubility products; NeqSim's `ComponentSalt` and the electrolyte phases."
   - id: neqsim/element.csv
-    reason: "no-implementation: the atoms making up each component, which only a reaction model reads."
+    reason: "not-ported: reaction stoichiometry; NeqSim's `chemicalreactions/`."
   - id: "neqsim/REACTIONDATA*.csv"
-    reason: "no-implementation: reaction kinetics and equilibrium, and no reactor exists here. Four files."
+    reason: "not-ported: reaction kinetics and equilibrium, four files; NeqSim's `chemicalreactions/`."
   - id: neqsim/ReactionKSPdata.csv
-    reason: "no-implementation: solubility products for the reaction models."
+    reason: "not-ported: reaction solubility products; NeqSim's `chemicalreactions/`."
   - id: neqsim/GibbsReactDatabase/
-    reason: "no-implementation: Gibbs free-energy minimisation, which is a reactor, not a flash."
+    reason: "not-ported: Gibbs free-energy minimisation; NeqSim's `thermodynamicoperations/`."
   - id: "neqsim/ISO6976constants*.csv"
-    reason: "no-implementation: fiscal metering constants for natural-gas energy content, which is a reporting standard rather than a calculation."
+    reason: "not-ported: natural-gas energy content to ISO 6976; NeqSim's `physicalproperties/`."
   - id: neqsim/fiscal/
-    reason: "no-implementation: fiscal metering parameters."
+    reason: "not-ported: fiscal metering; NeqSim's `process/measurementdevice/`."
   - id: neqsim/powergeneration/
-    reason: "no-implementation: gas-turbine catalogues and CO2 tax tables, which are economics rather than physics."
+    reason: "not-ported: gas-turbine models and CO2 tax tables; NeqSim's `process/equipment/`."
   - id: neqsim/AdsorptionParameters.csv
-    reason: "no-implementation: adsorption isotherms, and no adsorption model exists here."
+    reason: "not-ported: adsorption isotherms; NeqSim's `physicalproperties/interfaceproperties/solidadsorption`."
   - id: neqsim/chemical_compatibility_rules.csv
-    reason: "no-implementation: material-compatibility rules, which are a design aid rather than a calculation."
+    reason: "not-ported: material compatibility; NeqSim's `process/` material-selection models."
   - id: neqsim/scale_remediation.csv
-    reason: "no-implementation: scale-treatment guidance, which is a knowledge base rather than a model."
+    reason: "not-ported: mineral scale; NeqSim's `pvtsimulation/flowassurance/`."
   - id: neqsim/STOCCOEFDATA.csv
-    reason: "no-implementation: stoichiometric coefficients, which only a reaction model reads."
+    reason: "not-ported: reaction stoichiometry; NeqSim's `chemicalreactions/`."
   - id: neqsim/MBWR32param.csv
-    reason: "no-implementation: a 32-parameter modified Benedict-Webb-Rubin equation of state, which is a different equation from a cubic."
+    reason: "not-ported: the 32-parameter Benedict-Webb-Rubin equation; NeqSim's `PhaseBWRSEos`."
   - id: neqsim/PIPEDATA.csv
-    reason: "no-implementation: pipe schedule dimensions, which a line-sizing calculation would read and this library does not perform."
+    reason: "not-ported: pipe schedules; NeqSim's `process/equipment/`."
