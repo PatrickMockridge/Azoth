@@ -38,6 +38,7 @@ DOCS_SRC = ROOT / "docs" / "src"
 #: as the book's, and a dead one there is as broken as a dead one in the book.
 ROOT_PAGES = (
     "README.md",
+    "ROADMAP.md",
     "CODE_OF_CONDUCT.md",
     "SECURITY.md",
     "SPEC.md",

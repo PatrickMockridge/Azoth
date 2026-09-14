@@ -39,24 +39,26 @@ NeqSim is Apache-2.0; the attribution is in [`NOTICE`](../NOTICE).
 
 ## `manifest.toml` is the record of what was taken
 
-Every column of `COMP.csv` (170) and `INTER.csv` (39) is listed once, with what was
-done with it and a reason. `tools/check_manifest.py` prints the tally:
+Every resource file NeqSim ships is declared once, and every column of every one of
+them (35 files, 1,496 columns) is listed with what was done with it and a reason.
+`tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (2 vendored file(s), 209 column(s), 12 used, 17 not-vendored entr(ies))
-  139  not-ported
-   21  not-yet
+check_manifest: OK (35 vendored file(s), 1496 column(s), 1459 carried of which 14 read, 0 not-vendored entr(ies))
+  1445  carried, nothing reads it yet
+  1317  carried with no unit NeqSim states (neqsim-internal)
    10  not-a-value
    22  empty-upstream
     5  superseded-by
 ```
 
-**`not-ported` is the porting backlog, and it is the number that matters.** NeqSim is
-the target, not a reference: 139 of these columns are a physical property whose model
-NeqSim implements and azoth has not ported, and each entry names the class that would
-close it — `PhaseHydrate`, `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`,
-`ParachorSurfaceTension` and the rest. The check refuses a `not-ported` reason with no
-NeqSim name in it, so the list cannot drift back into being somewhere to put a column.
+**The porting backlog is "carried, nothing reads it yet" — 1,445 columns — and it is the
+number that matters.** NeqSim is the target, not a reference: each carried column is a
+physical property whose model NeqSim implements and azoth has not ported, and the
+`not-ported` reason names the class that would close it — `PhaseHydrate`,
+`CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the
+rest. The check refuses a `not-ported` reason with no NeqSim name in it, so the list
+cannot drift back into being somewhere to put a column.
 
 Nothing here is "out of scope". That word was in an earlier draft of this vocabulary
 and it was wrong: a file it labelled out of scope was work not yet done, and filing it

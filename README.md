@@ -9,26 +9,32 @@ simulator, under Apache-2.0 and credited in [`NOTICE`](NOTICE) rather than re-de
 
 What is azoth's own is the structure around them, and that is where the opinions are:
 
-- **A small core, and no cross-dependency.** `azoth-core` is units, errors, warnings,
-  results, range checks, the spec runtime and the solvers, and no engineering
-  calculation. A domain crate depends on it and on no sibling. So a new domain is a
-  new crate.
-- **Three levels.** A calculation, a model, a unit operation, a flowsheet. The first two
-  are built. The unit-operation tier was deleted rather than repaired: it asserted a
-  process simulator this library does not have, and it is P11 work in the specification's
-  own programme, not P0 work. The flowsheet is designed there too and not built.
-- **The keycard.** A component, an interaction parameter, a fluid table, a fitting
-  coefficient or a model variant overrides what ships, by name, without writing Rust or
-  Python. What azoth ships is a vendored slice of NeqSim's databank and equations; what
+- **Composable by construction.** The dimension group is proved in Lean
+  (`lean/Azoth/Dim.lean`), and the 24-unit vocabulary is data compiled into theorems
+  (`lean/Azoth/Vocabulary.lean`) that say which dimension each unit names. Above them,
+  pi and rho say a unit operation is a pure function on typed channels, so conservation
+  is linearity and the balances are lemmas rather than checks. The crates are a small
+  core with no cross-dependency, so a new domain is a new crate. What
+  [the calculus](docs/src/calculus/index.md) states once, every calculation
+  is an instance of.
+- **A standard, not an encyclopaedia.** No single project ships every fluid and every
+  correlation. azoth ships a *standard* others author against: the keycard (TOML data,
+  checked on load), a new equation as one spec plus one Rust file and one Python file,
+  and a `PropertyProvider` for fluid data it cannot ship. There is no runtime plugin
+  registry - a calculation exists twice, once per language, or not at all.
+- **The keycard is where responsibility sits.** The library implements; the engineer
+  decides. A name outside the vocabulary is refused when the card is loaded; a
+  coefficient must declare a unit, checked against the spec's declared unit; errors are
+  typed and range violations are warnings. What azoth ships is NeqSim's, vendored; what
   you add is yours, and the responsibility for it is yours too.
 - **Python is a real second implementation**, not a binding to a black box. Every
   calculation exists twice and the two are compared case by case, so azoth works in a
   notebook or a conda environment with no Rust toolchain at all.
 
-[the specification](docs/src/architecture/specification.md) is the page for all four, and
-[`SPEC.md`](SPEC.md) is the normative one - why Rust rather than Java, what is in scope
-and what deliberately is not, and what it costs to add a calculation. Where another
-document disagrees with the specification, that document is wrong.
+[the specification](docs/src/architecture/specification.md) is the normative statement
+of all four, and [`SPEC.md`](SPEC.md) points at it - why Rust rather than Java, what is
+in scope and what deliberately is not, and what it costs to add a calculation. Where
+another document disagrees with the specification, that document is wrong.
 
 **Status: early.** What is implemented is the table below, and it is generated from the
 specs rather than maintained by hand: a hydraulics kernel through Darcy-Weisbach
@@ -38,7 +44,8 @@ and the **flowsheet** above it are designed in
 [the specification](docs/src/architecture/specification.md) and not built. The fitting coefficients azoth
 ships are **placeholders, not engineering data**;
 see [Not for design work yet](#not-for-design-work-yet), and
-[the specification](docs/src/architecture/specification.md) has the programme.
+[the specification](docs/src/architecture/specification.md) has the programme. The
+order in which the rest of NeqSim is ported is [ROADMAP.md](ROADMAP.md).
 
 ## Install
 
