@@ -42,6 +42,8 @@ class PropertyPoint:
     dynamic_viscosity_pa_s: float
     citation: str
     verify_status: str
+    source_ref: str | None = None
+    source_locator: str | None = None
 
 
 @runtime_checkable
@@ -169,6 +171,11 @@ def _read_table(path: Path) -> tuple[PropertyPoint, ...]:
                     dynamic_viscosity_pa_s=float(raw["dynamic_viscosity_pa_s"]),
                     citation=raw["citation"],
                     verify_status=raw["verify_status"],
+                    # Empty means absent, not an empty string - the same rule the
+                    # Rust loader applies, so the two agree on what a row with no
+                    # source carries.
+                    source_ref=raw.get("source_ref") or None,
+                    source_locator=raw.get("source_locator") or None,
                 )
             )
         except (KeyError, ValueError) as exc:

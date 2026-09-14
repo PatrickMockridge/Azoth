@@ -1,5 +1,4 @@
-"""azoth - an opinionated port of NeqSim to Rust, with every calculation mirrored in
-Python.
+"""azoth - open, validated, citable chemical engineering calculations.
 
 Every calculation ships with its equation, a source, the range in which it is
 validated, its assumptions, a worked example and tests. The docs are generated

@@ -9,7 +9,7 @@ build-backend = "maturin"
 [project]
 name = "azoth"
 version = "0.1.0"
-description = "An opinionated port of NeqSim to Rust, with every calculation mirrored in Python"
+description = "Open, validated, citable chemical engineering calculations"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "AGPL-3.0-or-later"
