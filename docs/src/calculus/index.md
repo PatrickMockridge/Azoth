@@ -18,35 +18,59 @@ inlet and an outlet, and "the mole balance closes" is either a consequence of ho
 its channels are used or it is a sentence in a specification that nothing checks.
 That is the second thing.
 
-Five layers, each a Lean module and a page here:
+Five layers, each a Lean module and a page here. **Two of the modules exist** —
+`Azoth/Dim.lean` and `Azoth/Vocabulary.lean` — and the other three are the ones
+their tranches will write:
 
 | Layer | What it fixes | Lean | Page |
 |---|---|---|---|
-| Dimensions | what a unit's dimension is, and when two are equal | `Azoth/Dim.lean` | [Dimensions](./dimensions.md) |
+| Dimensions | what a unit's dimension is, and when two are equal | `Azoth/Dim.lean` ✅ | [Dimensions](./dimensions.md) |
+| Vocabulary | which units a spec may declare, and what each one is | `Azoth/Vocabulary.lean` ✅ | [The vocabulary table](./vocabulary.md) |
 | Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` | [Barbs](./barbs.md) |
 | Processes | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` | [Processes](./process.md) |
 | Reflection | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` | [Reflection](./rho.md) |
 | Capability | the keycard as authority a process holds rather than a global it reads | `Azoth/Capability.lean` | [The keycard](./capability.md) |
 
-The first layer is written against a **vocabulary** — the canonical unit strings a
-spec may declare. That vocabulary is data rather than proof: one hand-written
-table, compiled into Rust, Python and JSON Schema. It is specified separately, in
-[The vocabulary table](./vocabulary.md), because it is the one part of this whose
-authority is a generator rather than a proof.
+The two that exist are the ones written against a **vocabulary** — the canonical
+unit strings a spec may declare. That vocabulary is data rather than proof: one
+hand-written table, compiled into Rust, Python, JSON Schema and Lean. It is
+specified separately, in [The vocabulary table](./vocabulary.md), because it is the
+one part of this whose authority is a generator rather than a proof.
 
-## Status: written, not yet proved
+## Status: the vocabulary is proved, the rest is specification
 
-Every page below states claims and names the theorem each will become. **The Lean
-development is not in this tree yet**, so nothing here has been checked by a
-machine. A reader should take each *Claim* as a specification of what has to be
-proved, and not as a result — and the reason to say so plainly is the reason
-`spec.md` gives for having no status field anywhere: a form that asks for
-confidence manufactures it rather than producing it.
+**The vocabulary is proved.** The development is in `lean/`, and
+`tools/check_lean_axioms.py` refuses a gap in any theorem it claims — twenty-eight
+today: four about the dimension group, that its exponent vectors name it and read
+back unchanged, and one per canonical unit checking that the table's exponents name
+the dimension `lean-units` calls by that name. That is
+[The vocabulary table](./vocabulary.md), and it is the whole of what this section
+has checked against anything.
 
-Each claim carries its own status line recording whether it is proved, and the
-line is changed when the proof lands rather than when the proof is planned. The
-one exception is [The vocabulary table](./vocabulary.md), which describes a
-mechanism that is implemented and tested in this tree today.
+**Everything else here is a specification.** [Processes](./process.md),
+[Barbs](./barbs.md), [Reflection](./rho.md) and [The keycard](./capability.md)
+state the layers that tranches F4 and F7 will build, and **none of those layers
+exists**: there is no channel type in Rust or Python, no `Kind`, no process
+calculus, no card. A proof about them today would be a proof about nothing — it
+could not be falsified by any test this repository can run, which is the only thing
+a proof in this tree is for.
+
+So each claim names its theorem and says which of three things it is:
+
+| | Means |
+|---|---|
+| **Proved** | in `lean/Azoth/`, and the axiom gate covers it |
+| **Specified** | the layer does not exist. The claim is what will make the tranche that builds it checkable, and it is proved then |
+| **Characterised** | the layer exists and the claim describes it rather than guarding it. Nothing this repository can do would violate it, so it is stated and deliberately not proved |
+
+The distinction between the last two is the whole of the judgement here, and it is
+the one `spec.md` makes when it refuses a status field: what a claim is *worth*
+depends on whether anything can falsify it. A specification is worth writing
+before its layer exists, because it is what the layer is checked against. A
+characterisation is worth writing too — it is what makes the dimension the right
+notion rather than an arbitrary labelling — but proving it would add a theorem
+nobody consults to a gate whose value comes from every entry in it being one a
+change could break.
 
 ## The rule the rest depends on
 

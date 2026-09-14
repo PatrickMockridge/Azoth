@@ -40,8 +40,11 @@ result:
 ∃! r.  Run c x r
 ```
 
-*Status: not yet proved. Will be
-`Azoth.Capability.result_is_a_function_of_the_card`.*
+*Status: **specified**, and this one is worth being precise about. The card exists
+today as a module-level global in Python and as nothing at all in Rust, so the
+claim is not merely unproved - **the implementation contradicts it**, in the two
+ways the section below sets out. `Azoth.Capability.result_is_a_function_of_the_card`
+is what the tranche that makes the card a value is checked against.*
 
 This is the property `spec.md` states as a rule — *"It is not shared. One keycard
 per process… A library whose answers depend on call order is a library that returns
@@ -55,7 +58,8 @@ does not grant:
 Run c x r   →   derives r d   →   d ∈ G
 ```
 
-*Status: not yet proved. Will be `Azoth.Capability.no_amplification`.*
+*Status: **specified**. Authority is not a value here yet, so there is nothing whose
+exercise could fail to be a subset of what it holds.*
 
 Non-amplification is the claim that a card cannot be *added to* by using it — that
 the authority a calculation exercises is a subset of what it holds. It is the
@@ -71,13 +75,14 @@ witness in the other direction:
 computation whose result relies on `d` — and for that card, `derives r d` is not
 derivable.
 
-*Status: not yet proved. Will be `Azoth.Capability.amplification_is_possible`.*
+*Status: **specified**. It is the witness that makes the claim above non-vacuous,
+and it is proved in the same tranche - a gate that cannot fail is not a gate.*
 
-Both statements are in the development, and only the second is what makes the
-first worth proving. A gate that cannot fail is not a gate — the same reason
-`spec.md` requires a bound to name what it bounds, and the same reason the
-conversion test in [The vocabulary table](./vocabulary.md) is checked by pointing
-a unit at the wrong library rather than by reading the code.
+The witness is what makes the claim above worth proving, and it is not optional. A
+gate that cannot fail is not a gate — the same reason `spec.md` requires a bound to
+name what it bounds, and the same reason the conversion test in
+[The vocabulary table](./vocabulary.md) is checked by pointing a unit at the wrong
+library rather than by reading the code.
 
 ## What the implementation does today
 

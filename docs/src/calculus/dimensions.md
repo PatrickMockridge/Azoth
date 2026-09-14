@@ -89,7 +89,37 @@ preserves*. It is the formal counterpart of the observation that a conversion
 between units is the identity on dimensions, and it is what makes a unit choice
 free: units move the magnitude and leave `dim` alone.
 
-*Status: not yet proved. Will be `Azoth.Dim.dimension_is_the_universal_invariant`.*
+*Status: **characterised**. `Azoth.Dim.dimension_is_the_universal_invariant` is not
+proved, and deliberately: the group exists and this statement is true of it, but
+nothing this repository can do would violate it, so a proof would add a theorem to
+a gate whose value comes from every entry in it being one a change could break.
+What is proved about the group instead is the part a change *could* break — that
+the exponent vector determines the dimension and back, below.*
+
+## The exponents determine the dimension, and back
+
+The representation everything in this repository actually exchanges is the
+**exponent vector**, and the group element is what it means. So the claim that
+matters for the code is that the two are the same data:
+
+```
+Dim.exponents (Dim.ofExponents e)  =  e        for e of `slots.length` entries
+```
+
+**Claim (the representation is faithful).** `ofExponents` from exponent vectors in
+`slots` order into the dimension group, and `exponents` back, are mutually inverse
+on vectors of one entry per slot.
+
+*Status: **proved**, as `Azoth.Dim.exponents_ofExponents`.*
+
+This is the one statement in this section a change could break, and breaking it
+would be silent. The vocabulary table, the generated Rust, the generated Python and
+the twenty-four unit theorems all carry vectors; if a vector could name two
+different dimensions, or two vectors the same one, every one of those would agree
+with a table that meant nothing. The three theorems beside it —
+`ofExponentsOn_nil`, `ofExponents_nil` and `ofExponentsOn_singleton` — are the
+cases that proof is built from, and each says what `ofExponents` does to a vector
+of one element or none.
 
 ## Named kinds, and why the refinement is not injective
 
@@ -118,10 +148,13 @@ dimensions, and two distinct kinds are never conflated by the dimension map —
 `Entropy` and `MolarHeatCapacity` share a dimension and differ in kind, and
 `Enthalpy` and `GibbsEnergy` likewise, or they would not be distinct kinds.
 
-*Status: not yet proved. Will be `Azoth.Kind.refinement_is_faithful`, with the
-non-injectivity of `Kind → Dim` as `Azoth.Kind.kind_to_dim_is_not_injective`, so
-that the true statement and the false one are both in the development and only one
-of them is proved.*
+*Status: **specified**. There is no `Kind` in this repository — not in Lean, not in
+Rust, not in Python — so nothing could falsify the statement either way, and
+`Azoth.Kind.refinement_is_faithful` is not written. What the page fixes is the
+*shape* the layer has to have: a pair of a dimension and a tag, not a bare
+dimension, because the injectivity a bare dimension would claim is false. The
+tranche that builds the kinds proves it, and this paragraph is what it will be
+checked against.*
 
 The kinds are the layer at which a unit operation's arithmetic is *typed*, and the
 dimensions are the layer at which a conversion is *checked*. A candidate value

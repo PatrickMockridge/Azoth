@@ -68,8 +68,11 @@ rather than stopping at `≈̇`.
 dim Q = dim Q'   ⟺   no dimension-respecting context distinguishes them
 ```
 
-*Status: not yet proved. Will be
-`Azoth.Barb.dimensional_eq_iff_barbed_congruent`.*
+*Status: **specified**. There is no barb layer in this repository, no channel type
+and no process calculus, so nothing here could falsify this claim either way.
+`Azoth.Barb.dimensional_eq_iff_barbed_congruent` is what the tranche that builds
+the barb layer is checked against, and it is proved then - see
+[the status table](./index.md).*
 
 The two directions are not symmetric in difficulty. `⇐` is a congruence argument:
 if the dimensions agree, no barb can differ, because barbs observe only the
@@ -86,7 +89,9 @@ power rule. So the barbs of a channel at a derived dimension are determined by i
 barbs at the generators, and **checking a derived dimension never requires checking
 more than the seven exponents**.
 
-*Status: not yet proved. Will be `Azoth.Barb.barbs_are_generated_by_the_algebra`.*
+*Status: **specified**, for the same reason and with the same consequence:
+`Azoth.Barb.barbs_are_generated_by_the_algebra` is written when there is a barb
+layer for it to be about.*
 
 That second claim is the one that makes the first usable. Without it, "no context
 distinguishes them" would be a judgement over an infinite space of contexts; with

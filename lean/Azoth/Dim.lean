@@ -55,11 +55,8 @@ def ofExponents (e : List ℚ) : Dimension := ofExponentsOn slots e
 
 /-- The exponent of each base dimension in a dimension, in `slots` order.
 
-The inverse of `ofExponents` on vectors of the right width. That the two are
-inverse is the claim `docs/src/calculus/dimensions.md` makes when it says the
-exponents determine the dimension and no information is lost; it is stated as
-`exponents_ofExponents` in `Azoth.Units`, where the vocabulary is in scope.
--/
+The inverse of `ofExponents` on vectors of one entry per slot, which is
+`exponents_ofExponents` below. -/
 def exponents (d : Dimension) : List ℚ := slots.map (fun s => d._impl s)
 
 /-! ## The group laws
@@ -84,6 +81,60 @@ every canonical unit's exponents decompose into these. -/
 theorem ofExponentsOn_singleton (b : String) (q : ℚ) :
     ofExponentsOn [b] [q] = q • Dimension.ofString b := by
   simp [ofExponentsOn]
+
+/-! ## Reading a dimension back
+
+`exponents` reads a dimension's exponents out, so the two directions are the
+representation the vocabulary table, the generated Rust and the generated Python
+all exchange and the group element it means. That the two are inverse is what makes
+the representation faithful, and it is the claim in this module a change could
+break - silently, because every one of the twenty-four unit theorems in
+`Vocabulary.lean` would still agree with a table that meant nothing.
+
+The four lemmas below say what the projection `_impl` does to the operations, and
+each is `rfl`: `Dimension`'s `AddCommGroup` and `Module` instances are the
+`DFinsupp` ones carried across the equivalence `_impl`. They are stated because
+`simp` and `rw` will not use a definitional equality on their own, so without them
+the projection never reaches the arithmetic. -/
+
+/-- The projecton of a sum is the sum of the projections. -/
+theorem add_impl (d₁ d₂ : Dimension) (s : String) :
+    (d₁ + d₂)._impl s = d₁._impl s + d₂._impl s := rfl
+
+/-- The projection of a scaling is the scaling of the projection. -/
+theorem smul_impl (q : ℚ) (d : Dimension) (s : String) :
+    (q • d)._impl s = q • d._impl s := rfl
+
+/-- The projection of the dimensionless dimension is zero, at every slot. -/
+theorem zero_impl (s : String) : (Dimension._impl (0 : Dimension)) s = 0 := rfl
+
+/-- A base dimension carries one in its own slot and nothing in any other.
+
+The `if` is on the slot names and both are literals at every use, so the branch
+resolves when the goal is evaluated rather than needing a side condition. -/
+theorem ofString_impl (s t : String) :
+    (Dimension.ofString s)._impl t = if s = t then 1 else 0 := by
+  by_cases h : s = t
+  · subst h
+    simp [Dimension.ofString]
+  · simp [Dimension.ofString, h]
+
+/-- **The exponent vector determines the dimension, and back.**
+
+`ofExponents` and `exponents` are mutually inverse on vectors of one entry per
+slot: a vector survives the trip into the group and out again unchanged.
+
+Seven arguments rather than a list, because seven is what `slots` has and what
+every vector in this repository is. A general statement over a list of arbitrary
+length would need `base.Nodup` as a hypothesis - with a repeated slot the map is
+not injective and the claim is false - and no vector this repository produces is
+of any other length, so the hypothesis would be carried for nobody. -/
+theorem exponents_ofExponents (a b c d e f g : ℚ) :
+    exponents (ofExponents [a, b, c, d, e, f, g]) = [a, b, c, d, e, f, g] := by
+  simp only [exponents, ofExponents, ofExponentsOn, slots,
+    List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil,
+    List.sum_cons, List.sum_nil, add_impl, smul_impl, zero_impl, ofString_impl]
+  simp
 
 end Dim
 

@@ -25,3 +25,4 @@ import Azoth.Vocabulary
 #print axioms Azoth.Dim.ofExponentsOn_nil
 #print axioms Azoth.Dim.ofExponents_nil
 #print axioms Azoth.Dim.ofExponentsOn_singleton
+#print axioms Azoth.Dim.exponents_ofExponents

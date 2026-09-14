@@ -55,7 +55,10 @@ outlets `c'₁ … c'ₙ`, with `n(c)` the molar-flow field of a channel:
              Σᵢ ḣ(cᵢ)  =  Σⱼ ḣ(c'ⱼ) + duty    enthalpy
 ```
 
-*Status: not yet proved. Will be `Azoth.Process.balances_close_under_linearity`.*
+*Status: **specified**. Nothing in this repository declares a channel, a polarity or
+a multiplicity yet, so there is no linear discipline for a balance to follow from.
+`Azoth.Process.balances_close_under_linearity` is what the `ports` layer is checked
+against, and it is proved then.*
 
 The reason this belongs here rather than in a runtime check is that a balance
 asserted at runtime is a check that can be skipped, and a balance that follows from
@@ -74,7 +77,9 @@ the pure evaluation of `f`:
 U  ≅  f(x₁, …, xₘ)
 ```
 
-*Status: not yet proved. Will be `Azoth.Process.unit_op_is_extensional`.*
+*Status: **specified**. The eight unit operations are pure functions in both
+languages, but nothing declares that as a property rather than implementing it, so
+there is nothing yet for `Azoth.Process.unit_op_is_extensional` to be about.*
 
 Three hypotheses, and each is doing work: *only its declared channels*, so `U`
 cannot read anything the caller did not supply; *total*, so it cannot fail on a
@@ -107,7 +112,9 @@ than a feature added to it.
 contraction on the states its channel admits, the recycle process is
 barbed-congruent to the unique solution of its loop equations.
 
-*Status: not yet proved. Will be `Azoth.Process.recycle_is_a_fixed_point`.*
+*Status: **specified**. A recycle needs restriction and a fixed point, and the
+process layer has neither a way to write one nor anything to run one with.
+`Azoth.Process.recycle_is_a_fixed_point` is for the tranche that gives it both.*
 
 Uniqueness is the part that matters and the part that is easy to leave out. A
 converged loop is only *the* answer when the fixed point is unique; where it is
@@ -120,8 +127,9 @@ hypothesis is what buys uniqueness here.
 
 **There is no interpreter and no flowsheet engine.** Pi and rho are the language
 the process layer is *stated* in: a model spec declares its ports, the Lean
-development proves the claims above about the declared signature, and the Rust and
-Python implementations remain the hand-written kernels they already are. Building
+development proves the claims above about that declaration once the declaration
+exists, and the Rust and Python implementations remain the hand-written kernels
+they already are. Building
 an executor here would put a second flowsheet layer beside the port, and
 [Reflection](./rho.md) is where the reason that is a later question rather than
 this one is set out.

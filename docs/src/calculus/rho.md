@@ -25,7 +25,9 @@ inverses.
 so quoting a process and dropping it back is the identity, and a process carried
 on a channel and re-entered is the process that was carried.
 
-*Status: not yet proved. Will be `Azoth.Rho.reflection_is_a_bijection`.*
+*Status: **specified**. There is no reflection operator here and nothing that
+carries a process as a value, so `Azoth.Rho.reflection_is_a_bijection` is written
+when there is an interoperation surface for it to describe.*
 
 This is the claim that makes an interoperation surface possible rather than
 aspirational. A flowsheet handed to another tool, or stored in a file, or drawn in
@@ -55,7 +57,8 @@ level of streams.
 carries its body by reflection is barbed-congruent to the recycle written out
 directly, so reflection changes how a loop is *named* and not what it computes.
 
-*Status: not yet proved. Will be `Azoth.Rho.reflected_feedback_is_congruent`.*
+*Status: **specified**, for the same reason: it is about a loop expressed by
+reflection, and there is neither.*
 
 ## What this layer is for, and what it is not yet
 
