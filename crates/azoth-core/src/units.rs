@@ -221,42 +221,16 @@ pub fn kilograms_per_mole(value: f64) -> MolarMass {
 
 /// The canonical unit strings the spec schema permits.
 ///
-/// This is the Rust half of a three-way contract. The schema's
-/// `$defs.unit.enum`, `azoth.core.units.CANONICAL_UNITS` on the Python side, and
-/// this list must name the same set; `test_units_contract.py` asserts that rather
-/// than trusting three hand-edited lists to stay in step. The list is exposed to
-/// Python through `azoth._core.unit_names`, which is what makes the third leg of
-/// that check possible at all.
+/// Generated from `specs/vocabulary/vocabulary.yaml`, which is the one
+/// hand-written source of this list - and of the dimension each name carries, the
+/// conversion this crate performs for it, and the `pint` name it has on the Python
+/// side. The list reaches Python through `azoth._core.unit_names`.
 ///
 /// A name here is a claim that this crate has a *correct* conversion path for it -
-/// see `every_unit_name_has_a_conversion_path`, which fails if a name is added
-/// without one, or with one that yields the wrong SI base magnitude.
-pub const UNIT_NAMES: &[&str] = &[
-    "dimensionless",
-    "m",
-    "mm",
-    "m**2",
-    "m**3/s",
-    "kg/s",
-    "mol/s",
-    "kg/m**3",
-    "m/s",
-    "Pa",
-    "Pa*s",
-    "K",
-    "W",
-    "J/(kg*K)",
-    "W/(m*K)",
-    "W/(m**2*K)",
-    "kg/mol",
-    "m**3/mol",
-    "J/mol",
-    "J/(mol*K)",
-    "J/(mol*K**2)",
-    "J/(mol*K**3)",
-    "J/(mol*K**4)",
-    "J/(mol*K**5)",
-];
+/// see [`unit_vocab_gen::CONVERSION_PATHS`], and
+/// `every_unit_name_has_a_conversion_path` below, which fails if a name is added
+/// without one.
+pub use crate::unit_vocab_gen::{CONVERSION_PATHS, SLOTS, UNIT_DIMENSIONS, UNIT_NAMES};
 
 #[cfg(test)]
 mod tests {
@@ -287,70 +261,12 @@ mod tests {
         assert!((a.value - b.value).abs() < 1e-15);
     }
 
-    /// One row of [`Self::CONVERSION_PATHS`]: the spec unit string, the conversion
-    /// this crate performs for it, and the SI base magnitude that conversion must
-    /// yield for an input of 1.0.
-    type ConversionPath = (&'static str, fn(f64) -> f64, f64);
-
-    /// Each vocabulary name paired with the conversion this crate performs for it,
-    /// and the SI base magnitude that conversion must yield for an input of 1.0.
-    ///
-    /// The table is the point. A `UNIT_NAMES` entry is a claim that a spec may
-    /// declare this unit and a calculation will receive a correct number; asserting
-    /// only that the list is non-empty would let a name sit in it with no
-    /// conversion behind it at all, which is precisely how `K` went unnoticed.
-    const CONVERSION_PATHS: &[ConversionPath] = &[
-        // Dimensionless quantities carry no unit, so the conversion is the identity.
-        ("dimensionless", |v| v, 1.0),
-        ("m", |v| meters(v).value, 1.0),
-        ("mm", |v| millimeters(v).value, 1.0e-3),
-        ("m**2", |v| square_meters(v).value, 1.0),
-        ("m**3/s", |v| cubic_meters_per_second(v).value, 1.0),
-        ("kg/s", |v| kilograms_per_second(v).value, 1.0),
-        // The identity, and correctly so rather than by analogy with
-        // `dimensionless`: `mol/s` *is* the SI base unit for a molar flow, because
-        // both `mol` and `s` are base units and neither is prefixed. A caller who
-        // writes 1.0 mol/s means 1.0, and that is the number the calculation
-        // receives.
-        //
-        // There is no `MolarFlow` type beside this table for the reason there is no
-        // `moles_per_second` constructor either: `uom` has no molar-flow quantity
-        // (it has `MolarFlux`, mol/(m**2*s), and `MolarConcentration`, which are
-        // different dimensions). So a unit operation takes its molar flow as a bare
-        // `f64` in mol/s and this entry is what makes that legitimate in a spec,
-        // rather than a quantity smuggled in outside the vocabulary.
-        ("mol/s", |v| v, 1.0),
-        ("kg/m**3", |v| kilograms_per_cubic_meter(v).value, 1.0),
-        ("m/s", |v| meters_per_second(v).value, 1.0),
-        ("Pa", |v| pascals(v).value, 1.0),
-        ("Pa*s", |v| pascal_seconds(v).value, 1.0),
-        ("K", |v| kelvins(v).value, 1.0),
-        ("W", |v| watts(v).value, 1.0),
-        ("J/(kg*K)", |v| joules_per_kilogram_kelvin(v).value, 1.0),
-        ("W/(m*K)", |v| watts_per_meter_kelvin(v).value, 1.0),
-        (
-            "W/(m**2*K)",
-            |v| watts_per_square_meter_kelvin(v).value,
-            1.0,
-        ),
-        ("kg/mol", |v| kilograms_per_mole(v).value, 1.0),
-        ("m**3/mol", |v| cubic_meters_per_mole(v).value, 1.0),
-        ("J/mol", |v| joules_per_mole(v).value, 1.0),
-        ("J/(mol*K)", |v| joules_per_mole_kelvin(v).value, 1.0),
-        // A polynomial coefficient of `Cp` carries one more inverse kelvin per degree.
-        // `uom` has no quantity for those, so the magnitude is the SI base value.
-        ("J/(mol*K**2)", |v| v, 1.0),
-        ("J/(mol*K**3)", |v| v, 1.0),
-        ("J/(mol*K**4)", |v| v, 1.0),
-        ("J/(mol*K**5)", |v| v, 1.0),
-    ];
-
     #[test]
     fn every_unit_name_has_a_conversion_path() {
         use std::collections::BTreeSet;
 
         let declared: BTreeSet<&str> = UNIT_NAMES.iter().copied().collect();
-        let convertible: BTreeSet<&str> = CONVERSION_PATHS.iter().map(|(n, _, _)| *n).collect();
+        let convertible: BTreeSet<&str> = CONVERSION_PATHS.iter().map(|(n, _)| *n).collect();
 
         let missing: Vec<_> = declared.difference(&convertible).collect();
         let extra: Vec<_> = convertible.difference(&declared).collect();
@@ -367,21 +283,43 @@ mod tests {
     }
 
     #[test]
-    fn every_conversion_yields_the_si_base_magnitude() {
-        // `.value` is always the SI base value, and the Python side converts to
-        // base units too, so both implementations work in the same number for any
-        // unit the vocabulary permits. That is what the cross-language agreement
-        // test rests on.
+    fn every_dimension_has_the_same_width_as_the_slots() {
+        // The exponent tuples and the slot names are two halves of one encoding,
+        // and a tuple of the wrong length would be read against the wrong slots
+        // rather than rejected - `mm` as `[1]` would be a length, and as
+        // `[1, 0, 0, 0, 0, 0, 0, 0]` would be nonsense that still compared equal
+        // to nothing.
+        for (name, exponents) in UNIT_DIMENSIONS {
+            assert_eq!(
+                exponents.len(),
+                SLOTS.len(),
+                "{name}: {} exponent(s) for {} slot(s)",
+                exponents.len(),
+                SLOTS.len()
+            );
+        }
+    }
+
+    #[test]
+    fn every_conversion_is_total_and_positive() {
+        // A weak statement on purpose: it is the strongest one this side can make.
         //
-        // `mm` is the one entry that is not its own SI base unit, so it is the one
-        // that would catch a regression: it must yield 1.0e-3 here, and the Python
-        // half of the same check lives in test_units_conversion.py, where a
-        // conversion back to the declared unit would put 1000x between the two.
-        for (name, convert, expected_si_base) in CONVERSION_PATHS {
+        // What the conversion should *yield* is a number the units libraries
+        // already know, so asserting a magnitude here would put a hand-typed
+        // factor back into this repository - which is the defect the generated
+        // table exists to remove. The check that a conversion yields the right
+        // number is `python/tests/test_units_cross_library.py`, which compares
+        // each of these against `pint`'s own answer for the same unit name.
+        //
+        // What is checkable here is that no entry is a stub: every conversion
+        // returns a finite, positive magnitude, so a name added with nothing
+        // behind it fails rather than sitting in the vocabulary looking live.
+        for (name, convert) in CONVERSION_PATHS {
             let got = convert(1.0);
             assert!(
-                (got - expected_si_base).abs() < 1e-15,
-                "{name}: converting 1.0 yielded {got} in SI base, expected {expected_si_base}"
+                got.is_finite() && got > 0.0,
+                "{name}: converting 1.0 yielded {got}, which is not a positive finite \
+                 magnitude"
             );
         }
     }

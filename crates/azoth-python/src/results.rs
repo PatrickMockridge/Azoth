@@ -1622,6 +1622,47 @@ pub fn unit_names() -> Vec<String> {
     UNIT_NAMES.iter().map(|name| (*name).to_string()).collect()
 }
 
+/// The dimension of one canonical unit, as exponents in `SLOTS` order.
+///
+/// `None` for a name not in the vocabulary, rather than an error: a caller asking
+/// about a name that is not there is a question about the vocabulary, and the
+/// answer is that it has no dimension because it is not in it.
+///
+/// This exists so the table's exponents can be compared from Python against the
+/// ones the Rust side was generated with. The compile-time assertion in
+/// `azoth_core::unit_vocab_gen` catches a wrong exponent only when it makes the
+/// `uom` quantity differ, and two dimensions can share a quantity type - so this is
+/// the check that sees all seven slots.
+#[pyfunction]
+#[must_use]
+pub fn unit_dimensions(name: &str) -> Option<Vec<i8>> {
+    azoth_core::unit_vocab_gen::dimension(name).map(|d| d.to_vec())
+}
+
+/// How many SI base units one of `name` is worth, by running the conversion a
+/// calculation runs.
+///
+/// Not a stored number: this calls the generated conversion table, which is the
+/// same function `to_si`'s Rust counterpart reaches. What it is compared against
+/// is `pint`'s own answer for the same unit name, in
+/// `python/tests/test_units_cross_library.py` - so the two units libraries are
+/// compared and neither is restated.
+#[pyfunction]
+#[must_use]
+pub fn unit_si_factor(name: &str) -> Option<f64> {
+    azoth_core::unit_vocab_gen::si_factor(name)
+}
+
+/// The base dimensions, in the order the exponent tuples above are written in.
+#[pyfunction]
+#[must_use]
+pub fn unit_slots() -> Vec<String> {
+    azoth_core::unit_vocab_gen::SLOTS
+        .iter()
+        .map(|slot| (*slot).to_string())
+        .collect()
+}
+
 /// Every solver kind this crate implements, in the schema's spelling.
 ///
 /// The third leg of the same contract `warning_codes` and `unit_names` each

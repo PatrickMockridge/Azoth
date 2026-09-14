@@ -121,7 +121,11 @@ ignore = [
 # against a regeneration by `tools/gen_registry.py --check`. Letting the
 # formatter rewrite it would fail that gate for a purely cosmetic reason. It
 # remains linted; only reformatting is skipped.
-exclude = ["python/src/azoth/_registry_gen.py", "python/src/azoth/_models_gen.py"]
+exclude = [
+  "python/src/azoth/_registry_gen.py",
+  "python/src/azoth/_models_gen.py",
+  "python/src/azoth/core/_units_gen.py",
+]
 
 [tool.ruff.lint.per-file-ignores]
 # Tests legitimately hard-code expected numbers and use long assertion messages.
@@ -145,7 +149,10 @@ warn_unreachable = true
 warn_unused_ignores = true
 show_error_codes = true
 # Generated from the specs; its structure is asserted by tests rather than typed.
-exclude = ["python/src/azoth/_registry_gen\\.py"]
+exclude = [
+  "python/src/azoth/_registry_gen\\.py",
+  "python/src/azoth/core/_units_gen\\.py",
+]
 
 [[tool.mypy.overrides]]
 # pint ships type information that does not survive `--strict` cleanly: its

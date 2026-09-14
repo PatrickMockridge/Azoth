@@ -44,7 +44,6 @@ would be a flag to hide the only thing here that a user needs to be told.
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -61,6 +60,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # repository's `spec_lint` rejected a `verified` row whose citation still said
 # DUMMY, and this one accepted it. One definition now serves both, and the
 # constants and functions live beside the rules they belong to.
+import schema_registry
 from spec_lint import Report, check_fittings, check_fluids
 
 #: The version of the *keycard format*. It lives here rather than in `spec_lint`
@@ -130,26 +130,23 @@ def check_against_schema(report: Report, document: dict[str, Any], where: str) -
     document itself - so a shape the schema forbids is an error here even when both
     of those would have coped.
 
-    The `$ref`s into `calc.schema.json` are resolved by putting both documents in a
-    registry keyed by `$id`; the two are separate files and the citation definition
-    is deliberately shared rather than copied.
+    The `$ref`s into `calc.schema.json` are resolved by putting every schema under
+    `specs/schema/` in one registry keyed by `$id`; they are separate files and the
+    citation and unit definitions are deliberately shared rather than copied.
     """
     try:
         import jsonschema
-        from referencing import Registry, Resource
     except ImportError:  # pragma: no cover
         report.warn(where, "jsonschema is not installed, so the schema was not checked")
         return
 
-    root = Path(__file__).resolve().parent.parent
-    schema_dir = root / "specs" / "schema"
-    keycard_schema = json.loads((schema_dir / "keycard.schema.json").read_text(encoding="utf-8"))
-    calc_schema = json.loads((schema_dir / "calc.schema.json").read_text(encoding="utf-8"))
-
-    registry = Registry()
-    for schema in (calc_schema, keycard_schema):
-        registry = registry.with_resource(schema["$id"], Resource.from_contents(schema))
-    validator = jsonschema.Draft202012Validator(keycard_schema, registry=registry)
+    # Every schema in specs/schema/, because the keycard schema `$ref`s the calc
+    # schema for what a citation and a unit are, and the calc schema `$ref`s the
+    # unit schema for the enum. See `schema_registry`.
+    registry = schema_registry.registry()
+    validator = jsonschema.Draft202012Validator(
+        schema_registry.load("keycard.schema.json"), registry=registry
+    )
 
     for error in sorted(validator.iter_errors(document), key=lambda e: list(e.path)):
         location = ".".join(str(part) for part in error.path) or "<document>"

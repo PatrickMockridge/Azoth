@@ -144,6 +144,9 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(data::kij_rows, m)?)?;
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;
     m.add_function(wrap_pyfunction!(results::unit_names, m)?)?;
+    m.add_function(wrap_pyfunction!(results::unit_dimensions, m)?)?;
+    m.add_function(wrap_pyfunction!(results::unit_si_factor, m)?)?;
+    m.add_function(wrap_pyfunction!(results::unit_slots, m)?)?;
     m.add_function(wrap_pyfunction!(results::solver_kinds, m)?)?;
     m.add_function(wrap_pyfunction!(eos::model_ids, m)?)?;
     m.add_function(wrap_pyfunction!(eos::model_schemes, m)?)?;

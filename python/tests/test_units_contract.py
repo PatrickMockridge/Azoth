@@ -1,24 +1,27 @@
-"""The unit vocabulary is one set, agreed on by three separate places.
+"""The unit vocabulary is one set, declared once and compiled into four artefacts.
 
-A calc spec names its units as strings. Three artifacts have to agree about which
-strings are legal and what each one means:
+A calc spec names its units as strings. One hand-written table says which strings
+are legal - ``specs/vocabulary/vocabulary.yaml`` - and ``tools/gen_vocabulary.py``
+compiles it into:
 
-* ``specs/schema/calc.schema.json``'s ``$defs.unit.enum``, which is what a spec is
-  validated against;
+* ``specs/schema/unit.schema.json``, which is what a spec is validated against;
 * :data:`azoth.core.units.CANONICAL_UNITS`, which turns a name into a ``pint`` unit
   and is what the Python side actually converts with;
-* ``crates/azoth-core/src/units.rs``'s ``UNIT_NAMES``, the Rust vocabulary, reachable
-  from here through ``azoth._core.unit_names()``.
+* ``crates/azoth-core/src/unit_vocab_gen.rs``'s ``UNIT_NAMES``, the Rust vocabulary,
+  reachable from here through ``azoth._core.unit_names()``;
+* ``azoth.keycard.UNIT_VOCABULARY``, which is what the keycard loader admits.
 
-Nothing checked the Rust leg before, and it showed: ``K`` was a permitted unit the
-schema allowed and ``CANONICAL_UNITS`` knew about, while ``azoth-core`` had no
-temperature type at all. No calc used it, so no test touched it. A vocabulary is
-only a contract if something compares the copies, which is what this file does.
+Before the table existed those were hand-maintained lists, and it showed: ``K`` was
+a permitted unit the schema allowed and ``CANONICAL_UNITS`` knew about, while
+``azoth-core`` had no temperature type at all. No calc used it, so no test touched
+it. This file still compares all four - generation is what makes them agree, and
+comparing them is what makes a failure of generation visible rather than a spec
+failing at runtime for whoever declared the unit.
 
 The other thing checked here is that no entry is *dead* - each one converts in both
 directions rather than merely being listed. Whether the numbers those conversions
 produce are correct is a separate question and lives in
-``test_units_conversion.py``; this file is about the vocabulary being one set and
+``test_units_cross_library.py``; this file is about the vocabulary being one set and
 every member of it working.
 """
 
@@ -26,17 +29,22 @@ from __future__ import annotations
 
 import importlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, cast
 
 import pytest
+import yaml
 
 from azoth._registry_gen import CALCS
 from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si
+from azoth.keycard import UNIT_VOCABULARY
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
+VOCAB_PATH = REPO_ROOT / "specs" / "vocabulary" / "vocabulary.yaml"
+UNIT_SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "unit.schema.json"
 
 
 def _extension() -> ModuleType:
@@ -52,44 +60,68 @@ def _extension() -> ModuleType:
         raise AssertionError("azoth._core is not built; run `maturin develop`") from exc
 
 
+def table_units() -> set[str]:
+    """The unit strings the hand-written vocabulary table declares."""
+    table = cast("dict[str, Any]", yaml.safe_load(VOCAB_PATH.read_text(encoding="utf-8")))
+    return {unit["id"] for unit in table["units"]}
+
+
 def schema_units() -> set[str]:
-    """The unit strings the spec schema permits."""
-    schema: dict[str, Any] = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    return set(schema["$defs"]["unit"]["enum"])
+    """The unit strings the spec schema permits, read from the generated enum."""
+    schema: dict[str, Any] = json.loads(UNIT_SCHEMA_PATH.read_text(encoding="utf-8"))
+    return set(schema["enum"])
 
 
-def test_the_schema_and_the_python_vocabulary_agree() -> None:
-    """The schema's enum and ``CANONICAL_UNITS`` are the same set.
-
-    A name the schema allows but this dict lacks fails at runtime, in
-    ``to_si`` -> ``unit_for``, and only for whichever calc happens to use it -
-    ``spec_lint`` does not check units at all. This is the cheap version of that
-    check, and it runs without the extension built.
-    """
-    schema, python_side = schema_units(), set(CANONICAL_UNITS)
-    assert schema == python_side, (
-        f"unit vocabularies differ\n"
-        f"  only in the schema: {sorted(schema - python_side)}\n"
-        f"  only in CANONICAL_UNITS: {sorted(python_side - schema)}"
+def _report(name: str, expected: set[str], got: set[str]) -> None:
+    assert expected == got, (
+        f"{name} differs from the vocabulary table\n"
+        f"  only in the table: {sorted(expected - got)}\n"
+        f"  only in {name}: {sorted(got - expected)}"
     )
+
+
+def test_every_generated_copy_is_the_table() -> None:
+    """The table, the schema, the Python map and the keycard list are one set.
+
+    A name the schema allows but ``CANONICAL_UNITS`` lacks fails at runtime, in
+    ``to_si`` -> ``unit_for``, and only for whichever calc happens to use it.
+    This is the cheap version of that check, and it runs without the extension
+    built - the Rust leg is the marked test below.
+    """
+    table = table_units()
+    _report("the schema", table, schema_units())
+    _report("CANONICAL_UNITS", table, set(CANONICAL_UNITS))
+    _report("keycard.UNIT_VOCABULARY", table, set(UNIT_VOCABULARY))
 
 
 @pytest.mark.requires_rust
-def test_the_rust_vocabulary_agrees_with_both() -> None:
-    """All three lists are one set.
+def test_the_rust_vocabulary_is_the_table() -> None:
+    """The Rust leg, which is the one that was unchecked and the one that was wrong.
 
-    The Rust leg is the one that was unchecked, and the one that was wrong: `K`
-    was permitted by the schema and known to `CANONICAL_UNITS`, while azoth-core
-    had no temperature type at all. `unit_names()` exists so this can be asserted
-    from Python instead of by reading Rust source.
+    `K` was permitted by the schema and known to `CANONICAL_UNITS`, while
+    azoth-core had no temperature type at all. `unit_names()` exists so this can
+    be asserted from Python instead of by reading Rust source.
     """
-    rust_side = set(_extension().unit_names())
-    assert schema_units() == rust_side, (
-        f"the Rust vocabulary differs from the schema\n"
-        f"  only in the schema: {sorted(schema_units() - rust_side)}\n"
-        f"  only in Rust: {sorted(rust_side - schema_units())}"
+    _report("the Rust vocabulary", table_units(), set(_extension().unit_names()))
+
+
+def test_the_generated_files_are_current() -> None:
+    """Regenerating from the table changes nothing.
+
+    The four copies above agree because one generator emits them from one table;
+    this is the check that they agree with the table *now* rather than agreeing
+    with a table that has since been edited. `--check` writes nothing.
+    """
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "tools" / "gen_vocabulary.py"), "--check"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
-    assert rust_side == set(CANONICAL_UNITS)
+    assert result.returncode == 0, (
+        f"gen_vocabulary.py --check failed, so a generated copy is stale:\n"
+        f"{result.stdout}{result.stderr}"
+    )
 
 
 def test_every_vocabulary_entry_has_a_working_conversion() -> None:
@@ -131,5 +163,5 @@ def test_every_unit_a_spec_declares_is_in_the_vocabulary() -> None:
                 if unit is not None:
                     declared.add(unit)
 
-    unknown = declared - schema_units()
+    unknown = declared - table_units()
     assert not unknown, f"spec(s) declare unit(s) {sorted(unknown)} which the vocabulary lacks"

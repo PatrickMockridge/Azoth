@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/vocabulary.schema.json",
+  "title": "Azoth unit vocabulary",
+  "description": "The canonical units a spec may declare, each with the dimension it carries and the name it has in `uom` and in `pint`. This is the one hand-written source for that list; `tools/gen_vocabulary.py` compiles it into Rust, Python and JSON Schema, and `--check` fails if any of the three has drifted. **No magnitude appears in it.** A conversion factor is a number the units libraries already know, and restating one here would be a second answer to a question they have answered - the failure that produced this repository's millimetre defect. `additionalProperties: false` throughout, so a field cannot be added without a deliberate edit here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "slots", "dimensions", "units"],
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "Bump only if the format changes; the generator refuses a version it does not know rather than guessing at what a newer shape meant."
+    },
+    "slots": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": { "enum": ["L", "M", "T", "I", "Th", "N", "J"] },
+      "description": "The base dimensions, in the order every exponent tuple below is written in. The order is uom::si::ISQ's, and it is not cosmetic: the generated exponent tuples and the generated uom quantity types are both built from it, so a different order permutes all of them at once."
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/dimension" },
+      "description": "Every dimension a unit below carries, named once. A unit refers to one by id, so two units that share a dimension cannot be given different exponents by accident."
+    },
+    "units": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/unit" }
+    }
+  },
+  "$defs": {
+    "dimension_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "A dimension's name, unique within `dimensions`. The generator refuses a duplicate rather than letting the last one win."
+    },
+    "exponents": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 7,
+      "items": { "type": "integer", "minimum": -64, "maximum": 64 },
+      "description": "One exponent per slot, in the order `slots` declares. The bound is well inside the i8 the generated Rust carries, so a value that would overflow is refused here rather than at codegen."
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "exponents"],
+      "properties": {
+        "id": { "$ref": "#/$defs/dimension_id" },
+        "exponents": { "$ref": "#/$defs/exponents" }
+      }
+    },
+    "uom_path": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*::[a-z][a-z0-9_]*$",
+      "description": "Where uom carries this dimension, as `<dimension module>::<unit>` - the path `.new::<..>()` takes. The quantity type is not part of it: the generator derives that from the exponents, so a wrong exponent fails to compile instead of being waved through by a matching name. The module is checked against the dimension's own quantity, because uom's module for a quantity is its name in snake case."
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "dimension", "pint", "uom"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The canonical unit string, exactly as a spec spells it in `unit:`. This is the string that reaches a user, so it is the one entry in the table that is a readable unit rather than an identifier."
+        },
+        "dimension": { "$ref": "#/$defs/dimension_id" },
+        "pint": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The unit's name in pint's registry. pint supplies the conversion factor, which is why none is written down."
+        },
+        "uom": {
+          "oneOf": [{ "$ref": "#/$defs/uom_path" }, { "type": "null" }],
+          "description": "Null where uom has no such quantity. That is a structural fact rather than an oversight: uom's `quantity!` macro must run inside `uom::si`, and the `Units` trait that makes `.new::<u>()` compile is assembled by `system!` from a closed list, so no crate outside uom can add a quantity to `uom::si`. A null here is the list of dimensions azoth names itself, stated rather than implied, and the generated conversion for one is the identity because mol/s and J/(mol*K**n) are already their own SI base unit."
+        },
+        "rust_ctor": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "The hand-written constructor in crates/azoth-core/src/units.rs that the generated conversion calls. The generator never invents one, so a unit that claims a uom path and names no constructor is refused."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["uom"], "properties": { "uom": { "type": "string" } } },
+          "then": { "required": ["rust_ctor"] },
+          "else": { "not": { "required": ["rust_ctor"] } }
+        }
+      ]
+    }
+  }
+}

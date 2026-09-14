@@ -27,15 +27,18 @@ deleted from a schema and left in the tests comes back.
 from __future__ import annotations
 
 import copy
+import importlib
 import json
+import sys
 from pathlib import Path
+from types import ModuleType
 from typing import Any, cast
 
 import pytest
 from jsonschema import Draft202012Validator
-from referencing import Registry, Resource
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
 CALC_SCHEMA = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
 KEYCARD_SCHEMA = REPO_ROOT / "specs" / "schema" / "keycard.schema.json"
 
@@ -46,21 +49,32 @@ def load(path: Path) -> dict[str, Any]:
     return cast("dict[str, Any]", json.loads(path.read_text(encoding="utf-8")))
 
 
+def schema_registry() -> ModuleType:
+    """The tools' registry builder, loaded the way the generator tests load theirs.
+
+    That it *is* the tools' builder matters: it reads every schema in
+    `specs/schema/` rather than being told about two of them, and the keycard
+    schema reaches the calc schema, which reaches the unit schema in turn.
+    """
+    sys.path.insert(0, str(REPO_ROOT / "tools"))
+    try:
+        return importlib.import_module("schema_registry")
+    finally:
+        sys.path.pop(0)
+
+
 @pytest.fixture(scope="module")
 def keycard_validator() -> Draft202012Validator:
     """A validator for the keycard schema with the calc schema resolvable.
 
-    The two schemas are separate documents and the reference between them is by
-    `$id`, so a registry has to carry both. Built here rather than in the schema
-    because a `$ref` that only resolves at validation time is exactly what this
-    fixture exists to exercise.
+    The schemas are separate documents and the references between them are by
+    `$id`, so a registry has to carry all of them. Built here rather than in the
+    schema because a `$ref` that only resolves at validation time is exactly what
+    this fixture exists to exercise.
     """
-    calc = load(CALC_SCHEMA)
     keycard = load(KEYCARD_SCHEMA)
     Draft202012Validator.check_schema(keycard)
-    registry = Registry()
-    for document in (calc, keycard):
-        registry = registry.with_resource(document["$id"], Resource.from_contents(document))
+    registry = schema_registry().registry()
     return Draft202012Validator(keycard, registry=registry)
 
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/calc.schema.json",
   "title": "Azoth calculation spec",
-  "description": "**A data sheet, not a document.** A calc declares what it is called, the equation, its inputs and outputs, where the two implementations live, a worked example and the tests that exercise it. The registries and the generated reference tables are produced from these files; the *specification* of what a calculation is - its contract, its domains, why a bound takes the value it does - belongs in `docs/src/`, and `docs/src/specs.md` specifies this format. `additionalProperties: false` is the mechanism that keeps a status, citation-status or provenance field out of a spec: one cannot appear without a deliberate edit here. See `docs/src/spec.md` S6, \"The library implements; the engineer decides\" - the library implements and reports, and it does not grade an engineer's judgement about which equation of state or which data applies.",
+  "description": "**A data sheet, not a document.** A calc declares what it is called, the equation, its inputs and outputs, where the two implementations live, a worked example and the tests that exercise it. The registries and the generated reference tables are produced from these files; the *specification* of what a calculation is - its contract, its domains, why a bound takes the value it does - belongs in `docs/src/`, and `docs/src/specs.md` specifies this format. `additionalProperties: false` is the mechanism that keeps a status, citation-status or provenance field out of a spec: one cannot appear without a deliberate edit here. See `docs/src/spec.md`, \"The keycard is where responsibility sits\" - the library implements and reports, and it does not grade an engineer's judgement about which equation of state or which data applies.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -196,33 +196,8 @@
     },
 
     "unit": {
-      "enum": [
-        "dimensionless",
-        "m",
-        "mm",
-        "m**2",
-        "m**3/s",
-        "kg/s",
-        "mol/s",
-        "kg/m**3",
-        "m/s",
-        "Pa",
-        "Pa*s",
-        "K",
-        "W",
-        "J/(kg*K)",
-        "W/(m*K)",
-        "W/(m**2*K)",
-        "kg/mol",
-        "m**3/mol",
-        "J/mol",
-        "J/(mol*K)",
-        "J/(mol*K**2)",
-        "J/(mol*K**3)",
-        "J/(mol*K**4)",
-        "J/(mol*K**5)"
-      ],
-      "description": "Canonical unit of a quantity in the equation. SI-first. API callers may pass any convertible unit; this is the unit the spec and generated docs speak in, not the unit anything is calculated in - calculations work in SI base magnitudes, and to_si/from_si are the only places the two representations meet. Extend deliberately, with a conversion path in both languages: python/src/azoth/core/units.py's CANONICAL_UNITS, crates/azoth-core/src/units.rs's UNIT_NAMES, and a constructor in each. A contract test asserts the three lists are the same set, so adding a name to one and not the others fails rather than going unnoticed, and a conversion test asserts the round trip for every entry. SI-first is a convention for how these are written down, not a load-bearing property: mm is not its own SI base unit and converts correctly, because both implementations convert to base units rather than to the name recorded here."
+      "$ref": "unit.schema.json",
+      "description": "Canonical unit of a quantity in the equation. SI-first. API callers may pass any convertible unit; this is the unit the spec and generated docs speak in, not the unit anything is calculated in - calculations work in SI base magnitudes, and to_si/from_si are the only places the two representations meet. The enum is generated from `specs/vocabulary/vocabulary.yaml` by `tools/gen_vocabulary.py`, which is where a unit is added; the same table also generates `crates/azoth-core/src/unit_vocab_gen.rs` and `python/src/azoth/core/_units_gen.py`, so the set a spec may name, the set Rust has a conversion for and the set Python has a pint name for cannot drift apart. SI-first is a convention for how these are written down, not a load-bearing property: mm is not its own SI base unit and converts correctly, because both implementations convert to base units rather than to the name recorded here."
     },
 
     "quantity": {

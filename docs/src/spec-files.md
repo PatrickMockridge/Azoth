@@ -18,8 +18,9 @@ regenerating fails the build.
 
 The *specification* of what a calculation means — its contract, its domain, why a
 bound takes the value it does, what has not been confirmed — is a document, and it
-lives in this book. [S6](./spec.md#s6-the-library-implements-the-engineer-decides) is
-where that boundary is stated: **the library implements; the engineer decides.**
+lives in this book. [The keycard is where responsibility
+sits](./spec.md#the-keycard-is-where-responsibility-sits) is where that boundary is
+stated: **the library implements; the engineer decides.**
 
 ## The rule
 
@@ -143,7 +144,8 @@ level — a spec carrying one fails to validate rather than being quietly ignore
 | `notes` | Required improvements, for the parts that report a defect or a limitation. The rest is the code's job, or nothing |
 | `description` | the calculation's page, or this book |
 | `cases[].note`, `cases[].source`, `tests[].note` | Required improvements, or deleted |
-| any `status`, citation-status or provenance field | nowhere — see [S6](./spec.md#s6-the-library-implements-the-engineer-decides) |
+| any `status`, citation-status or provenance field | nowhere — see [the keycard's
+rules](./spec.md#the-rules-a-keycard-follows) |
 
 **One field is only partly clean.** `source` is a citation, and for a port it keeps the
 upstream class and the line ranges taken and not taken, because that is what a licence asks

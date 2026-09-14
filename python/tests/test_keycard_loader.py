@@ -11,10 +11,13 @@ than about a loader that rejects everything.
 
 Two tests hold the loader's vocabularies to the schema's. The loader cannot read the
 schema at runtime - it is a dev-time artefact and is not shipped in the wheel - so the
-vocabularies are a deliberate copy, and a copy without a test is the drift this project
-answers with two implementations compared against each other. `UNIT_VOCABULARY` is the
-sharpest case: `pint` parses `kelvin`, so a loader that trusted `pint` would accept a
-keycard that `tools/check_user_data.py` then rejects.
+vocabularies are a copy, and a copy without a test is the drift this project answers
+with two implementations compared against each other. The units are the sharpest case:
+`pint` parses `kelvin`, so a loader that trusted `pint` would accept a keycard that
+`tools/check_user_data.py` then rejects. `UNIT_VOCABULARY` is generated from
+`specs/vocabulary/vocabulary.yaml` by `tools/gen_vocabulary.py` and ships with the
+package, which is why it can be read at runtime at all; the model vocabularies below
+are still hand-written beside this module, and are the ones the comparison protects.
 """
 
 from __future__ import annotations
@@ -34,6 +37,9 @@ from azoth.eos.mixture import Component
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = REPO_ROOT / "specs" / "schema" / "keycard.schema.json"
 CALC_SCHEMA = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
+#: The unit enum lives in its own schema, which `calc.schema.json` `$ref`s. It is
+#: generated from `specs/vocabulary/vocabulary.yaml` by `tools/gen_vocabulary.py`.
+UNIT_SCHEMA = REPO_ROOT / "specs" / "schema" / "unit.schema.json"
 TEMPLATE = REPO_ROOT / "keycard.example.yaml"
 
 q = ureg.Quantity
@@ -69,10 +75,10 @@ def test_the_unit_vocabulary_is_the_schema_s_enum() -> None:
     loader missing a unit the schema allows rejects a file the checker accepts. Each
     passes a one-way test.
     """
-    schema = json.loads(CALC_SCHEMA.read_text(encoding="utf-8"))
-    declared = tuple(schema["$defs"]["unit"]["enum"])
+    schema = json.loads(UNIT_SCHEMA.read_text(encoding="utf-8"))
+    declared = tuple(schema["enum"])
     assert declared == keycard.UNIT_VOCABULARY, (
-        "the loader's unit vocabulary and calc.schema.json's enum have drifted. One of "
+        "the loader's unit vocabulary and the unit schema's enum have drifted. One of "
         "them accepts what the other refuses."
     )
 

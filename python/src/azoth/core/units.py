@@ -70,6 +70,7 @@ from typing import Any, Final
 
 import pint
 
+from azoth.core._units_gen import CANONICAL_UNITS as CANONICAL_UNITS
 from azoth.core.errors import UnitMismatchError
 
 #: The one registry. A second one would have its own unit cache and its own
@@ -80,58 +81,22 @@ ureg: Final[pint.UnitRegistry] = pint.UnitRegistry()
 #: Quantity alias. Always annotate `Q`, never a bare `Quantity`.
 type Q = pint.Quantity[float]
 
-#: Canonical unit strings, keyed by the strings the spec schema allows. The
-#: schema restricts `unit` to this set, so a spec cannot name a unit the code has
-#: no conversion path for.
+#: Canonical unit strings, keyed by the strings the spec schema allows, mapped to
+#: the unit's name in `pint`'s registry. **Generated** from
+#: `specs/vocabulary/vocabulary.yaml` by `tools/gen_vocabulary.py`, which is why
+#: the table rather than this module is where a unit is added.
 #:
 #: This is the unit the spec and the generated docs *speak in* - what a worked
 #: example's numbers mean, and what a caller gets back. It is deliberately not the
 #: unit anything is calculated in: calculations work in SI base magnitudes, and
 #: `to_si`/`from_si` are the only places the two representations meet.
 #:
-#: Entries are kept SI-first where the unit is a free choice, so that the
-#: vocabulary and the internal representation agree for most quantities and a
-#: reader has less to hold in their head. But that is a convention about how these
-#: are written down, not a load-bearing property: `mm` is not SI base, and the
-#: conversion handles it correctly because it converts to base units rather than to
-#: this name. A spec may declare any entry here without risking a silent factor.
-CANONICAL_UNITS: Final[dict[str, str]] = {
-    "dimensionless": "dimensionless",
-    "m": "meter",
-    # Not SI base, and for a while the reason two implementations disagreed by
-    # 1000x. Correct now, and deliberately kept as the case that keeps the
-    # conversion honest: it is the entry that would break first if `to_si` ever
-    # went back to converting to the named unit.
-    "mm": "millimeter",
-    "m**2": "meter**2",
-    "m**3/s": "meter**3/second",
-    "kg/s": "kilogram/second",
-    # A molar flow, and the reason a unit operation can state one in a spec at all.
-    # `pint` knows this dimension and `uom` does not, so the Rust side carries it as
-    # a bare `f64` in mol/s; see the note on the same entry in
-    # `crates/azoth-core/src/units.rs`.
-    "mol/s": "mole/second",
-    "kg/m**3": "kilogram/meter**3",
-    "m/s": "meter/second",
-    "Pa": "pascal",
-    "Pa*s": "pascal*second",
-    "K": "kelvin",
-    "W": "watt",
-    "J/(kg*K)": "joule/(kilogram*kelvin)",
-    "W/(m*K)": "watt/(meter*kelvin)",
-    "W/(m**2*K)": "watt/(meter**2*kelvin)",
-    "kg/mol": "kilogram/mole",
-    "m**3/mol": "meter**3/mole",
-    "J/mol": "joule/mole",
-    # Also the carrier for a molar *entropy*: `pint` has no separate name for it
-    # because the two are dimensionally identical, and the Rust side records the
-    # same reasoning on `joules_per_mole_kelvin`.
-    "J/(mol*K)": "joule/(mole*kelvin)",
-    "J/(mol*K**2)": "joule/(mole*kelvin**2)",
-    "J/(mol*K**3)": "joule/(mole*kelvin**3)",
-    "J/(mol*K**4)": "joule/(mole*kelvin**4)",
-    "J/(mol*K**5)": "joule/(mole*kelvin**5)",
-}
+#: Entries are SI-first where the unit is a free choice, so that the vocabulary and
+#: the internal representation agree for most quantities. But that is a convention
+#: about how these are written down, not a load-bearing property: `mm` is not SI
+#: base, and the conversion handles it correctly because it converts to base units
+#: rather than to this name. A spec may declare any entry here without risking a
+#: silent factor.
 
 
 def unit_for(spec_unit: str) -> str:

@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import re
 import sys
 from dataclasses import dataclass, field
@@ -975,9 +974,14 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    # Every schema under specs/schema/ in one registry, keyed by `$id`: the calc
+    # schema `$ref`s `unit.schema.json` for the unit enum, and the model and case
+    # schemas `$ref` the calc schema in turn. See `schema_registry`.
+    import schema_registry
+
+    schema = schema_registry.load("calc.schema.json")
     Draft202012Validator.check_schema(schema)
-    validator = Draft202012Validator(schema)
+    validator = Draft202012Validator(schema, registry=schema_registry.registry())
 
     report = Report()
     parsed = check_schema(report, validator, args.spec_dir)
@@ -988,23 +992,15 @@ def main() -> int:
     # units and quantities, so the two share one definition of what a unit is - and
     # the reference has to be resolvable locally rather than fetched.
     if MODEL_SCHEMA_PATH.exists():
-        from referencing import Registry, Resource
-
-        model_schema = json.loads(MODEL_SCHEMA_PATH.read_text(encoding="utf-8"))
+        model_schema = schema_registry.load("model.schema.json")
         Draft202012Validator.check_schema(model_schema)
-        registry = Registry().with_resource(schema["$id"], Resource.from_contents(schema))
-        model_validator = Draft202012Validator(model_schema, registry=registry)
+        model_validator = Draft202012Validator(model_schema, registry=schema_registry.registry())
         # The instances come from their own files, against their own schema: a model
         # is a type, and the machines to run are not part of it. They are attached
         # here so the case rules below run unchanged on the same shape they always did.
-        case_schema = json.loads(CASE_SCHEMA_PATH.read_text(encoding="utf-8"))
+        case_schema = schema_registry.load("case.schema.json")
         Draft202012Validator.check_schema(case_schema)
-        case_registry = (
-            Registry()
-            .with_resource(schema["$id"], Resource.from_contents(schema))
-            .with_resource(model_schema["$id"], Resource.from_contents(model_schema))
-        )
-        case_validator = Draft202012Validator(case_schema, registry=case_registry)
+        case_validator = Draft202012Validator(case_schema, registry=schema_registry.registry())
         instances: dict[str, list[dict[str, Any]]] = {}
         for _rel, document in check_schema(report, case_validator, CASE_DIR):
             instances.setdefault(document["model"], []).extend(document["cases"])

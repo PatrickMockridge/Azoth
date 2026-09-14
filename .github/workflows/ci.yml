@@ -44,6 +44,12 @@ jobs:
       # no NeqSim checkout, because the sources are committed - which is what lets
       # this run here rather than only on a machine that has one.
       - run: python tools/gen_databank.py --check
+      # The unit vocabulary table against the four artefacts compiled from it - the
+      # schema's unit enum, the Rust conversion table, the Python map and the keycard
+      # loader's list. One table, one generator, and this is what says the generated
+      # copies are current rather than merely agreeing with each other. It needs only
+      # pyyaml and jsonschema, both installed above.
+      - run: python tools/gen_vocabulary.py --check
 
   rust-test:
     name: rust-test
@@ -185,6 +191,7 @@ jobs:
       # caught here and nowhere else.
       - name: Regenerate everything
         run: |
+          .venv/bin/python tools/gen_vocabulary.py
           .venv/bin/python tools/gen_docs.py
           .venv/bin/python tools/gen_registry.py
           .venv/bin/python tools/gen_models.py
@@ -193,8 +200,9 @@ jobs:
         run: |
           if ! git diff --exit-code; then
             echo "::error::Generated files are out of date. Run:"
-            echo "::error::  python tools/gen_docs.py && python tools/gen_registry.py"
-            echo "::error::  python tools/gen_models.py && python tools/gen_stub.py"
+            echo "::error::  python tools/gen_vocabulary.py && python tools/gen_docs.py"
+            echo "::error::  python tools/gen_registry.py && python tools/gen_models.py"
+            echo "::error::  python tools/gen_stub.py"
             exit 1
           fi
 

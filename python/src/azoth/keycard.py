@@ -57,6 +57,7 @@ from typing import Any
 import pint
 import yaml
 
+from azoth.core._units_gen import UNIT_VOCABULARY as _UNIT_VOCABULARY
 from azoth.core.errors import KeycardError
 from azoth.core.units import Q, ureg
 
@@ -83,43 +84,22 @@ COMPONENT_PARAMETERS: Mapping[str, str] = {
     "omega": "dimensionless",
 }
 
-#: The units a keycard may declare, mirroring `$defs/unit` in
-#: `specs/schema/calc.schema.json`.
+#: The units a keycard may declare.
 #:
-#: **Duplicated deliberately, and held together by a test.** The schema is a
-#: dev-time artefact and is not shipped in the wheel, so the loader cannot read the
-#: enum at runtime. The alternative to a copy is worse than a copy: pint will parse
-#: `kelvin`, so a loader that trusted it would accept a file the checker rejects -
-#: a keycard that works until someone runs `check_user_data.py` on it. Two
-#: implementations of one vocabulary and a test that they agree is the answer this
-#: repository gives everywhere else, so it is the answer here.
-#: `test_keycard_loader.py` asserts this tuple equals the schema's enum, both ways.
-UNIT_VOCABULARY: tuple[str, ...] = (
-    "dimensionless",
-    "m",
-    "mm",
-    "m**2",
-    "m**3/s",
-    "kg/s",
-    "mol/s",
-    "kg/m**3",
-    "m/s",
-    "Pa",
-    "Pa*s",
-    "K",
-    "W",
-    "J/(kg*K)",
-    "W/(m*K)",
-    "W/(m**2*K)",
-    "kg/mol",
-    "m**3/mol",
-    "J/mol",
-    "J/(mol*K)",
-    "J/(mol*K**2)",
-    "J/(mol*K**3)",
-    "J/(mol*K**4)",
-    "J/(mol*K**5)",
-)
+#: **Generated, and available at runtime, both deliberately.** The schema is a
+#: dev-time artefact and is not shipped in the wheel, so the loader cannot read
+#: its enum - and trusting `pint` instead is worse than reading a list: pint will
+#: parse `kelvin`, so a loader that accepted whatever pint parses would take a file
+#: the checker rejects, which is a keycard that works until someone runs
+#: `check_user_data.py` on it. `specs/vocabulary/vocabulary.yaml` is compiled into
+#: `azoth.core._units_gen`, which ships, so there is one list and the loader reads
+#: the same one the schema is generated from.
+#:
+#: Bound here rather than imported straight into this module's namespace, because
+#: the name is part of this module's surface: `test_keycard_loader.py` holds it to
+#: the schema's enum, which is the check that makes a keycard with a unit outside
+#: the vocabulary fail at *load* rather than at first use.
+UNIT_VOCABULARY: tuple[str, ...] = _UNIT_VOCABULARY
 
 #: The model vocabularies this build implements. Each one is what the schema's enum
 #: admits, and `test_keycard_loader.py` asserts the two sets are equal - a schema

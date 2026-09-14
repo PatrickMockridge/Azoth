@@ -19,7 +19,6 @@ against.
 
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -29,6 +28,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import schema_registry
 from gen_registry import (
     ROOT,
     emit_range_check,
@@ -39,9 +39,6 @@ from gen_registry import (
 
 MODEL_DIR = ROOT / "specs" / "models"
 CASE_DIR = ROOT / "specs" / "cases"
-SCHEMA_PATH = ROOT / "specs" / "schema" / "model.schema.json"
-CASE_SCHEMA_PATH = ROOT / "specs" / "schema" / "case.schema.json"
-CALC_SCHEMA_PATH = ROOT / "specs" / "schema" / "calc.schema.json"
 
 
 def crate_for(namespace: str) -> str:
@@ -86,14 +83,11 @@ def load_models() -> list[dict[str, Any]]:
 
     try:
         from jsonschema import Draft202012Validator
-        from referencing import Registry, Resource
     except ImportError:  # pragma: no cover
-        sys.exit("gen_models requires jsonschema and referencing")
+        sys.exit("gen_models requires jsonschema")
 
-    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    calc = json.loads(CALC_SCHEMA_PATH.read_text(encoding="utf-8"))
-    registry = Registry().with_resource(calc["$id"], Resource.from_contents(calc))
-    validator = Draft202012Validator(schema, registry=registry)
+    schema = schema_registry.load("model.schema.json")
+    validator = Draft202012Validator(schema, registry=schema_registry.registry())
 
     models: list[dict[str, Any]] = []
     for path in paths:
@@ -116,15 +110,11 @@ def load_models() -> list[dict[str, Any]]:
 
     # The instances. A model is a type; the machines to run live in their own files,
     # against their own schema, so the type is never edited to make a test pass.
-    case_schema = json.loads(CASE_SCHEMA_PATH.read_text(encoding="utf-8"))
-    # The model schema is registered as well, because a case's values are the model's
-    # - vectors and matrices are inputs here, where a calc's are scalars.
-    case_registry = (
-        Registry()
-        .with_resource(calc["$id"], Resource.from_contents(calc))
-        .with_resource(schema["$id"], Resource.from_contents(schema))
-    )
-    case_validator = Draft202012Validator(case_schema, registry=case_registry)
+    # Every schema, because a case's values are the model's - vectors and matrices
+    # are inputs here, where a calc's are scalars - and the model schema `$ref`s the
+    # calc schema in turn.
+    case_schema = schema_registry.load("case.schema.json")
+    case_validator = Draft202012Validator(case_schema, registry=schema_registry.registry())
 
     by_id = {model["id"]: model for model in models}
     for model in models:

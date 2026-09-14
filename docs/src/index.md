@@ -155,8 +155,9 @@ Water and air properties are a different case: real published values, marked
 That column exists on the data *this repository ships*, and not on the rows of a
 keycard you supply — a deliberate asymmetry rather than a leftover. The shipped data
 is the library's own statement about itself, and it is what makes disclosure concrete;
-a keycard is yours, and the library does not ask. [Specification,
-S6](./spec.md#s6-provenance-is-the-engineers-job-not-the-librarys) has the reasoning.
+a keycard is yours, and the library does not ask. [What the library owes instead of a
+status field](./spec.md#what-the-library-owes-instead-of-a-status-field) has the
+reasoning.
 
 ## How a calculation is added
 
