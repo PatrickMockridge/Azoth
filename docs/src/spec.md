@@ -168,11 +168,56 @@ It is vendored rather than depended upon, because NeqSim is Apache-2.0,
 because the data is the output of work at Equinor and NTNU rather than something
 invented, and because a calculation library that ships no components is a calculator.
 
+### S5.1 The baseline is derived, and the derivation is designed rather than built
+
+**One directory, in one order.** It will hold the vendored upstreams — NeqSim's `COMP.csv`
+and `INTER.csv`, Crane TP-410's fitting coefficients, the fluid property tables — each with
+the revision it was taken from; then **the baseline keycard**, a generated YAML file in the
+format S5.2 describes, holding what this library ships; then the compiled data both
+languages read, derived from that card.
+
+The order is one-way: a source produces a card, and a card produces compiled data. Today
+it is two unrelated pipelines — `data/components/` from a NeqSim checkout by one tool,
+`data/fittings/` and `data/fluids/` from a keycard by another, sharing no code, with
+neither run in CI — and the files both languages read sit in a third arrangement again.
+
+**What the baseline buys is that the library's inputs and a user's become one object.** A
+keycard is then no longer only what a user adds; it is also what the library has, except
+that the second is derived rather than authored. One format, one compilation, and one
+place to look when asking where a value came from.
+
+**The vendoring is far narrower than the upstream data, and that is part of this work.**
+NeqSim's `COMP.csv` carries 170 columns and this library takes 10. Its `INTER.csv` carries
+38 and this library takes one, and 42% of the shipped interaction parameters are exactly
+zero — the ideal-mixture default, shipped as though it were a fitted coefficient. Every
+one of those columns will carry a disposition and a reason, so that what is absent is
+absent by decision rather than by nobody having looked.
+
+Until this is built, `data/` is what ships and [What ships](./data.md) describes it.
+
 **What a user adds: the keycard.** One YAML file. Its sections are `keyholder`,
 `components`, `kij`, `fluids`, `fittings`, `coefficients` and `models`. Everything in it
 overrides or extends what ships, by name. A keycard is how a user adds to azoth
 **without writing Rust or Python** — a component parameter, a fluid property table, a
 fitting coefficient, a discharge coefficient and a cubic-EOS variant are all data.
+
+### S5.2 A section is read either at run time or at build time
+
+The seven sections are not one mechanism. Five are read by the loaded keycard at the moment
+a calculation is called, so a change to any of them takes effect immediately: `keyholder`
+(which nothing reads, and which records whose card it is), `components` (`eos.component`,
+`eos.from_names`), `kij` (every mixture's mixing rule), `coefficients` (a calculation's
+named argument, as a default), and `models` (`eos.from_model`).
+
+Two are not. `fittings` and `fluids` are compiled into the shipped data files by a
+generation tool, and those files are embedded in the Rust core at compile time — so a
+change to either takes effect after a regeneration **and a rebuild**.
+
+**The distinction is part of the format rather than a footnote to it.** Each section
+carries an `x-azoth-stage` of `runtime` or `compiled` in
+`specs/schema/keycard.schema.json`, and the compiler derives its work list by reading
+those annotations. A section added without one is a build failure, rather than a section
+nobody notices is unhandled.
 
 **No contributor registers anything.** A calculation is found by its id, and the id is
 its address:
@@ -188,6 +233,26 @@ files and requires no registration step. What enumeration exists — the generat
 registries, and the list of what is implemented in this book — is a build artefact a
 generator emits, not a list a person maintains. Deleting registration rather than
 generating it is deliberate: a generated list is still a list that can be wrong.
+
+### S5.3 The keycard is the capability declaration
+
+**A keycard states what its holder may compute with, and therefore what this library can
+do for them.** It is not a configuration file. It is the record of which data the holder
+is entitled to use, and a result resting on a value nobody was licensed to supply is a
+result nobody should have produced. The library reads the card; the engineer holds it.
+
+Two consequences follow.
+
+**A keycard is data and cannot be anything else.** Every section is named choices from
+closed vocabularies plus numbers. Nothing in a keycard can make this library do something
+it does not already implement, and a name outside a vocabulary is refused when the card is
+*loaded* rather than when it is finally used — a model that silently fell back to
+Peng-Robinson would be a wrong answer with no symptom at all.
+
+**The library's own data carries the same obligation.** The baseline card is azoth's
+statement of what it may redistribute, and it is the reason attribution is discharged in
+`NOTICE` and why shipped data carries a `verify_status` column. A user's card and the
+library's differ in who is accountable, not in what they are.
 
 **The burden and the responsibility sit with the data.** If a value is wrong it is wrong
 in the vendored databank or in a keycard. Equinor and NTNU are accountable for the

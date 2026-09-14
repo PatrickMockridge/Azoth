@@ -99,6 +99,24 @@ def test_the_model_vocabularies_are_the_schema_s_enums(name: str, schema_path: s
     assert tuple(getattr(keycard, name)) == tuple(declared[schema_path]["enum"])
 
 
+def test_the_model_keys_are_the_schema_s_properties() -> None:
+    """Every key a definition may carry, compared in both directions.
+
+    `additionalProperties: false` is what makes this bite. A key the schema admits and
+    the loader refuses rejects a file the checker accepts; a key the loader admits and
+    the schema refuses is stored nowhere, which is the failure `critical_rule`,
+    `volume_translation` and `root_selection` were: accepted, never read, and gone from
+    the format now.
+    """
+    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    model = schema["properties"]["models"]["additionalProperties"]
+    declared = set(model["properties"]) | set(model["required"])
+    assert declared == keycard.MODEL_KEYS, (
+        "the loader's accepted model keys and keycard.schema.json's properties have "
+        "drifted. One of them accepts what the other refuses."
+    )
+
+
 def test_the_component_parameters_are_what_the_implementation_reads() -> None:
     """Every parameter the keycard accepts must reach a `Component`.
 

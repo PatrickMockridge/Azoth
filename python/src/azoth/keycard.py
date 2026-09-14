@@ -118,6 +118,15 @@ MODEL_SHAPES = ("peng_robinson",)
 MODEL_ALPHAS = ("peng_robinson",)
 MODEL_MIXING_RULES = ("classical_kij",)
 
+#: Every key a model definition may carry, which is the schema's
+#: `models.additionalProperties.properties` plus `required`. Checked because the schema
+#: sets `additionalProperties: false` and this loader is the second implementation of
+#: that contract: without the check a definition carrying a key the schema refuses -
+#: `critical_rule`, say - would load here and be stored nowhere, which is the
+#: accepted-and-ignored failure the vocabularies above are refused for. A test asserts
+#: this set equals the schema's, both ways.
+MODEL_KEYS = frozenset({"kind", "shape", "alpha", "mixing_rule", "components", "alpha_parameters"})
+
 
 @dataclass(frozen=True, slots=True)
 class Model:
@@ -473,6 +482,16 @@ def _models(raw: Any, where: str) -> dict[str, Model]:
                 f"alpha function this build implements (`peng_robinson`) takes none. "
                 f"A fitted alpha is a different equation, not a parameterisation of "
                 f"this one.",
+            )
+
+        unknown = sorted(set(body) - MODEL_KEYS)
+        if unknown:
+            raise KeycardError(
+                where,
+                f"`{field_name}` carries {unknown}, which no reader here knows. "
+                f"Accepted: {sorted(MODEL_KEYS)}. Refused rather than stored and "
+                f"ignored: a key a caller can write and never see again is a promise "
+                f"the format does not keep.",
             )
 
         out[str(name)] = Model(

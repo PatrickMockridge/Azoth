@@ -31,6 +31,11 @@ jobs:
       # did not pass on this tree when it was first run: it was reporting its own phrase
       # list, seven of its nine hits.
       - run: python tools/prose_lint.py
+      # `json.loads` keeps the last of two identical keys and discards the first
+      # without saying so, and `check_schema` does not look for them either - so a
+      # schema can carry a duplicated keyword and pass every other gate here.
+      # keycard.schema.json did, in two places.
+      - run: python tools/check_json_keys.py
 
   rust-test:
     name: rust-test
