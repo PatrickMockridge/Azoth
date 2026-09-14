@@ -52,15 +52,37 @@ pub fn pure_saturation(
     let spec = &model_gen::PURE_SATURATION_SPEC;
     let mut warnings = Vec::new();
 
+    // `Tc` and `Pc` are refused here rather than by a bound in the spec. They used to
+    // be declared `valid_range` entries: the model took the constants as arguments, so
+    // a bound on them was a bound on an input. The model names a *component* now and
+    // the constants come from the databank, which leaves no input for a bound to
+    // guard - and a bound the generator emits against nothing is a check that never
+    // fires, which is worse than no check at all. `Component::new` refuses a
+    // non-positive pair on the mixture path; this is the same refusal on the scalar
+    // one, and it is what keeps `Tc` from being a divisor by zero.
+    // A NaN is refused alongside zero and the negatives: `NaN > 0.0` is false, so the
+    // comparison is written as a refusal rather than as an acceptance, and a NaN
+    // critical temperature would otherwise propagate silently through every root.
+    if Tc.value.is_nan() || Tc.value <= 0.0 {
+        return Err(AzothError::out_of_range(
+            "Tc",
+            Tc.value,
+            "a critical temperature is absolute and positive by definition; it is also \
+             a divisor in the reduced temperature",
+        ));
+    }
+    if Pc.value.is_nan() || Pc.value <= 0.0 {
+        return Err(AzothError::out_of_range(
+            "Pc",
+            Pc.value,
+            "a critical pressure is positive by definition, and it converts the reduced \
+             answer back to pascals",
+        ));
+    }
+
     apply_checks(
         spec.input_checks(),
-        |quantity| match quantity {
-            "Tc" => Some(Tc.value),
-            "Pc" => Some(Pc.value),
-            "omega" => Some(omega),
-            "T" => Some(T.value),
-            _ => None,
-        },
+        |quantity| (quantity == "T").then_some(T.value),
         &mut warnings,
     )?;
 

@@ -8,20 +8,9 @@ model: process.splitter
 cases:
 - id: thirty_seventy_split_of_a_two_phase_feed
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
+    components:
+    - methane
+    - n-butane
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -34,27 +23,16 @@ cases:
   expected:
     T: 300.0
     P: 2000000.0
-    beta: 0.6824390296509166
+    beta: 0.6824390296509162
     flows:
     - 3.0
     - 7.0
   tolerance: 1.0e-09
 - id: a_single_branch_takes_everything
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
+    components:
+    - methane
+    - n-butane
     T: 300.0
     P: 2000000.0
     n: 10.0

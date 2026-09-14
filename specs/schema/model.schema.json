@@ -59,12 +59,29 @@
 
   "$defs": {
     "quantity": {
-      "description": "A scalar, vector or matrix quantity. A calc's `$defs.quantity` is `$ref`-ed rather than restated, so units and descriptions have one definition across both spec kinds; the two extra shapes exist because a mixture is not a number.",
+      "description": "A scalar, vector, matrix or component list. A calc's `$defs.quantity` is `$ref`-ed rather than restated, so units and descriptions have one definition across both spec kinds; the extra shapes exist because a mixture is not a number and not a list of numbers either.",
       "oneOf": [
         { "$ref": "calc.schema.json#/$defs/quantity" },
+        { "$ref": "#/$defs/components_quantity" },
         { "$ref": "#/$defs/vector_quantity" },
         { "$ref": "#/$defs/matrix_quantity" }
       ]
+    },
+
+    "components_quantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A list of substance names, resolved against the component databank the library ships (`data/components/`) with any keycard overlay applied. **This is the input a calculation names its fluid by.** It replaced the `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` inputs, which were nine parallel vectors a spec file carried: a number in a spec file is a number nobody can check against anything, and the port's whole point is that the numbers come from NeqSim's tables rather than from whoever typed the spec.\n\nA name carries no unit - the substances are looked up, not measured - so unlike every other quantity here it declares none.",
+      "required": ["type", "description"],
+      "properties": {
+        "type": { "const": "components" },
+        "description": { "type": "string", "minLength": 1 },
+        "length": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What the length means, e.g. 'one entry per component'. Prose rather than a number, because the length is the caller's: the model is written for any N."
+        }
+      }
     },
 
     "value": {

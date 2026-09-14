@@ -7,31 +7,28 @@
 //! nesting - is checked against an analytic answer rather than against a second
 //! reading of the same method.
 
-use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, CalcResult};
 use azoth_eos::critical_point::symmetric_eigen;
-use azoth_eos::mixture::{Component, Mixture};
-use azoth_eos::{critical_point, model_gen};
+use azoth_eos::mixture::Mixture;
+use azoth_eos::{critical_point, databank, model_gen};
 use azoth_test_support as common;
 
 const MODEL_ID: &str = "eos.critical_point";
 
-fn mixture_of(tc: &[f64], pc: &[f64], omega: &[f64], kij: Vec<f64>) -> Mixture {
-    let components = (0..tc.len())
-        .map(|i| {
-            Component::new(kelvins(tc[i]), pascals(pc[i]), omega[i]).expect("a valid component")
-        })
-        .collect();
-    Mixture::new(components, kij).expect("a valid mixture")
+/// The methane/n-butane pair the spec's cases use, resolved through the databank.
+fn methane_butane() -> Mixture {
+    databank::mixture_of(&["methane", "n-butane"])
+        .expect("the pair resolves")
+        .0
 }
 
 fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
-    mixture_of(
-        case.vector("Tc").expect("the case declares Tc"),
-        case.vector("Pc").expect("the case declares Pc"),
-        case.vector("omega").expect("the case declares omega"),
-        case.matrix("kij").expect("the case declares kij").to_vec(),
-    )
+    let names = case
+        .list("components")
+        .expect("the case declares components");
+    databank::mixture_of(names)
+        .expect("the case's components resolve")
+        .0
 }
 
 fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::CriticalPointResult {
@@ -98,13 +95,10 @@ fn every_case_in_the_spec() {
 #[test]
 fn a_pure_component_reproduces_the_analytic_critical_point() {
     let expected_z_c = (1.0 - azoth_eos::OMEGA_B) / 3.0;
-    for (name, tc, pc, omega) in [
-        ("propane", 369.83, 4_248_000.0, 0.1523),
-        ("methane", 190.56, 4_599_200.0, 0.01142),
-        ("n-butane", 425.12, 3_796_000.0, 0.2002),
-        ("carbon dioxide", 304.13, 7_377_000.0, 0.2239),
-    ] {
-        let mixture = mixture_of(&[tc], &[pc], &[omega], vec![0.0]);
+    for name in ["propane", "methane", "n-butane", "co2"] {
+        let entry = databank::entry(name).expect("a databank entry");
+        let (tc, pc) = (entry.tc, entry.pc);
+        let mixture = databank::mixture_of(&[name]).expect("resolves").0;
         let r = critical_point(&mixture, &[1.0]).expect("a critical point");
 
         // Measured, on both implementations: Tc to 2.5e-12 relative, Pc to 1.6e-11,
@@ -135,12 +129,7 @@ fn a_pure_component_reproduces_the_analytic_critical_point() {
 fn a_mixtures_critical_compressibility_varies_with_composition() {
     let mut seen = Vec::new();
     for methane_fraction in [0.2, 0.4, 0.6, 0.8] {
-        let mixture = mixture_of(
-            &[190.56, 425.12],
-            &[4_599_200.0, 3_796_000.0],
-            &[0.01142, 0.2002],
-            vec![0.0, 0.05, 0.05, 0.0],
-        );
+        let mixture = methane_butane();
         let r = critical_point(&mixture, &[methane_fraction, 1.0 - methane_fraction])
             .expect("a critical point");
         seen.push(r.z_c);
@@ -163,19 +152,16 @@ fn a_mixtures_critical_compressibility_varies_with_composition() {
 /// bracket or out of order is wrong whatever it is near.
 #[test]
 fn a_binarys_critical_locus_falls_between_its_pure_endpoints() {
-    let mixture = mixture_of(
-        &[190.56, 425.12],
-        &[4_599_200.0, 3_796_000.0],
-        &[0.01142, 0.2002],
-        vec![0.0, 0.05, 0.05, 0.0],
-    );
+    let mixture = methane_butane();
 
-    let mut previous = 425.12_f64;
+    let light = databank::entry("methane").expect("methane").tc;
+    let heavy = databank::entry("n-butane").expect("n-butane").tc;
+    let mut previous = heavy;
     for methane_fraction in [0.2, 0.4, 0.6, 0.8] {
         let r = critical_point(&mixture, &[methane_fraction, 1.0 - methane_fraction])
             .expect("a critical point");
         assert!(
-            r.tc.value > 190.56 && r.tc.value < 425.12,
+            r.tc.value > light && r.tc.value < heavy,
             "Tc = {} at z = {methane_fraction} is outside the pure endpoints",
             r.tc.value
         );
@@ -212,12 +198,7 @@ fn the_eigensolver_agrees_with_the_closed_form() {
 /// A composition that is not a composition is refused rather than renormalised.
 #[test]
 fn a_malformed_composition_is_refused() {
-    let mixture = mixture_of(
-        &[190.56, 425.12],
-        &[4_599_200.0, 3_796_000.0],
-        &[0.01142, 0.2002],
-        vec![0.0, 0.05, 0.05, 0.0],
-    );
+    let mixture = methane_butane();
     for (label, z) in [
         ("too short", vec![0.5]),
         ("too long", vec![0.5, 0.25, 0.25]),
@@ -235,12 +216,7 @@ fn a_malformed_composition_is_refused() {
 /// The result is clean at an ordinary composition, and reports what the spec says.
 #[test]
 fn the_result_carries_the_declared_fields() {
-    let mixture = mixture_of(
-        &[190.56, 425.12],
-        &[4_599_200.0, 3_796_000.0],
-        &[0.01142, 0.2002],
-        vec![0.0, 0.05, 0.05, 0.0],
-    );
+    let mixture = methane_butane();
     let r = critical_point(&mixture, &[0.4, 0.6]).expect("a critical point");
     assert!(r.is_clean(), "unexpected warnings: {:?}", r.warnings);
     assert_eq!(

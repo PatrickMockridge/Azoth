@@ -8,32 +8,9 @@ model: process.expander
 cases:
 - id: twenty_to_five_bar_at_ninety_percent
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -42,43 +19,17 @@ cases:
     - 0.4
     outlet_pressure: 500000.0
     efficiency: 0.9
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
-    T: 249.23100727263375
+    T: 265.521523500471
     P: 500000.0
-    power: -17945.271846810316
-    isentropic_temperature: 246.6396939819773
+    power: -19561.71003848759
+    isentropic_temperature: 264.39056768380897
   tolerance: 1.0e-09
 - id: a_superheated_feed_expands_to_vapour
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T: 450.0
     P: 2000000.0
     n: 10.0
@@ -87,12 +38,9 @@ cases:
     - 0.4
     outlet_pressure: 500000.0
     efficiency: 0.9
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
-    T: 283.412349666799
+    T: 389.72289777975766
     P: 500000.0
-    power: -28783.344978779307
-    isentropic_temperature: 282.36647114241777
+    power: -41743.592213534874
+    isentropic_temperature: 383.3906409835496
   tolerance: 1.0e-09

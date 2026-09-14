@@ -9,9 +9,11 @@ each run the same ``test_spec_case`` loop.
 want a fixture's lifetime or its indirection; they want a function they can read, and one
 that shows exactly which numbers a model is being given.
 
-The two components are the ones every other model spec in this tree uses -
+The components are the ones every other model spec in this tree uses -
 methane/n-butane with the same ``kij`` - so a reader comparing a unit operation's case
-against ``eos.ph_flash``'s is comparing the same mixture.
+against ``eos.ph_flash``'s is comparing the same mixture. They are resolved by name
+here, exactly as `_helpers.model_kwargs` resolves a case's, so the two paths to a fluid
+cannot describe different substances.
 """
 
 from __future__ import annotations
@@ -21,12 +23,13 @@ from typing import Any
 import _helpers as h
 from azoth import ureg
 from azoth.core.result import Phase
-from azoth.eos import Component, IdealGasModel, Mixture, mixture
+from azoth.eos import IdealGasModel, Mixture
+from azoth.eos.components import mixture_of
 
 Q = ureg.Quantity
 
-METHANE = Component(Q(190.56, "K"), Q(4_599_000.0, "Pa"), 0.0115)
-BUTANE = Component(Q(425.12, "K"), Q(3_796_000.0, "Pa"), 0.2002)
+#: The substances the unit-operation cases name, resolved through the databank.
+COMPONENTS = ["methane", "n-butane"]
 
 #: The units a unit operation's *stream* arguments are declared in, by argument name.
 #: Only the ones that are not `dimensionless` need an entry; a spec that renamed one of
@@ -57,24 +60,21 @@ RESULT_UNITS = {
 
 
 def a_mixture() -> Mixture:
-    """The mixture the spec cases describe."""
-    return mixture([METHANE, BUTANE], kij={(0, 1): 0.01289789})
+    """The mixture the spec cases describe, resolved through the databank."""
+    return mixture_of(COMPONENTS)[0]
 
 
 def an_ideal_gas() -> IdealGasModel:
-    """A deliberately trivial ideal-gas model: five zero coefficients.
+    """The same substances' ideal-gas model, from the same call.
 
-    Nothing about a unit operation depends on the coefficients being physical - its
-    arithmetic is the same whatever they are - so they are chosen to make a failure
-    readable rather than to describe a substance.
+    This used to be a deliberately trivial polynomial - `cp_a` of 3 and 5, everything
+    else zero - on the grounds that a unit operation's arithmetic does not depend on
+    the coefficients being physical. That is true of the arithmetic and false of the
+    *case*: a unit operation's recorded answers come from its case, and a case names
+    its components like every other model in this tree. A fixture the case does not
+    use is a second fluid, and the recorded numbers were regenerated from this one.
     """
-    return IdealGasModel(
-        cp_a=(3.0, 5.0),
-        cp_b=(0.0, 0.0),
-        cp_c=(0.0, 0.0),
-        cp_d=(0.0, 0.0),
-        cp_e=(0.0, 0.0),
-    )
+    return mixture_of(COMPONENTS)[1]
 
 
 def a_quantity(name: str, value: Any) -> Any:
@@ -100,7 +100,7 @@ def call(model: dict[str, Any], case: dict[str, Any]) -> Any:
 
     inputs = case["inputs"]
     arguments: dict[str, Any] = {"mixture": a_mixture()}
-    if "cp_a" in inputs:
+    if "ideal_gas" in h.parameters_of(model):
         arguments["ideal_gas"] = an_ideal_gas()
     for name, value in inputs.items():
         if name in UNITS:
@@ -131,8 +131,7 @@ def assert_case(model: dict[str, Any], case: dict[str, Any]) -> None:
 
 
 __all__ = [
-    "BUTANE",
-    "METHANE",
+    "COMPONENTS",
     "UNITS",
     "Phase",
     "a_mixture",

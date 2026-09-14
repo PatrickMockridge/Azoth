@@ -2,42 +2,24 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, CalcResult};
-use azoth_eos::mixture::{Component, Mixture};
+use azoth_eos::mixture::Mixture;
 use azoth_eos::molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
-use azoth_eos::{model_gen, pr_molar_volume::MOLAR_GAS_CONSTANT};
+use azoth_eos::{databank, model_gen, pr_molar_volume::MOLAR_GAS_CONSTANT};
 
 const MODEL_ID: &str = "eos.molar_enthalpy_entropy";
 
-fn mixture_of(tc: &[f64], pc: &[f64], omega: &[f64], kij: Vec<f64>) -> Mixture {
-    let components = (0..tc.len())
-        .map(|i| Component::new(kelvins(tc[i]), pascals(pc[i]), omega[i]).expect("valid"))
-        .collect();
-    Mixture::new(components, kij).expect("a valid mixture")
-}
-
+/// The methane/n-butane pair the spec's cases use, resolved through the databank.
 fn methane_butane() -> Mixture {
-    mixture_of(
-        &[190.56, 425.12],
-        &[4_599_200.0, 3_796_000.0],
-        &[0.01142, 0.2002],
-        vec![0.0, 0.05, 0.05, 0.0],
-    )
+    databank::mixture_of(&["methane", "n-butane"])
+        .expect("the pair resolves")
+        .0
 }
 
 fn from_case(case: &azoth_core::spec::TestCase) -> (Mixture, IdealGasModel, f64) {
-    let mixture = mixture_of(
-        case.vector("Tc").expect("Tc"),
-        case.vector("Pc").expect("Pc"),
-        case.vector("omega").expect("omega"),
-        case.matrix("kij").expect("kij").to_vec(),
-    );
-    let ideal_gas = IdealGasModel {
-        cp_a: case.vector("cp_a").expect("cp_a").to_vec(),
-        cp_b: case.vector("cp_b").expect("cp_b").to_vec(),
-        cp_c: case.vector("cp_c").expect("cp_c").to_vec(),
-        cp_d: case.vector("cp_d").expect("cp_d").to_vec(),
-        cp_e: case.vector("cp_e").expect("cp_e").to_vec(),
-    };
+    let names = case
+        .list("components")
+        .expect("the case declares components");
+    let (mixture, ideal_gas) = databank::mixture_of(names).expect("the case's components resolve");
     (mixture, ideal_gas, common_input(case, "compressibility"))
 }
 
@@ -129,7 +111,7 @@ fn the_enthalpy_is_the_departure_when_the_ideal_gas_terms_are_off() {
     );
     assert_eq!(result.h.value, result.h_departure.value);
     assert!(
-        (result.h.value / (MOLAR_GAS_CONSTANT * 330.0) - -0.5399247170906822).abs() < 1e-12,
+        (result.h.value / (MOLAR_GAS_CONSTANT * 330.0) - -0.5461395392187062).abs() < 1e-12,
         "h/(R T) is {}, not the departure the mixture module computes",
         result.h.value / (MOLAR_GAS_CONSTANT * 330.0)
     );
@@ -153,25 +135,13 @@ fn the_enthalpy_is_the_departure_when_the_ideal_gas_terms_are_off() {
 /// replaced by a weighted average that at `N = 1` is that component's own `psi`.
 #[test]
 fn the_departures_reduce_to_pr_departure_at_one_component() {
-    for (tc, pc, omega, t, p, z) in [
-        (
-            369.83,
-            4_248_000.0,
-            0.1523,
-            300.0,
-            1_000_000.0,
-            0.964_968_034_8,
-        ),
-        (
-            425.12,
-            3_796_000.0,
-            0.2002,
-            350.0,
-            1_000_000.0,
-            0.988_866_701_4,
-        ),
+    for (name, t, p, z) in [
+        ("propane", 300.0, 1_000_000.0, 0.964_968_034_8),
+        ("n-butane", 350.0, 1_000_000.0, 0.988_866_701_4),
     ] {
-        let mixture = mixture_of(&[tc], &[pc], &[omega], vec![0.0]);
+        let entry = databank::entry(name).expect("a databank entry");
+        let (tc, omega) = (entry.tc, entry.omega);
+        let mixture = databank::mixture_of(&[name]).expect("resolves").0;
         let ideal_gas = IdealGasModel {
             cp_a: vec![4.0],
             cp_b: vec![1.0],

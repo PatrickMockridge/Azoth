@@ -305,8 +305,12 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
     """
     spec = _models_gen.model("eos.pure_saturation")
     result = _core.pure_saturation(
-        input_to_si(spec, "Tc", Tc),
-        input_to_si(spec, "Pc", Pc),
+        # Not `input_to_si`: that reads the unit out of the spec's declaration, and the
+        # spec no longer declares `Tc` or `Pc` - a component's constants come from the
+        # databank by name, and a caller holding them holds quantities already. `T` is
+        # still declared and still goes through the spec.
+        Tc.to("K").magnitude,
+        Pc.to("Pa").magnitude,
         # A plain float: `omega` is genuinely dimensionless, so it crosses as
         # the number the caller used - the same rule the other eos calcs follow.
         omega,

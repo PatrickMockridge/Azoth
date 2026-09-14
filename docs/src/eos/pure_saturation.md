@@ -32,9 +32,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `Tc` | K | critical temperature of the pure component |
-| `Pc` | Pa | critical pressure of the pure component |
-| `omega` | dimensionless | acentric factor, as in `eos.pr_kappa`. All three of these are the caller's; `azoth.eos.component(name)` looks them up in the databank the library ships. |
+| `components` | - | the substance, by name, resolved against the component databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv and INTER.csv) with the loaded keycard's overrides applied. Its `Tc`, `Pc` and `omega` all come from there. **One name, and it takes a list because every other model here does.** A saturation pressure is a pure-component property; a second name is refused rather than ignored, with `eos.bubble_pressure` named as the model that takes a mixture. Until this input existed, `Tc`, `Pc` and `omega` were three numbers retyped into the spec and every case - numbers in a YAML file that nothing could check against anything. |
 | `T` | K | absolute temperature at which the saturation pressure is wanted. Must be below `Tc`: above the critical temperature a pure component has no saturation pressure, and the model refuses rather than returning the critical pressure or a plausible-looking extrapolation. |
 
 
@@ -50,13 +48,12 @@ not an equation, and both implementations read it from here.
 | Bound | On violation | Why |
 |---|---|---|
 | `T > 0` | raises | an absolute temperature; zero and below are not states |
-| `Tc > 0` | raises | a critical temperature is absolute and positive by definition; it is also a divisor in the reduced temperature |
-| `Pc > 0` | raises | a critical pressure is positive by definition, and it converts the reduced answer back to pascals |
 | `t_over_tc < 1` | raises | Above the critical temperature a pure component has no saturation pressure. The bound is on the *ratio* because that is the quantity the model needs - a bound on `T` alone would have to be a bound that happened to be right for the `Tc` in play, which is not a bound at all. At exactly `Tc` the two roots have merged, there is one fugacity, and the residual is zero for every pressure - so the search would converge on nothing. Hence exclusive. |
 
 ## Assumptions
 
-- the component's `Tc`, `Pc` and `omega` are correct and mutually consistent. NOT CHECKED - they are the caller's. A databank ships with the library, so they can come from there.
+- the component's `Tc`, `Pc` and `omega` are correct and mutually consistent. They come from the databank, which is a port of NeqSim's `COMP.csv` - and that is where the responsibility ends. Whether a substance's tabulated constants describe the fluid in front of a caller is the caller's judgement, not something this model re-derives.
+- **`Tc` and `Pc` are positive**, so they are not bounded here. They are no longer caller arguments and there is nothing for a `valid_range` entry to guard at the boundary: the databank carries them, and `Component::new` refuses a non-positive one when the mixture is resolved, which is where `t_over_tc` below then divides by it.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes. PRSV, with `eos.prsv_kappa`, would give a different saturation pressure from the same inputs, and this model does not accept a coefficient.
 - **`p_sat` is the pressure where the two *roots* agree, not necessarily the pressure where the component really saturates.** The cubic has three real roots below the spinodal at every pressure, including pressures so low that the liquid root describes an impossible molar volume; the bisection finds where their fugacities cross, which is the model's saturation pressure by definition and is a property of the equation rather than of the substance.
 - **near the critical temperature the answer degrades sharply**, and the model cannot tell. The roots coalesce as `Tr -> 1`, the residual flattens, and the last digits of `p_sat` stop being determined by the equation - the same ill-conditioning `eos.pr_z_factor` records. A caller working close to the critical point should read `residual` and `iterations` rather than trusting the digits.
@@ -67,8 +64,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `propane_at_300_k` | Tc = 369.83, Pc = 4248000.0, omega = 0.1523, T = 300.0 | p_sat = 997667.7436544185 |
-| `carbon_dioxide_at_280_k` | Tc = 304.13, Pc = 7377000.0, omega = 0.2239, T = 280.0 | p_sat = 4159392.604815074 |
+| `propane_at_300_k` | components = ['propane'], T = 300.0 | p_sat = 997667.7436544185 |
+| `carbon_dioxide_at_280_k` | components = ['co2'], T = 280.0 | p_sat = 4149661.721350788 |
 
 ## References
 

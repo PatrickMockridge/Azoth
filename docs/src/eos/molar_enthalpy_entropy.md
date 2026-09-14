@@ -8,7 +8,7 @@
 
 **The composition of ideal-gas and residual contributions**
 
-Standard thermodynamics: an absolute enthalpy or entropy is a reference value plus an ideal-gas integral plus a departure, and the split between them is a convention rather than a result. No source states this particular assembly, because the assembly is not a discovery - what matters is that the terms are written down and the datum is the caller's, which is what this spec does.
+Standard thermodynamics: an absolute enthalpy or entropy is a reference value plus an ideal-gas integral plus a departure, and the split between them is a convention rather than a result. No source states this particular assembly, because the assembly is not a discovery - what matters is that the terms are written down and the datum is named. The datum here is NeqSim's: `T_ref = 273.15 K`, `P_ref = 1.01325 bar`, and no formation term.
 
 
 ## What this model is
@@ -19,15 +19,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Name | Unit | Description |
 |---|---|---|
-| `Tc` | K | critical temperatures, in the mixture's component order |
-| `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order |
-| `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
-| `cp_a` | J/(mol*K) | the constant term of each component's `Cp` polynomial, in J/(mol*K). Together with the four below, this is everything the ideal-gas enthalpy and entropy are integrated from - there is no separate datum, because NeqSim's is a fixed reference temperature rather than a value a caller supplies. |
-| `cp_b` | J/(mol*K**2) | the coefficient of `T`, in J/(mol*K**2) |
-| `cp_c` | J/(mol*K**3) | the coefficient of `T**2`, in J/(mol*K**3) |
-| `cp_d` | J/(mol*K**4) | the coefficient of `T**3`, in J/(mol*K**4) |
-| `cp_e` | J/(mol*K**5) | the coefficient of `T**4`, in J/(mol*K**5) |
+| `components` | - | the substances the mixture is made of, by name, resolved against the component databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv and INTER.csv) with the loaded keycard's overrides applied. The critical constants, the acentric factors, the binary interaction parameters and the ideal-gas heat-capacity coefficients all come from there. **A name, rather than nine parallel vectors of numbers.** Until this input existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every spec and every case - numbers in a YAML file that nothing could check against anything, and that in fact disagreed with the databank. `azoth.eos.components` lists what is available; a keycard adds a substance the databank does not have. |
 | `T` | K | absolute temperature of the state |
 | `P` | Pa | absolute pressure of the state |
 | `z` | dimensionless | the mixture's mole fractions, checked rather than renormalised |
@@ -57,8 +49,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- **`h_ref` and `s_ref` are the caller's datum, and their correctness and consistency are NOT CHECKED.** Two enthalpies computed from different datums are not comparable, and subtracting them gives a plausible number rather than an error. This is the single most likely way to get a wrong answer out of this model.
-- **`Tc`, `Pc`, `omega`, `kij` and the four heat-capacity coefficients are the caller's, and their correctness is NOT CHECKED.** A databank of critical constants ships with the library; the heat-capacity coefficients are not in it.
+- **the datum is NeqSim's, and it is not a caller's choice.** `h` and `s` are differences from `T_ref = 273.15 K` and `P_ref = 1.01325 bar`, which are the constants NeqSim's `thermo` package integrates from; a formation enthalpy is deliberately not added, exactly as upstream does not add it. Nothing in the model let a caller move that datum, and nothing does now - so two enthalpies from this library are always comparable with each other, which is the property a caller needs and the one this model could not offer while the reference values were arguments.
+- **A component's constants come from the databank and from nowhere else, including the five heat-capacity coefficients.** `Tc`, `Pc`, `omega`, every `kij` and `cp_a`..`cp_e` are read out of `data/components/`, compiled from NeqSim's `COMP.csv` and `INTER.csv`, with the loaded keycard's overrides applied on top. There is deliberately no way to hand this model a component's numbers directly: that second path is what let a spec file carry numbers that disagreed with NeqSim and be checked against nothing.
 - the heat-capacity polynomial is valid over the range it was fitted to, and `T`, `T_ref` and the integration path between them all lie in it. The coefficients describe the ideal-gas heat capacity at every temperature on that path, which is an assumption the caller makes and this model cannot.
 - the departure functions are relative to the ideal-gas *mixture* at the same temperature, pressure and composition, not to the pure ideal gases. The entropy of mixing is therefore in `s_ideal` and not in `s_departure`.
 - **which root `compressibility` names is the caller's choice and is not checked against the phase it describes.** Passing a liquid root for a vapour state gives a number that is internally consistent and describes a state that does not exist.
@@ -68,8 +60,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_and_butane_with_a_zero_datum` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], cp_a = [4.0, 4.0], cp_b = [1.0, 1.0], cp_c = [-0.5, -0.5], cp_d = [0.1, 0.1], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789, cp_e = [0.0, 0.0] | h = 154733558.84735802, s = 510028.73265069793, h_ideal = 154735040.2780374, s_ideal = 510031.82949952676, h_departure = -1481.4306793662556, s_departure = -3.0968488288066105, psi_bar = -0.5619363510353611 |
-| `the_same_state_with_the_ideal_gas_terms_off` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], cp_a = [0.0, 0.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789, cp_e = [0.0, 0.0] | h = -1481.4306793662556, s = -24.154898040804962, h_ideal = 0.0, s_ideal = -21.058049211998352, h_departure = -1481.4306793662556, s_departure = -3.0968488288066105, psi_bar = -0.5619363510353611 |
+| `methane_and_butane_with_a_zero_datum` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789 | h = 1994.7372132261812, s = -12.576842303166291, h_ideal = 3493.2199516588726, s_ideal = -9.461161141430258, h_departure = -1498.4827384326913, s_departure = -3.1156811617360325, psi_bar = -0.5621211688023077 |
+| `the_same_state_with_the_ideal_gas_terms_off` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789 | h = 1994.7372132261812, s = -12.576842303166291, h_ideal = 3493.2199516588726, s_ideal = -9.461161141430258, h_departure = -1498.4827384326913, s_departure = -3.1156811617360325, psi_bar = -0.5621211688023077 |
 
 ## References
 

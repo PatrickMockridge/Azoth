@@ -8,14 +8,17 @@
   },
   "derivation": "The companion to propane_below_its_saturation_pressure.json, at 11.0 bar - about 10% above the 9.9767 bar the kernels give and the 9.974 bar published. Above the saturation pressure the same single K-value falls below one, and the flash reports the liquid. The pair brackets the externally-validated boundary from both sides.",
   "inputs": {
-    "Tc": [369.83],
-    "Pc": [4248000.0],
-    "omega": [0.1523],
-    "kij": [[0.0]],
+    "components": [
+      "propane"
+    ],
     "T": 300.0,
     "P": 1100000.0,
-    "z": [1.0]
+    "z": [
+      1.0
+    ]
   },
-  "expected": { "phase": "all_liquid" },
-  "tolerance": 1.0e-09
+  "expected": {
+    "phase": "all_liquid"
+  },
+  "tolerance": 1e-09
 }

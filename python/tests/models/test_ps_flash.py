@@ -21,7 +21,7 @@ import _helpers as h
 from azoth import _models_gen, ureg
 from azoth.core.errors import InvalidInputError, OutOfRangeError, SolverNotConvergedError
 from azoth.core.result import PsFlashResult
-from azoth.eos import Component, IdealGasModel, Mixture, mixture
+from azoth.eos import IdealGasModel, Mixture, component, mixture, ps_flash
 from azoth.eos.reference.ps_flash import entropy_at
 
 MODEL_ID = "eos.ps_flash"
@@ -31,8 +31,12 @@ SPEC = _models_gen.model(MODEL_ID)
 CASES = SPEC["cases"]
 TOLERANCE = SPEC["algorithm"]["tolerance"]
 
-METHANE = Component(Q(190.56, "K"), Q(4_599_000.0, "Pa"), 0.0115)
-BUTANE = Component(Q(425.12, "K"), Q(3_796_000.0, "Pa"), 0.2002)
+# The substances the cases and the identities below use, resolved through the
+# databank rather than typed here. A `Component` written out longhand is a second
+# copy of NeqSim's table, and this one had drifted: its methane was 0.01142 and
+# 4 599 200 Pa, where COMP.csv says 0.0115 and 4 599 000.
+METHANE = component("methane")
+BUTANE = component("n-butane")
 
 #: The mixture the spec's cases describe, at the pressure they use.
 P_BAR = 20.0
@@ -54,27 +58,15 @@ def an_ideal_gas() -> IdealGasModel:
 
 
 def call(case: dict[str, Any]) -> PsFlashResult:
-    """Run one case declared in the model spec."""
-    import azoth
+    """Run one case declared in the model spec.
 
-    inputs = case["inputs"]
-    fluid = mixture(
-        [
-            Component(Q(tc, "K"), Q(pc, "Pa"), omega)
-            for tc, pc, omega in zip(inputs["Tc"], inputs["Pc"], inputs["omega"], strict=True)
-        ],
-        kij={(0, 1): inputs["kij"][0][1]},
-    )
-    ideal_gas = IdealGasModel(
-        cp_a=inputs["cp_a"],
-        cp_b=inputs["cp_b"],
-        cp_c=inputs["cp_c"],
-        cp_d=inputs["cp_d"],
-        cp_e=(0.0, 0.0),
-    )
-    return azoth.eos.ps_flash(
-        fluid, ideal_gas, Q(inputs["P"], "Pa"), Q(inputs["S"], "J/(mol*K)"), inputs["z"]
-    )
+    Through :func:`_helpers.model_kwargs`, which is the one place a case's
+    declared inputs become arguments: it resolves `components` against the
+    databank and hands over the mixture and the ideal-gas model the function
+    takes. A hand-built mixture here would be a second fluid, described by the
+    case file rather than by NeqSim's tables.
+    """
+    return ps_flash(**h.model_kwargs(SPEC, case["inputs"]))
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])

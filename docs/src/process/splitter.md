@@ -37,10 +37,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `Tc` | K | critical temperatures, in the mixture's component order |
-| `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order |
-| `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
+| `components` | - | the substances the mixture is made of, by name, resolved against the component databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv and INTER.csv) with the loaded keycard's overrides applied. The critical constants, the acentric factors, the binary interaction parameters and the ideal-gas heat-capacity coefficients all come from there. **A name, rather than nine parallel vectors of numbers.** Until this input existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every spec and every case - numbers in a YAML file that nothing could check against anything, and that in fact disagreed with the databank. `azoth.eos.components` lists what is available; a keycard adds a substance the databank does not have. |
 | `T` | K | the feed's absolute temperature, and every branch's |
 | `P` | Pa | the feed's absolute pressure, and every branch's |
 | `n` | mol/s | the feed's molar flow rate, which the fractions divide |
@@ -77,8 +74,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `thirty_seventy_split_of_a_two_phase_feed` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], fractions = [0.3, 0.7] | T = 300.0, P = 2000000.0, beta = 0.6824390296509166, flows = [3.0, 7.0] |
-| `a_single_branch_takes_everything` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], fractions = [1.0] | T = 300.0, P = 2000000.0, flows = [10.0] |
+| `thirty_seventy_split_of_a_two_phase_feed` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], fractions = [0.3, 0.7] | T = 300.0, P = 2000000.0, beta = 0.6824390296509162, flows = [3.0, 7.0] |
+| `a_single_branch_takes_everything` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], fractions = [1.0] | T = 300.0, P = 2000000.0, flows = [10.0] |
 
 ## References
 

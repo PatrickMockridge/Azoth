@@ -8,27 +8,22 @@
 //! in a shared test crate that depends on the domains.
 
 use azoth_core::spec::TestCase;
-use azoth_core::units::{kelvins, pascals};
-use azoth_eos::mixture::{Component, Mixture};
+use azoth_eos::databank;
+use azoth_eos::mixture::Mixture;
 use azoth_eos::molar_enthalpy_entropy::IdealGasModel;
 
-/// The mixture a spec case describes, from its four per-component vectors.
+/// The mixture a spec case describes, resolved from its `components` list.
 ///
-/// Panics rather than returning a `Result`: a case missing `Tc` is a defect in the spec,
-/// and a test that silently skipped it would be a test that reports success for having
-/// run nothing.
+/// Panics rather than returning a `Result`: a case whose components do not resolve is a
+/// defect in the spec, and a test that silently skipped it would be a test that reports
+/// success for having run nothing.
 pub fn mixture_from_case(case: &TestCase) -> Mixture {
-    let tc = case.vector("Tc").expect("the case declares Tc");
-    let pc = case.vector("Pc").expect("the case declares Pc");
-    let omega = case.vector("omega").expect("the case declares omega");
-    let kij = case.matrix("kij").expect("the case declares kij");
-
-    let components = (0..tc.len())
-        .map(|i| {
-            Component::new(kelvins(tc[i]), pascals(pc[i]), omega[i]).expect("a valid component")
-        })
-        .collect();
-    Mixture::new(components, kij.to_vec()).expect("a valid mixture")
+    let names = case
+        .list("components")
+        .expect("the case declares components");
+    databank::mixture_of(names)
+        .expect("the case's components resolve")
+        .0
 }
 
 /// The ideal-gas datum a spec case describes.
@@ -37,16 +32,10 @@ pub fn mixture_from_case(case: &TestCase) -> Mixture {
 /// a splitter does an energy balance. A case for a model that takes none will not have
 /// these inputs, and the caller is the one that knows which it is asking for.
 pub fn ideal_gas_from_case(case: &TestCase) -> IdealGasModel {
-    fn vector(case: &TestCase, name: &str) -> Vec<f64> {
-        case.vector(name)
-            .unwrap_or_else(|| panic!("case `{}` declares no {name}", case.id))
-            .to_vec()
-    }
-    IdealGasModel {
-        cp_a: vector(case, "cp_a"),
-        cp_b: vector(case, "cp_b"),
-        cp_c: vector(case, "cp_c"),
-        cp_d: vector(case, "cp_d"),
-        cp_e: vector(case, "cp_e"),
-    }
+    let names = case
+        .list("components")
+        .expect("the case declares components");
+    databank::mixture_of(names)
+        .expect("the case's components resolve")
+        .1
 }

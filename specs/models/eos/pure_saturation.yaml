@@ -20,15 +20,21 @@ algorithm:
     steps: 4000
 
 inputs:
-  Tc:
-    unit: K
-    description: critical temperature of the pure component
-  Pc:
-    unit: Pa
-    description: critical pressure of the pure component
-  omega:
-    unit: dimensionless
-    description: acentric factor, as in `eos.pr_kappa`. All three of these are the caller's; `azoth.eos.component(name)` looks them up in the databank the library ships.
+  components:
+    type: components
+    length: exactly one
+    description: >
+      the substance, by name, resolved against the component databank this library
+      ships (`data/components/`, compiled from NeqSim's COMP.csv and INTER.csv) with
+      the loaded keycard's overrides applied. Its `Tc`, `Pc` and `omega` all come
+      from there.
+
+      **One name, and it takes a list because every other model here does.** A
+      saturation pressure is a pure-component property; a second name is refused
+      rather than ignored, with `eos.bubble_pressure` named as the model that takes a
+      mixture. Until this input existed, `Tc`, `Pc` and `omega` were three numbers
+      retyped into the spec and every case - numbers in a YAML file that nothing
+      could check against anything.
   T:
     unit: K
     description: >
@@ -71,20 +77,8 @@ valid_range:
     severity: error
     rationale: an absolute temperature; zero and below are not states
 
-  - quantity: Tc
-    min: 0
-    min_inclusive: false
-    severity: error
-    rationale: a critical temperature is absolute and positive by definition; it is also a divisor in the reduced temperature
-
-  - quantity: Pc
-    min: 0
-    min_inclusive: false
-    severity: error
-    rationale: a critical pressure is positive by definition, and it converts the reduced answer back to pascals
-
   - quantity: t_over_tc
-    computed_from: [T, Tc]
+    computed_from: [T, components]
     max: 1
     max_inclusive: false
     severity: error
@@ -99,7 +93,8 @@ valid_range:
       Hence exclusive.
 
 assumptions:
-  - "the component's `Tc`, `Pc` and `omega` are correct and mutually consistent. NOT CHECKED - they are the caller's. A databank ships with the library, so they can come from there."
+  - "the component's `Tc`, `Pc` and `omega` are correct and mutually consistent. They come from the databank, which is a port of NeqSim's `COMP.csv` - and that is where the responsibility ends. Whether a substance's tabulated constants describe the fluid in front of a caller is the caller's judgement, not something this model re-derives."
+  - "**`Tc` and `Pc` are positive**, so they are not bounded here. They are no longer caller arguments and there is nothing for a `valid_range` entry to guard at the boundary: the databank carries them, and `Component::new` refuses a non-positive one when the mixture is resolved, which is where `t_over_tc` below then divides by it."
   - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes. PRSV, with `eos.prsv_kappa`, would give a different saturation pressure from the same inputs, and this model does not accept a coefficient.
   - "**`p_sat` is the pressure where the two *roots* agree, not necessarily the pressure where the component really saturates.** The cubic has three real roots below the spinodal at every pressure, including pressures so low that the liquid root describes an impossible molar volume; the bisection finds where their fugacities cross, which is the model's saturation pressure by definition and is a property of the equation rather than of the substance."
   - "**near the critical temperature the answer degrades sharply**, and the model cannot tell. The roots coalesce as `Tr -> 1`, the residual flattens, and the last digits of `p_sat` stop being determined by the equation - the same ill-conditioning `eos.pr_z_factor` records. A caller working close to the critical point should read `residual` and `iterations` rather than trusting the digits."

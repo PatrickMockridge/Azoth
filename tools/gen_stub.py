@@ -45,6 +45,10 @@ from azoth._dispatch import result_type  # noqa: E402
 from azoth._models_gen import MODELS  # noqa: E402
 from azoth._registry_gen import CALCS  # noqa: E402
 
+#: The model ids, so a spec can be told from a calc spec by more than a flag. A model's
+#: extension signature is the transport shape; a calc's is its declared inputs.
+MODEL_IDS = frozenset(model["id"] for model in MODELS)
+
 STUB = ROOT / "python" / "src" / "azoth" / "_core.pyi"
 
 DOCSTRING = """Type stub for the compiled extension.
@@ -231,11 +235,55 @@ def render_result_class(calc_id: str) -> str:
     return "\n".join(out)
 
 
+def transport_parameters(model: dict[str, Any]) -> list[str]:
+    """The arguments a model's extension function takes, in the transport vocabulary.
+
+    **Not the spec's declared inputs.** A calc's function takes the scalars its spec
+    declares, so for a calc the two are the same. A model's takes *objects* - a
+    `Mixture` and, where an enthalpy is involved, an `IdealGasModel` - and a `cdylib`
+    has nothing to hold one in, so `_rust_bridge` flattens the mixture into four
+    vectors and the ideal-gas model into five before it crosses. The stub describes
+    the extension, so it has to describe that, not the spec.
+
+    Which objects is a fact about the implementation's signature, so that is where
+    this asks - the same question `python/tests/_helpers.py::parameters_of` asks, and
+    for the same reason. A model that takes the critical constants themselves rather
+    than a mixture (`eos.pure_saturation`) gets them as scalars, which is the same
+    flattening with nothing to flatten.
+
+    `components` is dropped: the resolved constants replace it, and a name list has
+    no transport form of its own.
+    """
+    import importlib
+    import inspect
+
+    namespace, _, name = model["id"].partition(".")
+    module = importlib.import_module(f"azoth.{namespace}")
+    taken = set(inspect.signature(getattr(module, name)).parameters)
+
+    params: list[str] = []
+    if "mixture" in taken:
+        params += ["Tc: list[float]", "Pc: list[float]", "omega: list[float]", "kij: list[float]"]
+    else:
+        params += ["Tc: float", "Pc: float", "omega: float"]
+    if "ideal_gas" in taken:
+        params += [f"{n}: list[float]" for n in ("cp_a", "cp_b", "cp_c", "cp_d", "cp_e")]
+    for parameter, declaration in model["inputs"].items():
+        if parameter == "components":
+            continue
+        params.append(render_parameter(parameter, declaration))
+    return params
+
+
 def render_signature(entry: dict[str, Any]) -> str:
     """One `def <name>(...) -> <Name>Result: ...` block."""
     function = entry["id"].rpartition(".")[2]
     result_name = result_type(entry["id"]).__name__
-    params = [render_parameter(name, d) for name, d in entry["inputs"].items()]
+    params = (
+        transport_parameters(entry)
+        if entry["id"] in MODEL_IDS
+        else [render_parameter(name, d) for name, d in entry["inputs"].items()]
+    )
     if not params:
         return f"def {function}() -> {result_name}: ..."
     single = f"def {function}({', '.join(params)}) -> {result_name}: ..."

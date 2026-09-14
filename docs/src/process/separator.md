@@ -37,15 +37,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `Tc` | K | critical temperatures, in the mixture's component order |
-| `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order |
-| `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
-| `cp_a` | J/(mol*K) | the constant term of each component's `Cp` polynomial, in J/(mol*K). Together with the four below, this is everything the ideal-gas enthalpy and entropy are integrated from - there is no separate datum, because NeqSim's is a fixed reference temperature rather than a value a caller supplies. |
-| `cp_b` | J/(mol*K**2) | the coefficient of `T`, in J/(mol*K**2) |
-| `cp_c` | J/(mol*K**3) | the coefficient of `T**2`, in J/(mol*K**3) |
-| `cp_d` | J/(mol*K**4) | the coefficient of `T**3`, in J/(mol*K**4) |
-| `cp_e` | J/(mol*K**5) | the coefficient of `T**4`, in J/(mol*K**5) |
+| `components` | - | the substances the mixture is made of, by name, resolved against the component databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv and INTER.csv) with the loaded keycard's overrides applied. The critical constants, the acentric factors, the binary interaction parameters and the ideal-gas heat-capacity coefficients all come from there. **A name, rather than nine parallel vectors of numbers.** Until this input existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every spec and every case - numbers in a YAML file that nothing could check against anything, and that in fact disagreed with the databank. `azoth.eos.components` lists what is available; a keycard adds a substance the databank does not have. |
 | `T` | K | the feed's temperature. It is the outlet temperature too when `heat_duty` is zero, which is the common case - a separator with no heat input does not change the temperature of what it is holding. |
 | `P` | Pa | the feed's absolute pressure, before the pressure drop |
 | `n` | mol/s | the feed's molar flow rate. Every answer is linear in it, and doubling it doubles both outlet flows and changes nothing else - which is a property of the model rather than of the number, and the reason the flow is a scale factor rather than part of the thermodynamic state. |
@@ -88,9 +80,9 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `a_two_phase_feed_splits_by_the_flash_vapour_fraction` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 0.0, cp_e = [0.0, 0.0] | T = 300.0, P = 2000000.0, beta = 0.6824390296509166, gas_flow = 6.824390296509167, liquid_flow = 3.1756097034908337 |
-| `a_pressure_drop_leaves_the_temperature_alone` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 500000.0, heat_duty = 0.0, cp_e = [0.0, 0.0] | T = 300.0, P = 1500000.0 |
-| `a_single_phase_feed_leaves_one_outlet_empty` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = 450.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 0.0, cp_e = [0.0, 0.0] | T = 450.0, P = 2000000.0, gas_flow = 10.0, liquid_flow = 0.0 |
+| `a_two_phase_feed_splits_by_the_flash_vapour_fraction` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 0.0 | T = 300.0, P = 2000000.0, beta = 0.6824390296509162, gas_flow = 6.824390296509161, liquid_flow = 3.175609703490838 |
+| `a_pressure_drop_leaves_the_temperature_alone` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 500000.0, heat_duty = 0.0 | T = 300.0, P = 1500000.0 |
+| `a_single_phase_feed_leaves_one_outlet_empty` | components = ['methane', 'n-butane'], T = 450.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], pressure_drop = 0.0, heat_duty = 0.0 | T = 450.0, P = 2000000.0, gas_flow = 10.0, liquid_flow = 0.0 |
 
 ## References
 

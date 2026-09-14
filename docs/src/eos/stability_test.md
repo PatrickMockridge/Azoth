@@ -30,10 +30,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `Tc` | K | critical temperatures, in the mixture's component order |
-| `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order |
-| `kij` | dimensionless | binary interaction parameters, as for `eos.pt_flash` |
+| `components` | - | the substances the mixture is made of, by name, resolved against the component databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv and INTER.csv) with the loaded keycard's overrides applied. The critical constants, the acentric factors, the binary interaction parameters and the ideal-gas heat-capacity coefficients all come from there. **A name, rather than nine parallel vectors of numbers.** Until this input existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every spec and every case - numbers in a YAML file that nothing could check against anything, and that in fact disagreed with the databank. `azoth.eos.components` lists what is available; a keycard adds a substance the databank does not have. |
 | `T` | K | absolute temperature |
 | `P` | Pa | absolute pressure |
 | `z` | dimensionless | overall mole fractions. Checked rather than renormalised, as everywhere else in this namespace. |
@@ -71,8 +68,8 @@ NeqSim carries a supplementary `pureComponentStabilityTrials` for exactly this, 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `a_two_phase_feed_is_unstable` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], T = 330.0, P = 2500000.0, z = [0.6, 0.4] | tm = [0.0, -0.21512223952208132], w = [[0.6000000000041634, 0.3999999999958367], [0.061639855471759084, 0.9383601445282409]], iterations = [16, 9] |
-| `a_trivial_flash_is_not_a_stable_feed` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], T = 430.0, P = 6000000.0, z = [0.6, 0.4] | tm = [0.0, -4.440892098500626e-16], w = [[0.6000000000039283, 0.39999999999607183], [0.5999999999942244, 0.40000000000577574]], iterations = [16, 17] |
+| `a_two_phase_feed_is_unstable` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4] | tm = [4.440892098500626e-16, -0.21428474257353658], w = [[0.6000000000028418, 0.3999999999971582], [0.06787627290819705, 0.9321237270918029]], iterations = [16, 9] |
+| `a_trivial_flash_is_not_a_stable_feed` | components = ['methane', 'n-butane'], T = 430.0, P = 6000000.0, z = [0.6, 0.4] | tm = [0.0, 2.220446049250313e-16], w = [[0.6000000000116659, 0.39999999998833413], [0.5999999999966463, 0.40000000000335373]], iterations = [15, 17] |
 
 ## References
 

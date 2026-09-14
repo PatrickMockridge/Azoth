@@ -18,7 +18,7 @@ import _helpers as h
 from azoth import _models_gen, ureg, use_backend
 from azoth.core.errors import InvalidInputError
 from azoth.core.result import CriticalPointResult
-from azoth.eos import Component, critical_point, mixture
+from azoth.eos import Component, Mixture, component, critical_point, from_names, mixture
 from azoth.eos.reference.pr_alpha_ab import OMEGA_B
 
 MODEL_ID = "eos.critical_point"
@@ -27,17 +27,26 @@ Q = ureg.Quantity
 SPEC = _models_gen.model(MODEL_ID)
 CASES = SPEC["cases"]
 
-METHANE = Component(Q(190.56, "K"), Q(4_599_200.0, "Pa"), 0.01142)
-BUTANE = Component(Q(425.12, "K"), Q(3_796_000.0, "Pa"), 0.2002)
-PROPANE = Component(Q(369.83, "K"), Q(4_248_000.0, "Pa"), 0.1523)
+# The substances the cases and the identities below use, resolved through the
+# databank rather than typed here. A `Component` written out longhand is a second
+# copy of NeqSim's table, and this one had drifted: its methane was 0.01142 and
+# 4 599 200 Pa, where COMP.csv says 0.0115 and 4 599 000.
+METHANE = component("methane")
+BUTANE = component("n-butane")
+PROPANE = component("propane")
 
 #: `(1 - omega_b)/3`, which every pure Peng-Robinson fluid has at `Tr = Pr = 1`.
 PURE_COMPRESSIBILITY = (1.0 - OMEGA_B) / 3.0
 
 
-def methane_butane() -> Any:
-    """The pair the spec's second case uses, with `kij = 0.05`."""
-    return mixture([METHANE, BUTANE], kij={(0, 1): 0.05})
+def methane_butane() -> Mixture:
+    """The methane/n-butane pair, with the interaction parameter NeqSim fits for it.
+
+    Resolved by name rather than assembled here, so the pair a sweep runs and the pair
+    a case runs are the same fluid. The `kij` used to be an "illustrative" 0.05 - a
+    number in a test file that described no fluid, and that disagreed with `INTER.csv`.
+    """
+    return from_names(["methane", "n-butane"])
 
 
 def pure(component: Component) -> Any:
@@ -45,19 +54,15 @@ def pure(component: Component) -> Any:
 
 
 def call(case: dict[str, Any]) -> CriticalPointResult:
-    inputs = case["inputs"]
-    fluid = mixture(
-        [
-            Component(Q(tc, "K"), Q(pc, "Pa"), omega)
-            for tc, pc, omega in zip(inputs["Tc"], inputs["Pc"], inputs["omega"], strict=True)
-        ],
-        kij={
-            (0, 1): inputs["kij"][0][1],
-        }
-        if len(inputs["Tc"]) == 2
-        else None,
-    )
-    return critical_point(fluid, list(inputs["z"]))
+    """Run one case declared in the model spec.
+
+    Through :func:`_helpers.model_kwargs`, which is the one place a case's
+    declared inputs become arguments: it resolves `components` against the
+    databank and hands over the mixture and the ideal-gas model the function
+    takes. A hand-built mixture here would be a second fluid, described by the
+    case file rather than by NeqSim's tables.
+    """
+    return critical_point(**h.model_kwargs(SPEC, case["inputs"]))
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])
@@ -87,16 +92,15 @@ def test_a_pure_component_reproduces_the_analytic_critical_point() -> None:
     rather than the arithmetic's limit - see the spec's notes - and they are the same
     four figures for every component, which is what a systematic floor looks like.
     """
-    carbon_dioxide = Component(Q(304.13, "K"), Q(7_377_000.0, "Pa"), 0.2239)
-    for name, component in (
+    for name, substance in (
         ("propane", PROPANE),
         ("methane", METHANE),
         ("n-butane", BUTANE),
-        ("carbon dioxide", carbon_dioxide),
+        ("carbon dioxide", component("co2")),
     ):
-        t_c = component.Tc.to_base_units().magnitude
-        p_c = component.Pc.to_base_units().magnitude
-        result = critical_point(pure(component), [1.0])
+        t_c = substance.Tc.to_base_units().magnitude
+        p_c = substance.Pc.to_base_units().magnitude
+        result = critical_point(pure(substance), [1.0])
 
         h.assert_close(result.tc.to("K").magnitude, t_c, 1e-10, f"{name}: Tc")
         h.assert_close(result.pc.to("Pa").magnitude, p_c, 1e-10, f"{name}: Pc")

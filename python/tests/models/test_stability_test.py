@@ -27,8 +27,9 @@ from azoth import _models_gen, ureg, use_backend
 from azoth.core.errors import InvalidInputError, OutOfRangeError, SolverNotConvergedError
 from azoth.core.result import StabilityTestResult, StabilityVerdict
 from azoth.eos import (
-    Component,
     Mixture,
+    component,
+    from_names,
     mixture,
     pr_z_factor,
     pt_flash,
@@ -49,36 +50,35 @@ Q = ureg.Quantity
 SPEC = _models_gen.model(MODEL_ID)
 CASES = SPEC["cases"]
 
-METHANE = Component(Q(190.56, "K"), Q(4_599_200.0, "Pa"), 0.01142)
-BUTANE = Component(Q(425.12, "K"), Q(3_796_000.0, "Pa"), 0.2002)
-PROPANE = Component(Q(369.83, "K"), Q(4_248_000.0, "Pa"), 0.1523)
+# The substances the cases and the identities below use, resolved through the
+# databank rather than typed here. A `Component` written out longhand is a second
+# copy of NeqSim's table, and this one had drifted: its methane was 0.01142 and
+# 4 599 200 Pa, where COMP.csv says 0.0115 and 4 599 000.
+METHANE = component("methane")
+BUTANE = component("n-butane")
+PROPANE = component("propane")
 
 
 def methane_butane() -> Mixture:
-    """The pair the spec's cases use, with an illustrative ``kij`` of 0.05."""
-    return mixture([METHANE, BUTANE], kij={(0, 1): 0.05})
+    """The methane/n-butane pair, with the interaction parameter NeqSim fits for it.
+
+    Resolved by name rather than assembled here, so the pair a sweep runs and the pair
+    a case runs are the same fluid. The `kij` used to be an "illustrative" 0.05 - a
+    number in a test file that described no fluid, and that disagreed with `INTER.csv`.
+    """
+    return from_names(["methane", "n-butane"])
 
 
 def call(case: dict[str, Any]) -> StabilityTestResult:
-    """Run one spec case through the public API, in the units the spec declares."""
-    fluid = Mixture(
-        components=tuple(
-            Component(Q(tc, "K"), Q(pc, "Pa"), omega)
-            for tc, pc, omega in zip(
-                case["inputs"]["Tc"],
-                case["inputs"]["Pc"],
-                case["inputs"]["omega"],
-                strict=True,
-            )
-        ),
-        kij=tuple(tuple(row) for row in case["inputs"]["kij"]),
-    )
-    return stability_test(
-        fluid,
-        T=Q(case["inputs"]["T"], SPEC["inputs"]["T"]["unit"]),
-        P=Q(case["inputs"]["P"], SPEC["inputs"]["P"]["unit"]),
-        z=list(case["inputs"]["z"]),
-    )
+    """Run one case declared in the model spec.
+
+    Through :func:`_helpers.model_kwargs`, which is the one place a case's
+    declared inputs become arguments: it resolves `components` against the
+    databank and hands over the mixture and the ideal-gas model the function
+    takes. A hand-built mixture here would be a second fluid, described by the
+    case file rather than by NeqSim's tables.
+    """
+    return stability_test(**h.model_kwargs(SPEC, case["inputs"]))
 
 
 def gibbs_at_root(
@@ -215,9 +215,10 @@ def test_a_trivial_flash_is_not_a_stable_feed() -> None:
     answers the question it could not ask, and answers ``stable``.
 
     Both trials converge to the feed here, so the verdict is the weakest kind of
-    ``stable``: two trials that found nothing, not two trials that separated. The
-    test asserts the shape of that - both distances at zero to rounding, and one of
-    them *negative*, which is exactly why the threshold is ``-1e-8`` and not zero.
+    ``stable``: two trials that found nothing, not two trials that separated. The test
+    asserts the shape of that - both distances at zero to rounding, and therefore the
+    threshold that decides ``stable`` has to tolerate a *negative* zero, which is why
+    it is ``-1e-8`` and not zero.
     """
     fluid = methane_butane()
     z = [0.6, 0.4]
@@ -231,10 +232,12 @@ def test_a_trivial_flash_is_not_a_stable_feed() -> None:
             f"trial {i} reached a stationary point at tm = {distance}, so this is not "
             f"the two-trivial-trials state the case describes"
         )
-    assert any(distance < 0.0 for distance in result.tm), (
-        f"the spec's case records a negative distance here, and it is the measurement "
-        f"that justifies the `-1e-8` threshold; got {result.tm}"
-    )
+    # The *sign* of that round-off is deliberately not asserted. It says which way the
+    # last `exp` rounded, and this test used to pin it as negative - a measurement of
+    # the old illustrative `kij` rather than a property of the model, and one the
+    # databank's fitted parameter rounds the other way. What the threshold has to
+    # tolerate is a distance below zero, and that a run ever produces one is a fact
+    # about single-precision cancellation rather than about 430 K.
 
 
 def test_the_feed_is_placed_on_its_lower_gibbs_root() -> None:
@@ -269,10 +272,10 @@ def test_the_feed_is_placed_on_its_lower_gibbs_root() -> None:
     liquid_residual, liquid_naive, liquid_right = forms(roots.z_min)
     vapour_residual, vapour_naive, vapour_right = forms(roots.z_max)
 
-    h.assert_close(liquid_residual, -2.55803921486359, 1e-9, "liquid A^R/RT")
-    h.assert_close(vapour_residual, -0.015547667877557337, 1e-9, "vapour A^R/RT")
-    h.assert_close(liquid_right, 3.145799559701996, 1e-9, "liquid A^R/RT - ln Z + Z")
-    h.assert_close(vapour_right, 0.984573819616667, 1e-9, "vapour A^R/RT - ln Z + Z")
+    h.assert_close(liquid_residual, -2.558159759861873, 1e-9, "liquid A^R/RT")
+    h.assert_close(vapour_residual, -0.015548831218595781, 1e-9, "vapour A^R/RT")
+    h.assert_close(liquid_right, 3.1456610060268475, 1e-9, "liquid A^R/RT - ln Z + Z")
+    h.assert_close(vapour_right, 0.9845726745266656, 1e-9, "vapour A^R/RT - ln Z + Z")
 
     assert liquid_naive < vapour_naive, (
         "the wrong comparison is only worth recording if it picks the other root"
@@ -317,12 +320,12 @@ def test_a_pure_components_trials_are_both_the_feed_and_one_is_trivial() -> None
     a superheated vapour is the other way round; and above the critical temperature
     there is one admissible root and both are trivial.
     """
-    for component in (METHANE, BUTANE, PROPANE):
-        fluid = mixture([component], kij={})
+    for substance in (METHANE, BUTANE, PROPANE):
+        fluid = mixture([substance], kij={})
         for t_c in (200.0, 280.0, 330.0):
             for p_pa in (1e5, 1e6, 5e6):
                 result = stability_test(fluid, T=Q(t_c, "K"), P=Q(p_pa, "Pa"), z=[1.0])
-                context = f"Tc={component.Tc}, T={t_c}, P={p_pa}"
+                context = f"Tc={substance.Tc}, T={t_c}, P={p_pa}"
 
                 assert result.w == ((1.0,), (1.0,)), f"{context}: both trials are the feed"
                 trivial = [i for i, distance in enumerate(result.tm) if distance == 0.0]
@@ -330,7 +333,7 @@ def test_a_pure_components_trials_are_both_the_feed_and_one_is_trivial() -> None
                 for i in trivial:
                     assert result.iterations[i] == 1, f"{context}: trial {i} starts there"
                 assert all(distance >= 0.0 for distance in result.tm), (
-                    f"{context}: a pure component would be reported unstable: {result.tm}"
+                    f"{context}: a pure substance would be reported unstable: {result.tm}"
                 )
                 assert result.verdict is StabilityVerdict.STABLE, f"{context}"
 
@@ -363,18 +366,7 @@ def test_every_reported_trial_is_a_stationary_point() -> None:
     this without any expected value to compare against.
     """
     for case in CASES:
-        fluid = Mixture(
-            components=tuple(
-                Component(Q(tc, "K"), Q(pc, "Pa"), omega)
-                for tc, pc, omega in zip(
-                    case["inputs"]["Tc"],
-                    case["inputs"]["Pc"],
-                    case["inputs"]["omega"],
-                    strict=True,
-                )
-            ),
-            kij=tuple(tuple(row) for row in case["inputs"]["kij"]),
-        )
+        fluid = from_names(list(case["inputs"]["components"]))
         t_c, p_pa = case["inputs"]["T"], case["inputs"]["P"]
         z = list(case["inputs"]["z"])
         result = call(case)

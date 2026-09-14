@@ -394,17 +394,15 @@ def kwargs_for(calc: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, 
     return kwargs
 
 
-#: The declared inputs a model's ``mixture`` argument is assembled from, and the ones its
-#: ``ideal_gas`` argument is. They are not parameters of the model, they are what those two
-#: parameters are made of.
-_MODEL_MIXTURE_INPUTS: tuple[str, ...] = ("Tc", "Pc", "omega", "kij")
-_MODEL_IDEAL_GAS_INPUTS: tuple[str, ...] = (
-    "cp_a",
-    "cp_b",
-    "cp_c",
-    "cp_d",
-    "cp_e",
-)
+#: The declared input a model's ``mixture`` and ``ideal_gas`` arguments are assembled
+#: from. It is not a parameter of the model, it is what those two parameters are made of.
+#:
+#: One input, where there used to be nine. `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e`
+#: reached a model through `_MODEL_MIXTURE_INPUTS` and `_MODEL_IDEAL_GAS_INPUTS`, two
+#: tuples that had to be kept in step with the specs by hand and with nothing checking
+#: they still matched. `components` is a list of names, and `mixture_of` resolves it
+#: against the databank - the same call, reading the same file, in both languages.
+_MODEL_COMPONENTS_INPUT = "components"
 
 
 def range_checks_that_may_skip(spec_: Mapping[str, Any]) -> set[str]:
@@ -444,46 +442,64 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
     """Turn a model's declared inputs into keyword arguments for the real call.
 
     Distinct from :func:`kwargs_for`, because a model's arguments are objects: the spec
-    declares `Tc, Pc, omega, kij` flat and the function takes a `mixture`. This rebuilds
-    it, which is the mirror of what `_rust_bridge` does in the other direction.
+    declares `components` and the function takes a `mixture` - and, where an enthalpy is
+    involved, an `ideal_gas` as well. This rebuilds them, which is the mirror of what
+    `_rust_bridge` does in the other direction.
+
+    **The resolution is `components.mixture_of`, not a local construction.** Given names,
+    it reads the databank and applies any keycard override, so a case and a caller take
+    the same path to their fluid. Building a `Mixture` here from numbers the case carried
+    is what made a case's fluid a second fluid, described by a spec file rather than by
+    NeqSim's tables.
     """
-    from azoth.eos import Component, IdealGasModel, mixture
+    from azoth.eos import components as databank
 
     declared = model["inputs"]
     kwargs: dict[str, Any] = {}
-    consumed: set[str] = set()
 
-    if "kij" in declared:
-        # The `kij` is what says this is a mixture: it is the only declared input that
-        # cannot be passed through, because it has to become part of the `Mixture` rather
-        # than an argument, and a pure component has no pair to give. `eos.pure_saturation`
-        # declares `Tc`, `Pc` and `omega` as scalars for that reason, and takes them.
-        components = [
-            Component(quantity(tc, "K"), quantity(pc, "Pa"), omega)
-            for tc, pc, omega in zip(inputs["Tc"], inputs["Pc"], inputs["omega"], strict=True)
-        ]
-        kij = inputs["kij"]
-        # Upper triangle only: `mixture` takes sparse pairs keyed `(i, j)` with `i < j`
-        # and builds the symmetric matrix itself. Passing the whole matrix would name
-        # the diagonal, which is a pair with itself and means nothing.
-        kwargs["mixture"] = mixture(
-            components,
-            kij={(i, j): kij[i][j] for i in range(len(kij)) for j in range(i + 1, len(kij))},
-        )
-        consumed |= set(_MODEL_MIXTURE_INPUTS)
-
-    if "cp_a" in declared:
-        kwargs["ideal_gas"] = IdealGasModel(
-            cp_a=tuple(inputs["cp_a"]),
-            cp_b=tuple(inputs["cp_b"]),
-            cp_c=tuple(inputs["cp_c"]),
-            cp_d=tuple(inputs["cp_d"]),
-            cp_e=tuple(inputs["cp_e"]),
-        )
-        consumed |= set(_MODEL_IDEAL_GAS_INPUTS)
+    names = inputs.get(_MODEL_COMPONENTS_INPUT)
+    if names is not None:
+        takes = parameters_of(model)
+        if "mixture" in takes:
+            fluid, ideal_gas = databank.mixture_of(list(names))
+            kwargs["mixture"] = fluid
+            if "ideal_gas" in takes:
+                kwargs["ideal_gas"] = ideal_gas
+        else:
+            # A pure-component model takes the constants themselves rather than a
+            # `Mixture`: `eos.pure_saturation` is the one, and a saturation pressure is
+            # a property of one substance. The names still go through the databank -
+            # only the last step differs.
+            if len(names) != 1:
+                raise AssertionError(
+                    f"{model['id']} takes scalar critical constants but its case names "
+                    f"{len(names)} components; the case is wrong, not the model"
+                )
+            record = databank.entry(names[0])
+            kwargs.update(Tc=record.Tc, Pc=record.Pc, omega=record.omega)
 
     for name, value in inputs.items():
-        if name in consumed:
+        if name == _MODEL_COMPONENTS_INPUT:
             continue
         kwargs[name] = _declared(declared[name], value)
     return kwargs
+
+
+def parameters_of(model: Mapping[str, Any]) -> set[str]:
+    """The parameter names a model's function actually takes.
+
+    Read from the implementation rather than from the spec's prose. The spec declares
+    *inputs* - `components`, `T`, `P` - and the function takes *objects*: a `mixture`,
+    and an `ideal_gas` where an enthalpy is involved. Which objects is a fact about the
+    signature, so that is where this asks, and a signature that changes fails here
+    instead of silently passing the wrong argument.
+    """
+    import importlib
+    import inspect
+
+    namespace, _, name = model["id"].partition(".")
+    module = importlib.import_module(f"azoth.{namespace}")
+    function = getattr(module, name, None)
+    if function is None:  # pragma: no cover - the registry contract covers this
+        raise AssertionError(f"{model['id']}: azoth.{namespace} has no `{name}`")
+    return set(inspect.signature(function).parameters)

@@ -8,32 +8,9 @@ model: process.pump
 cases:
 - id: twenty_to_thirty_bar_at_eighty_percent
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -42,43 +19,17 @@ cases:
     - 0.4
     outlet_pressure: 3000000.0
     efficiency: 0.8
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
-    T: 320.01374502973397
+    T: 312.4165147182354
     P: 3000000.0
-    power: 8444.537547413483
-    isentropic_temperature: 318.4003189954434
+    power: 8194.771204505514
+    isentropic_temperature: 311.3153978294822
   tolerance: 1.0e-09
 - id: a_liquid_feed_is_pumped
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T: 300.0
     P: 4000000.0
     n: 10.0
@@ -87,12 +38,9 @@ cases:
     - 0.8
     outlet_pressure: 5000000.0
     efficiency: 0.8
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
-    T: 302.20015479658355
+    T: 300.79281733102846
     P: 5000000.0
-    power: 1125.6697962614453
-    isentropic_temperature: 301.71571175367103
+    power: 1123.8593619733592
+    isentropic_temperature: 300.61769035219305
   tolerance: 1.0e-09

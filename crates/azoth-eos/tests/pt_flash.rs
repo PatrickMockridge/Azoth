@@ -8,7 +8,7 @@
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, CalcResult, WarningCode};
 use azoth_eos::mixture::{Component, Mixture, RootSide};
-use azoth_eos::{Phase, model_gen, pt_flash};
+use azoth_eos::{Phase, databank, model_gen, pt_flash};
 use azoth_test_support as common;
 
 const MODEL_ID: &str = "eos.pt_flash";
@@ -22,25 +22,26 @@ fn mixture_of(tc: &[f64], pc: &[f64], omega: &[f64], kij: Vec<f64>) -> Mixture {
     Mixture::new(components, kij).expect("a valid mixture")
 }
 
-/// The methane/n-butane pair the spec's first and third cases use, with `kij = 0.05`.
+/// The methane/n-butane pair the spec's first and third cases use.
 ///
-/// The `kij` is **illustrative and not fitted**, exactly as the spec's case says; it
-/// is round and non-zero so the mixing rule's cross term is exercised.
+/// Resolved through the databank, so the pair the sweeps run and the pair the cases
+/// run are the same fluid. The critical constants used to be typed out here and had
+/// drifted from `COMP.csv` - methane at 0.01142 and 4 599 200 Pa, where NeqSim says
+/// 0.0115 and 4 599 000 - and the `kij` was an "illustrative" 0.05 rather than the
+/// 0.01289789 `INTER.csv` fits.
 fn methane_butane() -> Mixture {
-    mixture_of(
-        &[190.56, 425.12],
-        &[4_599_200.0, 3_796_000.0],
-        &[0.01142, 0.2002],
-        vec![0.0, 0.05, 0.05, 0.0],
-    )
+    databank::mixture_of(&["methane", "n-butane"])
+        .expect("the pair resolves")
+        .0
 }
 
 fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
-    let tc = case.vector("Tc").expect("the case declares Tc");
-    let pc = case.vector("Pc").expect("the case declares Pc");
-    let omega = case.vector("omega").expect("the case declares omega");
-    let kij = case.matrix("kij").expect("the case declares kij");
-    mixture_of(tc, pc, omega, kij.to_vec())
+    let names = case
+        .list("components")
+        .expect("the case declares components");
+    databank::mixture_of(names)
+        .expect("the case's components resolve")
+        .0
 }
 
 fn flash_case(case: &azoth_core::spec::TestCase) -> azoth_eos::PtFlashResult {
@@ -296,13 +297,17 @@ fn the_mixture_parameters_reduce_to_the_binary_kernel() {
         for x1 in [0.1, 0.3, 0.6, 0.9] {
             let x = [x1, 1.0 - x1];
             let (a_mix, b_mix) = mixture.mixture_parameters(&reduced, &x);
+            // The kernel takes the pair's interaction parameter as its last argument.
+            // Read off the mixture rather than written here, so the two terms of the
+            // comparison cannot describe different fluids - which is exactly what
+            // happened while the fixture was literal and this argument was not.
             let kernel = azoth_eos::vdw1f_mix_binary(
                 x1,
                 reduced.a[0],
                 reduced.a[1],
                 reduced.b[0],
                 reduced.b[1],
-                0.05,
+                mixture.kij(0, 1),
             )
             .unwrap();
 

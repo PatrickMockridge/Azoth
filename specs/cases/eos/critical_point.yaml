@@ -8,14 +8,8 @@ model: eos.critical_point
 cases:
 - id: pure_propane
   inputs:
-    Tc:
-    - 369.83
-    Pc:
-    - 4248000.0
-    omega:
-    - 0.1523
-    kij:
-    - - 0.0
+    components:
+    - propane
     z:
     - 1.0
   expected:
@@ -26,26 +20,15 @@ cases:
   tolerance: 1.0e-09
 - id: methane_and_butane
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599200.0
-    - 3796000.0
-    omega:
-    - 0.01142
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.05
-    - - 0.05
-      - 0.0
+    components:
+    - methane
+    - n-butane
     z:
     - 0.4
     - 0.6
   expected:
-    tc: 389.60393757213683
-    pc: 8496149.763184471
-    vc: 0.00018249738000756879
-    z_c: 0.47865353496242996
+    tc: 389.7426334217613
+    pc: 8224619.579449218
+    vc: 0.0001852334599580244
+    z_c: 0.4701356210492527
   tolerance: 1.0e-09

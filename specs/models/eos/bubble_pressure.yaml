@@ -20,29 +20,21 @@ algorithm:
   max_iterations: 200
 
 inputs:
-  Tc:
-    type: vector
-    unit: K
-    length: one per component
-    description: critical temperatures, in the mixture's component order
-  Pc:
-    type: vector
-    unit: Pa
-    length: one per component
-    description: critical pressures, in the same order
-  omega:
-    type: vector
-    unit: dimensionless
-    length: one per component
+  components:
+    type: components
+    length: one entry per component
     description: >
-      acentric factors, in the same order. All three vectors are the caller's - this
-      library ships a databank of them (`azoth.eos.component`) - and they must be mutually consistent,
-      which is not checked.
-  kij:
-    type: matrix
-    unit: dimensionless
-    shape: "N x N, symmetric, zero diagonal"
-    description: binary interaction parameters, as in `eos.pt_flash`
+      the substances the mixture is made of, by name, resolved against the component
+      databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv
+      and INTER.csv) with the loaded keycard's overrides applied. The critical
+      constants, the acentric factors, the binary interaction parameters and the
+      ideal-gas heat-capacity coefficients all come from there.
+
+      **A name, rather than nine parallel vectors of numbers.** Until this input
+      existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every
+      spec and every case - numbers in a YAML file that nothing could check against
+      anything, and that in fact disagreed with the databank. `azoth.eos.components`
+      lists what is available; a keycard adds a substance the databank does not have.
   T:
     unit: K
     description: >
@@ -118,7 +110,7 @@ valid_range:
       rather than by this bound.
 
 assumptions:
-  - "**`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree."
+  - "**A component's constants come from the databank and from nowhere else.** `Tc`, `Pc`, `omega` and every `kij` are read out of `data/components/`, compiled from NeqSim's `COMP.csv` and `INTER.csv`, with the loaded keycard's overrides applied on top - one path, the same one every model here takes. There is deliberately no way to hand a calculation a component's numbers directly: that second path is what let a spec file carry numbers that disagreed with NeqSim and be checked against nothing. Whether a tabulated constant describes the fluid in front of a caller is the caller's judgement, and the keycard is where it is exercised."
   - "the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses - the same composition-checked form that reduces to `eos.pr_departure` at N = 1 and to `eos.vdw1f_mix_binary` at N = 2."
   - "**the model is for mixtures, and refuses a single component.** For one component the two phases have the same composition by construction, and the bubble point is the saturation pressure that `eos.pure_saturation` computes."
   - "**the pressure is solved for at a fixed temperature.** A bubble point at a fixed *pressure*, with the temperature as the unknown, is a later milestone - the inner solve then nests inside an outer one and the scheme is not the one named here."

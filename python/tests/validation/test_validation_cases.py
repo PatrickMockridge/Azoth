@@ -59,29 +59,30 @@ def _spec(calc_id: str) -> dict[str, Any] | None:
 
 
 def _mixture_kwargs(case: dict[str, Any]) -> dict[str, Any]:
-    """Pack a case's component vectors into the mixture a flash takes.
+    """Resolve a case's component names into the mixture a flash takes.
 
     The one place a case's JSON does not map straight onto a call. A mixture is an
     object, and JSON has no way to hold one - so `eos.pt_flash` is called with the
-    three per-component vectors and the interaction matrix *the spec declares*, and
-    the adapter builds the object here.
+    composition vector and the *names* the spec declares, and `mixture_of` turns them
+    into the object through the databank.
 
-    That keeps the case in the spec's own vocabulary: the names in `inputs` are the
-    ones `specs/models/eos/pt_flash.yaml` declares, so the "inputs name declared
-    quantities" check below still means something, and a reader of the JSON can look
-    each one up in the model's documentation.
+    The names in `inputs` are the ones `specs/models/eos/pt_flash.yaml` declares, so
+    the "inputs name declared quantities" check below still means something, and a
+    reader of the JSON can look each one up in the model's documentation.
+
+    Until this change the adapter built the components from three per-component
+    vectors the case carried, which made the case's fluid a second fluid - described
+    by a JSON file rather than by NeqSim's tables. A validation case exists to check
+    the *model* against something outside it, and a fluid the case invented made that
+    check partly a check of the case.
     """
     from azoth import ureg
-    from azoth.eos import Component, Mixture
+    from azoth.eos.components import mixture_of
 
     q = ureg.Quantity
     inputs = case["inputs"]
-    components = tuple(
-        Component(q(tc, "K"), q(pc, "Pa"), omega)
-        for tc, pc, omega in zip(inputs["Tc"], inputs["Pc"], inputs["omega"], strict=True)
-    )
     return {
-        "mixture": Mixture(components=components, kij=tuple(tuple(r) for r in inputs["kij"])),
+        "mixture": mixture_of(list(inputs["components"]))[0],
         "T": q(inputs["T"], "K"),
         "P": q(inputs["P"], "Pa"),
         "z": list(inputs["z"]),

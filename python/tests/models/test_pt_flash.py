@@ -19,8 +19,9 @@ from azoth import _models_gen, ureg, use_backend
 from azoth.core.errors import InvalidInputError, OutOfRangeError, SolverNotConvergedError
 from azoth.core.result import Phase, PtFlashResult
 from azoth.eos import (
-    Component,
     Mixture,
+    component,
+    from_names,
     mixture,
     pr_alpha_ab,
     pr_departure,
@@ -37,40 +38,35 @@ Q = ureg.Quantity
 SPEC = _models_gen.model(MODEL_ID)
 CASES = SPEC["cases"]
 
-METHANE = Component(Q(190.56, "K"), Q(4_599_200.0, "Pa"), 0.01142)
-BUTANE = Component(Q(425.12, "K"), Q(3_796_000.0, "Pa"), 0.2002)
-PROPANE = Component(Q(369.83, "K"), Q(4_248_000.0, "Pa"), 0.1523)
+# The substances the cases and the identities below use, resolved through the
+# databank rather than typed here. A `Component` written out longhand is a second
+# copy of NeqSim's table, and this one had drifted: its methane was 0.01142 and
+# 4 599 200 Pa, where COMP.csv says 0.0115 and 4 599 000.
+METHANE = component("methane")
+BUTANE = component("n-butane")
+PROPANE = component("propane")
 
 
 def methane_butane() -> Mixture:
-    """The pair the spec's cases use, with an illustrative ``kij`` of 0.05."""
-    return mixture([METHANE, BUTANE], kij={(0, 1): 0.05})
+    """The methane/n-butane pair, with the interaction parameter NeqSim fits for it.
+
+    Resolved by name rather than assembled here, so the pair a sweep runs and the pair
+    a case runs are the same fluid. The `kij` used to be an "illustrative" 0.05 - a
+    number in a test file that described no fluid, and that disagreed with `INTER.csv`.
+    """
+    return from_names(["methane", "n-butane"])
 
 
 def call(case: dict[str, Any]) -> PtFlashResult:
-    """Run one spec case through the public API, in the units the spec declares."""
-    fluid = Mixture(
-        components=tuple(
-            Component(
-                Q(tc, "K"),
-                Q(pc, "Pa"),
-                omega,
-            )
-            for tc, pc, omega in zip(
-                case["inputs"]["Tc"],
-                case["inputs"]["Pc"],
-                case["inputs"]["omega"],
-                strict=True,
-            )
-        ),
-        kij=tuple(tuple(row) for row in case["inputs"]["kij"]),
-    )
-    return pt_flash(
-        fluid,
-        T=Q(case["inputs"]["T"], SPEC["inputs"]["T"]["unit"]),
-        P=Q(case["inputs"]["P"], SPEC["inputs"]["P"]["unit"]),
-        z=list(case["inputs"]["z"]),
-    )
+    """Run one case declared in the model spec.
+
+    Through :func:`_helpers.model_kwargs`, which is the one place a case's
+    declared inputs become arguments: it resolves `components` against the
+    databank and hands over the mixture and the ideal-gas model the function
+    takes. A hand-built mixture here would be a second fluid, described by the
+    case file rather than by NeqSim's tables.
+    """
+    return pt_flash(**h.model_kwargs(SPEC, case["inputs"]))
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])
@@ -186,17 +182,17 @@ def test_the_mixture_form_reduces_to_pr_departure_at_one_component() -> None:
     from azoth.eos.reference._mixture_state import ReducedParameters
     from azoth.eos.reference._mixture_state import phase_state as _phase_state
 
-    for component, tr, pr in ((PROPANE, 0.8, 0.25), (BUTANE, 0.7, 0.4), (METHANE, 1.2, 0.9)):
-        tc = component.Tc.to_base_units().magnitude
-        pc = component.Pc.to_base_units().magnitude
-        kappa = pr_kappa(component.omega).kappa
+    for substance, tr, pr in ((PROPANE, 0.8, 0.25), (BUTANE, 0.7, 0.4), (METHANE, 1.2, 0.9)):
+        tc = substance.Tc.to_base_units().magnitude
+        pc = substance.Pc.to_base_units().magnitude
+        kappa = pr_kappa(substance.omega).kappa
         ab = pr_alpha_ab(kappa, tr, pr)
         sqrt_tr = tr**0.5
         reduced = ReducedParameters(
             a=[ab.a_reduced],
             b=[ab.b_reduced],
             psi=[-kappa * sqrt_tr / (1.0 + kappa * (1.0 - sqrt_tr))],
-            # `T*dpsi/dT` at one component, which is what the mixture's departure heat
+            # `T*dpsi/dT` at one substance, which is what the mixture's departure heat
             # capacity reduces to. Written out rather than read back from the call under
             # test, so the reduction is checked rather than asserted.
             psi_t=[
@@ -206,7 +202,7 @@ def test_the_mixture_form_reduces_to_pr_departure_at_one_component() -> None:
         )
         state = _phase_state(reduced, ((0.0,),), [1.0], liquid=False)
         z, ln_phi = state.z, state.ln_phi
-        kappa = pr_kappa(component.omega).kappa
+        kappa = pr_kappa(substance.omega).kappa
         pure = pr_departure(ab.a_reduced, ab.b_reduced, z, kappa, tr)
         h.assert_close(ln_phi[0], pure.ln_phi, 1e-12, f"ln phi for Tc={tc}, Pc={pc}")
 
@@ -226,19 +222,22 @@ def test_the_mixture_parameters_and_vapour_fraction_reduce_to_the_binary_kernels
     fluid = methane_butane()
     for t_c, p_pa in ((330.0, 2.5e6), (300.0, 3.0e6), (350.0, 5.0e6)):
         a, b = [], []
-        for component in fluid.components:
+        for substance in fluid.components:
             ab = pr_alpha_ab(
-                pr_kappa(component.omega).kappa,
-                t_c / component.Tc.to_base_units().magnitude,
-                p_pa / component.Pc.to_base_units().magnitude,
+                pr_kappa(substance.omega).kappa,
+                t_c / substance.Tc.to_base_units().magnitude,
+                p_pa / substance.Pc.to_base_units().magnitude,
             )
             a.append(ab.a_reduced)
             b.append(ab.b_reduced)
 
         for x1 in (0.1, 0.3, 0.6, 0.9):
             x = [x1, 1.0 - x1]
+            # The kernel takes the pair's interaction parameter as its last argument;
+            # it is read off the fluid rather than written here, so the two terms of
+            # the comparison cannot describe different mixtures.
             a_mix, b_mix = _mixture_parameters(a, b, fluid.kij, x)
-            mixture_kernel = vdw1f_mix_binary(x1, a[0], a[1], b[0], b[1], 0.05)
+            mixture_kernel = vdw1f_mix_binary(x1, a[0], a[1], b[0], b[1], fluid.kij[0][1])
             h.assert_close(a_mix, mixture_kernel.a_mix, 1e-12, f"a_mix at x1={x1}")
             h.assert_close(b_mix, mixture_kernel.b_mix, 1e-12, f"b_mix at x1={x1}")
 
@@ -493,11 +492,11 @@ def test_the_reported_roots_are_the_cubics_roots_at_the_reported_compositions() 
     for t_c, p_pa, z in ((330.0, 2.5e6, [0.6, 0.4]), (300.0, 3.0e6, [0.1, 0.9])):
         result = pt_flash(fluid, T=Q(t_c, "K"), P=Q(p_pa, "Pa"), z=z)
         a, b = [], []
-        for component in fluid.components:
+        for substance in fluid.components:
             ab = pr_alpha_ab(
-                pr_kappa(component.omega).kappa,
-                t_c / component.Tc.to_base_units().magnitude,
-                p_pa / component.Pc.to_base_units().magnitude,
+                pr_kappa(substance.omega).kappa,
+                t_c / substance.Tc.to_base_units().magnitude,
+                p_pa / substance.Pc.to_base_units().magnitude,
             )
             a.append(ab.a_reduced)
             b.append(ab.b_reduced)

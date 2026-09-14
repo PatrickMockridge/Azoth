@@ -8,32 +8,9 @@ model: process.compressor
 cases:
 - id: a_two_to_one_pressure_rise_at_three_quarters_efficiency
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -42,43 +19,17 @@ cases:
     - 0.4
     outlet_pressure: 4000000.0
     efficiency: 0.75
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
-    T: 335.99343797752493
+    T: 322.09501753909615
     P: 4000000.0
-    power: 15760.976224568014
-    isentropic_temperature: 332.3922769710072
+    power: 14950.70966597624
+    isentropic_temperature: 319.51928970913815
   tolerance: 1.0e-09
 - id: unit_efficiency_reaches_the_ideal_temperature
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -87,10 +38,7 @@ cases:
     - 0.4
     outlet_pressure: 4000000.0
     efficiency: 1.0
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
     P: 4000000.0
-    isentropic_temperature: 332.3922769710072
+    isentropic_temperature: 319.51928970913815
   tolerance: 1.0e-09

@@ -8,14 +8,17 @@
   },
   "derivation": "A pure component cannot have a two-phase solution at all: with one component, the Rachford-Rice equation reduces to a single K-value, and a split needs K > 1 and K < 1 simultaneously. So the flash's answer for a pure feed is a phase diagnosis, and the diagnosis switches exactly where ln phi_L = ln phi_V - which is the definition of the saturation pressure. At 300 K that is 9.9767 bar from these kernels against a published 9.974 bar, +0.03%. This case takes 9.0 bar, about 10% below it, where the sign of ln phi_L - ln phi_V is unambiguous.",
   "inputs": {
-    "Tc": [369.83],
-    "Pc": [4248000.0],
-    "omega": [0.1523],
-    "kij": [[0.0]],
+    "components": [
+      "propane"
+    ],
     "T": 300.0,
     "P": 900000.0,
-    "z": [1.0]
+    "z": [
+      1.0
+    ]
   },
-  "expected": { "phase": "all_vapour" },
-  "tolerance": 1.0e-09
+  "expected": {
+    "phase": "all_vapour"
+  },
+  "tolerance": 1e-09
 }

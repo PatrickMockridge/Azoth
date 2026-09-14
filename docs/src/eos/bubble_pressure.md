@@ -30,10 +30,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `Tc` | K | critical temperatures, in the mixture's component order |
-| `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order. All three vectors are the caller's - this library ships a databank of them (`azoth.eos.component`) - and they must be mutually consistent, which is not checked. |
-| `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
+| `components` | - | the substances the mixture is made of, by name, resolved against the component databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv and INTER.csv) with the loaded keycard's overrides applied. The critical constants, the acentric factors, the binary interaction parameters and the ideal-gas heat-capacity coefficients all come from there. **A name, rather than nine parallel vectors of numbers.** Until this input existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every spec and every case - numbers in a YAML file that nothing could check against anything, and that in fact disagreed with the databank. `azoth.eos.components` lists what is available; a keycard adds a substance the databank does not have. |
 | `T` | K | absolute temperature. The bubble point is sought at this temperature; the pressure is what is solved for. |
 | `x` | dimensionless | the liquid's mole fractions. Checked rather than renormalised, as the flash's feed is. |
 
@@ -58,7 +55,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree.
+- **A component's constants come from the databank and from nowhere else.** `Tc`, `Pc`, `omega` and every `kij` are read out of `data/components/`, compiled from NeqSim's `COMP.csv` and `INTER.csv`, with the loaded keycard's overrides applied on top - one path, the same one every model here takes. There is deliberately no way to hand a calculation a component's numbers directly: that second path is what let a spec file carry numbers that disagreed with NeqSim and be checked against nothing. Whether a tabulated constant describes the fluid in front of a caller is the caller's judgement, and the keycard is where it is exercised.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses - the same composition-checked form that reduces to `eos.pr_departure` at N = 1 and to `eos.vdw1f_mix_binary` at N = 2.
 - **the model is for mixtures, and refuses a single component.** For one component the two phases have the same composition by construction, and the bubble point is the saturation pressure that `eos.pure_saturation` computes.
 - **the pressure is solved for at a fixed temperature.** A bubble point at a fixed *pressure*, with the temperature as the unknown, is a later milestone - the inner solve then nests inside an outer one and the scheme is not the one named here.
@@ -69,8 +66,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_and_butane_at_300_k` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], T = 300.0, x = [0.2, 0.8] | pressure = 4405971.885241952, incipient = [0.8954934205328265, 0.10450657946717341], k = [4.477467102662793, 0.13063322433392768], z_liquid = 0.15923644847947147, z_vapour = 0.8559280792104561, min_t_over_tc = 0.7056831012420023, iterations = 23 |
-| `methane_propane_and_butane_at_320_k` | Tc = [190.56, 369.83, 425.12], Pc = [4599200.0, 4248000.0, 3796000.0], omega = [0.01142, 0.1523, 0.2002], kij = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], T = 320.0, x = [0.2, 0.3, 0.5] | pressure = 4562186.628738896, incipient = [0.7222910363935804, 0.15937358543476252, 0.118335378171657], k = [3.611455181964403, 0.531245284782027, 0.23667075634308468], z_liquid = 0.16191742589743646, z_vapour = 0.7941260235229536, min_t_over_tc = 0.7527286413248024, iterations = 29 |
+| `methane_and_butane_at_300_k` | components = ['methane', 'n-butane'], T = 300.0, x = [0.2, 0.8] | pressure = 3951153.714695018, incipient = [0.8904350353741208, 0.10956496462587914], k = [4.4521751768662945, 0.13695620578221637], z_liquid = 0.14278852391556096, z_vapour = 0.86370041643338, min_t_over_tc = 0.7056831012420023, iterations = 21 |
+| `methane_propane_and_butane_at_320_k` | components = ['methane', 'propane', 'n-butane'], T = 320.0, x = [0.2, 0.3, 0.5] | pressure = 4665004.59976245, incipient = [0.7242725346078629, 0.15812345468759503, 0.11760401070454207], k = [3.621362673037366, 0.5270781822916999, 0.2352080214089576], z_liquid = 0.1656770683414635, z_vapour = 0.7928702549330644, min_t_over_tc = 0.7527286413248024, iterations = 30 |
 
 ## References
 

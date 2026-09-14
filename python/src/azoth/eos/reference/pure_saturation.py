@@ -64,12 +64,39 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
     checks = checks_for(spec)
     warnings: list[Warning] = []
 
+    # `Tc` and `Pc` are converted here rather than through `input_to_si`: that reads the
+    # unit out of the spec's declaration of the input, and the spec no longer declares
+    # them - a component's constants come from the databank by name, and by the time a
+    # caller holds them they are already quantities in the units their constructor took.
+    # `T` is still a declared input, so it still goes through the spec.
     values = {
-        "Tc": input_to_si(spec, "Tc", Tc),
-        "Pc": input_to_si(spec, "Pc", Pc),
+        "Tc": Tc.to("K").magnitude,
+        "Pc": Pc.to("Pa").magnitude,
         "omega": omega,
         "T": input_to_si(spec, "T", T),
     }
+
+    # The positivity of `Tc` and `Pc` is refused here rather than by a bound in the
+    # spec. They used to be declared `valid_range` entries: the model took the
+    # constants as arguments, so a bound on them was a bound on an input. The model
+    # names a *component* now and the constants come from the databank, which leaves
+    # no input for a bound to guard. `Component.__post_init__` refuses a non-positive
+    # pair on the mixture path; this is the same refusal on the scalar one, and it is
+    # what keeps `Tc` from being a divisor by zero.
+    if not values["Tc"] > 0.0:
+        raise OutOfRangeError(
+            "Tc",
+            values["Tc"],
+            "a critical temperature is absolute and positive by definition; it is also "
+            "a divisor in the reduced temperature",
+        )
+    if not values["Pc"] > 0.0:
+        raise OutOfRangeError(
+            "Pc",
+            values["Pc"],
+            "a critical pressure is positive by definition, and it converts the reduced "
+            "answer back to pascals",
+        )
 
     apply_checks(checks.on_input, values.get, warnings)
 

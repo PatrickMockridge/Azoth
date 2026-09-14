@@ -37,10 +37,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `Tc` | K | critical temperatures, in the mixture's component order |
-| `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order. All three vectors are the caller's - this library ships a databank of them (`azoth.eos.component`) - and they must be mutually consistent, which is not checked. |
-| `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
+| `components` | - | the substances the mixture is made of, by name, resolved against the component databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv and INTER.csv) with the loaded keycard's overrides applied. The critical constants, the acentric factors, the binary interaction parameters and the ideal-gas heat-capacity coefficients all come from there. **A name, rather than nine parallel vectors of numbers.** Until this input existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every spec and every case - numbers in a YAML file that nothing could check against anything, and that in fact disagreed with the databank. `azoth.eos.components` lists what is available; a keycard adds a substance the databank does not have. |
 | `z` | dimensionless | the composition whose critical point is wanted, checked rather than renormalised. Unlike the flash's `z` this is not a feed being split: it is the composition of the single phase that is about to stop existing. |
 
 
@@ -63,7 +60,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **`Tc`, `Pc`, `omega` and `kij` are the caller's and their correctness is NOT CHECKED.** A databank ships with the library (`azoth.eos.component`), and a caller who supplies their own values replaces it silently - nothing checks that the two agree.
+- **A component's constants come from the databank and from nowhere else.** `Tc`, `Pc`, `omega` and every `kij` are read out of `data/components/`, compiled from NeqSim's `COMP.csv` and `INTER.csv`, with the loaded keycard's overrides applied on top - one path, the same one every model here takes. There is deliberately no way to hand a calculation a component's numbers directly: that second path is what let a spec file carry numbers that disagreed with NeqSim and be checked against nothing. Whether a tabulated constant describes the fluid in front of a caller is the caller's judgement, and the keycard is where it is exercised.
 - **the composition has exactly one critical point.** A mixture can have more than one, and this model finds the one nearest its starting point without any check that there is not another. It is the same limitation `eos.pt_flash` records for a second liquid phase, and it has the same cause: no stability analysis.
 - the critical point found is a *mixture* critical point of the given composition, not a point on the phase envelope of a reservoir fluid. The two coincide for a binary and need not for a fluid with more components.
 - Peng-Robinson's `Z_c` is not the experimental one for any substance. The model reports what the equation of state gives, and the equation of state is the caller's choice.
@@ -73,8 +70,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `pure_propane` | Tc = [369.83], Pc = [4248000.0], omega = [0.1523], kij = [[0.0]], z = [1.0] | tc = 369.8299999990743, pc = 4247999.999932174, vc = 0.0002225140955403989, z_c = 0.3074013092190002 |
-| `methane_and_butane` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], z = [0.4, 0.6] | tc = 389.60393757213683, pc = 8496149.763184471, vc = 0.00018249738000756879, z_c = 0.47865353496242996 |
+| `pure_propane` | components = ['propane'], z = [1.0] | tc = 369.8299999990743, pc = 4247999.999932174, vc = 0.0002225140955403989, z_c = 0.3074013092190002 |
+| `methane_and_butane` | components = ['methane', 'n-butane'], z = [0.4, 0.6] | tc = 389.7426334217613, pc = 8224619.579449218, vc = 0.0001852334599580244, z_c = 0.4701356210492527 |
 
 ## References
 

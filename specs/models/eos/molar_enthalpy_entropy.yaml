@@ -8,60 +8,27 @@ source:
     an ideal-gas integral plus a departure, and the split between them is a convention
     rather than a result. No source states this particular assembly, because the
     assembly is not a discovery - what matters is that the terms are written down and
-    the datum is the caller's, which is what this spec does.
+    the datum is named. The datum here is NeqSim's: `T_ref = 273.15 K`,
+    `P_ref = 1.01325 bar`, and no formation term.
 
 kind: direct
 
 inputs:
-  Tc:
-    type: vector
-    unit: K
-    length: one per component
-    description: critical temperatures, in the mixture's component order
-  Pc:
-    type: vector
-    unit: Pa
-    length: one per component
-    description: critical pressures, in the same order
-  omega:
-    type: vector
-    unit: dimensionless
-    length: one per component
-    description: acentric factors, in the same order
-  kij:
-    type: matrix
-    unit: dimensionless
-    shape: "N x N, symmetric, zero diagonal"
-    description: binary interaction parameters, as in `eos.pt_flash`
-  cp_a:
-    type: vector
-    unit: J/(mol*K)
-    length: one per component
+  components:
+    type: components
+    length: one entry per component
     description: >
-      the constant term of each component's `Cp` polynomial, in J/(mol*K). Together
-      with the four below, this is everything the ideal-gas enthalpy and entropy are
-      integrated from - there is no separate datum, because NeqSim's is a fixed
-      reference temperature rather than a value a caller supplies.
-  cp_b:
-    type: vector
-    unit: J/(mol*K**2)
-    length: one per component
-    description: the coefficient of `T`, in J/(mol*K**2)
-  cp_c:
-    type: vector
-    unit: J/(mol*K**3)
-    length: one per component
-    description: the coefficient of `T**2`, in J/(mol*K**3)
-  cp_d:
-    type: vector
-    unit: J/(mol*K**4)
-    length: one per component
-    description: the coefficient of `T**3`, in J/(mol*K**4)
-  cp_e:
-    type: vector
-    unit: J/(mol*K**5)
-    length: one per component
-    description: the coefficient of `T**4`, in J/(mol*K**5)
+      the substances the mixture is made of, by name, resolved against the component
+      databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv
+      and INTER.csv) with the loaded keycard's overrides applied. The critical
+      constants, the acentric factors, the binary interaction parameters and the
+      ideal-gas heat-capacity coefficients all come from there.
+
+      **A name, rather than nine parallel vectors of numbers.** Until this input
+      existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every
+      spec and every case - numbers in a YAML file that nothing could check against
+      anything, and that in fact disagreed with the databank. `azoth.eos.components`
+      lists what is available; a keycard adds a substance the databank does not have.
   T:
     unit: K
     description: absolute temperature of the state
@@ -153,8 +120,8 @@ valid_range:
       and belongs to the implementation rather than to this table.
 
 assumptions:
-  - "**`h_ref` and `s_ref` are the caller's datum, and their correctness and consistency are NOT CHECKED.** Two enthalpies computed from different datums are not comparable, and subtracting them gives a plausible number rather than an error. This is the single most likely way to get a wrong answer out of this model."
-  - "**`Tc`, `Pc`, `omega`, `kij` and the four heat-capacity coefficients are the caller's, and their correctness is NOT CHECKED.** A databank of critical constants ships with the library; the heat-capacity coefficients are not in it."
+  - "**the datum is NeqSim's, and it is not a caller's choice.** `h` and `s` are differences from `T_ref = 273.15 K` and `P_ref = 1.01325 bar`, which are the constants NeqSim's `thermo` package integrates from; a formation enthalpy is deliberately not added, exactly as upstream does not add it. Nothing in the model let a caller move that datum, and nothing does now - so two enthalpies from this library are always comparable with each other, which is the property a caller needs and the one this model could not offer while the reference values were arguments."
+  - "**A component's constants come from the databank and from nowhere else, including the five heat-capacity coefficients.** `Tc`, `Pc`, `omega`, every `kij` and `cp_a`..`cp_e` are read out of `data/components/`, compiled from NeqSim's `COMP.csv` and `INTER.csv`, with the loaded keycard's overrides applied on top. There is deliberately no way to hand this model a component's numbers directly: that second path is what let a spec file carry numbers that disagreed with NeqSim and be checked against nothing."
   - "the heat-capacity polynomial is valid over the range it was fitted to, and `T`, `T_ref` and the integration path between them all lie in it. The coefficients describe the ideal-gas heat capacity at every temperature on that path, which is an assumption the caller makes and this model cannot."
   - "the departure functions are relative to the ideal-gas *mixture* at the same temperature, pressure and composition, not to the pure ideal gases. The entropy of mixing is therefore in `s_ideal` and not in `s_departure`."
   - "**which root `compressibility` names is the caller's choice and is not checked against the phase it describes.** Passing a liquid root for a vapour state gives a number that is internally consistent and describes a state that does not exist."

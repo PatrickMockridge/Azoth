@@ -2,44 +2,33 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, CalcResult};
-use azoth_eos::mixture::{Component, Mixture};
-use azoth_eos::{dew_pressure, model_gen, pt_flash};
+use azoth_eos::mixture::Mixture;
+use azoth_eos::{databank, dew_pressure, model_gen, pt_flash};
 use azoth_test_support as common;
 
 const MODEL_ID: &str = "eos.dew_pressure";
 
-fn mixture_of(tc: &[f64], pc: &[f64], omega: &[f64], kij: Vec<f64>) -> Mixture {
-    let components = (0..tc.len())
-        .map(|i| Component::new(kelvins(tc[i]), pascals(pc[i]), omega[i]).expect("valid"))
-        .collect();
-    Mixture::new(components, kij).expect("a valid mixture")
-}
-
+/// The methane/n-butane pair the spec's cases use, resolved through the databank so
+/// the pair the sweeps run and the pair the cases run are the same fluid.
 fn methane_butane() -> Mixture {
-    mixture_of(
-        &[190.56, 425.12],
-        &[4_599_200.0, 3_796_000.0],
-        &[0.01142, 0.2002],
-        vec![0.0, 0.05, 0.05, 0.0],
-    )
+    databank::mixture_of(&["methane", "n-butane"])
+        .expect("the pair resolves")
+        .0
 }
 
 fn ternary() -> Mixture {
-    mixture_of(
-        &[190.56, 369.83, 425.12],
-        &[4_599_200.0, 4_248_000.0, 3_796_000.0],
-        &[0.01142, 0.1523, 0.2002],
-        vec![0.0; 9],
-    )
+    databank::mixture_of(&["methane", "propane", "n-butane"])
+        .expect("the trio resolves")
+        .0
 }
 
 fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
-    mixture_of(
-        case.vector("Tc").expect("Tc"),
-        case.vector("Pc").expect("Pc"),
-        case.vector("omega").expect("omega"),
-        case.matrix("kij").expect("kij").to_vec(),
-    )
+    let names = case
+        .list("components")
+        .expect("the case declares components");
+    databank::mixture_of(names)
+        .expect("the case's components resolve")
+        .0
 }
 
 #[test]
@@ -209,7 +198,9 @@ fn a_genuine_dew_point_is_never_refused() {
 
 #[test]
 fn a_single_component_is_refused_and_points_at_the_right_calc() {
-    let propane = mixture_of(&[369.83], &[4_248_000.0], &[0.1523], vec![0.0]);
+    let propane = databank::mixture_of(&["propane"])
+        .expect("propane resolves")
+        .0;
     let err = dew_pressure(&propane, kelvins(300.0), &[1.0]).unwrap_err();
     assert!(matches!(err, AzothError::InvalidInput { .. }));
     assert!(

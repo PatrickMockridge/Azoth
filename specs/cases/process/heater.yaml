@@ -8,32 +8,9 @@ model: process.heater
 cases:
 - id: fifty_kilowatts_on_ten_moles_per_second
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -42,41 +19,15 @@ cases:
     - 0.4
     pressure_drop: 0.0
     heat_duty: 50000.0
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
-    T: 331.9649682446286
+    T: 325.2262607503454
     P: 2000000.0
   tolerance: 1.0e-09
 - id: no_duty_is_the_identity
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -85,9 +36,6 @@ cases:
     - 0.4
     pressure_drop: 0.0
     heat_duty: 0.0
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
     T: 300.0
     P: 2000000.0

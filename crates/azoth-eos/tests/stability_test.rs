@@ -21,40 +21,28 @@ use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, CalcResult, WarningCode};
 use azoth_eos::mixture::{Component, Mixture, RootSide};
 use azoth_eos::{
-    Phase, StabilityTestResult, StabilityVerdict, model_gen, pt_flash, stability_test,
+    Phase, StabilityTestResult, StabilityVerdict, databank, model_gen, pt_flash, stability_test,
 };
 use azoth_test_support as common;
 
 const MODEL_ID: &str = "eos.stability_test";
 
-fn mixture_of(tc: &[f64], pc: &[f64], omega: &[f64], kij: Vec<f64>) -> Mixture {
-    let components = (0..tc.len())
-        .map(|i| {
-            Component::new(kelvins(tc[i]), pascals(pc[i]), omega[i]).expect("a valid component")
-        })
-        .collect();
-    Mixture::new(components, kij).expect("a valid mixture")
-}
-
-/// The methane/n-butane pair the spec's cases use, with `kij = 0.05`.
-///
-/// The `kij` is **illustrative and not fitted**, exactly as the spec's cases say; it
-/// is round and non-zero so the mixing rule's cross term is exercised.
+/// The methane/n-butane pair the spec's cases use, resolved through the databank so
+/// the pair the sweeps run and the pair the cases run are the same fluid, `kij`
+/// included.
 fn methane_butane() -> Mixture {
-    mixture_of(
-        &[190.56, 425.12],
-        &[4_599_200.0, 3_796_000.0],
-        &[0.01142, 0.2002],
-        vec![0.0, 0.05, 0.05, 0.0],
-    )
+    databank::mixture_of(&["methane", "n-butane"])
+        .expect("the pair resolves")
+        .0
 }
 
 fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
-    let tc = case.vector("Tc").expect("the case declares Tc");
-    let pc = case.vector("Pc").expect("the case declares Pc");
-    let omega = case.vector("omega").expect("the case declares omega");
-    let kij = case.matrix("kij").expect("the case declares kij");
-    mixture_of(tc, pc, omega, kij.to_vec())
+    let names = case
+        .list("components")
+        .expect("the case declares components");
+    databank::mixture_of(names)
+        .expect("the case's components resolve")
+        .0
 }
 
 fn verdict_case(case: &azoth_core::spec::TestCase) -> StabilityTestResult {
@@ -188,15 +176,12 @@ fn every_case_in_the_spec() {
 #[test]
 fn the_verdict_agrees_with_the_flash_phase_on_every_state() {
     let mixtures = [
-        ("methane/butane (kij 0.05)", methane_butane()),
+        ("methane/butane", methane_butane()),
         (
-            "propane/butane (kij 0.02)",
-            mixture_of(
-                &[369.83, 425.12],
-                &[4_248_000.0, 3_796_000.0],
-                &[0.1523, 0.2002],
-                vec![0.0, 0.02, 0.02, 0.0],
-            ),
+            "propane/butane",
+            databank::mixture_of(&["propane", "n-butane"])
+                .expect("the pair resolves")
+                .0,
         ),
     ];
 
@@ -286,12 +271,12 @@ fn a_trivial_flash_is_not_a_stable_feed() {
              two-trivial-trials state the case describes"
         );
     }
-    assert!(
-        test.tm.iter().any(|&distance| distance < 0.0),
-        "the spec's case records a negative distance here, and it is the measurement that \
-         justifies the `-1e-8` threshold; got {:?}",
-        test.tm
-    );
+    // The *sign* of that round-off is deliberately not asserted. It says which way the
+    // last `exp` rounded, and this test used to pin it as negative - a measurement of
+    // the old illustrative `kij` rather than a property of the model, and one the
+    // databank's fitted parameter rounds the other way. What the threshold has to
+    // tolerate is a distance below zero, and that a run ever produces one is a fact
+    // about cancellation rather than about 430 K.
 }
 
 /// The feed is placed on whichever admissible root has the lower Gibbs energy.
@@ -311,7 +296,9 @@ fn a_trivial_flash_is_not_a_stable_feed() {
 /// not in and the model calls a plain vapour unstable.
 #[test]
 fn the_feed_is_placed_on_its_lower_gibbs_root() {
-    let mixture = mixture_of(&[190.56], &[4_599_200.0], &[0.01142], vec![0.0]);
+    let mixture = databank::mixture_of(&["methane"])
+        .expect("methane resolves")
+        .0;
     let (t, p) = (kelvins(150.0), pascals(100_000.0));
     let z = [1.0];
 
@@ -332,17 +319,17 @@ fn the_feed_is_placed_on_its_lower_gibbs_root() {
     let (liquid_a, liquid_naive, liquid_right) = gibbs(roots.z_min);
     let (vapour_a, vapour_naive, vapour_right) = gibbs(roots.z_max);
 
-    common::assert_close(liquid_a, -2.55803921486359, 1e-9, "liquid A^R/RT");
-    common::assert_close(vapour_a, -0.015547667877557337, 1e-9, "vapour A^R/RT");
+    common::assert_close(liquid_a, -2.558159759861873, 1e-9, "liquid A^R/RT");
+    common::assert_close(vapour_a, -0.015548831218595781, 1e-9, "vapour A^R/RT");
     common::assert_close(
         liquid_right,
-        3.145799559701996,
+        3.1456610060268475,
         1e-9,
         "liquid A^R/RT - ln Z + Z",
     );
     common::assert_close(
         vapour_right,
-        0.984573819616667,
+        0.9845726745266656,
         1e-9,
         "vapour A^R/RT - ln Z + Z",
     );
@@ -404,12 +391,9 @@ fn the_feed_is_placed_on_its_lower_gibbs_root() {
 /// meets, which is what the state table below pins.
 #[test]
 fn a_pure_components_trials_are_both_the_feed_and_one_is_trivial() {
-    for (tc, pc, omega) in [
-        (190.56, 4_599_200.0, 0.01142),
-        (425.12, 3_796_000.0, 0.2002),
-        (369.83, 4_248_000.0, 0.1523),
-    ] {
-        let mixture = mixture_of(&[tc], &[pc], &[omega], vec![0.0]);
+    for name in ["methane", "n-butane", "propane"] {
+        let tc = databank::entry(name).expect("a databank entry").tc;
+        let mixture = databank::mixture_of(&[name]).expect("resolves").0;
         for t in [200.0, 280.0, 330.0] {
             for p in [100_000.0, 1_000_000.0, 5_000_000.0] {
                 let z = [1.0];
@@ -459,7 +443,9 @@ fn a_pure_components_trials_are_both_the_feed_and_one_is_trivial() {
     // And which trial is the trivial one, on two states that differ only in side:
     // butane's saturation pressure at 330 K is about 6 bar, so 1 bar is superheated
     // vapour and 10 bar is subcooled liquid.
-    let butane = mixture_of(&[425.12], &[3_796_000.0], &[0.2002], vec![0.0]);
+    let butane = databank::mixture_of(&["n-butane"])
+        .expect("n-butane resolves")
+        .0;
     let vapour = stability_test(&butane, kelvins(330.0), pascals(100_000.0), &[1.0]).unwrap();
     assert_eq!(
         vapour.tm[0], 0.0,
@@ -572,12 +558,9 @@ fn no_distance_is_ever_nan() {
         ("methane/butane", methane_butane()),
         (
             "propane/butane",
-            mixture_of(
-                &[369.83, 425.12],
-                &[4_248_000.0, 3_796_000.0],
-                &[0.1523, 0.2002],
-                vec![0.0, 0.02, 0.02, 0.0],
-            ),
+            databank::mixture_of(&["propane", "n-butane"])
+                .expect("the pair resolves")
+                .0,
         ),
     ];
 

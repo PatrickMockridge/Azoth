@@ -47,15 +47,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `Tc` | K | critical temperatures, in the mixture's component order |
-| `Pc` | Pa | critical pressures, in the same order |
-| `omega` | dimensionless | acentric factors, in the same order |
-| `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
-| `cp_a` | J/(mol*K) | the constant term of each component's `Cp` polynomial, in J/(mol*K). Together with the four below, this is everything the ideal-gas enthalpy and entropy are integrated from - there is no separate datum, because NeqSim's is a fixed reference temperature rather than a value a caller supplies. |
-| `cp_b` | J/(mol*K**2) | the coefficient of `T`, in J/(mol*K**2) |
-| `cp_c` | J/(mol*K**3) | the coefficient of `T**2`, in J/(mol*K**3) |
-| `cp_d` | J/(mol*K**4) | the coefficient of `T**3`, in J/(mol*K**4) |
-| `cp_e` | J/(mol*K**5) | the coefficient of `T**4`, in J/(mol*K**5) |
+| `components` | - | the substances the mixture is made of, by name, resolved against the component databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv and INTER.csv) with the loaded keycard's overrides applied. The critical constants, the acentric factors, the binary interaction parameters and the ideal-gas heat-capacity coefficients all come from there. **A name, rather than nine parallel vectors of numbers.** Until this input existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every spec and every case - numbers in a YAML file that nothing could check against anything, and that in fact disagreed with the databank. `azoth.eos.components` lists what is available; a keycard adds a substance the databank does not have. |
 | `T` | K | the feed's absolute temperature |
 | `P` | Pa | the feed's absolute pressure, before the drop |
 | `z` | dimensionless | the feed's mole fractions. Checked rather than renormalised. |
@@ -90,8 +82,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `a_five_bar_drop_cools_the_stream` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = 300.0, P = 2000000.0, z = [0.6, 0.4], pressure_drop = 500000.0, cp_e = [0.0, 0.0] | T = 292.3458825286523, P = 1500000.0 |
-| `no_drop_leaves_the_stream_alone` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = 300.0, P = 2000000.0, z = [0.6, 0.4], pressure_drop = 0.0, cp_e = [0.0, 0.0] | T = 300.0, P = 2000000.0 |
+| `a_five_bar_drop_cools_the_stream` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, z = [0.6, 0.4], pressure_drop = 500000.0 | T = 294.9665142143329, P = 1500000.0 |
+| `no_drop_leaves_the_stream_alone` | components = ['methane', 'n-butane'], T = 300.0, P = 2000000.0, z = [0.6, 0.4], pressure_drop = 0.0 | T = 300.0, P = 2000000.0 |
 
 ## References
 

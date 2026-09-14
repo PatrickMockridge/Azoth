@@ -8,32 +8,9 @@ model: process.mixer
 cases:
 - id: two_different_feeds_blend
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T:
     - 300.0
     - 350.0
@@ -48,11 +25,8 @@ cases:
       - 0.4
     - - 0.4
       - 0.6
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
-    T: 321.09734147505736
+    T: 321.5288782883907
     P: 1500000.0
     flow: 10.0
     z_out:
@@ -61,32 +35,9 @@ cases:
   tolerance: 1.0e-09
 - id: two_identical_feeds_double_the_flow_and_change_nothing_else
   inputs:
-    Tc:
-    - 190.56
-    - 425.12
-    Pc:
-    - 4599000.0
-    - 3796000.0
-    omega:
-    - 0.0115
-    - 0.2002
-    kij:
-    - - 0.0
-      - 0.01289789
-    - - 0.01289789
-      - 0.0
-    cp_a:
-    - 3.0
-    - 5.0
-    cp_b:
-    - 0.0
-    - 0.0
-    cp_c:
-    - 0.0
-    - 0.0
-    cp_d:
-    - 0.0
-    - 0.0
+    components:
+    - methane
+    - n-butane
     T:
     - 300.0
     - 300.0
@@ -101,9 +52,6 @@ cases:
       - 0.4
     - - 0.6
       - 0.4
-    cp_e:
-    - 0.0
-    - 0.0
   expected:
     T: 300.0
     P: 2000000.0

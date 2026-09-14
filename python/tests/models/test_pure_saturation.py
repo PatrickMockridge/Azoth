@@ -20,13 +20,15 @@ CASES = SPEC["cases"]
 
 
 def call(case: dict[str, Any]) -> PureSaturationResult:
-    """Run one case through the public API, in the units the spec declares."""
-    declared = SPEC["inputs"]
-    kwargs: dict[str, Any] = {}
-    for name, value in case["inputs"].items():
-        unit = declared[name].get("unit")
-        kwargs[name] = float(value) if unit == "dimensionless" else Q(float(value), unit)
-    return pure_saturation(**kwargs)
+    """Run one case declared in the model spec.
+
+    Through :func:`_helpers.model_kwargs`, which is the one place a case's
+    declared inputs become arguments: it resolves `components` against the
+    databank and hands over the mixture and the ideal-gas model the function
+    takes. A hand-built mixture here would be a second fluid, described by the
+    case file rather than by NeqSim's tables.
+    """
+    return pure_saturation(**h.model_kwargs(SPEC, case["inputs"]))
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])

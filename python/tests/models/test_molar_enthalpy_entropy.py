@@ -11,9 +11,10 @@ from azoth import _models_gen, ureg, use_backend
 from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.result import MolarEnthalpyEntropyResult
 from azoth.eos import (
-    Component,
     IdealGasModel,
     Mixture,
+    component,
+    from_names,
     mixture,
     molar_enthalpy_entropy,
     pr_departure,
@@ -27,12 +28,22 @@ Q = ureg.Quantity
 SPEC = _models_gen.model(MODEL_ID)
 CASES = SPEC["cases"]
 
-METHANE = Component(Q(190.56, "K"), Q(4_599_200.0, "Pa"), 0.01142)
-BUTANE = Component(Q(425.12, "K"), Q(3_796_000.0, "Pa"), 0.2002)
+# The substances the cases and the identities below use, resolved through the
+# databank rather than typed here. A `Component` written out longhand is a second
+# copy of NeqSim's table, and this one had drifted: its methane was 0.01142 and
+# 4 599 200 Pa, where COMP.csv says 0.0115 and 4 599 000.
+METHANE = component("methane")
+BUTANE = component("n-butane")
 
 
 def methane_butane() -> Mixture:
-    return mixture([METHANE, BUTANE], kij={(0, 1): 0.05})
+    """The methane/n-butane pair, with the interaction parameter NeqSim fits for it.
+
+    Resolved by name rather than assembled here, so the pair a sweep runs and the pair
+    a case runs are the same fluid. The `kij` used to be an "illustrative" 0.05 - a
+    number in a test file that described no fluid, and that disagreed with `INTER.csv`.
+    """
+    return from_names(["methane", "n-butane"])
 
 
 def ideal_gas(**overrides: Any) -> IdealGasModel:
@@ -48,28 +59,15 @@ def ideal_gas(**overrides: Any) -> IdealGasModel:
 
 
 def call(case: dict[str, Any]) -> MolarEnthalpyEntropyResult:
-    inputs = case["inputs"]
-    fluid = Mixture(
-        components=tuple(
-            Component(Q(tc, "K"), Q(pc, "Pa"), omega)
-            for tc, pc, omega in zip(inputs["Tc"], inputs["Pc"], inputs["omega"], strict=True)
-        ),
-        kij=tuple(tuple(row) for row in inputs["kij"]),
-    )
-    return molar_enthalpy_entropy(
-        fluid,
-        ideal_gas(
-            cp_a=tuple(inputs["cp_a"]),
-            cp_b=tuple(inputs["cp_b"]),
-            cp_c=tuple(inputs["cp_c"]),
-            cp_d=tuple(inputs["cp_d"]),
-            cp_e=tuple(inputs["cp_e"]),
-        ),
-        T=Q(inputs["T"], "K"),
-        P=Q(inputs["P"], "Pa"),
-        z=list(inputs["z"]),
-        compressibility=inputs["compressibility"],
-    )
+    """Run one case declared in the model spec.
+
+    Through :func:`_helpers.model_kwargs`, which is the one place a case's
+    declared inputs become arguments: it resolves `components` against the
+    databank and hands over the mixture and the ideal-gas model the function
+    takes. A hand-built mixture here would be a second fluid, described by the
+    case file rather than by NeqSim's tables.
+    """
+    return molar_enthalpy_entropy(**h.model_kwargs(SPEC, case["inputs"]))
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])
@@ -140,8 +138,8 @@ def test_the_departures_reduce_to_pr_departure_at_one_component() -> None:
     """
     from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 
-    for component, t_c, p_pa in ((METHANE, 200.0, 3.0e6), (BUTANE, 350.0, 1.0e6)):
-        fluid = mixture([component])
+    for substance, t_c, p_pa in ((METHANE, 200.0, 3.0e6), (BUTANE, 350.0, 1.0e6)):
+        fluid = mixture([substance])
         reduced = reduced_parameters(fluid, t_c, p_pa)
         state = phase_state(reduced, fluid.kij, [1.0], liquid=False)
 
@@ -163,11 +161,11 @@ def test_the_departures_reduce_to_pr_departure_at_one_component() -> None:
             reduced.a[0],
             reduced.b[0],
             state.z,
-            pr_kappa(component.omega).kappa,
-            t_c / component.Tc.to_base_units().magnitude,
+            pr_kappa(substance.omega).kappa,
+            t_c / substance.Tc.to_base_units().magnitude,
         )
 
-        assert result.psi_bar == reduced.psi[0], "psi_bar should be the component's own psi"
+        assert result.psi_bar == reduced.psi[0], "psi_bar should be the substance's own psi"
         assert (
             result.h_departure.to("J/mol").magnitude / (MOLAR_GAS_CONSTANT * t_c) == pure.h_dep_rt
         ), "the departure enthalpy should be bit-identical"

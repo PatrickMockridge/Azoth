@@ -35,55 +35,21 @@ algorithm:
     max_iterations: 200
 
 inputs:
-  Tc:
-    type: vector
-    unit: K
-    length: one per component
-    description: critical temperatures, in the mixture's component order
-  Pc:
-    type: vector
-    unit: Pa
-    length: one per component
-    description: critical pressures, in the same order
-  omega:
-    type: vector
-    unit: dimensionless
-    length: one per component
-    description: acentric factors, in the same order
-  kij:
-    type: matrix
-    unit: dimensionless
-    shape: N x N, symmetric, zero diagonal
-    description: binary interaction parameters, as in `eos.pt_flash`
-  cp_a:
-    type: vector
-    unit: J/(mol*K)
-    length: one per component
+  components:
+    type: components
+    length: one entry per component
     description: >
-      the constant term of each component's `Cp` polynomial, in J/(mol*K). Together
-      with the four below, this is everything the ideal-gas enthalpy and entropy are
-      integrated from - there is no separate datum, because NeqSim's is a fixed
-      reference temperature rather than a value a caller supplies.
-  cp_b:
-    type: vector
-    unit: J/(mol*K**2)
-    length: one per component
-    description: the coefficient of `T`, in J/(mol*K**2)
-  cp_c:
-    type: vector
-    unit: J/(mol*K**3)
-    length: one per component
-    description: the coefficient of `T**2`, in J/(mol*K**3)
-  cp_d:
-    type: vector
-    unit: J/(mol*K**4)
-    length: one per component
-    description: the coefficient of `T**3`, in J/(mol*K**4)
-  cp_e:
-    type: vector
-    unit: J/(mol*K**5)
-    length: one per component
-    description: the coefficient of `T**4`, in J/(mol*K**5)
+      the substances the mixture is made of, by name, resolved against the component
+      databank this library ships (`data/components/`, compiled from NeqSim's COMP.csv
+      and INTER.csv) with the loaded keycard's overrides applied. The critical
+      constants, the acentric factors, the binary interaction parameters and the
+      ideal-gas heat-capacity coefficients all come from there.
+
+      **A name, rather than nine parallel vectors of numbers.** Until this input
+      existed, `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` were retyped into every
+      spec and every case - numbers in a YAML file that nothing could check against
+      anything, and that in fact disagreed with the databank. `azoth.eos.components`
+      lists what is available; a keycard adds a substance the databank does not have.
   T:
     unit: K
     description: >
