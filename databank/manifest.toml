@@ -114,55 +114,32 @@ name = "Href"
 disposition = "vendored"
 as = "href"
 unit = "neqsim-internal"
-reason = """\
-    not-yet: eos.molar_enthalpy_entropy takes its reference state from the caller and would \
-    read a shipped one"""
-consumer = "eos.molar_enthalpy_entropy"
+reason = "not-ported: NeqSim's `Component` stores it as `referenceEnthalpy`; azoth's `eos.molar_enthalpy_entropy` does not consume it (`getHID` uses the fixed reference temperature)"
 [[upstreams.files.columns]]
 name = "CPA"
-disposition = "vendored"
+disposition = "used"
 as = "cpa"
 unit = "J/(mol*K)"
-reason = """\
-    not-yet: eos.ideal_gas_cp takes the polynomial from the caller today, so every caller \
-    retypes a published table"""
-consumer = "eos.ideal_gas_cp"
 [[upstreams.files.columns]]
 name = "CPB"
-disposition = "vendored"
+disposition = "used"
 as = "cpb"
 unit = "J/(mol*K2)"
-reason = """\
-    not-yet: eos.ideal_gas_cp takes the polynomial from the caller today, so every caller \
-    retypes a published table"""
-consumer = "eos.ideal_gas_cp"
 [[upstreams.files.columns]]
 name = "CPC"
-disposition = "vendored"
+disposition = "used"
 as = "cpc"
 unit = "J/(mol*K3)"
-reason = """\
-    not-yet: eos.ideal_gas_cp takes the polynomial from the caller today, so every caller \
-    retypes a published table"""
-consumer = "eos.ideal_gas_cp"
 [[upstreams.files.columns]]
 name = "CPD"
-disposition = "vendored"
+disposition = "used"
 as = "cpd"
 unit = "J/(mol*K4)"
-reason = """\
-    not-yet: eos.ideal_gas_cp takes the polynomial from the caller today, so every caller \
-    retypes a published table"""
-consumer = "eos.ideal_gas_cp"
 [[upstreams.files.columns]]
 name = "CPE"
-disposition = "vendored"
+disposition = "used"
 as = "cpe"
 unit = "J/(mol*K5)"
-reason = """\
-    not-yet: eos.ideal_gas_cp takes the polynomial from the caller today, so every caller \
-    retypes a published table"""
-consumer = "eos.ideal_gas_cp"
 [[upstreams.files.columns]]
 name = "AntoineVapPresLiqType"
 disposition = "dropped"
@@ -291,10 +268,7 @@ name = "GIBBSENERGYOFFORMATION"
 disposition = "vendored"
 as = "gibbsenergyofformation"
 unit = "J/mol"
-reason = """\
-    not-yet: a reference-state quantity eos.molar_enthalpy_entropy would read instead of \
-    taking one from the caller"""
-consumer = "eos.molar_enthalpy_entropy"
+reason = "not-ported: NeqSim's `ChemicalReactionOperations` and `ModifiedRANDSolver` read it for reaction equilibrium; azoth's `eos.molar_enthalpy_entropy` does not (`getHID` zeroes the formation enthalpy)"
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER1"
 disposition = "vendored"
@@ -463,19 +437,13 @@ name = "ENTHALPYOFFORMATION"
 disposition = "vendored"
 as = "enthalpyofformation"
 unit = "J/mol"
-reason = """\
-    not-yet: a reference-state quantity eos.molar_enthalpy_entropy would read instead of \
-    taking one from the caller"""
-consumer = "eos.molar_enthalpy_entropy"
+reason = "not-ported: NeqSim's `ChemicalReactionOperations` and `ModifiedRANDSolver` read it for reaction equilibrium; azoth's `eos.molar_enthalpy_entropy` does not (`getHID` zeroes the formation enthalpy)"
 [[upstreams.files.columns]]
 name = "ABSOLUTEENTROPY"
 disposition = "vendored"
 as = "absoluteentropy"
 unit = "J/(mol*K)"
-reason = """\
-    not-yet: a reference-state quantity eos.molar_enthalpy_entropy would read instead of \
-    taking one from the caller"""
-consumer = "eos.molar_enthalpy_entropy"
+reason = "not-ported: NeqSim's `ChemicalReactionOperations` and `ModifiedRANDSolver` read it for reaction equilibrium; azoth's `eos.molar_enthalpy_entropy` does not (`getHID` zeroes the formation enthalpy)"
 [[upstreams.files.columns]]
 name = "SOLIDDENSITYCOEFS1"
 disposition = "vendored"

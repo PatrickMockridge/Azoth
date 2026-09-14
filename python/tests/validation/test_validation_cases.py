@@ -89,6 +89,31 @@ def _mixture_kwargs(case: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _enthalpy_kwargs(case: dict[str, Any]) -> dict[str, Any]:
+    """Resolve a case's component names into the mixture and ideal-gas model.
+
+    Same shape as :func:`_mixture_kwargs`, one step further: `mixture_of` returns
+    both the `Mixture` and the `IdealGasModel` the enthalpy model takes, and the
+    case supplies the cubic root (`compressibility`) it is evaluated at rather
+    than solving for it - which root describes the phase is a choice the flash
+    has already made.
+    """
+    from azoth import ureg
+    from azoth.eos.components import mixture_of
+
+    q = ureg.Quantity
+    inputs = case["inputs"]
+    mixture, ideal_gas = mixture_of(list(inputs["components"]))
+    return {
+        "mixture": mixture,
+        "ideal_gas": ideal_gas,
+        "T": q(inputs["T"], "K"),
+        "P": q(inputs["P"], "Pa"),
+        "z": list(inputs["z"]),
+        "compressibility": inputs["compressibility"],
+    }
+
+
 #: Ids whose call arguments are not a straight copy of the case's `inputs`.
 #:
 #: One entry today. It grows by one line per model whose arguments are objects
@@ -96,6 +121,7 @@ def _mixture_kwargs(case: dict[str, Any]) -> dict[str, Any]:
 #: buried in `_call` - a reader can see the whole of the exception list at once.
 ARGUMENT_BUILDERS = {
     "eos.pt_flash": _mixture_kwargs,
+    "eos.molar_enthalpy_entropy": _enthalpy_kwargs,
 }
 
 

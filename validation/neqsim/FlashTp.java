@@ -57,10 +57,30 @@ public class FlashTp {
     System.out.println("  z_vapour  " + fluid.getPhase(0).getZ());
   }
 
+  /** One PT flash with its molar enthalpy and entropy, for `eos.molar_enthalpy_entropy`. */
+  static void enthalpy(String label, double temperatureK, double pressureBar, String[] names,
+      double[] moles) {
+    SystemInterface fluid = new SystemPrEos(temperatureK, pressureBar);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], moles[i]);
+    }
+    fluid.setMixingRule("classic");
+
+    new ThermodynamicOperations(fluid).TPflash();
+    fluid.initProperties();
+
+    System.out.println(label);
+    System.out.println("  H        " + fluid.getEnthalpy("J/mol"));
+    System.out.println("  S        " + fluid.getEntropy("J/molK"));
+    System.out.println("  z_vapour " + fluid.getPhase(0).getZ());
+  }
+
   public static void main(String[] args) {
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4});
     flash("propane, 1.0, 300 K, 9 bar",
+        300.0, 9.0, new String[] {"propane"}, new double[] {1.0});
+    enthalpy("propane, 1.0, 300 K, 9 bar",
         300.0, 9.0, new String[] {"propane"}, new double[] {1.0});
   }
 }
