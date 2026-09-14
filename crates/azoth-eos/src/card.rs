@@ -466,3 +466,20 @@ fn converted(value: f64, unit: &str, canonical: &str, field: &str) -> Result<f64
         })
         .map(|factor| value * factor)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::COMPONENT_PARAMETERS;
+
+    /// The parameter set `specs/schema/component.schema.json` declares, name and unit.
+    ///
+    /// Rust does not read the schema, so the expected list is written here and the
+    /// Python-side test holds both to the schema. A parameter is added in all three
+    /// places or none.
+    const DECLARED: &[(&str, &str)] = &[("Tc", "K"), ("Pc", "Pa"), ("omega", "dimensionless")];
+
+    #[test]
+    fn component_parameters_match_the_declaration() {
+        assert_eq!(COMPONENT_PARAMETERS, DECLARED);
+    }
+}

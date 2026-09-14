@@ -44,6 +44,8 @@ jobs:
       # no NeqSim checkout, because the sources are committed - which is what lets
       # this run here rather than only on a machine that has one.
       - run: python tools/gen_databank.py --check
+      # The baseline keycard against the compiled component data it derives from.
+      - run: python tools/gen_keycard.py --check
       # The unit vocabulary table against the four artefacts compiled from it - the
       # schema's unit enum, the Rust conversion table, the Python map and the keycard
       # loader's list. One table, one generator, and this is what says the generated

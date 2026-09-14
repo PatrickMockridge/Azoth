@@ -7,26 +7,26 @@ into and the compiled files that come out of it.
 Specified in [the specification, S5](../docs/src/architecture/specification.md#s5-it-ships-data-and-the-keycard-extends-it).
 This page is the operational half: what is here now, what is not, and how to check it.
 
-## The three stages, and which of them exist
+## The stages, and which of them exist
 
 ```
 databank/sources/          upstream files, whole, at a named revision      EXISTS
-        |
-        |  derive
+        |  compile             tools/gen_databank.py
         v
-databank/keycard.toml      the baseline keycard: what azoth ships           NOT BUILT
-        |
-        |  compile
+data/components/           the files both languages read                   EXISTS
+        |  derive              tools/gen_keycard.py
         v
-databank/compiled/         the files both languages actually read          NOT BUILT
+databank/keycard.toml      the baseline card: the subset a user overrides  EXISTS
 ```
 
-The order is one-way. A source produces a card, and a card produces the compiled files.
-
-**Only the first stage is built.** The compiled files still live at `data/`, where the
-two languages read them at fixed paths - Rust embeds them with `include_str!`, and
-`python/src/azoth/_data.py` finds them by walking up from the package. Nothing here
-has moved, so nothing here is broken by the move taking a while.
+The order is one-way: the compiled files come from the sources, and the baseline card
+comes from the compiled files. The card is the **subset a user may override** - the
+cubic's `Tc`, `Pc` and `omega` and the Peng-Robinson `kij` - stated in the format a
+user's card takes, so the library's data and a user's data are one object. It is not
+the source of the compiled files, which carry every column the manifest dispositions;
+`databank/compiled/` does not exist because the compiled files live at `data/`, where
+the two languages read them at fixed paths - Rust embeds them with `include_str!`, and
+`python/src/azoth/_data.py` finds them by walking up from the package.
 
 ## `sources/` holds upstream files whole
 

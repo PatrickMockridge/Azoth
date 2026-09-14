@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/component.schema.json",
+  "title": "Component parameters",
+  "description": "The parameters a keycard may state for one component, and the canonical unit each is converted to. This is the single declaration the two implementations and the keycard schema hold themselves to, so a parameter one carries and another does not is a test failure rather than a drift.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Tc": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "K",
+      "x-azoth-column": "tc_k",
+      "description": "Critical temperature."
+    },
+    "Pc": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "Pa",
+      "x-azoth-column": "pc_pa",
+      "description": "Critical pressure."
+    },
+    "omega": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-column": "acentric_factor",
+      "description": "Acentric factor."
+    }
+  },
+  "$defs": {
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "unit"],
+      "properties": {
+        "citation": { "$ref": "calc.schema.json#/$defs/citation" },
+        "value": { "type": "number" },
+        "unit": { "$ref": "calc.schema.json#/$defs/unit" }
+      }
+    }
+  }
+}

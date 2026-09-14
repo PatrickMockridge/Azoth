@@ -72,22 +72,12 @@
     },
     "components": {
       "x-azoth-stage": "runtime",
-      "description": "A component databank, keyed by substance name and then by parameter name. A component is a *set* of named parameters rather than a fixed record, because different models need different ones. Supplying a name the shipped databank already has overrides it; a new one extends it.",
+      "description": "A component databank, keyed by substance name and then by parameter name. A component is a *set* of named parameters rather than a fixed record, because different models need different ones. Supplying a name the shipped databank already has overrides it; a new one extends it. The parameter names and their canonical units are declared in `component.schema.json`.",
       "type": "object",
       "minProperties": 1,
       "additionalProperties": {
-        "type": "object",
-        "minProperties": 1,
-        "additionalProperties": {
-          "type": "object",
-          "properties": {
-            "citation": { "$ref": "calc.schema.json#/$defs/citation" },
-            "value": { "type": "number" },
-            "unit": { "$ref": "calc.schema.json#/$defs/unit" }
-          },
-          "additionalProperties": false,
-          "required": ["value", "unit"]
-        }
+        "$ref": "component.schema.json",
+        "minProperties": 1
       }
     },
     "kij": {

@@ -38,6 +38,7 @@ from azoth.eos.mixture import Component
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = REPO_ROOT / "specs" / "schema" / "keycard.schema.json"
 CALC_SCHEMA = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
+COMPONENT_SCHEMA = REPO_ROOT / "specs" / "schema" / "component.schema.json"
 #: The unit enum lives in its own schema, which `calc.schema.json` `$ref`s. It is
 #: generated from `specs/vocabulary/vocabulary.toml` by `tools/gen_vocabulary.py`.
 UNIT_SCHEMA = REPO_ROOT / "specs" / "schema" / "unit.schema.json"
@@ -131,6 +132,18 @@ def test_the_component_parameters_are_what_the_implementation_reads() -> None:
     assert set(keycard.COMPONENT_PARAMETERS) == {"Tc", "Pc", "omega"}
     fields = set(Component.__dataclass_fields__)
     assert set(keycard.COMPONENT_PARAMETERS) <= fields
+
+
+def test_component_parameters_mirror_the_single_declaration() -> None:
+    """`COMPONENT_PARAMETERS` is the schema's parameter set, unit for unit.
+
+    `specs/schema/component.schema.json` is the one declaration the loader and the
+    keycard schema both hold themselves to. The loader's table must match it, so a
+    parameter added to one and not the other fails here rather than drifting.
+    """
+    document = json.loads(COMPONENT_SCHEMA.read_text(encoding="utf-8"))
+    declared = {name: props["x-azoth-unit"] for name, props in document["properties"].items()}
+    assert dict(keycard.COMPONENT_PARAMETERS) == declared
 
 
 # ---------------------------------------------------------------------------
