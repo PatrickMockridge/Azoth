@@ -11,6 +11,8 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
 
+use crate::alpha_term::{AlphaTerm, Soave};
+use crate::cubic::Cubic;
 use crate::{pr_alpha_ab, pr_kappa, pr_z_factor};
 
 /// Which root of the cubic a phase claims.
@@ -116,6 +118,7 @@ impl Component {
 pub struct Mixture {
     components: Vec<Component>,
     kij: Vec<f64>,
+    cubic: Cubic,
 }
 
 impl Mixture {
@@ -176,7 +179,11 @@ impl Mixture {
                 }
             }
         }
-        Ok(Self { components, kij })
+        Ok(Self {
+            components,
+            kij,
+            cubic: Cubic::default(),
+        })
     }
 
     /// The components, in order.
@@ -196,6 +203,12 @@ impl Mixture {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.components.is_empty()
+    }
+
+    /// The cubic whose geometry this mixture is evaluated under.
+    #[must_use]
+    pub fn cubic(&self) -> Cubic {
+        self.cubic
     }
 
     /// The interaction parameter between components `i` and `j`.
@@ -234,17 +247,15 @@ impl Mixture {
                 p.value / component.pc.value,
             )?;
             warnings.extend(ab.warnings);
-            let sqrt_tr = reduced_temperature.sqrt();
+            // The alpha term's own two derivatives, so the Soave form lives in one
+            // place rather than being restated per call site. The term is PR's for
+            // now; the dispatch on `self.cubic` that will pick SRK's `kappa` and
+            // RK's kappa-free term arrives with those models.
+            let term = Soave { kappa: kappa.kappa };
             a.push(ab.a_reduced);
             b.push(ab.b_reduced);
-            psi.push(-kappa.kappa * sqrt_tr / (1.0 + kappa.kappa * (1.0 - sqrt_tr)));
-            // `T*dpsi/dT`, from `dpsi/dTr` and `dTr/dT = 1/Tc`. Carrying the `T`
-            // rather than dividing it out later is what keeps this free of the
-            // absolute temperature: the expression below is a function of `Tr` alone.
-            psi_t.push(
-                -kappa.kappa * (1.0 + kappa.kappa) * reduced_temperature
-                    / (2.0 * sqrt_tr * (1.0 + kappa.kappa * (1.0 - sqrt_tr)).powi(2)),
-            );
+            psi.push(term.psi(reduced_temperature));
+            psi_t.push(term.psi_t(reduced_temperature));
         }
         Ok(ReducedParameters {
             a,
@@ -331,9 +342,8 @@ impl Mixture {
             })
             .collect();
 
-        let sqrt_2 = std::f64::consts::SQRT_2;
-        let i_term = ((z + (1.0 + sqrt_2) * b_mix) / (z + (1.0 - sqrt_2) * b_mix)).ln();
-        let coefficient = a_mix / (2.0 * sqrt_2 * b_mix);
+        let i_term = self.cubic.i_term(z, b_mix);
+        let coefficient = self.cubic.coefficient(a_mix, b_mix);
         let ln_z_minus_b = (z - b_mix).ln();
 
         let ln_phi: Vec<f64> = (0..n)
@@ -385,16 +395,14 @@ impl Mixture {
         let t_da = a_mix * (psi_bar - 2.0);
         let t_db = -b_mix;
         let t_dc = coefficient * (psi_bar - 1.0);
-        let d_f_dz =
-            3.0 * z * z + 2.0 * (b_mix - 1.0) * z + (a_mix - 3.0 * b_mix * b_mix - 2.0 * b_mix);
-        let t_dfdt = t_db * z * z
-            + (t_da - 6.0 * b_mix * t_db - 2.0 * t_db) * z
-            + (3.0 * b_mix * b_mix * t_db + 2.0 * b_mix * t_db - t_da * b_mix - a_mix * t_db);
+        let d_f_dz = self.cubic.df_dz(z, a_mix, b_mix);
+        let t_dfdt = self.cubic.t_dfdt(z, a_mix, b_mix, t_da, t_db);
         let t_dz = -t_dfdt / d_f_dz;
-        let n_plus = z + (1.0 + sqrt_2) * b_mix;
-        let n_minus = z + (1.0 - sqrt_2) * b_mix;
-        let t_di =
-            (t_dz + (1.0 + sqrt_2) * t_db) / n_plus - (t_dz + (1.0 - sqrt_2) * t_db) / n_minus;
+        let d1 = self.cubic.delta1();
+        let d2 = self.cubic.delta2();
+        let n_plus = z + d1 * b_mix;
+        let n_minus = z + d2 * b_mix;
+        let t_di = (t_dz + d1 * t_db) / n_plus - (t_dz + d2 * t_db) / n_minus;
         let cp_dep_r = h_dep_rt
             + t_dz
             + t_dc * (psi_bar - 1.0) * i_term
@@ -484,9 +492,8 @@ impl Mixture {
                 a_sum += n[i] * n[j] * a_ij[i][j];
             }
         }
-        let sqrt_2 = std::f64::consts::SQRT_2;
-        let g = ((1.0 + (1.0 + sqrt_2) * b_sum) / (1.0 + (1.0 - sqrt_2) * b_sum)).ln();
-        Ok(-total * (1.0 - b_sum).ln() - (a_sum / (2.0 * sqrt_2 * b_sum)) * g)
+        let g = self.cubic.helmholtz_g(b_sum);
+        Ok(-total * (1.0 - b_sum).ln() - (a_sum / (self.cubic.delta_diff() * b_sum)) * g)
     }
 
     /// `d2(A^R/RT)/dn_i dn_j` at constant temperature and **volume**.
@@ -522,15 +529,15 @@ impl Mixture {
         let b_sum: f64 = (0..count).map(|i| n[i] * b_hat[i]).sum();
         self.check_b_sum(b_sum, compressibility)?;
 
-        let sqrt_2 = std::f64::consts::SQRT_2;
         let d = 1.0 - b_sum;
-        // L(b) = ln(1 - b), G(b) = ln((1 + (1+sqrt2)b) / (1 + (1-sqrt2)b)).
+        // L(b) = ln(1 - b), G(b) = ln((1 + delta1 b)/(1 + delta2 b)).
         let l_prime = -1.0 / d;
         let l_second = -1.0 / (d * d);
-        let q = 1.0 + 2.0 * b_sum - b_sum * b_sum;
-        let g = ((1.0 + (1.0 + sqrt_2) * b_sum) / (1.0 + (1.0 - sqrt_2) * b_sum)).ln();
-        let g_prime = 2.0 * sqrt_2 / q;
-        let g_second = -4.0 * sqrt_2 * d / (q * q);
+        let g = self.cubic.helmholtz_g(b_sum);
+        let g_prime = self.cubic.helmholtz_g_prime(b_sum);
+        let g_second = self.cubic.helmholtz_g_second(b_sum);
+        let half_delta_diff = self.cubic.half_delta_diff();
+        let delta_diff = self.cubic.delta_diff();
 
         let a_bar: Vec<f64> = (0..count)
             .map(|i| (0..count).map(|j| n[j] * a_ij[i][j]).sum())
@@ -549,12 +556,12 @@ impl Mixture {
                 let product = b_hat[i] * b_hat[j];
                 hessian[i][j] = -(b_hat[i] + b_hat[j]) * l_prime
                     - total * product * l_second
-                    - g * a_ij[i][j] / (sqrt_2 * b_sum)
-                    + g * pair / (sqrt_2 * b_sum * b_sum)
-                    - g * a_sum * product / (sqrt_2 * b_sum * b_sum * b_sum)
-                    - g_prime * pair / (sqrt_2 * b_sum)
-                    + g_prime * a_sum * product / (sqrt_2 * b_sum * b_sum)
-                    - g_second * a_sum * product / (2.0 * sqrt_2 * b_sum);
+                    - g * a_ij[i][j] / (half_delta_diff * b_sum)
+                    + g * pair / (half_delta_diff * b_sum * b_sum)
+                    - g * a_sum * product / (half_delta_diff * b_sum * b_sum * b_sum)
+                    - g_prime * pair / (half_delta_diff * b_sum)
+                    + g_prime * a_sum * product / (half_delta_diff * b_sum * b_sum)
+                    - g_second * a_sum * product / (delta_diff * b_sum);
             }
         }
         Ok(hessian)

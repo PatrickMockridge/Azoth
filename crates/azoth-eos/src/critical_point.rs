@@ -191,7 +191,9 @@ pub fn pressure_at_volume(
         }
     }
     let repulsion = MOLAR_GAS_CONSTANT * temperature / (volume - b_mix);
-    let attraction = a_mix / (volume * volume + 2.0 * b_mix * volume - b_mix * b_mix);
+    let attraction = a_mix
+        / ((volume + mixture.cubic().delta1() * b_mix)
+            * (volume + mixture.cubic().delta2() * b_mix));
     Ok(repulsion - attraction)
 }
 

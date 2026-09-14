@@ -12,6 +12,7 @@
 
 use azoth_core::{Result, apply_checks};
 
+use crate::cubic::Cubic;
 use crate::results::PrAlphaAbResult;
 use crate::spec_gen;
 
@@ -31,7 +32,7 @@ use crate::spec_gen;
 /// measurement and how to repeat it. A port that corrected its upstream would
 /// disagree with it by 1.4e-4 forever, and could never be validated against it at
 /// all. The spec's `assumptions` carries the argument in full.
-pub const OMEGA_A: f64 = 0.45724333333;
+pub const OMEGA_A: f64 = Cubic::Pr.omega_a();
 
 /// `Omega_b`, the repulsion constant of the Peng-Robinson cubic.
 ///
@@ -40,7 +41,7 @@ pub const OMEGA_A: f64 = 0.45724333333;
 /// and the paper's printed `0.07780`. It is 7.26e-6 above the exact value and 3.3333e-6
 /// above the printed one - the same offset `Omega_a` carries, and the larger of the
 /// two departures from the exact pair.
-pub const OMEGA_B: f64 = 0.077803333;
+pub const OMEGA_B: f64 = Cubic::Pr.omega_b();
 
 /// The Peng-Robinson alpha function and the reduced attraction parameters.
 ///

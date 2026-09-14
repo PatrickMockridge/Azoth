@@ -34,6 +34,7 @@ from azoth.eos.reference._mixture_state import (
     helmholtz_hessian,
     reduced_parameters,
 )
+from azoth.eos.reference.cubic import PR
 from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT
 
 MODEL_ID = "eos.critical_point"
@@ -159,7 +160,7 @@ def pressure_at_volume(
         for j in range(count)
     )
     repulsion = MOLAR_GAS_CONSTANT * temperature / (volume - b_mix)
-    attraction = a_mix / (volume * volume + 2.0 * b_mix * volume - b_mix * b_mix)
+    attraction = a_mix / ((volume + PR.delta1 * b_mix) * (volume + PR.delta2 * b_mix))
     return repulsion - attraction
 
 

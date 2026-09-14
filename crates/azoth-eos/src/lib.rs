@@ -32,9 +32,11 @@ pub fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
     })
 }
 
+pub mod alpha_term;
 pub mod bubble_pressure;
 pub mod card;
 pub mod critical_point;
+pub mod cubic;
 pub mod databank;
 pub mod dew_pressure;
 pub mod flash_property;
@@ -62,6 +64,7 @@ pub mod vdw1f_mix_binary;
 
 pub use bubble_pressure::bubble_pressure;
 pub use critical_point::critical_point;
+pub use cubic::Cubic;
 pub use dew_pressure::dew_pressure;
 pub use ideal_gas_cp::ideal_gas_cp;
 pub use mixture::{Component, Mixture, PhaseState, ReducedParameters, RootSide};

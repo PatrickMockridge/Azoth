@@ -21,6 +21,8 @@ from azoth._registry_gen import spec as _spec_for
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import PrDepartureResult
 from azoth.core.warnings import Warning
+from azoth.eos.reference.alpha_term import Soave
+from azoth.eos.reference.cubic import PR
 
 CALC_ID = "eos.pr_departure"
 
@@ -78,15 +80,14 @@ def pr_departure(
 
     apply_checks(checks.on_input, values.get, warnings)
 
-    # The logarithmic derivative of the alpha function. Hoisted rather than
-    # recomputed for each use so the two languages cannot evaluate it twice in
-    # different orders.
-    sqrt_tr = Tr**0.5
-    psi = -kappa * sqrt_tr / (1.0 + kappa * (1.0 - sqrt_tr))
+    # The logarithmic derivative of the alpha function, from the same Soave term the
+    # mixture layer uses, so the two languages cannot evaluate it twice in different
+    # orders or different places.
+    term = Soave(kappa=kappa)
+    psi = term.psi(Tr)
 
-    sqrt_2 = math.sqrt(2.0)
-    i_term = math.log((z + (1.0 + sqrt_2) * b_reduced) / (z + (1.0 - sqrt_2) * b_reduced))
-    coefficient = a_reduced / (2.0 * sqrt_2 * b_reduced)
+    i_term = PR.i_term(z, b_reduced)
+    coefficient = PR.coefficient(a_reduced, b_reduced)
     ln_z_minus_b = math.log(z - b_reduced)
 
     ln_phi = z - 1.0 - ln_z_minus_b - coefficient * i_term
@@ -99,30 +100,17 @@ def pr_departure(
     # and no term needs the absolute temperature, only ``Tr``.
     t_da = a_reduced * (psi - 2.0)
     t_db = -b_reduced
-    t_dpsi = -kappa * (1.0 + kappa) * Tr / (2.0 * sqrt_tr * (1.0 + kappa * (1.0 - sqrt_tr)) ** 2)
+    t_dpsi = term.psi_t(Tr)
     t_dc = coefficient * (psi - 1.0)
 
     # ``z`` is a root of ``F(z, T) = 0``, so ``dz/dT = -(dF/dT)/(dF/dz)``.
-    d_f_dz = (
-        3.0 * z * z
-        + 2.0 * (b_reduced - 1.0) * z
-        + (a_reduced - 3.0 * b_reduced * b_reduced - 2.0 * b_reduced)
-    )
-    t_dfdt = (
-        t_db * z * z
-        + (t_da - 6.0 * b_reduced * t_db - 2.0 * t_db) * z
-        + (
-            3.0 * b_reduced * b_reduced * t_db
-            + 2.0 * b_reduced * t_db
-            - t_da * b_reduced
-            - a_reduced * t_db
-        )
-    )
+    d_f_dz = PR.df_dz(z, a_reduced, b_reduced)
+    t_dfdt = PR.t_dfdt(z, a_reduced, b_reduced, t_da, t_db)
     t_dz = -t_dfdt / d_f_dz
 
-    n_plus = z + (1.0 + sqrt_2) * b_reduced
-    n_minus = z + (1.0 - sqrt_2) * b_reduced
-    t_di = (t_dz + (1.0 + sqrt_2) * t_db) / n_plus - (t_dz + (1.0 - sqrt_2) * t_db) / n_minus
+    n_plus = z + PR.delta1 * b_reduced
+    n_minus = z + PR.delta2 * b_reduced
+    t_di = (t_dz + PR.delta1 * t_db) / n_plus - (t_dz + PR.delta2 * t_db) / n_minus
 
     cp_dep_r = (
         h_dep_rt

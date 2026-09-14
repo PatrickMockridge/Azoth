@@ -23,6 +23,7 @@ from azoth.core.solver import (
     require_cubic_converged,
 )
 from azoth.core.warnings import Warning
+from azoth.eos.reference.cubic import PR
 
 CALC_ID = "eos.pr_z_factor"
 
@@ -65,10 +66,8 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
     convergence = Convergence.parse(solver["convergence"])
 
     # The monic cubic z**3 + c2*z**2 + c1*z + c0, coefficients straight from the
-    # published form so a reader can check them against the equation above.
-    c2 = -(1.0 - b_reduced)
-    c1 = a_reduced - 3.0 * b_reduced * b_reduced - 2.0 * b_reduced
-    c0 = -(a_reduced * b_reduced - b_reduced * b_reduced - b_reduced * b_reduced * b_reduced)
+    # cubic's geometry so a reader can check them against the equation above.
+    c2, c1, c0 = PR.z_coefficients(a_reduced, b_reduced)
 
     outcome = cubic_roots(
         c2,

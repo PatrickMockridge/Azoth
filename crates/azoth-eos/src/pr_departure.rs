@@ -14,6 +14,8 @@
 
 use azoth_core::{Result, apply_checks};
 
+use crate::alpha_term::{AlphaTerm, Soave};
+use crate::cubic::Cubic;
 use crate::results::PrDepartureResult;
 use crate::spec_gen;
 
@@ -71,16 +73,14 @@ pub fn pr_departure(
         &mut warnings,
     )?;
 
-    // The logarithmic derivative of the alpha function. Hoisted rather than
-    // recomputed for each use so the two languages cannot evaluate it twice in
-    // different orders.
-    let sqrt_tr = Tr.sqrt();
-    let psi = -kappa * sqrt_tr / (1.0 + kappa * (1.0 - sqrt_tr));
+    // The logarithmic derivative of the alpha function, from the same Soave term the
+    // mixture layer uses, so the two languages cannot evaluate it twice in different
+    // orders or different places.
+    let term = Soave { kappa };
+    let psi = term.psi(Tr);
 
-    let i_term = ((z + (1.0 + std::f64::consts::SQRT_2) * b_reduced)
-        / (z + (1.0 - std::f64::consts::SQRT_2) * b_reduced))
-        .ln();
-    let coefficient = a_reduced / (2.0 * std::f64::consts::SQRT_2 * b_reduced);
+    let i_term = Cubic::Pr.i_term(z, b_reduced);
+    let coefficient = Cubic::Pr.coefficient(a_reduced, b_reduced);
     let ln_z_minus_b = (z - b_reduced).ln();
 
     let ln_phi = z - 1.0 - ln_z_minus_b - coefficient * i_term;
@@ -95,26 +95,20 @@ pub fn pr_departure(
     // of the same call as the three above, and why it declares no input they do not.
     let t_da = a_reduced * (psi - 2.0);
     let t_db = -b_reduced;
-    let t_dpsi =
-        -kappa * (1.0 + kappa) * Tr / (2.0 * sqrt_tr * (1.0 + kappa * (1.0 - sqrt_tr)).powi(2));
+    let t_dpsi = term.psi_t(Tr);
     let t_dc = coefficient * (psi - 1.0);
 
     // `z` is a root of `F(z, T) = 0`, so `dz/dT = -(dF/dT)/(dF/dz)` and the chain
     // rule carries the two reduced-parameter derivatives through both brackets.
-    let d_f_dz = 3.0 * z * z
-        + 2.0 * (b_reduced - 1.0) * z
-        + (a_reduced - 3.0 * b_reduced * b_reduced - 2.0 * b_reduced);
-    let t_dfdt = t_db * z * z
-        + (t_da - 6.0 * b_reduced * t_db - 2.0 * t_db) * z
-        + (3.0 * b_reduced * b_reduced * t_db + 2.0 * b_reduced * t_db
-            - t_da * b_reduced
-            - a_reduced * t_db);
+    let d_f_dz = Cubic::Pr.df_dz(z, a_reduced, b_reduced);
+    let t_dfdt = Cubic::Pr.t_dfdt(z, a_reduced, b_reduced, t_da, t_db);
     let t_dz = -t_dfdt / d_f_dz;
 
-    let n_plus = z + (1.0 + std::f64::consts::SQRT_2) * b_reduced;
-    let n_minus = z + (1.0 - std::f64::consts::SQRT_2) * b_reduced;
-    let t_di = (t_dz + (1.0 + std::f64::consts::SQRT_2) * t_db) / n_plus
-        - (t_dz + (1.0 - std::f64::consts::SQRT_2) * t_db) / n_minus;
+    let d1 = Cubic::Pr.delta1();
+    let d2 = Cubic::Pr.delta2();
+    let n_plus = z + d1 * b_reduced;
+    let n_minus = z + d2 * b_reduced;
+    let t_di = (t_dz + d1 * t_db) / n_plus - (t_dz + d2 * t_db) / n_minus;
 
     let cp_dep_r = h_dep_rt
         + t_dz

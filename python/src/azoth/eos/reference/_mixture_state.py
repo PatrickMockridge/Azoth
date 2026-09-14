@@ -27,6 +27,8 @@ from typing import Any, NamedTuple
 from azoth.core.errors import OutOfRangeError
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
+from azoth.eos.reference.alpha_term import Soave
+from azoth.eos.reference.cubic import PR
 from azoth.eos.reference.pr_alpha_ab import pr_alpha_ab
 from azoth.eos.reference.pr_kappa import pr_kappa
 from azoth.eos.reference.pr_z_factor import pr_z_factor
@@ -36,8 +38,6 @@ from azoth.eos.reference.pr_z_factor import pr_z_factor
 #: rather than resolved, because a reader meeting the other value needs to know it
 #: is the same correlation and not a correction.
 WILSON_CONSTANT = 5.373
-
-_SQRT_2 = math.sqrt(2.0)
 
 
 def wilson_saturation_pressures(components: tuple[Any, ...], temperature: float) -> list[float]:
@@ -136,19 +136,13 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
             pressure / component.Pc.to_base_units().magnitude,
         )
         warnings.extend(ab.warnings)
-        sqrt_tr = math.sqrt(reduced_temperature)
+        # The alpha term's own two derivatives, so the Soave form lives in one place
+        # rather than being restated per call site.
+        term = Soave(kappa=kappa.kappa)
         a.append(ab.a_reduced)
         b.append(ab.b_reduced)
-        psi.append(-kappa.kappa * sqrt_tr / (1.0 + kappa.kappa * (1.0 - sqrt_tr)))
-        # ``T*dpsi/dT``, from ``dpsi/dTr`` and ``dTr/dT = 1/Tc``. Carrying the ``T``
-        # rather than dividing it out later keeps this free of the absolute
-        # temperature: it is a function of ``Tr`` alone.
-        psi_t.append(
-            -kappa.kappa
-            * (1.0 + kappa.kappa)
-            * reduced_temperature
-            / (2.0 * sqrt_tr * (1.0 + kappa.kappa * (1.0 - sqrt_tr)) ** 2)
-        )
+        psi.append(term.psi(reduced_temperature))
+        psi_t.append(term.psi_t(reduced_temperature))
     return ReducedParameters(a=a, b=b, psi=psi, psi_t=psi_t, warnings=warnings)
 
 
@@ -212,8 +206,8 @@ def phase_state_at(
     cross = [
         sum(x[j] * (1.0 - kij[i][j]) * math.sqrt(a[i] * a[j]) for j in range(n)) for i in range(n)
     ]
-    i_term = math.log((z + (1.0 + _SQRT_2) * b_mix) / (z + (1.0 - _SQRT_2) * b_mix))
-    coefficient = a_mix / (2.0 * _SQRT_2 * b_mix)
+    i_term = PR.i_term(z, b_mix)
+    coefficient = PR.coefficient(a_mix, b_mix)
     ln_z_minus_b = math.log(z - b_mix)
 
     ln_phi = []
@@ -255,16 +249,12 @@ def phase_state_at(
     t_da = a_mix * (psi_bar - 2.0)
     t_db = -b_mix
     t_dc = coefficient * (psi_bar - 1.0)
-    d_f_dz = 3.0 * z * z + 2.0 * (b_mix - 1.0) * z + (a_mix - 3.0 * b_mix * b_mix - 2.0 * b_mix)
-    t_dfdt = (
-        t_db * z * z
-        + (t_da - 6.0 * b_mix * t_db - 2.0 * t_db) * z
-        + (3.0 * b_mix * b_mix * t_db + 2.0 * b_mix * t_db - t_da * b_mix - a_mix * t_db)
-    )
+    d_f_dz = PR.df_dz(z, a_mix, b_mix)
+    t_dfdt = PR.t_dfdt(z, a_mix, b_mix, t_da, t_db)
     t_dz = -t_dfdt / d_f_dz
-    n_plus = z + (1.0 + _SQRT_2) * b_mix
-    n_minus = z + (1.0 - _SQRT_2) * b_mix
-    t_di = (t_dz + (1.0 + _SQRT_2) * t_db) / n_plus - (t_dz + (1.0 - _SQRT_2) * t_db) / n_minus
+    n_plus = z + PR.delta1 * b_mix
+    n_minus = z + PR.delta2 * b_mix
+    t_di = (t_dz + PR.delta1 * t_db) / n_plus - (t_dz + PR.delta2 * t_db) / n_minus
     cp_dep_r = (
         h_dep_rt
         + t_dz
@@ -338,8 +328,8 @@ def helmholtz_energy(
             f"rather than a compressibility that is out of range",
         )
     a_sum = sum(n[i] * n[j] * a_ij[i][j] for i in range(count) for j in range(count))
-    g = math.log((1.0 + (1.0 + _SQRT_2) * b_sum) / (1.0 + (1.0 - _SQRT_2) * b_sum))
-    return -total * math.log(1.0 - b_sum) - (a_sum / (2.0 * _SQRT_2 * b_sum)) * g
+    g = PR.helmholtz_g(b_sum)
+    return -total * math.log(1.0 - b_sum) - (a_sum / (PR.delta_diff * b_sum)) * g
 
 
 def helmholtz_hessian(
@@ -406,13 +396,14 @@ def helmholtz_hessian(
         )
 
     d = 1.0 - b_sum
-    # L(b) = ln(1 - b), G(b) = ln((1 + (1+sqrt2)b) / (1 + (1-sqrt2)b)).
+    # L(b) = ln(1 - b), G(b) = ln((1 + delta1 b)/(1 + delta2 b)).
     l_prime = -1.0 / d
     l_second = -1.0 / (d * d)
-    q = 1.0 + 2.0 * b_sum - b_sum * b_sum
-    g = math.log((1.0 + (1.0 + _SQRT_2) * b_sum) / (1.0 + (1.0 - _SQRT_2) * b_sum))
-    g_prime = 2.0 * _SQRT_2 / q
-    g_second = -4.0 * _SQRT_2 * d / (q * q)
+    g = PR.helmholtz_g(b_sum)
+    g_prime = PR.helmholtz_g_prime(b_sum)
+    g_second = PR.helmholtz_g_second(b_sum)
+    half_delta_diff = PR.half_delta_diff
+    delta_diff = PR.delta_diff
 
     a_bar = [sum(n[j] * a_ij[i][j] for j in range(count)) for i in range(count)]
     a_sum = sum(n[i] * n[j] * a_ij[i][j] for i in range(count) for j in range(count))
@@ -425,12 +416,12 @@ def helmholtz_hessian(
             hessian[i][j] = (
                 -(b_hat[i] + b_hat[j]) * l_prime
                 - total * product * l_second
-                - g * a_ij[i][j] / (_SQRT_2 * b_sum)
-                + g * pair / (_SQRT_2 * b_sum * b_sum)
-                - g * a_sum * product / (_SQRT_2 * b_sum * b_sum * b_sum)
-                - g_prime * pair / (_SQRT_2 * b_sum)
-                + g_prime * a_sum * product / (_SQRT_2 * b_sum * b_sum)
-                - g_second * a_sum * product / (2.0 * _SQRT_2 * b_sum)
+                - g * a_ij[i][j] / (half_delta_diff * b_sum)
+                + g * pair / (half_delta_diff * b_sum * b_sum)
+                - g * a_sum * product / (half_delta_diff * b_sum * b_sum * b_sum)
+                - g_prime * pair / (half_delta_diff * b_sum)
+                + g_prime * a_sum * product / (half_delta_diff * b_sum * b_sum)
+                - g_second * a_sum * product / (delta_diff * b_sum)
             )
     return hessian
 

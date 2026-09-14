@@ -17,6 +17,7 @@ from azoth._registry_gen import spec as _spec_for
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import PrAlphaAbResult
 from azoth.core.warnings import Warning
+from azoth.eos.reference.cubic import PR
 
 CALC_ID = "eos.pr_alpha_ab"
 
@@ -36,7 +37,7 @@ CALC_ID = "eos.pr_alpha_ab"
 #: the measurement and how to repeat it. A port that corrected its upstream would
 #: disagree with it by 1.4e-4 forever. The spec's ``notes`` carries the argument in
 #: full.
-OMEGA_A = 0.45724333333
+OMEGA_A = PR.omega_a
 
 #: ``Omega_b``, the repulsion constant of the Peng-Robinson cubic.
 #:
@@ -45,7 +46,7 @@ OMEGA_A = 0.45724333333
 #: ``0.07779607390388846`` and the paper's printed ``0.07780``. It is 7.26e-6 above
 #: the exact value and 3.3333e-6 above the printed one - the same offset
 #: ``Omega_a`` carries.
-OMEGA_B = 0.077803333
+OMEGA_B = PR.omega_b
 
 
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:

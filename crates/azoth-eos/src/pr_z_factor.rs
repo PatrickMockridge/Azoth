@@ -14,6 +14,7 @@
 use azoth_core::solver::{Convergence, cubic_roots, require_cubic_converged};
 use azoth_core::{Result, apply_checks};
 
+use crate::cubic::Cubic;
 use crate::results::{PrZFactorResult, RootStructure};
 use crate::spec_gen;
 
@@ -65,10 +66,8 @@ pub fn pr_z_factor(a_reduced: f64, b_reduced: f64) -> Result<PrZFactorResult> {
     let convergence = Convergence::parse(solver.convergence)?;
 
     // The monic cubic z**3 + c2*z**2 + c1*z + c0, coefficients straight from the
-    // published form so a reader can check them against the equation above.
-    let c2 = -(1.0 - b_reduced);
-    let c1 = a_reduced - 3.0 * b_reduced * b_reduced - 2.0 * b_reduced;
-    let c0 = -(a_reduced * b_reduced - b_reduced * b_reduced - b_reduced * b_reduced * b_reduced);
+    // cubic's geometry so a reader can check them against the equation above.
+    let (c2, c1, c0) = Cubic::Pr.z_coefficients(a_reduced, b_reduced);
 
     let outcome = cubic_roots(
         c2,
