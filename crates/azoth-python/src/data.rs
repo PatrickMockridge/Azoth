@@ -1,16 +1,6 @@
 //! The data tables, exposed to Python so the two sides can be compared.
 //!
-//! # Why this exists
-//!
-//! `crates/azoth-hydraulics/src/fluids.rs`, `fittings.rs` and
-//! `python/src/azoth/_data.py` all used to claim a cross-language test that compared
-//! the parsed data values. No such test existed, and it could not be written: the
-//! extension exposed the calculations and not the tables they were built from, so a
-//! Python test had no Rust-parsed value to compare against. Four docstrings asserting
-//! a check that did not run is exactly the failure this project is organised against,
-//! and it was found in its own source.
-//!
-//! So this module is the missing half. It exposes three things:
+//! It exposes three things:
 //!
 //! * the parsed rows, so every field can be compared row by row;
 //! * the **raw embedded text**, so the comparison can be made on bytes rather than on
@@ -19,8 +9,6 @@
 //!   like that - an agreement that proves nothing about which file was read;
 //! * the repo-relative path of each file, so Python knows which file on disk is
 //!   supposed to be the same one, rather than hardcoding the mapping in a test.
-//!
-//! # What this is not
 //!
 //! Not a data API. Nothing a calculation needs comes from here - the calcs read their
 //! own tables inside the crate, and the Python reference reads the files. This is

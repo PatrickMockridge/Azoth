@@ -25,8 +25,8 @@
 //! vocabulary and a result shape.
 //!
 //! `data_files`, `fittings_rows` and `fluid_rows` do the same job for the data the
-//! calcs are built from. See `data.rs` - the claim that both languages read the same
-//! tables was made in four docstrings before anything checked it.
+//! calcs are built from: the claim that both languages read the same tables is
+//! asserted by comparing parsed rows and embedded bytes. See `data.rs`.
 
 use pyo3::prelude::*;
 use pyo3::types::PyModule;

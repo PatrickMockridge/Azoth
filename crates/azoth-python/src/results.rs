@@ -2210,8 +2210,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
         PrMassDensityResult::CALC_ID => PrMassDensityResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
-        // contract whether or not its spec calls it a calculation, and before this
-        // the model results were covered by no shape check at all.
+        // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
         PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
         PhFlashResult::CALC_ID => PhFlashResult::FIELDS.to_vec(),
