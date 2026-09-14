@@ -50,7 +50,7 @@ def template_document() -> dict[str, Any]:
 def test_the_template_exists() -> None:
     """A missing template is the failure mode this file is named for."""
     assert TEMPLATE.is_file(), (
-        "keycard.example.yaml is missing. It is what docs/src/copyright.md tells "
+        "keycard.example.yaml is missing. It is what README.md tells "
         "a user to copy; without it that page describes a file that is not there."
     )
 

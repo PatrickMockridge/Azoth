@@ -32,8 +32,7 @@ Three consequences, and they are the reason this page exists:
 - **No status.** There is no `verified`, `unverified` or `source_needed` field on a
   spec, and there must not be. A spec declaring whether it is verified would be the
   library grading an engineer's judgement. What a calculation has not had confirmed is
-  recorded in [Required improvements](./required-improvements.md), next to the thing it
-  is about.
+  stated in its own `assumptions` and `source`, next to the thing it is about.
 - **No registration.** Nothing lists what exists. A calculation's id *is* its address —
   the module path and function name follow from it — so adding one adds files and
   registers nothing.
@@ -130,16 +129,14 @@ here. Attribution for anything ported lives in
 [`NOTICE`](https://github.com/PatrickMockridge/Azoth/blob/main/NOTICE), once, rather
 than in a per-calc block — a block repeated in twenty specs is a block nobody reads.
 
-**What a port *changed*, and why, is a limitation report** and belongs in
-[Required improvements](./required-improvements.md), not in a citation field. The line
-between the two is whether the sentence identifies a source or argues about it.
+**What a port *changed*, and why, belongs in the spec's `assumptions`**, not in a
+citation field. The line between the two is whether the sentence identifies a source or
+argues about it.
 
 ## Fields that are not part of the format
 
 The schema rejects each of these, because `additionalProperties: false` is set at every
-level — a spec carrying one fails to validate rather than being quietly ignored. They were
-removed at `6ac3c04`, with the entries they generated landing in
-[Required improvements](./required-improvements.md) first.
+level — a spec carrying one fails to validate rather than being quietly ignored.
 
 | Field | Where its content belongs instead |
 |---|---|

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Fail the build on prose that narrates the code's own history.
 
-[P5](./../docs/src/process.md) says a comment either explains the code in front of the
-reader, or reports something that belongs in `required-improvements.md`, or narrates the
+A comment either explains the code in front of the reader, or reports something that
+belongs in the commit that makes the change, or narrates the
 code's history or the author's process. The last of those is the one this catches.
 
 **This is a backstop and it is deliberately narrow.** The phrase list below is every
@@ -146,8 +146,8 @@ def main() -> int:
         print(
             f"prose_lint: {problems} line(s) narrate the code's history. The comment "
             f"either explains the code in front of the reader, or it reports something "
-            f"for required-improvements.md, or it does not belong in the file. "
-            f"See docs/src/process.md P5."
+            f"as a defect report in the commit that fixes it, or it does not belong in "
+            f"the file."
         )
         return 1
     return 0

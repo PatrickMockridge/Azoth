@@ -454,7 +454,7 @@ def pr_mass_density(*, M: Sequence[float], v: Sequence[float]) -> PrMassDensityB
 
     ``M`` is in kg/mol in the spec's canonical unit, as the scalar API declares - a
     batch call cannot check it, which is the one thing the batch API gives up and
-    ``docs/src/batch.md`` says so. See :func:`azoth.eos.pr_mass_density`.
+    and the batch API cannot check it. See :func:`azoth.eos.pr_mass_density`.
     """
     result: PrMassDensityBatch = run(
         _PR_MASS_DENSITY,

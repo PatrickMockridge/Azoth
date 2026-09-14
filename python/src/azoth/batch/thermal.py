@@ -54,7 +54,7 @@ def conduction_plane_wall(
     plausible answer ten times too large. The spec marks that input ``interval: true``
     and the scalar boundary refuses the offset unit. A batch call cannot make the
     mistake at all, because it takes no quantities: there is no unit to be wrong about.
-    See the note in ``docs/src/batch.md``.
+    Inputs are plain numbers in the spec's canonical unit.
 
     See :func:`azoth.thermal.conduction_plane_wall` for the calculation itself.
     """

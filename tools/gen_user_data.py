@@ -26,7 +26,7 @@ them. `data/` holds committed placeholders, and this tool overwrites them **in
 place**, because `include_str!` needs the file at the path the code names. So the
 only thing standing between your licensed data and a public repository is you
 reading the warning this prints and not running `git add`. See
-`docs/src/copyright.md`.
+`docs/src/spec.md`.
 
 # Why a fluid name can be refused
 
@@ -160,7 +160,7 @@ NOT_A_PLACEHOLDER_WARNING = """\
 #
 #  A table of real published values that this repository ships - the water and air
 #  tables - is a different case and does not carry that restriction. See
-#  docs/src/copyright.md."""
+#  see docs/src/spec.md."""
 
 STATUS_BODY = """\
 # verify_status values:

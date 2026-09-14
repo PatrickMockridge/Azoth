@@ -266,7 +266,7 @@ def test_the_shipped_registry_is_still_all_placeholders() -> None:
     assert statuses == {"estimated_dummy"}, (
         f"data/fittings/crane_k_factors.csv is no longer all placeholders ({statuses}). "
         f"If you generated licensed data into it, restore it with "
-        f"`git checkout -- data/` - see docs/src/copyright.md."
+        f"`git checkout -- data/` puts the shipped placeholders back."
     )
 
     for fluid in ("water", "air"):

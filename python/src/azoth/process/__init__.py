@@ -17,7 +17,7 @@ inlet, and the compositions become one row per inlet.
 **Every unit operation in this namespace is ported from `NeqSim
 <https://github.com/equinor/neqsim>`_**, which is developed at NTNU and maintained by
 Equinor and is Apache-2.0. See ``NOTICE`` at the repository root for the attribution,
-``docs/src/roadmap.md`` for what is in scope and what is deliberately not, and each
+``docs/src/spec.md`` for the port's order, and each
 model's spec under ``specs/models/process/`` for what its port took.
 
 As in every other namespace, each function dispatches to the Rust extension when it is

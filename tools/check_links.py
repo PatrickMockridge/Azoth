@@ -35,14 +35,12 @@ ROOT = Path(__file__).resolve().parent.parent
 DOCS_SRC = ROOT / "docs" / "src"
 
 #: Markdown outside the book. The README's links are as capable of being wrong
-#: as the book's, and were: it pointed at CONTRIBUTING.md before that file
-#: existed, which nothing caught because only docs/ was checked.
+#: as the book's, and a dead one there is as broken as a dead one in the book.
 ROOT_PAGES = (
     "README.md",
-    "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
     "SECURITY.md",
-    "TRUST.md",
+    "SPEC.md",
     "validation/README.md",
     "databank/README.md",
 )

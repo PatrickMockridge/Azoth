@@ -1,6 +1,6 @@
 name: Release
 
-# Triggered by a version tag. The tag is expected to be signed - see TRUST.md -
+# Triggered by a version tag. The tag is expected to be signed,
 # which is what ties the artifacts to a commit someone vouched for.
 on:
   push:
@@ -193,5 +193,5 @@ jobs:
           gh release create "${RELEASE_TAG}" \
             --repo "${{ github.repository }}" \
             --title "${RELEASE_TAG}" \
-            --notes "See TRUST.md for how to verify these artifacts." \
+            --notes "See README.md for how to verify these artifacts." \
             dist/* provenance.json

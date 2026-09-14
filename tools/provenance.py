@@ -301,7 +301,7 @@ def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
             "note": (
                 "Filled in by .github/workflows/release.yml after keyless signing "
                 "with cosign. Null for provenance generated from a source tree, "
-                "which is unsigned by construction. See TRUST.md."
+                "which is unsigned by construction."
             ),
         },
     }
@@ -324,7 +324,7 @@ def render(record: dict[str, Any]) -> str:
 def verify(path: Path) -> int:
     """Recompute the hashes in a record and report any that no longer match.
 
-    This is what makes the instructions in TRUST.md executable rather than
+    This is what makes the verification instructions executable rather than
     aspirational: a reader can check a published record against the tree they
     have, rather than being told to trust it.
     """

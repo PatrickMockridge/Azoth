@@ -15,7 +15,7 @@ knowing about. Converting a sequence of quantities costs one `pint` operation pe
 element - the same order as the per-element boundary crossing this exists to remove - so
 the conversion is one factor applied to a whole array instead. What is lost is the
 scalar API's `UnitMismatchError`: passing metres where the spec says millimetres gets a
-thousand-fold error with nothing to catch it. See `docs/src/batch.md`.
+thousand-fold error with nothing to catch it.
 """
 
 from __future__ import annotations

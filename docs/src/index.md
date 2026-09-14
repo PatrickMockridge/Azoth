@@ -14,7 +14,7 @@ what is in scope and what deliberately is not, and what it costs to add a
 calculation. It is normative: where a page here disagrees with it, that page is
 wrong.
 
-**[How azoth is put together](./architecture.md)** is the orientation rather than
+**[the specification](./spec.md)** is the orientation rather than
 the rulebook: the small core every domain depends on, the four levels of
 composition, and where a new piece of your own belongs.
 
@@ -61,7 +61,7 @@ Four sections, and the difference between them is the point:
   quantities with units.
 - **Unit operations** — the process layer over the domains, where a calculation becomes
   a transformation of streams. It is not a fourth domain but the composition tier above
-  them, and [How azoth is put together](./architecture.md) is the page for how the
+  them, and [the specification](./spec.md) is the page for how the
   levels nest.
 
 <!-- BEGIN GENERATED: implemented -->
@@ -132,7 +132,7 @@ still true of every id in the list above, and it is why each one has a worked ex
 reader can retrace by hand. A **process layer** - unit operations, and flowsheets that
 compose them - is being built on top, and it composes for you; what it gives up in
 exchange, and what replaces the guarantee, is set out in
-[the roadmap](./roadmap.md) rather than left to be discovered.
+[the specification](./spec.md) rather than left to be discovered.
 
 The `azoth pipe` command performs the composition shown here, and reports the two
 pressure drop contributions separately rather than only their sum - they come from
@@ -196,17 +196,19 @@ because a wrapper's signature and result class carry judgement the spec does not
 [Contributing](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md)
 has the current count, measured rather than remembered.
 
-[How azoth is put together](./architecture.md) carries the same decision table for the
+[the specification](./spec.md) carries the same decision table for the
 other kinds of addition — a component or a fluid, which is a keycard and no code at all,
 and a whole new domain, which is a new crate.
 
 ## The batch API
 
-[`azoth.batch`](./batch.md) evaluates almost all of these calculations over arrays, with
-one call crossing into the Rust core instead of N. It is a loop over the same
-scalar kernels, not a second implementation, so the cross-language claim is
-unchanged - and it deliberately gives up one thing the scalar API provides, which
-is unit checking. See the [batch page](./batch.md) before using it.
+`azoth.batch` evaluates almost all of these calculations over arrays, with one call
+crossing into the Rust core instead of N. It is a loop over the same scalar kernels, not
+a second implementation, so the cross-language claim is unchanged — and it deliberately
+gives up one thing the scalar API provides, which is unit checking: inputs are plain
+numbers in the spec's canonical unit, and outputs are SI base magnitudes with a unit map.
+`orifice_flow` is the live example, whose `d` is in **millimetres**, so `d=[50.0]` means
+50 mm.
 
 ## Licence
 

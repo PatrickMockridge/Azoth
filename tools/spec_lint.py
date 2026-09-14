@@ -709,7 +709,7 @@ def check_worked_example(report: Report, rel: Path, spec: dict[str, Any]) -> Non
     # anyone skimming. The check is deleted rather than re-enabled: `derivation` is
     # optional prose about how an expected value was obtained, the example's own
     # inputs and expected values are what the tests compare, and nothing here can
-    # tell whether arithmetic written in a sentence is true. See CONTRIBUTING.md.
+    # tell whether arithmetic written in a sentence is true, so it is a reviewer's job.
 
     tol = example["tolerance"]
     if tol > MAX_SENSIBLE_TOLERANCE:

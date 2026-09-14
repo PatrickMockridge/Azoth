@@ -64,13 +64,7 @@ NAMESPACES = {
 #: together and what you do with it, which is what a reader arriving at the book
 #: needs next. They used to sit after every calculation page, in the order the
 #: book happened to grow rather than the order it is read.
-FRONT_PAGES = (
-    ("Process", "process.md"),
-    ("How azoth is put together", "architecture.md"),
-    ("Spec files", "spec-files.md"),
-    ("The keycard", "keycard.md"),
-    ("What ships", "data.md"),
-)
+FRONT_PAGES = (("Spec files", "spec-files.md"),)
 
 #: Hand-written pages that come after the reference sections: consulted once a
 #: reader knows what is here.
@@ -80,15 +74,7 @@ FRONT_PAGES = (
 #: build for any page under docs/src that is missing from it. So a hand-written
 #: page has to be registered in one of them or it does not appear at all - and
 #: the failure is caught rather than being a page nobody ever reads.
-STATIC_PAGES = (
-    ("Test plan", "test-plan.md"),
-    ("Required improvements", "required-improvements.md"),
-    ("Remediation plan", "remediation.md"),
-    ("Copyright and licensed data", "copyright.md"),
-    ("The batch API", "batch.md"),
-    ("azoth and NeqSim", "comparison/neqsim.md"),
-    ("Roadmap", "roadmap.md"),
-)
+STATIC_PAGES: tuple[tuple[str, str], ...] = ()
 
 
 def namespace_dir(namespace: str) -> Path:

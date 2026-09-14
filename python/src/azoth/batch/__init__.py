@@ -2,7 +2,7 @@
 
 One call evaluates a calculation N times, crossing the language boundary once instead of
 N times. The README has named this as the missing performance story since the beginning;
-`docs/src/batch.md` records the decisions behind it, and most of that page is about what
+Most of what follows is about what
 this deliberately does *not* do.
 
 * :mod:`azoth.batch.hydraulics` - the hydraulics calculations, batched
@@ -11,7 +11,7 @@ this deliberately does *not* do.
 
 # A batch call is a loop over the scalar kernels
 
-Not a vectorised kernel. `README.md` and `CONTRIBUTING.md` both stake this project on
+Not a vectorised kernel. `README.md` and `docs/src/spec.md` both stake this project on
 there being exactly two implementations that check each other, and a vectorised Rust
 kernel would be a third - a different shape and a different arithmetic order, checked by
 nothing. The optimisation does not need one either: the boundary crossing is the cost,

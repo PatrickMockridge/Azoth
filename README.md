@@ -25,7 +25,7 @@ What is azoth's own is the structure around them, and that is where the opinions
   calculation exists twice and the two are compared case by case, so azoth works in a
   notebook or a conda environment with no Rust toolchain at all.
 
-[How azoth is put together](docs/src/architecture.md) is the page for all four, and
+[the specification](docs/src/spec.md) is the page for all four, and
 [`SPEC.md`](SPEC.md) is the normative one - why Rust rather than Java, what is in scope
 and what deliberately is not, and what it costs to add a calculation. Where another
 document disagrees with the specification, that document is wrong.
@@ -38,7 +38,7 @@ unit operations over the top. The fourth level - a **flowsheet** - is designed i
 [the specification](docs/src/spec.md) and not built. The fitting coefficients azoth
 ships are **placeholders, not engineering data**;
 see [Not for design work yet](#not-for-design-work-yet), and
-[Roadmap](docs/src/roadmap.md) has the programme.
+[the specification](docs/src/spec.md) has the programme.
 
 ## Install
 
@@ -184,13 +184,13 @@ nowhere**, so it is a source for the method and not for the answer; everything t
 model is checked against is this project's, including the closed-form `Z_c` a pure
 Peng-Robinson fluid has. The spec's notes say plainly what has and has not been
 confirmed, which is that nobody has read the paper.
-[azoth and NeqSim](docs/src/comparison/neqsim.md) compares the two libraries in full.
+[the specification](docs/src/spec.md) compares the two libraries in full.
 
 The ids are namespaced by **domain** - `hydraulics.*`, `thermal.*`, `eos.*` - not by
 project. They appear in provenance records and citations, so renaming the project does
 not, and should not, invalidate them. `process.*` is named differently on purpose: the
 process layer is not a fourth domain sitting beside the others but the composition tier
-above them, and [How azoth is put together](docs/src/architecture.md) sets out why.
+above them, and [the specification](docs/src/spec.md) sets out why.
 
 The namespaces are also what proved the pipeline is domain-agnostic rather than shaped
 around pipe flow. `eos` is where the shapes stop matching: an equation of state is
@@ -222,7 +222,7 @@ keycard.yaml ───────► tools/gen_user_data.py ─► data/fitting
 what fail the build.
 
 The layering, the four levels, and where a new piece of your own belongs are on
-[How azoth is put together](docs/src/architecture.md) rather than repeated here.
+[the specification](docs/src/spec.md) rather than repeated here.
 
 Python is the reference implementation and Rust the core, with PyO3 binding them.
 Units cross the public API as `pint` quantities and become plain floats inside;
@@ -275,7 +275,7 @@ contract, and S5 says why registration was deleted rather than automated.
 There are three ways in. There is no runtime plugin registry - no `register()` call and
 no loading at run time - which means a calculation always exists twice, once in each
 language, as the two-implementation rule requires.
-[How azoth is put together](docs/src/architecture.md) has the three.
+[the specification](docs/src/spec.md) has the three.
 
 Most of what you would want to change is **data, not arithmetic**. A **keycard** is one
 YAML file that overrides or extends what the library ships — a component's critical
@@ -291,10 +291,10 @@ azoth.eos.component("methane")  # your values, not the databank's
 
 Nothing needs registering to make it apply, in either language. `keycard.example.yaml`
 is the template, `python tools/check_user_data.py` checks yours, and
-[The keycard](docs/src/keycard.md) documents every section - including the two sections
+[the specification](docs/src/spec.md) documents every section - including the two sections
 that are compiled into the shipped data files by `tools/gen_user_data.py` rather than
-read at run time, and so need a rebuild. What the library ships and where it came from
-is on [What ships](docs/src/data.md).
+read at run time, and so need a rebuild. What the library ships and where it came from is
+in [`NOTICE`](NOTICE) and `databank/manifest.yaml`.
 
 **A new equation or procedure is code**, and it is a spec plus one Rust file and one
 Python file — the section below is the whole contract. **A new source of fluid
@@ -308,8 +308,7 @@ ship.
 magnitudes chosen so the software has something to run against. They are not from
 Crane TP-410 or any other standard. A pressure drop computed from them can be
 wrong by a factor of two and look entirely reasonable. Supply your own with
-`keycard.example.yaml`; see
-[Copyright and licensed data](docs/src/copyright.md).
+`keycard.example.yaml`; the attribution obligations are in [`NOTICE`](NOTICE).
 
 The `verify_status` column records that, and a test fails the day someone populates
 the file properly. Water and air under `data/fluids/` are a different case: real
@@ -318,16 +317,14 @@ primary formulation.
 
 That column exists on the data *this repository ships*, and not on the rows of a
 keycard, which is a deliberate asymmetry rather than a leftover —
-[Specification, S6](docs/src/spec.md#s6-provenance-is-the-engineers-job-not-the-librarys)
-is where the reasoning lives.
+[the specification](docs/src/spec.md) is where the reasoning lives.
 
 ## Verifying a result
 
-See [TRUST.md](TRUST.md): how to verify a release tag, check a wheel with cosign,
-reproduce a calculation by hand, and check a `provenance.json` record. It also
-states plainly what none of that proves - a verified artifact means the code is
-what it claims to be, not that the correlation is right for your fluid,
-roughness or Reynolds number.
+A release tag is signed and its wheels are signed with cosign, and every build emits a
+`provenance.json` recording the commit and a SHA-256 of every spec, implementation, test
+and data file. None of that proves the correlation is right for your fluid, roughness or
+Reynolds number: a verified artifact means the code is what it claims to be.
 
 ## Documentation
 
@@ -344,8 +341,7 @@ its algorithm where a calc page carries its solver, because a model's spec fixes
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and the
-[PR template](.github/PULL_REQUEST_TEMPLATE.md). Commits are signed.
+See the [PR template](.github/PULL_REQUEST_TEMPLATE.md). Commits are signed.
 
 Participation is covered by the [Code of Conduct](CODE_OF_CONDUCT.md), and
 anything that could produce a wrong number should go through
