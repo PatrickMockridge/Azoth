@@ -25,14 +25,11 @@ import argparse
 import csv
 import re
 import sys
+import tomllib
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    sys.exit("spec_lint requires PyYAML: pip install pyyaml")
 
 try:
     from jsonschema import Draft202012Validator
@@ -65,8 +62,9 @@ MAX_SENSIBLE_TOLERANCE = 0.05
 # equivalent for a spec file, and there must not be one.** A spec declaring whether
 # it is verified would be the library grading the engineer's judgement, which is not
 # its job: the choice of which equation of state and which data apply to a situation
-# belongs to the engineer and to their keycard. See `docs/src/spec.md` S6, "The
-# library implements; the engineer decides". A schema edit is the only way a new
+# belongs to the engineer and to their keycard. See
+# `docs/src/architecture/specification.md` S6, "The library implements; the engineer
+# decides". A schema edit is the only way a new
 # spec field can appear at all - every spec schema sets `additionalProperties: false`
 # - so if you are here to add a `status` or a `provenance` key to one, that edit is
 # the thing to not make.
@@ -274,11 +272,8 @@ def check_fluids(report: Report, raw: Any) -> None:
 def check_fluid_tables(report: Report, fluids_dir: Path) -> None:
     """Every fluid table the repository ships, checked unconditionally.
 
-    Not driven by a spec's `data:` block, because no calc reads these: the CLI
-    does, and the property provider does. So there is no spec to hang the check
-    off, and before this existed `data/fluids/*.csv` was the one committed data in
-    the repository that nothing validated - which is how both shipped tables came
-    to carry provenance the checker would have rejected.
+    Not driven by a spec's `data:` block, because the CLI and the property provider
+    read these and no calc does, so there is no spec to hang the check off.
     """
     for path in sorted(fluids_dir.glob("*.csv")):
         rows = load_csv_rows(path)
@@ -339,7 +334,7 @@ def check_schema(
 ) -> list[tuple[Path, dict[str, Any]]]:
     """Validate each spec against the JSON Schema. Returns the ones that parsed."""
     parsed: list[tuple[Path, dict[str, Any]]] = []
-    specs = sorted(spec_dir.rglob("*.yaml"))
+    specs = sorted(spec_dir.rglob("*.toml"))
     if not specs:
         report.error("specs", f"no spec files found under {spec_dir}")
         return parsed
@@ -347,9 +342,9 @@ def check_schema(
     for path in specs:
         rel = display_path(path)
         try:
-            spec = yaml.safe_load(path.read_text(encoding="utf-8"))
-        except yaml.YAMLError as exc:
-            report.error(str(rel), f"YAML does not parse: {exc}")
+            spec = tomllib.loads(path.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError as exc:
+            report.error(str(rel), f"TOML does not parse: {exc}")
             continue
 
         errors = sorted(validator.iter_errors(spec), key=lambda e: list(e.absolute_path))
@@ -514,6 +509,7 @@ def check_model(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     check_identity_model(report, rel, spec)
     check_range_checks(report, rel, spec)
     check_model_cases(report, rel, spec)
+    check_prose_length(report, rel, spec)
 
 
 def check_identity_model(report: Report, rel: Path, spec: dict[str, Any]) -> None:
@@ -529,7 +525,7 @@ def check_identity_model(report: Report, rel: Path, spec: dict[str, Any]) -> Non
         report.error(
             str(rel),
             f"id '{model_id}' has final segment '{expected_stem}' but the file is "
-            f"'{rel.stem}.yaml'. The generated table is keyed by the id and the docs "
+            f"'{rel.stem}.toml'. The generated table is keyed by the id and the docs "
             f"page is named after the file, so the two have to agree.",
         )
 
@@ -904,60 +900,69 @@ def check_data(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                     )
 
 
-def check_numeric_literals(report: Report, rel: Path, spec: dict[str, Any]) -> None:
-    """Catch numbers that YAML silently turned into strings.
+#: The longest a string in a spec may be, and the longer limit a worked substitution
+#: gets. A spec declares a value and a short label. A substitution is the one long
+#: string the format keeps, because a number nobody can follow is a number somebody
+#: typed - so its limit is set by the arithmetic, not by the reading.
+MAX_PROSE = 300
+MAX_SUBSTITUTION = 2000
 
-    PyYAML implements YAML 1.1, whose float resolver requires an explicit sign on
-    the exponent: `1.0e-3` is a float, but `1.0e12` is a STRING. That is a genuine
-    trap, because the spec still looks correct and the schema violation surfaces
-    far away from the typo. Worse, if the value lands somewhere unconstrained it
-    would flow into the generated Rust registry as a quoted string.
+#: The fields that hold a worked substitution rather than prose.
+SUBSTITUTIONS: tuple[str, ...] = ("derivation", "source")
 
-    Only the subtrees where numbers are genuinely expected are checked, so quoted
-    years and edition strings elsewhere are left alone.
+#: The fields that are the calculation rather than a description of it, and so carry no
+#: limit: the equation as Python and the same equation as LaTeX.
+UNBOUNDED: tuple[str, ...] = ("equation", "latex")
+
+
+def check_prose_length(report: Report, rel: Path, spec: dict[str, Any]) -> None:
+    """Every string in a spec fits in a sentence or two.
+
+    The rule is `docs/src/architecture/spec-files.md`'s: a spec declares and does not
+    explain. It was written down and then violated, because nothing measured it - a
+    rationale of 1,469
+    characters is a page in a file whose reader wants a number, and it is the kind of
+    prose that goes on arguing after the value beside it has changed.
+
+    Measured on the value with its whitespace collapsed, which is how a reader of the
+    generated page sees it.
     """
-    targets: list[tuple[str, Any]] = [
-        ("worked_example/tolerance", spec["worked_example"].get("tolerance")),
-    ]
-    for field_name in ("inputs", "expected"):
-        for key, value in spec["worked_example"][field_name].items():
-            targets.append((f"worked_example/{field_name}/{key}", value))
-
-    for index, check in enumerate(spec["valid_range"]):
-        for bound in ("min", "max"):
-            if bound in check:
-                targets.append((f"valid_range/{index}/{bound}", check[bound]))
-
-    for key, value in spec.get("solver", {}).items():
-        if key != "kind" and key != "convergence":
-            targets.append((f"solver/{key}", value))
-
-    for index, test in enumerate(spec["tests"]):
-        if "tolerance" in test:
-            targets.append((f"tests/{index}/tolerance", test["tolerance"]))
-        for field_name in ("inputs", "expected"):
-            for key, value in test.get(field_name, {}).items():
-                targets.append((f"tests/{index}/{field_name}/{key}", value))
-
-    for where, value in targets:
-        if isinstance(value, str):
+    for where, value in strings(spec):
+        field = where.rpartition("/")[2]
+        if field in UNBOUNDED:
+            continue
+        limit = MAX_SUBSTITUTION if field in SUBSTITUTIONS else MAX_PROSE
+        length = len(" ".join(value.split()))
+        if length > limit:
             report.error(
                 str(rel),
-                f"{where} is the string {value!r}, not a number. YAML 1.1 requires a "
-                f"signed exponent (write 1.0e+12, not 1.0e12) - an unsigned exponent "
-                f"silently parses as a string.",
+                f"{where} is {length} characters, over the {limit} a spec field allows. "
+                f"A spec declares a value and a short label; an argument belongs in a "
+                f"page of the book.",
             )
+
+
+def strings(value: Any, at: str = "") -> Iterator[tuple[str, str]]:
+    """Every string in a document, with the path it sits at."""
+    if isinstance(value, str):
+        yield at, value
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            yield from strings(item, f"{at}/{key}")
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            yield from strings(item, f"{at}/{index}")
 
 
 def lint_spec(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     check_identity(report, rel, spec)
     check_input_flags(report, rel, spec)
     check_identifier_names(report, rel, spec)
-    check_numeric_literals(report, rel, spec)
     check_range_checks(report, rel, spec)
     check_worked_example(report, rel, spec)
     check_tests(report, rel, spec)
     check_data(report, rel, spec)
+    check_prose_length(report, rel, spec)
 
 
 def main() -> int:
@@ -1018,11 +1023,9 @@ def main() -> int:
     if not args.quiet:
         print(f"spec_lint: {len(parsed)} spec(s) checked against {SCHEMA_PATH.name}")
 
-    # The fluid tables, unconditionally. They are not reached through a spec's
-    # `data:` block - the CLI and the property provider read them, not a calc - so
-    # there is nothing to hang the check off, and before this existed they were
-    # the one committed data in the repository that nothing validated. Both
-    # shipped tables had drifted into a state the shared rules reject.
+    # The fluid tables, unconditionally: they are not reached through a spec's
+    # `data:` block, because the CLI and the property provider read them and no calc
+    # does.
     check_fluid_tables(report, ROOT / "data" / "fluids")
 
     for warning in report.warnings:

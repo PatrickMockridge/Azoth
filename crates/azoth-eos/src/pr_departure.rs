@@ -8,7 +8,7 @@
 //! s_dep_r  = ln(z - B) + C*psi*I          where C = A / (2*sqrt(2)*B)
 //! ```
 //!
-//! Spec: `specs/calcs/eos/pr_departure.yaml`, which carries the provenance, the
+//! Spec: `specs/calcs/eos/pr_departure.toml`, which carries the provenance, the
 //! derivation of the Gibbs identity `h_dep_rt - s_dep_r = ln_phi`, and the assumptions
 //! about `z`, `kappa` and `Tr` this calc cannot check.
 

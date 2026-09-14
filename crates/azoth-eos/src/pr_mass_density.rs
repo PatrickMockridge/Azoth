@@ -4,7 +4,7 @@
 //! rho = M/v
 //! ```
 //!
-//! Spec: `specs/calcs/eos/pr_mass_density.yaml`, which carries why one division earns
+//! Spec: `specs/calcs/eos/pr_mass_density.toml`, which carries why one division earns
 //! a calc and the `g/mol`-versus-`kg/mol` trap that the units layer cannot catch.
 
 use azoth_core::units::{MolarMass, MolarVolume, kilograms_per_cubic_meter};

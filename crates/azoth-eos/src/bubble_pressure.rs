@@ -1,6 +1,6 @@
 //! `eos.bubble_pressure` - the pressure at which a liquid first gives off vapour.
 //!
-//! Spec: `specs/models/eos/bubble_pressure.yaml`
+//! Spec: `specs/models/eos/bubble_pressure.toml`
 //!
 //! The iteration itself lives in [`crate::phase_boundary`], because `eos.dew_pressure`
 //! runs the same loop with the phases exchanged and the guard against the trivial

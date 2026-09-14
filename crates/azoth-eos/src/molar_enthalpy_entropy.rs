@@ -5,7 +5,7 @@
 //! S = S_ig(T_ref) + integral Cp/T dT    - R ln(P/P_ref) - R sum z_i ln z_i + S_dep
 //! ```
 //!
-//! Spec: `specs/models/eos/molar_enthalpy_entropy.yaml`, which carries the assembly -
+//! Spec: `specs/models/eos/molar_enthalpy_entropy.toml`, which carries the assembly -
 //! which term belongs on which side - and what the caller is responsible for: the
 //! datum, the coefficients and the compressibility factor.
 //!

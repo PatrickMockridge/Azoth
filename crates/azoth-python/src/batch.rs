@@ -3,7 +3,7 @@
 //! # The decision this module embodies
 //!
 //! **This is a loop over the existing scalar kernels, not a vectorised kernel.**
-//! `README.md` and `docs/src/spec.md` both stake the project on there being exactly two
+//! `README.md` and `docs/src/architecture/specification.md` both stake the project on there being exactly two
 //! implementations that check each other. A vectorised Rust kernel would be a third -
 //! a different shape and a different arithmetic order, cross-checked by nothing - so
 //! the claim that two independent implementations agree would quietly stop being true

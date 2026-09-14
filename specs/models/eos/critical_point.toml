@@ -1,0 +1,80 @@
+id = "eos.critical_point"
+name = "Mixture critical point"
+kind = "procedure"
+assumptions = [
+    "A component's `Tc`, `Pc`, `omega` and every `kij` come from the databank (`data/components/`, from NeqSim's `COMP.csv` and `INTER.csv`) with the keycard's overrides applied.",
+    "the composition has exactly one critical point: this model finds the one nearest its starting point without any check that there is not another.",
+    "the critical point found is a *mixture* critical point of the given composition, not a point on the phase envelope of a reservoir fluid.",
+    "Peng-Robinson's `Z_c` is not the experimental one for any substance. The model reports what the equation of state gives, and the equation of state is the caller's choice.",
+    "the result is a state of one phase: nothing checks that the composition could exist at that state.",
+]
+references = [
+    "Heidemann, R. A.; Khalil, A. M. (1980). \"The calculation of critical points.\" AIChE Journal 26(5), 769-779. DOI 10.1002/aic.690260510.",
+    "Michelsen, M. L.; Mollerup, J. M. (2004). \"Thermodynamic Models: Fundamentals and Computational Aspects\", ch. 5.",
+    "Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.",
+    "NeqSim 3.20.0, `CriticalPointFlash.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Heidemann, R. A.; Khalil, A. M. (1980)"
+edition = "The calculation of critical points. AIChE Journal 26(5), 769-779."
+[algorithm]
+scheme = "heidemann_khalil_critical"
+initialisation = "kay_rule_and_covolume"
+convergence = "absolute"
+tolerance = 1e-09
+max_iterations = 60
+[algorithm.inner]
+scheme = "newton_on_temperature_eigenvalue"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 60
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the composition whose critical point is wanted, checked rather than renormalised."
+[outputs]
+[outputs.tc]
+unit = "K"
+description = "the critical temperature"
+[outputs.pc]
+unit = "Pa"
+description = "the critical pressure, evaluated from the equation of state at the returned volume"
+[outputs.vc]
+unit = "m**3/mol"
+description = "the critical molar volume"
+[outputs.z_c]
+unit = "dimensionless"
+description = "the critical compressibility, `pc vc/(R tc)`"
+[outputs.iterations]
+unit = "dimensionless"
+description = "outer iterations the critical-point search took"
+[outputs.residual]
+unit = "dimensionless"
+description = "the convergence residual at the returned state, against `algorithm.tolerance`"
+[[valid_range]]
+quantity = "tc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the iteration can leave the region where the equation of state has a critical point and converge on a temperature that is not a state."
+[[valid_range]]
+quantity = "pc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a non-positive pressure at the returned volume means the volume is inside the co-volume and the state is not one."
+[[valid_range]]
+quantity = "z_c"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a sign error in any of the three quantities above shows up as a negative `z_c` before it shows up anywhere else."
+[implementations]
+python = "azoth.eos.critical_point"
+rust = "azoth_eos::critical_point"

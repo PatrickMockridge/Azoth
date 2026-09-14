@@ -10,7 +10,7 @@
 // which belongs in a build - so the numbers it prints are recorded in the case
 // files beside it.
 //
-// The jar is NeqSim 3.20.0, the version `databank/manifest.yaml` names as the source
+// The jar is NeqSim 3.20.0, the version `databank/manifest.toml` names as the source
 // of every vendored table. `databank/sources/neqsim/` holds its data files; the jar
 // is not vendored, because it is 20 MB of compiled Java that nothing here links
 // against and its licence is carried by the attribution in NOTICE.

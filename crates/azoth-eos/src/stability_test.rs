@@ -5,7 +5,7 @@
 //! point, and a flash converging to `x = y = z` has shown that its own starting point was
 //! not a split, not that the feed is single phase.
 //!
-//! Spec: `specs/models/eos/stability_test.yaml`, which carries the criterion, the two
+//! Spec: `specs/models/eos/stability_test.toml`, which carries the criterion, the two
 //! Wilson trials and what they cost, the root the feed is placed on, and the iteration
 //! cap.
 //!

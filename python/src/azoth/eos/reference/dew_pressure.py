@@ -1,6 +1,6 @@
 """``eos.dew_pressure`` - the pressure at which a vapour first condenses.
 
-Spec: ``specs/models/eos/dew_pressure.yaml``
+Spec: ``specs/models/eos/dew_pressure.toml``
 
 The companion of ``eos.bubble_pressure`` and the same iteration with the phases
 exchanged. The loop lives in :mod:`azoth.eos.reference._phase_boundary` so that the

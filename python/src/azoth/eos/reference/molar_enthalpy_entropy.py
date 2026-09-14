@@ -1,6 +1,6 @@
 """``eos.molar_enthalpy_entropy`` - the absolute enthalpy and entropy of a mixture.
 
-Spec: ``specs/models/eos/molar_enthalpy_entropy.yaml``, which carries the assembly - which
+Spec: ``specs/models/eos/molar_enthalpy_entropy.toml``, which carries the assembly - which
 term belongs on which side - and what the caller is responsible for: the datum, the
 coefficients and the compressibility factor.
 

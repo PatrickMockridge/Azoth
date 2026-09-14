@@ -1,0 +1,101 @@
+id = "eos.prsv_kappa"
+name = "Peng-Robinson-Stryjek-Vera alpha-function coefficient"
+equation = """\
+    kappa = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3 + \
+    kappa1*(1 + Tr**0.5)*(0.7 - Tr)"""
+latex = """\
+    \\kappa = 0.378893 + 1.4897153\\,\\omega - 0.17131848\\,\\omega^{2} + \
+    0.0196554\\,\\omega^{3} + \\kappa_{1}\\left(1 + \\sqrt{T_{r}}\\right)\\left(0.7 - \
+    T_{r}\\right)"""
+assumptions = ["`kappa1` is a fitted parameter for the substance intended, and its correctness is NOT CHECKED - this library ships no values for it.\n", "**`kappa1 = 0` is not the same as Peng-Robinson.** The acentric-only polynomial here, `0.378893 + 1.4897153*omega - ...`, is a different correlation from `eos.pr_kappa`'s.\n", "the alpha function this coefficient feeds is unchanged from Peng-Robinson, so `eos.pr_alpha_ab` serves both.\n", """\
+    the range of reduced temperatures and acentric factors over which the correlation was \
+    fitted is NOT established, and no bound asserts one.""", "this is the 1986 PRSV of the cited paper; PRSV2 is a later revision of the pure-compound parameter.\n"]
+references = ["Stryjek, R.; Vera, J. H. (1986). \\\"PRSV: An improved Peng-Robinson equation of state for pure compounds and mixtures.\\\" Can. J. Chem. Eng. 64(2), 323-333. DOI 10.1002/cjce.5450640224.", "Pitzer, K. S. (1955). \\\"The Volumetric and Thermodynamic Properties of Fluids. I. Theoretical Basis and Virial Coefficients.\\\" J. Am. Chem. Soc. 77(13), 3427-3433. DOI 10.1021/ja01618a002."]
+[source]
+standard = "Stryjek, R.; Vera, J. H. (1986)"
+edition = """\
+    PRSV: An improved Peng-Robinson equation of state for pure compounds and mixtures. The \
+    Canadian Journal of Chemical Engineering, 64(2), 323-333"""
+doi = "10.1002/cjce.5450640224"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = """\
+    Acentric factor, as in `eos.pr_kappa`. A property of the substance, supplied by the \
+    caller.\n\
+    """
+[inputs.Tr]
+unit = "dimensionless"
+description = """\
+    Reduced temperature, T / Tc.\n\
+    """
+[inputs.kappa1]
+unit = "dimensionless"
+description = "The pure-compound parameter PRSV adds, fitted per substance to vapour pressure data, supplied by the caller; its sign is unconstrained.\n"
+[outputs]
+[outputs.kappa]
+unit = "dimensionless"
+description = "The PRSV alpha-function coefficient, which feeds the same alpha function as Peng-Robinson's, `alpha = (1 + kappa*(1 - sqrt(Tr)))**2`. Unlike Peng-Robinson's, it varies with `Tr`.\n"
+[[valid_range]]
+quantity = "Tr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Tr` appears as a square root; Tr = 0 is finite but a negative Tr makes the root undefined, and a reduced temperature at or below zero is not a state.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "The propane-like component from `eos.pr_kappa`'s worked example, omega = 0.152, at Tr = 0.8, with kappa1 = 0.05.\n**The value 0.05 is illustrative and is not a fitted parameter for any substance.**\nThe acentric-only part, in the order the equation states it:\n\n  0.378893                        = 0.378893\n  1.4897153 * 0.152               = 0.2264367256\n  0.152 * 0.152                   = 0.023104\n  0.17131848 * 0.023104           = 0.0039581421619199995\n  0.152 * 0.152 * 0.152           = 0.003511808\n  0.0196554 * 0.003511808         = 0.0000690259909632\n  0.378893 + 0.2264367256         = 0.6053297256\n  0.6053297256 - 0.0039581421619199995 = 0.60137158343808\n  0.60137158343808 + 0.0000690259909632 = 0.6014406094290431\n\nThe temperature-dependent part:\n\n  sqrt(0.8)                       = 0.8944271909999159\n  1 + sqrt(0.8)                   = 1.8944271909999157\n  0.7 - 0.8                       = -0.10000000000000009\n  product                         = -0.18944271909999175\n  0.05 * product                  = -0.009472135954999588\n\nkappa = 0.6014406094290431 - 0.009472135954999588 = 0.5919684734740435\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.152
+Tr = 0.8
+kappa1 = 0.05
+[worked_example.expected]
+kappa = 0.5919684734740435
+[implementations]
+python = "azoth.eos.prsv_kappa"
+rust = "azoth_eos::prsv_kappa"
+[[tests]]
+id = "propane_like_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "at_tr_0_7_the_kappa1_term_vanishes"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at Tr = 0.7, where the temperature factor `(1 + sqrt(Tr))*(0.7 - Tr)` is exactly zero for any finite kappa1:\n\n  kappa(0.152, Tr = 0.7, any kappa1) = 0.6014406094290431\nwith inputs omega = 0.152 and kappa1 = 0.05.\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.152
+Tr = 0.7
+kappa1 = 0.05
+[tests.expected]
+kappa = 0.6014406094290431
+[[tests]]
+id = "with_kappa1_zero_the_coefficient_is_temperature_independent"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at Tr = 0.85 with kappa1 = 0, where the coefficient collapses to the acentric-only polynomial at any Tr:\n\n  kappa(0.152, 0.85, 0.0) = 0.6014406094290431\nidentical to the value at Tr = 0.7.\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.152
+Tr = 0.85
+kappa1 = 0.0
+[tests.expected]
+kappa = 0.6014406094290431
+[[tests]]
+id = "the_prsv_coefficient_feeds_the_pr_alpha_function"
+type = "property"
+property = "consistency_with"
+status = "active"
+[[tests]]
+id = "monotonic"
+type = "property"
+property = "monotonic"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "skipped"
+skip_reason = "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.\n"

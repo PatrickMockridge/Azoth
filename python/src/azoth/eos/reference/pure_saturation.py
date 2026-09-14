@@ -5,7 +5,7 @@ found by bisection on reduced pressure. A *model* rather than a calculation: wha
 spec pins down is the procedure, and this module reads the procedure from
 ``azoth._models_gen`` rather than choosing it.
 
-Spec: ``specs/models/eos/pure_saturation.yaml``, which carries the procedure - the
+Spec: ``specs/models/eos/pure_saturation.toml``, which carries the procedure - the
 bracketing rule, the tolerance and the cap - since a procedure that differs between two
 implementations reaches a slightly different answer.
 

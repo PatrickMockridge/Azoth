@@ -66,7 +66,7 @@ def _mixture_kwargs(case: dict[str, Any]) -> dict[str, Any]:
     composition vector and the *names* the spec declares, and `mixture_of` turns them
     into the object through the databank.
 
-    The names in `inputs` are the ones `specs/models/eos/pt_flash.yaml` declares, so
+    The names in `inputs` are the ones `specs/models/eos/pt_flash.toml` declares, so
     the "inputs name declared quantities" check below still means something, and a
     reader of the JSON can look each one up in the model's documentation.
 

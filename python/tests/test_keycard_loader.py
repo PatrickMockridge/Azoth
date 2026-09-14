@@ -15,7 +15,7 @@ vocabularies are a copy, and a copy without a test is the drift this project ans
 with two implementations compared against each other. The units are the sharpest case:
 `pint` parses `kelvin`, so a loader that trusted `pint` would accept a keycard that
 `tools/check_user_data.py` then rejects. `UNIT_VOCABULARY` is generated from
-`specs/vocabulary/vocabulary.yaml` by `tools/gen_vocabulary.py` and ships with the
+`specs/vocabulary/vocabulary.toml` by `tools/gen_vocabulary.py` and ships with the
 package, which is why it can be read at runtime at all; the model vocabularies below
 are still hand-written beside this module, and are the ones the comparison protects.
 """
@@ -39,7 +39,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = REPO_ROOT / "specs" / "schema" / "keycard.schema.json"
 CALC_SCHEMA = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
 #: The unit enum lives in its own schema, which `calc.schema.json` `$ref`s. It is
-#: generated from `specs/vocabulary/vocabulary.yaml` by `tools/gen_vocabulary.py`.
+#: generated from `specs/vocabulary/vocabulary.toml` by `tools/gen_vocabulary.py`.
 UNIT_SCHEMA = REPO_ROOT / "specs" / "schema" / "unit.schema.json"
 TEMPLATE = REPO_ROOT / "keycard.example.toml"
 

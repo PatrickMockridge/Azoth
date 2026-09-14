@@ -2,7 +2,7 @@
   "id": "propane_below_its_saturation_pressure",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "Propane vapour pressure at 300 K: 9.974 bar, as cited in specs/models/eos/pure_saturation.yaml",
+    "attribution": "Propane vapour pressure at 300 K: 9.974 bar, as cited in specs/models/eos/pure_saturation.toml",
     "verification": "unverified",
     "notes": "The saturation pressure's attribution is inherited from eos.pure_saturation, whose spec case compares the Peng-Robinson value (9.9791 bar) against the published 9.974 bar. The published figure itself has not been checked against a primary source by a person, which is why this case is unverified - the flash's boundary is only as external as the number it is compared to. What IS independently established here is the direction: away from the boundary the sign of the fugacity difference is not in doubt."
   },

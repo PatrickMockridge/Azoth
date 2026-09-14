@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import re
+import tomllib
 from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
 
 import _helpers as h
 from azoth.core.errors import OutOfRangeError
@@ -28,6 +28,17 @@ ALL_CASES = h.all_tests(SPEC)
 ACTIVE = [c for c in ALL_CASES if c["status"] == "active" and c["type"] != "property"]
 PROPERTIES = [c for c in ALL_CASES if c["status"] == "active" and c["type"] == "property"]
 SKIPPED = [c for c in ALL_CASES if c["status"] != "active"]
+
+
+def all_text(value: Any) -> list[str]:
+    """Every string in a parsed document, in document order."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [text for item in value.values() for text in all_text(item)]
+    if isinstance(value, list):
+        return [text for item in value for text in all_text(item)]
+    return []
 
 
 def cubic(a: float, b: float, z: float) -> float:
@@ -102,13 +113,12 @@ def test_the_derivations_coefficients_are_what_the_cubic_produces() -> None:
     computed from the case's own inputs and each value's `repr` must appear
     somewhere in the spec's text. A mis-typed coefficient does not match.
 
-    The spec is read from its YAML rather than from the generated registry, because
+    The spec is read from its file rather than from the generated registry, because
     the registry flattens `verification` to its status string and drops the notes -
     and the notes are half of what this checks.
     """
-    spec_path = REPO_ROOT / "specs" / "calcs" / "eos" / "pr_z_factor.yaml"
-    raw = spec_path.read_text(encoding="utf-8")
-    document = yaml.safe_load(raw)
+    spec_path = REPO_ROOT / "specs" / "calcs" / "eos" / "pr_z_factor.toml"
+    document = tomllib.loads(spec_path.read_text(encoding="utf-8"))
 
     # The coefficient lines the spec prints, with their signs. Matched on the whole
     # `z**3 c2 z**2 + c1 z - c0 = 0` shape rather than by collecting loose numbers,
@@ -116,8 +126,10 @@ def test_the_derivations_coefficients_are_what_the_cubic_produces() -> None:
     # rather than `-0.97` when the line wraps - so harvesting decimals alone loses it,
     # and a sign error is exactly the kind of slip this is meant to catch.
     #
-    # Whitespace is flattened first, because several of those lines wrap.
-    flat = re.sub(r"\s+", " ", raw)
+    # Whitespace is flattened first, because several of those lines wrap. The prose is
+    # read from the parsed document rather than from the file's text: how a value is
+    # spelled in the file is the file format's business, not the arithmetic's.
+    flat = re.sub(r"\s+", " ", " ".join(all_text(document)))
     printed: set[tuple[float, float, float]] = set()
     for terms in re.findall(
         r"z\*\*3 ([+-]) ([\d.]+) z\*\*2 ([+-]) ([\d.]+) z ([+-]) ([\d.]+) = 0", flat

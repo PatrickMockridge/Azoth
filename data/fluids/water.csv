@@ -1,24 +1,15 @@
 # azoth fluid property table: liquid water at 1 atm
 #
-# Values are read from widely published engineering tables that trace back to
-# IAPWS-IF97 / NIST and the CRC Handbook. They are marked `unverified` because
-# they have been read from secondary public references rather than checked
-# against a primary formulation by a competent person - the same discipline the
-# fittings registry uses. They are NOT placeholders: unlike the Crane
-# coefficients, these are real published values. Interpolate with care between
-# points; water's viscosity varies by a factor of six across this range.
+# Real published values, read from widely published engineering tables that trace back to
+# IAPWS-IF97 / NIST and the CRC Handbook. Marked `unverified`: read from secondary public
+# references rather than checked against a primary formulation.
 #
-# The `verify_status` column is derived when the file is generated, not supplied:
-# a row whose citation says the value is a placeholder is `estimated_dummy`, and
-# every other row is `unverified`. There is deliberately no `verified` value - a
-# tool cannot check whether a person checked something, so offering the word
-# would only invite an assertion nobody can test. See docs/src/spec.md, S6.
-#
+# Interpolate with care between points: water's viscosity varies by a factor of six across
+# this range.
 #
 # Licence: CC-BY-4.0. This data is deliberately not AGPL: the reference
 # values are meant to be reusable and citable without a copyleft
 # obligation. See LICENSE-CC-BY-4.0.
-
 
 temperature_c,density_kg_m3,dynamic_viscosity_pa_s,citation,verify_status
 0,999.8,0.001781,Widely published engineering table values consistent with IAPWS-IF97 / NIST and CRC Handbook,unverified

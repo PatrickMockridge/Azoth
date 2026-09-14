@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/model.schema.json",
   "title": "Azoth model spec",
-  "description": "**A type, not an instance.** A model declares what a machine *is*: what it accepts, what it computes, the procedure it runs and where it is valid. The machines to *run* are instances and live in `specs/cases/`, one file per model, against `case.schema.json` - so this file is never edited to make a test pass, and a case that violates the contract is a broken test rather than a discovery about the machine.\n\nA calculation whose *algorithm* is the thing worth pinning down. A calc spec fixes an equation and both implementations evaluate it; a model spec fixes a procedure - a bracketing rule, a tolerance, an iteration cap - and both implementations run that procedure. The distinction matters because an iterated procedure that differs even slightly between two implementations diverges, and no check on the answer alone can tell a different-but-valid algorithm from the same one. Everything about units, quantities and bounds is `$ref`-ed from `calc.schema.json` rather than restated, so the two spec kinds share one definition of what a unit is.",
+  "description": "A model spec: what a machine accepts, what it computes, the procedure it runs and where it is valid. The machines to run are instances and live in `specs/cases/`, against `case.schema.json`.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -22,14 +22,14 @@
     "source": { "$ref": "calc.schema.json#/properties/source" },
     "kind": {
       "enum": ["procedure", "direct"],
-      "description": "What this model's spec fixes, and therefore whether it has an algorithm block. `procedure` - the usual case, and the reason the model tree exists at all - means a loop: a scheme, a convergence rule, a tolerance and a cap, which both implementations run and which a calc cannot express. `direct` means a computation over vectors with no iteration. A direct model is here because the calc registry's inputs are scalars, so a composition vector has nowhere to go; it has no `algorithm` block, and the schema forbids one rather than allowing a vacuous one, because a spec field nothing reads is the defect this project is organised against."
+      "description": "What this model's spec fixes. `procedure` means a loop: a scheme, a convergence rule, a tolerance and a cap, which both implementations run. `direct` means a computation over vectors with no iteration, and no `algorithm` block."
     },
     "algorithm": { "$ref": "#/$defs/algorithm" },
     "inputs": {
       "type": "object",
       "minProperties": 1,
       "additionalProperties": { "$ref": "#/$defs/quantity" },
-      "description": "Input quantities, keyed by parameter name. A calc's inputs are all scalars; a model's may be vectors and matrices, because a mixture is a list of components rather than one number."
+      "description": "Input quantities, keyed by parameter name. A calc's inputs are all scalars; a model's may be vectors and matrices."
     },
     "outputs": {
       "type": "object",
@@ -48,18 +48,18 @@
       "if": { "properties": { "kind": { "const": "procedure" } } },
       "then": {
         "required": ["algorithm"],
-        "description": "A procedure is a loop, and a loop needs its scheme, its convergence rule, its tolerance and its cap written down - that is the whole contract."
+        "description": "A procedure is a loop, so it requires an `algorithm` block."
       },
       "else": {
         "not": { "required": ["algorithm"] },
-        "description": "A direct model has no loop, so it must not carry an algorithm block. Forbidding one rather than ignoring it keeps `algorithm` meaning what it says: a thing both implementations run."
+        "description": "A direct model has no loop, so it must not carry an `algorithm` block."
       }
     }
   ],
 
   "$defs": {
     "quantity": {
-      "description": "A scalar, vector, matrix or component list. A calc's `$defs.quantity` is `$ref`-ed rather than restated, so units and descriptions have one definition across both spec kinds; the extra shapes exist because a mixture is not a number and not a list of numbers either.",
+      "description": "A scalar, vector, matrix or component list. Extends the calc `$defs.quantity` with the extra shapes a mixture needs.",
       "oneOf": [
         { "$ref": "calc.schema.json#/$defs/quantity" },
         { "$ref": "#/$defs/components_quantity" },
@@ -71,7 +71,7 @@
     "components_quantity": {
       "type": "object",
       "additionalProperties": false,
-      "description": "A list of substance names, resolved against the component databank the library ships (`data/components/`) with any keycard overlay applied. **This is the input a calculation names its fluid by.** It replaced the `Tc`, `Pc`, `omega`, `kij` and `cp_a`..`cp_e` inputs, which were nine parallel vectors a spec file carried: a number in a spec file is a number nobody can check against anything, and the port's whole point is that the numbers come from NeqSim's tables rather than from whoever typed the spec.\n\nA name carries no unit - the substances are looked up, not measured - so unlike every other quantity here it declares none.",
+      "description": "A list of substance names, resolved against the shipped component databank (`data/components/`) with any keycard overlay applied. This is the input a calculation names its fluid by; a name carries no unit, so it declares none.",
       "required": ["type", "description"],
       "properties": {
         "type": { "const": "components" },
@@ -79,13 +79,13 @@
         "length": {
           "type": "string",
           "minLength": 1,
-          "description": "What the length means, e.g. 'one entry per component'. Prose rather than a number, because the length is the caller's: the model is written for any N."
+          "description": "What the length means, e.g. 'one entry per component'. Prose rather than a number, because the model is written for any N."
         }
       }
     },
 
     "value": {
-      "description": "A case value: a number, a composition vector, or a matrix stated as rows. Extends the calc `$defs.value`, which permits a number or a list of *strings* - a model's vectors are numbers, and collecting them with the fitting-id rule gave a composition the type of a list of names.",
+      "description": "A case value: a number, a composition vector, or a matrix stated as rows. Extends the calc `$defs.value` with numeric vectors and matrices.",
       "oneOf": [
         { "$ref": "calc.schema.json#/$defs/value" },
         { "type": "array", "minItems": 1, "items": { "type": "number" } },
@@ -108,7 +108,7 @@
         "length": {
           "type": "string",
           "minLength": 1,
-          "description": "What the length means, e.g. 'one entry per component'. Prose rather than a number, because the length is the caller's: the model is written for any N."
+          "description": "What the length means, e.g. 'one entry per component'. Prose rather than a number, because the model is written for any N."
         }
       }
     },
@@ -124,7 +124,7 @@
         "shape": {
           "type": "string",
           "minLength": 1,
-          "description": "The matrix's shape, e.g. 'N x N, symmetric, zero diagonal'. Recorded because a shape assertion a reader can check is worth more than one they assume."
+          "description": "The matrix's shape, e.g. 'N x N, symmetric, zero diagonal'."
         }
       }
     },
@@ -133,12 +133,12 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["scheme", "convergence", "tolerance", "max_iterations"],
-      "description": "The procedure, stated completely enough that two implementations run the same one. This is the whole reason a model is not a calc: a calc's equation is a formula, and a model's is a loop, so the loop's stopping rule has to be written down somewhere both languages read.",
+      "description": "The procedure, stated completely enough that two implementations run the same one: its scheme, its stopping rule, its tolerance and its cap.",
       "properties": {
         "scheme": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$",
-          "description": "The procedure's name, e.g. saturation_pressure_bisection. Held to the implementations by python/tests/models/test_model_contract.py, the way `solver.kind` is held by test_solver_contract.py. A scheme named here and implemented nowhere is the 'looks like validation, does nothing' failure this project exists to prevent."
+          "description": "The procedure's name, e.g. saturation_pressure_bisection. Held to the implementations by python/tests/models/test_model_contract.py, the way `solver.kind` is held by test_solver_contract.py."
         },
         "convergence": { "$ref": "calc.schema.json#/properties/solver/properties/convergence" },
         "tolerance": { "$ref": "calc.schema.json#/properties/solver/properties/tolerance" },
@@ -146,33 +146,33 @@
         "initialisation": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$",
-          "description": "How the iteration starts, where the scheme needs a starting point. The analogue of a solver's `initial_guess`, and in the spec for the same reason: two implementations that start from different guesses take different paths to the same answer, and a convergence claim that holds from one starting point need not hold from another. `wilson` is the K-value correlation."
+          "description": "How the iteration starts, where the scheme needs a starting point. The analogue of a solver's `initial_guess`; `wilson` is the K-value correlation."
         },
         "inner": {
-          "description": "A nested procedure the outer one runs each iteration. Recursive, because an inner scheme has the same shape as an outer one and describing it with a second set of keys would be a second definition of what an algorithm is.",
+          "description": "A nested procedure the outer one runs each iteration, with the same shape as an outer algorithm.",
           "$ref": "#/$defs/algorithm"
         },
         "initial_temperature": {
           "type": "number",
           "exclusiveMinimum": 0,
-          "description": "Where a quasi-Newton inversion of a property starts, in kelvin. The isentropic and isenthalpic flashes iterate from a temperature rather than bracketing one, so it has to be declared: two implementations starting from different temperatures take different paths, and a convergence claim that holds from one need not hold from another. Upstream starts from the temperature its thermodynamic system already holds - for a compressor, the inlet temperature - and a model here has no system, so the spec states the start instead."
+          "description": "Where a quasi-Newton inversion of a property starts, in kelvin. The isentropic and isenthalpic flashes iterate from a temperature rather than bracketing one, so the spec states the start."
         },
         "bracket": {
           "type": "object",
           "additionalProperties": false,
           "required": ["scheme", "lower", "upper", "steps"],
-          "description": "How the interval the iteration starts from is found. Part of the scheme rather than an implementation detail: two implementations that bracket differently find different roots when there is more than one, and the difference is invisible in the converged answer until it is a different answer.",
+          "description": "How the interval the iteration starts from is found. Part of the scheme rather than an implementation detail: two implementations that bracket differently find different roots when there is more than one.",
           "properties": {
             "scheme": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
             "lower": {
               "type": "number",
-              "description": "Where the search starts, in the reduced variable the scheme names - dimensionless, like everything else in a model's interior, so the bracket does not depend on which unit a caller used."
+              "description": "Where the search starts, in the reduced variable the scheme names, dimensionless."
             },
             "upper": { "type": "number", "description": "Where the search stops." },
             "steps": {
               "type": "integer",
               "minimum": 2,
-              "description": "How many points the search evaluates. Stated because it quantises the bracket: the interval the iteration then refines is only as tight as this step size, and two implementations with different step counts take different numbers of iterations to the same answer."
+              "description": "How many points the search evaluates, at least 2. It quantises the bracket: the interval the iteration then refines is only as tight as this step size."
             }
           }
         }
@@ -189,7 +189,7 @@
           "type": "object",
           "minProperties": 1,
           "additionalProperties": { "$ref": "#/$defs/value" },
-          "description": "Input values in the units declared in `inputs`, exactly as a calc's worked example states them - except that a vector or matrix input is stated as an array, since a mixture has no scalar form."
+          "description": "Input values in the units declared in `inputs`; a vector or matrix input is stated as an array."
         },
         "expected": {
           "type": "object",

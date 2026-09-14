@@ -10,19 +10,27 @@ in this tree today.
 
 ## The table
 
-`specs/vocabulary/vocabulary.yaml`, validated by
+`specs/vocabulary/vocabulary.toml`, validated by
 `specs/schema/vocabulary.schema.json`. Three sections:
 
-```yaml
-slots: [L, M, T, I, Th, N, J]
+```toml
+slots = ["L", "M", "T", "I", "Th", "N", "J"]
 
-dimensions:
-  - {id: molar_entropy, exponents: [2, 1, -2, 0, -1, -1, 0]}
+[[dimensions]]
+id = "molar_entropy"
+exponents = [2, 1, -2, 0, -1, -1, 0]
 
-units:
-  - {id: mm, dimension: length, pint: millimeter, uom: length::millimeter,
-     rust_ctor: millimeters}
-  - {id: mol/s, dimension: molar_flow, pint: "mole/second", uom: null}
+[[units]]
+id = "mm"
+dimension = "length"
+pint = "millimeter"
+uom = "length::millimeter"
+rust_ctor = "millimeters"
+
+[[units]]
+id = "mol/s"
+dimension = "molar_flow"
+pint = "mole/second"
 ```
 
 `slots` is the basis of [the dimension group](./dimensions.md), in the order every
@@ -34,7 +42,8 @@ A unit declares three things and nothing else: **its dimension**, **its name in
 `pint`**, and **its conversion path in `uom`**. When the path is present it also
 names the hand-written constructor in `crates/azoth-core/src/units.rs` that the
 generated conversion calls; the generator never invents a constructor name, and a
-row that claims a path and names none is refused.
+row that claims a path and names none is refused. A unit with **no `uom` key** is one
+whose dimension `uom` does not carry, and its conversion is the identity.
 
 ## The rule: no magnitude is written down
 

@@ -5,7 +5,7 @@ a_mix = z1**2*a1 + 2*z1*z2*(1 - k12)*sqrt(a1*a2) + z2**2*a2
 b_mix = z1*b1 + z2*b2
 ```
 
-Spec: ``specs/calcs/eos/vdw1f_mix_binary.yaml``, which carries the provenance and why
+Spec: ``specs/calcs/eos/vdw1f_mix_binary.toml``, which carries the provenance and why
 the registry's scalar inputs stop at two components.
 """
 

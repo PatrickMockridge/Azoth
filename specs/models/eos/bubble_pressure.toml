@@ -1,0 +1,90 @@
+id = "eos.bubble_pressure"
+name = "Bubble-point pressure"
+kind = "procedure"
+assumptions = [
+    "A component's `Tc`, `Pc`, `omega` and every `kij` come from the databank (`data/components/`, from NeqSim's `COMP.csv` and `INTER.csv`) with the keycard's overrides applied.",
+    "the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses.",
+    "the model is for mixtures, and refuses a single component: for one component the two phases have the same composition by construction.",
+    "the pressure is solved for at a fixed temperature.",
+    "the liquid composition is the caller's and is taken as given; its stability is not asked.",
+    "no energy balance. The bubble point is a statement about phase equilibrium at one temperature and pressure, not about how a stream got there.",
+]
+references = [
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part II. Phase-split calculation.\" Fluid Phase Equilibria 9(1), 21-40. DOI 10.1016/0378-3812(82)85002-4.",
+    "Wilson, G. M. (1969). \"A Modified Redlich-Kwong Equation of State, Application to General Physical Data Calculations.\" Paper 15C, AIChE 65th National Meeting.",
+]
+[source]
+standard = "Michelsen, M. L. (1982)"
+edition = "The isothermal flash problem. Part II. Phase-split calculation. Fluid Phase Equilibria 9(1), 21-40."
+doi = "10.1016/0378-3812(82)85002-4"
+[algorithm]
+scheme = "bubble_pressure_successive_substitution"
+initialisation = "wilson_raoult"
+convergence = "absolute"
+tolerance = 1e-12
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = """\
+    absolute temperature. The bubble point is sought at this temperature; the pressure is \
+    what is solved for.\n\
+    """
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = """\
+    the liquid's mole fractions. Checked rather than renormalised, as the flash's feed is.\n\
+    """
+[outputs]
+[outputs.pressure]
+unit = "Pa"
+description = "the bubble-point pressure"
+[outputs.incipient]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the composition of the vapour that first appears - the `y` in equilibrium with the supplied `x`."
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "K-values at the converged pressure, `K_i = y_i / x_i = phi_i^L / phi_i^V`."
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the liquid root of the cubic at the converged state"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root"
+[outputs.min_t_over_tc]
+unit = "dimensionless"
+description = """\
+    the smallest `T / Tc_i` over the components. Reported because a bound is checked against \
+    it and because it is what the refusal above names.\n\
+    """
+[outputs.iterations]
+unit = "dimensionless"
+description = "pressure updates taken"
+[outputs.residual]
+unit = "dimensionless"
+description = "`|sum_i x_i K_i - 1|` at the last completed step."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "min_t_over_tc"
+max = 1.0
+max_inclusive = false
+severity = "warning"
+rationale = "Above the nearest component's critical temperature the iteration converges more slowly and the answer is less trustworthy, but a mixture may still have a bubble point there."
+[implementations]
+python = "azoth.eos.bubble_pressure"
+rust = "azoth_eos::bubble_pressure"

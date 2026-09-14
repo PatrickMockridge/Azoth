@@ -1,0 +1,123 @@
+id = "eos.rachford_rice_binary"
+name = "Rachford-Rice vapour fraction, for a binary"
+equation = "beta = -(z1*(K1 - 1) + (1 - z1)*(K2 - 1)) / ((K1 - 1)*(K2 - 1))"
+latex = """\
+    \\beta = -\\frac{z_{1}\\left(K_{1} - 1\\right) + z_{2}\\left(K_{2} - \
+    1\\right)}{\\left(K_{1} - 1\\right)\\left(K_{2} - 1\\right)}"""
+assumptions = ["""\
+    both K-values are for the same temperature and pressure. They are the caller's, and this \
+    calc has no way to know they describe one state.""", "the K-values are consistent with each other in the thermodynamic sense - derived from fugacity coefficients for the same mixture.\n", """\
+    the feed is a single overall composition `(z1, 1 - z1)`. A three-phase problem has no \
+    single `beta`, and a feed with a non-condensable component is not describable this way.""", "no stability test is performed; a `beta` inside `[0, 1]` says the equation has a solution there, not that the feed should split.\n"]
+references = ["Rachford, H. H.; Rice, J. D. (1952). \\\"Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium.\\\" J. Pet. Technol. 4(10), 19-3. DOI 10.2118/952327-G"]
+[source]
+standard = "Rachford, H. H.; Rice, J. D. (1952)"
+edition = """\
+    Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization \
+    Hydrocarbon Equilibrium. Journal of Petroleum Technology, 4(10), 19-3"""
+doi = "10.2118/952327-G"
+[inputs]
+[inputs.z1]
+unit = "dimensionless"
+description = "Overall mole fraction of component 1; component 2 is `1 - z1`, so there is no `z2` input.\n"
+[inputs.K1]
+unit = "dimensionless"
+description = """\
+    The K-value of component 1, `y1/x1`. Normally the caller's, computed from fugacity \
+    coefficients.\n\
+    """
+[inputs.K2]
+unit = "dimensionless"
+description = "the K-value of component 2"
+[outputs]
+[outputs.beta]
+unit = "dimensionless"
+description = "The vapour fraction that solves the Rachford-Rice equation, named `beta` because that is what every source calls it; outside `[0, 1]` it describes no two-phase mixture.\n"
+[[valid_range]]
+quantity = "z1"
+min = 0
+max = 1
+severity = "error"
+rationale = """\
+    a mole fraction; both ends are admitted, since a pure component is a legitimate limiting \
+    case and is a useful check"""
+[[valid_range]]
+quantity = "K1"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`K = y/x` with both compositions positive, so a K-value is strictly positive; a zero or negative one would make the vapour composition `K*x` negative.\n"
+[[valid_range]]
+quantity = "K2"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "as for `K1`"
+[[valid_range]]
+quantity = "K1"
+equals = 1
+severity = "error"
+rationale = "`K1 - 1` is a divisor in the closed form, and with `K1 = 1` component 1 drops out of the sum entirely.\n"
+[[valid_range]]
+quantity = "K2"
+equals = 1
+severity = "error"
+rationale = "as for `K1`"
+[[valid_range]]
+quantity = "beta"
+min = 0
+max = 1
+severity = "warning"
+rationale = "Outside `[0, 1]` the feed is single phase and the value is the *tangent-plane* solution rather than a phase split, but it is still returned as a warning.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "A case chosen so the arithmetic is short and checkable by hand: `z1 = 0.6`, `K1 = 4.0`, `K2 = 0.25`.\n\n  A = K1 - 1 = 3.0\n  B = K2 - 1 = -0.75\n  z1*A + (1 - z1)*B = 0.6*3.0 + 0.4*(-0.75)\n                    = 1.8 - 0.3\n                    = 1.4999999999999998\n  A*B = 3.0 * -0.75 = -2.25\n  beta = -1.4999999999999998 / -2.25 = 0.6666666666666665\n\nThe check that does not depend on the exact decimal is the residual, and it closes exactly:\n\n  0.6*3.0/(1 + beta*3.0) + 0.4*(-0.75)/(1 + beta*(-0.75)) = 0.0\n\nin double precision, at the returned `beta`.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+z1 = 0.6
+K1 = 4.0
+K2 = 0.25
+[worked_example.expected]
+beta = 0.6666666666666665
+[implementations]
+python = "azoth.eos.rachford_rice_binary"
+rust = "azoth_eos::rachford_rice_binary"
+[[tests]]
+id = "a_hand_checkable_case"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_feed_that_does_not_split"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at a feed whose K-values are both greater than one:\n\n  z1 = 0.5, K1 = 2.0, K2 = 1.5\n  A = 1.0, B = 0.5\n  z1*A + (1 - z1)*B = 0.5 + 0.25 = 0.75\n  A*B = 0.5\n  beta = -0.75/0.5 = -1.5\n`beta = -1.5`, outside `[0, 1]`, so the result carries the warning.\n"
+tolerance = 1e-15
+[tests.inputs]
+z1 = 0.5
+K1 = 2.0
+K2 = 1.5
+[tests.expected]
+beta = -1.5
+[[tests]]
+id = "a_second_two_phase_case"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at a different composition and a much wider spread of K-values:\n\n  z1 = 0.3, K1 = 5.0, K2 = 0.2\n  A = 4.0, B = -0.8\n  z1*A + (1 - z1)*B = 0.3*4.0 + 0.7*(-0.8) = 1.2 - 0.5599999999999999 = 0.64\n  A*B = -3.2\n  beta = -0.64 / -3.2 = 0.19999999999999998\nInside `[0, 1]`, so no warning.\n"
+tolerance = 1e-12
+[tests.inputs]
+z1 = 0.3
+K1 = 5.0
+K2 = 0.2
+[tests.expected]
+beta = 0.19999999999999998
+[[tests]]
+id = "the_returned_beta_solves_the_equation"
+type = "property"
+property = "consistency_with"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "skipped"
+skip_reason = "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.\n"

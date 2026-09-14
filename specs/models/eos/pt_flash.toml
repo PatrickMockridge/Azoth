@@ -1,0 +1,129 @@
+id = "eos.pt_flash"
+name = "Pressure-temperature flash"
+kind = "procedure"
+assumptions = [
+    "A component's `Tc`, `Pc`, `omega` and every `kij` come from the databank (`data/components/`, from NeqSim's `COMP.csv` and `INTER.csv`) with the keycard's overrides applied.",
+    "the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes. PRSV would give different K-values from the same inputs and this model does not accept a coefficient.",
+    "the mixture fugacity coefficient is not a registered calculation: it carries the sum over `x_j a_ij` and the `b_i / b_mix` term and lives in the model layer.",
+    "there is no stability test: successive substitution finds a stationary point of the flash equations, and which single phase a `trivial` feed is cannot be answered by this model.",
+    "no damping and no acceleration: plain successive substitution, which converges slowly near the critical point and sometimes to the wrong stationary point.",
+    "the components' `Tc`, `Pc` and `omega` are taken to be mutually consistent and to describe the same substances the `kij` pairs name.",
+    "the two phases are assumed to be at the same temperature and pressure as the feed - a flash, not a rigorous column stage. Nothing here does an energy balance, and the feed's enthalpy is not an input.",
+]
+references = [
+    "Rachford, H. H.; Rice, J. D. (1952). \"Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium.\" Journal of Petroleum Technology 4(10), 19-3. DOI 10.2118/952327-G",
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part I. Stability.\" Fluid Phase Equilibria 9(1), 1-19. DOI 10.1016/0378-3812(82)85001-2.",
+    "Wilson, G. M. (1969). \"A Modified Redlich-Kwong Equation of State, Application to General Physical Data Calculations.\" Paper 15C, AIChE 65th National Meeting.",
+]
+[source]
+standard = "Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982)"
+edition = "The Rachford-Rice equation is Rachford & Rice, Journal of Petroleum Technology 4(10), 19-3; successive substitution with a fugacity-coefficient update is set out in Michelsen (1982)."
+doi = "10.1016/0378-3812(82)85001-2"
+[algorithm]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 300
+[algorithm.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "overall mole fractions. Checked rather than renormalised: the entries must be non-negative and sum to one to within a tolerance."
+[outputs]
+[outputs.beta]
+unit = "dimensionless"
+optional = true
+description = "The vapour fraction, in `[0, 1]` for a two-phase split; outside that it is the negative-flash value and the feed is single phase. Absent where there is genuinely no vapour fraction."
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = """\
+    K-values, `K_i = y_i / x_i = phi_i^L / phi_i^V`. Reported because they are the iterate \
+    the loop converges on, so a caller can see the convergence rather than inferring it from \
+    `residual`.\n\
+    """
+[outputs.ln_phi_liquid]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "fugacity coefficients in the liquid phase, as logarithms"
+[outputs.ln_phi_vapour]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "fugacity coefficients in the vapour phase, as logarithms"
+[outputs.z_liquid]
+unit = "dimensionless"
+description = """\
+    the liquid root of the cubic at the liquid composition. The *smallest* admissible root, \
+    selected by ordering and never by an initial guess.\n\
+    """
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root at the vapour composition, the largest admissible one"
+[outputs.min_t_over_tc]
+unit = "dimensionless"
+description = "the smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point."
+[outputs.phase]
+type = "enum"
+values = ["two_phase", "all_liquid", "all_vapour", "trivial"]
+description = "What the converged state is: `two_phase` (`beta` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`)."
+[outputs.iterations]
+unit = "dimensionless"
+description = "successive-substitution steps taken, including the final evaluation of the converged state."
+[outputs.residual]
+unit = "dimensionless"
+description = "`rms_i |ln K_i - ln K_i_previous|` at the last step the loop completed. NaN when no step completed."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    an absolute pressure; zero and below are not states. This also keeps every `B_i` \
+    positive, which `eos.pr_z_factor` requires - `B` is proportional to pressure and the \
+    cubic degenerates at zero.\n\
+    """
+[[valid_range]]
+quantity = "min_t_over_tc"
+max = 0.9
+max_inclusive = true
+severity = "warning"
+rationale = "Above `T / Tc = 0.9` for the nearest component the cubic's roots are close to coalescing and successive substitution converges slowly or to the trivial solution."
+[implementations]
+python = "azoth.eos.pt_flash"
+rust = "azoth_eos::pt_flash"

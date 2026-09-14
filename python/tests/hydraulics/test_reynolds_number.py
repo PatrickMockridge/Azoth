@@ -1,6 +1,6 @@
 """Spec-driven tests for ``hydraulics.reynolds_number``.
 
-Every case comes from ``specs/calcs/hydraulics/reynolds_number.yaml``. Add a test
+Every case comes from ``specs/calcs/hydraulics/reynolds_number.toml``. Add a test
 to that file and it runs here and in Rust with no new test code.
 """
 

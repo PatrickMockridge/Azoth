@@ -1,43 +1,18 @@
 //! Units, and the rule that governs how they are used.
 //!
-//! # The boundary rule
+//! `uom` quantities are used at the **public boundary** and nowhere else: functions take
+//! dimensioned quantities in and results carry them out, and internally a calculation
+//! extracts the SI base value with `.value` and works in plain `f64`. Dividing two
+//! same-dimension quantities in `uom` does not yield a plain scalar, so a Reynolds number
+//! or a friction factor expressed as a ratio would need type-level ceremony for what is
+//! numerically a division.
 //!
-//! `uom` quantities are used at the **public boundary** and nowhere else:
-//! functions take dimensioned quantities in, and results carry dimensioned
-//! quantities out. Internally, calculations extract the SI base value with
-//! `.value` and work in plain `f64`.
+//! Public functions are typed against fixed `SI<f64>` quantities rather than being
+//! generic over `U: Units`: callers convert at the boundary either way, and fixed-SI
+//! still makes `Length + Time` a type error.
 //!
-//! That is a deliberate choice, not a shortcut, and the reason is that `uom`'s
-//! compile-time dimension arithmetic is genuinely valuable at the boundary - it
-//! makes `Length + Time` a type error - while being actively unhelpful in the
-//! middle of an equation. Dividing two same-dimension quantities in `uom` does
-//! not yield a plain scalar, so every Reynolds number, relative roughness and
-//! friction factor would need type-level ceremony to express a ratio that is
-//! numerically just a division.
-//!
-//! The cost of the rule is that dimensional correctness is enforced on the way
-//! in and out but not step by step through an equation. The benefit is that the
-//! bodies of the calculations are readable and identical in structure to the
-//! published equations. For short equations transcribed directly from a
-//! standard, matching the published form is the more valuable safety property:
-//! a reader can check the code against the paper line by line.
-//!
-//! # Why `SI<f64>` and not a generic `U`
-//!
-//! Public functions are typed against fixed `SI<f64>` quantities rather than
-//! being generic over `U: Units`. Full genericity requires threading
-//! `U: Conversion<f64> + Copy` style bounds through every signature, which makes
-//! them unreadable and buys nothing a caller wants: callers convert at the
-//! boundary either way. Fixed-SI still catches unit errors at compile time,
-//! because a caller cannot construct a `Length` from an unconverted number
-//! without saying which unit it is in.
-//!
-//! # Dimensionless quantities
-//!
-//! Genuinely dimensionless quantities - Reynolds number, relative roughness,
-//! friction factor, resistance coefficient - are plain `f64`, here and in the
-//! Python API. They carry no unit to be safe about, and a newtype wrapper around
-//! a ratio would be an abstraction with exactly one implementation.
+//! Dimensionless quantities - Reynolds number, relative roughness, friction factor,
+//! resistance coefficient - are plain `f64`, here and in the Python API.
 
 pub use uom::si::f64::{
     Area, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate, MolarEnergy,
@@ -221,7 +196,7 @@ pub fn kilograms_per_mole(value: f64) -> MolarMass {
 
 /// The canonical unit strings the spec schema permits.
 ///
-/// Generated from `specs/vocabulary/vocabulary.yaml`, which is the one
+/// Generated from `specs/vocabulary/vocabulary.toml`, which is the one
 /// hand-written source of this list - and of the dimension each name carries, the
 /// conversion this crate performs for it, and the `pint` name it has on the Python
 /// side. The list reaches Python through `azoth._core.unit_names`.

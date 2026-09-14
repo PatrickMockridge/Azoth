@@ -1,8 +1,8 @@
 # The calculus of thermodynamic dimensionality
 
-**This section is normative for the types.** `spec.md` is normative for the port —
+**This section is normative for the types.** `specification.md` is normative for the port —
 what is ported, how a calculation is declared, where responsibility for data sits.
-Where the two meet, `spec.md` decides the policy and this section decides the
+Where the two meet, `specification.md` decides the policy and this section decides the
 types, because a type is not a policy and the two are not two answers to one
 question.
 
@@ -64,7 +64,7 @@ So each claim names its theorem and says which of three things it is:
 | **Characterised** | the layer exists and the claim describes it rather than guarding it. Nothing this repository can do would violate it, so it is stated and deliberately not proved |
 
 The distinction between the last two is the whole of the judgement here, and it is
-the one `spec.md` makes when it refuses a status field: what a claim is *worth*
+the one `specification.md` makes when it refuses a status field: what a claim is *worth*
 depends on whether anything can falsify it. A specification is worth writing
 before its layer exists, because it is what the layer is checked against. A
 characterisation is worth writing too — it is what makes the dimension the right

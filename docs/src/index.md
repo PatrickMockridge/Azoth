@@ -9,14 +9,13 @@ pages under [Hydraulics](./hydraulics/index.md) are **generated from the same
 specification files the code is generated from**, so they cannot drift from it.
 CI regenerates them and fails on any difference.
 
-**[The specification](./spec.md) says what azoth is** — why Rust rather than Java,
-what is in scope and what deliberately is not, and what it costs to add a
-calculation. It is normative: where a page here disagrees with it, that page is
-wrong.
+**[Architecture](./architecture/index.md)** is the structure: the pipeline from a
+spec to the Rust, Python and Lean that are made from it, and what is true of azoth and
+where that truth is written.
 
-**[the specification](./spec.md)** is the orientation rather than
-the rulebook: the small core every domain depends on, the four levels of
-composition, and where a new piece of your own belongs.
+**[The specification](./architecture/specification.md)** is the port: why Rust rather
+than Java, what it owes a reader, and what a contribution costs. It is normative — where
+a page here disagrees with it, that page is wrong.
 
 ## The two ideas this library is built around
 
@@ -113,7 +112,7 @@ Each calculation is independent, and the composition is done by the caller. That
 still true of every id in the list above, and it is why each one has a worked example a
 reader can retrace by hand. A **unit-operation tier** and the **flowsheets** that
 compose them sit above this, and they compose for you; what that gives up in exchange,
-and what replaces the guarantee, is set out in [the specification](./spec.md) rather
+and what replaces the guarantee, is set out in [the specification](./architecture/specification.md) rather
 than left to be discovered. Neither is built - see P11 and P12 there.
 
 The `azoth pipe` command performs the composition shown here, and reports the two
@@ -156,12 +155,12 @@ That column exists on the data *this repository ships*, and not on the rows of a
 keycard you supply — a deliberate asymmetry rather than a leftover. The shipped data
 is the library's own statement about itself, and it is what makes disclosure concrete;
 a keycard is yours, and the library does not ask. [What the library owes instead of a
-status field](./spec.md#what-the-library-owes-instead-of-a-status-field) has the
+status field](./architecture/specification.md#what-the-library-owes-instead-of-a-status-field) has the
 reasoning.
 
 ## How a calculation is added
 
-1. Write a spec under `specs/calcs/<namespace>/<name>.yaml`.
+1. Write a spec under `specs/calcs/<namespace>/<name>.toml`.
 2. Write one function in Python and one in Rust.
 3. Declare the tests in the spec.
 
@@ -179,7 +178,7 @@ because a wrapper's signature and result class carry judgement the spec does not
 [Contributing](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md)
 has the current count, measured rather than remembered.
 
-[the specification](./spec.md) carries the same decision table for the
+[the specification](./architecture/specification.md) carries the same decision table for the
 other kinds of addition — a component or a fluid, which is a keycard and no code at all,
 and a whole new domain, which is a new crate.
 

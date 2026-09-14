@@ -1,6 +1,6 @@
 //! The shape of a calculation's specification, as the code sees it.
 //!
-//! `tools/gen_registry.py` turns the YAML under `specs/calcs/` into static tables
+//! `tools/gen_registry.py` turns the TOML under `specs/calcs/` into static tables
 //! built from these types, and every calculation reads its own bounds and test
 //! cases from those tables rather than restating them. That is what makes a spec
 //! authoritative at runtime instead of merely descriptive.

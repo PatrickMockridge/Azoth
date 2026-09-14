@@ -156,14 +156,8 @@ class PropertyUnavailableError(AzothError, LookupError):
 class KeycardError(AzothError, ValueError):
     """A keycard cannot be loaded, or names something this build does not implement.
 
-    Python-only, and necessarily so: **nothing else parses a keycard file**. A keycard
-    is YAML, the workspace takes no YAML dependency, and `azoth.keycard` is the only
-    implementation - so there is no second one for this class to be kept identical to.
-
-    That is a narrower claim than it reads as. The Rust core holds a card when it is
-    handed one, and refuses a name it cannot resolve with a different class; what is
-    unreachable from Rust is *this* one, because what Rust never does is read the
-    file.
+    Python-only. `azoth.keycard` and `azoth_eos::card` read the same file and refuse
+    the same documents, each with its own class; nothing raises this one from Rust.
     """
 
     def __init__(self, where: str, reason: str) -> None:

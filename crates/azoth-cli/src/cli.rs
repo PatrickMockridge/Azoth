@@ -1,29 +1,11 @@
 //! The command line itself: what `azoth` accepts.
 //!
 //! Here rather than in `main.rs` because a binary's items are not reachable from an
-//! integration test, and what a user types is the part of a CLI that breaks first. A
-//! mis-declared flag is not thermodynamics and no calculation test can see it.
+//! integration test, and what a user types is the part of a CLI that breaks first.
 //!
-//! # Why there is no `--keycard`
-//!
-//! A keycard is a value this library can be handed, and a card file can now be read
-//! here: `azoth_eos::card::Card` parses one and produces the
-//! `azoth_eos::databank::Overlay` a lookup takes. What is missing is not a reader but a
-//! *consumer*, and that is worth writing down before somebody adds the flag anyway.
-//!
-//! **Nothing this binary does would consult it.** The two subcommands read
-//! `azoth_hydraulics::{fluids, fittings}`, and the card sections that could feed them -
-//! `fluids` and `fittings` - are `compiled`-stage in `specs/schema/keycard.schema.json`:
-//! they are inputs to `tools/gen_user_data.py`, and **nothing reads them at run time in
-//! either language**. A card's `components` and `kij` are the runtime sections, and
-//! neither subcommand resolves a substance. So a `--keycard` added now would accept a
-//! file, change no answer, and report success, which is the accepted-and-read-by-nothing
-//! failure this repository refuses everywhere else.
-//!
-//! The trigger is an eos subcommand: something that names a component or a mixture, at
-//! which point `--keycard` reads the card with `azoth_eos::card` and hands the overlay
-//! to the lookup. Until there is such a subcommand the flag has nothing to deliver -
-//! and the reader it would need is already written.
+//! There is no `--keycard`: neither subcommand resolves a substance, so a card passed to
+//! one would change no answer. The sections that could feed them, `fluids` and
+//! `fittings`, are `compiled`-stage and nothing reads them at run time.
 
 use clap::{Parser, Subcommand};
 

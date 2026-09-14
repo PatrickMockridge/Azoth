@@ -3,7 +3,7 @@
 //! The pressure at which a pure component's vapour and liquid roots have equal
 //! fugacity, found by bisection on reduced pressure.
 //!
-//! Spec: `specs/models/eos/pure_saturation.yaml`, which carries the procedure - the
+//! Spec: `specs/models/eos/pure_saturation.toml`, which carries the procedure - the
 //! bracketing rule, the tolerance and the cap - since a procedure that differs between
 //! two implementations reaches a slightly different answer.
 //!

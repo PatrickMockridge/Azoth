@@ -1,6 +1,6 @@
 """``eos.critical_point`` - the mixture critical point.
 
-Spec: ``specs/models/eos/critical_point.yaml``, which carries the method, where this
+Spec: ``specs/models/eos/critical_point.toml``, which carries the method, where this
 differs from NeqSim's implementation, what it is checked against and where it is least
 trustworthy.
 

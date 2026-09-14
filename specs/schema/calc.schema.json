@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/calc.schema.json",
   "title": "Azoth calculation spec",
-  "description": "**A data sheet, not a document.** A calc declares what it is called, the equation, its inputs and outputs, where the two implementations live, a worked example and the tests that exercise it. The registries and the generated reference tables are produced from these files; the *specification* of what a calculation is - its contract, its domains, why a bound takes the value it does - belongs in `docs/src/`, and `docs/src/specs.md` specifies this format. `additionalProperties: false` is the mechanism that keeps a status, citation-status or provenance field out of a spec: one cannot appear without a deliberate edit here. See `docs/src/spec.md`, \"The keycard is where responsibility sits\" - the library implements and reports, and it does not grade an engineer's judgement about which equation of state or which data applies.",
+  "description": "A calculation spec: what a calc is called, the equation, its inputs and outputs, both implementations, a worked example and the tests that exercise it.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -30,20 +30,20 @@
     "equation": {
       "type": "string",
       "minLength": 1,
-      "description": "The equation. Written in Python expression syntax where the equation is explicit, so the worked example can be independently re-derived from it. For implicit equations (e.g. Colebrook) it is the defining relation and the worked example is derived by the solver named in `solver`. Rendered as LaTeX in the generated docs.",
+      "description": "The equation, in Python expression syntax so the worked example can be re-derived from it. For an implicit equation it is the defining relation, solved with the scheme named in `solver`.",
       "examples": ["dP = f * (L / D) * (rho * v**2 / 2)"]
     },
     "latex": {
       "type": "string",
       "minLength": 1,
-      "description": "The equation in LaTeX, for the generated documentation. A separate field from `equation` because the two have different jobs: `equation` is Python source, machine-evaluable and used to re-derive the worked example, while `latex` is typeset for a reader. `equation` cannot be rendered as mathematics - `log10(rr / 3.7 + ...)` is not notation a human reads - and `latex` cannot be evaluated. Required rather than optional because a calc whose documentation shows no equation is the drift this project exists to prevent. It is in `required` as well as being read by `gen_docs`, so a spec without it fails validation rather than crashing the generator.",
+      "description": "The equation in LaTeX, typeset for the generated documentation. A separate field from `equation`, which is Python source used to re-derive the worked example; both are required.",
       "examples": ["\\Delta P = f\\,\\frac{L}{D}\\,\\frac{\\rho v^{2}}{2}"]
     },
     "source": {
       "type": "object",
       "additionalProperties": false,
       "required": ["standard"],
-      "description": "Where the equation comes from. Only `standard` is required. A source whose equation number or DOI is unknown omits those keys rather than writing a placeholder into them - a placeholder renders into the generated page as though it were a citation, which is worse than saying less.",
+      "description": "Where the equation comes from. Only `standard` is required; omit `equation`, `doi` or `url` when they are unknown rather than writing a placeholder.",
       "properties": {
         "standard": {
           "type": "string",
@@ -74,7 +74,7 @@
     "valid_range": {
       "type": "array",
       "minItems": 1,
-      "description": "Bounds on the range in which the calc is validated. Typed bounds rather than free-form expressions, so they are machine-checkable and need no expression parser.",
+      "description": "Bounds on the range in which the calc is validated. Stated as typed bounds rather than free-form expressions, so they are machine-checkable.",
       "items": { "$ref": "#/$defs/range_check" }
     },
     "assumptions": {
@@ -93,22 +93,22 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "tolerance", "max_iterations", "convergence"],
-      "description": "Required for implicit equations. Encoding the solver in the spec is what keeps the Python and Rust implementations numerically comparable: a different-but-valid solver, or the same solver with a different stopping rule, would diverge in the last bits and fail the agreement test. Both implementations must implement exactly this scheme - see docs/src/theory/solvers.md.",
+      "description": "The solver for an implicit equation: the scheme, its tolerance, iteration cap and stopping rule. Both implementations must run exactly this scheme.",
       "properties": {
         "kind": {
           "enum": ["fixed_point", "cubic_roots"],
-          "description": "The scheme to solve with. A kind is here only when both implementations run it: a spec naming `bisection` or `newton` would describe a calculation neither implementation can run, which is the 'looks like validation, does nothing' failure this schema exists to catch. Adding a kind means three things in one commit - the solver in both implementations, the cross-language agreement test that proves they run the same scheme, and a contract test holding this enum and the implementations' kinds to each other. All three exist as of `eos.pr_z_factor`, which added `cubic_roots`: the test is `python/tests/test_solver_contract.py` and it asserts the schema, `azoth.core.solver.SolverKind` and `azoth_core::solver::SolverKind::ALL` are one set. `cubic_roots` is analytic rather than iterative and ignores `initial_guess`, which is why that key is required conditionally rather than always - see the `allOf` below."
+          "description": "The scheme to solve with. `fixed_point` iterates from a declared start; `cubic_roots` forms the roots analytically. A kind is admitted only when both implementations run it."
         },
         "tolerance": { "type": "number", "exclusiveMinimum": 0 },
         "max_iterations": { "type": "integer", "minimum": 1 },
         "initial_guess": {
           "type": "number",
           "exclusiveMinimum": 0,
-          "description": "Where the iteration starts. Required when `kind` is `fixed_point`, which iterates from a declared start, and meaningless for `cubic_roots`, which forms the roots analytically before polishing them - so it is required conditionally rather than always."
+          "description": "Where the iteration starts. Required when `kind` is `fixed_point`; not used by `cubic_roots`, so it is required conditionally rather than always."
         },
         "convergence": {
           "enum": ["absolute", "relative"],
-          "description": "Stopping rule applied to successive iterates x_k. `relative` means |x_{k+1} - x_k| <= tolerance * |x_{k+1}|; `absolute` means |x_{k+1} - x_k| <= tolerance. Naming this explicitly matters: the same tolerance means different things under the two rules, and the two implementations must agree on which one is meant."
+          "description": "Stopping rule applied to successive iterates x_k. `relative` means |x_{k+1} - x_k| <= tolerance * |x_{k+1}|; `absolute` means |x_{k+1} - x_k| <= tolerance."
         }
       },
       "allOf": [
@@ -185,7 +185,7 @@
   "$defs": {
     "citation": {
       "type": "string",
-      "description": "Where a value came from, for a reader. **Optional everywhere, and validated nowhere.** The engineer supplying data is responsible for knowing its provenance and whether they may use it - that is a professional responsibility a YAML linter cannot discharge, and one this library does not pretend to. What the library owes instead is disclosure: it says what it ships and where that came from (see NOTICE), and a result computed from a keycard records whose keycard it was. A field that was required and unenforceable taught people to fill it in rather than to know the answer."
+      "description": "Where a value came from, for a reader. Optional everywhere and validated nowhere: the engineer supplying data is responsible for knowing its provenance and whether they may use it."
     },
     "value": {
       "description": "A scalar quantity, or a list of identifiers for list-valued inputs such as a fitting list.",
@@ -197,7 +197,7 @@
 
     "unit": {
       "$ref": "unit.schema.json",
-      "description": "Canonical unit of a quantity in the equation. SI-first. API callers may pass any convertible unit; this is the unit the spec and generated docs speak in, not the unit anything is calculated in - calculations work in SI base magnitudes, and to_si/from_si are the only places the two representations meet. The enum is generated from `specs/vocabulary/vocabulary.yaml` by `tools/gen_vocabulary.py`, which is where a unit is added; the same table also generates `crates/azoth-core/src/unit_vocab_gen.rs` and `python/src/azoth/core/_units_gen.py`, so the set a spec may name, the set Rust has a conversion for and the set Python has a pint name for cannot drift apart. SI-first is a convention for how these are written down, not a load-bearing property: mm is not its own SI base unit and converts correctly, because both implementations convert to base units rather than to the name recorded here."
+      "description": "Canonical unit of a quantity in the equation, SI-first; it is the unit the spec and generated docs speak in, and API callers may pass any convertible unit. The enum is generated from `specs/vocabulary/vocabulary.toml` by `tools/gen_vocabulary.py`."
     },
 
     "quantity": {
@@ -221,7 +221,7 @@
           "type": "object",
           "minProperties": 1,
           "additionalProperties": { "$ref": "#/$defs/quantity" },
-          "description": "The named sub-quantities of one record, for `record_list`. A result that returns structured rows - one per fitting, per component, per phase - needs its row shape declared, or a generator emitting the result struct has no way to know the row's fields."
+          "description": "The named sub-quantities of one record, for `record_list`. Required when type is `record_list`; a result returning structured rows - one per fitting, per component, per phase - needs its row shape declared."
         },
         "description": { "type": "string", "minLength": 1 },
         "optional": {
@@ -233,7 +233,7 @@
         "interval": {
           "type": "boolean",
           "default": false,
-          "description": "The input is a temperature *difference* rather than an absolute temperature. Both are the same dimension, so a caller who passes 30 degC where a 30 K difference was meant gets 303.15 K: a plausible number wrong by 273.15, with nothing to catch it. Marking the input makes the Python boundary refuse an offset unit (degC, degF) rather than silently applying the offset - which is what Rust already gets for free by taking a TemperatureInterval rather than a ThermodynamicTemperature. Only meaningful on a unit that can express a difference, which is K; spec_lint enforces that."
+          "description": "The input is a temperature *difference* rather than an absolute temperature. Marking it makes the Python boundary refuse an offset unit (degC, degF); only meaningful on a unit that can express a difference, which is K, and spec_lint enforces that."
         }
       },
       "allOf": [
@@ -288,7 +288,7 @@
           "type": "array",
           "minItems": 1,
           "items": { "type": "string" },
-          "description": "For derived quantities (e.g. Re), the inputs it is computed from. spec_lint uses this to prove the check is actually evaluable - a range check that cannot run is worse than none, because it looks like validation.",
+          "description": "For derived quantities (e.g. Re), the inputs it is computed from. spec_lint uses this to prove the check is actually evaluable.",
           "examples": [["rho", "v", "D", "mu"]]
         },
         "min": { "type": "number", "description": "Lower bound of the interval described by min/max." },
@@ -300,11 +300,11 @@
         "when": {
           "enum": ["outside", "inside"],
           "default": "outside",
-          "description": "Which side of the min/max interval counts as a violation. 'outside' (the default) means the interval is the ALLOWED range, so values beyond it trigger the severity. 'inside' inverts this, for conditions that are only a problem within a band - e.g. transitional flow between Re 2000 and 4000. Only meaningful with min/max."
+          "description": "Which side of the min/max interval counts as a violation. 'outside' (the default) means the interval is the ALLOWED range; 'inside' inverts this, for conditions that are only a problem within a band. Only meaningful with min/max."
         },
         "severity": {
           "enum": ["warning", "error"],
-          "description": "error = mathematically undefined or invalid input, the implementation raises. warning = defined but outside the validated range, the implementation returns a value carrying a warning. Only evaluation of a test case may turn a `warning` range violation into a hard failure."
+          "description": "error = mathematically undefined or invalid input, the implementation raises. warning = defined but outside the validated range, the implementation returns a value carrying a warning."
         },
         "code": {
           "enum": [
@@ -315,7 +315,7 @@
             "TRIVIAL_SOLUTION"
           ],
           "default": "OUT_OF_VALID_RANGE",
-          "description": "Which warning code a violation emits. Defaults to OUT_OF_VALID_RANGE, which is right for a plain bound. Override it when the violation has a more specific meaning - the transitional-flow band emits TRANSITIONAL_FLOW, so a caller can react to indeterminate friction without string-matching a message. The code is data, not behaviour: naming it here is what keeps the spec and the warning the code raises from drifting apart."
+          "description": "Which warning code a violation emits. Defaults to OUT_OF_VALID_RANGE; override it when the violation has a more specific meaning, e.g. the transitional-flow band emits TRANSITIONAL_FLOW."
         },
         "rationale": { "type": "string" }
       },

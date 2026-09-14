@@ -4,7 +4,7 @@
 //! dP = f * (L / D) * (rho * v**2 / 2)
 //! ```
 //!
-//! Spec: `specs/calcs/hydraulics/darcy_weisbach.yaml`
+//! Spec: `specs/calcs/hydraulics/darcy_weisbach.toml`
 //!
 //! # A note on the sign convention
 //!

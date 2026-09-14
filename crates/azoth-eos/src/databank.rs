@@ -1,35 +1,16 @@
 //! The component databank: a mixture built from substance names.
 //!
-//! Until this existed, every calculation that needed a mixture took its critical
-//! constants, acentric factors, heat-capacity coefficients and interaction parameters
-//! as **parallel vectors supplied by the caller** - nine of them, retyped into every
-//! spec file. A number in a spec file is a number nobody can check against anything,
-//! and the whole point of vendoring NeqSim's tables is that it does not have to be.
+//! `data/components/components.csv` and `kij.csv` are generated from NeqSim's `COMP.csv`
+//! and `INTER.csv` by `tools/gen_databank.py`, embedded with `include_str!` so a wheel
+//! cannot find a different file or none. The Python side opens the same file from the
+//! repository and `python/tests/test_data_agreement.py` compares the embedded bytes
+//! against it.
 //!
-//! **Where the data comes from.** `data/components/components.csv` and `kij.csv` are
-//! generated from NeqSim's `COMP.csv` and `INTER.csv` by `tools/gen_databank.py`, which
-//! carries every column it can and records the unit of each in `databank/manifest.yaml`.
-//! They are embedded with `include_str!` rather than read at runtime, which is the
-//! arrangement `azoth-hydraulics` already uses for the fittings registry and for the
-//! same reason: a wheel that had to find a path would find a different file or none.
-//! The Python side opens the same file from the repository, and
-//! `python/tests/test_data_agreement.py` compares the embedded bytes against it - so
-//! the two implementations read one file rather than two copies that are supposed to
-//! match.
-//!
-//! **What a keycard can change.** The embedded tables are the baseline. A user's
-//! keycard overrides them by name, parameter by parameter: a card naming only `omega`
-//! keeps the shipped `Tc` and `Pc`, and a name the databank does not have is added -
-//! with no heat-capacity coefficients, because a card supplies the parameters a cubic
-//! needs and a polynomial is not one of them.
-//!
-//! An overlay is a value a caller passes, and not a store: nothing here holds one, so
-//! two cards in one process are two calls and neither answer depends on what was
-//! passed before it. **The card's sections are resolved elsewhere**, in
-//! [`crate::card`], which reads the file and produces the overlay: this module is about
-//! what an overlay *means* to a lookup, and keeping the two apart is what lets a caller
-//! build one directly - a test, a notebook, a service holding a card in memory - without
-//! a file existing at all.
+//! A keycard overrides the embedded tables by name, parameter by parameter: a card naming
+//! only `omega` keeps the shipped `Tc` and `Pc`, and a name the databank does not have is
+//! added - with no heat-capacity coefficients, because a card supplies the parameters a
+//! cubic needs. An overlay is a value a caller passes and not a store; [`crate::card`]
+//! reads a file and produces one.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -81,13 +62,9 @@ pub struct Entry {
     pub pc: f64,
     /// Acentric factor, dimensionless.
     pub omega: f64,
-    /// The `Cp` polynomial's five coefficients, in J/(mol*K**n).
-    ///
-    /// `None` for a substance an overlay *added*, and that is the whole of why this is
-    /// optional: a keycard supplies the parameters a **cubic** needs, and a heat-capacity
-    /// polynomial is not one of them. A mixture needs one, so `mixture_of` refuses such
-    /// a name rather than defaulting to zeros - which would be a zero heat capacity
-    /// wearing the shape of a polynomial.
+    /// The `Cp` polynomial's five coefficients, in J/(mol*K**n). `None` for a substance
+    /// an overlay added: a card supplies the parameters a cubic needs. `mixture_of`
+    /// refuses such a name rather than defaulting to zeros.
     pub cp: Option<[f64; 5]>,
 }
 
@@ -120,27 +97,17 @@ pub struct ComponentOverride {
 }
 
 impl ComponentOverride {
-    /// Whether this override names every parameter a cubic needs.
-    ///
-    /// Only asked of a substance the table does not have: one it *does* have is
-    /// completed from the table rather than required to be complete.
+    /// Whether this override names every parameter a cubic needs. Only asked of a
+    /// substance the table does not have; one it does have is completed from the table.
     #[must_use]
     pub fn is_complete(&self) -> bool {
         self.tc.is_some() && self.pc.is_some() && self.omega.is_some()
     }
 }
 
-/// A keycard's data, as a value a caller passes.
-///
-/// **A value, not a reader.** An overlay is what the two sections a lookup reads resolve
-/// to - [`crate::card::Card::overlay`] is where a card file becomes one, and a caller
-/// with the values already in hand builds one directly with [`Overlay::new`]. The
-/// distinction matters for tests and for embedding: an overlay needs no file, so a
-/// carded lookup can be asked for without one existing.
-///
-/// Nothing holds one. Two overlays in one process are two calls, and neither answer
-/// depends on what was passed before it - which is the property a module-level card
-/// cannot have, whoever set it.
+/// A keycard's data, as a value a caller passes. [`crate::card::Card::overlay`] is where
+/// a card file becomes one; a caller with the values in hand builds one with
+/// [`Overlay::new`], so a carded lookup needs no file. Nothing holds one.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Overlay {
     /// Overrides by lower-cased name, and additions the table does not have.
@@ -381,20 +348,13 @@ fn parse_kij() -> Result<HashMap<(String, String), f64>> {
 
 /// One substance's constants, or a failure naming it.
 ///
-/// `overlay` is the card this call reads, and `None` means the data this crate ships.
-/// The two are one path rather than two: an override is applied *here*, so every caller
-/// resolves a name the same way whether a card is in play or not.
-///
-/// Returns an owned [`Entry`] rather than a `&'static` one, and that is forced rather
-/// than chosen: a substance an overlay *adds* is in no table, so there is nothing static
-/// to borrow. The clone is a `String` and six numbers, once per component per mixture.
+/// `overlay` is the card this call reads; `None` means the data this crate ships. An
+/// override is applied here, so every caller resolves a name the same way. Owned rather
+/// than `&'static`, because a substance an overlay adds is in no table.
 ///
 /// # Errors
 /// * [`AzothError::PropertyUnavailable`] if neither the table nor the overlay carries
 ///   the substance, or if the overlay adds one without every parameter a cubic reads.
-///   Both are refused rather than approximated: a mixture silently missing a component,
-///   or holding one completed from a similar substance, is a wrong answer with every
-///   symptom of a right one.
 pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
     let key = name.trim().to_lowercase();
     let base = tables().0.get(&key).cloned();
@@ -458,13 +418,8 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
 /// The binary interaction parameter for a pair, or zero.
 ///
 /// Zero rather than a failure: an absent pair is the ideal-mixture default, which is
-/// what NeqSim's own reader substitutes. A pair either source *does* carry is never
-/// silently ignored.
-///
-/// **An overlay's zero wins over a fitted value**, which is the opposite of how an
-/// absent pair reads, and deliberately so: overriding a fitted pair back to ideal
-/// mixing is a caller stating something, and treating that zero as "no opinion" would
-/// undo it with no symptom.
+/// what NeqSim's own reader substitutes. An overlay's zero wins over a fitted value,
+/// because overriding a pair back to ideal mixing is a caller stating something.
 #[must_use]
 pub fn kij(first: &str, second: &str, overlay: Option<&Overlay>) -> f64 {
     if let Some(value) = overlay.and_then(|o| o.kij(first, second)) {
@@ -517,20 +472,14 @@ pub fn all_kij() -> Vec<(String, String, f64)> {
     out
 }
 
-/// A mixture and its ideal-gas model, built from substance names.
-///
-/// The two come back together because they are one object in practice: a mixture
-/// without the heat-capacity coefficients cannot produce an enthalpy, and building them
-/// from two separate lookups invites a call that names different components in each.
-///
-/// `overlay` is the card this call reads, and `None` means the data this crate ships.
+/// A mixture and its ideal-gas model, built from substance names, which come back
+/// together because a mixture without heat-capacity coefficients cannot produce an
+/// enthalpy.
 ///
 /// # Errors
 /// * [`AzothError::InvalidInput`] if `names` is empty.
-/// * [`AzothError::PropertyUnavailable`] if a name is in neither source, if an overlay
-///   adds one without every parameter a cubic reads, or if one has no heat-capacity
-///   coefficients - which is what an overlay-added substance is, and why an enthalpy
-///   cannot be produced from one.
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither source, or if one has
+///   no heat-capacity coefficients - which is what an overlay-added substance is.
 /// * Propagates [`Component::new`]'s range checks.
 pub fn mixture_of(names: &[&str], overlay: Option<&Overlay>) -> Result<(Mixture, IdealGasModel)> {
     if names.is_empty() {

@@ -4,7 +4,7 @@
 power = rho * g * q * H / eta
 ```
 
-Spec: ``specs/calcs/hydraulics/pump_power.yaml``
+Spec: ``specs/calcs/hydraulics/pump_power.toml``
 
 # ``g`` is a constant here, not an input
 

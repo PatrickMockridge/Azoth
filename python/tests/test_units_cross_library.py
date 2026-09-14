@@ -1,6 +1,6 @@
 """The vocabulary table, held to `pint` and to `uom` at once.
 
-`specs/vocabulary/vocabulary.yaml` declares what each canonical unit is: its
+`specs/vocabulary/vocabulary.toml` declares what each canonical unit is: its
 dimension, its name in `pint`, and its conversion path in `uom`. Neither of those
 libraries exposes a dimension as data - `uom` carries it in the type system and
 `pint` in its own registry - so the table is the only place the dimension is
@@ -29,18 +29,18 @@ typed; every number in this file is one a units library reported.
 from __future__ import annotations
 
 import importlib
+import tomllib
 from pathlib import Path
 from types import ModuleType
 from typing import Any, cast
 
 import pytest
-import yaml
 
 from azoth.core._units_gen import SLOTS
 from azoth.core.units import ureg
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-VOCAB_PATH = REPO_ROOT / "specs" / "vocabulary" / "vocabulary.yaml"
+VOCAB_PATH = REPO_ROOT / "specs" / "vocabulary" / "vocabulary.toml"
 
 #: How `pint` spells each of the table's slots. A closed map rather than a lookup
 #: on `pint`'s internal names, so a `pint` release that renames a base dimension
@@ -77,7 +77,7 @@ def _extension() -> ModuleType:
 
 def table() -> dict[str, Any]:
     """The hand-written vocabulary table."""
-    return cast("dict[str, Any]", yaml.safe_load(VOCAB_PATH.read_text(encoding="utf-8")))
+    return tomllib.loads(VOCAB_PATH.read_text(encoding="utf-8"))
 
 
 def units() -> list[dict[str, Any]]:

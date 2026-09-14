@@ -6,7 +6,7 @@ q = k * A * dT / L
 
 Fourier, J. (1822). "Théorie analytique de la chaleur." Paris: Firmin Didot.
 
-Spec: ``specs/calcs/thermal/conduction_plane_wall.yaml``
+Spec: ``specs/calcs/thermal/conduction_plane_wall.toml``
 
 # The sign convention
 

@@ -11,14 +11,14 @@ measurement has to exclude `tools/prose_lint.py` itself, which is a literal list
 phrases and therefore matches all of them - a detail the first version of this paragraph
 left out, and the reason the tool shipped failing on its own tree:
 
-    grep -rniI --include='*.rs' --include='*.py' --include='*.yaml' -- '<phrase>' \\
+    grep -rniI --include='*.rs' --include='*.py' --include='*.toml' -- '<phrase>' \\
         crates python/src python/tests specs tools --exclude=prose_lint.py
 
 Phrasings that occur in the existing tree are **not** here, however much they read like
 spam, because they are part of how this repository writes: `deliberately` occurs 105
 times, `no longer` 31, `the whole point` 11, and `load-bearing` 9 - including twice in
-`docs/src/spec.md`. A check that fires on those would be a check that has to be switched
-off, which is worse than no check.
+`docs/src/architecture/specification.md`. A check that fires on those would be a check
+that has to be switched off, which is worse than no check.
 
 **What that leaves out is the point.** The phrases that actually needed catching -
 `deliberately`, `the whole point`, `the load-bearing` - cannot be caught by a phrase list
@@ -53,6 +53,8 @@ HISTORY_PHRASES: tuple[str, ...] = (
     "had to change",
     "used to be called",
     "used to be named",
+    "before this existed",
+    "had already diverged",
 )
 
 #: Files whose prose is generated and therefore not written by anyone.
@@ -73,7 +75,7 @@ SEARCH: tuple[tuple[str, str], ...] = (
     ("lean/Azoth", "*.lean"),
     ("python/src", "*.py"),
     ("python/tests", "*.py"),
-    ("specs", "*.yaml"),
+    ("specs", "*.toml"),
     ("tools", "*.py"),
 )
 

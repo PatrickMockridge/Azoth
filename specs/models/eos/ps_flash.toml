@@ -1,0 +1,108 @@
+id = "eos.ps_flash"
+name = "Pressure-entropy flash"
+kind = "procedure"
+references = [
+    "Michelsen, M. L.; Mollerup, J. M. (2004). \"Thermodynamic Models: Fundamentals and Computational Aspects.\" Tie-Line Publications.",
+    "Smith, J. M.; Van Ness, H. C.; Abbott, M. M. \"Introduction to Chemical Engineering Thermodynamics.\"",
+]
+assumptions = [
+    "the iteration is quasi-Newton from `initial_temperature`, not a scan: the step is `factor * residual / (dS/dT)` with `dS/dT = cp/T`, clamped to ten kelvin.",
+    "the tolerance is `max(1e-5, |S_target| * 1e-10)`, in J/(mol*K): the floor is upstream's, stated per mole because this model carries no flow.",
+    "the starting temperature is declared in the spec, where upstream reads one off its thermodynamic system.",
+    "the flash at each trial temperature is converged, not exact: the entropy inverted is that of a converged approximation.",
+    "no check that the feed is stable: the model asks where the energy balance is satisfied, not whether the state found is the equilibrium one.",
+    "**the entropy is a difference from a supplied datum.** It is not an absolute quantity and is not comparable with a value computed from a different reference state.",
+]
+[source]
+standard = "Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup"
+edition = "The procedure is the ordinary one: the entropy of a mixture at fixed pressure is a strictly increasing function of temperature."
+[algorithm]
+scheme = "ps_flash_temperature_newton"
+convergence = "absolute"
+tolerance = 1e-05
+max_iterations = 200
+initial_temperature = 300.0
+[algorithm.inner]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 300
+[algorithm.inner.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure. Held fixed; the temperature is what is solved for."
+[inputs.S]
+unit = "J/(mol*K)"
+description = """\
+    the molar entropy the mixture is to reach, as a difference from the datum above. A \
+    magnitude, and it may be negative - a reference state that puts zero anywhere is a \
+    convention, not a physical floor.\n\
+    """
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the feed's mole fractions. Checked rather than renormalised."
+[outputs]
+[outputs.T]
+unit = "K"
+description = "the temperature that satisfies the entropy. This is the answer."
+[outputs.beta]
+unit = "dimensionless"
+description = """\
+    the vapour fraction at that temperature. Absent for a single-phase feed, where the flash \
+    reports an extrapolated split rather than a physical one - see the notes.\n\
+    """
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions at the answer"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions at the answer"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`K_i = y_i / x_i` at the answer, reported because the flash is one"
+[outputs.phase]
+type = "enum"
+values = ["all_liquid", "two_phase", "all_vapour"]
+description = "which phase the feed is in at the answer"
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the liquid root of the cubic at the answer"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root"
+[outputs.iterations]
+unit = "dimensionless"
+description = "Newton iterations taken"
+[outputs.residual]
+unit = "J/(mol*K)"
+description = "`|S(T) - S_target|` at the answer, in the property's own unit"
+[[valid_range]]
+quantity = "P"
+min = 0.0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    an absolute pressure; zero and below are not states, and the cubic's reduced variables \
+    divide by it.\n\
+    """
+[implementations]
+python = "azoth.eos.ps_flash"
+rust = "azoth_eos::ps_flash"

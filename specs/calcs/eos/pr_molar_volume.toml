@@ -1,0 +1,111 @@
+id = "eos.pr_molar_volume"
+name = "Molar volume from a compressibility factor"
+equation = "v = z*R*T/P"
+latex = '''v = \frac{z\,R\,T}{P}'''
+assumptions = ["`z` is the compressibility factor for the *same* `T` and `P`. NOT CHECKED, and not checkable here.\n", "the fluid is a single phase at this state; this calc does not know whether it is two-phase, supercritical, or on the unstable branch.\n", "no volume translation is applied, so `v` from a liquid root will be several per cent low - a property of the equation, not an error here.\n", """\
+    `R` is the exact value from the 2019 SI definition, not a truncated constant. A caller \
+    reproducing this by hand with `8.314` will disagree in the fourth significant figure.""", """\
+    the volume is molar. Converting to a specific volume needs a molar mass, which this calc \
+    does not take - `eos.pr_mass_density` is where that lives."""]
+references = ["Clapeyron, É. (1834). \\\"Mémoire sur la puissance motrice de la chaleur.\\\"", """\
+    van der Waals, J. D. (1873). \"Over de Continuiteit van den Gas- en Vloeistoftoestand.\" \
+    Leiden. (the compressibility factor as the departure from ideality)""", """\
+    BIPM. \"The International System of Units (SI)\", 9th edition (2019). (the exact values \
+    of the Avogadro and Boltzmann constants, from which `R` is computed)"""]
+[source]
+standard = "The ideal-gas law with the compressibility factor as the departure from it"
+edition = """\
+    Clapeyron, É. (1834); van der Waals, J. D. (1873) for the compressibility factor as the \
+    correction"""
+[inputs]
+[inputs.z]
+unit = "dimensionless"
+description = "The compressibility factor, from `eos.pr_z_factor`; either admissible root may be passed.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[outputs]
+[outputs.v]
+unit = "m**3/mol"
+description = """\
+    Molar volume. Positive whenever `z`, `T` and `P` are, which is what the bounds below \
+    ensure.\n\
+    """
+[[valid_range]]
+quantity = "z"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A molar volume is positive, so a `z` at or below zero could only come from a caller who is not passing a compressibility factor.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    an absolute temperature; zero and below are not states, and a negative one would give a \
+    negative volume"""
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    `P` is a divisor, and zero pressure is the infinite-volume limit - which is arithmetic \
+    rather than a state this calc can answer for. A negative pressure would give a negative \
+    volume.\n\
+    """
+[worked_example]
+source = "derived from the equation above"
+derivation = "The propane-like state this namespace is built on: `eos.pr_alpha_ab`'s worked example at `Tr = 0.8`, `Pr = 0.25`, and for propane (`Tc = 369.83 K`, `Pc = 4.248e6 Pa`):\n\n\n  T = 0.8 * 369.83      = 295.864 K\n  P = 0.25 * 4.248e6    = 1062000.0 Pa\n\nwith `eos.pr_z_factor`'s vapour root `z = 0.7907789662973796`:\n\n  R   = 6.02214076e23 * 1.380649e-23 = 8.31446261815324 J/(mol*K)\n  z*R = 0.7907789662973796 * 8.31446261815324 = 6.574902154501424\n  *T  = 6.574902154501424 * 295.864           = 1945.2768510394092\n  /P  = 1945.2768510394092 / 1062000.0        = 0.0018317107825229842\n\nA density follows from a molar mass, and with propane's conventional `M = 0.0440956 kg/mol`:\n\n  rho = 0.0440956 / 0.0018317107825229842 = 24.073451125981286 kg/m**3\nwhich is a plausible vapour density at 10.6 bar.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+z = 0.7907789662973796
+T = 295.864
+P = 1062000.0
+[worked_example.expected]
+v = 0.0018317107825229842
+[implementations]
+python = "azoth.eos.pr_molar_volume"
+rust = "azoth_eos::pr_molar_volume"
+[[tests]]
+id = "propane_vapour_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_reference_for_the_liquid_root"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at the same state but the *other* admissible root, `z = 0.036765449656896015`:\n\n  z*R = 0.036765449656896015 * 8.31446261815324 = 0.30568495681185676\n  *T  = 0.30568495681185676 * 295.864           = 90.44117406218318\n  /P  = 90.44117406218318 / 1062000.0           = 8.516118084951335e-05\n  rho = 0.0440956 / 8.516118084951335e-05       = 517.7899080323988 kg/m**3\n"
+tolerance = 1e-12
+[tests.inputs]
+z = 0.036765449656896015
+T = 295.864
+P = 1062000.0
+[tests.expected]
+v = 8.516118084951335e-05
+[[tests]]
+id = "the_ideal_gas_limit_is_z_of_one"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at `z = 1` - the ideal-gas limit - where the answer must be exactly `R*T/P` and nothing else:\n\n  z*R = 1.0 * 8.31446261815324 = 8.31446261815324\n  *T  = 8.31446261815324 * 300.0 = 2494.338785445972\n  /P  = 2494.338785445972 / 101325.0 = 0.024617209824287906\nwhich is 24.617 L/mol for an ideal gas at 300 K and one atmosphere.\n"
+tolerance = 1e-12
+[tests.inputs]
+z = 1.0
+T = 300.0
+P = 101325.0
+[tests.expected]
+v = 0.024617209824287906
+[[tests]]
+id = "monotonic"
+type = "property"
+property = "monotonic"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

@@ -11,11 +11,11 @@ this deliberately does *not* do.
 
 # A batch call is a loop over the scalar kernels
 
-Not a vectorised kernel. `README.md` and `docs/src/spec.md` both stake this project on
-there being exactly two implementations that check each other, and a vectorised Rust
-kernel would be a third - a different shape and a different arithmetic order, checked by
-nothing. The optimisation does not need one either: the boundary crossing is the cost,
-not the arithmetic, so looping captures the win.
+Not a vectorised kernel. `README.md` and `docs/src/architecture/specification.md` both
+stake this project on there being exactly two implementations that check each other, and
+a vectorised Rust kernel would be a third - a different shape and a different arithmetic
+order, checked by nothing. The optimisation does not need one either: the boundary
+crossing is the cost, not the arithmetic, so looping captures the win.
 
 # One calculation has no batch form, and it is not an omission
 

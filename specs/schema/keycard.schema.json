@@ -2,18 +2,18 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/keycard.schema.json",
   "title": "Azoth Keycard",
-  "description": "The file a user supplies to extend or override what this library ships: components, fluids, fittings, coefficients, and declarative model definitions. It is the way to add to azoth without writing Rust or Python - a component, a fluid, a coefficient and a cubic variant are all data. **Every section belongs to one of two stages, declared as `x-azoth-stage` on the section itself.** A `runtime` section is read by the loaded keycard at the moment a calculation is called, so a change takes effect immediately. A `compiled` section is consumed by a generator that writes a shipped data file, so a change takes effect after a regeneration and a rebuild. Nothing in the format says which; a reader has to be told, which is what the annotation is for. **A keycard is the user's, and this library does not police it.** A row may carry a citation; nothing requires one and nothing validates one. The engineer supplying data is responsible for its provenance and for their right to use it, which is a professional responsibility no schema can discharge. This is `docs/src/spec.md`, \"What a keycard cannot be\": do not add a required citation, a `verify_status`, or a rule that two provenance fields agree. A form teaches people to fill it in, which is worse than having no field at all.",
+  "description": "The file a user supplies to extend or override what this library ships: components, fluids, fittings, coefficients and declarative model definitions. Each section carries an `x-azoth-stage` of `runtime`, read when a calculation is called, or `compiled`, consumed by a generator.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version"],
   "properties": {
     "schema_version": {
       "const": 2,
-      "description": "The keycard format's version. Version 2 added `components`, `coefficients` and `models`. Bumped rather than extended in place because the checker that reads version 1 does not reject unknown sections - so a version-1 file carrying `components` would be accepted and the section silently dropped, which is data that looks in use and is read by nothing."
+      "description": "The keycard format's version. Version 2 added `components`, `coefficients` and `models`."
     },
     "keyholder": {
       "x-azoth-stage": "runtime",
-      "description": "Who is asserting the right to use these values. Optional, and nothing in azoth reads it: no result carries it and no check requires it. It is here so that a keycard says whose it is.",
+      "description": "Who is asserting the right to use these values. Optional, and nothing in azoth reads it: no result carries it and no check requires it.",
       "type": "object",
       "additionalProperties": false,
       "required": ["name"],
@@ -26,7 +26,7 @@
         "licence": {
           "type": "string",
           "pattern": "^(arweave:[A-Za-z0-9_-]{43}|doi:10\\.[0-9]{4,9}/\\S+|https://\\S+)$",
-          "description": "A fetchable reference to the licence itself, so a reviewer can see the terms a value was used under rather than being told they exist. Optional: a keycard carrying only public data has no licence to name."
+          "description": "A fetchable reference to the licence itself, so a reviewer can see the terms a value was used under. Optional: a keycard carrying only public data has no licence to name."
         }
       }
     },
@@ -72,7 +72,7 @@
     },
     "components": {
       "x-azoth-stage": "runtime",
-      "description": "A component databank, keyed by substance name. A component is a *set* of named parameters rather than a fixed record, because the models need different ones - a cubic needs `Tc`, `Pc` and `omega`, an associating model needs those plus association parameters - so the parameter names are open and the checker refuses one no model reads. Supplying a name the shipped databank already has overrides it; supplying a new one extends it.",
+      "description": "A component databank, keyed by substance name and then by parameter name. A component is a *set* of named parameters rather than a fixed record, because different models need different ones. Supplying a name the shipped databank already has overrides it; a new one extends it.",
       "type": "object",
       "minProperties": 1,
       "additionalProperties": {
@@ -92,7 +92,7 @@
     },
     "kij": {
       "x-azoth-stage": "runtime",
-      "description": "Binary interaction parameters, overriding or extending `data/components/kij.csv`. An array of rows rather than a map, because the key is a *pair* and every spelling of one - `a|b`, `b,a`, nested objects - is a convention nobody can guess. These are the values a cubic's mixing rule actually reads, so a keycard that overrides a component's `Tc` but not its interaction parameters is overriding less than it looks like.",
+      "description": "Binary interaction parameters, overriding or extending `data/components/kij.csv`. An array of rows rather than a map, because the key is a *pair*. These are the values a cubic's mixing rule reads.",
       "type": "array",
       "minItems": 1,
       "items": {
@@ -105,7 +105,7 @@
           "temperature_k": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "description": "The temperature the parameter was fitted at, where the source says. Optional: most published `kij` are treated as constants, and recording a temperature where the source gives one is disclosure, not a requirement."
+            "description": "The temperature the parameter was fitted at, where the source says. Optional: most published `kij` are treated as constants."
           }
         },
         "additionalProperties": false,
@@ -114,7 +114,7 @@
     },
     "coefficients": {
       "x-azoth-stage": "runtime",
-      "description": "Single constants a calculation takes as an argument, keyed by calculation id and then by input name - the identifiers the spec, both implementations and the registry already use. These are a *default*: a caller who passes the argument explicitly wins and the keycard is not consulted.",
+      "description": "Single constants a calculation takes as an argument, keyed by calculation id and then by input name. These are a *default*: a caller who passes the argument explicitly wins and the keycard is not consulted.",
       "type": "object",
       "minProperties": 1,
       "additionalProperties": {
@@ -127,11 +127,11 @@
             "value": { "type": "number" },
             "unit": {
               "$ref": "calc.schema.json#/$defs/unit",
-              "description": "Required, and checked against the spec's declared unit for that input. It is the one silent-error risk the entry carries: a coefficient declared in the wrong unit is a factor with no symptom."
+              "description": "Required, and checked against the spec's declared unit for that input. A coefficient declared in the wrong unit is a factor with no symptom."
             },
             "convention": {
               "type": "string",
-              "description": "Which convention the value is stated in, where the quantity is not a true ratio. `control_valve_cv`'s `Cv` is the case: it is declared `dimensionless` because no vocabulary unit can express `gpm/sqrt(psi)`, and that declaration is a fiction the warning carries instead."
+              "description": "Which convention the value is stated in, where the quantity is not a true ratio. `control_valve_cv`'s `Cv` is declared `dimensionless` because no vocabulary unit can express `gpm/sqrt(psi)`."
             }
           },
           "additionalProperties": false,
@@ -141,7 +141,7 @@
     },
     "models": {
       "x-azoth-stage": "runtime",
-      "description": "Declarative model definitions. A restricted, data-only form: named choices from closed vocabularies plus numeric parameters, with nothing to execute. Both implementations interpret the form independently and are cross-checked, which is what keeps the two-implementation guarantee true for a model this repository cannot see.",
+      "description": "Declarative model definitions: named choices from closed vocabularies plus numeric parameters, with nothing to execute. Both implementations interpret the form independently and are cross-checked.",
       "type": "object",
       "minProperties": 1,
       "additionalProperties": {
@@ -151,19 +151,19 @@
         "properties": {
           "kind": {
             "enum": ["cubic_eos"],
-            "description": "The model family. **One member, and deliberately.** A kind is here only when both implementations run it and a contract test holds the vocabulary to them together - the argument `docs/src/theory/solvers.md` already makes about `solver.kind`. Widening this enum is a deliberate act that happens alongside the implementation, never before it."
+            "description": "The model family. A kind is admitted only when both implementations run it and a contract test holds the vocabulary to them together, so widening this enum happens alongside the implementation, never before it."
           },
           "shape": {
             "enum": ["peng_robinson"],
-            "description": "Named as a pair rather than as loose numbers because it fixes the cubic's two constants (`e`, `f`), and naming them separately would make an invalid combination representable. **One member, and deliberately** - the same rule `kind` states above: a shape is here only when both implementations run it and a contract test holds the vocabulary to them together. An earlier draft listed five cubics and six alpha functions, none of which the code implemented; a keycard declaring one would have been accepted, stored, and silently evaluated as Peng-Robinson. Widening an enum is a deliberate act that happens alongside the implementation, never before it."
+            "description": "The cubic shape, named as a pair rather than as loose numbers because it fixes the cubic's two constants (`e`, `f`). A shape is admitted only when both implementations run it and a contract test holds the vocabulary to them together."
           },
           "alpha": {
             "enum": ["peng_robinson"],
-            "description": "One member for the same reason as `shape`. See `eos.pr_kappa` and `eos.pr_alpha_ab`: the alpha function is `[1 + kappa(1 - sqrt(Tr))]**2` with `kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2`. Mathias-Copeman and Twu are fitted forms with their own parameters; nothing here reads `alpha_parameters`, so declaring one would be a promise this build cannot keep."
+            "description": "The alpha function: `[1 + kappa(1 - sqrt(Tr))]**2` with `kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2`. One member, for the same reason as `shape`."
           },
           "mixing_rule": {
             "enum": ["classical_kij"],
-            "description": "One member: van der Waals one-fluid mixing with binary interaction parameters, which is what `eos.vdw1f_mix_binary` implements and what the flashes mix with. A keycard's `kij` rows are the parameters this rule reads."
+            "description": "Van der Waals one-fluid mixing with binary interaction parameters, which is what `eos.vdw1f_mix_binary` implements. A keycard's `kij` rows are the parameters this rule reads."
           },
           "components": {
             "type": "array",
@@ -173,7 +173,7 @@
           },
           "alpha_parameters": {
             "type": "object",
-            "description": "The extra parameters an alpha function needs. Present and empty for the one this build implements, which needs none - and left in the format because it is how a fitted alpha function would arrive. The `if/then` branches in this schema cover exactly the members the enum admits, because a constraint on a value the enum does not admit is a rule that can never fire.",
+            "description": "The extra parameters an alpha function needs. Present and empty for the one this build implements, which needs none.",
             "additionalProperties": { "type": "number" }
           }
         }

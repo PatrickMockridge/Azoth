@@ -1,6 +1,6 @@
 """``eos.ps_flash`` - the temperature a mixture reaches at a given pressure and entropy.
 
-Spec: ``specs/models/eos/ps_flash.yaml``
+Spec: ``specs/models/eos/ps_flash.toml``
 
 An outer bisection on temperature, for an **isentropic** unit operation - a compressor,
 an expander, a turbine or a nozzle, assumed ideal - whose outlet temperature is not

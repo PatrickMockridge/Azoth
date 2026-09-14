@@ -9,7 +9,7 @@ throughout: the coefficients carry the powers of temperature in their units, so
 ``cp_a`` is a heat capacity and ``cp_b`` is one per kelvin. That is what lets the five
 ``CPA``-``CPE`` columns of NeqSim's ``COMP.csv`` be read as they are stored.
 
-Spec: ``specs/calcs/eos/ideal_gas_cp.yaml``.
+Spec: ``specs/calcs/eos/ideal_gas_cp.toml``.
 """
 
 from __future__ import annotations

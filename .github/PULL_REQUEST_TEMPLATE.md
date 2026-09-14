@@ -4,7 +4,7 @@
 
 ## If this adds a calculation
 
-The contract in full is [Specification, S9](docs/src/spec.md#s9-what-a-contribution-costs).
+The contract in full is [Specification, S9](docs/src/architecture/specification.md#s9-what-a-contribution-costs).
 The short version:
 
 - [ ] A spec under `specs/calcs/` — equation, LaTeX form, source, inputs and outputs

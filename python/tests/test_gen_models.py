@@ -47,7 +47,7 @@ def synthetic(namespace: str, name: str, **overrides: Any) -> dict[str, Any]:
     model: dict[str, Any] = {
         # `load_models` attaches the spec's path, and the emitter writes it into the
         # generated header - so a model built by hand has to carry one too.
-        "_path": f"specs/models/{namespace}/{name}.yaml",
+        "_path": f"specs/models/{namespace}/{name}.toml",
         "id": f"{namespace}.{name}",
         "name": "A synthetic model",
         "kind": "direct",

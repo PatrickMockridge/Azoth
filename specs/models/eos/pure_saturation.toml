@@ -1,0 +1,68 @@
+id = "eos.pure_saturation"
+name = "Pure-component saturation pressure"
+kind = "procedure"
+assumptions = [
+    "the component's `Tc`, `Pc` and `omega` are correct and mutually consistent, and come from the databank, which is a port of NeqSim's `COMP.csv`.",
+    "`Tc` and `Pc` are positive, so they are not bounded here: they come from the databank, which refuses a non-positive one.",
+    "the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the model does not accept a coefficient.",
+    "`p_sat` is the pressure where the two *roots* agree, not necessarily the pressure where the component really saturates.",
+    "near the critical temperature the answer degrades sharply and the model cannot tell: the roots coalesce as `Tr -> 1` and the last digits of `p_sat` stop being determined by the equation.",
+    "no stability analysis is performed. The two roots exist and their fugacities cross; whether the single-root solution would have been more stable is not asked.",
+    "the result is a *pure-component* property. A mixture's bubble point is a different calculation and is not this one with an extra component.",
+]
+references = [
+    "Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.",
+]
+[source]
+standard = "Peng, D. Y.; Robinson, D. B. (1976)"
+edition = """\
+    A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, \
+    15(1), 59-64"""
+doi = "10.1021/i160057a011"
+[algorithm]
+scheme = "saturation_pressure_bisection"
+convergence = "relative"
+tolerance = 1e-12
+max_iterations = 200
+[algorithm.bracket]
+scheme = "linear_scan_for_spinodal"
+lower = 1e-06
+upper = 0.999
+steps = 4000
+[inputs]
+[inputs.components]
+type = "components"
+length = "exactly one"
+description = "the substance, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature at which the saturation pressure is wanted; must be below `Tc`."
+[outputs]
+[outputs.p_sat]
+unit = "Pa"
+description = "the saturation pressure"
+[outputs.ln_phi]
+unit = "dimensionless"
+description = "The common value of `ln phi_L` and `ln phi_V` at the converged pressure."
+[outputs.iterations]
+unit = "dimensionless"
+description = "Bisection steps taken."
+[outputs.residual]
+unit = "dimensionless"
+description = "The *dimensionless* half-width of the final bracket, `(hi - lo) / (2 * mid)` - the relative uncertainty in the reduced pressure, not `ln phi_L - ln phi_V`."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "t_over_tc"
+computed_from = ["T", "components"]
+max = 1
+max_inclusive = false
+severity = "error"
+rationale = "Above the critical temperature a pure component has no saturation pressure, and at exactly `Tc` the residual is zero for every pressure, so the search would converge on nothing."
+[implementations]
+python = "azoth.eos.pure_saturation"
+rust = "azoth_eos::pure_saturation"

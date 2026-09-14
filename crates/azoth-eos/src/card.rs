@@ -1,36 +1,16 @@
 //! A keycard, read: the file a user supplies to extend or override what azoth ships.
 //!
-//! `keycard.example.toml` at the repository root is the template, `specs/schema/
-//! keycard.schema.json` is the written contract, and `python/src/azoth/keycard.py` is
-//! the other implementation of it. A card is data: named choices from closed
-//! vocabularies plus numbers, with nothing in it that executes and nothing it can make
-//! the library do.
+//! `keycard.example.toml` is the template, `specs/schema/keycard.schema.json` the
+//! contract, and `python/src/azoth/keycard.py` the other implementation of it.
 //!
-//! **The card is a value.** Nothing here holds one, so there is no card in force: a
-//! caller reads a card, passes it to the calls that should use it, and a call with none
-//! reads the shipped tables. Two cards in one process are two calls, and neither answer
-//! depends on what was read before it - which is the property a module-level card cannot
-//! have, whoever set it. `docs/src/calculus/capability.md` is where that is argued.
+//! Every section is marked `runtime` or `compiled` in the schema, and that annotation is
+//! what this reader is organised around. `components` and `kij` become an [`Overlay`],
+//! which is what the databank resolves a name against. `coefficients`, `models`,
+//! `keyholder`, `fittings` and `fluids` are carried as the data they are; nothing in this
+//! crate interprets them.
 //!
-//! # Which sections this reads
-//!
-//! Every section is marked `runtime` or `compiled` in `specs/schema/keycard.schema.json`,
-//! and that annotation is what this reader is organised around:
-//!
-//! * `components` and `kij` become an [`Overlay`] - see [`Card::overlay`] - which is what
-//!   the databank resolves a name against.
-//! * `coefficients` and `models` are carried as the data they are, for a caller to read
-//!   with [`Card::coefficient`] and [`Card::model`]. Nothing in this crate consumes them,
-//!   and that is a statement about this crate rather than about the sections: the calls
-//!   that take a coefficient or build a named mixture are the caller's.
-//! * `keyholder` is carried and read by nothing, which is what the format says it is for.
-//! * `fittings` and `fluids` are the **`compiled`** stage: `tools/gen_user_data.py`'s
-//!   input, read at run time by neither language. They are accepted and carried as the
-//!   values the document wrote, and nothing here interprets them.
-//!
-//! A section this reader does not know is refused rather than skipped, and so is a
-//! parameter or a unit it does not know. The reason is the one this repository gives
-//! everywhere: a value nothing reads is data that looks in use and is not.
+//! An unknown section, parameter or unit is refused rather than skipped: a value nothing
+//! reads is data that looks in use and is not.
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -41,38 +21,21 @@ use serde::Deserialize;
 
 use crate::databank::{ComponentOverride, Overlay};
 
-/// The keycard format version this reader understands.
-///
-/// A card declaring anything else is refused rather than guessed at, for the reason
-/// `specs/schema/keycard.schema.json` gives: version 2 added `components`,
-/// `coefficients` and `models`, so a version-1 file carrying one of those would have the
-/// section silently dropped.
+/// The keycard format version this reader understands. A card declaring anything else
+/// is refused rather than guessed at.
 pub const SCHEMA_VERSION: i64 = 2;
 
-/// The component parameters a cubic reads, and the unit each is stated in.
+/// The component parameters a cubic reads, and the canonical unit each is stated in.
 ///
-/// **Closed on purpose**, and it is the second place after `COMPONENT_PARAMETERS` in
-/// `python/src/azoth/keycard.py` that says which parameters a cubic reads. The schema
-/// allows any parameter name, because an associating model will want a different set -
-/// but a name nothing reads is a value silently ignored, so a card naming one is refused
-/// with this list in the message.
-///
-/// The unit named here is the *canonical* one for the parameter, and what a card is held
-/// to is that unit's **dimension** rather than its name: any name in the vocabulary of
-/// the same dimension is converted, and one of another dimension is refused. That is the
-/// check that stops a temperature being read as a pressure - the two are the same kind of
-/// number, and the answer that comes out of the wrong reading is plausible and wrong.
+/// A card is held to the unit's **dimension** rather than its name: any unit in the
+/// vocabulary of the same dimension is converted, and one of another dimension is
+/// refused. That stops a temperature being read as a pressure, which is a plausible
+/// wrong answer with no symptom.
 pub const COMPONENT_PARAMETERS: &[(&str, &str)] =
     &[("Tc", "K"), ("Pc", "Pa"), ("omega", "dimensionless")];
 
-/// The model vocabularies this build implements, each the only member it admits.
-///
-/// One member each, and deliberately: a shape is listed here only when the code runs it,
-/// so a card declaring a variant that fell back to Peng-Robinson would be a wrong answer
-/// with no symptom. The schema's enums are the same lists, and
-/// `python/tests/test_keycard_loader.py` holds them to each other; this is the third
-/// copy, and the reason it is a copy is that the schema is a dev-time artefact the wheel
-/// does not carry.
+/// The model vocabularies this build implements, each the only member it admits, and the
+/// same lists as the schema's enums. A shape is listed only when the code runs it.
 pub const MODEL_KINDS: &[&str] = &["cubic_eos"];
 /// See [`MODEL_KINDS`].
 pub const MODEL_SHAPES: &[&str] = &["peng_robinson"];
@@ -101,7 +64,7 @@ pub struct Keyholder {
 pub struct Parameter {
     /// The number, in the unit beside it.
     pub value: f64,
-    /// The unit, as a name from `specs/vocabulary/vocabulary.yaml`.
+    /// The unit, as a name from `specs/vocabulary/vocabulary.toml`.
     pub unit: String,
     /// Where the value came from, if the holder said. Never validated: provenance is the
     /// holder's, and a field a tool could check would be a field people fill in.
@@ -134,7 +97,7 @@ pub struct KijRow {
 pub struct Coefficient {
     /// The number, in the unit beside it.
     pub value: f64,
-    /// The unit, as a name from `specs/vocabulary/vocabulary.yaml`.
+    /// The unit, as a name from `specs/vocabulary/vocabulary.toml`.
     pub unit: String,
     /// Which convention the value is stated in, where the quantity is not a true ratio.
     pub convention: Option<String>,
@@ -143,14 +106,9 @@ pub struct Coefficient {
 }
 
 impl Coefficient {
-    /// The value as an SI base magnitude.
-    ///
-    /// **Not the same as the value**, and stated separately rather than instead: what the
-    /// card wrote is disclosure, and what a calculation takes is an SI base magnitude -
-    /// the same conversion `azoth.core.units.to_si` makes on the Python side, which is
-    /// what keeps a coefficient declared in `mm` meaning the same thing in both
-    /// languages. The unit is checked when the card is read, so this conversion has a
-    /// factor by the time a `Coefficient` exists.
+    /// The value as an SI base magnitude, the conversion the Python side's
+    /// `azoth.core.units.to_si` makes, so a coefficient declared in `mm` means the same
+    /// thing in both languages. The unit is checked when the card is read.
     #[must_use]
     pub fn si_value(&self) -> f64 {
         si_factor(&self.unit).map_or(self.value, |factor| self.value * factor)
@@ -215,12 +173,9 @@ pub struct Card {
     pub fittings: Vec<toml::Value>,
     /// The `compiled` fluid tables, exactly as the document wrote them.
     pub fluids: toml::Table,
-    /// The component and interaction overrides, as the databank resolves them against.
-    ///
-    /// Built while the document is checked, so [`Card::overlay`] cannot fail: every
-    /// refusal a caller could provoke - an unknown parameter, a unit of the wrong
-    /// dimension, a pair naming one substance twice - has already happened by the time a
-    /// `Card` exists.
+    /// The component and interaction overrides, built while the document is checked, so
+    /// building one cannot fail: every refusal has already happened by the time a `Card`
+    /// exists.
     overlay: Overlay,
 }
 
@@ -280,11 +235,7 @@ impl Card {
         Self::from_toml(&text)
     }
 
-    /// The component and interaction overrides, as the databank resolves against them.
-    ///
-    /// This is what a Rust-native caller passes: `databank::entry(name, Some(card.
-    /// overlay()))`. Borrowed rather than cloned, because a card is one value a caller
-    /// holds for as long as it needs it.
+    /// The overrides a Rust-native caller passes to `databank::entry(name, Some(...))`.
     #[must_use]
     pub fn overlay(&self) -> &Overlay {
         &self.overlay
@@ -378,11 +329,8 @@ fn resolve_components(
     Ok(())
 }
 
-/// Add every interaction pair the document states to the overlay.
-///
-/// A pair naming one substance twice is refused by [`Overlay::set_kij`], and the refusal
-/// is the reason this takes the overlay by `&mut` rather than returning a map: the rule
-/// about a self-pair is a rule about an overlay, and it is stated in one place.
+/// Add every interaction pair the document states to the overlay, which refuses a pair
+/// naming one substance twice.
 fn resolve_kij(overlay: &mut Overlay, kij: Option<&Vec<KijRow>>) -> Result<()> {
     let Some(kij) = kij else {
         return Ok(());

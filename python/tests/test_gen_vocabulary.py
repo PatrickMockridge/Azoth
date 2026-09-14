@@ -1,6 +1,6 @@
 """The vocabulary generator, on tables the tree does not have.
 
-`gen_vocabulary` compiles `specs/vocabulary/vocabulary.yaml` into four artefacts, and
+`gen_vocabulary` compiles `specs/vocabulary/vocabulary.toml` into four artefacts, and
 the drift job fails if any of them is stale. What nothing exercised is the generator's
 *refusals* - and a table is exactly the kind of file a person edits by hand, so a
 generator whose disagreement between two columns is silently resolved is one that
@@ -20,15 +20,17 @@ from __future__ import annotations
 import copy
 import importlib
 import sys
+import tomllib
 from pathlib import Path
 from types import ModuleType
-from typing import Any, cast
+from typing import Any
 
 import pytest
-import yaml
+
+from _toml_fixture import dump
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-VOCAB_PATH = REPO_ROOT / "specs" / "vocabulary" / "vocabulary.yaml"
+VOCAB_PATH = REPO_ROOT / "specs" / "vocabulary" / "vocabulary.toml"
 
 
 def gen_vocabulary() -> ModuleType:
@@ -41,7 +43,7 @@ def gen_vocabulary() -> ModuleType:
 
 def a_table() -> dict[str, Any]:
     """The repository's table, as a mutable copy."""
-    return copy.deepcopy(cast("dict[str, Any]", yaml.safe_load(VOCAB_PATH.read_text())))
+    return copy.deepcopy(tomllib.loads(VOCAB_PATH.read_text()))
 
 
 def compile_table(tmp_path: Path, table: dict[str, Any]) -> None:
@@ -56,8 +58,8 @@ def compile_table(tmp_path: Path, table: dict[str, Any]) -> None:
     refusal below is reached identically - and a table that turned out to be *valid*
     would write the generated files over the repository's if this were a bare run.
     """
-    path = tmp_path / "vocabulary.yaml"
-    path.write_text(yaml.safe_dump(table, sort_keys=False))
+    path = tmp_path / "vocabulary.toml"
+    path.write_text(dump(table))
 
     module = gen_vocabulary()
     previous = sys.argv
@@ -152,7 +154,6 @@ def test_a_unit_with_no_lean_dimension_is_refused(tmp_path: Path) -> None:
             "id": "invented",
             "dimension": "length",
             "pint": "furlong",
-            "uom": None,
         }
     )
     with pytest.raises(SystemExit, match="LEAN_DIMENSIONS"):
@@ -221,7 +222,7 @@ def test_the_repository_table_has_no_uom_path_without_a_constructor() -> None:
     """
     table = a_table()
     for row in table["units"]:
-        if row["uom"] is None:
+        if "uom" not in row:
             assert "rust_ctor" not in row, f"{row['id']} names a constructor with no uom path"
         else:
             assert row.get("rust_ctor"), f"{row['id']} claims a uom path and names no constructor"

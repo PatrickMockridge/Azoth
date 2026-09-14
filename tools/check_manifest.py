@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check `databank/manifest.yaml` against the files it describes.
+"""Check `databank/manifest.toml` against the files it describes.
 
 # Why this exists
 

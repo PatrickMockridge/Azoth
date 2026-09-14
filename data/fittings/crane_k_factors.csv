@@ -3,19 +3,13 @@
 # ============================================================================
 #  WARNING: EVERY VALUE IN THIS FILE IS AN ESTIMATED DUMMY VALUE.
 #
-#  These numbers were NOT taken from Crane TP-410, or from any other standard,
-#  textbook or table. They are placeholders of a plausible magnitude, present so
-#  that the software pipeline - spec -> Rust -> Python -> docs -> CLI -> CI - can
-#  be built and tested against something concrete.
+#  These numbers were NOT taken from Crane TP-410, or from any other standard. They are
+#  placeholders of a plausible magnitude. THEY ARE NOT ENGINEERING DATA. DO NOT USE THEM
+#  TO SIZE ANYTHING: a pressure drop computed from this file can be wrong by a factor of
+#  two or more and will still look reasonable, and no test here can detect that.
 #
-#  THEY ARE NOT ENGINEERING DATA. DO NOT USE THEM TO SIZE ANYTHING. A pressure
-#  drop computed from this file can be wrong by a factor of two or more and will
-#  still look perfectly reasonable. No test in this repository can detect that,
-#  because there is nothing correct to compare against.
-#
-#  Before this library is used for design work every row must be replaced with
-#  values read from a copy of the primary standard by a competent engineer, and
-#  its verify_status changed to `verified` with the source recorded in
+#  Replace every row with values read from the primary standard before this library is
+#  used for design work, and set its verify_status to `verified` with the source in
 #  `citation`.
 # ============================================================================
 #
@@ -24,27 +18,13 @@
 # the significant figures are not, so a table whose trailing zeros are meant has to be
 # edited in this file rather than generated into it.
 #
-# The METHOD being implemented (K = n_ld * f_t) is standard and is the actual
-# contribution; only the coefficients below are placeholders. See
-# specs/calcs/hydraulics/crane_k_factors.yaml for the equation and its status.
+# K      = f_t * sum(n_ld)   resistance coefficient of the fittings
+# n_ld   = L_eq / D          equivalent length ratio, fully turbulent flow
+# f_t                        Darcy friction factor for fully turbulent flow
+# See specs/calcs/hydraulics/crane_k_factors.toml for the equation and its status.
 #
-#   K      = f_t * sum(n_ld)   resistance coefficient of the fittings
-#   n_ld   = L_eq / D          equivalent length ratio, fully turbulent flow
-#   f_t                        Darcy friction factor for fully turbulent flow
-#
-# verify_status values:
-#   estimated_dummy - placeholder, not from any source. Software testing ONLY.
-#   unverified      - has a citation, but no named person has confirmed it
-#                     against an authoritative copy of the source. This covers
-#                     both "read from a secondary public reference" and "read
-#                     from a copy of the standard that nobody has verified is
-#                     faithful".
-#   verified        - confirmed by a named person against an authoritative
-#                     copy, with their name, the edition, and the date recorded
-#                     in `citation`.
-#
-# This column is the record, and it is the only one: nothing warns on it at
-# runtime any more, so it has to be read.
+# verify_status: estimated_dummy (placeholder) | unverified (cited, unconfirmed) |
+# verified (confirmed against an authoritative copy).
 #
 # Rows in this file: 7 estimated_dummy.
 #

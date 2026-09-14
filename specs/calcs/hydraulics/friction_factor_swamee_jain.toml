@@ -1,0 +1,101 @@
+id = "hydraulics.friction_factor_swamee_jain"
+name = "Swamee-Jain friction factor (explicit)"
+equation = "f = 0.25 / (log10(relative_roughness / 3.7 + 5.74 / Re**0.9))**2"
+latex = """\
+    f = \\frac{0.25}{\\left[\\log_{10}\\!\\left(\\frac{\\varepsilon/D}{3.7} + \
+    \\frac{5.74}{Re^{0.9}}\\right)\\right]^{2}}"""
+assumptions = ["fully turbulent flow", "circular pipe running full", "steady, fully developed, single-phase, incompressible flow", "uniform sand-grain roughness of height epsilon", "Newtonian fluid", "accuracy within about 1% of the Colebrook equation over the stated range"]
+references = ["Swamee, P. K.; Jain, A. K. (1976). \"Explicit equations for pipe-flow problems.\" Journal of the Hydraulics Division, ASCE, 102(5), 657-664.", "Colebrook, C. F. (1939). \"Turbulent flow in pipes, with particular reference to the transition region between the smooth and rough pipe laws.\" J. Inst. Civ. Eng., 11(4), 133-156."]
+[source]
+standard = "Swamee, P. K.; Jain, A. K. (1976)"
+edition = "Journal of the Hydraulics Division, ASCE, 102(5), 657-664"
+equation = '''"Explicit equations for pipe-flow problems"'''
+[inputs]
+[inputs.re]
+unit = "dimensionless"
+description = "Reynolds number"
+[inputs.relative_roughness]
+unit = "dimensionless"
+description = "absolute roughness divided by internal diameter (epsilon / D)"
+[outputs]
+[outputs.f]
+unit = "dimensionless"
+description = "Darcy-Weisbach friction factor"
+[[valid_range]]
+quantity = "re"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "Re**0.9 is zero at Re = 0 and the 5.74/Re**0.9 term is singular"
+[[valid_range]]
+quantity = "relative_roughness"
+min = 0
+severity = "error"
+rationale = "negative roughness is unphysical"
+[[valid_range]]
+quantity = "re"
+min = 5000
+min_inclusive = false
+severity = "warning"
+rationale = "Below Re = 5000 the equation is outside the range stated in the original paper."
+[[valid_range]]
+quantity = "re"
+max = 100000000.0
+max_inclusive = false
+severity = "warning"
+rationale = "upper Reynolds-number bound stated in the original paper"
+[[valid_range]]
+quantity = "relative_roughness"
+min = 1e-06
+min_inclusive = false
+severity = "warning"
+rationale = "lower relative-roughness bound stated in the original paper"
+[[valid_range]]
+quantity = "relative_roughness"
+max = 0.01
+max_inclusive = false
+severity = "warning"
+rationale = "Upper relative-roughness bound stated in the original paper (10**-2)."
+[worked_example]
+source = "derived from the equation above"
+derivation = "For Re = 1.0e5 and relative_roughness = 4.6e-4 (commercial steel, epsilon = 0.046 mm in a 100 mm pipe):\n  relative_roughness/3.7 = 1.2432432432432433e-4\n  5.74/Re**0.9           = 1.815147376936649e-4\n  sum                    = 3.0583906201798924e-4\n  log10(sum)             = -3.5145070469306843\n  f = 0.25 / (-3.5145070469306843)**2 = 0.02024003092624823"
+tolerance = 1e-06
+[worked_example.inputs]
+re = 100000.0
+relative_roughness = 0.00046
+[worked_example.expected]
+f = 0.0202400309
+[implementations]
+python = "azoth.hydraulics.friction_factor_swamee_jain"
+rust = "azoth_hydraulics::friction_factor_swamee_jain"
+[[tests]]
+id = "commercial_steel_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "agrees_with_colebrook_within_one_percent"
+type = "reference"
+status = "active"
+source = "Cross-check against the Colebrook equation at Re = 1e5 and relative_roughness = 4.6e-4; the paper claims agreement within 1% over the stated range."
+tolerance = 0.01
+[tests.inputs]
+re = 100000.0
+relative_roughness = 0.00046
+[tests.expected]
+f = 0.020162032
+[[tests]]
+id = "exact_smooth_pipe_limit"
+type = "reference"
+status = "active"
+source = "With relative_roughness = 0 the equation reduces to an explicit form that can be evaluated by hand.\n  f = 0.25 / (log10(5.74/Re**0.9))**2\n  At Re = 1e5: 5.74/Re**0.9 = 1.815147376936649e-4, its log10 is -3.741088107602027\n  f = 0.25/13.995740... = 0.01786257789"
+tolerance = 0.0001
+[tests.inputs]
+re = 100000.0
+relative_roughness = 0.0
+[tests.expected]
+f = 0.01786257789
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

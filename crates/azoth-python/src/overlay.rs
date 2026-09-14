@@ -2,16 +2,9 @@
 //!
 //! `azoth_eos::databank::Overlay` is the Rust type; this is how Python builds one and
 //! reads back what it resolves to. Nothing here decides anything - the merge rule lives
-//! in `azoth-eos`, and this module is a window onto it.
-//!
-//! **Why a window rather than a parameter.** `python/src/azoth/_rust_bridge.py` already
-//! resolves names to numbers before crossing, so the model functions have no need of an
-//! overlay and their signatures are untouched. What the overlay *does* need to be is
-//! **readable from Python**, because the merge rule - a card naming only `omega` keeps
-//! the shipped `Tc` and `Pc` - is implemented twice, once in
-//! `python/src/azoth/eos/components.py` and once in `azoth-eos::databank`, and two
-//! implementations of one rule are only worth having if something compares them.
-//! `python/tests/test_data_agreement.py` is that comparison.
+//! in `azoth-eos`, and this module is a window onto it. The rule is implemented twice,
+//! here and in `python/src/azoth/eos/components.py`, and
+//! `python/tests/test_card_agreement.py` compares them.
 
 use pyo3::prelude::*;
 
@@ -23,13 +16,8 @@ use crate::data::{PyComponentRow, row_of};
 /// because a card naming only `omega` keeps the shipped `Tc` and `Pc`.
 pub type ComponentArguments = (String, Option<f64>, Option<f64>, Option<f64>);
 
-/// A keycard's sections, as this crate can read them.
-///
-/// Built either entry by entry, from the values `azoth.keycard` resolved to, or by
-/// reading a card's text with [`card_overlay`].
-/// Opaque on purpose: a card crosses as a value and *what it resolves to* is read
-/// through the functions below, so there is nothing about it Python can inspect
-/// directly and nothing here for the stub to describe.
+/// A keycard's sections, as this crate can read them. Opaque: a card crosses as a value,
+/// and *what it resolves to* is read through the functions below.
 #[pyclass(frozen, skip_from_py_object, module = "azoth._core", name = "Overlay")]
 pub struct PyOverlay {
     inner: Overlay,
@@ -42,17 +30,12 @@ impl PyOverlay {
     }
 }
 
-/// A keycard, built from the values `azoth.keycard` resolved to.
+/// A keycard, built from the values `azoth.keycard` resolved to. A function rather than a
+/// builder, so the card is a value from the moment it exists.
 ///
-/// A function rather than a builder object, so the card is a value the caller holds
-/// from the moment it exists: there is no half-built overlay, and no way to keep one
-/// and add to it after it has been used. A keycard is immutable once read, and this is
-/// the shape that says so.
-///
-/// `components` is `(name, Tc, Pc, omega)` per substance, each parameter optional
-/// because a card naming only `omega` keeps the shipped `Tc` and `Pc`. `kij` is
-/// `(first, second, value)` per pair, and a value of exactly zero is a caller stating
-/// ideal mixing rather than a card saying nothing.
+/// `components` is `(name, Tc, Pc, omega)` per substance, each optional because a card
+/// naming only `omega` keeps the shipped `Tc` and `Pc`. `kij` is
+/// `(first, second, value)` per pair, where exactly zero is a caller stating ideal mixing.
 ///
 /// # Errors
 /// * `InvalidInputError` if a `kij` pair names one substance twice.
@@ -91,7 +74,7 @@ pub fn overlay_entry_row(
     Ok(row_of(&entry))
 }
 
-/// Every substance a card *names*, resolved, in name order.
+/// Every substance a card names, resolved, in name order.
 ///
 /// Only the card's own names, because those are the ones the baseline does not answer
 /// for: comparing the whole table would compare the file against itself. A card naming a
@@ -133,14 +116,8 @@ pub fn overlay_kij_rows(overlay: &PyOverlay) -> Vec<(String, String, f64)> {
         .collect()
 }
 
-/// A card read by **Rust**, as the overlay it resolves to.
-///
-/// The second reader of one document. `python/tests/test_card_agreement.py` hands one
-/// card's text to both this and `azoth.keycard`, and compares what each says - one case
-/// per rule, on the shipped template. That is the arrangement
-/// `python/tests/test_data_agreement.py` already uses for the merge rule, and the reason
-/// is the same: two implementations of one document are only worth having if something
-/// holds them to each other on real data.
+/// A card read by **Rust**, as the overlay it resolves to. The second reader of one
+/// document; `python/tests/test_card_agreement.py` holds it to `azoth.keycard`.
 ///
 /// # Errors
 /// * `InvalidInputError` if the text is not a card this build reads, naming the section,

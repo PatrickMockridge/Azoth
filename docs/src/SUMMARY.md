@@ -1,8 +1,9 @@
 # Summary
 
 - [azoth](./index.md)
-- [Specification](./spec.md)
-- [Spec files](./spec-files.md)
+- [Architecture](./architecture/index.md)
+  - [The specification](./architecture/specification.md)
+  - [Spec files](./architecture/spec-files.md)
 - [The calculus of thermodynamic dimensionality](./calculus/index.md)
   - [Dimensions](./calculus/dimensions.md)
   - [Barbs](./calculus/barbs.md)

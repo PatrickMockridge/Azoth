@@ -49,9 +49,9 @@ class Band(StrEnum):
 def flatten(text: str) -> str:
     """Collapse whitespace in a piece of spec prose.
 
-    YAML folded scalars arrive with embedded newlines and a trailing one. Those
-    are a formatting artefact of the spec file, not meaning, and both languages
-    must render the same rationale the same way - the Rust codegen flattens at
+    A value written across several lines arrives with embedded newlines. Those are
+    a formatting artefact of the spec file, not meaning, and both languages must
+    render the same rationale the same way - the Rust codegen flattens at
     generation time, so Python flattens at load time.
     """
     return " ".join(text.split())

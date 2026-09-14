@@ -20,8 +20,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install --upgrade pip pyyaml jsonschema
-      # Every YAML in specs/calcs must validate against the schema, and must
+      - run: python -m pip install --upgrade pip jsonschema
+      # Every spec under specs/ must validate against the schema, and must
       # satisfy the semantic rules the schema cannot express. Also prints the
       # count of estimated-dummy data rows, so placeholder data is visible in
       # every build log rather than only where it is used.
@@ -48,7 +48,7 @@ jobs:
       # schema's unit enum, the Rust conversion table, the Python map and the keycard
       # loader's list. One table, one generator, and this is what says the generated
       # copies are current rather than merely agreeing with each other. It needs only
-      # pyyaml and jsonschema, both installed above.
+      # jsonschema, installed above.
       - run: python tools/gen_vocabulary.py --check
 
   rust-test:
@@ -249,7 +249,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install --upgrade pip pyyaml
+      - run: python -m pip install --upgrade pip
       # Generated here so every build produces a reviewable record, not only
       # tagged releases. It is unsigned on a branch, and says so.
       - run: python tools/provenance.py --out provenance.json

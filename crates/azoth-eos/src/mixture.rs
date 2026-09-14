@@ -683,7 +683,7 @@ impl Mixture {
 /// `K_i = (Pc_i / P) * exp(5.373 * (1 + omega_i) * (1 - Tc_i / T))`.
 ///
 /// The constant is 5.373, quoted as 5.37 in some sources; the discrepancy is recorded
-/// in the references of `specs/models/eos/pt_flash.yaml` rather than resolved, because
+/// in the references of `specs/models/eos/pt_flash.toml` rather than resolved, because
 /// a reader meeting the other value needs to know it is the same correlation.
 ///
 /// Shared by the two models that use it: `eos.pt_flash` seeds its iteration with it,

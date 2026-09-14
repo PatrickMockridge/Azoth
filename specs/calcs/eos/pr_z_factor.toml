@@ -1,0 +1,142 @@
+id = "eos.pr_z_factor"
+name = "Peng-Robinson compressibility factor"
+equation = """\
+    z**3 - (1 - b_reduced)*z**2 + (a_reduced - 3*b_reduced**2 - 2*b_reduced)*z - \
+    (a_reduced*b_reduced - b_reduced**2 - b_reduced**3) = 0"""
+latex = """\
+    z^{3} - \\left(1 - B\\right)z^{2} + \\left(A - 3B^{2} - 2B\\right)z - \\left(AB - B^{2} \
+    - B^{3}\\right) = 0"""
+assumptions = ["the cubic has a real root above `b_reduced`. It is a theorem for `B > 0` rather than an assumption: the polynomial evaluates to `-2*B**2` at `z = b_reduced` and tends to positive infinity.\n", "the caller has applied a mixing rule if the system is a mixture; this calc takes `A` and `B` already composition-weighted.\n", "**`z_min` and `z_max` are the extreme roots, not the stable phases.** Which root has the lower Gibbs energy is a question about the mixture and is not answered here.\n", "**near the critical point the answer is not well determined, and this calc cannot tell.** The cubic's constants place a triple root there, and a triple root is cubically ill-conditioned.\n"]
+references = ["Peng, D. Y.; Robinson, D. B. (1976). \\\"A New Two-Constant Equation of State.\\\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011."]
+[source]
+standard = "Peng, D. Y.; Robinson, D. B. (1976)"
+edition = """\
+    A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, \
+    15(1), 59-64"""
+doi = "10.1021/i160057a011"
+[inputs]
+[inputs.a_reduced]
+unit = "dimensionless"
+description = "The cubic's attraction parameter `A`, from `eos.pr_alpha_ab`, dimensionless and already carrying the composition.\n"
+[inputs.b_reduced]
+unit = "dimensionless"
+description = """\
+    The cubic's repulsion parameter `B`, from `eos.pr_alpha_ab`. Also dimensionless and \
+    composition-carrying.\n\
+    """
+[outputs]
+[outputs.z_min]
+unit = "dimensionless"
+description = "The smallest *admissible* real root; roots at or below `b_reduced` are discarded, because `z = b_reduced` is the zero-volume limit.\n"
+[outputs.z_max]
+unit = "dimensionless"
+description = "The largest admissible real root, named for its position in the ordered root set rather than as \"liquid\" or \"vapour\": above the critical temperature there is one root and neither name is true.\n"
+[outputs.root_structure]
+type = "enum"
+values = ["one_root", "three_roots"]
+description = "How many admissible real roots the cubic has: one, or three. Never two, because the polynomial at `z = b_reduced` is `-2*b_reduced**2`."
+[outputs.iterations]
+unit = "dimensionless"
+description = "solver iterations performed"
+[outputs.converged]
+type = "boolean"
+description = "whether the iteration met the tolerance the solver block declares"
+[outputs.residual]
+unit = "dimensionless"
+description = "the residual at the final iterate"
+[[valid_range]]
+quantity = "b_reduced"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`B` is zero only at zero pressure, where the cubic degenerates to `z**3 - z**2 = z**2 (z - 1)` and the answer is trivial rather than wrong.\n"
+[[valid_range]]
+quantity = "a_reduced"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "`A` is a squared term times a positive coefficient - `Omega_a * alpha * Pr / Tr**2` - so it cannot be negative for any real input to `eos.pr_alpha_ab`; zero is permitted as the hard-sphere limit.\n"
+[solver]
+kind = "cubic_roots"
+tolerance = 1e-12
+max_iterations = 50
+convergence = "relative"
+[worked_example]
+source = "derived from the equation above"
+derivation = "The propane-like state from `eos.pr_alpha_ab`: A = 0.20206500174625697, B = 0.02431127309496514.\nThe cubic is then\n\n  z**3 - (1 - 0.02431127309496514) z**2\n       + (0.20206500174625697 - 3*0.02431127309496514**2 - 2*0.02431127309496514) z\n       - (0.20206500174625697*0.02431127309496514 - 0.02431127309496514**2\n          - 0.02431127309496514**3) = 0\n\nwhose coefficients evaluate to\n\n  z**3 - 0.97568872690503483 z**2 + 0.15166934155783277 z\n       - 0.0043070505546745881 = 0\n\nThis has three real roots:\n\n  z = 0.036765449656896015\n  z = 0.14814431095075864    (the middle root, discarded)\n  z = 0.7907789662973796\n\nAll three exceed B = 0.02431127309496514, so all three are admissible and `root_structure` is `three_roots`.\n\n  z_min = 0.036765449656896015\n  z_max = 0.7907789662973796\n\nThe middle root is discarded: it is a real root of the polynomial, not a state this equation of state describes.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+a_reduced = 0.20206500174625697
+b_reduced = 0.02431127309496514
+[worked_example.expected]
+z_min = 0.036765449656896015
+z_max = 0.7907789662973796
+[implementations]
+python = "azoth.eos.pr_z_factor"
+rust = "azoth_eos::pr_z_factor"
+[[tests]]
+id = "propane_like_three_root_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_hand_pickable_cubic_with_three_roots"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at A = 0.25 and B = 0.03125, both exact in binary:\n\n  z**3 - 0.96875 z**2 + (0.25 - 3*0.03125**2 - 2*0.03125) z\n       - (0.25*0.03125 - 0.03125**2 - 0.03125**3) = 0\n  z**3 - 0.96875 z**2 + 0.1845703125 z - 0.006805419921875 = 0\nwith roots\n\n  0.04868889529885568, 0.191973552085114, 0.7280875526160305\nz_min = 0.04868889529885568, z_max = 0.7280875526160305, structure three.\n"
+tolerance = 1e-12
+[tests.inputs]
+a_reduced = 0.25
+b_reduced = 0.03125
+[tests.expected]
+z_min = 0.04868889529885568
+z_max = 0.7280875526160305
+[[tests]]
+id = "a_single_root_above_the_critical_temperature"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at A = 0.08448417260831159 and B = 0.025932024634629486, for methane at Tr = 1.5 and Pr = 0.5.\n\n  z**3 - 0.97406797536537049 z**2 + 0.030602713634099526 z\n       - 0.0015009372376083338 = 0\nhas one real root, z = 0.943312987185517, and two complex ones.\n"
+tolerance = 1e-12
+[tests.inputs]
+a_reduced = 0.08448417260831159
+b_reduced = 0.025932024634629486
+[tests.expected]
+z_min = 0.943312987185517
+z_max = 0.943312987185517
+[[tests]]
+id = "the_critical_point_is_where_the_answer_stops_being_determined"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at A = 0.4572355289213822 and B = 0.07779607390388846.\nThe cubic here is\n\n  z**3 - 0.92220392609611157 z**2 + 0.28348669376902746 z\n       - 0.029048060221089245 = 0\nwhose exact triple root is -c2/3 = 0.30740130869870386.\n"
+tolerance = 0.001
+[tests.inputs]
+a_reduced = 0.4572355289213822
+b_reduced = 0.07779607390388846
+[tests.expected]
+z_min = 0.30740130869870386
+z_max = 0.30740130869870386
+[[tests]]
+id = "selected_roots_satisfy_the_cubic"
+type = "property"
+property = "consistency_with"
+status = "active"
+[[tests]]
+id = "the_middle_root_is_not_returned"
+type = "property"
+property = "consistency_with"
+status = "active"
+[[tests]]
+id = "the_admissible_count_is_never_two"
+type = "property"
+property = "consistency_with"
+status = "active"
+[[tests]]
+id = "monotonic"
+type = "property"
+property = "monotonic"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "skipped"
+skip_reason = "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.\n"

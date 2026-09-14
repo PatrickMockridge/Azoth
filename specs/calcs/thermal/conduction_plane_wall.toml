@@ -1,0 +1,105 @@
+id = "thermal.conduction_plane_wall"
+name = "Steady conduction through a plane wall"
+equation = "q = k * A * dT / L"
+latex = '''q = \frac{k\,A\,\Delta T}{L}'''
+assumptions = ["Steady state: the temperature profile is no longer changing.", "One-dimensional conduction: heat flows normal to the faces and nowhere else.", "the wall is homogeneous and isotropic, so a single `k` describes it in the flow direction", "`k` is constant across the temperature range.", "no internal heat generation within the wall", "no contact resistance at either face, and no convective film on either side; `dT` is the temperature difference across the solid itself, not between two fluids", "both faces are isothermal", "edge effects are neglected, which is the plane-wall idealisation: valid while the wall's lateral extent is large compared with its thickness", "the sign of `q` follows the sign of `dT`, and this calc does not know which physical face is which. It models a temperature difference across a slab, not a named hot side and cold side."]
+references = ["Fourier, J. (1822). \"Théorie analytique de la chaleur.\" Paris: Firmin Didot."]
+[source]
+standard = "Fourier, J. (1822)"
+edition = "Théorie analytique de la chaleur, Paris: Firmin Didot"
+[inputs]
+[inputs.k]
+unit = "W/(m*K)"
+description = "Thermal conductivity of the wall material."
+[inputs.A]
+unit = "m**2"
+description = "area of the wall face through which the heat flows"
+[inputs.dT]
+unit = "K"
+interval = true
+description = "Temperature difference across the wall."
+[inputs.L]
+unit = "m"
+description = "wall thickness in the direction of heat flow"
+[outputs]
+[outputs.q]
+unit = "W"
+description = "Heat flow rate through the wall, positive in the direction of decreasing temperature."
+[[valid_range]]
+quantity = "k"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "Thermal conductivity is strictly positive for any real material."
+[[valid_range]]
+quantity = "A"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    an area is positive by definition; zero area carries no heat and would make `q` zero \
+    regardless of the temperature difference"""
+[[valid_range]]
+quantity = "L"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    `L` is a divisor, so `L = 0` is singular - and physically it is the infinite-heat-flow \
+    limit of a zero-thickness wall, which is not a state the steady plane-wall model \
+    describes.\n\
+    """
+[worked_example]
+source = "derived from the equation above"
+derivation = "A carbon steel plate 50 mm thick and 2 m square, with a 30 K difference between its faces, at a conductivity of 45 W/(m*K):\n  k * A    = 45.0 * 2.0    = 90.0 W/K\n  dT / L   = 30.0 / 0.05   = 600.0 K/m\n  q = 90.0 * 600.0         = 54000.0 W\n  Equivalently in one step: 45.0 * 2.0 * 30.0 / 0.05 = 2700.0 / 0.05 = 54000.0 W"
+tolerance = 1e-12
+[worked_example.inputs]
+k = 45.0
+A = 2.0
+dT = 30.0
+L = 0.05
+[worked_example.expected]
+q = 54000.0
+[implementations]
+python = "azoth.thermal.conduction_plane_wall"
+rust = "azoth_thermal::conduction_plane_wall"
+[[tests]]
+id = "steel_plate_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "brick_wall_different_numbers"
+type = "reference"
+status = "active"
+source = "Derived from the equation above for a 200 mm brick wall, 10 m^2 of face, 20 K across it and k = 0.7 W/(m*K).\n  0.7 * 10.0 = 7.0 W/K\n  20.0 / 0.2 = 100.0 K/m\n  q = 7.0 * 100.0 = 700.0 W"
+tolerance = 1e-12
+[tests.inputs]
+k = 0.7
+A = 10.0
+dT = 20.0
+L = 0.2
+[tests.expected]
+q = 700.0
+[[tests]]
+id = "sign_follows_the_temperature_difference"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, with `dT` reversed:\n  q(k=45, A=2, dT=-30, L=0.05) = -q(k=45, A=2, dT=30, L=0.05) = -54000.0 W"
+tolerance = 1e-12
+[tests.inputs]
+k = 45.0
+A = 2.0
+dT = -30.0
+L = 0.05
+[tests.expected]
+q = -54000.0
+[[tests]]
+id = "monotonic"
+type = "property"
+property = "monotonic"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

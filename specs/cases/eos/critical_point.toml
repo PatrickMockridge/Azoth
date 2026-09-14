@@ -1,0 +1,23 @@
+model = "eos.critical_point"
+[[cases]]
+id = "pure_propane"
+tolerance = 1e-09
+[cases.inputs]
+components = ["propane"]
+z = [1.0]
+[cases.expected]
+tc = 369.8124146141963
+pc = 4247401.68587663
+vc = 0.00022253485817164885
+z_c = 0.3074013092188133
+[[cases]]
+id = "methane_and_butane"
+tolerance = 1e-09
+[cases.inputs]
+components = ["methane", "n-butane"]
+z = [0.4, 0.6]
+[cases.expected]
+tc = 389.72436734238954
+pc = 8223457.654726913
+vc = 0.00018525082354388668
+z_c = 0.4701353007478311

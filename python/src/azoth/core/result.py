@@ -89,7 +89,7 @@ class RootStructure(StrEnum):
 
     **There is no ``TWO_ROOTS``, and that is a theorem rather than an omission.**
     For the Peng-Robinson cubic, ``f(b_reduced)`` is exactly ``-2*b_reduced**2`` -
-    the algebra is in ``specs/calcs/eos/pr_z_factor.yaml`` - so ``b_reduced`` lies
+    the algebra is in ``specs/calcs/eos/pr_z_factor.toml`` - so ``b_reduced`` lies
     either below all three roots or between the middle and the largest one. The
     admissible count is therefore 1 or 3 and never 2. A variant that cannot occur
     would be a value a caller branches on and never sees, which is worse than an

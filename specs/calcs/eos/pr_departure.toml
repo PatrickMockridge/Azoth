@@ -1,0 +1,161 @@
+id = "eos.pr_departure"
+name = "Peng-Robinson fugacity coefficient and departure functions"
+equation = """\
+    psi = -kappa*Tr**0.5/(1 + kappa*(1 - Tr**0.5))\n\
+    I = ln((z + (1 + 2**0.5)*b_reduced)/(z + (1 - 2**0.5)*b_reduced))\n\
+    c = a_reduced/(2*2**0.5*b_reduced)\n\
+    ln_phi = z - 1 - ln(z - b_reduced) - c*I\n\
+    h_dep_rt = (z - 1) + c*(psi - 1)*I\n\
+    s_dep_r = ln(z - b_reduced) + c*psi*I\n\
+    \n\
+    # The heat-capacity departure. Cp^R/R = y + T*dy/dT at constant P, with\n\
+    # y = h_dep_rt. Every T-derivative below is the derivative already multiplied\n\
+    # by T, so the 1/T that each carries cancels and no term needs the absolute\n\
+    # temperature - only Tr. That is why this output needs no input the three\n\
+    # above do not already take.\n\
+    t_da = a_reduced*(psi - 2)\n\
+    t_db = -b_reduced\n\
+    t_dpsi = -kappa*(1 + kappa)*Tr/(2*Tr**0.5*(1 + kappa*(1 - Tr**0.5))**2)\n\
+    t_dc = c*(psi - 1)\n\
+    t_dz = -(t_db*z**2 + (t_da - 6*b_reduced*t_db - 2*t_db)*z\n\
+    \u0020\u0020\u0020\u0020\u0020\u0020\u0020\u0020\u0020+ 3*b_reduced**2*t_db + \
+    2*b_reduced*t_db - t_da*b_reduced - a_reduced*t_db) \\\n\
+    \u0020\u0020\u0020\u0020\u0020\u0020\u0020/ (3*z**2 + 2*(b_reduced - 1)*z + a_reduced - \
+    3*b_reduced**2 - 2*b_reduced)\n\
+    t_di = (t_dz + (1 + 2**0.5)*t_db)/(z + (1 + 2**0.5)*b_reduced) \\\n\
+    \u0020\u0020\u0020\u0020\u0020\u0020\u0020- (t_dz + (1 - 2**0.5)*t_db)/(z + (1 - \
+    2**0.5)*b_reduced)\n\
+    cp_dep_r = h_dep_rt + t_dz + t_dc*(psi - 1)*I + c*t_dpsi*I + c*(psi - 1)*t_di\n\
+    """
+latex = """\
+    \\psi = \\frac{-\\kappa\\sqrt{T_{r}}}{1 + \\kappa\\left(1 - \\sqrt{T_{r}}\\right)}, \
+    \\qquad I = \\ln\\frac{z + \\left(1 + \\sqrt{2}\\right)B}{z + \\left(1 - \
+    \\sqrt{2}\\right)B}, \\qquad C = \\frac{A}{2\\sqrt{2}B}, \\qquad \\ln\\varphi = z - 1 - \
+    \\ln\\left(z - B\\right) - CI, \\qquad \\frac{H^{R}}{RT} = \\left(z - 1\\right) + \
+    C\\left(\\psi - 1\\right)I, \\qquad \\frac{S^{R}}{R} = \\ln\\left(z - B\\right) + C\\psi \
+    I, \\qquad \\frac{C_{p}^{R}}{R} = \\frac{H^{R}}{RT} + \
+    T\\left(\\frac{\\partial}{\\partial T}\\frac{H^{R}}{RT}\\right)_{P}"""
+assumptions = ["**`z` is a root of the cubic that `a_reduced` and `b_reduced` define.** NOT CHECKED here, and not checkable: it would mean solving the cubic.\n", "`kappa` and `Tr` correspond to the state `a_reduced` and `b_reduced` describe. Also NOT CHECKED.\n", "the alpha function is the one whose logarithmic derivative `psi` is; Peng-Robinson's and PRSV's coefficients both feed it.\n", "the departure functions are relative to the ideal-gas state at the same temperature and pressure.\n", """\
+    no mixing rule is applied. These are pure-component departure functions, computed from \
+    the composition-weighted `A` and `B` a caller passes."""]
+references = ["Peng, D. Y.; Robinson, D. B. (1976). \\\"A New Two-Constant Equation of State.\\\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011."]
+[source]
+standard = "Peng, D. Y.; Robinson, D. B. (1976)"
+edition = """\
+    A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, \
+    15(1), 59-64"""
+doi = "10.1021/i160057a011"
+[inputs]
+[inputs.a_reduced]
+unit = "dimensionless"
+description = "the cubic's attraction parameter `A`, from `eos.pr_alpha_ab`"
+[inputs.b_reduced]
+unit = "dimensionless"
+description = "the cubic's repulsion parameter `B`, from `eos.pr_alpha_ab`"
+[inputs.z]
+unit = "dimensionless"
+description = "The compressibility factor, from `eos.pr_z_factor`. This calc does not check that `z` is a root of the cubic `A` and `B` define.\n"
+[inputs.kappa]
+unit = "dimensionless"
+description = "The alpha-function coefficient, from `eos.pr_kappa` or `eos.prsv_kappa`; both supply a coefficient for the same alpha function.\n"
+[inputs.Tr]
+unit = "dimensionless"
+description = "reduced temperature, T / Tc"
+[outputs]
+[outputs.ln_phi]
+unit = "dimensionless"
+description = "The logarithm of the fugacity coefficient, returned as a logarithm because that is what the algebra produces and what the equilibrium condition equates.\n"
+[outputs.h_dep_rt]
+unit = "dimensionless"
+description = "The departure enthalpy divided by `R*T` - the enthalpy relative to the ideal-gas state at the same temperature and pressure, made dimensionless.\n"
+[outputs.s_dep_r]
+unit = "dimensionless"
+description = "the departure entropy divided by `R`, dimensionless for the same reason"
+[outputs.cp_dep_r]
+unit = "dimensionless"
+description = "The departure heat capacity divided by `R` - `Cp` relative to the ideal-gas value at the same state.\n"
+[[valid_range]]
+quantity = "b_reduced"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`b_reduced` appears as a divisor in the coefficient `A/(2*sqrt(2)*B)`, and at B = 0 the departure functions are zero - the ideal-gas limit, which is not reachable by division.\n"
+[[valid_range]]
+quantity = "z_minus_b_reduced"
+computed_from = ["z", "b_reduced"]
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`z` appears as `ln(z - b_reduced)`, so `z = b_reduced` is the zero-volume limit and `z < b_reduced` makes the logarithm of a negative number.\n"
+[worked_example]
+source = "derived from the equations above"
+derivation = "The vapour root of the propane-like state in this namespace:\n\n  A = 0.20206500174625697    from eos.pr_alpha_ab at kappa = 0.60282728832, Tr = 0.8, Pr = 0.25\n  B = 0.02431127309496514    from the same call\n  z = 0.7907789662973796     the larger admissible root, from eos.pr_z_factor\n  kappa = 0.60282728832      from eos.pr_kappa at omega = 0.152\n  Tr = 0.8\n\nThe two substitutions:\n\n  sqrt(0.8) = 0.8944271909999159\n  psi = -0.60282728832 * 0.8944271909999159\n        / (1 + 0.60282728832 * (1 - 0.8944271909999159))\n      = -0.5069234120945535\n\n  (1 + sqrt(2))*B = 2.414213562373095  * 0.02431127309496514 = 0.05869260522442097\n  (1 - sqrt(2))*B = -0.4142135623730951 * 0.02431127309496514 = -0.010070059034490693\n  z + (1 + sqrt(2))*B = 0.7907789662973796 + 0.05869260522442097 = 0.8494715715218006\n  z + (1 - sqrt(2))*B = 0.7907789662973796 - 0.010070059034490693 = 0.780708907262889\n  I = ln(0.8494715715218006 / 0.780708907262889) = 0.08441211320846123\n\n  2*sqrt(2)*B = 2 * 1.4142135623730951 * 0.02431127309496514 = 0.06876266425891167\n  A/(2*sqrt(2)*B) = 0.20206500174625697 / 0.06876266425891167 = 2.9385859888357837\n\n  z - B = 0.7664676932024145,   ln(z - B) = -0.26596273002244775\n\nAnd the three outputs:\n\n  ln_phi   = 0.7907789662973796 - 1 - ln(0.7664676932024145)\n             - 2.9385859888357837 * 0.08441211320846123\n           = -0.19131055684257678\n  h_dep_rt = 0.7907789662973796 - 1\n             + 2.9385859888357837 * (-0.5069234120945535 - 1) * 0.08441211320846123\n           = -0.5830167814158524\n  s_dep_r  = ln(0.7664676932024145)\n             + 2.9385859888357837 * (-0.5069234120945535) * 0.08441211320846123\n           = -0.39170622457327564\n\nThe identity closes on these numbers:\n\n  h_dep_rt - s_dep_r = -0.5830167814158524 - (-0.39170622457327564)\n                     = -0.19131055684257676   against ln_phi = -0.19131055684257678\n\n"
+tolerance = 1e-12
+[worked_example.inputs]
+a_reduced = 0.20206500174625697
+b_reduced = 0.02431127309496514
+z = 0.7907789662973796
+kappa = 0.60282728832
+Tr = 0.8
+[worked_example.expected]
+ln_phi = -0.19131055684257678
+h_dep_rt = -0.5830167814158524
+s_dep_r = -0.39170622457327564
+cp_dep_r = 1.3282223816107868
+[implementations]
+python = "azoth.eos.pr_departure"
+rust = "azoth_eos::pr_departure"
+[[tests]]
+id = "propane_vapour_root_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "the_liquid_root_of_the_same_state"
+type = "reference"
+status = "active"
+source = "Derived from the equations above, at the same A, B, kappa and Tr as the worked example but at the *other* admissible root, z = 0.036765449656896015.\n\n  ln_phi   = -0.3218698775991462\n  h_dep_rt = -6.6056599807533996\n  s_dep_r  = -6.283790103154252\n"
+tolerance = 1e-12
+[tests.inputs]
+a_reduced = 0.20206500174625697
+b_reduced = 0.02431127309496514
+z = 0.036765449656896015
+kappa = 0.60282728832
+Tr = 0.8
+[tests.expected]
+ln_phi = -0.3218698775991462
+h_dep_rt = -6.6056599807533996
+s_dep_r = -6.283790103154252
+cp_dep_r = 5.916541294000248
+[[tests]]
+id = "supercritical_state_with_a_different_coefficient"
+type = "reference"
+status = "active"
+source = "Derived from the equations above, at the methane-like supercritical state: A = 0.08448417260831159, B = 0.025932024634629486, z = 0.943312987185517, kappa = 0.392217407205312, Tr = 1.5.\n\n  psi      = -0.5268033695356904\n  I        = 0.07571034498029687\n  ln_phi   = -0.05766112543659872\n  h_dep_rt = -0.18983428427214197\n  s_dep_r  = -0.13217315883554326\n"
+tolerance = 1e-12
+[tests.inputs]
+a_reduced = 0.08448417260831159
+b_reduced = 0.025932024634629486
+z = 0.943312987185517
+kappa = 0.392217407205312
+Tr = 1.5
+[tests.expected]
+ln_phi = -0.05766112543659872
+h_dep_rt = -0.18983428427214197
+s_dep_r = -0.13217315883554326
+cp_dep_r = 0.3262364051639115
+[[tests]]
+id = "the_gibbs_identity_holds"
+type = "property"
+property = "consistency_with"
+status = "active"
+[[tests]]
+id = "low_pressure_limit_is_the_ideal_gas"
+type = "property"
+property = "consistency_with"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "skipped"
+skip_reason = "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.\n"

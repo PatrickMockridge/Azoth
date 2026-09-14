@@ -21,10 +21,9 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
-
-import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -77,7 +76,7 @@ def ident(model_id: str) -> str:
 
 def load_models() -> list[dict[str, Any]]:
     """Every model spec, validated against the schema, in id order."""
-    paths = sorted(MODEL_DIR.rglob("*.yaml"))
+    paths = sorted(MODEL_DIR.rglob("*.toml"))
     if not paths:
         return []
 
@@ -91,7 +90,7 @@ def load_models() -> list[dict[str, Any]]:
 
     models: list[dict[str, Any]] = []
     for path in paths:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+        raw = tomllib.loads(path.read_text(encoding="utf-8"))
         errors = sorted(validator.iter_errors(raw), key=lambda e: list(e.path))
         if errors:
             for error in errors:
@@ -119,8 +118,8 @@ def load_models() -> list[dict[str, Any]]:
     by_id = {model["id"]: model for model in models}
     for model in models:
         model["cases"] = []
-    for path in sorted(CASE_DIR.rglob("*.yaml")):
-        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    for path in sorted(CASE_DIR.rglob("*.toml")):
+        raw = tomllib.loads(path.read_text(encoding="utf-8"))
         errors = sorted(case_validator.iter_errors(raw), key=lambda e: list(e.path))
         if errors:
             for error in errors:

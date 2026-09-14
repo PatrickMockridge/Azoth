@@ -1,44 +1,23 @@
 #!/usr/bin/env python3
 """Compile a checked user data file into the repository's data files.
 
-`keycard.toml` at the repository root is a *source*, not a runtime input. This
-turns it into the canonical CSVs that both languages read, exactly as
-`specs/calcs/*.yaml` is compiled into two registries. Run it, rebuild, and your
-values are what the calculations use.
+`keycard.toml` is a *source*, not a runtime input. This turns its `fittings` and
+`fluids` sections - the ones `specs/schema/keycard.schema.json` marks `compiled` - into
+the canonical CSVs both languages read, exactly as `specs/calcs/*.toml` is compiled into
+two registries. Run it, rebuild, and your values are what the calculations use.
 
     python tools/check_user_data.py keycard.toml     # check first
     python tools/gen_user_data.py   keycard.toml     # then write
     python tools/gen_user_data.py   keycard.toml --check
 
-# Why files, rather than reading the card at runtime
+It writes **in place**, over the committed placeholders, because the Rust core embeds
+the file with `include_str!` and needs it at the path the code names. If the values came
+from a standard you licensed, committing them redistributes them - read the warning this
+prints, and do not run `git add`.
 
-The Rust core embeds its data with `include_str!`, which is what makes the two
-implementations read byte-identical bytes - a property
-`python/tests/test_data_agreement.py` rests on. A table read at run time from a path
-the user controls would put a file's *location* into the call path of every
-calculation that reads it, in both languages, and the two could disagree about which
-file they had read. So the sections that are tables rather than values - `fittings`
-and `fluids`, which `specs/schema/keycard.schema.json` marks `compiled` - are written
-into the shipped files instead: one path, named by the code, embedded on both sides.
-
-# Do not commit what this writes
-
-If the values came from a standard you licensed, committing them redistributes
-them. `data/` holds committed placeholders, and this tool overwrites them **in
-place**, because `include_str!` needs the file at the path the code names. So the
-only thing standing between your licensed data and a public repository is you
-reading the warning this prints and not running `git add`. See
-`docs/src/spec.md`.
-
-# Why a fluid name can be refused
-
-`data/fluids/<name>.csv` is only readable if both implementations can *name* it,
-and both hardcode the fluid list - Rust through `include_str!` and a `match`,
-Python through a `_BUILTINS` dict. Generating `example_fluid.csv` would produce a
-file that nothing reads and nothing complains about, which is the failure this
-project is organised against: it would look like data in use. So a name that is
-not built in is refused, with the list of places to register it, rather than
-written to a path that goes nowhere.
+A fluid name that no implementation can name is refused rather than written: both sides
+hardcode the fluid list, so `data/fluids/<name>.csv` for an unregistered name would be a
+file nothing reads and nothing complains about.
 """
 
 from __future__ import annotations
@@ -94,34 +73,24 @@ FLUID_REGISTRATION = (
 
 BOX = "=" * 76
 
-#: The placeholder banner, used when every row is a dummy. Kept word for word from
-#: the hand-written file it replaces, so regenerating the shipped data is a no-op
-#: apart from the derived line below - and so the argument it makes, which is the
-#: most important prose in the repository, is not paraphrased by a tool.
+#: The loud banner: every row is a placeholder. Its wording is the claim the file makes
+#: about itself, and the line a reader must not skim past.
 DUMMY_WARNING = """\
 #  WARNING: EVERY VALUE IN THIS FILE IS AN ESTIMATED DUMMY VALUE.
 #
-#  These numbers were NOT taken from Crane TP-410, or from any other standard,
-#  textbook or table. They are placeholders of a plausible magnitude, present so
-#  that the software pipeline - spec -> Rust -> Python -> docs -> CLI -> CI - can
-#  be built and tested against something concrete.
+#  These numbers were NOT taken from Crane TP-410, or from any other standard. They are
+#  placeholders of a plausible magnitude. THEY ARE NOT ENGINEERING DATA. DO NOT USE THEM
+#  TO SIZE ANYTHING: a pressure drop computed from this file can be wrong by a factor of
+#  two or more and will still look reasonable, and no test here can detect that.
 #
-#  THEY ARE NOT ENGINEERING DATA. DO NOT USE THEM TO SIZE ANYTHING. A pressure
-#  drop computed from this file can be wrong by a factor of two or more and will
-#  still look perfectly reasonable. No test in this repository can detect that,
-#  because there is nothing correct to compare against.
-#
-#  Before this library is used for design work every row must be replaced with
-#  values read from a copy of the primary standard by a competent engineer, and
-#  its verify_status changed to `verified` with the source recorded in
+#  Replace every row with values read from the primary standard before this library is
+#  used for design work, and set its verify_status to `verified` with the source in
 #  `citation`."""
 
-#: The banner for a file that is not all placeholders. It does not make the claim
-#: above, which would then be false, and it does not claim the file was generated
-#: either - the shipped water and air tables are real published values that were
-#: never near this tool, and a banner saying "generated from keycard.toml" would
-#: be a lie about them. What it says instead is true of both: read the column, and
-#: do not commit licensed values.
+#: The banner for a file that is not all placeholders, which must not make the claim
+#: above. The water and air tables are real published values that were never near this
+#: tool, so it claims neither that every row is a placeholder nor that the file was
+#: generated: read the column, and do not commit licensed values.
 NOT_A_PLACEHOLDER_WARNING = """\
 #  WARNING: NOT EVERY VALUE IN THIS FILE IS A PLACEHOLDER.
 #
@@ -130,19 +99,12 @@ NOT_A_PLACEHOLDER_WARNING = """\
 #  it is the column to read before trusting anything here.
 #
 #  IF YOU RAN tools/gen_user_data.py TO MAKE THIS FILE: do not commit it. Values
-#  that came from a standard you licensed are redistributed by committing them,
-#  which is the thing this mechanism exists to avoid. `git checkout -- data/`
-#  brings the shipped placeholders back.
-#
-#  A table of real published values that this repository ships - the water and air
-#  tables - is a different case and does not carry that restriction. See
-#  see docs/src/spec.md."""
+#  that came from a standard you licensed are redistributed by committing them.
+#  `git checkout -- data/` brings the shipped placeholders back."""
 
-#: How a number reaches the file, which is the one thing about it a reader cannot
-#: recover afterwards. `0.0000200` and `2e-05` are the same float and are not the same
-#: statement about precision, and the second is what a value goes through the generator
-#: as - so the file says so rather than leaving the difference to be discovered by
-#: somebody comparing a table against the standard they took it from.
+#: How a number reaches the file, which is the one thing about it a reader cannot recover
+#: afterwards: `0.0000200` and `2e-05` are the same float and not the same statement about
+#: precision.
 NUMBER_NOTE = """\
 # Numbers in these rows are rendered from their values, not from the text written in
 # the source: `0.0000200` in a keycard becomes `2e-05` here. The value is the same and
@@ -150,29 +112,15 @@ NUMBER_NOTE = """\
 # edited in this file rather than generated into it."""
 
 STATUS_BODY = """\
-# verify_status values:
-#   estimated_dummy - placeholder, not from any source. Software testing ONLY.
-#   unverified      - has a citation, but no named person has confirmed it
-#                     against an authoritative copy of the source. This covers
-#                     both "read from a secondary public reference" and "read
-#                     from a copy of the standard that nobody has verified is
-#                     faithful".
-#   verified        - confirmed by a named person against an authoritative
-#                     copy, with their name, the edition, and the date recorded
-#                     in `citation`.
-#
-# This column is the record, and it is the only one: nothing warns on it at
-# runtime any more, so it has to be read."""
+# verify_status: estimated_dummy (placeholder) | unverified (cited, unconfirmed) |
+# verified (confirmed against an authoritative copy)."""
 
 FITTINGS_BODY = (
     """\
-# The METHOD being implemented (K = n_ld * f_t) is standard and is the actual
-# contribution; only the coefficients below are placeholders. See
-# specs/calcs/hydraulics/crane_k_factors.yaml for the equation and its status.
-#
-#   K      = f_t * sum(n_ld)   resistance coefficient of the fittings
-#   n_ld   = L_eq / D          equivalent length ratio, fully turbulent flow
-#   f_t                        Darcy friction factor for fully turbulent flow
+# K      = f_t * sum(n_ld)   resistance coefficient of the fittings
+# n_ld   = L_eq / D          equivalent length ratio, fully turbulent flow
+# f_t                        Darcy friction factor for fully turbulent flow
+# See specs/calcs/hydraulics/crane_k_factors.toml for the equation and its status.
 #
 """
     + STATUS_BODY
@@ -180,15 +128,9 @@ FITTINGS_BODY = (
 
 FLUIDS_BODY = (
     """\
-# Interpolated by `azoth.properties` and by the CLI to turn a fluid name and a
-# temperature into a density and a viscosity. Linear interpolation between the
-# points, and no extrapolation: past either end a straight-line extension is a
-# confident wrong number rather than a small error. Water's viscosity varies by a
-# factor of six across 0-100 C, which is why.
-#
-# Listed in ascending temperature order, because the checker refuses a table that
-# is not: rows are interpolated in order, so an unsorted table would give answers
-# that depend on how it happened to be written.
+# Read by `azoth pipe` and `azoth.properties`: temperature into density and viscosity,
+# by linear interpolation between the points, with no extrapolation past either end.
+# Ascending temperature order, because the checker refuses a table that is not.
 #
 """
     + STATUS_BODY

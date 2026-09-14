@@ -10,7 +10,7 @@ and the decision is invisible in the output: a reader looking at a compiled CSV
 cannot tell whether a column is absent because nobody needed it, because the
 physics is out of scope, or because nobody looked.
 
-`databank/manifest.yaml` records the decision per column. This module is what
+`databank/manifest.toml` records the decision per column. This module is what
 stops it becoming prose. It is checked, not read.
 
 # Two steps, and the manifest keeps them apart
@@ -48,14 +48,13 @@ from __future__ import annotations
 import csv
 import io
 import re
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 ROOT = Path(__file__).resolve().parent.parent
-MANIFEST = ROOT / "databank" / "manifest.yaml"
+MANIFEST = ROOT / "databank" / "manifest.toml"
 SOURCES = Path("databank") / "sources"
 
 SCHEMA_VERSION = 1
@@ -290,7 +289,7 @@ def read(path: Path = MANIFEST) -> tuple[Manifest, list[str]]:
     """
     problems: list[str] = []
     try:
-        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        document = tomllib.loads(path.read_text(encoding="utf-8"))
     except OSError as error:
         return Manifest(SCHEMA_VERSION, ()), [f"{path}: {error}"]
 
@@ -398,17 +397,13 @@ def data_rows(path: Path) -> int:
 
 
 def spec_ids(root: Path = ROOT) -> set[str]:
-    """Every registered id, read from the specs rather than a generated file.
-
-    Read here rather than imported so this check keeps working while the generators
-    are being changed, and so it needs nothing beyond PyYAML.
-    """
+    """Every registered id, read from the specs rather than a generated file."""
     found: set[str] = set()
     for kind in ("calcs", "models"):
-        for path in (root / "specs" / kind).rglob("*.yaml"):
+        for path in (root / "specs" / kind).rglob("*.toml"):
             for line in path.read_text(encoding="utf-8").splitlines():
-                if line.startswith("id:"):
-                    found.add(line.split(":", 1)[1].strip().strip("'\""))
+                if line.startswith("id = "):
+                    found.add(line.split("=", 1)[1].strip().strip("'\""))
                     break
     return found
 

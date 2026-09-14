@@ -4,7 +4,7 @@
 q = CV_TO_SI * Cv * sqrt(dP / SG)
 ```
 
-Spec: ``specs/calcs/hydraulics/control_valve_cv.yaml``
+Spec: ``specs/calcs/hydraulics/control_valve_cv.toml``
 
 # The coefficient is an input, and its units are the hard part
 

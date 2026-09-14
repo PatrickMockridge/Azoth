@@ -2,27 +2,13 @@
 """Generate the type stub for the compiled extension.
 
 `python/src/azoth/_core.pyi` is what a type checker reads in place of `azoth._core`,
-which does not exist until the bindings are built. It was hand-maintained, and two
-things went wrong with that:
+which does not exist until the bindings are built. The result classes come from the
+result dataclasses in `azoth.core.result`, which the Rust transport types are asserted
+to match field for field; the signatures come from the specs' declared inputs, which
+both implementations are held to.
 
-* **Adding a calculation had to be done twice by hand** - once in Rust, where the
-  function is registered, and once here, where the type checker looks.
-* **The vocabulary at the top drifted and nothing noticed.** `FittingRow` declared
-  `source_ref` and `source_locator` for as long as it took someone to read it, and those
-  fields had been deleted from the Rust struct and from the project. The completeness
-  test checked that the stub declares each *name*; nothing checked a field.
-
-So the file is generated. Two sources, neither of them new:
-
-* **the result classes** come from the Python result dataclasses in
-  `azoth.core.result`, which the Rust transport classes are already asserted to match
-  field for field;
-* **the signatures** come from the specs' declared inputs, which both implementations
-  are already held to.
-
-The vocabulary below is data in *this* file rather than in the stub, because it mirrors
-Rust types that a new calculation does not change. It is still hand-written - a `cdylib`
-has nothing to introspect - but it is now in one place, next to the reason it exists,
+The vocabulary below is data in this file rather than in the stub, because it mirrors
+Rust types a new calculation does not change - a `cdylib` has nothing to introspect -
 and `test_the_stub_matches_the_rust_transport_types` holds it to the Rust source.
 
 Usage:

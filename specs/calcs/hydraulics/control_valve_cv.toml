@@ -1,0 +1,111 @@
+id = "hydraulics.control_valve_cv"
+name = "Liquid flow through a control valve from its flow coefficient"
+equation = "q = CV_TO_SI * Cv * sqrt(dP / SG)"
+latex = '''Q = C_v \sqrt{\frac{\Delta P}{SG}}'''
+assumptions = ["single-phase liquid flow. A flashing or cavitating liquid is not described by this relation at all, and neither is a two-phase inlet.", "The flow is non-choked: above a limiting pressure drop the flow through a valve stops rising with the pressure difference.", "fully turbulent flow through the valve, which is what a published coefficient assumes. At low Reynolds numbers the coefficient falls off and the true flow is smaller.", "The coefficient is for the valve at the travel and trim it is actually installed at.", "The installed valve has no attached fittings whose loss is being counted twice.", "`SG` is relative to water at 15.6 C, the reference the `Cv` convention uses. A caller working from density ratios at another reference temperature has a small systematic offset, not a random error.", "the pressure drop is the difference across the valve itself, between the tappings the coefficient is defined against, and not the difference across a sub-circuit containing it"]
+references = ["IEC 60534, Industrial-process control valves, Part 2-1: Flow capacity.", "No specific source is claimed: Q = Cv * sqrt(dP/SG) is standard control-valve sizing.", "Derived, not cited: 1 US gallon = 3.785411784 L and 1 lbf = 4.4482216152605 N are both exact definitions."]
+[source]
+standard = """\
+    the liquid sizing equation for control valves; IEC 60534 for the coefficient tables, \
+    which this calc does not implement"""
+[inputs]
+[inputs.Cv]
+unit = "dimensionless"
+description = "Valve flow coefficient in the US convention: the flow of water in US gallons per minute at a pressure drop of one pound per square inch."
+[inputs.dP]
+unit = "Pa"
+description = "Pressure drop across the valve."
+[inputs.SG]
+unit = "dimensionless"
+description = "Specific gravity of the liquid: its density divided by the density of water at 15.6 C (60 F), the reference the coefficient convention uses."
+[outputs]
+[outputs.q]
+unit = "m**3/s"
+description = "volumetric flow rate through the valve"
+[[valid_range]]
+quantity = "Cv"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "Flow is proportional to the coefficient, so a non-positive one gives no flow or negative flow."
+[[valid_range]]
+quantity = "dP"
+min = 0
+severity = "error"
+rationale = """\
+    a negative drop would mean flow in the other direction, which is a different calculation \
+    and not the one named here. Zero is allowed and correct: no pressure difference drives \
+    no flow.\n\
+    """
+[[valid_range]]
+quantity = "SG"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    specific gravity is a divisor inside the square root, so zero is singular and negative \
+    would make the root imaginary.\n\
+    """
+[worked_example]
+source = "derived from the equation above"
+derivation = "Water at Cv = 10, SG = 1 and a pressure drop of exactly one pound per square inch.\nThe constant first:\n\n  1 US gallon      = 3.785411784e-3 m**3            (definition)\n  1 gpm            = 3.785411784e-3 / 60 = 6.30901964e-5 m**3/s\n  1 lbf            = 4.4482216152605 N              (definition)\n  1 in             = 0.0254 m                       (definition)\n  1 psi            = 4.4482216152605 / 0.0254**2 = 6894.757293168361 Pa\n  sqrt(1 psi)      = 83.03467524575719\n  CV_TO_SI         = 6.30901964e-05 / 83.03467524575719 = 7.59805421208337e-07\n\nThen the example, at Cv = 10, dP = 1 psi and SG = 1:\n\n  q = 7.59805421208337e-7 * 10 * sqrt(6894.757293168361 / 1)\n    = 7.59805421208337e-07 * 10 * 83.03467524575719\n    = 6.309019640000001e-4 m**3/s\n\nThat is 10 gpm."
+tolerance = 1e-12
+[worked_example.inputs]
+Cv = 10.0
+dP = 6894.757293168361
+SG = 1.0
+[worked_example.expected]
+q = 0.0006309019640000001
+[implementations]
+python = "azoth.hydraulics.control_valve_cv"
+rust = "azoth_hydraulics::control_valve_cv"
+[[tests]]
+id = "unit_drop_at_unit_specific_gravity_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "realistic_bar_of_drop"
+type = "reference"
+status = "active"
+source = "Derived from the equation above at Cv = 10, SG = 1 and 1 bar of drop (100000 Pa).\nThrough the SI constant:\n  q = 7.59805421208337e-7 * 10 * sqrt(100000) = 0.00240271570956195 m**3/s\n\nThrough the convention, converting the drop first:\n  100000 Pa / 6894.757293168361 Pa per psi = 14.503773773020923 psi\n  Q = 10 * sqrt(14.503773773020923) = 38.0838204136887 gpm\n  q = 38.0838204136887 * 6.30901964e-05 = 0.0024027157095619493 m**3/s"
+tolerance = 1e-12
+[tests.inputs]
+Cv = 10.0
+dP = 100000.0
+SG = 1.0
+[tests.expected]
+q = 0.00240271570956195
+[[tests]]
+id = "a_coefficient_of_one_passes_one_gallon_per_minute"
+type = "reference"
+status = "active"
+source = "Derived from the definition of Cv: a coefficient of 1 passes 1 gpm of water at 1 psi of drop, which in SI is 6.30901964e-5 m**3/s."
+tolerance = 1e-12
+[tests.inputs]
+Cv = 1.0
+dP = 6894.757293168361
+SG = 1.0
+[tests.expected]
+q = 6.30901964e-05
+[[tests]]
+id = "denser_liquid_passes_less"
+type = "reference"
+status = "active"
+source = "Derived from the equation above at a specific gravity of 1.2.\n  sqrt(6894.757293168361 / 1.2) = 75.79994114536171\n  q(SG = 1.2) = 7.59805421208337e-07 * 10 * 75.79994114536171\n              = 0.0005759320620951871 m**3/s"
+tolerance = 1e-12
+[tests.inputs]
+Cv = 10.0
+dP = 6894.757293168361
+SG = 1.2
+[tests.expected]
+q = 0.0005759320620951871
+[[tests]]
+id = "monotonic"
+type = "property"
+property = "monotonic"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

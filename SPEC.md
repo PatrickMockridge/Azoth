@@ -1,6 +1,6 @@
 # Specification
 
-The specification for azoth lives at **[docs/src/spec.md](docs/src/spec.md)**.
+The specification for azoth lives at **[docs/src/architecture/specification.md](docs/src/architecture/specification.md)**.
 
 It is kept in one place on purpose. A second copy here would be a second answer to what
 azoth is, and the two would drift — which is the failure this repository is organised

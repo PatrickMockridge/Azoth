@@ -34,7 +34,7 @@ from azoth.core.warnings import WarningCode
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "calc.schema.json"
-SPEC_PAGE = REPO_ROOT / "docs" / "src" / "spec.md"
+SPEC_PAGE = REPO_ROOT / "docs" / "src" / "architecture" / "specification.md"
 
 #: `azoth has **30 ids** — 21 calculations and 9 models.`
 _COUNT_CLAIM = re.compile(

@@ -5,7 +5,7 @@
 //! f = 0.25 / (log10(relative_roughness / 3.7 + 5.74 / Re**0.9))**2
 //! ```
 //!
-//! Spec: `specs/calcs/hydraulics/friction_factor_swamee_jain.yaml`, which carries the
+//! Spec: `specs/calcs/hydraulics/friction_factor_swamee_jain.toml`, which carries the
 //! citation.
 //!
 //! This is an *approximation to* Colebrook, not a more correct alternative to

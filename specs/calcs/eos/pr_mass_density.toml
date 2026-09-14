@@ -1,0 +1,78 @@
+id = "eos.pr_mass_density"
+name = "Mass density from a molar volume"
+equation = "rho = M/v"
+latex = '''\rho = \frac{M}{v}'''
+assumptions = ["`M` is the molar mass of the same substance `v` describes. NOT CHECKED: the two are independent inputs with no relation this calc can see.\n", "`M` is in `kg/mol`. A caller who supplies the `g/mol` figure most tables quote gets a density 1000 times too small.\n", """\
+    the substance is a single phase and the volume is the phase the caller means. A density \
+    from a liquid root and one from a vapour root are both correct answers to different \
+    questions."""]
+references = ["""\
+    BIPM. \"The International System of Units (SI)\", 9th edition (2019). (the mole and the \
+    kilogram, and therefore the units this calc divides)"""]
+[source]
+standard = "The definition of molar mass"
+edition = """\
+    Molar mass is the mass per amount of substance, so a mass density is a molar mass \
+    divided by a molar volume. There is no paper to cite for that."""
+[inputs]
+[inputs.M]
+unit = "kg/mol"
+description = "Molar mass of the substance, in `kg/mol`, supplied by the caller; this library ships no component data.\n"
+[inputs.v]
+unit = "m**3/mol"
+description = "molar volume, from `eos.pr_molar_volume`"
+[outputs]
+[outputs.rho]
+unit = "kg/m**3"
+description = """\
+    Mass density. Positive whenever `M` and `v` are, which the bounds below ensure.\n\
+    """
+[[valid_range]]
+quantity = "M"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A molar mass is a positive mass per amount of substance; zero would give a density of zero for any volume and negative has no meaning.\n"
+[[valid_range]]
+quantity = "v"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`v` is a divisor, and molar volume is strictly positive for any real state; zero is the zero-volume limit, which is arithmetic rather than a state.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "The vapour state from `eos.pr_molar_volume`'s worked example, with propane's conventional molar mass:\n\n  M = 0.0440956 kg/mol    (44.0956 g/mol, the value quoted for propane in the\n                           standard tables; a widely published fact, not read\n                           from a primary source here)\n  v = 0.0018317107825229842 m**3/mol\n\n  rho = 0.0440956 / 0.0018317107825229842 = 24.073451125981286 kg/m**3\nwhich is a plausible vapour density for propane at 295.9 K and 10.6 bar.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+M = 0.0440956
+v = 0.0018317107825229842
+[worked_example.expected]
+rho = 24.073451125981286
+[implementations]
+python = "azoth.eos.pr_mass_density"
+rust = "azoth_eos::pr_mass_density"
+[[tests]]
+id = "propane_vapour_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_liquid_density_that_shows_the_equations_error"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at the liquid root from `eos.pr_molar_volume`'s first reference case:\n\n  rho = 0.0440956 / 8.516118084951335e-05 = 517.7899080323988 kg/m**3\n"
+tolerance = 1e-12
+[tests.inputs]
+M = 0.0440956
+v = 8.516118084951335e-05
+[tests.expected]
+rho = 517.7899080323988
+[[tests]]
+id = "doubling_the_molar_mass_doubles_the_density"
+type = "property"
+property = "consistency_with"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

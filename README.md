@@ -25,7 +25,7 @@ What is azoth's own is the structure around them, and that is where the opinions
   calculation exists twice and the two are compared case by case, so azoth works in a
   notebook or a conda environment with no Rust toolchain at all.
 
-[the specification](docs/src/spec.md) is the page for all four, and
+[the specification](docs/src/architecture/specification.md) is the page for all four, and
 [`SPEC.md`](SPEC.md) is the normative one - why Rust rather than Java, what is in scope
 and what deliberately is not, and what it costs to add a calculation. Where another
 document disagrees with the specification, that document is wrong.
@@ -35,10 +35,10 @@ specs rather than maintained by hand: a hydraulics kernel through Darcy-Weisbach
 pressure drop, steady conduction, the Peng-Robinson equation of state through a
 two-phase flash, stability testing and mixture critical points. The unit-operation tier
 and the **flowsheet** above it are designed in
-[the specification](docs/src/spec.md) and not built. The fitting coefficients azoth
+[the specification](docs/src/architecture/specification.md) and not built. The fitting coefficients azoth
 ships are **placeholders, not engineering data**;
 see [Not for design work yet](#not-for-design-work-yet), and
-[the specification](docs/src/spec.md) has the programme.
+[the specification](docs/src/architecture/specification.md) has the programme.
 
 ## Install
 
@@ -176,13 +176,13 @@ nowhere**, so it is a source for the method and not for the answer; everything t
 model is checked against is this project's, including the closed-form `Z_c` a pure
 Peng-Robinson fluid has. The spec's notes say plainly what has and has not been
 confirmed, which is that nobody has read the paper.
-[the specification](docs/src/spec.md) compares the two libraries in full.
+[the specification](docs/src/architecture/specification.md) compares the two libraries in full.
 
 The ids are namespaced by **domain** - `hydraulics.*`, `thermal.*`, `eos.*` - not by
 project. They appear in provenance records and citations, so renaming the project does
 not, and should not, invalidate them. A unit-operation or flowsheet namespace above
 them will not be a fourth domain sitting beside the others but a composition tier,
-and [the specification](docs/src/spec.md) sets out the programme for it.
+and [the specification](docs/src/architecture/specification.md) sets out the programme for it.
 
 The namespaces are also what proved the pipeline is domain-agnostic rather than shaped
 around pipe flow. `eos` is where the shapes stop matching: an equation of state is
@@ -193,81 +193,36 @@ special case anywhere.
 ## Architecture
 
 ```
-specs/calcs/**/*.yaml     one file per calculation
-specs/models/**/*.yaml    one file per procedure
+specs/**/*.toml        one file per calculation, model, case, and the unit vocabulary
         │
-        ├─► tools/gen_registry.py ─► crates/azoth-*/src/spec_gen.rs
-        │                         └► python/src/azoth/_registry_gen.py
-        ├─► tools/gen_models.py   ─► crates/azoth-*/src/model_gen.rs
-        │                         └► python/src/azoth/_models_gen.py
-        ├─► tools/gen_stub.py     ─► python/src/azoth/_core.pyi
-        ├─► tools/gen_docs.py     ─► docs/src/**, and the list below
-        └─► tools/provenance.py   ─► provenance.json
-
-a NeqSim checkout ──► tools/gen_databank.py ──► data/components/*.csv
-keycard.toml ───────► tools/gen_user_data.py ─► data/fittings/*.csv
-                                               data/fluids/*.csv
+        ├─► tools/gen_registry.py   ─► crates/azoth-*/src/spec_gen.rs
+        │                              python/src/azoth/_registry_gen.py
+        ├─► tools/gen_models.py     ─► crates/azoth-eos/src/model_gen.rs
+        │                              python/src/azoth/_models_gen.py
+        ├─► tools/gen_vocabulary.py ─► crates/azoth-core/src/unit_vocab_gen.rs
+        │                              python/src/azoth/core/_units_gen.py
+        │                              specs/schema/unit.schema.json
+        │                              lean/Azoth/Vocabulary.lean, Gate.lean
+        ├─► tools/gen_docs.py       ─► docs/src/**, including SUMMARY.md
+        ├─► tools/gen_stub.py       ─► python/src/azoth/_core.pyi
+        └─► tools/provenance.py     ─► provenance.json
 ```
 
-`tools/` also holds the checkers - `check_links`, `check_user_data`,
-`check_wheel_data`, `spec_lint` and `prose_lint` - which generate nothing and are
-what fail the build.
+Every generated file comes from a file in this repository, and CI regenerates all of
+them and fails on a diff - so a spec is not a document that is supposed to match the
+code, it is the thing the code was made from. Python is the reference implementation
+and Rust the second one, with PyO3 binding them; both run the same arithmetic on the
+same numbers, and the test suite compares them by tolerance.
 
-The layering, the four levels, and where a new piece of your own belongs are on
-[the specification](docs/src/spec.md) rather than repeated here.
-
-Python is the reference implementation and Rust the core, with PyO3 binding them.
-Units cross the public API as `pint` quantities and become plain floats inside;
-the Rust side does the same with `uom`. Both implementations therefore run the
-same arithmetic on the same numbers rather than each trusting its units library
-to arrive there by a different route. The test suite runs every spec case through
-both and compares them **by tolerance, not bit-equality** - `log10` and `sqrt` are
-not correctly-rounded in general and `libm` differs between platforms - and where
-a procedure iterates, the iteration counts are required to match. Bit-equality is
-asserted separately, and only for the same platform and build.
-
-### Why Rust, if not for speed
-
-For a single call, the Rust core is **not** faster than Python - PyO3 call
-overhead exceeds the cost of the arithmetic. Its value here is being a *second
-independent implementation* to cross-check the first against, plus a path to
-performance that does not require rewriting the maths.
-
-If performance is your goal, the win is the batch API, which **is** implemented:
-`azoth.batch.hydraulics` and `azoth.batch.thermal` evaluate one calculation over
-arrays, crossing the language boundary once instead of N times. It is a loop over
-the same scalar kernels, not a vectorised second implementation, so it does not
-weaken the two-implementation claim - see `docs/src/batch.md`.
-
-The single-call path is still not the fast one, and this section exists so nobody
-adopts the current design for a reason it does not support.
-
-## The specs are the source of truth
-
-`specs/calcs/**/*.yaml` defines each calculation: equation, source, valid range,
-assumptions, worked example, tests. Each calc reads its range checks from the
-generated table, so a bound edited in a YAML file changes behaviour in both
-languages with no second edit.
-
-CI regenerates the docs and the registries and fails on any diff, which is what
-makes "the docs cannot drift from the code" a property of the build rather than a
-claim in this file.
-
-Adding a calculation is a spec, one Python file and one Rust file — **and nothing
-else**. There is no dispatch table, no `__all__` and no registration call to update,
-because a calculation's id *is* its address: `hydraulics.darcy_weisbach` names
-`azoth/hydraulics/reference/darcy_weisbach.py` and
-`azoth-hydraulics/src/darcy_weisbach.rs` by convention. The docs page, the range
-checks, the test cases and the type stubs are generated from the spec.
-[Specification, S9](docs/src/spec.md#s9-what-a-contribution-costs) states the whole
-contract, and S5 says why registration was deleted rather than automated.
+The pipeline in full, what is true and where it is written, and the three rules a port
+follows are on **[Architecture](docs/src/architecture/index.md)**.
 
 ## Extending it
 
 There are three ways in. There is no runtime plugin registry - no `register()` call and
 no loading at run time - which means a calculation always exists twice, once in each
 language, as the two-implementation rule requires.
-[the specification](docs/src/spec.md) has the three.
+[the specification](docs/src/architecture/specification.md) has the three.
 
 Most of what you would want to change is **data, not arithmetic**. A **keycard** is one
 TOML file that overrides or extends what the library ships — a component's critical
@@ -289,10 +244,10 @@ when they did it.
 
 Nothing needs registering to make it apply, in either language. `keycard.example.toml`
 is the template, `python tools/check_user_data.py` checks yours, and
-[the specification](docs/src/spec.md) documents every section - including the two sections
+[the specification](docs/src/architecture/specification.md) documents every section - including the two sections
 that are compiled into the shipped data files by `tools/gen_user_data.py` rather than
 read at run time, and so need a rebuild. What the library ships and where it came from is
-in [`NOTICE`](NOTICE) and `databank/manifest.yaml`.
+in [`NOTICE`](NOTICE) and `databank/manifest.toml`.
 
 **A new equation or procedure is code**, and it is a spec plus one Rust file and one
 Python file — the section below is the whole contract. **A new source of fluid
@@ -315,7 +270,7 @@ primary formulation.
 
 That column exists on the data *this repository ships*, and not on the rows of a
 keycard, which is a deliberate asymmetry rather than a leftover —
-[the specification](docs/src/spec.md) is where the reasoning lives.
+[the specification](docs/src/architecture/specification.md) is where the reasoning lives.
 
 ## Verifying a result
 

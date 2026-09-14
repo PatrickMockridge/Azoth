@@ -1,7 +1,7 @@
 """The unit vocabulary is one set, declared once and compiled into four artefacts.
 
 A calc spec names its units as strings. One hand-written table says which strings
-are legal - ``specs/vocabulary/vocabulary.yaml`` - and ``tools/gen_vocabulary.py``
+are legal - ``specs/vocabulary/vocabulary.toml`` - and ``tools/gen_vocabulary.py``
 compiles it into:
 
 * ``specs/schema/unit.schema.json``, which is what a spec is validated against;
@@ -31,19 +31,19 @@ import importlib
 import json
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from types import ModuleType
-from typing import Any, cast
+from typing import Any
 
 import pytest
-import yaml
 
 from azoth._registry_gen import CALCS
 from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si
 from azoth.keycard import UNIT_VOCABULARY
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-VOCAB_PATH = REPO_ROOT / "specs" / "vocabulary" / "vocabulary.yaml"
+VOCAB_PATH = REPO_ROOT / "specs" / "vocabulary" / "vocabulary.toml"
 UNIT_SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "unit.schema.json"
 
 
@@ -62,7 +62,7 @@ def _extension() -> ModuleType:
 
 def table_units() -> set[str]:
     """The unit strings the hand-written vocabulary table declares."""
-    table = cast("dict[str, Any]", yaml.safe_load(VOCAB_PATH.read_text(encoding="utf-8")))
+    table = tomllib.loads(VOCAB_PATH.read_text(encoding="utf-8"))
     return {unit["id"] for unit in table["units"]}
 
 

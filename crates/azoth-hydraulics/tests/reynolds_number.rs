@@ -1,6 +1,6 @@
 //! Spec-driven tests for `hydraulics.reynolds_number`.
 //!
-//! Every case here comes from `specs/calcs/hydraulics/reynolds_number.yaml`. Add
+//! Every case here comes from `specs/calcs/hydraulics/reynolds_number.toml`. Add
 //! a test to that file and it runs here and in Python with no new test code.
 
 use azoth_test_support as common;

@@ -9,7 +9,7 @@
 //! `cp_a` is a heat capacity and `cp_b` is one per kelvin. That is what lets the five
 //! `CPA`-`CPE` columns of NeqSim's `COMP.csv` be read as they are stored.
 //!
-//! Spec: `specs/calcs/eos/ideal_gas_cp.yaml`.
+//! Spec: `specs/calcs/eos/ideal_gas_cp.toml`.
 
 use azoth_core::units::{ThermodynamicTemperature, joules_per_mole_kelvin};
 use azoth_core::{Result, apply_checks};

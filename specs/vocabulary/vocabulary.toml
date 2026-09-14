@@ -1,0 +1,203 @@
+schema_version = 1
+slots = ["L", "M", "T", "I", "Th", "N", "J"]
+[[dimensions]]
+id = "dimensionless"
+exponents = [0, 0, 0, 0, 0, 0, 0]
+[[dimensions]]
+id = "length"
+exponents = [1, 0, 0, 0, 0, 0, 0]
+[[dimensions]]
+id = "area"
+exponents = [2, 0, 0, 0, 0, 0, 0]
+[[dimensions]]
+id = "volume_rate"
+exponents = [3, 0, -1, 0, 0, 0, 0]
+[[dimensions]]
+id = "mass_rate"
+exponents = [0, 1, -1, 0, 0, 0, 0]
+[[dimensions]]
+id = "molar_flow"
+exponents = [0, 0, -1, 0, 0, 1, 0]
+[[dimensions]]
+id = "mass_density"
+exponents = [-3, 1, 0, 0, 0, 0, 0]
+[[dimensions]]
+id = "velocity"
+exponents = [1, 0, -1, 0, 0, 0, 0]
+[[dimensions]]
+id = "pressure"
+exponents = [-1, 1, -2, 0, 0, 0, 0]
+[[dimensions]]
+id = "dynamic_viscosity"
+exponents = [-1, 1, -1, 0, 0, 0, 0]
+[[dimensions]]
+id = "thermodynamic_temperature"
+exponents = [0, 0, 0, 0, 1, 0, 0]
+[[dimensions]]
+id = "power"
+exponents = [2, 1, -3, 0, 0, 0, 0]
+[[dimensions]]
+id = "specific_heat_capacity"
+exponents = [2, 0, -2, 0, -1, 0, 0]
+[[dimensions]]
+id = "thermal_conductivity"
+exponents = [1, 1, -3, 0, -1, 0, 0]
+[[dimensions]]
+id = "heat_transfer"
+exponents = [0, 1, -3, 0, -1, 0, 0]
+[[dimensions]]
+id = "molar_mass"
+exponents = [0, 1, 0, 0, 0, -1, 0]
+[[dimensions]]
+id = "molar_volume"
+exponents = [3, 0, 0, 0, 0, -1, 0]
+[[dimensions]]
+id = "molar_energy"
+exponents = [2, 1, -2, 0, 0, -1, 0]
+[[dimensions]]
+id = "molar_heat_capacity"
+exponents = [2, 1, -2, 0, -1, -1, 0]
+[[dimensions]]
+id = "molar_heat_capacity_coefficient_2"
+exponents = [2, 1, -2, 0, -2, -1, 0]
+[[dimensions]]
+id = "molar_heat_capacity_coefficient_3"
+exponents = [2, 1, -2, 0, -3, -1, 0]
+[[dimensions]]
+id = "molar_heat_capacity_coefficient_4"
+exponents = [2, 1, -2, 0, -4, -1, 0]
+[[dimensions]]
+id = "molar_heat_capacity_coefficient_5"
+exponents = [2, 1, -2, 0, -5, -1, 0]
+[[units]]
+id = "dimensionless"
+dimension = "dimensionless"
+pint = "dimensionless"
+[[units]]
+id = "m"
+dimension = "length"
+pint = "meter"
+uom = "length::meter"
+rust_ctor = "meters"
+[[units]]
+id = "mm"
+dimension = "length"
+pint = "millimeter"
+uom = "length::millimeter"
+rust_ctor = "millimeters"
+[[units]]
+id = "m**2"
+dimension = "area"
+pint = "meter**2"
+uom = "area::square_meter"
+rust_ctor = "square_meters"
+[[units]]
+id = "m**3/s"
+dimension = "volume_rate"
+pint = "meter**3/second"
+uom = "volume_rate::cubic_meter_per_second"
+rust_ctor = "cubic_meters_per_second"
+[[units]]
+id = "kg/s"
+dimension = "mass_rate"
+pint = "kilogram/second"
+uom = "mass_rate::kilogram_per_second"
+rust_ctor = "kilograms_per_second"
+[[units]]
+id = "mol/s"
+dimension = "molar_flow"
+pint = "mole/second"
+[[units]]
+id = "kg/m**3"
+dimension = "mass_density"
+pint = "kilogram/meter**3"
+uom = "mass_density::kilogram_per_cubic_meter"
+rust_ctor = "kilograms_per_cubic_meter"
+[[units]]
+id = "m/s"
+dimension = "velocity"
+pint = "meter/second"
+uom = "velocity::meter_per_second"
+rust_ctor = "meters_per_second"
+[[units]]
+id = "Pa"
+dimension = "pressure"
+pint = "pascal"
+uom = "pressure::pascal"
+rust_ctor = "pascals"
+[[units]]
+id = "Pa*s"
+dimension = "dynamic_viscosity"
+pint = "pascal*second"
+uom = "dynamic_viscosity::pascal_second"
+rust_ctor = "pascal_seconds"
+[[units]]
+id = "K"
+dimension = "thermodynamic_temperature"
+pint = "kelvin"
+uom = "thermodynamic_temperature::kelvin"
+rust_ctor = "kelvins"
+[[units]]
+id = "W"
+dimension = "power"
+pint = "watt"
+uom = "power::watt"
+rust_ctor = "watts"
+[[units]]
+id = "J/(kg*K)"
+dimension = "specific_heat_capacity"
+pint = "joule/(kilogram*kelvin)"
+uom = "specific_heat_capacity::joule_per_kilogram_kelvin"
+rust_ctor = "joules_per_kilogram_kelvin"
+[[units]]
+id = "W/(m*K)"
+dimension = "thermal_conductivity"
+pint = "watt/(meter*kelvin)"
+uom = "thermal_conductivity::watt_per_meter_kelvin"
+rust_ctor = "watts_per_meter_kelvin"
+[[units]]
+id = "W/(m**2*K)"
+dimension = "heat_transfer"
+pint = "watt/(meter**2*kelvin)"
+uom = "heat_transfer::watt_per_square_meter_kelvin"
+rust_ctor = "watts_per_square_meter_kelvin"
+[[units]]
+id = "kg/mol"
+dimension = "molar_mass"
+pint = "kilogram/mole"
+uom = "molar_mass::kilogram_per_mole"
+rust_ctor = "kilograms_per_mole"
+[[units]]
+id = "m**3/mol"
+dimension = "molar_volume"
+pint = "meter**3/mole"
+uom = "molar_volume::cubic_meter_per_mole"
+rust_ctor = "cubic_meters_per_mole"
+[[units]]
+id = "J/mol"
+dimension = "molar_energy"
+pint = "joule/mole"
+uom = "molar_energy::joule_per_mole"
+rust_ctor = "joules_per_mole"
+[[units]]
+id = "J/(mol*K)"
+dimension = "molar_heat_capacity"
+pint = "joule/(mole*kelvin)"
+uom = "molar_heat_capacity::joule_per_kelvin_mole"
+rust_ctor = "joules_per_mole_kelvin"
+[[units]]
+id = "J/(mol*K**2)"
+dimension = "molar_heat_capacity_coefficient_2"
+pint = "joule/(mole*kelvin**2)"
+[[units]]
+id = "J/(mol*K**3)"
+dimension = "molar_heat_capacity_coefficient_3"
+pint = "joule/(mole*kelvin**3)"
+[[units]]
+id = "J/(mol*K**4)"
+dimension = "molar_heat_capacity_coefficient_4"
+pint = "joule/(mole*kelvin**4)"
+[[units]]
+id = "J/(mol*K**5)"
+dimension = "molar_heat_capacity_coefficient_5"
+pint = "joule/(mole*kelvin**5)"

@@ -1,7 +1,7 @@
 //! Shared helpers for the spec-driven integration tests, across every namespace.
 //!
 //! The tests are not hand-written per calc. They walk the spec's `tests` list and
-//! execute whatever it declares, so a test added to a spec YAML runs in both
+//! execute whatever it declares, so a test added to a spec file runs in both
 //! languages with no new test code. That is the whole point of generating
 //! `spec_gen.rs`: the specs are the test plan.
 //!

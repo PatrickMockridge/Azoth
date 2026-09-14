@@ -1,66 +1,21 @@
 """The keycard: the file a user supplies to extend or override what azoth ships.
 
-A keycard is how someone adds to azoth **without writing Rust or Python**. Its
-sections are ``keyholder``, ``components``, ``kij``, ``fluids``, ``fittings``,
-``coefficients`` and ``models``, and everything in it overrides or extends what the
-library ships, by name. A component you supply with a name the databank already has
-replaces its critical constants; a name it does not have adds one.
+Sections: ``keyholder``, ``components``, ``kij``, ``fluids``, ``fittings``,
+``coefficients`` and ``models``. A name the databank already has replaces its
+critical constants; a name it does not have adds one.
 
     >>> import azoth
     >>> card = azoth.keycard.load("keycard.toml")
     >>> azoth.eos.component("methane", card=card)   # the card's values, not the databank's
 
-**A keycard is TOML.** The format is the one the rest of this repository's data is
-written in, so a card and a spec are read by the same rules, and `tomllib` is in the
-standard library, so reading one costs no dependency. It is also a format whose
-numbers are numbers: `1.0e12` and `1.0e+12` are floats, where YAML 1.1 reads the
-first as a *string* - a trap this repository carried a lint rule for and no longer
-needs.
+**The card is a value.** :func:`load` returns what the file says and stores nothing;
+every call that reads a card is handed one, and a call handed none reads the data
+this library ships. There is no `current()` and no `clear()`. The library implements;
+the engineer decides, and the card is where that decision is recorded.
 
-# There is no registration step anywhere, and this is why
-
-Nothing lists what exists. A calculation's id *is* its address - the module path and
-the function name follow from it by convention - and the data a calculation reads
-comes from the vendored databank, overridden by whatever keycard is loaded. The
-burden and the responsibility both sit with that data: the shipped values are
-Equinor's and NTNU's, and the ones you supply are yours.
-
-**The library implements; the engineer decides.** That is `docs/src/spec.md` S6, and
-this module is where it is most tempting to break it. Do not add, here or anywhere
-downstream: a check that a `citation` is real or matches a status; a `verify_status`
-on a user's row; a list of what components or calculations exist. A keycard states
-what its holder may compute with, and the accountability for that is theirs - a
-machine cannot discharge it and a field asking them to assert it only manufactures
-confidence. Adding a calculation is files, not a registration; the id is the address.
-
-# The card is a value, and there is no card in force
-
-:func:`load` reads a file and returns what it says. It stores nothing, and nothing
-in this library consults a store: every call that reads a card is handed one, and a
-call handed none reads the data this library ships.
-
-That is the difference between a library whose answers depend on call order and one
-whose answers do not. A process-wide card set by `load` gives two results for one
-calculation when somebody loads a file between the two calls, whoever they are and
-whatever they meant - which is the state `spec.md` names as the thing a keycard must
-not be. There is deliberately no `current()` to read and no `clear()` to undo,
-because both of those exist only to manage a global.
-
-A caller with two datasets passes a different card to each call, or runs two
-processes; the second is still the only way to compare them for a *reason*, and the
-first is now possible at all.
-
-# What this module does not do
-
-It does not validate against the JSON Schema. That is deliberate, and the reason is
-a dependency: the schema is a dev-time artefact and validating against it needs
-``jsonschema``, which this package does not depend on at runtime. The split is the
-one this repository already uses where a contract has two implementations -
-``tools/check_user_data.py`` validates a file against the schema, this module checks
-what it needs to build objects safely, and ``test_keycard_loader.py`` holds the two
-to each other on a corpus of malformed documents. Two implementations of one
-contract, and a test that they agree, rather than one implementation and a copy of
-its rules.
+This module does not validate against the JSON Schema - that is
+``tools/check_user_data.py``, and ``test_keycard_loader.py`` holds the two to each
+other.
 """
 
 from __future__ import annotations
@@ -77,62 +32,33 @@ from azoth.core._units_gen import UNIT_VOCABULARY as _UNIT_VOCABULARY
 from azoth.core.errors import KeycardError
 from azoth.core.units import Q, ureg
 
-#: The format version this module reads. A keycard declaring anything else is
-#: refused rather than guessed at: version 1 had no `components`, `coefficients` or
-#: `models`, so a version-1 file carrying one would have the section silently
-#: dropped - data that looks in use and is read by nothing.
+#: The format version this module reads. A keycard declaring anything else is refused
+#: rather than guessed at.
 SCHEMA_VERSION = 2
 
 #: The component parameters this build reads, and the unit each is converted to.
-#:
-#: **Closed on purpose.** The schema allows any parameter name, because a future
-#: associating model will need a different set - but a name nothing reads is a value
-#: silently ignored, which is the failure this project is organised against. So a
-#: keycard naming a parameter outside this table is refused, and the message lists
-#: what is accepted.
-#:
-#: The unit is checked rather than assumed. A `Tc` supplied in Celsius would
-#: otherwise be converted as though it were kelvin and shift every result by 273,
-#: which is a plausible-looking wrong number with no symptom.
+#: A parameter outside this table is refused, because a value nothing reads is a value
+#: silently ignored. The unit is checked and not assumed: a `Tc` in Celsius converted
+#: as though it were kelvin is a plausible wrong number with no symptom.
 COMPONENT_PARAMETERS: Mapping[str, str] = {
     "Tc": "K",
     "Pc": "Pa",
     "omega": "dimensionless",
 }
 
-#: The units a keycard may declare.
-#:
-#: **Generated, and available at runtime, both deliberately.** The schema is a
-#: dev-time artefact and is not shipped in the wheel, so the loader cannot read
-#: its enum - and trusting `pint` instead is worse than reading a list: pint will
-#: parse `kelvin`, so a loader that accepted whatever pint parses would take a file
-#: the checker rejects, which is a keycard that works until someone runs
-#: `check_user_data.py` on it. `specs/vocabulary/vocabulary.yaml` is compiled into
-#: `azoth.core._units_gen`, which ships, so there is one list and the loader reads
-#: the same one the schema is generated from.
-#:
-#: Bound here rather than imported straight into this module's namespace, because
-#: the name is part of this module's surface: `test_keycard_loader.py` holds it to
-#: the schema's enum, which is the check that makes a keycard with a unit outside
-#: the vocabulary fail at *load* rather than at first use.
+#: The units a keycard may declare, compiled from `specs/vocabulary/vocabulary.toml`
+#: into `azoth.core._units_gen`. The schema's enum is generated from the same table;
+#: a unit outside it fails at load rather than at first use.
 UNIT_VOCABULARY: tuple[str, ...] = _UNIT_VOCABULARY
 
-#: The model vocabularies this build implements. Each one is what the schema's enum
-#: admits, and `test_keycard_loader.py` asserts the two sets are equal - a schema
-#: offering a member the code cannot run is a keycard accepted, stored, and silently
-#: evaluated as something else.
+#: The model vocabularies this build implements, each equal to the schema's enum.
 MODEL_KINDS = ("cubic_eos",)
 MODEL_SHAPES = ("peng_robinson",)
 MODEL_ALPHAS = ("peng_robinson",)
 MODEL_MIXING_RULES = ("classical_kij",)
 
 #: Every key a model definition may carry, which is the schema's
-#: `models.additionalProperties.properties` plus `required`. Checked because the schema
-#: sets `additionalProperties: false` and this loader is the second implementation of
-#: that contract: without the check a definition carrying a key the schema refuses -
-#: `critical_rule`, say - would load here and be stored nowhere, which is the
-#: accepted-and-ignored failure the vocabularies above are refused for. A test asserts
-#: this set equals the schema's, both ways.
+#: `models.additionalProperties.properties` plus `required`.
 MODEL_KEYS = frozenset({"kind", "shape", "alpha", "mixing_rule", "components", "alpha_parameters"})
 
 
@@ -192,25 +118,18 @@ class Keycard:
         )
 
 
-#: There is deliberately no module-level card here, and no accessor for one.
-#:
-#: A card is a value a caller passes, so a library reading one out of a global is a
-#: library whose answer depends on what somebody loaded before the call - which
-#: `spec.md` states as the thing a keycard must not be: *"a library whose answers
-#: depend on call order is a library that returns two results for one calculation."*
-#: A global set by `load` is exactly that, whoever set it.
-#:
-#: `python/tests/test_keycard_loader.py` asserts this module holds no `Keycard`, in
-#: both directions: that no module-level binding of one exists, and that there is no
-#: `current` or `clear` for a caller to reach for.
+#: There is no module-level card here and no accessor for one: a card is a value a
+#: caller passes, so nothing in this library reads a global. `test_keycard_loader.py`
+#: asserts that no `Keycard` binding exists at module level and that there is no
+#: `current` or `clear` to reach for.
 
 
 def load(path: str | Path) -> Keycard:
-    """Read a keycard from a TOML file.
+    """Read a keycard from a TOML file, returning it and setting nothing.
 
-    **Returns it and sets nothing.** The card is passed to the calls that should read
-    it - ``azoth.eos.component("methane", card=card)`` - and a call with none passed
-    reads the data this library ships.
+    ``card`` is passed to the calls that should read it, as
+    ``azoth.eos.component("methane", card=card)``; a call without one reads the data
+    this library ships.
 
     Raises:
         KeycardError: if the file cannot be read, does not parse, or does not
@@ -515,23 +434,14 @@ def _models(raw: Any, where: str) -> dict[str, Model]:
 def coefficient_value(calc_id: str, name: str, given: Any, *, card: Keycard | None = None) -> Any:
     """A coefficient for a calculation: what the caller passed, else the card's.
 
-    The schema states the precedence and this implements it - **an explicit argument
-    always wins, and the keycard is not consulted**. That direction matters: a caller
-    who writes ``Cd=0.61`` is stating a value for this call, and quietly overriding it
-    from a file they loaded an hour ago would be the worst kind of surprise.
-
-    `card` is the card this call reads: with none passed, no card supplies anything
-    and a coefficient the caller omitted is an error.
-
-    The value is converted against the *spec's* declared unit for that input, so a
-    keycard coefficient declared in bar and read as pascal is caught here rather than
-    becoming a factor with no symptom.
+    An explicit argument always wins and the card is not consulted. The value is
+    converted against the *spec's* declared unit for that input, so a coefficient
+    declared in bar and read as pascal is caught here.
 
     Raises:
-        InvalidInputError: if the caller passed nothing and no keycard supplies it.
-            A missing coefficient is an error rather than a default, for the usual
-            reason: a plausible discharge coefficient that nobody chose is a wrong
-            answer with no symptom.
+        InvalidInputError: if the caller passed nothing and no card supplies it.
+            A missing coefficient is an error rather than a default: a plausible
+            value nobody chose is a wrong answer with no symptom.
     """
     from azoth._registry_gen import spec  # local: the registry is generated, not core
     from azoth.core.errors import InvalidInputError

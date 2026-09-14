@@ -4,7 +4,7 @@
 //! A = m_dot / (sqrt(k * rho0 * P0) * (2 / (k + 1))**((k + 1) / (2 * (k - 1))))
 //! ```
 //!
-//! Spec: `specs/calcs/hydraulics/choked_flow_area.yaml`
+//! Spec: `specs/calcs/hydraulics/choked_flow_area.toml`
 //!
 //! # What this is, and what it deliberately is not
 //!

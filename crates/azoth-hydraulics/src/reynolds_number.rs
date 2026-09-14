@@ -4,7 +4,7 @@
 //! Re = rho * v * D / mu
 //! ```
 //!
-//! Spec: `specs/calcs/hydraulics/reynolds_number.yaml`
+//! Spec: `specs/calcs/hydraulics/reynolds_number.toml`
 //!
 //! Every other calc in this crate consumes the Reynolds number, and two of them
 //! consume the regime as well, so this is the entry point to the slice. The

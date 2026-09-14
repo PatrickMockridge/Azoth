@@ -1,44 +1,25 @@
 #!/usr/bin/env python3
 """Check a user data file before it is used to generate the repository's data.
 
-`keycard.example.toml` at the repository root describes the format. A user
-fills in the values they are entitled to use, and this checks the result.
+`keycard.example.toml` describes the format. A user fills in the values they are
+entitled to use, and this checks the result.
 
-It checks *provenance*, not values. Nothing here can tell whether a coefficient
-is right - only whether the row says where it came from in a form a tool can
-fetch, and whether its status is one the rest of the pipeline understands. That
-is the same division of labour the specs use: the machine enforces that a claim
-is checkable, and a person decides whether it is true.
+It checks *provenance*, not values: nothing here can tell whether a coefficient is
+right, only whether the row says where it came from. The machine enforces that a claim
+is checkable and a person decides whether it is true.
 
-# Why the rules are imported rather than restated
+The row rules - `Report`, `check_fittings`, `check_fluids` - are imported from
+`tools/spec_lint.py`, which applies them to the repository's own data files. A user's
+file and the repository's are the same kind of thing and are held to the same rules.
 
-`Report`, `check_fittings` and `check_fluids` are the row rules, and they live in
-`tools/spec_lint.py`, which applies them to the repository's own data files. A
-user's file and the repository's files are the same kind of thing, so they are
-held to the same rules - and a second copy of those rules here was a second
-definition of what a valid citation is, which is exactly the drift this project
-organises against.
-
-That is not hypothetical: the two copies had already diverged. The repository's
-rejected a row marked `verified` whose citation still said DUMMY, and this one
-accepted it, so a file could pass the checker a user is told to run and fail the
-one CI runs.
-
-# What this does not do
-
-It does not write anything. Generating the repository's data files from a
-checked file is a separate tool, so that checking and writing cannot become one
-step that does both when one of them fails.
+It writes nothing: generating the data files is `tools/gen_user_data.py`, so checking
+and writing cannot become one step that does both when one of them fails.
 
 Usage:
     python tools/check_user_data.py keycard.toml
 
-Exit status is non-zero if any error is found.
-
-There is deliberately no `--quiet`. This tool's job is to say what it found, and
-the one thing it must never do quietly is report that a file is full of
-placeholders - that note is the reason it prints at all. A flag to suppress it
-would be a flag to hide the only thing here that a user needs to be told.
+Exit status is non-zero if any error is found. There is no `--quiet`: the one thing this
+tool must never do quietly is report that a file is full of placeholders.
 """
 
 from __future__ import annotations
@@ -51,11 +32,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-# The repository's own rules for a data row, imported rather than restated. This
-# file used to carry its own copies and they had already diverged: the
-# repository's `spec_lint` rejected a `verified` row whose citation still said
-# DUMMY, and this one accepted it. One definition now serves both, and the
-# constants and functions live beside the rules they belong to.
+# The repository's own rules for a data row, imported rather than restated, so a user's
+# file and the repository's files are held to one definition of a valid row.
 import schema_registry
 from spec_lint import Report, check_fittings, check_fluids
 

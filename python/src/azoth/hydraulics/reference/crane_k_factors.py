@@ -5,7 +5,7 @@ method.
 K = f_t * sum(n_ld for each fitting)
 ```
 
-Spec: ``specs/calcs/hydraulics/crane_k_factors.yaml``
+Spec: ``specs/calcs/hydraulics/crane_k_factors.toml``
 
 # This calc cannot validate its own inputs
 

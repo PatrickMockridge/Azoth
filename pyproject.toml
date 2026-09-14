@@ -27,10 +27,6 @@ classifiers = [
 dependencies = [
   # Units. The whole public API speaks pint quantities, so this is not optional.
   "pint>=0.24",
-  # `azoth.keycard` parses YAML, and `azoth/__init__.py` imports it at module
-  # scope, so `import azoth` does too. Not optional for the same reason pint is
-  # not: a dependency of the package as it is imported rather than of the tools.
-  "pyyaml>=6",
 ]
 
 [project.optional-dependencies]
@@ -45,8 +41,7 @@ dev = [
   # to them, so a dev environment without this fails a test rather than skipping
   # one. Dev-only because nothing under `python/src/azoth` imports it: the schema
   # is a dev-time artefact and `azoth.keycard` checks only what it needs to build
-  # objects safely. `pyyaml` used to be listed here for the same reason and is now
-  # a runtime dependency above, because the package itself imports it.
+  # objects safely.
   "jsonschema>=4.20",
 ]
 
@@ -171,19 +166,11 @@ module = ["azoth._registry_gen", "azoth._models_gen"]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-# PyYAML publishes no type information. The only consumer on the checked path is
-# the spec_lint test, which writes a synthetic spec out as YAML and needs a real
-# parser to do it. A stub package would be a new dev dependency for that one
-# import; the tools themselves are already outside `files`.
-module = ["yaml"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
 # Neither `jsonschema` nor `referencing` publishes type information. The consumers
 # on the checked path are `test_keycard_schema.py`, which validates documents
 # against the real schemas rather than a mock - a schema is only worth testing
 # against the validator that reads it - and it needs `referencing` to resolve the
-# `$ref` between the two schema documents. Same reasoning as `yaml` above: a stub
+# `$ref` between the two schema documents. A stub
 # package would be a new dev dependency for one import, and the tools that use the
 # same libraries are already outside `files`.
 module = ["jsonschema", "referencing"]

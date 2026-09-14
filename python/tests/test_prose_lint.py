@@ -62,6 +62,31 @@ def test_a_planted_violation_is_caught(tmp_path: Path) -> None:
     assert "planted.rs" in result.stdout, result.stdout
 
 
+def test_every_phrase_occurs_nowhere_in_the_tree() -> None:
+    """Each entry is measured, not assumed, which is what makes a hit a hit.
+
+    A phrase that already occurs in the tree would fail this gate on the tree it
+    guards, so the list can only hold phrasings that were removed first. That is the
+    property the docstring claims and nothing checked: an entry added from memory
+    would turn the gate into a gate that has to be switched off.
+    """
+    sys.path.insert(0, str(REPO_ROOT / "tools"))
+    try:
+        tool: ModuleType = importlib.import_module("prose_lint")
+    finally:
+        sys.path.pop(0)
+
+    present: dict[str, list[str]] = {}
+    for path in tool.sources(REPO_ROOT):
+        for _, phrase, line in tool.offending_lines(path):
+            present.setdefault(phrase, []).append(f"{path.relative_to(REPO_ROOT)}: {line}")
+
+    assert not present, (
+        "a phrase in HISTORY_PHRASES occurs in the tree it guards, so the gate fails on "
+        f"the repository rather than on a violation: {present}"
+    )
+
+
 def test_the_phrase_list_is_not_scanned_as_prose() -> None:
     """The tool's own data block is not in the set of files it reads.
 

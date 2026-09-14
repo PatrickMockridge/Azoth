@@ -1,21 +1,10 @@
 """One card, two readers, and the numbers they resolve it to.
 
-A keycard is read by `python/src/azoth/keycard.py` and by `azoth_eos::card`, and the two
-are separate implementations of one document: the Python reader converts with `pint`,
-the Rust one with the generated unit table, and the closed lists they check against - a
-component parameter, a model shape, a unit - are written twice. Two implementations of
-one thing are only worth having if something holds them to each other on real data, so
-that is what this file does: hand one card's text to both and compare.
-
-**The comparison is over the overlay**, which is the part both readers resolve rather
-than merely carry: `components` and `kij`, name by name and pair by pair. `coefficients`
-and `models` are carried by both and interpreted by neither at read time, and what each
-carries is asserted on its own side - `test_keycard_loader.py` for Python,
-`crates/azoth-eos/tests/card.rs` for Rust.
-
-The card is the shipped template, read from the repository root, for the reason
-`test_data_agreement.py` reads the real tables: a comparison over a fixture written for
-the occasion agrees with itself.
+A keycard is read by `python/src/azoth/keycard.py` and by `azoth_eos::card`. The
+comparison is over the overlay, the part both readers resolve rather than carry:
+`components` and `kij`, name by name and pair by pair. The card is the shipped
+template, for the reason `test_data_agreement.py` reads the real tables: a comparison
+over a fixture written for the occasion agrees with itself.
 """
 
 from __future__ import annotations

@@ -1,0 +1,17 @@
+model = "eos.pure_saturation"
+[[cases]]
+id = "propane_at_300_k"
+tolerance = 1e-09
+[cases.inputs]
+components = ["propane"]
+T = 300.0
+[cases.expected]
+p_sat = 997905.585109325
+[[cases]]
+id = "carbon_dioxide_at_280_k"
+tolerance = 1e-09
+[cases.inputs]
+components = ["co2"]
+T = 280.0
+[cases.expected]
+p_sat = 4150449.601020932

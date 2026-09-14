@@ -6,7 +6,7 @@ a_reduced = Omega_a * alpha * Pr / Tr**2
 b_reduced = Omega_b * Pr / Tr
 ```
 
-Spec: ``specs/calcs/eos/pr_alpha_ab.yaml``, which carries the provenance, the
+Spec: ``specs/calcs/eos/pr_alpha_ab.toml``, which carries the provenance, the
 derivation of the two Omega constants from the triple-root condition, and what is
 not claimed about the source.
 """

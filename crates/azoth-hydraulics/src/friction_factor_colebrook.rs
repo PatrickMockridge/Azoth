@@ -5,7 +5,7 @@
 //! 1 / sqrt(f) = -2 * log10(relative_roughness / 3.7 + 2.51 / (Re * sqrt(f)))
 //! ```
 //!
-//! Spec: `specs/calcs/hydraulics/friction_factor_colebrook.yaml`, which carries the
+//! Spec: `specs/calcs/hydraulics/friction_factor_colebrook.toml`, which carries the
 //! citation.
 //!
 //! The equation is implicit in `f`, so it is solved rather than evaluated.

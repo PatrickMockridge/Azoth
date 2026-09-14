@@ -4,7 +4,7 @@
 //! z**3 - (1 - B)*z**2 + (A - 3*B**2 - 2*B)*z - (A*B - B**2 - B**3) = 0
 //! ```
 //!
-//! Spec: `specs/calcs/eos/pr_z_factor.yaml`, which carries the provenance, the proof
+//! Spec: `specs/calcs/eos/pr_z_factor.toml`, which carries the provenance, the proof
 //! that the admissible root count is one or three, and what the answer does near the
 //! critical point.
 //!

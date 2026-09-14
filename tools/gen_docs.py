@@ -29,13 +29,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    sys.exit("gen_docs requires PyYAML")
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
@@ -59,45 +55,25 @@ NAMESPACES = {
     "process": "Unit operations",
 }
 
-#: Hand-written pages that come *before* the reference sections.
-#:
-#: The specification says what azoth is and is normative; these say how it is put
-#: together and what you do with it, which is what a reader arriving at the book
-#: needs next. They used to sit after every calculation page, in the order the
-#: book happened to grow rather than the order it is read.
-FRONT_PAGES = (("Spec files", "spec-files.md"),)
+#: The architecture section, first in the book, with each page's depth under it.
+ARCHITECTURE: tuple[tuple[str, str, int], ...] = (
+    ("Architecture", "architecture/index.md", 0),
+    ("The specification", "architecture/specification.md", 1),
+    ("Spec files", "architecture/spec-files.md", 1),
+)
 
-#: Hand-written pages that come after the reference sections: consulted once a
-#: reader knows what is here.
-#:
-#: Both tuples are load-bearing rather than decorative: mdBook silently drops a
-#: page that is not named in SUMMARY.md, and `tools/check_links.py` fails the
-#: build for any page under docs/src that is missing from it. So a hand-written
-#: page has to be registered in one of them or it does not appear at all - and
-#: the failure is caught rather than being a page nobody ever reads.
-STATIC_PAGES: tuple[tuple[str, str], ...] = ()
-
-#: Hand-written pages that form their own section of the book, after the front
-#: pages and before the reference sections.
-#:
-#: A separate tuple from FRONT_PAGES and STATIC_PAGES because the calculus is a
-#: section with a heading and subpages, not a flat sibling - and because its
-#: position is load-bearing: a model page's ports and its units are instances of
-#: what these pages define, so a reader who meets them last meets twenty pages of
-#: consequences before their cause.
-STATIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
-    (
-        "The calculus of thermodynamic dimensionality",
-        (
-            ("The calculus of thermodynamic dimensionality", "calculus/index.md"),
-            ("Dimensions", "calculus/dimensions.md"),
-            ("Barbs", "calculus/barbs.md"),
-            ("Processes and channels", "calculus/process.md"),
-            ("Reflection and feedback", "calculus/rho.md"),
-            ("The keycard as a capability", "calculus/capability.md"),
-            ("The vocabulary table", "calculus/vocabulary.md"),
-        ),
-    ),
+#: The calculus, a peer of the architecture. Both are hand-written and listed here
+#: ahead of the generated calculation pages, so a reader meets the formal layer before
+#: its consequences. mdBook silently drops a page that is not named in the summary,
+#: and `tools/check_links.py` fails the build for one that is missing.
+CALCULUS: tuple[tuple[str, str, int], ...] = (
+    ("The calculus of thermodynamic dimensionality", "calculus/index.md", 0),
+    ("Dimensions", "calculus/dimensions.md", 1),
+    ("Barbs", "calculus/barbs.md", 1),
+    ("Processes and channels", "calculus/process.md", 1),
+    ("Reflection and feedback", "calculus/rho.md", 1),
+    ("The keycard as a capability", "calculus/capability.md", 1),
+    ("The vocabulary table", "calculus/vocabulary.md", 1),
 )
 
 
@@ -132,13 +108,13 @@ def namespace_title(namespace: str) -> str:
 def source_of(spec: dict[str, Any]) -> str:
     """Repo-relative path of a calc's spec file."""
     parts = spec["id"].split(".")
-    return f"specs/calcs/{parts[0]}/{parts[-1]}.yaml"
+    return f"specs/calcs/{parts[0]}/{parts[-1]}.toml"
 
 
 def source_of_model(spec: dict[str, Any]) -> str:
     """Repo-relative path of a model's spec file."""
     parts = spec["id"].split(".")
-    return f"specs/models/{parts[0]}/{parts[-1]}.yaml"
+    return f"specs/models/{parts[0]}/{parts[-1]}.toml"
 
 
 def describe_source(spec: dict[str, Any]) -> str:
@@ -150,10 +126,9 @@ def describe_source(spec: dict[str, Any]) -> str:
     source = spec.get("source")
     if not source:
         return ""
-    # Every field is whitespace-normalised before it is placed. A YAML folded scalar
-    # keeps the author's line breaks, and a `**` opened on one line of a multi-line
-    # value closes on another - which renders as an unmatched bold marker and, where a
-    # parenthesis followed, a stray `)` outside it.
+    # Every field is whitespace-normalised before it is placed. A `**` opened on one
+    # line of a multi-line value closes on another - which renders as an unmatched bold
+    # marker and, where a parenthesis followed, a stray `)` outside it.
     parts = [f"**{' '.join(str(source['standard']).split())}**"]
     if source.get("edition"):
         parts.append(f"\n\n{' '.join(str(source['edition']).split())}")
@@ -504,19 +479,8 @@ def render_model(spec: dict[str, Any]) -> str:
 
 def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | None = None) -> str:
     out = "# Summary\n\n- [azoth](./index.md)\n"
-    # The specification sits directly under the index rather than in STATIC_PAGES,
-    # which would put it below twenty calculation pages. It is the page every other
-    # page defers to, and one a reader arrives at last is one they do not read.
-    out += "- [Specification](./spec.md)\n"
-    for title, filename in FRONT_PAGES:
-        out += f"- [{title}](./{filename})\n"
-    for section_title, pages in STATIC_SECTIONS:
-        # The section heading links to its own first page, so the entry is
-        # navigable rather than a label - mdBook renders a summary entry without a
-        # link as plain text.
-        out += f"- [{section_title}](./{pages[0][1]})\n"
-        for page_title, filename in pages[1:]:
-            out += f"  - [{page_title}](./{filename})\n"
+    for title, filename, depth in (*ARCHITECTURE, *CALCULUS):
+        out += f"{'  ' * depth}- [{title}](./{filename})\n"
 
     by_namespace: dict[str, list[dict[str, Any]]] = {}
     for calc in calcs:
@@ -543,9 +507,6 @@ def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | N
             key=lambda m: m["id"],
         ):
             out += f"  - [{model['name']}](./{namespace}/{model['id'].split('.')[-1]}.md)\n"
-
-    for title, filename in STATIC_PAGES:
-        out += f"- [{title}](./{filename})\n"
 
     out += "- [Solvers](./theory/solvers.md)\n"
     return out
@@ -704,25 +665,25 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="fail if out of date")
     args = parser.parse_args()
 
-    paths = sorted(SPEC_DIR.rglob("*.yaml"))
+    paths = sorted(SPEC_DIR.rglob("*.toml"))
     if not paths:
         sys.exit(f"gen_docs: no specs found under {SPEC_DIR}")
-    calcs = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in paths]
+    calcs = [tomllib.loads(p.read_text(encoding="utf-8")) for p in paths]
     calcs.sort(key=lambda c: c["id"])
 
     # Models are generated by `gen_models.py` into their own tables, but their *pages*
     # belong in the same book under the same namespace, so this reads them too. A
     # model rendered nowhere would be a spec whose documentation is a file in
     # `specs/models/` that only its authors read.
-    model_paths = sorted(MODEL_DIR.rglob("*.yaml"))
-    models = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in model_paths]
+    model_paths = sorted(MODEL_DIR.rglob("*.toml"))
+    models = [tomllib.loads(p.read_text(encoding="utf-8")) for p in model_paths]
     models.sort(key=lambda m: m["id"])
 
     # The instances, from their own files. A model is a type and its cases are the
     # machines to run, so the page renders the second under the first.
     instances: dict[str, list[dict[str, Any]]] = {}
-    for path in sorted(CASE_DIR.rglob("*.yaml")):
-        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    for path in sorted(CASE_DIR.rglob("*.toml")):
+        document = tomllib.loads(path.read_text(encoding="utf-8"))
         instances.setdefault(document["model"], []).extend(document["cases"])
     for model in models:
         model["cases"] = instances.get(model["id"], [])

@@ -83,7 +83,7 @@ type Q = pint.Quantity[float]
 
 #: Canonical unit strings, keyed by the strings the spec schema allows, mapped to
 #: the unit's name in `pint`'s registry. **Generated** from
-#: `specs/vocabulary/vocabulary.yaml` by `tools/gen_vocabulary.py`, which is why
+#: `specs/vocabulary/vocabulary.toml` by `tools/gen_vocabulary.py`, which is why
 #: the table rather than this module is where a unit is added.
 #:
 #: This is the unit the spec and the generated docs *speak in* - what a worked

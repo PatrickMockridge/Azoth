@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import tomllib
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -77,8 +78,8 @@ def test_every_model_spec_is_in_the_generated_registry() -> None:
     """
     spec_ids = {
         str(raw["id"])
-        for path in sorted((REPO_ROOT / "specs" / "models").rglob("*.yaml"))
-        for raw in [__import__("yaml").safe_load(path.read_text(encoding="utf-8"))]
+        for path in sorted((REPO_ROOT / "specs" / "models").rglob("*.toml"))
+        for raw in [tomllib.loads(path.read_text(encoding="utf-8"))]
     }
     registry_ids = schema_model_ids()
     assert spec_ids == registry_ids, (

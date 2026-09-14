@@ -4,7 +4,7 @@
 //! kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2
 //! ```
 //!
-//! Spec: `specs/calcs/eos/pr_kappa.yaml`, which carries the citation, what a
+//! Spec: `specs/calcs/eos/pr_kappa.toml`, which carries the citation, what a
 //! transposed digit in the polynomial costs, and why a negative `kappa` is returned
 //! with a warning rather than refused.
 //!

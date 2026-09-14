@@ -1,6 +1,6 @@
 """The pressure iteration ``eos.bubble_pressure`` and ``eos.dew_pressure`` share.
 
-Specs: ``specs/models/eos/bubble_pressure.yaml`` and ``specs/models/eos/dew_pressure.yaml``
+Specs: ``specs/models/eos/bubble_pressure.toml`` and ``specs/models/eos/dew_pressure.toml``
 
 Both models ask the same question with the phases exchanged: *given one phase's
 composition, at what pressure does the other phase appear?* Their equations differ,
@@ -31,7 +31,7 @@ from azoth.eos.reference._mixture_state import (
 #: while the K-values are still far from one; and the threshold has to clear the
 #: lowest value a genuine boundary reaches at any step, not the value a degenerate
 #: state ends at. The measurements behind the constant, and why it is ``1e-2`` here
-#: and ``1e-8`` in the flash, are in ``specs/models/eos/bubble_pressure.yaml``.
+#: and ``1e-8`` in the flash, are in ``specs/models/eos/bubble_pressure.toml``.
 TRIVIAL_TOLERANCE = 1.0e-02
 
 #: Which phase appears at the boundary being sought.

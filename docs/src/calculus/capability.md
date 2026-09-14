@@ -1,6 +1,6 @@
 # The keycard as a capability
 
-`spec.md` says the keycard "is where responsibility sits": the shipped baseline is
+`specification.md` says the keycard "is where responsibility sits": the shipped baseline is
 NeqSim's, a user's card is theirs, and the difference between the two is who is
 accountable for a value being right. This page says what that makes the card *as a
 thing in the calculus* — and the answer is that it is authority a process holds,
@@ -48,7 +48,7 @@ declaration for this claim**: `Azoth.Capability` does not exist, nothing in this
 repository could falsify the statement, and the tranche that builds the Rust overlay
 is what will make it checkable.*
 
-This is the property `spec.md` states as a rule — *"It is not shared. One keycard
+This is the property `specification.md` states as a rule — *"It is not shared. One keycard
 per process… A library whose answers depend on call order is a library that returns
 two results for one calculation."* The claim is that rule, made formal: the result
 is a function of the card and the inputs, and of nothing else.
@@ -81,7 +81,7 @@ derivable.
 and it is proved in the same tranche - a gate that cannot fail is not a gate.*
 
 The witness is what makes the claim above worth proving, and it is not optional. A
-gate that cannot fail is not a gate — the same reason `spec.md` requires a bound to
+gate that cannot fail is not a gate — the same reason `specification.md` requires a bound to
 name what it bounds, and the same reason the conversion test in
 [The vocabulary table](./vocabulary.md) is checked by pointing a unit at the wrong
 library rather than by reading the code.
@@ -132,7 +132,7 @@ that ignored its argument would pass it and fail every other one.
 ## Disclosure, which is the other half
 
 Non-amplification says a result cannot rest on data the card does not grant. It
-does not say the result has to *say* what it rested on, and by `spec.md`'s own
+does not say the result has to *say* what it rested on, and by `specification.md`'s own
 account it must: *"What the library owes instead of a status field"* is disclosure.
 So the result carries the origins it used, and a caller can see which names an
 answer involved rather than inferring it from the card they handed in — which is

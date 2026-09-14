@@ -16,7 +16,7 @@ over something non-reproducible is harder to check than it needs to be.
 
 # Why raw bytes, not canonicalised content
 
-Hashing the file as committed avoids inventing a canonical form for YAML and
+Hashing the file as committed avoids inventing a canonical form for TOML and
 JSON. A canonicalisation scheme would be a second definition of the content, and
 the two would eventually disagree - which is the failure mode this whole file
 exists to rule out.
@@ -41,13 +41,9 @@ import hashlib
 import json
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    sys.exit("provenance requires PyYAML")
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
@@ -158,7 +154,7 @@ def _data_files() -> tuple[str, ...]:
     describe the release, and nothing said so.
 
     Walking cannot go stale. Whether each file *should* be shipped is a different
-    question, and `databank/manifest.yaml` is where it is answered: a data file the
+    question, and `databank/manifest.toml` is where it is answered: a data file the
     manifest does not declare fails `tools/check_manifest.py`.
     """
     return tuple(sorted(str(path.relative_to(ROOT)) for path in DATA_DIR.rglob("*.csv")))
@@ -228,7 +224,7 @@ def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
         "id": spec["id"],
         "name": spec["name"],
         "equation": spec["equation"],
-        "spec": describe(f"specs/calcs/{namespace}/{name}.yaml"),
+        "spec": describe(f"specs/calcs/{namespace}/{name}.toml"),
         "code": [
             describe(f"python/src/azoth/{namespace}/reference/{name}.py"),
             describe(f"crates/azoth-{namespace}/src/{name}.rs"),
@@ -250,7 +246,7 @@ def model_entry(spec: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": spec["id"],
         "name": spec["name"],
-        "spec": describe(f"specs/models/{namespace}/{name}.yaml"),
+        "spec": describe(f"specs/models/{namespace}/{name}.toml"),
         "code": [
             describe(f"python/src/azoth/{namespace}/reference/{name}.py"),
             describe(f"crates/azoth-{namespace}/src/{name}.rs"),
@@ -264,12 +260,12 @@ def model_entry(spec: dict[str, Any]) -> dict[str, Any]:
 
 def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
     """Assemble the provenance record."""
-    paths = sorted(SPEC_DIR.rglob("*.yaml"))
-    calcs = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in paths]
+    paths = sorted(SPEC_DIR.rglob("*.toml"))
+    calcs = [tomllib.loads(p.read_text(encoding="utf-8")) for p in paths]
     calcs.sort(key=lambda c: c["id"])
 
-    model_paths = sorted((ROOT / "specs" / "models").rglob("*.yaml"))
-    models = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in model_paths]
+    model_paths = sorted((ROOT / "specs" / "models").rglob("*.toml"))
+    models = [tomllib.loads(p.read_text(encoding="utf-8")) for p in model_paths]
     models.sort(key=lambda m: m["id"])
 
     status = git("status", "--porcelain")

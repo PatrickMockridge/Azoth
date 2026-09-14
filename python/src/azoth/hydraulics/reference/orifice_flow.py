@@ -4,7 +4,7 @@
 q = Cd * (math.pi * d**2 / 4) * sqrt(2 * dP / rho)
 ```
 
-Spec: ``specs/calcs/hydraulics/orifice_flow.yaml``
+Spec: ``specs/calcs/hydraulics/orifice_flow.toml``
 
 # The discharge coefficient is an input, deliberately
 

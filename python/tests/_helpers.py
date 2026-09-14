@@ -2,7 +2,7 @@
 
 Mirrors ``crates/azoth-hydraulics/tests/common/mod.rs``. The tests in this
 directory are not hand-written per calc: they walk the spec's ``tests`` list and
-execute whatever it declares, so a test added to a spec YAML runs in both
+execute whatever it declares, so a test added to a spec file runs in both
 languages with no new test code. That is the whole point of generating the
 registry on both sides.
 

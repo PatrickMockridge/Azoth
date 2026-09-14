@@ -4,7 +4,7 @@
 //! K = f_t * sum(n_ld for each fitting)
 //! ```
 //!
-//! Spec: `specs/calcs/hydraulics/crane_k_factors.yaml`, which records that the
+//! Spec: `specs/calcs/hydraulics/crane_k_factors.toml`, which records that the
 //! coefficients this sums are placeholders and what that means for testing.
 //!
 //! The method is standard; the coefficients come from

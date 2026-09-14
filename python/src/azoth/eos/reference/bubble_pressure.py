@@ -1,6 +1,6 @@
 """``eos.bubble_pressure`` - the pressure at which a liquid first gives off vapour.
 
-Spec: ``specs/models/eos/bubble_pressure.yaml``
+Spec: ``specs/models/eos/bubble_pressure.toml``
 
 The iteration lives in :mod:`azoth.eos.reference._phase_boundary`, because
 ``eos.dew_pressure`` runs the same loop with the phases exchanged. What is here is

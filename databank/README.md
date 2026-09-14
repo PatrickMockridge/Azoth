@@ -4,7 +4,7 @@ Everything azoth ships as *input*: the upstream data it vendors, the record of w
 took from each and why it took no more, and in time the baseline keycard both derive
 into and the compiled files that come out of it.
 
-Specified in [the specification, S5](../docs/src/spec.md#s5-it-ships-data-and-the-keycard-extends-it).
+Specified in [the specification, S5](../docs/src/architecture/specification.md#s5-it-ships-data-and-the-keycard-extends-it).
 This page is the operational half: what is here now, what is not, and how to check it.
 
 ## The three stages, and which of them exist
@@ -37,7 +37,7 @@ NeqSim checkout. Refreshing them is what a checkout is for.
 
 NeqSim is Apache-2.0; the attribution is in [`NOTICE`](../NOTICE).
 
-## `manifest.yaml` is the record of what was taken
+## `manifest.toml` is the record of what was taken
 
 Every column of `COMP.csv` (170) and `INTER.csv` (39) is listed once, with what was
 done with it and a reason. `tools/check_manifest.py` prints the tally:
@@ -86,7 +86,7 @@ failing before it writes anything.
 
 ## What none of this can tell you
 
-**Whether the vendored slice is current.** `manifest.yaml` records the NeqSim commit it
+**Whether the vendored slice is current.** `manifest.toml` records the NeqSim commit it
 was last checked against (`dedba8735d030c6411e09b6fd7e69f6c4a136114`, v3.20.0), and
 nothing here can tell you a newer NeqSim exists. The `not_vendored` list was built by
 expanding NeqSim's resource directory by hand, at that commit.

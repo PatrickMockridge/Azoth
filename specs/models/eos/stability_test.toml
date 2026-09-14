@@ -1,0 +1,87 @@
+id = "eos.stability_test"
+name = "Tangent-plane stability test"
+kind = "procedure"
+assumptions = [
+    "Only two trial phases are run, both from Wilson K-values, and Wilson assumes gas-liquid equilibrium, so a feed unstable to a liquid-liquid split can come back `stable`.",
+    "the feed's own fugacity coefficients are evaluated at the feed composition, so `d_i = ln z_i + ln phi_i(z)` presupposes that the feed is a single phase occupying one root of the cubic.",
+    "the cubic is Peng-Robinson with the alpha function and mixing rule `eos.pt_flash` uses: the test is a property of the model, not of the mixture alone.",
+    "`tm` is reported for the stationary point each trial reached, and successive substitution finds the nearest one rather than the global minimum.",
+]
+references = [
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part I. Stability.\" Fluid Phase Equilibria 9(1), 1-19. The tangent-plane criterion, the two-trial structure and the `tm = 1 - sum(W)` form.\n",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0, developed at NTNU and maintained by Equinor. `Flash.stabilityAnalysis`, the port source.",
+    "`eos.pt_flash`, which is the same state asked a different question, and the cross-check this model's tests lean on.\n",
+]
+[source]
+standard = '''Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability"'''
+edition = "Fluid Phase Equilibria 9(1), 1-19"
+doi = "10.1016/0378-3812(82)85001-2"
+[algorithm]
+scheme = "tangent_plane_stability"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 2000
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = """\
+    overall mole fractions. Checked rather than renormalised, as everywhere else in this \
+    namespace.\n\
+    """
+[outputs]
+[outputs.verdict]
+type = "enum"
+values = ["stable", "unstable"]
+description = "Whether the feed is stable as a single phase: `unstable` means one of the two trials reached a stationary point below the tangent plane, so a split exists."
+[outputs.tm]
+type = "vector"
+unit = "dimensionless"
+length = "one per trial"
+description = "The tangent-plane distance at each trial's stationary point, in the same order as `w`; negative means the trial lies below the tangent plane through the feed."
+[outputs.iterations]
+type = "vector"
+unit = "dimensionless"
+length = "one per trial"
+description = "Successive-substitution steps each trial took, in the same order as `tm`."
+[outputs.min_t_over_tc]
+unit = "dimensionless"
+description = "The smallest `T / Tc_i` over the components; a minimum above 0.9 means no component is well below its critical temperature."
+[outputs.w]
+type = "matrix"
+unit = "dimensionless"
+shape = "2 x N, rows sum to 1"
+description = "The stationary-point composition of each trial, in the same order as `tm`, as normalised mole fractions."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "min_t_over_tc"
+max = 0.9
+max_inclusive = true
+severity = "warning"
+rationale = "Above `T / Tc = 0.9` for every component the cubic's roots are close to coalescing and the two phases stop being distinguishable, so a `stable` verdict near the critical point is the one to distrust."
+[implementations]
+python = "azoth.eos.stability_test"
+rust = "azoth_eos::stability_test"

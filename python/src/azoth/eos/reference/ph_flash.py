@@ -1,6 +1,6 @@
 """``eos.ph_flash`` - the temperature a mixture reaches at a given pressure and enthalpy.
 
-Spec: ``specs/models/eos/ph_flash.yaml``
+Spec: ``specs/models/eos/ph_flash.toml``
 
 An outer bisection on temperature, over the enthalpy assembled from two things this
 library already has: the phase split at a trial temperature, from

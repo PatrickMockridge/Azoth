@@ -1,0 +1,99 @@
+id = "hydraulics.reynolds_number"
+name = "Reynolds number for pipe flow"
+equation = "Re = rho * v * D / mu"
+latex = '''Re = \frac{\rho v D}{\mu}'''
+assumptions = ["Newtonian fluid", "single-phase flow", "constant density and viscosity across the pipe cross-section", "circular pipe running full", "fully developed flow"]
+references = ["Reynolds, O. (1883). \"An experimental investigation of the circumstances which determine whether the motion of water shall be direct or sinuous, and of the law of resistance in parallel channels.\" Phil. Trans. R. Soc. Lond., 174, 935-982. DOI 10.1098/rstl.1883.0029", "Crane Technical Paper No. 410, \"Flow of Fluids Through Valves, Fittings and Pipe\" (2013), chapter 1 - regime boundaries as conventionally used with the Darcy-Weisbach equation."]
+[source]
+standard = "Crane TP-410"
+edition = "2013"
+[inputs]
+[inputs.rho]
+unit = "kg/m**3"
+description = "fluid density"
+[inputs.v]
+unit = "m/s"
+description = "bulk mean velocity"
+[inputs.D]
+unit = "m"
+description = "internal pipe diameter"
+[inputs.mu]
+unit = "Pa*s"
+description = "dynamic viscosity"
+[outputs]
+[outputs.re]
+unit = "dimensionless"
+description = "Reynolds number"
+[outputs.regime]
+type = "enum"
+values = ["laminar", "transitional", "turbulent"]
+description = "flow regime under the Crane/Moody boundaries"
+[[valid_range]]
+quantity = "rho"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    density must be positive; it divides into nothing here but a non-positive value is \
+    unphysical"""
+[[valid_range]]
+quantity = "D"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a zero diameter makes the Reynolds number zero regardless of flow"
+[[valid_range]]
+quantity = "mu"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "zero viscosity makes the Reynolds number undefined rather than large"
+[[valid_range]]
+quantity = "v"
+min = 0
+severity = "error"
+rationale = "speed is non-negative; flow direction is not modelled by this calc"
+[[valid_range]]
+quantity = "re"
+min = 2000
+max = 4000
+when = "inside"
+severity = "warning"
+code = "TRANSITIONAL_FLOW"
+rationale = "Downstream friction-factor correlations are indeterminate in this band."
+[worked_example]
+source = "derived from the equation above"
+derivation = "Water at rho = 998 kg/m**3 and mu = 1.002e-3 Pa*s in a 0.1 m pipe at 1.5 m/s:\n  Re = 998 * 1.5 * 0.1 / 1.002e-3 = 149.7 / 1.002e-3 = 149401.19760479042\nTurbulent (> 4000), so no regime warning."
+tolerance = 1e-12
+[worked_example.inputs]
+rho = 998.0
+v = 1.5
+D = 0.1
+mu = 0.001002
+[worked_example.expected]
+re = 149401.19760479042
+[implementations]
+python = "azoth.hydraulics.reynolds_number"
+rust = "azoth_hydraulics::reynolds_number"
+[[tests]]
+id = "water_pipe_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "transitional_warning"
+type = "reference"
+status = "active"
+source = "derived from the equation above; exercises the transitional-flow warning path"
+tolerance = 1e-12
+[tests.inputs]
+rho = 1000.0
+v = 0.1
+D = 0.05
+mu = 0.0015
+[tests.expected]
+re = 3333.3333333333335
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

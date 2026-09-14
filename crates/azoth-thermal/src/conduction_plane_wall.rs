@@ -4,7 +4,7 @@
 //! q = k * A * dT / L
 //! ```
 //!
-//! Spec: `specs/calcs/thermal/conduction_plane_wall.yaml`, which carries the citation.
+//! Spec: `specs/calcs/thermal/conduction_plane_wall.toml`, which carries the citation.
 //!
 //! # The sign convention
 //!

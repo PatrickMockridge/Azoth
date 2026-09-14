@@ -1,0 +1,100 @@
+id = "eos.molar_enthalpy_entropy"
+name = "Molar enthalpy and entropy of a mixture"
+kind = "direct"
+assumptions = [
+    "the datum is NeqSim's, and it is not a caller's choice: `h` and `s` are differences from `T_ref = 273.15 K` and `P_ref = 1.01325 bar`, with no formation enthalpy added.",
+    "A component's `Tc`, `Pc`, `omega`, every `kij` and `cp_a`..`cp_e` come from the databank (`data/components/`, from NeqSim's `COMP.csv` and `INTER.csv`) with the keycard's overrides applied.",
+    "the heat-capacity polynomial is valid over the range it was fitted to, and `T`, `T_ref` and the integration path between them all lie in it.",
+    "the departure functions are relative to the ideal-gas *mixture* at the same temperature, pressure and composition, not to the pure ideal gases.",
+    "which root `compressibility` names is the caller's choice and is not checked against the phase it describes.",
+    "no energy balance and no reaction: this is a property of one state.",
+]
+references = [
+    "Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. \"The Properties of Gases and Liquids\", 5th ed.",
+    "Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.",
+]
+[source]
+standard = "The composition of ideal-gas and residual contributions"
+edition = "Standard thermodynamics: an absolute enthalpy or entropy is a reference value plus an ideal-gas integral plus a departure, with the datum NeqSim's (`T_ref = 273.15 K`, `P_ref = 1.01325 bar`)."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature of the state"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure of the state"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, checked rather than renormalised"
+[inputs.compressibility]
+unit = "dimensionless"
+description = """\
+    the cubic's root for the phase wanted. Not solved for here: which root describes the \
+    phase is a choice, and a caller holding a `z` has already made it.\n\
+    """
+[outputs]
+[outputs.h]
+unit = "J/mol"
+description = "the molar enthalpy, `h_ideal + h_departure`"
+[outputs.s]
+unit = "J/(mol*K)"
+description = "the molar entropy, `s_ideal + s_departure`"
+[outputs.h_ideal]
+unit = "J/mol"
+description = "the ideal-gas part: the reference enthalpies plus the heat-capacity integrals."
+[outputs.s_ideal]
+unit = "J/(mol*K)"
+description = "the ideal-gas part of the entropy - the reference values, the heat-capacity integrals, `-R ln(P/P_ref)` for the pressure and `-R sum_i z_i ln z_i` for the mixing."
+[outputs.h_departure]
+unit = "J/mol"
+description = "the residual enthalpy, `R*T*h_dep_rt`"
+[outputs.s_departure]
+unit = "J/(mol*K)"
+description = """\
+    the residual entropy, `R*s_dep_r`. **Does not include the entropy of mixing**, which is \
+    an ideal-gas term; see the notes.\n\
+    """
+[outputs.psi_bar]
+unit = "dimensionless"
+description = "the composition-weighted average of the components' `psi` that the mixture departure functions are built on."
+[outputs.cp]
+unit = "J/(mol*K)"
+description = """\
+    the molar heat capacity at constant pressure, `cp_ideal + cp_departure`.\n\
+    """
+[outputs.cp_ideal]
+unit = "J/(mol*K)"
+description = """\
+    the ideal-gas part of the heat capacity - the same polynomial whose integral gives the \
+    ideal enthalpy, evaluated at the state's temperature rather than integrated.\n\
+    """
+[outputs.cp_departure]
+unit = "J/(mol*K)"
+description = "the residual heat capacity, `R*cp_dep_r`"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "compressibility"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Z = P v /(R T)` is positive for any state with a positive volume."
+[implementations]
+python = "azoth.eos.molar_enthalpy_entropy"
+rust = "azoth_eos::molar_enthalpy_entropy"

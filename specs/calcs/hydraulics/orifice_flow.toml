@@ -1,0 +1,123 @@
+id = "hydraulics.orifice_flow"
+name = "Flow through an orifice from the pressure difference across it"
+equation = "q = Cd * (math.pi * d**2 / 4) * sqrt(2 * dP / rho)"
+latex = '''Q = C_d \frac{\pi d^{2}}{4} \sqrt{\frac{2\,\Delta P}{\rho}}'''
+assumptions = ["The flow is incompressible; a gas with a significant pressure ratio across the orifice needs an expansion factor.", "the fluid is single-phase, Newtonian and free of suspended solids", "the orifice is a square-edged plate, and `Cd` describes that geometry. Other primaries - a nozzle, a Venturi, a cone - have different coefficients, and nothing here reveals which was meant.", "`Cd` is valid at this Reynolds number and this diameter ratio.", "The pressure difference is measured between the tappings the coefficient is defined against.", "The approach velocity is accounted for either inside `Cd` or not at all.", "steady flow, with no pulsation; an orifice in a pulsating flow reads a difference that is not the mean", "A fully developed, undisturbed velocity profile approaches the orifice."]
+references = ["ISO 5167-1 and -2, Measurement of fluid flow by means of pressure differential devices.", "No specific source is claimed: q = Cd * A * sqrt(2*dP/rho) is standard fluid mechanics."]
+[source]
+standard = """\
+    the orifice equation; ISO 5167 for the discharge coefficient, which this calc does not \
+    implement"""
+[inputs]
+[inputs.d]
+unit = "mm"
+description = "Orifice bore diameter."
+[inputs.dP]
+unit = "Pa"
+description = "Pressure difference across the orifice, between the tappings the coefficient is defined against."
+[inputs.rho]
+unit = "kg/m**3"
+description = "Density of the fluid, taken as constant through the orifice."
+[inputs.Cd]
+unit = "dimensionless"
+description = "Discharge coefficient: actual flow divided by the ideal flow through the same area at the same pressure difference."
+[outputs]
+[outputs.q]
+unit = "m**3/s"
+description = "volumetric flow rate through the orifice"
+[[valid_range]]
+quantity = "d"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    the bore is squared, so a zero bore would give zero area and zero flow, and a negative \
+    one would give a positive area from a nonsensical input. Both are caller errors rather \
+    than physical states.\n\
+    """
+[[valid_range]]
+quantity = "dP"
+min = 0
+severity = "error"
+rationale = """\
+    a negative difference would mean flow in the other direction, which is a different \
+    calculation and not the one named here. Zero is allowed and correct: no pressure \
+    difference drives no flow.\n\
+    """
+[[valid_range]]
+quantity = "rho"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    density is a divisor inside the square root, so zero is singular and negative would make \
+    the root imaginary.\n\
+    """
+[[valid_range]]
+quantity = "Cd"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    a non-positive coefficient would give a flow that is zero or in the wrong direction - \
+    wrong rather than merely unusual.\n\
+    """
+[[valid_range]]
+quantity = "Cd"
+max = 1
+severity = "error"
+rationale = "The ideal, lossless orifice passes exactly the ideal flow, so a coefficient above 1 would claim more flow than an obstruction of that area can pass."
+[worked_example]
+source = "derived from the equation above"
+derivation = "Water through a 50 mm orifice with 25 kPa across it, at a discharge coefficient of 0.62:\n\n  d          = 50 mm                = 0.05 m\n  A          = pi * 0.05**2 / 4     = 0.001963495408493621 m**2\n  2*dP/rho   = 2 * 25000 / 998      = 50.100200400801604\n  sqrt(...)  = sqrt(50.100200400801604) = 7.07814950398772\n  q = 0.62 * 0.001963495408493621 * 7.07814950398772\n    = 0.008616706712060997 m**3/s\n\nThat is 8.617 L/s."
+tolerance = 1e-12
+[worked_example.inputs]
+d = 50.0
+dP = 25000.0
+rho = 998.0
+Cd = 0.62
+[worked_example.expected]
+q = 0.008616706712060997
+[implementations]
+python = "azoth.hydraulics.orifice_flow"
+rust = "azoth_hydraulics::orifice_flow"
+[[tests]]
+id = "water_through_a_50mm_orifice_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "larger_bore_and_lower_differential"
+type = "reference"
+status = "active"
+source = "Derived from the equation above at a 100 mm bore with 10 kPa across it, water at 1000 kg/m**3 and Cd = 0.61.\n  A = pi * 0.100**2 / 4 = 0.007853981633974483 m**2\n  sqrt(2 * 10000 / 1000) = sqrt(20) = 4.47213595499958\n  q = 0.61 * 0.007853981633974483 * 4.47213595499958\n    = 0.021425684929674216 m**3/s"
+tolerance = 1e-12
+[tests.inputs]
+d = 100.0
+dP = 10000.0
+rho = 1000.0
+Cd = 0.61
+[tests.expected]
+q = 0.021425684929674216
+[[tests]]
+id = "an_ideal_orifice_passes_the_ideal_flow"
+type = "reference"
+status = "active"
+source = "Derived from the equation above at Cd = 1, the lossless limit.\n  q = 1 * 0.001963495408493621 * 7.07814950398772 = 0.013897914051711287 m**3/s"
+tolerance = 1e-12
+[tests.inputs]
+d = 50.0
+dP = 25000.0
+rho = 998.0
+Cd = 1.0
+[tests.expected]
+q = 0.013897914051711287
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
+[[tests]]
+id = "monotonic"
+type = "property"
+property = "monotonic"
+status = "active"

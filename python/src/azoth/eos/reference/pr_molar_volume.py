@@ -4,7 +4,7 @@
 v = z*R*T/P
 ```
 
-Spec: ``specs/calcs/eos/pr_molar_volume.yaml``, which carries why this is the one
+Spec: ``specs/calcs/eos/pr_molar_volume.toml``, which carries why this is the one
 dimensional calc in the namespace, why the gas constant is computed from its two
 defining constants, and why the evaluation order matters.
 """

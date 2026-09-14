@@ -5,7 +5,7 @@
 //!       + kappa1*(1 + Tr**0.5)*(0.7 - Tr)
 //! ```
 //!
-//! Spec: `specs/calcs/eos/prsv_kappa.yaml`, which carries the provenance, the
+//! Spec: `specs/calcs/eos/prsv_kappa.toml`, which carries the provenance, the
 //! parameter `kappa1` this library does not ship, and why no bound asserts the fitted
 //! range.
 //!

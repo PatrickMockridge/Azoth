@@ -2,7 +2,7 @@
 
 The library used to carry a ``verification.status`` — ``verified``, ``unverified`` or
 ``source_needed`` — and a rule coupling it to whether a calc's worked example could run.
-The status is gone: provenance is the engineer's business, not a YAML linter's, and a
+The status is gone: provenance is the engineer's business, not a linter's, and a
 field nobody can enforce honestly trains people to fill it in rather than to know the
 answer.
 
@@ -24,15 +24,16 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tomllib
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import yaml
+from _toml_fixture import dump
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SPEC_LINT = REPO_ROOT / "tools" / "spec_lint.py"
-SOURCE_SPEC = REPO_ROOT / "specs" / "calcs" / "hydraulics" / "reynolds_number.yaml"
+SOURCE_SPEC = REPO_ROOT / "specs" / "calcs" / "hydraulics" / "reynolds_number.toml"
 
 Mutator = Callable[[dict[str, Any]], None]
 
@@ -53,14 +54,12 @@ def spec_tree(tmp_path: Path, mutate: Mutator | None = None) -> Path:
     The filename has to match the id's final segment or `check_identity` objects,
     so the copy keeps the original name under its own namespace directory.
     """
-    spec: dict[str, Any] = yaml.safe_load(SOURCE_SPEC.read_text(encoding="utf-8"))
+    spec: dict[str, Any] = tomllib.loads(SOURCE_SPEC.read_text(encoding="utf-8"))
     if mutate is not None:
         mutate(spec)
     directory = tmp_path / "hydraulics"
     directory.mkdir(parents=True, exist_ok=True)
-    (directory / SOURCE_SPEC.name).write_text(
-        yaml.safe_dump(spec, sort_keys=False), encoding="utf-8"
-    )
+    (directory / SOURCE_SPEC.name).write_text(dump(spec), encoding="utf-8")
     return tmp_path
 
 
@@ -115,6 +114,47 @@ def test_skipping_the_example_without_a_reason_fails(tmp_path: Path) -> None:
     result = lint(spec_tree(tmp_path, as_skipped_without_a_reason))
     assert result.returncode != 0, (
         f"a skipped worked example with no skip_reason must fail:\n{result.stdout}{result.stderr}"
+    )
+
+
+def as_having_a_rationale_that_is_a_paragraph(spec: dict[str, Any]) -> None:
+    spec["valid_range"][0]["rationale"] = "An argument. " * 40
+
+
+def test_a_prose_field_longer_than_a_sentence_fails(tmp_path: Path) -> None:
+    """A spec declares; it does not explain. The rule is measured, not asked for.
+
+    `docs/src/architecture/spec-files.md` has stated this since the format was
+    written, and the tree broke it anyway - a rationale of 1,469 characters, an
+    assumption that recounted how a constant was chosen. A standard nothing measures
+    is a standard that drifts, so this is the check, and this case is the proof that
+    it bites.
+    """
+    result = lint(spec_tree(tmp_path, as_having_a_rationale_that_is_a_paragraph))
+
+    assert result.returncode != 0, (
+        f"a rationale of 520 characters must fail:\n{result.stdout}{result.stderr}"
+    )
+    assert "characters" in result.stdout + result.stderr, (
+        "the failure must say how long the value is, not just that it is wrong"
+    )
+
+
+def as_having_a_substitution_that_is_a_document(spec: dict[str, Any]) -> None:
+    spec["worked_example"]["derivation"] = "And then. " * 300
+
+
+def test_a_substitution_is_allowed_to_be_long_but_not_a_document(tmp_path: Path) -> None:
+    """The one long string the format keeps has a limit of its own.
+
+    A worked substitution is arithmetic a reader retraces, so its limit is set by the
+    arithmetic rather than by the reading - and it is still a limit, which is what
+    this pins: the field cannot become a page.
+    """
+    result = lint(spec_tree(tmp_path, as_having_a_substitution_that_is_a_document))
+
+    assert result.returncode != 0, (
+        f"a derivation of 3,000 characters must fail:\n{result.stdout}{result.stderr}"
     )
 
 

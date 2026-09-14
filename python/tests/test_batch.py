@@ -21,7 +21,7 @@ Properties 1 and 2 run on whichever backend is selected, so under CI's
 ``AZOTH_REQUIRE_RUST=1`` they run on Rust; the cross-language test runs both in one
 process, which is where `use_backend` earns its keep.
 
-The cases come from the specs, not from a list here, so a test added to a spec YAML is
+The cases come from the specs, not from a list here, so a test added to a spec file is
 covered in batch as well as in scalar with no new code.
 """
 

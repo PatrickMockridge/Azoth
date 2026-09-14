@@ -4,7 +4,7 @@
 beta = -(z1*(K1 - 1) + z2*(K2 - 1)) / ((K1 - 1)*(K2 - 1))     z2 = 1 - z1
 ```
 
-Spec: ``specs/calcs/eos/rachford_rice_binary.yaml``, which carries the provenance, the
+Spec: ``specs/calcs/eos/rachford_rice_binary.toml``, which carries the provenance, the
 derivation of the closed form, and why a ``beta`` outside ``[0, 1]`` is a warning
 rather than an error.
 """

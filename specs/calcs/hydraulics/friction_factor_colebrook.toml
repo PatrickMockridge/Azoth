@@ -1,0 +1,105 @@
+id = "hydraulics.friction_factor_colebrook"
+name = "Colebrook-White friction factor (implicit)"
+equation = "1 / f**0.5 = -2 * log10(relative_roughness / 3.7 + 2.51 / (Re * f**0.5))"
+latex = """\
+    \\frac{1}{\\sqrt{f}} = -2\\,\\log_{10}\\!\\left(\\frac{\\varepsilon/D}{3.7} + \
+    \\frac{2.51}{Re\\,\\sqrt{f}}\\right)"""
+assumptions = ["fully turbulent flow, Re > 4000", "circular pipe running full", "steady, fully developed, single-phase, incompressible flow", "uniform sand-grain roughness of height epsilon", "Newtonian fluid"]
+references = ["Colebrook, C. F. (1939). \"Turbulent flow in pipes, with particular reference to the transition region between the smooth and rough pipe laws.\" J. Inst. Civ. Eng., 11(4), 133-156. DOI 10.1680/ijoti.1939.13150", "Moody, L. F. (1944). \"Friction factors for pipe flow.\" Transactions of the ASME, 66, 671-684."]
+[source]
+standard = "Colebrook, C. F. (1939)"
+edition = "Journal of the Institution of Civil Engineers, 11(4), 133-156"
+equation = "the Colebrook-White transition equation"
+doi = "10.1680/ijoti.1939.13150"
+[inputs]
+[inputs.re]
+unit = "dimensionless"
+description = "Reynolds number"
+[inputs.relative_roughness]
+unit = "dimensionless"
+description = "absolute roughness divided by internal diameter (epsilon / D)"
+[outputs]
+[outputs.f]
+unit = "dimensionless"
+description = "Darcy-Weisbach friction factor"
+[outputs.iterations]
+unit = "dimensionless"
+description = "solver iterations performed"
+[outputs.converged]
+type = "boolean"
+description = "whether the iteration met the tolerance the solver block declares"
+[outputs.residual]
+unit = "dimensionless"
+description = "the residual at the final iterate"
+[solver]
+kind = "fixed_point"
+tolerance = 1e-12
+max_iterations = 100
+initial_guess = 0.02
+convergence = "relative"
+[[valid_range]]
+quantity = "re"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the 2.51/(Re*sqrt(f)) term is singular at Re = 0"
+[[valid_range]]
+quantity = "relative_roughness"
+min = 0
+severity = "error"
+rationale = "negative roughness is unphysical"
+[[valid_range]]
+quantity = "re"
+min = 4000
+min_inclusive = false
+severity = "warning"
+rationale = "Below Re ~ 4000 the Colebrook equation is outside the range it was fitted to, which is turbulent flow."
+[[valid_range]]
+quantity = "relative_roughness"
+max = 0.05
+max_inclusive = true
+severity = "warning"
+rationale = "Above epsilon/D ~ 0.05 the Moody/Colebrook framework is no longer meaningful."
+[worked_example]
+source = "derived by the fixed-point solver named in `solver` above"
+derivation = "The equation is implicit, so the example is not obtained by direct substitution: with x = 1/sqrt(f) the equation becomes a fixed point, iterated from x0 = 1/sqrt(0.02) until |x_{k+1} - x_k| <= 1e-12 * |x_{k+1}|, then f = 1/x**2.\n  x = -2 * log10(relative_roughness/3.7 + 2.51*x/Re)\n  Re = 1.0e5, relative_roughness = 4.6e-4 (commercial steel, epsilon = 0.046 mm in a 100 mm pipe)\n  converges in 10 iterations to x = 7.04259719938201, giving f = 0.02016203204441411"
+tolerance = 1e-06
+[worked_example.inputs]
+re = 100000.0
+relative_roughness = 0.00046
+[worked_example.expected]
+f = 0.020162032
+[implementations]
+python = "azoth.hydraulics.friction_factor_colebrook"
+rust = "azoth_hydraulics::friction_factor_colebrook"
+[[tests]]
+id = "commercial_steel_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "smooth_pipe_agrees_with_textbook"
+type = "reference"
+status = "active"
+source = "Smooth-pipe limit: at relative_roughness = 0 the accepted value at Re = 1e5 is f ~ 0.0180."
+tolerance = 0.001
+[tests.inputs]
+re = 100000.0
+relative_roughness = 0.0
+[tests.expected]
+f = 0.0179898
+[[tests]]
+id = "fully_rough_limit"
+type = "reference"
+status = "active"
+source = "Fully-rough (von Karman) limit: as Re -> infinity the Colebrook equation tends to an explicit asymptote.\n  1/sqrt(f) = -2*log10(relative_roughness/3.7)\n  at relative_roughness = 0.01: 1/sqrt(f) = 5.13640344813399, so f = 0.03790371 at Re = 1e12"
+tolerance = 1e-06
+[tests.inputs]
+re = 1000000000000.0
+relative_roughness = 0.01
+[tests.expected]
+f = 0.03790371
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

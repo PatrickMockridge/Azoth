@@ -1,24 +1,15 @@
 """The user data generator: does what it writes match what the loaders read.
 
-``tools/gen_user_data.py`` compiles a checked ``keycard.toml`` into the CSVs
-under ``data/``. The dangerous property of a generator like that is not that it
-crashes - it is that it writes something *nearly* right: a column renamed, a value
-reformatted, a header line missing. Every one of those produces a file that looks
-like data, loads without complaint in one language, and silently disagrees with
-the other.
+``tools/gen_user_data.py`` compiles a checked ``keycard.toml`` into the CSVs under
+``data/``. The dangerous property of a generator like that is not that it crashes - it
+is that it writes something *nearly* right: a column renamed, a value reformatted, a
+header line missing. Each produces a file that looks like data, loads without complaint
+in one language, and silently disagrees with the other.
 
-So these tests check three things, and none of them is "the tool runs":
-
-* **The format is the committed format.** The shipped fittings registry is
-  regenerated row for row from its own parsed contents and must come back
-  byte-identical, so the generator reproduces the file the loaders already read
-  rather than a new dialect of it.
-* **The columns are the loaders' contract.** The generator's column tuples are
-  compared against the header rows of the committed files, which are what both
-  implementations key off.
-* **Numbers are rendered from their values.** ``0.0000200`` reaches the file as
-  ``2e-05``: the same float and not the same statement about precision. That is a
-  loss, so the file says so in its banner and a test asserts it does.
+So these check that the shipped registry regenerates byte-identical, that the
+generator's column tuples are the headers the loaders key off, and that a number
+reaches the file as its value - ``0.0000200`` becomes ``2e-05``, which is a loss the
+file's banner records.
 """
 
 from __future__ import annotations

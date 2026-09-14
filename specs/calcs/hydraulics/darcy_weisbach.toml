@@ -1,0 +1,146 @@
+id = "hydraulics.darcy_weisbach"
+name = "Darcy-Weisbach pressure drop"
+equation = "dP = f * (L / D) * (rho * v**2 / 2)"
+latex = '''\Delta P = f\,\frac{L}{D}\,\frac{\rho v^{2}}{2}'''
+assumptions = ["constant density along the pipe", "fully developed flow", "negligible elevation change and no shaft work between the two points", "steady, single-phase, incompressible flow", "Mach number below about 0.3; above that the incompressible form is not valid.", "The friction factor f corresponds to the actual flow regime.", "The pipe is straight; fittings' resistance must be added separately."]
+references = ["Darcy, H. (1857). \"Recherches expérimentales relatives au mouvement de l'eau dans les tuyaux.\" Mallet-Bachelier, Paris.", "Weisbach, J. (1845). \"Lehrbuch der Ingenieur- und Maschinen-Mechanik.\" Vieweg, Braunschweig.", "Crane Technical Paper No. 410, \"Flow of Fluids Through Valves, Fittings and Pipe\" (2013)."]
+[source]
+standard = "Crane TP-410"
+edition = "2013"
+[inputs]
+[inputs.f]
+unit = "dimensionless"
+description = "Darcy friction factor."
+[inputs.L]
+unit = "m"
+description = "pipe length"
+[inputs.D]
+unit = "m"
+description = "internal pipe diameter"
+[inputs.rho]
+unit = "kg/m**3"
+description = "fluid density"
+[inputs.v]
+unit = "m/s"
+description = "bulk mean velocity"
+[inputs.mu]
+unit = "Pa*s"
+optional = true
+description = "Dynamic viscosity."
+[outputs]
+[outputs.dp]
+unit = "Pa"
+description = "pressure drop over the pipe length"
+[outputs.re]
+unit = "dimensionless"
+optional = true
+description = "Reynolds number, returned only when mu is supplied"
+[outputs.f]
+unit = "dimensionless"
+description = "the Darcy friction factor the drop was computed with"
+[outputs.regime]
+type = "enum"
+values = ["laminar", "transitional", "turbulent"]
+optional = true
+description = "flow regime under the Crane/Moody boundaries; present only when mu is supplied"
+[[valid_range]]
+quantity = "f"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a non-positive friction factor is unphysical and would give a negative or zero loss"
+[[valid_range]]
+quantity = "L"
+min = 0
+severity = "error"
+rationale = "negative length is unphysical; zero length correctly gives zero drop"
+[[valid_range]]
+quantity = "D"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "L/D is singular at D = 0"
+[[valid_range]]
+quantity = "rho"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "pressure drop scales with density, which must be positive"
+[[valid_range]]
+quantity = "v"
+min = 0
+severity = "error"
+rationale = "speed is non-negative; the sign of the drop is not modelled"
+[[valid_range]]
+quantity = "re"
+computed_from = ["rho", "v", "D", "mu"]
+min = 2000
+max = 4000
+when = "inside"
+severity = "warning"
+code = "TRANSITIONAL_FLOW"
+rationale = "The friction factor, and therefore the pressure drop, is genuinely indeterminate in this band."
+[worked_example]
+source = "derived from the equation above"
+derivation = "Evaluating the equation at f = 0.02, L = 100 m, D = 0.1 m, rho = 998 kg/m**3 and v = 1.5 m/s:\n  L/D         = 100 / 0.1          = 1000\n  rho*v**2/2  = 998 * 1.5**2 / 2   = 1122.75\n  dP          = 0.02 * 1000 * 1122.75 = 22455.0 Pa"
+tolerance = 1e-09
+[worked_example.inputs]
+f = 0.02
+L = 100.0
+D = 0.1
+rho = 998.0
+v = 1.5
+[worked_example.expected]
+dp = 22455.0
+[implementations]
+python = "azoth.hydraulics.darcy_weisbach"
+rust = "azoth_hydraulics::darcy_weisbach"
+[[tests]]
+id = "derived_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "crane_3_5"
+type = "reference"
+status = "skipped"
+skip_reason = "source_needed: attributed to Crane TP-410 Example 3-5, but the example could not be located or verified and its expected value disagreed with the stated equation by a factor of 10."
+[[tests]]
+id = "perry_6_42"
+type = "reference"
+status = "skipped"
+skip_reason = "source_needed: \"Perry's 8th ed. Eq. 6-42\" could not be verified."
+[[tests]]
+id = "reynolds_reported_when_mu_supplied"
+type = "reference"
+status = "active"
+source = "derived from Re = rho*v*D/mu on the worked example's inputs"
+tolerance = 1e-12
+[tests.inputs]
+f = 0.02
+L = 100.0
+D = 0.1
+rho = 998.0
+v = 1.5
+mu = 0.001002
+[tests.expected]
+dp = 22455.0
+re = 149401.19760479042
+[[tests]]
+id = "public_water_steel_example"
+type = "reference"
+status = "active"
+source = "Independent public worked example: water at 20 C in 100 m of 100 mm commercial steel pipe at 50 m3/h, with rho = 998 kg/m**3, mu = 0.001 Pa*s and epsilon = 0.046 mm.\n  Recomputing with the Colebrook friction factor: V = 1.768388 m/s, Re = 176485.1, f = 0.01884561, dP = 29408.04 Pa = 29.41 kPa against a published 29.6 kPa."
+tolerance = 0.02
+[tests.inputs]
+f = 0.01884561
+L = 100.0
+D = 0.1
+rho = 998.0
+v = 1.768388
+[tests.expected]
+dp = 29600.0
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

@@ -5,7 +5,7 @@
 //! b_mix = z1*b1 + z2*b2
 //! ```
 //!
-//! Spec: `specs/calcs/eos/vdw1f_mix_binary.yaml`, which carries the provenance and why
+//! Spec: `specs/calcs/eos/vdw1f_mix_binary.toml`, which carries the provenance and why
 //! the registry's scalar inputs stop at two components.
 
 use azoth_core::{Result, apply_checks};

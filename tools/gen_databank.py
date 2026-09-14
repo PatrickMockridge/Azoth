@@ -5,56 +5,35 @@
     python tools/gen_databank.py /tmp/neqsim-check/neqsim    # against a fresh checkout
 
 The default argument is `databank/sources/neqsim/`, which holds NeqSim's `COMP.csv`
-and `INTER.csv` verbatim. That is what a checkout is for: refreshing those two files
-when NeqSim is bumped. Every other run reads what is committed, so this tool has no
-dependency CI cannot satisfy, and `--check` reproduces the shipped files from the
-vendored sources on every build.
+and `INTER.csv` verbatim; a checkout refreshes those two when NeqSim is bumped, and
+every other run reads what is committed. `NOTICE` carries the attribution, and each
+row's `citation` names the source once because that is the column the loader reads.
 
-# What this is
+# The units
 
-azoth ships no component data of its own, and every calculation in the `eos`
-namespace takes `Tc`, `Pc` and `omega` as caller arguments because of it. NeqSim is
-Apache-2.0 and has the databank; this compiles a slice of it into the canonical CSVs
-both implementations read, exactly as `gen_registry.py` compiles specs and
-`gen_user_data.py` compiles a user's file.
-
-`NOTICE` at the repository root carries the attribution. It is not repeated in the
-generated file's rows beyond the `citation` column, which names the source once per
-row because that is the column the loader reads.
-
-# The units, which are the whole risk
-
-Read out of NeqSim's own loader - `thermo/component/Component.java` around line 305
-- rather than guessed from the column names:
+Read out of NeqSim's own loader, `thermo/component/Component.java` around line 305,
+rather than guessed from the column names:
 
     molarmass  divided by 1000        -> kg/mol      (the file is g/mol)
     TC         plus 273.15            -> K           (the file is degrees Celsius)
-    PC         unchanged              -> bar         (see the check below)
+    PC         unchanged              -> bar         (see below)
     critvol    unchanged              -> cm**3/mol
     liqdens    unchanged              -> g/cm**3
 
-Every one of those is applied once, here, and the result is asserted against values
-known independently of NeqSim. Guessing any of them would be the `mm` bug again: a
-factor that is silently wrong and looks entirely reasonable.
+Each is applied once, here, and the result is asserted against values known
+independently of NeqSim.
 
-`PC` is the one read out rather than copied from a comment. NeqSim's
+`PC` is read out rather than copied from a comment. NeqSim's
 `criticalCompressibilityFactor` is `Pc * Vc / R / Tc / 10`, and methane's
 `Z_c = 0.2874` falls out of that arithmetic with `Pc` in bar and `Vc` in cm**3/mol -
-which is what fixes those two and rules out Pa, kPa and m**3/mol.
+which fixes those two and rules out Pa, kPa and m**3/mol.
 
-# What is kept, and what is not
+# What is carried across
 
-# Which columns are carried across, and why the rest are not
-
-`COMPONENT_COLUMNS` below is the list. The *reasons* are not here: every one of
+`COMPONENT_COLUMNS` below is the list. The reasons are not here: every one of
 `COMP.csv`'s 170 columns and `INTER.csv`'s 39 is dispositioned in
-`databank/manifest.yaml`, with a reason from a closed vocabulary, and this tool
-asserts at startup that the two agree. So the answer to "why is this column absent"
-has one home rather than two, and adding a column here without recording it there is
-a failure rather than an oversight.
-
-`COMP_EXT.csv` (86 MB, 76,705 rows) is not vendored at all; the manifest carries that
-reason too.
+`databank/manifest.toml`, and this tool asserts at startup that the two agree.
+`COMP_EXT.csv` (86 MB, 76,705 rows) is not vendored at all, and the manifest says why.
 """
 
 from __future__ import annotations

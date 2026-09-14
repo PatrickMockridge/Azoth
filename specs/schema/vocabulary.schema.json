@@ -61,7 +61,7 @@
     "unit": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "dimension", "pint", "uom"],
+      "required": ["id", "dimension", "pint"],
       "properties": {
         "id": {
           "type": "string",
@@ -75,8 +75,8 @@
           "description": "The unit's name in pint's registry. pint supplies the conversion factor, which is why none is written down."
         },
         "uom": {
-          "oneOf": [{ "$ref": "#/$defs/uom_path" }, { "type": "null" }],
-          "description": "Null where uom has no such quantity. That is a structural fact rather than an oversight: uom's `quantity!` macro must run inside `uom::si`, and the `Units` trait that makes `.new::<u>()` compile is assembled by `system!` from a closed list, so no crate outside uom can add a quantity to `uom::si`. A null here is the list of dimensions azoth names itself, stated rather than implied, and the generated conversion for one is the identity because mol/s and J/(mol*K**n) are already their own SI base unit."
+          "$ref": "#/$defs/uom_path",
+          "description": "Where uom carries this dimension. Absent where uom has no such quantity: uom's `quantity!` macro must run inside `uom::si`, and the `Units` trait that makes `.new::<u>()` compile is assembled by `system!` from a closed list, so no crate outside uom can add a quantity to it. A unit with no `uom` converts by the identity, because it is already its own SI base unit."
         },
         "rust_ctor": {
           "type": "string",

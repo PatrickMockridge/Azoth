@@ -1,6 +1,6 @@
 """``eos.pt_flash`` - the isothermal two-phase flash.
 
-Spec: ``specs/models/eos/pt_flash.yaml``
+Spec: ``specs/models/eos/pt_flash.toml``
 
 The two-phase split of a mixture at a fixed temperature and pressure: Wilson
 K-value estimates, then successive substitution, with Rachford-Rice bisected each

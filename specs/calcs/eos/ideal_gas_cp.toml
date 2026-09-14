@@ -1,0 +1,117 @@
+id = "eos.ideal_gas_cp"
+name = "Ideal-gas heat capacity from a polynomial"
+equation = "cp = cp_a + cp_b*T + cp_c*T**2 + cp_d*T**3 + cp_e*T**4"
+latex = '''C_{p}^{\mathrm{ig}} = c_{0} + c_{1}T + c_{2}T^{2} + c_{3}T^{3} + c_{4}T^{4}'''
+assumptions = ["**the coefficients are the caller's, and their range is not checked.**\n", """\
+    **the polynomial is ideal-gas `Cp`, not the real fluid's.** The departure is a separate \
+    model - `eos.pr_departure` - and a caller wanting the real heat capacity adds the two.""", "**the coefficients are per component.** Evaluating a mixture's ideal-gas heat capacity means evaluating this once per component and taking the mole-fraction weighted sum.\n"]
+references = ["NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `Component.java` line 1547."]
+[source]
+standard = "NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0"
+edition = "`thermo/component/Component.java`, `getCp0(double)` at line 1547. The five coefficients are the `CPA`-`CPE` columns of NeqSim's `COMP.csv`.\n"
+[inputs]
+[inputs.cp_a]
+unit = "J/(mol*K)"
+description = "the constant term"
+[inputs.cp_b]
+unit = "J/(mol*K**2)"
+description = "the coefficient of `T`"
+[inputs.cp_c]
+unit = "J/(mol*K**3)"
+description = "the coefficient of `T**2`"
+[inputs.cp_d]
+unit = "J/(mol*K**4)"
+description = "the coefficient of `T**3`"
+[inputs.cp_e]
+unit = "J/(mol*K**5)"
+description = "the coefficient of `T**4`. Zero for a component whose heat capacity"
+[inputs.T]
+unit = "K"
+description = """\
+    absolute temperature. Must be in the range the coefficients were fitted over, which is \
+    **not checked** - see `assumptions`.\n\
+    """
+[outputs]
+[outputs.cp]
+unit = "J/(mol*K)"
+description = """\
+    the ideal-gas heat capacity. Carries a warning when it comes out non-positive, which \
+    means the polynomial has been evaluated outside the range it was fitted over.\n\
+    """
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    an absolute temperature; zero and below are not states, and every term but the first \
+    scales with it.\n\
+    """
+[[valid_range]]
+quantity = "cp"
+min = 0.0
+min_inclusive = false
+severity = "warning"
+code = "OUT_OF_VALID_RANGE"
+rationale = "a heat capacity of zero or below, which is how a fitted polynomial evaluated beyond its range presents.\n"
+[implementations]
+python = "azoth.eos.ideal_gas_cp"
+rust = "azoth_eos::ideal_gas_cp"
+[worked_example]
+source = "NeqSim's own coefficients for methane, from the `CPA`-`CPE` columns of `COMP.csv`"
+derivation = "Methane at 300 K, with the five coefficients exactly as NeqSim ships them:\n\n  cp_a = 37.978352        cp_b = -0.07461815      cp_c = 0.000301881\n  cp_d = -2.83e-07        cp_e = 9.070574e-11\n\nThe five terms, in order:\n\n  37.978352\n  -0.07461815 * 300              = -22.385445\n  0.000301881 * 300**2           = +27.16929\n  -2.83e-07 * 300**3             = -7.641\n  9.070574e-11 * 300**4          = +0.73469041...\n\nwhose sum is 35.855913494 J/(mol*K).\n"
+tolerance = 1e-12
+[worked_example.inputs]
+cp_a = 37.978352
+cp_b = -0.07461815
+cp_c = 0.000301881
+cp_d = -2.83e-07
+cp_e = 9.070574e-11
+T = 300.0
+[worked_example.expected]
+cp = 35.855913494
+[[tests]]
+id = "methane_at_300_k"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "propane_at_400_k"
+type = "reference"
+status = "active"
+source = "The same polynomial evaluated for propane at 400 K, from `COMP.csv`: cp_a = 31.983958, cp_b = 0.042659134, cp_c = 0.000499754, cp_d = -6.56e-07, cp_e = 2.5598806e-10.\n\n  cp = 93.577545936 J/(mol*K)\n"
+tolerance = 1e-12
+[tests.inputs]
+cp_a = 31.983958
+cp_b = 0.042659134
+cp_c = 0.000499754
+cp_d = -6.56e-07
+cp_e = 2.5598806e-10
+T = 400.0
+[tests.expected]
+cp = 93.577545936
+[[tests]]
+id = "co2_at_300_k"
+type = "reference"
+status = "active"
+source = "Carbon dioxide at 300 K, the one component in the file whose coefficients are given to full precision rather than to six figures:\n\n  cp_a = 18.58302105174049, cp_b = 0.0823796345114741,\n  cp_c = -7.930390038368174e-05, cp_d = 4.222181385638e-08,\n  cp_e = -9.577100164048893e-12\n\n  cp = 37.22197483344483 J/(mol*K)\n"
+tolerance = 1e-12
+[tests.inputs]
+cp_a = 18.58302105174049
+cp_b = 0.0823796345114741
+cp_c = -7.930390038368174e-05
+cp_d = 4.222181385638e-08
+cp_e = -9.577100164048893e-12
+T = 300.0
+[tests.expected]
+cp = 37.22197483344483
+[[tests]]
+id = "the_polynomial_turns_over"
+type = "property"
+property = "monotonic"
+status = "skipped"
+skip_reason = "A quartic is not monotonic in general, and the property that matters is monotonicity *over the fitted range*, which is not recorded in the file.\n"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

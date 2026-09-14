@@ -19,12 +19,10 @@ Both outputs are committed and drift-checked in CI, so the specs are genuinely
 the single source of truth rather than a document that is supposed to match the
 code.
 
-Why generate Rust rather than have Rust parse the YAML: parsing would mean
-depending on a YAML crate (serde_yaml is deprecated, and serde_yml is an
-unrelated low-trust fork), and it would make the spec's contents available only
-at runtime, so a malformed bound would be a runtime error instead of a build
-failure. Generating a `&'static` table moves that to compile time and keeps the
-dependency tree free of a parser that exists for one purpose.
+Why generate Rust rather than have Rust read the TOML at run time: the spec's
+contents would be available only at run time, so a malformed bound would be a
+runtime error instead of a build failure. Generating a `&'static` table moves
+that to compile time.
 
 Design note on the generated range checks: they are emitted as full struct
 literals rather than through the convenience constructors in azoth-core. The
@@ -44,13 +42,9 @@ import argparse
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    sys.exit("gen_registry requires PyYAML: pip install pyyaml")
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
@@ -129,10 +123,8 @@ def rustfmt(source: str) -> str:
 def rust_str(value: str) -> str:
     """A Rust string literal for a bounded piece of prose.
 
-    Whitespace runs are collapsed to single spaces. Spec rationales are YAML
-    folded scalars, so they arrive with embedded newlines; those are a YAML
-    formatting artefact, not meaning, and collapsing them keeps the generated
-    file readable and the message rendering identical on both sides.
+    Whitespace runs are collapsed to single spaces, so the message renders
+    identically on both sides and the generated file stays readable.
     """
     flat = " ".join(value.split())
     escaped = flat.replace("\\", "\\\\").replace('"', '\\"')
@@ -142,12 +134,9 @@ def rust_str(value: str) -> str:
 def rust_f64(value: float) -> str:
     """A Rust `f64` literal.
 
-    The `float()` coercion is load-bearing, not defensive. YAML parses a bare
-    `0` as an integer, and Python's repr then produces `0`, which is an integer
-    literal in Rust and will not compile where an `f64` is expected. Forcing the
-    type first means every emitted literal carries a '.' or an 'e'.
-
-    repr() round-trips exactly, so no precision is lost in translation.
+    A spec may write a whole number (`0`), whose Python repr produces an integer
+    literal in Rust that will not compile where an `f64` is expected, so the type
+    is forced first. `repr` round-trips exactly, so no precision is lost.
     """
     return repr(float(value))
 
@@ -535,7 +524,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    paths = sorted(SPEC_DIR.rglob("*.yaml"))
+    paths = sorted(SPEC_DIR.rglob("*.toml"))
     if not paths:
         sys.exit(f"gen_registry: no specs found under {SPEC_DIR}")
 
@@ -546,7 +535,7 @@ def main() -> int:
     # so an accidental disagreement would attribute one namespace's spec files to
     # another's tables and be very hard to see.
     loaded: list[tuple[str, dict[str, Any]]] = [
-        (str(p.relative_to(ROOT)), yaml.safe_load(p.read_text(encoding="utf-8"))) for p in paths
+        (str(p.relative_to(ROOT)), tomllib.loads(p.read_text(encoding="utf-8"))) for p in paths
     ]
     loaded.sort(key=lambda pair: pair[1]["id"])
 
