@@ -48,7 +48,15 @@ pub fn overlay(
 ) -> PyResult<PyOverlay> {
     let mut inner = Overlay::new();
     for (name, tc, pc, omega) in components {
-        inner.set_component(&name, ComponentOverride { tc, pc, omega, ..Default::default() });
+        inner.set_component(
+            &name,
+            ComponentOverride {
+                tc,
+                pc,
+                omega,
+                ..Default::default()
+            },
+        );
     }
     for (first, second, value) in kij {
         inner
