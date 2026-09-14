@@ -5,10 +5,8 @@
 //! f = 0.25 / (log10(relative_roughness / 3.7 + 5.74 / Re**0.9))**2
 //! ```
 //!
-//! Swamee, P. K.; Jain, A. K. (1976). "Explicit equations for pipe-flow
-//! problems." Journal of the Hydraulics Division, ASCE, 102(5), 657-664.
-//!
-//! Spec: `specs/calcs/hydraulics/friction_factor_swamee_jain.yaml`
+//! Spec: `specs/calcs/hydraulics/friction_factor_swamee_jain.yaml`, which carries the
+//! citation.
 //!
 //! This is an *approximation to* Colebrook, not a more correct alternative to
 //! it. It is offered so a caller can trade about 1% accuracy for the absence of

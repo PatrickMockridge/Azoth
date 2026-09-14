@@ -5,11 +5,8 @@
 //! 1 / sqrt(f) = -2 * log10(relative_roughness / 3.7 + 2.51 / (Re * sqrt(f)))
 //! ```
 //!
-//! Colebrook, C. F. (1939). "Turbulent flow in pipes, with particular reference
-//! to the transition region between the smooth and rough pipe laws." J. Inst.
-//! Civil Engineers 11(4), 133-156. DOI 10.1680/ijoti.1939.13150
-//!
-//! Spec: `specs/calcs/hydraulics/friction_factor_colebrook.yaml`
+//! Spec: `specs/calcs/hydraulics/friction_factor_colebrook.yaml`, which carries the
+//! citation.
 //!
 //! The equation is implicit in `f`, so it is solved rather than evaluated.
 //! Substituting `x = 1/sqrt(f)` makes it a fixed point in `x`, which converges

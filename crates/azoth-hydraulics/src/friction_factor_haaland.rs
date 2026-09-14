@@ -4,10 +4,8 @@
 //! f = (1.0 / (-1.8 * log10((relative_roughness / 3.7)**1.11 + 6.9 / Re)))**2
 //! ```
 //!
-//! Haaland, S. E. (1983). "Simple and explicit formulas for the friction factor
-//! in turbulent pipe flow." Journal of Fluids Engineering, 105(1), 89-90.
-//!
-//! Spec: `specs/calcs/hydraulics/friction_factor_haaland.yaml`
+//! Spec: `specs/calcs/hydraulics/friction_factor_haaland.yaml`, which carries the
+//! citation.
 //!
 //! This is an *approximation to* Colebrook, not a more correct alternative to it,
 //! and it is the second such approximation here alongside Swamee-Jain. They were

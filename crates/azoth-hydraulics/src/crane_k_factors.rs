@@ -1,27 +1,15 @@
-//! `hydraulics.crane_k_factors` - fitting losses by the equivalent-length
-//! method.
+//! `hydraulics.crane_k_factors` - fitting losses by the equivalent-length method.
 //!
 //! ```text
 //! K = f_t * sum(n_ld for each fitting)
 //! ```
 //!
-//! Spec: `specs/calcs/hydraulics/crane_k_factors.yaml`
+//! Spec: `specs/calcs/hydraulics/crane_k_factors.yaml`, which records that the
+//! coefficients this sums are placeholders and what that means for testing.
 //!
-//! # This calc cannot validate its own inputs
-//!
-//! The *method* is standard: a fitting's resistance coefficient is its
-//! equivalent length ratio times the friction factor. The **coefficients** come
-//! from `data/fittings/crane_k_factors.csv`, where every row is currently an
-//! estimated dummy value - a placeholder of plausible magnitude, not from Crane
-//! TP-410 or any other standard. See that file's header.
-//!
-//! The consequence is unusual and worth stating plainly: because the
-//! coefficients are placeholders, there is no correct value for this calc to be
-//! checked against, and **no test in this repository can detect a wrong
-//! coefficient**. The tests validate the arithmetic and the registry lookup. A
-//! pressure drop computed from this data can be wrong by a factor of two and
-//! still look entirely reasonable, so the placeholder status is recorded in the
-//! data file and in this spec rather than announced by a warning.
+//! The method is standard; the coefficients come from
+//! `data/fittings/crane_k_factors.csv`, and every row there is an estimated dummy value
+//! rather than a value from Crane TP-410 or any other standard.
 
 use crate::fittings::{self, Fitting};
 use crate::results::{KComponent, KFactorsResult};
