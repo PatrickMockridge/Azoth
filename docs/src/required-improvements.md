@@ -213,6 +213,32 @@ The banner logic already handles a mixed file, and `Fitting::is_estimated()` is 
 the placeholder warning survives the merge. A test asserts that a card with one fitting
 compiles to the shipped count.
 
+### 42% of the shipped `kij` table is zeros
+
+**Severity: major. Status: open.**
+
+**Symptom.** `data/components/kij.csv` ships 516 rows and **217 of them carry exactly
+`0.0`**. A zero is the ideal-mixture default — the value the mixing rule uses when a pair
+is absent — so those rows state "no interaction parameter" in the same form as a fitted
+one. Nothing in the file distinguishes a pair someone fitted to zero from a pair nobody
+fitted at all.
+
+**Evidence.** Measured over NeqSim's `INTER.csv` restricted to the 173 vendored
+components: 516 pairs, 299 with a non-zero `KIJPR`. `tools/gen_databank.py:171-173`
+skips a row whose `KIJPR` is empty and writes one whose text is `"0"`, so all 217 come
+through. The magnitudes that are real span −0.276 to 1.0.
+
+**Root cause.** Zero is a legitimate value — `eos.components.kij_for` documents that
+overriding a fitted pair *back* to zero is a deliberate act — so the generator is right
+not to drop it. The defect is one level up: the file has no way to say whether a value
+was fitted, so it cannot distinguish the two cases it is storing identically.
+
+**Remediation.** Drop the zero rows. It is a no-op behaviourally: `kij_for` records only
+non-zero pairs, and `mixture()` already defaults an absent pair to zero, so the compiled
+answers are identical and the row count starts meaning something. A test asserting no
+shipped row is zero is what would keep it true. Changing the file is a separate change
+set from the vendoring audit, which is why this is recorded rather than fixed here.
+
 ---
 
 ## Minor
@@ -530,6 +556,47 @@ model key it does not know, and
 `test_keycard_loader.py::test_the_model_keys_are_the_schema_s_properties` binds the loader's
 accepted set to the schema's `properties` plus `required`, both directions, so the next
 field added to one and not the other fails the build.
+
+### `provenance.json` did not hash the component databank
+
+**Severity: major. Status: fixed at `9a29f54`.**
+
+**Symptom.** The release provenance record hashed the fittings table and the two fluid
+tables, and omitted `data/components/components.csv` and `data/components/kij.csv` — the
+two largest shipped data files, and the two every `eos` calculation reads. A record that
+does not cover them does not describe the release: change one critical constant and every
+answer the library gives changes, with nothing in the record to compare against.
+
+**Evidence.** `tools/provenance.py:150-154` listed three paths. `provenance.json`'s `data`
+array carried three entries where five files ship.
+
+**Root cause.** A hand-written list of files, in a project whose pages and registries exist
+precisely because hand-written lists go stale. Nothing compared the list to what is
+actually in `data/`.
+
+**Fix and its test.** The tuple is walked from the data directory, so a shipped file is
+hashed because it ships rather than because somebody remembered it. Five files where there
+were three, and `--verify` round-trips against its own record.
+
+### `gen_databank.py` decoded its input with `errors="replace"`
+
+**Severity: minor. Status: fixed at `9a29f54`.**
+
+**Symptom.** A byte in NeqSim's `COMP.csv` or `INTER.csv` that is not valid UTF-8 became
+U+FFFD, the row parsed, and the corruption shipped inside a component's name or formula.
+
+**Evidence.** `tools/gen_databank.py:137` opened with `errors="replace"`. The unit
+conversions are guarded by `ROUND_TRIP` against published methane constants; the encoding
+was guarded by nothing, so a mangled name would have been caught only if it happened to hit
+one of four checked fields.
+
+**Root cause.** `errors="replace"` is the forgiving default when a CSV is only being
+inspected. Here the rows are transcription input to a shipped artefact, where the
+forgiving behaviour is the harmful one.
+
+**Fix and its test.** The file is decoded strictly and the failure names the byte offset.
+The vendored copies under `databank/sources/neqsim/` are byte-identical to upstream, so the
+check is reproducible.
 
 ---
 
