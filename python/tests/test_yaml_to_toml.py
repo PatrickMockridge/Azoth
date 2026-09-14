@@ -237,6 +237,31 @@ def test_the_awkward_values_survive(name: str) -> None:
     assert revisit({"k": value}) == {"k": value}
 
 
+def test_a_scalar_is_spelled_the_way_a_reader_expects() -> None:
+    """A short value is an ordinary quoted string unless escaping it would be a loss.
+
+    A literal string is unusual enough that it should carry a reason, and it has one:
+    this repository's values include LaTeX and citations with quoted titles, where the
+    basic spelling doubles every backslash and escapes every quote. Everywhere else the
+    ordinary spelling is what a reader of a TOML file is looking for - and this is forty
+    files of hand-reviewed prose, not generated output.
+    """
+    module = converter()
+
+    assert module.toml_string("hydraulics.reynolds_number") == '"hydraulics.reynolds_number"'
+    assert module.toml_string("Reynolds number for pipe flow") == (
+        '"Reynolds number for pipe flow"'
+    )
+    assert module.toml_string("the value is named 'methane'") == (
+        "\"the value is named 'methane'\""
+    )
+    # The two that make the literal spelling worth having.
+    assert module.toml_string(r"Re = \frac{\rho v D}{\mu}") == (r"'''Re = \frac{\rho v D}{\mu}'''")
+    assert module.toml_string('Reynolds, O. (1883). "An experimental investigation"') == (
+        "'''Reynolds, O. (1883). \"An experimental investigation\"'''"
+    )
+
+
 def test_the_document_shapes_survive() -> None:
     """A whole table converts, including the shapes that make ordering matter.
 

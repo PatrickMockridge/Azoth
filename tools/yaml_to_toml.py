@@ -70,6 +70,10 @@ INDENT = "    "
 
 _BARE_KEY = re.compile(r"[A-Za-z0-9_-]+")
 
+#: What a basic string has to escape: a backslash, a quote, and the control
+#: characters TOML has no literal form for. A tab is the one that occurs.
+_BASIC_UNSAFE = re.compile(r'[\\"\x00-\x1f]')
+
 
 def toml_key(name: str) -> str:
     """A TOML key: bare where it can be, quoted where it cannot.
@@ -175,15 +179,23 @@ def toml_string(value: str) -> str:
       string**, wrapped at spaces with a trailing backslash. That continuation trims the
       next line's leading whitespace, so indentation that is part of the value is written
       as escapes - `_escaped_layout` - which makes this spelling exact for any value.
-    * A short single-line value is a **literal string** on one line, needing no escapes:
-      this repository's prose carries LaTeX and paths, and a literal string carries them
-      without the doubling a basic string would impose.
+    * A short single-line value is a **basic string** - the ordinary `"..."` - unless it
+      holds something a basic string would have to escape. Which it usually does not, and
+      when it does it is the one case a literal `'''` string is worth the unusual
+      spelling for: a spec's `latex` is LaTeX and its `references` are citations with
+      quoted titles, and doubling every backslash in those is how a typo gets in.
 
-    A `'''` in the value, or a value ending in a quote, falls back to the basic form,
-    because either would collide with the delimiter.
+    A `'''` in the value, or a value ending in a quote, falls back to the escaped basic
+    form, because either would collide with the literal delimiter.
     """
     if "\n" not in value:
-        if len(value) <= WIDTH and "'''" not in value:
+        literal = (
+            _BASIC_UNSAFE.search(value) is not None
+            and len(value) <= WIDTH
+            and "'''" not in value
+            and not value.endswith("'")
+        )
+        if literal:
             return f"'''{value}'''"
         return _basic_single(value)
 
