@@ -58,17 +58,27 @@ NAMESPACES = {
     "process": "Unit operations",
 }
 
-#: Pages in the book that are neither a namespace index nor generated from a spec.
-#: Hand-written, and listed here only because the summary itself is generated.
+#: Hand-written pages that come *before* the reference sections.
 #:
-#: This list is load-bearing rather than decorative: mdBook silently drops a page
-#: that is not named in SUMMARY.md, and `tools/check_links.py` fails the build for
-#: any page under docs/src that is missing from it. So a hand-written page has to
-#: be registered here or it does not appear at all - and the failure is caught
-#: rather than being a page nobody ever reads.
-STATIC_PAGES = (
+#: The specification says what azoth is and is normative; these say how it is put
+#: together and what you do with it, which is what a reader arriving at the book
+#: needs next. They used to sit after every calculation page, in the order the
+#: book happened to grow rather than the order it is read.
+FRONT_PAGES = (
+    ("How azoth is put together", "architecture.md"),
     ("The keycard", "keycard.md"),
     ("What ships", "data.md"),
+)
+
+#: Hand-written pages that come after the reference sections: consulted once a
+#: reader knows what is here.
+#:
+#: Both tuples are load-bearing rather than decorative: mdBook silently drops a
+#: page that is not named in SUMMARY.md, and `tools/check_links.py` fails the
+#: build for any page under docs/src that is missing from it. So a hand-written
+#: page has to be registered in one of them or it does not appear at all - and
+#: the failure is caught rather than being a page nobody ever reads.
+STATIC_PAGES = (
     ("Copyright and licensed data", "copyright.md"),
     ("The batch API", "batch.md"),
     ("azoth and NeqSim", "comparison/neqsim.md"),
@@ -328,6 +338,23 @@ def render_calc(spec: dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
+def table_cell(text: str) -> str:
+    """Prose reduced to one line, safe inside a markdown table cell.
+
+    A spec's `source.standard` is written to be read, and several are folded
+    scalars spanning two or three lines. Written into a cell unchanged, every
+    newline in one ends the row: the table stops being a table and the remaining
+    cells of that row become a paragraph. That is what happened to the unit
+    operations index, where every row was split in two, and it is invisible in the
+    spec - the text is correct there, and correct on the model's own page.
+
+    Escaping the pipe is not enough on its own, which is why this replaces the
+    `.replace("|", ...)` that used to guard these cells: a cell has to end where
+    the line does.
+    """
+    return " ".join(text.split()).replace("|", r"\|")
+
+
 def render_namespace_index(
     calcs: list[dict[str, Any]], namespace: str, models: list[dict[str, Any]] | None = None
 ) -> str:
@@ -351,8 +378,8 @@ def render_namespace_index(
     )
     out += "| Calculation | Equation | Source |\n|---|---|---|\n"
     for calc in calcs:
-        equation = calc["latex"].replace("|", r"\|")
-        standard = calc["source"]["standard"].replace("|", r"\|")
+        equation = table_cell(calc["latex"])
+        standard = table_cell(calc["source"]["standard"])
         out += (
             f"| [`{calc['id']}`](./{calc['id'].split('.')[-1]}.md) | ${equation}$ | {standard} |\n"
         )
@@ -372,11 +399,11 @@ def render_namespace_index(
             # column says what it is instead. Printing an empty cell would read as a
             # missing value rather than as a model that has none.
             scheme = (
-                model["algorithm"]["scheme"].replace("|", r"\|")
+                table_cell(model["algorithm"]["scheme"])
                 if "algorithm" in model
                 else "direct composition"
             )
-            standard = model["source"]["standard"].replace("|", r"\|")
+            standard = table_cell(model["source"]["standard"])
             out += (
                 f"| [`{model['id']}`](./{model['id'].split('.')[-1]}.md) "
                 f"| `{scheme}` | {standard} |\n"
@@ -485,8 +512,6 @@ def render_model(spec: dict[str, Any]) -> str:
     for reference in spec["references"]:
         parts.append(f"- {reference}\n")
 
-    if spec.get("notes"):
-        parts.append(f"\n## Notes\n\n{spec['notes'].strip()}\n")
     return "".join(parts)
 
 
@@ -496,6 +521,8 @@ def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | N
     # which would put it below twenty calculation pages. It is the page every other
     # page defers to, and one a reader arrives at last is one they do not read.
     out += "- [Specification](./spec.md)\n"
+    for title, filename in FRONT_PAGES:
+        out += f"- [{title}](./{filename})\n"
     by_namespace: dict[str, list[dict[str, Any]]] = {}
     for calc in calcs:
         by_namespace.setdefault(calc["id"].split(".")[0], []).append(calc)
@@ -665,13 +692,14 @@ def render_theory_solvers(calcs: list[dict[str, Any]]) -> str:
         "which is why the spec names one explicitly:\n\n"
         "- `relative`: `|x_(k+1) - x_k| <= tolerance * |x_(k+1)|`\n"
         "- `absolute`: `|x_(k+1) - x_k| <= tolerance`\n\n"
-        "## Why only one kind is permitted\n\n"
-        "The schema permits `fixed_point` alone, because that is the only scheme\n"
-        "implemented in both languages. A spec naming a scheme no implementation can\n"
-        "run would describe a calculation that exists only on paper, and would read\n"
-        "as validation while doing nothing. Widening the enum is a deliberate act\n"
-        "that happens alongside the implementation and its agreement test, never\n"
-        "before it.\n"
+        "## Why the list is closed\n\n"
+        "The schema admits the schemes both implementations run, and no others. A\n"
+        "spec naming a scheme no implementation can run would describe a calculation\n"
+        "that exists only on paper, and would read as validation while doing nothing.\n"
+        "Widening the enum is a deliberate act that happens alongside the\n"
+        "implementation and its agreement test, never before it - which is how\n"
+        "`cubic_roots` arrived beside `fixed_point`, and why the table above lists\n"
+        "two rows rather than one.\n"
     )
     return out
 

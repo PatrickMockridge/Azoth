@@ -2,6 +2,9 @@
 
 - [azoth](./index.md)
 - [Specification](./spec.md)
+- [How azoth is put together](./architecture.md)
+- [The keycard](./keycard.md)
+- [What ships](./data.md)
 - [Equations of state](./eos/index.md)
   - [Ideal-gas heat capacity from a polynomial](./eos/ideal_gas_cp.md)
   - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)
@@ -37,8 +40,6 @@
   - [Separator](./process/separator.md)
 - [Heat transfer](./thermal/index.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
-- [The keycard](./keycard.md)
-- [What ships](./data.md)
 - [Copyright and licensed data](./copyright.md)
 - [The batch API](./batch.md)
 - [azoth and NeqSim](./comparison/neqsim.md)

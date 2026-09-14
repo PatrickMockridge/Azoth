@@ -24,7 +24,7 @@ counts below will age. The shape is the part worth reading.*
 | Lines in `src/main` | 1,285,392 across 3,371 files | — |
 | Thermodynamics alone | 199,598 lines | — |
 | Test files | 2,123 | 766 tests |
-| Registered calculations | 60+ equations of state, 33+ equipment types | 21 calcs, 5 models |
+| Registered calculations | 60+ equations of state, 33+ equipment types | 21 calcs, 10 models |
 | Component data | 258 rows in `COMP.csv`, 76,705 in `COMP_EXT.csv`, 1,309 kij rows | 173 in `data/components/`, 516 kij rows, vendored from NeqSim |
 | Licence | Apache-2.0 | AGPL-3.0 code, CC-BY-4.0 docs and data |
 
@@ -125,10 +125,14 @@ NeqSim is 1.29 million lines: 33+ equipment packages, PVT simulation, pipeline f
 hydrates, safety and relief, mechanical design, cost estimation, field development
 economics — and, more recently, an MCP server and tooling for AI agents.
 
-azoth is 26 registered calculations. `docs/src/index.md` says "each calculation is
-independent, and the composition is done by the caller," and that is a **chosen
-boundary**: the moment azoth grew a flowsheet it would be a different project with a
-different thesis, and a much larger one.
+azoth is 21 calculations and 10 models. The distance from NeqSim's 1.29 million lines is
+a **scope decision, not a stage of work**: nearly every NeqSim unit operation is a flash
+call plus arithmetic, and what surrounds it is performance charts, entrainment models,
+geometry sizing and mechanical design. Azoth takes what makes a flowsheet run — which
+now includes a process layer, where a calculation becomes a transformation of streams
+and the composition is done for you rather than by the caller. What makes a model
+acceptable to a detailed-design review is a different product, and
+[Roadmap](../roadmap.md) records where the line is drawn.
 
 ### 6. Licence, and who each library is for
 

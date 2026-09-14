@@ -3,24 +3,39 @@
 **An opinionated port of NeqSim to Rust, with every calculation mirrored in Python.**
 
 azoth is a thermodynamic and process library: equations of state, flashes, property
-models, unit operations and flowsheets. The algorithms are carried across from
+models and unit operations. The algorithms are carried across from
 [NeqSim](https://github.com/equinor/neqsim), Equinor's open-source Java process
 simulator, under Apache-2.0 and credited in [`NOTICE`](NOTICE) rather than re-derived.
-What is azoth's own is the structure around them: a small core that every domain
-depends on and no domain depends on another, an extension surface that is a data file
-rather than an API, and no registration step anywhere.
 
-**[`SPEC.md`](SPEC.md) says what azoth is, and it is normative.** Where another document
-disagrees with it, that document is wrong. Why Rust rather than Java, what is in scope
-and what deliberately is not, and what it costs to add a calculation are all answered
-there rather than here.
+What is azoth's own is the structure around them, and that is where the opinions are:
 
-**Status: early.** Twenty-one calculations and ten models - a hydraulics kernel, steady
-conduction, the Peng-Robinson equation of state through a two-phase flash, stability
-testing and mixture critical points, and the first **unit operation**, a separator,
-ported from NeqSim. The fitting coefficients it ships are **placeholders, not
-engineering data**; see [Not for design work yet](#not-for-design-work-yet). The rest of
-the unit operations, flowsheets and reports are the next tranche, and
+- **A small core, and no cross-dependency.** `azoth-core` is units, errors, warnings,
+  the spec runtime and the solvers, and no engineering calculation. Every domain crate
+  depends on it and on no sibling, so a new domain is a new crate and the boundary is
+  checked by the compiler rather than by review.
+- **Four levels, each composing the one below.** A calculation, a model, a unit
+  operation, a flowsheet. Nothing is replaced on the way up, and every level is useful
+  on its own.
+- **The keycard.** A component, an interaction parameter, a fluid table, a fitting
+  coefficient or a model variant overrides what ships, by name, without writing Rust or
+  Python. What azoth ships is a vendored slice of NeqSim's databank and equations; what
+  you add is yours, and the responsibility for it is yours too.
+- **Python is a real second implementation**, not a binding to a black box. Every
+  calculation exists twice and the two are compared case by case, so azoth works in a
+  notebook or a conda environment with no Rust toolchain at all.
+
+[How azoth is put together](docs/src/architecture.md) is the page for all four, and
+[`SPEC.md`](SPEC.md) is the normative one - why Rust rather than Java, what is in scope
+and what deliberately is not, and what it costs to add a calculation. Where another
+document disagrees with the specification, that document is wrong.
+
+**Status: early.** What is implemented is the table below, and it is generated from the
+specs rather than maintained by hand: a hydraulics kernel through Darcy-Weisbach
+pressure drop, steady conduction, the Peng-Robinson equation of state through a
+two-phase flash, stability testing and mixture critical points, and the beginnings of a
+process layer over the top. The fourth level - a **flowsheet** - is specified and not
+built. The fitting coefficients azoth ships are **placeholders, not engineering data**;
+see [Not for design work yet](#not-for-design-work-yet), and
 [Roadmap](docs/src/roadmap.md) has the programme.
 
 ## Install
@@ -162,26 +177,40 @@ Peng-Robinson fluid has. The spec's notes say plainly what has and has not been
 confirmed, which is that nobody has read the paper.
 [azoth and NeqSim](docs/src/comparison/neqsim.md) compares the two libraries in full.
 
-The calc ids are namespaced by **domain** (`hydraulics.*`, `thermal.*`, `eos.*`),
-not by project. They appear in provenance records and citations, so renaming the
-project does not - and should not - invalidate them. The second namespace is what
-proved the spec pipeline is domain-agnostic rather than shaped around pipe flow,
-since it runs through the same specs, generators, tests and documentation with no
-special case anywhere. The third is where the shapes stop matching: an equation of
-state is written in reduced variables, so it is dimensionless end to end and
-carries no unit at all - which the same pipeline absorbed without a special case
-either.
+The ids are namespaced by **domain** - `hydraulics.*`, `thermal.*`, `eos.*` - not by
+project. They appear in provenance records and citations, so renaming the project does
+not, and should not, invalidate them. `process.*` is named differently on purpose: the
+process layer is not a fourth domain sitting beside the others but the composition tier
+above them, and [How azoth is put together](docs/src/architecture.md) draws it that way.
+
+The namespaces are also what proved the pipeline is domain-agnostic rather than shaped
+around pipe flow. `eos` is where the shapes stop matching: an equation of state is
+written in reduced variables, so it is dimensionless end to end and carries no unit at
+all - and the same specs, generators, tests and documentation absorbed that with no
+special case anywhere.
 
 ## Architecture
 
 ```
-specs/calcs/**/*.yaml     the registry: one file per calculation
+specs/calcs/**/*.yaml     one file per calculation
+specs/models/**/*.yaml    one file per procedure
         │
-        ├─► tools/gen_registry.py ─► crates/azoth-hydraulics/src/spec_gen.rs
-        │                          └► python/src/azoth/_registry_gen.py
-        ├─► tools/gen_docs.py     ─► docs/src/**
+        ├─► tools/gen_registry.py ─► crates/azoth-*/src/spec_gen.rs
+        │                         └► python/src/azoth/_registry_gen.py
+        ├─► tools/gen_models.py   ─► crates/azoth-*/src/model_gen.rs
+        │                         └► python/src/azoth/_models_gen.py
+        ├─► tools/gen_stub.py     ─► python/src/azoth/_core.pyi
+        └─► tools/gen_docs.py     ─► docs/src/**, and the list below
+
+data/components/*.csv     the vendored NeqSim databank
+data/fittings/*.csv       the registry, compiled from a keycard by
+data/fluids/*.csv         tools/gen_user_data.py
+        │
         └─► tools/provenance.py   ─► provenance.json
 ```
+
+The layering, the four levels, and where a new piece of your own belongs are on
+[How azoth is put together](docs/src/architecture.md) rather than repeated here.
 
 Python is the reference implementation and Rust the core, with PyO3 binding them.
 Units cross the public API as `pint` quantities and become plain floats inside;
@@ -226,9 +255,14 @@ checks, the test cases and the type stubs are generated from the spec.
 [Specification, S9](docs/src/spec.md#s9-what-a-contribution-costs) states the whole
 contract, and S5 says why registration was deleted rather than automated.
 
-## Extending it without writing code
+## Extending it
 
-Most of what you would want to change is data, not arithmetic. A **keycard** is one
+There are three ways, and [How azoth is put together](docs/src/architecture.md) sets out
+why there is deliberately no fourth: no runtime plugin registry, because a plugin
+written in one language would be a calculation that exists in one implementation, which
+is the class of thing the two-implementation rule exists to exclude.
+
+Most of what you would want to change is **data, not arithmetic**. A **keycard** is one
 YAML file that overrides or extends what the library ships — a component's critical
 constants, a binary interaction parameter, a fluid's property table, a fitting's
 equivalent length, a coefficient a calculation takes, or a named model variant:
@@ -244,6 +278,11 @@ Nothing needs registering to make it apply, in either language. `keycard.example
 is the template, `python tools/check_user_data.py` checks yours, and
 [The keycard](docs/src/keycard.md) documents every section. What the library ships and
 where it came from is on [What ships](docs/src/data.md).
+
+**A new equation or procedure is code**, and it is a spec plus one Rust file and one
+Python file — the section below is the whole contract. **A new source of fluid
+properties** is a two-method `PropertyProvider` on the Python side, for the one case
+where the right answer depends on data this library cannot ship.
 
 ## Not for design work yet
 

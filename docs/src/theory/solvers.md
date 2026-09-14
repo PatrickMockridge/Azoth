@@ -30,11 +30,12 @@ which is why the spec names one explicitly:
 - `relative`: `|x_(k+1) - x_k| <= tolerance * |x_(k+1)|`
 - `absolute`: `|x_(k+1) - x_k| <= tolerance`
 
-## Why only one kind is permitted
+## Why the list is closed
 
-The schema permits `fixed_point` alone, because that is the only scheme
-implemented in both languages. A spec naming a scheme no implementation can
-run would describe a calculation that exists only on paper, and would read
-as validation while doing nothing. Widening the enum is a deliberate act
-that happens alongside the implementation and its agreement test, never
-before it.
+The schema admits the schemes both implementations run, and no others. A
+spec naming a scheme no implementation can run would describe a calculation
+that exists only on paper, and would read as validation while doing nothing.
+Widening the enum is a deliberate act that happens alongside the
+implementation and its agreement test, never before it - which is how
+`cubic_roots` arrived beside `fixed_point`, and why the table above lists
+two rows rather than one.

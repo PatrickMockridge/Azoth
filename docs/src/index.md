@@ -14,6 +14,10 @@ what is in scope and what deliberately is not, and what it costs to add a
 calculation. It is normative: where a page here disagrees with it, that page is
 wrong.
 
+**[How azoth is put together](./architecture.md)** is the orientation rather than
+the rulebook: the small core every domain depends on, the four levels of
+composition, where a new piece of your own belongs, and why there is no plugin API.
+
 ## The two ideas this library is built around
 
 **Warnings are not errors.** A value outside the range in which a correlation was
@@ -46,11 +50,19 @@ Each page has the same shape, and the order is deliberate:
 
 ## What is implemented
 
-Three namespaces. The first is the hydraulics kernel through Darcy-Weisbach
-pressure drop. The second exists to demonstrate that nothing in the pipeline is
-shaped around it. The third is where the model stops being a correlation over a
-geometry: an equation of state is implicit, mixture-valued, and written in reduced
-variables rather than in quantities with units.
+Four sections, and the difference between them is the point:
+
+- **Hydraulics** — a kernel of correlations over a geometry, through Darcy-Weisbach
+  pressure drop.
+- **Heat transfer** — steady conduction through a plane wall, and the proof that
+  nothing in the pipeline is shaped around pipe flow.
+- **Equations of state** — where the model stops being a correlation: an equation of
+  state is implicit, mixture-valued, and written in reduced variables rather than in
+  quantities with units.
+- **Unit operations** — the process layer over the domains, where a calculation becomes
+  a transformation of streams. It is not a fourth domain but the composition tier above
+  them, and [How azoth is put together](./architecture.md) is the page for how the
+  levels nest.
 
 <!-- BEGIN GENERATED: implemented -->
 **Equations of state** - [`eos/index.md`](./eos/index.md):
@@ -175,6 +187,10 @@ derived from the calculation's own id or emitted by a generator. What is left is
 boilerplate that attaches a Rust function to a Python name, which is still typed by
 hand. [Contributing](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md)
 has the current count, measured rather than remembered.
+
+[How azoth is put together](./architecture.md) carries the same decision table for the
+other kinds of addition — a component or a fluid, which is a keycard and no code at all,
+and a whole new domain, which is a new crate.
 
 ## The batch API
 

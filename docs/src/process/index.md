@@ -13,5 +13,4 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 
 | Model | Scheme | Source |
 |---|---|---|
-| [`process.separator`](./separator.md) | `flash_then_phase_split` | NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.separator.Separator`, `run(UUID)` at lines 674-782 of the 3.20.0 source tree. See `NOTICE` at the repository root for the attribution.
- |
+| [`process.separator`](./separator.md) | `flash_then_phase_split` | NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.separator.Separator`, `run(UUID)` at lines 674-782 of the 3.20.0 source tree. See `NOTICE` at the repository root for the attribution. |

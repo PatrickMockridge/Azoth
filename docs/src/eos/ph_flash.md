@@ -124,14 +124,3 @@ not an equation, and both implementations read it from here.
 
 - Michelsen, M. L.; Mollerup, J. M. (2004). "Thermodynamic Models: Fundamentals and Computational Aspects." Tie-Line Publications. (named as where the treatment of isenthalpic flashes lives; not read, and no equation number is claimed - see `notes`)
 - Smith, J. M.; Van Ness, H. C.; Abbott, M. M. "Introduction to Chemical Engineering Thermodynamics." (the standard statement that the enthalpy of a mixture at fixed pressure increases with temperature; not read here)
-
-## Notes
-
-# Where this differs from a textbook isenthalpic flash, and why
-The procedure here is the ordinary one. What is particular to this implementation is that **the inner flash is not modified**: the trial state comes from `eos.pt_flash` exactly as a caller would get it, and the phase enthalpies come from `eos.molar_enthalpy_entropy` exactly as a caller would get them. There is no isenthalpic-flash-specific arithmetic anywhere. That is deliberate - it means the numbers this model returns are the numbers a caller could reproduce by hand with the three public models and a bisection, which is the retraceability the worked example is for.
-# Why `beta` is absent for a single-phase feed, and not just out of range
-Below the bubble point or above the dew point the flash still returns a split, and it is the *extrapolated* one - values outside `[0, 1]` are normal, and this model's own test data shows 1.888. That number is not the vapour fraction of anything. A model that multiplied by it would produce a wrong enthalpy shaped exactly like a right one, so the single-phase branch takes the whole feed and the appropriate root instead, and the result reports no `beta` rather than an extrapolation a caller might use.
-# What is checked, and what is not
-The model is checked against itself in the way that matters: a temperature is chosen, the enthalpy at it is computed, and that enthalpy is fed back in. The temperature that comes out is the one that went in, to 1e-12 relative. **That establishes that the inversion is exact; it does not establish that the enthalpy is right.** The enthalpy is `eos.molar_enthalpy_entropy`'s, and the confidence in it is whatever that model's own notes support.
-A second check is not self-referential and is worth more: the answer is independent of the bracket. A state reached from a 2000-point scan over 100-1500 K and the same state reached from a narrower scan must agree, because bisection converges to the root rather than to the bracket's midpoint. Both are in the tests.
-**The citations are unconfirmed.** No equation number is claimed, and the text named above has not been read - the procedure is standard enough that reading it would not change the arithmetic, but that is an argument for the arithmetic, not a claim that anyone checked the attribution.
