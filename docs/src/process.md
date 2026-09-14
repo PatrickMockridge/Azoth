@@ -19,10 +19,13 @@ Read this page second.
 implementations and to verification. Nothing is implemented that no spec asks for, and no
 spec asks for anything nothing implements.
 
-**Mechanism.** `test_registry_contract.py` and `test_model_contract.py` hold spec ↔ registry
-↔ code agreement in both languages. `test_registry_contract.py::test_every_id_is_verified`
-holds the reverse: an id with no active spec cases, or with no verification beyond its own
-recorded case, fails the build.
+**Mechanism.** `tools/spec_lint.py` requires every spec to carry a `worked_example` test —
+skippable, but only with a reason — and rejects a case whose inputs or expected outputs are
+not declared ones. `test_registry_contract.py` and its model counterpart
+`python/tests/models/test_model_contract.py` hold spec ↔ registry ↔ code agreement in both
+languages, including `test_registry_matches_the_spec_files`, which fails when a registry
+entry and a spec file disagree. Both linters and the link checker run in
+`.github/workflows/ci.yml`.
 
 ## P2. Verification and validation
 

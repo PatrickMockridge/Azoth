@@ -16,7 +16,7 @@ wrong.
 
 **[How azoth is put together](./architecture.md)** is the orientation rather than
 the rulebook: the small core every domain depends on, the four levels of
-composition, where a new piece of your own belongs, and why there is no plugin API.
+composition, and where a new piece of your own belongs.
 
 ## The two ideas this library is built around
 
@@ -54,8 +54,8 @@ Four sections, and the difference between them is the point:
 
 - **Hydraulics** — a kernel of correlations over a geometry, through Darcy-Weisbach
   pressure drop.
-- **Heat transfer** — steady conduction through a plane wall, and the proof that
-  nothing in the pipeline is shaped around pipe flow.
+- **Heat transfer** — steady conduction through a plane wall: a domain with no pipe in
+  it, running through the same specs, generators, tests and documentation as the rest.
 - **Equations of state** — where the model stops being a correlation: an equation of
   state is implicit, mixture-valued, and written in reduced variables rather than in
   quantities with units.
@@ -184,15 +184,16 @@ S6](./spec.md#s6-provenance-is-the-engineers-job-not-the-librarys) has the reaso
 
 The documentation, the range checks both implementations enforce, the test cases
 both implementations run, and the list of what exists on this page are all derived
-from that one file. If you can write the spec, you have written the calc, the tests
-and the docs.
+from that one file. What the spec does not write is the arithmetic, or the glue that
+names it in each language.
 
 Nothing is registered. For a while a calculation had to be added to a dozen places —
 an id-to-function table, a result-type table, four PyO3 declaration lists, a type
-stub, a batch arm in each language, and this page — and each of those is now either
-derived from the calculation's own id or emitted by a generator. What is left is the
-boilerplate that attaches a Rust function to a Python name, which is still typed by
-hand. [Contributing](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md)
+stub, and this page — and each of those is now either derived from the calculation's
+own id or emitted by a generator. What is left is the boilerplate that attaches a Rust
+function to a Python name, plus **a batch arm in each language**, which is hand-written
+because a wrapper's signature and result class carry judgement the spec does not.
+[Contributing](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md)
 has the current count, measured rather than remembered.
 
 [How azoth is put together](./architecture.md) carries the same decision table for the
@@ -201,7 +202,7 @@ and a whole new domain, which is a new crate.
 
 ## The batch API
 
-[`azoth.batch`](./batch.md) evaluates any of these calculations over arrays, with
+[`azoth.batch`](./batch.md) evaluates almost all of these calculations over arrays, with
 one call crossing into the Rust core instead of N. It is a loop over the same
 scalar kernels, not a second implementation, so the cross-language claim is
 unchanged - and it deliberately gives up one thing the scalar API provides, which

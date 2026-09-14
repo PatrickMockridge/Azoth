@@ -23,8 +23,8 @@ counts below will age. The shape is the part worth reading.*
 | Language | Java 8 | Rust + Python |
 | Lines in `src/main` | 1,285,392 across 3,371 files | — |
 | Thermodynamics alone | 199,598 lines | — |
-| Test files | 2,123 | 766 tests |
-| Registered calculations | 60+ equations of state, 33+ equipment types | 21 calcs, 10 models |
+| Test files | 2,123 | 102 — 57 Python, 45 Rust |
+| Registered calculations | 60+ equations of state, 33+ equipment types | 21 calcs, 17 models |
 | Component data | 258 rows in `COMP.csv`, 76,705 in `COMP_EXT.csv`, 1,309 kij rows | 173 in `data/components/`, 516 kij rows, vendored from NeqSim |
 | Licence | Apache-2.0 | AGPL-3.0 code, CC-BY-4.0 docs and data |
 
@@ -80,9 +80,11 @@ across. `COMP_EXT.csv` did not: 86 MB of heavy fluids this library cannot charac
 **The provenance is institutional, and that is now the whole of it.** `COMP.csv` has no
 citation column, so a value in it carries a project, a version and a file rather than a
 per-value citation. That is real — more than most engineering data has — and it is not a
-person having checked anything. The vendored rows therefore carry that citation
-verbatim, naming Equinor and NTNU and the version it came from, rather than an assertion
-about how far it can be trusted.
+person having checked anything. The vendored component rows therefore carry that
+citation verbatim, naming Equinor and NTNU and the version it came from, rather than an
+assertion about how far it can be trusted. The interaction-parameter table is the
+exception: its rows carry no citation column at all, so its attribution is the `NOTICE`
+file rather than a per-row one.
 
 **The residual risk is inherited, not resolved.** Apache-2.0 permits redistributing
 NeqSim's compilation; it does not establish that every value inside was cleanly sourced
@@ -125,7 +127,8 @@ NeqSim is 1.29 million lines: 33+ equipment packages, PVT simulation, pipeline f
 hydrates, safety and relief, mechanical design, cost estimation, field development
 economics — and, more recently, an MCP server and tooling for AI agents.
 
-azoth is 21 calculations and 10 models. The distance from NeqSim's 1.29 million lines is
+azoth is 21 calculations and 17 models, eight of which are unit operations. The distance
+from NeqSim's 1.29 million lines is
 a **scope decision, not a stage of work**: nearly every NeqSim unit operation is a flash
 call plus arithmetic, and what surrounds it is performance charts, entrainment models,
 geometry sizing and mechanical design. Azoth takes what makes a flowsheet run — which
@@ -180,8 +183,9 @@ The boundary, stated so that it is visible rather than discovered:
 | Mechanical design, cost, field development, safety and risk | Engineering deliverables, not flowsheet physics. |
 | Relief-valve *sizing* to a standard | The de-rating coefficients are the caller's to compose; `choked_flow_area` is the isentropic basis. |
 
-Two rows left this table and are worth naming, because each was a boundary this page
-argued for and each has since been crossed by the databank work or by a port:
+Two rows left this table, and a third item never was one. Each is worth naming, because
+each was a boundary this page argued for and each has since been crossed by the databank
+work or by a port:
 
 **A component databank** was "the central question of axis 2" and the answer here was
 that this library ships none. It ships one now — 173 substances and 516 `kij` pairs,
@@ -197,13 +201,15 @@ ships, on Heidemann & Khalil's conditions, and the test that distinguishes the t
 routes is that a mixture's `Z_c` moves with composition — it varies by 0.146 across
 methane/n-butane, against a constant.
 
-**Flowsheets and equipment models are on their way in.** This page used to say they were
+**Equipment models have arrived; flowsheets have not.** This page used to say they were
 "a thesis change, not a feature", and that was the right call when it was written: the
 project's guarantee is that every calculation has one phase, one composition and a
 worked example a human can retrace, and a flowsheet has none of those. The user has
-since asked for the wider port — unit operations, reports and an agent surface — so the
-boundary moves deliberately rather than by drift, and what replaces the guarantee is
-stated in `docs/src/roadmap.md`.
+since asked for the wider port — unit operations, reports and an agent surface — and
+eight unit operations now ship, each still a model with a spec, a source and a
+retraceable example. A flowsheet is designed and not built, so the boundary moves
+deliberately rather than by drift; what replaces the guarantee when it does is stated in
+`docs/src/roadmap.md`.
 
 ## What we take from it
 
@@ -224,8 +230,11 @@ well-known library implements something is evidence that it can be implemented. 
 not evidence that it is right, and NeqSim's critical point is the concrete case: correct
 by inspection, and validated nowhere.
 
-Every ported algorithm is listed with its source file and commit, so the boundary
-between what is ours and what is borrowed is legible in the specs themselves.
+Every ported algorithm is listed with the NeqSim class it came from, so the boundary
+between what is ours and what is borrowed is legible in the specs themselves. The
+critical point is the only port that also records a commit; the unit operations record a
+class and a line range in the 3.20.0 source tree, and the flash models cite the paper the
+method comes from rather than a file.
 
 ## Credit
 

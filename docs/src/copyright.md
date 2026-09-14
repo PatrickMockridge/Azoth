@@ -44,9 +44,12 @@ discipline the fitting registry uses, in a milder tier — `estimated_dummy` mea
 placeholder" while `unverified` means "real, unchecked".
 
 The column is derived when the data file is generated, from whether the row's citation
-says the value is a placeholder. There is deliberately no `verified` value: a tool
-cannot check whether a person checked something, so offering the word would only invite
-an assertion nobody can test. See [Specification, S6](./spec.md#s6-provenance-is-the-engineers-job-not-the-librarys).
+says the value is a placeholder. The generator never *derives* `verified`, because a tool
+cannot check whether a person checked something, and a row carrying the word would be an
+assertion nobody can test. The value exists in the vocabulary — the Rust
+`VerifyStatus` enum has the variant, and the shipped CSV's header documents it — for the
+case where a person has in fact checked a value against a primary source and says so.
+See [Specification, S6](./spec.md#s6-provenance-is-the-engineers-job-not-the-librarys).
 
 ## The three patterns that come out of this
 
@@ -239,9 +242,10 @@ and prints the five places to register the name; `example_fluid` in the template
 deliberately one of these, so the template shows the shape without pretending the
 repository carries a third table.
 
-**And if you do generate licensed data, two tests will fail** — the ones asserting the
-shipped coefficients are placeholders. That is what they are for. Read this page before
-changing them.
+**And if you do generate licensed data, three tests will fail** — the ones asserting the
+shipped coefficients are placeholders, one in each language plus the generator's own
+(`test_crane_k_factors.py`, `crane_k_factors.rs` and `test_gen_user_data.py`). That is
+what they are for. Read this page before changing them.
 
 ## Why not simply include the numbers
 

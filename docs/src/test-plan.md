@@ -12,7 +12,7 @@ written down is a gap that gets rediscovered as a bug.
 | | |
 |---|---|
 | Registered calculations and models | **38** — 21 calcs, 17 models |
-| Crates | 11 — `azoth-core`, four domains, the process layer, the binding, the CLI, test support |
+| Crates | 8 — `azoth-core`, the domains (`eos`, `hydraulics`, `thermal`, `process`), the binding (`azoth-python`), the CLI and test support |
 | The Python package | `azoth` — the public API, the dispatch layer, the keycard, the batch API |
 | The generators | `tools/*.py` — six that emit code or docs from the specs |
 | The CLI | `azoth pipe` |
@@ -68,9 +68,9 @@ before the thermodynamics.
 
 | | |
 |---|---|
-| Python | **560** test functions across 56 files |
-| Rust | **308** — 246 in 32 integration files, 62 in 12 `#[cfg(test)]` modules |
-| Spec cases | Every one of the 38 ids has them; 1 to 9 each, median 4 |
+| Python | **571** test functions across 58 files |
+| Rust | **325** `#[test]` attributes — 259 in 32 integration files, 66 in 13 `#[cfg(test)]` modules |
+| Spec cases | Every one of the 38 ids has them; 2 to 9 each |
 | CI | 10 jobs, all gates, none with `continue-on-error` |
 
 Levels 1, 3, 4, 5, 6 and 8 are covered well. Level 2 is covered well for calculations and

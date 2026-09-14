@@ -204,6 +204,7 @@ argued for instead of quietly joining the exclusion.
   signature, result class and docstring carry judgement the spec does not, so each is
   hand-written, and a coverage test
   (`test_every_batchable_calc_has_a_batch_arm`) is what makes omitting one fail the build
-  naming the calc and the file. That is the same mechanism M2 uses for registration
-  completeness, and the same honest position: a check that fails loudly, rather than a
-  generator that would have to invent the API.
+  naming the calc and the file. That is the same mechanism
+  `python/tests/test_registration_completeness.py` uses for the rest of the wiring, and
+  the same honest position: a check that fails loudly, rather than a generator that would
+  have to invent the API.

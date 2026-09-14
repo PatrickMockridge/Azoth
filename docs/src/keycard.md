@@ -30,9 +30,19 @@ python tools/check_user_data.py keycard.yaml
 | `components` | `data/components/components.csv` | `eos.component`, `eos.from_names` |
 | `kij` | `data/components/kij.csv` | every mixture's mixing rule |
 | `coefficients` | — | a calculation's named argument, as a default |
-| `fittings` | `data/fittings/crane_k_factors.csv` | `hydraulics.crane_k_factors`, `azoth pipe` |
-| `fluids` | `data/fluids/` | `azoth.properties`, `azoth pipe` |
 | `models` | — | `eos.from_model` |
+| `fittings` | `data/fittings/crane_k_factors.csv` | `tools/gen_user_data.py` — then a rebuild |
+| `fluids` | `data/fluids/` | `tools/gen_user_data.py` — then a rebuild |
+
+The last two are different in kind from the rest, and the difference is worth knowing
+before you write a keycard. `keycard.yaml` is a **source**, not a runtime input: the four
+sections above them are read when a keycard is loaded, and `fittings` and `fluids` are
+compiled into the shipped data files by `tools/gen_user_data.py` instead. That is what
+lets the Rust core embed those files with `include_str!` while Python reads the same
+bytes from disk, which is the property `python/tests/test_data_agreement.py` rests on.
+So a fitting or a fluid takes effect after a `gen_user_data.py` run and a rebuild — and
+neither is visible to `azoth pipe`, which is a Rust binary and never sees a
+Python-loaded keycard.
 
 Everything is by name. A component you supply with a name the databank already has
 replaces the parameters you list and keeps the rest — correcting one value does not

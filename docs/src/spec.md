@@ -77,22 +77,27 @@ throws that away and pays for it. The case for doing it anyway, and the price:
 ## S3. A core in the middle
 
 `azoth-core` holds the vocabulary every other crate needs and nothing domain-specific:
-units, errors, warnings, the spec runtime, range checks, and the solvers. **Every
-domain crate depends on it and on no sibling.** `azoth-eos` does not know that
-hydraulics exists, and cannot come to know without an edit to its `Cargo.toml` that a
-reviewer will see.
+units, errors, warnings, results, range checks, the spec runtime, and the solvers. **Every
+domain crate depends on it and on no sibling**, with one exception, below. `azoth-eos`
+does not know that hydraulics exists, and cannot come to know without an edit to its
+`Cargo.toml` that a reviewer will see.
 
 ```
                           azoth-core
-          units · errors · warnings · spec runtime · solvers
+    units · errors · warnings · results · range checks · spec runtime · solvers
                                 │
         ┌──────────────┬────────┴────────┬──────────────┐
-    azoth-eos     azoth-thermal   azoth-hydraulics   azoth-cli
-        │
-   azoth-process
-        └──────────────┴────────┬────────┴──────────────┘
-                          azoth-python
+    azoth-eos     azoth-thermal   azoth-hydraulics   azoth-test-support
+        │                                │
+   azoth-process                    azoth-cli
+        └──────────────┬─────────────────┘
+                    azoth-python
 ```
+
+The diagram is the **domain** layering, which is the part the rule is about.
+`azoth-cli` and `azoth-python` are the two entry points: neither is a domain, and each
+reaches several crates because it has to expose them. The full dependency table is on
+[How azoth is put together](./architecture.md).
 
 The rule does work rather than decorating a diagram:
 
@@ -105,15 +110,14 @@ The rule does work rather than decorating a diagram:
 - **`azoth-core` stays small.** It may not grow a dependency on a domain, and it may
   not grow a calculation.
 
-**`azoth-process` is the one crate that depends on a sibling, and it is a deliberate
-exception rather than a lapse.** A unit operation is a flash call plus arithmetic -
-that is the whole of the Pareto argument for the scope of this port, and it is read
-from NeqSim's source rather than asserted. A process layer that could not call the
-flashes would not be a process layer, so `azoth-process` depends on `azoth-eos`. It
-belongs to the tier above the domains rather than inside one, and the diagram above
-shows it that way: it is drawn *under* `azoth-eos` because that is what it consumes,
-and it joins the composition tier that `azoth-python` and `azoth-cli` already occupy
-rather than sitting beside the domains.
+**`azoth-process` is the one *domain* crate that depends on a sibling, and it is a
+deliberate exception rather than a lapse.** A unit operation is a flash call plus
+arithmetic - that is the whole of the Pareto argument for the scope of this port, and it
+is read from NeqSim's source rather than asserted. A process layer that could not call
+the flashes would not be a process layer, so `azoth-process` depends on `azoth-eos`. It
+belongs to the tier above the domains rather than inside one: it is drawn *under*
+`azoth-eos` because that is what it consumes, and it joins the composition tier that
+`azoth-python` and `azoth-cli` already occupy rather than sitting beside the domains.
 
 `azoth-test-support` (shared test fixtures) is depended on by tests only and is not part
 of the runtime layering.

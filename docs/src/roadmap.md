@@ -25,12 +25,13 @@ survives:
 
 - A **unit operation** is still a model with a spec, a source, and a worked example a
   human can retrace. Nothing about the process layer relaxes that.
-- A **flowsheet** carries a hand-computable case — a mixer into a flash, no recycle —
+- A **flowsheet** will carry a hand-computable case — a mixer into a flash, no recycle —
   plus conservation checks that hold at every answer rather than at one recorded one.
   That is the honest analogue of a worked example, and it is weaker. Saying so is the
-  point of this section.
-- **Two implementations, always.** A flowsheet is a document both languages execute and
-  compare, with iteration counts required to match. There is no third lane.
+  point of this section, and it is a description of a design that is not built yet:
+  tranche 2a below is where it sits.
+- **Two implementations, always.** A flowsheet would be a document both languages
+  execute and compare, with iteration counts required to match. There is no third lane.
 
 What is given up is narrower than it sounds: a plant model still tells you *whether*
 its numbers are self-consistent, which a worked example does, and it tells you *whether*
@@ -65,8 +66,8 @@ Status is stated as of the last commit that touched this page, and a tranche is 
 |---|---|---|
 | 0 | Repair the claims this plan falsifies; a roadmap page; an announcement test that covers models | **done** |
 | 1 | `eos.ph_flash` and `eos.ps_flash` — the critical path, since eight of the ten units above are one of them plus arithmetic | **done** |
-| 2a | The `process` namespace and its crate, proved on `process.separator`; then the flowsheet: `specs/flowsheets/` and the sequential solver | **in progress** — the crate and `process.separator` are done; the flowsheet is not started |
-| 2b | The rest of the Pareto set: valve, heater, cooler, splitter, compressor, pump, expander, heat exchanger, three-phase separator; plus `eos.viscosity` and `eos.thermal_conductivity` | planned |
+| 2a | The `process` namespace and its crate, proved on `process.separator`; then the flowsheet: `specs/flowsheets/` and the sequential solver | **in progress** — the crate and all eight unit operations are done (separator, compressor, expander, heater and cooler, mixer, pump, splitter, throttling valve); the flowsheet is not started |
+| 2b | The rest of the Pareto set: heat exchanger, three-phase separator; plus `eos.viscosity` and `eos.thermal_conductivity` | planned |
 | 2c | Recycle convergence (direct substitution and Wegstein) | planned |
 | 3 | `azoth report` — Markdown and HTML from Rust, no new dependency | planned |
 | 4 | The agent surface: `azoth describe`, generated from the registry, and an MCP server over it | planned |
@@ -87,7 +88,7 @@ implementations and the tests agree about - a unit operation's inputs are declar
 field by field in its spec, exactly as a flash's are, and the contract tests compare the
 declaration against the signature in both languages.
 
-So `process.separator` takes seven arguments and no new type. Where a unit has several
+So `process.separator` takes eight arguments and no new type. Where a unit has several
 inlets the state becomes a vector or a matrix of rows - `T: vector(S)`, `z: matrix(S x
 N)` - and the shapes the schema already has carry it. The `record` shape a stream type
 would need is not required for the unit operations, and it is a schema change that would
@@ -95,8 +96,8 @@ touch the generator, both languages and every spec that reads it.
 
 **This is a decision that can be revisited and probably should be**, when the flowsheet
 arrives and units start passing streams to each other by name rather than by argument.
-The test to apply then is the one applied here: does the type say something the six
-arguments do not, or is it a second name for them?
+The test to apply then is the one applied here: does the type say something those six
+quantities do not, or is it a second name for them?
 
 ## Deliberately not ported
 

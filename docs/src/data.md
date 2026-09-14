@@ -16,8 +16,10 @@ tells you what it has and who produced it, and you judge.
 interaction parameter pairs**.
 
 Both are generated from [NeqSim](https://github.com/equinor/neqsim)'s `COMP.csv` and
-`INTER.csv` by `tools/gen_databank.py`, and every row cites the source it came from:
-NeqSim v3.20.0, Equinor and NTNU, Apache-2.0. The full attribution is in
+`INTER.csv` by `tools/gen_databank.py`, and every component row carries its citation
+verbatim: NeqSim v3.20.0, Equinor and NTNU, Apache-2.0. The `kij` table carries none —
+`COMP.csv` has no citation column for it to copy — so its attribution is the `NOTICE`
+file rather than a per-row one. The full attribution for both is in
 [`NOTICE`](https://github.com/PatrickMockridge/Azoth/blob/main/NOTICE).
 
 **What is not in it, and why.** NeqSim's `COMP.csv` is larger. The ions are excluded
@@ -63,8 +65,9 @@ end, a straight-line extension is a confident wrong number rather than a small e
 ## Why there is a status column here and not in your keycard
 
 A deliberate asymmetry, not a leftover. The data *this repository ships* records a
-derived `verify_status` so that the library can warn you when a result rests on its
-placeholders — that is disclosure, and it is the library's own statement about itself.
+derived `verify_status`, so that the file says what it is. Nothing warns on it at run
+time: a result resting on a placeholder is not marked on the result, and the column has
+to be read. That is disclosure, and it is the library's own statement about itself.
 
 A value *you* supply is yours. There is no status field in a keycard, because a form
 asking you to assert something no tool can check would teach you to fill it in rather
@@ -74,7 +77,7 @@ than to know the answer. See
 ## Reproducing any of it
 
 ```bash
-python tools/gen_databank.py --check     # the component databank, from NeqSim
+python tools/gen_databank.py /path/to/neqsim --check   # the component databank
 python tools/gen_user_data.py keycard.yaml --check   # your own, from a keycard
 mdbook build docs && python tools/check_links.py
 ```
