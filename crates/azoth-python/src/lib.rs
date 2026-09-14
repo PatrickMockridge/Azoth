@@ -36,6 +36,7 @@ mod data;
 mod eos;
 mod errors;
 mod hydraulics;
+mod process;
 mod results;
 mod thermal;
 
@@ -45,7 +46,8 @@ use results::{
     PyOrificeFlowResult, PyPhFlashResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
     PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
     PyPsFlashResult, PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
-    PyReynoldsNumberResult, PySwameeJainResult, PyVdw1fMixBinaryResult, PyWarning,
+    PyReynoldsNumberResult, PySeparatorResult, PySwameeJainResult, PyVdw1fMixBinaryResult,
+    PyWarning,
 };
 
 #[pymodule]
@@ -81,6 +83,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyOrificeFlowResult>()?;
     m.add_class::<PyControlValveCvResult>()?;
     m.add_class::<PyChokedFlowAreaResult>()?;
+    m.add_class::<PySeparatorResult>()?;
 
     // Data transport, for the cross-language data comparison.
     m.add_class::<batch::PyBatchColumn>()?;
@@ -132,6 +135,10 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::dew_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::ideal_gas_cp, m)?)?;
     m.add_function(wrap_pyfunction!(eos::molar_enthalpy_entropy, m)?)?;
+
+    // Unit operations. The process layer, and the first thing in this extension that
+    // takes a *stream* rather than a state.
+    m.add_function(wrap_pyfunction!(process::separator, m)?)?;
 
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;

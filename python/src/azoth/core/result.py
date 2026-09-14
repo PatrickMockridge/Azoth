@@ -803,3 +803,38 @@ class CriticalPointResult(_HasWarnings):
     residual: float
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SeparatorResult(_HasWarnings):
+    """Result of ``process.separator``.
+
+    A feed split into a gas and a liquid. Both outlets are at the **same temperature
+    and pressure** - the flash's answer - because that is what a separator is: a vessel
+    at one state, with two streams leaving it. Reporting one ``T`` and one ``P`` rather
+    than a pair each is that statement rather than a saving.
+    """
+
+    #: The temperature both outlets leave at.
+    T: Q
+    #: The pressure both outlets leave at: the inlet pressure less ``pressure_drop``.
+    P: Q
+    #: The vapour fraction, or ``None`` for a single-phase feed.
+    #: **Read ``phase``, not this** - see the model spec's notes.
+    beta: float | None
+    #: Molar flow to the gas outlet, in mol/s. Zero when the feed is all liquid.
+    gas_flow: float
+    #: The gas outlet's mole fractions, or the feed's when ``gas_flow`` is zero. A
+    #: zero-flow stream has no phase composition of its own, and a row of zeros is not
+    #: a composition.
+    gas_z: tuple[float, ...]
+    #: Molar flow to the liquid outlet, in mol/s. Zero when the feed is all vapour.
+    liquid_flow: float
+    #: The liquid outlet's mole fractions, by the same convention.
+    liquid_z: tuple[float, ...]
+    #: Which phase the feed was in.
+    phase: Phase
+    #: Flash iterations taken, and the evidence the split was made at a converged state.
+    iterations: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]

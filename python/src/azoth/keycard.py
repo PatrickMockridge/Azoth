@@ -93,6 +93,7 @@ UNIT_VOCABULARY: tuple[str, ...] = (
     "m**2",
     "m**3/s",
     "kg/s",
+    "mol/s",
     "kg/m**3",
     "m/s",
     "Pa",

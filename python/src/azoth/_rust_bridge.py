@@ -56,6 +56,7 @@ from azoth.core.result import (
     RachfordRiceBinaryResult,
     ReynoldsNumberResult,
     RootStructure,
+    SeparatorResult,
     StabilityTestResult,
     SwameeJainResult,
     Vdw1fMixBinaryResult,
@@ -688,6 +689,62 @@ def molar_enthalpy_entropy(
         h_departure=from_si(result.h_departure.magnitude_si, result.h_departure.unit),
         s_departure=from_si(result.s_departure.magnitude_si, result.s_departure.unit),
         psi_bar=result.psi_bar,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def separator(
+    mixture: Any,
+    ideal_gas: Any,
+    T: Q,
+    P: Q,
+    n: Q,
+    z: Sequence[float],
+    pressure_drop: Q,
+    heat_duty: Q,
+) -> SeparatorResult:
+    """One feed split into a gas and a liquid at a single state, run in Rust.
+
+    The first bridge function for a unit operation, and the shape every one after it
+    takes: the mixture crosses as the three per-component vectors plus a flattened
+    `kij`, exactly as `pt_flash` sends them, because it *is* the same object.
+
+    `n` crosses as `mol/s` and is the one input here that arrives as a bare `f64`
+    magnitude with no `uom` type behind it on the Rust side - the units vocabulary has
+    the name and the conversion is the identity, which is what makes that legitimate
+    rather than a quantity smuggled across outside the vocabulary.
+    """
+    spec = _models_gen.model("process.separator")
+    result = _core.separator(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        [v for v in ideal_gas.h_ref],
+        [v for v in ideal_gas.s_ref],
+        input_to_si(spec, "T_ref", ideal_gas.T_ref),
+        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "n", n),
+        list(z),
+        input_to_si(spec, "pressure_drop", pressure_drop),
+        input_to_si(spec, "heat_duty", heat_duty),
+    )
+    return SeparatorResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        beta=result.beta,
+        gas_flow=result.gas_flow,
+        gas_z=tuple(result.gas_z),
+        liquid_flow=result.liquid_flow,
+        liquid_z=tuple(result.liquid_z),
+        phase=_Phase(result.phase),
+        iterations=result.iterations,
         warnings=_warnings(result.warnings),
     )
 

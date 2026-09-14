@@ -238,6 +238,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "m**2",
     "m**3/s",
     "kg/s",
+    "mol/s",
     "kg/m**3",
     "m/s",
     "Pa",
@@ -302,6 +303,19 @@ mod tests {
         ("m**2", |v| square_meters(v).value, 1.0),
         ("m**3/s", |v| cubic_meters_per_second(v).value, 1.0),
         ("kg/s", |v| kilograms_per_second(v).value, 1.0),
+        // The identity, and correctly so rather than by analogy with
+        // `dimensionless`: `mol/s` *is* the SI base unit for a molar flow, because
+        // both `mol` and `s` are base units and neither is prefixed. A caller who
+        // writes 1.0 mol/s means 1.0, and that is the number the calculation
+        // receives.
+        //
+        // There is no `MolarFlow` type beside this table for the reason there is no
+        // `moles_per_second` constructor either: `uom` has no molar-flow quantity
+        // (it has `MolarFlux`, mol/(m**2*s), and `MolarConcentration`, which are
+        // different dimensions). So a unit operation takes its molar flow as a bare
+        // `f64` in mol/s and this entry is what makes that legitimate in a spec,
+        // rather than a quantity smuggled in outside the vocabulary.
+        ("mol/s", |v| v, 1.0),
         ("kg/m**3", |v| kilograms_per_cubic_meter(v).value, 1.0),
         ("m/s", |v| meters_per_second(v).value, 1.0),
         ("Pa", |v| pascals(v).value, 1.0),

@@ -23,6 +23,7 @@ use azoth_eos::results::{
     PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, StabilityTestResult,
     Vdw1fMixBinaryResult,
 };
+use azoth_process::results::SeparatorResult;
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -1631,6 +1632,87 @@ pub fn solver_kinds() -> Vec<String> {
         .collect()
 }
 
+/// Result of `process.separator`, transported.
+///
+/// Both outlets at one temperature and one pressure, which is what a separator is,
+/// so `T` and `P` cross once rather than twice. The compositions cross as plain
+/// `Vec<f64>` and the flows as `f64` in mol/s - the one quantity here with no `uom`
+/// type behind it, because `uom` has no molar flow and the units vocabulary's `mol/s`
+/// is already SI base.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SeparatorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` and `P` are the symbols the spec and the Python result use
+pub struct PySeparatorResult {
+    /// The temperature both outlets leave at.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The pressure both outlets leave at.
+    #[pyo3(get)]
+    pub P: PyQty,
+    /// The vapour fraction, or `None` for a single-phase feed.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Molar flow to the gas outlet, in mol/s.
+    #[pyo3(get)]
+    pub gas_flow: f64,
+    /// The gas outlet's mole fractions.
+    #[pyo3(get)]
+    pub gas_z: Vec<f64>,
+    /// Molar flow to the liquid outlet, in mol/s.
+    #[pyo3(get)]
+    pub liquid_flow: f64,
+    /// The liquid outlet's mole fractions.
+    #[pyo3(get)]
+    pub liquid_z: Vec<f64>,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Flash iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySeparatorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SeparatorResult(T={} K, P={} Pa, phase={}, gas={} mol/s, liquid={} mol/s)",
+            self.T.magnitude_si, self.P.magnitude_si, self.phase, self.gas_flow, self.liquid_flow
+        )
+    }
+}
+
+impl From<&SeparatorResult> for PySeparatorResult {
+    fn from(r: &SeparatorResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            P: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            beta: r.beta,
+            gas_flow: r.gas_flow,
+            gas_z: r.gas_z.clone(),
+            liquid_flow: r.liquid_flow,
+            liquid_z: r.liquid_z.clone(),
+            phase: r.phase.as_str().to_string(),
+            iterations: r.iterations,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// The public field names of a calc's result, in declaration order.
 ///
 /// Returns an empty list for an unknown id rather than raising: this is an
@@ -1670,6 +1752,10 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
+        // Unit operations. In the same table for the same reason the models are: a
+        // result's shape is a cross-language contract whether or not its spec calls it
+        // a calculation.
+        SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),

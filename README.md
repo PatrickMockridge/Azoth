@@ -15,12 +15,13 @@ disagrees with it, that document is wrong. Why Rust rather than Java, what is in
 and what deliberately is not, and what it costs to add a calculation are all answered
 there rather than here.
 
-**Status: early.** Twenty-one calculations and seven models - a hydraulics kernel,
-steady conduction, and the Peng-Robinson equation of state through a two-phase flash,
-stability testing and mixture critical points. The fitting coefficients it ships are
-**placeholders, not engineering data**; see
-[Not for design work yet](#not-for-design-work-yet). Unit operations, flowsheets and
-reports are the next tranche, and [Roadmap](docs/src/roadmap.md) has the programme.
+**Status: early.** Twenty-one calculations and ten models - a hydraulics kernel, steady
+conduction, the Peng-Robinson equation of state through a two-phase flash, stability
+testing and mixture critical points, and the first **unit operation**, a separator,
+ported from NeqSim. The fitting coefficients it ships are **placeholders, not
+engineering data**; see [Not for design work yet](#not-for-design-work-yet). The rest of
+the unit operations, flowsheets and reports are the next tranche, and
+[Roadmap](docs/src/roadmap.md) has the programme.
 
 ## Install
 
@@ -130,6 +131,7 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.orifice_flow` | Flow through an orifice from the pressure difference across it |
 | `hydraulics.pump_power` | Pump shaft power from flow, head and efficiency |
 | `hydraulics.reynolds_number` | Reynolds number for pipe flow |
+| `process.separator` | Separator — a *model* |
 | `thermal.conduction_plane_wall` | Steady conduction through a plane wall |
 <!-- END GENERATED: implemented -->
 

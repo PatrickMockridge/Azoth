@@ -65,7 +65,7 @@ Status is stated as of the last commit that touched this page, and a tranche is 
 |---|---|---|
 | 0 | Repair the claims this plan falsifies; a roadmap page; an announcement test that covers models | **done** |
 | 1 | `eos.ph_flash` and `eos.ps_flash` — the critical path, since eight of the ten units above are one of them plus arithmetic | **done** |
-| 2a | The stream and the flowsheet: a `stream` quantity type, `specs/flowsheets/`, the sequential solver, proved on `process.mixer` and `process.separator` | **in progress** |
+| 2a | The `process` namespace and its crate, proved on `process.separator`; then the flowsheet: `specs/flowsheets/` and the sequential solver | **in progress** — the crate and `process.separator` are done; the flowsheet is not started |
 | 2b | The rest of the Pareto set: valve, heater, cooler, splitter, compressor, pump, expander, heat exchanger, three-phase separator; plus `eos.viscosity` and `eos.thermal_conductivity` | planned |
 | 2c | Recycle convergence (direct substitution and Wegstein) | planned |
 | 3 | `azoth report` — Markdown and HTML from Rust, no new dependency | planned |
@@ -74,6 +74,29 @@ Status is stated as of the last commit that touched this page, and a tranche is 
 **Tranche 1 comes first because it is the dependency, not because it is the most
 visible.** There is no unit operation without it. Tranches 3 and 4 are the user features
 the port was asked for, and they sit on top of something worth reporting about.
+
+## What a stream turned out to be
+
+This page used to say tranche 2a would add a **`stream` quantity type**. It did not, and
+the reason is worth recording rather than leaving as a silent change of plan.
+
+A stream is six things: a mixture, the ideal-gas model an enthalpy is measured from, a
+temperature, a pressure, a molar flow and a composition. A `stream` type would be a
+second way to state those six, and the six are already what the specs, both
+implementations and the tests agree about - a unit operation's inputs are declared
+field by field in its spec, exactly as a flash's are, and the contract tests compare the
+declaration against the signature in both languages.
+
+So `process.separator` takes seven arguments and no new type. Where a unit has several
+inlets the state becomes a vector or a matrix of rows - `T: vector(S)`, `z: matrix(S x
+N)` - and the shapes the schema already has carry it. The `record` shape a stream type
+would need is not required for the unit operations, and it is a schema change that would
+touch the generator, both languages and every spec that reads it.
+
+**This is a decision that can be revisited and probably should be**, when the flowsheet
+arrives and units start passing streams to each other by name rather than by argument.
+The test to apply then is the one applied here: does the type say something the six
+arguments do not, or is it a second name for them?
 
 ## Deliberately not ported
 

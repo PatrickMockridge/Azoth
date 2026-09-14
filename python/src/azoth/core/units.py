@@ -107,6 +107,11 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     "m**2": "meter**2",
     "m**3/s": "meter**3/second",
     "kg/s": "kilogram/second",
+    # A molar flow, and the reason a unit operation can state one in a spec at all.
+    # `pint` knows this dimension and `uom` does not, so the Rust side carries it as
+    # a bare `f64` in mol/s; see the note on the same entry in
+    # `crates/azoth-core/src/units.rs`.
+    "mol/s": "mole/second",
     "kg/m**3": "kilogram/meter**3",
     "m/s": "meter/second",
     "Pa": "pascal",

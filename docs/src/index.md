@@ -91,6 +91,13 @@ variables rather than in quantities with units.
 - [`hydraulics.pump_power`](./hydraulics/pump_power.md)
 - [`hydraulics.reynolds_number`](./hydraulics/reynolds_number.md)
 
+**Unit operations** - [`process/index.md`](./process/index.md):
+
+
+*Models* — whose specs fix a procedure rather than an equation:
+
+- [`process.separator`](./process/separator.md) — Separator
+
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)

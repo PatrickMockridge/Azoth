@@ -1,0 +1,22 @@
+[package]
+name = "azoth-process"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Unit operations: the process layer over the equations of state"
+
+[dependencies]
+azoth-core.workspace = true
+# The one crate here that depends on a sibling, and deliberately. A unit operation
+# is a flash call plus arithmetic, so there is no version of this crate that does
+# not need the flashes; see `docs/src/spec.md` S3, which records this tier.
+azoth-eos.workspace = true
+
+[dev-dependencies]
+azoth-test-support.workspace = true
+uom.workspace = true
+
+[lints]
+workspace = true

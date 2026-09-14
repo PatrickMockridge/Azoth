@@ -74,7 +74,7 @@ __version__ = "0.1.0"
 # Imported last: `azoth.hydraulics` pulls in the dispatch layer, which imports
 # this package's submodules. Keeping it at the bottom means everything it needs
 # is already bound.
-from azoth import batch, eos, hydraulics, keycard, properties, thermal
+from azoth import batch, eos, hydraulics, keycard, process, properties, thermal
 
 __all__ = [
     "AzothError",
@@ -101,6 +101,7 @@ __all__ = [
     "extension",
     "hydraulics",
     "keycard",
+    "process",
     "properties",
     "select",
     "thermal",

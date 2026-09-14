@@ -55,6 +55,7 @@ NAMESPACES = {
     "hydraulics": "Hydraulics",
     "thermal": "Heat transfer",
     "eos": "Equations of state",
+    "process": "Unit operations",
 }
 
 #: Pages in the book that are neither a namespace index nor generated from a spec.
@@ -498,6 +499,17 @@ def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | N
     by_namespace: dict[str, list[dict[str, Any]]] = {}
     for calc in calcs:
         by_namespace.setdefault(calc["id"].split(".")[0], []).append(calc)
+    # A namespace that has models and no calculations still gets a section.
+    #
+    # It did not. This mapping was built from `calcs` alone, which was every namespace
+    # there was until `process` arrived carrying a unit operation and no calculations
+    # at all - so its page was generated and never listed. That is the same omission
+    # `test_registry_contract.py` records about models not being announced: a list that
+    # was complete when it was written, and a second thing that grew beside it. Here it
+    # is worse than an omission, because `tools/check_links.py` fails the build for any
+    # page missing from the summary, so the failure a reader met was a build error.
+    for model in models or []:
+        by_namespace.setdefault(model["id"].split(".")[0], [])
 
     for namespace in sorted(by_namespace):
         title = namespace_title(namespace)

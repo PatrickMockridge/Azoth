@@ -33,6 +33,8 @@
   - [Flow through an orifice from the pressure difference across it](./hydraulics/orifice_flow.md)
   - [Pump shaft power from flow, head and efficiency](./hydraulics/pump_power.md)
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
+- [Unit operations](./process/index.md)
+  - [Separator](./process/separator.md)
 - [Heat transfer](./thermal/index.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
 - [The keycard](./keycard.md)

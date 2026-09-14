@@ -88,6 +88,8 @@ reviewer will see.
                                 │
         ┌──────────────┬────────┴────────┬──────────────┐
     azoth-eos     azoth-thermal   azoth-hydraulics   azoth-cli
+        │
+   azoth-process
         └──────────────┴────────┬────────┴──────────────┘
                           azoth-python
 ```
@@ -99,9 +101,19 @@ The rule does work rather than decorating a diagram:
   review.
 - **Nothing can reach across**, so a change in one domain cannot silently alter
   another's behaviour. Cross-domain composition lives above the domains, in
-  `azoth-python` today and in a `process` crate when flowsheets arrive (S4).
+  `azoth-python` today and in `azoth-process` for the process layer (S4).
 - **`azoth-core` stays small.** It may not grow a dependency on a domain, and it may
   not grow a calculation.
+
+**`azoth-process` is the one crate that depends on a sibling, and it is a deliberate
+exception rather than a lapse.** A unit operation is a flash call plus arithmetic -
+that is the whole of the Pareto argument for the scope of this port, and it is read
+from NeqSim's source rather than asserted. A process layer that could not call the
+flashes would not be a process layer, so `azoth-process` depends on `azoth-eos`. It
+belongs to the tier above the domains rather than inside one, and the diagram above
+shows it that way: it is drawn *under* `azoth-eos` because that is what it consumes,
+and it joins the composition tier that `azoth-python` and `azoth-cli` already occupy
+rather than sitting beside the domains.
 
 `azoth-test-support` (shared test fixtures) is depended on by tests only and is not part
 of the runtime layering.

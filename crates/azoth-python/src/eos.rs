@@ -216,8 +216,12 @@ pub fn pure_saturation(
 /// Shared by the flash and the two phase-boundary models: all three take the same
 /// component arguments in the same order, and building the object in one place is
 /// what keeps the component ordering from being decided three times.
+///
+/// `pub(crate)` because `process.rs` builds the same object from the same arguments.
+/// A unit operation takes a mixture exactly as a flash does, so a second construction
+/// here would be a second place for the component order to be decided.
 #[allow(non_snake_case)] // `Tc` and `Pc` are the symbols in the chemistry
-fn build_mixture(
+pub(crate) fn build_mixture(
     py: Python<'_>,
     Tc: &[f64],
     Pc: &[f64],
@@ -549,7 +553,26 @@ pub fn molar_enthalpy_entropy(
     .map_err(|e| to_pyerr(py, e))
 }
 
-/// Every model id `azoth-eos` implements.
+/// Every model in the workspace, across every namespace that has one.
+///
+/// The tables are separate because each is *generated into the crate that owns its
+/// namespace* - `azoth-eos/src/model_gen.rs` and `azoth-process/src/model_gen.rs` are
+/// two files because a namespace owns its own models. They are read together here
+/// because the contract is over all of them: `azoth._models_gen` is one registry, and
+/// a language reporting only the `eos` half would agree with itself about every model
+/// it mentioned while silently covering half of what the Python side can call.
+///
+/// **This is the function that has to change when a namespace is added.** It read
+/// `eos::model_gen` alone until `process` arrived, and the three `model_*` functions
+/// below stayed green for exactly as long as nobody asked them about a unit operation.
+fn all_models() -> impl Iterator<Item = &'static azoth_core::ModelSpec> {
+    eos::model_gen::models()
+        .iter()
+        .chain(azoth_process::model_gen::models().iter())
+        .copied()
+}
+
+/// Every model id this extension implements.
 ///
 /// Separate from `calc_ids()` on purpose: the calc registry's id list is asserted to
 /// be *exactly* the specs under `specs/calcs/`, so a model appearing there would
@@ -558,10 +581,7 @@ pub fn molar_enthalpy_entropy(
 #[pyfunction]
 #[must_use]
 pub fn model_ids() -> Vec<String> {
-    eos::model_gen::models()
-        .iter()
-        .map(|m| m.id.to_string())
-        .collect()
+    all_models().map(|m| m.id.to_string()).collect()
 }
 
 /// What a model's spec fixes, by model id: `procedure` or `direct`.
@@ -573,7 +593,7 @@ pub fn model_ids() -> Vec<String> {
 #[pyfunction]
 #[must_use]
 pub fn model_kind(model_id: &str) -> String {
-    match eos::model_gen::model(model_id) {
+    match all_models().find(|spec| spec.id == model_id) {
         Some(spec) => spec.kind.to_string(),
         None => String::new(),
     }
@@ -588,7 +608,7 @@ pub fn model_kind(model_id: &str) -> String {
 #[pyfunction]
 #[must_use]
 pub fn model_schemes(model_id: &str) -> Vec<String> {
-    match eos::model_gen::model(model_id) {
+    match all_models().find(|spec| spec.id == model_id) {
         // A `direct` model has no scheme, and an empty list is the honest answer:
         // there is no procedure whose name could be compared, and the contract test
         // asserts the emptiness rather than papering over it with a placeholder.

@@ -309,6 +309,19 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class SeparatorResult:
+    T: Qty
+    P: Qty
+    beta: float | None
+    gas_flow: float
+    gas_z: list[float]
+    liquid_flow: float
+    liquid_z: list[float]
+    phase: str
+    iterations: int
+    warnings: list[Warning]
+
+@final
 class ConductionPlaneWallResult:
     q: Qty
     warnings: list[Warning]
@@ -451,6 +464,26 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def separator(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    h_ref: list[float],
+    s_ref: list[float],
+    T_ref: float,
+    P_ref: float,
+    T: float,
+    P: float,
+    n: float,
+    z: list[float],
+    pressure_drop: float,
+    heat_duty: float,
+) -> SeparatorResult: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
 
 # --- introspection --------------------------------------------------------

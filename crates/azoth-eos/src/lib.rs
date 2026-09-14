@@ -71,7 +71,12 @@ use azoth_core::{AzothError, ModelAlgorithm, ModelSpec, Result};
 /// Here rather than in each of the three models that need it, because three copies of
 /// a check is three places for it to drift, and the check is about the *spec* rather
 /// than about any one model.
-pub(crate) fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
+///
+/// `pub` because `azoth-process` runs the same check on its own specs. Every unit
+/// operation is a procedure with an algorithm block, so the second consumer is not a
+/// hypothetical one - and a copy of the check in that crate would be the drift this
+/// doc comment is about.
+pub fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
     spec.algorithm.ok_or_else(|| AzothError::InvalidInput {
         field: "algorithm".to_string(),
         reason: format!(
