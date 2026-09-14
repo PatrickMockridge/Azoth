@@ -84,9 +84,17 @@ class ReducedParameters(NamedTuple):
     by a composition-weighted average of these.
     """
 
+    #: ``psi`` is the logarithmic derivative of the alpha function. It is carried here
+    #: because the mixture's departure functions are the pure form with ``psi`` replaced
+    #: by a composition-weighted average of these.
     a: list[float]
     b: list[float]
     psi: list[float]
+    #: ``T * dpsi_i/dT`` for every component: the same derivative already multiplied by
+    #: the absolute temperature, which is the form the departure heat capacity needs.
+    #: Carried because ``kappa`` and ``Tr`` - the two things it is built from - are
+    #: local to :func:`reduced_parameters`.
+    psi_t: list[float]
     warnings: list[Warning]
 
 
@@ -107,13 +115,16 @@ class PhaseState(NamedTuple):
     s_dep_r: float
     #: The composition-weighted average of the components' ``psi``.
     psi_bar: float
+    #: The departure heat capacity over ``R``, for the mixture.
+    cp_dep_r: float
 
 
 def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) -> ReducedParameters:
-    """``(A_i, B_i, psi_i, warnings)`` for every component at a state."""
+    """``(A_i, B_i, psi_i, T*dpsi_i/dT, warnings)`` for every component at a state."""
     a: list[float] = []
     b: list[float] = []
     psi: list[float] = []
+    psi_t: list[float] = []
     warnings: list[Warning] = []
     for component in mixture.components:
         kappa = pr_kappa(component.omega)
@@ -129,7 +140,16 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
         a.append(ab.a_reduced)
         b.append(ab.b_reduced)
         psi.append(-kappa.kappa * sqrt_tr / (1.0 + kappa.kappa * (1.0 - sqrt_tr)))
-    return ReducedParameters(a=a, b=b, psi=psi, warnings=warnings)
+        # ``T*dpsi/dT``, from ``dpsi/dTr`` and ``dTr/dT = 1/Tc``. Carrying the ``T``
+        # rather than dividing it out later keeps this free of the absolute
+        # temperature: it is a function of ``Tr`` alone.
+        psi_t.append(
+            -kappa.kappa
+            * (1.0 + kappa.kappa)
+            * reduced_temperature
+            / (2.0 * sqrt_tr * (1.0 + kappa.kappa * (1.0 - sqrt_tr)) ** 2)
+        )
+    return ReducedParameters(a=a, b=b, psi=psi, psi_t=psi_t, warnings=warnings)
 
 
 def mixture_parameters(
@@ -210,14 +230,48 @@ def phase_state_at(
     # it exactly at one component.
     weight_total = 0.0
     weighted_psi = 0.0
+    weighted_psi_t = 0.0
     for i in range(n):
         for j in range(n):
             weight = x[i] * x[j] * (1.0 - kij[i][j]) * math.sqrt(a[i] * a[j])
+            psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j])
             weight_total += weight
-            weighted_psi += weight * 0.5 * (reduced.psi[i] + reduced.psi[j])
+            weighted_psi += weight * psi_pair
+            # ``T*d(weight*psi_pair)/dT`` for this pair. The weight carries
+            # ``sqrt(A_i A_j)``, whose logarithmic derivative is ``psi_pair - 2``, and
+            # ``psi_pair`` carries the two components' own derivatives.
+            weighted_psi_t += weight * (
+                (psi_pair - 2.0) * psi_pair + 0.5 * (reduced.psi_t[i] + reduced.psi_t[j])
+            )
     psi_bar = weighted_psi / weight_total
+    t_dpsi_bar = weighted_psi_t / weight_total - psi_bar * (psi_bar - 2.0)
     h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term
     s_dep_r = h_dep_rt - sum(xi * lp for xi, lp in zip(x, ln_phi, strict=True))
+
+    # The heat-capacity departure. ``a_mix`` moves with temperature exactly as ``A``
+    # does in ``eos.pr_departure`` - its logarithmic derivative is ``psi_bar - 2``,
+    # because the weights that form it are the same terms - so these lines are that
+    # calc's with ``psi_bar`` in place of ``psi``.
+    t_da = a_mix * (psi_bar - 2.0)
+    t_db = -b_mix
+    t_dc = coefficient * (psi_bar - 1.0)
+    d_f_dz = 3.0 * z * z + 2.0 * (b_mix - 1.0) * z + (a_mix - 3.0 * b_mix * b_mix - 2.0 * b_mix)
+    t_dfdt = (
+        t_db * z * z
+        + (t_da - 6.0 * b_mix * t_db - 2.0 * t_db) * z
+        + (3.0 * b_mix * b_mix * t_db + 2.0 * b_mix * t_db - t_da * b_mix - a_mix * t_db)
+    )
+    t_dz = -t_dfdt / d_f_dz
+    n_plus = z + (1.0 + _SQRT_2) * b_mix
+    n_minus = z + (1.0 - _SQRT_2) * b_mix
+    t_di = (t_dz + (1.0 + _SQRT_2) * t_db) / n_plus - (t_dz + (1.0 - _SQRT_2) * t_db) / n_minus
+    cp_dep_r = (
+        h_dep_rt
+        + t_dz
+        + t_dc * (psi_bar - 1.0) * i_term
+        + coefficient * t_dpsi_bar * i_term
+        + coefficient * (psi_bar - 1.0) * t_di
+    )
 
     return PhaseState(
         a_mix=a_mix,
@@ -227,6 +281,7 @@ def phase_state_at(
         h_dep_rt=h_dep_rt,
         s_dep_r=s_dep_r,
         psi_bar=psi_bar,
+        cp_dep_r=cp_dep_r,
     )
 
 

@@ -87,6 +87,41 @@ pub fn pr_departure(
     let h_dep_rt = (z - 1.0) + coefficient * (psi - 1.0) * i_term;
     let s_dep_r = ln_z_minus_b + coefficient * psi * i_term;
 
+    // The heat-capacity departure, from `Cp^R/R = y + T*(dy/dT)_P` with `y = h_dep_rt`.
+    //
+    // Every derivative below is already multiplied by `T` - that is what the `t_`
+    // prefix means - so the `1/T` that each of them carries cancels and no term here
+    // needs the absolute temperature, only `Tr`. That is what lets this be an output
+    // of the same call as the three above, and why it declares no input they do not.
+    let t_da = a_reduced * (psi - 2.0);
+    let t_db = -b_reduced;
+    let t_dpsi =
+        -kappa * (1.0 + kappa) * Tr / (2.0 * sqrt_tr * (1.0 + kappa * (1.0 - sqrt_tr)).powi(2));
+    let t_dc = coefficient * (psi - 1.0);
+
+    // `z` is a root of `F(z, T) = 0`, so `dz/dT = -(dF/dT)/(dF/dz)` and the chain
+    // rule carries the two reduced-parameter derivatives through both brackets.
+    let d_f_dz = 3.0 * z * z
+        + 2.0 * (b_reduced - 1.0) * z
+        + (a_reduced - 3.0 * b_reduced * b_reduced - 2.0 * b_reduced);
+    let t_dfdt = t_db * z * z
+        + (t_da - 6.0 * b_reduced * t_db - 2.0 * t_db) * z
+        + (3.0 * b_reduced * b_reduced * t_db + 2.0 * b_reduced * t_db
+            - t_da * b_reduced
+            - a_reduced * t_db);
+    let t_dz = -t_dfdt / d_f_dz;
+
+    let n_plus = z + (1.0 + std::f64::consts::SQRT_2) * b_reduced;
+    let n_minus = z + (1.0 - std::f64::consts::SQRT_2) * b_reduced;
+    let t_di = (t_dz + (1.0 + std::f64::consts::SQRT_2) * t_db) / n_plus
+        - (t_dz + (1.0 - std::f64::consts::SQRT_2) * t_db) / n_minus;
+
+    let cp_dep_r = h_dep_rt
+        + t_dz
+        + t_dc * (psi - 1.0) * i_term
+        + coefficient * t_dpsi * i_term
+        + coefficient * (psi - 1.0) * t_di;
+
     apply_checks(
         spec.derived_checks(),
         |quantity| match quantity {
@@ -102,6 +137,7 @@ pub fn pr_departure(
         ln_phi,
         h_dep_rt,
         s_dep_r,
+        cp_dep_r,
         warnings,
     })
 }

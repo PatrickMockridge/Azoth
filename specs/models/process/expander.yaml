@@ -225,10 +225,10 @@ cases:
       outlet_pressure: 500000.0
       efficiency: 0.9
     expected:
-      T: 259.83556747436535
+      T: 259.8355676783778
       P: 500000.0
-      power: -18911.450787166472
-      isentropic_temperature: 258.3310657501221
+      power: -18911.45107513822
+      isentropic_temperature: 258.3310655160541
     tolerance: 1.0e-9
 
   - id: a_superheated_feed_expands_to_vapour
@@ -252,8 +252,8 @@ cases:
       outlet_pressure: 500000.0
       efficiency: 0.9
     expected:
-      T: 320.82670307159424
+      T: 320.8267034829063
       P: 500000.0
-      power: -37081.70558078743
-      isentropic_temperature: 308.3776784896851
+      power: -37081.70547629313
+      isentropic_temperature: 308.3776788396833
     tolerance: 1.0e-9

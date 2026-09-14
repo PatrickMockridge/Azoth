@@ -141,6 +141,7 @@ pub fn molar_enthalpy_entropy(
     let theta_ref = ideal_gas.t_ref.value / REFERENCE_TEMPERATURE;
     let mut h_ideal = 0.0;
     let mut s_ideal = 0.0;
+    let mut cp_ideal_over_r = 0.0;
     for (i, &z_i) in z.iter().enumerate() {
         let (a, b, c, d) = (
             ideal_gas.cp_a[i],
@@ -163,6 +164,9 @@ pub fn molar_enthalpy_entropy(
                 + d * (theta.powi(3) - theta_ref.powi(3)) / 3.0);
         h_ideal += z_i * (ideal_gas.h_ref[i] + dh);
         s_ideal += z_i * (ideal_gas.s_ref[i] + ds);
+        // The polynomial itself, at the state's `theta`. It is the integrand of `dh`,
+        // so reporting it costs one evaluation and no new assumption.
+        cp_ideal_over_r += z_i * (a + b * theta + c * theta.powi(2) + d * theta.powi(3));
     }
     // The two ideal-gas terms that no coefficient switches off. The pressure one is
     // per mole of mixture - an ideal gas's entropy falls by `R ln(P/P_ref)` however
@@ -173,6 +177,9 @@ pub fn molar_enthalpy_entropy(
     let h_departure = MOLAR_GAS_CONSTANT * t.value * state.h_dep_rt;
     let s_departure = MOLAR_GAS_CONSTANT * state.s_dep_r;
 
+    let cp_ideal = MOLAR_GAS_CONSTANT * cp_ideal_over_r;
+    let cp_departure = MOLAR_GAS_CONSTANT * state.cp_dep_r;
+
     Ok(MolarEnthalpyEntropyResult {
         h: joules_per_mole(h_ideal + h_departure),
         s: joules_per_mole_kelvin(s_ideal + s_departure),
@@ -181,6 +188,9 @@ pub fn molar_enthalpy_entropy(
         h_departure: joules_per_mole(h_departure),
         s_departure: joules_per_mole_kelvin(s_departure),
         psi_bar: state.psi_bar,
+        cp: joules_per_mole_kelvin(cp_ideal + cp_departure),
+        cp_ideal: joules_per_mole_kelvin(cp_ideal),
+        cp_departure: joules_per_mole_kelvin(cp_departure),
         warnings,
     })
 }

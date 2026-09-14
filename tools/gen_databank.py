@@ -63,6 +63,7 @@ import argparse
 import csv
 import io
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -82,17 +83,113 @@ CITATION = f"NeqSim v{NEQSIM_VERSION} COMP.csv (Equinor/NTNU), Apache-2.0, retri
 
 #: Output column -> (NeqSim column, conversion). The conversions are the ones
 #: documented above, each with the reason it is that and not another.
-COMPONENT_COLUMNS: tuple[tuple[str, str, object], ...] = (
-    ("name", "NAME", lambda v: v.strip().lower()),
-    ("cas", "CASnumber", lambda v: v.strip()),
-    ("formula", "FORMULA", lambda v: v.strip()),
-    ("molar_mass_kg_per_mol", "MOLARMASS", lambda v: float(v) / 1000.0),
-    ("tc_k", "TC", lambda v: float(v) + 273.15),
-    ("pc_pa", "PC", lambda v: float(v) * 1.0e5),
-    ("acentric_factor", "ACSFACT", float),
-    ("critical_volume_m3_per_mol", "CRITVOL", lambda v: float(v) * 1.0e-6),
-    ("liquid_density_kg_per_m3", "LIQDENS", lambda v: float(v) * 1000.0),
-)
+#: How an upstream value becomes the unit the manifest records for that column.
+#:
+#: Every entry is a place NeqSim's file and this library disagree about a unit, and the
+#: comment names both sides. A column absent from this table is carried exactly as
+#: NeqSim stores it, which the manifest records as `neqsim-internal` - not a guess, and
+#: countable, so the columns whose unit nobody has established are visible.
+CONVERSIONS: dict[str, Callable[[str], object]] = {
+    "MOLARMASS": lambda v: float(v) / 1000.0,  # g/mol -> kg/mol
+    "TC": lambda v: float(v) + 273.15,  # degC -> K
+    "PC": lambda v: float(v) * 1.0e5,  # bar -> Pa
+    "CRITVOL": lambda v: float(v) * 1.0e-6,  # cm3/mol -> m3/mol
+    "LIQDENS": lambda v: float(v) * 1000.0,  # g/cm3 -> kg/m3
+    "NORMBOIL": lambda v: float(v) + 273.15,  # degC -> K
+    "sigmaSAFT": lambda v: float(v) / 1.0e10,  # Angstrom -> m
+    "sigmaSAFTVRMie": lambda v: float(v) / 1.0e10,  # Angstrom -> m
+    # A defect in the upstream file, not a unit: six rows of this column are written
+    # with a comma decimal separator - `propane/CO2 = 0,1241` and five more alkane/CO2
+    # pairs. NeqSim's own reader is `Double.parseDouble`, which throws on every one, so
+    # the file has never been read along that path. The values rise monotonically with
+    # carbon number, which is what a Soreide-Whitson kij does, so the comma is a decimal
+    # point and the fix is stated here rather than applied silently to the source.
+    "KIJWhitsonSoriede": lambda v: float(v.replace(",", ".")),
+}
+
+
+def read_rows(path: Path) -> list[dict[str, str]]:
+    """Rows of a NeqSim resource CSV, decoded strictly.
+
+    Strictly rather than with `errors="replace"`, which is what this did. A replaced
+    byte is silent: a name or a formula arrives with U+FFFD in it and the row parses
+    anyway, so the corruption ships. The unit conversions are guarded by `ROUND_TRIP`
+    and the encoding was guarded by nothing.
+    """
+    try:
+        with path.open(newline="", encoding="utf-8") as handle:
+            return [row for row in csv.DictReader(handle) if row.get("NAME") or row.get("COMP1")]
+    except UnicodeDecodeError as error:
+        raise ValueError(
+            f"{path}: not valid UTF-8 (byte {error.start}). Read strictly because a "
+            f"replaced byte is an undetectable corruption in a shipped component row."
+        ) from error
+
+
+def _text_columns(source: Path) -> frozenset[str]:
+    """The columns whose values are not all numbers, read from the file itself.
+
+    **Read rather than listed**, because a list is a second copy of the file that can be
+    wrong: `associationscheme` holds `4C`, `HydrateFormer` holds `yes`, and a column
+    coerced to a number is a row silently dropped - which is how the first run of this
+    lost two components and three hundred interaction pairs without saying so.
+    """
+    text: set[str] = set()
+    for row in read_rows(source):
+        for name, value in row.items():
+            if name in text:
+                continue
+            stripped = (value or "").strip()
+            if not stripped:
+                continue
+            try:
+                float(stripped)
+            except ValueError:
+                text.add(name)
+    return frozenset(text)
+
+
+TEXT_COLUMNS: frozenset[str] = _text_columns(SOURCES / "COMP.csv")
+
+
+def _converter(column: str) -> Callable[[str], object]:
+    """The function that turns one upstream value into the unit the manifest states.
+
+    `CONVERSIONS` is the record of every column where the two units differ, so a column
+    absent from it is carried as NeqSim stores it and the manifest's `unit` says what
+    that is - a stated unit where it is known, `neqsim-internal` where it is not. The
+    two are told apart in the manifest rather than here, because the difference between
+    "dimensionless" and "nobody has established this" is what a reader needs and a
+    conversion table cannot carry it.
+    """
+    if column in TEXT_COLUMNS:
+        # `NAME` is lower-cased as well as trimmed: it is the key every other table and
+        # the keycard join on, and `INTER.csv` holds the same names in lower case. A
+        # text column carried with `str.strip` alone matches nothing.
+        return (lambda v: v.strip().lower()) if column == "NAME" else str.strip
+    return CONVERSIONS.get(column, float)
+
+
+def _component_columns() -> tuple[tuple[str, str, Callable[[str], object]], ...]:
+    """The columns to carry, **read from the manifest** rather than listed again.
+
+    This used to be a tuple written out here, next to a manifest that listed the same
+    columns, held together by a disagreement check. The check was the symptom: two
+    lists that had to be kept equal by hand. There is one list now, and the manifest is
+    it - so a column is carried because the manifest says so, and no edit can make the
+    two disagree.
+    """
+    found, problems = manifest_module.read()
+    if problems:
+        raise SystemExit("gen_databank: " + "\n  ".join(problems))
+    return tuple(
+        (column.as_field or "", column.name, _converter(column.name))
+        for column in found.file("neqsim/COMP.csv").columns
+        if column.disposition in manifest_module.CARRIED
+    )
+
+
+COMPONENT_COLUMNS: tuple[tuple[str, str, Callable[[str], object]], ...] = _component_columns()
 
 #: Which of NeqSim's component types a cubic equation of state can describe.
 #:
@@ -110,9 +207,27 @@ KEEP_TYPES = frozenset(
     {"HC", "inert", "other", "glycol", "acid", "alcohol", "amine", "chlorine", "water"}
 )
 
+
 #: The interaction parameters, keyed by ordered pair. `KIJPR` is Peng-Robinson's,
 #: which is the only cubic this library implements today.
-KIJ_HEADER = ("component_a", "component_b", "kij_pr")
+def _inter_columns() -> tuple[tuple[str, str, Callable[[str], object]], ...]:
+    """The interaction columns to carry, read from the manifest for the same reason
+    `_component_columns` is: one list, and the manifest is it."""
+    found, problems = manifest_module.read()
+    if problems:
+        raise SystemExit("gen_databank: " + "\n  ".join(problems))
+    return tuple(
+        (column.as_field or "", column.name, _converter(column.name))
+        for column in found.file("neqsim/INTER.csv").columns
+        if column.disposition in manifest_module.CARRIED
+    )
+
+
+INTER_COLUMNS: tuple[tuple[str, str, Callable[[str], object]], ...] = _inter_columns()
+
+#: The header of the interaction file, derived from the column spec above so the two
+#: cannot disagree about the order.
+KIJ_HEADER: tuple[str, ...] = tuple(name for name, _, _ in INTER_COLUMNS)
 
 #: The header of the component file, derived from the column spec above so the two
 #: cannot disagree about the order.
@@ -150,65 +265,6 @@ def resource_dir(checkout: Path) -> Path:
     raise FileNotFoundError(f"no COMP.csv under {checkout}")
 
 
-def read_rows(path: Path) -> list[dict[str, str]]:
-    """Rows of a NeqSim resource CSV, decoded strictly.
-
-    Strictly rather than with `errors="replace"`, which is what this did. A replaced
-    byte is silent: a name or a formula arrives with U+FFFD in it and the row parses
-    anyway, so the corruption ships. The unit conversions are guarded by `ROUND_TRIP`
-    and the encoding was guarded by nothing.
-    """
-    try:
-        with path.open(newline="", encoding="utf-8") as handle:
-            return [row for row in csv.DictReader(handle) if row.get("NAME") or row.get("COMP1")]
-    except UnicodeDecodeError as error:
-        raise ValueError(
-            f"{path}: not valid UTF-8 (byte {error.start}). Read strictly because a "
-            f"replaced byte is an undetectable corruption in a shipped component row."
-        ) from error
-
-
-def manifest_disagreements() -> list[str]:
-    """Where this script's `used` columns and `databank/manifest.yaml` differ.
-
-    The rule that keeps the manifest a record of a decision rather than a description
-    of this file. Checked before anything is built, so a column added to
-    `COMPONENT_COLUMNS` without a manifest row fails here instead of quietly
-    producing a file the manifest does not describe - and so does a column dropped
-    from the manifest and left in the script.
-    """
-    found, problems = manifest_module.read()
-    if problems:
-        return problems
-
-    ours = {
-        "neqsim/COMP.csv": {out_name for out_name, _, _ in COMPONENT_COLUMNS},
-        "neqsim/INTER.csv": set(KIJ_HEADER),
-    }
-
-    messages: list[str] = []
-    for file_id, produced in ours.items():
-        declared = {
-            column.as_field
-            for column in found.file(file_id).columns
-            if column.disposition == "used"
-        }
-        extra = sorted(produced - declared)
-        if extra:
-            messages.append(
-                f"{file_id}: this script produces {extra}, which the manifest does not "
-                f"declare `used`. Add the column to databank/manifest.yaml with the "
-                f"reason it is carried across."
-            )
-        missing = sorted(declared - produced)
-        if missing:
-            messages.append(
-                f"{file_id}: the manifest declares {missing} `used` and this script does "
-                f"not produce them. One of the two has changed and the other has not."
-            )
-    return messages
-
-
 def build_components(source: Path) -> list[dict[str, str]]:
     """`data/components/components.csv` as text rows."""
     out: list[dict[str, str]] = []
@@ -220,11 +276,19 @@ def build_components(source: Path) -> list[dict[str, str]]:
             # Not a substance a cubic describes. See KEEP_TYPES.
             continue
         try:
-            values = {out_name: convert(row[src]) for out_name, src, convert in COMPONENT_COLUMNS}
+            values = {}
+            for out_name, src, convert in COMPONENT_COLUMNS:
+                raw = (row.get(src) or "").strip()
+                # An empty cell is a column this component has no value for - an
+                # acid has no CPA association volume - so it is carried empty. It is
+                # not zero, and it is not the same thing as a value that will not
+                # parse. Treating the two alike is what dropped `hno3` and `h2so4`
+                # from the compiled table without a word.
+                values[out_name] = "" if not raw else str(convert(raw))
         except (KeyError, ValueError):
-            # A row NeqSim cannot parse either. Skipped rather than shipped as a
-            # partial record: a component missing its critical pressure is not a
-            # component, and half a row would look like one.
+            # A non-empty value NeqSim could not parse either. Skipped rather than
+            # shipped as a partial record: a component missing its critical pressure is
+            # not a component, and half a row would look like one.
             continue
         values["citation"] = CITATION
         out.append(values)
@@ -232,7 +296,14 @@ def build_components(source: Path) -> list[dict[str, str]]:
 
 
 def build_kij(source: Path, known: set[str]) -> list[dict[str, str]]:
-    """`data/components/kij.csv`, restricted to pairs this databank has both of."""
+    """`data/components/kij.csv`: every carried column, for pairs this databank has both of.
+
+    The row filter is the one this file always had - both components present in the
+    compiled component table, and a Peng-Robinson `KIJPR` to carry - so the row set is
+    unchanged. The columns are now every one the manifest carries rather than the
+    interaction parameter alone: a pair table that carried one model's parameter and
+    dropped the other twenty-seven would be the slice this change exists to remove.
+    """
     out: list[dict[str, str]] = []
     for row in read_rows(source / "INTER.csv"):
         a = (row.get("COMP1") or "").strip().lower()
@@ -243,10 +314,19 @@ def build_kij(source: Path, known: set[str]) -> list[dict[str, str]]:
         if not raw:
             continue
         try:
-            value = float(raw)
+            float(raw)
         except ValueError:
             continue
-        out.append({"component_a": a, "component_b": b, "kij_pr": repr(value)})
+        carried: dict[str, str] = {}
+        for out_name, source_name, convert in INTER_COLUMNS:
+            text = (row.get(source_name) or "").strip()
+            if out_name in ("component_a", "component_b"):
+                carried[out_name] = a if out_name == "component_a" else b
+            elif not text:
+                carried[out_name] = ""
+            else:
+                carried[out_name] = repr(convert(text))
+        out.append(carried)
     return out
 
 
@@ -304,17 +384,6 @@ def main(argv: list[str] | None = None) -> int:
             f"checkout, or at {SOURCES.relative_to(ROOT)}.",
             file=sys.stderr,
         )
-        return 1
-
-    disagreements = manifest_disagreements()
-    if disagreements:
-        print(
-            "gen_databank: this script and databank/manifest.yaml disagree about which "
-            "columns are vendored. Nothing has been written:",
-            file=sys.stderr,
-        )
-        for disagreement in disagreements:
-            print(f"  {disagreement}", file=sys.stderr)
         return 1
 
     try:

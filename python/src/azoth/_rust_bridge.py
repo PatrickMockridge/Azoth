@@ -248,7 +248,7 @@ def pr_departure(
 ) -> PrDepartureResult:
     """The Peng-Robinson fugacity coefficient and departures, computed in Rust.
 
-    Five dimensionless arguments and three dimensionless outputs, so there is
+    Five dimensionless arguments and four dimensionless outputs, so there is
     nothing to convert and no unit string to keep in step.
     """
     result = _core.pr_departure(a_reduced, b_reduced, z, kappa, Tr)
@@ -256,6 +256,7 @@ def pr_departure(
         ln_phi=result.ln_phi,
         h_dep_rt=result.h_dep_rt,
         s_dep_r=result.s_dep_r,
+        cp_dep_r=result.cp_dep_r,
         warnings=_warnings(result.warnings),
     )
 
@@ -696,6 +697,9 @@ def molar_enthalpy_entropy(
         h_departure=from_si(result.h_departure.magnitude_si, result.h_departure.unit),
         s_departure=from_si(result.s_departure.magnitude_si, result.s_departure.unit),
         psi_bar=result.psi_bar,
+        cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        cp_ideal=from_si(result.cp_ideal.magnitude_si, result.cp_ideal.unit),
+        cp_departure=from_si(result.cp_departure.magnitude_si, result.cp_departure.unit),
         warnings=_warnings(result.warnings),
     )
 

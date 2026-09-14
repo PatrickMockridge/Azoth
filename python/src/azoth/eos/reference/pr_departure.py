@@ -93,6 +93,45 @@ def pr_departure(
     h_dep_rt = (z - 1.0) + coefficient * (psi - 1.0) * i_term
     s_dep_r = ln_z_minus_b + coefficient * psi * i_term
 
+    # The heat-capacity departure, from ``Cp^R/R = y + T*(dy/dT)_P`` with
+    # ``y = h_dep_rt``. Every derivative below is already multiplied by ``T`` - that
+    # is what the ``t_`` prefix means - so the ``1/T`` each of them carries cancels
+    # and no term needs the absolute temperature, only ``Tr``.
+    t_da = a_reduced * (psi - 2.0)
+    t_db = -b_reduced
+    t_dpsi = -kappa * (1.0 + kappa) * Tr / (2.0 * sqrt_tr * (1.0 + kappa * (1.0 - sqrt_tr)) ** 2)
+    t_dc = coefficient * (psi - 1.0)
+
+    # ``z`` is a root of ``F(z, T) = 0``, so ``dz/dT = -(dF/dT)/(dF/dz)``.
+    d_f_dz = (
+        3.0 * z * z
+        + 2.0 * (b_reduced - 1.0) * z
+        + (a_reduced - 3.0 * b_reduced * b_reduced - 2.0 * b_reduced)
+    )
+    t_dfdt = (
+        t_db * z * z
+        + (t_da - 6.0 * b_reduced * t_db - 2.0 * t_db) * z
+        + (
+            3.0 * b_reduced * b_reduced * t_db
+            + 2.0 * b_reduced * t_db
+            - t_da * b_reduced
+            - a_reduced * t_db
+        )
+    )
+    t_dz = -t_dfdt / d_f_dz
+
+    n_plus = z + (1.0 + sqrt_2) * b_reduced
+    n_minus = z + (1.0 - sqrt_2) * b_reduced
+    t_di = (t_dz + (1.0 + sqrt_2) * t_db) / n_plus - (t_dz + (1.0 - sqrt_2) * t_db) / n_minus
+
+    cp_dep_r = (
+        h_dep_rt
+        + t_dz
+        + t_dc * (psi - 1.0) * i_term
+        + coefficient * t_dpsi * i_term
+        + coefficient * (psi - 1.0) * t_di
+    )
+
     def derived(quantity: str) -> float | None:
         # The bound that matters is on the difference, not on `z`: `z = B` is the
         # zero-volume limit and nothing about `z` alone says where it is.
@@ -106,5 +145,6 @@ def pr_departure(
         ln_phi=ln_phi,
         h_dep_rt=h_dep_rt,
         s_dep_r=s_dep_r,
+        cp_dep_r=cp_dep_r,
         warnings=tuple(warnings),
     )

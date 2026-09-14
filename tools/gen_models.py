@@ -140,6 +140,10 @@ def emit_rust_algorithm(algorithm: dict[str, Any], inner_ref: str, indent: str) 
     initialisation_literal = (
         "None" if initialisation is None else f"Some({rust_str(initialisation)})"
     )
+    initial_temperature = algorithm.get("initial_temperature")
+    initial_temperature_literal = (
+        "None" if initial_temperature is None else f"Some({rust_f64(initial_temperature)})"
+    )
     return (
         "ModelAlgorithm {\n"
         f"{indent}    scheme: {rust_str(algorithm['scheme'])},\n"
@@ -148,6 +152,7 @@ def emit_rust_algorithm(algorithm: dict[str, Any], inner_ref: str, indent: str) 
         f"{indent}    max_iterations: {algorithm['max_iterations']},\n"
         f"{indent}    bracket: {bracket_literal},\n"
         f"{indent}    initialisation: {initialisation_literal},\n"
+        f"{indent}    initial_temperature: {initial_temperature_literal},\n"
         f"{indent}    inner: {inner_ref},\n"
         f"{indent}}}"
     )

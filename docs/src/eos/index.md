@@ -8,7 +8,7 @@ Every calculation in this section is generated from its specification. Each page
 |---|---|---|
 | [`eos.ideal_gas_cp`](./ideal_gas_cp.md) | $\frac{C_{p}}{R} = a + b\,\theta + c\,\theta^{2} + d\,\theta^{3}, \qquad \theta = \frac{T}{T_{0}}, \qquad T_{0} = 1000\ \mathrm{K}$ | The standard four-term ideal-gas heat-capacity polynomial |
 | [`eos.pr_alpha_ab`](./pr_alpha_ab.md) | $\alpha = \left[1 + \kappa\left(1 - \sqrt{T_{r}}\right)\right]^{2}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}$ | Peng, D. Y.; Robinson, D. B. (1976) |
-| [`eos.pr_departure`](./pr_departure.md) | $\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - \frac{A}{2\sqrt{2}B}I, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + \frac{A}{2\sqrt{2}B}\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + \frac{A}{2\sqrt{2}B}\psi I$ | Peng, D. Y.; Robinson, D. B. (1976) |
+| [`eos.pr_departure`](./pr_departure.md) | $\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad C = \frac{A}{2\sqrt{2}B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - CI, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + C\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + C\psi I, \qquad \frac{C_{p}^{R}}{R} = \frac{H^{R}}{RT} + T\left(\frac{\partial}{\partial T}\frac{H^{R}}{RT}\right)_{P}$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pr_kappa`](./pr_kappa.md) | $\kappa = 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2}$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pr_mass_density`](./pr_mass_density.md) | $\rho = \frac{M}{v}$ | The definition of molar mass |
 | [`eos.pr_molar_volume`](./pr_molar_volume.md) | $v = \frac{z\,R\,T}{P}$ | The ideal-gas law with the compressibility factor as the departure from it |
@@ -27,8 +27,8 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.critical_point`](./critical_point.md) | `heidemann_khalil_critical` | Heidemann, R. A.; Khalil, A. M. (1980) |
 | [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.molar_enthalpy_entropy`](./molar_enthalpy_entropy.md) | `direct composition` | The composition of ideal-gas and residual contributions |
-| [`eos.ph_flash`](./ph_flash.md) | `ph_flash_temperature_bisection` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
-| [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_bisection` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
+| [`eos.ph_flash`](./ph_flash.md) | `ph_flash_inverse_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
+| [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.pt_flash`](./pt_flash.md) | `successive_substitution_flash` | Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982) |
 | [`eos.pure_saturation`](./pure_saturation.md) | `saturation_pressure_bisection` | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |

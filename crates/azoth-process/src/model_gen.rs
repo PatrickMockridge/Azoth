@@ -112,10 +112,10 @@ static COMPRESSOR_CASES: &[TestCase] = &[
         ],
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
         expected: &[
-            ("T", 328.0895195007323),
+            ("T", 328.0895199847116),
             ("P", 4000000.0),
-            ("power", 15274.141294383553),
-            ("isentropic_temperature", 324.9618244171142),
+            ("power", 15274.141966358111),
+            ("isentropic_temperature", 324.9618248392254),
         ],
         expected_vectors: &[],
     },
@@ -151,7 +151,7 @@ static COMPRESSOR_CASES: &[TestCase] = &[
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
         expected: &[
             ("P", 4000000.0),
-            ("isentropic_temperature", 324.9618244171142),
+            ("isentropic_temperature", 324.9618248392254),
         ],
         expected_vectors: &[],
     },
@@ -164,6 +164,7 @@ static COMPRESSOR_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: None,
 };
 
@@ -174,6 +175,7 @@ static COMPRESSOR_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: Some(&COMPRESSOR_INNER),
 };
 
@@ -281,10 +283,10 @@ static EXPANDER_CASES: &[TestCase] = &[
         ],
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
         expected: &[
-            ("T", 259.83556747436535),
+            ("T", 259.8355676783778),
             ("P", 500000.0),
-            ("power", -18911.450787166472),
-            ("isentropic_temperature", 258.3310657501221),
+            ("power", -18911.45107513822),
+            ("isentropic_temperature", 258.3310655160541),
         ],
         expected_vectors: &[],
     },
@@ -319,10 +321,10 @@ static EXPANDER_CASES: &[TestCase] = &[
         ],
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
         expected: &[
-            ("T", 320.82670307159424),
+            ("T", 320.8267034829063),
             ("P", 500000.0),
-            ("power", -37081.70558078743),
-            ("isentropic_temperature", 308.3776784896851),
+            ("power", -37081.70547629313),
+            ("isentropic_temperature", 308.3776788396833),
         ],
         expected_vectors: &[],
     },
@@ -335,6 +337,7 @@ static EXPANDER_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: None,
 };
 
@@ -345,6 +348,7 @@ static EXPANDER_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: Some(&EXPANDER_INNER),
 };
 
@@ -481,6 +485,7 @@ static HEATER_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: None,
 };
 
@@ -491,6 +496,7 @@ static HEATER_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: Some(&HEATER_INNER),
 };
 
@@ -621,6 +627,7 @@ static MIXER_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: None,
 };
 
@@ -631,6 +638,7 @@ static MIXER_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: Some(&MIXER_INNER),
 };
 
@@ -738,10 +746,10 @@ static PUMP_CASES: &[TestCase] = &[
         ],
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
         expected: &[
-            ("T", 315.60042991638187),
+            ("T", 315.6004299531121),
             ("P", 3000000.0),
-            ("power", 8294.833590884116),
-            ("isentropic_temperature", 314.25679302215576),
+            ("power", 8294.83382119513),
+            ("isentropic_temperature", 314.2567931729825),
         ],
         expected_vectors: &[],
     },
@@ -776,10 +784,10 @@ static PUMP_CASES: &[TestCase] = &[
         ],
         matrices: &[("kij", &[0.0, 0.01289789, 0.01289789, 0.0])],
         expected: &[
-            ("T", 301.2741340637207),
+            ("T", 301.2741362140612),
             ("P", 5000000.0),
-            ("power", 1124.4762812424597),
-            ("isentropic_temperature", 300.99279785156244),
+            ("power", 1124.4773017828265),
+            ("isentropic_temperature", 300.99279887328595),
         ],
         expected_vectors: &[],
     },
@@ -792,6 +800,7 @@ static PUMP_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: None,
 };
 
@@ -802,6 +811,7 @@ static PUMP_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: Some(&PUMP_INNER),
 };
 
@@ -997,6 +1007,7 @@ static SEPARATOR_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: None,
+    initial_temperature: None,
     inner: None,
 };
 
@@ -1007,6 +1018,7 @@ static SEPARATOR_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: Some(&SEPARATOR_INNER),
 };
 
@@ -1117,6 +1129,7 @@ static SPLITTER_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: None,
+    initial_temperature: None,
     inner: None,
 };
 
@@ -1127,6 +1140,7 @@ static SPLITTER_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: Some(&SPLITTER_INNER),
 };
 
@@ -1259,6 +1273,7 @@ static THROTTLING_VALVE_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: None,
 };
 
@@ -1269,6 +1284,7 @@ static THROTTLING_VALVE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: Some(&THROTTLING_VALVE_INNER),
 };
 

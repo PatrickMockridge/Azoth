@@ -18,13 +18,10 @@ not an equation, and both implementations read it from here.
 
 | Setting | Value |
 |---|---|
-| Scheme | `ph_flash_temperature_bisection` |
+| Scheme | `ph_flash_inverse_temperature_newton` |
 | Convergence | `relative` |
 | Tolerance | `1e-08` |
 | Max iterations | `200` |
-| Bracket | `linear_scan_for_enthalpy` |
-| Bracket range | `100.0` to `1500.0` |
-| Bracket steps | `2000` |
 
 ## Inner procedure
 
@@ -78,18 +75,19 @@ not an equation, and both implementations read it from here.
 | `phase` | all_liquid / two_phase / all_vapour | which phase the feed is in at the answer |
 | `z_liquid` | dimensionless | the liquid root of the cubic at the answer |
 | `z_vapour` | dimensionless | the vapour root |
-| `iterations` | dimensionless | bisection steps taken |
-| `residual` | dimensionless | `|H(T) - H_target| / max(|H_target|, 1)` at the answer |
+| `iterations` | dimensionless | Newton iterations taken |
+| `residual` | dimensionless | `(H(T) - H_target) / |H_target|` at the answer, signed |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `P > 0` | raises | an absolute pressure; zero and below are not states, and the cubic's reduced variables divide by it. |
-| `T >= 100 and T <= 1500` | warns `OUT_OF_VALID_RANGE` | the bracket itself, reported rather than left implicit. The scan covers 100 K to 1500 K, so an answer outside it cannot be found - and that is a property of this implementation rather than of thermodynamics, which is why it warns. |
 
 ## Assumptions
 
-- **the bracket is a fixed range, not an adaptive one.** The scan covers 100 K to 1500 K at 2000 points. An enthalpy that no temperature in that range produces is reported as a solver failure rather than searched for elsewhere. The reason is stated in the notes: an adaptive expansion is a second thing for the two implementations to agree about, and two expansions that stop at different points take different iteration counts.
-- **the flash at each trial temperature is converged, not exact.** The inner iteration carries its own tolerance, so the enthalpy this model inverts is the enthalpy of a converged approximation. Tighter than the outer tolerance, which is why the residue reported is dominated by the bisection.
+- **the iteration is quasi-Newton in `1/T` from `initial_temperature`, not a scan.** The variable is reciprocal temperature, which is what makes the step well scaled for an enthalpy: the residual is `(H - H_target)/|H_target|` and its derivative is `-T**2 * cp / |H_target|`. `factor` halves when the residual grows and relaxes as `i/(i+1)` when it falls, and every step is clamped to ten kelvin. A bracket is maintained adaptively from the sign of the residual, which is how a trial temperature outside it is detected.
+- **a trial temperature the inner flash cannot settle is backed off, not fatal.** Upstream carries the reason: a trial temperature can land where the cubic has no valid root, and the response is to halve the gap back towards the last temperature that worked and try again, up to fifteen times. Aborting instead would fail a solvable inversion wherever the path crossed such a region.
+- **the starting temperature is declared, where upstream reads one off its system.** Upstream iterates from the temperature its thermodynamic system already holds - for a heater or a valve, the inlet temperature. A model here has no system, so the spec states the start, and both implementations take the same path from it.
+- **the flash at each trial temperature is converged, not exact.** The inner iteration carries its own tolerance, so the enthalpy this model inverts is the enthalpy of a converged approximation. Tighter than the outer tolerance.
 - **no check that the feed is stable.** This model asks where the energy balance is satisfied, not whether the state it finds is the equilibrium one - the same division `eos.bubble_pressure` makes about its own input.
 - **the enthalpy is a difference from a supplied datum.** It is not an absolute quantity and is not comparable with a value computed from a different reference state.
 

@@ -71,9 +71,28 @@ REASON_PREFIXES = (
     "superseded-by",
 )
 
-#: What may be done with a column. `used` carries a value into the compiled file;
-#: `filter` selects rows rather than carrying a value; `dropped` does neither.
-DISPOSITIONS = ("used", "filter", "dropped")
+#: What may be done with a column.
+#:
+#: `used` carries a value into the compiled file and something reads it. `vendored`
+#: carries it and nothing reads it yet - the distinction that stops this file
+#: conflating *the data is here* with *a model consumes it*, which is the question
+#: "can every calculation's inputs be supplied?" and a different question from
+#: "which calculations are ported?". `filter` selects rows rather than carrying a
+#: value; `dropped` does neither.
+DISPOSITIONS = ("used", "vendored", "filter", "dropped")
+
+#: The dispositions that put a value in the compiled file, and so must agree with its
+#: header, carry a field name, and state a unit.
+CARRIED = ("used", "vendored")
+
+#: The unit a value is stored in, or `unknown`.
+#:
+#: **A unit is recorded, never guessed.** Where NeqSim's reader states one - a setter
+#: taking a unit, a division by 1000, an addition of 273.15 - it is written here as the
+#: unit the compiled file holds. Where the reader states nothing, the value is carried
+#: exactly as NeqSim stores it and this says `neqsim-internal`: not a guess, and
+#: countable, so the set with no stated unit is visible rather than assumed away.
+NO_STATED_UNIT = "neqsim-internal"
 
 #: How a `not-yet` column names what would read it: a spec id, or a roadmap tranche.
 #: The two are told apart by shape, so the check knows whether to look the name up.
@@ -87,9 +106,13 @@ class Column:
     name: str
     disposition: str
     reason: str
-    #: The compiled column name, for `used`. Checked against the compiled header, so
-    #: a rename that skips the manifest is a failure rather than a silent shift.
+    #: The compiled column name, for `used` and `vendored`. Checked against the compiled
+    #: header, so a rename that skips the manifest is a failure rather than a silent
+    #: shift.
     as_field: str | None = None
+    #: The unit the compiled value is in. Required of every carried column, because a
+    #: number whose unit is not written down is a number nobody can use.
+    unit: str | None = None
     #: For `not-yet`, what would read it once it exists.
     consumer: str | None = None
 
@@ -119,6 +142,14 @@ class UpstreamFile:
     source_rows: int
     compiled_rows: int
     columns: tuple[Column, ...]
+    #: Whether `columns:` was written at all.
+    #:
+    #: A file that is not a table - `fiscal_parameters.json` - has no columns to
+    #: disposition, and one whose format defeats the parser has no columns this file can
+    #: honestly state. Both are vendored whole, and the difference between "declared and
+    #: present" and "declared and present, columns not yet read" has to be visible or the
+    #: second reads as an oversight. Absent `columns:` means the second.
+    columns_declared: bool = True
     rows: tuple[RowGroup, ...] = ()
     #: Columns the compiler writes that no upstream column produces - the per-row
     #: `citation` on components.csv is the one today. Listed rather than left
@@ -154,7 +185,7 @@ class Manifest:
         return {
             column.name: column.as_field or ""
             for column in self.file(file_id).columns
-            if column.disposition == "used"
+            if column.disposition in CARRIED
         }
 
     def file(self, file_id: str) -> UpstreamFile:
@@ -169,6 +200,7 @@ def _column(raw: dict[str, Any], where: str, problems: list[str]) -> Column:
     disposition = str(raw.get("disposition") or "")
     reason = str(raw.get("reason") or "")
     as_field = raw.get("as")
+    unit = raw.get("unit")
     consumer = raw.get("consumer")
 
     if not name:
@@ -179,31 +211,43 @@ def _column(raw: dict[str, Any], where: str, problems: list[str]) -> Column:
         )
 
     prefix = reason.split(":", 1)[0].strip()
-    if disposition != "used" and prefix not in REASON_PREFIXES:
+    if disposition == "vendored":
+        # A vendored column is carried and unread. Its reason says what would read it,
+        # or that nothing does - it is not a prefix from the dropped vocabulary, because
+        # a column that is present is not one this file decided against.
+        pass
+    elif disposition != "used" and prefix not in REASON_PREFIXES:
         problems.append(
             f"{where}.{name}: reason {reason!r} starts with {prefix!r}, which is not a "
             f"known prefix. Known: {list(REASON_PREFIXES)}. The prefix is what makes the "
             f"list countable, so a reason without one is a comment."
         )
 
-    if prefix == "not-yet" and not consumer:
+    if disposition != "vendored" and prefix == "not-yet" and not consumer:
         problems.append(
             f"{where}.{name}: a `not-yet` column names the `consumer` that would read "
             f"it, or it is a parking space rather than a plan."
         )
-    if prefix == "not-ported" and "`" not in reason:
+    if disposition != "vendored" and prefix == "not-ported" and "`" not in reason:
         problems.append(
             f"{where}.{name}: a `not-ported` reason names the NeqSim class or package "
             f"that would close it, in backticks. Without one this list stops being a "
             f"porting backlog and becomes somewhere to put a column."
         )
-    if disposition == "used" and not as_field:
+    if disposition in ("used", "vendored") and not as_field:
         problems.append(
-            f"{where}.{name}: a `used` column names the compiled column it becomes, in `as:`"
+            f"{where}.{name}: a `{disposition}` column names the compiled column it "
+            f"becomes, in `as:`"
         )
-    if disposition != "used" and as_field:
+    if disposition in ("used", "vendored") and not unit:
         problems.append(
-            f"{where}.{name}: only a `used` column carries `as:`, and this one is {disposition!r}"
+            f"{where}.{name}: a carried column states the unit its compiled value is in, "
+            f"or `{NO_STATED_UNIT}` where NeqSim's reader states none. A number whose "
+            f"unit is not written down is one nobody can use."
+        )
+    if disposition not in ("used", "vendored") and as_field:
+        problems.append(
+            f"{where}.{name}: only a carried column carries `as:`, and this one is {disposition!r}"
         )
 
     return Column(
@@ -211,6 +255,7 @@ def _column(raw: dict[str, Any], where: str, problems: list[str]) -> Column:
         disposition=disposition,
         reason=reason,
         as_field=str(as_field) if as_field else None,
+        unit=str(unit) if unit else None,
         consumer=str(consumer) if consumer else None,
     )
 
@@ -225,6 +270,7 @@ def _upstream_file(raw: dict[str, Any], problems: list[str]) -> UpstreamFile:
         source_rows=int(raw.get("source_rows") or 0),
         compiled_rows=int(raw.get("compiled_rows") or 0),
         columns=tuple(_column(c, file_id, problems) for c in (raw.get("columns") or ())),
+        columns_declared="columns" in raw,
         rows=tuple(
             RowGroup(selector=str(r["selector"]), count=int(r["count"]), reason=str(r["reason"]))
             for r in (raw.get("rows") or ())
@@ -233,12 +279,14 @@ def _upstream_file(raw: dict[str, Any], problems: list[str]) -> UpstreamFile:
     )
 
 
-def read(path: Path = MANIFEST, root: Path = ROOT) -> tuple[Manifest, list[str]]:
-    """Parse the manifest and return it with every problem found, parse or rule.
+def read(path: Path = MANIFEST) -> tuple[Manifest, list[str]]:
+    """Parse the manifest and report what is wrong with the file itself.
 
-    One function rather than two, because a shape error and a rule error are the same
-    kind of news to the person running the check, and splitting them would mean a
-    malformed manifest reported half its faults and stopped.
+    Parsing and cross-checking are separate steps, and this is the first. The second,
+    :func:`validate`, compares the manifest against the files on disk - which a
+    generator cannot do before it has written them, and would otherwise make it
+    impossible to add a column: the file would be stale until regenerated, and
+    regeneration would refuse until the file was current.
     """
     problems: list[str] = []
     try:
@@ -277,8 +325,17 @@ def read(path: Path = MANIFEST, root: Path = ROOT) -> tuple[Manifest, list[str]]
         not_vendored=tuple(document.get("not_vendored") or ()),
     )
 
-    problems.extend(vendoring_problems(manifest, root))
     return manifest, problems
+
+
+def validate(manifest: Manifest, root: Path = ROOT) -> list[str]:
+    """Where the manifest and the files on disk disagree.
+
+    The second step of :func:`read`'s work, and the one `tools/check_manifest.py` runs:
+    every vendored file present and declared, every column of it accounted for in both
+    directions, and the row counts what the manifest says.
+    """
+    return vendoring_problems(manifest, root)
 
 
 def _body(path: Path) -> io.StringIO:
@@ -312,7 +369,7 @@ def reasons(manifest: Manifest) -> dict[str, int]:
     counts = dict.fromkeys(REASON_PREFIXES, 0)
     for entry in manifest.files():
         for column in entry.columns:
-            if column.disposition == "used":
+            if column.disposition in CARRIED:
                 continue
             if column.prefix in counts:
                 counts[column.prefix] += 1
@@ -381,7 +438,7 @@ def vendoring_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
                 messages.append(
                     f"{entry.id}: vendored_source {entry.vendored_source!r} does not exist"
                 )
-            else:
+            elif entry.columns_declared:
                 _agree(
                     messages,
                     f"{entry.id}: {entry.vendored_source}",
@@ -405,7 +462,7 @@ def vendoring_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
                     messages,
                     f"{entry.id}: {entry.compiled_to}",
                     declared=[
-                        *(c.as_field or "" for c in entry.columns if c.disposition == "used"),
+                        *(c.as_field or "" for c in entry.columns if c.disposition in CARRIED),
                         *entry.generated,
                     ],
                     actual=header(compiled),

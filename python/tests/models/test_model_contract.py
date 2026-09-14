@@ -376,9 +376,17 @@ def test_every_model_scheme_and_inner_scheme_is_named() -> None:
             # one would be asserting something about a block it must not have.
             continue
         algorithm = model["algorithm"]
-        assert "initialisation" in algorithm or algorithm["scheme"].endswith("bisection"), (
+        # A scheme that needs somewhere to start has to say where. Either spelling will
+        # do: `initialisation` for one that starts from a named rule - Wilson K-values -
+        # and `initial_temperature` for one that starts from a temperature.
+        assert (
+            "initialisation" in algorithm
+            or "initial_temperature" in algorithm
+            or algorithm["scheme"].endswith("bisection")
+        ), (
             f"{model['id']}: a scheme that needs a starting point must declare "
-            f"`initialisation`, or two implementations take different paths"
+            f"`initialisation` or `initial_temperature`, or two implementations take "
+            f"different paths"
         )
         inner = algorithm.get("inner")
         if inner is not None:

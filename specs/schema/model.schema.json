@@ -142,6 +142,11 @@
           "description": "A nested procedure the outer one runs each iteration. Recursive, because an inner scheme has the same shape as an outer one and describing it with a second set of keys would be a second definition of what an algorithm is.",
           "$ref": "#/$defs/algorithm"
         },
+        "initial_temperature": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Where a quasi-Newton inversion of a property starts, in kelvin. The isentropic and isenthalpic flashes iterate from a temperature rather than bracketing one, so it has to be declared: two implementations starting from different temperatures take different paths, and a convergence claim that holds from one need not hold from another. Upstream starts from the temperature its thermodynamic system already holds - for a compressor, the inlet temperature - and a model here has no system, so the spec states the start instead."
+        },
         "bracket": {
           "type": "object",
           "additionalProperties": false,

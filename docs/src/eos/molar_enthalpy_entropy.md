@@ -48,6 +48,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `h_departure` | J/mol | the residual enthalpy, `R*T*h_dep_rt` |
 | `s_departure` | J/(mol*K) | the residual entropy, `R*s_dep_r`. **Does not include the entropy of mixing**, which is an ideal-gas term; see the notes. |
 | `psi_bar` | dimensionless | the composition-weighted average of the components' `psi` that the mixture departure functions are built on. Reported because it is what makes the mixture departure differ from a pure component's, and because at `N = 1` it must equal that component's own `psi` exactly - a test asserts it. |
+| `cp` | J/(mol*K) | the molar heat capacity at constant pressure, `cp_ideal + cp_departure`. |
+| `cp_ideal` | J/(mol*K) | the ideal-gas part of the heat capacity - the same polynomial whose integral gives the ideal enthalpy, evaluated at the state's temperature rather than integrated. |
+| `cp_departure` | J/(mol*K) | the residual heat capacity, `R*cp_dep_r`. It is the departure form of the derivative the isentropic and isenthalpic flashes step on: theirs is `dS/dT = cp/T` in the entropy's case, and `dH/d(1/T) = -T**2*cp` in the enthalpy's. |
 
 | Bound | On violation | Why |
 |---|---|---|

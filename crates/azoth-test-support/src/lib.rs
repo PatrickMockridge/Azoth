@@ -15,9 +15,9 @@
 //! and a copy that drifted would silently weaken the guarantee in one namespace
 //! while the other stayed green.
 //!
-//! The only thing in here that ever knew about a namespace was the spec lookup.
-//! That is now a parameter: each test binary passes its own `spec_gen::specs()`,
-//! which is the one line of a spec-driven test that is namespace-specific.
+//! The only thing in here that knows about a namespace is the spec lookup, and it
+//! is a parameter: each test binary passes its own `spec_gen::specs()`, which is the
+//! one line of a spec-driven test that is namespace-specific.
 
 use azoth_core::spec::{CalcSpec, TestCase};
 use azoth_core::{CalcResult, Warning, WarningCode};

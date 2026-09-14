@@ -131,6 +131,9 @@ class MolarEnthalpyEntropyResult:
     h_departure: Qty
     s_departure: Qty
     psi_bar: float
+    cp: Qty
+    cp_ideal: Qty
+    cp_departure: Qty
     warnings: list[Warning]
 
 @final
@@ -159,6 +162,7 @@ class PrDepartureResult:
     ln_phi: float
     h_dep_rt: float
     s_dep_r: float
+    cp_dep_r: float
     warnings: list[Warning]
 
 @final

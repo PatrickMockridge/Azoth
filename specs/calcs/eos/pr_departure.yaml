@@ -3,10 +3,27 @@ name: Peng-Robinson fugacity coefficient and departure functions
 equation: |
   psi = -kappa*Tr**0.5/(1 + kappa*(1 - Tr**0.5))
   I = ln((z + (1 + 2**0.5)*b_reduced)/(z + (1 - 2**0.5)*b_reduced))
-  ln_phi = z - 1 - ln(z - b_reduced) - (a_reduced/(2*2**0.5*b_reduced))*I
-  h_dep_rt = (z - 1) + (a_reduced/(2*2**0.5*b_reduced))*(psi - 1)*I
-  s_dep_r = ln(z - b_reduced) + (a_reduced/(2*2**0.5*b_reduced))*psi*I
-latex: '\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - \frac{A}{2\sqrt{2}B}I, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + \frac{A}{2\sqrt{2}B}\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + \frac{A}{2\sqrt{2}B}\psi I'
+  c = a_reduced/(2*2**0.5*b_reduced)
+  ln_phi = z - 1 - ln(z - b_reduced) - c*I
+  h_dep_rt = (z - 1) + c*(psi - 1)*I
+  s_dep_r = ln(z - b_reduced) + c*psi*I
+
+  # The heat-capacity departure. Cp^R/R = y + T*dy/dT at constant P, with
+  # y = h_dep_rt. Every T-derivative below is the derivative already multiplied
+  # by T, so the 1/T that each carries cancels and no term needs the absolute
+  # temperature - only Tr. That is why this output needs no input the three
+  # above do not already take.
+  t_da = a_reduced*(psi - 2)
+  t_db = -b_reduced
+  t_dpsi = -kappa*(1 + kappa)*Tr/(2*Tr**0.5*(1 + kappa*(1 - Tr**0.5))**2)
+  t_dc = c*(psi - 1)
+  t_dz = -(t_db*z**2 + (t_da - 6*b_reduced*t_db - 2*t_db)*z
+           + 3*b_reduced**2*t_db + 2*b_reduced*t_db - t_da*b_reduced - a_reduced*t_db) \
+         / (3*z**2 + 2*(b_reduced - 1)*z + a_reduced - 3*b_reduced**2 - 2*b_reduced)
+  t_di = (t_dz + (1 + 2**0.5)*t_db)/(z + (1 + 2**0.5)*b_reduced) \
+         - (t_dz + (1 - 2**0.5)*t_db)/(z + (1 - 2**0.5)*b_reduced)
+  cp_dep_r = h_dep_rt + t_dz + t_dc*(psi - 1)*I + c*t_dpsi*I + c*(psi - 1)*t_di
+latex: '\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad C = \frac{A}{2\sqrt{2}B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - CI, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + C\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + C\psi I, \qquad \frac{C_{p}^{R}}{R} = \frac{H^{R}}{RT} + T\left(\frac{\partial}{\partial T}\frac{H^{R}}{RT}\right)_{P}'
 
 source:
   standard: Peng, D. Y.; Robinson, D. B. (1976)
@@ -58,6 +75,13 @@ outputs:
   s_dep_r:
     unit: dimensionless
     description: the departure entropy divided by `R`, dimensionless for the same reason
+  cp_dep_r:
+    unit: dimensionless
+    description: >
+      The departure heat capacity divided by `R` - `Cp` relative to the ideal-gas
+      value at the same state, made dimensionless for the same reason as the other
+      two. It is `d(H_dep/RT)/d(ln T)` at constant pressure, and it is the departure
+      part of the derivative the isentropic and isenthalpic flashes step on.
 
 valid_range:
   - quantity: b_reduced
@@ -155,7 +179,7 @@ worked_example:
     looser than `eos.pr_kappa`'s worked example because this arithmetic has
     logarithms and a cancellation in it.
   inputs: { a_reduced: 0.20206500174625697, b_reduced: 0.02431127309496514, z: 0.7907789662973796, kappa: 0.60282728832, Tr: 0.8 }
-  expected: { ln_phi: -0.19131055684257678, h_dep_rt: -0.5830167814158524, s_dep_r: -0.39170622457327564 }
+  expected: { ln_phi: -0.19131055684257678, h_dep_rt: -0.5830167814158524, s_dep_r: -0.39170622457327564, cp_dep_r: 1.3282223816107868 }
   tolerance: 1.0e-12
 
 implementations:
@@ -188,7 +212,7 @@ tests:
       vapour root. That is why the property test below asserts at 1e-12 rather than
       at 1e-15 - the tolerance comes from this measurement, not from caution.
     inputs: { a_reduced: 0.20206500174625697, b_reduced: 0.02431127309496514, z: 0.036765449656896015, kappa: 0.60282728832, Tr: 0.8 }
-    expected: { ln_phi: -0.3218698775991462, h_dep_rt: -6.6056599807533996, s_dep_r: -6.283790103154252 }
+    expected: { ln_phi: -0.3218698775991462, h_dep_rt: -6.6056599807533996, s_dep_r: -6.283790103154252, cp_dep_r: 5.9165412940002478 }
     tolerance: 1.0e-12
 
   - id: supercritical_state_with_a_different_coefficient
@@ -211,7 +235,7 @@ tests:
       state. A calc that ignored `kappa` or `Tr` entirely would pass both of those
       and fail this.
     inputs: { a_reduced: 0.08448417260831159, b_reduced: 0.025932024634629486, z: 0.943312987185517, kappa: 0.392217407205312, Tr: 1.5 }
-    expected: { ln_phi: -0.05766112543659872, h_dep_rt: -0.18983428427214197, s_dep_r: -0.13217315883554326 }
+    expected: { ln_phi: -0.05766112543659872, h_dep_rt: -0.18983428427214197, s_dep_r: -0.13217315883554326, cp_dep_r: 0.3262364051639115 }
     tolerance: 1.0e-12
 
   - id: the_gibbs_identity_holds

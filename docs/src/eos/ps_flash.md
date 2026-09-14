@@ -18,13 +18,10 @@ not an equation, and both implementations read it from here.
 
 | Setting | Value |
 |---|---|
-| Scheme | `ps_flash_temperature_bisection` |
-| Convergence | `relative` |
-| Tolerance | `1e-08` |
+| Scheme | `ps_flash_temperature_newton` |
+| Convergence | `absolute` |
+| Tolerance | `1e-05` |
 | Max iterations | `200` |
-| Bracket | `linear_scan_for_entropy` |
-| Bracket range | `100.0` to `1500.0` |
-| Bracket steps | `2000` |
 
 ## Inner procedure
 
@@ -78,18 +75,19 @@ not an equation, and both implementations read it from here.
 | `phase` | all_liquid / two_phase / all_vapour | which phase the feed is in at the answer |
 | `z_liquid` | dimensionless | the liquid root of the cubic at the answer |
 | `z_vapour` | dimensionless | the vapour root |
-| `iterations` | dimensionless | bisection steps taken |
-| `residual` | dimensionless | `|S(T) - S_target| / max(|S_target|, 1)` at the answer |
+| `iterations` | dimensionless | Newton iterations taken |
+| `residual` | J/(mol*K) | `|S(T) - S_target|` at the answer, in the property's own unit |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `P > 0` | raises | an absolute pressure; zero and below are not states, and the cubic's reduced variables divide by it. |
-| `T >= 100 and T <= 1500` | warns `OUT_OF_VALID_RANGE` | the bracket itself, reported rather than left implicit. The scan covers 100 K to 1500 K, so an answer outside it cannot be found - and that is a property of this implementation rather than of thermodynamics, which is why it warns. |
 
 ## Assumptions
 
-- **the bracket is a fixed range, not an adaptive one.** The scan covers 100 K to 1500 K at 2000 points. An entropy that no temperature in that range produces is reported as a solver failure rather than searched for elsewhere. The reason is stated in the notes: an adaptive expansion is a second thing for the two implementations to agree about, and two expansions that stop at different points take different iteration counts.
-- **the flash at each trial temperature is converged, not exact.** The inner iteration carries its own tolerance, so the entropy this model inverts is the entropy of a converged approximation. Tighter than the outer tolerance, which is why the residue reported is dominated by the bisection.
+- **the iteration is quasi-Newton from `initial_temperature`, not a scan.** The step is `factor * residual / (dS/dT)` with `dS/dT = cp/T`, `factor` halving whenever the residual grows and returning to one when it falls, and every step clamped to ten kelvin. A trial temperature where the inner flash cannot settle is not fatal: the step is undone, `factor` is halved and the iteration continues from the last good temperature.
+- **the tolerance is `max(1e-5, |S_target| * 1e-10)`, in J/(mol*K).** The floor is upstream's, stated per mole because this model carries no flow where upstream would have a total. A solve that stops improving at a residual below `1e-4` for five consecutive iterations is accepted rather than driven to the cap, which is upstream's stagnation rule and the reason a state at the edge of the cubic's validity returns an answer instead of an error.
+- **the starting temperature is declared, where upstream reads one off its system.** Upstream iterates from the temperature its thermodynamic system already holds - for a compressor, the inlet temperature. A model here has no system, so the spec states the start, and both implementations take the same path from it.
+- **the flash at each trial temperature is converged, not exact.** The inner iteration carries its own tolerance, so the entropy this model inverts is the entropy of a converged approximation. Tighter than the outer tolerance.
 - **no check that the feed is stable.** This model asks where the energy balance is satisfied, not whether the state it finds is the equilibrium one - the same division `eos.bubble_pressure` makes about its own input.
 - **the entropy is a difference from a supplied datum.** It is not an absolute quantity and is not comparable with a value computed from a different reference state.
 

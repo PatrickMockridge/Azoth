@@ -55,6 +55,13 @@ pub struct PhaseState {
     /// The composition-weighted average of the components' `psi`, weighted by the
     /// attraction parameters. At `N = 1` it equals that component's own `psi` exactly.
     pub psi_bar: f64,
+    /// The departure heat capacity over `R`, for the mixture.
+    ///
+    /// `pr_departure`'s expression again, with `psi_bar` in place of `psi` and with
+    /// `psi_bar` itself moving with temperature, because the weights that form it do.
+    /// At `N = 1` the double sum collapses to the single component's `T*dpsi/dT`, so
+    /// this reduces to the registered calc's `cp_dep_r` exactly.
+    pub cp_dep_r: f64,
 }
 
 /// One component's critical constants.
@@ -214,6 +221,7 @@ impl Mixture {
         let mut a = Vec::with_capacity(self.len());
         let mut b = Vec::with_capacity(self.len());
         let mut psi = Vec::with_capacity(self.len());
+        let mut psi_t = Vec::with_capacity(self.len());
         let mut warnings = Vec::new();
 
         for component in &self.components {
@@ -230,11 +238,19 @@ impl Mixture {
             a.push(ab.a_reduced);
             b.push(ab.b_reduced);
             psi.push(-kappa.kappa * sqrt_tr / (1.0 + kappa.kappa * (1.0 - sqrt_tr)));
+            // `T*dpsi/dT`, from `dpsi/dTr` and `dTr/dT = 1/Tc`. Carrying the `T`
+            // rather than dividing it out later is what keeps this free of the
+            // absolute temperature: the expression below is a function of `Tr` alone.
+            psi_t.push(
+                -kappa.kappa * (1.0 + kappa.kappa) * reduced_temperature
+                    / (2.0 * sqrt_tr * (1.0 + kappa.kappa * (1.0 - sqrt_tr)).powi(2)),
+            );
         }
         Ok(ReducedParameters {
             a,
             b,
             psi,
+            psi_t,
             warnings,
         })
     }
@@ -337,15 +353,23 @@ impl Mixture {
         // what makes them reduce to it exactly at one component.
         let mut weight_total = 0.0;
         let mut weighted_psi = 0.0;
+        let mut weighted_psi_t = 0.0;
         for i in 0..n {
             for j in 0..n {
                 let weight =
                     x[i] * x[j] * (1.0 - self.kij(i, j)) * (reduced.a[i] * reduced.a[j]).sqrt();
+                let psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j]);
                 weight_total += weight;
-                weighted_psi += weight * 0.5 * (reduced.psi[i] + reduced.psi[j]);
+                weighted_psi += weight * psi_pair;
+                // `T*d(weight*psi_pair)/dT` for this pair. The weight carries
+                // `sqrt(A_i A_j)`, whose logarithmic derivative is `psi_pair - 2`, and
+                // `psi_pair` carries the two components' own derivatives.
+                weighted_psi_t += weight
+                    * ((psi_pair - 2.0) * psi_pair + 0.5 * (reduced.psi_t[i] + reduced.psi_t[j]));
             }
         }
         let psi_bar = weighted_psi / weight_total;
+        let t_dpsi_bar = weighted_psi_t / weight_total - psi_bar * (psi_bar - 2.0);
         let h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term;
         let s_dep_r = h_dep_rt
             - ln_phi
@@ -353,6 +377,29 @@ impl Mixture {
                 .zip(x)
                 .map(|(&lp, &x_i)| x_i * lp)
                 .sum::<f64>();
+
+        // The heat-capacity departure. `a_mix` moves with temperature exactly as `A`
+        // does above - its logarithmic derivative is `psi_bar - 2`, because the weights
+        // that form it are the same terms - so these four lines are the registered
+        // calc's with `psi_bar` in place of `psi`.
+        let t_da = a_mix * (psi_bar - 2.0);
+        let t_db = -b_mix;
+        let t_dc = coefficient * (psi_bar - 1.0);
+        let d_f_dz =
+            3.0 * z * z + 2.0 * (b_mix - 1.0) * z + (a_mix - 3.0 * b_mix * b_mix - 2.0 * b_mix);
+        let t_dfdt = t_db * z * z
+            + (t_da - 6.0 * b_mix * t_db - 2.0 * t_db) * z
+            + (3.0 * b_mix * b_mix * t_db + 2.0 * b_mix * t_db - t_da * b_mix - a_mix * t_db);
+        let t_dz = -t_dfdt / d_f_dz;
+        let n_plus = z + (1.0 + sqrt_2) * b_mix;
+        let n_minus = z + (1.0 - sqrt_2) * b_mix;
+        let t_di =
+            (t_dz + (1.0 + sqrt_2) * t_db) / n_plus - (t_dz + (1.0 - sqrt_2) * t_db) / n_minus;
+        let cp_dep_r = h_dep_rt
+            + t_dz
+            + t_dc * (psi_bar - 1.0) * i_term
+            + coefficient * t_dpsi_bar * i_term
+            + coefficient * (psi_bar - 1.0) * t_di;
 
         Ok(PhaseState {
             a_mix,
@@ -362,6 +409,7 @@ impl Mixture {
             h_dep_rt,
             s_dep_r,
             psi_bar,
+            cp_dep_r,
         })
     }
 
@@ -687,6 +735,15 @@ pub struct ReducedParameters {
     /// per solve - and because the mixture's departure functions are the pure form
     /// with `psi` replaced by a composition-weighted average of these.
     pub psi: Vec<f64>,
+    /// `T * dpsi_i/dT`, one per component: the same derivative already multiplied by
+    /// the absolute temperature, which is the form the departure heat capacity needs.
+    ///
+    /// Carried rather than recomputed because `kappa_i` and `Tr_i` - the two things it
+    /// is built from - are local to [`Self::reduced_parameters`], and recovering them
+    /// from `psi` and `A` afterwards is possible but loses the reduction to
+    /// `pr_departure` at one component, which is the property the whole mixture layer
+    /// is checked against.
+    pub psi_t: Vec<f64>,
     /// Warnings raised while computing them - in practice `pr_kappa`'s
     /// `kappa < 0` for a component with a sufficiently negative acentric factor.
     pub warnings: Vec<Warning>,

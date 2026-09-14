@@ -127,6 +127,22 @@ outputs:
       departure functions are built on. Reported because it is what makes the mixture
       departure differ from a pure component's, and because at `N = 1` it must equal
       that component's own `psi` exactly - a test asserts it.
+  cp:
+    unit: J/(mol*K)
+    description: >
+      the molar heat capacity at constant pressure, `cp_ideal + cp_departure`.
+  cp_ideal:
+    unit: J/(mol*K)
+    description: >
+      the ideal-gas part of the heat capacity - the same polynomial whose integral
+      gives the ideal enthalpy, evaluated at the state's temperature rather than
+      integrated.
+  cp_departure:
+    unit: J/(mol*K)
+    description: >
+      the residual heat capacity, `R*cp_dep_r`. It is the departure form of the
+      derivative the isentropic and isenthalpic flashes step on: theirs is `dS/dT =
+      cp/T` in the entropy's case, and `dH/d(1/T) = -T**2*cp` in the enthalpy's.
 
 valid_range:
   - quantity: T

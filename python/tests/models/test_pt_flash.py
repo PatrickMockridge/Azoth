@@ -196,6 +196,12 @@ def test_the_mixture_form_reduces_to_pr_departure_at_one_component() -> None:
             a=[ab.a_reduced],
             b=[ab.b_reduced],
             psi=[-kappa * sqrt_tr / (1.0 + kappa * (1.0 - sqrt_tr))],
+            # `T*dpsi/dT` at one component, which is what the mixture's departure heat
+            # capacity reduces to. Written out rather than read back from the call under
+            # test, so the reduction is checked rather than asserted.
+            psi_t=[
+                -kappa * (1.0 + kappa) * tr / (2.0 * sqrt_tr * (1.0 + kappa * (1.0 - sqrt_tr)) ** 2)
+            ],
             warnings=[],
         )
         state = _phase_state(reduced, ((0.0,),), [1.0], liquid=False)

@@ -655,6 +655,9 @@ pub struct PyPrDepartureResult {
     /// The departure entropy over `R`. Dimensionless.
     #[pyo3(get)]
     pub s_dep_r: f64,
+    /// The departure heat capacity over `R`. Dimensionless.
+    #[pyo3(get)]
+    pub cp_dep_r: f64,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -664,10 +667,11 @@ pub struct PyPrDepartureResult {
 impl PyPrDepartureResult {
     fn __repr__(&self) -> String {
         format!(
-            "PrDepartureResult(ln_phi={}, h_dep_rt={}, s_dep_r={}, {} warning(s))",
+            "PrDepartureResult(ln_phi={}, h_dep_rt={}, s_dep_r={}, cp_dep_r={}, {} warning(s))",
             self.ln_phi,
             self.h_dep_rt,
             self.s_dep_r,
+            self.cp_dep_r,
             self.warnings.len()
         )
     }
@@ -679,6 +683,7 @@ impl From<&PrDepartureResult> for PyPrDepartureResult {
             ln_phi: r.ln_phi,
             h_dep_rt: r.h_dep_rt,
             s_dep_r: r.s_dep_r,
+            cp_dep_r: r.cp_dep_r,
             warnings: transport(&r.warnings),
         }
     }
@@ -1031,6 +1036,15 @@ pub struct PyMolarEnthalpyEntropyResult {
     /// The composition-weighted average of the components' `psi`.
     #[pyo3(get)]
     pub psi_bar: f64,
+    /// The molar heat capacity at constant pressure.
+    #[pyo3(get)]
+    pub cp: PyQty,
+    /// The ideal-gas part of the heat capacity.
+    #[pyo3(get)]
+    pub cp_ideal: PyQty,
+    /// The residual heat capacity.
+    #[pyo3(get)]
+    pub cp_departure: PyQty,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -1060,6 +1074,9 @@ impl From<&MolarEnthalpyEntropyResult> for PyMolarEnthalpyEntropyResult {
             h_departure: qty(r.h_departure.value, "J/mol"),
             s_departure: qty(r.s_departure.value, "J/(mol*K)"),
             psi_bar: r.psi_bar,
+            cp: qty(r.cp.value, "J/(mol*K)"),
+            cp_ideal: qty(r.cp_ideal.value, "J/(mol*K)"),
+            cp_departure: qty(r.cp_departure.value, "J/(mol*K)"),
             warnings: transport(&r.warnings),
         }
     }

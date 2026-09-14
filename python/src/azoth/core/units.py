@@ -45,11 +45,10 @@ difference is the whole reason this module exists as its own thing.
 
 `to_si` converts to base units rather than to whatever `CANONICAL_UNITS` names, so
 it is correct for any unit the schema permits - including one whose canonical form
-is not its SI base unit, which `mm` is. Earlier versions converted to the named
-unit and relied on every entry being SI-coherent; `mm` was in the vocabulary the
-whole time and would have made the two implementations disagree by 1000x. The
-vocabulary is still kept SI-first, but correctness no longer rests on that
-holding, and a test asserts the round trip for every entry.
+is not its SI base unit, which `mm` is. Conversion is to the SI base unit rather than
+to the named one, so correctness does not rest on every entry being SI-coherent -
+`mm` is in the vocabulary and would otherwise make the two implementations disagree
+by 1000x. A test asserts the round trip for every entry.
 
 # Dimensionless quantities
 

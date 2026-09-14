@@ -124,6 +124,7 @@ static BUBBLE_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: Some("wilson_raoult"),
+    initial_temperature: None,
     inner: None,
 };
 
@@ -242,6 +243,7 @@ static CRITICAL_POINT_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 60,
     bracket: None,
     initialisation: None,
+    initial_temperature: None,
     inner: None,
 };
 
@@ -252,6 +254,7 @@ static CRITICAL_POINT_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 60,
     bracket: None,
     initialisation: Some("kay_rule_and_covolume"),
+    initial_temperature: None,
     inner: Some(&CRITICAL_POINT_INNER),
 };
 
@@ -369,6 +372,7 @@ static DEW_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: Some("wilson_raoult"),
+    initial_temperature: None,
     inner: None,
 };
 
@@ -549,38 +553,21 @@ pub static MOLAR_ENTHALPY_ENTROPY_SPEC: ModelSpec = ModelSpec {
     cases: MOLAR_ENTHALPY_ENTROPY_CASES,
 };
 
-static PH_FLASH_CHECKS: &[SpecCheck] = &[
-    SpecCheck {
-        on_input: true,
-        check: RangeCheck {
-            quantity: "P",
-            min: Some(0.0),
-            min_inclusive: false,
-            max: None,
-            max_inclusive: true,
-            equals: None,
-            band: Band::Outside,
-            severity: Severity::Error,
-            code: WarningCode::OutOfValidRange,
-            rationale: "an absolute pressure; zero and below are not states, and the cubic's reduced variables divide by it.",
-        },
+static PH_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "P",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute pressure; zero and below are not states, and the cubic's reduced variables divide by it.",
     },
-    SpecCheck {
-        on_input: false,
-        check: RangeCheck {
-            quantity: "T",
-            min: Some(100.0),
-            min_inclusive: true,
-            max: Some(1500.0),
-            max_inclusive: true,
-            equals: None,
-            band: Band::Outside,
-            severity: Severity::Warning,
-            code: WarningCode::OutOfValidRange,
-            rationale: "the bracket itself, reported rather than left implicit. The scan covers 100 K to 1500 K, so an answer outside it cannot be found - and that is a property of this implementation rather than of thermodynamics, which is why it warns.",
-        },
-    },
-];
+}];
 
 static PH_FLASH_CASES: &[TestCase] = &[
     TestCase {
@@ -652,21 +639,18 @@ static PH_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: None,
 };
 
 static PH_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
-    scheme: "ph_flash_temperature_bisection",
+    scheme: "ph_flash_inverse_temperature_newton",
     convergence: "relative",
     tolerance: 1e-08,
     max_iterations: 200,
-    bracket: Some(ModelBracket {
-        scheme: "linear_scan_for_enthalpy",
-        lower: 100.0,
-        upper: 1500.0,
-        steps: 2000,
-    }),
+    bracket: None,
     initialisation: None,
+    initial_temperature: Some(300.0),
     inner: Some(&PH_FLASH_INNER),
 };
 
@@ -679,38 +663,21 @@ pub static PH_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: PH_FLASH_CASES,
 };
 
-static PS_FLASH_CHECKS: &[SpecCheck] = &[
-    SpecCheck {
-        on_input: true,
-        check: RangeCheck {
-            quantity: "P",
-            min: Some(0.0),
-            min_inclusive: false,
-            max: None,
-            max_inclusive: true,
-            equals: None,
-            band: Band::Outside,
-            severity: Severity::Error,
-            code: WarningCode::OutOfValidRange,
-            rationale: "an absolute pressure; zero and below are not states, and the cubic's reduced variables divide by it.",
-        },
+static PS_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "P",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute pressure; zero and below are not states, and the cubic's reduced variables divide by it.",
     },
-    SpecCheck {
-        on_input: false,
-        check: RangeCheck {
-            quantity: "T",
-            min: Some(100.0),
-            min_inclusive: true,
-            max: Some(1500.0),
-            max_inclusive: true,
-            equals: None,
-            band: Band::Outside,
-            severity: Severity::Warning,
-            code: WarningCode::OutOfValidRange,
-            rationale: "the bracket itself, reported rather than left implicit. The scan covers 100 K to 1500 K, so an answer outside it cannot be found - and that is a property of this implementation rather than of thermodynamics, which is why it warns.",
-        },
-    },
-];
+}];
 
 static PS_FLASH_CASES: &[TestCase] = &[
     TestCase {
@@ -782,21 +749,18 @@ static PS_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: None,
 };
 
 static PS_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
-    scheme: "ps_flash_temperature_bisection",
-    convergence: "relative",
-    tolerance: 1e-08,
+    scheme: "ps_flash_temperature_newton",
+    convergence: "absolute",
+    tolerance: 1e-05,
     max_iterations: 200,
-    bracket: Some(ModelBracket {
-        scheme: "linear_scan_for_entropy",
-        lower: 100.0,
-        upper: 1500.0,
-        steps: 2000,
-    }),
+    bracket: None,
     initialisation: None,
+    initial_temperature: Some(300.0),
     inner: Some(&PS_FLASH_INNER),
 };
 
@@ -985,6 +949,7 @@ static PT_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 200,
     bracket: None,
     initialisation: None,
+    initial_temperature: None,
     inner: None,
 };
 
@@ -995,6 +960,7 @@ static PT_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 300,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: Some(&PT_FLASH_INNER),
 };
 
@@ -1123,6 +1089,7 @@ static PURE_SATURATION_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
         steps: 4000,
     }),
     initialisation: None,
+    initial_temperature: None,
     inner: None,
 };
 
@@ -1237,6 +1204,7 @@ static STABILITY_TEST_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     max_iterations: 2000,
     bracket: None,
     initialisation: Some("wilson"),
+    initial_temperature: None,
     inner: None,
 };
 

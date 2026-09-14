@@ -2,9 +2,8 @@
 
 `data/components/components.csv` ships with the library, generated from NeqSim
 (Equinor/NTNU, Apache-2.0) by `tools/gen_databank.py`; `NOTICE` carries the
-attribution. Before this existed every calculation in the `eos` namespace took
-`Tc`, `Pc` and `omega` as caller arguments, because there was no licence to ship a
-databank. There is now.
+attribution. It is how the `eos` namespace gets `Tc`, `Pc` and `omega` without every
+calculation taking them as caller arguments.
 
     >>> from azoth.eos import component, from_names
     >>> methane = component("methane")

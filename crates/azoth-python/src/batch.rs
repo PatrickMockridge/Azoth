@@ -535,6 +535,7 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             let mut ln_phi = Vec::with_capacity(n);
             let mut h_dep_rt = Vec::with_capacity(n);
             let mut s_dep_r = Vec::with_capacity(n);
+            let mut cp_dep_r = Vec::with_capacity(n);
             for i in 0..n {
                 let r = element(
                     py,
@@ -544,10 +545,12 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
                 ln_phi.push(r.ln_phi);
                 h_dep_rt.push(r.h_dep_rt);
                 s_dep_r.push(r.s_dep_r);
+                cp_dep_r.push(r.cp_dep_r);
             }
             push_values(&mut columns, "ln_phi", "dimensionless", ln_phi);
             push_values(&mut columns, "h_dep_rt", "dimensionless", h_dep_rt);
             push_values(&mut columns, "s_dep_r", "dimensionless", s_dep_r);
+            push_values(&mut columns, "cp_dep_r", "dimensionless", cp_dep_r);
         }
 
         "eos.vdw1f_mix_binary" => {

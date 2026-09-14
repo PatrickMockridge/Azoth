@@ -117,12 +117,10 @@ def reference_for(calc_id: str) -> Callable[..., Any]:
     between. So this is a lookup rather than a table, and adding a calculation adds
     no entry anywhere.
 
-    The namespace used to be hardcoded as `hydraulics` while only the function name
-    was derived, so a calc in any other namespace resolved from
-    `azoth.hydraulics.reference.<name>` and failed with an `ImportError` *at call
-    time* - not at build time, not at import time, but the first time a caller used
-    it. That is the latest possible moment for a wiring mistake to surface, which is
-    what made it worth deriving rather than listing.
+    Deriving the whole path rather than only the function name is what keeps a calc in
+    any namespace from resolving from `azoth.hydraulics.reference.<name>`, where it
+    would fail with an `ImportError` *at call time* - the latest possible moment for a
+    wiring mistake to surface.
     """
     namespace, _, function_name = calc_id.rpartition(".")
     # Annotated rather than inferred: `getattr` returns Any, which would make the

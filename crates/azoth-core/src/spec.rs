@@ -264,6 +264,17 @@ pub struct ModelAlgorithm {
     /// paths to the same answer, and a convergence claim that holds from one
     /// starting point need not hold from another.
     pub initialisation: Option<&'static str>,
+    /// Where a quasi-Newton inversion of a property starts, in kelvin.
+    ///
+    /// The isentropic and isenthalpic flashes iterate from a temperature rather than
+    /// bracketing one, so they need a starting point and it has to be the same in both
+    /// implementations - two that start from different temperatures take different
+    /// paths, and a convergence claim that holds from one need not hold from another.
+    ///
+    /// Upstream starts from the temperature its thermodynamic system already holds,
+    /// which for a compressor is the inlet temperature. A model here has no system, so
+    /// the spec declares the start instead.
+    pub initial_temperature: Option<f64>,
     /// A nested procedure the outer one runs each iteration.
     pub inner: Option<&'static ModelAlgorithm>,
 }

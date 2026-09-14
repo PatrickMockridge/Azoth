@@ -44,6 +44,7 @@ def main() -> int:
         sys.exit(f"check_manifest: {manifest_module.MANIFEST} does not exist")
 
     found, problems = manifest_module.read()
+    problems.extend(manifest_module.validate(found))
 
     if problems:
         for problem in problems:
@@ -53,11 +54,19 @@ def main() -> int:
 
     columns = sum(len(f.columns) for f in found.files())
     files = found.files()
-    used = sum(1 for f in files for c in f.columns if c.disposition == "used")
+    carried = [c for f in files for c in f.columns if c.disposition in manifest_module.CARRIED]
+    used = sum(1 for c in carried if c.disposition == "used")
+    unstated = sum(1 for c in carried if c.unit == manifest_module.NO_STATED_UNIT)
     print(
         f"check_manifest: OK ({len(files)} vendored file(s), {columns} column(s), "
-        f"{used} used, {len(found.not_vendored)} not-vendored entr(ies))"
+        f"{len(carried)} carried of which {used} read, "
+        f"{len(found.not_vendored)} not-vendored entr(ies))"
     )
+    # The two numbers that answer the question this file exists for: is the data here,
+    # and does anything use it. A carried column with no stated unit is neither - it is
+    # present and unmeaning, so it is counted rather than left to look finished.
+    print(f"  {len(carried) - used:>3}  carried, nothing reads it yet")
+    print(f"  {unstated:>3}  carried with no unit NeqSim states ({manifest_module.NO_STATED_UNIT})")
 
     # Printed rather than left to `grep`: a reason is a quoted flow mapping, so
     # `grep 'reason: not-yet'` matches nothing. See `manifest.reasons`.

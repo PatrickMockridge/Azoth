@@ -230,10 +230,17 @@ def test_a_real_machine_leaves_the_fluid_warmer_than_an_ideal_one(
     inequality, and it is the one statement here that needs no reference to the source at
     all - it is a consequence of the second law.
     """
+    # At unit efficiency the two temperatures are the same state, reached by two
+    # different inversions - `eos.ps_flash` for the ideal one and `eos.ph_flash` for the
+    # real one - so they agree to their own tolerances rather than to the last bit. The
+    # slack is that tolerance carried into kelvin: an absolute enthalpy tolerance of
+    # `1e-8 * |H|` over a heat capacity of order 100 J/(mol*K) is a temperature of order
+    # `1e-6 K`. A tighter slack would be asserting that two solvers round alike.
+    slack = 1.0e-6
     for efficiency in (0.5, 0.8, 1.0):
         result = run(name, outlet_pressure=outlet_pressure, efficiency=efficiency)
         assert (
-            result.T.to("K").magnitude >= result.isentropic_temperature.to("K").magnitude - 1.0e-9
+            result.T.to("K").magnitude >= result.isentropic_temperature.to("K").magnitude - slack
         ), (
             f"{name} at eta={efficiency}: the real outlet is colder than the ideal one, "
             f"which no machine can produce"

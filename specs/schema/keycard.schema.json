@@ -173,7 +173,7 @@
           },
           "alpha_parameters": {
             "type": "object",
-            "description": "The extra parameters an alpha function needs. Present and empty for the one this build implements, which needs none - and left in the format because it is how a fitted alpha function would arrive. The `if/then` branches that required `eta` for Mathias-Copeman and `L`, `M`, `N` for Twu are gone with those members: a constraint on a value the enum no longer admits is a rule that can never fire.",
+            "description": "The extra parameters an alpha function needs. Present and empty for the one this build implements, which needs none - and left in the format because it is how a fitted alpha function would arrive. The `if/then` branches in this schema cover exactly the members the enum admits, because a constraint on a value the enum does not admit is a rule that can never fire.",
             "additionalProperties": { "type": "number" }
           }
         }

@@ -379,10 +379,10 @@ class RachfordRiceBinaryResult(_HasWarnings):
 class PrDepartureResult(_HasWarnings):
     """Result of ``eos.pr_departure``.
 
-    Three dimensionless outputs: the logarithm of the fugacity coefficient, and the
-    departure enthalpy and entropy made dimensionless as ``h_dep_rt`` and
-    ``s_dep_r``. The multiplication by ``R`` and ``T`` happens where those live -
-    the model layer - so this namespace stays unit-free end to end.
+    Four dimensionless outputs: the logarithm of the fugacity coefficient, and the
+    departure enthalpy, entropy and heat capacity made dimensionless as ``h_dep_rt``,
+    ``s_dep_r`` and ``cp_dep_r``. The multiplication by ``R`` and ``T`` happens where
+    those live - the model layer - so this namespace stays unit-free end to end.
     """
 
     #: The logarithm of the fugacity coefficient. Returned as a logarithm rather
@@ -395,6 +395,10 @@ class PrDepartureResult(_HasWarnings):
     h_dep_rt: float
     #: The departure entropy over ``R``.
     s_dep_r: float
+    #: The departure heat capacity over ``R`` - ``Cp`` relative to the ideal-gas
+    #: value at the same state. It is ``d(H_dep/RT)/d(ln T)`` at constant pressure,
+    #: which is the derivative the isentropic and isenthalpic flashes need.
+    cp_dep_r: float
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -775,6 +779,15 @@ class MolarEnthalpyEntropyResult(_HasWarnings):
     s_departure: Q
     #: The composition-weighted average of the components' ``psi``.
     psi_bar: float
+    #: The molar heat capacity at constant pressure, ``cp_ideal + cp_departure``.
+    #: The derivative the isentropic and isenthalpic flashes step on: theirs is
+    #: ``dS/dT = cp/T`` in the entropy's case, ``dH/d(1/T) = -T**2*cp`` in the
+    #: enthalpy's.
+    cp: Q
+    #: The ideal-gas part of the heat capacity - the polynomial, at ``T``.
+    cp_ideal: Q
+    #: The residual heat capacity, ``R*cp_dep_r``.
+    cp_departure: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
 

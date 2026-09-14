@@ -1,23 +1,20 @@
 """Inverting a molar property for temperature, at a fixed pressure.
 
-The machinery behind ``eos.ph_flash`` and ``eos.ps_flash``, which differ in exactly one
-thing: whether the property being inverted is the enthalpy or the entropy. Everything
-else - how the state at a trial temperature is assembled, why the bracket is a scan,
-why the answer is narrowed on the temperature rather than on the property, why the
-warnings are deduplicated - is the same for both, and it is subtle enough that writing
-it twice would invite the two copies to disagree.
+The machinery behind ``eos.ph_flash`` and ``eos.ps_flash``, which differ in two things:
+which property is being inverted, and the variable the iteration runs in. Everything
+else - how the state at a trial temperature is assembled, the damping, the step clamp,
+what happens when a trial temperature cannot be evaluated, why the warnings are
+deduplicated - is the same for both, and it is subtle enough that writing it twice would
+invite the two copies to disagree.
 
 The precedent is :mod:`azoth.eos.reference._phase_boundary`, shared by
 ``eos.bubble_pressure`` and ``eos.dew_pressure`` because "the guard against the trivial
-solution has to be written once". It is stronger here, for the single-phase branch
-below: a feed that is entirely one phase has no vapour fraction, and the flash's value
-for it is an *extrapolation* rather than a number nobody should use.
+solution has to be written once".
 
-They share the bracket, the bisection, the branch on the phase and the warning
-handling. They do not share the property itself: an enthalpy and an entropy are
-different functions, each comes from ``eos.molar_enthalpy_entropy``, and each has its
-own units. So the caller names which one it wants and this module sums it the same way
-either time.
+The iteration is upstream's: ``thermodynamicoperations/flashops/PSFlash.java`` and
+``PHflash.java``, NeqSim 3.20.0. Both are quasi-Newton in the temperature - entropy in
+``T``, enthalpy in ``1/T`` - damped by a factor that halves whenever the residual grows,
+and neither is fatal when a trial temperature cannot be evaluated.
 """
 
 from __future__ import annotations
@@ -25,7 +22,7 @@ from __future__ import annotations
 import math
 from typing import Any, Literal
 
-from azoth.core.errors import InvalidInputError, OutOfRangeError, SolverNotConvergedError
+from azoth.core.errors import InvalidInputError, SolverNotConvergedError
 from azoth.core.units import Q, from_si
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
@@ -42,6 +39,35 @@ UNIT_OF: dict[str, str] = {"h": "J/mol", "s": "J/(mol*K)"}
 TWO_PHASE = "two_phase"
 ALL_LIQUID = "all_liquid"
 
+#: The largest temperature step one iteration may take, in kelvin.
+#:
+#: Upstream clamps to ten in both solvers. It is what keeps a Newton step taken far from
+#: the root - where the derivative is a poor local model - from throwing the iterate into
+#: a region the cubic cannot describe.
+MAX_STEP = 10.0
+
+#: How much of a Newton step the first iteration takes, before any damping.
+INITIAL_FACTOR = 0.8
+
+#: Below this the damping stops halving: a smaller factor cannot make progress and only
+#: drives the iteration into its cap.
+MIN_FACTOR = 0.1
+
+#: The relative term in the entropy solver's tolerance, upstream's
+#: ``RELATIVE_ENTROPY_FLASH_TOLERANCE``. The tolerance is
+#: ``max(algorithm tolerance, |target| * this)``.
+RELATIVE_ENTROPY_TOLERANCE = 1.0e-10
+
+#: A residual this small that has stopped improving is accepted rather than driven on.
+STAGNANT_RESIDUAL = 1.0e-4
+
+#: Consecutive non-improving iterations at a low residual before the answer is accepted.
+STAGNANT_LIMIT = 5
+
+#: How many times the enthalpy solver may halve the gap back towards a temperature that
+#: worked, before the failure is reported.
+RETRY_LIMIT = 15
+
 
 def property_at(
     mixture: Mixture,
@@ -53,12 +79,29 @@ def property_at(
 ) -> tuple[float, dict[str, Any]]:
     """The molar property of a mixture at a temperature and pressure, and its split.
 
-    The composition the flash settles on is the equilibrium one, so this is the
-    property of the *feed* at that state - which is what makes it comparable with a
-    duty or a change a caller supplied.
+    The composition the flash settles on is the equilibrium one, so this is the property
+    of the *feed* at that state - which is what makes it comparable with a duty or a
+    change a caller supplied.
 
     Returns:
         ``(the property in its base unit, the flash's own result as a mapping)``.
+    """
+    value, _, flash = _evaluate(mixture, ideal_gas, t_si, p_si, z, which)
+    return value, {"phase": str(flash.phase), "flash": flash, "warnings": list(flash.warnings)}
+
+
+def _evaluate(
+    mixture: Mixture,
+    ideal_gas: IdealGasModel,
+    t_si: float,
+    p_si: float,
+    z: list[float],
+    which: Property,
+) -> tuple[float, float, Any]:
+    """The property and the heat capacity at a state, on whichever branch the flash picks.
+
+    Carries the heat capacity alongside the value because the Newton step needs it:
+    ``dS/dT = cp/T`` and, in reciprocal temperature, ``dH/d(1/T) = -T**2 * cp``.
     """
     flash = pt_flash(mixture, from_si(t_si, "K"), from_si(p_si, "Pa"), z)
     phase = str(flash.phase)
@@ -72,13 +115,12 @@ def property_at(
             # `TypeError` at a caller's feet rather than here.
             raise InvalidInputError("phase", "a two-phase flash reported no vapour fraction")
 
-        liquid = _phase_property(
-            mixture, ideal_gas, t_si, p_si, list(flash.x), flash.z_liquid, which
+        liquid = _phase_state(mixture, ideal_gas, t_si, p_si, list(flash.x), flash.z_liquid)
+        vapour = _phase_state(mixture, ideal_gas, t_si, p_si, list(flash.y), flash.z_vapour)
+        value = (1.0 - beta) * _property_of(liquid, which) + beta * _property_of(vapour, which)
+        cp = (1.0 - beta) * float(liquid.cp.to_base_units().magnitude) + beta * float(
+            vapour.cp.to_base_units().magnitude
         )
-        vapour = _phase_property(
-            mixture, ideal_gas, t_si, p_si, list(flash.y), flash.z_vapour, which
-        )
-        value = (1.0 - beta) * liquid + beta * vapour
     else:
         # One phase, so the whole feed is in it and *its* root describes it. `beta` is
         # deliberately not used - see the module docstring - and neither are
@@ -87,22 +129,23 @@ def property_at(
         # and its cubic root is a different number from the feed's.
         reduced = reduced_parameters(mixture, t_si, p_si)
         root = phase_state(reduced, mixture.kij, z, liquid=(phase == ALL_LIQUID)).z
-        value = _phase_property(mixture, ideal_gas, t_si, p_si, z, root, which)
+        state = _phase_state(mixture, ideal_gas, t_si, p_si, z, root)
+        value = _property_of(state, which)
+        cp = float(state.cp.to_base_units().magnitude)
 
-    return value, {"phase": phase, "flash": flash, "warnings": list(flash.warnings)}
+    return value, cp, flash
 
 
-def _phase_property(
+def _phase_state(
     mixture: Mixture,
     ideal_gas: IdealGasModel,
     t_si: float,
     p_si: float,
     composition: list[float],
     root: float,
-    which: Property,
-) -> float:
-    """One phase's molar property, in its base unit."""
-    result = molar_enthalpy_entropy(
+) -> Any:
+    """One phase's state, in its base unit."""
+    return molar_enthalpy_entropy(
         mixture,
         ideal_gas,
         from_si(t_si, "K"),
@@ -110,8 +153,62 @@ def _phase_property(
         composition,
         root,
     )
-    quantity: Q = getattr(result, which)
+
+
+def _property_of(state: Any, which: Property) -> float:
+    """The property a state carries, in its base unit."""
+    quantity: Q = getattr(state, which)
     return float(quantity.to_base_units().magnitude)
+
+
+def _temperature_dependent(error: Exception) -> bool:
+    """Whether a failed trial is a property of *that* temperature rather than the call.
+
+    An :class:`InvalidInputError` - a composition that is not a composition, a vector of
+    the wrong length - does not depend on the temperature, so it is the caller's error at
+    every point and must not be absorbed by the recovery. Everything else a trial
+    temperature can raise is a property of that temperature, and the solvers recover.
+    """
+    return not isinstance(error, InvalidInputError)
+
+
+def _slope(
+    mixture: Mixture,
+    ideal_gas: IdealGasModel,
+    p_si: float,
+    z: list[float],
+    which: Property,
+    temperature: float,
+    fallback: float,
+) -> float:
+    """The derivative of the property with respect to temperature, at constant pressure.
+
+    Taken from the property itself rather than from the heat capacity, because across a
+    phase boundary the two are not the same quantity. ``cp`` is the phase-fraction-
+    weighted heat capacity of the two phases; the equilibrium ``dS/dT`` at constant
+    pressure also carries the latent heat of the split changing with temperature, and
+    that term is the **larger** of the two. Measured on methane/n-butane at 5 bar,
+    ``dS/dT`` reaches 1.3 J/(mol*K**2) where ``cp/T`` is 0.5. Stepping on the smaller one
+    makes the iteration a fixed point with a gain of about three, which oscillates
+    between two temperatures instead of converging.
+
+    A central difference costs two evaluations and is exact to second order in ``delta``,
+    chosen relative to the temperature so the step is the same fraction of the state in
+    either implementation. Where either side cannot be evaluated the heat capacity's
+    value is used instead, which is the frozen-composition slope.
+    """
+    delta = max(1.0e-4 * temperature, 1.0e-6)
+    try:
+        above, _, _ = _evaluate(mixture, ideal_gas, temperature + delta, p_si, z, which)
+        below, _, _ = _evaluate(mixture, ideal_gas, max(temperature - delta, 1.0), p_si, z, which)
+    except Exception:
+        return fallback
+    return (above - below) / (2.0 * delta)
+
+
+def _start_temperature(algorithm: dict[str, Any]) -> float:
+    """The starting temperature, from the spec, floored where upstream floors it."""
+    return max(float(algorithm.get("initial_temperature", 300.0)), 50.0)
 
 
 def solve_temperature(
@@ -123,125 +220,258 @@ def solve_temperature(
     which: Property,
     algorithm: dict[str, Any],
 ) -> dict[str, Any]:
-    """Invert ``X(T, P) = target`` for ``T`` by bracketing, then bisecting.
+    """Invert ``X(T, P) = target`` for ``T``.
+
+    ``"h"`` runs upstream's ``PHflash.solveQ`` and ``"s"`` its ``PSFlash.solveQ``. They
+    share the damping, the step clamp and the recovery, and differ in the variable the
+    step is taken in and in the residual that is tested.
+
+    Returns:
+        A mapping with ``T``, ``residual``, ``state``, ``iterations`` and ``warnings``.
 
     Raises:
-        SolverNotConvergedError: if the scan finds no sign change - the requested
-            property is outside the range this model's bracket covers - or if the
-            bisection reaches its cap. The two are reported apart because they mean
-            different things: one is a state this model cannot represent, the other is
-            an iteration that did not settle.
+        SolverNotConvergedError: if the iteration reaches its cap without the residual
+            falling below the tolerance.
+        InvalidInputError: from :func:`property_at`, for arguments that are the caller's
+            error at every temperature.
     """
-    bracket = algorithm["bracket"]
-    lower = float(bracket["lower"])
-    upper = float(bracket["upper"])
-    steps = int(bracket["steps"])
-
-    warnings: list[Warning] = []
-    lo, hi = bracket_by_scan(mixture, ideal_gas, p_si, target, z, which, lower, upper, steps)
-    lo_value, _ = property_at(mixture, ideal_gas, lo, p_si, z, which)
-
-    tolerance = float(algorithm["tolerance"])
-    max_iterations = int(algorithm["max_iterations"])
-    iterations = 0
-    mid = lo
-    mid_value = lo_value
-    residual = math.inf
-    mid_state: dict[str, Any] = {}
-    while iterations < max_iterations:
-        iterations += 1
-        mid = 0.5 * (lo + hi)
-        mid_value, mid_state = property_at(mixture, ideal_gas, mid, p_si, z, which)
-        warnings.extend(mid_state["warnings"])
-
-        # Convergence is declared on the *residual*, not on the width of the temperature
-        # bracket. The bracket bounds the residual through `|H'| * (hi - lo) / 2` only
-        # while `H(T)` is continuous; where it is not, the bisection collapses onto the
-        # jump and returns a temperature whose enthalpy is not the one asked for, with no
-        # error. See the spec's notes.
-        residual = abs(mid_value - target) / max(abs(target), 1.0)
-        if residual <= tolerance:
-            break
-
-        if (mid_value - target) * (lo_value - target) <= 0.0:
-            hi = mid
-        else:
-            lo, lo_value = mid, mid_value
-
-    if residual > tolerance:
-        raise SolverNotConvergedError(iterations, residual, tolerance)
-
-    return {
-        "T": mid,
-        "residual": residual,
-        "state": mid_state,
-        "iterations": iterations,
-        "warnings": warnings,
-    }
+    if which == "h":
+        return _solve_enthalpy(mixture, ideal_gas, p_si, target, z, algorithm)
+    return _solve_entropy(mixture, ideal_gas, p_si, target, z, algorithm)
 
 
-def bracket_by_scan(
+def _solve_entropy(
     mixture: Mixture,
     ideal_gas: IdealGasModel,
     p_si: float,
     target: float,
     z: list[float],
-    which: Property,
-    lower: float,
-    upper: float,
-    steps: int,
-) -> tuple[float, float]:
-    """The narrowest interval of the scan that contains the requested property.
+    algorithm: dict[str, Any],
+) -> dict[str, Any]:
+    """Invert the entropy, by upstream's ``PSFlash.solveQ``."""
+    tolerance = max(float(algorithm["tolerance"]), abs(target) * RELATIVE_ENTROPY_TOLERANCE)
+    stagnation = min(STAGNANT_RESIDUAL, tolerance)
+    cap = int(algorithm["max_iterations"])
 
-    Scanned from the bottom up and returning the *first* sign change, so the interval
-    is determined by the bracket alone rather than by where a search happened to start
-    - which is what lets the two implementations agree on the iteration count.
+    temperature = _start_temperature(algorithm)
+    value, cp, flash = _evaluate(mixture, ideal_gas, temperature, p_si, z, "s")
+    warnings: list[Warning] = list(flash.warnings)
 
-    **A temperature with no state is skipped rather than fatal.** Some ``(T, P)`` pairs
-    on the scan have no admissible liquid root, so no property to compare against the
-    target, and such a point cannot bracket anything. The occurrence is not confined to
-    the ends of the range - the spec's notes record where it lands - so aborting on one
-    would make the model unusable at ordinary states.
+    # Upstream's initial values, kept because the damping rule reads them: a first
+    # iteration counts as an improvement on ``1.0e10`` and so takes a half step, where
+    # seeding the errors at infinity would make the relaxation below evaluate to zero
+    # and the iteration would never move.
+    iterations = 1
+    error = 1.0
+    error_old = 1.0e10
+    factor = INITIAL_FACTOR
+    correct_factor = True
+    stagnant = 0
 
-    **Only an out-of-range state is skipped.** An :class:`InvalidInputError` - a
-    composition that is not a composition, a vector of the wrong length - does not depend
-    on the temperature, so it is the caller's error at every point and it propagates
-    immediately. Skipping those too would turn "your ``z`` is wrong" into "the solver did
-    not converge", which reports a failure of the search where the search was never the
-    problem.
+    while True:
+        if error > error_old and factor > MIN_FACTOR and correct_factor:
+            factor *= 0.5
+        elif error < error_old and correct_factor:
+            factor = 1.0
+        iterations += 1
 
-    Raises:
-        SolverNotConvergedError: if no sign change is found between two temperatures that
-            both have states. The residual is infinite when nothing on the scan was
-            evaluable at all, which is the honest reading rather than a number.
-        InvalidInputError: from :func:`property_at`, for arguments that are the caller's
-            error at every temperature.
+        # The residual ``target - S`` falls as ``S`` rises, so its derivative is the
+        # property's slope negated.
+        residual = target - value
+        derivative = -_slope(mixture, ideal_gas, p_si, z, "s", temperature, cp / temperature)
+        if math.isfinite(derivative) and derivative != 0.0:
+            candidate = temperature - factor * residual / derivative
+
+            if not math.isfinite(candidate):
+                candidate = temperature + 1.0
+                correct_factor = False
+            elif candidate < 0.0:
+                candidate = abs(temperature - MAX_STEP)
+                correct_factor = False
+            elif abs(temperature - candidate) > MAX_STEP:
+                candidate = temperature - math.copysign(MAX_STEP, temperature - candidate)
+                correct_factor = False
+            else:
+                correct_factor = True
+
+            try:
+                value, cp, flash = _evaluate(mixture, ideal_gas, candidate, p_si, z, "s")
+            except Exception as error_raised:
+                if not _temperature_dependent(error_raised):
+                    raise
+                # The step is undone and the damping halved, which is upstream's
+                # response. The state that was good stays good, so nothing is lost but
+                # the progress this step would have made, and the residual is read from
+                # the state that remains.
+                factor *= 0.5
+                correct_factor = False
+            else:
+                temperature = candidate
+                warnings.extend(flash.warnings)
+
+        error_old = error
+        error = abs(target - value)
+        if iterations > 3 and abs(error - error_old) <= tolerance and error <= stagnation:
+            stagnant += 1
+        else:
+            stagnant = 0
+
+        if (error + error_old) <= tolerance and iterations >= 3:
+            break
+        if stagnant >= STAGNANT_LIMIT or iterations >= cap:
+            break
+
+    if error > tolerance:
+        raise SolverNotConvergedError(iterations, error, tolerance)
+
+    return {
+        "T": temperature,
+        "residual": error,
+        "state": {"phase": str(flash.phase), "flash": flash, "warnings": list(flash.warnings)},
+        "iterations": iterations,
+        "warnings": distinct_warnings(warnings),
+    }
+
+
+def _solve_enthalpy(
+    mixture: Mixture,
+    ideal_gas: IdealGasModel,
+    p_si: float,
+    target: float,
+    z: list[float],
+    algorithm: dict[str, Any],
+) -> dict[str, Any]:
+    """Invert the enthalpy, by upstream's ``PHflash.solveQ``, in reciprocal temperature.
+
+    The variable is ``1/T`` rather than ``T`` because an enthalpy against temperature is
+    close to linear in the reciprocal, which makes the Newton step a good model over a
+    much wider range.
     """
-    previous: tuple[float, float] | None = None
-    for index in range(steps + 1):
-        t = lower + (upper - lower) * index / steps
-        try:
-            value, _ = property_at(mixture, ideal_gas, t, p_si, z, which)
-        except OutOfRangeError:
-            continue
-        if previous is not None and (value - target) * (previous[1] - target) <= 0.0:
-            return previous[0], t
-        previous = (t, value)
+    tolerance = float(algorithm["tolerance"])
+    cap = int(algorithm["max_iterations"])
+    # The residual is relative, so a target of zero has no scale to be relative to.
+    # Upstream divides by ``|Hspec|`` unconditionally; refusing is the honest alternative
+    # to returning whatever the division produces.
+    scale = abs(target)
+    if scale == 0.0:
+        raise InvalidInputError(
+            "H",
+            "an enthalpy of exactly zero has no scale for the solver's relative residual "
+            "to be measured against, so the inversion would divide by it",
+        )
 
-    raise SolverNotConvergedError(
-        steps,
-        float("inf") if previous is None else abs(previous[1] - target) / max(abs(target), 1.0),
-        0.0,
-    )
+    temperature = _start_temperature(algorithm)
+    value, cp, flash = _evaluate(mixture, ideal_gas, temperature, p_si, z, "h")
+    warnings: list[Warning] = list(flash.warnings)
+
+    # Upstream's initial values, kept because the damping rule reads them: a first
+    # iteration counts as an improvement on ``1.0e10`` and so takes a half step.
+    iterations = 1
+    error = 1.0
+    error_old = 1.0e10
+    factor = INITIAL_FACTOR
+    correct_factor = True
+    retries = 0
+    # The bracket upstream keeps from the sign of the residual. It starts open, because
+    # the first iteration has seen one temperature and nothing bounds it from the other
+    # side yet.
+    min_temperature = 0.0
+    max_temperature = 1.0e10
+
+    while True:
+        if error > error_old and factor > MIN_FACTOR and correct_factor:
+            factor *= 0.5
+        elif error < error_old and correct_factor:
+            factor = iterations / (iterations + 1.0)
+        iterations += 1
+
+        # The step is taken in ``1/T``, where the residual ``(H - target)/scale`` has
+        # derivative ``-T**2 * dH/dT / scale`` - so the update is applied to the
+        # reciprocal and the clamps below are applied to the temperature it converts
+        # back to.
+        residual = (value - target) / scale
+        derivative = (
+            -temperature
+            * temperature
+            * _slope(mixture, ideal_gas, p_si, z, "h", temperature, cp)
+            / scale
+        )
+        if math.isfinite(derivative) and derivative != 0.0:
+            reciprocal = 1.0 / temperature - factor * residual / derivative
+            candidate = math.inf if reciprocal == 0.0 else 1.0 / reciprocal
+
+            if not math.isfinite(candidate):
+                candidate = temperature + 1.0
+                correct_factor = False
+            elif candidate < 0.0:
+                candidate = abs(temperature + MAX_STEP)
+                correct_factor = False
+            elif abs(temperature - candidate) > MAX_STEP:
+                candidate = temperature - math.copysign(MAX_STEP, temperature - candidate)
+                correct_factor = False
+            else:
+                correct_factor = True
+            candidate = min(max(candidate, min_temperature + 0.1), max_temperature - 0.1)
+
+            # A trial temperature the inner flash cannot settle is backed off towards
+            # the last one that worked rather than reported. Upstream's comment is the
+            # reason: a trial temperature can land where the cubic has no valid root, and
+            # aborting the whole inversion there would make the model fail wherever its
+            # path crossed such a region.
+            accepted = False
+            while True:
+                try:
+                    value, cp, flash = _evaluate(mixture, ideal_gas, candidate, p_si, z, "h")
+                    accepted = True
+                    break
+                except Exception as error_raised:
+                    if not _temperature_dependent(error_raised):
+                        raise
+                    retries += 1
+                    if retries > RETRY_LIMIT:
+                        raise SolverNotConvergedError(iterations, error, tolerance) from None
+                    candidate = 0.5 * (candidate + temperature)
+                    if abs(candidate - temperature) < 1.0e-09:
+                        break
+
+            if accepted:
+                temperature = candidate
+                warnings.extend(flash.warnings)
+
+                # The bracket tightens from the sign of the residual at the temperature
+                # just evaluated, which is how a step that overshoots is detected.
+                if residual > 0.0 and temperature > max_temperature:
+                    max_temperature = temperature
+                elif residual < 0.0 and temperature < min_temperature:
+                    min_temperature = temperature
+
+        error_old = error
+        error = abs((value - target) / scale)
+
+        if (error + error_old) <= tolerance and iterations >= 3:
+            break
+        if iterations >= cap:
+            break
+
+    if error > tolerance:
+        raise SolverNotConvergedError(iterations, error, tolerance)
+
+    return {
+        "T": temperature,
+        "residual": error,
+        "state": {"phase": str(flash.phase), "flash": flash, "warnings": list(flash.warnings)},
+        "iterations": iterations,
+        "warnings": distinct_warnings(warnings),
+    }
 
 
 def distinct_warnings(warnings: list[Warning]) -> tuple[Warning, ...]:
     """One of each distinct warning, in first-seen order.
 
-    The search evaluates the flash thousands of times, so the same caveat arrives
-    thousands of times. Returning them all would make the result depend on how many
-    iterations the search took, which is a property of the algorithm rather than of the
-    state the caller asked about.
+    The search evaluates the flash many times, so the same caveat arrives many times.
+    Returning them all would make the result depend on how many iterations the search
+    took, which is a property of the algorithm rather than of the state the caller asked
+    about.
     """
     seen: dict[tuple[str, str | None, str], Warning] = {}
     for warning in warnings:

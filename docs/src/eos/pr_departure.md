@@ -7,7 +7,7 @@
 ## Equation
 
 $$
-\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - \frac{A}{2\sqrt{2}B}I, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + \frac{A}{2\sqrt{2}B}\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + \frac{A}{2\sqrt{2}B}\psi I
+\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad C = \frac{A}{2\sqrt{2}B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - CI, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + C\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + C\psi I, \qquad \frac{C_{p}^{R}}{R} = \frac{H^{R}}{RT} + T\left(\frac{\partial}{\partial T}\frac{H^{R}}{RT}\right)_{P}
 $$
 
 In the form the library evaluates:
@@ -15,9 +15,26 @@ In the form the library evaluates:
 ```python
 psi = -kappa*Tr**0.5/(1 + kappa*(1 - Tr**0.5))
 I = ln((z + (1 + 2**0.5)*b_reduced)/(z + (1 - 2**0.5)*b_reduced))
-ln_phi = z - 1 - ln(z - b_reduced) - (a_reduced/(2*2**0.5*b_reduced))*I
-h_dep_rt = (z - 1) + (a_reduced/(2*2**0.5*b_reduced))*(psi - 1)*I
-s_dep_r = ln(z - b_reduced) + (a_reduced/(2*2**0.5*b_reduced))*psi*I
+c = a_reduced/(2*2**0.5*b_reduced)
+ln_phi = z - 1 - ln(z - b_reduced) - c*I
+h_dep_rt = (z - 1) + c*(psi - 1)*I
+s_dep_r = ln(z - b_reduced) + c*psi*I
+
+# The heat-capacity departure. Cp^R/R = y + T*dy/dT at constant P, with
+# y = h_dep_rt. Every T-derivative below is the derivative already multiplied
+# by T, so the 1/T that each carries cancels and no term needs the absolute
+# temperature - only Tr. That is why this output needs no input the three
+# above do not already take.
+t_da = a_reduced*(psi - 2)
+t_db = -b_reduced
+t_dpsi = -kappa*(1 + kappa)*Tr/(2*Tr**0.5*(1 + kappa*(1 - Tr**0.5))**2)
+t_dc = c*(psi - 1)
+t_dz = -(t_db*z**2 + (t_da - 6*b_reduced*t_db - 2*t_db)*z
+         + 3*b_reduced**2*t_db + 2*b_reduced*t_db - t_da*b_reduced - a_reduced*t_db) \
+       / (3*z**2 + 2*(b_reduced - 1)*z + a_reduced - 3*b_reduced**2 - 2*b_reduced)
+t_di = (t_dz + (1 + 2**0.5)*t_db)/(z + (1 + 2**0.5)*b_reduced) \
+       - (t_dz + (1 - 2**0.5)*t_db)/(z + (1 - 2**0.5)*b_reduced)
+cp_dep_r = h_dep_rt + t_dz + t_dc*(psi - 1)*I + c*t_dpsi*I + c*(psi - 1)*t_di
 
 ```
 
@@ -47,6 +64,7 @@ DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 | `ln_phi` | dimensionless | The logarithm of the fugacity coefficient. Returned as a logarithm rather than as `phi` because the logarithm is what the algebra produces, what the equilibrium condition equates, and what has the useful symmetry `ln(K_i) = ln_phi_liquid - ln_phi_vapour`. |
 | `h_dep_rt` | dimensionless | The departure enthalpy divided by `R*T` - the enthalpy relative to the ideal-gas state at the same temperature and pressure, made dimensionless. Dimensionless on purpose: this namespace carries no units at all, so the multiplication by `R*T` happens where the temperature and the gas constant live, which is the model layer, not here. |
 | `s_dep_r` | dimensionless | the departure entropy divided by `R`, dimensionless for the same reason |
+| `cp_dep_r` | dimensionless | The departure heat capacity divided by `R` - `Cp` relative to the ideal-gas value at the same state, made dimensionless for the same reason as the other two. It is `d(H_dep/RT)/d(ln T)` at constant pressure, and it is the departure part of the derivative the isentropic and isenthalpic flashes step on. |
 
 
 ## Valid range
@@ -88,6 +106,7 @@ Source: derived from the equations above
 | `ln_phi` | -0.19131055684257678 |
 | `h_dep_rt` | -0.5830167814158524 |
 | `s_dep_r` | -0.39170622457327564 |
+| `cp_dep_r` | 1.3282223816107868 |
 
 Relative tolerance: `1e-12`
 

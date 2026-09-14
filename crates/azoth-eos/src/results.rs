@@ -132,6 +132,8 @@ pub struct PrDepartureResult {
     pub h_dep_rt: f64,
     /// The departure entropy over `R`.
     pub s_dep_r: f64,
+    /// The departure heat capacity over `R`.
+    pub cp_dep_r: f64,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -594,6 +596,16 @@ pub struct MolarEnthalpyEntropyResult {
     pub s_departure: MolarHeatCapacity,
     /// The composition-weighted average of the components' `psi`.
     pub psi_bar: f64,
+    /// The molar heat capacity at constant pressure, `cp_ideal + cp_departure`.
+    ///
+    /// The derivative the isentropic and isenthalpic flashes step on: theirs is
+    /// `dS/dT = cp/T`, in the entropy's case, and `dH/d(1/T) = -T**2*cp` in the
+    /// enthalpy's.
+    pub cp: MolarHeatCapacity,
+    /// The ideal-gas part of the heat capacity - the polynomial, evaluated at `T`.
+    pub cp_ideal: MolarHeatCapacity,
+    /// The residual heat capacity, `R*cp_dep_r`.
+    pub cp_departure: MolarHeatCapacity,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -608,6 +620,9 @@ impl CalcResult for MolarEnthalpyEntropyResult {
         "h_departure",
         "s_departure",
         "psi_bar",
+        "cp",
+        "cp_ideal",
+        "cp_departure",
         "warnings",
     ];
 
@@ -683,7 +698,8 @@ impl CalcResult for RachfordRiceBinaryResult {
 
 impl CalcResult for PrDepartureResult {
     const CALC_ID: &'static str = "eos.pr_departure";
-    const FIELDS: &'static [&'static str] = &["ln_phi", "h_dep_rt", "s_dep_r", "warnings"];
+    const FIELDS: &'static [&'static str] =
+        &["ln_phi", "h_dep_rt", "s_dep_r", "cp_dep_r", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

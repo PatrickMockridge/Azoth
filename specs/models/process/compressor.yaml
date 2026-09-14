@@ -226,10 +226,10 @@ cases:
       outlet_pressure: 4000000.0
       efficiency: 0.75
     expected:
-      T: 328.0895195007323
+      T: 328.0895199847116
       P: 4000000.0
-      power: 15274.141294383553
-      isentropic_temperature: 324.9618244171142
+      power: 15274.141966358111
+      isentropic_temperature: 324.9618248392254
     tolerance: 1.0e-9
 
   - id: unit_efficiency_reaches_the_ideal_temperature
@@ -254,5 +254,5 @@ cases:
       efficiency: 1.0
     expected:
       P: 4000000.0
-      isentropic_temperature: 324.9618244171142
+      isentropic_temperature: 324.9618248392254
     tolerance: 1.0e-9

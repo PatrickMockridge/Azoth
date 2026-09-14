@@ -144,6 +144,7 @@ def molar_enthalpy_entropy(
     theta_ref = t_ref / REFERENCE_TEMPERATURE
     h_ideal = 0.0
     s_ideal = 0.0
+    cp_ideal_over_r = 0.0
     for i in range(n):
         a, b, c, d = (
             ideal_gas.cp_a[i],
@@ -171,6 +172,9 @@ def molar_enthalpy_entropy(
         )
         h_ideal += z[i] * (ideal_gas.h_ref[i] + dh)
         s_ideal += z[i] * (ideal_gas.s_ref[i] + ds)
+        # The polynomial itself, at the state's `theta`. It is the integrand of `dh`,
+        # so reporting it costs one evaluation and no new assumption.
+        cp_ideal_over_r += z[i] * (a + b * theta + c * theta**2 + d * theta**3)
 
     # The two ideal-gas terms that no coefficient switches off.
     s_ideal -= MOLAR_GAS_CONSTANT * math.log(p_si / p_ref)
@@ -178,6 +182,9 @@ def molar_enthalpy_entropy(
 
     h_departure = MOLAR_GAS_CONSTANT * t_si * state.h_dep_rt
     s_departure = MOLAR_GAS_CONSTANT * state.s_dep_r
+
+    cp_ideal = MOLAR_GAS_CONSTANT * cp_ideal_over_r
+    cp_departure = MOLAR_GAS_CONSTANT * state.cp_dep_r
 
     return MolarEnthalpyEntropyResult(
         h=from_si(h_ideal + h_departure, "J/mol"),
@@ -187,6 +194,9 @@ def molar_enthalpy_entropy(
         h_departure=from_si(h_departure, "J/mol"),
         s_departure=from_si(s_departure, "J/(mol*K)"),
         psi_bar=state.psi_bar,
+        cp=from_si(cp_ideal + cp_departure, "J/(mol*K)"),
+        cp_ideal=from_si(cp_ideal, "J/(mol*K)"),
+        cp_departure=from_si(cp_departure, "J/(mol*K)"),
         warnings=tuple(warnings),
     )
 

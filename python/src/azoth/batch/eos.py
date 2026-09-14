@@ -258,6 +258,8 @@ class PrDepartureBatch(BatchResult):
     h_dep_rt: array[float]
     #: Departure entropy over ``R`` per element. Dimensionless.
     s_dep_r: array[float]
+    #: Departure heat capacity over ``R`` per element. Dimensionless.
+    cp_dep_r: array[float]
 
 
 def _build_departure(
@@ -271,6 +273,7 @@ def _build_departure(
         ln_phi=columns["ln_phi"],  # type: ignore[arg-type]
         h_dep_rt=columns["h_dep_rt"],  # type: ignore[arg-type]
         s_dep_r=columns["s_dep_r"],  # type: ignore[arg-type]
+        cp_dep_r=columns["cp_dep_r"],  # type: ignore[arg-type]
     )
 
 
