@@ -41,22 +41,6 @@
 # This column is the record, and it is the only one: nothing warns on it at
 # runtime any more, so it has to be read.
 #
-# source_ref identifies the document a value was read from, in a form anyone can
-# fetch and check. `arweave:<txid>` is the preferred form: an Arweave transaction
-# ID is the hash of its content, so it is immutable, independently timestamped,
-# and fetchable byte-for-byte by anyone. That makes the provenance of a single
-# number auditable rather than a matter of trusting whoever typed it in.
-#
-#   arweave:<43-char txid>   a document pinned on Arweave
-#   doi:<doi>                a published paper
-#   https://...              anything else fetchable
-#
-# source_locator says where inside that document to look, e.g. "Table 2, 90 deg
-# standard elbow, threaded". A checker needs both: the document, and the place.
-#
-# source_ref is required for any row that is not estimated_dummy. The tools
-# enforce the format, so a tx ID cannot be mistyped into prose and go unnoticed.
-#
 # Rows in this file: 7 estimated_dummy.
 #
 # Licence: CC-BY-4.0. This data is deliberately not AGPL: the reference

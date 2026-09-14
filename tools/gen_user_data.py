@@ -149,10 +149,9 @@ DUMMY_WARNING = """\
 NOT_A_PLACEHOLDER_WARNING = """\
 #  WARNING: NOT EVERY VALUE IN THIS FILE IS A PLACEHOLDER.
 #
-#  Rows marked `unverified` or `verified` are real values, read from the document
-#  named in that row's source_ref; rows marked `estimated_dummy` are not. Which is
-#  which is in the verify_status column, and it is the column to read before
-#  trusting anything here.
+#  Rows marked `unverified` or `verified` are real values; rows marked
+#  `estimated_dummy` are not. Which is which is in the verify_status column, and
+#  it is the column to read before trusting anything here.
 #
 #  IF YOU RAN tools/gen_user_data.py TO MAKE THIS FILE: do not commit it. Values
 #  that came from a standard you licensed are redistributed by committing them,
@@ -176,23 +175,7 @@ STATUS_BODY = """\
 #                     in `citation`.
 #
 # This column is the record, and it is the only one: nothing warns on it at
-# runtime any more, so it has to be read.
-#
-# source_ref identifies the document a value was read from, in a form anyone can
-# fetch and check. `arweave:<txid>` is the preferred form: an Arweave transaction
-# ID is the hash of its content, so it is immutable, independently timestamped,
-# and fetchable byte-for-byte by anyone. That makes the provenance of a single
-# number auditable rather than a matter of trusting whoever typed it in.
-#
-#   arweave:<43-char txid>   a document pinned on Arweave
-#   doi:<doi>                a published paper
-#   https://...              anything else fetchable
-#
-# source_locator says where inside that document to look, e.g. "Table 2, 90 deg
-# standard elbow, threaded". A checker needs both: the document, and the place.
-#
-# source_ref is required for any row that is not estimated_dummy. The tools
-# enforce the format, so a tx ID cannot be mistyped into prose and go unnoticed."""
+# runtime any more, so it has to be read."""
 
 FITTINGS_BODY = (
     """\

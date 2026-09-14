@@ -1,6 +1,6 @@
 [book]
 title = "azoth"
-description = "Open, validated, citable chemical engineering calculations"
+description = "An opinionated port of NeqSim to Rust, with every calculation mirrored in Python"
 authors = ["azoth contributors"]
 language = "en"
 src = "src"

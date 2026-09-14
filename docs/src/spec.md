@@ -203,7 +203,6 @@ all, because it manufactures confidence.
   has not been confirmed — see [S7](#s7-every-rust-calculation-is-mirrored-in-python)
   on how that is checked, and the `## Notes` section on any calculation page for what
   it looks like.
-- A result computed from a keycard records whose keycard it was.
 
 The rest is engineering judgement, which is a professional responsibility and not one a
 YAML linter can discharge.

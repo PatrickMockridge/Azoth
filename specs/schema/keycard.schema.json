@@ -13,9 +13,8 @@
       "description": "The keycard format's version. Version 2 added `components`, `coefficients` and `models`. Bumped rather than extended in place because the checker that reads version 1 does not reject unknown sections - so a version-1 file carrying `components` would be accepted and the section silently dropped, which is data that looks in use and is read by nothing."
     },
     "keyholder": {
-      "description": "Who is asserting the right to use these values. Required, because a result computed from a keycard records whose keycard it was and the recording needs a name.",
+      "description": "Who is asserting the right to use these values. Optional, and nothing in azoth reads it: no result carries it and no check requires it. It is here so that a keycard says whose it is.",
       "type": "object",
-      "additionalProperties": false,
       "additionalProperties": false,
       "required": ["name"],
       "properties": {

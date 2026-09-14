@@ -17,7 +17,7 @@ edition = "2024"
 rust-version = "1.85"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/PatrickMockridge/Azoth"
-description = "Open, validated, citable chemical engineering calculations"
+description = "An opinionated port of NeqSim to Rust, with every calculation mirrored in Python"
 authors = ["azoth contributors"]
 
 [workspace.dependencies]

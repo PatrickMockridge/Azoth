@@ -34,8 +34,8 @@
 #  teaches people to fill it in.
 #
 #  What the library owes you instead is disclosure: it says what it ships and
-#  where that came from (`NOTICE`), and a result computed from your keycard
-#  records whose keycard it was.
+#  where that came from (`NOTICE`). Whether a value is right, and whether you may
+#  use it, is engineering judgement - and it is yours.
 #
 #  ---------------------------------------------------------------------------
 #  WHAT A KEYCARD IS NOT
@@ -58,8 +58,9 @@ schema_version: 2
 #  Keyholder
 # ---------------------------------------------------------------------------
 #
-#  Who is asserting the right to use these values. A result computed from a
-#  keycard records whose keycard it was, and the recording needs a name.
+#  Who is asserting the right to use these values. Nothing in azoth reads this:
+#  no result carries it and no check requires it. It is here so that the file
+#  says whose it is.
 #
 keyholder:
   name: Example Engineering Ltd

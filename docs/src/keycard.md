@@ -26,7 +26,7 @@ python tools/check_user_data.py keycard.yaml
 
 | Section | Overrides | Read by |
 |---|---|---|
-| `keyholder` | — | recorded on a result computed from this keycard |
+| `keyholder` | — | nothing in azoth; it records who is asserting the right to use the values |
 | `components` | `data/components/components.csv` | `eos.component`, `eos.from_names` |
 | `kij` | `data/components/kij.csv` | every mixture's mixing rule |
 | `coefficients` | — | a calculation's named argument, as a default |
@@ -95,9 +95,8 @@ so a required field would be a form to fill in rather than a fact, and a form te
 people to fill it in.
 
 What the library owes you instead is disclosure: [What ships](./data.md) says what the
-library carries and where it came from, and a result computed from your keycard records
-whose keycard it was. The rest — whether a value is right, and whether you may use it —
-is engineering judgement, and it is yours.
+library carries and where it came from. The rest — whether a value is right, and whether
+you may use it — is engineering judgement, and it is yours.
 
 **It is not shared.** A keycard is per-process and per-caller. Passing one around
 between threads that expect different data is not supported, and the answer is one

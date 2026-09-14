@@ -156,12 +156,10 @@ def test_the_banner_stops_claiming_every_value_is_a_placeholder() -> None:
         "f_t_basis": "f_t",
         "citation": "DUMMY",
         "verify_status": "estimated_dummy",
-        "source_ref": "",
-        "source_locator": "",
     }
     assert "EVERY VALUE IN THIS FILE IS AN ESTIMATED DUMMY" in gen.render_fittings([dummy])
 
-    real = {**dummy, "verify_status": "verified", "citation": "read it", "source_ref": "https://x"}
+    real = {**dummy, "verify_status": "verified", "citation": "read it"}
     rendered = gen.render_fittings([real])
     assert "EVERY VALUE IN THIS FILE IS AN ESTIMATED DUMMY" not in rendered, (
         "the placeholder banner survived a file that is not all placeholders"
