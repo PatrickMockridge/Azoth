@@ -21,7 +21,7 @@ use azoth_eos::mixture::{Mixture, ReducedParameters, RootSide};
 /// `COMP.csv`: methane is 0.0115 and 4 599 000 Pa in the table, not 0.01142 and
 /// 4 599 200, and the `kij` was an illustrative 0.05 where `INTER.csv` fits 0.01289789.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"])
+    databank::mixture_of(&["methane", "n-butane"], None)
         .expect("the pair resolves")
         .0
 }
@@ -42,9 +42,9 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
         ("n-butane", 350.0, 1_000_000.0),
         ("methane", 200.0, 3_000_000.0),
     ] {
-        let entry = databank::entry(name).expect("the databank has it");
+        let entry = databank::entry(name, None).expect("the databank has it");
         let (tc, omega) = (entry.tc, entry.omega);
-        let mixture = databank::mixture_of(&[name])
+        let mixture = databank::mixture_of(&[name], None)
             .expect("the substance resolves")
             .0;
         let reduced = mixture
@@ -84,7 +84,7 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
 /// `N = 1` the reduction test above already covers it.
 #[test]
 fn the_gibbs_identity_holds_for_a_mixture() {
-    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"])
+    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"], None)
         .expect("the three resolve")
         .0;
     for (mixture, t, p, z) in [
@@ -120,7 +120,7 @@ fn the_gibbs_identity_holds_for_a_mixture() {
 /// the same statement as the reduction test above, read as an inequality.
 #[test]
 fn psi_bar_lies_between_the_components_psi() {
-    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"])
+    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"], None)
         .expect("the three resolve")
         .0;
     for (t, p, z) in [
@@ -359,7 +359,7 @@ fn one_component_state(a: f64, b: f64) -> ReducedParameters {
 /// state directly is the honest way to ask for it.
 #[test]
 fn the_criticality_matrix_vanishes_at_the_cubics_critical_point() {
-    let mixture = databank::mixture_of(&["propane"])
+    let mixture = databank::mixture_of(&["propane"], None)
         .expect("propane resolves")
         .0;
     let q = mixture
@@ -385,7 +385,7 @@ fn the_criticality_matrix_vanishes_at_the_cubics_critical_point() {
 /// constants is visible here as well as in `eos.pr_alpha_ab`.
 #[test]
 fn the_shipped_omegas_leave_a_critical_point_residue() {
-    let mixture = databank::mixture_of(&["propane"])
+    let mixture = databank::mixture_of(&["propane"], None)
         .expect("propane resolves")
         .0;
     let q = mixture
@@ -415,9 +415,9 @@ fn the_shipped_omegas_leave_a_critical_point_residue() {
 /// from it.
 #[test]
 fn the_criticality_matrix_is_minimised_at_the_critical_temperature() {
-    let entry = databank::entry("propane").expect("the databank has propane");
+    let entry = databank::entry("propane", None).expect("the databank has propane");
     let (tc, pc) = (entry.tc, entry.pc);
-    let mixture = databank::mixture_of(&["propane"])
+    let mixture = databank::mixture_of(&["propane"], None)
         .expect("propane resolves")
         .0;
 

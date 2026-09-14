@@ -30,7 +30,7 @@ fn mixture_of(tc: &[f64], pc: &[f64], omega: &[f64], kij: Vec<f64>) -> Mixture {
 /// 0.0115 and 4 599 000 - and the `kij` was an "illustrative" 0.05 rather than the
 /// 0.01289789 `INTER.csv` fits.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"])
+    databank::mixture_of(&["methane", "n-butane"], None)
         .expect("the pair resolves")
         .0
 }
@@ -39,7 +39,7 @@ fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
     let names = case
         .list("components")
         .expect("the case declares components");
-    databank::mixture_of(names)
+    databank::mixture_of(names, None)
         .expect("the case's components resolve")
         .0
 }

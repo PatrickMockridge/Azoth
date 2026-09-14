@@ -34,7 +34,7 @@ use crate::results::DewPressureResult;
 /// use azoth_core::units::kelvins;
 /// use azoth_eos::{databank, dew_pressure};
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"])
+/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
 ///     .expect("the pair resolves")
 ///     .0;
 /// let r = dew_pressure(&mixture, kelvins(300.0), &[0.8, 0.2])?;

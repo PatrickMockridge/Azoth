@@ -31,7 +31,7 @@ const MODEL_ID: &str = "eos.stability_test";
 /// the pair the sweeps run and the pair the cases run are the same fluid, `kij`
 /// included.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"])
+    databank::mixture_of(&["methane", "n-butane"], None)
         .expect("the pair resolves")
         .0
 }
@@ -40,7 +40,7 @@ fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
     let names = case
         .list("components")
         .expect("the case declares components");
-    databank::mixture_of(names)
+    databank::mixture_of(names, None)
         .expect("the case's components resolve")
         .0
 }
@@ -179,7 +179,7 @@ fn the_verdict_agrees_with_the_flash_phase_on_every_state() {
         ("methane/butane", methane_butane()),
         (
             "propane/butane",
-            databank::mixture_of(&["propane", "n-butane"])
+            databank::mixture_of(&["propane", "n-butane"], None)
                 .expect("the pair resolves")
                 .0,
         ),
@@ -296,7 +296,7 @@ fn a_trivial_flash_is_not_a_stable_feed() {
 /// not in and the model calls a plain vapour unstable.
 #[test]
 fn the_feed_is_placed_on_its_lower_gibbs_root() {
-    let mixture = databank::mixture_of(&["methane"])
+    let mixture = databank::mixture_of(&["methane"], None)
         .expect("methane resolves")
         .0;
     let (t, p) = (kelvins(150.0), pascals(100_000.0));
@@ -392,8 +392,8 @@ fn the_feed_is_placed_on_its_lower_gibbs_root() {
 #[test]
 fn a_pure_components_trials_are_both_the_feed_and_one_is_trivial() {
     for name in ["methane", "n-butane", "propane"] {
-        let tc = databank::entry(name).expect("a databank entry").tc;
-        let mixture = databank::mixture_of(&[name]).expect("resolves").0;
+        let tc = databank::entry(name, None).expect("a databank entry").tc;
+        let mixture = databank::mixture_of(&[name], None).expect("resolves").0;
         for t in [200.0, 280.0, 330.0] {
             for p in [100_000.0, 1_000_000.0, 5_000_000.0] {
                 let z = [1.0];
@@ -443,7 +443,7 @@ fn a_pure_components_trials_are_both_the_feed_and_one_is_trivial() {
     // And which trial is the trivial one, on two states that differ only in side:
     // butane's saturation pressure at 330 K is about 6 bar, so 1 bar is superheated
     // vapour and 10 bar is subcooled liquid.
-    let butane = databank::mixture_of(&["n-butane"])
+    let butane = databank::mixture_of(&["n-butane"], None)
         .expect("n-butane resolves")
         .0;
     let vapour = stability_test(&butane, kelvins(330.0), pascals(100_000.0), &[1.0]).unwrap();
@@ -558,7 +558,7 @@ fn no_distance_is_ever_nan() {
         ("methane/butane", methane_butane()),
         (
             "propane/butane",
-            databank::mixture_of(&["propane", "n-butane"])
+            databank::mixture_of(&["propane", "n-butane"], None)
                 .expect("the pair resolves")
                 .0,
         ),

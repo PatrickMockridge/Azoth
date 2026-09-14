@@ -81,13 +81,137 @@ pub struct Entry {
     /// Acentric factor, dimensionless.
     pub omega: f64,
     /// The `Cp` polynomial's five coefficients, in J/(mol*K**n).
-    pub cp: [f64; 5],
+    ///
+    /// `None` for a substance an overlay *added*, and that is the whole of why this is
+    /// optional: a keycard supplies the parameters a **cubic** needs, and a heat-capacity
+    /// polynomial is not one of them. A mixture needs one, so `mixture_of` refuses such
+    /// a name rather than defaulting to zeros - which would be a zero heat capacity
+    /// wearing the shape of a polynomial.
+    pub cp: Option<[f64; 5]>,
 }
 
 impl Entry {
     /// The cubic's record for this substance.
     pub fn component(&self) -> Result<Component> {
         Component::new(kelvins(self.tc), pascals(self.pc), self.omega)
+    }
+}
+
+/// One substance as an overlay states it: each parameter named, or none.
+///
+/// Every field is optional, and that is the rule a keycard follows rather than a
+/// convenience: a card naming only `omega` keeps the shipped `Tc` and `Pc`. A record
+/// that replaced the shipped one whole would make a user correcting one value restate
+/// the others, and lose them silently if they did not.
+///
+/// **Three fields, and that is a closed list.** It widens when the component model
+/// does, and `specs/schema/component.schema.json` is where that is declared. Until
+/// then this is the second place after `keycard.COMPONENT_PARAMETERS` that says which
+/// parameters a *cubic* reads, and the two are held together by a test.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct ComponentOverride {
+    /// Critical temperature, in K.
+    pub tc: Option<f64>,
+    /// Critical pressure, in Pa.
+    pub pc: Option<f64>,
+    /// Acentric factor, dimensionless.
+    pub omega: Option<f64>,
+}
+
+impl ComponentOverride {
+    /// Whether this override names every parameter a cubic needs.
+    ///
+    /// Only asked of a substance the table does not have: one it *does* have is
+    /// completed from the table rather than required to be complete.
+    #[must_use]
+    pub fn is_complete(&self) -> bool {
+        self.tc.is_some() && self.pc.is_some() && self.omega.is_some()
+    }
+}
+
+/// A keycard's data, as a value a caller passes.
+///
+/// **Built from values, never from a file.** A keycard is YAML, this workspace takes no
+/// YAML dependency, and this crate does not read one: `python/src/azoth/keycard.py`
+/// reads and validates the file, and an overlay is built from what it resolved to. A
+/// Rust caller builds one directly.
+///
+/// Nothing holds one. Two overlays in one process are two calls, and neither answer
+/// depends on what was passed before it - which is the property a module-level card
+/// cannot have, whoever set it.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Overlay {
+    /// Overrides by lower-cased name, and additions the table does not have.
+    components: HashMap<String, ComponentOverride>,
+    /// Overrides by lower-cased pair, stored both ways round.
+    kij: HashMap<(String, String), f64>,
+}
+
+impl Overlay {
+    /// An overlay that changes nothing.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Override one substance's parameters, or add a substance by name.
+    pub fn set_component(&mut self, name: &str, parameters: ComponentOverride) -> &mut Self {
+        self.components
+            .insert(name.trim().to_lowercase(), parameters);
+        self
+    }
+
+    /// Override one pair's interaction parameter.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if both names are the same substance. `Mixture::new`
+    ///   refuses a non-zero diagonal too, but only for a pair whose *both* names are in
+    ///   the mixture being built - so a self-pair on a name nothing builds would be stored
+    ///   and read by nothing, which is the failure this crate refuses everywhere.
+    pub fn set_kij(&mut self, first: &str, second: &str, value: f64) -> Result<&mut Self> {
+        let a = first.trim().to_lowercase();
+        let b = second.trim().to_lowercase();
+        if a == b {
+            return Err(AzothError::invalid_input(
+                "kij",
+                format!("`{a}` does not interact with itself"),
+            ));
+        }
+        // Stored both ways, exactly as the table is, so a caller need not know which
+        // name came first.
+        self.kij.insert((a.clone(), b.clone()), value);
+        self.kij.insert((b, a), value);
+        Ok(self)
+    }
+
+    /// This overlay's statement about a substance, or `None` if it makes none.
+    #[must_use]
+    pub fn component(&self, name: &str) -> Option<&ComponentOverride> {
+        self.components.get(&name.trim().to_lowercase())
+    }
+
+    /// This overlay's interaction parameter for a pair, or `None` if it states none.
+    ///
+    /// `None` and `Some(0.0)` are different answers, and the difference is a caller's
+    /// deliberate reset to ideal mixing. Anything that filters a zero here silently
+    /// undoes it.
+    #[must_use]
+    pub fn kij(&self, first: &str, second: &str) -> Option<f64> {
+        self.kij
+            .get(&(first.trim().to_lowercase(), second.trim().to_lowercase()))
+            .copied()
+    }
+
+    /// The names this overlay adds to the table, in no particular order.
+    #[must_use]
+    pub fn component_names(&self) -> Vec<&str> {
+        self.components.keys().map(String::as_str).collect()
+    }
+
+    /// Whether this overlay changes nothing.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.components.is_empty() && self.kij.is_empty()
     }
 }
 
@@ -185,7 +309,9 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                 tc: number(&record, index["tc_k"], "tc_k", row)?,
                 pc: number(&record, index["pc_pa"], "pc_pa", row)?,
                 omega: number(&record, index["acentric_factor"], "acentric_factor", row)?,
-                cp,
+                // `Some` for everything the table carries: it holds the polynomial for
+                // every row it has, and `mixture_of` refuses a name without one.
+                cp: Some(cp),
             },
         );
     }
@@ -235,30 +361,95 @@ fn parse_kij() -> Result<HashMap<(String, String), f64>> {
 
 /// One substance's constants, or a failure naming it.
 ///
+/// `overlay` is the card this call reads, and `None` means the data this crate ships.
+/// The two are one path rather than two: an override is applied *here*, so every caller
+/// resolves a name the same way whether a card is in play or not.
+///
+/// Returns an owned [`Entry`] rather than a `&'static` one, and that is forced rather
+/// than chosen: a substance an overlay *adds* is in no table, so there is nothing static
+/// to borrow. The clone is a `String` and six numbers, once per component per mixture.
+///
 /// # Errors
-/// * [`AzothError::InvalidInput`] if the databank carries no such substance. A name it
-///   does not have is refused rather than approximated: a mixture silently missing a
-///   component is a wrong answer with every symptom of a right one.
-pub fn entry(name: &str) -> Result<&'static Entry> {
+/// * [`AzothError::PropertyUnavailable`] if neither the table nor the overlay carries
+///   the substance, or if the overlay adds one without every parameter a cubic reads.
+///   Both are refused rather than approximated: a mixture silently missing a component,
+///   or holding one completed from a similar substance, is a wrong answer with every
+///   symptom of a right one.
+pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
     let key = name.trim().to_lowercase();
-    tables()
-        .0
-        .get(&key)
-        .ok_or_else(|| AzothError::InvalidInput {
-            field: "components".to_string(),
-            reason: format!(
-                "the databank has no component `{key}`. Names come from NeqSim's COMP.csv, \
-                 carried in data/components/components.csv; a keycard adds one by name"
-            ),
-        })
+    let base = tables().0.get(&key).cloned();
+    let over = overlay.and_then(|o| o.component(&key));
+
+    match (base, over) {
+        (None, None) => Err(AzothError::property_unavailable(
+            key,
+            "critical constants".to_string(),
+            "neither the databank nor the keycard has it. Names come from NeqSim's COMP.csv, \
+             carried in data/components/components.csv; a keycard adds one by name"
+                .to_string(),
+        )),
+        (Some(base), None) => Ok(base),
+        (None, Some(over)) => {
+            if !over.is_complete() {
+                let mut missing = Vec::new();
+                if over.tc.is_none() {
+                    missing.push("Tc");
+                }
+                if over.pc.is_none() {
+                    missing.push("Pc");
+                }
+                if over.omega.is_none() {
+                    missing.push("omega");
+                }
+                return Err(AzothError::property_unavailable(
+                    key,
+                    "critical constants".to_string(),
+                    format!(
+                        "the keycard adds it but is missing {missing:?}. A substance the \
+                         databank does not have needs every parameter a cubic reads, because \
+                         completing it from a similar one would be inventing data"
+                    ),
+                ));
+            }
+            Ok(Entry {
+                name: key,
+                // Checked complete above; the defaults are unreachable rather than
+                // meaningful, and a zero here would be a critical constant.
+                tc: over.tc.unwrap_or_default(),
+                pc: over.pc.unwrap_or_default(),
+                omega: over.omega.unwrap_or_default(),
+                // A card supplies the parameters a cubic needs, and a polynomial is not
+                // one of them.
+                cp: None,
+            })
+        }
+        (Some(base), Some(over)) => Ok(Entry {
+            // Parameter by parameter: what the overlay names, else what ships. A card
+            // overriding one value does not restate, and does not lose, the others.
+            tc: over.tc.unwrap_or(base.tc),
+            pc: over.pc.unwrap_or(base.pc),
+            omega: over.omega.unwrap_or(base.omega),
+            cp: base.cp,
+            name: base.name,
+        }),
+    }
 }
 
 /// The binary interaction parameter for a pair, or zero.
 ///
 /// Zero rather than a failure: an absent pair is the ideal-mixture default, which is
-/// what NeqSim's own reader substitutes. A pair the databank *does* carry is never
+/// what NeqSim's own reader substitutes. A pair either source *does* carry is never
 /// silently ignored.
-pub fn kij(first: &str, second: &str) -> f64 {
+///
+/// **An overlay's zero wins over a fitted value**, which is the opposite of how an
+/// absent pair reads, and deliberately so: overriding a fitted pair back to ideal
+/// mixing is a caller stating something, and treating that zero as "no opinion" would
+/// undo it with no symptom.
+#[must_use]
+pub fn kij(first: &str, second: &str, overlay: Option<&Overlay>) -> f64 {
+    if let Some(value) = overlay.and_then(|o| o.kij(first, second)) {
+        return value;
+    }
     tables()
         .1
         .get(&(first.trim().to_lowercase(), second.trim().to_lowercase()))
@@ -266,10 +457,15 @@ pub fn kij(first: &str, second: &str) -> f64 {
         .unwrap_or(0.0)
 }
 
-/// Every substance name in the databank, in file order.
-pub fn names() -> Vec<String> {
+/// Every substance name available, sorted: the table plus whatever an overlay adds.
+#[must_use]
+pub fn names(overlay: Option<&Overlay>) -> Vec<String> {
     let mut out: Vec<String> = tables().0.keys().cloned().collect();
+    if let Some(overlay) = overlay {
+        out.extend(overlay.components.keys().cloned());
+    }
     out.sort();
+    out.dedup();
     out
 }
 
@@ -307,46 +503,74 @@ pub fn all_kij() -> Vec<(String, String, f64)> {
 /// without the heat-capacity coefficients cannot produce an enthalpy, and building them
 /// from two separate lookups invites a call that names different components in each.
 ///
+/// `overlay` is the card this call reads, and `None` means the data this crate ships.
+///
 /// # Errors
-/// * [`AzothError::InvalidInput`] if `names` is empty or one of them is not in the
-///   databank.
+/// * [`AzothError::InvalidInput`] if `names` is empty.
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither source, if an overlay
+///   adds one without every parameter a cubic reads, or if one has no heat-capacity
+///   coefficients - which is what an overlay-added substance is, and why an enthalpy
+///   cannot be produced from one.
 /// * Propagates [`Component::new`]'s range checks.
-pub fn mixture_of(names: &[&str]) -> Result<(Mixture, IdealGasModel)> {
+pub fn mixture_of(names: &[&str], overlay: Option<&Overlay>) -> Result<(Mixture, IdealGasModel)> {
     if names.is_empty() {
         return Err(AzothError::invalid_input(
             "components",
             "a mixture needs at least one component",
         ));
     }
-    let entries: Vec<&Entry> = names
+    let entries: Vec<Entry> = names
         .iter()
-        .map(|name| entry(name))
+        .map(|name| entry(name, overlay))
         .collect::<Result<_>>()?;
+
+    let missing: Vec<&str> = entries
+        .iter()
+        .filter(|e| e.cp.is_none())
+        .map(|e| e.name.as_str())
+        .collect();
+    if !missing.is_empty() {
+        return Err(AzothError::property_unavailable(
+            missing.join(", "),
+            "heat-capacity coefficients".to_string(),
+            "the databank carries them for every substance it ships; one a keycard adds \
+             needs its own, because a cubic needs `Tc`, `Pc` and `omega` and an enthalpy \
+             needs the polynomial as well"
+                .to_string(),
+        ));
+    }
 
     let components = entries
         .iter()
-        .map(|e| e.component())
+        .map(Entry::component)
         .collect::<Result<Vec<_>>>()?;
 
     // Flattened row-major, symmetric with a zero diagonal - the shape `Mixture::new`
     // validates. The diagonal is zero because a component does not interact with
-    // itself, and the databank has no self-pair to look up.
+    // itself, and neither source has a self-pair to look up.
     let n = entries.len();
     let mut matrix = vec![0.0; n * n];
     for i in 0..n {
         for j in (i + 1)..n {
-            let value = kij(&entries[i].name, &entries[j].name);
+            let value = kij(&entries[i].name, &entries[j].name, overlay);
             matrix[i * n + j] = value;
             matrix[j * n + i] = value;
         }
     }
 
+    // Every entry has a polynomial: the filter above refuses the mixture otherwise.
+    let coefficient = |index: usize| -> Vec<f64> {
+        entries
+            .iter()
+            .map(|e| e.cp.map_or(0.0, |cp| cp[index]))
+            .collect()
+    };
     let ideal_gas = IdealGasModel {
-        cp_a: entries.iter().map(|e| e.cp[0]).collect(),
-        cp_b: entries.iter().map(|e| e.cp[1]).collect(),
-        cp_c: entries.iter().map(|e| e.cp[2]).collect(),
-        cp_d: entries.iter().map(|e| e.cp[3]).collect(),
-        cp_e: entries.iter().map(|e| e.cp[4]).collect(),
+        cp_a: coefficient(0),
+        cp_b: coefficient(1),
+        cp_c: coefficient(2),
+        cp_d: coefficient(3),
+        cp_e: coefficient(4),
     };
 
     Ok((Mixture::new(components, matrix)?, ideal_gas))

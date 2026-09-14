@@ -101,11 +101,14 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
             ("tc_k", "float"),
             ("pc_pa", "float"),
             ("acentric_factor", "float"),
-            ("cp_a", "float"),
-            ("cp_b", "float"),
-            ("cp_c", "float"),
-            ("cp_d", "float"),
-            ("cp_e", "float"),
+            # Optional because the row shape is also what an overlay reports, and a
+            # substance a keycard adds has no polynomial. Every row of the shipped
+            # table has all five.
+            ("cp_a", "float | None"),
+            ("cp_b", "float | None"),
+            ("cp_c", "float | None"),
+            ("cp_d", "float | None"),
+            ("cp_e", "float | None"),
         ),
     ),
     (

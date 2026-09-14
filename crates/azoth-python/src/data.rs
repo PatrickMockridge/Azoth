@@ -129,16 +129,21 @@ pub struct PyComponentRow {
     #[pyo3(get)]
     pub acentric_factor: f64,
     /// The five `Cp` coefficients, in J/(mol*K**n).
+    ///
+    /// Optional because the row shape is also what an *overlay* reports, and a
+    /// substance a keycard adds has no polynomial: a keycard supplies the parameters a
+    /// cubic reads, and this is not one of them. Every row of the shipped table has
+    /// all five, so a `None` here can only come from an overlay.
     #[pyo3(get)]
-    pub cp_a: f64,
+    pub cp_a: Option<f64>,
     #[pyo3(get)]
-    pub cp_b: f64,
+    pub cp_b: Option<f64>,
     #[pyo3(get)]
-    pub cp_c: f64,
+    pub cp_c: Option<f64>,
     #[pyo3(get)]
-    pub cp_d: f64,
+    pub cp_d: Option<f64>,
     #[pyo3(get)]
-    pub cp_e: f64,
+    pub cp_e: Option<f64>,
 }
 
 /// One row of the interaction table, transported.
@@ -226,11 +231,11 @@ pub fn component_rows() -> Vec<PyComponentRow> {
             tc_k: entry.tc,
             pc_pa: entry.pc,
             acentric_factor: entry.omega,
-            cp_a: entry.cp[0],
-            cp_b: entry.cp[1],
-            cp_c: entry.cp[2],
-            cp_d: entry.cp[3],
-            cp_e: entry.cp[4],
+            cp_a: entry.cp.map(|cp| cp[0]),
+            cp_b: entry.cp.map(|cp| cp[1]),
+            cp_c: entry.cp.map(|cp| cp[2]),
+            cp_d: entry.cp.map(|cp| cp[3]),
+            cp_e: entry.cp.map(|cp| cp[4]),
         })
         .collect()
 }

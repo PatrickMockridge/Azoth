@@ -11,13 +11,13 @@ const MODEL_ID: &str = "eos.bubble_pressure";
 /// The methane/n-butane pair the spec's cases use, resolved through the databank so
 /// the pair the sweeps run and the pair the cases run are the same fluid.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"])
+    databank::mixture_of(&["methane", "n-butane"], None)
         .expect("the pair resolves")
         .0
 }
 
 fn ternary() -> Mixture {
-    databank::mixture_of(&["methane", "propane", "n-butane"])
+    databank::mixture_of(&["methane", "propane", "n-butane"], None)
         .expect("the trio resolves")
         .0
 }
@@ -26,7 +26,7 @@ fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
     let names = case
         .list("components")
         .expect("the case declares components");
-    databank::mixture_of(names)
+    databank::mixture_of(names, None)
         .expect("the case's components resolve")
         .0
 }
@@ -195,7 +195,7 @@ fn a_genuine_bubble_point_is_never_refused() {
 
 #[test]
 fn a_single_component_is_refused_and_points_at_the_right_calc() {
-    let propane = databank::mixture_of(&["propane"])
+    let propane = databank::mixture_of(&["propane"], None)
         .expect("propane resolves")
         .0;
     let err = bubble_pressure(&propane, kelvins(300.0), &[1.0]).unwrap_err();

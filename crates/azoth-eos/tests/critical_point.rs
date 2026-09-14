@@ -17,7 +17,7 @@ const MODEL_ID: &str = "eos.critical_point";
 
 /// The methane/n-butane pair the spec's cases use, resolved through the databank.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"])
+    databank::mixture_of(&["methane", "n-butane"], None)
         .expect("the pair resolves")
         .0
 }
@@ -26,7 +26,7 @@ fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
     let names = case
         .list("components")
         .expect("the case declares components");
-    databank::mixture_of(names)
+    databank::mixture_of(names, None)
         .expect("the case's components resolve")
         .0
 }
@@ -96,9 +96,9 @@ fn every_case_in_the_spec() {
 fn a_pure_component_reproduces_the_analytic_critical_point() {
     let expected_z_c = (1.0 - azoth_eos::OMEGA_B) / 3.0;
     for name in ["propane", "methane", "n-butane", "co2"] {
-        let entry = databank::entry(name).expect("a databank entry");
+        let entry = databank::entry(name, None).expect("a databank entry");
         let (tc, pc) = (entry.tc, entry.pc);
-        let mixture = databank::mixture_of(&[name]).expect("resolves").0;
+        let mixture = databank::mixture_of(&[name], None).expect("resolves").0;
         let r = critical_point(&mixture, &[1.0]).expect("a critical point");
 
         // Measured, on both implementations: Tc to 5.5e-05 relative, Pc to 1.5e-04,
@@ -159,8 +159,8 @@ fn a_mixtures_critical_compressibility_varies_with_composition() {
 fn a_binarys_critical_locus_falls_between_its_pure_endpoints() {
     let mixture = methane_butane();
 
-    let light = databank::entry("methane").expect("methane").tc;
-    let heavy = databank::entry("n-butane").expect("n-butane").tc;
+    let light = databank::entry("methane", None).expect("methane").tc;
+    let heavy = databank::entry("n-butane", None).expect("n-butane").tc;
     let mut previous = heavy;
     for methane_fraction in [0.2, 0.4, 0.6, 0.8] {
         let r = critical_point(&mixture, &[methane_fraction, 1.0 - methane_fraction])

@@ -84,6 +84,22 @@ pub enum AzothError {
         /// The calc id.
         id: String,
     },
+
+    /// A substance, or a property of one, that the data does not carry.
+    ///
+    /// Separate from [`AzothError::InvalidInput`], which is about a value the caller
+    /// supplied, because this one is about a *name* the data could not answer - and the
+    /// two are different classes in Python for the same reason: a caller has to be able
+    /// to tell "you gave me nonsense" from "I do not have that substance".
+    #[error("{fluid} has no {property}: {reason}")]
+    PropertyUnavailable {
+        /// The substance the lookup named.
+        fluid: String,
+        /// What was wanted of it.
+        property: String,
+        /// Why it could not be answered.
+        reason: String,
+    },
 }
 
 impl AzothError {
@@ -104,12 +120,26 @@ impl AzothError {
         }
     }
 
+    /// Construct an [`AzothError::PropertyUnavailable`].
+    pub fn property_unavailable(
+        fluid: impl Into<String>,
+        property: impl Into<String>,
+        reason: impl Into<String>,
+    ) -> Self {
+        Self::PropertyUnavailable {
+            fluid: fluid.into(),
+            property: property.into(),
+            reason: reason.into(),
+        }
+    }
+
     /// The field this error is about, when it is about one.
     #[must_use]
     pub fn field(&self) -> Option<&str> {
         match self {
             Self::InvalidInput { field, .. } | Self::OutOfRange { field, .. } => Some(field),
             Self::UnknownFitting { id } | Self::UnverifiedCalculation { id } => Some(id),
+            Self::PropertyUnavailable { property, .. } => Some(property),
             Self::SolverNotConverged { .. } => None,
         }
     }

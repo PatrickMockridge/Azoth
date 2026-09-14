@@ -58,7 +58,7 @@ pub fn enthalpy_at(
 /// use azoth_core::units::{joules_per_mole, pascals};
 /// use azoth_eos::{databank, ph_flash};
 ///
-/// let (mixture, ideal_gas) = databank::mixture_of(&["methane", "n-butane"])
+/// let (mixture, ideal_gas) = databank::mixture_of(&["methane", "n-butane"], None)
 ///     .expect("the pair resolves");
 /// let r = ph_flash::ph_flash(
 ///     &mixture,

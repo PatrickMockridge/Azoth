@@ -138,7 +138,7 @@ const TRIVIAL_TOLERANCE: f64 = 1.0e-08;
 /// use azoth_core::units::{kelvins, pascals};
 /// use azoth_eos::{databank, pt_flash};
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"])
+/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
 ///     .expect("the pair resolves")
 ///     .0;
 /// let r = pt_flash(&mixture, kelvins(330.0), pascals(2_500_000.0), &[0.6, 0.4])?;

@@ -10,7 +10,7 @@ const MODEL_ID: &str = "eos.molar_enthalpy_entropy";
 
 /// The methane/n-butane pair the spec's cases use, resolved through the databank.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"])
+    databank::mixture_of(&["methane", "n-butane"], None)
         .expect("the pair resolves")
         .0
 }
@@ -19,7 +19,8 @@ fn from_case(case: &azoth_core::spec::TestCase) -> (Mixture, IdealGasModel, f64)
     let names = case
         .list("components")
         .expect("the case declares components");
-    let (mixture, ideal_gas) = databank::mixture_of(names).expect("the case's components resolve");
+    let (mixture, ideal_gas) =
+        databank::mixture_of(names, None).expect("the case's components resolve");
     (mixture, ideal_gas, common_input(case, "compressibility"))
 }
 
@@ -139,9 +140,9 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
         ("propane", 300.0, 1_000_000.0, 0.964_968_034_8),
         ("n-butane", 350.0, 1_000_000.0, 0.988_866_701_4),
     ] {
-        let entry = databank::entry(name).expect("a databank entry");
+        let entry = databank::entry(name, None).expect("a databank entry");
         let (tc, omega) = (entry.tc, entry.omega);
-        let mixture = databank::mixture_of(&[name]).expect("resolves").0;
+        let mixture = databank::mixture_of(&[name], None).expect("resolves").0;
         let ideal_gas = IdealGasModel {
             cp_a: vec![4.0],
             cp_b: vec![1.0],

@@ -34,6 +34,7 @@ pub fn to_pyerr(py: Python<'_>, error: AzothError) -> PyErr {
         AzothError::SolverNotConverged { .. } => "SolverNotConvergedError",
         AzothError::UnknownFitting { .. } => "UnknownFittingError",
         AzothError::UnverifiedCalculation { .. } => "UnverifiedCalculationError",
+        AzothError::PropertyUnavailable { .. } => "PropertyUnavailableError",
         _ => "AzothError",
     };
     let message = error.to_string();
@@ -61,6 +62,11 @@ pub fn to_pyerr(py: Python<'_>, error: AzothError) -> PyErr {
             } => class.call1((*iterations, *residual, *tolerance))?,
             AzothError::UnknownFitting { id } => class.call1((id.as_str(),))?,
             AzothError::UnverifiedCalculation { id } => class.call1((id.as_str(),))?,
+            AzothError::PropertyUnavailable {
+                fluid,
+                property,
+                reason,
+            } => class.call1((fluid.as_str(), property.as_str(), reason.as_str()))?,
             _ => {
                 let args = PyTuple::new(py, [message.as_str()])?;
                 class.call1(args)?

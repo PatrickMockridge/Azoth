@@ -54,7 +54,7 @@ pub fn entropy_at(
 /// use azoth_core::units::{joules_per_mole_kelvin, pascals};
 /// use azoth_eos::{databank, ps_flash};
 ///
-/// let (mixture, ideal_gas) = databank::mixture_of(&["methane", "n-butane"])
+/// let (mixture, ideal_gas) = databank::mixture_of(&["methane", "n-butane"], None)
 ///     .expect("the pair resolves");
 /// let r = ps_flash::ps_flash(
 ///     &mixture,

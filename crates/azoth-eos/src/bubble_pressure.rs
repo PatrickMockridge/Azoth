@@ -33,7 +33,7 @@ use crate::{model_gen, phase_boundary};
 /// use azoth_core::units::kelvins;
 /// use azoth_eos::{bubble_pressure, databank};
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"])
+/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
 ///     .expect("the pair resolves")
 ///     .0;
 /// let r = bubble_pressure(&mixture, kelvins(300.0), &[0.2, 0.8])?;

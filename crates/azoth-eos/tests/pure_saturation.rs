@@ -12,7 +12,7 @@ const MODEL_ID: &str = "eos.pure_saturation";
 /// The case declares `components` and `T`, and the constants come from the databank -
 /// the same lookup `databank::mixture_of` performs on the mixture path, reduced to the
 /// one component this model takes.
-fn substance(case: &azoth_core::spec::TestCase) -> &'static azoth_eos::databank::Entry {
+fn substance(case: &azoth_core::spec::TestCase) -> azoth_eos::databank::Entry {
     let names = case
         .list("components")
         .expect("the case declares components");
@@ -21,7 +21,7 @@ fn substance(case: &azoth_core::spec::TestCase) -> &'static azoth_eos::databank:
         1,
         "a saturation pressure is a pure-component property"
     );
-    databank::entry(names[0]).expect("the case's component resolves")
+    databank::entry(names[0], None).expect("the case's component resolves")
 }
 
 fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::PureSaturationResult {
