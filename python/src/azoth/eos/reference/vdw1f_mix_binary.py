@@ -5,23 +5,8 @@ a_mix = z1**2*a1 + 2*z1*z2*(1 - k12)*sqrt(a1*a2) + z2**2*a2
 b_mix = z1*b1 + z2*b2
 ```
 
-Spec: ``specs/calcs/eos/vdw1f_mix_binary.yaml``
-
-# Why two components and not N
-
-The quadratic form for ``a_mix`` is a double sum, so a general version takes a
-composition vector and a matrix of ``kij``. The calc registry is scalar - its inputs
-are named quantities with units, and there is no vector or matrix type - so two
-components is the largest it can express. The general case belongs to the model
-layer, and that layer's spec requires it to reduce to this calc at N = 2.
-
-# The two terms a reader should check
-
-Written longhand rather than as a loop, so the double sum's three distinct parts are
-visible: the two pure terms, and the cross term carrying ``k12``. An implementation
-that got the cross term's factor of two wrong, or that transposed ``z1`` and ``z2``
-in it, would still look like a weighted average at a mid-range composition - which
-is why the pure-component limits are a spec test.
+Spec: ``specs/calcs/eos/vdw1f_mix_binary.yaml``, which carries the provenance and why
+the registry's scalar inputs stop at two components.
 """
 
 from __future__ import annotations
@@ -48,9 +33,8 @@ def vdw1f_mix_binary(
         a2: the same for component 2.
         b1: the cubic's repulsion parameter ``B`` for component 1.
         b2: the same for component 2.
-        k12: the binary interaction parameter. **Supplied by the caller - this
-            library ships no values for it**, because a table of fitted binary
-            parameters is the databank it deliberately does not have.
+        k12: the binary interaction parameter, fitted per pair. **Supplied by the
+            caller - this library ships no values for it.**
 
     Returns:
         ``a_mix`` and ``b_mix``, the cubic's parameters for the mixture.
@@ -58,7 +42,8 @@ def vdw1f_mix_binary(
     Raises:
         OutOfRangeError: if ``z1`` is outside ``[0, 1]``, or if the resulting
             ``a_mix`` is negative - which happens when ``k12`` is outside ``[0, 2]``
-            and the composition is unfavourable.
+            and the composition is unfavourable, and which
+            :func:`azoth.eos.pr_z_factor` would refuse downstream anyway.
 
     Example:
         >>> m = vdw1f_mix_binary(0.6, 0.20206500174625697, 0.08448417260831159,
@@ -77,6 +62,8 @@ def vdw1f_mix_binary(
     apply_checks(checks.on_input, values.get, warnings)
 
     z2 = 1.0 - z1
+    # The double sum written out longhand: the two pure terms and the cross term
+    # carrying `k12`.
     a_mix = z1 * z1 * a1 + 2.0 * z1 * z2 * (1.0 - k12) * (a1 * a2) ** 0.5 + z2 * z2 * a2
     b_mix = z1 * b1 + z2 * b2
 

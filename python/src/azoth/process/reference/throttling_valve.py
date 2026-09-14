@@ -1,23 +1,13 @@
 """``process.throttling_valve`` - pressure dropped at constant enthalpy.
 
-Spec: ``specs/models/process/throttling_valve.yaml``
+Spec: ``specs/models/process/throttling_valve.yaml``, which carries the provenance, the
+absent flow rate and the divergence over a negative drop.
 
-The port source is ``neqsim.process.equipment.valve.ThrottlingValve``, ``run(UUID)`` at
-lines 363-453 of the 3.20.0 tree, with the isenthalpic flash in
-``runPHflashWithNaNRetry`` at ``:467-495``. Two statements of physics:
-
-    P_out = P_in - deltaP        (:407-412)
-    T_out = PHflash(P_out, H_in) (:470)
-
-**The temperature really does change.** A throttling valve is the classic Joule-Thomson
-device, and a model that returned the inlet temperature would be wrong for every real gas.
-The ``PHflash`` is what makes it right, and it is the reason this unit operation could not
-be written before ``eos.ph_flash`` existed.
-
-**There is no flow rate in this signature**, and that is a statement about the physics
-rather than a saving: an isenthalpic flash is a molar property, so the outlet state does
-not depend on the flow at all. NeqSim computes a molar flow here too and applies it only
-on the transient path.
+There is no flow in this signature and none is needed: an isenthalpic flash is a *molar*
+property, so the outlet state does not depend on the flow rate, and a valve changes
+neither the flow nor the composition. The ``PHflash`` is the whole of the thermodynamics -
+a valve is the classic Joule-Thomson device, and a model returning the inlet temperature
+would be wrong for every real gas.
 """
 
 from __future__ import annotations

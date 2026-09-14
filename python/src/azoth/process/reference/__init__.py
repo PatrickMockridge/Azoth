@@ -12,8 +12,8 @@ they carry a molar flow and return one or two streams where the equation-of-stat
 carry one and return a state.
 
 The bodies here are written to mirror the Rust line for line, so a reviewer can read the
-two side by side against the NeqSim source they were ported from. Where they diverge, it
-is a bug in one of them - and the cross-implementation tests are what catch it.
+two side by side. Where they diverge, it is a bug in one of them - and the
+cross-implementation tests are what catch it.
 """
 
 from __future__ import annotations

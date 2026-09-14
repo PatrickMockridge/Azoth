@@ -105,6 +105,16 @@ notes: >
   273.5 K between the pure endpoints of 425.12 K and 190.56 K, which is the shape a
   binary's critical locus has.
 
+  # The smallest eigenvalue of `Q` is not generically near zero
+
+  `A(T, V, n)` is not homogeneous in `n` at fixed `V` - homogeneity needs the volume
+  to scale with it - so there is no Euler-theorem null vector, and the ideal part of
+  the Hessian at constant volume (`delta_ij / n_i`) is positive definite on its own.
+  Measured across a sweep of temperatures and volumes: the smallest eigenvalue of `Q`
+  is nowhere near zero away from a critical point. The vanishing is therefore
+  informative rather than generic, and the direction it vanishes along is the critical
+  composition fluctuation and nothing else.
+
   # Where this is least trustworthy
 
   **The cubic form is a finite difference**, and it is the weaker of the two

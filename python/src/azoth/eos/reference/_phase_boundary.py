@@ -1,34 +1,12 @@
 """The pressure iteration ``eos.bubble_pressure`` and ``eos.dew_pressure`` share.
 
+Specs: ``specs/models/eos/bubble_pressure.yaml`` and ``specs/models/eos/dew_pressure.yaml``
+
 Both models ask the same question with the phases exchanged: *given one phase's
-composition, at what pressure does the other phase appear?* The equations differ -
-``sum_i x_i K_i = 1`` against ``sum_i y_i / K_i = 1`` - but the loop, the
+composition, at what pressure does the other phase appear?* Their equations differ,
+``sum_i x_i K_i = 1`` against ``sum_i y_i / K_i = 1``, and everything else - the
 initialisation, the update, the tolerance and the guard against the trivial solution
-are one piece of code in two directions, and writing them twice would be writing the
-guard twice.
-
-The Rust counterpart is ``crates/azoth-eos/src/phase_boundary.rs``, which carries the
-full derivation of both the update's sign and the guard. The short version:
-
-* **The update**: if there is too much of the incipient phase, move away from it.
-  A bubble point's is vapour and ``P <- P * S``; a dew point's is liquid and
-  ``P <- P / S``. Getting the second backwards sends the pressure to zero, which is
-  measured and recorded in the dew model's spec.
-* **The guard**: ``S = 1`` is satisfied by ``K_i = 1`` for every ``i`` at *every*
-  pressure, and that trivial solution is the fixed point the iteration converges to
-  when no boundary exists. The residual cannot detect it, because
-  ``S - 1 = sum_i x_i (K_i - 1)`` is a weighted sum whose terms cancel - measured at
-  ``1.5e-13`` while the individual deviations were of order ``1e-7``. So the guard is
-  on ``max_i |ln K_i|``.
-
-# Why this threshold is ``1e-2`` and the flash's is ``1e-8``
-
-They are not inconsistent, and the difference follows from the two convergence
-tests. A flash stops on the change in ``ln K`` itself, so when it lands on the
-trivial solution the K-values have stopped moving *because they are* 1, and a tight
-guard catches it. This iteration stops on ``S - 1``, which cancels, so the K-values
-can still be ``1e-6`` from 1 when it fires. A ``1e-8`` guard here would sit below
-the noise and never trigger.
+- is one piece of code run in two directions.
 """
 
 from __future__ import annotations
@@ -48,9 +26,12 @@ from azoth.eos.reference._mixture_state import (
 
 #: The ``max_i |ln K_i|`` below which the two phases have merged.
 #:
-#: Measured: states with no bubble or dew point stop between ``3.6e-04`` and
-#: ``9.1e-04``, and every state with a genuine one converges at ``1.10`` or above.
-#: This sits near the middle of a three-order-of-magnitude gap.
+#: Not tight, and deliberately. The guard is on the K-values because ``S - 1`` is a
+#: weighted sum whose terms cancel, so it can sit inside the convergence tolerance
+#: while the K-values are still far from one; and the threshold has to clear the
+#: lowest value a genuine boundary reaches at any step, not the value a degenerate
+#: state ends at. The measurements behind the constant, and why it is ``1e-2`` here
+#: and ``1e-8`` in the flash, are in ``specs/models/eos/bubble_pressure.yaml``.
 TRIVIAL_TOLERANCE = 1.0e-02
 
 #: Which phase appears at the boundary being sought.
@@ -180,8 +161,10 @@ def phase_boundary_pressure(
                 "warnings": warnings,
             }
 
-        # Too much incipient phase means move away from it; which direction that is
-        # differs between the two, and the derivation is in the Rust counterpart.
+        # Too much incipient phase means move away from it: for a bubble point `S` is
+        # how much vapour the liquid would give off, so `S > 1` is too much and `P * S`
+        # raises the pressure; for a dew point `S` is how much liquid the vapour would
+        # condense, so `S < 1` is too little and `P / S` raises it.
         pressure = pressure * s if incipient == VAPOUR else pressure / s
         if not math.isfinite(pressure) or pressure <= 0.0:
             raise SolverNotConvergedError(iterations, residual, algorithm["tolerance"])

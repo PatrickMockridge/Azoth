@@ -2,36 +2,15 @@
 
 Spec: ``specs/models/eos/ps_flash.yaml``
 
-# What this model is for
+An outer bisection on temperature, for an **isentropic** unit operation - a compressor,
+an expander, a turbine or a nozzle, assumed ideal - whose outlet temperature is not
+known because entropy is conserved and temperature is not. The bracket, the loop, the
+phase branch and the warning handling live in
+:mod:`azoth.eos.reference._flash_property`, shared with ``eos.ph_flash``.
 
-An **isentropic** unit operation: a compressor or an expander that is assumed ideal, a
-turbine, a nozzle. Each knows the pressure it leaves at and the entropy it started with,
-and none of them knows the temperature that results - because entropy is conserved and
-temperature is not.
-
-The companion to :mod:`azoth.eos.reference.ph_flash`, and almost the same model. The
-entropy of a mixture at a fixed pressure is strictly increasing in temperature, exactly
-as the enthalpy is, so inverting it is the same well-posed bisection:
-
-    S(T) = (1 - beta) * S_liquid(x, Z_l) + beta * S_vapour(y, Z_v)
-
-The bracket, the loop, the phase branch and the warning handling are shared with
-``ph_flash`` in :mod:`azoth.eos.reference._flash_property` rather than copied. What is
-here is the entropy half.
-
-# The difference that is not just a different letter
-
-The entropy of a two-phase state includes the **entropy of mixing**, because each phase's
-entropy is computed for that phase's own composition - and the two compositions are not
-the feed. That is the physically correct assembly and it is not optional arithmetic: a
-model that summed the phase entropies at the *feed* composition would conserve entropy
-across a phase change, which is wrong, and would do it in a way no single-phase test
-could see.
-
-``eos.molar_enthalpy_entropy`` already carries that, and its own note records that the
-departure entropy it returns does **not** include the entropy of mixing - the ideal
-part does, and the two are added before the phase weighting here. What this model adds
-is the weighting.
+Each phase's entropy is taken at *that phase's own composition*, so the weighted sum
+carries the entropy of mixing; summing the phases at the feed composition instead would
+conserve entropy across a phase change, which is wrong.
 """
 
 from __future__ import annotations

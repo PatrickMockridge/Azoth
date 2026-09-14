@@ -18,15 +18,7 @@ inlet, and the compositions become one row per inlet.
 <https://github.com/equinor/neqsim>`_**, which is developed at NTNU and maintained by
 Equinor and is Apache-2.0. See ``NOTICE`` at the repository root for the attribution,
 ``docs/src/roadmap.md`` for what is in scope and what is deliberately not, and each
-function's own module in :mod:`azoth.process.reference` for what its port took from
-which line of the original.
-
-The Pareto argument for the scope, and it is read from NeqSim's source rather than
-asserted: nearly every unit operation is a flash call plus arithmetic. NeqSim's
-``Separator.run`` is 109 lines of a 4,511-line file and does one ``TPflash`` and a phase
-split; its ``ThrottlingValve.run`` is 91 lines of 1,894 and does one isenthalpic
-``PHflash``. The rest of each file is performance charts, entrainment models, geometry
-and mechanical design, and `docs/src/roadmap.md` records that boundary.
+model's spec under ``specs/models/process/`` for what its port took.
 
 As in every other namespace, each function dispatches to the Rust extension when it is
 built and to :mod:`azoth.process.reference` otherwise. Both are always reachable - see
@@ -141,8 +133,7 @@ def mixer(
     nothing in it can be above the lowest pressure any feed arrives at.
 
     **Every inlet shares one component set**, which is why there is one ``mixture``
-    argument. NeqSim accumulates component by component and handles a pseudo-fraction
-    the others do not have; azoth does not need to.
+    argument.
 
     See :func:`azoth.process.reference.mixer`.
     """
@@ -169,10 +160,9 @@ def splitter(
         )
         r.flows   # (3.0, 7.0)
 
-    **The fractions must sum to one**, and that is checked rather than corrected. NeqSim
-    normalises its split factors; a splitter's entire output *is* those numbers, so
-    silently rescaling them would make a caller's arithmetic error invisible while
-    changing every number downstream.
+    **The fractions must sum to one**, and that is checked rather than corrected: a
+    splitter's entire output *is* those numbers, so silently rescaling them would make a
+    caller's arithmetic error invisible while changing every number downstream.
 
     **There is no ideal-gas argument.** A splitter does no energy balance, so it needs no
     datum - and it is the only unit operation here that takes none.
@@ -230,8 +220,7 @@ def heater(
     """A duty applied to a stream at a fixed pressure - a heater or a cooler.
 
     The duty is the specification and the temperature is the answer. **A negative duty is
-    a cooler**: NeqSim's ``Cooler`` has no ``run()`` of its own and inherits ``Heater``'s
-    steady state, so this is one model rather than two::
+    a cooler**, so this is one model rather than two::
 
         r = azoth.process.heater(
             fluid, ig, T=q(300, "K"), P=q(20, "bar"), n=q(10, "mol/s"),
@@ -242,10 +231,6 @@ def heater(
     **The flow matters.** A duty is an extensive quantity and the flash inverts a molar
     enthalpy, so ``Q / n`` is part of the model: the same 50 kW on 1 mol/s is ten times
     the temperature rise.
-
-    The other ways NeqSim lets a heater be specified - an outlet temperature, a
-    ``deltaT`` - are not here, because neither is a unit operation: both reduce to
-    ``eos.pt_flash``, where the temperature is already an input.
 
     See :func:`azoth.process.reference.heater`.
     """
@@ -286,9 +271,8 @@ def compressor(
     is what the efficiency is measured against and a caller sizing an intercooler needs
     it.
 
-    **The efficiency is required rather than defaulted.** NeqSim defaults it to ``1.0``
-    and clamps rather than refusing; a compressor assumed ideal is one that understates
-    every duty it is asked for.
+    **The efficiency is required rather than defaulted.** A compressor assumed ideal is
+    one that understates every duty it is asked for.
 
     ``process.pump`` and ``process.expander`` run the same procedure with the efficiency
     scaling the other way.
@@ -329,9 +313,6 @@ def pump(
         )
         r.T, r.power   # 315.60 K, 8.29 kW
 
-    **Nothing checks that the inlet is a liquid.** A pump run on a vapour is
-    arithmetically fine and returns a pressure rise nobody can achieve with a pump.
-
     See :func:`azoth.process.reference.pump`.
     """
     return resolve(_PUMP)(  # type: ignore[no-any-return]
@@ -359,8 +340,8 @@ def expander(
     """A pressure drop that produces work.
 
     The same procedure again, with the efficiency **multiplying** the ideal enthalpy
-    change rather than dividing it - which is the whole difference from
-    :func:`compressor`, and it is one line in NeqSim's source::
+    change rather than dividing it, which is the whole difference from
+    :func:`compressor`::
 
         r = azoth.process.expander(
             fluid, ig, T=q(300, "K"), P=q(20, "bar"), n=q(10, "mol/s"),
@@ -373,8 +354,7 @@ def expander(
     about which sign means what.
 
     ``T`` is always **above** ``isentropic_temperature``: an expander cannot deliver more
-    work than the isentropic drop contains. A model that divided instead of multiplying
-    would break that, which is what its test asserts.
+    work than the isentropic drop contains.
 
     See :func:`azoth.process.reference.expander`.
     """

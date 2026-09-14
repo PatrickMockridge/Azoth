@@ -56,8 +56,9 @@ fn ln(value: f64) -> f64 {
 
 /// The feed's phase state, on whichever admissible root has the lower Gibbs energy.
 ///
-/// See the module documentation for the comparison and the measurement behind it. A
-/// single admissible root is the common case and is taken directly.
+/// The comparison is `A^R / RT - ln Z + Z` and **not** `A^R / RT + Z`; the spec's notes
+/// carry the reduction and the measurement behind it. A single admissible root is the
+/// common case and is taken directly.
 fn feed_state(mixture: &Mixture, reduced: &ReducedParameters, z: &[f64]) -> Result<PhaseState> {
     let (a_mix, b_mix) = mixture.mixture_parameters(reduced, z);
     let roots = pr_z_factor(a_mix, b_mix)?;

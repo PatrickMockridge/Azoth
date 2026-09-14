@@ -1,24 +1,6 @@
 """``process.separator`` - one feed split into a gas and a liquid at a single state.
 
 Spec: ``specs/models/process/separator.yaml``
-
-The first unit operation ported from NeqSim, and the pure-Python half of it. Its
-physics is one flash and the arithmetic that follows from it: the vapour fraction
-splits the molar flow, the equilibrium compositions become the two outlets', and both
-outlets leave at the flash's temperature and pressure because that is what a vessel
-held at one state does.
-
-The port source is ``neqsim.process.equipment.separator.Separator``, ``run(UUID)`` at
-lines 674-782 of the 3.20.0 tree - 109 lines of a 4,511-line file. What is taken from
-them is the pressure drop, the choice between an isothermal and an isenthalpic flash,
-and building an outlet from a flashed phase. What is not is the internal mixer, the
-memoization guard, the low-flow bypass and the entrainment model; the spec's notes
-record each with its reason.
-
-**The split is decided on ``phase`` and never on ``beta``.** A single-phase feed has no
-vapour fraction, and the number the flash would report for one is the *extrapolated*
-split - values outside ``[0, 1]`` are ordinary. Multiplying the feed by 1.888 would give
-a wrong answer shaped exactly like a right one.
 """
 
 from __future__ import annotations
@@ -100,9 +82,8 @@ def separator(
         x, y = list(tp.x), list(tp.y)
         warnings.extend(tp.warnings)
     else:
-        # The feed's enthalpy at its *own* state, evaluated explicitly. NeqSim adds the
-        # duty to whatever the last flash left on the object; this depends on the
-        # inputs and on nothing else. See the spec's notes.
+        # The feed's enthalpy at its *own* state, evaluated explicitly, so the answer
+        # depends on the inputs and on nothing else. See the spec's notes.
         h_in, _ = enthalpy_at(mixture, ideal_gas, t_si, p_si, list(z))
         ph = ph_flash(
             mixture,
@@ -127,6 +108,8 @@ def separator(
         liquid_flow = (1.0 - beta) * n_si
         gas_z, liquid_z = y, x
     elif phase == Phase.ALL_LIQUID:
+        # A zero-flow outlet carries the feed's composition: a row of zeros is not a
+        # composition, and a unit reading one would produce a plausible wrong answer.
         gas_flow, liquid_flow, gas_z, liquid_z = 0.0, n_si, list(z), x
     else:
         # ALL_VAPOUR, and TRIVIAL - where the flash converged to `x = y = z` and

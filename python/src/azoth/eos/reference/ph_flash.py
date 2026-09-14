@@ -2,30 +2,14 @@
 
 Spec: ``specs/models/eos/ph_flash.yaml``
 
-# What this model is, and why it is the one the process layer needs
+An outer bisection on temperature, over the enthalpy assembled from two things this
+library already has: the phase split at a trial temperature, from
+:mod:`azoth.eos.reference.pt_flash`, and each phase's enthalpy, from
+``eos.molar_enthalpy_entropy``. The enthalpy rises monotonically with temperature at a
+fixed pressure, which is what makes the bisection well posed.
 
-Every unit operation that adds or removes energy - a heater, a cooler, a compressor, a
-valve - knows the pressure it leaves a stream at and the duty it put in, and does not
-know the temperature that results. That is this model. It is the second of the two that
-the port needs before a flowsheet can run at all, the first being
-:mod:`azoth.eos.reference.pt_flash`.
-
-# The procedure is an outer solve over two things that already exist
-
-The enthalpy of a mixture at a pressure is a **strictly increasing** function of
-temperature, which is what makes a bisection well posed, and it is assembled from parts
-this library already has:
-
-* the phase split at a trial temperature, from ``eos.pt_flash``;
-* each phase's enthalpy, from ``eos.molar_enthalpy_entropy``.
-
-    H(T) = (1 - beta) * H_liquid(x, Z_l) + beta * H_vapour(y, Z_v)
-
-The bracket, the bisection, the branch on the phase and the warning handling all live in
-:mod:`azoth.eos.reference._flash_property`, because ``eos.ps_flash`` inverts the entropy
-with the same machinery and the details are subtle enough that a second copy would
-invite the two to disagree. What is here is the enthalpy half: which property is summed,
-and what the result means.
+The bracket, the loop and the phase branch live in
+:mod:`azoth.eos.reference._flash_property`, shared with ``eos.ps_flash``.
 """
 
 from __future__ import annotations

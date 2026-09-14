@@ -1,42 +1,17 @@
 """``eos.pure_saturation`` - pure-component saturation pressure.
 
-The pressure at which a pure component's vapour and liquid roots have equal
-fugacity, found by bisection. A *model* rather than a calculation: what the spec pins
-down is the procedure, not an equation, and this module reads the procedure from
+The pressure at which a pure component's vapour and liquid roots have equal fugacity,
+found by bisection on reduced pressure. A *model* rather than a calculation: what the
+spec pins down is the procedure, and this module reads the procedure from
 ``azoth._models_gen`` rather than choosing it.
 
-Spec: ``specs/models/eos/pure_saturation.yaml``
+Spec: ``specs/models/eos/pure_saturation.yaml``, which carries the procedure - the
+bracketing rule, the tolerance and the cap - since a procedure that differs between two
+implementations reaches a slightly different answer.
 
-# This composes the kernels and adds a search, and nothing else
-
-Every number it computes comes from a registered calculation:
-:func:`azoth.eos.pr_kappa` for the attraction coefficient,
-:func:`azoth.eos.pr_alpha_ab` for the reduced parameters at a trial pressure,
-:func:`azoth.eos.pr_z_factor` for the roots and their admissibility, and
-:func:`azoth.eos.pr_departure` for the two fugacity coefficients. The only thing here
-that is not a kernel is the loop that searches for the pressure where the two agree.
-
-That is deliberate, and it is the model layer's whole contract: a second
-implementation of the Peng-Robinson equation living in the model layer would be a
-*third* implementation of it, and the claim that two independent implementations
-check each other would quietly stop being true.
-
-# The algorithm
-
-1. **Bracket.** Scan the reduced pressure upward from the spec's ``lower`` to its
-   ``upper`` in ``steps`` points, and take the *last* one at which the cubic still
-   has three admissible roots. That is the spinodal; above it there is one root, no
-   liquid branch, and nothing to equate.
-
-   The window is **one-sided**: a cubic has three real roots at every pressure below
-   the spinodal, including pressures so low that the "liquid" root describes a molar
-   volume no liquid could have. The bracket's lower end is the scan's first point and
-   is arbitrary on purpose.
-
-2. **Bisect** on the reduced pressure until the bracket's *width* meets the tolerance,
-   relatively - not until the residual is small, which would be circular.
-
-3. **Return** the bracket's midpoint times ``Pc``.
+Every number is a registered calc's: :func:`azoth.eos.pr_kappa`,
+:func:`azoth.eos.pr_alpha_ab`, :func:`azoth.eos.pr_z_factor` and
+:func:`azoth.eos.pr_departure`. Only the search is here.
 """
 
 from __future__ import annotations

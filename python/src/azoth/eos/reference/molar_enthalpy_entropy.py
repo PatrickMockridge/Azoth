@@ -1,30 +1,16 @@
 """``eos.molar_enthalpy_entropy`` - the absolute enthalpy and entropy of a mixture.
 
-Spec: ``specs/models/eos/molar_enthalpy_entropy.yaml``
-
-# The composition, which is the whole of what is ours here
+Spec: ``specs/models/eos/molar_enthalpy_entropy.yaml``, which carries the assembly - which
+term belongs on which side - and what the caller is responsible for: the datum, the
+coefficients and the compressibility factor.
 
 .. code-block:: text
 
     H = H_ig(T_ref) + integral Cp dT      + H_dep
     S = S_ig(T_ref) + integral Cp/T dT    - R ln(P/P_ref) - R sum z_i ln z_i + S_dep
 
-Nothing in it is a discovery: the departure functions are the mixture module's, the
-integrals are exact integrals of the polynomial :func:`azoth.eos.ideal_gas_cp`
-registers, and the mixing term is the ideal-gas entropy of mixing. What this module is
-for is *which term goes where*.
-
-# Three things that are easy to get wrong and are therefore stated
-
-1. **The datum is the caller's.** ``h_ref`` and ``s_ref`` are per-component ideal-gas
-   values at the reference state, and nothing checks that two calls used the same
-   source. Two enthalpies from different datums are not comparable and subtracting
-   them gives a plausible number rather than an error.
-2. **The entropy of mixing is an ideal-gas term, not a departure.** The departure
-   functions are defined against the ideal-gas *mixture* at the same state, so
-   ``-R sum z_i ln z_i`` belongs on the ideal-gas side.
-3. **The root is the caller's.** ``compressibility`` is an input rather than a
-   solved-for quantity, because which root describes the phase is a choice.
+The departure functions are ``_mixture_state``'s and the integrals are exact integrals of
+the polynomial :func:`azoth.eos.ideal_gas_cp` registers.
 """
 
 from __future__ import annotations

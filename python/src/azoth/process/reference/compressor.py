@@ -1,16 +1,10 @@
 """``process.compressor`` - a pressure rise at a stated isentropic efficiency.
 
-Spec: ``specs/models/process/compressor.yaml``
-
-The port source is ``neqsim.process.equipment.compressor.Compressor``, ``run(UUID)`` at
-lines 1005-1817 of a 6,593-line file, and specifically its default isentropic path at
-``:1721-1776`` - **55 of those lines**. The rest is the compressor chart, the speed solve,
-the anti-surge recycle, three polytropic correlations, the outlet-temperature efficiency
-solve and the mechanical design.
-
-The procedure itself, and everything not ported, is in
-:mod:`azoth.process.reference._isentropic`; this module is the argument handling and the
-result, and the same is true of the pump and the expander.
+Spec: ``specs/models/process/compressor.yaml``, which carries the provenance and what is
+not ported. The procedure is :mod:`azoth.process.reference._isentropic`'s - the three
+machines share it and differ only in which way the efficiency scales the ideal enthalpy
+change. This module is the argument handling and the result, and the same is true of the
+pump and the expander.
 """
 
 from __future__ import annotations
@@ -48,9 +42,9 @@ def compressor(
         z: the inlet mole fractions.
         outlet_pressure: the pressure the compressor delivers.
         efficiency: the isentropic efficiency, in ``(0, 1]``. **Required rather than
-            defaulted**: NeqSim defaults it to ``1.0`` and clamps
-            (``Compressor.java:109``, ``:2118``), and a compressor assumed ideal is one
-            that understates every duty it is asked for.
+            defaulted**, and range-checked: an efficiency of one is a machine with no
+            losses, and a compressor assumed ideal is one that understates every duty it
+            is asked for.
 
     Returns:
         The outlet temperature and phase, the shaft power, and the temperature a perfect

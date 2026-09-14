@@ -1,29 +1,9 @@
 """``process.heater`` - a duty applied at a fixed pressure.
 
-Spec: ``specs/models/process/heater.yaml``
+Spec: ``specs/models/process/heater.yaml``, which carries the provenance and the reason
+one of the four specifications is ported and the others are not.
 
-The port source is ``neqsim.process.equipment.heatexchanger.Heater``, ``run(UUID)`` at
-lines 402-471 of the 3.20.0 tree. **``Cooler`` has no ``run()`` of its own** - it is a
-258-line class in the same package that inherits this one for its steady state - so a
-cooler here is this model with a negative duty, and that is one fewer unit operation to
-spec and test.
-
-    P_out = P_in - pressureDrop     (:432-435)
-    H_out = H_in + Q                (:431)
-    T_out = PHflash(P_out, H_out)   (:445-446)
-
-# Why only one of NeqSim's four specifications is ported
-
-``Heater.run`` switches on how the outlet is specified (``:437-450``). Only the energy
-input is here, because the other three are not unit operations at all: a specified outlet
-temperature is ``TPflash``, which is ``eos.pt_flash`` - where the temperature is already an
-input - and a specified ``deltaT`` is that same call with the temperature added first.
-
-# The duty is extensive and the flash is molar
-
-NeqSim sums joules directly, because its ``PHflash`` takes joules. ``eos.ph_flash`` takes a
-molar enthalpy, so the port is ``h_out = h_in + Q/n``. Same physics, and the one place in
-this model where the expression changed.
+A cooler is this model with a negative ``heat_duty``; the sign is the whole difference.
 """
 
 from __future__ import annotations

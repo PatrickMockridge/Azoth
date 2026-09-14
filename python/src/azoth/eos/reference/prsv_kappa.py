@@ -5,36 +5,14 @@ kappa = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3
       + kappa1*(1 + Tr**0.5)*(0.7 - Tr)
 ```
 
-Stryjek, R.; Vera, J. H. (1986). "PRSV: An improved Peng-Robinson equation of
-state for pure compounds and mixtures." Can. J. Chem. Eng. 64(2), 323-333.
-DOI 10.1002/cjce.5450640224
+Spec: ``specs/calcs/eos/prsv_kappa.yaml``, which carries the provenance, the
+parameter ``kappa1`` this library does not ship, and why no bound asserts the fitted
+range.
 
-Spec: ``specs/calcs/eos/prsv_kappa.yaml``
-
-# What PRSV changes, and what it does not
-
-It changes the temperature dependence of the attraction coefficient and nothing
-else. The alpha function it feeds is Peng-Robinson's, unchanged, which is why
-:func:`azoth.eos.pr_alpha_ab` serves both and why this is a coefficient rather than
-a second equation of state.
-
-Peng-Robinson's coefficient is a constant per substance. This one is not: the
-``(1 + sqrt(Tr))*(0.7 - Tr)`` term varies with temperature, and ``kappa1`` is fitted
-per component so the variation matches that component's vapour pressure.
-
-# The anchor at Tr = 0.7
-
-The temperature factor is exactly zero at ``Tr = 0.7``, for any ``kappa1``, because
-``0.7 - Tr`` is. So the coefficient collapses to its acentric-only part there - the
-temperature at which the acentric factor is defined. PRSV is pinned to the
-acentric-only fit at Tr = 0.7 and departs from it elsewhere by whatever ``kappa1``
-says.
-
-# The parameter this library does not ship
-
-``kappa1`` is fitted per substance, and a table of fitted parameters is the databank
-this library deliberately has none of. It is an input. A caller who expected PRSV's
-published accuracy for free will not get it.
+PRSV changes the temperature dependence of the attraction coefficient and nothing
+else, so :func:`azoth.eos.pr_alpha_ab` serves it unchanged. Unlike Peng-Robinson's
+coefficient this one varies with ``Tr``, so it has to be recomputed at each
+temperature rather than passed as a fixed number.
 """
 
 from __future__ import annotations
@@ -91,6 +69,8 @@ def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult:
         - 0.17131848 * (omega * omega)
         + 0.0196554 * (omega * omega * omega)
     )
+    # `0.7 - Tr` is zero at Tr = 0.7 whatever `kappa1` is, which is the reduced
+    # temperature the acentric factor is defined at - the correlation's anchor.
     kappa = acentric_only + kappa1 * (1.0 + Tr**0.5) * (0.7 - Tr)
 
     apply_checks(checks.derived, lambda name: kappa if name == "kappa" else None, warnings)

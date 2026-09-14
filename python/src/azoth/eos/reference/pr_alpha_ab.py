@@ -6,26 +6,9 @@ a_reduced = Omega_a * alpha * Pr / Tr**2
 b_reduced = Omega_b * Pr / Tr
 ```
 
-Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State."
-Ind. Eng. Chem. Fundam. 15(1), 59-64. DOI 10.1021/i160057a011
-
-Spec: ``specs/calcs/eos/pr_alpha_ab.yaml``
-
-# Why the Omega constants are not the printed ones
-
-The paper prints ``0.45724`` and ``0.07780``. Those are roundings, and using them
-makes the cubic fail its own critical point: at ``Tr = Pr = 1`` the real root comes
-out 0.321379025174 instead of Peng-Robinson's critical compressibility
-0.307401308699 - 4.55% wrong exactly where the equation is anchored.
-
-The cause is conditioning. The constants exist to place a *triple* root at the
-critical point, and a triple root is cubically ill-conditioned: perturbing the
-coefficients by ``epsilon`` moves the roots by about ``epsilon ** (1/3)``.
-
-So this module carries the full-precision pair, which is the unique solution of the
-triple-root condition rather than a value transcribed from anywhere. The Rust half
-asserts both - that these satisfy it, and that the printed pair does not. See the
-spec's ``verification`` notes for what remains unconfirmed.
+Spec: ``specs/calcs/eos/pr_alpha_ab.yaml``, which carries the provenance, the
+derivation of the two Omega constants from the triple-root condition, and what is
+not claimed about the source.
 """
 
 from __future__ import annotations
@@ -39,9 +22,9 @@ CALC_ID = "eos.pr_alpha_ab"
 
 #: ``Omega_a``, the attraction constant of the Peng-Robinson cubic.
 #:
-#: Full precision, and load-bearing. The paper prints ``0.45724``, which is this
-#: rounded, and which puts the cubic's critical point 4.55% out. Mirrored exactly
-#: in ``crates/azoth-eos/src/pr_alpha_ab.rs``.
+#: Full precision, and load-bearing: the paper prints ``0.45724``, which is this
+#: rounded, and which puts the cubic's critical point 4.55% out. See the spec's
+#: ``notes``.
 OMEGA_A = 0.4572355289213822
 
 #: ``Omega_b``, the repulsion constant of the Peng-Robinson cubic.
@@ -82,17 +65,14 @@ def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:
 
     apply_checks(checks.on_input, values.get, warnings)
 
-    # Guarded by the checks above, so Tr is positive here.
+    # A square, so never negative; exactly 1 at Tr = 1 whatever kappa is, which is
+    # what makes the critical point special.
     #
-    # Written as `attraction ** 2` to mirror the Rust side's `attraction * attraction`,
-    # following the same convention `darcy_weisbach` uses for `v**2` / `v * v`.
-    #
-    # Measured: the two backends give bit-identical results for all three outputs on
-    # the worked example. Not *guaranteed* - IEEE-754 pins `+ - * /` and `sqrt`, and
-    # says nothing about how a language lowers `x ** 2` - so the claim this calc makes
-    # is agreement within the spec's tolerance, not bit-equality.
+    # Written as `t ** 2` to mirror the Rust side's `t * t`, following the same
+    # convention `darcy_weisbach` uses for `v**2` / `v * v`.
     attraction = 1.0 + kappa * (1.0 - Tr**0.5)
     alpha = attraction**2
+    # Guarded by the checks above, so Tr is positive here.
     a_reduced = OMEGA_A * alpha * Pr / Tr**2
     b_reduced = OMEGA_B * Pr / Tr
 

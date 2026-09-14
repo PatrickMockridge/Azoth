@@ -1,64 +1,12 @@
 """``eos.pt_flash`` - the isothermal two-phase flash.
 
-The two-phase split of a mixture at a fixed temperature and pressure, by successive
-substitution from Wilson K-value estimates. A *model* rather than a calculation:
-what the spec pins down is the procedure, and this module reads the procedure from
-``azoth._models_gen`` rather than choosing it.
-
 Spec: ``specs/models/eos/pt_flash.yaml``
 
-# The algorithm
-
-1. **Initialise** every ``K_i`` from Wilson's correlation,
-   ``K_i = (Pc_i / P) * exp(5.373 * (1 + omega_i) * (1 - Tc_i / T))``.
-2. **Solve Rachford-Rice** for the vapour fraction, by bisection on
-   ``g(beta) = sum_i z_i (K_i - 1) / (1 + beta (K_i - 1))``.
-3. **Compose** the two phases, ``x_i = z_i / (1 + beta (K_i - 1))`` and
-   ``y_i = K_i x_i``.
-4. **Evaluate** ``ln phi_i`` in each phase from the mixture form, at the liquid root
-   for ``x`` and the vapour root for ``y``.
-5. **Update** ``K_i = exp(ln phi_i^L - ln phi_i^V)`` and stop when the rms change in
-   ``ln K`` meets the tolerance.
-6. **Re-evaluate once** at the converged ``K``, so the returned ``beta``, ``x``, ``y``
-   and ``K`` are one consistent state rather than one state and its predecessor's
-   vapour fraction.
-
-# The Rachford-Rice bracket, which is not the textbook one
-
-``g`` has poles at ``1/(1 - K_i)``, is strictly decreasing between consecutive
-poles, and jumps from ``-inf`` to ``+inf`` across each. So the leftmost and
-rightmost intervals have no root, and every bounded interval between poles has
-exactly one. Of those, the one with both phases positive is the interval on which
-``1 + beta (K_i - 1) > 0`` for every ``i``:
-
-.. code-block:: text
-
-    lower = max over {i : K_i > 1} of 1/(1 - K_i)
-    upper = min over {i : K_i < 1} of 1/(1 - K_i)
-
-and **it exists only when the K-values straddle one**. The textbook statement
-``1/(1 - K_max) < beta < 1/(1 - K_min)`` is what those two collapse to in that case,
-and is an empty inverted interval otherwise - a bisection handed it walks to
-whichever end it happens to reach and returns a number. See the spec's correction 1
-for what each of the two wrong versions measured.
-
-# The mixture fugacity coefficient is this layer's own arithmetic
-
-``eos.pr_departure`` covers a *pure* component; the mixture form, which carries the
-sum over ``x_j a_ij`` and the ``b_i / b_mix`` term, has no registered calculation
-behind it because the registry is scalar and has no composition vector to hang one
-on. It is checked by composition instead: at ``N = 1`` the cross-sum factor collapses
-to 1 and this becomes exactly ``eos.pr_departure``, and at ``N = 2`` the mixture
-parameters and the vapour fraction must reproduce ``eos.vdw1f_mix_binary`` and
-``eos.rachford_rice_binary``. Both are asserted in the test files.
-
-# No stability test
-
-Successive substitution finds *a* stationary point. Whether the feed was stable is a
-different question, and this model cannot ask it. Where the K-values straddle one
-throughout and the feed is single phase, the iteration converges to ``x = y = z`` and
-the result says ``TRIVIAL`` - the feed is single phase, and which one is not
-something this function can tell you.
+The two-phase split of a mixture at a fixed temperature and pressure: Wilson
+K-value estimates, then successive substitution, with Rachford-Rice bisected each
+iteration. A *model* rather than a calculation - what the spec pins down is the
+procedure, and this module reads the procedure from ``azoth._models_gen`` rather than
+choosing it.
 """
 
 from __future__ import annotations
@@ -82,12 +30,26 @@ from azoth.eos.reference._mixture_state import (
 
 MODEL_ID = "eos.pt_flash"
 
-#: The ``|ln K|`` below which the iteration has found the trivial solution.
+#: The ``ln K`` below which the iteration has found the trivial solution.
+#:
+#: ``|ln K_i| < 1e-8`` for every ``i`` means the two phases have converged onto the
+#: feed. It is compared against the *K-values* and never against ``beta``, which is
+#: indeterminate there - see the spec's correction 2 for the feed a ``beta`` test
+#: would have mislabelled.
 TRIVIAL_TOLERANCE = 1.0e-08
 
 
 def _rachford_rice_bounds(k: list[float]) -> tuple[float, float] | None:
     """The interval on which Rachford-Rice has its physical root, or ``None``.
+
+    ``g(beta) = sum_i z_i (K_i - 1) / (1 + beta (K_i - 1))`` has poles at
+    ``1/(1 - K_i)``, so the root the flash wants is the interval on which
+    ``1 + beta (K_i - 1) > 0`` for every ``i`` - the one that keeps
+    ``x_i = z_i / (1 + beta (K_i - 1))`` and ``y_i = K_i x_i`` non-negative:
+
+    .. code-block:: text
+
+        max over {i : K_i > 1} of 1/(1 - K_i)  <  beta  <  min over {i : K_i < 1} of 1/(1 - K_i)
 
     ``None`` is not a numerical failure: it is a proof that the feed has no
     two-phase solution at these K-values, since ``sum_i y_i = sum_i K_i x_i = 1``

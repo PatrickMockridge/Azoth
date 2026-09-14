@@ -241,6 +241,22 @@ notes: >
   so the single-phase branch takes the whole feed and the appropriate root instead, and
   the result reports no `beta` rather than an extrapolation a caller might use.
 
+  # Convergence is on the residual, and a state-less scan point is skipped
+
+  The bisection stops on `|H(T) - H_target| / max(|H_target|, 1)`, not on the width of
+  the temperature bracket. The bracket bounds the residual through `|H'| * (hi - lo) / 2`
+  only while `H(T)` is continuous; where it is not, the bisection collapses onto the jump
+  and returns a temperature whose enthalpy is not the one asked for, with no error.
+
+  The bracket scan **skips a temperature at which the state does not exist** rather than
+  aborting on it. Some `(T, P)` pairs have no admissible liquid root - the cubic's
+  smallest root falls below the mixture's `B`, so `ln(Z - B)` is the logarithm of a
+  negative number - and such a point has no property and cannot bracket anything. The
+  occurrence is not confined to the ends of the range: on methane/n-butane at 15 bar it
+  happens at 160 K and nowhere else between 100 K and 400 K. Only an out-of-range state
+  is skipped, because an `InvalidInputError` does not depend on the temperature and is
+  the caller's error at every point.
+
   # What is checked, and what is not
 
   The model is checked against itself in the way that matters: a temperature is chosen,

@@ -1,21 +1,12 @@
 """``process.expander`` - a pressure drop that produces work.
 
-Spec: ``specs/models/process/expander.yaml``
+Spec: ``specs/models/process/expander.yaml``, which carries the provenance and what is not
+ported. The procedure is :mod:`azoth.process.reference._isentropic`'s.
 
-The port source is ``neqsim.process.equipment.expander.Expander``, ``run(UUID)`` at lines
-608-668 of a 669-line file. ``Expander`` **extends ``Compressor``** and overrides ``run``,
-and the difference from the compressor is one expression:
-
-    Compressor.java:1738   dH = (H(P_out, s_in) - H_in) / isentropicEfficiency
-    Expander.java:653      dH = (H(P_out, s_in) - H_in) * isentropicEfficiency
-
-The enthalpy change of an expansion is negative, so the multiplication makes it less
-negative and the real outlet **warmer** than the ideal one. That is the physical statement:
-an expander cannot deliver more work than the isentropic drop contains, so its outlet
-cannot be colder than the isentropic temperature.
-
-The procedure itself is in :mod:`azoth.process.reference._isentropic`, and the only thing
-this module passes that the compressor does not is ``Direction.PRODUCING``.
+What this module passes that the compressor does not is ``Direction.PRODUCING``, which
+**multiplies** the ideal enthalpy change where the compressor divides it. An expansion's
+enthalpy change is negative, so multiplying makes it less negative - the real outlet is
+warmer than the ideal one, which is the irreversibility the efficiency stands for.
 """
 
 from __future__ import annotations
@@ -67,9 +58,7 @@ def expander(
 
     Note:
         ``power`` is negative here and positive for a compressor, on the same convention:
-        positive means energy into the fluid. NeqSim reports the opposite sign on its
-        energy port (``Expander.java:661``, ``setDuty(-dH)``), which is worth knowing
-        before comparing the two.
+        positive means energy into the fluid.
     """
     spec = _models_gen.model(MODEL_ID)
     checks = checks_for(spec)

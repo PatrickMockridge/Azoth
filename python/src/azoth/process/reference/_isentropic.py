@@ -1,20 +1,12 @@
 """The procedure a compressor, a pump and an expander have in common.
 
-NeqSim has three classes for the three machines and the same eleven lines in each. Read
-out of ``Compressor.java:1721-1776``, ``Pump.java:558-572`` and ``Expander.java:646-660``,
-all three do:
+The three machines are the same eleven statements with one difference: which way the
+efficiency scales the ideal enthalpy change, which is what :class:`Direction` names.
+Dividing puts the outlet further from the inlet than ideal - a machine consuming work;
+multiplying puts it closer - a machine producing it.
 
-    s_in  = S(T_in, P_in)                        the entropy the fluid arrives with
-    T_is  = PSflash(P_out, s_in)                 where it would get to ideally
-    h_is  = H(T_is, P_out)                       the ideal outlet enthalpy
-    h_out = h_in + (h_is - h_in) / eta           compressor and pump  (Compressor.java:1738)
-    h_out = h_in + (h_is - h_in) * eta           expander             (Expander.java:653)
-    T_out = PHflash(P_out, h_out)                the real outlet state
-
-The only difference between the three is **which way the efficiency scales the ideal
-enthalpy change**, and that is what :class:`Direction` names. Dividing gives an outlet
-further from the inlet than ideal, which is a machine consuming work; multiplying gives
-one closer to the inlet, which is a machine producing it.
+Each machine's spec carries its own provenance and its own list of what is not ported:
+``specs/models/process/compressor.yaml``, ``pump.yaml`` and ``expander.yaml``.
 
 The mirror of ``crates/azoth-process/src/isentropic.rs``, and it exists for the same
 reason that one does: three copies of eleven lines is three places for the efficiency to
@@ -86,10 +78,9 @@ def isentropic_run(
 ) -> Solved:
     """Run one machine and return the six things its three result types are built from.
 
-    ``efficiency`` is the **isentropic** efficiency, in ``(0, 1]``. NeqSim allows exactly
-    that range too, clamped rather than refused (``Compressor.java:2118``); here the
-    spec's range check refuses it, because a clamp turns a caller's mistake into a
-    slightly different answer that looks deliberate.
+    ``efficiency`` is the **isentropic** efficiency, in ``(0, 1]``. The spec's range check
+    refuses a value outside it rather than clamping, because a clamp turns a caller's
+    mistake into a slightly different answer.
 
     Raises:
         InvalidInputError: if the pressure moves the wrong way for the direction claimed.
@@ -120,7 +111,7 @@ def isentropic_run(
     t_is = to_si(ideal.T, "K", "T")
     h_ideal, _ = enthalpy_at(mixture, ideal_gas, t_is, p_out_si, z)
 
-    # The whole difference between the three machines, at NeqSim's own line numbers.
+    # The one expression that differs between the three machines.
     if direction is Direction.CONSUMING:
         d_h = (h_ideal - h_in) / efficiency
     else:

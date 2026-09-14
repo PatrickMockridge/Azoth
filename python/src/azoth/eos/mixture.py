@@ -7,17 +7,11 @@ neither implementation owns it.
 
 # No component names, deliberately
 
-:class:`Component` carries ``Tc``, ``Pc`` and ``omega`` and **no name**. This used
-to be because there was no databank to look a value up in; there is one now
-(``azoth.eos.components``, generated from NeqSim) and the rule has not changed, for
-a different reason. A name on the component would let a *calculation* resolve it,
-and a flash that looks up its own inputs is one whose answer depends on a file the
-caller never mentioned. So the lookup is a step the caller takes:
-``component("methane")`` returns one of these, and everything downstream still takes
-the numbers.
-
-That is why every spec case can keep building a :class:`Component` by hand and why
-the library still works with no data file at all.
+:class:`Component` carries ``Tc``, ``Pc`` and ``omega`` and **no name**: a name would
+let a *calculation* resolve it, and a flash that looks up its own inputs is one whose
+answer depends on a file the caller never mentioned. So the lookup is a step the
+caller takes - ``azoth.eos.components.component("methane")`` returns one of these, and
+everything downstream still takes the numbers.
 """
 
 from __future__ import annotations

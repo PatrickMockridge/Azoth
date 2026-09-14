@@ -9,14 +9,11 @@ it twice would invite the two copies to disagree.
 
 The precedent is :mod:`azoth.eos.reference._phase_boundary`, shared by
 ``eos.bubble_pressure`` and ``eos.dew_pressure`` because "the guard against the trivial
-solution has to be written once". The same argument applies here, and it is stronger
-for the single-phase branch below: a feed that is entirely one phase has no vapour
-fraction, and the flash's value for it is an *extrapolation* rather than a number
-nobody should use.
+solution has to be written once". It is stronger here, for the single-phase branch
+below: a feed that is entirely one phase has no vapour fraction, and the flash's value
+for it is an *extrapolation* rather than a number nobody should use.
 
-# What the two models share, and what they do not
-
-They share the bracket, the bisection, the branch on the phase, and the warning
+They share the bracket, the bisection, the branch on the phase and the warning
 handling. They do not share the property itself: an enthalpy and an entropy are
 different functions, each comes from ``eos.molar_enthalpy_entropy``, and each has its
 own units. So the caller names which one it wants and this module sums it the same way
@@ -85,12 +82,9 @@ def property_at(
     else:
         # One phase, so the whole feed is in it and *its* root describes it. `beta` is
         # deliberately not used - see the module docstring - and neither are
-        # `z_liquid`/`z_vapour`, which belong to the extrapolated phase compositions.
-        # Reading the root from one of those is what made `H(T)` discontinuous: where the
-        # flash reports a negative flash its phase composition is not a state, its cubic
-        # root is a different number from the feed's, and the step between the two showed
-        # up as a hundred kelvin's worth of enthalpy - so `eos.ph_flash` inverted a
-        # function with a jump in it and `process.heater` returned a wrong temperature.
+        # `z_liquid`/`z_vapour`, which belong to the extrapolated phase compositions:
+        # where the flash reports a negative flash its phase composition is not a state,
+        # and its cubic root is a different number from the feed's.
         reduced = reduced_parameters(mixture, t_si, p_si)
         root = phase_state(reduced, mixture.kij, z, liquid=(phase == ALL_LIQUID)).z
         value = _phase_property(mixture, ideal_gas, t_si, p_si, z, root, which)
@@ -164,8 +158,7 @@ def solve_temperature(
         # bracket. The bracket bounds the residual through `|H'| * (hi - lo) / 2` only
         # while `H(T)` is continuous; where it is not, the bisection collapses onto the
         # jump and returns a temperature whose enthalpy is not the one asked for, with no
-        # error. It did exactly that for 105 of 111 enthalpy targets before
-        # `eos.pt_flash` stopped handing back an extrapolated vapour fraction.
+        # error. See the spec's notes.
         residual = abs(mid_value - target) / max(abs(target), 1.0)
         if residual <= tolerance:
             break
@@ -205,13 +198,10 @@ def bracket_by_scan(
     - which is what lets the two implementations agree on the iteration count.
 
     **A temperature with no state is skipped rather than fatal.** Some ``(T, P)`` pairs
-    on the scan have no admissible liquid root - the cubic's smallest root falls below
-    the mixture's ``B``, so ``ln(Z - B)`` is the logarithm of a negative number - and
-    that is not confined to the ends of the range: on methane/n-butane at 15 bar it
-    happens at 160 K and nowhere else between 100 K and 400 K. Such a point has no
-    property, so it cannot bracket anything. Aborting the search on one - which this did
-    until the process layer needed a valve at 15 bar - made ``eos.ph_flash`` unusable at
-    ordinary states, and the failure looked like a caller's mistake.
+    on the scan have no admissible liquid root, so no property to compare against the
+    target, and such a point cannot bracket anything. The occurrence is not confined to
+    the ends of the range - the spec's notes record where it lands - so aborting on one
+    would make the model unusable at ordinary states.
 
     **Only an out-of-range state is skipped.** An :class:`InvalidInputError` - a
     composition that is not a composition, a vector of the wrong length - does not depend

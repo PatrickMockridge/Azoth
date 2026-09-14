@@ -1,30 +1,12 @@
 """``process.splitter`` - one feed divided into branches.
 
-Spec: ``specs/models/process/splitter.yaml``
+Spec: ``specs/models/process/splitter.yaml``, which carries the provenance, the reason
+there is no ideal-gas block, and the divergence over normalising the fractions.
 
-The port source is ``neqsim.process.equipment.splitter.Splitter``, ``run(UUID)`` at lines
-376-438 of the 3.20.0 tree:
-
-    n_k = f_k * n_in          (:420-425)
-    T_k = T_in, P_k = P_in    (copied by the clone at :407, never set)
-    state_k = TPflash()       (:427)
-
-# One flash, not ``S`` flashes
-
-NeqSim flashes every branch and has to: its streams are mutable objects a caller may have
-written to between the split and the flash. Here every branch is at the **same**
-temperature, pressure and composition by construction, and an isothermal flash is a
-function of exactly those three - so ``S`` flashes would return ``S`` copies of one
-answer. This runs it once and reports one ``phase`` and one ``beta`` with the branch flows
-as a vector. Same answer, stated in a form that cannot disagree with itself.
-
-# The fractions are checked, not corrected
-
-NeqSim sanitises its split factors (``:388-404``) - negatives to zero, and if the total is
-not positive it zeroes them all and sets the first to one. That is defensible for a solver
-that must keep running inside a transient loop. It is not defensible here: a splitter's
-entire output *is* those numbers, and silently rescaling a caller's fractions makes their
-arithmetic error invisible while changing every number downstream.
+Every branch leaves at the feed's own temperature, pressure and composition, so one
+isothermal flash describes all of them. The model runs it **once** and reports one
+``phase`` and one ``beta``, with the branch flows as a vector - not a shortcut, but the
+same answer stated in a form that cannot disagree with itself.
 """
 
 from __future__ import annotations

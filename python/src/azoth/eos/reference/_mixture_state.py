@@ -11,19 +11,12 @@ The models that need it are ``eos.pt_flash``, which holds two compositions and
 solves for the split, and ``eos.bubble_pressure`` / ``eos.dew_pressure``, which hold
 one and solve for the pressure at which the other appears.
 
-# What keeps it honest
-
-Not an assertion but a *reduction*: at ``N = 1`` the cross-sum factor collapses to 1
-and :func:`phase_state` returns exactly ``eos.pr_departure``'s ``ln phi``, and at
-``N = 2`` :func:`mixture_parameters` reproduces ``eos.vdw1f_mix_binary``. Both are
-asserted in both languages, and the second is a cross-layer check no single-language
-test can replace.
-
-Both reductions are to within a couple of ulps rather than bit-identical, and the
-reason is in ``azoth.eos.mixture``'s Rust counterpart: the registered binary kernel
-evaluates its three terms longhand while this sums a double loop, so the two
-associate differently. A bit-equality claim here would be a claim about summation
-order rather than about the mixing rule.
+What keeps it honest is not an assertion but a *reduction*: at ``N = 1`` the cross-sum
+factor collapses to 1 and :func:`phase_state` returns exactly ``eos.pr_departure``'s
+``ln phi``, and at ``N = 2`` :func:`mixture_parameters` reproduces
+``eos.vdw1f_mix_binary``. Both are asserted in both languages. The
+``eos.vdw1f_mix_binary`` spec's notes record why each holds to a couple of ulps rather
+than bit-identically.
 """
 
 from __future__ import annotations
@@ -412,11 +405,10 @@ def criticality_matrix(
     opposite is easy to assume. ``A(T, V, n)`` is not homogeneous in ``n`` at fixed
     ``V`` - homogeneity needs the volume to scale with it - so there is no
     Euler-theorem null vector, and the ideal part of the Hessian at constant volume
-    (``delta_ij/n_i``) is positive definite on its own. Measured across a sweep of
-    temperatures and volumes, the smallest eigenvalue of ``Q`` is nowhere near zero
-    away from a critical point. The vanishing is therefore informative rather than
-    generic, and the direction it vanishes along is the critical composition
-    fluctuation and nothing else.
+    (``delta_ij/n_i``) is positive definite on its own. The vanishing is therefore
+    informative rather than generic, and the direction it vanishes along is the
+    critical composition fluctuation and nothing else; the spec's notes record the
+    sweep that measures it.
 
     That is why the critical point solves for the **smallest-magnitude eigenvalue**
     rather than for ``det(Q)``. The two are not the same equation: the determinant

@@ -1,34 +1,12 @@
 """``process.mixer`` - several feeds blended into one.
 
-Spec: ``specs/models/process/mixer.yaml``
+Spec: ``specs/models/process/mixer.yaml``, which carries this model's provenance and the
+two places its arithmetic diverges from NeqSim's.
 
-The port source is ``neqsim.process.equipment.mixer.Mixer``, ``run(UUID)`` at lines
-642-729 of the 3.20.0 tree, with the material balance in ``mixStream()`` at ``:192-320``.
-
-# The one expression that changed
-
-NeqSim sums **total** enthalpies in joules and its ``PHflash`` takes joules, so the sum
-is the whole energy balance. ``eos.ph_flash`` takes a **molar** enthalpy, so the port is
-the flow-weighted mean:
-
-    H_out = sum_s (n_s * H_s) / sum_s n_s
-
-Same physics - an energy balance on an open system with no heat and no work - and a
-different expression. It is the only place in this port where a formula looks different
-from the source it came from.
-
-# The outlet pressure is the lowest inlet pressure
-
-A mixer is a vessel: nothing in it can be above the lowest pressure any feed arrives at.
-The maximum, or the arithmetic mean, would give an answer that is arithmetically fine and
-describes a pump.
-
-# The shape a multi-inlet unit has
-
-``T``, ``P`` and ``n`` are one entry per inlet and ``z`` is one row per inlet. That is the
-shape every later multi-inlet unit uses, and it is why there is no ``stream`` type: the
-six things a stream is are already the arguments, and a type would be a second way to
-state them.
+The outlet is at the **lowest** inlet pressure - a mixer is a vessel, and nothing in it
+can be above the pressure any feed arrives at - and its temperature is an isenthalpic
+flash of the flow-weighted blend. There is no ``stream`` type: the six things a stream is
+are the arguments a unit operation takes, and a type would be a second way to state them.
 """
 
 from __future__ import annotations

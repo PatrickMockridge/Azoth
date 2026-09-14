@@ -48,6 +48,10 @@ The mechanical route - solving `dP/dV = d2P/dV2 = 0` at fixed composition - is e
 
 What tells them apart is that **a mixture's `Z_c` varies with composition**. Measured here for methane / n-butane at `kij = 0.05`: `0.39696`, `0.47865`, `0.54247` and `0.49913` at methane fractions 0.2, 0.4, 0.6 and 0.8 - a spread of 0.146 against the mechanical route's constant. The `Tc` locus falls monotonically from 411.1 K to 273.5 K between the pure endpoints of 425.12 K and 190.56 K, which is the shape a binary's critical locus has.
 
+#### The smallest eigenvalue of `Q` is not generically near zero
+
+`A(T, V, n)` is not homogeneous in `n` at fixed `V` - homogeneity needs the volume to scale with it - so there is no Euler-theorem null vector, and the ideal part of the Hessian at constant volume (`delta_ij / n_i`) is positive definite on its own. Measured across a sweep of temperatures and volumes: the smallest eigenvalue of `Q` is nowhere near zero away from a critical point. The vanishing is therefore informative rather than generic, and the direction it vanishes along is the critical composition fluctuation and nothing else.
+
 #### Where this is least trustworthy
 
 **The cubic form is a finite difference**, and it is the weaker of the two conditions. Its step is fixed at `1e-4` in the composition, which puts a floor of roughly `1e-10` on the residual that no amount of iterating improves - so the outer tolerance is `1e-9` and the reported residual sits near that floor rather than at it. An analytic third derivative would remove the floor; it would also be a much larger expression, and the finite difference is checked to be converging by the pure-component result rather than assumed to be.

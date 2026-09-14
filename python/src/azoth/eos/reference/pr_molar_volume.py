@@ -4,30 +4,9 @@
 v = z*R*T/P
 ```
 
-Spec: ``specs/calcs/eos/pr_molar_volume.yaml``
-
-# The one dimensional calc in this namespace
-
-Everything else in :mod:`azoth.eos` is reduced variables and constitutive
-coefficients, deliberately unit-free. This is where a compressibility factor becomes
-a volume, and it is therefore the only calc here that takes a temperature, a
-pressure, and a unit that is not ``dimensionless`` - it is what made ``m**3/mol``
-the seventeenth entry in the vocabulary.
-
-# The gas constant is exact
-
-Since the 2019 SI redefinition both constants in ``R = N_A * k_B`` are exact by
-definition, so their product is a defined value rather than a measurement. This
-module computes it from the two constants rather than carrying a literal, so the
-arithmetic shows where it comes from. The commonly quoted ``8.314462618`` is that
-value truncated.
-
-# Evaluation order
-
-Written ``z * R * T / P``, left to right, because that is the order the equation
-gives and it is the order the Rust side uses. It matters, and only just: evaluating
-it as ``z * (R * T / P)`` is bit-identical for a vapour root and one-ulp-different
-for a liquid one.
+Spec: ``specs/calcs/eos/pr_molar_volume.yaml``, which carries why this is the one
+dimensional calc in the namespace, why the gas constant is computed from its two
+defining constants, and why the evaluation order matters.
 """
 
 from __future__ import annotations
@@ -67,7 +46,9 @@ def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:
         The molar volume, in ``m**3/mol``.
 
     Raises:
-        OutOfRangeError: if ``z <= 0``, or if ``T`` or ``P`` is not positive.
+        OutOfRangeError: if ``z <= 0``, or if ``T`` or ``P`` is not positive. A
+            molar volume is positive, so a non-positive input can only be a caller
+            error, and ``P`` is a divisor besides.
 
     Example:
         >>> import azoth
@@ -88,8 +69,8 @@ def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:
 
     apply_checks(checks.on_input, values.get, warnings)
 
-    # Written in the equation's own order - see the module documentation for why
-    # the order is stated rather than incidental.
+    # Written in the equation's own order, left to right; the spec's worked example
+    # records why the order is stated rather than incidental.
     v = z * MOLAR_GAS_CONSTANT * values["T"] / values["P"]
 
     apply_checks(checks.derived, lambda name: v if name == "v" else None, warnings)

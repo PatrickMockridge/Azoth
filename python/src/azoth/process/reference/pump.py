@@ -1,24 +1,8 @@
 """``process.pump`` - a pressure rise in a liquid, at a stated isentropic efficiency.
 
-Spec: ``specs/models/process/pump.yaml``
-
-The port source is ``neqsim.process.equipment.pump.Pump``, ``run(UUID)`` at lines 515-677
-of a 1,700-line file, and specifically its **default** path at ``:558-572`` - the one taken
-when ``calculateAsCompressor`` is true, which it is by default (``Pump.java:114``). That
-path is literally the compressor's: a ``PSflash`` at the inlet entropy, then a ``PHflash``
-at the actual enthalpy.
-
-# Why a liquid pump runs an entropy flash at all
-
-Because the temperature rises, slightly, and the model should say by how much rather than
-assume zero. For methane/n-butane at 300 K, 20 to 30 bar at an efficiency of 0.8 the rise
-is 1.34 K - small, real, and free here, since the flash this runs is the same one a
-compressor runs.
-
-The alternative - NeqSim's simple pressure-rise path (``:645-664``), ``dP * volumetric
-flow / efficiency`` - takes the fluid as incompressible and is what
-``hydraulics.pump_power`` already is. Neither is wrong; they are different models, and a
-caller should be able to tell which they are running.
+Spec: ``specs/models/process/pump.yaml``, which carries the provenance, which of the four
+paths through NeqSim's ``Pump.run`` this is, and why a liquid pump runs an isentropic
+flash at all. The procedure is :mod:`azoth.process.reference._isentropic`'s.
 """
 
 from __future__ import annotations
@@ -56,9 +40,8 @@ def pump(
         z: the inlet mole fractions.
         outlet_pressure: the pressure the pump delivers.
         efficiency: the isentropic efficiency, in ``(0, 1]``. Required rather than
-            defaulted, for the reason :mod:`azoth.process.reference.compressor` gives:
-            NeqSim defaults it to one, and its setter here does not even clamp
-            (``Pump.java:854``).
+            defaulted, for the reason :mod:`azoth.process.reference.compressor` gives: a
+            silently ideal pump is a pump that understates its power.
 
     Returns:
         The outlet temperature and phase, the shaft power, and the temperature a perfect
@@ -68,11 +51,6 @@ def pump(
         InvalidInputError: if ``outlet_pressure`` is not above the inlet pressure.
         OutOfRangeError: if an input is outside the spec's declared range.
         SolverNotConvergedError: if either flash cannot reach its target.
-
-    Note:
-        **Nothing checks that the inlet is a liquid.** A pump run on a vapour is
-        arithmetically fine and returns a pressure rise nobody can achieve with a pump.
-        A caller who needs the check has ``eos.stability_test`` and a phase-boundary model.
     """
     spec = _models_gen.model(MODEL_ID)
     checks = checks_for(spec)

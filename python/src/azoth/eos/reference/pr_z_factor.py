@@ -4,45 +4,12 @@
 z**3 - (1 - B)*z**2 + (A - 3*B**2 - 2*B)*z - (A*B - B**2 - B**3) = 0
 ```
 
-Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State."
-Ind. Eng. Chem. Fundam. 15(1), 59-64. DOI 10.1021/i160057a011
+Spec: ``specs/calcs/eos/pr_z_factor.yaml``, which carries the provenance, the proof
+that the admissible root count is one or three, and what the answer does near the
+critical point.
 
-Spec: ``specs/calcs/eos/pr_z_factor.yaml``
-
-# Which roots come back, and which do not
-
-The cubic has up to three real roots. This calc returns the **outermost two of
-those that are admissible**, where admissible means ``z > B``: ``z = B`` is the
-zero-volume limit, and a root below it makes ``ln(z - B)`` the logarithm of a
-negative number.
-
-The middle root is discarded. It is a genuine root of the polynomial and it is not
-a state the equation describes - it lies on the unstable branch between the
-spinodals - and the spec asserts it is *absent* rather than merely unmentioned.
-
-# Why only one or three, never two
-
-``f(B)`` is exactly ``-2*B**2``, by cancellation of every other term:
-
-```text
-f(B) = B**3 - (1 - B)B**2 + (A - 3B**2 - 2B)B - (AB - B**2 - B**3)
-     = -2B**2
-```
-
-which is negative for every permitted ``B``. A cubic with a positive leading
-coefficient is negative below its smallest root and between its middle and largest
-ones, so ``B`` lies either below all three roots or between the middle and largest.
-One admissible root or three, and no third case.
-
-# Near the critical point
-
-The constants exist to place a triple root at the critical point, and a triple root
-is cubically ill-conditioned. At ``A = OMEGA_A, B = OMEGA_B`` the polynomial stays
-within ``1e-12`` of zero across a window about ``2e-4`` wide in ``z``, changing
-sign repeatedly inside it on rounding noise alone - so every value in that window
-is a root as far as double precision can tell. This calc cannot pin the last four
-digits there, and cannot detect that it is in that region, because the reduction
-happened two calcs upstream and it never sees ``Tr`` or ``Pr``.
+This calc returns the outermost two roots that are admissible - ``z > B`` - and
+discards the middle one, which lies on the unstable branch between the spinodals.
 """
 
 from __future__ import annotations
@@ -98,8 +65,7 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
     convergence = Convergence.parse(solver["convergence"])
 
     # The monic cubic z**3 + c2*z**2 + c1*z + c0, coefficients straight from the
-    # published form so a reader can check them against the equation above. Written
-    # exactly as the Rust arm writes them, statement for statement.
+    # published form so a reader can check them against the equation above.
     c2 = -(1.0 - b_reduced)
     c1 = a_reduced - 3.0 * b_reduced * b_reduced - 2.0 * b_reduced
     c0 = -(a_reduced * b_reduced - b_reduced * b_reduced - b_reduced * b_reduced * b_reduced)

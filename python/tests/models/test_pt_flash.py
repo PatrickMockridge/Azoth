@@ -303,6 +303,45 @@ def test_a_negative_flash_reports_its_vapour_fraction() -> None:
         assert result.x[i] > 0.0 and result.y[i] > 0.0
 
 
+def test_the_phase_label_and_the_vapour_fraction_agree() -> None:
+    """`two_phase` means a split, and a split means `two_phase`.
+
+    The spec's `phase` description is a contract about the two fields together: `beta`
+    is in `[0, 1]` when the phase is `two_phase`, absent when it is `trivial`, and an
+    extrapolation - reported, with a warning - otherwise. Each half is checked
+    elsewhere; the implication between them was not, and a model reporting
+    `two_phase` with a vapour fraction of 1.7 would satisfy every single-field test.
+
+    Swept rather than spot-checked, and the sweep has to reach every phase value or
+    the assertion above it proves nothing for the phases it missed.
+    """
+    fluid = methane_butane()
+    z = [0.6, 0.4]
+    seen: set[Phase] = set()
+
+    for temperature in range(240, 460, 10):
+        for pressure in (1.0e5, 1.0e6, 2.0e6, 5.0e6, 2.0e7):
+            try:
+                result = pt_flash(fluid, T=Q(float(temperature), "K"), P=Q(pressure, "Pa"), z=z)
+            except (OutOfRangeError, SolverNotConvergedError):
+                # A state this model does not cover; the point of the sweep is the
+                # states it does.
+                continue
+
+            where = f"T={temperature} K, P={pressure} Pa"
+            seen.add(result.phase)
+            if result.phase is Phase.TWO_PHASE:
+                assert result.beta is not None, f"{where}: a split with no vapour fraction"
+                assert 0.0 <= result.beta <= 1.0, (
+                    f"{where}: `two_phase` with beta = {result.beta}, which is not a "
+                    f"split and not a number a caller can use as one"
+                )
+            elif result.phase is Phase.TRIVIAL:
+                assert result.beta is None, f"{where}: a trivial solution with a beta"
+
+    assert seen == set(Phase), f"the sweep reached only {seen}, so it proved little"
+
+
 def test_a_feed_that_converges_to_the_trivial_solution_says_so() -> None:
     """The model's honest gap, made testable.
 
