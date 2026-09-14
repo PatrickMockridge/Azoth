@@ -36,6 +36,7 @@ from typing import Any
 import pytest
 
 from azoth._data import find
+from azoth.eos import components
 from azoth.hydraulics.reference.fittings import registry
 from azoth.properties import available_fluids, provider_for
 
@@ -63,6 +64,23 @@ FLUID_FIELDS = (
     "citation",
     "verify_status",
 )
+
+#: The columns a calculation reads out of the component databank. Not every column the
+#: file carries: a comparison of a field neither side acts on proves nothing about the
+#: numbers a flash uses.
+COMPONENT_FIELDS = (
+    "name",
+    "tc_k",
+    "pc_pa",
+    "acentric_factor",
+    "cp_a",
+    "cp_b",
+    "cp_c",
+    "cp_d",
+    "cp_e",
+)
+
+KIJ_FIELDS = ("component_a", "component_b", "kij_pr")
 
 
 def extension() -> ModuleType:
@@ -111,6 +129,50 @@ def python_fluid_rows(name: str) -> list[dict[str, Any]]:
     ]
 
 
+def python_component_rows() -> list[dict[str, Any]]:
+    """The databank as the Python reference parses it, ordered by name.
+
+    `available()` is the public surface and is sorted, which is the one ordering both
+    sides can reproduce without agreeing on how the file happens to be laid out.
+    """
+    out = []
+    for name in components.available():
+        record = components.entry(name)
+        if record.cp is None:  # pragma: no cover - only a keycard-added substance
+            continue
+        out.append(
+            {
+                "name": record.name.lower(),
+                "tc_k": record.Tc.to("K").magnitude,
+                "pc_pa": record.Pc.to("Pa").magnitude,
+                "acentric_factor": record.omega,
+                "cp_a": record.cp[0],
+                "cp_b": record.cp[1],
+                "cp_c": record.cp[2],
+                "cp_d": record.cp[3],
+                "cp_e": record.cp[4],
+            }
+        )
+    return sorted(out, key=lambda row: row["name"])
+
+
+def python_kij_rows() -> list[dict[str, Any]]:
+    """The interaction table as the Python reference parses it, one row per pair.
+
+    `_kij()` rather than a public function: the shipped map is symmetric and keyed both
+    ways round, which is the storage a flash wants and not a table. Reaching in here
+    keeps a public surface from existing only to be compared.
+    """
+    return sorted(
+        (
+            {"component_a": a, "component_b": b, "kij_pr": value}
+            for (a, b), value in components._kij().items()
+            if a < b
+        ),
+        key=lambda row: (row["component_a"], row["component_b"]),
+    )
+
+
 def rust_rows(rows: list[Any], fields: tuple[str, ...]) -> list[dict[str, Any]]:
     """Transported rows flattened to plain dicts, in a fixed field order."""
     return [{field: getattr(row, field) for field in fields} for row in rows]
@@ -125,6 +187,8 @@ def test_this_build_embeds_something() -> None:
     files = extension().data_files()
     assert files, "the extension embeds no data files"
     assert extension().fittings_rows(), "the extension parsed no fitting rows"
+    assert extension().component_rows(), "the extension parsed no component rows"
+    assert extension().kij_rows(), "the extension parsed no interaction rows"
     for name in available_fluids():
         assert extension().fluid_rows(name), f"the extension parsed no rows for {name}"
 
@@ -136,16 +200,26 @@ def test_the_two_sides_agree_on_which_files_exist() -> None:
     from a packaging change made on one side only.
     """
     rust_paths = {data_file.path for data_file in extension().data_files()}
-    expected = {"data/fittings/crane_k_factors.csv"} | {
-        f"data/fluids/{name}.csv" for name in available_fluids()
-    }
+    expected = {
+        "data/fittings/crane_k_factors.csv",
+        "data/components/components.csv",
+        "data/components/kij.csv",
+    } | {f"data/fluids/{name}.csv" for name in available_fluids()}
     assert rust_paths == expected, (
         f"the extension embeds {sorted(rust_paths)} but this build of the Python side "
         f"expects {sorted(expected)}"
     )
 
 
-@pytest.mark.parametrize("path", ["data/fittings/crane_k_factors.csv", "data/fluids/water.csv"])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "data/fittings/crane_k_factors.csv",
+        "data/fluids/water.csv",
+        "data/components/components.csv",
+        "data/components/kij.csv",
+    ],
+)
 def test_a_named_file_is_byte_identical_on_both_sides(path: str) -> None:
     """A specific file, so a failure names which table is out of step.
 
@@ -216,6 +290,46 @@ def test_every_fluid_row_agrees_field_by_field(name: str) -> None:
     )
     for index, (left, right) in enumerate(zip(rust, python, strict=True)):
         assert left == right, f"{name} row {index} differs\n  rust:   {left}\n  python: {right}"
+
+
+def test_every_component_row_agrees_field_by_field() -> None:
+    """Every column a calculation reads, for every substance.
+
+    This is the comparison that makes "both sides read one databank" a checked claim
+    rather than an architectural intention. Python's `csv` module and the `csv` crate
+    are different code: they do not have to agree about quoting, a byte-order mark or
+    exponent notation, and a divergence here is a component whose critical pressure is
+    one value in Rust and another in Python.
+    """
+    rust = rust_rows(extension().component_rows(), COMPONENT_FIELDS)
+    python = python_component_rows()
+
+    assert len(rust) == len(python), (
+        f"the two sides parsed {len(rust)} and {len(python)} component rows"
+    )
+    for index, (left, right) in enumerate(zip(rust, python, strict=True)):
+        for field in COMPONENT_FIELDS:
+            assert left[field] == pytest.approx(right[field], rel=0, abs=0), (
+                f"component row {index} ({left['name']}) differs on `{field}`\n"
+                f"  rust:   {left[field]!r}\n  python: {right[field]!r}"
+            )
+
+
+def test_every_interaction_row_agrees_field_by_field() -> None:
+    """Every pair, in the same order on both sides."""
+    rust = rust_rows(extension().kij_rows(), KIJ_FIELDS)
+    python = python_kij_rows()
+
+    assert len(rust) == len(python), (
+        f"the two sides parsed {len(rust)} and {len(python)} interaction rows"
+    )
+    for index, (left, right) in enumerate(zip(rust, python, strict=True)):
+        assert left["component_a"] == right["component_a"], f"interaction row {index}"
+        assert left["component_b"] == right["component_b"], f"interaction row {index}"
+        assert left["kij_pr"] == pytest.approx(right["kij_pr"], rel=0, abs=0), (
+            f"interaction row {index} ({left['component_a']}/{left['component_b']}): "
+            f"rust {left['kij_pr']!r}, python {right['kij_pr']!r}"
+        )
 
 
 def test_an_unknown_fluid_fails_rather_than_returning_nothing() -> None:

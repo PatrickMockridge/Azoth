@@ -771,7 +771,9 @@ def _mixture_arguments(
     )
 
 
-def _ideal_gas_arguments(ideal_gas: Any) -> tuple[
+def _ideal_gas_arguments(
+    ideal_gas: Any,
+) -> tuple[
     list[float],
     list[float],
     list[float],
@@ -792,7 +794,9 @@ def _ideal_gas_arguments(ideal_gas: Any) -> tuple[
     )
 
 
-def _model_arguments(mixture: Any, ideal_gas: Any) -> tuple[
+def _model_arguments(
+    mixture: Any, ideal_gas: Any
+) -> tuple[
     list[float],
     list[float],
     list[float],
@@ -804,7 +808,7 @@ def _model_arguments(mixture: Any, ideal_gas: Any) -> tuple[
     list[float],
 ]:
     """The leading arguments every unit operation takes, as one tuple: the mixture and
-the ideal-gas model.
+    the ideal-gas model.
 
     The concatenation of the two above, and not two separate unpacks at the call site:
     a call written `f(*a, *b, ...)` with both `a` and `b` of known length is one mypy

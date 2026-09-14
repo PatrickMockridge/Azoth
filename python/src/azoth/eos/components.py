@@ -50,6 +50,7 @@ from azoth._data import find
 from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 from azoth.core.units import Q, ureg
 from azoth.eos.mixture import Component, Mixture
+from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
 COMPONENTS_CSV = "data/components/components.csv"
 KIJ_CSV = "data/components/kij.csv"
@@ -67,6 +68,11 @@ COLUMNS = (
     "acentric_factor",
     "critical_volume_m3_per_mol",
     "liquid_density_kg_per_m3",
+    "cpa",
+    "cpb",
+    "cpc",
+    "cpd",
+    "cpe",
     "citation",
 )
 
@@ -96,6 +102,12 @@ class DatabankEntry:
     molar_mass: Q | None
     critical_volume: Q | None
     liquid_density: Q | None
+    #: The five coefficients of NeqSim's `Cp` polynomial, in J/(mol*K**n), or ``None``
+    #: for a substance a keycard supplied. A keycard gives the parameters a *cubic*
+    #: needs - `Tc`, `Pc` and `omega` - and this is not one of them, so a substance it
+    #: adds has no enthalpy until its coefficients are supplied too. ``None`` says that
+    #: rather than a row of zeros standing in for a polynomial.
+    cp: tuple[float, float, float, float, float] | None
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
@@ -142,6 +154,13 @@ def _table() -> dict[str, DatabankEntry]:
             molar_mass=ureg.Quantity(float(row["molar_mass_kg_per_mol"]), "kg/mol"),
             critical_volume=ureg.Quantity(float(row["critical_volume_m3_per_mol"]), "m**3/mol"),
             liquid_density=ureg.Quantity(float(row["liquid_density_kg_per_m3"]), "kg/m**3"),
+            cp=(
+                float(row["cpa"]),
+                float(row["cpb"]),
+                float(row["cpc"]),
+                float(row["cpd"]),
+                float(row["cpe"]),
+            ),
             citation=row["citation"],
         )
     return entries
@@ -219,6 +238,10 @@ def entry(name: str) -> DatabankEntry:
             molar_mass=None,
             critical_volume=None,
             liquid_density=None,
+            # A keycard supplies the parameters a *cubic* needs, and a polynomial is not
+            # one of them. `None` says so rather than a row of zeros standing in for a
+            # heat capacity - `mixture_of` is where a caller finds out, by name.
+            cp=None,
             citation=None,
             source="keycard",
         )
@@ -289,9 +312,11 @@ def from_names(names: list[str]) -> Mixture:
 
     The interaction parameters come from the databank too, so a caller writing
     `from_names(["methane", "n-butane"])` gets the published `kij` rather than a
-    silent zero. It is a convenience over the databank and never a requirement:
-    `Component` and `mixture()` are what every spec case uses, and the library works
-    with no data file at all.
+    silent zero.
+
+    A mixture alone, for a caller who has their own heat-capacity coefficients or wants
+    only to flash. :func:`mixture_of` returns the polynomial beside it, and is what a
+    calculation takes - a mixture without one cannot produce an enthalpy.
 
     Raises:
         PropertyUnavailableError: if any name is not in the databank.
@@ -300,6 +325,60 @@ def from_names(names: list[str]) -> Mixture:
     resolved = [name.strip().lower() for name in names]
     components = tuple(component(name) for name in resolved)
     return mixture(components, kij=kij_for(tuple(resolved)))
+
+
+def mixture_of(names: list[str]) -> tuple[Mixture, IdealGasModel]:
+    """A mixture and its ideal-gas model, from a list of databank names.
+
+    The two come back together because they are one object in practice: a mixture
+    without heat-capacity coefficients cannot produce an enthalpy, and building them
+    from two separate lookups invites a call that names different components in each.
+
+    This is the one path a calculation takes to its data. Until it existed, a model's
+    spec carried ``Tc``, ``Pc``, ``omega``, ``kij`` and ``cp_a`` through ``cp_e`` as
+    nine parallel vectors - numbers in a spec file that nothing could check against
+    anything. They are in `data/components/` instead, ported from NeqSim.
+
+    Args:
+        names: substance names, matched without regard to case or surrounding space.
+
+    Returns:
+        ``(the mixture, the ideal-gas model)``, one entry per name in each vector.
+
+    Raises:
+        PropertyUnavailableError: if any name is not in the databank. A name it does
+            not have is refused rather than approximated.
+        InvalidInputError: if the list is empty, or a substance has no heat-capacity
+            coefficients - which is the case for one a keycard added, because a card
+            supplies the parameters a *cubic* needs and a polynomial is not one.
+    """
+    if not names:
+        raise InvalidInputError("components", "a mixture needs at least one component")
+    resolved = [name.strip().lower() for name in names]
+    entries = [entry(name) for name in resolved]
+
+    missing = [e.name for e in entries if e.cp is None]
+    if missing:
+        raise InvalidInputError(
+            "components",
+            f"no heat-capacity coefficients for {missing}. The databank carries them for "
+            f"every substance it ships; one a keycard adds needs its own, because a cubic "
+            f"needs `Tc`, `Pc` and `omega` and an enthalpy needs the polynomial as well",
+        )
+
+    return (
+        mixture(
+            tuple(e.component() for e in entries),
+            kij=kij_for(tuple(resolved)),
+        ),
+        IdealGasModel(
+            cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]
+            cp_b=tuple(e.cp[1] for e in entries),  # type: ignore[index]
+            cp_c=tuple(e.cp[2] for e in entries),  # type: ignore[index]
+            cp_d=tuple(e.cp[3] for e in entries),  # type: ignore[index]
+            cp_e=tuple(e.cp[4] for e in entries),  # type: ignore[index]
+        ),
+    )
 
 
 def from_model(name: str) -> Mixture:

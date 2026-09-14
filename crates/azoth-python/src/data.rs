@@ -15,6 +15,7 @@
 //! introspection in the same sense `warning_codes` and `result_fields` are: it exists
 //! so a test can assert a cross-language claim instead of asserting it in prose.
 
+use azoth_eos::databank;
 use azoth_hydraulics::{fittings, fluids};
 use pyo3::prelude::*;
 
@@ -101,6 +102,59 @@ pub struct PyFluidRow {
     pub verify_status: String,
 }
 
+/// One row of the component databank, transported.
+///
+/// The columns are the ones a calculation reads. The file carries more - the CAS
+/// number, the formula, the liquid density - and those are deliberately not here: a
+/// cross-language test that compared them would be testing a field neither
+/// implementation acts on, and the fields that matter would still need their own case.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ComponentRow"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyComponentRow {
+    /// Lower-case name, which is the key the table is addressed by.
+    #[pyo3(get)]
+    pub name: String,
+    /// Critical temperature, in K.
+    #[pyo3(get)]
+    pub tc_k: f64,
+    /// Critical pressure, in Pa.
+    #[pyo3(get)]
+    pub pc_pa: f64,
+    /// Acentric factor, dimensionless.
+    #[pyo3(get)]
+    pub acentric_factor: f64,
+    /// The five `Cp` coefficients, in J/(mol*K**n).
+    #[pyo3(get)]
+    pub cp_a: f64,
+    #[pyo3(get)]
+    pub cp_b: f64,
+    #[pyo3(get)]
+    pub cp_c: f64,
+    #[pyo3(get)]
+    pub cp_d: f64,
+    #[pyo3(get)]
+    pub cp_e: f64,
+}
+
+/// One row of the interaction table, transported.
+#[pyclass(frozen, skip_from_py_object, module = "azoth._core", name = "KijRow")]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyKijRow {
+    /// The pair, with the lower-sorting name first.
+    #[pyo3(get)]
+    pub component_a: String,
+    #[pyo3(get)]
+    pub component_b: String,
+    /// The Peng-Robinson binary interaction parameter.
+    #[pyo3(get)]
+    pub kij_pr: f64,
+}
+
 /// Every data file this build embeds, with its bytes.
 ///
 /// # Errors
@@ -109,11 +163,23 @@ pub struct PyFluidRow {
 #[pyfunction]
 #[must_use]
 pub fn data_files() -> Vec<PyDataFile> {
-    let mut out = vec![PyDataFile {
-        name: "fittings".to_string(),
-        path: fittings::embedded_path().to_string(),
-        text: fittings::embedded_csv().to_string(),
-    }];
+    let mut out = vec![
+        PyDataFile {
+            name: "fittings".to_string(),
+            path: fittings::embedded_path().to_string(),
+            text: fittings::embedded_csv().to_string(),
+        },
+        PyDataFile {
+            name: "components".to_string(),
+            path: databank::COMPONENTS_PATH.to_string(),
+            text: databank::embedded_components().to_string(),
+        },
+        PyDataFile {
+            name: "kij".to_string(),
+            path: databank::KIJ_PATH.to_string(),
+            text: databank::embedded_kij().to_string(),
+        },
+    ];
     for fluid in fluids::available_fluids() {
         if let (Some(path), Some(text)) =
             (fluids::embedded_path(fluid), fluids::embedded_csv(fluid))
@@ -147,6 +213,40 @@ pub fn fittings_rows(py: Python<'_>) -> PyResult<Vec<PyFittingRow>> {
             verify_status: row.status.as_str().to_string(),
         })
         .collect())
+}
+
+/// Every row of the component databank, as the `azoth-eos` crate parsed it.
+#[pyfunction]
+#[must_use]
+pub fn component_rows() -> Vec<PyComponentRow> {
+    databank::all_entries()
+        .into_iter()
+        .map(|entry| PyComponentRow {
+            name: entry.name.clone(),
+            tc_k: entry.tc,
+            pc_pa: entry.pc,
+            acentric_factor: entry.omega,
+            cp_a: entry.cp[0],
+            cp_b: entry.cp[1],
+            cp_c: entry.cp[2],
+            cp_d: entry.cp[3],
+            cp_e: entry.cp[4],
+        })
+        .collect()
+}
+
+/// Every row of the interaction table, as the `azoth-eos` crate parsed it.
+#[pyfunction]
+#[must_use]
+pub fn kij_rows() -> Vec<PyKijRow> {
+    databank::all_kij()
+        .into_iter()
+        .map(|(component_a, component_b, kij_pr)| PyKijRow {
+            component_a,
+            component_b,
+            kij_pr,
+        })
+        .collect()
 }
 
 /// Every row of a built-in fluid's table, as this crate parsed it.

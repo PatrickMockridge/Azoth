@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from azoth.core.errors import PropertyUnavailableError
+from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 from azoth.eos import Component, available_components, component, from_names
 from azoth.eos import components as databank
 
@@ -155,3 +155,48 @@ def test_a_pair_the_databank_does_not_have_is_zero() -> None:
 def test_from_names_reports_a_name_it_does_not_have() -> None:
     with pytest.raises(PropertyUnavailableError):
         from_names(["methane", "unobtainium"])
+
+
+def test_mixture_of_returns_the_polynomial_beside_the_mixture() -> None:
+    """The one path a calculation takes to its data.
+
+    A mixture without heat-capacity coefficients cannot produce an enthalpy, so the
+    two come back together - and the coefficients come from the same file the
+    constants do, which is what stops a spec file carrying them.
+    """
+    fluid, ideal_gas = databank.mixture_of(["methane", "n-butane"])
+
+    assert len(fluid) == 2
+    assert len(ideal_gas.cp_a) == 2
+    assert len(ideal_gas.cp_e) == 2
+
+    # Methane's constant term, as NeqSim's COMP.csv has it. Retyped here on purpose: a
+    # test that read the same table it is testing would agree with any table at all.
+    assert ideal_gas.cp_a[0] == pytest.approx(37.978_352)
+    assert fluid.kij[0][1] == pytest.approx(0.01289789)
+
+
+def test_mixture_of_takes_the_same_components_from_names_alone() -> None:
+    """The constants are the ones `component()` gives, so nothing is restated."""
+    fluid, _ = databank.mixture_of(["methane", "n-butane"])
+    by_name = from_names(["methane", "n-butane"])
+
+    assert fluid.components[0].Tc == by_name.components[0].Tc
+    assert fluid.components[1].omega == by_name.components[1].omega
+    assert fluid.kij[0][1] == by_name.kij[0][1]
+
+
+def test_mixture_of_refuses_an_empty_list() -> None:
+    with pytest.raises(InvalidInputError):
+        databank.mixture_of([])
+
+
+def test_every_shipped_substance_has_heat_capacity_coefficients() -> None:
+    """The databank's own completeness, which a spec cannot assert.
+
+    A substance with constants but no polynomial is one a cubic can flash and nothing
+    can give an enthalpy for - the failure would surface as an outage a long way from
+    the row that caused it.
+    """
+    missing = [name for name in available_components() if databank.entry(name).cp is None]
+    assert not missing, f"no heat-capacity coefficients for {missing}"

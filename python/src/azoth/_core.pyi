@@ -43,6 +43,28 @@ class FluidRow:
     verify_status: str
 
 @final
+class ComponentRow:
+    """One row of the component databank, as the Rust core parsed it."""
+
+    name: str
+    tc_k: float
+    pc_pa: float
+    acentric_factor: float
+    cp_a: float
+    cp_b: float
+    cp_c: float
+    cp_d: float
+    cp_e: float
+
+@final
+class KijRow:
+    """One row of the interaction table, as the Rust core parsed it."""
+
+    component_a: str
+    component_b: str
+    kij_pr: float
+
+@final
 class Qty:
     """A physical quantity: always SI magnitude, plus a canonical unit label."""
 
@@ -671,6 +693,8 @@ def batch_run(calc_id: str, inputs: dict[str, list[float]]) -> BatchResult: ...
 def data_files() -> list[DataFile]: ...
 def fittings_rows() -> list[FittingRow]: ...
 def fluid_rows(name: str) -> list[FluidRow]: ...
+def component_rows() -> list[ComponentRow]: ...
+def kij_rows() -> list[KijRow]: ...
 def warning_codes() -> list[str]: ...
 def unit_names() -> list[str]: ...
 def solver_kinds() -> list[str]: ...

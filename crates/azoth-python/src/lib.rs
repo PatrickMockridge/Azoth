@@ -99,6 +99,8 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<data::PyDataFile>()?;
     m.add_class::<data::PyFittingRow>()?;
     m.add_class::<data::PyFluidRow>()?;
+    m.add_class::<data::PyComponentRow>()?;
+    m.add_class::<data::PyKijRow>()?;
     m.add_class::<PyKFactorsResult>()?;
     m.add_class::<PyDarcyWeisbachResult>()?;
 
@@ -160,6 +162,8 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(data::data_files, m)?)?;
     m.add_function(wrap_pyfunction!(data::fittings_rows, m)?)?;
     m.add_function(wrap_pyfunction!(data::fluid_rows, m)?)?;
+    m.add_function(wrap_pyfunction!(data::component_rows, m)?)?;
+    m.add_function(wrap_pyfunction!(data::kij_rows, m)?)?;
     m.add_function(wrap_pyfunction!(results::warning_codes, m)?)?;
     m.add_function(wrap_pyfunction!(results::unit_names, m)?)?;
     m.add_function(wrap_pyfunction!(results::solver_kinds, m)?)?;
