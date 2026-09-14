@@ -18,25 +18,31 @@
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
 import neqsim.thermo.system.SystemSrkEos;
+import neqsim.thermo.system.SystemRKEos;
 import neqsim.thermodynamicoperations.ThermodynamicOperations;
 
 public class FlashTp {
-  /** The cubic `srk` selects, else Peng-Robinson. */
-  static SystemInterface system(boolean srk, double temperatureK, double pressureBar) {
-    return srk
-        ? new SystemSrkEos(temperatureK, pressureBar)
-        : new SystemPrEos(temperatureK, pressureBar);
+  /** The cubic `cubic` selects: "pr", "srk" or "rk". */
+  static SystemInterface system(String cubic, double temperatureK, double pressureBar) {
+    switch (cubic) {
+      case "srk":
+        return new SystemSrkEos(temperatureK, pressureBar);
+      case "rk":
+        return new SystemRKEos(temperatureK, pressureBar);
+      default:
+        return new SystemPrEos(temperatureK, pressureBar);
+    }
   }
 
   /** One PT flash, printed in the fields azoth's `eos.pt_flash` reports. */
   static void flash(String label, double temperatureK, double pressureBar, String[] names,
-      double[] moles, boolean srk) {
-    SystemInterface fluid = system(srk, temperatureK, pressureBar);
+      double[] moles, String cubic) {
+    SystemInterface fluid = system(cubic, temperatureK, pressureBar);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], moles[i]);
     }
     // "classic" is the van der Waals one-fluid mixing rule with the database's
-    // interaction parameters - NeqSim's default for both systems.
+    // interaction parameters - NeqSim's default for every system.
     fluid.setMixingRule("classic");
 
     new ThermodynamicOperations(fluid).TPflash();
@@ -66,8 +72,8 @@ public class FlashTp {
 
   /** One PT flash with its molar enthalpy and entropy, for `eos.molar_enthalpy_entropy`. */
   static void enthalpy(String label, double temperatureK, double pressureBar, String[] names,
-      double[] moles, boolean srk) {
-    SystemInterface fluid = system(srk, temperatureK, pressureBar);
+      double[] moles, String cubic) {
+    SystemInterface fluid = system(cubic, temperatureK, pressureBar);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], moles[i]);
     }
@@ -84,14 +90,18 @@ public class FlashTp {
 
   public static void main(String[] args) {
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
-        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, false);
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr");
     flash("propane, 1.0, 300 K, 9 bar",
-        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, false);
+        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, "pr");
     enthalpy("propane, 1.0, 300 K, 9 bar",
-        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, false);
+        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, "pr");
     flash("SRK methane/n-butane, 0.6/0.4, 330 K, 25 bar",
-        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, true);
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "srk");
     flash("SRK propane, 1.0, 300 K, 9 bar",
-        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, true);
+        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, "srk");
+    flash("RK methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "rk");
+    flash("RK propane, 1.0, 300 K, 9 bar",
+        300.0, 9.0, new String[] {"propane"}, new double[] {1.0}, "rk");
   }
 }

@@ -55,6 +55,8 @@ from azoth.core.result import (
     PureSaturationResult,
     RachfordRiceBinaryResult,
     ReynoldsNumberResult,
+    RkAlphaAbResult,
+    RkDepartureResult,
     RootStructure,
     SrkAlphaAbResult,
     SrkDepartureResult,
@@ -294,6 +296,29 @@ def srk_departure(
     """The Soave-Redlich-Kwong fugacity coefficient and departures, in Rust."""
     result = _core.srk_departure(a_reduced, b_reduced, z, kappa, Tr)
     return SrkDepartureResult(
+        ln_phi=result.ln_phi,
+        h_dep_rt=result.h_dep_rt,
+        s_dep_r=result.s_dep_r,
+        cp_dep_r=result.cp_dep_r,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def rk_alpha_ab(Tr: float, Pr: float) -> RkAlphaAbResult:
+    """The Redlich-Kwong alpha function and reduced parameters, in Rust."""
+    result = _core.rk_alpha_ab(Tr, Pr)
+    return RkAlphaAbResult(
+        alpha=result.alpha,
+        a_reduced=result.a_reduced,
+        b_reduced=result.b_reduced,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def rk_departure(a_reduced: float, b_reduced: float, z: float) -> RkDepartureResult:
+    """The Redlich-Kwong fugacity coefficient and departures, in Rust."""
+    result = _core.rk_departure(a_reduced, b_reduced, z)
+    return RkDepartureResult(
         ln_phi=result.ln_phi,
         h_dep_rt=result.h_dep_rt,
         s_dep_r=result.s_dep_r,

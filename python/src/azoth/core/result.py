@@ -540,6 +540,36 @@ class SrkDepartureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class RkAlphaAbResult(_HasWarnings):
+    """Result of ``eos.rk_alpha_ab``."""
+
+    #: The Redlich-Kwong alpha function, ``1/sqrt(Tr)``.
+    alpha: float
+    #: ``A = a*alpha*P/(R**2*T**2)``, the dimensionless attraction parameter.
+    a_reduced: float
+    #: ``B = b*P/(R*T)``, the dimensionless repulsion parameter.
+    b_reduced: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class RkDepartureResult(_HasWarnings):
+    """Result of ``eos.rk_departure``."""
+
+    #: The logarithm of the fugacity coefficient.
+    ln_phi: float
+    #: The departure enthalpy over ``R*T``.
+    h_dep_rt: float
+    #: The departure entropy over ``R``.
+    s_dep_r: float
+    #: The departure heat capacity over ``R``.
+    cp_dep_r: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class KComponent:
     """One fitting's contribution to the total resistance coefficient."""
 

@@ -822,6 +822,53 @@ impl CalcResult for SrkDepartureResult {
     }
 }
 
+/// Result of `eos.rk_alpha_ab`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RkAlphaAbResult {
+    /// The Redlich-Kwong alpha function, `1/sqrt(Tr)`.
+    pub alpha: f64,
+    /// `A = a*alpha*P/(R**2*T**2)`, the dimensionless attraction parameter.
+    pub a_reduced: f64,
+    /// `B = b*P/(R*T)`, the dimensionless repulsion parameter.
+    pub b_reduced: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for RkAlphaAbResult {
+    const CALC_ID: &'static str = "eos.rk_alpha_ab";
+    const FIELDS: &'static [&'static str] = &["alpha", "a_reduced", "b_reduced", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.rk_departure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RkDepartureResult {
+    /// The logarithm of the fugacity coefficient.
+    pub ln_phi: f64,
+    /// The departure enthalpy over `R*T`.
+    pub h_dep_rt: f64,
+    /// The departure entropy over `R`.
+    pub s_dep_r: f64,
+    /// The departure heat capacity over `R`.
+    pub cp_dep_r: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for RkDepartureResult {
+    const CALC_ID: &'static str = "eos.rk_departure";
+    const FIELDS: &'static [&'static str] =
+        &["ln_phi", "h_dep_rt", "s_dep_r", "cp_dep_r", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.critical_point`.
 ///
 /// The four state variables of a mixture critical point. `z_c` is here because it is the

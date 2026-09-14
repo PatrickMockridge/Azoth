@@ -68,7 +68,7 @@ fn feed_state(mixture: &Mixture, reduced: &ReducedParameters, z: &[f64]) -> Resu
             let roots = pr_z_factor(a_mix, b_mix)?;
             (roots.z_min, roots.z_max)
         }
-        Cubic::Srk => {
+        Cubic::Srk | Cubic::Rk => {
             let roots = srk_z_factor(a_mix, b_mix)?;
             (roots.z_min, roots.z_max)
         }

@@ -122,5 +122,18 @@ SRK = Cubic(
     delta_diff=1.0,
 )
 
+#: Redlich-Kwong: the original, with the same ``omega`` and ``delta`` as Soave's but
+#: ``alpha = 1/sqrt(Tr)`` instead of Soave's correlation.
+RK = Cubic(
+    name="rk",
+    omega_a=0.4274802335403413,
+    omega_b=0.08664034996495773,
+    delta1=1.0,
+    delta2=0.0,
+    delta_sum=1.0,
+    delta_prod=0.0,
+    delta_diff=1.0,
+)
+
 #: The cubics this library runs, keyed by the short name that crosses the boundary.
-CUBICS: dict[str, Cubic] = {"pr": PR, "srk": SRK}
+CUBICS: dict[str, Cubic] = {"pr": PR, "srk": SRK, "rk": RK}

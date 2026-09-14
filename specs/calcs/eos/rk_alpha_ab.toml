@@ -1,0 +1,83 @@
+id = "eos.rk_alpha_ab"
+name = "Redlich-Kwong alpha function and reduced attraction parameters"
+equation = """\
+    alpha = 1/Tr**0.5\n\
+    a_reduced = 0.4274802335403413*alpha*Pr/Tr**2\n\
+    b_reduced = 0.08664034996495773*Pr/Tr\n\
+    """
+latex = """\
+    \\alpha = \\frac{1}{\\sqrt{T_{r}}}, \\qquad A = \
+    \\frac{\\Omega_{a}\\,\\alpha\\,P_{r}}{T_{r}^{2}}, \\qquad B = \
+    \\frac{\\Omega_{b}\\,P_{r}}{T_{r}}"""
+assumptions = ["the alpha function is Redlich-Kwong's original, kappa-free form. Soave's (1972) correlation is this shape times a fitted coefficient, and the two are not interchangeable.\n", "`Tr` and `Pr` are reduced against a critical point that is correct for the component intended. NOT CHECKED.\n", "the range of reduced temperature over which the alpha function's fit holds is NOT established, and no bound asserts one.\n", "A and B are the reduced parameters of the Redlich-Kwong cubic and go with that cubic's mixing rules.\n", "**`Omega_a` and `Omega_b` are Redlich-Kwong's**, `1/(9*(2**(1/3) - 1))` and `(2**(1/3) - 1)/3`, the same pair Soave's correlation is built on.\n"]
+references = ["Redlich, O.; Kwong, J. N. S. (1949). \\\"On the Thermodynamics of Solutions. V.\\\" Chemical Reviews 44(1), 233-244. DOI 10.1021/cr60137a013.", "NeqSim 3.20.0, `neqsim.thermo.component.ComponentRK`, constructor."]
+[source]
+standard = "Redlich, O.; Kwong, J. N. S. (1949)"
+edition = "On the Thermodynamics of Solutions. V. Chemical Reviews, 44(1), 233-244"
+doi = "10.1021/cr60137a013"
+[inputs]
+[inputs.Tr]
+unit = "dimensionless"
+description = "Reduced temperature, T / Tc, against the critical temperature the caller supplies.\n"
+[inputs.Pr]
+unit = "dimensionless"
+description = "reduced pressure, P / Pc"
+[outputs]
+[outputs.alpha]
+unit = "dimensionless"
+description = "The Redlich-Kwong alpha function, `1/sqrt(Tr)`: the cubic's temperature dependence, and 1 at Tr = 1.\n"
+[outputs.a_reduced]
+unit = "dimensionless"
+description = "A = a*alpha*P/(R**2*T**2), the dimensionless attraction parameter called `A` in the cubic.\n"
+[outputs.b_reduced]
+unit = "dimensionless"
+description = "B = b*P/(R*T), the dimensionless repulsion parameter, called `B` in the cubic"
+[[valid_range]]
+quantity = "Tr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Tr` appears as a square root in alpha and as a squared divisor in `a_reduced`; Tr = 0 is singular, a negative Tr leaves the square root undefined, and neither is a state.\n"
+[[valid_range]]
+quantity = "Pr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "Pr = 0 drives both A and B to zero, and B is a divisor in the fugacity-coefficient expression that consumes this calc's output.\n"
+[worked_example]
+source = "derived from the equations above"
+derivation = "A propane-like component at Tr = 0.8, Pr = 0.25:\n\n  sqrt(Tr)   = sqrt(0.8)            = 0.8944271909999159\n  alpha      = 1 / 0.8944271909999159 = 1.118033988749895\n\n  Omega_a * alpha = 0.4274802335403413 * 1.118033988749895 = 0.4779385352549576\n  * Pr / Tr**2    = 0.4779385352549576 * 0.25 / 0.64       = 0.1866943088347048\n  a_reduced                                                 = 0.1866943088347048\n\n  Omega_b * Pr / Tr = 0.08664034996495773 * 0.25 / 0.8      = 0.02707510936404929\n  b_reduced                                                 = 0.02707510936404929\n\n"
+tolerance = 1e-12
+[worked_example.inputs]
+Tr = 0.8
+Pr = 0.25
+[worked_example.expected]
+alpha = 1.118033988749895
+a_reduced = 0.1866943088347048
+b_reduced = 0.02707510936404929
+[implementations]
+python = "azoth.eos.rk_alpha_ab"
+rust = "azoth_eos::rk_alpha_ab"
+[[tests]]
+id = "propane_at_tr_0_8_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "at_the_critical_point_the_parameters_are_the_omegas"
+type = "reference"
+status = "active"
+source = "Derived from the equations above, at Tr = Pr = 1, where alpha is exactly 1 and A and B collapse to Omega_a and Omega_b:\n\n  alpha     = 1/sqrt(1) = 1.0    exactly\n  a_reduced = 0.4274802335403413 * 1 * 1 / 1 = 0.4274802335403413\n  b_reduced = 0.08664034996495773 * 1 / 1    = 0.08664034996495773\n"
+tolerance = 1e-15
+[tests.inputs]
+Tr = 1.0
+Pr = 1.0
+[tests.expected]
+alpha = 1.0
+a_reduced = 0.4274802335403413
+b_reduced = 0.08664034996495773
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "skipped"
+skip_reason = "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.\n"

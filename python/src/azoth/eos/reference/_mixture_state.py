@@ -26,12 +26,13 @@ from typing import Any, NamedTuple
 
 from azoth.core.errors import OutOfRangeError
 from azoth.core.warnings import Warning
-from azoth.eos.alpha_term import Soave
+from azoth.eos.alpha_term import RkAlpha, Soave
 from azoth.eos.cubic import PR, Cubic
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference.pr_alpha_ab import pr_alpha_ab
 from azoth.eos.reference.pr_kappa import pr_kappa
 from azoth.eos.reference.pr_z_factor import pr_z_factor
+from azoth.eos.reference.rk_alpha_ab import rk_alpha_ab
 from azoth.eos.reference.srk_alpha_ab import srk_alpha_ab
 from azoth.eos.reference.srk_kappa import srk_kappa
 from azoth.eos.reference.srk_z_factor import srk_z_factor
@@ -138,30 +139,41 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
         reduced_pressure = pressure / component.Pc.to_base_units().magnitude
         # The kappa correlation and the reduced parameters belong to the cubic this
         # mixture is: SRK and PR share the Soave alpha form but differ in both the
-        # coefficient and the Omega constants.
-        if mixture.cubic.name == "srk":
+        # coefficient and the Omega constants; RK is kappa-free.
+        if mixture.cubic.name == "rk":
+            rk_ab = rk_alpha_ab(reduced_temperature, reduced_pressure)
+            warnings.extend(rk_ab.warnings)
+            rk_term = RkAlpha()
+            a_reduced = rk_ab.a_reduced
+            b_reduced = rk_ab.b_reduced
+            psi_value = rk_term.psi(reduced_temperature)
+            psi_t_value = rk_term.psi_t(reduced_temperature)
+        elif mixture.cubic.name == "srk":
             srk_result = srk_kappa(component.omega)
             srk_ab = srk_alpha_ab(srk_result.kappa, reduced_temperature, reduced_pressure)
             warnings.extend(srk_result.warnings)
             warnings.extend(srk_ab.warnings)
-            kappa = srk_result.kappa
+            srk_term = Soave(kappa=srk_result.kappa)
             a_reduced = srk_ab.a_reduced
             b_reduced = srk_ab.b_reduced
+            psi_value = srk_term.psi(reduced_temperature)
+            psi_t_value = srk_term.psi_t(reduced_temperature)
         else:
             pr_result = pr_kappa(component.omega)
             pr_ab = pr_alpha_ab(pr_result.kappa, reduced_temperature, reduced_pressure)
             warnings.extend(pr_result.warnings)
             warnings.extend(pr_ab.warnings)
-            kappa = pr_result.kappa
+            pr_term = Soave(kappa=pr_result.kappa)
             a_reduced = pr_ab.a_reduced
             b_reduced = pr_ab.b_reduced
-        # The alpha term's own two derivatives, so the Soave form lives in one place
-        # rather than being restated per call site.
-        term = Soave(kappa=kappa)
+            psi_value = pr_term.psi(reduced_temperature)
+            psi_t_value = pr_term.psi_t(reduced_temperature)
+        # The alpha term's own two derivatives, so the form lives in one place rather
+        # than being restated per call site.
         a.append(a_reduced)
         b.append(b_reduced)
-        psi.append(term.psi(reduced_temperature))
-        psi_t.append(term.psi_t(reduced_temperature))
+        psi.append(psi_value)
+        psi_t.append(psi_t_value)
     return ReducedParameters(a=a, b=b, psi=psi, psi_t=psi_t, cubic=mixture.cubic, warnings=warnings)
 
 
@@ -193,7 +205,11 @@ def phase_state(
     :func:`phase_state_at` instead, which does not re-derive it.
     """
     a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, kij, x)
-    roots = srk_z_factor(a_mix, b_mix) if reduced.cubic.name == "srk" else pr_z_factor(a_mix, b_mix)
+    roots = (
+        srk_z_factor(a_mix, b_mix)
+        if reduced.cubic.name in ("srk", "rk")
+        else pr_z_factor(a_mix, b_mix)
+    )
     return phase_state_at(reduced, kij, x, roots.z_min if liquid else roots.z_max)
 
 

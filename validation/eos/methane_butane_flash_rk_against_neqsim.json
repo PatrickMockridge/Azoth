@@ -1,0 +1,26 @@
+{
+  "id": "methane_butane_flash_rk_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemRKEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Same driver as the Soave case, on SystemRKEos. The pair's KIJSRK equals its KIJPR (0.01289789), so azoth's kij lookup is not a source of error on this case."
+  },
+  "derivation": "The driver was run with SystemRKEos at 330 K and 25 bar, methane 0.6 and n-butane 0.4, mixing rule 'classic'. It printed:\n\n  beta 0.9525551759710986\n  k    [6.18390905247986, 0.4173156446899031]\n  x    [0.10104481348088883, 0.8989551865191111]\n  y    [0.624851936790506, 0.3751480632094941]\n  Zl   0.10944871595541934\n  Zv   0.8556710632316012\n\nazoth reproduces all six to 4.1e-12 on beta and at or better on the rest, the same residue the other cubic cases show and the same cause - both implementations stop on an rms change in ln K. The tolerance is 1e-10, well above the measured floor. RK differs from Soave only in the alpha term, `1/sqrt(Tr)` against Soave's fitted correlation, and the agreement confirms that that one difference is the whole difference.",
+  "eos": "rk",
+  "inputs": {
+    "components": ["methane", "n-butane"],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [0.6, 0.4]
+  },
+  "expected": {
+    "beta": 0.9525551759710986,
+    "k": [6.18390905247986, 0.4173156446899031],
+    "x": [0.10104481348088883, 0.8989551865191111],
+    "y": [0.624851936790506, 0.3751480632094941],
+    "z_liquid": 0.10944871595541934,
+    "z_vapour": 0.8556710632316012
+  },
+  "tolerance": 1.0e-10
+}

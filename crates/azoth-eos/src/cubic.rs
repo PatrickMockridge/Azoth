@@ -31,6 +31,10 @@ pub enum Cubic {
     /// expression to full double precision, and the test
     /// `a_soave_redlich_kwong_recomputes_its_omegas` re-derives them.
     Srk,
+    /// Redlich-Kwong: the original, with the same `omega` and `delta` as Soave's but
+    /// `alpha = 1/sqrt(Tr)` instead of Soave's correlation. The shape is identical to
+    /// [`Cubic::Srk`]; only the alpha term in [`crate::alpha_term`] differs.
+    Rk,
 }
 
 impl Cubic {
@@ -40,6 +44,7 @@ impl Cubic {
         match self {
             Cubic::Pr => 0.45724333333,
             Cubic::Srk => 0.4274802335403413,
+            Cubic::Rk => 0.4274802335403413,
         }
     }
 
@@ -49,6 +54,7 @@ impl Cubic {
         match self {
             Cubic::Pr => 0.077803333,
             Cubic::Srk => 0.08664034996495773,
+            Cubic::Rk => 0.08664034996495773,
         }
     }
 
@@ -58,6 +64,7 @@ impl Cubic {
         match self {
             Cubic::Pr => 1.0 + std::f64::consts::SQRT_2,
             Cubic::Srk => 1.0,
+            Cubic::Rk => 1.0,
         }
     }
 
@@ -67,6 +74,7 @@ impl Cubic {
         match self {
             Cubic::Pr => 1.0 - std::f64::consts::SQRT_2,
             Cubic::Srk => 0.0,
+            Cubic::Rk => 0.0,
         }
     }
 
@@ -76,6 +84,7 @@ impl Cubic {
         match self {
             Cubic::Pr => 2.0 * std::f64::consts::SQRT_2,
             Cubic::Srk => 1.0,
+            Cubic::Rk => 1.0,
         }
     }
 
@@ -85,6 +94,7 @@ impl Cubic {
         match self {
             Cubic::Pr => 2.0,
             Cubic::Srk => 1.0,
+            Cubic::Rk => 1.0,
         }
     }
 
@@ -94,6 +104,7 @@ impl Cubic {
         match self {
             Cubic::Pr => -1.0,
             Cubic::Srk => 0.0,
+            Cubic::Rk => 0.0,
         }
     }
 
@@ -179,6 +190,7 @@ impl Cubic {
         match self {
             Cubic::Pr => "pr",
             Cubic::Srk => "srk",
+            Cubic::Rk => "rk",
         }
     }
 }
@@ -190,7 +202,10 @@ impl std::str::FromStr for Cubic {
         match s {
             "pr" => Ok(Cubic::Pr),
             "srk" => Ok(Cubic::Srk),
-            other => Err(format!("unknown cubic `{other}`; expected `pr` or `srk`")),
+            "rk" => Ok(Cubic::Rk),
+            other => Err(format!(
+                "unknown cubic `{other}`; expected `pr`, `srk` or `rk`"
+            )),
         }
     }
 }

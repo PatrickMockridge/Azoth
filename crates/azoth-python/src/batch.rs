@@ -590,6 +590,45 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "cp_dep_r", "dimensionless", cp_dep_r);
         }
 
+        "eos.rk_alpha_ab" => {
+            let (tr, pr) = (take(&inputs, "Tr")?, take(&inputs, "Pr")?);
+            let mut alpha = Vec::with_capacity(n);
+            let mut a_reduced = Vec::with_capacity(n);
+            let mut b_reduced = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(py, eos::rk_alpha_ab(tr[i], pr[i]), &mut warnings)?;
+                alpha.push(r.alpha);
+                a_reduced.push(r.a_reduced);
+                b_reduced.push(r.b_reduced);
+            }
+            push_values(&mut columns, "alpha", "dimensionless", alpha);
+            push_values(&mut columns, "a_reduced", "dimensionless", a_reduced);
+            push_values(&mut columns, "b_reduced", "dimensionless", b_reduced);
+        }
+
+        "eos.rk_departure" => {
+            let (a, b, z) = (
+                take(&inputs, "a_reduced")?,
+                take(&inputs, "b_reduced")?,
+                take(&inputs, "z")?,
+            );
+            let mut ln_phi = Vec::with_capacity(n);
+            let mut h_dep_rt = Vec::with_capacity(n);
+            let mut s_dep_r = Vec::with_capacity(n);
+            let mut cp_dep_r = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(py, eos::rk_departure(a[i], b[i], z[i]), &mut warnings)?;
+                ln_phi.push(r.ln_phi);
+                h_dep_rt.push(r.h_dep_rt);
+                s_dep_r.push(r.s_dep_r);
+                cp_dep_r.push(r.cp_dep_r);
+            }
+            push_values(&mut columns, "ln_phi", "dimensionless", ln_phi);
+            push_values(&mut columns, "h_dep_rt", "dimensionless", h_dep_rt);
+            push_values(&mut columns, "s_dep_r", "dimensionless", s_dep_r);
+            push_values(&mut columns, "cp_dep_r", "dimensionless", cp_dep_r);
+        }
+
         "eos.prsv_kappa" => {
             let (omega, tr, kappa1) = (
                 take(&inputs, "omega")?,

@@ -11,9 +11,11 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
 
-use crate::alpha_term::{AlphaTerm, Soave};
+use crate::alpha_term::{AlphaTerm, RkAlpha, Soave};
 use crate::cubic::Cubic;
-use crate::{pr_alpha_ab, pr_kappa, pr_z_factor, srk_alpha_ab, srk_kappa, srk_z_factor};
+use crate::{
+    pr_alpha_ab, pr_kappa, pr_z_factor, rk_alpha_ab, srk_alpha_ab, srk_kappa, srk_z_factor,
+};
 
 /// Which root of the cubic a phase claims.
 ///
@@ -252,30 +254,50 @@ impl Mixture {
             let reduced_pressure = p.value / component.pc.value;
             // The kappa correlation and the reduced parameters belong to the cubic
             // this mixture is: SRK and PR share the Soave alpha form but differ in
-            // both the coefficient and the Omega constants.
-            let (kappa, a_reduced, b_reduced) = match self.cubic {
+            // both the coefficient and the Omega constants; RK is kappa-free.
+            let (a_reduced, b_reduced, psi_value, psi_t_value) = match self.cubic {
                 Cubic::Pr => {
                     let kappa = pr_kappa(component.omega)?;
                     warnings.extend(kappa.warnings);
                     let ab = pr_alpha_ab(kappa.kappa, reduced_temperature, reduced_pressure)?;
                     warnings.extend(ab.warnings);
-                    (kappa.kappa, ab.a_reduced, ab.b_reduced)
+                    let term = Soave { kappa: kappa.kappa };
+                    (
+                        ab.a_reduced,
+                        ab.b_reduced,
+                        term.psi(reduced_temperature),
+                        term.psi_t(reduced_temperature),
+                    )
                 }
                 Cubic::Srk => {
                     let kappa = srk_kappa(component.omega)?;
                     warnings.extend(kappa.warnings);
                     let ab = srk_alpha_ab(kappa.kappa, reduced_temperature, reduced_pressure)?;
                     warnings.extend(ab.warnings);
-                    (kappa.kappa, ab.a_reduced, ab.b_reduced)
+                    let term = Soave { kappa: kappa.kappa };
+                    (
+                        ab.a_reduced,
+                        ab.b_reduced,
+                        term.psi(reduced_temperature),
+                        term.psi_t(reduced_temperature),
+                    )
+                }
+                Cubic::Rk => {
+                    let ab = rk_alpha_ab(reduced_temperature, reduced_pressure)?;
+                    warnings.extend(ab.warnings);
+                    let term = RkAlpha;
+                    (
+                        ab.a_reduced,
+                        ab.b_reduced,
+                        term.psi(reduced_temperature),
+                        term.psi_t(reduced_temperature),
+                    )
                 }
             };
-            // The alpha term's own two derivatives, so the Soave form lives in one
-            // place rather than being restated per call site.
-            let term = Soave { kappa };
             a.push(a_reduced);
             b.push(b_reduced);
-            psi.push(term.psi(reduced_temperature));
-            psi_t.push(term.psi_t(reduced_temperature));
+            psi.push(psi_value);
+            psi_t.push(psi_t_value);
         }
         Ok(ReducedParameters {
             a,
@@ -309,7 +331,9 @@ impl Mixture {
                 let roots = pr_z_factor(a_mix, b_mix)?;
                 (roots.z_min, roots.z_max)
             }
-            Cubic::Srk => {
+            // RK's cubic is SRK's - the same `omega` and `delta` - so the root finder
+            // is shared; only the alpha term above differs.
+            Cubic::Srk | Cubic::Rk => {
                 let roots = srk_z_factor(a_mix, b_mix)?;
                 (roots.z_min, roots.z_max)
             }

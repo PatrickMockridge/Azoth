@@ -83,6 +83,8 @@ from azoth.core.result import (
     PtFlashResult,
     PureSaturationResult,
     RachfordRiceBinaryResult,
+    RkAlphaAbResult,
+    RkDepartureResult,
     SrkAlphaAbResult,
     SrkDepartureResult,
     SrkKappaResult,
@@ -121,6 +123,8 @@ __all__ = [
     "pt_flash",
     "pure_saturation",
     "rachford_rice_binary",
+    "rk_alpha_ab",
+    "rk_departure",
     "srk_alpha_ab",
     "srk_departure",
     "srk_kappa",
@@ -152,6 +156,8 @@ _SRK_KAPPA = "eos.srk_kappa"
 _SRK_ALPHA_AB = "eos.srk_alpha_ab"
 _SRK_Z_FACTOR = "eos.srk_z_factor"
 _SRK_DEPARTURE = "eos.srk_departure"
+_RK_ALPHA_AB = "eos.rk_alpha_ab"
+_RK_DEPARTURE = "eos.rk_departure"
 
 
 def pr_kappa(omega: float) -> PrKappaResult:
@@ -278,6 +284,33 @@ def srk_departure(
     """
     return resolve(_SRK_DEPARTURE)(  # type: ignore[no-any-return]
         a_reduced=a_reduced, b_reduced=b_reduced, z=z, kappa=kappa, Tr=Tr
+    )
+
+
+def rk_alpha_ab(Tr: float, Pr: float) -> RkAlphaAbResult:
+    """The Redlich-Kwong alpha function and the reduced attraction parameters.
+
+    Kappa-free: ``alpha = 1/sqrt(Tr)``, the original Redlich-Kwong temperature
+    dependence.
+
+    Raises:
+        OutOfRangeError: if ``Tr <= 0`` or ``Pr <= 0``.
+
+    See :func:`azoth.eos.reference.rk_alpha_ab`.
+    """
+    return resolve(_RK_ALPHA_AB)(Tr=Tr, Pr=Pr)  # type: ignore[no-any-return]
+
+
+def rk_departure(a_reduced: float, b_reduced: float, z: float) -> RkDepartureResult:
+    """The Redlich-Kwong fugacity coefficient and departure functions.
+
+    Raises:
+        OutOfRangeError: if ``b_reduced <= 0`` or ``z <= b_reduced``.
+
+    See :func:`azoth.eos.reference.rk_departure`.
+    """
+    return resolve(_RK_DEPARTURE)(  # type: ignore[no-any-return]
+        a_reduced=a_reduced, b_reduced=b_reduced, z=z
     )
 
 

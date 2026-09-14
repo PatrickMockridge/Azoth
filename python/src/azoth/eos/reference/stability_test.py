@@ -81,7 +81,11 @@ def _feed_state(
     A single admissible root is the common case and is taken directly.
     """
     a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, kij, z)
-    roots = srk_z_factor(a_mix, b_mix) if reduced.cubic.name == "srk" else pr_z_factor(a_mix, b_mix)
+    roots = (
+        srk_z_factor(a_mix, b_mix)
+        if reduced.cubic.name in ("srk", "rk")
+        else pr_z_factor(a_mix, b_mix)
+    )
     candidates = [roots.z_min] if roots.z_min == roots.z_max else [roots.z_min, roots.z_max]
 
     best = None

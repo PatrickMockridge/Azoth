@@ -32,6 +32,8 @@ __all__ = [
     "PrZFactorBatch",
     "PrsvKappaBatch",
     "RachfordRiceBinaryBatch",
+    "RkAlphaAbBatch",
+    "RkDepartureBatch",
     "SrkAlphaAbBatch",
     "SrkDepartureBatch",
     "SrkKappaBatch",
@@ -46,6 +48,8 @@ __all__ = [
     "pr_z_factor",
     "prsv_kappa",
     "rachford_rice_binary",
+    "rk_alpha_ab",
+    "rk_departure",
     "srk_alpha_ab",
     "srk_departure",
     "srk_kappa",
@@ -67,6 +71,8 @@ _SRK_KAPPA = "eos.srk_kappa"
 _SRK_ALPHA_AB = "eos.srk_alpha_ab"
 _SRK_Z_FACTOR = "eos.srk_z_factor"
 _SRK_DEPARTURE = "eos.srk_departure"
+_RK_ALPHA_AB = "eos.rk_alpha_ab"
+_RK_DEPARTURE = "eos.rk_departure"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -709,5 +715,98 @@ def srk_departure(
             "Tr": sequence(Tr, "Tr"),
         },
         _build_srk_departure,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class RkAlphaAbBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.rk_alpha_ab`."""
+
+    #: The alpha function per element. Dimensionless.
+    alpha: array[float]
+    #: The cubic's ``A`` per element. Dimensionless.
+    a_reduced: array[float]
+    #: The cubic's ``B`` per element. Dimensionless.
+    b_reduced: array[float]
+
+
+def _build_rk_alpha_ab(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> RkAlphaAbBatch:
+    return RkAlphaAbBatch(
+        warnings=warnings,
+        units=units,
+        alpha=columns["alpha"],  # type: ignore[arg-type]
+        a_reduced=columns["a_reduced"],  # type: ignore[arg-type]
+        b_reduced=columns["b_reduced"],  # type: ignore[arg-type]
+    )
+
+
+def rk_alpha_ab(*, Tr: Sequence[float], Pr: Sequence[float]) -> RkAlphaAbBatch:
+    """The Redlich-Kwong alpha function and reduced parameters, over arrays.
+
+    See :func:`azoth.eos.rk_alpha_ab` for the calculation itself.
+    """
+    result: RkAlphaAbBatch = run(
+        _RK_ALPHA_AB,
+        {
+            "Tr": sequence(Tr, "Tr"),
+            "Pr": sequence(Pr, "Pr"),
+        },
+        _build_rk_alpha_ab,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class RkDepartureBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.rk_departure`."""
+
+    #: Logarithm of the fugacity coefficient per element. Dimensionless.
+    ln_phi: array[float]
+    #: Departure enthalpy over ``R*T`` per element. Dimensionless.
+    h_dep_rt: array[float]
+    #: Departure entropy over ``R`` per element. Dimensionless.
+    s_dep_r: array[float]
+    #: Departure heat capacity over ``R`` per element. Dimensionless.
+    cp_dep_r: array[float]
+
+
+def _build_rk_departure(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> RkDepartureBatch:
+    return RkDepartureBatch(
+        warnings=warnings,
+        units=units,
+        ln_phi=columns["ln_phi"],  # type: ignore[arg-type]
+        h_dep_rt=columns["h_dep_rt"],  # type: ignore[arg-type]
+        s_dep_r=columns["s_dep_r"],  # type: ignore[arg-type]
+        cp_dep_r=columns["cp_dep_r"],  # type: ignore[arg-type]
+    )
+
+
+def rk_departure(
+    *,
+    a_reduced: Sequence[float],
+    b_reduced: Sequence[float],
+    z: Sequence[float],
+) -> RkDepartureBatch:
+    """The Redlich-Kwong fugacity coefficient and departures, over arrays.
+
+    See :func:`azoth.eos.rk_departure` for the calculation itself.
+    """
+    result: RkDepartureBatch = run(
+        _RK_DEPARTURE,
+        {
+            "a_reduced": sequence(a_reduced, "a_reduced"),
+            "b_reduced": sequence(b_reduced, "b_reduced"),
+            "z": sequence(z, "z"),
+        },
+        _build_rk_departure,
     )
     return result

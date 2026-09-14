@@ -19,8 +19,8 @@ use crate::results::{
     PyPhaseBoundaryResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
     PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
     PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
-    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkZFactorResult,
-    PyStabilityTestResult, PyVdw1fMixBinaryResult,
+    PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult, PySrkDepartureResult,
+    PySrkKappaResult, PySrkZFactorResult, PyStabilityTestResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -153,6 +153,32 @@ pub fn srk_departure(
 ) -> PyResult<PySrkDepartureResult> {
     azoth_eos::srk_departure(a_reduced, b_reduced, z, kappa, Tr)
         .map(|r| PySrkDepartureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Redlich-Kwong alpha function and the reduced attraction parameters.
+#[pyfunction]
+#[pyo3(signature = (Tr, Pr))]
+#[pyo3(text_signature = "(Tr, Pr)")]
+#[allow(non_snake_case)] // `Tr` and `Pr` are the symbols in the published equation
+pub fn rk_alpha_ab(py: Python<'_>, Tr: f64, Pr: f64) -> PyResult<PyRkAlphaAbResult> {
+    azoth_eos::rk_alpha_ab(Tr, Pr)
+        .map(|r| PyRkAlphaAbResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Redlich-Kwong fugacity coefficient and departure functions.
+#[pyfunction]
+#[pyo3(signature = (a_reduced, b_reduced, z))]
+#[pyo3(text_signature = "(a_reduced, b_reduced, z)")]
+pub fn rk_departure(
+    py: Python<'_>,
+    a_reduced: f64,
+    b_reduced: f64,
+    z: f64,
+) -> PyResult<PyRkDepartureResult> {
+    azoth_eos::rk_departure(a_reduced, b_reduced, z)
+        .map(|r| PyRkDepartureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

@@ -42,3 +42,20 @@ class Soave:
             * tr
             / (2.0 * sqrt_tr * (1.0 + self.kappa * (1.0 - sqrt_tr)) ** 2)
         )
+
+
+class RkAlpha:
+    """Redlich-Kwong's original correlation: ``alpha = 1/sqrt(Tr)``.
+
+    Kappa-free, which is the whole difference from :class:`Soave`: the logarithmic
+    derivative is the constant ``-1/2`` and its temperature derivative is zero.
+    """
+
+    def alpha(self, tr: float) -> float:
+        return 1.0 / math.sqrt(tr)
+
+    def psi(self, _tr: float) -> float:
+        return -0.5
+
+    def psi_t(self, _tr: float) -> float:
+        return 0.0

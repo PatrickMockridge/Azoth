@@ -21,6 +21,8 @@
   - [Peng-Robinson compressibility factor](./eos/pr_z_factor.md)
   - [Peng-Robinson-Stryjek-Vera alpha-function coefficient](./eos/prsv_kappa.md)
   - [Rachford-Rice vapour fraction, for a binary](./eos/rachford_rice_binary.md)
+  - [Redlich-Kwong alpha function and reduced attraction parameters](./eos/rk_alpha_ab.md)
+  - [Redlich-Kwong fugacity coefficient and departure functions](./eos/rk_departure.md)
   - [Soave-Redlich-Kwong alpha function and reduced attraction parameters](./eos/srk_alpha_ab.md)
   - [Soave-Redlich-Kwong fugacity coefficient and departure functions](./eos/srk_departure.md)
   - [Soave-Redlich-Kwong attraction-parameter coefficient](./eos/srk_kappa.md)

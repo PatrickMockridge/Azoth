@@ -52,3 +52,25 @@ impl AlphaTerm for Soave {
             / (2.0 * sqrt_tr * (1.0 + self.kappa * (1.0 - sqrt_tr)).powi(2))
     }
 }
+
+/// Redlich-Kwong's original correlation: `alpha = 1/sqrt(Tr)`.
+///
+/// Kappa-free, which is the whole difference from Soave: the logarithmic derivative is
+/// the constant `-1/2` and its temperature derivative is zero, so neither needs a
+/// coefficient.
+#[derive(Debug, Clone, Copy)]
+pub struct RkAlpha;
+
+impl AlphaTerm for RkAlpha {
+    fn alpha(&self, tr: f64) -> f64 {
+        1.0 / tr.sqrt()
+    }
+
+    fn psi(&self, _tr: f64) -> f64 {
+        -0.5
+    }
+
+    fn psi_t(&self, _tr: f64) -> f64 {
+        0.0
+    }
+}

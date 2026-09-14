@@ -11,6 +11,8 @@
 //!   - specs/calcs/eos/pr_z_factor.toml
 //!   - specs/calcs/eos/prsv_kappa.toml
 //!   - specs/calcs/eos/rachford_rice_binary.toml
+//!   - specs/calcs/eos/rk_alpha_ab.toml
+//!   - specs/calcs/eos/rk_departure.toml
 //!   - specs/calcs/eos/srk_alpha_ab.toml
 //!   - specs/calcs/eos/srk_departure.toml
 //!   - specs/calcs/eos/srk_kappa.toml
@@ -1329,6 +1331,220 @@ pub static RACHFORD_RICE_BINARY_SPEC: CalcSpec = CalcSpec {
     tests: RACHFORD_RICE_BINARY_TESTS,
 };
 
+/// Registry entry for `eos.rk_alpha_ab`.
+static RK_ALPHA_AB_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Tr",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`Tr` appears as a square root in alpha and as a squared divisor in `a_reduced`; Tr = 0 is singular, a negative Tr leaves the square root undefined, and neither is a state.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Pr",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "Pr = 0 drives both A and B to zero, and B is a divisor in the fugacity-coefficient expression that consumes this calc's output.",
+        },
+    },
+];
+
+static RK_ALPHA_AB_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "at_the_critical_point_the_parameters_are_the_omegas",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-15,
+        numbers: &[("Tr", 1.0), ("Pr", 1.0)],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("alpha", 1.0),
+            ("a_reduced", 0.4274802335403413),
+            ("b_reduced", 0.08664034996495773),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "skipped",
+        skip_reason: Some(
+            "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.",
+        ),
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.rk_alpha_ab`.
+///
+/// Public and addressable directly, so a calc can hold `&RK_ALPHA_AB_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static RK_ALPHA_AB_SPEC: CalcSpec = CalcSpec {
+    id: "eos.rk_alpha_ab",
+    checks: RK_ALPHA_AB_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "propane_at_tr_0_8_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("Tr", 0.8), ("Pr", 0.25)],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("alpha", 1.118033988749895),
+            ("a_reduced", 0.1866943088347048),
+            ("b_reduced", 0.02707510936404929),
+        ],
+        expected_vectors: &[],
+    },
+    tests: RK_ALPHA_AB_TESTS,
+};
+
+/// Registry entry for `eos.rk_departure`.
+static RK_DEPARTURE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "b_reduced",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`b_reduced` appears as a divisor in the coefficient `A/B`, and at B = 0 the departure functions are zero - the ideal-gas limit, which is not reachable by division.",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "z_minus_b_reduced",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`z` appears as `ln(z - b_reduced)`, so `z = b_reduced` is the zero-volume limit and `z < b_reduced` makes the logarithm of a negative number.",
+        },
+    },
+];
+
+static RK_DEPARTURE_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "the_liquid_root_of_the_same_state",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("a_reduced", 0.1866943088347048),
+            ("b_reduced", 0.02707510936404929),
+            ("z", 0.042900126240552006),
+        ],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("ln_phi", -0.18463661328478986),
+            ("h_dep_rt", -6.017649849807655),
+            ("s_dep_r", -5.8330132365228655),
+            ("cp_dep_r", 6.902884760249198),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "skipped",
+        skip_reason: Some(
+            "Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.",
+        ),
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.rk_departure`.
+///
+/// Public and addressable directly, so a calc can hold `&RK_DEPARTURE_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static RK_DEPARTURE_SPEC: CalcSpec = CalcSpec {
+    id: "eos.rk_departure",
+    checks: RK_DEPARTURE_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "propane_vapour_root_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("a_reduced", 0.1866943088347048),
+            ("b_reduced", 0.02707510936404929),
+            ("z", 0.8119920001727409),
+        ],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("ln_phi", -0.17200180559684855),
+            ("h_dep_rt", -0.5272648660603503),
+            ("s_dep_r", -0.3552630604635018),
+            ("cp_dep_r", 1.2455752814017873),
+        ],
+        expected_vectors: &[],
+    },
+    tests: RK_DEPARTURE_TESTS,
+};
+
 /// Registry entry for `eos.srk_alpha_ab`.
 static SRK_ALPHA_AB_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -1893,6 +2109,8 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &PR_Z_FACTOR_SPEC,
     &PRSV_KAPPA_SPEC,
     &RACHFORD_RICE_BINARY_SPEC,
+    &RK_ALPHA_AB_SPEC,
+    &RK_DEPARTURE_SPEC,
     &SRK_ALPHA_AB_SPEC,
     &SRK_DEPARTURE_SPEC,
     &SRK_KAPPA_SPEC,
