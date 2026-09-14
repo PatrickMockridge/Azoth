@@ -4,38 +4,11 @@
 
 `eos.ph_flash`
 
-The temperature at which a mixture of known composition has a given molar enthalpy at a given pressure, together with the phase split there.
-This is the model a unit operation needs. Every one that adds or removes energy - a heater, a cooler, a compressor, an expander, a valve - knows the pressure a stream leaves at and the duty it put in, and does not know the temperature that results. `eos.pt_flash` answers the other question; this is the second of the two the process layer needs before a flowsheet can run.
-**The enthalpy is a difference from a datum the caller supplies**, not an absolute quantity. Two calls with different reference values are not comparable and their difference is a plausible number rather than an error, which is the same caveat `eos.molar_enthalpy_entropy` carries and for the same reason.
-
 ## Source
 
 **Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup** (The procedure is the ordinary one: the enthalpy of a mixture at fixed pressure is a strictly increasing function of temperature, so inverting it is well posed, and the enthalpy of a two-phase state is the phase-fraction weighted sum of the two phase enthalpies. **The specific text has not been read** and no equation number is claimed. What is checked is against this project's own pieces, and the spec's notes say what that does and does not establish.
 )
 
-## Notes
-
-#### Where this differs from a textbook isenthalpic flash, and why
-
-The procedure here is the ordinary one. What is particular to this implementation is that **the inner flash is not modified**: the trial state comes from `eos.pt_flash` exactly as a caller would get it, and the phase enthalpies come from `eos.molar_enthalpy_entropy` exactly as a caller would get them. There is no isenthalpic-flash-specific arithmetic anywhere. That is deliberate - it means the numbers this model returns are the numbers a caller could reproduce by hand with the three public models and a bisection, which is the retraceability the worked example is for.
-
-#### Why `beta` is absent for a single-phase feed, and not just out of range
-
-Below the bubble point or above the dew point the flash still returns a split, and it is the *extrapolated* one - values outside `[0, 1]` are normal, and this model's own test data shows 1.888. That number is not the vapour fraction of anything. A model that multiplied by it would produce a wrong enthalpy shaped exactly like a right one, so the single-phase branch takes the whole feed and the appropriate root instead, and the result reports no `beta` rather than an extrapolation a caller might use.
-
-#### Convergence is on the residual, and a state-less scan point is skipped
-
-The bisection stops on `|H(T) - H_target| / max(|H_target|, 1)`, not on the width of the temperature bracket. The bracket bounds the residual through `|H'| * (hi - lo) / 2` only while `H(T)` is continuous; where it is not, the bisection collapses onto the jump and returns a temperature whose enthalpy is not the one asked for, with no error.
-
-The bracket scan **skips a temperature at which the state does not exist** rather than aborting on it. Some `(T, P)` pairs have no admissible liquid root - the cubic's smallest root falls below the mixture's `B`, so `ln(Z - B)` is the logarithm of a negative number - and such a point has no property and cannot bracket anything. The occurrence is not confined to the ends of the range: on methane/n-butane at 15 bar it happens at 160 K and nowhere else between 100 K and 400 K. Only an out-of-range state is skipped, because an `InvalidInputError` does not depend on the temperature and is the caller's error at every point.
-
-#### What is checked, and what is not
-
-The model is checked against itself in the way that matters: a temperature is chosen, the enthalpy at it is computed, and that enthalpy is fed back in. The temperature that comes out is the one that went in, to 1e-12 relative. **That establishes that the inversion is exact; it does not establish that the enthalpy is right.** The enthalpy is `eos.molar_enthalpy_entropy`'s, and the confidence in it is whatever that model's own notes support.
-
-A second check is not self-referential and is worth more: the answer is independent of the bracket. A state reached from a 2000-point scan over 100-1500 K and the same state reached from a narrower scan must agree, because bisection converges to the root rather than to the bracket's midpoint. Both are in the tests.
-
-**The citations are unconfirmed.** No equation number is claimed, and the text named above has not been read - the procedure is standard enough that reading it would not change the arithmetic, but that is an argument for the arithmetic, not a claim that anyone checked the attribution.
 
 ## Algorithm
 

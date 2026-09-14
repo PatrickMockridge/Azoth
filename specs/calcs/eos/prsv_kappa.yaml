@@ -8,44 +8,6 @@ source:
   edition: "PRSV: An improved Peng-Robinson equation of state for pure compounds and mixtures. The Canadian Journal of Chemical Engineering, 64(2), 323-333"
   doi: "10.1002/cjce.5450640224"
 
-notes: >
-  The citation is confirmed: Stryjek & Vera, "PRSV: An improved Peng-Robinson
-  equation of state for pure compounds and mixtures", Canadian Journal of Chemical
-  Engineering 64(2), 323-333, DOI 10.1002/cjce.5450640224. The paper's abstract
-  confirms the substance of what this calc implements - it modifies the
-  temperature and acentric-factor dependence of the Peng-Robinson attraction term
-  and introduces "a single pure-compound parameter".
-
-  What has NOT been done is opening the paper and reading the coefficients off it.
-  Specifically unconfirmed: (1) that the four constants of the acentric-factor
-  polynomial are printed as 0.378893, 1.4897153, -0.17131848 and 0.0196554; (2)
-  that the temperature factor is written as (1 + sqrt(Tr))*(0.7 - Tr), rather than
-  in some algebraically equivalent form that would not be bit-identical; (3) the
-  equation numbers, so none is given above.
-
-  # What this calc deliberately does NOT carry, and why it matters here
-
-  `kappa1` is a **per-component fitted parameter**. PRSV's accuracy over PR comes
-  from fitting it to each substance's vapour pressure data, and a table of those
-  values is exactly the kind of data this library does not ship - the same
-  decision `eos.pr_kappa` records for the acentric factor and `hydraulics` for the
-  fitting coefficients. So it is an input, supplied by the caller, and the worked
-  example below uses a round illustrative value while saying so.
-
-  That is worth stating plainly because it is the one place a reader might expect
-  a databank: the whole point of PRSV is the extra parameter, and a library that
-  offers PRSV without offering the parameters is offering the equation and not
-  the correlation. It is still useful - it is the same equation a caller's own
-  fitted values need - but a caller who expected to get PRSV's published accuracy
-  for free will not get it, and should be told so here rather than discover it.
-
-  # Why no bound asserts the fitted range
-
-  PRSV is fitted over a range of reduced temperatures and acentric factors, and
-  that range is not established here, so no bound claims one. `eos.pr_kappa`
-  records the same omission for the same reason.
-
-
 inputs:
   omega:
     unit: dimensionless
@@ -214,33 +176,10 @@ tests:
     type: property
     property: consistency_with
     status: active
-    note: >
-      The claim the decomposition rests on: PRSV changes the coefficient's
-      temperature dependence and nothing else, so `eos.pr_alpha_ab` serves it
-      unchanged. This test computes a PRSV coefficient and feeds it to
-      `eos.pr_alpha_ab`, asserting the alpha function comes back consistent with
-      the coefficient it was given - `alpha` is `(1 + kappa*(1 - sqrt(Tr)))**2`, so
-      the returned alpha and the returned coefficient must satisfy that relation,
-      and the reduced parameters that follow must be built from the PRSV alpha
-      rather than a stale one.
-
-      It is a cross-calc test rather than a single-calc one, which is why it is
-      declared here and implemented in both test files rather than generated. If
-      PRSV had needed `pr_alpha_ab` to change, this is where that would have shown
-      up - and the whole argument for splitting the coefficients out of the
-      equation of state would have been wrong.
-
   - id: monotonic
     type: property
     property: monotonic
     status: active
-    note: >
-      `kappa` increases with `omega`, for any `kappa1`. The derivative of the
-      acentric-only polynomial, `1.4897153 - 0.34263696*omega + 0.0589662*omega**2`,
-      has a negative discriminant and so is positive everywhere, and the kappa1 term
-      does not involve omega at all - so the monotonicity holds independent of the
-      fitted parameter, which is what makes it safe to assert without one.
-
   - id: round_trip_units
     type: property
     property: unit_round_trip

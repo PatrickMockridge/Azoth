@@ -4,56 +4,12 @@
 
 `eos.stability_test`
 
-Whether a feed at a given temperature and pressure is stable as a single phase, by the tangent-plane criterion. Two trial phases are seeded from Wilson K-value estimates - one liquid-like, one vapour-like - and each is iterated to a stationary point of the tangent-plane distance function. The feed is unstable if either stationary point lies below the tangent plane through the feed.
-This is the question `eos.pt_flash` cannot ask. Successive substitution finds *a* stationary point; whether the feed was stable to begin with is a different question, and a flash that converges to `x = y = z` has demonstrated that its own starting point was not a split - not that the feed is single phase.
-
 ## Source
 
 **Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability"** (Fluid Phase Equilibria 9(1), 1-19)
 
 DOI: [10.1016/0378-3812(82)85001-2](https://doi.org/10.1016/0378-3812(82)85001-2)
 
-## Notes
-
-The method is Michelsen (1982). What is unconfirmed is the equation number - the paper has not been read.
-
-#### Where this differs from NeqSim's implementation
-
-The two Wilson trials, the tangent-plane distance `tm = 1 - sum(W)`, the unconverged-reset rule and the instability threshold are the same. Three things differ, and each was a decision rather than a transcription.
-
-**The trial phases are seeded from azoth's own Wilson correlation.** NeqSim reads `Component.getK()`, which is whatever the last flash left on the component. That is an implicit coupling between two calculations - the answer here would depend on what ran before - so this seeds from `_mixture_state.wilson_k` explicitly and depends on nothing but its inputs.
-
-**The second-order Newton fallback and the DEM acceleration are not ported.** NeqSim switches to a Newton step on `sqrt(W)` when successive substitution stalls, and accelerates on an Aitken-style estimate every fifth iteration. Both change how fast the iteration reaches its stationary point and not which point that is, and neither is needed to state the criterion. Without them the iteration is plain successive substitution, which is what the spec's `algorithm` block describes and what both implementations run.
-
-**An unconverged trial raises rather than being discarded.** NeqSim breaks out of the loop on a failed `init` and carries on with whatever `tm` the partial iteration reached. A tangent-plane distance is only a bound on stability at a *stationary point*, so a `tm` read from a partially-converged iterate is a number about the iteration rather than about the mixture - and discarding it turns "could not tell" into "stable". It raises `SolverNotConvergedError` instead, which is the rule `eos.pt_flash` already applies to its own loop.
-
-**Verified against `eos.pt_flash` instead, which is a stronger check than it sounds.** The two models answer different questions about the same states, and their answers are related: a feed `pt_flash` splits into two phases must come back UNSTABLE here, and a feed it reports as single phase by the no-root proof must come back STABLE. Those are asserted on every case both models share.
-
-#### Correction 1: the iteration cap was set by assumption and was too low
-
-The first draft carried `max_iterations: 200`, reasoned from the fact that the parallel flash converges in a dozen steps. It is not parallel, and 200 was measured to be too few on an ordinary state - methane/n-butane at 300 K and 100 bar, a liquid, where the *liquid-like* trial needs **507** iterations to reach 1e-10.
-
-The failure is not a divergence. Successive substitution here is linear with a ratio near 0.93 in `ln W`, so the residual falls by roughly twenty per hundred iterations and simply needs longer than the cap allowed. Measured on that state:
-
-```text iteration    50        100       200       400 residual     2.9e-04   4.1e-05   1.6e-06   2.9e-09 ```
-
-The cap is now 2000, which is above every state tested and still bounded. It is a *cap* and not a target: the vapour-like trial on the same state converges in 22 steps.
-
-This is also the measurement that justifies not porting NeqSim's DEM/Aitken acceleration. It exists precisely because this iteration is slow, and it is not needed for the criterion - but the cost of leaving it out is paid here, in a cap an order of magnitude higher than the flash's, and that is the honest place to record it rather than in a claim that the acceleration was unnecessary.
-
-#### Correction 2: the wrong Gibbs comparison, and it is a quiet one
-
-`ln phi_i(z)` needs the feed to sit on *a* root of the cubic, and in the two-phase region there are three. The feed is placed at the **lower Gibbs energy** of the admissible roots.
-
-With `G / RT = A / RT + Z` and `A = A^ideal + A^R`, the ideal part carries `-n ln V` - and `V` differs between two roots, so the ideal part differs too. Reducing it, with `sum(n) = 1` and `V = Z R T / P`, leaves only `-ln Z` differing at one `(T, P, n)`. The comparison is therefore
-
-```text A^R / RT - ln Z + Z ```
-
-**and not `A^R / RT + Z`.** Measured, because the wrong form is plausible and quiet: pure methane at 150 K and 1 bar is superheated vapour - its saturation pressure there is about 10 bar - and the two roots give
-
-```text root             A^R/RT      Z          A^R/RT + Z   A^R/RT - ln Z + Z liquid-like     -2.558039   0.003344   -2.554695    3.145800 vapour-like     -0.015548   0.984493    0.968946    0.984573 ```
-
-The wrong form picks the liquid and calls a plain vapour unstable; the right one picks the vapour. Nothing else about the model changes.
 
 ## Algorithm
 

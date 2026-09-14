@@ -4,35 +4,12 @@
 
 `process.heater`
 
-A duty applied to a stream at a fixed pressure.
-One model for both a heater and a cooler, with the sign of `heat_duty` distinguishing them, because that is what NeqSim's own code says: **`Cooler` has no `run()` of its own**. It is a 258-line class that inherits `Heater.run` for its steady state, and the two differ only in the sign of the duty and in what their dynamics do.
-The physics is one `PHflash` at the outlet pressure and the enthalpy the duty produces, which is why `eos.ph_flash` exists.
-
 ## Source
 
 **NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.heatexchanger.Heater`, `run(UUID)` at lines 402-471 of the 3.20.0 source tree. `Cooler` is in the same package and inherits it.
 ** (Version 3.20.0. Taken from it: `P_out = P_in - pressureDrop` (`:432-435`), `H_out = H_in + Q` (`:431`) and `PHflash(P_out, H_out)` (`:445-446`). Not taken: the three other specifications the class switches between, the energy port and the caches.
 )
 
-## Notes
-
-#### Why only one of NeqSim's four specifications is ported
-
-`Heater.run` switches on how the outlet is specified (`Heater.java:437-450`): an outlet *stream* to read a temperature from, a specified outlet temperature, a specified energy input, or a specified `deltaT`. **Only the energy input is here**, and the reason is that the other three are not unit operations at all.
-
-A heater with a specified outlet temperature is `TPflash(T_out, P_out)` - which is `eos.pt_flash`, a model this library already has, where the temperature is an input rather than something to solve for. A specified `deltaT` is that same call with the temperature added first. An outlet stream read back is a flowsheet connection, which is a different level of composition entirely.
-
-So the Pareto set is one specification: the one where the energy balance has to be solved. The model is named `heater` rather than `heater_cooler` because that is what NeqSim calls the class the procedure lives in, and `Cooler` is this with a negative duty.
-
-#### The duty is extensive and the flash is molar
-
-NeqSim sums joules directly (`:431`, `H_out = H_in + Q`), because its `PHflash` takes joules. `eos.ph_flash` takes a molar enthalpy, so the port is `h_out = h_in + Q/n`. Same physics, and the one place in this model where the expression changed - written down here so it does not read as a transcription error.
-
-#### What is checked, and what is not
-
-The identity is the check: `n * (H_out - H_in) == Q`, with both enthalpies computed from `eos.molar_enthalpy_entropy` independently of this model. It is asserted at several duties and flows, including flows that differ by a factor of ten at the same duty - which is the test that catches a model that forgot to divide by `n`.
-
-The recorded case is the second check and it is weaker: it says the model still does what it did when the number was written. **The citations are unconfirmed** - no equation number is claimed and the file has been read rather than the standard.
 
 ## Algorithm
 

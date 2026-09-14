@@ -2,19 +2,6 @@ id: process.pump
 name: Pump
 kind: procedure
 
-description: >
-  A pressure rise in a liquid, at a stated isentropic efficiency.
-
-  The same procedure as `process.compressor` - see that spec for the derivation and
-  `crates/azoth-process/src/isentropic.rs` for the shared code - applied to a stream that
-  is liquid rather than gas. What differs is the answer rather than the arithmetic: a
-  liquid is nearly incompressible, so the ideal enthalpy rise is small and the
-  temperature barely moves, while the power is not small at all.
-
-  A pump is a separate model from a compressor because a caller should be able to read
-  which one they are running, and because NeqSim has a separate class for it with a
-  default path that happens to be the same arithmetic.
-
 source:
   standard: >
     NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is
@@ -202,45 +189,12 @@ assumptions:
     NeqSim default and it is what can be checked without a manufacturer''s data.'
   - '**the cubic is Peng-Robinson**, as throughout this workspace.'
 
-notes: >
-  # Why a liquid pump runs an entropy flash at all
-
-  Because the temperature rises, slightly, and the model should say by how much rather
-  than assume zero. For this mixture at 300 K, 20 to 30 bar at an efficiency of 0.8 the
-  rise is **1.34 K** - small, real, and free here, since the flash this runs is the same
-  one a compressor runs.
-
-  The alternative - NeqSim's simple pressure-rise path, `dP * volumetric flow / efficiency`
-  - takes the fluid as incompressible and would give a slightly different answer with a
-  different justification. `hydraulics.pump_power` is that calculation, and it is a
-  *calculation* rather than a model because it is one line. Neither is wrong; they are
-  different models, and a caller should be able to tell which they are running.
-
-  # What is checked, and what is not
-
-  The same two identities as `process.compressor`, computed in the test from
-  `eos.ps_flash` and `eos.molar_enthalpy_entropy` independently of this model: that the
-  ideal state is isentropic, and that the efficiency divides. The compressor spec records
-  why those two and not a recorded number.
-
-  The recorded case pins the magnitude, which for a pump is the part that is easy to get
-  wrong by a factor: the power is in kilowatts and the temperature rise is in kelvin, and
-  a model that mixed them up would still produce plausible-looking numbers for both.
-
 implementations:
   python: azoth.process.pump
   rust: azoth_process::pump
 
 cases:
   - id: twenty_to_thirty_bar_at_eighty_percent
-    note: >
-      Methane/n-butane liquid at 300 K, pumped from 20 to 30 bar at an isentropic
-      efficiency of 0.8. The ideal outlet is **314.26 K**, the real one **315.60 K**, and
-      the power is **8.29 kW** at 10 mol/s.
-
-      The temperature rise of 1.34 K across a 10 bar rise is the part worth reading: it
-      is small, it is real, and a model that assumed a pump were isothermal - which is the
-      usual hand calculation - would be wrong by exactly that.
     inputs:
       Tc: [190.56, 425.12]
       Pc: [4599000.0, 3796000.0]
@@ -268,19 +222,6 @@ cases:
     tolerance: 1.0e-9
 
   - id: a_liquid_feed_is_pumped
-    note: >
-      A butane-rich feed (z = 0.2/0.8) at 300 K, pumped from 40 to 50 bar. This feed is
-      single-phase liquid at both ends, which is the branch the case above does not
-      reach: there the feed is two-phase, so its enthalpy is a split rather than one
-      phase's.
-
-      The ideal outlet is **300.99 K**, the real one **301.27 K**, and the power is
-      **1.12 kW** at 10 mol/s - small next to a compressor's, because a liquid is nearly
-      incompressible and the work goes into pressure rather than volume.
-
-      The state is not arbitrary: at 50 bar and the same composition the model raises
-      rather than answering, because one temperature on the isentropic search's scan does
-      not converge. That is recorded in the defect log rather than worked around here.
     inputs:
       Tc: [190.56, 425.12]
       Pc: [4599000.0, 3796000.0]

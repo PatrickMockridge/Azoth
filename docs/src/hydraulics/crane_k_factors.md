@@ -20,20 +20,6 @@ K = f_t * sum(n_ld for each fitting)
 
 **Crane TP-410** (2013)
 
-## Notes
-
-TWO SEPARATE THINGS ARE UNVERIFIED HERE, and they matter differently.
-
-(1) The METHOD (K = f_t * L_eq/D) is standard engineering practice and is the real contribution of this calc. The specific Crane equation number is unconfirmed, so it is left unstated rather than guessed.
-
-(2) The COEFFICIENTS in data/fittings/crane_k_factors.csv are ESTIMATED DUMMY VALUES. They were not read from Crane TP-410 or from any other standard; they are placeholders of plausible magnitude so that the software pipeline can be built and tested end to end. They are not engineering data and nothing computed from them should be used to size equipment. Every row is marked `estimated_dummy` in the verify_status column, which is the record a reader has to consult; nothing warns on it at runtime.
-
-Consequence for testing: because the coefficients are placeholders, there is no correct value for the calc to be checked against, so no test in this repository can detect a wrong coefficient. The tests below therefore validate the ARITHMETIC and the data LOOKUP - that K is computed correctly from whatever coefficients are present - and are honest about not validating the coefficients themselves. This is the one calc in the slice whose numbers are unvalidatable by construction, which is precisely why it is marked so loudly.
-
-[Copyright and licensed data](../copyright.md) lists this alongside every other value the project cannot ship, and the pattern that resolves each. The answer for this one is a file of your own: see keycard.example.yaml.
-
-Deliberately no `unit_round_trip` test here, unlike the other four calcs in this slice. This calc has no dimensioned inputs at all - a fitting list and a dimensionless friction factor - so a units round-trip would have nothing to convert and would assert nothing. A test that cannot fail is worse than no test, because it counts as coverage.
-
 ## Inputs
 
 | Name | Unit | Description |

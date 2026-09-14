@@ -22,20 +22,6 @@ z**3 - (1 - b_reduced)*z**2 + (a_reduced - 3*b_reduced**2 - 2*b_reduced)*z - (a_
 
 DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 
-## Notes
-
-The polish tolerance is `1e-12` and was `1e-14`. The old value asked for a Newton step below `1e-14 * |x|`, which for a root of order 0.04 is a couple of ulps and which a near-double root therefore never meets - it stalls at 5.2e-15 and reports failure however many iterations it is given. See `python/tests/models/test_mixer.py` carries the state that exposed it.
-
-The cubic is the 1976 Peng-Robinson equation written in reduced variables. The citation is confirmed; the form of the equation is not in doubt - it is one of the two or three most widely implemented in chemical engineering, and this rearrangement is algebra rather than a separate result.
-
-What is NOT confirmed: the equation number in the paper (so none is given above), the constants A and B are built from - see `eos.pr_alpha_ab`, which records that the paper's printed Omega values are deliberately not the ones shipped - and that the paper writes the cubic in this reduced form at all, rather than only in the pressure-explicit form from which it follows.
-
-#### The solver is a separate contract from the equation
-
-This is the first calc in the registry whose equation is implicit in a way that needs a *named* scheme of its own, and the first to declare `solver.kind: cubic_roots`. That kind, its scheme and the contract test holding it to both implementations are described in `docs/src/theory/solvers.md`, which is generated from the specs. `eos.pr_z_factor` is where `cubic_roots` entered the registry, and the schema's own description of `solver.kind` records that.
-
-The scheme is fixed here rather than chosen by each implementation because the two languages have to land on the *same* root. A cubic has up to three real roots and which one a search returns depends on where it started: measured on the worked example below, whose roots are 0.0368, 0.1481 and 0.7908, Newton from 0.30 converges to the middle root, from 0.50 to the liquid root and from 0.70 to the vapour one. So the scheme forms the roots analytically and orders them, which removes the guess entirely, and then polishes - see `docs/src/theory/solvers.md` for why the polish is not optional.
-
 ## Inputs
 
 | Name | Unit | Description |

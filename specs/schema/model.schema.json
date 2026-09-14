@@ -8,7 +8,6 @@
   "required": [
     "id",
     "name",
-    "description",
     "kind",
     "inputs",
     "outputs",
@@ -21,11 +20,6 @@
       "description": "Dotted identifier, e.g. eos.pure_saturation. Same rule as a calc id: it must match the module and function names in both implementations."
     },
     "name": { "$ref": "calc.schema.json#/properties/name" },
-    "description": {
-      "type": "string",
-      "minLength": 1,
-      "description": "What the model computes and, where it is not obvious, why it is a model rather than a calc. Rendered as the docs page's opening paragraph."
-    },
     "source": { "$ref": "calc.schema.json#/properties/source" },
     "kind": {
       "enum": ["procedure", "direct"],
@@ -53,8 +47,7 @@
       "minItems": 1,
       "description": "Cases both implementations must reproduce. The same idea as a calc's `tests`, minus the property tests: a property test is written against a calc's single equation, and a model's invariants are about its procedure - that the residual vanishes, that the bracket contains the answer - so they are written by hand in the test files and recorded in `assumptions` rather than declared here.",
       "items": { "$ref": "#/$defs/case" }
-    },
-    "notes": { "$ref": "calc.schema.json#/properties/notes" }
+    }
   },
 
   "allOf": [
@@ -188,12 +181,7 @@
           "minProperties": 1,
           "additionalProperties": { "$ref": "#/$defs/value" }
         },
-        "tolerance": { "type": "number", "exclusiveMinimum": 0 },
-        "source": {
-          "type": "string",
-          "description": "Where the expected values came from. Required by spec_lint when the case is not derived from the model's own definition, so a borrowed number carries its origin."
-        },
-        "note": { "type": "string" }
+        "tolerance": { "type": "number", "exclusiveMinimum": 0 }
       }
     }
   }

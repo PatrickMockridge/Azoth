@@ -22,30 +22,6 @@ kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2
 
 DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 
-## Notes
-
-The citation is confirmed: Peng & Robinson, "A New Two-Constant Equation of State", Ind. Eng. Chem. Fundam. 15(1), 59-64, DOI 10.1021/i160057a011. The equation that uses this coefficient is one of the two or three most widely implemented in chemical engineering, and alpha = (1 + kappa*(1 - sqrt(Tr)))**2 is not in doubt.
-
-What has NOT been done is opening the paper and reading the three coefficients off it. Specifically unconfirmed: (1) that the quadratic in omega is printed as 0.37464 + 1.54226*omega - 0.26992*omega**2 in the 1976 paper, rather than being a later re-fit or a value reproduced from a secondary source that attributed it to that paper; (2) the equation number, which is why `source.equation` is left unstated.
-
-#### Why this matters more here than an equation number usually does
-
-A transposed digit in 0.26992 produces a coefficient that is wrong by a fraction of a percent, and therefore an alpha function, and therefore a Z factor, a fugacity coefficient, a K-value and a phase split that are each slightly wrong - while every one of them still converges, still passes a consistency check against its own equation, and still looks entirely reasonable. There is no internal check that catches it, because the constant is an input to the maths rather than a consequence of it. Only reading the paper catches it.
-
-An open search confirms the DOI, the title and the journal. It does not contain the coefficients, which is exactly the situation `unverified` describes: the equation is standard and the citation is not confirmed. It is not `source_needed`, because the equation is standard and the worked example below is derived from it and runs.
-
-#### Why the coefficients are separate calculations
-
-The shape this namespace does not use is one calc per equation of state, taking a component and returning a Z factor. That shape hides the constants: the Z factor is computed *from* the coefficient, so no check on it can see a wrong one. Splitting the constitutive coefficients out gives each its own worked example and its own cross-language test, and it makes a modification cheap - PRSV changes the temperature dependence of `kappa` and nothing else, so it is one new calc rather than a fork of the whole chain.
-
-#### The fitted range is unconfirmed too
-
-The range of acentric factors the correlation was fitted over has not been established either, and no bound is asserted for it here. See `assumptions`.
-
-#### Why this calc has no error bounds
-
-Every bound below is a warning. There is no acentric factor for which this polynomial is undefined - it is defined for every real omega, including the negative values that quantum fluids carry - so there is no input a refusal would be the right answer for. An error bound here would have to be an accuracy claim dressed up as a domain check, which is the failure this schema's `valid_range` description is written against.
-
 ## Inputs
 
 | Name | Unit | Description |

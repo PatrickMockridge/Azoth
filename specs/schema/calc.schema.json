@@ -179,10 +179,6 @@
       "minItems": 1,
       "description": "Tests to generate and run. Every calc needs at least a worked_example; reference and property tests are strongly encouraged.",
       "items": { "$ref": "#/$defs/test" }
-    },
-    "notes": {
-      "type": "string",
-      "description": "Free-form notes on the calculation, rendered into its generated page as a `## Notes` section. This is where a spec records what a reader needs in order to judge a number: where the implementation departs from the source it cites, why a constant takes the value it does, and which claims are unconfirmed. Fields elsewhere in the spec point here by name. Deliberately not a status: nothing here is machine-checked and there is no `verified`/`unverified` vocabulary to fill in."
     }
   },
 
@@ -372,8 +368,7 @@
           "minProperties": 1,
           "additionalProperties": { "$ref": "#/$defs/value" }
         },
-        "tolerance": { "type": "number", "exclusiveMinimum": 0 },
-        "note": { "type": "string" }
+        "tolerance": { "type": "number", "exclusiveMinimum": 0 }
       },
       "allOf": [
         {

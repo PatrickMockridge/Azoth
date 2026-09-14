@@ -4,39 +4,12 @@
 
 `process.splitter`
 
-One feed divided into branches at the feed's own temperature and pressure.
-The branches differ only in how much of the feed each carries. Every one of them is at the same temperature, the same pressure and the same composition, so the phase state is a property of the *feed* rather than of any branch, and this model reports it once.
-This is the only unit operation in the port whose spec carries no ideal-gas block. The reason is that it needs none: a splitter does no energy balance, and its single thermodynamic call is a `TPflash`, which is a function of the temperature, the pressure and the composition.
-
 ## Source
 
 **NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.splitter.Splitter`, `run(UUID)` at lines 376-438 of the 3.20.0 source tree.
 ** (Version 3.20.0. Taken from it: the component-mole scaling by the split factor (`:420-425`), the inherited temperature and pressure (`:407`), and the flash of each branch (`:427`). Not taken: the conversion of a fixed-flow specification into fractions (`:385`), and the sanitising of the factors (`:388-404`) - see the notes.
 )
 
-## Notes
-
-#### The fractions are checked, not corrected
-
-NeqSim sanitises its split factors before using them (`:388-404`): negatives are zeroed, and if the total is not positive it sets every factor to zero and the first to one. That is defensible for a solver that must keep running inside a transient loop.
-
-It is not defensible here. A splitter's entire output *is* those numbers, and a model that silently rescales a caller's fractions makes their arithmetic error invisible while changing every number downstream - which is the failure this library is organised against, stated in `eos.pt_flash` about compositions and applied here to splits. A fraction set that does not sum to one is refused, naming the total it did sum to.
-
-#### What is checked, and what is not
-
-Two things, neither of which needs a recorded number:
-
-- **Material is conserved**: `sum(flows) == n`. The analogue of the separator's mole
-
-  balance, and the check that catches a fraction set applied twice or not at all.
-
-- **Each branch is its fraction of the feed**: `flows[k] == fractions[k] * n`, which is
-
-  the definition and is arithmetic rather than physics.
-
-
-
-The recorded case is the second check and it is weaker. **Nothing here checks the flash** - the `beta` in the case is `eos.pt_flash`'s and the confidence in it is whatever that model's notes support.
 
 ## Algorithm
 

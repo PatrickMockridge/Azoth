@@ -239,6 +239,101 @@ answers are identical and the row count starts meaning something. A test asserti
 shipped row is zero is what would keep it true. Changing the file is a separate change
 set from the vendoring audit, which is why this is recorded rather than fixed here.
 
+### The citations across the registry are unconfirmed
+
+**Severity: major. Status: open.**
+
+**Symptom.** Nearly every spec records the same thing: the equation is not in doubt, and the
+*citation* is. Nobody has opened the source and confirmed the equation number, the page, or
+the form the relation is printed in. `source.equation` is left unstated rather than guessed
+at, which is the right call and leaves the claim unverified.
+
+**Evidence.** The report appears in eighteen specs: `eos.pr_kappa`, `eos.pr_alpha_ab`,
+`eos.pr_departure`, `eos.prsv_kappa`, `eos.vdw1f_mix_binary`, `eos.rachford_rice_binary`,
+`eos.critical_point`, `eos.stability_test`, `hydraulics.darcy_weisbach`,
+`hydraulics.reynolds_number`, `hydraulics.friction_factor_haaland`,
+`hydraulics.friction_factor_swamee_jain`, `hydraulics.orifice_flow`, `hydraulics.pump_power`,
+`hydraulics.choked_flow_area`, `hydraulics.crane_k_factors`, `thermal.conduction_plane_wall`
+and `process.heater`.
+
+**Root cause.** The sources are paywalled standards and papers and this project has no
+subscription to them, so the honest record was a gap rather than an equation number recalled
+from memory.
+
+**Remediation.** Not a software task. It needs one reader with access to the standards. It is
+the largest body of unverified claims in the registry, and **consolidating it is what makes it
+countable**: it was eighteen paragraphs each saying "this is unconfirmed", which reads as
+diligence and is one fact stated eighteen times.
+
+### Nothing checks that a separator's feed is stable before it is split
+
+**Severity: major. Status: open.**
+
+**Symptom.** `process.separator` splits a feed by a flash's answer without asking whether the
+feed is stable as a single phase. An unstable feed — the case where a split is *required*
+rather than merely permitted — is split by whatever the flash converged to.
+
+**Evidence.** `specs/models/process/separator.yaml`, the assumptions list. The test that
+answers the question already exists and is registered: `eos.stability_test`, Michelsen's
+tangent-plane test.
+
+**Root cause.** The port carried NeqSim's `Separator.run` (lines 674-782), which calls a flash
+and not a stability test, so the gap was inherited rather than introduced.
+
+**Remediation.** Either the separator runs `eos.stability_test` first, or its contract states
+that an unstable feed is the caller's to detect and is not diagnosed here. Both are
+defensible; leaving it unsaid is not.
+
+### `process.pump` accepts a vapour at its inlet and returns a plausible pressure rise
+
+**Severity: major. Status: open.**
+
+**Symptom.** Nothing checks that the inlet is a liquid. A pump run on a vapour returns a
+pressure rise and a power that look entirely reasonable.
+
+**Evidence.** `specs/models/process/pump.yaml`; `python/src/azoth/process/reference/pump.py`.
+
+**Root cause.** The port follows NeqSim's `Pump`, whose liquid assumption is implicit in the
+equipment type rather than checked.
+
+**Remediation.** A range check on the inlet phase, or an explicit statement that the phase is
+the caller's responsibility.
+
+### `process.pump` raises `SolverNotConvergedError` for ordinary states
+
+**Severity: major. Status: open.**
+
+**Symptom.** A pump run at ordinary conditions fails. 20 to 60 bar at 300 K raises; so does
+40 to 50 bar on a leaner feed; at 60 bar the failing temperature is 410 K.
+
+**Evidence.** Measured on the shipped pump. One temperature on the isentropic search's scan
+fails to converge, and one failing scan point is fatal to the whole model.
+
+**Root cause.** `eos.ps_flash`'s scan skips a temperature with no admissible root but does not
+skip one where the flash fails to settle. Those are different conditions and only the first
+was considered.
+
+**Remediation.** A decision, not a patch. Skipping loses the sign change that brackets the
+answer; aborting makes the model unusable at ordinary states. Decide, then make the scan's
+rule match the decision.
+
+### A separator's duty branch measures enthalpy from the feed's own state
+
+**Severity: major. Status: open.**
+
+**Symptom.** Where a duty is supplied, the model measures the enthalpy change from the feed's
+own state. NeqSim reads `getEnthalpy()`, which is history-dependent: the value depends on the
+path the stream was taken through, not only on where it is.
+
+**Evidence.** `specs/models/process/separator.yaml`.
+
+**Root cause.** A port of a state-function call from a library whose streams carry their
+history. The two agree whenever the fluid is single-phase throughout, which is the common
+case, so the divergence has no symptom in ordinary use.
+
+**Remediation.** State the difference and the condition under which the two agree. A
+documentation fix unless a case can be built where they diverge.
+
 ---
 
 ## Minor
@@ -362,6 +457,82 @@ fourteen tests.
 
 **Remediation.** Correct the arithmetic and state the real reason. The harness half is fixed
 (see "Fixed in this change set"); the text half is not.
+
+### A separator routes the flash's `trivial` verdict to the gas outlet
+
+**Severity: minor. Status: open.**
+
+**Symptom.** A feed whose flash reports `trivial` is sent to the gas outlet. That is a
+convention, not a checked result.
+
+**Evidence.** `specs/models/process/separator.yaml`.
+
+**Root cause.** `trivial` means the two trial phases converged to the same composition. It
+carries no information about which outlet the stream belongs in.
+
+**Remediation.** Route by the feed's own state, or say in the contract that `trivial` goes to
+the gas outlet by convention.
+
+### A separator models no entrainment carry-over
+
+**Severity: minor. Status: open.**
+
+**Symptom.** The separator is ideal: each phase goes wholly to its own outlet, with no liquid
+carried into the gas or the reverse.
+
+**Evidence.** `specs/models/process/separator.yaml`.
+
+**Root cause.** Entrainment needs a correlation and a geometry. Neither is in the Pareto set,
+and NeqSim's own entrainment models are out of scope by S8.
+
+**Remediation.** A sentence in the contract. Nothing to implement.
+
+### A unit operation inherits the flash's confidence and adds none
+
+**Severity: minor. Status: open.**
+
+**Symptom.** A separator's split is the flash's split, and nothing the separator does
+independently verifies the flash. The heater's duty is the same: it is the flash's answer,
+scaled.
+
+**Evidence.** `specs/models/process/separator.yaml`, `specs/models/process/heater.yaml`.
+
+**Root cause.** A unit operation is a flash call plus arithmetic — the Pareto argument for the
+scope of this port — so the unit cannot be more trustworthy than the flash inside it.
+
+**Remediation.** Nothing to fix. It is a statement about what a passing `process.separator`
+test does and does not tell a reader, and it belongs in the contract where a reader meets it.
+
+### The molar-versus-total enthalpy translation from NeqSim's joule sum
+
+**Severity: minor. Status: open.**
+
+**Symptom.** NeqSim sums *total* enthalpy in joules across a mixer's inlets. These models work
+in molar enthalpy and multiply by the flow. The translation is exact only when the streams
+share a molar mass.
+
+**Evidence.** `specs/models/process/mixer.yaml`, `specs/models/process/heater.yaml`.
+
+**Root cause.** NeqSim's streams expose a total-enthalpy accessor; azoth's results carry molar
+properties, because a molar property is what the equations of state produce.
+
+**Remediation.** State the translation and construct the case where it is not exact —
+differing molar masses across a mixer's inlets is the one to try. If they diverge, this is a
+wrong answer rather than a documentation gap and moves up a severity.
+
+### A cubic equation of state is not trustworthy at a high-ratio compressor's outlet
+
+**Severity: minor. Status: open.**
+
+**Symptom.** `process.compressor`'s largest assumption is that Peng-Robinson describes the
+outlet of a high-pressure-ratio machine. Nothing tests it.
+
+**Evidence.** `specs/models/process/compressor.yaml`.
+
+**Root cause.** A property of the equation of state rather than of the model. Testing it needs
+a real machine's data, which this library does not ship and could not check.
+
+**Remediation.** None in software. It belongs in the model's contract as a stated limit.
 
 ---
 
@@ -602,38 +773,23 @@ check is reproducible.
 
 ## Source prose that is a report rather than a comment
 
-[P5](./process.md) says a comment either explains the code in front of it, reports something
-for this page, or does not belong in the file. The entries below are the third kind found in
-the change set: defect and limitation reports currently living in source and specs, which
-must move here before the prose is removed. The de-spam is scoped in the remediation plan.
+**Actioned.** This section was a backlog: defect and limitation reports living in source and
+specs, which had to move here *before* the prose was removed from the specs. Each is now an
+entry in the sections above, at its own severity, and the prose it came from is gone.
 
-Each is **open** and each is a MOVE from a named line range.
+The backlog existed because [P5](./process.md) said a comment either explains the code in
+front of it, reports something for this page, or does not belong in the file — and the third
+kind had no home. It has one now.
 
-| Finding | Where it lives now |
-|---|---|
-| Separator: nothing checks that the feed is stable before splitting it | `specs/models/process/separator.yaml` assumptions |
-| Separator: the `trivial` phase is routed to the gas outlet — a convention, not a checked result | `specs/models/process/separator.yaml` |
-| Separator: no entrainment carry-over is modelled | `specs/models/process/separator.yaml` |
-| Separator: the split is the flash's split; the flash's correctness is not independently verified | `specs/models/process/separator.yaml` |
-| Separator: the duty branch measures enthalpy from the feed's own state, where NeqSim reads a history-dependent `getEnthalpy()` | `specs/models/process/separator.yaml` |
-| Pump: nothing checks that the inlet is a liquid — a pump run on a vapour returns a plausible pressure rise | `specs/models/process/pump.yaml`, `python/src/azoth/process/reference/pump.py` |
-| Mixer: the molar-versus-total enthalpy translation from NeqSim's joule sum | `specs/models/process/mixer.yaml` |
-| Heater: the same molar-versus-total enthalpy translation | `specs/models/process/heater.yaml` |
-| Heater: the spec's citations are unconfirmed — no equation number is claimed | `specs/models/process/heater.yaml`, `specs/models/eos/critical_point.yaml` references |
-| Compressor: the largest assumption, that a cubic EOS is trustworthy at a high-ratio outlet, is unchecked | `specs/models/process/compressor.yaml` |
-| `eos.ph_flash`'s bracket scan aborted the whole search on one inadmissible scan temperature | `specs/models/process/throttling_valve.yaml` — **fixed**, needs its entry and its test |
-| `eos.ph_flash`'s `ph_flash` root-structure discontinuity, found through `process.heater` | `python/tests/models/test_heater.py` — **the blocking entry above**, filed where it cannot be found |
+Two of the items were not findings but *pointers*: sentences inside specs that told a reader to
+go and look at a test file to find one. `specs/calcs/eos/pr_z_factor.yaml` and
+`specs/models/eos/stability_test.yaml` each carried one. **A finding recorded where nothing
+reads it is not recorded**, and pointing at a test file is the same failure with an extra step.
+Both sentences are gone; the findings they pointed at were already here.
 
-A pointer into a test file that carries no finding is the same class, and two exist:
-`specs/calcs/eos/pr_z_factor.yaml:12-16` ends a sentence with "See
-`python/tests/models/test_mixer.py` carries the state that exposed it", and
-`specs/models/eos/stability_test.yaml:299` does the like. Both are open.
-
-One reading is **contested** and recorded rather than resolved:
-`specs/models/process/separator.yaml:14-20` ("This is the first unit operation ported from
-NeqSim…") is arguably itself a MOVE under P5's second specific. `separator.rs` was cleaned by
-moving prose *into* the spec, and whether it moved to the right spec field — `source:`,
-`assumptions:` or `notes:` — is a question for the review.
+One reading was contested and is resolved by deletion rather than by argument: whether
+`separator.rs`'s prose had been moved to the *right spec field*. The question presupposed that
+a spec is a home for prose. It is not — see [Spec files](./spec-files.md).
 
 ---
 

@@ -4,29 +4,12 @@
 
 `process.pump`
 
-A pressure rise in a liquid, at a stated isentropic efficiency.
-The same procedure as `process.compressor` - see that spec for the derivation and `crates/azoth-process/src/isentropic.rs` for the shared code - applied to a stream that is liquid rather than gas. What differs is the answer rather than the arithmetic: a liquid is nearly incompressible, so the ideal enthalpy rise is small and the temperature barely moves, while the power is not small at all.
-A pump is a separate model from a compressor because a caller should be able to read which one they are running, and because NeqSim has a separate class for it with a default path that happens to be the same arithmetic.
-
 ## Source
 
 **NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.pump.Pump`, `run(UUID)` at lines 515-677 of a 1,700-line file, and specifically its default path at `:558-572`.
 ** (Version 3.20.0. Taken from it: `PSflash(entropy)` at the outlet pressure (`:563`), `dH = (H_is - H_in) / efficiency` (`:566`) and `PHflash(H_in + dH)` (`:572`). The default path is the one taken when `calculateAsCompressor` is true, which it is by default (`:114`). Not taken: the pump-curve path (`:573-644`), the simple pressure-rise path (`:645-664`) and the fixed-outlet-temperature path (`:549-556`).
 )
 
-## Notes
-
-#### Why a liquid pump runs an entropy flash at all
-
-Because the temperature rises, slightly, and the model should say by how much rather than assume zero. For this mixture at 300 K, 20 to 30 bar at an efficiency of 0.8 the rise is **1.34 K** - small, real, and free here, since the flash this runs is the same one a compressor runs.
-
-The alternative - NeqSim's simple pressure-rise path, `dP * volumetric flow / efficiency` - takes the fluid as incompressible and would give a slightly different answer with a different justification. `hydraulics.pump_power` is that calculation, and it is a *calculation* rather than a model because it is one line. Neither is wrong; they are different models, and a caller should be able to tell which they are running.
-
-#### What is checked, and what is not
-
-The same two identities as `process.compressor`, computed in the test from `eos.ps_flash` and `eos.molar_enthalpy_entropy` independently of this model: that the ideal state is isentropic, and that the efficiency divides. The compressor spec records why those two and not a recorded number.
-
-The recorded case pins the magnitude, which for a pump is the part that is easy to get wrong by a factor: the power is in kilowatts and the temperature rise is in kelvin, and a model that mixed them up would still produce plausible-looking numbers for both.
 
 ## Algorithm
 

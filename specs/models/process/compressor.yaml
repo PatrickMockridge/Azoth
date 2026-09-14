@@ -2,17 +2,6 @@ id: process.compressor
 name: Compressor
 kind: procedure
 
-description: >
-  A pressure rise at a stated isentropic efficiency.
-
-  The fluid is taken isentropically to the outlet pressure to find the ideal outlet
-  enthalpy, and the real one is further from the inlet by exactly the efficiency. The
-  temperature that results is the answer, and it is above the ideal one for the reason an
-  efficiency is less than one.
-
-  This is the first unit operation here whose answer depends on an entropy rather than an
-  enthalpy, and so the first to need `eos.ps_flash`.
-
 source:
   standard: >
     NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is
@@ -211,65 +200,12 @@ assumptions:
     outlet is often above the range where a cubic is trustworthy, and that is a property
     of the equation of state rather than of this model.'
 
-notes: >
-  # The three machines are one procedure
-
-  NeqSim has three classes and the same eleven lines in each. Read out of
-  `Compressor.java:1721-1776`, `Pump.java:558-572` and `Expander.java:646-660`, all three
-  do: take the entropy the fluid arrives with, `PSflash` to the outlet pressure to find
-  the ideal state, `PHflash` to the real one at an enthalpy scaled by the efficiency.
-
-  The only difference is **which way the efficiency scales**, and that is one expression:
-
-  ```text
-  compressor, pump   dH = (H_is - H_in) / efficiency     Compressor.java:1738
-  expander           dH = (H_is - H_in) * efficiency     Expander.java:653
-  ```
-
-  The three are separate models here because they are separate unit operations with
-  separate specs and separate result types, and because the arithmetic of a gas and a
-  liquid differ in what a caller should expect. The *procedure* is shared, in
-  `crates/azoth-process/src/isentropic.rs`.
-
-  # An efficiency of one is not the default
-
-  NeqSim defaults `isentropicEfficiency` to `1.0` (`Compressor.java:109`) and clamps
-  rather than refusing. **This model requires it and range-checks it**, which is a
-  deliberate difference: a compressor assumed ideal is one that understates every duty it
-  is asked for, and a default is a value a caller gets without having said it. The
-  difference is recorded here rather than left for someone to find by comparing.
-
-  # What is checked, and what is not
-
-  Two identities, both computed in the test from `eos.ps_flash` and
-  `eos.molar_enthalpy_entropy` independently of this model:
-
-  - **The isentropic state is isentropic**: `S(T_is, P_out) == S(T, P)`.
-  - **The efficiency is honoured**: `H(T, P_out) == H(T, P) + (H_is - H(T, P)) / eta`.
-
-  The second is the check that catches the division and the multiplication being the
-  wrong way round, and the test runs a compressor and an expander on the *same* input to
-  make that concrete: theirs are the two directions and a single sign error swaps them.
-
-  **The largest assumption is not checked**: that a cubic equation of state is
-  trustworthy at the outlet of a high-ratio compressor. Nothing here tests that, and it
-  is the sort of thing that would need a real machine's data.
-
 implementations:
   python: azoth.process.compressor
   rust: azoth_process::compressor
 
 cases:
   - id: a_two_to_one_pressure_rise_at_three_quarters_efficiency
-    note: >
-      Methane/n-butane at 300 K and 20 bar compressed to 40 bar at an isentropic
-      efficiency of 0.75. The ideal outlet is **324.96 K** and the real one is
-      **328.09 K** - hotter, which is what the loss means - for **15.27 kW** at
-      10 mol/s.
-
-      The three numbers together are the case. A model that had the efficiency the wrong
-      way round would land below the ideal temperature, and one that reported the ideal
-      temperature as the answer would be 3 K out with a plausible-looking result.
     inputs:
       Tc: [190.56, 425.12]
       Pc: [4599000.0, 3796000.0]
@@ -297,17 +233,6 @@ cases:
     tolerance: 1.0e-9
 
   - id: unit_efficiency_reaches_the_ideal_temperature
-    note: >
-      The same compression at an efficiency of one. The real outlet **is** the ideal one,
-      so `T` is not recorded here: it is asserted equal to `isentropic_temperature` in the
-      test rather than written down twice. The two come from different flashes - one
-      bisects an entropy, the other an enthalpy - so they agree to their own tolerances
-      rather than to the last bit, and the test's bound says so.
-
-      This is the case that pins the direction of the efficiency without needing a
-      recorded number to be trusted: at unity the two branches meet, and a model that
-      divided where it should have multiplied would be visibly wrong here and wrong by a
-      factor of `eta**2` at any other value.
     inputs:
       Tc: [190.56, 425.12]
       Pc: [4599000.0, 3796000.0]

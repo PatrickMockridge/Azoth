@@ -4,44 +4,11 @@
 
 `eos.molar_enthalpy_entropy`
 
-The absolute molar enthalpy and entropy of a mixture at a state, composed from three parts: the ideal-gas enthalpy and entropy carried in from a reference state, the ideal-gas heat capacity's integral between that reference and the state, and the departure functions for the equation of state.
-``` H = H_ig(T_ref) + integral Cp dT      + H_dep S = S_ig(T_ref) + integral Cp/T dT    - R ln(P/P_ref) - R sum z_i ln z_i + S_dep ```
-A *direct* model rather than a procedure: there is no iteration here, and no algorithm to pin down. It is a model rather than a calculation because its inputs are composition vectors, which the calc registry - whose inputs are scalars - has nowhere to put, and because a library function with one implementation would be the one thing this project is organised against. See `kind` below.
-
 ## Source
 
 **The composition of ideal-gas and residual contributions** (Standard thermodynamics: an absolute enthalpy or entropy is a reference value plus an ideal-gas integral plus a departure, and the split between them is a convention rather than a result. No source states this particular assembly, because the assembly is not a discovery - what matters is that the terms are written down and the datum is the caller's, which is what this spec does.
 )
 
-## Notes
-
-Nothing here is a correlation. The departure functions are `eos.pr_departure`'s machinery applied to a mixture, the ideal-gas integrals are `eos.ideal_gas_cp`'s polynomial integrated exactly, and the mixing term is the ideal-gas entropy of mixing. What is ours, and what this entry is for, is the **assembly** - which terms belong where, and what the caller is responsible for.
-
-#### The datum is the caller's, and that is the dangerous part
-
-An absolute enthalpy is absolute only relative to a reference state, and this library ships no reference. `h_ref` and `s_ref` are the caller's - one per component, the ideal-gas values at `T_ref` and `P_ref` - and nothing checks that they come from the same source, or that two calls using different ones were meant to be compared.
-
-**Two enthalpies from different datums are not comparable, and subtracting them produces a plausible number rather than an error.** A heat of reaction computed from two streams whose `h_ref` came from different tables is wrong by the difference between the tables' reference states, which for a formation-property datum can be hundreds of kJ/mol. This is the next silent wrong number this programme would otherwise produce, and there is no arithmetic that catches it - so it is stated here, in the API docstring, and in `assumptions`, and the worked example uses a zero datum so that a reader comparing it against their own numbers knows exactly which datum it is on.
-
-#### Why the ideal-gas entropy has two terms that the enthalpy does not
-
-With every coefficient and reference value set to zero, `H` is **exactly** the departure - `R*T*h_dep_rt`, which is what `eos.pr_departure` computes for a pure component and what the mixture module computes for a mixture. `S` is not, and the difference is structural rather than an oversight: an ideal gas's entropy depends on pressure and on mixing even when its heat capacity is zero, so
-
-```text S(coefficients = 0, refs = 0) = -R ln(P/P_ref) - R sum_i z_i ln z_i + R*s_dep_r ```
-
-and the two leading terms are ideal-gas terms that no coefficient switches off. The spec case below pins that, because a reader who expected `S = S_dep` exactly would take the difference for a defect.
-
-#### The mixing term is inside the ideal-gas part, not the departure
-
-`-R sum_i z_i ln z_i` is added explicitly and is **not** part of `s_dep_r`. The departure functions are defined against the ideal-gas *mixture* at the same temperature, pressure and composition - which is why `sum_i z_i ln phi_i` vanishes for an ideal mixture - so the entropy of mixing belongs to the ideal-gas side. A reader who expected it in the departure would find the two disagreeing by exactly that term.
-
-#### The composition is a pure function of the state, and the root is the caller's
-
-The model takes the compressibility factor as an input rather than solving for it. That is deliberate: which root describes the phase is a *choice*, a caller holding a `Z` from `eos.pr_z_factor` or from a flash has already made it, and a model that re-derived it would silently overrule them. It also keeps this model free of the root-selection question that `eos.pt_flash` had to answer with a phase enum.
-
-#### No accuracy claim
-
-The departure functions inherit Peng-Robinson's accuracy; the ideal-gas integrals inherit the coefficients'. No bound below is an accuracy claim.
 
 ## What this model is
 

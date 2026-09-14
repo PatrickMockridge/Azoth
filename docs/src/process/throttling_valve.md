@@ -4,35 +4,12 @@
 
 `process.throttling_valve`
 
-A stream's pressure dropped at constant enthalpy.
-The classic Joule-Thomson device, and the reason it is worth a model rather than a subtraction: for a real gas the temperature falls, and by how much is a property of the equation of state rather than of the valve. A model that returned the inlet temperature would be wrong at every real state and would look right on a worked example that never checked it.
-The physics is one `PHflash` at the reduced pressure, which is why this unit could not be written before `eos.ph_flash` existed.
-
 ## Source
 
 **NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.valve.ThrottlingValve`, `run(UUID)` at lines 363-453 of the 3.20.0 source tree, and the isenthalpic flash inside it at `:467-495`.
 ** (Version 3.20.0. Taken from it: the pressure drop (`:407-412`), the clamp that stops a valve raising the pressure unless asked to (`:424-432`), and `PHflash(H_in)` at the outlet pressure (`:470`). Not taken: the IEC 60534 capacity calculation, the fixed-Kv outlet-pressure solve and the transient response.
 )
 
-## Notes
-
-#### The temperature is the whole point
-
-A throttling valve is where the Joule-Thomson coefficient shows up as an engineering number, and the port's worked case is chosen to make that visible: methane/n-butane at 300 K and 20 bar falls to **293.91 K** across a 5 bar drop. Fifteen hundredths of a kelvin per bar, computed and not assumed.
-
-A model that returned the inlet temperature would agree with this one at zero drop and at an ideal gas, which is exactly why the case is not either of those.
-
-#### What is checked, and what is not
-
-The identity is the check: `H(T_out, P_out) == H(T_in, P_in)`, because that is what the model claims. The test computes the inlet enthalpy and the outlet enthalpy from `eos.molar_enthalpy_entropy` independently of this model and requires them equal, at several drops. **That establishes that the flash inverts the enthalpy it was given.** It does not establish that the enthalpy is right, and the confidence in it is whatever `eos.molar_enthalpy_entropy`'s own notes support.
-
-The recorded case is the second check and it is weaker: it says the model still does what it did when the number was written.
-
-#### A bug this model found in `eos.ph_flash`
-
-The valve was the first caller to run an isenthalpic flash at a pressure below 20 bar, and it failed: `eos.ph_flash`'s bracket scan evaluates temperatures from 100 K upward and aborted the whole search when one of them had no admissible liquid root. On this mixture at 15 bar that happens at 160 K and nowhere else between 100 K and 400 K - a single temperature, not a range - and the scan hit it and raised.
-
-That was a defect in `eos.ph_flash` and not in this model. A temperature with no state has no property, so it cannot bracket anything and cannot be compared against the target; the scan now skips such a point and keeps the previous *evaluable* one. The fix is recorded here because this model is what exposed it, and because the failure looked like a caller's error rather than a gap in the search.
 
 ## Algorithm
 

@@ -4,51 +4,12 @@
 
 `process.mixer`
 
-Several feeds blended into one.
-The outlet pressure is the **lowest** inlet pressure, and the outlet temperature is solved for rather than averaged: the blend happens at constant enthalpy, and the temperature of a mixture is not the mean of its parts' temperatures because the enthalpy is not linear in it.
-This is the first unit operation in the port whose state is a *set* of streams rather than one, and the shape it establishes is the one every later multi-inlet unit uses: a vector per state variable, and a matrix of compositions with one row per inlet.
-
 ## Source
 
 **NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.mixer.Mixer`, `run(UUID)` at lines 642-729 of the 3.20.0 source tree, with the material balance in `mixStream()` at `:192-320` and the enthalpy in `calcMixStreamEnthalpy()` at `:537-544`.
 ** (Version 3.20.0. Taken from it: the mole accumulation (`:292`), the outlet pressure (`:681`) and `PHflash(sum of inlet enthalpies)` (`:702-711`). Not taken: the component-matching machinery for inlets whose pseudo-fractions have different molar masses (`:285-291`), which cannot arise here, and the zero-flow and single-inlet special cases.
 )
 
-## Notes
-
-#### Why the blend is a flow-weighted mean
-
-NeqSim sums **total** enthalpies in joules (`calcMixStreamEnthalpy`, `:537-544`) and its `PHflash` takes joules, so the sum is the whole energy balance. `eos.ph_flash` takes a **molar** enthalpy, so the port is the flow-weighted mean:
-
-```text H_out = sum_s (n_s * H_s) / sum_s n_s ```
-
-Same physics - an energy balance on an open system with no heat and no work - and a different expression. It is the only place in this port where a formula looks different from the source it came from, which is why it is written down rather than left to read as a transcription error.
-
-#### What is checked, and what is not
-
-Three identities, each computed independently of this model in the test:
-
-- **Moles are conserved**: `flow == sum(n)`. - **The composition is the blend**: `z_out == sum(n_s z_s) / sum(n_s)`, which for two
-
-  inlets is arithmetic a reader can do by hand.
-
-- **The energy is conserved**: `flow * H_out == sum_s (n_s H_s)`, with each `H_s` from
-
-  `eos.molar_enthalpy_entropy` at that inlet's own state. **This is the check that
-
-  would catch the mean-versus-sum mistake**, because a model that passed the summed
-
-  enthalpy to a molar flash would be wrong by a factor of `sum(n_s)` and would still
-
-  produce a temperature.
-
-
-
-The recorded case is the second check and it is weaker.
-
-#### The temperature is not between the inlets' temperatures, necessarily
-
-It usually is, and the worked case has it so: 300 K and 350 K blend to 320.92 K. But that is a consequence of the energy balance rather than a rule, and a blend of two streams at the same temperature is at that temperature whatever the flows. The mixer should not be described as averaging, and this model does not average.
 
 ## Algorithm
 

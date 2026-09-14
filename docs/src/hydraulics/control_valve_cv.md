@@ -20,26 +20,6 @@ q = CV_TO_SI * Cv * sqrt(dP / SG)
 
 **the liquid sizing equation for control valves; IEC 60534 for the coefficient tables, which this calc does not implement**
 
-## Notes
-
-The relation is standard control-valve sizing: the flow through a valve is proportional to its flow coefficient and to the square root of the pressure drop divided by the specific gravity. What has NOT been done is checking this spec against a named source, so `source.equation` is omitted rather than quoting an equation number.
-
-#### The coefficient is an input, and its *units* are the hard part
-
-`Cv` is supplied by the caller. IEC 60534's published coefficient values are a table, and reproducing a table is what this project's copyright rule forbids - see [Copyright and licensed data](../copyright.md). So the coefficient is an input, exactly as `Cd` is to `orifice_flow`.
-
-But `Cv` is a harder case than `Cd`, and the difference is worth stating. `Cd` is genuinely dimensionless: a ratio of flows. **`Cv` is not dimensionless.** It is defined as the flow of water in US gallons per minute at a pressure drop of one pound per square inch, so it carries the units `gpm / sqrt(psi)` - and this spec has to declare it `dimensionless` because the schema's unit vocabulary cannot express a fractional power of a non-SI unit. That declaration is a fiction of necessity, and the whole job of this calculation is to undo it correctly.
-
-So the constant in the equation is not decoration. It is `(1 gpm in m**3/s) / sqrt(1 psi in Pa)`, derived below from the definitions of the gallon and the pound-force, and it is what converts a coefficient in a US convention into a flow in SI. Burying it in an input description would make every caller re-derive - and mis-derive - the same factor.
-
-#### Which convention, and the Kv alternative
-
-This calc takes the US `Cv`. The metric `Kv` is defined against `m**3/h` and `bar`, and the two differ by a fixed factor - `Kv = 0.865 * Cv` to the precision those conventions are usually quoted at. A caller holding `Kv` should convert once, deliberately, rather than pass it where `Cv` is expected: the error is a factor of 1.156, which is large, silent, and produces a perfectly ordinary-looking flow.
-
-#### Why there are no warning bounds
-
-The fourth calc with none, and the same reasoning as the other three: the relation is exact given its inputs, so there is no fitted range outside which it stops being trustworthy. What varies is the caller's coefficient, and the conditions under which a published coefficient is valid - choked flow, flashing, laminar or transitional flow - are functions of pressures and a vapour pressure this calc does not have. They are assumptions here, not bounds, because a bound could not be evaluated.
-
 ## Inputs
 
 | Name | Unit | Description |

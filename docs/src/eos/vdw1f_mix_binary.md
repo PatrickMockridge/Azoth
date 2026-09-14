@@ -22,24 +22,6 @@ b_mix = z1*b1 + (1 - z1)*b2
 
 **van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text** (The classical mixing rule. Its modern form, and the role of k12, are set out in e.g. Poling, Prausnitz & O'Connell, The Properties of Gases and Liquids, 5th ed., ch. 5.)
 
-## Notes
-
-The van der Waals one-fluid (vdW1f) mixing rule is the classical one: the mixture parameters are quadratic and linear averages of the pure-component ones, with one binary parameter `k12` correcting the cross term. It is in every cubic-EOS text and its form is not in doubt.
-
-What has NOT been done is checking this spec against a primary source. Specifically unconfirmed: (1) the equation number, so none is given above, and whether a single attribution is even appropriate for a rule this old - the quadratic form is van der Waals', the `k12` convention is a later addition and different authors scale it differently (some use `(1 - k12)` as here, some use a signed `a12` directly); (2) that the edition cited states the cross term in this form, which is why the edition is described rather than given a page.
-
-#### Why this is a binary calc and not an N-component one
-
-The quadratic form for `a_mix` is a double sum over components, so a general version takes a composition vector and a matrix of `kij`. The calc registry is scalar: its inputs are named quantities with units, and there is no vector or matrix type. The two-component case is the largest the registry can express, and it is written out longhand rather than as a loop so that the double sum's three distinct terms - the two pure ones and the cross term - are visible.
-
-A general N-component version belongs to the model layer, and the spec for the flash records that the model layer must reduce to this calc at N = 2. That is the contract that keeps the two from drifting apart.
-
-The reduction is to within a couple of ulps rather than bit-identical: this calc writes the cross term longhand, the model layer's double sum runs `i` then `j`, and the two associate differently. A bit-equality claim would be a claim about summation order rather than about the mixing rule.
-
-#### The k12 this library does not ship
-
-`k12` is a fitted parameter - one per binary pair - and a table of them is the databank this library deliberately has none of. It is an input. The worked example uses a round illustrative value and says so.
-
 ## Inputs
 
 | Name | Unit | Description |

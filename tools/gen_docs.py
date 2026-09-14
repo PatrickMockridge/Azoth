@@ -132,8 +132,14 @@ def source_of_model(spec: dict[str, Any]) -> str:
 
 
 def describe_source(spec: dict[str, Any]) -> str:
-    """One line naming where the equation came from."""
-    source = spec["source"]
+    """One line naming where the equation came from, or empty when nothing is cited.
+
+    A citation is optional. A spec with nothing to cite emits no `## Source` section
+    rather than an empty heading, and the test cases it carries are its own evidence.
+    """
+    source = spec.get("source")
+    if not source:
+        return ""
     bits = [f"**{source['standard']}**"]
     if source.get("edition"):
         bits.append(f"({source['edition']})")
@@ -143,41 +149,6 @@ def describe_source(spec: dict[str, Any]) -> str:
     if source.get("doi"):
         line += f"\n\nDOI: [{source['doi']}](https://doi.org/{source['doi']})"
     return line
-
-
-def render_notes(spec: dict[str, Any]) -> str:
-    """The spec's notes, rendered for a reader.
-
-    This is where a spec records the reasoning a reader needs in order to judge a
-    number: where this implementation departs from the source it cites, why a
-    constant takes the value it does, and which claims are unconfirmed. Several
-    fields elsewhere in a spec point here by name, so leaving it unrendered would
-    make those pointers dead ends.
-
-    It is deliberately *not* a provenance status. There is no `verified` /
-    `unverified` field and nothing here is machine-checked - a note is prose, and
-    the engineer reading it decides what it is worth.
-    """
-    notes = (spec.get("notes") or "").strip()
-    if not notes:
-        return ""
-
-    # Two rewrites, both because YAML's folded scalar (`>`) is not markdown.
-    #
-    # It folds every wrapped line into a space, so each surviving newline is a
-    # paragraph break - and markdown needs a blank line to see one. Without this
-    # the whole note renders as a single wall of text.
-    #
-    # And it keeps the author's `#` headings, which would otherwise land as level-1
-    # headings competing with the page title. Demoted two levels so they nest under
-    # the section this is rendered into.
-    paragraphs = []
-    for line in notes.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith("#"):
-            line = f"###{stripped}"
-        paragraphs.append(line)
-    return "\n\n".join(paragraphs) + "\n"
 
 
 def render_table(rows: list[tuple[str, str, str]], headers: tuple[str, str, str]) -> str:
@@ -297,12 +268,10 @@ def render_calc(spec: dict[str, Any]) -> str:
     parts.append("## Equation\n")
     parts.append(f"$$\n{spec['latex']}\n$$\n")
     parts.append(f"In the form the library evaluates:\n\n```python\n{spec['equation']}\n```\n")
-    parts.append("## Source\n")
-    parts.append(describe_source(spec) + "\n")
-    notes = render_notes(spec)
-    if notes:
-        parts.append("## Notes\n")
-        parts.append(notes)
+    citation = describe_source(spec)
+    if citation:
+        parts.append("## Source\n")
+        parts.append(citation + "\n")
 
     rows = [(f"`{name}`", *describe_quantity(d)) for name, d in spec["inputs"].items()]
     parts.append("## Inputs\n")
@@ -384,7 +353,7 @@ def render_namespace_index(
     out += "| Calculation | Equation | Source |\n|---|---|---|\n"
     for calc in calcs:
         equation = table_cell(calc["latex"])
-        standard = table_cell(calc["source"]["standard"])
+        standard = table_cell((calc.get("source") or {}).get("standard", "-"))
         out += (
             f"| [`{calc['id']}`](./{calc['id'].split('.')[-1]}.md) | ${equation}$ | {standard} |\n"
         )
@@ -408,7 +377,7 @@ def render_namespace_index(
                 if "algorithm" in model
                 else "direct composition"
             )
-            standard = table_cell(model["source"]["standard"])
+            standard = table_cell((model.get("source") or {}).get("standard", "-"))
             out += (
                 f"| [`{model['id']}`](./{model['id'].split('.')[-1]}.md) "
                 f"| `{scheme}` | {standard} |\n"
@@ -465,13 +434,13 @@ def render_model(spec: dict[str, Any]) -> str:
         BANNER.format(source=source_of_model(spec)) + "\n\n",
         f"# {spec['name']}\n\n",
         f"`{spec['id']}`\n\n",
-        f"{spec['description'].strip()}\n\n",
-        "## Source\n\n",
-        f"{describe_source(spec)}\n\n",
     ]
-    notes = render_notes(spec)
-    if notes:
-        parts.append(f"## Notes\n\n{notes}")
+    summary = str(spec.get("description") or "").strip()
+    if summary:
+        parts.append(f"{summary}\n\n")
+    citation = describe_source(spec)
+    if citation:
+        parts.append(f"## Source\n\n{citation}\n\n")
     if algorithm is None:
         # A direct model: vectors in, values out, no loop. The absence of an algorithm
         # block is the point, so it is stated rather than left as a missing section.

@@ -20,18 +20,6 @@ f = (1.0 / (-1.8 * log10((relative_roughness / 3.7)**1.11 + 6.9 / Re)))**2
 
 **Haaland, S. E. (1983)** (Journal of Fluids Engineering, 105(1), 89-90)
 
-## Notes
-
-The equation is not in doubt: it is the standard explicit approximation to Colebrook, quoted in essentially every modern fluid mechanics text, and its form is published in Haaland's 1983 paper. What has NOT been done is checking this spec against the paper itself - nobody has opened it and compared.
-
-Specifically unconfirmed: (1) the equation number within the paper, which is why `source.equation` is left unstated rather than guessed; (2) the volume and page numbers in `source.edition`, which are reproduced from memory of the citation rather than read from the journal; (3) whether the paper states a DOI, so no DOI is claimed; (4) the paper's own stated validity range.
-
-Consequence for `valid_range`, and this is the part a reader should notice: the bounds below are NOT Haaland's stated range, because that could not be read. They are the Moody/Colebrook framework bounds this library already applies to the Colebrook equation, and their rationales say so. A spec whose bounds are inherited from the framework rather than the source has to say which, or the bounds read as a claim about the paper.
-
-`unverified` rather than `source_needed` on the distinction the schema draws: no source is in doubt, only its citation. The equation is standard and the worked example is derived from it, so there is a runnable test - which `source_needed` would forbid and which is worth more than a citation nobody has checked. See the note on the equation in `source`.
-
-Accuracy: the equation is an approximation to Colebrook, quoted as within about 1-2% for turbulent flow. Measured here it is 1.31% below Colebrook at the worked example's inputs, which is consistent with that claim. The cross-method test below asserts against the claim rather than against a number chosen here.
-
 ## Inputs
 
 | Name | Unit | Description |

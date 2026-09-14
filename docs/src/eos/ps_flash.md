@@ -4,32 +4,11 @@
 
 `eos.ps_flash`
 
-The temperature at which a mixture of known composition has a given molar entropy at a given pressure, together with the phase split there.
-This is the model an *isentropic* unit operation needs. A compressor, an expander, a turbine or a nozzle assumed ideal knows the pressure it leaves at and the entropy it arrived with, and does not know the temperature that results - because entropy is conserved and temperature is not. `eos.pt_flash` answers the equilibrium question and `eos.ph_flash` inverts the enthalpy; this inverts the entropy.
-**The entropy is a difference from a datum the caller supplies**, not an absolute quantity. Two calls with different reference values are not comparable and their difference is a plausible number rather than an error, which is the same caveat `eos.molar_enthalpy_entropy` carries and for the same reason.
-
 ## Source
 
 **Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup** (The procedure is the ordinary one: the entropy of a mixture at fixed pressure is a strictly increasing function of temperature, so inverting it is well posed, and the entropy of a two-phase state is the phase-fraction weighted sum of the two phase entropies, each evaluated at its own composition. **The specific text has not been read** and no equation number is claimed. What is checked is against this project's own pieces, and the spec's notes say what that does and does not establish.
 )
 
-## Notes
-
-#### Where this differs from a textbook isenthalpic flash, and why
-
-The procedure here is the ordinary one. What is particular to this implementation is that **the inner flash is not modified**: the trial state comes from `eos.pt_flash` exactly as a caller would get it, and the phase enthalpies come from `eos.molar_enthalpy_entropy` exactly as a caller would get them. There is no isentropic-specific arithmetic anywhere. That is deliberate - it means the numbers this model returns are the numbers a caller could reproduce by hand with the three public models and a bisection, which is the retraceability the worked example is for.
-
-#### Why `beta` is absent for a single-phase feed, and not just out of range
-
-Below the bubble point or above the dew point the flash still returns a split, and it is the *extrapolated* one - values outside `[0, 1]` are normal, and this model's own test data shows 1.888. That number is not the vapour fraction of anything. A model that multiplied by it would produce a wrong entropy shaped exactly like a right one, so the single-phase branch takes the whole feed and the appropriate root instead, and the result reports no `beta` rather than an extrapolation a caller might use.
-
-#### What is checked, and what is not
-
-The model is checked against itself in the way that matters: a temperature is chosen, the entropy at it is computed, and that entropy is fed back in. The temperature that comes out is the one that went in, to 1e-12 relative. **That establishes that the inversion is exact; it does not establish that the entropy is right.** The entropy is `eos.molar_enthalpy_entropy`'s, and the confidence in it is whatever that model's own notes support.
-
-A second check is not self-referential and is worth more: the answer is independent of the bracket. A state reached from a 2000-point scan over 100-1500 K and the same state reached from a narrower scan must agree, because bisection converges to the root rather than to the bracket's midpoint. Both are in the tests.
-
-**The citations are unconfirmed.** No equation number is claimed, and the text named above has not been read - the procedure is standard enough that reading it would not change the arithmetic, but that is an argument for the arithmetic, not a claim that anyone checked the attribution.
 
 ## Algorithm
 

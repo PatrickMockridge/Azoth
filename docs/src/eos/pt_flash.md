@@ -4,9 +4,6 @@
 
 `eos.pt_flash`
 
-The two-phase split of a mixture at a fixed temperature and pressure: how much of it is vapour, what the two phases are made of, and the fugacity coefficients that make it so. Solved by successive substitution from Wilson K-value estimates, with Rachford-Rice solved by bisection each iteration.
-This is the model layer's reason for existing. Everything below it in `eos` is a scalar kernel with a worked example a reader can retrace on a calculator; a flash is an iteration whose answer is a composition vector, and what has to be pinned down is not an equation - `K_i = phi_i^L / phi_i^V` is one line - but the procedure that searches for the state where it holds.
-
 ## Source
 
 **Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982)** (The Rachford-Rice equation is Rachford & Rice, Journal of Petroleum Technology 4(10), 19-3, DOI 10.2118/952327-G, the same paper `eos.rachford_rice_binary` cites. Successive substitution with a fugacity-coefficient update is the standard method and is set out in Michelsen, M. L. "The isothermal flash problem. Part I. Stability." Fluid Phase Equilibria 9(1), 1-19 (1982), DOI 10.1016/0378-3812(82)85001-2.
@@ -14,85 +11,6 @@ This is the model layer's reason for existing. Everything below it in `eos` is a
 
 DOI: [10.1016/0378-3812(82)85001-2](https://doi.org/10.1016/0378-3812(82)85001-2)
 
-## Notes
-
-The equations are not in doubt. `K_i = phi_i^L / phi_i^V`, `sum_i z_i (K_i - 1) / (1 + beta (K_i - 1)) = 0`, and the material balance `z = (1 - beta) x + beta y` are the definition of an isothermal two-phase flash, and the second is the equation `eos.rachford_rice_binary` already registers.
-
-What is ours, and unverified, is the **procedure** - the initialisation, the bracket, the tolerances, the stopping rule. No source states our choices because no source would. They are recorded here so a reader judges the choices rather than reverse-engineering them, and the three subsections below are the parts of the procedure that were **wrong in an earlier draft of this spec and are recorded with the measurement that caught them**. That is the content worth reading; the rest is bookkeeping.
-
-#### Correction 1: the Rachford-Rice bracket, and what "no root" means
-
-This is the one that took three attempts, and the first two were wrong in the same direction - each was a *patch* on the textbook statement rather than a derivation from it.
-
-The textbook bracket for `g(beta) = sum_i z_i (K_i - 1) / (1 + beta (K_i - 1))` is `1/(1 - K_max) < beta < 1/(1 - K_min)`. That is correct **only when the K-values straddle one**. `g` has poles at `1/(1 - K_i)`, is strictly decreasing between consecutive poles, and jumps from `-inf` to `+inf` across each. That fixes the whole root structure:
-
-* the leftmost interval runs from `0-` at `-inf` to `-inf` at the first pole -
-
-  **no root**;
-
-* the rightmost runs from `+inf` at the last pole to `0+` at `+inf` -
-
-  **no root**;
-
-* every bounded interval between consecutive poles has **exactly one** root, and
-
-  there are `n - 1` of them.
-
-
-
-Of those `n - 1` roots, exactly one has both phases positive, and it is the one on which `1 + beta (K_i - 1) > 0` for every `i` - because that is what keeps `x_i = z_i / (1 + beta (K_i - 1))` in `[0, 1]`. Solving those inequalities gives the interval the bisection must search:
-
-```text lower = max over {i : K_i > 1} of 1/(1 - K_i) upper = min over {i : K_i < 1} of 1/(1 - K_i) ```
-
-and **it exists only when the K-values straddle one.** When every `K_i` is on the same side of 1 there is no such interval, because the two expressions are then both negative or both positive - and this is not a numerical failure but a proof. `sum_i y_i = sum_i K_i x_i = 1` with every `K_i < 1` and `sum_i x_i = 1` requires `1 < 1`; with every `K_i > 1` it requires `1 > 1`. Either way the feed has no two-phase solution at those K-values and is single phase.
-
-#### What the two wrong versions did
-
-The first draft used the textbook bracket unguarded. Measured: an all-liquid feed (methane/n-butane, T = 200 K, P = 50 MPa, z = (0.6, 0.4)) produced a *negative molar composition* - `b_reduced = -4.78`, which `eos.pr_z_factor` refused - and an all-vapour feed at 1 bar produced `beta = -0.129` from a bracket of `(-0.0022, 0)`.
-
-The second draft replaced it with `min(0, 1/(1 - K_max))` and `max(0, 1/(1 - K_min))`, which is right whenever the K-values straddle one and wrong whenever they do not: it substitutes the interval *containing zero* for the interval *containing the root*, and those differ exactly when every K is on one side. Measured, with propane/n-butane at T = 280 K, P = 1 bar, z = (0.1, 0.9): `K = (5.92, 1.29)`, both above one, so there is no root at all - and the bisection walked to the bracket's end and returned `beta = -2.9e-15` with a vapour mole fraction of **1.162**. A composition above one is the kind of answer a caller can only catch by checking, and nothing in the model was checking.
-
-Both are now tested. `both_compositions_stay_positive` in both languages sweeps two binaries over 60 states and asserts every returned mole fraction is in `[0, 1]`, which is the property the correct bracket is *equivalent* to rather than merely consistent with.
-
-#### Correction 2: what the trivial solution is
-
-The plan for this milestone defined `TRIVIAL_SOLUTION` as convergence to `x = y = z` "while the RR solution lay strictly inside (0, 1)". The second clause is wrong, and measurably so. At the trivial solution `g` is identically zero - every `K_i` is 1 - so **`beta` is indeterminate**: it is not inside (0, 1), not outside it, but undefined. Successive substitution approaches the point through geometrically growing `beta`, and where the bisection stops is a ratio of round-off.
-
-Measured: methane/n-butane at T = 330 K, P = 1 bar, z = (0.6, 0.4) - a feed that is unambiguously all *vapour* - converged with `max|ln K_i| = 8.7e-19` and `beta = -7.7e10`. A guard written on `beta < 0` would have labelled it "all liquid". The guard is on the K-values alone:
-
-```text max_i |ln K_i| < 1e-08   during or after convergence  =>  trivial ```
-
-and `beta` is then reported as **absent**, not as a number. That is the one place this model's result shape differs from every other result in the library, and it is deliberate: a fabricated `beta` would be indistinguishable from a real one, and the whole point is that a caller must not be able to mistake this outcome for a phase split.
-
-That particular feed is no longer a trivial solution - with the bracket correction 1 describes, its K-values are all above one and it is *proved* single phase vapour on the first iteration, with `beta` absent for a better reason. The measurement stands as the reason the guard is not written on `beta`, and the `trivial` outcome is still reached where the K-values straddle one throughout: the same mixture and composition at 20 MPa, in 59 iterations, where the feed is a compressed liquid the model can only say it cannot split.
-
-#### Correction 3: one of the plan's invariants is vacuous
-
-The plan's §2.5 listed `ln K_i = ln phi_i^L - ln phi_i^V` as an invariant to test to 1e-10 on every case. For a successive-substitution flash that is the **update rule**, not a check on it - the iteration assigns exactly that - so the test can only ever measure the convergence residual, which the result already reports. It is kept in the test suite for what it does say (the loop stopped where it claimed), but the invariants that actually discriminate a right answer from a plausible wrong one are the material balance, the normalisation, `K_i = y_i / x_i`, the Rachford-Rice residual, and the Gibbs minimum. Those five are the ones worth sabotaging.
-
-#### Correction 4: `residual` is not a value a case can pin
-
-The first draft of the cases below asserted `residual` alongside the rest, at the case's 1e-9 relative tolerance. Two implementations agreeing to the last bit on `beta`, `x`, `y` and `K` disagreed on it in the sixth significant figure - 4.658240e-11 against 4.658231e-11.
-
-That is not a defect, and the scale of it is worth stating correctly: the two differ by 9e-17. Relative to `residual` itself that is 1.9e-06, or about 1.4e10 *ulps of the residual* - which is the number this note used to quote, and it is the wrong denominator. The right one is the quantities the residual is built from, which are order one: 9e-17 is **0.4 ulp of those**. `residual` is an rms difference of terms involving `ln` and `sqrt`, neither correctly rounded, so its absolute error sits at the rounding of an order-one number however small the difference itself becomes. A value of 4.7e-11 therefore has no significant figures left to spare, no relative tolerance can be met on it, and pinning it would have been a claim about the C library rather than about this model.
-
-So the cases pin what is reproducible - `beta`, both compositions, the K-values, both `ln phi` vectors, both roots, `min_t_over_tc`, and the **iteration count**, which is the sharp structural check and is exactly reproducible - and `residual` is asserted against the algorithm's own tolerance instead, in the test files. That is the claim that matters about it, and the one that is true.
-
-#### The honest gap: there is no stability test
-
-Successive substitution finds *a* stationary point of the flash equations. It does not ask whether the feed was stable in the first place, and the two are different questions. Correction 1 closes part of the gap - a feed with no Rachford-Rice root is now *proved* single phase rather than approximated as one, and that is a diagnostic the textbook bracket cannot make - but it is not a stability test and the difference is measured.
-
-What remains is the `trivial` outcome, which is the gap stated plainly: the iteration converges to `x = y = z`, the feed is single phase, and the model **cannot say which phase**. For methane/n-butane at z = (0.6, 0.4) the trivia outcome is reached at 20 MPa across 280-330 K, where the feed is a compressed liquid, and the model knows that only in the sense that it cannot find a split. A tangent-plane analysis is what answers it, and it is a later milestone. A caller who needs to know must not read `phase: trivial` as "all liquid".
-
-The three states that *are* diagnosed, for the same mixture at the same composition, over a pressure sweep at 330 K:
-
-| P | phase | beta | iterations | |---|---|---|---| | 100 kPa | `all_vapour` | absent | 1 | | 1 MPa | `all_vapour` | 1.674 | 9 | | 2.5-10 MPa | `two_phase` | 0.845 to 0.470 | 13-42 | | 20 MPa | `trivial` | absent | 59 | | 50 MPa | `all_liquid` | absent | 1 |
-
-Three distinct routes to a single phase - no root, a negative flash, and the trivial convergence - and only the third is a failure to know.
-
-#### No accuracy claim
-
-Peng-Robinson's VLE predictions are good to a few per cent for light hydrocarbons and worse for polar and asymmetric mixtures. As in the rest of this namespace, no bound below is an accuracy claim - they are all about where the calculation is defined.
 
 ## Algorithm
 

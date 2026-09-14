@@ -8,43 +8,6 @@ source:
   edition: "A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64"
   doi: "10.1021/i160057a011"
 
-notes: >
-  The polish tolerance is `1e-12` and was `1e-14`. The old value asked for a Newton
-  step below `1e-14 * |x|`, which for a root of order 0.04 is a couple of ulps and
-  which a near-double root therefore never meets - it stalls at 5.2e-15 and reports
-  failure however many iterations it is given. See
-  `python/tests/models/test_mixer.py` carries the state that exposed it.
-
-  The cubic is the 1976 Peng-Robinson equation written in reduced variables. The
-  citation is confirmed; the form of the equation is not in doubt - it is one of
-  the two or three most widely implemented in chemical engineering, and this
-  rearrangement is algebra rather than a separate result.
-
-  What is NOT confirmed: the equation number in the paper (so none is given above),
-  the constants A and B are built from - see `eos.pr_alpha_ab`, which records
-  that the paper's printed Omega values are deliberately not the ones shipped -
-  and that the paper writes the cubic in this reduced form at all, rather than
-  only in the pressure-explicit form from which it follows.
-
-  # The solver is a separate contract from the equation
-
-  This is the first calc in the registry whose equation is implicit in a way that
-  needs a *named* scheme of its own, and the first to declare
-  `solver.kind: cubic_roots`. That kind, its scheme and the contract test holding
-  it to both implementations are described in `docs/src/theory/solvers.md`, which
-  is generated from the specs. `eos.pr_z_factor` is where `cubic_roots` entered
-  the registry, and the schema's own description of `solver.kind` records that.
-
-  The scheme is fixed here rather than chosen by each implementation because the
-  two languages have to land on the *same* root. A cubic has up to three real
-  roots and which one a search returns depends on where it started: measured on
-  the worked example below, whose roots are 0.0368, 0.1481 and 0.7908, Newton
-  from 0.30 converges to the middle root, from 0.50 to the liquid root and from
-  0.70 to the vapour one. So the scheme forms the roots analytically and orders
-  them, which removes the guess entirely, and then polishes - see
-  `docs/src/theory/solvers.md` for why the polish is not optional.
-
-
 inputs:
   a_reduced:
     unit: dimensionless
@@ -279,63 +242,18 @@ tests:
     type: property
     property: consistency_with
     status: active
-    note: >
-      Every returned root, on every case, substituted back into the cubic must leave
-      a residual within 1e-12. This is the check that does not depend on knowing the
-      right answer - which matters most in the critical-point case above, where no
-      implementation can know it. It is also what catches a polish that has been
-      removed, an analytic branch taken on the wrong side of the discriminant, or a
-      root returned unpolished: all three produce plausible values that do not
-      satisfy the equation.
-
-      Measured on the worked example: residuals of 8.7e-19, 7.8e-18 and 3.1e-16 for
-      the three roots - a few roundings of the coefficients, which is all a correct
-      implementation should leave.
-
   - id: the_middle_root_is_not_returned
     type: property
     property: consistency_with
     status: active
-    note: >
-      When three real roots exist, the returned pair must be the outermost two and
-      the middle one must be absent. `z_min < z_middle < z_max` is checked by
-      bracketing: the middle root is the one the cubic has between the other two,
-      so `z_min` and `z_max` must straddle a sign change of the polynomial while
-      sharing none with it. A calc that reported the two *smallest* roots, or the
-      two it happened to find, would pass the residual check above and fail this.
-
   - id: the_admissible_count_is_never_two
     type: property
     property: consistency_with
     status: active
-    note: >
-      Sweep `a_reduced` and `b_reduced` over a grid and assert the admissible root
-      count is never two. This is the test for the theorem in `root_structure`'s
-      description: `f(b_reduced)` is exactly `-2*b_reduced**2`, so `B` cannot lie
-      between the two smallest roots, and the count is 1 or 3 and nothing else.
-
-      Worth asserting rather than proving once in prose, because the argument
-      depends on the cubic's coefficients being exactly what this spec says they
-      are. A sign error in `c0` would break `f(B) = -2*B**2` and could make a
-      count of two reachable - at which point the enum would be missing a value it
-      needs, and that should fail here rather than surface as a caller's
-      `AttributeError` or a silently mislabelled structure.
-
-      Measured over 47,477 parameter combinations before this test was written:
-      counts of 1 (41,607 times) and 3 (5,870 times), and never 2.
-
   - id: monotonic
     type: property
     property: monotonic
     status: active
-    note: >
-      Both extreme roots fall as `a_reduced` rises and rise as `b_reduced` rises -
-      more attraction pulls the fluid together, more repulsion pushes it apart.
-      Measured across the range: at B = 0.024311, increasing A from 0.10 to 0.30
-      takes z_max from 0.9242 to 0.5224; at A = 0.202065, increasing B from 0.005 to
-      0.06 takes z_max from 0.7359 to 0.8690. A sign error in either coefficient of
-      the cubic, or a transposed one, cannot survive both directions.
-
   - id: round_trip_units
     type: property
     property: unit_round_trip

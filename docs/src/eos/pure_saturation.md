@@ -4,51 +4,12 @@
 
 `eos.pure_saturation`
 
-The pressure at which a pure component's vapour and liquid roots have equal fugacity, found by bisection on pressure. The first model rather than calculation in this registry: what has to be pinned down is not an equation - `ln phi_L = ln phi_V` is one line - but the *procedure* that searches for the pressure where it holds, and a procedure that differs between two implementations takes a different number of steps to a slightly different answer.
-
 ## Source
 
 **Peng, D. Y.; Robinson, D. B. (1976)** (A New Two-Constant Equation of State. Industrial & Engineering Chemistry Fundamentals, 15(1), 59-64)
 
 DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 
-## Notes
-
-The equilibrium condition is not in doubt: a pure component at saturation has equal fugacity in both phases, `ln phi_L = ln phi_V`, which is the definition of the saturation pressure rather than a correlation for it. The Peng-Robinson equation both fugacities come from is `eos.pr_z_factor` and `eos.pr_departure`, whose own notes apply here unchanged - this model adds a search, not a correlation. **It re-implements none of it**: a second Peng-Robinson implementation in the model layer would be a third in the tree, untested and cross-checked by nothing, while the two that exist still claim to be the independent pair.
-
-What is ours and unverified: the **procedure**. The bracketing rule, the tolerance and the iteration cap are choices, not results, and no source states them because no source would. They are recorded here so a reader can judge the choices rather than having to reverse-engineer them:
-
-* The upper bracket is the **spinodal** - the highest reduced pressure at which
-
-  the cubic still has three admissible roots - found by a linear scan. Above it
-
-  there is one root, no liquid branch, and nothing to equate.
-
-* The lower bracket is the scan's first point, `Pr = 1e-06`. Any pressure below
-
-  the spinodal works: the residual is positive everywhere below the saturation
-
-  pressure and monotonically decreasing, so the bracket only has to straddle the
-
-  root, not be tight.
-
-* The stopping rule is on the **bracket width**, relative, not on the residual.
-
-  A rule on `|g|` would stop at whatever pressure makes the fugacities agree to
-
-  within a tolerance - which is the thing being solved for, so the rule would be
-
-  circular when the two disagree for a reason other than the pressure.
-
-
-
-#### What the bracket is NOT
-
-The upper end is a spinodal. The lower end is not - and an earlier version of this note said it was, describing a "spinodal window" of 0.10-18.94 bar for propane at 300 K. That range was an artefact of where the scan happened to start. A cubic equation of state has three real roots at *every* pressure below the upper spinodal, including pressures so low that the "liquid" root describes a molar volume no liquid could have. The window is one-sided, and the bracket's lower end is arbitrary on purpose.
-
-#### Why no accuracy claim
-
-PR's saturation pressures are good to a few tenths of a per cent for light hydrocarbons and worse elsewhere. The cases below record the deviations rather than asserting a band, because a band on `Tr` would look like validation while asserting nothing - the same argument `eos.pr_kappa` makes.
 
 ## Algorithm
 

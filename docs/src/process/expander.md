@@ -4,33 +4,12 @@
 
 `process.expander`
 
-A pressure drop that produces work.
-The same procedure as `process.compressor` and `process.pump` - see `crates/azoth-process/src/isentropic.rs` for the derived code and the compressor spec for the derivation - with **one expression changed**: the efficiency multiplies the ideal enthalpy change instead of dividing it.
-The enthalpy change of an expansion is negative, so multiplying makes it *less* negative: the real outlet is warmer than the ideal one, which is the irreversibility the efficiency stands for. A model that divided would return an outlet colder than isentropic, which no machine can produce.
-
 ## Source
 
 **NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.expander.Expander`, `run(UUID)` at lines 608-668 of a 669-line file. `Expander` extends `Compressor` and overrides `run`; its isentropic path at `:646-660` differs from the compressor's in one line.
 ** (Version 3.20.0. Taken from it: `PSflash(entropy)` at the outlet pressure (`:650`), `dH = (H_is - H_in) * efficiency` (`:653`) and `PHflash(H_in + dH)` (`:659`). Not taken: the five-step polytropic path (`:620-633`) and the specified-shaft-power branch (`:652`).
 )
 
-## Notes
-
-#### The one line that makes it an expander
-
-`Expander` extends `Compressor` in NeqSim and overrides `run`. Of its 61 lines, the difference from the compressor is one expression:
-
-```text Compressor.java:1738   dH = (H(P_out, s_in) - H_in) / isentropicEfficiency Expander.java:653      dH = (H(P_out, s_in) - H_in) * isentropicEfficiency ```
-
-The enthalpy change of an expansion is negative, so the multiplication makes it less negative and the real outlet warmer than the ideal one. That is the physical statement: **an expander cannot deliver more work than the isentropic drop contains**, so its outlet cannot be colder than `isentropic_temperature`.
-
-The test asserts exactly that inequality, on the same input the compressor's case uses, so a sign error in either model fails both.
-
-#### What is checked, and what is not
-
-The same two identities as `process.compressor`, computed in the test from `eos.ps_flash` and `eos.molar_enthalpy_entropy` independently of this model, with the efficiency multiplying rather than dividing. The compressor spec records why those two and not a recorded number.
-
-Plus one this model adds: **`T >= isentropic_temperature`**, at several efficiencies. It is the inequality that distinguishes an expander from a compressor, and unlike the identities it needs no reference to the source at all - it is a statement about the second law.
 
 ## Algorithm
 

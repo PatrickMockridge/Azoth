@@ -4,52 +4,12 @@
 
 `process.separator`
 
-One feed split into a gas and a liquid at a single temperature and pressure.
-A separator is a vessel held at one state with two streams leaving it, so the outlets share the flash's temperature and pressure and differ only in how much of the feed they carry and what it is made of. The physics is one flash and the arithmetic that follows from it: the vapour fraction splits the molar flow, and the equilibrium compositions become the two outlets'.
-This is the first unit operation ported from NeqSim, and it is the one the Pareto argument rests on. NeqSim's `Separator.run` is 109 lines of a 4,511-line file, and what those 109 lines do is: drop the pressure, flash, and split. The rest of the file - and the missing 4,400 lines - is level control, weir flow, mist-eliminator pressure drop, entrainment carry-over, geometry and mechanical design.
-**It is a port, not a transcription.** The two places it differs from NeqSim's source are recorded in the notes, and both are about removing a dependency on something outside the inputs rather than about simplifying the physics.
-
 ## Source
 
 **NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.separator.Separator`, `run(UUID)` at lines 674-782 of the 3.20.0 source tree. See `NOTICE` at the repository root for the attribution.
 ** (Version 3.20.0. The thermodynamic sequence taken from it is: `setPressure(P - dP)`; `PHflash(H + Q)` when a heat input is set and `TPflash()` otherwise; then each outlet built from the flashed phase, `setThermoSystemFromPhase`. What is *not* taken is the memoization guard, the low-flow bypass, the internal mixer and the entrainment model - see the notes.
 )
 
-## Notes
-
-#### What is ported, and what is deliberately not
-
-Taken from `Separator.run` (NeqSim 3.20.0, lines 674-782): the pressure drop, the choice between an isenthalpic and an isothermal flash, and building an outlet from a flashed phase. That is lines 694, 697-711 and 740-759.
-
-Not taken, each with a reason rather than for brevity:
-
-**The internal `Mixer` at line 675.** NeqSim feeds a separator through a mixer of its own inlet streams. Composing this model over `process.mixer` is the same arithmetic with one fewer place for a stream to be handled differently, and it keeps a single-feed unit from carrying multi-feed machinery.
-
-**The memoization guard at lines 684-688**, which returns early when `|dH/H|`, `|dF/F|` and `|dP/P|` are all below `1e-6`. That is an optimisation for a transient loop that re-runs the same steady state, and it makes the answer depend on what ran before. A model whose answer depends on its history is the opposite of what every worked example in this book is for.
-
-**The entrainment model at lines 715-738.** Real physics, and it is a *performance* model with droplet-size and geometry inputs - it belongs to separator sizing, which `docs/src/roadmap.md` records as out of scope.
-
-**The low-flow bypass at 676-680**, which zeroes both outlets below a minimum flow. The `n > 0` range check refuses that input instead, which is the same decision made loudly rather than quietly.
-
-**The re-flash of the phase outlets at 760-775.** NeqSim re-runs each outlet as a stream, which can re-split a phase that was already separated. The outlet of a separator here is the phase the flash found, at the state the flash found it.
-
-#### The duty branch measures its enthalpy from the feed's own state
-
-NeqSim reads `getEnthalpy()` off a system whose pressure it has already changed but which it has not re-flashed, so the number it adds the duty to is whatever the last flash left on that object. This evaluates the feed's enthalpy at `(T, P)` explicitly, by calling `eos.ph_flash`'s `enthalpy_at` at the *inlet* state, so the answer depends on the inputs and on nothing else. It is the decision `eos.stability_test` records about NeqSim's `Component.getK()`: a calculation must not be coupled to whatever ran before it.
-
-#### Read `phase`, not `beta`
-
-For a single-phase feed the flash returns no `beta` - correctly, because the number it would return is the *extrapolated* split, and values outside `[0, 1]` are ordinary there. This model therefore branches on `phase`, and multiplies the feed by `beta` only where the flash has said there is a genuine split. A model that multiplied by 1.888 would produce a wrong answer shaped exactly like a right one, and no check on the totals would see it.
-
-#### A zero-flow outlet carries the feed's composition
-
-The gas composition of an all-liquid feed is not a physical quantity, and neither is the liquid composition of an all-vapour one. Reporting zeros would be honest about that and useless downstream, because a row of zeros is not a composition - it does not sum to one, and the first unit to read it would produce a plausible wrong answer. The feed's composition is carried through instead, with `gas_flow = 0` being the field that says the outlet is empty. NeqSim's answer is an empty thermo system, which carries no composition at all; this is the same statement made in a form a caller can pass on.
-
-#### What is checked, and what is not
-
-Two things are asserted about every case. The first is a **mole balance**: `gas_flow + liquid_flow` equals `n` to the tolerance, which holds at every answer rather than at one recorded one. The second is a **cross-model check that is not self-referential**: with `heat_duty = 0` this model is `eos.pt_flash` plus arithmetic, so its vapour fraction must equal that model's `beta` for the same state, and its two compositions must be that model's `x` and `y`. `eos.ph_flash`'s own worked case at 300 K and 20 bar is the one used, and its `beta = 0.6824390296506371` is where this model's `gas_flow` comes from.
-
-**That establishes that the split is the flash's split.** It does not establish that the flash is right, and the confidence in the flash is whatever `eos.pt_flash`'s own notes support. Nor does anything here check the entrainment that a real vessel has and this model does not.
 
 ## Algorithm
 

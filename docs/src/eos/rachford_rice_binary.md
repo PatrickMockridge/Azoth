@@ -22,44 +22,6 @@ beta = -(z1*(K1 - 1) + (1 - z1)*(K2 - 1)) / ((K1 - 1)*(K2 - 1))
 
 DOI: [10.2118/952327-G](https://doi.org/10.2118/952327-G)
 
-## Notes
-
-The Rachford-Rice equation - `sum_i z_i (K_i - 1) / (1 + beta (K_i - 1)) = 0` - is the standard condition for a two-phase flash, and its derivation is not in doubt. The citation above is the paper that introduced it.
-
-#### The citation is confirmed, and this entry records how easily it was not
-
-A search confirms the paper as SPE-952327-G: Rachford & Rice, *Journal of Petroleum Technology* **4**(10), 19-3, DOI 10.2118/952327-G. An earlier draft of this spec carried a different title, a different DOI and a different volume - every part of the citation wrong, and all of it written from memory rather than looked up. The search took one query. It is recorded here because the failure is the one this project is organised against: a citation that looks entirely plausible, is checkable by anyone, and was not checked by the person writing it.
-
-What has NOT been done is reading the paper. Specifically unconfirmed: (1) the equation number, so none is given above; (2) that the paper states the equation in the form above - Rachford-Rice is normally written for N components with a numerical solution, and how the original presents it has not been seen; (3) that the two-component closed form appears there at all.
-
-**The closed form is ours.** It is algebra that follows from the equation, not a result to cite, and `worked_example` derives it rather than attributing it. The citation covers the equation; it does not cover the solution.
-
-#### The closed form, and why it is exact rather than iterative
-
-For two components the equation is linear in `beta`, not just solvable:
-
-
-
-  z1*(K1 - 1)/(1 + beta*(K1 - 1)) + z2*(K2 - 1)/(1 + beta*(K2 - 1)) = 0
-
-
-
-Multiplying through by `(1 + beta*(K1 - 1))*(1 + beta*(K2 - 1))` clears both denominators:
-
-
-
-  z1*A*(1 + beta*B) + z2*B*(1 + beta*A) = 0        with A = K1 - 1, B = K2 - 1
-
-  z1*A + z2*B + beta*A*B*(z1 + z2) = 0
-
-  z1*A + z2*B + beta*A*B = 0                       since z1 + z2 = 1
-
-  beta = -(z1*A + z2*B) / (A*B)
-
-
-
-So the binary case needs no iteration at all, which is what makes this calc worth having as a scalar kernel. The N-component case is the general one and belongs to the model layer, where it is solved by bisection. The model layer has to reproduce *this* result at N = 2, and that cross-layer check is the contract that keeps the two from drifting apart.
-
 ## Inputs
 
 | Name | Unit | Description |

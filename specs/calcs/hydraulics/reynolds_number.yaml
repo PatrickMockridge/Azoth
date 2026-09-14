@@ -7,16 +7,6 @@ source:
   standard: Crane TP-410
   edition: "2013"
 
-notes: >
-  The Reynolds number originates with Reynolds (1883) and is reproduced in
-  every fluid mechanics text; the equation itself is not in doubt. What is
-  unconfirmed is the specific Crane TP-410 equation number, so it is left
-  unstated rather than guessed at. The regime boundaries below are the Crane/Moody
-  convention (laminar < 2000, transitional 2000-4000, turbulent > 4000) and
-  are approximate engineering guidance, not exact physical transitions: the
-  real onset of transition depends on inlet geometry, vibration and roughness.
-
-
 inputs:
   rho:
     unit: kg/m**3
@@ -114,11 +104,6 @@ tests:
     type: reference
     status: active
     source: derived from the equation above; exercises the transitional-flow warning path
-    note: >
-      Chosen so Re lands squarely inside the 2000-4000 band. The test asserts the
-      numeric result AND that a TRANSITIONAL_FLOW warning is emitted, because a
-      silently unwarned transitional result is the failure mode this warning exists
-      to prevent.
     inputs: { rho: 1000.0, v: 0.1, D: 0.05, mu: 1.5e-3 }
     expected: { re: 3333.3333333333335 }
     tolerance: 1.0e-12
@@ -127,8 +112,3 @@ tests:
     type: property
     property: unit_round_trip
     status: active
-    note: >
-      Builds the same physical state in SI and in US customary units and asserts
-      the Reynolds number is identical. Reynolds number is dimensionless, so this
-      is the sharpest available check that unit handling is correct and not
-      accidentally absorbing a conversion factor.

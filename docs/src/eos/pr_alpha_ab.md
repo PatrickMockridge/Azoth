@@ -25,32 +25,6 @@ b_reduced = 0.07779607390388846*Pr/Tr
 
 DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 
-## Notes
-
-The citation is confirmed; the coefficients are not read from the paper. That is the same position `eos.pr_kappa` records, and the same reasoning applies to the two Omega constants below. What is different here - and what this note exists for - is that **this spec uses full-precision Omega values that the paper does not print**, so the deviation is stated rather than left for a reviewer to notice.
-
-Specifically unconfirmed: (1) that the 1976 paper prints the attraction and repulsion constants as 0.45724 and 0.07780, which is the form every secondary source reproduces; (2) the equation numbers, so none is given above; (3) that the alpha function in this spec is the one the paper gives, which is the claim `eos.pr_kappa` already carries.
-
-#### Why 0.4572355289213822 and not 0.45724
-
-The printed values are roundings. The full-precision pair is what they round from, and the difference is not cosmetic:
-
-**With the printed pair, the cubic fails its own critical point.** At Tr = Pr = 1 - the critical point by definition - the equation z**3 - (1 - B)*z**2 + (A - 3*B**2 - 2*B)*z - (A*B - B**2 - B**3) = 0 has one real root. With Omega_a = 0.45724 and Omega_b = 0.07780 that root is 0.321379025174. Peng-Robinson's critical compressibility is 0.307401308699. The rounded constants are wrong by 4.55% exactly where the equation is supposed to be anchored.
-
-The reason is conditioning, not arithmetic. The constants' job is to place a triple root at the critical point, and a triple root is cubically ill-conditioned: perturbing the coefficients by epsilon moves the roots by about epsilon**(1/3). A rounding error of 5e-6 in Omega_b therefore moves the critical root by around 1.7e-2. That is the whole 4.55%.
-
-**The full-precision pair is derived, not transcribed.** It is the unique solution of the condition that the cubic above has a triple root at Tr = Pr = 1: writing u = Omega_b, the requirements are Omega_a = 3*u**2 + 2*u + (1 - u)**2/3 and Omega_a*u - u**2 - u**3 = (1 - u)**3/27, which fix u to 0.07779607390388846 and Omega_a to 0.4572355289213822. Both are stated in full in `equation` above, so the worked example is retraceable from the spec without the paper - which is the point. A reader who doubts the constants can check them against the triple-root condition themselves, and a reader who trusts the printed pair can check that it does not satisfy it.
-
-This is the one place in the registry where a value differs from what its own cited source prints, and it is deliberate: the printed pair is a rounding of a number that matters, and shipping the rounding would make every result this calc feeds slightly wrong in a way nothing downstream can detect.
-
-#### What is NOT claimed
-
-Nothing here says the paper's alpha function is this one, or that the paper's equation of state is the form written above. Those are claims about the source and no one has opened it. Reading the 1976 paper remains a human-blocked task - see `eos.pr_kappa`, whose notes carry it.
-
-#### Cross-language agreement
-
-Measured on the worked example: both implementations return bit-identical values for `alpha`, `a_reduced` and `b_reduced`. The arithmetic is `+ - * /` and `sqrt`, which IEEE-754 pins, so the agreement is expected rather than lucky - but a language's `x ** 2` lowering is not pinned, which is why the Rust side writes the square as `t * t` rather than `.powi(2)`, mirroring the Python side's `t ** 2`, and why this calc claims agreement within the tolerance above rather than bit-equality.
-
 ## Inputs
 
 | Name | Unit | Description |

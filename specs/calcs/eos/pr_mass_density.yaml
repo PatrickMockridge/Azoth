@@ -7,41 +7,6 @@ source:
   standard: The definition of molar mass
   edition: "Molar mass is the mass per amount of substance, so a mass density is a molar mass divided by a molar volume. There is no paper to cite for that."
 
-notes: >
-  `rho = M/v` is dimensional analysis rather than a correlation: a molar mass is
-  kilograms per mole, a molar volume is cubic metres per mole, and their ratio is
-  kilograms per cubic metre. There is nothing to verify against a source, and
-  saying so is more honest than attaching a citation to make the entry look like
-  the others.
-
-  # Why this is a calc rather than a line in the caller
-
-  It is one division, and the obvious question is why it earns a spec, two
-  implementations and a batch arm. Three reasons, and the third is the one that
-  decided it:
-
-  * It is the last step of the path a caller actually wants. `eos.pr_z_factor`
-    gives a compressibility factor, `eos.pr_molar_volume` turns it into a volume,
-    and this turns that into the density somebody asked for. Stopping one step
-    short would leave every caller writing the same division with units.
-  * The division has a unit on each side, so it is exactly the kind of step the
-    units layer exists to make safe: `M` in kg/mol over `v` in m**3/mol gives
-    kg/m**3, and passing a specific volume where a molar one was meant is a
-    `UnitMismatchError` rather than a wrong answer.
-  * **It gives `kg/mol` its first consumer.** That unit has been in the vocabulary
-    since the vocabulary was made checkable, with a correct conversion path and no
-    calculation using it - the same state `K` was in, which is what the unit
-    contract test was written to catch. A unit nothing uses is not a defect while
-    its conversion is tested, but it is a unit nobody has ever proved works
-    end to end through a real calculation. Now one has.
-
-  # What is NOT here
-
-  No component data. `M` is the caller's, and this library ships no molar masses -
-  the same decision every other calc in this namespace records. The worked example
-  uses propane's conventional value and says where it came from.
-
-
 inputs:
   M:
     unit: kg/mol
@@ -150,23 +115,7 @@ tests:
     type: property
     property: consistency_with
     status: active
-    note: >
-      `rho` is linear in `M` and inversely proportional to `v`, so doubling either
-      input's effect is exactly determined: twice the molar mass is twice the
-      density, twice the molar volume is half of it. A point-value case cannot tell a
-      correct formula from one with the two inputs swapped or with `M*v` instead of
-      `M/v`; these two relations can, and they use no reference value at all.
-
   - id: round_trip_units
     type: property
     property: unit_round_trip
     status: active
-    note: >
-      Unlike most of this namespace, both inputs and the output carry units, so this
-      is a real test. The same physical state described with `v` in `m**3/mol` and
-      with `v` in `cm**3/mol` must give the same density - and the conversion factor
-      is 1e-6, so an implementation that got it wrong fails by a factor of a million
-      rather than marginally.
-
-      It is also the second test to exercise `m**3/mol` and the first to exercise
-      `kg/mol` through a real calculation.

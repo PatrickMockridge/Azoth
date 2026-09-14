@@ -20,32 +20,6 @@ A = m_dot / (sqrt(k * rho0 * P0) * (2 / (k + 1))**((k + 1) / (2 * (k - 1))))
 
 **the isentropic critical-flow relation from gas dynamics; API 520 / ISO 4126 for relief valve sizing, which this calc does NOT implement**
 
-## Notes
-
-This is the isentropic choked-flow relation: the mass flux through a throat when the downstream pressure is low enough that the flow reaches sonic velocity there and stops responding to it. The derivation is standard gas dynamics and appears in every compressible-flow text. What has NOT been done is checking this spec against a named source, so `source.equation` is omitted.
-
-#### Why this is not called relief_valve_area
-
-It was going to be. The four calcs this registry set out to add were orifice, control valve, relief valve and pump, and this is the fourth.
-
-But relief valve *sizing* to a standard is not what this calculation does. API 520's sizing equation wraps this relation in de-rating coefficients - a discharge coefficient, a back-pressure correction, a combination factor - whose values are the standard's, tabulated. Reproducing those tables is what this project's copyright rule forbids, so the honest option was to ship the physics and leave the factors to the caller.
-
-And a calc that shipped the physics under the name `relief_valve_area` would overclaim: a caller looking for "relief valve sizing" would find it, use it, and get an area that is missing every de-rating factor the standard requires - too small, in the unsafe direction, and looking entirely ordinary. Calc ids are permanent public identifiers - they appear in provenance records and citations - so the name is the one thing here that cannot be fixed later. It is named for what it computes.
-
-The application is not lost. The relation is the basis of relief valve sizing, rupture disc sizing and any choked-gas discharge, and the de-rating factors are a composition the caller performs visibly - exactly as the `azoth pipe` CLI composes fitting losses rather than a calc baking them in.
-
-#### Why this one has a warning bound when the last four did not
-
-`orifice_flow`, `pump_power`, `conduction_plane_wall` and `control_valve_cv` each carry no warning bounds, and each says why: the relation is exact given its inputs, so there is no fitted range outside which it stops being trustworthy, and the uncertainty lives in a caller-supplied coefficient.
-
-This one is different in a way worth naming. `k` is a **property of a substance**, not a coefficient in a convention, and substances have a known range: every real gas has an isentropic exponent above 1 and none above 5/3, the monatomic limit. So there is a factual band to warn about, and no equivalent band existed for the other four.
-
-#### A bound this calc cannot express, and why
-
-The choked assumption - the one the whole relation rests on - is that the pressure downstream is below the critical ratio `(2/(k+1))**(k/(k-1))`, which is 0.528 for air and 0.546 for a k of 1.3. The calc does not take a downstream pressure, so it cannot check this.
-
-It could take one. What it cannot do is *declare* the check: the threshold is a function of `k`, and the schema's range checks are typed constants with no expression parser, deliberately. So a downstream pressure input would buy a check the spec could not describe - and a check the spec cannot describe is one the warning-parity test would reject, since that test asserts a result's warnings match the spec's declared bounds exactly. Recorded as an assumption the caller must satisfy, the same way `darcy_weisbach` records its Mach number limit.
-
 ## Inputs
 
 | Name | Unit | Description |

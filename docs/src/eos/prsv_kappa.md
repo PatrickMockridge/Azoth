@@ -22,22 +22,6 @@ kappa = 0.378893 + 1.4897153*omega - 0.17131848*omega**2 + 0.0196554*omega**3 + 
 
 DOI: [10.1002/cjce.5450640224](https://doi.org/10.1002/cjce.5450640224)
 
-## Notes
-
-The citation is confirmed: Stryjek & Vera, "PRSV: An improved Peng-Robinson equation of state for pure compounds and mixtures", Canadian Journal of Chemical Engineering 64(2), 323-333, DOI 10.1002/cjce.5450640224. The paper's abstract confirms the substance of what this calc implements - it modifies the temperature and acentric-factor dependence of the Peng-Robinson attraction term and introduces "a single pure-compound parameter".
-
-What has NOT been done is opening the paper and reading the coefficients off it. Specifically unconfirmed: (1) that the four constants of the acentric-factor polynomial are printed as 0.378893, 1.4897153, -0.17131848 and 0.0196554; (2) that the temperature factor is written as (1 + sqrt(Tr))*(0.7 - Tr), rather than in some algebraically equivalent form that would not be bit-identical; (3) the equation numbers, so none is given above.
-
-#### What this calc deliberately does NOT carry, and why it matters here
-
-`kappa1` is a **per-component fitted parameter**. PRSV's accuracy over PR comes from fitting it to each substance's vapour pressure data, and a table of those values is exactly the kind of data this library does not ship - the same decision `eos.pr_kappa` records for the acentric factor and `hydraulics` for the fitting coefficients. So it is an input, supplied by the caller, and the worked example below uses a round illustrative value while saying so.
-
-That is worth stating plainly because it is the one place a reader might expect a databank: the whole point of PRSV is the extra parameter, and a library that offers PRSV without offering the parameters is offering the equation and not the correlation. It is still useful - it is the same equation a caller's own fitted values need - but a caller who expected to get PRSV's published accuracy for free will not get it, and should be told so here rather than discover it.
-
-#### Why no bound asserts the fitted range
-
-PRSV is fitted over a range of reduced temperatures and acentric factors, and that range is not established here, so no bound claims one. `eos.pr_kappa` records the same omission for the same reason.
-
 ## Inputs
 
 | Name | Unit | Description |

@@ -4,41 +4,12 @@
 
 `process.compressor`
 
-A pressure rise at a stated isentropic efficiency.
-The fluid is taken isentropically to the outlet pressure to find the ideal outlet enthalpy, and the real one is further from the inlet by exactly the efficiency. The temperature that results is the answer, and it is above the ideal one for the reason an efficiency is less than one.
-This is the first unit operation here whose answer depends on an entropy rather than an enthalpy, and so the first to need `eos.ps_flash`.
-
 ## Source
 
 **NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0. The port source is `neqsim.process.equipment.compressor.Compressor`, `run(UUID)` at lines 1005-1817 of a 6,593-line file, and specifically its default isentropic path at `:1721-1776`.
 ** (Version 3.20.0. Taken from it: `PSflash(entropy)` at the outlet pressure (`:1725`), `dH = (H_is - H_in) / efficiency` (`:1738`) and `PHflash(H_in + dH)` (`:1766`). Not taken: the compressor chart, the speed solve, the anti-surge recycle, the three polytropic paths, the outlet-temperature efficiency solve and the mechanical design.
 )
 
-## Notes
-
-#### The three machines are one procedure
-
-NeqSim has three classes and the same eleven lines in each. Read out of `Compressor.java:1721-1776`, `Pump.java:558-572` and `Expander.java:646-660`, all three do: take the entropy the fluid arrives with, `PSflash` to the outlet pressure to find the ideal state, `PHflash` to the real one at an enthalpy scaled by the efficiency.
-
-The only difference is **which way the efficiency scales**, and that is one expression:
-
-```text compressor, pump   dH = (H_is - H_in) / efficiency     Compressor.java:1738 expander           dH = (H_is - H_in) * efficiency     Expander.java:653 ```
-
-The three are separate models here because they are separate unit operations with separate specs and separate result types, and because the arithmetic of a gas and a liquid differ in what a caller should expect. The *procedure* is shared, in `crates/azoth-process/src/isentropic.rs`.
-
-#### An efficiency of one is not the default
-
-NeqSim defaults `isentropicEfficiency` to `1.0` (`Compressor.java:109`) and clamps rather than refusing. **This model requires it and range-checks it**, which is a deliberate difference: a compressor assumed ideal is one that understates every duty it is asked for, and a default is a value a caller gets without having said it. The difference is recorded here rather than left for someone to find by comparing.
-
-#### What is checked, and what is not
-
-Two identities, both computed in the test from `eos.ps_flash` and `eos.molar_enthalpy_entropy` independently of this model:
-
-- **The isentropic state is isentropic**: `S(T_is, P_out) == S(T, P)`. - **The efficiency is honoured**: `H(T, P_out) == H(T, P) + (H_is - H(T, P)) / eta`.
-
-The second is the check that catches the division and the multiplication being the wrong way round, and the test runs a compressor and an expander on the *same* input to make that concrete: theirs are the two directions and a single sign error swaps them.
-
-**The largest assumption is not checked**: that a cubic equation of state is trustworthy at the outlet of a high-ratio compressor. Nothing here tests that, and it is the sort of thing that would need a real machine's data.
 
 ## Algorithm
 

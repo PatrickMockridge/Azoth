@@ -20,10 +20,6 @@ f = 0.25 / (log10(relative_roughness / 3.7 + 5.74 / Re**0.9))**2
 
 **Swamee, P. K.; Jain, A. K. (1976)** (Journal of the Hydraulics Division, ASCE, 102(5), 657-664) - "Explicit equations for pipe-flow problems"
 
-## Notes
-
-Citation confirmed: Swamee, P.K. and Jain, A.K. (1976), "Explicit equations for pipe-flow problems", Journal of the Hydraulics Division, ASCE, 102(5), 657-664. This is the explicit approximation to the Colebrook equation, and is provided alongside it so callers can trade a small accuracy loss for the absence of an iteration. It is NOT a replacement for Colebrook in the sense of being more correct - it is an approximation of it.
-
 ## Inputs
 
 | Name | Unit | Description |

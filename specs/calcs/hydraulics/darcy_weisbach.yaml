@@ -7,17 +7,6 @@ source:
   standard: Crane TP-410
   edition: "2013"
 
-notes: >
-  The Darcy-Weisbach equation itself is entirely standard and is not in doubt -
-  it appears in every fluid mechanics text and is the basis of the L_eq/D method
-  Crane uses. What is unconfirmed is the specific equation number. The project
-  brief cited "Crane Eq. 3-2", but Crane TP-410's publicly documented numbering
-  for this relation is Eq. 1-6 / 1-7 (and the resistance-of-bends equation 2-20),
-  not 3-2, so the number is left unstated rather than repeated. This spec is
-  therefore `unverified`: usable, but the citation needs a human with a copy of
-  the standard. See also the note on the worked example below.
-
-
 inputs:
   f:
     unit: dimensionless
@@ -164,10 +153,6 @@ tests:
     type: reference
     status: active
     source: derived from Re = rho*v*D/mu on the worked example's inputs
-    note: >
-      Same inputs as the worked example plus mu, which exercises the optional-input
-      path and confirms dP is unchanged by supplying mu, while re becomes available
-      and the regime check actually runs.
     inputs: { f: 0.02, L: 100.0, D: 0.1, rho: 998.0, v: 1.5, mu: 1.002e-3 }
     expected: { dp: 22455.0, re: 149401.19760479042 }
     tolerance: 1.0e-12

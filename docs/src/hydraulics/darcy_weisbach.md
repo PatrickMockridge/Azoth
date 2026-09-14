@@ -20,10 +20,6 @@ dP = f * (L / D) * (rho * v**2 / 2)
 
 **Crane TP-410** (2013)
 
-## Notes
-
-The Darcy-Weisbach equation itself is entirely standard and is not in doubt - it appears in every fluid mechanics text and is the basis of the L_eq/D method Crane uses. What is unconfirmed is the specific equation number. The project brief cited "Crane Eq. 3-2", but Crane TP-410's publicly documented numbering for this relation is Eq. 1-6 / 1-7 (and the resistance-of-bends equation 2-20), not 3-2, so the number is left unstated rather than repeated. This spec is therefore `unverified`: usable, but the citation needs a human with a copy of the standard. See also the note on the worked example below.
-
 ## Inputs
 
 | Name | Unit | Description |
