@@ -30,7 +30,11 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LEAN_DIR = REPO_ROOT / "lean"
-AXIOMS = LEAN_DIR / "Azoth" / "Axioms.lean"
+
+#: The files carrying `#print axioms` lines: hand-written general theorems, and one
+#: generated line per canonical unit. See `tools/check_lean_axioms.py`.
+GATES = (LEAN_DIR / "Azoth" / "Axioms.lean", LEAN_DIR / "Azoth" / "Gate.lean")
+LEAN_SOURCE = LEAN_DIR / "Azoth"
 
 #: `#print axioms Azoth.Dim.ofExponents_nil`
 _PRINTED = re.compile(r"^\s*#print axioms\s+(?P<name>[A-Za-z0-9_.]+)\s*$", re.MULTILINE)
@@ -43,8 +47,11 @@ _DECLARED = re.compile(
 
 
 def gated_names() -> list[str]:
-    """Every theorem `Azoth/Axioms.lean` asks Lean to report the axioms of."""
-    return _PRINTED.findall(AXIOMS.read_text(encoding="utf-8"))
+    """Every theorem the gate files ask Lean to report the axioms of."""
+    names: list[str] = []
+    for gate in GATES:
+        names.extend(_PRINTED.findall(gate.read_text(encoding="utf-8")))
+    return names
 
 
 def declared_names() -> set[str]:
@@ -55,7 +62,7 @@ def declared_names() -> set[str]:
     report the gate as naming a theorem that does not exist.
     """
     names: set[str] = set()
-    for path in sorted((LEAN_DIR / "Azoth").glob("*.lean")):
+    for path in sorted(LEAN_SOURCE.glob("*.lean")):
         open_namespaces: list[str] = []
         for line in path.read_text(encoding="utf-8").splitlines():
             stripped = line.strip()
@@ -75,10 +82,11 @@ def declared_names() -> set[str]:
 def test_the_gate_names_something() -> None:
     """An empty gate is not a gate, and must fail here as well as in CI."""
     name = "Azoth.Dim.ofExponents_nil"
+    gates = ", ".join(g.relative_to(REPO_ROOT).as_posix() for g in GATES)
     assert gated_names(), (
-        f"{AXIOMS.relative_to(REPO_ROOT)} names no theorem, so nothing is gated. A "
-        f"Lean file that prints nothing passes every axiom check by having nothing "
-        f"to check - the vacuous-gate failure the gate exists to catch."
+        f"the gate files ({gates}) name no theorem, so nothing is gated. A Lean file "
+        f"that prints nothing passes every axiom check by having nothing to check - "
+        f"the vacuous-gate failure the gate exists to catch."
     )
     assert name in gated_names(), (
         f"the gate does not name {name}, which is one of the theorems this "
@@ -97,7 +105,7 @@ def test_every_gated_name_is_a_declaration_that_exists() -> None:
     declared = declared_names()
     missing = [name for name in gated_names() if name not in declared]
     assert not missing, (
-        f"{AXIOMS.relative_to(REPO_ROOT)} gates {missing}, which no file under "
+        f"the gate files name {missing}, which no file under "
         f"lean/Azoth/ declares. Either the name is misspelled or the theorem was "
         f"removed; in both cases the gate is naming something that is not there."
     )

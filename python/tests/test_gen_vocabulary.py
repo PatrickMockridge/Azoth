@@ -138,6 +138,27 @@ def test_a_unit_with_a_dimension_the_table_does_not_declare_is_refused(
         compile_table(tmp_path, table)
 
 
+def test_a_unit_with_no_lean_dimension_is_refused(tmp_path: Path) -> None:
+    """A new unit forces the question of what `lean-units` calls it.
+
+    `LEAN_DIMENSIONS` is the hand-written claim about what each unit *is*, and the
+    generated theorem is what makes the table agree with it. A unit with no entry
+    would get a theorem whose right-hand side came from the table, which proves
+    nothing - so the omission is refused rather than defaulted.
+    """
+    table = a_table()
+    table["units"].append(
+        {
+            "id": "invented",
+            "dimension": "length",
+            "pint": "furlong",
+            "uom": None,
+        }
+    )
+    with pytest.raises(SystemExit, match="LEAN_DIMENSIONS"):
+        compile_table(tmp_path, table)
+
+
 def test_a_duplicate_unit_id_is_refused(tmp_path: Path) -> None:
     """Two rows for one name is a silent drop, not a merge.
 

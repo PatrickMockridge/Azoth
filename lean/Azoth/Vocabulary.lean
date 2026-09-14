@@ -57,4 +57,148 @@ because it is not in it.
 def dimOf (name : String) : Option Units.Dimension :=
   (units.find? (fun entry => entry.1 == name)).map (fun entry => entry.2)
 
+/-- "dimensionless" carries the dimension `lean-units` calls
+    `0`. -/
+theorem u_dimensionless_dimension :
+    dimOf "dimensionless" = some (0) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "m" carries the dimension `lean-units` calls
+    `Dimension.Length`. -/
+theorem u_m_dimension :
+    dimOf "m" = some (Dimension.Length) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "mm" carries the dimension `lean-units` calls
+    `Dimension.Length`. -/
+theorem u_mm_dimension :
+    dimOf "mm" = some (Dimension.Length) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "m**2" carries the dimension `lean-units` calls
+    `Dimension.Area`. -/
+theorem u_m_pow_2_dimension :
+    dimOf "m**2" = some (Dimension.Area) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "m**3/s" carries the dimension `lean-units` calls
+    `Dimension.Volume / Dimension.Time`. -/
+theorem u_m_pow_3_per_s_dimension :
+    dimOf "m**3/s" = some (Dimension.Volume / Dimension.Time) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "kg/s" carries the dimension `lean-units` calls
+    `Dimension.Mass / Dimension.Time`. -/
+theorem u_kg_per_s_dimension :
+    dimOf "kg/s" = some (Dimension.Mass / Dimension.Time) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "mol/s" carries the dimension `lean-units` calls
+    `Dimension.AmountOfSubstance / Dimension.Time`. -/
+theorem u_mol_per_s_dimension :
+    dimOf "mol/s" = some (Dimension.AmountOfSubstance / Dimension.Time) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "kg/m**3" carries the dimension `lean-units` calls
+    `Dimension.Mass / Dimension.Volume`. -/
+theorem u_kg_per_m_pow_3_dimension :
+    dimOf "kg/m**3" = some (Dimension.Mass / Dimension.Volume) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "m/s" carries the dimension `lean-units` calls
+    `Dimension.Speed`. -/
+theorem u_m_per_s_dimension :
+    dimOf "m/s" = some (Dimension.Speed) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "Pa" carries the dimension `lean-units` calls
+    `Dimension.Pressure`. -/
+theorem u_Pa_dimension :
+    dimOf "Pa" = some (Dimension.Pressure) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "Pa*s" carries the dimension `lean-units` calls
+    `Dimension.Pressure * Dimension.Time`. -/
+theorem u_Pa_times_s_dimension :
+    dimOf "Pa*s" = some (Dimension.Pressure * Dimension.Time) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "K" carries the dimension `lean-units` calls
+    `Dimension.Temperature`. -/
+theorem u_K_dimension :
+    dimOf "K" = some (Dimension.Temperature) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "W" carries the dimension `lean-units` calls
+    `Dimension.Power`. -/
+theorem u_W_dimension :
+    dimOf "W" = some (Dimension.Power) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "J/(kg*K)" carries the dimension `lean-units` calls
+    `Dimension.Energy / (Dimension.Mass * Dimension.Temperature)`. -/
+theorem u_J_per__kg_times_K_dimension :
+    dimOf "J/(kg*K)" = some (Dimension.Energy / (Dimension.Mass * Dimension.Temperature)) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "W/(m*K)" carries the dimension `lean-units` calls
+    `Dimension.Power / (Dimension.Length * Dimension.Temperature)`. -/
+theorem u_W_per__m_times_K_dimension :
+    dimOf "W/(m*K)" = some (Dimension.Power / (Dimension.Length * Dimension.Temperature)) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "W/(m**2*K)" carries the dimension `lean-units` calls
+    `Dimension.Power / (Dimension.Area * Dimension.Temperature)`. -/
+theorem u_W_per__m_pow_2_times_K_dimension :
+    dimOf "W/(m**2*K)" = some (Dimension.Power / (Dimension.Area * Dimension.Temperature)) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "kg/mol" carries the dimension `lean-units` calls
+    `Dimension.Mass / Dimension.AmountOfSubstance`. -/
+theorem u_kg_per_mol_dimension :
+    dimOf "kg/mol" = some (Dimension.Mass / Dimension.AmountOfSubstance) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "m**3/mol" carries the dimension `lean-units` calls
+    `Dimension.Volume / Dimension.AmountOfSubstance`. -/
+theorem u_m_pow_3_per_mol_dimension :
+    dimOf "m**3/mol" = some (Dimension.Volume / Dimension.AmountOfSubstance) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "J/mol" carries the dimension `lean-units` calls
+    `Dimension.Energy / Dimension.AmountOfSubstance`. -/
+theorem u_J_per_mol_dimension :
+    dimOf "J/mol" = some (Dimension.Energy / Dimension.AmountOfSubstance) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "J/(mol*K)" carries the dimension `lean-units` calls
+    `Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature)`. -/
+theorem u_J_per__mol_times_K_dimension :
+    dimOf "J/(mol*K)" = some (Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature)) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "J/(mol*K**2)" carries the dimension `lean-units` calls
+    `Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 2)`. -/
+theorem u_J_per__mol_times_K_pow_2_dimension :
+    dimOf "J/(mol*K**2)" = some (Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 2)) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "J/(mol*K**3)" carries the dimension `lean-units` calls
+    `Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 3)`. -/
+theorem u_J_per__mol_times_K_pow_3_dimension :
+    dimOf "J/(mol*K**3)" = some (Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 3)) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "J/(mol*K**4)" carries the dimension `lean-units` calls
+    `Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 4)`. -/
+theorem u_J_per__mol_times_K_pow_4_dimension :
+    dimOf "J/(mol*K**4)" = some (Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 4)) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "J/(mol*K**5)" carries the dimension `lean-units` calls
+    `Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 5)`. -/
+theorem u_J_per__mol_times_K_pow_5_dimension :
+    dimOf "J/(mol*K**5)" = some (Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 5)) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
 end Azoth.Vocabulary

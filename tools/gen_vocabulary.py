@@ -7,6 +7,7 @@ Reads `specs/vocabulary/vocabulary.yaml` and emits:
   crates/azoth-core/src/unit_vocab_gen.rs    UNIT_NAMES, dimensions, conversions
   python/src/azoth/core/_units_gen.py        the same, in Python
   lean/Azoth/Vocabulary.lean                 the same, as a dimension per unit
+  lean/Azoth/Gate.lean                       one `#print axioms` line per unit
 
 The table is the one hand-written source of that list. Before it existed the same
 24 strings were maintained by hand in four places - the calc schema's
@@ -56,6 +57,7 @@ UNIT_SCHEMA_OUT = ROOT / "specs" / "schema" / "unit.schema.json"
 RUST_OUT = ROOT / "crates" / "azoth-core" / "src" / "unit_vocab_gen.rs"
 PY_OUT = ROOT / "python" / "src" / "azoth" / "core" / "_units_gen.py"
 LEAN_OUT = ROOT / "lean" / "Azoth" / "Vocabulary.lean"
+LEAN_GATE_OUT = ROOT / "lean" / "Azoth" / "Gate.lean"
 
 GENERATED_BANNER = "GENERATED FILE - DO NOT EDIT BY HAND."
 
@@ -103,6 +105,54 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
 }
 
 
+#: The `lean-units` dimension for each dimension in the table, as a Lean term.
+#:
+#: This is what makes the emitted theorem a *check* rather than a tautology, and it
+#: is keyed by **unit** rather than by dimension on purpose.
+#:
+#: Keyed by dimension it would prove nothing: a table entry whose exponents were
+#: wrong would select the expression for those wrong exponents, and the theorem
+#: would hold. Keyed by unit, this is the hand-written claim about what each unit
+#: *is* - the counterpart of `rust_ctor`, which is what makes the Rust assertion
+#: bite - and the theorem forces the table's exponents to agree with it.
+#:
+#: So a unit declared an area when this map says it is a length fails to prove, and
+#: so does a slot order that moves the exponents under it. A unit with no entry here
+#: is refused rather than skipped, which is the property that keeps the map total as
+#: the table grows.
+#:
+#: Every unit in the vocabulary is expressible this way, which is why there is no
+#: `None` here as there is in `UOM_TYPES`: `uom` names about twenty quantities, and
+#: `lean-units` names the base dimensions and enough derived ones to build the rest
+#: by division.
+LEAN_DIMENSIONS: dict[str, str] = {
+    "dimensionless": "0",
+    "m": "Dimension.Length",
+    "mm": "Dimension.Length",
+    "m**2": "Dimension.Area",
+    "m**3/s": "Dimension.Volume / Dimension.Time",
+    "kg/s": "Dimension.Mass / Dimension.Time",
+    "mol/s": "Dimension.AmountOfSubstance / Dimension.Time",
+    "kg/m**3": "Dimension.Mass / Dimension.Volume",
+    "m/s": "Dimension.Speed",
+    "Pa": "Dimension.Pressure",
+    "Pa*s": "Dimension.Pressure * Dimension.Time",
+    "K": "Dimension.Temperature",
+    "W": "Dimension.Power",
+    "J/(kg*K)": "Dimension.Energy / (Dimension.Mass * Dimension.Temperature)",
+    "W/(m*K)": "Dimension.Power / (Dimension.Length * Dimension.Temperature)",
+    "W/(m**2*K)": "Dimension.Power / (Dimension.Area * Dimension.Temperature)",
+    "kg/mol": "Dimension.Mass / Dimension.AmountOfSubstance",
+    "m**3/mol": "Dimension.Volume / Dimension.AmountOfSubstance",
+    "J/mol": "Dimension.Energy / Dimension.AmountOfSubstance",
+    "J/(mol*K)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature)",
+    "J/(mol*K**2)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 2)",
+    "J/(mol*K**3)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 3)",
+    "J/(mol*K**4)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 4)",
+    "J/(mol*K**5)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 5)",
+}
+
+
 def snake(name: str) -> str:
     """`VolumeRate` -> `volume_rate`, which is uom's module name for it."""
     return "".join(f"_{c.lower()}" if c.isupper() else c for c in name).lstrip("_")
@@ -141,6 +191,17 @@ def load_table() -> dict[str, Any]:
     dupes = {i for i in unit_ids if unit_ids.count(i) > 1}
     if dupes:
         sys.exit(f"gen_vocabulary: duplicate unit id(s): {sorted(dupes)}")
+
+    # Every unit needs a hand-written lean-units expression, or the theorem the
+    # generator emits for it has no independent right-hand side to check against.
+    unnamed = sorted(set(unit_ids) - set(LEAN_DIMENSIONS))
+    if unnamed:
+        sys.exit(
+            f"gen_vocabulary: unit(s) {unnamed} have no entry in LEAN_DIMENSIONS, so "
+            f"there is nothing for their dimension to be checked against. Add one: "
+            f"that map is the hand-written claim about what each unit is, and the "
+            f"generated theorem is what makes the table agree with it."
+        )
 
     by_id = {d["id"]: d for d in table["dimensions"]}
     for dimension in table["dimensions"]:
@@ -421,11 +482,129 @@ def emit_lean(table: dict[str, Any]) -> str:
         "def dimOf (name : String) : Option Units.Dimension :=",
         "  (units.find? (fun entry => entry.1 == name)).map (fun entry => entry.2)",
         "",
-    ]
-    out += [
+        emit_lean_theorems(table),
         "end Azoth.Vocabulary",
         "",
     ]
+    return "\n".join(out)
+
+
+#: What the per-unit proof unfolds, and nothing else. The named dimensions of
+#: `lean-units` come first: unfolding them is what turns the right-hand side into
+#: base-dimension arithmetic the tactics below can normalise.
+_DIMENSION_LEMMAS = " ".join(
+    [
+        "dimOf,",
+        "units,",
+        "Azoth.Dim.ofExponents,",
+        "Azoth.Dim.ofExponentsOn,",
+        "Azoth.slots,",
+        "Units.Dimension.Acceleration,",
+        "Units.Dimension.AmountOfSubstance,",
+        "Units.Dimension.Area,",
+        "Units.Dimension.Energy,",
+        "Units.Dimension.Force,",
+        "Units.Dimension.Length,",
+        "Units.Dimension.Mass,",
+        "Units.Dimension.Power,",
+        "Units.Dimension.Pressure,",
+        "Units.Dimension.Speed,",
+        "Units.Dimension.Temperature,",
+        "Units.Dimension.Time,",
+        "Units.Dimension.Volume,",
+        "Units.Dimension.ofString,",
+        "Units.Dimension.div_eq_sub,",
+        "Units.Dimension.mul_eq_add,",
+        "Units.Dimension.npow_eq_nsmul,",
+        "sub_eq_add_neg,",
+        "List.zip_cons_cons,",
+        "List.zip_nil_right,",
+        "List.map_cons,",
+        "List.map_nil,",
+        "List.sum_cons,",
+        "List.sum_nil",
+    ]
+)
+
+
+def lean_name(unit_id: str) -> str:
+    """A canonical unit string as a Lean identifier.
+
+    `J/(mol*K**2)` is not one, so the punctuation a unit may contain is spelled
+    out rather than dropped - dropping it would map `m**2` and `m**3` onto the
+    same name, and the second would shadow the first in the namespace.
+    """
+    spelled = (
+        unit_id.replace("**", "_pow_")
+        .replace("*", "_times_")
+        .replace("/", "_per_")
+        .replace("(", "_")
+        .replace(")", "_")
+    )
+    cleaned = "".join(c if (c.isalnum() or c == "_") else "_" for c in spelled)
+    return "u_" + cleaned.strip("_") + "_dimension"
+
+
+def emit_lean_theorems(table: dict[str, Any]) -> str:
+    """One theorem per canonical unit, checking its dimension against `lean-units`.
+
+    The counterpart of the compile-time assertion on the Rust side, and a *check*
+    rather than a restatement: the right-hand side is a dimension with a name
+    `lean-units` wrote, in a system that was in this tree before this table
+    existed. A wrong slot order, or an exponent in the wrong coordinate, fails to
+    prove - `ofExponents [1, 0, 0, 0, 0, 0, 0]` is `Length` only because the slot
+    order says the first slot is length.
+
+    The proof is `simp` to push `_impl` through the module operations and reduce
+    `\u211a`-scaled sums, then `module` to normalise the result. `abel` does not
+    close these: it fails on a goal containing a negation, which every unit whose
+    dimension has a negative exponent produces.
+    """
+    out: list[str] = []
+    for unit in table["units"]:
+        expression = LEAN_DIMENSIONS[unit["id"]]
+        out += [
+            f"/-- {json.dumps(unit['id'])} carries the dimension `lean-units` calls",
+            f"    `{expression}`. -/",
+            f"theorem {lean_name(unit['id'])} :",
+            # Parenthesised whether or not the expression needs it, so the shape
+            # does not depend on which units happen to have compound dimensions.
+            f"    dimOf {json.dumps(unit['id'])} = some ({expression}) := by",
+            # Chained on one line and each step wrapped in `try`, because `simp
+            # only` closes some of these outright and a tactic applied where there
+            # is nothing left to do is an error rather than a no-op. `try` cannot
+            # hide a failure: a step that does not close the goal leaves it open,
+            # and the theorem then does not prove.
+            f"  simp only [{_DIMENSION_LEMMAS}] <;> simp <;> module",
+            "",
+        ]
+    return "\n".join(out)
+
+
+def emit_lean_gate(table: dict[str, Any]) -> str:
+    """One `#print axioms` line per unit theorem, so the gate cannot miss one.
+
+    Generated for the reason the rest of this file is: a hand-maintained list of
+    twenty-four names goes stale the first time a unit is added, and it goes stale
+    *silently* - the theorem is proved and nothing gates it. Here the gate grows
+    with the table.
+    """
+    out = [
+        f"-- {GENERATED_BANNER}",
+        "--",
+        "-- Generated by `tools/gen_vocabulary.py` from",
+        "-- `specs/vocabulary/vocabulary.yaml`.",
+        "--",
+        "-- One `#print axioms` per unit theorem in `Azoth/Vocabulary.lean`, so the",
+        "-- gate covers every unit rather than the ones somebody remembered. Run by",
+        "-- `tools/check_lean_axioms.py`, which refuses any axiom set outside",
+        "-- `propext`, `Classical.choice` and `Quot.sound`.",
+        "",
+        "import Azoth.Vocabulary",
+        "",
+    ]
+    out += [f"#print axioms Azoth.Vocabulary.{lean_name(u['id'])}" for u in table["units"]]
+    out.append("")
     return "\n".join(out)
 
 
@@ -512,6 +691,7 @@ def main() -> int:
         PY_OUT: emit_python(table),
         UNIT_SCHEMA_OUT: emit_unit_schema(table),
         LEAN_OUT: emit_lean(table),
+        LEAN_GATE_OUT: emit_lean_gate(table),
     }
 
     stale: list[Path] = []

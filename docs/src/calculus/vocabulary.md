@@ -110,13 +110,45 @@ breaking the thing it guards.
 | Compile-time dimension | `unit_vocab_gen.rs`, `the_table_agrees_with_uom` | a constructor that produces a different quantity than the exponents name |
 | `pint` dimensionality | `python/tests/test_units_cross_library.py` | table exponents that `pint` disagrees with |
 | Factor agreement | the same file | the two units libraries disagreeing about a factor |
+| Lean dimension | `lean/Azoth/Vocabulary.lean`, one theorem per unit | a unit whose exponents name a different dimension than `lean-units` does |
 
-The last one is the check that was missing. It compares `pint`'s own answer for a
+The factor check is the one that was missing. It compares `pint`'s own answer for a
 unit name against `azoth._core.unit_si_factor`, which runs the very conversion a
 calculation runs — so **neither side is a literal**. Pointing `mm` at `pint: meter`
 reports *"pint says one of it is 1.0 in SI base, and the Rust conversion this
 library actually runs gives 0.001"*, which is the defect above, caught by a test
 rather than by a reviewer.
+
+## The Lean leg, and why its right-hand side is written by hand
+
+`lean/Azoth/Vocabulary.lean` carries one theorem per unit:
+
+```lean
+theorem u_mm_dimension :
+    dimOf "mm" = some (Dimension.Length) := by
+  simp only [dimOf, units, ...] <;> simp <;> module
+```
+
+The left is the table's exponents, read through `Azoth.Dim.slots`. The right is a
+dimension with a name **`lean-units` wrote** — and `LEAN_DIMENSIONS` in
+`tools/gen_vocabulary.py` is what decides which name each unit gets. That map is
+keyed by **unit**, not by dimension, and that is the whole reason the theorem is a
+check:
+
+- Keyed by dimension it would prove nothing. A table entry whose exponents were
+  wrong would select the expression for those wrong exponents, and the theorem would
+  hold however wrong the table was.
+- Keyed by unit it is a hand-written claim about what each unit *is* — the
+  counterpart of `rust_ctor`, which is what makes the Rust assertion bite — and the
+  theorem forces the table to agree with it.
+
+So declaring `mm` an area fails to prove, with a goal of `2 = 1`: the table's second
+exponent against the first one `Length` has. A unit with no entry in the map is
+refused at generation rather than skipped, so the map stays total as the table
+grows. And because the map is data, `Axioms.lean`'s sibling `Gate.lean` is generated
+from it too — a hand-maintained list of twenty-four names would go stale the first
+time a unit was added, and go stale silently, with the theorem proved and nothing
+gating it.
 
 ## Adding a unit
 
