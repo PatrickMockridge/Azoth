@@ -5,10 +5,12 @@ the physics the most callers need to the physics the fewest do. Impact first: a 
 or model that ordinary oil, gas and water work uses is ported before one only a
 specialist reaches for.
 
-This is the tiered view over `databank/manifest.toml`, which is the column-by-column
-record of what is carried and what is not — 35 of NeqSim's resource files, 1,496
-columns, 1,459 carried of which 14 are read today. This file orders that backlog; it
-does not re-inventory it.
+This maps NeqSim's physics **one to one**. Every class under NeqSim's `thermo/`,
+`thermodynamicoperations/` and `physicalproperties/` trees is assigned to a tier below;
+the trees that are not physics — `process` (unit operations and the flowsheet),
+`fluidmechanics` (azoth has its own hydraulics) and the support packages — are named at
+the end rather than silently dropped. The column-by-column record is
+`databank/manifest.toml`, which this file orders; it does not re-inventory it.
 
 ## The rules every port follows
 
@@ -29,8 +31,9 @@ would close it named — never "out of scope".
 
 ### Tier 0 — the one data path
 
-The cubic Peng-Robinson core is ported: TP, PH and PS flash, the tangent-plane
-stability test, the mixture critical point, the phase envelope, Rachford-Rice and the
+The cubic Peng-Robinson core is ported: `ComponentPR`, `AttractiveTermPr`,
+`PhasePrEos`, `SystemPrEos`, `TPflash`, `PHflash`, `PSFlash`, the tangent-plane
+stability test, `CriticalPointFlash`, the phase envelope, `RachfordRice` and the
 classical vdW1f mixing rule, reading 14 of the databank's columns. What remains is the
 foundation the rest stands on:
 
@@ -42,52 +45,139 @@ foundation the rest stands on:
 
 ### Tier 1 — oil and gas
 
-The cubic family in breadth, the standard component correlations, petroleum-fraction
-characterisation, and the transport properties every process model needs.
+The cubic family in breadth, the activity-coefficient models, the standard component
+correlations, petroleum-fraction characterisation, and the transport properties every
+process model needs.
 
-- Cubic EOS beyond PR: SRK and RK, Peneloux volume-shift
-  (`ComponentSrkPeneloux`, `PhaseSrkPenelouxEos`), and the alpha variants
-  (`SystemSrkTwuCoonEos`, `SystemPrMathiasCopeman`, `SystemPrEos1978`,
-  `SystemPrLeeKeslerEos`, `SystemSrkSchwartzentruberEos`, `SystemPrGassemEos`), with the
-  mixing-rule handler beyond classical vdW (`EosMixingRuleHandler`, Huron-Vidal and
-  Wong-Sandler).
-- Generic component correlations read from `thermo/component/` (normal boiling point,
+- **Cubic EOS breadth.** `ComponentSrk`, `ComponentRK`, `ComponentPRvolcor`,
+  `ComponentSrkvolcor`, `ComponentSrkPeneloux`, `ComponentCSPsrk`, `ComponentTST`,
+  `ComponentBWRS`, `ComponentBNS`, `ComponentAmmoniaEos`, and the alpha terms
+  `AttractiveTermSrk`, `AttractiveTermRk`, `AttractiveTermPr1978`, `AttractiveTermTwu`,
+  `AttractiveTermTwuCoon`, `AttractiveTermTwuCoonParam`, `AttractiveTermTwuCoonStatoil`,
+  `AttractiveTermMatCop`, `AttractiveTermMatCopPR`, `AttractiveTermMatCopPRUMR`,
+  `AttractiveTermMatCop5PRUMR`, `AttractiveTermMollerup`, `AttractiveTermPrLeeKesler`,
+  `AttractiveTermPrDanesh`, `AttractiveTermPrDelft1998`, `AttractiveTermPrGassem2001`,
+  `AttractiveTermSchwartzentruber`, with their `Phase*` and `System*` counterparts
+  (`SystemSrkEos`, `SystemSrkPenelouxEos`, `SystemSrkTwuCoonEos`,
+  `SystemSrkMathiasCopeman`, `SystemPrMathiasCopeman`, `SystemPrEos1978`,
+  `SystemPrLeeKeslerEos`, `SystemPrDanesh`, `SystemPrGassemEos`, `SystemPrEosDelft1998`,
+  `SystemSrkSchwartzentruberEos`, `SystemCSPsrkEos`, `SystemRKEos`, `SystemBWRSEos`,
+  `SystemBnsEos`, `SystemAmmoniaEos`, `SystemTSTEos`).
+- **Mixing rules.** `EosMixingRuleHandler` (classic, Huron-Vidal, Wong-Sandler),
+  `HVMixingRulesInterface`, `MixingRuleHandler`.
+- **Activity-coefficient / GE models.** `ComponentGeNRTL`, `ComponentGENRTLmodifiedHV`,
+  `ComponentGENRTLmodifiedWS`, `ComponentGEUniquac`, `ComponentGEUniquacmodifiedHV`,
+  `ComponentGEWilson`, `ComponentGEUnifac`, `ComponentGEUnifacPSRK`,
+  `ComponentGEUnifacUMRPRU`, `ComponentGeVanLaarAcid`, with `PhaseGENRTL`,
+  `PhaseGEUniquac`, `PhaseGEWilson`, `PhaseGEUnifac`, `SystemNRTL`, `SystemUNIFAC`,
+  `SystemUNIFACpsrk`, `SystemGEWilson`.
+- **Component correlations** read from `thermo/component/` (normal boiling point,
   Antoine vapour pressure) and `physicalproperties/` (standard liquid density, heat of
-  vaporisation, liquid heat capacity) — the columns the manifest already lists under
-  those packages.
-- Petroleum-fraction characterisation: `Characterise`, `TBPCharacterize`,
-  `PlusFractionModel`, `LumpingModel` in `thermo/characterization/`.
-- Transport properties: Chung viscosity and conductivity, Rackett and Costald density,
-  and `ParachorSurfaceTension`.
+  vaporisation, liquid heat capacity) — the columns the manifest lists under those
+  packages.
+- **Petroleum-fraction characterisation.** `thermo/characterization/`: `Characterise`,
+  `PlusCharacterize`, `TBPCharacterize`, `TBPfractionModel`, `PlusFractionModel`,
+  `PedersenPlusModelSolver`, `LumpingModel`, `LumpingConfigBuilder`,
+  `PseudoComponentCombiner`, `Recombine`, `OilAssayCharacterisation`, `TbpClosure`,
+  `RefineryAssayBlend`, `BioFeedstock`, `BiomassCharacterization`.
+- **Transport properties.** `physicalproperties/methods/`: gas and liquid viscosity
+  (`ChungViscosityMethod`, `Viscosity`), conductivity (`ChungConductivityMethod`,
+  `FilippovConductivityMethod`, `Conductivity`), density (`Rackett`, `Costald`,
+  `Density`), diffusivity (`WilkeChangDiffusivity`, `HaydukMinhasDiffusivity`,
+  `SiddiqiLucasMethod`, `TynCalusDiffusivity`, `WilkeLeeDiffusivity`,
+  `FullerSchettlerGiddingsDiffusivity`), and surface tension (`ParachorSurfaceTension`,
+  `GTSurfaceTension`, `FirozabadiRamleyInterfaceTension`, `LGTSurfaceTension`,
+  `CDFTSurfaceTension`).
+- **Flash breadth.** `TVflash`, `PVflash`, `VUflash`, `THflash`, `TSflash`, `TUflash`,
+  `PUflash`, `PVFflash`, `TVfractionFlash`, `QfuncFlash`, `ImprovedVUflashQfunc`.
+- **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,
+  `CricondenBarFlash`, `CricondenThermFlash`, `SysNewtonRhapsonPhaseEnvelope`.
+- **PVT and flow assurance.** `pvtsimulation/` (simulation, model tuning, reservoir
+  properties).
 
 ### Tier 2 — water and gas-water
 
 Water and the aqueous models: the water EOS, water content and dehydration, acid-gas
-solubility, and the electrolytes and hydrate inhibitors that water work depends on.
+solubility, electrolytes, salts and scale, and freezing.
 
-- The water EOS: `ComponentWater`, `PhaseWaterIAPWS`, `Iapws_if97`.
-- Water content and dehydration: `WATcalc`, `WaterDewPointTemperatureFlash`.
-- Acid gas: `ComponentSoreideWhitson`, `CO2BrinePhaseEquilibrium`, `SaturateWithWater`.
-- Electrolytes and salts: `PhasePitzer`, `PhaseKentEisenberg`, `PhaseDesmukhMather`,
-  `PhaseDuanSun` and the `Pitzer*` machinery, with MEG, methanol and glycol inhibition.
+- **The water EOS.** `ComponentWater`, `PhaseWaterIAPWS`, `SystemWaterIF97`,
+  `thermo/util/steam/Iapws_if97`.
+- **Water content and dehydration.** `WATcalc`, `WaterDewPointTemperatureFlash`,
+  `WaterDewPointTemperatureMultiphaseFlash`, `WaterDewPointEquilibriumLine`.
+- **Acid gas.** `ComponentSoreideWhitson`, `ComponentGeVanLaarAcid`,
+  `CO2BrinePhaseEquilibrium`, `SaturateWithWater`.
+- **Electrolytes.** `ComponentGePitzer`, `ComponentKentEisenberg`,
+  `ComponentDesmukhMather`, `ComponentGeDuanSun`, `ComponentModifiedFurstElectrolyteEos`
+  and `…Mod2004`, with `PhasePitzer`, `PhaseKentEisenberg`, `PhaseDesmukhMather`,
+  `PhaseDuanSun`, `PhaseModifiedFurstElectrolyteEos`, `SystemPitzer`,
+  `SystemKentEisenberg`, `SystemDesmukhMather`, `SystemDuanSun`,
+  `SystemFurstElectrolyteEos`, and the `Pitzer*` machinery (`PitzerNeutralInteraction`,
+  `PitzerElectrostaticMixing`, `PitzerTemperatureFunction`, and the parameter catalogs).
+- **Salts and scale.** `MultiSaltPrecipitation`, `CalcSaltSatauration`,
+  `CheckScalePotential`, `AddIonToScaleSaturation`.
+- **Freezing.** `FreezeOut`, `FreezingPointTemperatureFlash`.
 
 ### Tier 3 — wax, hydrate, hydrogen, asphaltene
 
 The specialist physics.
 
-- Hydrate: `PhaseHydrate`, `TPHydrateFlash`, `HydrateFormationPressureFlash`,
-  `HydrateInhibitorConcentrationFlash`.
-- Wax: `ComponentWax`, `ComponentWonWax`, `ComponentCoutinhoWax`, `TPmultiflashWAX`,
-  `WaxCharacterise`.
-- Asphaltene: `AsphalteneOnsetPressureFlash`, `FloryHugginsAsphalteneModel`.
-- Hydrogen and cryogenic: `ComponentGERG2008Eos` and `GERG2008`, `ComponentLeachmanEos`,
-  `ParaOrthoH2Correction`, `ParaHydrogenSolidHelmholtzEquation`.
+- **Hydrate.** `ComponentHydrate`, `ComponentHydrateBallard`, `ComponentHydrateGF`,
+  `ComponentHydrateKluda`, `ComponentHydratePitzer`, `ComponentHydratePVTsim`,
+  `ComponentHydrateStatoil`, `PhaseHydrate`, `TPHydrateFlash`,
+  `HydrateFormationPressureFlash`, `HydrateFormationTemperatureFlash`,
+  `HydrateInhibitorConcentrationFlash`, `HydrateInhibitorwtFlash`, `PitzerHydrateFlash`,
+  `HydrateEquilibriumLine`, `HydrateEquilibriumDiagnostics`, `OLGAhydrateCurveGenerator`.
+- **Wax.** `ComponentWax`, `ComponentWonWax`, `ComponentCoutinhoWax`,
+  `ComponentWaxWilson`, `PhaseWax`, `TPmultiflashWAX`, `WaxCharacterise`,
+  `WaxModelInterface`, and `pvtsimulation/flowassurance/WaxCurveCalculator`.
+- **Asphaltene.** `AsphalteneCharacterization`, `PedersenAsphalteneCharacterization`,
+  `AsphalteneOnsetPressureFlash`, `AsphalteneOnsetTemperatureFlash`, and
+  `pvtsimulation/flowassurance/FloryHugginsAsphalteneModel`.
+- **Hydrogen and cryogenic.** `ComponentGERG2008Eos`, `ComponentGERG2004`,
+  `PhaseGERG2008Eos`, `SystemGERG2008Eos`, `PHflashGERG2008`, `PSFlashGERG2008` and
+  `thermo/util/gerg/`; `ComponentLeachmanEos`, `PHflashLeachman`, `PSFlashLeachman` and
+  `thermo/util/leachman/`; `thermo/util/hydrogen/ParaOrthoH2Correction`;
+  `thermo/util/solid/ParaHydrogenSolidHelmholtzEquation`.
 
 ### Tier 4 — the long tail
 
 Port on demand, as a caller needs them:
 
-- CPA (`ComponentPrCPA`, `CPAMixingRuleHandler`), PC-SAFT and SAFT-VR-Mie
-  (`ComponentPCSAFT`, `ComponentSAFTVRMie`), the Span-Wagner reference EOS
-  (`ComponentSpanWagnerEos`), solids (`ComponentSolid`, `SolidFlash1`), sulfur
-  (`SulfurThermodynamics`), amines (`AmineKentEisenberg`), and the reactive flash.
+- **CPA.** `ComponentPrCPA`, `ComponentSrkCPA`, `ComponentSrkCPAs`, `ComponentSrkCPAMM`,
+  `ComponentUMRCPA`, `PhasePrCPA`, `PhaseSrkCPA` and its mixing variants,
+  `CPAMixingRuleHandler`, `CPAMixingRuleType`, `SystemPrCPA`, `SystemSrkCPA`,
+  `SystemUMRCPAEoS`.
+- **SAFT.** `ComponentPCSAFT`, `ComponentPCSAFTa`, `ComponentSAFTVRMie`, `PhasePCSAFT`,
+  `PhasePCSAFTa`, `PhaseSAFTVRMie`, `SystemPCSAFT`, `SystemPCSAFTa`, `SystemSAFTVRMie`,
+  `TPflashSAFT`.
+- **Reference equations of state.** `ComponentSpanWagnerEos`, `ComponentVegaEos`,
+  `ComponentEOSCGEos`, `PhaseSpanWagnerEos`, `PhaseVegaEos`, `SystemSpanWagnerEos`,
+  `SystemVegaEos`, `PHflashVega`, `PSFlashVega`, `EOSCGSaturationVUFlash`, and
+  `thermo/util/spanwagner/`, `thermo/util/Vega/`.
+- **UMR.** `ComponentUMRCPA`, `ComponentUMRCPAvolcor`, `ComponentGEUnifacUMRPRU`,
+  `AttractiveTermUMRPRU`, `SystemUMRPRUEos`, `SystemUMRPRUMCEos`.
+- **Solids.** `ComponentSolid`, `ComponentSolidHelmholtzEos`, `PhaseSolid`,
+  `PhaseSolidComplex`, `PhasePureComponentSolid`, `PhaseSolidHelmholtzEos`,
+  `SystemSolidHelmholtzEos`, `SystemArgonSolidHelmholtzEos`, `SolidFlash`, `SolidFlash1`,
+  `SolidFlash12`, `PHsolidFlash`, `thermo/util/solid/`.
+- **Sulfur.** `thermo/util/sulfur/SulfurThermodynamics`.
+- **Amines.** `thermo/util/amines/` (`AmineSystem`, `AmineKentEisenberg`), and the
+  amine viscosity and diffusivity methods.
+- **Reactive and equilibrium.** `thermodynamicoperations/flashops/reactiveflash/`
+  (`ReactiveMultiphaseTPflash`, `ReactiveMultiphasePHflash`, `ReactiveStabilityAnalysis`,
+  `ModifiedRANDSolver`, `DIISAccelerator`), `ChemicalEquilibrium`, and `chemicalreactions/`.
+- **Black oil.** `blackoil/`.
+- **Standards.** `standards/` — standard and regulatory calculations.
+
+## Not a port target
+
+The following NeqSim trees are deliberately not ported, so that the mapping above is
+complete rather than silent about them:
+
+- **`process/`** (unit operations, equipment, the flowsheet). azoth's specification puts
+  the unit-operation tier at tranche P11; the tier was deleted, not deferred piecemeal,
+  and it is built on the physics above once that is complete.
+- **`fluidmechanics/`** — azoth has its own hydraulics (`hydraulics.*`); this tree is
+  NeqSim's parallel one and is not the port source.
+- **`statistics/`, `util/`, `mcp/`, `mathlib/`, `integration/`, `datapresentation/`,
+  `api/`** — infrastructure and tooling, not physics.

@@ -9,14 +9,15 @@ simulator, under Apache-2.0 and credited in [`NOTICE`](NOTICE) rather than re-de
 
 What is azoth's own is the structure around them, and that is where the opinions are:
 
-- **Composable by construction.** The dimension group is proved in Lean
-  (`lean/Azoth/Dim.lean`), and the 24-unit vocabulary is data compiled into theorems
-  (`lean/Azoth/Vocabulary.lean`) that say which dimension each unit names. Above them,
-  pi and rho say a unit operation is a pure function on typed channels, so conservation
-  is linearity and the balances are lemmas rather than checks. The crates are a small
-  core with no cross-dependency, so a new domain is a new crate. What
-  [the calculus](docs/src/calculus/index.md) states once, every calculation
-  is an instance of.
+- **Composable by construction.** azoth's formal layer is a development in the
+  calculus of constructions — the dependent type theory Lean implements — in which the
+  dimension group is proved (`lean/Azoth/Dim.lean`) and the 24-unit vocabulary is data
+  compiled into proved theorems (`lean/Azoth/Vocabulary.lean`). Above them, pi and rho
+  specify a unit operation as a pure function on typed channels, so conservation is
+  linearity and the balances are lemmas rather than checks. The crates are a small core
+  with no cross-dependency, so a new domain is a new crate. What
+  [the calculus of thermodynamic dimensionality](docs/src/calculus/index.md) states
+  once, every calculation is an instance of.
 - **A standard, not an encyclopaedia.** No single project ships every fluid and every
   correlation. azoth ships a *standard* others author against: the keycard (TOML data,
   checked on load), a new equation as one spec plus one Rust file and one Python file,
