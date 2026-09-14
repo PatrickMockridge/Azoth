@@ -27,6 +27,13 @@ classifiers = [
 dependencies = [
   # Units. The whole public API speaks pint quantities, so this is not optional.
   "pint>=0.24",
+  # A keycard is a YAML file, and `azoth/__init__.py` imports `azoth.keycard`,
+  # which imports this at module scope. So it is reached by a bare `import azoth`
+  # and not only by `keycard.load()`. Left undeclared it made the wheel
+  # unimportable in a clean environment: `pip install azoth` succeeded and the
+  # first `import azoth` raised ModuleNotFoundError. Every development venv had
+  # it through the dev extra, which is why only the wheel job saw it.
+  "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

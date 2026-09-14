@@ -199,9 +199,7 @@ def _rust_pyclasses() -> dict[str, tuple[str, ...]]:
     which is a test that fails for a reason the reader cannot see.
     """
     source_dir = REPO_ROOT / "crates" / "azoth-python" / "src"
-    attribute = re.compile(
-        r'#\[pyclass\([^)]*?name\s*=\s*"(?P<name>\w+)"', re.DOTALL
-    )
+    attribute = re.compile(r'#\[pyclass\([^)]*?name\s*=\s*"(?P<name>\w+)"', re.DOTALL)
     struct = re.compile(r"pub struct \w+ \{")
 
     found: dict[str, tuple[str, ...]] = {}
@@ -222,9 +220,7 @@ def _rust_pyclasses() -> dict[str, tuple[str, ...]]:
                         end = index
                         break
             body = text[opening.end() : end]
-            found[match.group("name")] = tuple(
-                re.findall(r"#\[pyo3\(get\)\]\s*pub (\w+):", body)
-            )
+            found[match.group("name")] = tuple(re.findall(r"#\[pyo3\(get\)\]\s*pub (\w+):", body))
     return found
 
 
