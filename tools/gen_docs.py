@@ -77,6 +77,29 @@ FRONT_PAGES = (("Spec files", "spec-files.md"),)
 #: the failure is caught rather than being a page nobody ever reads.
 STATIC_PAGES: tuple[tuple[str, str], ...] = ()
 
+#: Hand-written pages that form their own section of the book, after the front
+#: pages and before the reference sections.
+#:
+#: A separate tuple from FRONT_PAGES and STATIC_PAGES because the calculus is a
+#: section with a heading and subpages, not a flat sibling - and because its
+#: position is load-bearing: a model page's ports and its units are instances of
+#: what these pages define, so a reader who meets them last meets twenty pages of
+#: consequences before their cause.
+STATIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
+    (
+        "The calculus of thermodynamic dimensionality",
+        (
+            ("The calculus of thermodynamic dimensionality", "calculus/index.md"),
+            ("Dimensions", "calculus/dimensions.md"),
+            ("Barbs", "calculus/barbs.md"),
+            ("Processes and channels", "calculus/process.md"),
+            ("Reflection and feedback", "calculus/rho.md"),
+            ("The keycard as a capability", "calculus/capability.md"),
+            ("The vocabulary table", "calculus/vocabulary.md"),
+        ),
+    ),
+)
+
 
 def namespace_dir(namespace: str) -> Path:
     """Where a namespace's pages live.
@@ -487,6 +510,14 @@ def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | N
     out += "- [Specification](./spec.md)\n"
     for title, filename in FRONT_PAGES:
         out += f"- [{title}](./{filename})\n"
+    for section_title, pages in STATIC_SECTIONS:
+        # The section heading links to its own first page, so the entry is
+        # navigable rather than a label - mdBook renders a summary entry without a
+        # link as plain text.
+        out += f"- [{section_title}](./{pages[0][1]})\n"
+        for page_title, filename in pages[1:]:
+            out += f"  - [{page_title}](./{filename})\n"
+
     by_namespace: dict[str, list[dict[str, Any]]] = {}
     for calc in calcs:
         by_namespace.setdefault(calc["id"].split(".")[0], []).append(calc)

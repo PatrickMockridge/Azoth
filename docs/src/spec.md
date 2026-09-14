@@ -4,8 +4,8 @@
 calculation mirrored in Python.**
 
 This page is the specification. It is normative: where a docstring, a comment or a habit
-disagrees with it, this page wins and the other thing is a bug. It has two parts — the
-port, and the keycard.
+disagrees with it, this page wins and the other thing is a bug. It has three parts — the
+port, the keycard, and the calculus.
 
 ---
 
@@ -212,3 +212,41 @@ real.
   of surprise.
 - **A coefficient must declare a unit**, checked against the spec's declared unit for that
   input. A value in the wrong unit is a factor with no symptom.
+
+---
+
+# Part three: the calculus
+
+**The calculus is normative for the types, and this page is normative for the
+policy.** They do not overlap, and neither overrides the other. Where a signature,
+a dimension or a channel declaration disagrees with
+[The calculus of thermodynamic dimensionality](./calculus/index.md), the calculus
+wins and the other thing is a bug. Where a rule about what is ported, how a
+calculation is declared, or where responsibility for data sits disagrees with this
+page, this page wins. A type is not a policy, and the two are not two answers to
+one question.
+
+Four rules from it are stated here because they constrain everything else on this
+page:
+
+- **One vocabulary table.** `specs/vocabulary/vocabulary.yaml` is the one
+  hand-written source of the canonical units a spec may declare, and the schema's
+  unit enum, the Rust conversion table and the Python map are compiled from it. A
+  unit added anywhere else is a unit that disagrees.
+
+- **The calculus is hand-written; the vocabulary is data.** The same split
+  [How a calculation is ported](#how-a-calculation-is-ported) makes for kernels,
+  extended by one file: the Lean development is written by hand, and everything
+  that merely names a unit is generated from the table.
+
+- **No conversion factor is written down anywhere.** A factor is a number `uom`
+  and `pint` each already know. A third copy is a copy that can disagree with
+  both, and it is why `mm` once put a factor of a thousand between the two
+  implementations while every test passed.
+
+- **A unit operation's channels are declared, and they are a signature rather
+  than a program.** A model declares its ports, their polarity, their multiplicity
+  and the fields that cross them, and a lint rule holds that declaration against
+  the inputs and outputs in both directions. Pi and rho are the language the
+  process layer is *stated in* — they are not spec fields, and there is no
+  interpreter for them. See [Processes and channels](./calculus/process.md).
