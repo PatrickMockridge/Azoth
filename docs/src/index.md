@@ -59,10 +59,6 @@ Four sections, and the difference between them is the point:
 - **Equations of state** — where the model stops being a correlation: an equation of
   state is implicit, mixture-valued, and written in reduced variables rather than in
   quantities with units.
-- **Unit operations** — the process layer over the domains, where a calculation becomes
-  a transformation of streams. It is not a fourth domain but the composition tier above
-  them, and [the specification](./spec.md) is the page for how the
-  levels nest.
 
 <!-- BEGIN GENERATED: implemented -->
 **Equations of state** - [`eos/index.md`](./eos/index.md):
@@ -103,20 +99,6 @@ Four sections, and the difference between them is the point:
 - [`hydraulics.pump_power`](./hydraulics/pump_power.md)
 - [`hydraulics.reynolds_number`](./hydraulics/reynolds_number.md)
 
-**Unit operations** - [`process/index.md`](./process/index.md):
-
-
-*Models* — whose specs fix a procedure rather than an equation:
-
-- [`process.compressor`](./process/compressor.md) — Compressor
-- [`process.expander`](./process/expander.md) — Expander
-- [`process.heater`](./process/heater.md) — Heater and cooler
-- [`process.mixer`](./process/mixer.md) — Mixer
-- [`process.pump`](./process/pump.md) — Pump
-- [`process.separator`](./process/separator.md) — Separator
-- [`process.splitter`](./process/splitter.md) — Splitter
-- [`process.throttling_valve`](./process/throttling_valve.md) — Throttling valve
-
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)
@@ -129,10 +111,10 @@ is the isentropic basis, with the standard's de-rating coefficients left to the 
 
 Each calculation is independent, and the composition is done by the caller. That is
 still true of every id in the list above, and it is why each one has a worked example a
-reader can retrace by hand. A **process layer** - unit operations, and flowsheets that
-compose them - is being built on top, and it composes for you; what it gives up in
-exchange, and what replaces the guarantee, is set out in
-[the specification](./spec.md) rather than left to be discovered.
+reader can retrace by hand. A **unit-operation tier** and the **flowsheets** that
+compose them sit above this, and they compose for you; what that gives up in exchange,
+and what replaces the guarantee, is set out in [the specification](./spec.md) rather
+than left to be discovered. Neither is built - see P11 and P12 there.
 
 The `azoth pipe` command performs the composition shown here, and reports the two
 pressure drop contributions separately rather than only their sum - they come from

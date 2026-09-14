@@ -60,7 +60,8 @@ def test_every_declared_range_check_runs() -> None:
     The calc-side half of the same assertion `test_model_contract.py` makes for models,
     and the reason it is behavioural rather than a name check: a declared quantity whose
     name resolves proves nothing about whether the implementation's resolver has an arm
-    for it. `process.mixer` is the worked example — `T` was a declared input, and neither
+    for it. The worked example was `process.mixer` — deleted since, along with the
+    whole unit-operation tier — where `T` was a declared input and neither
     implementation's resolver produced it, so the bound was skipped on every call while
     reading as enforced.
 

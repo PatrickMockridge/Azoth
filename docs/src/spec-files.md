@@ -152,7 +152,7 @@ an argument is a limitation report. That is the last of it, and the sentence to 
 one that identifies the source.
 
 The reason the removed fields could not stay is not taste. A spec is YAML, and YAML folded
-scalars do not carry markdown: before this, the generated page for `process.compressor` showed
+scalars do not carry markdown: before this, the generated page for a spec whose prose argued at length showed
 a fenced code block flattened onto one line, a bullet list collapsed into ` - `-joined text,
 and a blockquote emitting an unmatched `**` and a stray `)`. All three came from prose written
 as markdown inside a `>` scalar. Prose that survives is prose that was written as markdown in

@@ -534,21 +534,16 @@ pub fn molar_enthalpy_entropy(
 
 /// Every model in the workspace, across every namespace that has one.
 ///
-/// The tables are separate because each is *generated into the crate that owns its
-/// namespace* - `azoth-eos/src/model_gen.rs` and `azoth-process/src/model_gen.rs` are
-/// two files because a namespace owns its own models. They are read together here
-/// because the contract is over all of them: `azoth._models_gen` is one registry, and
-/// a language reporting only the `eos` half would agree with itself about every model
-/// it mentioned while silently covering half of what the Python side can call.
+/// The table is generated into the crate that owns its namespace, so a second
+/// namespace means a second table chained in here. `process` was one - a unit-operation
+/// layer that asserted a process simulator this library does not have - and it was
+/// deleted rather than repaired; `eos` is the whole of what remains.
 ///
 /// **This is the function that has to change when a namespace is added.** It read
 /// `eos::model_gen` alone until `process` arrived, and the three `model_*` functions
 /// below stayed green for exactly as long as nobody asked them about a unit operation.
 fn all_models() -> impl Iterator<Item = &'static azoth_core::ModelSpec> {
-    eos::model_gen::models()
-        .iter()
-        .chain(azoth_process::model_gen::models().iter())
-        .copied()
+    eos::model_gen::models().iter().copied()
 }
 
 /// Every model id this extension implements.

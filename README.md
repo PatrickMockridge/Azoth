@@ -11,12 +11,12 @@ What is azoth's own is the structure around them, and that is where the opinions
 
 - **A small core, and no cross-dependency.** `azoth-core` is units, errors, warnings,
   results, range checks, the spec runtime and the solvers, and no engineering
-  calculation. A domain crate depends on it and on no sibling, with one exception:
-  `azoth-process` calls the equation-of-state crate, because a unit operation is a flash
-  call plus arithmetic. So a new domain is a new crate.
-- **Four levels.** A calculation, a model, a unit operation, a flowsheet. The first three
-  are built; the fourth is a design in the specification rather than a schema, a format
-  or any code.
+  calculation. A domain crate depends on it and on no sibling. So a new domain is a
+  new crate.
+- **Three levels.** A calculation, a model, a unit operation, a flowsheet. The first two
+  are built. The unit-operation tier was deleted rather than repaired: it asserted a
+  process simulator this library does not have, and it is P11 work in the specification's
+  own programme, not P0 work. The flowsheet is designed there too and not built.
 - **The keycard.** A component, an interaction parameter, a fluid table, a fitting
   coefficient or a model variant overrides what ships, by name, without writing Rust or
   Python. What azoth ships is a vendored slice of NeqSim's databank and equations; what
@@ -33,8 +33,8 @@ document disagrees with the specification, that document is wrong.
 **Status: early.** What is implemented is the table below, and it is generated from the
 specs rather than maintained by hand: a hydraulics kernel through Darcy-Weisbach
 pressure drop, steady conduction, the Peng-Robinson equation of state through a
-two-phase flash, stability testing and mixture critical points, and a process layer of
-unit operations over the top. The fourth level - a **flowsheet** - is designed in
+two-phase flash, stability testing and mixture critical points. The unit-operation tier
+and the **flowsheet** above it are designed in
 [the specification](docs/src/spec.md) and not built. The fitting coefficients azoth
 ships are **placeholders, not engineering data**;
 see [Not for design work yet](#not-for-design-work-yet), and
@@ -148,14 +148,6 @@ leaves the flow regime unchecked, and the result says so.
 | `hydraulics.orifice_flow` | Flow through an orifice from the pressure difference across it |
 | `hydraulics.pump_power` | Pump shaft power from flow, head and efficiency |
 | `hydraulics.reynolds_number` | Reynolds number for pipe flow |
-| `process.compressor` | Compressor — a *model* |
-| `process.expander` | Expander — a *model* |
-| `process.heater` | Heater and cooler — a *model* |
-| `process.mixer` | Mixer — a *model* |
-| `process.pump` | Pump — a *model* |
-| `process.separator` | Separator — a *model* |
-| `process.splitter` | Splitter — a *model* |
-| `process.throttling_valve` | Throttling valve — a *model* |
 | `thermal.conduction_plane_wall` | Steady conduction through a plane wall |
 <!-- END GENERATED: implemented -->
 
@@ -188,9 +180,9 @@ confirmed, which is that nobody has read the paper.
 
 The ids are namespaced by **domain** - `hydraulics.*`, `thermal.*`, `eos.*` - not by
 project. They appear in provenance records and citations, so renaming the project does
-not, and should not, invalidate them. `process.*` is named differently on purpose: the
-process layer is not a fourth domain sitting beside the others but the composition tier
-above them, and [the specification](docs/src/spec.md) sets out why.
+not, and should not, invalidate them. A unit-operation or flowsheet namespace above
+them will not be a fourth domain sitting beside the others but a composition tier,
+and [the specification](docs/src/spec.md) sets out the programme for it.
 
 The namespaces are also what proved the pipeline is domain-agnostic rather than shaped
 around pipe flow. `eos` is where the shapes stop matching: an equation of state is

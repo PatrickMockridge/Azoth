@@ -19,8 +19,8 @@ use azoth_core::{AzothError, ModelAlgorithm, ModelSpec, Result};
 /// table and the schema disagree - a generator defect rather than a caller error.
 /// Returned rather than panicked, per this crate's no-panic rule.
 ///
-/// Here rather than in each of the models that need it, and `pub` because
-/// `azoth-process` runs the same check on its own specs.
+/// Here rather than in each of the models that need it, and `pub` because it is part
+/// of the model layer's contract rather than of any one model.
 pub fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
     spec.algorithm.ok_or_else(|| AzothError::InvalidInput {
         field: "algorithm".to_string(),
