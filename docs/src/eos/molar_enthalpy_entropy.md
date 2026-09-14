@@ -23,18 +23,15 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `Pc` | Pa | critical pressures, in the same order |
 | `omega` | dimensionless | acentric factors, in the same order |
 | `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
-| `cp_a` | dimensionless | the constant term of each component's `Cp/R` polynomial. As in `eos.ideal_gas_cp`, the four coefficients are dimensionless because the polynomial is divided through by `R` and written against `T/(1000 K)`. |
-| `cp_b` | dimensionless | the coefficient of `theta` in each component's polynomial |
-| `cp_c` | dimensionless | the coefficient of `theta**2` in each component's polynomial |
-| `cp_d` | dimensionless | the coefficient of `theta**3` in each component's polynomial |
-| `h_ref` | J/mol | each component's ideal-gas molar enthalpy at `T_ref`, which is the caller's datum. **Nothing checks it against any other source**, and two enthalpies computed from different datums are not comparable. |
-| `s_ref` | J/(mol*K) | each component's ideal-gas molar entropy at `T_ref` and `P_ref` |
-| `T_ref` | K | the temperature the reference values are given at |
-| `P_ref` | Pa | the pressure `s_ref` is given at. It does not enter the enthalpy. |
-| `T` | K | absolute temperature of the state wanted |
-| `P` | Pa | absolute pressure of the state wanted |
+| `cp_a` | J/(mol*K) | the constant term of each component's `Cp` polynomial, in J/(mol*K). Together with the four below, this is everything the ideal-gas enthalpy and entropy are integrated from - there is no separate datum, because NeqSim's is a fixed reference temperature rather than a value a caller supplies. |
+| `cp_b` | J/(mol*K**2) | the coefficient of `T`, in J/(mol*K**2) |
+| `cp_c` | J/(mol*K**3) | the coefficient of `T**2`, in J/(mol*K**3) |
+| `cp_d` | J/(mol*K**4) | the coefficient of `T**3`, in J/(mol*K**4) |
+| `cp_e` | J/(mol*K**5) | the coefficient of `T**4`, in J/(mol*K**5) |
+| `T` | K | absolute temperature of the state |
+| `P` | Pa | absolute pressure of the state |
 | `z` | dimensionless | the mixture's mole fractions, checked rather than renormalised |
-| `compressibility` | dimensionless | the cubic's root for this phase, `Z = P v /(R T)`. An input rather than something this model solves for: which root describes the phase is the caller's choice, and a caller holding a `Z` from `eos.pr_z_factor` or from a flash has already made it. |
+| `compressibility` | dimensionless | the cubic's root for the phase wanted. Not solved for here: which root describes the phase is a choice, and a caller holding a `z` has already made it. |
 
 
 ## Outputs
@@ -55,9 +52,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | Bound | On violation | Why |
 |---|---|---|
 | `T > 0` | raises | an absolute temperature; zero and below are not states |
-| `T_ref > 0` | raises | the reference temperature, and the argument of `ln(T/T_ref)` in the entropy integral - so zero is a division rather than a state |
 | `P > 0` | raises | an absolute pressure; zero and below are not states |
-| `P_ref > 0` | raises | the reference pressure, and the argument of `ln(P/P_ref)` |
 | `compressibility > 0` | raises | `Z = P v /(R T)` is positive for any state with a positive volume. The stricter check that actually matters - that the root exceeds the mixture's `B`, without which `ln(Z - B)` is the logarithm of a negative number - needs the composition and belongs to the implementation rather than to this table. |
 
 ## Assumptions
@@ -73,8 +68,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_and_butane_with_a_zero_datum` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], cp_a = [4.0, 4.0], cp_b = [1.0, 1.0], cp_c = [-0.5, -0.5], cp_d = [0.1, 0.1], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 298.15, P_ref = 101325.0, T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789 | h = -351.24593942874526, s = -20.553517170090107, h_ideal = 1130.1847399375104, s_ideal = -17.456668341283496, h_departure = -1481.4306793662556, s_departure = -3.0968488288066105, psi_bar = -0.5619363510353611 |
-| `the_same_state_with_the_ideal_gas_terms_off` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], cp_a = [0.0, 0.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 298.15, P_ref = 101325.0, T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789 | h = -1481.4306793662556, s = -24.154898040804962, h_ideal = 0.0, s_ideal = -21.058049211998352, h_departure = -1481.4306793662556, s_departure = -3.0968488288066105, psi_bar = -0.5619363510353611 |
+| `methane_and_butane_with_a_zero_datum` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], cp_a = [4.0, 4.0], cp_b = [1.0, 1.0], cp_c = [-0.5, -0.5], cp_d = [0.1, 0.1], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789, cp_e = [0.0, 0.0] | h = 154733558.84735802, s = 510028.73265069793, h_ideal = 154735040.2780374, s_ideal = 510031.82949952676, h_departure = -1481.4306793662556, s_departure = -3.0968488288066105, psi_bar = -0.5619363510353611 |
+| `the_same_state_with_the_ideal_gas_terms_off` | Tc = [190.56, 425.12], Pc = [4599200.0, 3796000.0], omega = [0.01142, 0.2002], kij = [[0.0, 0.05], [0.05, 0.0]], cp_a = [0.0, 0.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789, cp_e = [0.0, 0.0] | h = -1481.4306793662556, s = -24.154898040804962, h_ideal = 0.0, s_ideal = -21.058049211998352, h_departure = -1481.4306793662556, s_departure = -3.0968488288066105, psi_bar = -0.5619363510353611 |
 
 ## References
 

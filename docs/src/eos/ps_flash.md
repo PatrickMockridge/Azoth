@@ -50,14 +50,11 @@ not an equation, and both implementations read it from here.
 | `Pc` | Pa | critical pressures, in the same order |
 | `omega` | dimensionless | acentric factors, in the same order. All three vectors are the caller's - this library ships a databank of them (`azoth.eos.component`) - and they must be mutually consistent, which is not checked. |
 | `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
-| `cp_a` | dimensionless | the constant term of each component's `Cp/R` polynomial, as in `eos.molar_enthalpy_entropy`. Together with the three below and the reference values, this is the datum the requested entropy is measured from. |
-| `cp_b` | dimensionless | the coefficient of `theta` in each component's polynomial |
-| `cp_c` | dimensionless | the coefficient of `theta**2` |
-| `cp_d` | dimensionless | the coefficient of `theta**3` |
-| `h_ref` | J/mol | each component's ideal-gas molar enthalpy at `T_ref`. This is the datum. |
-| `s_ref` | J/(mol*K) | each component's ideal-gas molar entropy at `T_ref` and `P_ref`. **Not used by this model** - an isentropic flash does not need it - and required only because it belongs to the same ideal-gas model the entropy is computed from, and a coefficient set without a reference state is not a thermodynamic model. |
-| `T_ref` | K | the temperature the reference values are given at |
-| `P_ref` | Pa | the pressure `s_ref` is given at. It does not enter this model's answer, for the same reason `s_ref` does not. |
+| `cp_a` | J/(mol*K) | the constant term of each component's `Cp` polynomial, in J/(mol*K). Together with the four below, this is everything the ideal-gas enthalpy and entropy are integrated from - there is no separate datum, because NeqSim's is a fixed reference temperature rather than a value a caller supplies. |
+| `cp_b` | J/(mol*K**2) | the coefficient of `T`, in J/(mol*K**2) |
+| `cp_c` | J/(mol*K**3) | the coefficient of `T**2`, in J/(mol*K**3) |
+| `cp_d` | J/(mol*K**4) | the coefficient of `T**3`, in J/(mol*K**4) |
+| `cp_e` | J/(mol*K**5) | the coefficient of `T**4`, in J/(mol*K**5) |
 | `P` | Pa | absolute pressure. Held fixed; the temperature is what is solved for. |
 | `S` | J/(mol*K) | the molar entropy the mixture is to reach, as a difference from the datum above. A magnitude, and it may be negative - a reference state that puts zero anywhere is a convention, not a physical floor. |
 | `z` | dimensionless | the feed's mole fractions. Checked rather than renormalised. |
@@ -95,8 +92,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `two_phase_round_trip` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 300.0, P_ref = 100000.0, P = 2000000.0, S = -39.078496670600245, z = [0.6, 0.4] | T = 300.0, beta = 0.6824390269029676 |
-| `single_phase_vapour_round_trip` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 300.0, P_ref = 100000.0, P = 2000000.0, S = -7.568398845188517, z = [0.6, 0.4] | T = 450.0 |
+| `two_phase_round_trip` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], P = 2000000.0, S = -38.61276026788922, z = [0.6, 0.4], cp_e = [0.0, 0.0] | T = 300.0, beta = 0.6824390296509166 |
+| `single_phase_vapour_round_trip` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], P = 2000000.0, S = -18.372548072123493, z = [0.6, 0.4], cp_e = [0.0, 0.0] | T = 450.0 |
 
 ## References
 

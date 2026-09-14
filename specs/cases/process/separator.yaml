@@ -34,14 +34,6 @@ cases:
     cp_d:
     - 0.0
     - 0.0
-    h_ref:
-    - 0.0
-    - 0.0
-    s_ref:
-    - 0.0
-    - 0.0
-    T_ref: 300.0
-    P_ref: 100000.0
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -50,12 +42,15 @@ cases:
     - 0.4
     pressure_drop: 0.0
     heat_duty: 0.0
+    cp_e:
+    - 0.0
+    - 0.0
   expected:
     T: 300.0
     P: 2000000.0
-    beta: 0.6824390296506371
-    gas_flow: 6.824390296506371
-    liquid_flow: 3.175609703493629
+    beta: 0.6824390296509166
+    gas_flow: 6.824390296509167
+    liquid_flow: 3.1756097034908337
   tolerance: 1.0e-09
 - id: a_pressure_drop_leaves_the_temperature_alone
   inputs:
@@ -85,14 +80,6 @@ cases:
     cp_d:
     - 0.0
     - 0.0
-    h_ref:
-    - 0.0
-    - 0.0
-    s_ref:
-    - 0.0
-    - 0.0
-    T_ref: 300.0
-    P_ref: 100000.0
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -101,6 +88,9 @@ cases:
     - 0.4
     pressure_drop: 500000.0
     heat_duty: 0.0
+    cp_e:
+    - 0.0
+    - 0.0
   expected:
     T: 300.0
     P: 1500000.0
@@ -133,14 +123,6 @@ cases:
     cp_d:
     - 0.0
     - 0.0
-    h_ref:
-    - 0.0
-    - 0.0
-    s_ref:
-    - 0.0
-    - 0.0
-    T_ref: 300.0
-    P_ref: 100000.0
     T: 450.0
     P: 2000000.0
     n: 10.0
@@ -149,6 +131,9 @@ cases:
     - 0.4
     pressure_drop: 0.0
     heat_duty: 0.0
+    cp_e:
+    - 0.0
+    - 0.0
   expected:
     T: 450.0
     P: 2000000.0

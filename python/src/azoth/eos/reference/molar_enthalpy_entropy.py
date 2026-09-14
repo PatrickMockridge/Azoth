@@ -29,50 +29,56 @@ from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT
 
 MODEL_ID = "eos.molar_enthalpy_entropy"
 
-#: The temperature scale this model's ideal-gas polynomial is written against.
+#: The temperature NeqSim's ideal-gas integrals are measured from, in kelvin.
 #:
-#: This model's own convention rather than ``eos.ideal_gas_cp``'s: that calc evaluates
-#: a dimensional polynomial, and this is the reduction that makes a table's printed
-#: coefficients dimensionless against a stated scale.
-REFERENCE_TEMPERATURE = 1000.0
+#: ``ThermodynamicConstantsInterface.referenceTemperature``. Fixed rather than a
+#: caller's choice: it is where ``getHID`` and ``getIdEntropy`` both start, so it is
+#: part of the correlation rather than a datum a caller supplies.
+REFERENCE_TEMPERATURE = 273.15
+
+#: The pressure NeqSim's ideal-gas entropy is measured from, in pascals.
+#:
+#: ``ThermodynamicConstantsInterface.referencePressure``, which is 1.01325 bar.
+REFERENCE_PRESSURE = 1.01325e5
 
 
 @dataclass(frozen=True, slots=True)
 class IdealGasModel:
-    """The caller's ideal-gas model and the datum it is referenced to.
+    """The ideal-gas heat-capacity coefficients of every component in the mixture.
 
-    One object rather than eight arguments because the eight belong together: a
-    coefficient set without a reference state is not a thermodynamic model, and
-    passing them separately invites a call that supplies four of the six vectors.
+    Five vectors rather than eight arguments because they belong together: a
+    coefficient set without the other four is not a polynomial, and passing them
+    separately invites a call that supplies three of the five.
+
+    **There is no datum here, and that is NeqSim's design rather than an omission.**
+    Its ``getHID`` is ``integral Cp dT`` from a fixed ``referenceTemperature`` of
+    273.15 K, and it multiplies the formation enthalpy by zero; its entropy is the same
+    integral of ``Cp/T`` from the same temperature, less
+    ``R ln(P / referencePressure)``. So the ideal-gas state is fully determined by the
+    five coefficients, and ``h_ref``, ``s_ref``, ``T_ref`` and ``P_ref`` were azoth's
+    inventions.
 
     Attributes:
-        cp_a: the constant term of each component's ``Cp/R`` polynomial.
-        cp_b: the coefficient of ``theta`` in each component's polynomial.
-        cp_c: the coefficient of ``theta**2``.
-        cp_d: the coefficient of ``theta**3``.
-        h_ref: each component's ideal-gas molar enthalpy at ``T_ref``, in J/mol.
-        s_ref: each component's ideal-gas molar entropy at ``T_ref`` and ``P_ref``,
-            in J/(mol*K).
-        T_ref: the temperature the reference values are given at.
-        P_ref: the pressure ``s_ref`` is given at. It does not enter the enthalpy.
+        cp_a: the constant term of each component's ``Cp``, in J/(mol*K).
+        cp_b: the coefficient of ``T``, in J/(mol*K**2).
+        cp_c: the coefficient of ``T**2``, in J/(mol*K**3).
+        cp_d: the coefficient of ``T**3``, in J/(mol*K**4).
+        cp_e: the coefficient of ``T**4``, in J/(mol*K**5).
     """
 
     cp_a: tuple[float, ...] | list[float]
     cp_b: tuple[float, ...] | list[float]
     cp_c: tuple[float, ...] | list[float]
     cp_d: tuple[float, ...] | list[float]
-    h_ref: tuple[float, ...] | list[float]
-    s_ref: tuple[float, ...] | list[float]
-    T_ref: Q
-    P_ref: Q
+    cp_e: tuple[float, ...] | list[float]
 
     def validate(self, n: int) -> None:
-        """Check the six vectors agree in length.
+        """Check the five vectors agree in length.
 
         Raises:
             InvalidInputError: if any vector's length differs from ``n``.
         """
-        for name in ("cp_a", "cp_b", "cp_c", "cp_d", "h_ref", "s_ref"):
+        for name in ("cp_a", "cp_b", "cp_c", "cp_d", "cp_e"):
             vector = getattr(self, name)
             if len(vector) != n:
                 raise InvalidInputError(
@@ -121,16 +127,12 @@ def molar_enthalpy_entropy(
 
     t_si = input_to_si(spec, "T", T)
     p_si = input_to_si(spec, "P", P)
-    t_ref = input_to_si(spec, "T_ref", ideal_gas.T_ref)
-    p_ref = input_to_si(spec, "P_ref", ideal_gas.P_ref)
 
     apply_checks(
         checks.on_input,
         {
             "T": t_si,
             "P": p_si,
-            "T_ref": t_ref,
-            "P_ref": p_ref,
             "compressibility": compressibility,
         }.get,
         warnings,
@@ -144,43 +146,43 @@ def molar_enthalpy_entropy(
     warnings.extend(reduced.warnings)
     state = phase_state_at(reduced, mixture.kij, list(z), compressibility)
 
-    # The ideal-gas part: each component's reference value plus the exact integral of
-    # its polynomial. Closed forms rather than quadrature, because it is a polynomial.
-    theta = t_si / REFERENCE_TEMPERATURE
-    theta_ref = t_ref / REFERENCE_TEMPERATURE
+    # The ideal-gas part, which is NeqSim's `getHID` and `getIdEntropy`: each
+    # component's polynomial integrated exactly from the fixed reference temperature to
+    # the state. Closed forms rather than quadrature, because it is a polynomial - and a
+    # five-term one, so the enthalpy gains a fifth-power term and the entropy a fourth.
+    t_ref, p_ref = REFERENCE_TEMPERATURE, REFERENCE_PRESSURE
+    t2, t3, t4, t5 = t_si**2, t_si**3, t_si**4, t_si**5
+    r2, r3, r4, r5 = t_ref**2, t_ref**3, t_ref**4, t_ref**5
     h_ideal = 0.0
     s_ideal = 0.0
-    cp_ideal_over_r = 0.0
+    cp_ideal = 0.0
     for i in range(n):
-        a, b, c, d = (
+        a, b, c, d, e = (
             ideal_gas.cp_a[i],
             ideal_gas.cp_b[i],
             ideal_gas.cp_c[i],
             ideal_gas.cp_d[i],
+            ideal_gas.cp_e[i],
         )
-        # `T = REFERENCE_TEMPERATURE * theta`, so `dT = REFERENCE_TEMPERATURE dtheta`.
-        dh = (
-            MOLAR_GAS_CONSTANT
-            * REFERENCE_TEMPERATURE
-            * (
-                a * (theta - theta_ref)
-                + b * (theta**2 - theta_ref**2) / 2.0
-                + c * (theta**3 - theta_ref**3) / 3.0
-                + d * (theta**4 - theta_ref**4) / 4.0
-            )
+        # `integral Cp dT` from `T_ref` to `T`.
+        h_ideal += z[i] * (
+            a * (t_si - t_ref)
+            + b * (t2 - r2) / 2.0
+            + c * (t3 - r3) / 3.0
+            + d * (t4 - r4) / 4.0
+            + e * (t5 - r5) / 5.0
         )
-        # `integral Cp/T dT` is `R * integral (a + b theta + ...)/theta dtheta`.
-        ds = MOLAR_GAS_CONSTANT * (
-            a * math.log(theta / theta_ref)
-            + b * (theta - theta_ref)
-            + c * (theta**2 - theta_ref**2) / 2.0
-            + d * (theta**3 - theta_ref**3) / 3.0
+        # `integral Cp / T dT`, the same limits.
+        s_ideal += z[i] * (
+            a * math.log(t_si / t_ref)
+            + b * (t_si - t_ref)
+            + c * (t2 - r2) / 2.0
+            + d * (t3 - r3) / 3.0
+            + e * (t4 - r4) / 4.0
         )
-        h_ideal += z[i] * (ideal_gas.h_ref[i] + dh)
-        s_ideal += z[i] * (ideal_gas.s_ref[i] + ds)
-        # The polynomial itself, at the state's `theta`. It is the integrand of `dh`,
-        # so reporting it costs one evaluation and no new assumption.
-        cp_ideal_over_r += z[i] * (a + b * theta + c * theta**2 + d * theta**3)
+        # The polynomial itself at the state. It is the integrand of the enthalpy, so
+        # reporting it costs one evaluation and no new assumption.
+        cp_ideal += z[i] * (a + b * t_si + c * t2 + d * t3 + e * t4)
 
     # The two ideal-gas terms that no coefficient switches off.
     s_ideal -= MOLAR_GAS_CONSTANT * math.log(p_si / p_ref)
@@ -188,8 +190,6 @@ def molar_enthalpy_entropy(
 
     h_departure = MOLAR_GAS_CONSTANT * t_si * state.h_dep_rt
     s_departure = MOLAR_GAS_CONSTANT * state.s_dep_r
-
-    cp_ideal = MOLAR_GAS_CONSTANT * cp_ideal_over_r
     cp_departure = MOLAR_GAS_CONSTANT * state.cp_dep_r
 
     return MolarEnthalpyEntropyResult(

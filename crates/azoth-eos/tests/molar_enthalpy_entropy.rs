@@ -36,10 +36,7 @@ fn from_case(case: &azoth_core::spec::TestCase) -> (Mixture, IdealGasModel, f64)
         cp_b: case.vector("cp_b").expect("cp_b").to_vec(),
         cp_c: case.vector("cp_c").expect("cp_c").to_vec(),
         cp_d: case.vector("cp_d").expect("cp_d").to_vec(),
-        h_ref: case.vector("h_ref").expect("h_ref").to_vec(),
-        s_ref: case.vector("s_ref").expect("s_ref").to_vec(),
-        t_ref: kelvins(common_input(case, "T_ref")),
-        p_ref: pascals(common_input(case, "P_ref")),
+        cp_e: case.vector("cp_e").expect("cp_e").to_vec(),
     };
     (mixture, ideal_gas, common_input(case, "compressibility"))
 }
@@ -114,10 +111,7 @@ fn the_enthalpy_is_the_departure_when_the_ideal_gas_terms_are_off() {
         cp_b: vec![0.0; 2],
         cp_c: vec![0.0; 2],
         cp_d: vec![0.0; 2],
-        h_ref: vec![0.0; 2],
-        s_ref: vec![0.0; 2],
-        t_ref: kelvins(298.15),
-        p_ref: pascals(101_325.0),
+        cp_e: vec![0.0; 2],
     };
     let result = molar_enthalpy_entropy(
         &mixture,
@@ -183,10 +177,7 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
             cp_b: vec![1.0],
             cp_c: vec![-0.5],
             cp_d: vec![0.1],
-            h_ref: vec![0.0],
-            s_ref: vec![0.0],
-            t_ref: kelvins(298.15),
-            p_ref: pascals(101_325.0),
+            cp_e: vec![0.0],
         };
         let reduced = mixture
             .reduced_parameters(kelvins(t), pascals(p))
@@ -230,31 +221,28 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
     }
 }
 
-/// The datum shifts the enthalpy, and only by what the caller put in.
+/// `integral Cp dT` from `T_ref` to `T_ref` is zero, whatever the coefficients.
 ///
-/// A model whose absolute enthalpy is meaningful only relative to a datum must move
-/// with it exactly: raising every `h_ref` by a constant raises `h` by that constant,
-/// leaving both the ideal-gas integrals and the departures untouched. It is what would
-/// fail if the reference were mixed into the integral rather than added to it, which is
-/// invisible at a zero datum - the only datum a spec case can state.
+/// `h_ideal` is measured from NeqSim's fixed `referenceTemperature` of 273.15 K, so at
+/// that temperature the ideal-gas enthalpy is exactly nothing, and the entropy is then
+/// only the pressure and mixing terms. This is the check that would fail if a reference
+/// were mixed into the integral rather than being its lower limit, and it pins the
+/// constant: 298.15 K, a rounder number, gives a non-zero answer.
 #[test]
-fn the_datum_shifts_the_enthalpy_exactly() {
+fn the_ideal_gas_enthalpy_is_zero_at_the_reference_temperature() {
     let mixture = methane_butane();
-    let build = |offset: f64| IdealGasModel {
+    let ideal_gas = IdealGasModel {
         cp_a: vec![4.0, 4.0],
         cp_b: vec![1.0, 1.0],
         cp_c: vec![-0.5, -0.5],
         cp_d: vec![0.1, 0.1],
-        h_ref: vec![offset, offset],
-        s_ref: vec![0.0, 0.0],
-        t_ref: kelvins(298.15),
-        p_ref: pascals(101_325.0),
+        cp_e: vec![0.0, 0.0],
     };
-    let at = |model: &IdealGasModel| {
+    let at = |t: f64| {
         molar_enthalpy_entropy(
             &mixture,
-            model,
-            kelvins(330.0),
+            &ideal_gas,
+            kelvins(t),
             pascals(2_500_000.0),
             &[0.6, 0.4],
             0.8274482588400789,
@@ -262,27 +250,18 @@ fn the_datum_shifts_the_enthalpy_exactly() {
         .expect("a state")
     };
 
-    let plain = at(&build(0.0));
-    let shifted = at(&build(-285_830.0));
-    assert!(
-        (shifted.h.value - (plain.h.value - 285_830.0)).abs() < 1e-9,
-        "shifting the datum by -285830 moved h by {}, not by that",
-        shifted.h.value - plain.h.value
-    );
-    // Relative rather than exact: adding 285830 back to a value near -284700 is a
-    // cancellation, and the relative error of the recovery is the arithmetic's rather
-    // than the model's. `s` and `h_departure` below need no such allowance, because
-    // the datum does not enter either of them.
-    assert!(
-        (shifted.h_ideal.value + 285_830.0 - plain.h_ideal.value).abs() < 1e-9,
-        "recovering the ideal-gas enthalpy from the shifted one lost more than the \
-         cancellation explains"
-    );
-    assert_eq!(shifted.h_departure.value, plain.h_departure.value);
+    let reference = at(273.15);
     assert_eq!(
-        shifted.s.value, plain.s.value,
-        "the datum is an enthalpy only"
+        reference.h_ideal.value, 0.0,
+        "the integral from T_ref to T_ref is zero"
     );
+
+    let other = at(298.15);
+    assert!(
+        other.h_ideal.value.abs() > 1.0,
+        "298.15 K is not the reference"
+    );
+    assert_ne!(other.h_departure.value, reference.h_departure.value);
 }
 
 #[test]
@@ -293,10 +272,7 @@ fn a_malformed_input_is_refused() {
         cp_b: vec![1.0, 1.0],
         cp_c: vec![-0.5, -0.5],
         cp_d: vec![0.1, 0.1],
-        h_ref: vec![0.0, 0.0],
-        s_ref: vec![0.0, 0.0],
-        t_ref: kelvins(298.15),
-        p_ref: pascals(101_325.0),
+        cp_e: vec![0.0, 0.0],
     };
     let call = |model: &IdealGasModel, z: &[f64], compressibility: f64| {
         molar_enthalpy_entropy(
@@ -326,12 +302,4 @@ fn a_malformed_input_is_refused() {
     let err = call(&good, &[0.6, 0.4], 0.01).unwrap_err();
     assert!(matches!(err, AzothError::OutOfRange { .. }));
     assert_eq!(err.field(), Some("z"));
-
-    // A reference state that is not a state.
-    let mut bad_ref = good.clone();
-    bad_ref.t_ref = kelvins(0.0);
-    assert!(matches!(
-        call(&bad_ref, &[0.6, 0.4], 0.827),
-        Err(AzothError::OutOfRange { .. })
-    ));
 }

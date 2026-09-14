@@ -35,52 +35,39 @@ inputs:
     description: binary interaction parameters, as in `eos.pt_flash`
   cp_a:
     type: vector
-    unit: dimensionless
-    length: one per component
-    description: >
-      the constant term of each component's `Cp/R` polynomial. As in
-      `eos.ideal_gas_cp`, the four coefficients are dimensionless because the
-      polynomial is divided through by `R` and written against `T/(1000 K)`.
-  cp_b:
-    type: vector
-    unit: dimensionless
-    length: one per component
-    description: the coefficient of `theta` in each component's polynomial
-  cp_c:
-    type: vector
-    unit: dimensionless
-    length: one per component
-    description: the coefficient of `theta**2` in each component's polynomial
-  cp_d:
-    type: vector
-    unit: dimensionless
-    length: one per component
-    description: the coefficient of `theta**3` in each component's polynomial
-  h_ref:
-    type: vector
-    unit: J/mol
-    length: one per component
-    description: >
-      each component's ideal-gas molar enthalpy at `T_ref`, which is the caller's
-      datum. **Nothing checks it against any other source**, and two enthalpies computed
-      from different datums are not comparable.
-  s_ref:
-    type: vector
     unit: J/(mol*K)
     length: one per component
-    description: each component's ideal-gas molar entropy at `T_ref` and `P_ref`
-  T_ref:
-    unit: K
-    description: the temperature the reference values are given at
-  P_ref:
-    unit: Pa
-    description: the pressure `s_ref` is given at. It does not enter the enthalpy.
+    description: >
+      the constant term of each component's `Cp` polynomial, in J/(mol*K). Together
+      with the four below, this is everything the ideal-gas enthalpy and entropy are
+      integrated from - there is no separate datum, because NeqSim's is a fixed
+      reference temperature rather than a value a caller supplies.
+  cp_b:
+    type: vector
+    unit: J/(mol*K**2)
+    length: one per component
+    description: the coefficient of `T`, in J/(mol*K**2)
+  cp_c:
+    type: vector
+    unit: J/(mol*K**3)
+    length: one per component
+    description: the coefficient of `T**2`, in J/(mol*K**3)
+  cp_d:
+    type: vector
+    unit: J/(mol*K**4)
+    length: one per component
+    description: the coefficient of `T**3`, in J/(mol*K**4)
+  cp_e:
+    type: vector
+    unit: J/(mol*K**5)
+    length: one per component
+    description: the coefficient of `T**4`, in J/(mol*K**5)
   T:
     unit: K
-    description: absolute temperature of the state wanted
+    description: absolute temperature of the state
   P:
     unit: Pa
-    description: absolute pressure of the state wanted
+    description: absolute pressure of the state
   z:
     type: vector
     unit: dimensionless
@@ -89,10 +76,8 @@ inputs:
   compressibility:
     unit: dimensionless
     description: >
-      the cubic's root for this phase, `Z = P v /(R T)`. An input rather than something
-      this model solves for: which root describes the phase is the caller's choice, and
-      a caller holding a `Z` from `eos.pr_z_factor` or from a flash has already made it.
-
+      the cubic's root for the phase wanted. Not solved for here: which root describes
+      the phase is a choice, and a caller holding a `z` has already made it.
 outputs:
   h:
     unit: J/mol
@@ -151,25 +136,11 @@ valid_range:
     severity: error
     rationale: an absolute temperature; zero and below are not states
 
-  - quantity: T_ref
-    min: 0
-    min_inclusive: false
-    severity: error
-    rationale: >
-      the reference temperature, and the argument of `ln(T/T_ref)` in the entropy
-      integral - so zero is a division rather than a state
-
   - quantity: P
     min: 0
     min_inclusive: false
     severity: error
     rationale: an absolute pressure; zero and below are not states
-
-  - quantity: P_ref
-    min: 0
-    min_inclusive: false
-    severity: error
-    rationale: the reference pressure, and the argument of `ln(P/P_ref)`
 
   - quantity: compressibility
     min: 0

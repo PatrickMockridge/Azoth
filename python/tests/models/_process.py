@@ -62,21 +62,18 @@ def a_mixture() -> Mixture:
 
 
 def an_ideal_gas() -> IdealGasModel:
-    """A deliberately trivial datum: four zero coefficients and zero reference values.
+    """A deliberately trivial ideal-gas model: five zero coefficients.
 
-    Nothing about a unit operation depends on the datum being physical - an enthalpy is
-    always a difference from whatever it is - so the coefficients are chosen to make a
-    failure readable rather than to describe a substance.
+    Nothing about a unit operation depends on the coefficients being physical - its
+    arithmetic is the same whatever they are - so they are chosen to make a failure
+    readable rather than to describe a substance.
     """
     return IdealGasModel(
         cp_a=(3.0, 5.0),
         cp_b=(0.0, 0.0),
         cp_c=(0.0, 0.0),
         cp_d=(0.0, 0.0),
-        h_ref=(0.0, 0.0),
-        s_ref=(0.0, 0.0),
-        T_ref=Q(300.0, "K"),
-        P_ref=Q(1.0e5, "Pa"),
+        cp_e=(0.0, 0.0),
     )
 
 

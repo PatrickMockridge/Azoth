@@ -57,44 +57,33 @@ inputs:
     description: binary interaction parameters, as in `eos.pt_flash`
   cp_a:
     type: vector
-    unit: dimensionless
-    length: one per component
-    description: >
-      the constant term of each component's `Cp/R` polynomial, as in
-      `eos.molar_enthalpy_entropy`. The ideal-gas block is required even when
-      `heat_duty` is zero, because the model's signature is fixed and the duty branch
-      is the same model.
-  cp_b:
-    type: vector
-    unit: dimensionless
-    length: one per component
-    description: the coefficient of `theta` in each component's polynomial
-  cp_c:
-    type: vector
-    unit: dimensionless
-    length: one per component
-    description: the coefficient of `theta**2`
-  cp_d:
-    type: vector
-    unit: dimensionless
-    length: one per component
-    description: the coefficient of `theta**3`
-  h_ref:
-    type: vector
-    unit: J/mol
-    length: one per component
-    description: each component's ideal-gas molar enthalpy at `T_ref`. The datum.
-  s_ref:
-    type: vector
     unit: J/(mol*K)
     length: one per component
-    description: each component's ideal-gas molar entropy at `T_ref` and `P_ref`
-  T_ref:
-    unit: K
-    description: the temperature the reference values are given at
-  P_ref:
-    unit: Pa
-    description: the pressure `s_ref` is given at
+    description: >
+      the constant term of each component's `Cp` polynomial, in J/(mol*K). Together
+      with the four below, this is everything the ideal-gas enthalpy and entropy are
+      integrated from - there is no separate datum, because NeqSim's is a fixed
+      reference temperature rather than a value a caller supplies.
+  cp_b:
+    type: vector
+    unit: J/(mol*K**2)
+    length: one per component
+    description: the coefficient of `T`, in J/(mol*K**2)
+  cp_c:
+    type: vector
+    unit: J/(mol*K**3)
+    length: one per component
+    description: the coefficient of `T**2`, in J/(mol*K**3)
+  cp_d:
+    type: vector
+    unit: J/(mol*K**4)
+    length: one per component
+    description: the coefficient of `T**3`, in J/(mol*K**4)
+  cp_e:
+    type: vector
+    unit: J/(mol*K**5)
+    length: one per component
+    description: the coefficient of `T**4`, in J/(mol*K**5)
   T:
     unit: K
     description: >

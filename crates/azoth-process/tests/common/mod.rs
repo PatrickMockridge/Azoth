@@ -47,9 +47,6 @@ pub fn ideal_gas_from_case(case: &TestCase) -> IdealGasModel {
         cp_b: vector(case, "cp_b"),
         cp_c: vector(case, "cp_c"),
         cp_d: vector(case, "cp_d"),
-        h_ref: vector(case, "h_ref"),
-        s_ref: vector(case, "s_ref"),
-        t_ref: kelvins(azoth_test_support::input(case, "T_ref")),
-        p_ref: pascals(azoth_test_support::input(case, "P_ref")),
+        cp_e: vector(case, "cp_e"),
     }
 }

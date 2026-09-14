@@ -43,20 +43,14 @@ pub(crate) fn eos_ideal_gas(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
 ) -> azoth_eos::IdealGasModel {
     azoth_eos::IdealGasModel {
         cp_a,
         cp_b,
         cp_c,
         cp_d,
-        h_ref,
-        s_ref,
-        t_ref: kelvins(T_ref),
-        p_ref: pascals(P_ref),
+        cp_e,
     }
 }
 
@@ -68,10 +62,10 @@ pub(crate) fn eos_ideal_gas(
 /// fraction splitting the molar flow.
 #[pyfunction]
 #[pyo3(
-    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, pressure_drop, heat_duty)
+    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, pressure_drop, heat_duty)
 )]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, pressure_drop, heat_duty)"
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, pressure_drop, heat_duty)"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T_ref` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -85,10 +79,7 @@ pub fn separator(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     T: f64,
     P: f64,
     n: f64,
@@ -97,7 +88,7 @@ pub fn separator(
     heat_duty: f64,
 ) -> PyResult<PySeparatorResult> {
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref);
+    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, cp_e);
     process::separator(
         &mixture,
         &ideal_gas,
@@ -121,11 +112,9 @@ pub fn separator(
 /// from the arguments rather than being a fourth vector that could disagree with them.
 #[pyfunction]
 #[pyo3(
-    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z)
+    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z)
 )]
-#[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z)"
-)]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z)")]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T_ref` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn mixer(
@@ -138,17 +127,14 @@ pub fn mixer(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     T: Vec<f64>,
     P: Vec<f64>,
     n: Vec<f64>,
     z: Vec<f64>,
 ) -> PyResult<PyMixerResult> {
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref);
+    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, cp_e);
     let temperatures: Vec<_> = T.into_iter().map(kelvins).collect();
     let pressures: Vec<_> = P.into_iter().map(pascals).collect();
     process::mixer(&mixture, &ideal_gas, &temperatures, &pressures, &n, &z)
@@ -190,10 +176,10 @@ pub fn splitter(
 /// molar property, so the outlet state does not depend on the flow at all.
 #[pyfunction]
 #[pyo3(
-    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, z, pressure_drop)
+    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, pressure_drop)
 )]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, z, pressure_drop)"
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, pressure_drop)"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T_ref` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -207,17 +193,14 @@ pub fn throttling_valve(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     T: f64,
     P: f64,
     z: Vec<f64>,
     pressure_drop: f64,
 ) -> PyResult<PyThrottlingValveResult> {
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref);
+    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, cp_e);
     process::throttling_valve(
         &mixture,
         &ideal_gas,
@@ -233,10 +216,10 @@ pub fn throttling_valve(
 /// A duty applied to a stream at a fixed pressure. A negative duty is a cooler.
 #[pyfunction]
 #[pyo3(
-    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, pressure_drop, heat_duty)
+    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, pressure_drop, heat_duty)
 )]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, pressure_drop, heat_duty)"
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, pressure_drop, heat_duty)"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T_ref` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -250,10 +233,7 @@ pub fn heater(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     T: f64,
     P: f64,
     n: f64,
@@ -262,7 +242,7 @@ pub fn heater(
     heat_duty: f64,
 ) -> PyResult<PyHeaterResult> {
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref);
+    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, cp_e);
     process::heater(
         &mixture,
         &ideal_gas,
@@ -284,10 +264,10 @@ pub fn heater(
 /// `0.75`, not `75`.
 #[pyfunction]
 #[pyo3(
-    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, outlet_pressure, efficiency)
+    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, outlet_pressure, efficiency)
 )]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, outlet_pressure, efficiency)"
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, outlet_pressure, efficiency)"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T_ref` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -301,10 +281,7 @@ pub fn compressor(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     T: f64,
     P: f64,
     n: f64,
@@ -313,7 +290,7 @@ pub fn compressor(
     efficiency: f64,
 ) -> PyResult<PyCompressorResult> {
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref);
+    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, cp_e);
     process::compressor(
         &mixture,
         &ideal_gas,
@@ -331,10 +308,10 @@ pub fn compressor(
 /// A pressure rise in a liquid, at a stated isentropic efficiency.
 #[pyfunction]
 #[pyo3(
-    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, outlet_pressure, efficiency)
+    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, outlet_pressure, efficiency)
 )]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, outlet_pressure, efficiency)"
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, outlet_pressure, efficiency)"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T_ref` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -348,10 +325,7 @@ pub fn pump(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     T: f64,
     P: f64,
     n: f64,
@@ -360,7 +334,7 @@ pub fn pump(
     efficiency: f64,
 ) -> PyResult<PyPumpResult> {
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref);
+    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, cp_e);
     process::pump(
         &mixture,
         &ideal_gas,
@@ -381,10 +355,10 @@ pub fn pump(
 /// dividing, so `power` crosses **negative** - the fluid is doing the work.
 #[pyfunction]
 #[pyo3(
-    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, outlet_pressure, efficiency)
+    signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, outlet_pressure, efficiency)
 )]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, n, z, outlet_pressure, efficiency)"
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, n, z, outlet_pressure, efficiency)"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T_ref` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -398,10 +372,7 @@ pub fn expander(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     T: f64,
     P: f64,
     n: f64,
@@ -410,7 +381,7 @@ pub fn expander(
     efficiency: f64,
 ) -> PyResult<PyExpanderResult> {
     let mixture = build_mixture(py, &Tc, &Pc, &omega, kij)?;
-    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref);
+    let ideal_gas = eos_ideal_gas(cp_a, cp_b, cp_c, cp_d, cp_e);
     process::expander(
         &mixture,
         &ideal_gas,

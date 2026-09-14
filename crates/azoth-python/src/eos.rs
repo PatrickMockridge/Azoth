@@ -274,10 +274,8 @@ pub fn pt_flash(
 /// isenthalpic flash does not need an entropy - and are taken because they belong to
 /// the same model.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, P, H, z))]
-#[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, P, H, z)"
-)]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z)")]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T_ref` and the rest are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn ph_flash(
@@ -290,10 +288,7 @@ pub fn ph_flash(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     P: f64,
     H: f64,
     z: Vec<f64>,
@@ -304,10 +299,7 @@ pub fn ph_flash(
         cp_b,
         cp_c,
         cp_d,
-        h_ref,
-        s_ref,
-        t_ref: kelvins(T_ref),
-        p_ref: pascals(P_ref),
+        cp_e,
     };
     eos::ph_flash(&mixture, &ideal_gas, pascals(P), joules_per_mole(H), &z)
         .map(|r| PyPhFlashResult::from(&r))
@@ -320,10 +312,8 @@ pub fn ph_flash(
 /// or an expander assumed ideal knows the pressure it leaves at and the entropy it
 /// arrived with, and not the temperature that results.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, P, S, z))]
-#[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, P, S, z)"
-)]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z)")]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T_ref` and the rest are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn ps_flash(
@@ -336,10 +326,7 @@ pub fn ps_flash(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     P: f64,
     S: f64,
     z: Vec<f64>,
@@ -350,10 +337,7 @@ pub fn ps_flash(
         cp_b,
         cp_c,
         cp_d,
-        h_ref,
-        s_ref,
-        t_ref: kelvins(T_ref),
-        p_ref: pascals(P_ref),
+        cp_e,
     };
     eos::ps_flash(
         &mixture,
@@ -503,11 +487,11 @@ pub fn ideal_gas_cp(
 /// is where the caller's `IdealGasModel` is unpacked.
 #[pyfunction]
 #[pyo3(signature = (
-    Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, z,
+    Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z,
     compressibility
 ))]
 #[pyo3(text_signature = "(
-    Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, h_ref, s_ref, T_ref, P_ref, T, P, z,
+    Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z,
     compressibility
 )")]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
@@ -522,10 +506,7 @@ pub fn molar_enthalpy_entropy(
     cp_b: Vec<f64>,
     cp_c: Vec<f64>,
     cp_d: Vec<f64>,
-    h_ref: Vec<f64>,
-    s_ref: Vec<f64>,
-    T_ref: f64,
-    P_ref: f64,
+    cp_e: Vec<f64>,
     T: f64,
     P: f64,
     z: Vec<f64>,
@@ -537,10 +518,7 @@ pub fn molar_enthalpy_entropy(
         cp_b,
         cp_c,
         cp_d,
-        h_ref,
-        s_ref,
-        t_ref: kelvins(T_ref),
-        p_ref: pascals(P_ref),
+        cp_e,
     };
     eos::molar_enthalpy_entropy(
         &mixture,

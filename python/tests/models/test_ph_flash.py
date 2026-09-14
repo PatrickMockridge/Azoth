@@ -44,21 +44,18 @@ def a_mixture() -> Mixture:
 
 
 def an_ideal_gas() -> IdealGasModel:
-    """A deliberately trivial datum: four zero coefficients and zero reference values.
+    """A deliberately trivial ideal-gas model: five zero coefficients.
 
-    Nothing about this model depends on the datum being physical - the requested
-    enthalpy is a difference from whatever it is - so the coefficients are chosen to
-    make a failure readable rather than to describe a substance.
+    Nothing about this model depends on the coefficients being physical - a unit
+    operation's arithmetic is the same whatever they are - so they are chosen to make
+    a failure readable rather than to describe a substance.
     """
     return IdealGasModel(
         cp_a=(3.0, 5.0),
         cp_b=(0.0, 0.0),
         cp_c=(0.0, 0.0),
         cp_d=(0.0, 0.0),
-        h_ref=(0.0, 0.0),
-        s_ref=(0.0, 0.0),
-        T_ref=Q(300.0, "K"),
-        P_ref=Q(1.0e5, "Pa"),
+        cp_e=(0.0, 0.0),
     )
 
 
@@ -77,10 +74,7 @@ def call(case: dict[str, Any]) -> PhFlashResult:
         cp_b=inputs["cp_b"],
         cp_c=inputs["cp_c"],
         cp_d=inputs["cp_d"],
-        h_ref=inputs["h_ref"],
-        s_ref=inputs["s_ref"],
-        T_ref=Q(inputs["T_ref"], "K"),
-        P_ref=Q(inputs["P_ref"], "Pa"),
+        cp_e=(0.0, 0.0),
     )
     import azoth
 

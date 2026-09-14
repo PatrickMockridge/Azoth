@@ -494,10 +494,7 @@ def ph_flash(mixture: Any, ideal_gas: Any, P: Q, H: Q, z: Sequence[float]) -> Ph
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
         list(ideal_gas.cp_d),
-        [v for v in ideal_gas.h_ref],
-        [v for v in ideal_gas.s_ref],
-        input_to_si(spec, "T_ref", ideal_gas.T_ref),
-        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+        list(ideal_gas.cp_e),
         input_to_si(spec, "P", P),
         input_to_si(spec, "H", H),
         list(z),
@@ -533,10 +530,7 @@ def ps_flash(mixture: Any, ideal_gas: Any, P: Q, S: Q, z: Sequence[float]) -> Ps
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
         list(ideal_gas.cp_d),
-        [v for v in ideal_gas.h_ref],
-        [v for v in ideal_gas.s_ref],
-        input_to_si(spec, "T_ref", ideal_gas.T_ref),
-        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+        list(ideal_gas.cp_e),
         input_to_si(spec, "P", P),
         input_to_si(spec, "S", S),
         list(z),
@@ -691,10 +685,7 @@ def molar_enthalpy_entropy(
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
         list(ideal_gas.cp_d),
-        list(ideal_gas.h_ref),
-        list(ideal_gas.s_ref),
-        input_to_si(spec, "T_ref", ideal_gas.T_ref),
-        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+        list(ideal_gas.cp_e),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),
@@ -738,7 +729,7 @@ def separator(
     """
     spec = _models_gen.model("process.separator")
     result = _core.separator(
-        *_model_arguments(mixture, spec, ideal_gas),
+        *_model_arguments(mixture, ideal_gas),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         input_to_si(spec, "n", n),
@@ -780,34 +771,28 @@ def _mixture_arguments(
     )
 
 
-def _ideal_gas_arguments(
-    spec: Any, ideal_gas: Any
-) -> tuple[
+def _ideal_gas_arguments(ideal_gas: Any) -> tuple[
     list[float],
     list[float],
     list[float],
     list[float],
     list[float],
-    list[float],
-    float,
-    float,
 ]:
-    """The six vectors and two reference states an ideal-gas model crosses as."""
+    """The five coefficients an ideal-gas model crosses as.
+
+    There is no reference state among them: NeqSim's ideal-gas integrals start from a
+    fixed temperature and pressure, so the coefficients are the whole of the model.
+    """
     return (
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
         list(ideal_gas.cp_d),
-        list(ideal_gas.h_ref),
-        list(ideal_gas.s_ref),
-        input_to_si(spec, "T_ref", ideal_gas.T_ref),
-        input_to_si(spec, "P_ref", ideal_gas.P_ref),
+        list(ideal_gas.cp_e),
     )
 
 
-def _model_arguments(
-    mixture: Any, spec: Any, ideal_gas: Any
-) -> tuple[
+def _model_arguments(mixture: Any, ideal_gas: Any) -> tuple[
     list[float],
     list[float],
     list[float],
@@ -817,11 +802,9 @@ def _model_arguments(
     list[float],
     list[float],
     list[float],
-    list[float],
-    float,
-    float,
 ]:
-    """The twelve leading arguments every unit operation takes, as one tuple.
+    """The leading arguments every unit operation takes, as one tuple: the mixture and
+the ideal-gas model.
 
     The concatenation of the two above, and not two separate unpacks at the call site:
     a call written `f(*a, *b, ...)` with both `a` and `b` of known length is one mypy
@@ -829,7 +812,7 @@ def _model_arguments(
     reporting a mismatch that is not there. One tuple is checked correctly, so the
     argument count at the call site is verified rather than assumed.
     """
-    return _mixture_arguments(mixture) + _ideal_gas_arguments(spec, ideal_gas)
+    return _mixture_arguments(mixture) + _ideal_gas_arguments(ideal_gas)
 
 
 def mixer(
@@ -849,7 +832,7 @@ def mixer(
     """
     spec = _models_gen.model("process.mixer")
     result = _core.mixer(
-        *_model_arguments(mixture, spec, ideal_gas),
+        *_model_arguments(mixture, ideal_gas),
         [input_to_si(spec, "T", value) for value in T],
         [input_to_si(spec, "P", value) for value in P],
         [input_to_si(spec, "n", value) for value in n],
@@ -915,7 +898,7 @@ def throttling_valve(
     """
     spec = _models_gen.model("process.throttling_valve")
     result = _core.throttling_valve(
-        *_model_arguments(mixture, spec, ideal_gas),
+        *_model_arguments(mixture, ideal_gas),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),
@@ -944,7 +927,7 @@ def heater(
     """A duty applied at a fixed pressure, run in Rust. A negative duty is a cooler."""
     spec = _models_gen.model("process.heater")
     result = _core.heater(
-        *_model_arguments(mixture, spec, ideal_gas),
+        *_model_arguments(mixture, ideal_gas),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         input_to_si(spec, "n", n),
@@ -975,7 +958,7 @@ def compressor(
     """A pressure rise at a stated isentropic efficiency, run in Rust."""
     spec = _models_gen.model("process.compressor")
     result = _core.compressor(
-        *_model_arguments(mixture, spec, ideal_gas),
+        *_model_arguments(mixture, ideal_gas),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         input_to_si(spec, "n", n),
@@ -1010,7 +993,7 @@ def pump(
     """A pressure rise in a liquid, run in Rust."""
     spec = _models_gen.model("process.pump")
     result = _core.pump(
-        *_model_arguments(mixture, spec, ideal_gas),
+        *_model_arguments(mixture, ideal_gas),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         input_to_si(spec, "n", n),
@@ -1045,7 +1028,7 @@ def expander(
     """A pressure drop that produces work, run in Rust. `power` crosses negative."""
     spec = _models_gen.model("process.expander")
     result = _core.expander(
-        *_model_arguments(mixture, spec, ideal_gas),
+        *_model_arguments(mixture, ideal_gas),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         input_to_si(spec, "n", n),

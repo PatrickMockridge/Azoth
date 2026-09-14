@@ -403,10 +403,7 @@ _MODEL_IDEAL_GAS_INPUTS: tuple[str, ...] = (
     "cp_b",
     "cp_c",
     "cp_d",
-    "h_ref",
-    "s_ref",
-    "T_ref",
-    "P_ref",
+    "cp_e",
 )
 
 
@@ -481,10 +478,7 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             cp_b=tuple(inputs["cp_b"]),
             cp_c=tuple(inputs["cp_c"]),
             cp_d=tuple(inputs["cp_d"]),
-            h_ref=tuple(inputs["h_ref"]),
-            s_ref=tuple(inputs["s_ref"]),
-            T_ref=quantity(inputs["T_ref"], "K"),
-            P_ref=quantity(inputs["P_ref"], "Pa"),
+            cp_e=tuple(inputs["cp_e"]),
         )
         consumed |= set(_MODEL_IDEAL_GAS_INPUTS)
 

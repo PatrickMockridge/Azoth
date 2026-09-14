@@ -41,10 +41,7 @@ def ideal_gas(**overrides: Any) -> IdealGasModel:
         "cp_b": (1.0, 1.0),
         "cp_c": (-0.5, -0.5),
         "cp_d": (0.1, 0.1),
-        "h_ref": (0.0, 0.0),
-        "s_ref": (0.0, 0.0),
-        "T_ref": Q(298.15, "K"),
-        "P_ref": Q(101325.0, "Pa"),
+        "cp_e": (0.0, 0.0),
     }
     fields.update(overrides)
     return IdealGasModel(**fields)
@@ -66,10 +63,7 @@ def call(case: dict[str, Any]) -> MolarEnthalpyEntropyResult:
             cp_b=tuple(inputs["cp_b"]),
             cp_c=tuple(inputs["cp_c"]),
             cp_d=tuple(inputs["cp_d"]),
-            h_ref=tuple(inputs["h_ref"]),
-            s_ref=tuple(inputs["s_ref"]),
-            T_ref=Q(inputs["T_ref"], "K"),
-            P_ref=Q(inputs["P_ref"], "Pa"),
+            cp_e=tuple(inputs["cp_e"]),
         ),
         T=Q(inputs["T"], "K"),
         P=Q(inputs["P"], "Pa"),
@@ -158,8 +152,7 @@ def test_the_departures_reduce_to_pr_departure_at_one_component() -> None:
                 cp_b=(1.0,),
                 cp_c=(-0.5,),
                 cp_d=(0.1,),
-                h_ref=(0.0,),
-                s_ref=(0.0,),
+                cp_e=(0.0,),
             ),
             T=Q(t_c, "K"),
             P=Q(p_pa, "Pa"),
@@ -186,32 +179,27 @@ def test_the_departures_reduce_to_pr_departure_at_one_component() -> None:
         )
 
 
-def test_the_datum_shifts_the_enthalpy_and_leaves_the_entropy_alone() -> None:
-    """The reference is an enthalpy datum, and nothing else.
+def test_the_ideal_gas_enthalpy_is_zero_at_neqs_im_reference_temperature() -> None:
+    """``integral Cp dT`` from `T_ref` to `T_ref` is zero, whatever the coefficients.
 
-    Raising every ``h_ref`` by a constant must raise ``h`` by exactly that constant and
-    leave ``s`` and both departures untouched. It is what would fail if the reference
-    were mixed into the integral rather than added to it - invisible at a zero datum,
-    which is the only datum a spec case can state.
+    ``h_ideal`` is measured from NeqSim's fixed ``referenceTemperature`` of 273.15 K, so
+    at that temperature the ideal-gas enthalpy is exactly nothing - and the entropy is
+    then only the pressure and mixing terms. This is the check that would fail if a
+    reference were mixed into the integral rather than being its lower limit, and it
+    pins the constant: 298.15 K, a rounder number, gives a non-zero answer.
     """
     fluid = methane_butane()
     args: dict[str, Any] = {
-        "T": Q(330.0, "K"),
         "P": Q(2.5e6, "Pa"),
         "z": [0.6, 0.4],
         "compressibility": 0.8274482588400789,
     }
-    plain = molar_enthalpy_entropy(fluid, ideal_gas(), **args)
-    shifted = molar_enthalpy_entropy(fluid, ideal_gas(h_ref=(-285_830.0, -285_830.0)), **args)
+    reference = molar_enthalpy_entropy(fluid, ideal_gas(), T=Q(273.15, "K"), **args)
+    assert reference.h_ideal.to("J/mol").magnitude == 0.0
 
-    h.assert_close(
-        shifted.h.to("J/mol").magnitude,
-        plain.h.to("J/mol").magnitude - 285_830.0,
-        1e-9,
-        "the datum should shift h by exactly what was put in",
-    )
-    assert shifted.h_departure.to("J/mol").magnitude == plain.h_departure.to("J/mol").magnitude
-    assert shifted.s.to("J/(mol*K)").magnitude == plain.s.to("J/(mol*K)").magnitude
+    other = molar_enthalpy_entropy(fluid, ideal_gas(), T=Q(298.15, "K"), **args)
+    assert abs(other.h_ideal.to("J/mol").magnitude) > 1.0
+    assert other.h_departure.to("J/mol").magnitude != reference.h_departure.to("J/mol").magnitude
 
 
 def test_a_malformed_input_is_refused() -> None:
@@ -231,8 +219,6 @@ def test_a_malformed_input_is_refused() -> None:
     with pytest.raises(OutOfRangeError) as excinfo:
         molar_enthalpy_entropy(fluid, ideal_gas(), **{**args, "compressibility": 0.01})
     assert excinfo.value.field() == "z"
-    with pytest.raises(OutOfRangeError):
-        molar_enthalpy_entropy(fluid, ideal_gas(T_ref=Q(0.0, "K")), **args)
 
 
 def test_the_two_backends_agree_on_every_spec_case() -> None:

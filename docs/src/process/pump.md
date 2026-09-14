@@ -51,14 +51,11 @@ not an equation, and both implementations read it from here.
 | `Pc` | Pa | critical pressures, in the same order |
 | `omega` | dimensionless | acentric factors, in the same order |
 | `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash` |
-| `cp_a` | dimensionless | the constant term of each component's `Cp/R` polynomial |
-| `cp_b` | dimensionless | the coefficient of `theta` in each component's polynomial |
-| `cp_c` | dimensionless | the coefficient of `theta**2` |
-| `cp_d` | dimensionless | the coefficient of `theta**3` |
-| `h_ref` | J/mol | each component's ideal-gas molar enthalpy at `T_ref`. The datum. |
-| `s_ref` | J/(mol*K) | each component's ideal-gas molar entropy at `T_ref` and `P_ref`. Used. |
-| `T_ref` | K | the temperature the reference values are given at |
-| `P_ref` | Pa | the pressure `s_ref` is given at |
+| `cp_a` | J/(mol*K) | the constant term of each component's `Cp` polynomial, in J/(mol*K). Together with the four below, this is everything the ideal-gas enthalpy and entropy are integrated from - there is no separate datum, because NeqSim's is a fixed reference temperature rather than a value a caller supplies. |
+| `cp_b` | J/(mol*K**2) | the coefficient of `T`, in J/(mol*K**2) |
+| `cp_c` | J/(mol*K**3) | the coefficient of `T**2`, in J/(mol*K**3) |
+| `cp_d` | J/(mol*K**4) | the coefficient of `T**3`, in J/(mol*K**4) |
+| `cp_e` | J/(mol*K**5) | the coefficient of `T**4`, in J/(mol*K**5) |
 | `T` | K | the inlet absolute temperature |
 | `P` | Pa | the inlet absolute pressure. The outlet must be **above** it. |
 | `n` | mol/s | the inlet molar flow rate, which turns the molar enthalpy change into a power |
@@ -97,8 +94,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `twenty_to_thirty_bar_at_eighty_percent` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 300.0, P_ref = 100000.0, T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 3000000.0, efficiency = 0.8 | T = 315.6004299531121, P = 3000000.0, power = 8294.83382119513, isentropic_temperature = 314.2567931729825 |
-| `a_liquid_feed_is_pumped` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 300.0, P_ref = 100000.0, T = 300.0, P = 4000000.0, n = 10.0, z = [0.2, 0.8], outlet_pressure = 5000000.0, efficiency = 0.8 | T = 301.2741362140612, P = 5000000.0, power = 1124.4773017828265, isentropic_temperature = 300.99279887328595 |
+| `twenty_to_thirty_bar_at_eighty_percent` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = 300.0, P = 2000000.0, n = 10.0, z = [0.6, 0.4], outlet_pressure = 3000000.0, efficiency = 0.8, cp_e = [0.0, 0.0] | T = 320.01374502973397, P = 3000000.0, power = 8444.537547413483, isentropic_temperature = 318.4003189954434 |
+| `a_liquid_feed_is_pumped` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = 300.0, P = 4000000.0, n = 10.0, z = [0.2, 0.8], outlet_pressure = 5000000.0, efficiency = 0.8, cp_e = [0.0, 0.0] | T = 302.20015479658355, P = 5000000.0, power = 1125.6697962614453, isentropic_temperature = 301.71571175367103 |
 
 ## References
 

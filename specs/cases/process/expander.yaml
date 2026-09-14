@@ -34,14 +34,6 @@ cases:
     cp_d:
     - 0.0
     - 0.0
-    h_ref:
-    - 0.0
-    - 0.0
-    s_ref:
-    - 0.0
-    - 0.0
-    T_ref: 300.0
-    P_ref: 100000.0
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -50,11 +42,14 @@ cases:
     - 0.4
     outlet_pressure: 500000.0
     efficiency: 0.9
+    cp_e:
+    - 0.0
+    - 0.0
   expected:
-    T: 259.8355676783778
+    T: 249.23100727263375
     P: 500000.0
-    power: -18911.45107513822
-    isentropic_temperature: 258.3310655160541
+    power: -17945.271846810316
+    isentropic_temperature: 246.6396939819773
   tolerance: 1.0e-09
 - id: a_superheated_feed_expands_to_vapour
   inputs:
@@ -84,14 +79,6 @@ cases:
     cp_d:
     - 0.0
     - 0.0
-    h_ref:
-    - 0.0
-    - 0.0
-    s_ref:
-    - 0.0
-    - 0.0
-    T_ref: 300.0
-    P_ref: 100000.0
     T: 450.0
     P: 2000000.0
     n: 10.0
@@ -100,9 +87,12 @@ cases:
     - 0.4
     outlet_pressure: 500000.0
     efficiency: 0.9
+    cp_e:
+    - 0.0
+    - 0.0
   expected:
-    T: 320.8267034829063
+    T: 283.412349666799
     P: 500000.0
-    power: -37081.70547629313
-    isentropic_temperature: 308.3776788396833
+    power: -28783.344978779307
+    isentropic_temperature: 282.36647114241777
   tolerance: 1.0e-09

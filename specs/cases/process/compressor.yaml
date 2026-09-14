@@ -34,14 +34,6 @@ cases:
     cp_d:
     - 0.0
     - 0.0
-    h_ref:
-    - 0.0
-    - 0.0
-    s_ref:
-    - 0.0
-    - 0.0
-    T_ref: 300.0
-    P_ref: 100000.0
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -50,11 +42,14 @@ cases:
     - 0.4
     outlet_pressure: 4000000.0
     efficiency: 0.75
+    cp_e:
+    - 0.0
+    - 0.0
   expected:
-    T: 328.0895199847116
+    T: 335.99343797752493
     P: 4000000.0
-    power: 15274.141966358111
-    isentropic_temperature: 324.9618248392254
+    power: 15760.976224568014
+    isentropic_temperature: 332.3922769710072
   tolerance: 1.0e-09
 - id: unit_efficiency_reaches_the_ideal_temperature
   inputs:
@@ -84,14 +79,6 @@ cases:
     cp_d:
     - 0.0
     - 0.0
-    h_ref:
-    - 0.0
-    - 0.0
-    s_ref:
-    - 0.0
-    - 0.0
-    T_ref: 300.0
-    P_ref: 100000.0
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -100,7 +87,10 @@ cases:
     - 0.4
     outlet_pressure: 4000000.0
     efficiency: 1.0
+    cp_e:
+    - 0.0
+    - 0.0
   expected:
     P: 4000000.0
-    isentropic_temperature: 324.9618248392254
+    isentropic_temperature: 332.3922769710072
   tolerance: 1.0e-09

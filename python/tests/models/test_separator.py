@@ -57,10 +57,7 @@ def an_ideal_gas() -> IdealGasModel:
         cp_b=(0.0, 0.0),
         cp_c=(0.0, 0.0),
         cp_d=(0.0, 0.0),
-        h_ref=(0.0, 0.0),
-        s_ref=(0.0, 0.0),
-        T_ref=Q(300.0, "K"),
-        P_ref=Q(1.0e5, "Pa"),
+        cp_e=(0.0, 0.0),
     )
 
 
@@ -105,10 +102,7 @@ def call(case: dict[str, Any]) -> SeparatorResult:
         cp_b=inputs["cp_b"],
         cp_c=inputs["cp_c"],
         cp_d=inputs["cp_d"],
-        h_ref=inputs["h_ref"],
-        s_ref=inputs["s_ref"],
-        T_ref=Q(inputs["T_ref"], "K"),
-        P_ref=Q(inputs["P_ref"], "Pa"),
+        cp_e=(0.0, 0.0),
     )
     return azoth.process.separator(
         fluid,

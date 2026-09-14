@@ -34,14 +34,6 @@ cases:
     cp_d:
     - 0.0
     - 0.0
-    h_ref:
-    - 0.0
-    - 0.0
-    s_ref:
-    - 0.0
-    - 0.0
-    T_ref: 300.0
-    P_ref: 100000.0
     T: 300.0
     P: 2000000.0
     n: 10.0
@@ -50,11 +42,14 @@ cases:
     - 0.4
     outlet_pressure: 3000000.0
     efficiency: 0.8
+    cp_e:
+    - 0.0
+    - 0.0
   expected:
-    T: 315.6004299531121
+    T: 320.01374502973397
     P: 3000000.0
-    power: 8294.83382119513
-    isentropic_temperature: 314.2567931729825
+    power: 8444.537547413483
+    isentropic_temperature: 318.4003189954434
   tolerance: 1.0e-09
 - id: a_liquid_feed_is_pumped
   inputs:
@@ -84,14 +79,6 @@ cases:
     cp_d:
     - 0.0
     - 0.0
-    h_ref:
-    - 0.0
-    - 0.0
-    s_ref:
-    - 0.0
-    - 0.0
-    T_ref: 300.0
-    P_ref: 100000.0
     T: 300.0
     P: 4000000.0
     n: 10.0
@@ -100,9 +87,12 @@ cases:
     - 0.8
     outlet_pressure: 5000000.0
     efficiency: 0.8
+    cp_e:
+    - 0.0
+    - 0.0
   expected:
-    T: 301.2741362140612
+    T: 302.20015479658355
     P: 5000000.0
-    power: 1124.4773017828265
-    isentropic_temperature: 300.99279887328595
+    power: 1125.6697962614453
+    isentropic_temperature: 301.71571175367103
   tolerance: 1.0e-09

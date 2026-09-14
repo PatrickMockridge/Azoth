@@ -68,16 +68,13 @@ pub fn entropy_at(
 ///     cp_b: vec![0.0, 0.0],
 ///     cp_c: vec![0.0, 0.0],
 ///     cp_d: vec![0.0, 0.0],
-///     h_ref: vec![0.0, 0.0],
-///     s_ref: vec![0.0, 0.0],
-///     t_ref: kelvins(300.0),
-///     p_ref: pascals(100_000.0),
+///     cp_e: vec![0.0, 0.0],
 /// };
 /// let r = ps_flash::ps_flash(
 ///     &mixture,
 ///     &ideal_gas,
 ///     pascals(2_000_000.0),
-///     joules_per_mole_kelvin(-39.078496670600245),
+///     joules_per_mole_kelvin(-38.61276026788922),
 ///     &[0.6, 0.4],
 /// )?;
 /// assert!((r.temperature.value - 300.0).abs() < 1.0e-6);

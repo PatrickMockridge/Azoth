@@ -51,14 +51,11 @@ not an equation, and both implementations read it from here.
 | `Pc` | Pa | critical pressures, in the same order |
 | `omega` | dimensionless | acentric factors, in the same order |
 | `kij` | dimensionless | binary interaction parameters, as in `eos.pt_flash`. **One matrix for every inlet**: all the feeds share a component set here, which is what makes the accumulation a vector sum rather than the component-matching problem NeqSim has to solve. |
-| `cp_a` | dimensionless | the constant term of each component's `Cp/R` polynomial |
-| `cp_b` | dimensionless | the coefficient of `theta` in each component's polynomial |
-| `cp_c` | dimensionless | the coefficient of `theta**2` |
-| `cp_d` | dimensionless | the coefficient of `theta**3` |
-| `h_ref` | J/mol | each component's ideal-gas molar enthalpy at `T_ref`. The datum. |
-| `s_ref` | J/(mol*K) | each component's ideal-gas molar entropy at `T_ref` and `P_ref`. **Not used** - an isenthalpic flash needs no entropy - and required because it belongs to the same ideal-gas model the enthalpy comes from. |
-| `T_ref` | K | the temperature the reference values are given at |
-| `P_ref` | Pa | the pressure `s_ref` is given at |
+| `cp_a` | J/(mol*K) | the constant term of each component's `Cp` polynomial, in J/(mol*K). Together with the four below, this is everything the ideal-gas enthalpy and entropy are integrated from - there is no separate datum, because NeqSim's is a fixed reference temperature rather than a value a caller supplies. |
+| `cp_b` | J/(mol*K**2) | the coefficient of `T`, in J/(mol*K**2) |
+| `cp_c` | J/(mol*K**3) | the coefficient of `T**2`, in J/(mol*K**3) |
+| `cp_d` | J/(mol*K**4) | the coefficient of `T**3`, in J/(mol*K**4) |
+| `cp_e` | J/(mol*K**5) | the coefficient of `T**4`, in J/(mol*K**5) |
 | `T` | K | each inlet's absolute temperature |
 | `P` | Pa | each inlet's absolute pressure. The outlet is the **minimum** of these - a mixer is a vessel, and nothing in it can be above the lowest pressure any feed arrives at. A feed arriving at 20 bar into a vessel held at 15 bar flashes as it enters. |
 | `n` | mol/s | each inlet's molar flow rate |
@@ -94,8 +91,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `two_different_feeds_blend` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 300.0, P_ref = 100000.0, T = [300.0, 350.0], P = [2000000.0, 1500000.0], n = [6.0, 4.0], z = [[0.6, 0.4], [0.4, 0.6]] | T = 321.10986042022694, P = 1500000.0, flow = 10.0, z_out = [0.52, 0.48] |
-| `two_identical_feeds_double_the_flow_and_change_nothing_else` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], h_ref = [0.0, 0.0], s_ref = [0.0, 0.0], T_ref = 300.0, P_ref = 100000.0, T = [300.0, 300.0], P = [2000000.0, 2000000.0], n = [6.0, 4.0], z = [[0.6, 0.4], [0.6, 0.4]] | T = 300.0, P = 2000000.0, flow = 10.0, z_out = [0.6, 0.4] |
+| `two_different_feeds_blend` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = [300.0, 350.0], P = [2000000.0, 1500000.0], n = [6.0, 4.0], z = [[0.6, 0.4], [0.4, 0.6]], cp_e = [0.0, 0.0] | T = 321.09734147505736, P = 1500000.0, flow = 10.0, z_out = [0.5199999999999999, 0.4800000000000001] |
+| `two_identical_feeds_double_the_flow_and_change_nothing_else` | Tc = [190.56, 425.12], Pc = [4599000.0, 3796000.0], omega = [0.0115, 0.2002], kij = [[0.0, 0.01289789], [0.01289789, 0.0]], cp_a = [3.0, 5.0], cp_b = [0.0, 0.0], cp_c = [0.0, 0.0], cp_d = [0.0, 0.0], T = [300.0, 300.0], P = [2000000.0, 2000000.0], n = [6.0, 4.0], z = [[0.6, 0.4], [0.6, 0.4]], cp_e = [0.0, 0.0] | T = 300.0, P = 2000000.0, flow = 10.0, z_out = [0.6, 0.4] |
 
 ## References
 

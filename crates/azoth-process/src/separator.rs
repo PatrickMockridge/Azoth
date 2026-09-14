@@ -56,10 +56,7 @@ struct Split {
 ///     cp_b: vec![0.0, 0.0],
 ///     cp_c: vec![0.0, 0.0],
 ///     cp_d: vec![0.0, 0.0],
-///     h_ref: vec![0.0, 0.0],
-///     s_ref: vec![0.0, 0.0],
-///     t_ref: kelvins(300.0),
-///     p_ref: pascals(100_000.0),
+///     cp_e: vec![0.0, 0.0],
 /// };
 /// // Two-phase at this state, so both flows are non-zero and they sum to the feed.
 /// let r = separator(
