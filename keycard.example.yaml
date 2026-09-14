@@ -46,9 +46,10 @@
 #  vocabularies plus numbers - so there is nothing in a keycard that this library
 #  has not already implemented, and nothing a keycard can make it do.
 #
-#  One keycard is in force at a time, process-wide. `load()` replaces whatever
-#  was there, and `azoth.keycard.clear()` goes back to what ships. Two datasets
-#  are two processes, which is also the only way to compare them honestly.
+#  A card is a value you pass, and `load()` is how you read one. It stores
+#  nothing, so there is no card in force: a call with no card reads the data this
+#  library ships, and two datasets are two cards held at once rather than two
+#  processes.
 # ============================================================================
 
 # Bump only if the format changes; the checker rejects unknown versions rather

@@ -18,9 +18,17 @@
 //! match.
 //!
 //! **What a keycard can change.** The embedded tables are the baseline. A user's
-//! keycard overrides them by name, and that overlay is a runtime concern: it belongs to
-//! whichever language loaded the card, and it is applied before a mixture is built -
-//! see `python/src/azoth/keycard.py` on the Python side.
+//! keycard overrides them by name, parameter by parameter: a card naming only `omega`
+//! keeps the shipped `Tc` and `Pc`, and a name the databank does not have is added -
+//! with no heat-capacity coefficients, because a card supplies the parameters a cubic
+//! needs and a polynomial is not one of them.
+//!
+//! An overlay is a value a caller passes, and not a store: nothing here holds one, so
+//! two cards in one process are two calls and neither answer depends on what was
+//! passed before it. **This crate never parses a card.** A keycard is YAML, the
+//! workspace takes no YAML dependency for the reason `tools/gen_registry.py` gives
+//! about the spec tree, and `python/src/azoth/keycard.py` reads and validates the file -
+//! an [`Overlay`] is built from the values it resolved to.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -123,8 +131,10 @@ fn number(record: &csv::StringRecord, index: usize, column: &str, row: usize) ->
 /// A `csv` failure as this crate's error.
 ///
 /// Unreachable in practice - the table is embedded, so a malformed one is a build
-/// defect rather than a caller condition - but it has to be a `Result` rather than an
-/// `expect`, because the same code will read a keycard's rows once the overlay is in.
+/// defect rather than a caller condition - and it is a `Result` anyway, because this
+/// crate does not panic on data and because the table is a build artefact whose parse
+/// is fallible in principle. It is not here for a keycard: a keycard is YAML, this
+/// crate never reads one, and an overlay is built from values rather than parsed.
 fn csv_failure(error: csv::Error) -> AzothError {
     AzothError::InvalidInput {
         field: "databank".to_string(),

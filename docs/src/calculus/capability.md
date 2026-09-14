@@ -40,11 +40,13 @@ result:
 ∃! r.  Run c x r
 ```
 
-*Status: **specified**, and this one is worth being precise about. The card exists
-today as a module-level global in Python and as nothing at all in Rust, so the
-claim is not merely unproved - **the implementation contradicts it**, in the two
-ways the section below sets out. `Azoth.Capability.result_is_a_function_of_the_card`
-is what the tranche that makes the card a value is checked against.*
+*Status: **specified**. The Python half of the implementation now states this claim
+rather than contradicting it - `azoth.keycard.load` stores nothing, so there is no
+card in force for a call order to change. The Rust half cannot express a card at all,
+which is a narrower failure than it sounds and is set out below. There is **no Lean
+declaration for this claim**: `Azoth.Capability` does not exist, nothing in this
+repository could falsify the statement, and the tranche that builds the Rust overlay
+is what will make it checkable.*
 
 This is the property `spec.md` states as a rule — *"It is not shared. One keycard
 per process… A library whose answers depend on call order is a library that returns
@@ -106,13 +108,26 @@ module-level card still written and no longer read is the same defect one layer 
 So determinism is a description of the library rather than a requirement on it, for
 the Python half.
 
-**The Rust side still has no card at all.** `crates/azoth-eos/src/databank.rs` reads
-only the files compiled into the binary, and a user's overlay never reaches it. So a
-Rust caller and a Python caller with the same card get different physics from the
-same inputs — which is the one thing the two-implementations rule exists to prevent.
-The capability is what closes it: an overlay is a value passed in, and a value passed
-in is the thing a compile-time embed cannot be. That is the next piece of this
-tranche, and until it lands the non-amplification claim is half true at best.
+**The Rust half cannot express a card — which is not the same as ignoring one.**
+`crates/azoth-eos/src/databank.rs` reads only the files compiled into the binary, and
+there is no type for an overlay: `entry`, `kij` and `mixture_of` take a name and
+nothing else, and `Mixture`'s components deliberately carry no name, so a name cannot
+be resolved inside the core at all. A Rust-native caller — someone writing Rust against
+`azoth-eos`, or anything built on it — therefore cannot ask for a carded answer.
+
+**A Python caller's card does reach Rust's arithmetic.** `azoth.eos.components.mixture_of`
+resolves the names and applies the card *in Python*, and `azoth._rust_bridge` crosses the
+boundary with the numbers, so the flash that runs in Rust runs on the card's values.
+Measured, not reasoned about: a card shifting methane's `Tc` to 300 K gives
+`beta = 0.2870200723305141` on the Python backend and `0.2870200723305131` on the Rust
+one, against a baseline of `0.6824887179287704`. What is absent is not the card's
+*effect* but its *expressibility* inside the core.
+
+That distinction is worth the paragraph because it is what the two-implementations rule
+is for. A card naming only `omega` keeps the shipped `Tc` and `Pc` — and that merge rule
+has **one implementation**, in Python, with nothing to be compared against. An overlay
+in Rust gives the rule a second implementation, and gives the comparison something to
+compare. Until then this claim is true of one language and unstatable in the other.
 
 ## Disclosure, which is the other half
 

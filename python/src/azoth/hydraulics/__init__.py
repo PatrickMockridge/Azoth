@@ -174,9 +174,8 @@ def orifice_flow(
     ``coefficients.hydraulics.orifice_flow.Cd``. An explicit argument always wins and
     the keycard is not consulted - see :func:`azoth.keycard.coefficient_value`.
 
-    `card` is the keycard this call reads, and the loaded one is consulted when none
-    is passed. The same precedence applies to it as to ``Cd``: a card handed to this
-    call is the one used, and a file loaded an hour ago is not.
+    `card` is the keycard this call reads. A call with none passed reads the data this
+    library ships — there is no card in force and nothing to consult.
 
     ``d`` is the bore and is declared in millimetres, as bores are quoted; any length
     is accepted. ``dP`` is a magnitude and may not be negative.
