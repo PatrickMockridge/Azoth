@@ -61,7 +61,7 @@ pub mod vdw1f_mix_binary;
 pub use bubble_pressure::bubble_pressure;
 pub use critical_point::critical_point;
 pub use dew_pressure::dew_pressure;
-pub use ideal_gas_cp::{REFERENCE_TEMPERATURE, ideal_gas_cp};
+pub use ideal_gas_cp::ideal_gas_cp;
 pub use mixture::{Component, Mixture, PhaseState, ReducedParameters, RootSide};
 pub use molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
 pub use ph_flash::ph_flash;

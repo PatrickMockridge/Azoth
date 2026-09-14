@@ -565,8 +565,6 @@ impl CalcResult for DewPressureResult {
 /// the single step it is, rather than folded into the answer.
 #[derive(Debug, Clone, PartialEq)]
 pub struct IdealGasCpResult {
-    /// The polynomial's value, `Cp/R`.
-    pub cp_over_r: f64,
     /// The ideal-gas heat capacity. Carries `OutOfValidRange` when it is not
     /// positive, which means the polynomial has been evaluated outside its range.
     pub cp: MolarHeatCapacity,
@@ -633,7 +631,7 @@ impl CalcResult for MolarEnthalpyEntropyResult {
 
 impl CalcResult for IdealGasCpResult {
     const CALC_ID: &'static str = "eos.ideal_gas_cp";
-    const FIELDS: &'static [&'static str] = &["cp_over_r", "cp", "warnings"];
+    const FIELDS: &'static [&'static str] = &["cp", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

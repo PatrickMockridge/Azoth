@@ -614,25 +614,23 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
         }
 
         "eos.ideal_gas_cp" => {
-            let (a, b, c, d, t) = (
-                take(&inputs, "a")?,
-                take(&inputs, "b")?,
-                take(&inputs, "c")?,
-                take(&inputs, "d")?,
+            let (a, b, c, d, e, t) = (
+                take(&inputs, "cp_a")?,
+                take(&inputs, "cp_b")?,
+                take(&inputs, "cp_c")?,
+                take(&inputs, "cp_d")?,
+                take(&inputs, "cp_e")?,
                 take(&inputs, "T")?,
             );
-            let mut cp_over_r = Vec::with_capacity(n);
             let mut cp = Vec::with_capacity(n);
             for i in 0..n {
                 let r = element(
                     py,
-                    eos::ideal_gas_cp(a[i], b[i], c[i], d[i], kelvins(t[i])),
+                    eos::ideal_gas_cp(a[i], b[i], c[i], d[i], e[i], kelvins(t[i])),
                     &mut warnings,
                 )?;
-                cp_over_r.push(r.cp_over_r);
                 cp.push(r.cp.value);
             }
-            push_values(&mut columns, "cp_over_r", "dimensionless", cp_over_r);
             push_values(&mut columns, "cp", "J/(mol*K)", cp);
         }
 

@@ -471,8 +471,6 @@ def pr_mass_density(*, M: Sequence[float], v: Sequence[float]) -> PrMassDensityB
 class IdealGasCpBatch(BatchResult):
     """Result of a batch :func:`azoth.eos.ideal_gas_cp`."""
 
-    #: The polynomial's dimensionless value per element.
-    cp_over_r: array[float]
     #: Ideal-gas heat capacity per element, in J/(mol*K).
     cp: array[float]
 
@@ -485,34 +483,34 @@ def _build_ideal_gas_cp(
     return IdealGasCpBatch(
         warnings=warnings,
         units=units,
-        cp_over_r=columns["cp_over_r"],  # type: ignore[arg-type]
         cp=columns["cp"],  # type: ignore[arg-type]
     )
 
 
 def ideal_gas_cp(
     *,
-    a: Sequence[float],
-    b: Sequence[float],
-    c: Sequence[float],
-    d: Sequence[float],
+    cp_a: Sequence[float],
+    cp_b: Sequence[float],
+    cp_c: Sequence[float],
+    cp_d: Sequence[float],
+    cp_e: Sequence[float],
     T: Sequence[float],
 ) -> IdealGasCpBatch:
     """Ideal-gas heat capacity, over arrays.
 
-    ``T`` is in kelvin. This is the first calc in this namespace whose unit is not
-    dimensionless, so it is the first batch arm here that carries a unit back out -
-    ``cp`` is in ``J/(mol*K)``, which the result records.
+    The five coefficients are in J/(mol*K) and one per kelvin per degree; ``T`` is in
+    kelvin. ``cp`` comes back in ``J/(mol*K)``, which the result records.
 
     See :func:`azoth.eos.ideal_gas_cp`.
     """
     result: IdealGasCpBatch = run(
         _IDEAL_GAS_CP,
         {
-            "a": sequence(a, "a"),
-            "b": sequence(b, "b"),
-            "c": sequence(c, "c"),
-            "d": sequence(d, "d"),
+            "cp_a": sequence(cp_a, "cp_a"),
+            "cp_b": sequence(cp_b, "cp_b"),
+            "cp_c": sequence(cp_c, "cp_c"),
+            "cp_d": sequence(cp_d, "cp_d"),
+            "cp_e": sequence(cp_e, "cp_e"),
             "T": sequence(T, "T"),
         },
         _build_ideal_gas_cp,

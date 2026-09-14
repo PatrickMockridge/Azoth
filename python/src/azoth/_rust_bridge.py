@@ -398,17 +398,28 @@ def choked_flow_area(m_dot: Q, P0: Q, rho0: Q, k: float) -> ChokedFlowAreaResult
     )
 
 
-def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResult:
+def ideal_gas_cp(
+    cp_a: float, cp_b: float, cp_c: float, cp_d: float, cp_e: float, T: Q
+) -> IdealGasCpResult:
     """The ideal-gas heat capacity, computed in Rust.
 
-    All four coefficients cross as plain floats because they are genuinely
-    dimensionless - the same rule the rest of this namespace follows. Only `T` needs
-    a conversion, and only the result needs a unit put back on it.
+    The five coefficients cross as plain floats, in the units the spec declares them:
+    a heat capacity and one per kelvin per degree. Only `T` needs a conversion, and
+    only the result needs a unit put back on it.
     """
     spec = _spec_for("eos.ideal_gas_cp")
-    result = _core.ideal_gas_cp(a, b, c, d, input_to_si(spec, "T", T))
+    result = _core.ideal_gas_cp(
+        # Each coefficient carries its own power of temperature, so each has its own
+        # conversion. Passing them through unstripped would hand Rust a quantity where
+        # it wants an SI magnitude.
+        input_to_si(spec, "cp_a", cp_a),
+        input_to_si(spec, "cp_b", cp_b),
+        input_to_si(spec, "cp_c", cp_c),
+        input_to_si(spec, "cp_d", cp_d),
+        input_to_si(spec, "cp_e", cp_e),
+        input_to_si(spec, "T", T),
+    )
     return IdealGasCpResult(
-        cp_over_r=result.cp_over_r,
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         warnings=_warnings(result.warnings),
     )

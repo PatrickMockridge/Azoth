@@ -41,6 +41,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
 DOCS_SRC = ROOT / "docs" / "src"
 MODEL_DIR = ROOT / "specs" / "models"
+CASE_DIR = ROOT / "specs" / "cases"
 THEORY_DIR = DOCS_SRC / "theory"
 
 # The runtime's own bound renderer, so the docs and the warnings cannot disagree
@@ -685,6 +686,15 @@ def main() -> int:
     model_paths = sorted(MODEL_DIR.rglob("*.yaml"))
     models = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in model_paths]
     models.sort(key=lambda m: m["id"])
+
+    # The instances, from their own files. A model is a type and its cases are the
+    # machines to run, so the page renders the second under the first.
+    instances: dict[str, list[dict[str, Any]]] = {}
+    for path in sorted(CASE_DIR.rglob("*.yaml")):
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        instances.setdefault(document["model"], []).extend(document["cases"])
+    for model in models:
+        model["cases"] = instances.get(model["id"], [])
 
     outputs: dict[Path, str] = {DOCS_SRC / "SUMMARY.md": render_summary(calcs, models)}
     outputs[THEORY_DIR / "solvers.md"] = render_theory_solvers(calcs)

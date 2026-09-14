@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/model.schema.json",
   "title": "Azoth model spec",
-  "description": "A calculation whose *algorithm* is the thing worth pinning down. A calc spec fixes an equation and both implementations evaluate it; a model spec fixes a procedure - a bracketing rule, a tolerance, an iteration cap - and both implementations run that procedure. The distinction matters because an iterated procedure that differs even slightly between two implementations diverges, and no check on the answer alone can tell a different-but-valid algorithm from the same one. Everything about units, quantities and bounds is `$ref`-ed from `calc.schema.json` rather than restated, so the two spec kinds share one definition of what a unit is.",
+  "description": "**A type, not an instance.** A model declares what a machine *is*: what it accepts, what it computes, the procedure it runs and where it is valid. The machines to *run* are instances and live in `specs/cases/`, one file per model, against `case.schema.json` - so this file is never edited to make a test pass, and a case that violates the contract is a broken test rather than a discovery about the machine.\n\nA calculation whose *algorithm* is the thing worth pinning down. A calc spec fixes an equation and both implementations evaluate it; a model spec fixes a procedure - a bracketing rule, a tolerance, an iteration cap - and both implementations run that procedure. The distinction matters because an iterated procedure that differs even slightly between two implementations diverges, and no check on the answer alone can tell a different-but-valid algorithm from the same one. Everything about units, quantities and bounds is `$ref`-ed from `calc.schema.json` rather than restated, so the two spec kinds share one definition of what a unit is.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -11,8 +11,7 @@
     "kind",
     "inputs",
     "outputs",
-    "implementations",
-    "cases"
+    "implementations"
   ],
   "properties": {
     "id": {
@@ -41,13 +40,7 @@
     "valid_range": { "$ref": "calc.schema.json#/properties/valid_range" },
     "assumptions": { "$ref": "calc.schema.json#/properties/assumptions" },
     "references": { "$ref": "calc.schema.json#/properties/references" },
-    "implementations": { "$ref": "calc.schema.json#/properties/implementations" },
-    "cases": {
-      "type": "array",
-      "minItems": 1,
-      "description": "Cases both implementations must reproduce. The same idea as a calc's `tests`, minus the property tests: a property test is written against a calc's single equation, and a model's invariants are about its procedure - that the residual vanishes, that the bracket contains the answer - so they are written by hand in the test files and recorded in `assumptions` rather than declared here.",
-      "items": { "$ref": "#/$defs/case" }
-    }
+    "implementations": { "$ref": "calc.schema.json#/properties/implementations" }
   },
 
   "allOf": [

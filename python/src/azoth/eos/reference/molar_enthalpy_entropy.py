@@ -25,10 +25,16 @@ from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import phase_state_at, reduced_parameters
-from azoth.eos.reference.ideal_gas_cp import REFERENCE_TEMPERATURE
 from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT
 
 MODEL_ID = "eos.molar_enthalpy_entropy"
+
+#: The temperature scale this model's ideal-gas polynomial is written against.
+#:
+#: This model's own convention rather than ``eos.ideal_gas_cp``'s: that calc evaluates
+#: a dimensional polynomial, and this is the reduction that makes a table's printed
+#: coefficients dimensionless against a stated scale.
+REFERENCE_TEMPERATURE = 1000.0
 
 
 @dataclass(frozen=True, slots=True)

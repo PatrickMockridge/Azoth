@@ -1,4 +1,8 @@
 //! Spec-driven tests for `eos.ideal_gas_cp`.
+//!
+//! The calc is a port of NeqSim's `Component.getCp0`, and it is dimensional: each
+//! coefficient carries a power of temperature, which is what lets the `CPA`-`CPE`
+//! columns of NeqSim's `COMP.csv` be read as they are stored.
 
 use azoth_core::units::kelvins;
 use azoth_core::{AzothError, CalcResult, WarningCode};
@@ -7,15 +11,31 @@ use azoth_test_support as common;
 
 const CALC_ID: &str = "eos.ideal_gas_cp";
 
+/// Methane's coefficients as NeqSim ships them, and the set most of these tests use.
+const METHANE: (f64, f64, f64, f64, f64) =
+    (37.978352, -0.07461815, 0.000301881, -2.83e-07, 9.070574e-11);
+
+fn cp_of(
+    cp_a: f64,
+    cp_b: f64,
+    cp_c: f64,
+    cp_d: f64,
+    cp_e: f64,
+    t: f64,
+) -> azoth_eos::IdealGasCpResult {
+    ideal_gas_cp(cp_a, cp_b, cp_c, cp_d, cp_e, kelvins(t))
+        .unwrap_or_else(|e| panic!("t = {t} should compute but failed: {e}"))
+}
+
 fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::IdealGasCpResult {
-    ideal_gas_cp(
-        common::input(case, "a"),
-        common::input(case, "b"),
-        common::input(case, "c"),
-        common::input(case, "d"),
-        kelvins(common::input(case, "T")),
+    cp_of(
+        common::input(case, "cp_a"),
+        common::input(case, "cp_b"),
+        common::input(case, "cp_c"),
+        common::input(case, "cp_d"),
+        common::input(case, "cp_e"),
+        common::input(case, "T"),
     )
-    .unwrap_or_else(|e| panic!("test `{}` should compute but failed: {e}", case.id))
 }
 
 #[test]
@@ -36,12 +56,6 @@ fn every_case_in_the_spec() {
         let context = &format!("{}::{}", spec.id, case.id);
 
         common::assert_close(
-            result.cp_over_r,
-            common::expected(case, "cp_over_r"),
-            case.tolerance,
-            &format!("{context} (cp_over_r)"),
-        );
-        common::assert_close(
             result.cp.value,
             common::expected(case, "cp"),
             case.tolerance,
@@ -52,10 +66,11 @@ fn every_case_in_the_spec() {
             spec,
             &result.warnings,
             |quantity| match quantity {
-                "a" => Some(common::input(case, "a")),
-                "b" => Some(common::input(case, "b")),
-                "c" => Some(common::input(case, "c")),
-                "d" => Some(common::input(case, "d")),
+                "cp_a" => Some(common::input(case, "cp_a")),
+                "cp_b" => Some(common::input(case, "cp_b")),
+                "cp_c" => Some(common::input(case, "cp_c")),
+                "cp_d" => Some(common::input(case, "cp_d")),
+                "cp_e" => Some(common::input(case, "cp_e")),
                 "T" => Some(common::input(case, "T")),
                 "cp" => Some(result.cp.value),
                 _ => None,
@@ -68,39 +83,46 @@ fn every_case_in_the_spec() {
 
 /// The polynomial is homogeneous of degree one in its coefficients.
 ///
-/// `cp_over_r` is linear in `(a, b, c, d)` by construction, so doubling every
-/// coefficient doubles the answer and changing the sign of all four negates it. That
-/// is not a property of any particular coefficient set - it holds for all of them -
-/// and it is what catches an implementation which, say, multiplies `d` by `theta` twice
-/// or drops a term, both of which pass at the values one worked example happens to use.
+/// `cp` is linear in all five by construction, so doubling every coefficient doubles
+/// the answer and changing the sign of all five negates it. That is not a property of
+/// any particular coefficient set - it holds for all of them - and it is what catches
+/// an implementation which, say, multiplies a coefficient by the temperature twice or
+/// drops a term, both of which pass at the values one worked example happens to use.
 #[test]
 fn the_polynomial_is_linear_in_its_coefficients() {
-    let (a, b, c, d, t) = (4.0, 1.0, -0.5, 0.1, 500.0);
-    let base = ideal_gas_cp(a, b, c, d, kelvins(t)).unwrap();
-    let doubled = ideal_gas_cp(2.0 * a, 2.0 * b, 2.0 * c, 2.0 * d, kelvins(t)).unwrap();
-    let negated = ideal_gas_cp(-a, -b, -c, -d, kelvins(t)).unwrap();
+    let t = 500.0;
+    let base = cp_of(METHANE.0, METHANE.1, METHANE.2, METHANE.3, METHANE.4, t);
+    let doubled = cp_of(
+        2.0 * METHANE.0,
+        2.0 * METHANE.1,
+        2.0 * METHANE.2,
+        2.0 * METHANE.3,
+        2.0 * METHANE.4,
+        t,
+    );
+    let negated = cp_of(
+        -METHANE.0, -METHANE.1, -METHANE.2, -METHANE.3, -METHANE.4, t,
+    );
 
-    assert!((doubled.cp_over_r - 2.0 * base.cp_over_r).abs() < 1e-15);
-    assert!((negated.cp_over_r + base.cp_over_r).abs() < 1e-15);
-    assert!((doubled.cp.value - 2.0 * base.cp.value).abs() < 1e-12);
+    assert!((doubled.cp.value - 2.0 * base.cp.value).abs() < 1e-9);
+    assert!((negated.cp.value + base.cp.value).abs() < 1e-9);
 }
 
-/// The reference temperature is what makes a table's printed numbers dimensionless.
+/// At 1 K every power of the temperature is one.
 ///
-/// At `T = 1000 K` the reduced temperature is exactly one, so the polynomial collapses
-/// to `a + b + c + d`. That is the one temperature at which the four coefficients can
-/// be checked against the answer by addition alone, and it is the check that catches an
-/// implementation using `T/100` or `T` rather than `T/1000` - all of which agree at any
-/// other temperature after rescaling the coefficients, and none of which agree here.
+/// The one temperature at which the five coefficients can be checked against the
+/// answer by addition alone. An implementation using a reduced temperature - a
+/// different scale, or a divisor - agrees elsewhere after rescaling its coefficients,
+/// and fails here.
 #[test]
-fn the_reference_temperature_is_a_thousand_kelvin() {
-    let result = ideal_gas_cp(4.0, -20.0, 10.0, 1.0, kelvins(1000.0)).unwrap();
+fn at_one_kelvin_the_polynomial_is_the_sum_of_its_coefficients() {
+    let (a, b, c, d, e) = (4.0, -20.0, 10.0, 1.0, 0.5);
+    let result = cp_of(a, b, c, d, e, 1.0);
     assert!(
-        (result.cp_over_r - (4.0 - 20.0 + 10.0 + 1.0)).abs() < 1e-15,
-        "at T = 1000 K the polynomial should be a + b + c + d, got {}",
-        result.cp_over_r
+        (result.cp.value - (a + b + c + d + e)).abs() < 1e-12,
+        "at T = 1 K the polynomial should be the sum of its coefficients, got {}",
+        result.cp.value
     );
-    assert!((result.cp.value - result.cp_over_r * azoth_eos::MOLAR_GAS_CONSTANT).abs() < 1e-12);
 }
 
 /// A polynomial that has turned over reports it rather than passing in silence.
@@ -109,7 +131,7 @@ fn the_reference_temperature_is_a_thousand_kelvin() {
 /// into `integral Cp dT` produces an enthalpy wrong by an amount nobody can see.
 #[test]
 fn a_non_positive_heat_capacity_warns() {
-    let result = ideal_gas_cp(4.0, -20.0, 10.0, 1.0, kelvins(1000.0)).unwrap();
+    let result = cp_of(4.0, -20.0, 10.0, 1.0, 0.5, 1.0);
     assert!(result.cp.value < 0.0);
     assert!(
         result
@@ -120,8 +142,8 @@ fn a_non_positive_heat_capacity_warns() {
         result.warnings
     );
 
-    // And a positive one at the same coefficients, inside the range, is clean.
-    let ordinary = ideal_gas_cp(4.0, 1.0, -0.5, 0.1, kelvins(500.0)).unwrap();
+    // And methane's own coefficients at 300 K, which are ordinary, are clean.
+    let ordinary = cp_of(METHANE.0, METHANE.1, METHANE.2, METHANE.3, METHANE.4, 300.0);
     assert!(
         ordinary.is_clean(),
         "unexpected warnings: {:?}",
@@ -132,32 +154,88 @@ fn a_non_positive_heat_capacity_warns() {
 #[test]
 fn a_non_positive_temperature_is_refused() {
     for t in [0.0, -1.0] {
-        let err = ideal_gas_cp(4.0, 1.0, -0.5, 0.1, kelvins(t)).unwrap_err();
+        let err = ideal_gas_cp(
+            METHANE.0,
+            METHANE.1,
+            METHANE.2,
+            METHANE.3,
+            METHANE.4,
+            kelvins(t),
+        )
+        .unwrap_err();
         assert!(matches!(err, AzothError::OutOfRange { .. }), "T = {t}");
         assert_eq!(err.field(), Some("T"), "T = {t}");
     }
 }
 
-/// All four coefficients matter, individually.
+/// All five coefficients matter, individually.
 ///
-/// Four separate single-coefficient perturbations, each of which must move the answer.
-/// An implementation that silently dropped one - the commonest way a four-term
-/// polynomial goes wrong - would be indistinguishable at most coefficient sets,
-/// because the term it drops is a small correction.
+/// Five separate single-coefficient perturbations, each of which must move the answer.
+/// An implementation that silently dropped one - the commonest way a polynomial goes
+/// wrong, and `cp_e` is what a four-term implementation drops - would be
+/// indistinguishable at most coefficient sets, because the term it drops is a small
+/// correction.
 #[test]
 fn every_coefficient_changes_the_answer() {
-    let base = ideal_gas_cp(4.0, 1.0, -0.5, 0.1, kelvins(700.0)).unwrap();
-    for (index, perturbed) in [
-        ideal_gas_cp(4.5, 1.0, -0.5, 0.1, kelvins(700.0)).unwrap(),
-        ideal_gas_cp(4.0, 1.5, -0.5, 0.1, kelvins(700.0)).unwrap(),
-        ideal_gas_cp(4.0, 1.0, -0.9, 0.1, kelvins(700.0)).unwrap(),
-        ideal_gas_cp(4.0, 1.0, -0.5, 0.5, kelvins(700.0)).unwrap(),
-    ]
-    .into_iter()
-    .enumerate()
-    {
+    let t = 700.0;
+    let base = cp_of(METHANE.0, METHANE.1, METHANE.2, METHANE.3, METHANE.4, t)
+        .cp
+        .value;
+    let perturbations = [
+        cp_of(
+            METHANE.0 + 0.5,
+            METHANE.1,
+            METHANE.2,
+            METHANE.3,
+            METHANE.4,
+            t,
+        )
+        .cp
+        .value,
+        cp_of(
+            METHANE.0,
+            METHANE.1 + 0.5,
+            METHANE.2,
+            METHANE.3,
+            METHANE.4,
+            t,
+        )
+        .cp
+        .value,
+        cp_of(
+            METHANE.0,
+            METHANE.1,
+            METHANE.2 - 0.4,
+            METHANE.3,
+            METHANE.4,
+            t,
+        )
+        .cp
+        .value,
+        cp_of(
+            METHANE.0,
+            METHANE.1,
+            METHANE.2,
+            METHANE.3 + 0.4,
+            METHANE.4,
+            t,
+        )
+        .cp
+        .value,
+        cp_of(
+            METHANE.0,
+            METHANE.1,
+            METHANE.2,
+            METHANE.3,
+            METHANE.4 + 1.0e-11,
+            t,
+        )
+        .cp
+        .value,
+    ];
+    for (index, perturbed) in perturbations.into_iter().enumerate() {
         assert!(
-            (perturbed.cp_over_r - base.cp_over_r).abs() > 1e-6,
+            (perturbed - base).abs() > 1e-9,
             "coefficient {index} has no effect on the answer"
         );
     }

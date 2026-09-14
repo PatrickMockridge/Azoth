@@ -132,39 +132,3 @@ references:
 implementations:
   python: azoth.eos.bubble_pressure
   rust: azoth_eos::bubble_pressure
-
-cases:
-  - id: methane_and_butane_at_300_k
-    inputs:
-      Tc: [190.56, 425.12]
-      Pc: [4599200.0, 3796000.0]
-      omega: [0.01142, 0.2002]
-      kij: [[0.0, 0.05], [0.05, 0.0]]
-      T: 300.0
-      x: [0.2, 0.8]
-    expected:
-      pressure: 4405971.88524195
-      incipient: [0.8954934205328267, 0.10450657946717332]
-      k: [4.477467102662785, 0.1306332243339273]
-      z_liquid: 0.15923644847947147
-      z_vapour: 0.8559280792104562
-      min_t_over_tc: 0.7056831012420023
-      iterations: 23
-    tolerance: 1.0e-09
-  - id: methane_propane_and_butane_at_320_k
-    inputs:
-      Tc: [190.56, 369.83, 425.12]
-      Pc: [4599200.0, 4248000.0, 3796000.0]
-      omega: [0.01142, 0.1523, 0.2002]
-      kij: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-      T: 320.0
-      x: [0.2, 0.3, 0.5]
-    expected:
-      pressure: 4562186.628738893
-      incipient: [0.7222910363935799, 0.15937358543476263, 0.11833537817165739]
-      k: [3.6114551819644003, 0.5312452847820274, 0.23667075634308543]
-      z_liquid: 0.1619174258974364
-      z_vapour: 0.7941260235229536
-      min_t_over_tc: 0.7527286413248024
-      iterations: 29
-    tolerance: 1.0e-09

@@ -972,9 +972,6 @@ impl PyPtFlashResult {
 )]
 #[derive(Debug, Clone, PartialEq)]
 pub struct PyIdealGasCpResult {
-    /// The polynomial's value, `Cp/R`.
-    #[pyo3(get)]
-    pub cp_over_r: f64,
     /// The ideal-gas heat capacity.
     #[pyo3(get)]
     pub cp: PyQty,
@@ -996,7 +993,6 @@ impl PyIdealGasCpResult {
 impl From<&IdealGasCpResult> for PyIdealGasCpResult {
     fn from(r: &IdealGasCpResult) -> Self {
         Self {
-            cp_over_r: r.cp_over_r,
             cp: PyQty {
                 magnitude_si: r.cp.value,
                 unit: "J/(mol*K)".to_string(),

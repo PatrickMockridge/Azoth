@@ -1,0 +1,151 @@
+# Instances of `eos.pt_flash`.
+#
+# The model is the type - what the machine is, what it accepts, what it computes
+# and where it is valid. Each entry below is one machine to run: its components,
+# its state, its settings, and the numbers the run must reproduce. A case that
+# violates the type's contract is a broken test rather than a discovery.
+model: eos.pt_flash
+cases:
+- id: methane_and_butane_at_330_k_and_25_bar
+  inputs:
+    Tc:
+    - 190.56
+    - 425.12
+    Pc:
+    - 4599200.0
+    - 3796000.0
+    omega:
+    - 0.01142
+    - 0.2002
+    kij:
+    - - 0.0
+      - 0.05
+    - - 0.05
+      - 0.0
+    T: 330.0
+    P: 2500000.0
+    z:
+    - 0.6
+    - 0.4
+  expected:
+    beta: 0.8447220271668119
+    x:
+    - 0.08646861506372552
+    - 0.9135313849362734
+    y:
+    - 0.6943980503344653
+    - 0.3056019496655348
+    k:
+    - 8.030636894354197
+    - 0.3345281341230035
+    ln_phi_liquid:
+    - 2.0769347319092257
+    - -1.4953745844048578
+    ln_phi_vapour:
+    - -0.006329107265372294
+    - -0.4003402894548284
+    z_liquid: 0.0933521915309248
+    z_vapour: 0.8722188526935039
+    min_t_over_tc: 0.7762514113662025
+    iterations: 13
+  tolerance: 1.0e-09
+- id: methane_propane_and_butane_at_350_k_and_50_bar
+  inputs:
+    Tc:
+    - 190.56
+    - 369.83
+    - 425.12
+    Pc:
+    - 4599200.0
+    - 4248000.0
+    - 3796000.0
+    omega:
+    - 0.01142
+    - 0.1523
+    - 0.2002
+    kij:
+    - - 0.0
+      - 0.0
+      - 0.0
+    - - 0.0
+      - 0.0
+      - 0.0
+    - - 0.0
+      - 0.0
+      - 0.0
+    T: 350.0
+    P: 5000000.0
+    z:
+    - 0.5
+    - 0.3
+    - 0.2
+  expected:
+    beta: 0.9897493300887433
+    x:
+    - 0.17105357654811876
+    - 0.3837611570605945
+    - 0.445185266391286
+    y:
+    - 0.5034068436348336
+    - 0.2991324995670004
+    - 0.19746065679816602
+    k:
+    - 2.9429775968070517
+    - 0.7794757079069585
+    - 0.44354715150121843
+    ln_phi_liquid:
+    - 1.140973487143631
+    - -0.7934020172498539
+    - -1.631208601116444
+    ln_phi_vapour:
+    - 0.06155163030297489
+    - -0.5442682626142179
+    - -0.8182574350707497
+    z_liquid: 0.1923272374793064
+    z_vapour: 0.6962296633271022
+    min_t_over_tc: 0.8232969514490026
+    iterations: 22
+  tolerance: 1.0e-09
+- id: a_subcooled_liquid_feed
+  inputs:
+    Tc:
+    - 190.56
+    - 425.12
+    Pc:
+    - 4599200.0
+    - 3796000.0
+    omega:
+    - 0.01142
+    - 0.2002
+    kij:
+    - - 0.0
+      - 0.05
+    - - 0.05
+      - 0.0
+    T: 300.0
+    P: 3000000.0
+    z:
+    - 0.1
+    - 0.9
+  expected:
+    beta: -0.046417400850318154
+    x:
+    - 0.1343066534039841
+    - 0.8656933465960167
+    y:
+    - 0.8733970112336372
+    - 0.12660298876638099
+    k:
+    - 6.503006285224948
+    - 0.1462446133659167
+    ln_phi_liquid:
+    - 1.8168271437554724
+    - -2.413916106531643
+    ln_phi_vapour:
+    - -0.05543743164054027
+    - -0.49144148129974313
+    z_liquid: 0.1109805757787235
+    z_vapour: 0.8903679940210696
+    min_t_over_tc: 0.7056831012420023
+    iterations: 12
+  tolerance: 1.0e-09

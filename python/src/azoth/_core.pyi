@@ -118,7 +118,6 @@ class DewPressureResult:
 
 @final
 class IdealGasCpResult:
-    cp_over_r: float
     cp: Qty
     warnings: list[Warning]
 
@@ -429,7 +428,14 @@ def dew_pressure(
     T: float,
     y: list[float],
 ) -> DewPressureResult: ...
-def ideal_gas_cp(a: float, b: float, c: float, d: float, T: float) -> IdealGasCpResult: ...
+def ideal_gas_cp(
+    cp_a: float,
+    cp_b: float,
+    cp_c: float,
+    cp_d: float,
+    cp_e: float,
+    T: float,
+) -> IdealGasCpResult: ...
 def molar_enthalpy_entropy(
     Tc: list[float],
     Pc: list[float],

@@ -746,8 +746,6 @@ class IdealGasCpResult(_HasWarnings):
     as the single step it is, rather than folded into the answer.
     """
 
-    #: The polynomial's value, ``Cp/R``.
-    cp_over_r: float
     #: The ideal-gas heat capacity. Carries ``OUT_OF_VALID_RANGE`` when it is not
     #: positive, which means the polynomial has been evaluated outside its range.
     cp: Q

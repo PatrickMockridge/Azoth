@@ -44,8 +44,10 @@ except ImportError:  # pragma: no cover
 ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
 MODEL_DIR = ROOT / "specs" / "models"
+CASE_DIR = ROOT / "specs" / "cases"
 SCHEMA_PATH = ROOT / "specs" / "schema" / "calc.schema.json"
 MODEL_SCHEMA_PATH = ROOT / "specs" / "schema" / "model.schema.json"
+CASE_SCHEMA_PATH = ROOT / "specs" / "schema" / "case.schema.json"
 
 # Quantities that name a state rather than a number. These have no units and are
 # not function parameters, so they are allowed in range checks without appearing
@@ -992,7 +994,29 @@ def main() -> int:
         Draft202012Validator.check_schema(model_schema)
         registry = Registry().with_resource(schema["$id"], Resource.from_contents(schema))
         model_validator = Draft202012Validator(model_schema, registry=registry)
+        # The instances come from their own files, against their own schema: a model
+        # is a type, and the machines to run are not part of it. They are attached
+        # here so the case rules below run unchanged on the same shape they always did.
+        case_schema = json.loads(CASE_SCHEMA_PATH.read_text(encoding="utf-8"))
+        Draft202012Validator.check_schema(case_schema)
+        case_registry = (
+            Registry()
+            .with_resource(schema["$id"], Resource.from_contents(schema))
+            .with_resource(model_schema["$id"], Resource.from_contents(model_schema))
+        )
+        case_validator = Draft202012Validator(case_schema, registry=case_registry)
+        instances: dict[str, list[dict[str, Any]]] = {}
+        for _rel, document in check_schema(report, case_validator, CASE_DIR):
+            instances.setdefault(document["model"], []).extend(document["cases"])
+
         for rel, spec in check_schema(report, model_validator, MODEL_DIR):
+            spec["cases"] = instances.get(spec["id"], [])
+            if not spec["cases"]:
+                report.error(
+                    str(rel),
+                    f"{spec['id']} has no instances. Every model ships at least one "
+                    f"file under specs/cases/, or nothing verifies it.",
+                )
             check_model(report, rel, spec)
 
     if not args.quiet:

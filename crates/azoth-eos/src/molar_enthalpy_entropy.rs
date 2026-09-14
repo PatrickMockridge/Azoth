@@ -19,8 +19,15 @@ use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::mixture::Mixture;
 use crate::pr_molar_volume::MOLAR_GAS_CONSTANT;
+
+/// The temperature scale this model's ideal-gas polynomial is written against.
+///
+/// This model's own convention rather than `eos.ideal_gas_cp`'s: that calc evaluates a
+/// dimensional polynomial, and this is the reduction that makes a table's printed
+/// coefficients dimensionless against a stated scale.
+pub const REFERENCE_TEMPERATURE: f64 = 1000.0;
+use crate::model_gen;
 use crate::results::MolarEnthalpyEntropyResult;
-use crate::{ideal_gas_cp::REFERENCE_TEMPERATURE, model_gen};
 
 /// The caller's ideal-gas model and the datum it is referenced to.
 ///

@@ -347,16 +347,15 @@ def dew_pressure(mixture: Mixture, T: Q, y: list[float]) -> DewPressureResult:
     return resolve(_DEW_PRESSURE)(mixture=mixture, T=T, y=y)  # type: ignore[no-any-return]
 
 
-def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResult:
+def ideal_gas_cp(
+    cp_a: float, cp_b: float, cp_c: float, cp_d: float, cp_e: float, T: Q
+) -> IdealGasCpResult:
     """The ideal-gas heat capacity at a temperature, from a caller-supplied polynomial.
 
-    ``Cp/R = a + b*theta + c*theta**2 + d*theta**3`` with ``theta = T/(1000 K)``, so
-    the four coefficients are dimensionless and a published table's printed numbers go
-    in unchanged - see :func:`azoth.eos.reference.ideal_gas_cp` for the derivation of
-    that substitution.
-
-    **This library ships no heat-capacity coefficients.** They are per-component fitted
-    data, which is the databank this library deliberately has none of.
+    ``cp = cp_a + cp_b*T + cp_c*T**2 + cp_d*T**3 + cp_e*T**4``, dimensional throughout:
+    the coefficients carry the powers of temperature in their units, so ``cp_a`` is a
+    heat capacity and ``cp_b`` is one per kelvin. Those are the units the ``CPA``-``CPE``
+    columns of NeqSim's ``COMP.csv`` are stored in, which is where they come from.
 
     ``T`` must lie inside the range the coefficients were fitted over, and that is not
     checked. A polynomial evaluated outside it turns over, ``cp`` goes negative, and
@@ -368,7 +367,9 @@ def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResu
 
     See :func:`azoth.eos.reference.ideal_gas_cp`.
     """
-    return resolve(_IDEAL_GAS_CP)(a=a, b=b, c=c, d=d, T=T)  # type: ignore[no-any-return]
+    return resolve(_IDEAL_GAS_CP)(  # type: ignore[no-any-return]
+        cp_a=cp_a, cp_b=cp_b, cp_c=cp_c, cp_d=cp_d, cp_e=cp_e, T=T
+    )
 
 
 def molar_enthalpy_entropy(

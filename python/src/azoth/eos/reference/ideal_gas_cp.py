@@ -1,12 +1,15 @@
-"""``eos.ideal_gas_cp`` - ideal-gas heat capacity from a four-term polynomial.
+"""``eos.ideal_gas_cp`` - ideal-gas heat capacity from a polynomial.
 
 ```text
-Cp/R = a + b*theta + c*theta**2 + d*theta**3,   theta = T / (1000 K)
+cp = cp_a + cp_b*T + cp_c*T**2 + cp_d*T**3 + cp_e*T**4
 ```
 
-Spec: ``specs/calcs/eos/ideal_gas_cp.yaml``, which carries why the four coefficients
-are the caller's, the derivation of the ``T/(1000 K)`` substitution, and the warning
-a non-positive ``Cp`` carries.
+A port of ``neqsim.thermo.component.Component.getCp0(double)``, and dimensional
+throughout: the coefficients carry the powers of temperature in their units, so
+``cp_a`` is a heat capacity and ``cp_b`` is one per kelvin. That is what lets the five
+``CPA``-``CPE`` columns of NeqSim's ``COMP.csv`` be read as they are stored.
+
+Spec: ``specs/calcs/eos/ideal_gas_cp.yaml``.
 """
 
 from __future__ import annotations
@@ -17,36 +20,27 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import IdealGasCpResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
-from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT
 
 MODEL_ID = "eos.ideal_gas_cp"
 
-#: The reference temperature the polynomial is written against, in kelvin.
-#:
-#: A stated constant of the correlation's form rather than a fitted quantity: it is
-#: what makes a table's four printed numbers dimensionless, and a caller whose
-#: coefficients are quoted against another reference rescales them once.
-REFERENCE_TEMPERATURE = 1000.0
 
-
-def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResult:
+def ideal_gas_cp(
+    cp_a: float, cp_b: float, cp_c: float, cp_d: float, cp_e: float, T: Q
+) -> IdealGasCpResult:
     """The ideal-gas heat capacity at a temperature.
 
-    The coefficients are dimensionless and describe ``Cp/R``; the result is
-    dimensioned.
-
     Args:
-        a: the constant term of ``Cp/R``.
-        b: the coefficient of ``theta``.
-        c: the coefficient of ``theta**2``.
-        d: the coefficient of ``theta**3``.
-        T: absolute temperature. Must lie inside the range the coefficients were
-            fitted over, which is **not checked**.
+        cp_a: the constant term, in J/(mol*K).
+        cp_b: the coefficient of ``T``, in J/(mol*K**2).
+        cp_c: the coefficient of ``T**2``, in J/(mol*K**3).
+        cp_d: the coefficient of ``T**3``, in J/(mol*K**4).
+        cp_e: the coefficient of ``T**4``, in J/(mol*K**5). Zero for a component whose
+            heat capacity is described by four terms.
+        T: absolute temperature.
 
     Returns:
-        ``cp_over_r`` and ``cp``. A non-positive ``cp`` comes back carrying
-        ``OUT_OF_VALID_RANGE`` rather than raising: it means the polynomial has been
-        evaluated outside its fitted range, and the arithmetic is well defined.
+        ``cp``, the ideal-gas heat capacity in J/(mol*K), carrying a warning when it
+        comes out non-positive.
 
     Raises:
         OutOfRangeError: if ``T`` is not positive.
@@ -54,20 +48,48 @@ def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResu
     Example:
         >>> import azoth
         >>> q = azoth.ureg.Quantity
-        >>> r = ideal_gas_cp(4.0, 1.0, -0.5, 0.1, q(500.0, "K"))
-        >>> round(r.cp_over_r, 4)
-        4.3875
+        >>> r = ideal_gas_cp(
+        ...     37.978352, -0.07461815, 0.000301881, -2.83e-07, 9.070574e-11, q(300.0, "K")
+        ... )
+        >>> round(r.cp.to("J/(mol*K)").magnitude, 6)
+        35.855913
     """
     spec = _spec()
     checks = checks_for(spec)
     warnings: list[Warning] = []
 
-    values = {"a": a, "b": b, "c": c, "d": d, "T": input_to_si(spec, "T", T)}
+    # Every argument becomes an SI magnitude before any arithmetic. The coefficients
+    # carry units of their own - a heat capacity and one per kelvin per degree - so
+    # leaving them as quantities and mixing them with a plain temperature leaves each
+    # term with a different power of kelvin and the sum does not add up.
+    values = {
+        "cp_a": input_to_si(spec, "cp_a", cp_a),
+        "cp_b": input_to_si(spec, "cp_b", cp_b),
+        "cp_c": input_to_si(spec, "cp_c", cp_c),
+        "cp_d": input_to_si(spec, "cp_d", cp_d),
+        "cp_e": input_to_si(spec, "cp_e", cp_e),
+        "T": input_to_si(spec, "T", T),
+    }
     apply_checks(checks.on_input, values.get, warnings)
 
-    theta = values["T"] / REFERENCE_TEMPERATURE
-    cp_over_r = a + b * theta + c * theta * theta + d * theta * theta * theta
-    cp = cp_over_r * MOLAR_GAS_CONSTANT
+    # Abbreviated multiplication rather than `**`, because these are the terms as the
+    # source writes them and a reader checking one against the other should not have to
+    # expand an operator.
+    (a, b, c, d, e) = (
+        values["cp_a"],
+        values["cp_b"],
+        values["cp_c"],
+        values["cp_d"],
+        values["cp_e"],
+    )
+    temperature = values["T"]
+    cp = (
+        a
+        + b * temperature
+        + c * temperature * temperature
+        + d * temperature * temperature * temperature
+        + e * temperature * temperature * temperature * temperature
+    )
 
     apply_checks(
         checks.derived,
@@ -76,7 +98,6 @@ def ideal_gas_cp(a: float, b: float, c: float, d: float, T: Q) -> IdealGasCpResu
     )
 
     return IdealGasCpResult(
-        cp_over_r=cp_over_r,
         cp=from_si(cp, "J/(mol*K)"),
         warnings=tuple(warnings),
     )

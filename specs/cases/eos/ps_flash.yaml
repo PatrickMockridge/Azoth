@@ -1,0 +1,97 @@
+# Instances of `eos.ps_flash`.
+#
+# The model is the type - what the machine is, what it accepts, what it computes
+# and where it is valid. Each entry below is one machine to run: its components,
+# its state, its settings, and the numbers the run must reproduce. A case that
+# violates the type's contract is a broken test rather than a discovery.
+model: eos.ps_flash
+cases:
+- id: two_phase_round_trip
+  inputs:
+    Tc:
+    - 190.56
+    - 425.12
+    Pc:
+    - 4599000.0
+    - 3796000.0
+    omega:
+    - 0.0115
+    - 0.2002
+    kij:
+    - - 0.0
+      - 0.01289789
+    - - 0.01289789
+      - 0.0
+    cp_a:
+    - 3.0
+    - 5.0
+    cp_b:
+    - 0.0
+    - 0.0
+    cp_c:
+    - 0.0
+    - 0.0
+    cp_d:
+    - 0.0
+    - 0.0
+    h_ref:
+    - 0.0
+    - 0.0
+    s_ref:
+    - 0.0
+    - 0.0
+    T_ref: 300.0
+    P_ref: 100000.0
+    P: 2000000.0
+    S: -39.078496670600245
+    z:
+    - 0.6
+    - 0.4
+  expected:
+    T: 300.0
+    beta: 0.6824390269029676
+  tolerance: 1.0e-07
+- id: single_phase_vapour_round_trip
+  inputs:
+    Tc:
+    - 190.56
+    - 425.12
+    Pc:
+    - 4599000.0
+    - 3796000.0
+    omega:
+    - 0.0115
+    - 0.2002
+    kij:
+    - - 0.0
+      - 0.01289789
+    - - 0.01289789
+      - 0.0
+    cp_a:
+    - 3.0
+    - 5.0
+    cp_b:
+    - 0.0
+    - 0.0
+    cp_c:
+    - 0.0
+    - 0.0
+    cp_d:
+    - 0.0
+    - 0.0
+    h_ref:
+    - 0.0
+    - 0.0
+    s_ref:
+    - 0.0
+    - 0.0
+    T_ref: 300.0
+    P_ref: 100000.0
+    P: 2000000.0
+    S: -7.568398845188517
+    z:
+    - 0.6
+    - 0.4
+  expected:
+    T: 450.0
+  tolerance: 1.0e-07

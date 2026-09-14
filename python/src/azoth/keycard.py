@@ -115,6 +115,10 @@ UNIT_VOCABULARY: tuple[str, ...] = (
     "m**3/mol",
     "J/mol",
     "J/(mol*K)",
+    "J/(mol*K**2)",
+    "J/(mol*K**3)",
+    "J/(mol*K**4)",
+    "J/(mol*K**5)",
 )
 
 #: The model vocabularies this build implements. Each one is what the schema's enum

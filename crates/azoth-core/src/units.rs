@@ -252,6 +252,10 @@ pub const UNIT_NAMES: &[&str] = &[
     "m**3/mol",
     "J/mol",
     "J/(mol*K)",
+    "J/(mol*K**2)",
+    "J/(mol*K**3)",
+    "J/(mol*K**4)",
+    "J/(mol*K**5)",
 ];
 
 #[cfg(test)]
@@ -333,6 +337,12 @@ mod tests {
         ("m**3/mol", |v| cubic_meters_per_mole(v).value, 1.0),
         ("J/mol", |v| joules_per_mole(v).value, 1.0),
         ("J/(mol*K)", |v| joules_per_mole_kelvin(v).value, 1.0),
+        // A polynomial coefficient of `Cp` carries one more inverse kelvin per degree.
+        // `uom` has no quantity for those, so the magnitude is the SI base value.
+        ("J/(mol*K**2)", |v| v, 1.0),
+        ("J/(mol*K**3)", |v| v, 1.0),
+        ("J/(mol*K**4)", |v| v, 1.0),
+        ("J/(mol*K**5)", |v| v, 1.0),
     ];
 
     #[test]

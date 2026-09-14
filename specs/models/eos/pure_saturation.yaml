@@ -112,13 +112,3 @@ references:
 implementations:
   python: azoth.eos.pure_saturation
   rust: azoth_eos::pure_saturation
-
-cases:
-  - id: propane_at_300_k
-    inputs: { Tc: 369.83, Pc: 4248000.0, omega: 0.1523, T: 300.0 }
-    expected: { p_sat: 997667.7436544185 }
-    tolerance: 1.0e-9
-  - id: carbon_dioxide_at_280_k
-    inputs: { Tc: 304.13, Pc: 7377000.0, omega: 0.2239, T: 280.0 }
-    expected: { p_sat: 4159392.604815074 }
-    tolerance: 1.0e-9

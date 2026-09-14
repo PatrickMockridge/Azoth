@@ -477,18 +477,19 @@ pub fn dew_pressure(
 /// floats: they are dimensionless by construction, because the polynomial is written
 /// against `T/(1000 K)` and divided through by `R`.
 #[pyfunction]
-#[pyo3(signature = (a, b, c, d, T))]
-#[pyo3(text_signature = "(a, b, c, d, T)")]
+#[pyo3(signature = (cp_a, cp_b, cp_c, cp_d, cp_e, T))]
+#[pyo3(text_signature = "(cp_a, cp_b, cp_c, cp_d, cp_e, T)")]
 #[allow(non_snake_case)] // `T` is the symbol in the chemistry
 pub fn ideal_gas_cp(
     py: Python<'_>,
-    a: f64,
-    b: f64,
-    c: f64,
-    d: f64,
+    cp_a: f64,
+    cp_b: f64,
+    cp_c: f64,
+    cp_d: f64,
+    cp_e: f64,
     T: f64,
 ) -> PyResult<PyIdealGasCpResult> {
-    eos::ideal_gas_cp(a, b, c, d, kelvins(T))
+    eos::ideal_gas_cp(cp_a, cp_b, cp_c, cp_d, cp_e, kelvins(T))
         .map(|r| PyIdealGasCpResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

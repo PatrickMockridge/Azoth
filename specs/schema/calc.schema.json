@@ -216,7 +216,11 @@
         "kg/mol",
         "m**3/mol",
         "J/mol",
-        "J/(mol*K)"
+        "J/(mol*K)",
+        "J/(mol*K**2)",
+        "J/(mol*K**3)",
+        "J/(mol*K**4)",
+        "J/(mol*K**5)"
       ],
       "description": "Canonical unit of a quantity in the equation. SI-first. API callers may pass any convertible unit; this is the unit the spec and generated docs speak in, not the unit anything is calculated in - calculations work in SI base magnitudes, and to_si/from_si are the only places the two representations meet. Extend deliberately, with a conversion path in both languages: python/src/azoth/core/units.py's CANONICAL_UNITS, crates/azoth-core/src/units.rs's UNIT_NAMES, and a constructor in each. A contract test asserts the three lists are the same set, so adding a name to one and not the others fails rather than going unnoticed, and a conversion test asserts the round trip for every entry. SI-first is a convention for how these are written down, not a load-bearing property: mm is not its own SI base unit and converts correctly, because both implementations convert to base units rather than to the name recorded here."
     },

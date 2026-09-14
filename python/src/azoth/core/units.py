@@ -127,6 +127,10 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     # because the two are dimensionally identical, and the Rust side records the
     # same reasoning on `joules_per_mole_kelvin`.
     "J/(mol*K)": "joule/(mole*kelvin)",
+    "J/(mol*K**2)": "joule/(mole*kelvin**2)",
+    "J/(mol*K**3)": "joule/(mole*kelvin**3)",
+    "J/(mol*K**4)": "joule/(mole*kelvin**4)",
+    "J/(mol*K**5)": "joule/(mole*kelvin**5)",
 }
 
 

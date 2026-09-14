@@ -7,29 +7,30 @@
 ## Equation
 
 $$
-\frac{C_{p}}{R} = a + b\,\theta + c\,\theta^{2} + d\,\theta^{3}, \qquad \theta = \frac{T}{T_{0}}, \qquad T_{0} = 1000\ \mathrm{K}
+C_{p}^{\mathrm{ig}} = c_{0} + c_{1}T + c_{2}T^{2} + c_{3}T^{3} + c_{4}T^{4}
 $$
 
 In the form the library evaluates:
 
 ```python
-Cp/R = a + b*theta + c*theta**2 + d*theta**3,  theta = T/(1000 K)
+cp = cp_a + cp_b*T + cp_c*T**2 + cp_d*T**3 + cp_e*T**4
 ```
 
 ## Source
 
-**The standard four-term ideal-gas heat-capacity polynomial**
+**NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0**
 
-The form is the conventional one - `Cp/R` as a cubic in temperature - and is set out in e.g. Poling, Prausnitz & O'Connell, The Properties of Gases and Liquids, 5th ed., ch. 3. The reference temperature is the scale at which the coefficients are quoted, not a fitted quantity.
+`thermo/component/Component.java`, `getCp0(double)` at line 1547. The five coefficients are the `CPA`-`CPE` columns of NeqSim's `COMP.csv`, carried across as `cpa`-`cpe` in `data/components/components.csv`.
 
 ## Inputs
 
 | Name | Unit | Description |
 |---|---|---|
-| `a` | dimensionless | the constant term of `Cp/R`. Dimensionless, as are the three that follow, because the polynomial is divided through by `R` - which is what lets a published table's numbers be used unchanged. |
-| `b` | dimensionless | the coefficient of `theta` |
-| `c` | dimensionless | the coefficient of `theta**2` |
-| `d` | dimensionless | the coefficient of `theta**3` |
+| `cp_a` | J/(mol*K) | the constant term |
+| `cp_b` | J/(mol*K**2) | the coefficient of `T` |
+| `cp_c` | J/(mol*K**3) | the coefficient of `T**2` |
+| `cp_d` | J/(mol*K**4) | the coefficient of `T**3` |
+| `cp_e` | J/(mol*K**5) | the coefficient of `T**4`. Zero for a component whose heat capacity |
 | `T` | K | absolute temperature. Must be in the range the coefficients were fitted over, which is **not checked** - see `assumptions`. |
 
 
@@ -37,7 +38,6 @@ The form is the conventional one - `Cp/R` as a cubic in temperature - and is set
 
 | Name | Unit | Description |
 |---|---|---|
-| `cp_over_r` | dimensionless | the polynomial's own value, reported because it is what a reader checking the arithmetic by hand computes first. `cp` is this multiplied by `R`. |
 | `cp` | J/(mol*K) | the ideal-gas heat capacity. Carries a warning when it comes out non-positive, which means the polynomial has been evaluated outside the range it was fitted over. |
 
 
@@ -45,8 +45,8 @@ The form is the conventional one - `Cp/R` as a cubic in temperature - and is set
 
 | Bound | On violation | Why |
 |---|---|---|
-| `T > 0` | raises | an absolute temperature, and the divisor in the reduced temperature; zero and below are not states. The bound is on `T` and not on `theta` because `theta` is what the equation uses while `T` is what the caller supplies, so naming `T` is what makes the message legible. |
-| `cp > 0` | warns `OUT_OF_VALID_RANGE` | a heat capacity is positive by definition, so a negative one means the polynomial has turned over outside its fitted range. A warning rather than an error because the arithmetic is well defined and a caller inspecting the limit is doing something legitimate - but it must not pass in silence, because the value feeds an integral downstream and a negative heat capacity produces an enthalpy that is wrong by an amount nobody can see. |
+| `T > 0` | raises | an absolute temperature; zero and below are not states, and every term but the first scales with it. |
+| `cp > 0` | warns `OUT_OF_VALID_RANGE` | a heat capacity of zero or below. Not refused, because a caller inspecting where a polynomial turns over is asking a legitimate question and the arithmetic is well defined; it is a warning because a fitted polynomial beyond its range is exactly how such an answer arises, and the caller should see that rather than a number that looks like a result. |
 
 
 ## Assumptions
@@ -55,45 +55,43 @@ These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
-- **`a`, `b`, `c` and `d` are the caller's, and their correctness is NOT CHECKED.** This library ships no heat-capacity coefficients and no component data of any kind. A transposed digit in one of them produces a heat capacity that is wrong everywhere and looks entirely reasonable.
-- **`T` must lie inside the range the coefficients were fitted over, and that is NOT CHECKED and cannot be.** A fitted polynomial is meaningless outside its range and the way it fails is a turning-over, not an obvious explosion. The non-positive bound above catches the case where it has turned over far enough to change sign; it does not catch the much more likely case where the value is simply wrong by a few per cent.
-- the coefficients describe the ideal-gas heat capacity, so the value is a property of the substance at that temperature and not of any real fluid state. Deviation from ideality is `eos.pr_departure`'s business and is not applied here.
-- the polynomial's form is the caller's as well. A substance whose heat capacity is better described by a different expression - a Shomate polynomial, a table of values, an association model - is not served by this calc, and passing its coefficients to a four-term cubic is a mistake this library cannot detect.
+- **the coefficients are the caller's, and their range is not checked.** A cubic fitted over 200-1000 K and evaluated at 1500 K returns a number with nothing to distinguish it from a good one, except that it usually turns over first and the warning above fires.
+- **the polynomial is ideal-gas `Cp`, not the real fluid's.** The departure is a separate model - `eos.pr_departure` - and a caller wanting the real heat capacity adds the two.
+- **the coefficients are per component.** Evaluating a mixture's ideal-gas heat capacity means evaluating this once per component and taking the mole-fraction weighted sum, which is what `eos.molar_enthalpy_entropy` does.
 
 
 
 ## Worked example
 
-Source: derived from the equation above, with coefficients chosen to be arithmetic a reader can do in their head
+Source: NeqSim's own coefficients for methane, from the `CPA`-`CPE` columns of `COMP.csv`
 
 | Input | Value |
 |---|---|
-| `a` | 4.0 |
-| `b` | 1.0 |
-| `c` | -0.5 |
-| `d` | 0.1 |
-| `T` | 500.0 |
+| `cp_a` | 37.978352 |
+| `cp_b` | -0.07461815 |
+| `cp_c` | 0.000301881 |
+| `cp_d` | -2.83e-07 |
+| `cp_e` | 9.070574e-11 |
+| `T` | 300.0 |
 
 | Output | Expected |
 |---|---|
-| `cp_over_r` | 4.3875 |
-| `cp` | 36.47970473714734 |
+| `cp` | 35.855913494 |
 
 Relative tolerance: `1e-12`
 
-With `a = 4.0`, `b = 1.0`, `c = -0.5`, `d = 0.1` and `T = 500 K`: ```text theta = 500/1000 = 0.5 Cp/R = 4.0 + 1.0*0.5 + (-0.5)*0.25 + 0.1*0.125 = 4.0 + 0.5 - 0.125 + 0.0125 = 4.3875 Cp = 4.3875 * 8.31446261815324 = 36.47970473714734 J/(mol*K) ``` Every term is exact in binary except the final multiplication, so the expected values are given to full double precision and the tolerance is tight. The coefficients are **illustrative and are not fitted to any substance** - the arithmetic is the point, and this library ships no coefficients to fit them to.
+Methane at 300 K, with the five coefficients exactly as NeqSim ships them: cp_a = 37.978352 cp_b = -0.07461815 cp_c = 0.000301881 cp_d = -2.83e-07 cp_e = 9.070574e-11 The five terms, in order: 37.978352 -0.07461815 * 300 = -22.385445 0.000301881 * 300**2 = +27.16929 -2.83e-07 * 300**3 = -7.641 9.070574e-11 * 300**4 = +0.73469041... whose sum is 35.855913494 J/(mol*K). The literature value for methane's ideal-gas heat capacity at 300 K is about 35.7, which is the check that the coefficients are being read in the units NeqSim stores them in rather than in some rescaled form: a factor of 1000 anywhere in the column would move this by three orders.
 
 
 ## Tests
 
 | Test | Type | What it does |
 |---|---|---|
-| `illustrative_coefficients_worked_example` | `worked_example` | the example above; active |
-| `a_second_temperature` | `reference` | an independent value; active |
-| `a_polynomial_that_has_turned_over` | `reference` | an independent value; active |
-| `an_all_zero_coefficient_set` | `reference` | an independent value; active |
-| `monotonic` | `property` | monotonic; active |
-| `unit_round_trip` | `property` | unit_round_trip; active |
+| `methane_at_300_k` | `worked_example` | the example above; active |
+| `propane_at_400_k` | `reference` | an independent value; active |
+| `co2_at_300_k` | `reference` | an independent value; active |
+| `the_polynomial_turns_over` | `property` | monotonic; **skipped** - A quartic is not monotonic in general, and the components in the file whose coefficient sets turn over inside their fitted range are the ones this would catch - but the property that matters is monotonicity *over the fitted range*, and the fitted range is not recorded in the file. Asserting the wrong interval would be a test of the interval rather than of the model. |
+| `round_trip_units` | `property` | unit_round_trip; active |
 
 
 ## Implementation
@@ -105,7 +103,7 @@ With `a = 4.0`, `b = 1.0`, `c = -0.5`, `d = 0.1` and `T = 500 K`: ```text theta 
 
 ## References
 
-- Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. "The Properties of Gases and Liquids", 5th ed., chapter 3. (the standard statement of the four-term ideal-gas heat-capacity polynomial and the convention for quoting its coefficients; the edition is described rather than page-cited, and is unconfirmed)
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `Component.java` line 1547.
 
 
 ---

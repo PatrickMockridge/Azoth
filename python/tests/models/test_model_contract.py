@@ -35,6 +35,7 @@ from azoth import _models_gen
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "model.schema.json"
+CASE_SCHEMA_PATH = REPO_ROOT / "specs" / "schema" / "case.schema.json"
 
 
 def _extension() -> ModuleType:
@@ -156,10 +157,27 @@ def test_the_schema_requires_every_field_a_model_needs() -> None:
         # Not `verification`: it is optional now. A status on every spec was a
         # mandatory badge on everything, which said nothing about any one of them.
         "implementations",
-        "cases",
     }
     missing = needed - required
     assert not missing, f"the model schema does not require {sorted(missing)}"
+
+    # `cases` is deliberately *not* here, and its absence is the point: a model is a
+    # type and the machines to run are instances in `specs/cases/`, against their own
+    # schema. What a case needs is asserted there instead, one step below, so the two
+    # cannot be conflated back into one document.
+    assert "cases" not in required, (
+        "`cases` must not be required of a model: it is an instance, not a type"
+    )
+    case_schema: dict[str, Any] = json.loads(CASE_SCHEMA_PATH.read_text(encoding="utf-8"))
+    assert set(case_schema["required"]) == {"model", "cases"}, (
+        "a case file names the model it instantiates and the cases it holds"
+    )
+    assert set(case_schema["$defs"]["case"]["required"]) == {
+        "id",
+        "inputs",
+        "expected",
+        "tolerance",
+    }, "a case names itself, its inputs, the answer and the tolerance it is held to"
 
     # `algorithm` is required of a *procedure* and forbidden of a direct model, which
     # is what lets a model with no iteration live in the same tree. Asserted as a

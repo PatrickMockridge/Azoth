@@ -1,54 +1,56 @@
-//! `eos.ideal_gas_cp` - ideal-gas heat capacity from a four-term polynomial.
+//! `eos.ideal_gas_cp` - ideal-gas heat capacity from a polynomial.
 //!
 //! ```text
-//! Cp/R = a + b*theta + c*theta**2 + d*theta**3,   theta = T / (1000 K)
+//! cp = cp_a + cp_b*T + cp_c*T**2 + cp_d*T**3 + cp_e*T**4
 //! ```
 //!
-//! Spec: `specs/calcs/eos/ideal_gas_cp.yaml`, which carries why the four coefficients
-//! are the caller's, the derivation of the `T/(1000 K)` substitution, and the warning
-//! a non-positive `Cp` carries.
+//! A port of `neqsim.thermo.component.Component.getCp0(double)`, and dimensional
+//! throughout: the coefficients carry the powers of temperature in their units, so
+//! `cp_a` is a heat capacity and `cp_b` is one per kelvin. That is what lets the five
+//! `CPA`-`CPE` columns of NeqSim's `COMP.csv` be read as they are stored.
+//!
+//! Spec: `specs/calcs/eos/ideal_gas_cp.yaml`.
 
 use azoth_core::units::{ThermodynamicTemperature, joules_per_mole_kelvin};
 use azoth_core::{Result, apply_checks};
 
-use crate::pr_molar_volume::MOLAR_GAS_CONSTANT;
 use crate::results::IdealGasCpResult;
 use crate::spec_gen;
 
-/// The reference temperature the polynomial is written against, in kelvin.
-///
-/// A stated constant of the correlation's form rather than a fitted quantity: it is
-/// what makes a table's four printed numbers dimensionless, and a caller whose
-/// coefficients are quoted against another reference rescales them once.
-pub const REFERENCE_TEMPERATURE: f64 = 1000.0;
-
 /// The ideal-gas heat capacity at a temperature, from a caller-supplied polynomial.
-///
-/// The coefficients are dimensionless and describe `Cp/R`; the result is dimensioned.
 ///
 /// # Errors
 /// * [`azoth_core::AzothError::OutOfRange`] if `T` is not positive.
 ///
-/// A non-positive `cp` is **returned** carrying `OutOfValidRange` rather than
-/// refused: it means the polynomial has been evaluated outside the range it was
-/// fitted over, the arithmetic is well defined, and inspecting the limit is a
-/// legitimate thing for a caller to be doing. See the spec.
+/// A non-positive `cp` is **returned** carrying `OutOfValidRange` rather than refused:
+/// it means the polynomial has been evaluated outside the range it was fitted over, the
+/// arithmetic is well defined, and inspecting the limit is a legitimate thing for a
+/// caller to be doing. See the spec.
 ///
 /// # Example
 /// ```
 /// use azoth_core::units::kelvins;
 /// use azoth_eos::ideal_gas_cp;
 ///
-/// let r = ideal_gas_cp(4.0, 1.0, -0.5, 0.1, kelvins(500.0))?;
-/// assert!((r.cp_over_r - 4.3875).abs() < 1e-15);
-/// assert!((r.cp.value - 36.47970473714734).abs() < 1e-12);
+/// // Methane's coefficients as NeqSim ships them, at 300 K.
+/// let r = ideal_gas_cp(
+///     37.978352,
+///     -0.07461815,
+///     0.000301881,
+///     -2.83e-07,
+///     9.070574e-11,
+///     kelvins(300.0),
+/// )?;
+/// assert!((r.cp.value - 35.855913494).abs() < 1e-9);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn ideal_gas_cp(
-    a: f64,
-    b: f64,
-    c: f64,
-    d: f64,
+    cp_a: f64,
+    cp_b: f64,
+    cp_c: f64,
+    cp_d: f64,
+    cp_e: f64,
     t: ThermodynamicTemperature,
 ) -> Result<IdealGasCpResult> {
     let spec = &spec_gen::IDEAL_GAS_CP_SPEC;
@@ -57,21 +59,26 @@ pub fn ideal_gas_cp(
     apply_checks(
         spec.input_checks(),
         |quantity| match quantity {
-            "a" => Some(a),
-            "b" => Some(b),
-            "c" => Some(c),
-            "d" => Some(d),
+            "cp_a" => Some(cp_a),
+            "cp_b" => Some(cp_b),
+            "cp_c" => Some(cp_c),
+            "cp_d" => Some(cp_d),
+            "cp_e" => Some(cp_e),
             "T" => Some(t.value),
             _ => None,
         },
         &mut warnings,
     )?;
 
-    // `theta = T/(1000 K)` is the substitution that makes a published table's four
-    // printed numbers dimensionless, so a caller copies them across unchanged.
-    let theta = t.value / REFERENCE_TEMPERATURE;
-    let cp_over_r = a + b * theta + c * theta * theta + d * theta * theta * theta;
-    let cp = cp_over_r * MOLAR_GAS_CONSTANT;
+    // Abbreviated multiplication rather than `powi`, because these are the terms as the
+    // source writes them and a reader checking one against the other should not have to
+    // expand a call.
+    let temperature = t.value;
+    let cp = cp_a
+        + cp_b * temperature
+        + cp_c * temperature * temperature
+        + cp_d * temperature * temperature * temperature
+        + cp_e * temperature * temperature * temperature * temperature;
 
     apply_checks(
         spec.derived_checks(),
@@ -80,7 +87,6 @@ pub fn ideal_gas_cp(
     )?;
 
     Ok(IdealGasCpResult {
-        cp_over_r,
         cp: joules_per_mole_kelvin(cp),
         warnings,
     })

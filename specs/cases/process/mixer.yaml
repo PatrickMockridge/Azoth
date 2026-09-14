@@ -1,0 +1,124 @@
+# Instances of `process.mixer`.
+#
+# The model is the type - what the machine is, what it accepts, what it computes
+# and where it is valid. Each entry below is one machine to run: its components,
+# its state, its settings, and the numbers the run must reproduce. A case that
+# violates the type's contract is a broken test rather than a discovery.
+model: process.mixer
+cases:
+- id: two_different_feeds_blend
+  inputs:
+    Tc:
+    - 190.56
+    - 425.12
+    Pc:
+    - 4599000.0
+    - 3796000.0
+    omega:
+    - 0.0115
+    - 0.2002
+    kij:
+    - - 0.0
+      - 0.01289789
+    - - 0.01289789
+      - 0.0
+    cp_a:
+    - 3.0
+    - 5.0
+    cp_b:
+    - 0.0
+    - 0.0
+    cp_c:
+    - 0.0
+    - 0.0
+    cp_d:
+    - 0.0
+    - 0.0
+    h_ref:
+    - 0.0
+    - 0.0
+    s_ref:
+    - 0.0
+    - 0.0
+    T_ref: 300.0
+    P_ref: 100000.0
+    T:
+    - 300.0
+    - 350.0
+    P:
+    - 2000000.0
+    - 1500000.0
+    n:
+    - 6.0
+    - 4.0
+    z:
+    - - 0.6
+      - 0.4
+    - - 0.4
+      - 0.6
+  expected:
+    T: 321.10986042022694
+    P: 1500000.0
+    flow: 10.0
+    z_out:
+    - 0.52
+    - 0.48
+  tolerance: 1.0e-09
+- id: two_identical_feeds_double_the_flow_and_change_nothing_else
+  inputs:
+    Tc:
+    - 190.56
+    - 425.12
+    Pc:
+    - 4599000.0
+    - 3796000.0
+    omega:
+    - 0.0115
+    - 0.2002
+    kij:
+    - - 0.0
+      - 0.01289789
+    - - 0.01289789
+      - 0.0
+    cp_a:
+    - 3.0
+    - 5.0
+    cp_b:
+    - 0.0
+    - 0.0
+    cp_c:
+    - 0.0
+    - 0.0
+    cp_d:
+    - 0.0
+    - 0.0
+    h_ref:
+    - 0.0
+    - 0.0
+    s_ref:
+    - 0.0
+    - 0.0
+    T_ref: 300.0
+    P_ref: 100000.0
+    T:
+    - 300.0
+    - 300.0
+    P:
+    - 2000000.0
+    - 2000000.0
+    n:
+    - 6.0
+    - 4.0
+    z:
+    - - 0.6
+      - 0.4
+    - - 0.6
+      - 0.4
+  expected:
+    T: 300.0
+    P: 2000000.0
+    flow: 10.0
+    z_out:
+    - 0.6
+    - 0.4
+  tolerance: 1.0e-07

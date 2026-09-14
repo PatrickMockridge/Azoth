@@ -38,7 +38,9 @@ from gen_registry import (
 )
 
 MODEL_DIR = ROOT / "specs" / "models"
+CASE_DIR = ROOT / "specs" / "cases"
 SCHEMA_PATH = ROOT / "specs" / "schema" / "model.schema.json"
+CASE_SCHEMA_PATH = ROOT / "specs" / "schema" / "case.schema.json"
 CALC_SCHEMA_PATH = ROOT / "specs" / "schema" / "calc.schema.json"
 
 
@@ -111,6 +113,46 @@ def load_models() -> list[dict[str, Any]]:
         if model["id"] in seen:
             sys.exit(f"gen_models: duplicate model id '{model['id']}'")
         seen.add(model["id"])
+
+    # The instances. A model is a type; the machines to run live in their own files,
+    # against their own schema, so the type is never edited to make a test pass.
+    case_schema = json.loads(CASE_SCHEMA_PATH.read_text(encoding="utf-8"))
+    # The model schema is registered as well, because a case's values are the model's
+    # - vectors and matrices are inputs here, where a calc's are scalars.
+    case_registry = (
+        Registry()
+        .with_resource(calc["$id"], Resource.from_contents(calc))
+        .with_resource(schema["$id"], Resource.from_contents(schema))
+    )
+    case_validator = Draft202012Validator(case_schema, registry=case_registry)
+
+    by_id = {model["id"]: model for model in models}
+    for model in models:
+        model["cases"] = []
+    for path in sorted(CASE_DIR.rglob("*.yaml")):
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+        errors = sorted(case_validator.iter_errors(raw), key=lambda e: list(e.path))
+        if errors:
+            for error in errors:
+                where = "/".join(str(p) for p in error.path) or "(root)"
+                print(f"gen_models: {path.relative_to(ROOT)}: {where}: {error.message}")
+            sys.exit(1)
+        target = by_id.get(raw["model"])
+        if target is None:
+            sys.exit(
+                f"gen_models: {path.relative_to(ROOT)} instantiates {raw['model']!r}, "
+                f"which is no model. A case file that names nothing is a file nobody runs."
+            )
+        if target["cases"]:
+            sys.exit(f"gen_models: two case files for {raw['model']!r}")
+        target["cases"] = raw["cases"]
+
+    for model in models:
+        if not model["cases"]:
+            sys.exit(
+                f"gen_models: {model['id']} has no cases. Every model ships at least one "
+                f"instance in specs/cases/, or nothing verifies it."
+            )
     return models
 
 

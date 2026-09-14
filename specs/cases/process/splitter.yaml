@@ -1,0 +1,71 @@
+# Instances of `process.splitter`.
+#
+# The model is the type - what the machine is, what it accepts, what it computes
+# and where it is valid. Each entry below is one machine to run: its components,
+# its state, its settings, and the numbers the run must reproduce. A case that
+# violates the type's contract is a broken test rather than a discovery.
+model: process.splitter
+cases:
+- id: thirty_seventy_split_of_a_two_phase_feed
+  inputs:
+    Tc:
+    - 190.56
+    - 425.12
+    Pc:
+    - 4599000.0
+    - 3796000.0
+    omega:
+    - 0.0115
+    - 0.2002
+    kij:
+    - - 0.0
+      - 0.01289789
+    - - 0.01289789
+      - 0.0
+    T: 300.0
+    P: 2000000.0
+    n: 10.0
+    z:
+    - 0.6
+    - 0.4
+    fractions:
+    - 0.3
+    - 0.7
+  expected:
+    T: 300.0
+    P: 2000000.0
+    beta: 0.6824390296509166
+    flows:
+    - 3.0
+    - 7.0
+  tolerance: 1.0e-09
+- id: a_single_branch_takes_everything
+  inputs:
+    Tc:
+    - 190.56
+    - 425.12
+    Pc:
+    - 4599000.0
+    - 3796000.0
+    omega:
+    - 0.0115
+    - 0.2002
+    kij:
+    - - 0.0
+      - 0.01289789
+    - - 0.01289789
+      - 0.0
+    T: 300.0
+    P: 2000000.0
+    n: 10.0
+    z:
+    - 0.6
+    - 0.4
+    fractions:
+    - 1.0
+  expected:
+    T: 300.0
+    P: 2000000.0
+    flows:
+    - 10.0
+  tolerance: 1.0e-09

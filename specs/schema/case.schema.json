@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/case.schema.json",
+  "title": "Azoth case",
+  "description": "**An instance, not a type.** A model declares what a machine *is*; a case declares one machine to run and the answer it must give. The two are separate documents with separate schemas because they answer separate questions, and conflating them is how a spec comes to be edited to fit a test.\n\nA case names the model it instantiates, the components it is made of, the state it is in, and the numbers the run must reproduce. It is a verification instance: the thing a unit test runs. It is not part of the model's contract, and a case that violates the contract is a broken test rather than a discovery about the machine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["model", "cases"],
+  "properties": {
+    "model": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "description": "The id of the model this file instantiates. Every case in the file is a run of that model, and a name that resolves to no model is refused rather than ignored - a case file that names nothing is a file nobody is running."
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "description": "One entry per machine to run. Named, because a failing case has to be nameable in a report.",
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "inputs", "expected", "tolerance"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$",
+          "description": "The case's name, unique within the model. What a failure names."
+        },
+        "inputs": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "The instance's inputs, keyed by the model's declared input names. Every one must be declared, and `spec_lint` refuses a key the model does not take.",
+          "additionalProperties": { "$ref": "model.schema.json#/$defs/value" }
+        },
+        "expected": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "The output values this run must reproduce, keyed by the model's declared output names. A key the model does not declare is refused: an expectation about a field nothing produces is a test of nothing.",
+          "additionalProperties": { "$ref": "model.schema.json#/$defs/value" }
+        },
+        "tolerance": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Relative tolerance for every expected value in this case. Stated per case rather than per model because it is a property of the run: a case at a phase boundary is a harder inversion than one deep in a single phase."
+        },
+        "source": {
+          "type": "string",
+          "description": "Where the expected values came from, when they did not come from running the model."
+        }
+      }
+    }
+  }
+}

@@ -15,7 +15,7 @@ from __future__ import annotations
 from azoth.eos.reference.bubble_pressure import bubble_pressure
 from azoth.eos.reference.critical_point import critical_point
 from azoth.eos.reference.dew_pressure import dew_pressure
-from azoth.eos.reference.ideal_gas_cp import REFERENCE_TEMPERATURE, ideal_gas_cp
+from azoth.eos.reference.ideal_gas_cp import ideal_gas_cp
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel, molar_enthalpy_entropy
 from azoth.eos.reference.pr_alpha_ab import OMEGA_A, OMEGA_B, pr_alpha_ab
 from azoth.eos.reference.pr_departure import pr_departure
@@ -35,7 +35,6 @@ __all__ = [
     "MOLAR_GAS_CONSTANT",
     "OMEGA_A",
     "OMEGA_B",
-    "REFERENCE_TEMPERATURE",
     "IdealGasModel",
     "bubble_pressure",
     "critical_point",
