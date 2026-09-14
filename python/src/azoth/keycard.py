@@ -44,7 +44,17 @@ COMPONENT_PARAMETERS: Mapping[str, str] = {
     "Tc": "K",
     "Pc": "Pa",
     "omega": "dimensionless",
+    "cp_a": "J/(mol*K)",
+    "cp_b": "J/(mol*K**2)",
+    "cp_c": "J/(mol*K**3)",
+    "cp_d": "J/(mol*K**4)",
+    "cp_e": "J/(mol*K**5)",
 }
+
+#: The subset of `COMPONENT_PARAMETERS` a cubic reads, and therefore what a card must
+#: supply to add a substance. The rest are what an *enthalpy* needs, optional for a
+#: caller who only flashes.
+CUBIC_PARAMETERS: frozenset[str] = frozenset({"Tc", "Pc", "omega"})
 
 #: The units a keycard may declare, compiled from `specs/vocabulary/vocabulary.toml`
 #: into `azoth.core._units_gen`. The schema's enum is generated from the same table;
@@ -282,6 +292,12 @@ def _components(raw: Any, where: str) -> dict[str, dict[str, Q]]:
                 COMPONENT_PARAMETERS[parameter],
                 where,
                 f"{field_name}.{parameter}",
+            )
+        present = [p for p in resolved if p.startswith("cp_")]
+        if present and len(present) != 5:
+            raise KeycardError(
+                where,
+                f"`{field_name}` needs all five of `cp_a` through `cp_e`, or none of them",
             )
         out[str(name).strip().lower()] = resolved
     return out

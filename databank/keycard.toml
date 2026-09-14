@@ -17,6 +17,26 @@ unit = "Pa"
 value = 0.6218
 unit = "dimensionless"
 
+[components.1-propanol.cp_a]
+value = 36.548344
+unit = "J/(mol*K)"
+
+[components.1-propanol.cp_b]
+value = 0.005221192
+unit = "J/(mol*K**2)"
+
+[components.1-propanol.cp_c]
+value = 0.000461094
+unit = "J/(mol*K**3)"
+
+[components.1-propanol.cp_d]
+value = -5.83e-07
+unit = "J/(mol*K**4)"
+
+[components.1-propanol.cp_e]
+value = 2.232309e-10
+unit = "J/(mol*K**5)"
+
 [components."1.1.3-tm-cy-c6".Tc]
 value = 612.06
 unit = "K"
@@ -28,6 +48,26 @@ unit = "Pa"
 [components."1.1.3-tm-cy-c6".omega]
 value = 0.267
 unit = "dimensionless"
+
+[components."1.1.3-tm-cy-c6".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."1.1.3-tm-cy-c6".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."1.1.3-tm-cy-c6".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."1.1.3-tm-cy-c6".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."1.1.3-tm-cy-c6".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components."1.2-dm-cyc5".Tc]
 value = 553.15
@@ -41,6 +81,26 @@ unit = "Pa"
 value = 0.2698
 unit = "dimensionless"
 
+[components."1.2-dm-cyc5".cp_a]
+value = -54.5
+unit = "J/(mol*K)"
+
+[components."1.2-dm-cyc5".cp_b]
+value = 0.7592
+unit = "J/(mol*K**2)"
+
+[components."1.2-dm-cyc5".cp_c]
+value = -0.000448
+unit = "J/(mol*K**3)"
+
+[components."1.2-dm-cyc5".cp_d]
+value = 1.01e-07
+unit = "J/(mol*K**4)"
+
+[components."1.2-dm-cyc5".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components."1.2.3-tm-benzene".Tc]
 value = 664.53
 unit = "K"
@@ -52,6 +112,26 @@ unit = "Pa"
 [components."1.2.3-tm-benzene".omega]
 value = 0.3664
 unit = "dimensionless"
+
+[components."1.2.3-tm-benzene".cp_a]
+value = 33.605188
+unit = "J/(mol*K)"
+
+[components."1.2.3-tm-benzene".cp_b]
+value = 0.258997728
+unit = "J/(mol*K**2)"
+
+[components."1.2.3-tm-benzene".cp_c]
+value = 0.00084678
+unit = "J/(mol*K**3)"
+
+[components."1.2.3-tm-benzene".cp_d]
+value = -1.352e-06
+unit = "J/(mol*K**4)"
+
+[components."1.2.3-tm-benzene".cp_e]
+value = 5.7549508e-10
+unit = "J/(mol*K**5)"
 
 [components."1.2.3-tmcyc6".Tc]
 value = 621.31
@@ -65,6 +145,26 @@ unit = "Pa"
 value = 0.29
 unit = "dimensionless"
 
+[components."1.2.3-tmcyc6".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."1.2.3-tmcyc6".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."1.2.3-tmcyc6".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."1.2.3-tmcyc6".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."1.2.3-tmcyc6".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components."1.2.4-tmcyc6".Tc]
 value = 613.75
 unit = "K"
@@ -76,6 +176,26 @@ unit = "Pa"
 [components."1.2.4-tmcyc6".omega]
 value = 0.2619
 unit = "dimensionless"
+
+[components."1.2.4-tmcyc6".cp_a]
+value = 32.239
+unit = "J/(mol*K)"
+
+[components."1.2.4-tmcyc6".cp_b]
+value = 0.00191
+unit = "J/(mol*K**2)"
+
+[components."1.2.4-tmcyc6".cp_c]
+value = 1.06e-05
+unit = "J/(mol*K**3)"
+
+[components."1.2.4-tmcyc6".cp_d]
+value = -3e-09
+unit = "J/(mol*K**4)"
+
+[components."1.2.4-tmcyc6".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components."1.3-ddm-cyc5".Tc]
 value = 556.47
@@ -89,6 +209,26 @@ unit = "Pa"
 value = 0.271
 unit = "dimensionless"
 
+[components."1.3-ddm-cyc5".cp_a]
+value = -5.75
+unit = "J/(mol*K)"
+
+[components."1.3-ddm-cyc5".cp_b]
+value = 0.553
+unit = "J/(mol*K**2)"
+
+[components."1.3-ddm-cyc5".cp_c]
+value = -0.000222
+unit = "J/(mol*K**3)"
+
+[components."1.3-ddm-cyc5".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."1.3-ddm-cyc5".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components."1.cis-2.trans-4-tmcyc5".Tc]
 value = 582.21
 unit = "K"
@@ -100,6 +240,26 @@ unit = "Pa"
 [components."1.cis-2.trans-4-tmcyc5".omega]
 value = 0.265
 unit = "dimensionless"
+
+[components."1.cis-2.trans-4-tmcyc5".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."1.cis-2.trans-4-tmcyc5".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."1.cis-2.trans-4-tmcyc5".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."1.cis-2.trans-4-tmcyc5".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."1.cis-2.trans-4-tmcyc5".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.11-dm-cy-c5.Tc]
 value = 499.9
@@ -113,6 +273,26 @@ unit = "Pa"
 value = 0.247
 unit = "dimensionless"
 
+[components.11-dm-cy-c5.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.11-dm-cy-c5.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.11-dm-cy-c5.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.11-dm-cy-c5.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.11-dm-cy-c5.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.113-tm-cy-c5.Tc]
 value = 543.28
 unit = "K"
@@ -124,6 +304,26 @@ unit = "Pa"
 [components.113-tm-cy-c5.omega]
 value = 0.304
 unit = "dimensionless"
+
+[components.113-tm-cy-c5.cp_a]
+value = -7.49
+unit = "J/(mol*K)"
+
+[components.113-tm-cy-c5.cp_b]
+value = 0.6301
+unit = "J/(mol*K**2)"
+
+[components.113-tm-cy-c5.cp_c]
+value = -0.000254
+unit = "J/(mol*K**3)"
+
+[components.113-tm-cy-c5.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.113-tm-cy-c5.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.2-e-p-xylene.Tc]
 value = 663.0
@@ -137,6 +337,26 @@ unit = "Pa"
 value = 0.4114
 unit = "dimensionless"
 
+[components.2-e-p-xylene.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.2-e-p-xylene.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.2-e-p-xylene.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.2-e-p-xylene.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.2-e-p-xylene.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.2-m-c5.Tc]
 value = 497.5
 unit = "K"
@@ -148,6 +368,26 @@ unit = "Pa"
 [components.2-m-c5.omega]
 value = 0.2781
 unit = "dimensionless"
+
+[components.2-m-c5.cp_a]
+value = 17.426144
+unit = "J/(mol*K)"
+
+[components.2-m-c5.cp_b]
+value = 0.385927566
+unit = "J/(mol*K**2)"
+
+[components.2-m-c5.cp_c]
+value = 0.000259729
+unit = "J/(mol*K**3)"
+
+[components.2-m-c5.cp_d]
+value = -5.67e-07
+unit = "J/(mol*K**4)"
+
+[components.2-m-c5.cp_e]
+value = 2.4127228e-10
+unit = "J/(mol*K**5)"
 
 [components.2-m-c6.Tc]
 value = 530.37
@@ -161,6 +401,26 @@ unit = "Pa"
 value = 0.3282
 unit = "dimensionless"
 
+[components.2-m-c6.cp_a]
+value = 28.699928
+unit = "J/(mol*K)"
+
+[components.2-m-c6.cp_b]
+value = 0.385545122
+unit = "J/(mol*K**2)"
+
+[components.2-m-c6.cp_c]
+value = 0.00045278
+unit = "J/(mol*K**3)"
+
+[components.2-m-c6.cp_d]
+value = -8.21e-07
+unit = "J/(mol*K**4)"
+
+[components.2-m-c6.cp_e]
+value = 3.3995946e-10
+unit = "J/(mol*K**5)"
+
 [components.2-m-c7.Tc]
 value = 559.64
 unit = "K"
@@ -172,6 +432,26 @@ unit = "Pa"
 [components.2-m-c7.omega]
 value = 0.3769
 unit = "dimensionless"
+
+[components.2-m-c7.cp_a]
+value = 43.706698
+unit = "J/(mol*K)"
+
+[components.2-m-c7.cp_b]
+value = 0.342437032
+unit = "J/(mol*K**2)"
+
+[components.2-m-c7.cp_c]
+value = 0.0008097
+unit = "J/(mol*K**3)"
+
+[components.2-m-c7.cp_d]
+value = -1.304e-06
+unit = "J/(mol*K**4)"
+
+[components.2-m-c7.cp_e]
+value = 5.462298e-10
+unit = "J/(mol*K**5)"
 
 [components.2-m-c8.Tc]
 value = 586.75
@@ -185,6 +465,26 @@ unit = "Pa"
 value = 0.4217
 unit = "dimensionless"
 
+[components.2-m-c8.cp_a]
+value = 49.168996
+unit = "J/(mol*K)"
+
+[components.2-m-c8.cp_b]
+value = 0.391082246
+unit = "J/(mol*K**2)"
+
+[components.2-m-c8.cp_c]
+value = 0.000863575
+unit = "J/(mol*K**3)"
+
+[components.2-m-c8.cp_d]
+value = -1.387e-06
+unit = "J/(mol*K**4)"
+
+[components.2-m-c8.cp_e]
+value = 5.6967528e-10
+unit = "J/(mol*K**5)"
+
 [components."2.2-dm-c7".Tc]
 value = 576.8
 unit = "K"
@@ -196,6 +496,26 @@ unit = "Pa"
 [components."2.2-dm-c7".omega]
 value = 0.3899
 unit = "dimensionless"
+
+[components."2.2-dm-c7".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."2.2-dm-c7".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."2.2-dm-c7".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."2.2-dm-c7".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."2.2-dm-c7".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components."2.3-dm-c6".Tc]
 value = 563.4
@@ -209,6 +529,26 @@ unit = "Pa"
 value = 0.3472
 unit = "dimensionless"
 
+[components."2.3-dm-c6".cp_a]
+value = -29.880516
+unit = "J/(mol*K)"
+
+[components."2.3-dm-c6".cp_b]
+value = 0.839572662
+unit = "J/(mol*K**2)"
+
+[components."2.3-dm-c6".cp_c]
+value = -0.000405723
+unit = "J/(mol*K**3)"
+
+[components."2.3-dm-c6".cp_d]
+value = -2.8e-08
+unit = "J/(mol*K**4)"
+
+[components."2.3-dm-c6".cp_e]
+value = 6.559746e-11
+unit = "J/(mol*K**5)"
+
 [components."2.6-dm-c7".Tc]
 value = 579.0
 unit = "K"
@@ -220,6 +560,26 @@ unit = "Pa"
 [components."2.6-dm-c7".omega]
 value = 0.3927
 unit = "dimensionless"
+
+[components."2.6-dm-c7".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."2.6-dm-c7".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."2.6-dm-c7".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."2.6-dm-c7".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."2.6-dm-c7".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.22-dim-c3.Tc]
 value = 433.78
@@ -233,6 +593,26 @@ unit = "Pa"
 value = 0.1964
 unit = "dimensionless"
 
+[components.22-dim-c3.cp_a]
+value = -95.012392
+unit = "J/(mol*K)"
+
+[components.22-dim-c3.cp_b]
+value = 1.297291618
+unit = "J/(mol*K**2)"
+
+[components.22-dim-c3.cp_c]
+value = -0.002775462
+unit = "J/(mol*K**3)"
+
+[components.22-dim-c3.cp_d]
+value = 3.336e-06
+unit = "J/(mol*K**4)"
+
+[components.22-dim-c3.cp_e]
+value = -1e-09
+unit = "J/(mol*K**5)"
+
 [components.22-dim-c4.Tc]
 value = 488.78
 unit = "K"
@@ -244,6 +624,26 @@ unit = "Pa"
 [components.22-dim-c4.omega]
 value = 0.2339
 unit = "dimensionless"
+
+[components.22-dim-c4.cp_a]
+value = 25.000198
+unit = "J/(mol*K)"
+
+[components.22-dim-c4.cp_b]
+value = 0.324736526
+unit = "J/(mol*K**2)"
+
+[components.22-dim-c4.cp_c]
+value = 0.000403312
+unit = "J/(mol*K**3)"
+
+[components.22-dim-c4.cp_d]
+value = -6.85e-07
+unit = "J/(mol*K**4)"
+
+[components.22-dim-c4.cp_e]
+value = 2.7993238e-10
+unit = "J/(mol*K**5)"
 
 [components.22-dm-c5.Tc]
 value = 520.4
@@ -257,6 +657,26 @@ unit = "Pa"
 value = 0.287
 unit = "dimensionless"
 
+[components.22-dm-c5.cp_a]
+value = 10.93291
+unit = "J/(mol*K)"
+
+[components.22-dm-c5.cp_b]
+value = 0.502681068
+unit = "J/(mol*K**2)"
+
+[components.22-dm-c5.cp_c]
+value = 0.000233872
+unit = "J/(mol*K**3)"
+
+[components.22-dm-c5.cp_d]
+value = -6.33e-07
+unit = "J/(mol*K**4)"
+
+[components.22-dm-c5.cp_e]
+value = 2.8550276e-10
+unit = "J/(mol*K**5)"
+
 [components.22-dm-c6.Tc]
 value = 549.8
 unit = "K"
@@ -268,6 +688,26 @@ unit = "Pa"
 [components.22-dm-c6.omega]
 value = 0.339
 unit = "dimensionless"
+
+[components.22-dm-c6.cp_a]
+value = 28.699928
+unit = "J/(mol*K)"
+
+[components.22-dm-c6.cp_b]
+value = 0.459115708
+unit = "J/(mol*K**2)"
+
+[components.22-dm-c6.cp_c]
+value = 0.000504327
+unit = "J/(mol*K**3)"
+
+[components.22-dm-c6.cp_d]
+value = -9.37e-07
+unit = "J/(mol*K**4)"
+
+[components.22-dm-c6.cp_e]
+value = 3.6348808e-10
+unit = "J/(mol*K**5)"
 
 [components.223-tm-c4.Tc]
 value = 531.0999999999999
@@ -281,6 +721,26 @@ unit = "Pa"
 value = 0.25
 unit = "dimensionless"
 
+[components.223-tm-c4.cp_a]
+value = -5.911254
+unit = "J/(mol*K)"
+
+[components.223-tm-c4.cp_b]
+value = 0.611594468
+unit = "J/(mol*K**2)"
+
+[components.223-tm-c4.cp_c]
+value = -8.3721e-05
+unit = "J/(mol*K**3)"
+
+[components.223-tm-c4.cp_d]
+value = -2.5e-07
+unit = "J/(mol*K**4)"
+
+[components.223-tm-c4.cp_e]
+value = 1.3161062e-10
+unit = "J/(mol*K**5)"
+
 [components.224-tm-c5.Tc]
 value = 543.28
 unit = "K"
@@ -292,6 +752,26 @@ unit = "Pa"
 [components.224-tm-c5.omega]
 value = 0.304
 unit = "dimensionless"
+
+[components.224-tm-c5.cp_a]
+value = 3.192576
+unit = "J/(mol*K)"
+
+[components.224-tm-c5.cp_b]
+value = 0.640668526
+unit = "J/(mol*K**2)"
+
+[components.224-tm-c5.cp_c]
+value = 5.5288e-05
+unit = "J/(mol*K**3)"
+
+[components.224-tm-c5.cp_d]
+value = -4.62e-07
+unit = "J/(mol*K**4)"
+
+[components.224-tm-c5.cp_e]
+value = 2.1774366e-10
+unit = "J/(mol*K**5)"
 
 [components.23-dim-c4.Tc]
 value = 499.98
@@ -305,6 +785,26 @@ unit = "Pa"
 value = 0.2475
 unit = "dimensionless"
 
+[components.23-dim-c4.cp_a]
+value = -18.407196
+unit = "J/(mol*K)"
+
+[components.23-dim-c4.cp_b]
+value = 0.618162528
+unit = "J/(mol*K**2)"
+
+[components.23-dim-c4.cp_c]
+value = -0.000307368
+unit = "J/(mol*K**3)"
+
+[components.23-dim-c4.cp_d]
+value = 2.2e-08
+unit = "J/(mol*K**4)"
+
+[components.23-dim-c4.cp_e]
+value = 2.560712e-11
+unit = "J/(mol*K**5)"
+
 [components.23-dm-c5.Tc]
 value = 537.3
 unit = "K"
@@ -316,6 +816,26 @@ unit = "Pa"
 [components.23-dm-c5.omega]
 value = 0.297
 unit = "dimensionless"
+
+[components.23-dm-c5.cp_a]
+value = -35.866596
+unit = "J/(mol*K)"
+
+[components.23-dm-c5.cp_b]
+value = 0.804030312
+unit = "J/(mol*K**2)"
+
+[components.23-dm-c5.cp_c]
+value = -0.000536585
+unit = "J/(mol*K**3)"
+
+[components.23-dm-c5.cp_d]
+value = 1.85e-07
+unit = "J/(mol*K**4)"
+
+[components.23-dm-c5.cp_e]
+value = -2.602282e-11
+unit = "J/(mol*K**5)"
 
 [components.234-tm-c5.Tc]
 value = 566.3
@@ -329,6 +849,26 @@ unit = "Pa"
 value = 0.3161
 unit = "dimensionless"
 
+[components.234-tm-c5.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.234-tm-c5.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.234-tm-c5.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.234-tm-c5.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.234-tm-c5.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.24-dm-c5.Tc]
 value = 519.79
 unit = "K"
@@ -340,6 +880,26 @@ unit = "Pa"
 [components.24-dm-c5.omega]
 value = 0.3018
 unit = "dimensionless"
+
+[components.24-dm-c5.cp_a]
+value = -26.047762
+unit = "J/(mol*K)"
+
+[components.24-dm-c5.cp_b]
+value = 0.814131822
+unit = "J/(mol*K**2)"
+
+[components.24-dm-c5.cp_c]
+value = -0.000574663
+unit = "J/(mol*K**3)"
+
+[components.24-dm-c5.cp_d]
+value = 2.01e-07
+unit = "J/(mol*K**4)"
+
+[components.24-dm-c5.cp_e]
+value = -2.0785e-11
+unit = "J/(mol*K**5)"
 
 [components.24-dm-c6.Tc]
 value = 553.5
@@ -353,6 +913,26 @@ unit = "Pa"
 value = 0.3436
 unit = "dimensionless"
 
+[components.24-dm-c6.cp_a]
+value = -28.034808
+unit = "J/(mol*K)"
+
+[components.24-dm-c6.cp_b]
+value = 0.90327453
+unit = "J/(mol*K**2)"
+
+[components.24-dm-c6.cp_c]
+value = -0.000604178
+unit = "J/(mol*K**3)"
+
+[components.24-dm-c6.cp_d]
+value = 1.8e-07
+unit = "J/(mol*K**4)"
+
+[components.24-dm-c6.cp_e]
+value = -8.56342e-12
+unit = "J/(mol*K**5)"
+
 [components.25-dm-c6.Tc]
 value = 553.5
 unit = "K"
@@ -364,6 +944,26 @@ unit = "Pa"
 [components.25-dm-c6.omega]
 value = 0.344
 unit = "dimensionless"
+
+[components.25-dm-c6.cp_a]
+value = -11.365238
+unit = "J/(mol*K)"
+
+[components.25-dm-c6.cp_b]
+value = 0.72568749
+unit = "J/(mol*K**2)"
+
+[components.25-dm-c6.cp_c]
+value = -0.000149568
+unit = "J/(mol*K**3)"
+
+[components.25-dm-c6.cp_d]
+value = -2.77e-07
+unit = "J/(mol*K**4)"
+
+[components.25-dm-c6.cp_e]
+value = 1.5439098e-10
+unit = "J/(mol*K**5)"
 
 [components.3-e-c6.Tc]
 value = 565.4
@@ -377,6 +977,26 @@ unit = "Pa"
 value = 0.362
 unit = "dimensionless"
 
+[components.3-e-c6.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.3-e-c6.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.3-e-c6.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.3-e-c6.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.3-e-c6.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components."3-m-4.4-de-heptane".Tc]
 value = 653.51
 unit = "K"
@@ -388,6 +1008,26 @@ unit = "Pa"
 [components."3-m-4.4-de-heptane".omega]
 value = 0.461
 unit = "dimensionless"
+
+[components."3-m-4.4-de-heptane".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."3-m-4.4-de-heptane".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."3-m-4.4-de-heptane".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."3-m-4.4-de-heptane".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."3-m-4.4-de-heptane".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.3-m-c5.Tc]
 value = 504.42999999999995
@@ -401,6 +1041,26 @@ unit = "Pa"
 value = 0.2737
 unit = "dimensionless"
 
+[components.3-m-c5.cp_a]
+value = 3.599962
+unit = "J/(mol*K)"
+
+[components.3-m-c5.cp_b]
+value = 0.092642902
+unit = "J/(mol*K**2)"
+
+[components.3-m-c5.cp_c]
+value = 6.0692e-05
+unit = "J/(mol*K**3)"
+
+[components.3-m-c5.cp_d]
+value = -1.34e-07
+unit = "J/(mol*K**4)"
+
+[components.3-m-c5.cp_e]
+value = 5.73666e-11
+unit = "J/(mol*K**5)"
+
 [components.3-m-c6.Tc]
 value = 535.25
 unit = "K"
@@ -412,6 +1072,26 @@ unit = "Pa"
 [components.3-m-c6.omega]
 value = 0.3216
 unit = "dimensionless"
+
+[components.3-m-c6.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.3-m-c6.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.3-m-c6.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.3-m-c6.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.3-m-c6.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.3-m-c7.Tc]
 value = 563.67
@@ -425,6 +1105,26 @@ unit = "Pa"
 value = 0.3716
 unit = "dimensionless"
 
+[components.3-m-c7.cp_a]
+value = -9.22
+unit = "J/(mol*K)"
+
+[components.3-m-c7.cp_b]
+value = 0.786
+unit = "J/(mol*K**2)"
+
+[components.3-m-c7.cp_c]
+value = -0.00044
+unit = "J/(mol*K**3)"
+
+[components.3-m-c7.cp_d]
+value = 9.6e-08
+unit = "J/(mol*K**4)"
+
+[components.3-m-c7.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.3-m-c8.Tc]
 value = 590.15
 unit = "K"
@@ -436,6 +1136,26 @@ unit = "Pa"
 [components.3-m-c8.omega]
 value = 0.412
 unit = "dimensionless"
+
+[components.3-m-c8.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.3-m-c8.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.3-m-c8.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.3-m-c8.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.3-m-c8.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.33-dm-c5.Tc]
 value = 536.3
@@ -449,6 +1169,26 @@ unit = "Pa"
 value = 0.269
 unit = "dimensionless"
 
+[components.33-dm-c5.cp_a]
+value = -3.99072
+unit = "J/(mol*K)"
+
+[components.33-dm-c5.cp_b]
+value = 0.61037231
+unit = "J/(mol*K**2)"
+
+[components.33-dm-c5.cp_c]
+value = -6.1523e-05
+unit = "J/(mol*K**3)"
+
+[components.33-dm-c5.cp_d]
+value = -2.96e-07
+unit = "J/(mol*K**4)"
+
+[components.33-dm-c5.cp_e]
+value = 1.5148108e-10
+unit = "J/(mol*K**5)"
+
 [components.33-dm-c6.Tc]
 value = 562.020019531
 unit = "K"
@@ -460,6 +1200,26 @@ unit = "Pa"
 [components.33-dm-c6.omega]
 value = 0.326000005
 unit = "dimensionless"
+
+[components.33-dm-c6.cp_a]
+value = -3.99072
+unit = "J/(mol*K)"
+
+[components.33-dm-c6.cp_b]
+value = 0.61037231
+unit = "J/(mol*K**2)"
+
+[components.33-dm-c6.cp_c]
+value = -6.1523e-05
+unit = "J/(mol*K**3)"
+
+[components.33-dm-c6.cp_d]
+value = -2.96e-07
+unit = "J/(mol*K**4)"
+
+[components.33-dm-c6.cp_e]
+value = 1.5148108e-10
+unit = "J/(mol*K**5)"
 
 [components.4-m-c8.Tc]
 value = 587.65
@@ -473,6 +1233,26 @@ unit = "Pa"
 value = 0.413
 unit = "dimensionless"
 
+[components.4-m-c8.cp_a]
+value = 12.3
+unit = "J/(mol*K)"
+
+[components.4-m-c8.cp_b]
+value = 0.7551
+unit = "J/(mol*K**2)"
+
+[components.4-m-c8.cp_c]
+value = -0.00029
+unit = "J/(mol*K**3)"
+
+[components.4-m-c8.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.4-m-c8.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components."acetic acid".Tc]
 value = 591.95
 unit = "K"
@@ -484,6 +1264,26 @@ unit = "Pa"
 [components."acetic acid".omega]
 value = 0.462
 unit = "dimensionless"
+
+[components."acetic acid".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."acetic acid".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."acetic acid".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."acetic acid".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."acetic acid".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.acetone.Tc]
 value = 508.09999999999997
@@ -497,6 +1297,26 @@ unit = "Pa"
 value = 0.559
 unit = "dimensionless"
 
+[components.acetone.cp_a]
+value = 42.617564
+unit = "J/(mol*K)"
+
+[components.acetone.cp_b]
+value = 0.012562454
+unit = "J/(mol*K**2)"
+
+[components.acetone.cp_c]
+value = 0.000476475
+unit = "J/(mol*K**3)"
+
+[components.acetone.cp_d]
+value = -5.96e-07
+unit = "J/(mol*K**4)"
+
+[components.acetone.cp_e]
+value = 2.2680592e-10
+unit = "J/(mol*K**5)"
+
 [components.ammonia.Tc]
 value = 405.4
 unit = "K"
@@ -508,6 +1328,26 @@ unit = "Pa"
 [components.ammonia.omega]
 value = 0.25
 unit = "dimensionless"
+
+[components.ammonia.cp_a]
+value = 39.192196
+unit = "J/(mol*K)"
+
+[components.ammonia.cp_b]
+value = -0.058081604
+unit = "J/(mol*K**2)"
+
+[components.ammonia.cp_c]
+value = 0.000350102
+unit = "J/(mol*K**3)"
+
+[components.ammonia.cp_d]
+value = -3.69e-07
+unit = "J/(mol*K**4)"
+
+[components.ammonia.cp_e]
+value = 1.276199e-10
+unit = "J/(mol*K**5)"
 
 [components.argon.Tc]
 value = 150.79999999999998
@@ -521,6 +1361,26 @@ unit = "Pa"
 value = -0.004
 unit = "dimensionless"
 
+[components.argon.cp_a]
+value = 20.785
+unit = "J/(mol*K)"
+
+[components.argon.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.argon.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.argon.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.argon.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.benzene.Tc]
 value = 562.16
 unit = "K"
@@ -532,6 +1392,26 @@ unit = "Pa"
 [components.benzene.omega]
 value = 0.2108
 unit = "dimensionless"
+
+[components.benzene.cp_a]
+value = 29.523014
+unit = "J/(mol*K)"
+
+[components.benzene.cp_b]
+value = -0.051413776
+unit = "J/(mol*K**2)"
+
+[components.benzene.cp_c]
+value = 0.001194306
+unit = "J/(mol*K**3)"
+
+[components.benzene.cp_d]
+value = -1.646e-06
+unit = "J/(mol*K**4)"
+
+[components.benzene.cp_e]
+value = 6.8457476e-10
+unit = "J/(mol*K**5)"
 
 [components.c-c4.Tc]
 value = 459.9
@@ -545,6 +1425,26 @@ unit = "Pa"
 value = 0.209
 unit = "dimensionless"
 
+[components.c-c4.cp_a]
+value = -50.3
+unit = "J/(mol*K)"
+
+[components.c-c4.cp_b]
+value = 0.5024
+unit = "J/(mol*K**2)"
+
+[components.c-c4.cp_c]
+value = 0.5024
+unit = "J/(mol*K**3)"
+
+[components.c-c4.cp_d]
+value = -1.803e-06
+unit = "J/(mol*K**4)"
+
+[components.c-c4.cp_e]
+value = 6.829951e-10
+unit = "J/(mol*K**5)"
+
 [components.c-c5.Tc]
 value = 511.76
 unit = "K"
@@ -556,6 +1456,26 @@ unit = "Pa"
 [components.c-c5.omega]
 value = 0.1943
 unit = "dimensionless"
+
+[components.c-c5.cp_a]
+value = 41.727966
+unit = "J/(mol*K)"
+
+[components.c-c5.cp_b]
+value = -0.164068476
+unit = "J/(mol*K**2)"
+
+[components.c-c5.cp_c]
+value = 0.001489619
+unit = "J/(mol*K**3)"
+
+[components.c-c5.cp_d]
+value = -1.803e-06
+unit = "J/(mol*K**4)"
+
+[components.c-c5.cp_e]
+value = 6.829951e-10
+unit = "J/(mol*K**5)"
 
 [components.c-c7.Tc]
 value = 604.3
@@ -569,6 +1489,26 @@ unit = "Pa"
 value = 0.243
 unit = "dimensionless"
 
+[components.c-c7.cp_a]
+value = -76.2
+unit = "J/(mol*K)"
+
+[components.c-c7.cp_b]
+value = 0.7868
+unit = "J/(mol*K**2)"
+
+[components.c-c7.cp_c]
+value = -0.0004204
+unit = "J/(mol*K**3)"
+
+[components.c-c7.cp_d]
+value = 7.5e-08
+unit = "J/(mol*K**4)"
+
+[components.c-c7.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.c-c8.Tc]
 value = 640.0
 unit = "K"
@@ -580,6 +1520,26 @@ unit = "Pa"
 [components.c-c8.omega]
 value = 0.2904
 unit = "dimensionless"
+
+[components.c-c8.cp_a]
+value = 35.218104
+unit = "J/(mol*K)"
+
+[components.c-c8.cp_b]
+value = 0.109071366
+unit = "J/(mol*K**2)"
+
+[components.c-c8.cp_c]
+value = 0.001356262
+unit = "J/(mol*K**3)"
+
+[components.c-c8.cp_d]
+value = -1.751e-06
+unit = "J/(mol*K**4)"
+
+[components.c-c8.cp_e]
+value = 6.6403918e-10
+unit = "J/(mol*K**5)"
 
 [components.c-hexane.Tc]
 value = 553.54
@@ -593,6 +1553,26 @@ unit = "Pa"
 value = 0.2118
 unit = "dimensionless"
 
+[components.c-hexane.cp_a]
+value = 33.54699
+unit = "J/(mol*K)"
+
+[components.c-hexane.cp_b]
+value = -0.036855962
+unit = "J/(mol*K**2)"
+
+[components.c-hexane.cp_c]
+value = 0.001399578
+unit = "J/(mol*K**3)"
+
+[components.c-hexane.cp_d]
+value = -1.727e-06
+unit = "J/(mol*K**4)"
+
+[components.c-hexane.cp_e]
+value = 6.4400244e-10
+unit = "J/(mol*K**5)"
+
 [components.c-propane.Tc]
 value = 397.79999999999995
 unit = "K"
@@ -604,6 +1584,26 @@ unit = "Pa"
 [components.c-propane.omega]
 value = 0.264
 unit = "dimensionless"
+
+[components.c-propane.cp_a]
+value = 37.354802
+unit = "J/(mol*K)"
+
+[components.c-propane.cp_b]
+value = -0.150458458
+unit = "J/(mol*K**2)"
+
+[components.c-propane.cp_c]
+value = 0.001059536
+unit = "J/(mol*K**3)"
+
+[components.c-propane.cp_d]
+value = -1.334e-06
+unit = "J/(mol*K**4)"
+
+[components.c-propane.cp_e]
+value = 5.3425764e-10
+unit = "J/(mol*K**5)"
 
 [components.chlorine.Tc]
 value = 416.8654
@@ -617,6 +1617,26 @@ unit = "Pa"
 value = 0.07
 unit = "dimensionless"
 
+[components.chlorine.cp_a]
+value = 25.4089891488
+unit = "J/(mol*K)"
+
+[components.chlorine.cp_b]
+value = 0.04465530069384
+unit = "J/(mol*K**2)"
+
+[components.chlorine.cp_c]
+value = -6.73304954604e-05
+unit = "J/(mol*K**3)"
+
+[components.chlorine.cp_d]
+value = 4.73342196414e-08
+unit = "J/(mol*K**4)"
+
+[components.chlorine.cp_e]
+value = -1.268453987088e-11
+unit = "J/(mol*K**5)"
+
 [components.cis-12-dm-cy-c6.Tc]
 value = 606.15
 unit = "K"
@@ -628,6 +1648,26 @@ unit = "Pa"
 [components.cis-12-dm-cy-c6.omega]
 value = 0.2324
 unit = "dimensionless"
+
+[components.cis-12-dm-cy-c6.cp_a]
+value = -68.4
+unit = "J/(mol*K)"
+
+[components.cis-12-dm-cy-c6.cp_b]
+value = 0.8973
+unit = "J/(mol*K**2)"
+
+[components.cis-12-dm-cy-c6.cp_c]
+value = -0.0005137
+unit = "J/(mol*K**3)"
+
+[components.cis-12-dm-cy-c6.cp_d]
+value = 1.09e-07
+unit = "J/(mol*K**4)"
+
+[components.cis-12-dm-cy-c6.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.cis-13-dm-cy-c5.Tc]
 value = 551.0
@@ -641,6 +1681,26 @@ unit = "Pa"
 value = 0.276
 unit = "dimensionless"
 
+[components.cis-13-dm-cy-c5.cp_a]
+value = -20.967908
+unit = "J/(mol*K)"
+
+[components.cis-13-dm-cy-c5.cp_b]
+value = 0.503312932
+unit = "J/(mol*K**2)"
+
+[components.cis-13-dm-cy-c5.cp_c]
+value = 0.000224727
+unit = "J/(mol*K**3)"
+
+[components.cis-13-dm-cy-c5.cp_d]
+value = -6.29e-07
+unit = "J/(mol*K**4)"
+
+[components.cis-13-dm-cy-c5.cp_e]
+value = 2.7943354e-10
+unit = "J/(mol*K**5)"
+
 [components.cis-13-dm-cy-c6.Tc]
 value = 591.15
 unit = "K"
@@ -652,6 +1712,26 @@ unit = "Pa"
 [components.cis-13-dm-cy-c6.omega]
 value = 0.2366
 unit = "dimensionless"
+
+[components.cis-13-dm-cy-c6.cp_a]
+value = -65.2
+unit = "J/(mol*K)"
+
+[components.cis-13-dm-cy-c6.cp_b]
+value = 0.8839
+unit = "J/(mol*K**2)"
+
+[components.cis-13-dm-cy-c6.cp_c]
+value = -0.0004932
+unit = "J/(mol*K**3)"
+
+[components.cis-13-dm-cy-c6.cp_d]
+value = 1.02e-07
+unit = "J/(mol*K**4)"
+
+[components.cis-13-dm-cy-c6.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.cis-14-dm-cy-c6.Tc]
 value = 598.15
@@ -665,6 +1745,26 @@ unit = "Pa"
 value = 0.23398
 unit = "dimensionless"
 
+[components.cis-14-dm-cy-c6.cp_a]
+value = -68.4
+unit = "J/(mol*K)"
+
+[components.cis-14-dm-cy-c6.cp_b]
+value = 0.8973
+unit = "J/(mol*K**2)"
+
+[components.cis-14-dm-cy-c6.cp_c]
+value = -0.0005137
+unit = "J/(mol*K**3)"
+
+[components.cis-14-dm-cy-c6.cp_d]
+value = 1.09e-07
+unit = "J/(mol*K**4)"
+
+[components.cis-14-dm-cy-c6.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.cis-butene.Tc]
 value = 435.75
 unit = "K"
@@ -676,6 +1776,26 @@ unit = "Pa"
 [components.cis-butene.omega]
 value = 0.202
 unit = "dimensionless"
+
+[components.cis-butene.cp_a]
+value = 30.6720422022
+unit = "J/(mol*K)"
+
+[components.cis-butene.cp_b]
+value = 0.1595045968032
+unit = "J/(mol*K**2)"
+
+[components.cis-butene.cp_c]
+value = 0.00018541245354
+unit = "J/(mol*K**3)"
+
+[components.cis-butene.cp_d]
+value = -2.84853392748e-07
+unit = "J/(mol*K**4)"
+
+[components.cis-butene.cp_e]
+value = 1.04429615088e-10
+unit = "J/(mol*K**5)"
 
 [components.co.Tc]
 value = 132.94900512699996
@@ -689,6 +1809,26 @@ unit = "Pa"
 value = 0.093000002
 unit = "dimensionless"
 
+[components.co.cp_a]
+value = 32.524368
+unit = "J/(mol*K)"
+
+[components.co.cp_b]
+value = -0.032532682
+unit = "J/(mol*K**2)"
+
+[components.co.cp_c]
+value = 9.8271e-05
+unit = "J/(mol*K**3)"
+
+[components.co.cp_d]
+value = -1.08e-07
+unit = "J/(mol*K**4)"
+
+[components.co.cp_e]
+value = 4.28171e-11
+unit = "J/(mol*K**5)"
+
 [components.co2.Tc]
 value = 304.19
 unit = "K"
@@ -700,6 +1840,26 @@ unit = "Pa"
 [components.co2.omega]
 value = 0.2276
 unit = "dimensionless"
+
+[components.co2.cp_a]
+value = 18.58302105174049
+unit = "J/(mol*K)"
+
+[components.co2.cp_b]
+value = 0.0823796345114741
+unit = "J/(mol*K**2)"
+
+[components.co2.cp_c]
+value = -7.930390038368174e-05
+unit = "J/(mol*K**3)"
+
+[components.co2.cp_d]
+value = 4.222181385638e-08
+unit = "J/(mol*K**4)"
+
+[components.co2.cp_e]
+value = -9.577100164048893e-12
+unit = "J/(mol*K**5)"
 
 [components.cos.Tc]
 value = 378.79999999999995
@@ -713,6 +1873,26 @@ unit = "Pa"
 value = 0.0970119
 unit = "dimensionless"
 
+[components.cos.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.cos.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.cos.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.cos.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.cos.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.cy-c9.Tc]
 value = 682.04
 unit = "K"
@@ -724,6 +1904,26 @@ unit = "Pa"
 [components.cy-c9.omega]
 value = 0.268
 unit = "dimensionless"
+
+[components.cy-c9.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.cy-c9.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.cy-c9.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.cy-c9.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.cy-c9.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.dea.Tc]
 value = 513.9
@@ -737,6 +1937,26 @@ unit = "Pa"
 value = 0.644
 unit = "dimensionless"
 
+[components.dea.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.dea.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.dea.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.dea.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.dea.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.default.Tc]
 value = 190.56399999999996
 unit = "K"
@@ -748,6 +1968,26 @@ unit = "Pa"
 [components.default.omega]
 value = 0.008
 unit = "dimensionless"
+
+[components.default.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.default.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.default.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.default.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.default.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.deg.Tc]
 value = 744.5999999999999
@@ -761,6 +2001,26 @@ unit = "Pa"
 value = 1.2011
 unit = "dimensionless"
 
+[components.deg.cp_a]
+value = 73.1
+unit = "J/(mol*K)"
+
+[components.deg.cp_b]
+value = 0.3462
+unit = "J/(mol*K**2)"
+
+[components.deg.cp_c]
+value = -0.0001468
+unit = "J/(mol*K**3)"
+
+[components.deg.cp_d]
+value = 1.8e-08
+unit = "J/(mol*K**4)"
+
+[components.deg.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.e-cy-c5.Tc]
 value = 569.52
 unit = "K"
@@ -772,6 +2032,26 @@ unit = "Pa"
 [components.e-cy-c5.omega]
 value = 0.2715
 unit = "dimensionless"
+
+[components.e-cy-c5.cp_a]
+value = 48.611958
+unit = "J/(mol*K)"
+
+[components.e-cy-c5.cp_b]
+value = -0.000399072
+unit = "J/(mol*K**2)"
+
+[components.e-cy-c5.cp_c]
+value = 0.001455531
+unit = "J/(mol*K**3)"
+
+[components.e-cy-c5.cp_d]
+value = -1.87e-06
+unit = "J/(mol*K**4)"
+
+[components.e-cy-c5.cp_e]
+value = 7.1965984e-10
+unit = "J/(mol*K**5)"
 
 [components.ethane.Tc]
 value = 305.32
@@ -785,6 +2065,26 @@ unit = "Pa"
 value = 0.0995
 unit = "dimensionless"
 
+[components.ethane.cp_a]
+value = 34.735892
+unit = "J/(mol*K)"
+
+[components.ethane.cp_b]
+value = -0.036806078
+unit = "J/(mol*K**2)"
+
+[components.ethane.cp_c]
+value = 0.000470572
+unit = "J/(mol*K**3)"
+
+[components.ethane.cp_d]
+value = -5.52e-07
+unit = "J/(mol*K**4)"
+
+[components.ethane.cp_e]
+value = 2.0676918e-10
+unit = "J/(mol*K**5)"
+
 [components.ethanol.Tc]
 value = 513.92
 unit = "K"
@@ -796,6 +2096,26 @@ unit = "Pa"
 [components.ethanol.omega]
 value = 0.644
 unit = "dimensionless"
+
+[components.ethanol.cp_a]
+value = 36.548344
+unit = "J/(mol*K)"
+
+[components.ethanol.cp_b]
+value = 0.005221192
+unit = "J/(mol*K**2)"
+
+[components.ethanol.cp_c]
+value = 0.000461094
+unit = "J/(mol*K**3)"
+
+[components.ethanol.cp_d]
+value = -5.83e-07
+unit = "J/(mol*K**4)"
+
+[components.ethanol.cp_e]
+value = 2.232309e-10
+unit = "J/(mol*K**5)"
 
 [components.ethanolpvtsim.Tc]
 value = 513.9
@@ -809,6 +2129,26 @@ unit = "Pa"
 value = 0.644
 unit = "dimensionless"
 
+[components.ethanolpvtsim.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.ethanolpvtsim.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.ethanolpvtsim.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.ethanolpvtsim.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.ethanolpvtsim.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.ethylbenzene.Tc]
 value = 617.17
 unit = "K"
@@ -820,6 +2160,26 @@ unit = "Pa"
 [components.ethylbenzene.omega]
 value = 0.3036
 unit = "dimensionless"
+
+[components.ethylbenzene.cp_a]
+value = 37.778816
+unit = "J/(mol*K)"
+
+[components.ethylbenzene.cp_b]
+value = 0.087945492
+unit = "J/(mol*K**2)"
+
+[components.ethylbenzene.cp_c]
+value = 0.001134362
+unit = "J/(mol*K**3)"
+
+[components.ethylbenzene.cp_d]
+value = -1.602e-06
+unit = "J/(mol*K**4)"
+
+[components.ethylbenzene.cp_e]
+value = 6.555589e-10
+unit = "J/(mol*K**5)"
 
 [components.ethylcyclohexane.Tc]
 value = 609.15
@@ -833,6 +2193,26 @@ unit = "Pa"
 value = 0.2455
 unit = "dimensionless"
 
+[components.ethylcyclohexane.cp_a]
+value = -63.9
+unit = "J/(mol*K)"
+
+[components.ethylcyclohexane.cp_b]
+value = 0.8894
+unit = "J/(mol*K**2)"
+
+[components.ethylcyclohexane.cp_c]
+value = -0.0005108
+unit = "J/(mol*K**3)"
+
+[components.ethylcyclohexane.cp_d]
+value = 1.1e-07
+unit = "J/(mol*K**4)"
+
+[components.ethylcyclohexane.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.ethylene.Tc]
 value = 282.35
 unit = "K"
@@ -844,6 +2224,26 @@ unit = "Pa"
 [components.ethylene.omega]
 value = 0.0866
 unit = "dimensionless"
+
+[components.ethylene.cp_a]
+value = 35.0953348158
+unit = "J/(mol*K)"
+
+[components.ethylene.cp_b]
+value = -0.0730175859636
+unit = "J/(mol*K**2)"
+
+[components.ethylene.cp_c]
+value = 0.00048182294541
+unit = "J/(mol*K**3)"
+
+[components.ethylene.cp_d]
+value = -5.59479999942e-07
+unit = "J/(mol*K**4)"
+
+[components.ethylene.cp_e]
+value = 2.08776085578e-10
+unit = "J/(mol*K**5)"
 
 [components."formic acid".Tc]
 value = 588.0
@@ -857,6 +2257,26 @@ unit = "Pa"
 value = 0.3222
 unit = "dimensionless"
 
+[components."formic acid".cp_a]
+value = 31.6697773782
+unit = "J/(mol*K)"
+
+[components."formic acid".cp_b]
+value = 0.0130370729664
+unit = "J/(mol*K**2)"
+
+[components."formic acid".cp_c]
+value = 0.000298239673026
+unit = "J/(mol*K**3)"
+
+[components."formic acid".cp_d]
+value = -3.6666767718e-07
+unit = "J/(mol*K**4)"
+
+[components."formic acid".cp_e]
+value = 1.39017767856e-10
+unit = "J/(mol*K**5)"
+
 [components.glycerol.Tc]
 value = 766.0999999999999
 unit = "K"
@@ -868,6 +2288,26 @@ unit = "Pa"
 [components.glycerol.omega]
 value = 1.2874
 unit = "dimensionless"
+
+[components.glycerol.cp_a]
+value = 86.4
+unit = "J/(mol*K)"
+
+[components.glycerol.cp_b]
+value = 0.6008
+unit = "J/(mol*K**2)"
+
+[components.glycerol.cp_c]
+value = -0.0003622
+unit = "J/(mol*K**3)"
+
+[components.glycerol.cp_d]
+value = 7.2e-08
+unit = "J/(mol*K**4)"
+
+[components.glycerol.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.h2o2.Tc]
 value = 696.3499999999999
@@ -881,6 +2321,26 @@ unit = "Pa"
 value = 0.113
 unit = "dimensionless"
 
+[components.h2o2.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.h2o2.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.h2o2.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.h2o2.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.h2o2.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.h2s.Tc]
 value = 373.53
 unit = "K"
@@ -892,6 +2352,26 @@ unit = "Pa"
 [components.h2s.omega]
 value = 0.0942
 unit = "dimensionless"
+
+[components.h2s.cp_a]
+value = 35.467524
+unit = "J/(mol*K)"
+
+[components.h2s.cp_b]
+value = -0.028583532
+unit = "J/(mol*K**2)"
+
+[components.h2s.cp_c]
+value = 0.000109661
+unit = "J/(mol*K**3)"
+
+[components.h2s.cp_d]
+value = -1.1e-07
+unit = "J/(mol*K**4)"
+
+[components.h2s.cp_e]
+value = 4.057232e-11
+unit = "J/(mol*K**5)"
 
 [components.h2so4.Tc]
 value = 858.8652605453877
@@ -905,6 +2385,26 @@ unit = "Pa"
 value = 0.27640701720972727
 unit = "dimensionless"
 
+[components.h2so4.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.h2so4.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.h2so4.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.h2so4.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.h2so4.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.helium.Tc]
 value = 5.190000057999953
 unit = "K"
@@ -916,6 +2416,26 @@ unit = "Pa"
 [components.helium.omega]
 value = -0.390031993
 unit = "dimensionless"
+
+[components.helium.cp_a]
+value = 20.785
+unit = "J/(mol*K)"
+
+[components.helium.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.helium.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.helium.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.helium.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.hno3.Tc]
 value = 920.15
@@ -929,6 +2449,26 @@ unit = "Pa"
 value = 0.205
 unit = "dimensionless"
 
+[components.hno3.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.hno3.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.hno3.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.hno3.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.hno3.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components."hydrochloric acid".Tc]
 value = 324.68
 unit = "K"
@@ -940,6 +2480,26 @@ unit = "Pa"
 [components."hydrochloric acid".omega]
 value = 0.129
 unit = "dimensionless"
+
+[components."hydrochloric acid".cp_a]
+value = 31.8194376546
+unit = "J/(mol*K)"
+
+[components."hydrochloric acid".cp_b]
+value = -0.0244112539727999
+unit = "J/(mol*K**2)"
+
+[components."hydrochloric acid".cp_c]
+value = 7.3084101642e-05
+unit = "J/(mol*K**3)"
+
+[components."hydrochloric acid".cp_d]
+value = -8.5722080538e-08
+unit = "J/(mol*K**4)"
+
+[components."hydrochloric acid".cp_e]
+value = 3.6500478522e-11
+unit = "J/(mol*K**5)"
 
 [components.hydrogen.Tc]
 value = 33.19999999999999
@@ -953,6 +2513,26 @@ unit = "Pa"
 value = -0.22
 unit = "dimensionless"
 
+[components.hydrogen.cp_a]
+value = 23.969262
+unit = "J/(mol*K)"
+
+[components.hydrogen.cp_b]
+value = 0.030603834
+unit = "J/(mol*K**2)"
+
+[components.hydrogen.cp_c]
+value = -6.4184e-05
+unit = "J/(mol*K**3)"
+
+[components.hydrogen.cp_d]
+value = 5.7e-08
+unit = "J/(mol*K**4)"
+
+[components.hydrogen.cp_e]
+value = -1.770882e-11
+unit = "J/(mol*K**5)"
+
 [components.i-butane.Tc]
 value = 408.14
 unit = "K"
@@ -964,6 +2544,26 @@ unit = "Pa"
 [components.i-butane.omega]
 value = 0.177
 unit = "dimensionless"
+
+[components.i-butane.cp_a]
+value = 27.860214
+unit = "J/(mol*K)"
+
+[components.i-butane.cp_b]
+value = 0.148679262
+unit = "J/(mol*K**2)"
+
+[components.i-butane.cp_c]
+value = 0.000455357
+unit = "J/(mol*K**3)"
+
+[components.i-butane.cp_d]
+value = -6.73e-07
+unit = "J/(mol*K**4)"
+
+[components.i-butane.cp_e]
+value = 2.6962302e-10
+unit = "J/(mol*K**5)"
 
 [components.i-p-cy-c5.Tc]
 value = 593.25
@@ -977,6 +2577,26 @@ unit = "Pa"
 value = 0.3029
 unit = "dimensionless"
 
+[components.i-p-cy-c5.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.i-p-cy-c5.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.i-p-cy-c5.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.i-p-cy-c5.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.i-p-cy-c5.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.i-pentane.Tc]
 value = 460.42999999999995
 unit = "K"
@@ -988,6 +2608,26 @@ unit = "Pa"
 [components.i-pentane.omega]
 value = 0.2275
 unit = "dimensionless"
+
+[components.i-pentane.cp_a]
+value = 16.287126
+unit = "J/(mol*K)"
+
+[components.i-pentane.cp_b]
+value = 0.317519974
+unit = "J/(mol*K**2)"
+
+[components.i-pentane.cp_c]
+value = 0.000202362
+unit = "J/(mol*K**3)"
+
+[components.i-pentane.cp_d]
+value = -4.3e-07
+unit = "J/(mol*K**4)"
+
+[components.i-pentane.cp_e]
+value = 1.799981e-10
+unit = "J/(mol*K**5)"
 
 [components.i-propanol.Tc]
 value = 508.29999999999995
@@ -1001,6 +2641,26 @@ unit = "Pa"
 value = 0.6677
 unit = "dimensionless"
 
+[components.i-propanol.cp_a]
+value = 36.548344
+unit = "J/(mol*K)"
+
+[components.i-propanol.cp_b]
+value = 0.005221192
+unit = "J/(mol*K**2)"
+
+[components.i-propanol.cp_c]
+value = 0.000461094
+unit = "J/(mol*K**3)"
+
+[components.i-propanol.cp_d]
+value = -5.83e-07
+unit = "J/(mol*K**4)"
+
+[components.i-propanol.cp_e]
+value = 2.232309e-10
+unit = "J/(mol*K**5)"
+
 [components.iso-butene.Tc]
 value = 418.09
 unit = "K"
@@ -1012,6 +2672,26 @@ unit = "Pa"
 [components.iso-butene.omega]
 value = 0.193
 unit = "dimensionless"
+
+[components.iso-butene.cp_a]
+value = 26.8640196138
+unit = "J/(mol*K)"
+
+[components.iso-butene.cp_b]
+value = 0.1741796183502
+unit = "J/(mol*K**2)"
+
+[components.iso-butene.cp_c]
+value = 0.000192313455174
+unit = "J/(mol*K**3)"
+
+[components.iso-butene.cp_d]
+value = -3.28338017502e-07
+unit = "J/(mol*K**4)"
+
+[components.iso-butene.cp_e]
+value = 1.30204440468e-10
+unit = "J/(mol*K**5)"
 
 [components.m-cy-c5.Tc]
 value = 532.79
@@ -1025,6 +2705,26 @@ unit = "Pa"
 value = 0.2302
 unit = "dimensionless"
 
+[components.m-cy-c5.cp_a]
+value = 44.721006
+unit = "J/(mol*K)"
+
+[components.m-cy-c5.cp_b]
+value = -0.068657012
+unit = "J/(mol*K**2)"
+
+[components.m-cy-c5.cp_c]
+value = 0.00143774
+unit = "J/(mol*K**3)"
+
+[components.m-cy-c5.cp_d]
+value = -1.799e-06
+unit = "J/(mol*K**4)"
+
+[components.m-cy-c5.cp_e]
+value = 6.8698582e-10
+unit = "J/(mol*K**5)"
+
 [components.m-cy-c6.Tc]
 value = 572.19
 unit = "K"
@@ -1036,6 +2736,26 @@ unit = "Pa"
 [components.m-cy-c6.omega]
 value = 0.235
 unit = "dimensionless"
+
+[components.m-cy-c6.cp_a]
+value = 26.172472
+unit = "J/(mol*K)"
+
+[components.m-cy-c6.cp_b]
+value = 0.153293532
+unit = "J/(mol*K**2)"
+
+[components.m-cy-c6.cp_c]
+value = 0.001132699
+unit = "J/(mol*K**3)"
+
+[components.m-cy-c6.cp_d]
+value = -1.562e-06
+unit = "J/(mol*K**4)"
+
+[components.m-cy-c6.cp_e]
+value = 6.1224296e-10
+unit = "J/(mol*K**5)"
 
 [components.m-xylene.Tc]
 value = 617.05
@@ -1049,6 +2769,26 @@ unit = "Pa"
 value = 0.326
 unit = "dimensionless"
 
+[components.m-xylene.cp_a]
+value = 33.272628
+unit = "J/(mol*K)"
+
+[components.m-xylene.cp_b]
+value = 0.145802618
+unit = "J/(mol*K**2)"
+
+[components.m-xylene.cp_c]
+value = 0.000880452
+unit = "J/(mol*K**3)"
+
+[components.m-xylene.cp_d]
+value = -1.25e-06
+unit = "J/(mol*K**4)"
+
+[components.m-xylene.cp_e]
+value = 4.9950512e-10
+unit = "J/(mol*K**5)"
+
 [components.mdea.Tc]
 value = 677.0
 unit = "K"
@@ -1060,6 +2800,26 @@ unit = "Pa"
 [components.mdea.omega]
 value = 1.242
 unit = "dimensionless"
+
+[components.mdea.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.mdea.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.mdea.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.mdea.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.mdea.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.mea.Tc]
 value = 638.0
@@ -1073,6 +2833,26 @@ unit = "Pa"
 value = 0.7966
 unit = "dimensionless"
 
+[components.mea.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.mea.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.mea.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.mea.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.mea.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.meg.Tc]
 value = 720.0
 unit = "K"
@@ -1084,6 +2864,26 @@ unit = "Pa"
 [components.meg.omega]
 value = 0.5347
 unit = "dimensionless"
+
+[components.meg.cp_a]
+value = 35.7
+unit = "J/(mol*K)"
+
+[components.meg.cp_b]
+value = 0.2484
+unit = "J/(mol*K**2)"
+
+[components.meg.cp_c]
+value = -0.0001497
+unit = "J/(mol*K**3)"
+
+[components.meg.cp_d]
+value = 3e-08
+unit = "J/(mol*K**4)"
+
+[components.meg.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.megpvtsim18.Tc]
 value = 720.0
@@ -1097,6 +2897,26 @@ unit = "Pa"
 value = 0.5347
 unit = "dimensionless"
 
+[components.megpvtsim18.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.megpvtsim18.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.megpvtsim18.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.megpvtsim18.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.megpvtsim18.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.megpvtsim19.Tc]
 value = 720.0
 unit = "K"
@@ -1108,6 +2928,26 @@ unit = "Pa"
 [components.megpvtsim19.omega]
 value = 0.5347
 unit = "dimensionless"
+
+[components.megpvtsim19.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.megpvtsim19.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.megpvtsim19.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.megpvtsim19.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.megpvtsim19.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.mercury.Tc]
 value = 1735.15
@@ -1121,6 +2961,26 @@ unit = "Pa"
 value = -0.1645
 unit = "dimensionless"
 
+[components.mercury.cp_a]
+value = 20.8
+unit = "J/(mol*K)"
+
+[components.mercury.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.mercury.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.mercury.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.mercury.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.methane.Tc]
 value = 190.55999999999997
 unit = "K"
@@ -1132,6 +2992,26 @@ unit = "Pa"
 [components.methane.omega]
 value = 0.0115
 unit = "dimensionless"
+
+[components.methane.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.methane.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.methane.cp_c]
+value = 0.000301881
+unit = "J/(mol*K**3)"
+
+[components.methane.cp_d]
+value = -2.83e-07
+unit = "J/(mol*K**4)"
+
+[components.methane.cp_e]
+value = 9.070574e-11
+unit = "J/(mol*K**5)"
 
 [components.methanol.Tc]
 value = 512.64
@@ -1145,6 +3025,26 @@ unit = "Pa"
 value = 0.559
 unit = "dimensionless"
 
+[components.methanol.cp_a]
+value = 39.192196
+unit = "J/(mol*K)"
+
+[components.methanol.cp_b]
+value = -0.058081604
+unit = "J/(mol*K**2)"
+
+[components.methanol.cp_c]
+value = 0.000350102
+unit = "J/(mol*K**3)"
+
+[components.methanol.cp_d]
+value = -3.69e-07
+unit = "J/(mol*K**4)"
+
+[components.methanol.cp_e]
+value = 1.276199e-10
+unit = "J/(mol*K**5)"
+
 [components.methanolpvtsim.Tc]
 value = 512.5999999999999
 unit = "K"
@@ -1156,6 +3056,26 @@ unit = "Pa"
 [components.methanolpvtsim.omega]
 value = 0.559
 unit = "dimensionless"
+
+[components.methanolpvtsim.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.methanolpvtsim.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.methanolpvtsim.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.methanolpvtsim.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.methanolpvtsim.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.n-bcychexane.Tc]
 value = 667.039001464
@@ -1169,6 +3089,26 @@ unit = "Pa"
 value = 0.361990004
 unit = "dimensionless"
 
+[components.n-bcychexane.cp_a]
+value = -3.99072
+unit = "J/(mol*K)"
+
+[components.n-bcychexane.cp_b]
+value = 0.61037231
+unit = "J/(mol*K**2)"
+
+[components.n-bcychexane.cp_c]
+value = -6.1523e-05
+unit = "J/(mol*K**3)"
+
+[components.n-bcychexane.cp_d]
+value = -2.96e-07
+unit = "J/(mol*K**4)"
+
+[components.n-bcychexane.cp_e]
+value = 1.5148108e-10
+unit = "J/(mol*K**5)"
+
 [components.n-butane.Tc]
 value = 425.12
 unit = "K"
@@ -1180,6 +3120,26 @@ unit = "Pa"
 [components.n-butane.omega]
 value = 0.2002
 unit = "dimensionless"
+
+[components.n-butane.cp_a]
+value = 46.117758
+unit = "J/(mol*K)"
+
+[components.n-butane.cp_b]
+value = 0.046026304
+unit = "J/(mol*K**2)"
+
+[components.n-butane.cp_c]
+value = 0.000669858
+unit = "J/(mol*K**3)"
+
+[components.n-butane.cp_d]
+value = -8.78e-07
+unit = "J/(mol*K**4)"
+
+[components.n-butane.cp_e]
+value = 3.4370076e-10
+unit = "J/(mol*K**5)"
 
 [components.n-heptane.Tc]
 value = 540.2
@@ -1193,6 +3153,26 @@ unit = "Pa"
 value = 0.3495
 unit = "dimensionless"
 
+[components.n-heptane.cp_a]
+value = 80.097076
+unit = "J/(mol*K)"
+
+[components.n-heptane.cp_b]
+value = 0.034552984
+unit = "J/(mol*K**2)"
+
+[components.n-heptane.cp_c]
+value = 0.001288171
+unit = "J/(mol*K**3)"
+
+[components.n-heptane.cp_d]
+value = -1.668e-06
+unit = "J/(mol*K**4)"
+
+[components.n-heptane.cp_e]
+value = 6.459978e-10
+unit = "J/(mol*K**5)"
+
 [components.n-hexane.Tc]
 value = 507.59999999999997
 unit = "K"
@@ -1204,6 +3184,26 @@ unit = "Pa"
 [components.n-hexane.omega]
 value = 0.3013
 unit = "dimensionless"
+
+[components.n-hexane.cp_a]
+value = 73.420934
+unit = "J/(mol*K)"
+
+[components.n-hexane.cp_b]
+value = -0.001380124
+unit = "J/(mol*K**2)"
+
+[components.n-hexane.cp_c]
+value = 0.001189068
+unit = "J/(mol*K**3)"
+
+[components.n-hexane.cp_d]
+value = -1.522e-06
+unit = "J/(mol*K**4)"
+
+[components.n-hexane.cp_e]
+value = 5.9228936e-10
+unit = "J/(mol*K**5)"
 
 [components.n-nonane.Tc]
 value = 595.65
@@ -1217,6 +3217,26 @@ unit = "Pa"
 value = 0.4377
 unit = "dimensionless"
 
+[components.n-nonane.cp_a]
+value = 101.031728
+unit = "J/(mol*K)"
+
+[components.n-nonane.cp_b]
+value = 0.03803655
+unit = "J/(mol*K**2)"
+
+[components.n-nonane.cp_c]
+value = 0.001697386
+unit = "J/(mol*K**3)"
+
+[components.n-nonane.cp_d]
+value = -2.226e-06
+unit = "J/(mol*K**4)"
+
+[components.n-nonane.cp_e]
+value = 8.700601e-10
+unit = "J/(mol*K**5)"
+
 [components.n-octane.Tc]
 value = 568.7
 unit = "K"
@@ -1228,6 +3248,26 @@ unit = "Pa"
 [components.n-octane.omega]
 value = 0.3996
 unit = "dimensionless"
+
+[components.n-octane.cp_a]
+value = 89.990736
+unit = "J/(mol*K)"
+
+[components.n-octane.cp_b]
+value = 0.041428662
+unit = "J/(mol*K**2)"
+
+[components.n-octane.cp_c]
+value = 0.001475818
+unit = "J/(mol*K**3)"
+
+[components.n-octane.cp_d]
+value = -1.923e-06
+unit = "J/(mol*K**4)"
+
+[components.n-octane.cp_e]
+value = 7.465972e-10
+unit = "J/(mol*K**5)"
 
 [components.n-pentane.Tc]
 value = 469.7
@@ -1241,6 +3281,26 @@ unit = "Pa"
 value = 0.2515
 unit = "dimensionless"
 
+[components.n-pentane.cp_a]
+value = 62.803956
+unit = "J/(mol*K)"
+
+[components.n-pentane.cp_b]
+value = -0.003059552
+unit = "J/(mol*K**2)"
+
+[components.n-pentane.cp_c]
+value = 0.000984876
+unit = "J/(mol*K**3)"
+
+[components.n-pentane.cp_d]
+value = -1.242e-06
+unit = "J/(mol*K**4)"
+
+[components.n-pentane.cp_e]
+value = 4.7830442e-10
+unit = "J/(mol*K**5)"
+
 [components.n2o4.Tc]
 value = 430.15
 unit = "K"
@@ -1252,6 +3312,26 @@ unit = "Pa"
 [components.n2o4.omega]
 value = 0.9
 unit = "dimensionless"
+
+[components.n2o4.cp_a]
+value = 37.28
+unit = "J/(mol*K)"
+
+[components.n2o4.cp_b]
+value = -0.002
+unit = "J/(mol*K**2)"
+
+[components.n2o4.cp_c]
+value = 0.000302
+unit = "J/(mol*K**3)"
+
+[components.n2o4.cp_d]
+value = -2.8e-07
+unit = "J/(mol*K**4)"
+
+[components.n2o4.cp_e]
+value = 9.1e-11
+unit = "J/(mol*K**5)"
 
 [components.nano2.Tc]
 value = 717.3
@@ -1265,6 +3345,26 @@ unit = "Pa"
 value = 0.344
 unit = "dimensionless"
 
+[components.nano2.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nano2.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nano2.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nano2.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nano2.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.naphthalene.Tc]
 value = 748.4
 unit = "K"
@@ -1276,6 +3376,26 @@ unit = "Pa"
 [components.naphthalene.omega]
 value = 0.302
 unit = "dimensionless"
+
+[components.naphthalene.cp_a]
+value = -50.3
+unit = "J/(mol*K)"
+
+[components.naphthalene.cp_b]
+value = 0.5024
+unit = "J/(mol*K**2)"
+
+[components.naphthalene.cp_c]
+value = 0.5024
+unit = "J/(mol*K**3)"
+
+[components.naphthalene.cp_d]
+value = -1.803e-06
+unit = "J/(mol*K**4)"
+
+[components.naphthalene.cp_e]
+value = 6.829951e-10
+unit = "J/(mol*K**5)"
 
 [components.nbutanepvtsim.Tc]
 value = 425.2
@@ -1289,6 +3409,26 @@ unit = "Pa"
 value = 0.193
 unit = "dimensionless"
 
+[components.nbutanepvtsim.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nbutanepvtsim.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nbutanepvtsim.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nbutanepvtsim.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nbutanepvtsim.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc10.Tc]
 value = 617.7
 unit = "K"
@@ -1300,6 +3440,26 @@ unit = "Pa"
 [components.nc10.omega]
 value = 0.4923
 unit = "dimensionless"
+
+[components.nc10.cp_a]
+value = 111.964638
+unit = "J/(mol*K)"
+
+[components.nc10.cp_b]
+value = 0.034411646
+unit = "J/(mol*K**2)"
+
+[components.nc10.cp_c]
+value = 0.001922778
+unit = "J/(mol*K**3)"
+
+[components.nc10.cp_d]
+value = -2.533e-06
+unit = "J/(mol*K**4)"
+
+[components.nc10.cp_e]
+value = 9.951858e-10
+unit = "J/(mol*K**5)"
 
 [components.nc10-benzene.Tc]
 value = 753.0
@@ -1313,6 +3473,26 @@ unit = "Pa"
 value = 0.6812
 unit = "dimensionless"
 
+[components.nc10-benzene.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc10-benzene.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc10-benzene.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc10-benzene.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc10-benzene.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc10-cy-c5.Tc]
 value = 732.38
 unit = "K"
@@ -1324,6 +3504,26 @@ unit = "Pa"
 [components.nc10-cy-c5.omega]
 value = 0.6314
 unit = "dimensionless"
+
+[components.nc10-cy-c5.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc10-cy-c5.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc10-cy-c5.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc10-cy-c5.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc10-cy-c5.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.nc11.Tc]
 value = 639.0
@@ -1337,6 +3537,26 @@ unit = "Pa"
 value = 0.5303
 unit = "dimensionless"
 
+[components.nc11.cp_a]
+value = -8.39
+unit = "J/(mol*K)"
+
+[components.nc11.cp_b]
+value = 1.053
+unit = "J/(mol*K**2)"
+
+[components.nc11.cp_c]
+value = -0.0005799
+unit = "J/(mol*K**3)"
+
+[components.nc11.cp_d]
+value = 1.23e-07
+unit = "J/(mol*K**4)"
+
+[components.nc11.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc12.Tc]
 value = 658.0
 unit = "K"
@@ -1348,6 +3568,26 @@ unit = "Pa"
 [components.nc12.omega]
 value = 0.5764
 unit = "dimensionless"
+
+[components.nc12.cp_a]
+value = 143.241906
+unit = "J/(mol*K)"
+
+[components.nc12.cp_b]
+value = -0.060209988
+unit = "J/(mol*K**2)"
+
+[components.nc12.cp_c]
+value = 0.002653995
+unit = "J/(mol*K**3)"
+
+[components.nc12.cp_d]
+value = -3.518e-06
+unit = "J/(mol*K**4)"
+
+[components.nc12.cp_e]
+value = 1e-09
+unit = "J/(mol*K**5)"
 
 [components.nc12-cy-c5.Tc]
 value = 758.89
@@ -1361,6 +3601,26 @@ unit = "Pa"
 value = 0.7163
 unit = "dimensionless"
 
+[components.nc12-cy-c5.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc12-cy-c5.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc12-cy-c5.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc12-cy-c5.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc12-cy-c5.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc13.Tc]
 value = 675.0
 unit = "K"
@@ -1372,6 +3632,26 @@ unit = "Pa"
 [components.nc13.omega]
 value = 0.6174
 unit = "dimensionless"
+
+[components.nc13.cp_a]
+value = 154.191444
+unit = "J/(mol*K)"
+
+[components.nc13.cp_b]
+value = -0.063485704
+unit = "J/(mol*K**2)"
+
+[components.nc13.cp_c]
+value = 0.002876976
+unit = "J/(mol*K**3)"
+
+[components.nc13.cp_d]
+value = -3.822e-06
+unit = "J/(mol*K**4)"
+
+[components.nc13.cp_e]
+value = 1e-09
+unit = "J/(mol*K**5)"
 
 [components.nc14.Tc]
 value = 693.0
@@ -1385,6 +3665,26 @@ unit = "Pa"
 value = 0.643
 unit = "dimensionless"
 
+[components.nc14.cp_a]
+value = 152.76975
+unit = "J/(mol*K)"
+
+[components.nc14.cp_b]
+value = 0.05474769
+unit = "J/(mol*K**2)"
+
+[components.nc14.cp_c]
+value = 0.002686003
+unit = "J/(mol*K**3)"
+
+[components.nc14.cp_d]
+value = -3.547e-06
+unit = "J/(mol*K**4)"
+
+[components.nc14.cp_e]
+value = 1e-09
+unit = "J/(mol*K**5)"
+
 [components.nc14-cy-c5.Tc]
 value = 782.3399999999999
 unit = "K"
@@ -1396,6 +3696,26 @@ unit = "Pa"
 [components.nc14-cy-c5.omega]
 value = 0.7949
 unit = "dimensionless"
+
+[components.nc14-cy-c5.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc14-cy-c5.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc14-cy-c5.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc14-cy-c5.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc14-cy-c5.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.nc15.Tc]
 value = 708.0
@@ -1409,6 +3729,26 @@ unit = "Pa"
 value = 0.6863
 unit = "dimensionless"
 
+[components.nc15.cp_a]
+value = 176.09052
+unit = "J/(mol*K)"
+
+[components.nc15.cp_b]
+value = -0.070037136
+unit = "J/(mol*K**2)"
+
+[components.nc15.cp_c]
+value = 0.003323022
+unit = "J/(mol*K**3)"
+
+[components.nc15.cp_d]
+value = -4.43e-06
+unit = "J/(mol*K**4)"
+
+[components.nc15.cp_e]
+value = 1e-09
+unit = "J/(mol*K**5)"
+
 [components.nc16.Tc]
 value = 717.0
 unit = "K"
@@ -1420,6 +3760,26 @@ unit = "Pa"
 [components.nc16.omega]
 value = 0.742
 unit = "dimensionless"
+
+[components.nc16.cp_a]
+value = 330.456558
+unit = "J/(mol*K)"
+
+[components.nc16.cp_b]
+value = -1.713947728
+unit = "J/(mol*K**2)"
+
+[components.nc16.cp_c]
+value = 0.009545635
+unit = "J/(mol*K**3)"
+
+[components.nc16.cp_d]
+value = -1.2932e-05
+unit = "J/(mol*K**4)"
+
+[components.nc16.cp_e]
+value = 5e-09
+unit = "J/(mol*K**5)"
 
 [components.nc17.Tc]
 value = 735.5
@@ -1433,6 +3793,26 @@ unit = "Pa"
 value = 0.6572
 unit = "dimensionless"
 
+[components.nc17.cp_a]
+value = 197.981282
+unit = "J/(mol*K)"
+
+[components.nc17.cp_b]
+value = -0.07657194
+unit = "J/(mol*K**2)"
+
+[components.nc17.cp_c]
+value = 0.003768985
+unit = "J/(mol*K**3)"
+
+[components.nc17.cp_d]
+value = -5.038e-06
+unit = "J/(mol*K**4)"
+
+[components.nc17.cp_e]
+value = 2e-09
+unit = "J/(mol*K**5)"
+
 [components.nc17-cy-c5.Tc]
 value = 811.16
 unit = "K"
@@ -1444,6 +3824,26 @@ unit = "Pa"
 [components.nc17-cy-c5.omega]
 value = 0.906
 unit = "dimensionless"
+
+[components.nc17-cy-c5.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc17-cy-c5.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc17-cy-c5.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc17-cy-c5.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc17-cy-c5.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.nc18.Tc]
 value = 747.0
@@ -1457,6 +3857,26 @@ unit = "Pa"
 value = 0.811
 unit = "dimensionless"
 
+[components.nc18.cp_a]
+value = 208.93082
+unit = "J/(mol*K)"
+
+[components.nc18.cp_b]
+value = -0.079839342
+unit = "J/(mol*K**2)"
+
+[components.nc18.cp_c]
+value = 0.003991967
+unit = "J/(mol*K**3)"
+
+[components.nc18.cp_d]
+value = -5.342e-06
+unit = "J/(mol*K**4)"
+
+[components.nc18.cp_e]
+value = 2e-09
+unit = "J/(mol*K**5)"
+
 [components.nc19.Tc]
 value = 760.0999999999999
 unit = "K"
@@ -1468,6 +3888,26 @@ unit = "Pa"
 [components.nc19.omega]
 value = 0.7073
 unit = "dimensionless"
+
+[components.nc19.cp_a]
+value = 219.880358
+unit = "J/(mol*K)"
+
+[components.nc19.cp_b]
+value = -0.083123372
+unit = "J/(mol*K**2)"
+
+[components.nc19.cp_c]
+value = 0.004214948
+unit = "J/(mol*K**3)"
+
+[components.nc19.cp_d]
+value = -5.646e-06
+unit = "J/(mol*K**4)"
+
+[components.nc19.cp_e]
+value = 2e-09
+unit = "J/(mol*K**5)"
 
 [components.nc20.Tc]
 value = 767.0
@@ -1481,6 +3921,26 @@ unit = "Pa"
 value = 0.907
 unit = "dimensionless"
 
+[components.nc20.cp_a]
+value = 230.829896
+unit = "J/(mol*K)"
+
+[components.nc20.cp_b]
+value = -0.086374146
+unit = "J/(mol*K**2)"
+
+[components.nc20.cp_c]
+value = 0.00443793
+unit = "J/(mol*K**3)"
+
+[components.nc20.cp_d]
+value = -5.95e-06
+unit = "J/(mol*K**4)"
+
+[components.nc20.cp_e]
+value = 2e-09
+unit = "J/(mol*K**5)"
+
 [components.nc21.Tc]
 value = 779.5999999999999
 unit = "K"
@@ -1492,6 +3952,26 @@ unit = "Pa"
 [components.nc21.omega]
 value = 0.861
 unit = "dimensionless"
+
+[components.nc21.cp_a]
+value = 230.829896
+unit = "J/(mol*K)"
+
+[components.nc21.cp_b]
+value = -0.086374146
+unit = "J/(mol*K**2)"
+
+[components.nc21.cp_c]
+value = 0.00443793
+unit = "J/(mol*K**3)"
+
+[components.nc21.cp_d]
+value = 95.008038
+unit = "J/(mol*K**4)"
+
+[components.nc21.cp_e]
+value = 0.040390996
+unit = "J/(mol*K**5)"
 
 [components.nc22.Tc]
 value = 792.1999999999999
@@ -1505,6 +3985,26 @@ unit = "Pa"
 value = 0.777
 unit = "dimensionless"
 
+[components.nc22.cp_a]
+value = 230.829896
+unit = "J/(mol*K)"
+
+[components.nc22.cp_b]
+value = -0.086374146
+unit = "J/(mol*K**2)"
+
+[components.nc22.cp_c]
+value = 0.00443793
+unit = "J/(mol*K**3)"
+
+[components.nc22.cp_d]
+value = 95.008038
+unit = "J/(mol*K**4)"
+
+[components.nc22.cp_e]
+value = 0.040390996
+unit = "J/(mol*K**5)"
+
 [components.nc23.Tc]
 value = 801.9
 unit = "K"
@@ -1516,6 +4016,26 @@ unit = "Pa"
 [components.nc23.omega]
 value = 0.799
 unit = "dimensionless"
+
+[components.nc23.cp_a]
+value = 230.829896
+unit = "J/(mol*K)"
+
+[components.nc23.cp_b]
+value = -0.086374146
+unit = "J/(mol*K**2)"
+
+[components.nc23.cp_c]
+value = 0.00443793
+unit = "J/(mol*K**3)"
+
+[components.nc23.cp_d]
+value = 95.008038
+unit = "J/(mol*K**4)"
+
+[components.nc23.cp_e]
+value = 0.040390996
+unit = "J/(mol*K**5)"
 
 [components.nc24.Tc]
 value = 806.3
@@ -1529,6 +4049,26 @@ unit = "Pa"
 value = 0.95
 unit = "dimensionless"
 
+[components.nc24.cp_a]
+value = 230.829896
+unit = "J/(mol*K)"
+
+[components.nc24.cp_b]
+value = -0.086374146
+unit = "J/(mol*K**2)"
+
+[components.nc24.cp_c]
+value = 0.00443793
+unit = "J/(mol*K**3)"
+
+[components.nc24.cp_d]
+value = 95.008038
+unit = "J/(mol*K**4)"
+
+[components.nc24.cp_e]
+value = 0.040390996
+unit = "J/(mol*K**5)"
+
 [components.nc25.Tc]
 value = 857.0
 unit = "K"
@@ -1540,6 +4080,26 @@ unit = "Pa"
 [components.nc25.omega]
 value = 1.1053
 unit = "dimensionless"
+
+[components.nc25.cp_a]
+value = -46.5
+unit = "J/(mol*K)"
+
+[components.nc25.cp_b]
+value = 0.309
+unit = "J/(mol*K**2)"
+
+[components.nc25.cp_c]
+value = 0.00287
+unit = "J/(mol*K**3)"
+
+[components.nc25.cp_d]
+value = -7.09e-07
+unit = "J/(mol*K**4)"
+
+[components.nc25.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.nc26.Tc]
 value = 819.0
@@ -1553,6 +4113,26 @@ unit = "Pa"
 value = 1.1544
 unit = "dimensionless"
 
+[components.nc26.cp_a]
+value = -49.6
+unit = "J/(mol*K)"
+
+[components.nc26.cp_b]
+value = 0.315
+unit = "J/(mol*K**2)"
+
+[components.nc26.cp_c]
+value = 0.00287
+unit = "J/(mol*K**3)"
+
+[components.nc26.cp_d]
+value = -7.1e-07
+unit = "J/(mol*K**4)"
+
+[components.nc26.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc27.Tc]
 value = 836.3
 unit = "K"
@@ -1564,6 +4144,26 @@ unit = "Pa"
 [components.nc27.omega]
 value = 0.8813
 unit = "dimensionless"
+
+[components.nc27.cp_a]
+value = -22.4
+unit = "J/(mol*K)"
+
+[components.nc27.cp_b]
+value = 2.57
+unit = "J/(mol*K**2)"
+
+[components.nc27.cp_c]
+value = -0.001448
+unit = "J/(mol*K**3)"
+
+[components.nc27.cp_d]
+value = 3.16e-07
+unit = "J/(mol*K**4)"
+
+[components.nc27.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.nc28.Tc]
 value = 832.0
@@ -1577,6 +4177,26 @@ unit = "Pa"
 value = 1.2375
 unit = "dimensionless"
 
+[components.nc28.cp_a]
+value = -55.0
+unit = "J/(mol*K)"
+
+[components.nc28.cp_b]
+value = 0.324
+unit = "J/(mol*K**2)"
+
+[components.nc28.cp_c]
+value = 0.00287
+unit = "J/(mol*K**3)"
+
+[components.nc28.cp_d]
+value = -7.11e-07
+unit = "J/(mol*K**4)"
+
+[components.nc28.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc29.Tc]
 value = 835.6999999999999
 unit = "K"
@@ -1588,6 +4208,26 @@ unit = "Pa"
 [components.nc29.omega]
 value = 1.2005
 unit = "dimensionless"
+
+[components.nc29.cp_a]
+value = -55.0
+unit = "J/(mol*K)"
+
+[components.nc29.cp_b]
+value = 0.324
+unit = "J/(mol*K**2)"
+
+[components.nc29.cp_c]
+value = 0.00287
+unit = "J/(mol*K**3)"
+
+[components.nc29.cp_d]
+value = -7.11e-07
+unit = "J/(mol*K**4)"
+
+[components.nc29.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.nc30.Tc]
 value = 863.05
@@ -1601,6 +4241,26 @@ unit = "Pa"
 value = 1.307
 unit = "dimensionless"
 
+[components.nc30.cp_a]
+value = -25.0
+unit = "J/(mol*K)"
+
+[components.nc30.cp_b]
+value = 2.854
+unit = "J/(mol*K**2)"
+
+[components.nc30.cp_c]
+value = -0.00161
+unit = "J/(mol*K**3)"
+
+[components.nc30.cp_d]
+value = 3.52e-07
+unit = "J/(mol*K**4)"
+
+[components.nc30.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc34.Tc]
 value = 860.65
 unit = "K"
@@ -1612,6 +4272,26 @@ unit = "Pa"
 [components.nc34.omega]
 value = 1.435
 unit = "dimensionless"
+
+[components.nc34.cp_a]
+value = -28.4
+unit = "J/(mol*K)"
+
+[components.nc34.cp_b]
+value = 3.233
+unit = "J/(mol*K**2)"
+
+[components.nc34.cp_c]
+value = -0.001827
+unit = "J/(mol*K**3)"
+
+[components.nc34.cp_d]
+value = 4e-07
+unit = "J/(mol*K**4)"
+
+[components.nc34.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.nc39.Tc]
 value = 912.0
@@ -1625,6 +4305,26 @@ unit = "Pa"
 value = 1.0889
 unit = "dimensionless"
 
+[components.nc39.cp_a]
+value = -32.7
+unit = "J/(mol*K)"
+
+[components.nc39.cp_b]
+value = 3.706
+unit = "J/(mol*K**2)"
+
+[components.nc39.cp_c]
+value = -0.002098
+unit = "J/(mol*K**3)"
+
+[components.nc39.cp_d]
+value = 4.6e-07
+unit = "J/(mol*K**4)"
+
+[components.nc39.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc5-benzene.Tc]
 value = 679.95
 unit = "K"
@@ -1636,6 +4336,26 @@ unit = "Pa"
 [components.nc5-benzene.omega]
 value = 0.4376
 unit = "dimensionless"
+
+[components.nc5-benzene.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc5-benzene.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc5-benzene.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc5-benzene.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc5-benzene.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.nc6-benzene.Tc]
 value = 697.5
@@ -1649,6 +4369,26 @@ unit = "Pa"
 value = 0.48
 unit = "dimensionless"
 
+[components.nc6-benzene.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc6-benzene.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc6-benzene.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc6-benzene.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc6-benzene.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc7-benzene.Tc]
 value = 714.0
 unit = "K"
@@ -1660,6 +4400,26 @@ unit = "Pa"
 [components.nc7-benzene.omega]
 value = 0.5287
 unit = "dimensionless"
+
+[components.nc7-benzene.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc7-benzene.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc7-benzene.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc7-benzene.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc7-benzene.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.nc8-benzene.Tc]
 value = 728.15
@@ -1673,6 +4433,26 @@ unit = "Pa"
 value = 0.5909
 unit = "dimensionless"
 
+[components.nc8-benzene.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc8-benzene.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc8-benzene.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc8-benzene.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc8-benzene.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nc9-benzene.Tc]
 value = 740.8499999999999
 unit = "K"
@@ -1684,6 +4464,26 @@ unit = "Pa"
 [components.nc9-benzene.omega]
 value = 0.6523
 unit = "dimensionless"
+
+[components.nc9-benzene.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nc9-benzene.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nc9-benzene.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nc9-benzene.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nc9-benzene.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.neon.Tc]
 value = 44.39999999999998
@@ -1697,6 +4497,26 @@ unit = "Pa"
 value = -0.376
 unit = "dimensionless"
 
+[components.neon.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.neon.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.neon.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.neon.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.neon.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nh2so3h.Tc]
 value = 717.3
 unit = "K"
@@ -1708,6 +4528,26 @@ unit = "Pa"
 [components.nh2so3h.omega]
 value = 0.344
 unit = "dimensionless"
+
+[components.nh2so3h.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nh2so3h.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nh2so3h.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nh2so3h.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nh2so3h.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components."nitric acid".Tc]
 value = 520.0
@@ -1721,6 +4561,26 @@ unit = "Pa"
 value = 0.7144
 unit = "dimensionless"
 
+[components."nitric acid".cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components."nitric acid".cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components."nitric acid".cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components."nitric acid".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."nitric acid".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nitrogen.Tc]
 value = 126.09999999999997
 unit = "K"
@@ -1732,6 +4592,26 @@ unit = "Pa"
 [components.nitrogen.omega]
 value = 0.0403
 unit = "dimensionless"
+
+[components.nitrogen.cp_a]
+value = 29.3824747474747
+unit = "J/(mol*K)"
+
+[components.nitrogen.cp_b]
+value = -0.0030260473322971
+unit = "J/(mol*K**2)"
+
+[components.nitrogen.cp_c]
+value = 5.771148989898619e-06
+unit = "J/(mol*K**3)"
+
+[components.nitrogen.cp_d]
+value = 4.686124061124461e-09
+unit = "J/(mol*K**4)"
+
+[components.nitrogen.cp_e]
+value = -4.086538461538615e-12
+unit = "J/(mol*K**5)"
 
 [components.no2.Tc]
 value = 431.15
@@ -1745,6 +4625,26 @@ unit = "Pa"
 value = 0.9
 unit = "dimensionless"
 
+[components.no2.cp_a]
+value = 30.022
+unit = "J/(mol*K)"
+
+[components.no2.cp_b]
+value = 0.016761
+unit = "J/(mol*K**2)"
+
+[components.no2.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.no2.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.no2.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.o-e-toluene.Tc]
 value = 651.15
 unit = "K"
@@ -1756,6 +4656,26 @@ unit = "Pa"
 [components.o-e-toluene.omega]
 value = 0.2932
 unit = "dimensionless"
+
+[components.o-e-toluene.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.o-e-toluene.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.o-e-toluene.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.o-e-toluene.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.o-e-toluene.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.o-xylene.Tc]
 value = 630.37
@@ -1769,6 +4689,26 @@ unit = "Pa"
 value = 0.3127
 unit = "dimensionless"
 
+[components.o-xylene.cp_a]
+value = 27.344746
+unit = "J/(mol*K)"
+
+[components.o-xylene.cp_b]
+value = 0.283873216
+unit = "J/(mol*K**2)"
+
+[components.o-xylene.cp_c]
+value = 0.000414785
+unit = "J/(mol*K**3)"
+
+[components.o-xylene.cp_d]
+value = -6.92e-07
+unit = "J/(mol*K**4)"
+
+[components.o-xylene.cp_e]
+value = 2.7752132e-10
+unit = "J/(mol*K**5)"
+
 [components.ortho-hydrogen.Tc]
 value = 33.21999999999997
 unit = "K"
@@ -1780,6 +4720,26 @@ unit = "Pa"
 [components.ortho-hydrogen.omega]
 value = -0.22
 unit = "dimensionless"
+
+[components.ortho-hydrogen.cp_a]
+value = 23.969262
+unit = "J/(mol*K)"
+
+[components.ortho-hydrogen.cp_b]
+value = 0.030603834
+unit = "J/(mol*K**2)"
+
+[components.ortho-hydrogen.cp_c]
+value = -6.4184e-05
+unit = "J/(mol*K**3)"
+
+[components.ortho-hydrogen.cp_d]
+value = 5.7e-08
+unit = "J/(mol*K**4)"
+
+[components.ortho-hydrogen.cp_e]
+value = -1.770882e-11
+unit = "J/(mol*K**5)"
 
 [components.oxygen.Tc]
 value = 154.59999999999997
@@ -1793,6 +4753,26 @@ unit = "Pa"
 value = 0.021
 unit = "dimensionless"
 
+[components.oxygen.cp_a]
+value = 30.17982
+unit = "J/(mol*K)"
+
+[components.oxygen.cp_b]
+value = -0.014915316
+unit = "J/(mol*K**2)"
+
+[components.oxygen.cp_c]
+value = 5.4706e-05
+unit = "J/(mol*K**3)"
+
+[components.oxygen.cp_d]
+value = -4.89e-08
+unit = "J/(mol*K**4)"
+
+[components.oxygen.cp_e]
+value = 1.488206e-11
+unit = "J/(mol*K**5)"
+
 [components.p-xylene.Tc]
 value = 616.23
 unit = "K"
@@ -1804,6 +4784,26 @@ unit = "Pa"
 [components.p-xylene.omega]
 value = 0.3259
 unit = "dimensionless"
+
+[components.p-xylene.cp_a]
+value = 34.195482
+unit = "J/(mol*K)"
+
+[components.p-xylene.cp_b]
+value = 0.123953426
+unit = "J/(mol*K**2)"
+
+[components.p-xylene.cp_c]
+value = 0.000981883
+unit = "J/(mol*K**3)"
+
+[components.p-xylene.cp_d]
+value = -1.39e-06
+unit = "J/(mol*K**4)"
+
+[components.p-xylene.cp_e]
+value = 5.6003104e-10
+unit = "J/(mol*K**5)"
 
 [components.para-hydrogen.Tc]
 value = 32.93799999999999
@@ -1817,6 +4817,26 @@ unit = "Pa"
 value = -0.22
 unit = "dimensionless"
 
+[components.para-hydrogen.cp_a]
+value = 23.969262
+unit = "J/(mol*K)"
+
+[components.para-hydrogen.cp_b]
+value = 0.030603834
+unit = "J/(mol*K**2)"
+
+[components.para-hydrogen.cp_c]
+value = -6.4184e-05
+unit = "J/(mol*K**3)"
+
+[components.para-hydrogen.cp_d]
+value = 5.7e-08
+unit = "J/(mol*K**4)"
+
+[components.para-hydrogen.cp_e]
+value = -1.770882e-11
+unit = "J/(mol*K**5)"
+
 [components.pent-cc6.Tc]
 value = 674.0
 unit = "K"
@@ -1828,6 +4848,26 @@ unit = "Pa"
 [components.pent-cc6.omega]
 value = 0.412999004
 unit = "dimensionless"
+
+[components.pent-cc6.cp_a]
+value = -3.99072
+unit = "J/(mol*K)"
+
+[components.pent-cc6.cp_b]
+value = 0.61037231
+unit = "J/(mol*K**2)"
+
+[components.pent-cc6.cp_c]
+value = -6.1523e-05
+unit = "J/(mol*K**3)"
+
+[components.pent-cc6.cp_d]
+value = -2.96e-07
+unit = "J/(mol*K**4)"
+
+[components.pent-cc6.cp_e]
+value = 1.5148108e-10
+unit = "J/(mol*K**5)"
 
 [components.pg.Tc]
 value = 626.0
@@ -1841,6 +4881,26 @@ unit = "Pa"
 value = 1.102
 unit = "dimensionless"
 
+[components.pg.cp_a]
+value = 35.7
+unit = "J/(mol*K)"
+
+[components.pg.cp_b]
+value = 0.2484
+unit = "J/(mol*K**2)"
+
+[components.pg.cp_c]
+value = -0.0001497
+unit = "J/(mol*K**3)"
+
+[components.pg.cp_d]
+value = 3e-08
+unit = "J/(mol*K**4)"
+
+[components.pg.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.piperazine.Tc]
 value = 638.0
 unit = "K"
@@ -1852,6 +4912,26 @@ unit = "Pa"
 [components.piperazine.omega]
 value = 0.414
 unit = "dimensionless"
+
+[components.piperazine.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.piperazine.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.piperazine.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.piperazine.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.piperazine.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.propane.Tc]
 value = 369.83
@@ -1865,6 +4945,26 @@ unit = "Pa"
 value = 0.1523
 unit = "dimensionless"
 
+[components.propane.cp_a]
+value = 31.983958
+unit = "J/(mol*K)"
+
+[components.propane.cp_b]
+value = 0.042659134
+unit = "J/(mol*K**2)"
+
+[components.propane.cp_c]
+value = 0.000499754
+unit = "J/(mol*K**3)"
+
+[components.propane.cp_d]
+value = -6.56e-07
+unit = "J/(mol*K**4)"
+
+[components.propane.cp_e]
+value = 2.5598806e-10
+unit = "J/(mol*K**5)"
+
 [components.propanepvtsim.Tc]
 value = 369.79999999999995
 unit = "K"
@@ -1876,6 +4976,26 @@ unit = "Pa"
 [components.propanepvtsim.omega]
 value = 0.152
 unit = "dimensionless"
+
+[components.propanepvtsim.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.propanepvtsim.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.propanepvtsim.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.propanepvtsim.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.propanepvtsim.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.propene.Tc]
 value = 364.211
@@ -1889,6 +5009,26 @@ unit = "Pa"
 value = 0.146
 unit = "dimensionless"
 
+[components.propene.cp_a]
+value = 31.8776388732
+unit = "J/(mol*K)"
+
+[components.propene.cp_b]
+value = 0.0323681920014
+unit = "J/(mol*K**2)"
+
+[components.propene.cp_c]
+value = 0.0003897818754239
+unit = "J/(mol*K**3)"
+
+[components.propene.cp_d]
+value = -4.99948467774e-07
+unit = "J/(mol*K**4)"
+
+[components.propene.cp_e]
+value = 1.89819117234e-10
+unit = "J/(mol*K**5)"
+
 [components.propylbenzene.Tc]
 value = 638.38
 unit = "K"
@@ -1900,6 +5040,26 @@ unit = "Pa"
 [components.propylbenzene.omega]
 value = 0.344
 unit = "dimensionless"
+
+[components.propylbenzene.cp_a]
+value = 39.566326
+unit = "J/(mol*K)"
+
+[components.propylbenzene.cp_b]
+value = 0.199170184
+unit = "J/(mol*K**2)"
+
+[components.propylbenzene.cp_c]
+value = 0.000985957
+unit = "J/(mol*K**3)"
+
+[components.propylbenzene.cp_d]
+value = -1.446e-06
+unit = "J/(mol*K**4)"
+
+[components.propylbenzene.cp_e]
+value = 5.8730096e-10
+unit = "J/(mol*K**5)"
 
 [components.r12.Tc]
 value = 385.0
@@ -1913,6 +5073,26 @@ unit = "Pa"
 value = 0.176
 unit = "dimensionless"
 
+[components.r12.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.r12.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.r12.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.r12.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.r12.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.r134a.Tc]
 value = 374.0
 unit = "K"
@@ -1924,6 +5104,26 @@ unit = "Pa"
 [components.r134a.omega]
 value = 0.332
 unit = "dimensionless"
+
+[components.r134a.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.r134a.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.r134a.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.r134a.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.r134a.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.s8.Tc]
 value = 1158.15
@@ -1937,6 +5137,26 @@ unit = "Pa"
 value = 0.2059
 unit = "dimensionless"
 
+[components.s8.cp_a]
+value = 89.990736
+unit = "J/(mol*K)"
+
+[components.s8.cp_b]
+value = 0.041428662
+unit = "J/(mol*K**2)"
+
+[components.s8.cp_c]
+value = 0.001475818
+unit = "J/(mol*K**3)"
+
+[components.s8.cp_d]
+value = -1.923e-06
+unit = "J/(mol*K**4)"
+
+[components.s8.cp_e]
+value = 7.465972e-10
+unit = "J/(mol*K**5)"
+
 [components.sf6.Tc]
 value = 319.0
 unit = "K"
@@ -1948,6 +5168,26 @@ unit = "Pa"
 [components.sf6.omega]
 value = 0.21
 unit = "dimensionless"
+
+[components.sf6.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.sf6.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.sf6.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.sf6.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.sf6.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.so2.Tc]
 value = 430.64
@@ -1961,6 +5201,26 @@ unit = "Pa"
 value = 0.256
 unit = "dimensionless"
 
+[components.so2.cp_a]
+value = 36.7249689366
+unit = "J/(mol*K)"
+
+[components.so2.cp_b]
+value = -0.0185745031932
+unit = "J/(mol*K**2)"
+
+[components.so2.cp_c]
+value = 0.0001948909377119
+unit = "J/(mol*K**3)"
+
+[components.so2.cp_d]
+value = -2.71965980058e-07
+unit = "J/(mol*K**4)"
+
+[components.so2.cp_e]
+value = 1.15820425014e-10
+unit = "J/(mol*K**5)"
+
 [components."sulfur(s8)".Tc]
 value = 1158.15
 unit = "K"
@@ -1972,6 +5232,26 @@ unit = "Pa"
 [components."sulfur(s8)".omega]
 value = 0.2059
 unit = "dimensionless"
+
+[components."sulfur(s8)".cp_a]
+value = 89.990736
+unit = "J/(mol*K)"
+
+[components."sulfur(s8)".cp_b]
+value = 0.041428662
+unit = "J/(mol*K**2)"
+
+[components."sulfur(s8)".cp_c]
+value = 0.001475818
+unit = "J/(mol*K**3)"
+
+[components."sulfur(s8)".cp_d]
+value = -1.923e-06
+unit = "J/(mol*K**4)"
+
+[components."sulfur(s8)".cp_e]
+value = 7.465972e-10
+unit = "J/(mol*K**5)"
 
 [components."sulfuric acid".Tc]
 value = 924.0
@@ -1985,6 +5265,26 @@ unit = "Pa"
 value = 0.481623142957687
 unit = "dimensionless"
 
+[components."sulfuric acid".cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components."sulfuric acid".cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components."sulfuric acid".cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components."sulfuric acid".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."sulfuric acid".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.teg.Tc]
 value = 769.5
 unit = "K"
@@ -1996,6 +5296,26 @@ unit = "Pa"
 [components.teg.omega]
 value = 1.2874
 unit = "dimensionless"
+
+[components.teg.cp_a]
+value = 86.4
+unit = "J/(mol*K)"
+
+[components.teg.cp_b]
+value = 0.6008
+unit = "J/(mol*K**2)"
+
+[components.teg.cp_c]
+value = -0.0003622
+unit = "J/(mol*K**3)"
+
+[components.teg.cp_d]
+value = 7.2e-08
+unit = "J/(mol*K**4)"
+
+[components.teg.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.toluene.Tc]
 value = 591.79
@@ -2009,6 +5329,26 @@ unit = "Pa"
 value = 0.2641
 unit = "dimensionless"
 
+[components.toluene.cp_a]
+value = 32.141924
+unit = "J/(mol*K)"
+
+[components.toluene.cp_b]
+value = 0.029581212
+unit = "J/(mol*K**2)"
+
+[components.toluene.cp_c]
+value = 0.001110417
+unit = "J/(mol*K**3)"
+
+[components.toluene.cp_d]
+value = -1.551e-06
+unit = "J/(mol*K**4)"
+
+[components.toluene.cp_e]
+value = 6.393466e-10
+unit = "J/(mol*K**5)"
+
 [components.trans-12-dm-cy-c5.Tc]
 value = 553.0
 unit = "K"
@@ -2020,6 +5360,26 @@ unit = "Pa"
 [components.trans-12-dm-cy-c5.omega]
 value = 0.253
 unit = "dimensionless"
+
+[components.trans-12-dm-cy-c5.cp_a]
+value = -54.5
+unit = "J/(mol*K)"
+
+[components.trans-12-dm-cy-c5.cp_b]
+value = 0.7592
+unit = "J/(mol*K**2)"
+
+[components.trans-12-dm-cy-c5.cp_c]
+value = -0.000448
+unit = "J/(mol*K**3)"
+
+[components.trans-12-dm-cy-c5.cp_d]
+value = 1.01e-07
+unit = "J/(mol*K**4)"
+
+[components.trans-12-dm-cy-c5.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
 
 [components.trans-12-dm-cy-c6.Tc]
 value = 595.927001953
@@ -2033,6 +5393,26 @@ unit = "Pa"
 value = 0.3304
 unit = "dimensionless"
 
+[components.trans-12-dm-cy-c6.cp_a]
+value = -68.4
+unit = "J/(mol*K)"
+
+[components.trans-12-dm-cy-c6.cp_b]
+value = 0.8973
+unit = "J/(mol*K**2)"
+
+[components.trans-12-dm-cy-c6.cp_c]
+value = -0.0005137
+unit = "J/(mol*K**3)"
+
+[components.trans-12-dm-cy-c6.cp_d]
+value = 1.09e-07
+unit = "J/(mol*K**4)"
+
+[components.trans-12-dm-cy-c6.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.trans-13-dm-cy-c5.Tc]
 value = 553.0
 unit = "K"
@@ -2044,6 +5424,26 @@ unit = "Pa"
 [components.trans-13-dm-cy-c5.omega]
 value = 0.253
 unit = "dimensionless"
+
+[components.trans-13-dm-cy-c5.cp_a]
+value = -20.967908
+unit = "J/(mol*K)"
+
+[components.trans-13-dm-cy-c5.cp_b]
+value = 0.503312932
+unit = "J/(mol*K**2)"
+
+[components.trans-13-dm-cy-c5.cp_c]
+value = 0.000224727
+unit = "J/(mol*K**3)"
+
+[components.trans-13-dm-cy-c5.cp_d]
+value = -6.29e-07
+unit = "J/(mol*K**4)"
+
+[components.trans-13-dm-cy-c5.cp_e]
+value = 2.7943354e-10
+unit = "J/(mol*K**5)"
 
 [components.trans-14-dm-cy-c6.Tc]
 value = 589.817016601
@@ -2057,6 +5457,26 @@ unit = "Pa"
 value = 0.23398
 unit = "dimensionless"
 
+[components.trans-14-dm-cy-c6.cp_a]
+value = -68.4
+unit = "J/(mol*K)"
+
+[components.trans-14-dm-cy-c6.cp_b]
+value = 0.8973
+unit = "J/(mol*K**2)"
+
+[components.trans-14-dm-cy-c6.cp_c]
+value = -0.0005137
+unit = "J/(mol*K**3)"
+
+[components.trans-14-dm-cy-c6.cp_d]
+value = 1.09e-07
+unit = "J/(mol*K**4)"
+
+[components.trans-14-dm-cy-c6.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.trans-butene.Tc]
 value = 428.61
 unit = "K"
@@ -2069,6 +5489,26 @@ unit = "Pa"
 value = 0.21
 unit = "dimensionless"
 
+[components.trans-butene.cp_a]
+value = 46.42794352319999
+unit = "J/(mol*K)"
+
+[components.trans-butene.cp_b]
+value = -0.040657708422
+unit = "J/(mol*K**2)"
+
+[components.trans-butene.cp_c]
+value = 0.0007593596135339
+unit = "J/(mol*K**3)"
+
+[components.trans-butene.cp_d]
+value = -9.1251196305e-07
+unit = "J/(mol*K**4)"
+
+[components.trans-butene.cp_e]
+value = 3.3964568283e-10
+unit = "J/(mol*K**5)"
+
 [components.water.Tc]
 value = 647.3
 unit = "K"
@@ -2080,6 +5520,26 @@ unit = "Pa"
 [components.water.omega]
 value = 0.344
 unit = "dimensionless"
+
+[components.water.cp_a]
+value = 36.54003
+unit = "J/(mol*K)"
+
+[components.water.cp_b]
+value = -0.034802404
+unit = "J/(mol*K**2)"
+
+[components.water.cp_c]
+value = 0.000116811
+unit = "J/(mol*K**3)"
+
+[components.water.cp_d]
+value = -1.3e-07
+unit = "J/(mol*K**4)"
+
+[components.water.cp_e]
+value = 5.254448e-11
+unit = "J/(mol*K**5)"
 
 [[kij]]
 component_a = "1-propanol"

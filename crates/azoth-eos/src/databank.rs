@@ -94,6 +94,8 @@ pub struct ComponentOverride {
     pub pc: Option<f64>,
     /// Acentric factor, dimensionless.
     pub omega: Option<f64>,
+    /// The five ideal-gas heat-capacity coefficients, all or none.
+    pub cp: Option<[f64; 5]>,
 }
 
 impl ComponentOverride {
@@ -398,9 +400,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 tc: over.tc.unwrap_or_default(),
                 pc: over.pc.unwrap_or_default(),
                 omega: over.omega.unwrap_or_default(),
-                // A card supplies the parameters a cubic needs, and a polynomial is not
-                // one of them.
-                cp: None,
+                // The card may also supply the polynomial, in which case the substance
+                // has an enthalpy path; without it, it is a cubic only.
+                cp: over.cp,
             })
         }
         (Some(base), Some(over)) => Ok(Entry {
@@ -409,7 +411,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             tc: over.tc.unwrap_or(base.tc),
             pc: over.pc.unwrap_or(base.pc),
             omega: over.omega.unwrap_or(base.omega),
-            cp: base.cp,
+            cp: over.cp.or(base.cp),
             name: base.name,
         }),
     }

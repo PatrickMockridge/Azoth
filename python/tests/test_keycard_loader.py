@@ -124,14 +124,23 @@ def test_the_model_keys_are_the_schema_s_properties() -> None:
 
 
 def test_the_component_parameters_are_what_the_implementation_reads() -> None:
-    """Every parameter the keycard accepts must reach a `Component`.
+    """Every parameter the keycard accepts must reach a reader.
 
-    A parameter that the loader accepts and `Component` has no field for is a value
-    silently dropped - the exact failure the closed list exists to prevent.
+    The cubic parameters reach the mixture `Component`; the heat-capacity coefficients
+    reach the ideal-gas model, so they are the five the schema's name alone does not
+    promise. A parameter that reaches neither is a value silently dropped - the exact
+    failure the closed list exists to prevent.
     """
-    assert set(keycard.COMPONENT_PARAMETERS) == {"Tc", "Pc", "omega"}
+    assert {"Tc", "Pc", "omega"} == keycard.CUBIC_PARAMETERS
     fields = set(Component.__dataclass_fields__)
-    assert set(keycard.COMPONENT_PARAMETERS) <= fields
+    assert fields >= keycard.CUBIC_PARAMETERS
+    assert set(keycard.COMPONENT_PARAMETERS) - keycard.CUBIC_PARAMETERS == {
+        "cp_a",
+        "cp_b",
+        "cp_c",
+        "cp_d",
+        "cp_e",
+    }
 
 
 def test_component_parameters_mirror_the_single_declaration() -> None:
@@ -597,3 +606,29 @@ def test_a_card_reaches_the_physics() -> None:
 
     # And the ideal-gas model came from the same card, so an enthalpy would move too.
     assert shifted_gas.cp_a == shipped_gas.cp_a
+
+
+def test_a_card_component_with_a_polynomial_has_an_enthalpy() -> None:
+    """A card that adds a substance and its Cp polynomial reaches the enthalpy model.
+
+    A card-added substance is a cubic from `Tc`, `Pc` and `omega` alone, and before the
+    polynomial was part of the card `mixture_of` refused it - an enthalpy needs the
+    polynomial. The card now carries it, so the substance has both.
+    """
+    card = a_card(
+        components={
+            "unobtainium": {
+                "Tc": {"value": 500.0, "unit": "K"},
+                "Pc": {"value": 2_000_000.0, "unit": "Pa"},
+                "omega": {"value": 0.3, "unit": "dimensionless"},
+                "cp_a": {"value": 20.0, "unit": "J/(mol*K)"},
+                "cp_b": {"value": 0.1, "unit": "J/(mol*K**2)"},
+                "cp_c": {"value": 0.0, "unit": "J/(mol*K**3)"},
+                "cp_d": {"value": 0.0, "unit": "J/(mol*K**4)"},
+                "cp_e": {"value": 0.0, "unit": "J/(mol*K**5)"},
+            }
+        }
+    )
+    _, gas = eos.components.mixture_of(["unobtainium"], card=card)
+    assert gas.cp_a == (20.0,)
+    assert gas.cp_b == (0.1,)

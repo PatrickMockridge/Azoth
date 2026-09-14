@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import csv
 import io
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from functools import cache
 
@@ -220,13 +221,13 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
         return base
 
     if base is None:
-        missing = sorted(set(keycard.COMPONENT_PARAMETERS) - set(override))
+        missing = sorted(keycard.CUBIC_PARAMETERS - set(override))
         if missing:
             raise PropertyUnavailableError(
                 name,
                 "critical constants",
                 f"the keycard supplies {sorted(override)} but a cubic needs "
-                f"{sorted(keycard.COMPONENT_PARAMETERS)}; {missing} is missing. A "
+                f"{sorted(keycard.CUBIC_PARAMETERS)}; {missing} is missing. A "
                 f"partial component is refused rather than completed from a similar "
                 f"substance, which would be inventing data.",
             )
@@ -240,10 +241,9 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             molar_mass=None,
             critical_volume=None,
             liquid_density=None,
-            # A keycard supplies the parameters a *cubic* needs, and a polynomial is not
-            # one of them. `None` says so rather than a row of zeros standing in for a
-            # heat capacity - `mixture_of` is where a caller finds out, by name.
-            cp=None,
+            # The card may also supply the polynomial, in which case the substance has
+            # an enthalpy path; without it, it is a cubic only.
+            cp=_cp(override),
             citation=None,
             source="keycard",
         )
@@ -253,6 +253,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
         Tc=override.get("Tc", base.Tc),
         Pc=override.get("Pc", base.Pc),
         omega=_as_float(override["omega"], key) if "omega" in override else base.omega,
+        cp=_cp(override) or base.cp,
         source="keycard",
     )
 
@@ -270,6 +271,25 @@ def _as_float(value: Q, name: str) -> float:
             f"the acentric factor is a pure number, but got {value}",
         )
     return float(value.to("dimensionless").magnitude)
+
+
+def _cp(override: Mapping[str, Q]) -> tuple[float, float, float, float, float] | None:
+    """The five heat-capacity coefficients if the card states all of them, else `None`.
+
+    Each is already a quantity in its canonical unit, so the magnitude is the value the
+    ideal-gas model takes. A partial polynomial is refused at load, so a card that got
+    here names all five or none.
+    """
+    names = ("cp_a", "cp_b", "cp_c", "cp_d", "cp_e")
+    if all(name in override for name in names):
+        return (
+            float(override["cp_a"].magnitude),
+            float(override["cp_b"].magnitude),
+            float(override["cp_c"].magnitude),
+            float(override["cp_d"].magnitude),
+            float(override["cp_e"].magnitude),
+        )
+    return None
 
 
 def component(name: str, *, card: keycard.Keycard | None = None) -> Component:

@@ -205,6 +205,7 @@ fn a_card_added_substance_has_no_polynomial() {
             tc: Some(500.0),
             pc: Some(2.0e6),
             omega: Some(0.3),
+            ..Default::default()
         },
     );
     let added = databank::entry("unobtainium", Some(&overlay)).expect("the card adds it");
@@ -295,10 +296,29 @@ fn a_mixture_needs_a_polynomial() {
             tc: Some(500.0),
             pc: Some(2.0e6),
             omega: Some(0.3),
+            ..Default::default()
         },
     );
     let refused = databank::mixture_of(&["unobtainium"], Some(&overlay));
     assert!(refused.is_err(), "a mixture was built without a polynomial");
+}
+
+#[test]
+fn a_card_component_with_a_polynomial_has_an_enthalpy() {
+    let mut overlay = databank::Overlay::new();
+    overlay.set_component(
+        "unobtainium",
+        databank::ComponentOverride {
+            tc: Some(500.0),
+            pc: Some(2.0e6),
+            omega: Some(0.3),
+            cp: Some([20.0, 0.1, 0.0, 0.0, 0.0]),
+        },
+    );
+    let (_, ideal_gas) = databank::mixture_of(&["unobtainium"], Some(&overlay))
+        .expect("a card component with a polynomial has an enthalpy");
+    assert_eq!(ideal_gas.cp_a, vec![20.0]);
+    assert_eq!(ideal_gas.cp_b, vec![0.1]);
 }
 
 #[test]

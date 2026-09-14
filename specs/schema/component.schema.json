@@ -23,6 +23,36 @@
       "x-azoth-unit": "dimensionless",
       "x-azoth-column": "acentric_factor",
       "description": "Acentric factor."
+    },
+    "cp_a": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "J/(mol*K)",
+      "x-azoth-column": "cpa",
+      "description": "Ideal-gas heat-capacity constant term."
+    },
+    "cp_b": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "J/(mol*K**2)",
+      "x-azoth-column": "cpb",
+      "description": "Ideal-gas heat-capacity linear coefficient."
+    },
+    "cp_c": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "J/(mol*K**3)",
+      "x-azoth-column": "cpc",
+      "description": "Ideal-gas heat-capacity quadratic coefficient."
+    },
+    "cp_d": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "J/(mol*K**4)",
+      "x-azoth-column": "cpd",
+      "description": "Ideal-gas heat-capacity cubic coefficient."
+    },
+    "cp_e": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "J/(mol*K**5)",
+      "x-azoth-column": "cpe",
+      "description": "Ideal-gas heat-capacity quartic coefficient."
     }
   },
   "$defs": {

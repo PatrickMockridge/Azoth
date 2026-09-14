@@ -31,8 +31,16 @@ pub const SCHEMA_VERSION: i64 = 2;
 /// vocabulary of the same dimension is converted, and one of another dimension is
 /// refused. That stops a temperature being read as a pressure, which is a plausible
 /// wrong answer with no symptom.
-pub const COMPONENT_PARAMETERS: &[(&str, &str)] =
-    &[("Tc", "K"), ("Pc", "Pa"), ("omega", "dimensionless")];
+pub const COMPONENT_PARAMETERS: &[(&str, &str)] = &[
+    ("Tc", "K"),
+    ("Pc", "Pa"),
+    ("omega", "dimensionless"),
+    ("cp_a", "J/(mol*K)"),
+    ("cp_b", "J/(mol*K**2)"),
+    ("cp_c", "J/(mol*K**3)"),
+    ("cp_d", "J/(mol*K**4)"),
+    ("cp_e", "J/(mol*K**5)"),
+];
 
 /// The model vocabularies this build implements, each the only member it admits, and the
 /// same lists as the schema's enums. A shape is listed only when the code runs it.
@@ -291,6 +299,7 @@ fn resolve_components(
 
     for (name, parameters) in components {
         let mut override_ = ComponentOverride::default();
+        let mut cp = [None::<f64>; 5];
         for (parameter, body) in parameters {
             let field = format!("components.{name}.{parameter}");
             let Some((_, canonical)) = COMPONENT_PARAMETERS
@@ -315,7 +324,12 @@ fn resolve_components(
                 "Tc" => override_.tc = Some(value),
                 "Pc" => override_.pc = Some(value),
                 "omega" => override_.omega = Some(value),
-                // Unreachable: the lookup above admits these three and no others.
+                "cp_a" => cp[0] = Some(value),
+                "cp_b" => cp[1] = Some(value),
+                "cp_c" => cp[2] = Some(value),
+                "cp_d" => cp[3] = Some(value),
+                "cp_e" => cp[4] = Some(value),
+                // Unreachable: the lookup above admits these eight and no others.
                 other => {
                     return Err(AzothError::invalid_input(
                         field,
@@ -324,6 +338,17 @@ fn resolve_components(
                 }
             }
         }
+        // A polynomial is all five coefficients or none: three of five is not a
+        // polynomial, and it is not a value anything reads.
+        let has_all = cp.iter().all(Option::is_some);
+        if cp.iter().any(Option::is_some) && !has_all {
+            return Err(AzothError::invalid_input(
+                format!("components.{name}"),
+                "the heat-capacity polynomial needs all five of `cp_a` through `cp_e`, \
+                 or none of them",
+            ));
+        }
+        override_.cp = has_all.then(|| cp.map(|value| value.expect("checked present")));
         overlay.set_component(name, override_);
     }
     Ok(())
@@ -476,7 +501,16 @@ mod tests {
     /// Rust does not read the schema, so the expected list is written here and the
     /// Python-side test holds both to the schema. A parameter is added in all three
     /// places or none.
-    const DECLARED: &[(&str, &str)] = &[("Tc", "K"), ("Pc", "Pa"), ("omega", "dimensionless")];
+    const DECLARED: &[(&str, &str)] = &[
+        ("Tc", "K"),
+        ("Pc", "Pa"),
+        ("omega", "dimensionless"),
+        ("cp_a", "J/(mol*K)"),
+        ("cp_b", "J/(mol*K**2)"),
+        ("cp_c", "J/(mol*K**3)"),
+        ("cp_d", "J/(mol*K**4)"),
+        ("cp_e", "J/(mol*K**5)"),
+    ];
 
     #[test]
     fn component_parameters_match_the_declaration() {
