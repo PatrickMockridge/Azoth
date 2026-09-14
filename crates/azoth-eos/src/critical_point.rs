@@ -1,64 +1,19 @@
 //! `eos.critical_point` - the mixture critical point.
 //!
-//! Spec: `specs/models/eos/critical_point.yaml`
+//! Spec: `specs/models/eos/critical_point.yaml`, which carries the method, where this
+//! differs from NeqSim's implementation, what it is checked against and where it is least
+//! trustworthy.
 //!
-//! # What a critical point is, and why it is not where the spinodal closes
+//! A nested Newton on `(T, V)`, from Heidemann & Khalil (1980): an inner solve drives the
+//! **algebraically smallest** eigenvalue of the scaled Helmholtz Hessian
+//! ([`crate::mixture::Mixture::criticality_matrix`]) to zero at fixed volume, and an outer
+//! solve drives the cubic form along that eigenvalue's eigenvector to zero. Both conditions
+//! are evaluated at constant temperature and volume, so the state is `(T, V)` throughout: at
+//! a critical point the cubic is degenerate, and the pressure is taken from the volume
+//! through the explicit equation of state rather than from a root.
 //!
-//! For a pure component the critical point is where the cubic's three roots merge, and
-//! `dP/dV = d2P/dV2 = 0` finds it exactly. That route does **not** generalise, and the
-//! way it fails is worth stating because it is silent: in reduced variables those two
-//! conditions depend only on `(a_tilde, v)` and have a *single universal root*, so they
-//! predict the same `Z_c = 0.3074` for every mixture - exact for one component, wrong
-//! for all the rest, and wrong in a way its own name conceals. This model therefore
-//! implements the two conditions that do generalise, from Heidemann & Khalil (1980).
-//!
-//! # The two conditions
-//!
-//! At a fixed composition, with `Q` the scaled Helmholtz Hessian of
-//! [`crate::mixture::Mixture::criticality_matrix`]:
-//!
-//! 1. the **algebraically smallest** eigenvalue of `Q` vanishes;
-//! 2. the **cubic form** - the third derivative of the Helmholtz energy along the
-//!    eigenvector of that eigenvalue - vanishes.
-//!
-//! Both are evaluated at constant temperature and volume, so the state is `(T, V)` and
-//! this model works in `(T, V)` throughout rather than in `(T, P)`. That is not a
-//! detail: at a critical point the cubic is degenerate and its root is ill-conditioned,
-//! and solving for the pressure *from the volume* through the explicit equation of
-//! state avoids ever asking the cubic a question it cannot answer there.
-//!
-//! # Why the smallest eigenvalue and not `det(Q)`
-//!
-//! The determinant is the product of every eigenvalue, so it vanishes when *any* of
-//! them does - including ones whose vanishing is not criticality - and being a product
-//! it is badly scaled for a Newton step. The eigenvalue is the quantity whose vanishing
-//! is the condition. Note also "algebraically smallest" rather than "smallest in
-//! magnitude": the eigenvalue that crosses zero at a critical point is the one that
-//! goes from negative to positive, and below the critical point it is not the one
-//! nearest zero.
-//!
-//! # The cubic form, and where the `-1` comes from
-//!
-//! The cubic form is a central difference of the Hessian along the eigenvector, which
-//! needs no third-derivative tensor:
-//!
-//! ```text
-//! C(u) = sum_ijk u_i u_j u_k d3(A^R/RT)/dn_i dn_j dn_k  -  sum_i u_i**3 / n_i**2
-//! ```
-//!
-//! **The second sum is not optional.** `A^R` is the *residual* Helmholtz energy, and
-//! the ideal part's third derivative at constant volume is `delta_ijk / n_i**2`.
-//! Omitting it leaves a constant offset that is exactly `1` at unit composition - so a
-//! pure component's cubic form reads `1.000000000` at its critical point instead of
-//! zero, and the outer Newton converges on that offset rather than on the critical
-//! point.
-//!
-//! # The iteration
-//!
-//! Nested, as the published method describes: an inner Newton on `T` drives the
-//! eigenvalue to zero at fixed `V`, and an outer Newton on `V` drives the cubic form to
-//! zero. The eigenvector is re-derived at each state rather than carried, because the
-//! outer derivative is taken with the eigenvector that belongs to each perturbed state.
+//! The eigenvector is re-derived at each state rather than carried, because the outer
+//! derivative is taken with the eigenvector belonging to each perturbed state.
 
 use azoth_core::units::{ThermodynamicTemperature, pascals};
 use azoth_core::{AzothError, Result, apply_checks};
@@ -249,7 +204,13 @@ pub fn pressure_at_volume(
 /// ```
 ///
 /// evaluated at unit total moles, minus the ideal part's third derivative
-/// `sum_i u_i**3 / n_i**2`. See the module documentation for why that term is there.
+/// `sum_i u_i**3 / n_i**2`.
+///
+/// **That second sum is not optional.** `A^R` is the *residual* Helmholtz energy, and the
+/// ideal part's third derivative at constant volume is `delta_ijk / n_i**2`. Omitting it
+/// leaves a constant offset that is exactly `1` at unit composition, so a pure component's
+/// cubic form reads `1.000000000` at its own critical point instead of zero and the outer
+/// Newton converges on the offset rather than on the critical point.
 fn cubic_form(
     mixture: &Mixture,
     reduced: &ReducedParameters,

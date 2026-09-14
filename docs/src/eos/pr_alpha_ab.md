@@ -47,6 +47,10 @@ This is the one place in the registry where a value differs from what its own ci
 
 Nothing here says the paper's alpha function is this one, or that the paper's equation of state is the form written above. Those are claims about the source and no one has opened it. Reading the 1976 paper remains a human-blocked task - see `eos.pr_kappa`, whose notes carry it.
 
+#### Cross-language agreement
+
+Measured on the worked example: both implementations return bit-identical values for `alpha`, `a_reduced` and `b_reduced`. The arithmetic is `+ - * /` and `sqrt`, which IEEE-754 pins, so the agreement is expected rather than lucky - but a language's `x ** 2` lowering is not pinned, which is why the Rust side writes the square as `t * t` rather than `.powi(2)`, mirroring the Python side's `t ** 2`, and why this calc claims agreement within the tolerance above rather than bit-equality.
+
 ## Inputs
 
 | Name | Unit | Description |

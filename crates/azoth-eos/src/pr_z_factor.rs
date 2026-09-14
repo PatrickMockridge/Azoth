@@ -4,38 +4,12 @@
 //! z**3 - (1 - B)*z**2 + (A - 3*B**2 - 2*B)*z - (A*B - B**2 - B**3) = 0
 //! ```
 //!
-//! Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State."
-//! Ind. Eng. Chem. Fundam. 15(1), 59-64. DOI 10.1021/i160057a011
+//! Spec: `specs/calcs/eos/pr_z_factor.yaml`, which carries the provenance, the proof
+//! that the admissible root count is one or three, and what the answer does near the
+//! critical point.
 //!
-//! Spec: `specs/calcs/eos/pr_z_factor.yaml`
-//!
-//! # Which roots come back, and which do not
-//!
-//! The cubic has up to three real roots. This calc returns the **outermost two of
-//! those that are admissible**, where admissible means `z > B`: `z = B` is the
-//! zero-volume limit, and a root below it makes `\ln(z - B)` the logarithm of a
-//! negative number.
-//!
-//! The middle root is discarded. It is a genuine root of the polynomial and it is
-//! not a state the equation describes - it lies on the unstable branch between the
-//! spinodals. The spec's `the_middle_root_is_not_returned` test asserts it is
-//! absent rather than merely unmentioned.
-//!
-//! The two returned roots are named for their position in the ordered set, not as
-//! "liquid" and "vapour". Above the critical temperature there is one root and
-//! neither name is true, and a field called `z_liquid` holding a supercritical
-//! compressibility factor is a wrong answer that looks like a right one.
-//!
-//! # Near the critical point
-//!
-//! The constants exist to place a triple root at the critical point, and a triple
-//! root is cubically ill-conditioned. At `A = Omega_a, B = Omega_b` the polynomial
-//! stays within `1e-12` of zero across a window about `2e-4` wide in `z`, and
-//! changes sign repeatedly inside it on rounding noise alone - so every value in
-//! that window is a root as far as double precision can tell, and this calc cannot
-//! pin the last four digits. It also cannot *detect* that it is in that region,
-//! because the reduction happened two calcs upstream and it never sees `Tr` or
-//! `Pr`. The spec records this rather than bounding it; see its `assumptions`.
+//! This calc returns the outermost two roots that are admissible - `z > B` - and
+//! discards the middle one, which lies on the unstable branch between the spinodals.
 
 use azoth_core::solver::{Convergence, cubic_roots, require_cubic_converged};
 use azoth_core::{Result, apply_checks};
@@ -106,10 +80,12 @@ pub fn pr_z_factor(a_reduced: f64, b_reduced: f64) -> Result<PrZFactorResult> {
     );
     let outcome = require_cubic_converged(outcome, solver.tolerance)?;
 
-    // Admissible roots only. For `B > 0` there is always at least one: the
-    // polynomial equals `-2*B**2` at `z = B` and tends to positive infinity, so it
-    // crosses zero above `B`. An empty set would mean `B <= 0`, which the input
-    // checks have already refused.
+    // Admissible means `z > B`: `z = B` is the zero-volume limit, and a root below it
+    // makes `ln(z - B)` the logarithm of a negative number.
+    //
+    // For `B > 0` there is always at least one: the polynomial equals `-2*B**2` at
+    // `z = B` and tends to positive infinity, so it crosses zero above `B`. An empty
+    // set would mean `B <= 0`, which the input checks have already refused.
     let admissible: Vec<f64> = outcome
         .roots
         .iter()

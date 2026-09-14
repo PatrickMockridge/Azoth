@@ -93,10 +93,8 @@ pub struct PrZFactorResult {
     pub z_max: f64,
     /// How many admissible roots there were.
     pub root_structure: RootStructure,
-    /// Newton steps the polish took, summed over the roots. Carried because the
-    /// answer alone does not say whether the solver did any work, and because the
-    /// cross-language agreement test compares iteration counts as the sharpest
-    /// cheap check that both implementations ran the same scheme.
+    /// Newton steps the polish took, summed over the roots. Reported because the
+    /// answer alone does not say whether the solver did any work.
     pub iterations: u32,
     /// Whether the polish met its stopping rule.
     pub converged: bool,
@@ -233,14 +231,10 @@ impl Phase {
 ///
 /// At a trivial solution every `K_i` is 1, the Rachford-Rice function is identically
 /// zero, and the vapour fraction is **indeterminate** rather than merely outside
-/// `[0, 1]`. Successive substitution approaches the point through geometrically
-/// growing `beta`, and where a bisection stops on an identically-zero function is a
-/// ratio of round-off - measured at `-7.7e10` for one feed and `-2.2e11` for
-/// another, neither reproducible across implementations.
-///
-/// Reporting a number there would be reporting a fabrication that looks exactly like
-/// a real vapour fraction. `None` is the honest answer, and it is type-level: a
-/// caller cannot read it without noticing.
+/// `[0, 1]`: where a bisection stops on an identically-zero function is a ratio of
+/// round-off. Reporting a number there would be reporting a fabrication that looks
+/// exactly like a real vapour fraction. `None` is the honest answer, and it is
+/// type-level: a caller cannot read it without noticing.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PtFlashResult {
     /// The vapour fraction, or `None` when the solution is trivial.
@@ -438,9 +432,8 @@ impl StabilityVerdict {
 /// Two trials are run, always, so both are length two in a fixed order - the
 /// vapour-like trial first. A trial that converges to the feed itself still has a
 /// tangent-plane distance, and it is that near-zero number which is the evidence it
-/// was trivial; reporting only the trials that found something would throw away the
-/// only record of the ones that did not, and would make the vector's *index* mean
-/// something different on every state.
+/// was trivial; reporting only the trials that found something would make the
+/// vector's *index* mean something different on every state.
 #[derive(Debug, Clone, PartialEq)]
 pub struct StabilityTestResult {
     /// Whether the feed is stable as a single phase.
@@ -478,8 +471,7 @@ impl CalcResult for StabilityTestResult {
 ///
 /// Deliberately sharing a shape with [`DewPressureResult`] rather than one type
 /// with a switch: the two differ in *which* composition is the input, and a shared
-/// field would have to be named after neither. The flash's spec makes the same
-/// argument for two models rather than a `kind` argument.
+/// field would have to be named after neither.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BubblePressureResult {
     /// The bubble-point pressure.
@@ -717,10 +709,9 @@ impl CalcResult for PrZFactorResult {
 
 /// Result of `eos.critical_point`.
 ///
-/// The four state variables of a mixture critical point. `z_c` is here rather than left
-/// to the caller because it is the quantity that distinguishes this model from the
-/// mechanical conditions: a pure component's is `(1 - omega_b)/3`, a mixture's varies
-/// with composition, and the mechanical route cannot produce the second.
+/// The four state variables of a mixture critical point. `z_c` is here because it is the
+/// quantity that distinguishes this model from the mechanical conditions: a pure
+/// component's is `(1 - omega_b)/3`, and a mixture's varies with composition.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CriticalPointResult {
     /// The critical temperature.

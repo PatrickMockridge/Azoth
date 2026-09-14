@@ -34,6 +34,12 @@ notes: >
   nothing to convert. That also makes the symmetry structural, and NeqSim needs an
   explicit symmetrisation step because theirs is not.
 
+  **The ideal part of that Hessian is the constant-volume one.** `delta_ij / n_i`,
+  not the `delta_ij / n_i - 1/n` of the constant-pressure frame, where the `-1/n` is
+  the entropy of mixing. The pressure form shifts every diagonal entry by `-1`, and
+  at a pure component's critical point it would turn a quantity that should be zero
+  into exactly `-1`.
+
   **The pressure comes from the volume, not from the cubic.** NeqSim sets the volume
   and asks its phase object for the pressure through the cubic solver. A critical
   point is exactly where a cubic is degenerate - at `Tr = Pr = 1` the three roots

@@ -14,7 +14,7 @@ DOI: [10.1021/i160057a011](https://doi.org/10.1021/i160057a011)
 
 ## Notes
 
-The equilibrium condition is not in doubt: a pure component at saturation has equal fugacity in both phases, `ln phi_L = ln phi_V`, which is the definition of the saturation pressure rather than a correlation for it. The Peng-Robinson equation both fugacities come from is `eos.pr_z_factor` and `eos.pr_departure`, whose own notes apply here unchanged - this model adds a search, not a correlation.
+The equilibrium condition is not in doubt: a pure component at saturation has equal fugacity in both phases, `ln phi_L = ln phi_V`, which is the definition of the saturation pressure rather than a correlation for it. The Peng-Robinson equation both fugacities come from is `eos.pr_z_factor` and `eos.pr_departure`, whose own notes apply here unchanged - this model adds a search, not a correlation. **It re-implements none of it**: a second Peng-Robinson implementation in the model layer would be a third in the tree, untested and cross-checked by nothing, while the two that exist still claim to be the independent pair.
 
 What is ours and unverified: the **procedure**. The bracketing rule, the tolerance and the iteration cap are choices, not results, and no source states them because no source would. They are recorded here so a reader can judge the choices rather than having to reverse-engineer them:
 

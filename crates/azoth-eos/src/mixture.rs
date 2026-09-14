@@ -1,29 +1,12 @@
 //! Components, mixtures, and the arithmetic over them.
 //!
-//! This is the model layer's own arithmetic, and it is the one place in this crate
-//! where that is true. Everything else composes registered calculations; a mixture's
-//! fugacity coefficient is not a registered calculation, because `eos.pr_departure`
-//! covers a *pure* component and the registry is scalar - it has no composition
-//! vector to hang a mixture form on.
-//!
-//! # Why that is a mitigation and not a hole
-//!
-//! The mixture form is checked by *composition* rather than by assertion, and the
-//! reductions are exact rather than approximate:
-//!
-//! * **At `N = 1`** the cross-sum factor `2 * sum_j x_j A_ij / A - B_i / B` collapses
-//!   to `2 * A / A - 1 = 1`, so [`Mixture::phase_state`]'s `ln_phi` becomes exactly
-//!   `eos.pr_departure`'s. Tested in both languages.
-//! * **At `N = 2`** the mixture parameters must reproduce `eos.vdw1f_mix_binary` and
-//!   the vapour fraction must reproduce `eos.rachford_rice_binary`. Tested in both
-//!   languages, and the second is a *cross-layer* check no single-language test can
-//!   replace.
-//!
-//! Both reductions are to within a couple of ulps rather than bit-identical, and the
-//! reason is written down where it bites: the registered binary kernel evaluates
-//! `z1*z1*a1 + 2*z1*z2*(1 - k12)*sqrt(a1*a2) + z2*z2*a2` longhand, the mixture form
-//! sums `i` then `j`, and the two associate differently. A bit-equality claim here
-//! would be a claim about summation order rather than about the mixing rule.
+//! The model layer's own arithmetic: a mixture's fugacity coefficient is not a
+//! registered calculation, because `eos.pr_departure` covers a *pure* component and the
+//! registry is scalar, so there is no composition vector to hang a mixture form on.
+//! `eos.pt_flash`'s spec records the contract that keeps the two in step - at `N = 1`
+//! the mixture form must reduce to `eos.pr_departure`, and at `N = 2` the mixture
+//! parameters must reproduce `eos.vdw1f_mix_binary` and the vapour fraction
+//! `eos.rachford_rice_binary`.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
@@ -34,9 +17,7 @@ use crate::{pr_alpha_ab, pr_kappa, pr_z_factor};
 ///
 /// Selection is by *ordering* and never by an initial guess - the rule
 /// [`crate::pr_z_factor`] fixes, and the one the flash has to follow so that both
-/// implementations pick the same phase. A Newton iteration from a starting point
-/// selects a root by basin, which is a different and unstable rule; see that calc's
-/// module documentation.
+/// implementations pick the same phase.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RootSide {
     /// The smallest admissible root.
@@ -72,17 +53,14 @@ pub struct PhaseState {
     /// `sum_i sum_j z_i z_j A_ij (psi_i + psi_j)/2 / sum_i sum_j z_i z_j A_ij`.
     ///
     /// The composition-weighted average of the components' `psi`, weighted by the
-    /// attraction parameters. Reported because it is what makes the mixture departure
-    /// a departure at all, and because at `N = 1` it must equal that component's own
-    /// `psi` exactly - a test asserts it.
+    /// attraction parameters. At `N = 1` it equals that component's own `psi` exactly.
     pub psi_bar: f64,
 }
 
 /// One component's critical constants.
 ///
-/// A caller-supplied record, and deliberately carrying **no name**: if a name were
-/// here, something would eventually use it to look a value up, and "this library
-/// ships no component databank" is worth more than a nicer `Debug` output.
+/// A caller-supplied record, and deliberately carrying **no name**: a name would
+/// invite a lookup rather than a value the caller supplied.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Component {
     /// Critical temperature.
@@ -465,14 +443,11 @@ impl Mixture {
 
     /// `d2(A^R/RT)/dn_i dn_j` at constant temperature and **volume**.
     ///
-    /// Not at constant pressure, and the difference is the whole reason this exists
-    /// rather than being one more derivative of [`Self::phase_state_at`]. The
-    /// Hessian of the Helmholtz energy is the quantity every criticality condition
-    /// is written in, because its vanishing is what separates a stable phase from a
-    /// metastable one, and it is only the Helmholtz Hessian that has that meaning.
-    /// A constant-pressure composition derivative answers a different question, and
-    /// converting between the two frames needs two further derivative families and
-    /// a partial-molar-volume correction that this avoids entirely.
+    /// Not at constant pressure: the Hessian every criticality condition is written in
+    /// is the Helmholtz one, because its vanishing is what separates a stable phase from
+    /// a metastable one. A constant-pressure composition derivative answers a different
+    /// question, and converting between the two frames needs two further derivative
+    /// families and a partial-molar-volume correction that this avoids entirely.
     ///
     /// **Everything is dimensionless**, like the rest of the `eos` core:
     /// `a_i/(R T V)` is `A_i/Z` and `b_i/V` is `B_i/Z`, so the reduced parameters
@@ -481,9 +456,8 @@ impl Mixture {
     ///
     /// With `b = sum_i n_i B_i/Z`, `L = ln(1 - b)` and
     /// `G = ln((1 + (1+sqrt2)b)/(1 + (1-sqrt2)b))`, every term below is one of those
-    /// three differentiated once or twice. They are written out because a factored
-    /// form would hide which derivative each term came from, and this is the piece
-    /// of the critical point most likely to be got wrong.
+    /// three differentiated once or twice, written out rather than factored so that
+    /// each term still shows which derivative it came from.
     ///
     /// # Errors
     /// * [`AzothError::InvalidInput`] if `n` is not one entry per component.
@@ -545,12 +519,9 @@ impl Mixture {
     /// ```
     ///
     /// at constant temperature and volume, the **total** Helmholtz energy rather than
-    /// the residual one. The ideal part of that Hessian at constant volume is
-    /// `delta_ij / n_i` - not the `delta_ij/n_i - 1/n` that appears in the
-    /// constant-pressure frame, where the `-1/n` is the entropy of mixing. Using the
-    /// pressure form here shifts every diagonal entry by `-1`, and at a pure
-    /// component's critical point it turns a quantity that should be zero into
-    /// exactly `-1`.
+    /// the residual one. Its ideal part is `delta_ij / n_i`, the constant-volume form;
+    /// the model spec's notes record the constant-pressure alternative and what taking
+    /// it here would cost.
     ///
     /// **The scaling by `sqrt(n_i n_j)` is not decoration.** A Maxwell relation makes
     /// the Hessian symmetric already; the scaling makes that symmetry *structural*
@@ -663,16 +634,13 @@ impl Mixture {
 ///
 /// `K_i = (Pc_i / P) * exp(5.373 * (1 + omega_i) * (1 - Tc_i / T))`.
 ///
-/// The constant is 5.373. Some sources print 5.37 and the paper is dated 1968 in
-/// some and 1969 in others; the discrepancy is recorded in the specs' references
-/// rather than resolved, because a reader meeting the other value needs to know it
-/// is the same correlation and not a correction.
+/// The constant is 5.373, quoted as 5.37 in some sources; the discrepancy is recorded
+/// in the references of `specs/models/eos/pt_flash.yaml` rather than resolved, because
+/// a reader meeting the other value needs to know it is the same correlation.
 ///
-/// Here rather than in either model that uses it, because two do: `eos.pt_flash`
-/// seeds its iteration with it, and `eos.stability_test` seeds *both* of its trials
-/// with it - the vapour-like one from `z_i K_i` and the liquid-like one from
-/// `z_i / K_i`. A second copy would be a second place for the constant to drift, and
-/// the two models' answers are compared against each other.
+/// Shared by the two models that use it: `eos.pt_flash` seeds its iteration with it,
+/// and `eos.stability_test` seeds *both* of its trials with it - the vapour-like one
+/// from `z_i K_i` and the liquid-like one from `z_i / K_i`.
 pub(crate) fn wilson_k(mixture: &Mixture, t: ThermodynamicTemperature, p: Pressure) -> Vec<f64> {
     mixture
         .components()

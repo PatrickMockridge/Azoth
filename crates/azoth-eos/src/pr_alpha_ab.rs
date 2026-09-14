@@ -6,29 +6,9 @@
 //! b_reduced = Omega_b * Pr / Tr
 //! ```
 //!
-//! Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State."
-//! Ind. Eng. Chem. Fundam. 15(1), 59-64. DOI 10.1021/i160057a011
-//!
-//! Spec: `specs/calcs/eos/pr_alpha_ab.yaml`
-//!
-//! # Why the Omega constants are not the printed ones
-//!
-//! The paper prints `Omega_a = 0.45724` and `Omega_b = 0.07780`. Those are
-//! roundings, and using them makes the cubic fail its own critical point: at
-//! `Tr = Pr = 1` the equation's real root comes out 0.321379025174 instead of
-//! Peng-Robinson's critical compressibility 0.307401308699 - an error of 4.55%,
-//! exactly where the equation is supposed to be anchored.
-//!
-//! The cause is conditioning. The constants exist to place a *triple* root at the
-//! critical point, and a triple root is cubically ill-conditioned: perturbing the
-//! coefficients by `epsilon` moves the roots by about `epsilon**(1/3)`. A
-//! rounding error of 5e-6 in `Omega_b` therefore moves the critical root by
-//! around 1.7e-2.
-//!
-//! So this module carries the full-precision pair. They are not transcribed from
-//! anywhere - they are the unique solution of the triple-root condition, which is
-//! the check `every_omega_is_the_triple_root_solution` in this crate's tests
-//! performs. See the spec's `notes` for what remains unconfirmed.
+//! Spec: `specs/calcs/eos/pr_alpha_ab.yaml`, which carries the provenance, the
+//! derivation of the two Omega constants from the triple-root condition, and what is
+//! not claimed about the source.
 
 use azoth_core::{Result, apply_checks};
 
@@ -37,9 +17,9 @@ use crate::spec_gen;
 
 /// `Omega_a`, the attraction constant of the Peng-Robinson cubic.
 ///
-/// Full precision, and load-bearing - see the module documentation. The paper
-/// prints `0.45724`, which is this rounded, and which puts the cubic's critical
-/// point 4.55% out.
+/// Full precision, and load-bearing: the paper prints `0.45724`, which is this
+/// rounded, and which puts the cubic's critical point 4.55% out. See the spec's
+/// `notes`.
 pub const OMEGA_A: f64 = 0.4572355289213822;
 
 /// `Omega_b`, the repulsion constant of the Peng-Robinson cubic.
@@ -94,13 +74,6 @@ pub fn pr_alpha_ab(kappa: f64, Tr: f64, Pr: f64) -> Result<PrAlphaAbResult> {
     // Written as `t * t` rather than `.powi(2)` to mirror the Python side's
     // `t ** 2`, following the same convention `darcy_weisbach` uses for
     // `v**2`/`v * v`.
-    //
-    // Measured: the two backends produce bit-identical results for all three
-    // outputs on the worked example, as they do for `darcy_weisbach`. That is not
-    // *guaranteed* - IEEE-754 pins `+ - * /` and `sqrt`, and does not pin what a
-    // language's `x ** 2` lowering does - so this calc claims agreement within the
-    // spec's tolerance and not bit-equality. The measurement is recorded because a
-    // claim that is true but unstated is worth less than one that is checked.
     let attraction = 1.0 + kappa * (1.0 - Tr.sqrt());
     let alpha = attraction * attraction;
     // Guarded by the checks above, so Tr is positive here.

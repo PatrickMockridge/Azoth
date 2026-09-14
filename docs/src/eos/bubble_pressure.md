@@ -50,6 +50,8 @@ The threshold is not arbitrary and it is not tight, and the measurement behind i
 
 The gap spans six orders of magnitude and 1e-2 sits in the middle of it. A tighter threshold would be nearer the degenerate cluster for no gain; a looser one would start refusing genuine bubble points near the critical region, where the K-values legitimately approach 1.
 
+**The flash's guard is `1e-08` and the difference is not an inconsistency.** It follows from the two convergence tests. `eos.pt_flash` stops on the change in `ln K` itself, so when it lands on the trivial solution the K-values have stopped moving *because they are* 1, and a tight guard catches it there. This iteration stops on `S - 1`, which cancels, so the K-values can still be `1e-6` from 1 when its residual test fires - a `1e-08` guard here would sit below that and never trigger. `eos.dew_pressure` shares the test and the constant.
+
 **The residual is not a substitute and it is worth saying why.** The first measurement taken here was of `max_i |ln K_i|` at the step the residual test fires, which suggested the degenerate cluster topped out at `9.1e-04`. That was an artefact of a guard at `1e-3` having already stopped the iteration early: with no guard at all the same states run on to `1e-06`. Measuring where a state *ends up* rather than what it *passes through* is how a threshold gets set one order of magnitude too loose.
 
 A mixture **above its critical pressure at this temperature has no bubble point**, and this is the model's way of saying so. It refuses with `OutOfRange` naming `min_t_over_tc` - the same shape `eos.pure_saturation` uses for `T >= Tc`, and for the same reason: the state asked for does not exist.

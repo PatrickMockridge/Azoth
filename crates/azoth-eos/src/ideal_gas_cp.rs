@@ -4,24 +4,9 @@
 //! Cp/R = a + b*theta + c*theta**2 + d*theta**3,   theta = T / (1000 K)
 //! ```
 //!
-//! Spec: `specs/calcs/eos/ideal_gas_cp.yaml`
-//!
-//! # The coefficients are the caller's, and that is the point
-//!
-//! This is the first calc in this namespace whose constants are *fitted data* rather
-//! than published coefficients of an equation. A table of them is exactly the
-//! component databank this library has decided not to have, so the four arrive as
-//! arguments and none ship. The same decision keeps `Cd`, `Cv`, `f_T`, `k_ij` and
-//! `kappa_1` out.
-//!
-//! # Why `T/(1000 K)` rather than `T`
-//!
-//! Because that is the substitution which makes the polynomial dimensionless. A
-//! published table gives `Cp/R = A + B T + C T**2 + D T**3` with `T` in kelvin and
-//! prints `B`, `C`, `D` already multiplied by `10**3`, `10**6` and `10**9` - exactly
-//! so that all four numbers come out dimensionless - and against `theta = T/(1000 K)`
-//! those printed numbers are the coefficients. A caller copies them across unchanged,
-//! and this calc needs no unit for a polynomial coefficient at all.
+//! Spec: `specs/calcs/eos/ideal_gas_cp.yaml`, which carries why the four coefficients
+//! are the caller's, the derivation of the `T/(1000 K)` substitution, and the warning
+//! a non-positive `Cp` carries.
 
 use azoth_core::units::{ThermodynamicTemperature, joules_per_mole_kelvin};
 use azoth_core::{Result, apply_checks};
@@ -82,6 +67,8 @@ pub fn ideal_gas_cp(
         &mut warnings,
     )?;
 
+    // `theta = T/(1000 K)` is the substitution that makes a published table's four
+    // printed numbers dimensionless, so a caller copies them across unchanged.
     let theta = t.value / REFERENCE_TEMPERATURE;
     let cp_over_r = a + b * theta + c * theta * theta + d * theta * theta * theta;
     let cp = cp_over_r * MOLAR_GAS_CONSTANT;

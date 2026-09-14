@@ -2,35 +2,14 @@
 //!
 //! Spec: `specs/models/eos/ph_flash.yaml`
 //!
-//! # The procedure is an outer solve over two things that already exist
-//!
-//! The enthalpy of a mixture at a pressure is a **strictly increasing** function of
-//! temperature, which is what makes a bisection well posed, and it is assembled from
-//! parts this crate already has: the phase split at a trial temperature, from
-//! [`crate::pt_flash`], and each phase's enthalpy, from [`crate::molar_enthalpy_entropy`].
-//!
-//! ```text
-//! H(T) = (1 - beta) * H_liquid(x, Z_l) + beta * H_vapour(y, Z_v)
-//! ```
-//!
-//! A single-phase state is the same expression with the whole of it on one side, and the
-//! root that describes that phase. It is deliberately *not* expressed through `beta`
-//! there: the flash reports a `beta` outside `[0, 1]` for a single-phase feed - it is the
-//! extrapolated split, not a physical one - and multiplying an enthalpy by 1.888 would
-//! be a wrong answer shaped exactly like a right one.
-//!
-//! # The mirror
-//!
-//! `python/src/azoth/eos/reference/ph_flash.py` runs the same procedure, and
-//! `python/tests/models/test_ph_flash.py` compares them case by case with the
-//! **iteration counts required to match**. That is why the scan is a fixed one over the
-//! spec's bracket rather than an adaptive expansion: two expansions that stop at
-//! different points take different numbers of steps, and this project treats that as a
-//! disagreement rather than a detail.
+//! An outer bisection on temperature, over the enthalpy assembled from two things this
+//! crate already has: the phase split at a trial temperature, from [`crate::pt_flash`],
+//! and each phase's enthalpy, from [`crate::molar_enthalpy_entropy`]. The enthalpy rises
+//! monotonically with temperature at a fixed pressure, which is what makes the bisection
+//! well posed.
 //!
 //! The bracket, the loop and the phase branch live in [`crate::flash_property`], shared
-//! with `eos.ps_flash`. What is here is the enthalpy half: which property is summed, and
-//! what the result means.
+//! with `eos.ps_flash`.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, kelvins};
 use azoth_core::{Result, apply_checks};

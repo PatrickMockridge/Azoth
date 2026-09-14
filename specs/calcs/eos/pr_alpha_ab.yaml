@@ -67,6 +67,16 @@ notes: >
   source and no one has opened it. Reading the 1976 paper remains a
   human-blocked task - see `eos.pr_kappa`, whose notes carry it.
 
+  # Cross-language agreement
+
+  Measured on the worked example: both implementations return bit-identical values
+  for `alpha`, `a_reduced` and `b_reduced`. The arithmetic is `+ - * /` and `sqrt`,
+  which IEEE-754 pins, so the agreement is expected rather than lucky - but a
+  language's `x ** 2` lowering is not pinned, which is why the Rust side writes the
+  square as `t * t` rather than `.powi(2)`, mirroring the Python side's `t ** 2`,
+  and why this calc claims agreement within the tolerance above rather than
+  bit-equality.
+
 
 inputs:
   kappa:

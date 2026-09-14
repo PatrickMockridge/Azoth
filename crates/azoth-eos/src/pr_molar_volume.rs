@@ -4,31 +4,9 @@
 //! v = z*R*T/P
 //! ```
 //!
-//! Spec: `specs/calcs/eos/pr_molar_volume.yaml`
-//!
-//! # The one dimensional calc in this namespace
-//!
-//! Everything else in `azoth-eos` is reduced variables and constitutive
-//! coefficients, deliberately unit-free. This is where a compressibility factor
-//! becomes a volume, and it is therefore the only calc here that takes a
-//! temperature, a pressure, and a unit that is not `dimensionless` - it is what
-//! made `m**3/mol` the seventeenth entry in the vocabulary.
-//!
-//! # The gas constant is exact
-//!
-//! Since the 2019 SI redefinition both constants in `R = N_A * k_B` are exact by
-//! definition, so their product is a defined value rather than a measurement. This
-//! module computes it from the two constants rather than carrying a literal, so the
-//! arithmetic shows where it comes from - the same argument `pump_power` makes for
-//! the standard gravity. The commonly quoted `8.314462618` is that value truncated.
-//!
-//! # Evaluation order
-//!
-//! Written `z * R * T / P`, left to right, because that is the order the equation
-//! gives and it is the order the Python side uses. It matters, and only just:
-//! evaluating it as `z * (R * T / P)` is bit-identical for a vapour root and
-//! one-ulp-different for a liquid one, because the grouping changes which rounding
-//! happens first. The spec records the comparison.
+//! Spec: `specs/calcs/eos/pr_molar_volume.yaml`, which carries why this is the one
+//! dimensional calc in the namespace, why the gas constant is computed from its two
+//! defining constants, and why the evaluation order matters.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature, cubic_meters_per_mole};
 use azoth_core::{Result, apply_checks};
@@ -86,8 +64,8 @@ pub fn pr_molar_volume(
         &mut warnings,
     )?;
 
-    // Written in the equation's own order - see the module documentation for why
-    // the order is stated rather than incidental.
+    // Written in the equation's own order, left to right; the spec's worked example
+    // records why the order is stated rather than incidental.
     let v = z * MOLAR_GAS_CONSTANT * T.value / P.value;
 
     apply_checks(

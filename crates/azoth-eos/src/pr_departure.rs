@@ -8,44 +8,9 @@
 //! s_dep_r  = ln(z - B) + C*psi*I          where C = A / (2*sqrt(2)*B)
 //! ```
 //!
-//! Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State."
-//! Ind. Eng. Chem. Fundam. 15(1), 59-64. DOI 10.1021/i160057a011
-//!
-//! Spec: `specs/calcs/eos/pr_departure.yaml`
-//!
-//! # The Gibbs identity
-//!
-//! `h_dep_rt - s_dep_r` equals `ln_phi`, exactly, in real arithmetic - the two
-//! `psi` terms cancel:
-//!
-//! ```text
-//! (z - 1) + C*(psi - 1)*I - ln(z - B) - C*psi*I
-//!   = (z - 1) - ln(z - B) - C*I
-//!   = ln_phi
-//! ```
-//!
-//! For a pure component that is not a coincidence: the departure Gibbs energy
-//! divided by `RT` **is** the logarithm of the fugacity coefficient, because
-//! `G = H - TS`. So the identity is a consequence of what the three functions mean,
-//! and any disagreement between them is rounding rather than a residual to be
-//! tolerated.
-//!
-//! That is what makes it the strongest test here. A sign error in either departure
-//! function leaves `ln_phi` untouched and moves the other to a value that is still
-//! entirely plausible as an enthalpy or entropy departure - the point-value cases
-//! would not necessarily notice. The identity does.
-//!
-//! # What this calc cannot check
-//!
-//! `z` must be a root of the cubic that `A` and `B` define, and `kappa` and `Tr`
-//! must describe the same state. Neither is checkable here - the cubic is solved by
-//! [`crate::pr_z_factor`], and the state is the caller's - so a mismatched input set
-//! produces departure functions that are internally consistent and describe a state
-//! that does not exist. The spec records both as assumptions.
-//!
-//! The failure is quieter for `kappa` and `Tr` than for `z`: they enter only through
-//! `psi`, so a stale coefficient shifts the enthalpy and entropy departures without
-//! touching `ln_phi` at all.
+//! Spec: `specs/calcs/eos/pr_departure.yaml`, which carries the provenance, the
+//! derivation of the Gibbs identity `h_dep_rt - s_dep_r = ln_phi`, and the assumptions
+//! about `z`, `kappa` and `Tr` this calc cannot check.
 
 use azoth_core::{Result, apply_checks};
 

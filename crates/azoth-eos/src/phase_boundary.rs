@@ -1,56 +1,12 @@
 //! The pressure iteration `eos.bubble_pressure` and `eos.dew_pressure` share.
 //!
+//! Specs: `specs/models/eos/bubble_pressure.yaml` and `specs/models/eos/dew_pressure.yaml`
+//!
 //! Both models ask the same question with the phases exchanged: *given one phase's
 //! composition, at what pressure does the other phase appear?* Their equations differ,
-//! `sum_i x_i K_i = 1` against `sum_i y_i / K_i = 1`, but the loop, the initialisation,
-//! the update, the tolerance and the guard against the trivial solution are one piece
-//! of code run in two directions - and writing them twice would be writing the guard
-//! twice.
-//!
-//! # The update, and why the two directions are not symmetric
-//!
-//! The rule in both is one sentence: **if there is too much of the incipient phase,
-//! move away from it.**
-//!
-//! - A bubble point's incipient phase is vapour, `S = sum_i x_i K_i` is how much
-//!   vapour the liquid would give off, and `S > 1` means too much - so the pressure
-//!   rises, `P <- P * S`.
-//! - A dew point's is liquid, `S = sum_i y_i / K_i` is how much liquid the vapour
-//!   would condense, and `S < 1` means too *little* - so the pressure rises here
-//!   too, and `P / S` is what raises it.
-//!
-//! Measured with the dew update's sign inverted, before this was written down: the
-//! dew point of methane/n-butane at 300 K ran down to `P = 3.6e-07` Pa over nine
-//! iterations and then failed inside [`crate::pr_z_factor`], because the pressure had
-//! gone to zero rather than to the answer.
-//!
-//! # The trivial solution
-//!
-//! `S = 1` has two kinds of solution. One is the boundary this model is looking for.
-//! The other is `K_i = 1` for every `i`, which satisfies it at *every* pressure
-//! because `sum_i x_i = 1` and `sum_i y_i = 1` identically - and which the iteration
-//! converges to whenever the composition has no boundary at this temperature,
-//! because that state is a fixed point of the update rule and the physical one is
-//! not there to attract it.
-//!
-//! **The residual cannot detect it, and that is the point worth recording.**
-//! `S - 1 = sum_i x_i (K_i - 1)` is a weighted sum whose terms cancel: measured, a
-//! state with no bubble point reached `K = (1.000000375, 0.999999724, 0.999999476)`,
-//! deviations of order `1e-7`, and `S - 1` came out at `1.5e-13` - inside a tolerance
-//! of `1e-12`. A convergence test on `S` alone accepts the trivial solution silently
-//! and returns a pressure that looks entirely plausible.
-//!
-//! So the guard is on the K-values. [`TRIVIAL_TOLERANCE`] carries the measurement
-//! behind the constant.
-//!
-//! # Why this threshold is `1e-2` and the flash's is `1e-8`
-//!
-//! They are not inconsistent, and the difference is a consequence of the two
-//! convergence tests. A flash stops on the change in `ln K` itself, so when it lands
-//! on the trivial solution the K-values have stopped moving *because they are* 1 -
-//! a tight guard catches it. This iteration stops on `S - 1`, which cancels, so the
-//! K-values can still be `1e-6` from 1 when it fires. A `1e-8` guard here would sit
-//! below the noise and never trigger.
+//! `sum_i x_i K_i = 1` against `sum_i y_i / K_i = 1`, and everything else - the
+//! initialisation, the update, the tolerance and the guard against the trivial solution
+//! - is one piece of code run in two directions.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
@@ -61,20 +17,12 @@ use crate::model_gen;
 
 /// The `max_i |ln K_i|` below which the two phases have merged.
 ///
-/// Not tight, and deliberately. The measurement is not of where the two kinds of
-/// state *end up* - a degenerate one drives `max_i |ln K_i|` smoothly through every
-/// value on its way down - but of the lowest value each reaches at any point in its
-/// iteration, which is what a threshold has to clear:
-///
-/// * every state with a genuine boundary kept `max_i |ln K_i| >= 1.30` at **every**
-///   step, across the binaries and the ternary in the test files;
-/// * every state with no boundary drove it below `1e-06` before its residual test
-///   could fire.
-///
-/// So the gap spans six orders of magnitude and this sits in the middle of it. A
-/// tighter threshold would be nearer the degenerate cluster for no gain; a looser one
-/// would start refusing genuine boundaries near the critical region, where the
-/// K-values legitimately approach 1.
+/// Not tight, and deliberately. The guard is on the K-values because `S - 1` is a
+/// weighted sum whose terms cancel, so it can sit inside the convergence tolerance
+/// while the K-values are still far from one; and the threshold has to clear the lowest
+/// value a genuine boundary reaches at any step, not the value a degenerate state ends
+/// at. The measurements behind the constant, and why it is `1e-2` here and `1e-8` in
+/// the flash, are in `specs/models/eos/bubble_pressure.yaml`.
 pub const TRIVIAL_TOLERANCE: f64 = 1.0e-02;
 
 /// Wilson's constant, shared with [`crate::pt_flash`]'s initialisation.
@@ -241,7 +189,7 @@ pub fn phase_boundary_pressure(
 
         // Checked before the update, and on the K-values rather than on the
         // residual: `S - 1` cancels, so it is small here long before the K-values
-        // are near 1. See the module documentation.
+        // are near 1. See [`TRIVIAL_TOLERANCE`].
         if k.iter().all(|value| value.ln().abs() < TRIVIAL_TOLERANCE) {
             return Err(AzothError::OutOfRange {
                 field: "min_t_over_tc".to_string(),
@@ -294,8 +242,10 @@ pub fn phase_boundary_pressure(
             });
         }
 
-        // Too much incipient phase means move away from it; which direction that is
-        // differs between the two, and the derivation is in the module docs.
+        // Too much incipient phase means move away from it: for a bubble point `S` is
+        // how much vapour the liquid would give off, so `S > 1` is too much and `P * S`
+        // raises the pressure; for a dew point `S` is how much liquid the vapour would
+        // condense, so `S < 1` is too little and `P / S` raises it.
         pressure = match incipient {
             Incipient::Vapour => pressure * s,
             Incipient::Liquid => pressure / s,

@@ -39,12 +39,12 @@ the whole chain.
 
 # Where the components come from
 
-Nowhere, deliberately. There is **no component databank** in this library: every
-pure-component constant - the acentric factor here, and the critical temperature
-and pressure that go with it - is supplied by the caller. A databank is a
-licensing and provenance problem as much as a data problem, and shipping one is a
-decision worth making on its own rather than in passing. The same reasoning
-already governs the fitting coefficients in :mod:`azoth.hydraulics`.
+:mod:`azoth.eos.components` ships a databank: 173 substances read from
+``data/components/components.csv``, generated from NeqSim (Apache-2.0) by
+``tools/gen_databank.py`` and attributed in ``NOTICE``. Every pure-component
+constant is still an argument - the acentric factor here, and the critical
+temperature and pressure that go with it - so the databank is a default a caller
+can replace, and nothing checks that a caller's values agree with it.
 
 # Dimensionless by construction
 

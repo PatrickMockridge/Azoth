@@ -78,6 +78,14 @@ notes: >
   would start refusing genuine bubble points near the critical region, where the
   K-values legitimately approach 1.
 
+  **The flash's guard is `1e-08` and the difference is not an inconsistency.** It
+  follows from the two convergence tests. `eos.pt_flash` stops on the change in
+  `ln K` itself, so when it lands on the trivial solution the K-values have stopped
+  moving *because they are* 1, and a tight guard catches it there. This iteration
+  stops on `S - 1`, which cancels, so the K-values can still be `1e-6` from 1 when
+  its residual test fires - a `1e-08` guard here would sit below that and never
+  trigger. `eos.dew_pressure` shares the test and the constant.
+
   **The residual is not a substitute and it is worth saying why.** The first
   measurement taken here was of `max_i |ln K_i|` at the step the residual test
   fires, which suggested the degenerate cluster topped out at `9.1e-04`. That was

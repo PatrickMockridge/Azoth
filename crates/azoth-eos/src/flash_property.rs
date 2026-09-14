@@ -1,17 +1,11 @@
 //! Inverting a molar property for temperature, at a fixed pressure.
 //!
-//! The machinery behind [`crate::ph_flash`] and [`crate::ps_flash`], which differ in
-//! exactly one thing: whether the property being inverted is the enthalpy or the
+//! The shared machinery behind [`crate::ph_flash`] and [`crate::ps_flash`], which differ
+//! in exactly one thing: whether the property being inverted is the enthalpy or the
 //! entropy. Everything else - how the state at a trial temperature is assembled, why the
 //! bracket is a scan, why the answer is narrowed on the temperature rather than on the
-//! property, why the warnings are deduplicated - is the same for both, and it is subtle
-//! enough that writing it twice would invite the two copies to disagree.
-//!
-//! The precedent is [`crate::phase_boundary`], shared by `eos.bubble_pressure` and
-//! `eos.dew_pressure` because the guard against the trivial solution has to be written
-//! once. The same argument applies here, and it is stronger for the single-phase branch
-//! below: a feed that is entirely one phase has no vapour fraction, and the flash's
-//! value for it is an *extrapolation* rather than a number anybody should use.
+//! property, why the warnings are deduplicated - is the same for both, and subtle enough
+//! that writing it twice would invite the two copies to disagree.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature, kelvins};
 use azoth_core::{AzothError, Result, Warning};
@@ -74,13 +68,9 @@ pub fn property_at(
             (1.0 - beta) * which.of(&liquid) + beta * which.of(&vapour)
         }
         // One phase, so the whole feed is in it and *its* root describes it. `beta` is
-        // deliberately unused - the flash's value there is an extrapolation - and so are
-        // `z_liquid`/`z_vapour`, which belong to the extrapolated phase compositions.
-        // Reading the root from one of those is what made `H(T)` discontinuous: where the
-        // flash reports a negative flash its phase composition is not a state, its cubic
-        // root is a different number from the feed's, and the step between the two showed
-        // up as a hundred kelvin's worth of enthalpy - so `eos.ph_flash` inverted a
-        // function with a jump in it and `process.heater` returned a wrong temperature.
+        // deliberately unused - the flash's value there is an extrapolation rather than a
+        // split - and so are `z_liquid`/`z_vapour`, which belong to the extrapolated
+        // phase compositions and not to the feed.
         _ => {
             let side = if flash.phase == Phase::AllLiquid {
                 RootSide::Liquid
@@ -106,21 +96,15 @@ pub fn property_at(
 ///
 /// Some `(T, P)` pairs on the scan have no admissible liquid root: the cubic's smallest
 /// root falls below the mixture's `B`, so `ln(Z - B)` is the logarithm of a negative
-/// number and the state does not exist. That is not rare and it is not confined to the
-/// ends of the range - on methane/n-butane at 15 bar it happens at 160 K and nowhere
-/// else between 100 K and 400 K.
-///
-/// Such a point has no property, so it cannot bracket anything and cannot be compared
-/// against the target. Aborting the whole search on one - which this did until the
-/// process layer needed a valve at 15 bar - made `eos.ph_flash` unusable at ordinary
-/// states, and the failure looked like a caller's error rather than a gap in the scan.
+/// number and the state does not exist. Such a point has no property, so it cannot
+/// bracket anything and cannot be compared against the target.
 ///
 /// **Only an out-of-range state is skipped.** An [`AzothError::InvalidInput`] - a
 /// composition that is not a composition, a vector of the wrong length - does not depend
 /// on the temperature, so it is the caller's error at every point and it propagates
 /// immediately. Skipping those too would turn "your `z` is wrong" into "the solver did
-/// not converge", which is a worse answer to a question nobody asked: it reports a
-/// failure of the search where the search was never the problem.
+/// not converge", which is a worse answer: it reports a failure of the search where the
+/// search was never the problem.
 ///
 /// # Errors
 /// * [`AzothError::SolverNotConverged`] if no temperature on the scan produces a
@@ -258,10 +242,8 @@ pub fn solve_temperature(
 
         // Convergence is declared on the *residual*, not on the width of the temperature
         // bracket. The bracket bounds the residual through `|H'| * (hi - lo) / 2` only
-        // while `H(T)` is continuous; where it is not, the bisection collapses onto the
-        // jump and returns a temperature whose enthalpy is not the one asked for, with no
-        // error. It did exactly that for 105 of 111 enthalpy targets before
-        // `eos.pt_flash` stopped handing back an extrapolated vapour fraction.
+        // while `H(T)` is continuous, so a bracket narrow enough to look converged can
+        // still sit on a jump.
         residual = (mid_value - target).abs() / target.abs().max(1.0);
         if residual <= algorithm.tolerance {
             break;

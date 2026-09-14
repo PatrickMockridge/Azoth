@@ -41,6 +41,20 @@ The cap is now 2000, which is above every state tested and still bounded. It is 
 
 This is also the measurement that justifies not porting NeqSim's DEM/Aitken acceleration. It exists precisely because this iteration is slow, and it is not needed for the criterion - but the cost of leaving it out is paid here, in a cap an order of magnitude higher than the flash's, and that is the honest place to record it rather than in a claim that the acceleration was unnecessary.
 
+#### Correction 2: the wrong Gibbs comparison, and it is a quiet one
+
+`ln phi_i(z)` needs the feed to sit on *a* root of the cubic, and in the two-phase region there are three. The feed is placed at the **lower Gibbs energy** of the admissible roots.
+
+With `G / RT = A / RT + Z` and `A = A^ideal + A^R`, the ideal part carries `-n ln V` - and `V` differs between two roots, so the ideal part differs too. Reducing it, with `sum(n) = 1` and `V = Z R T / P`, leaves only `-ln Z` differing at one `(T, P, n)`. The comparison is therefore
+
+```text A^R / RT - ln Z + Z ```
+
+**and not `A^R / RT + Z`.** Measured, because the wrong form is plausible and quiet: pure methane at 150 K and 1 bar is superheated vapour - its saturation pressure there is about 10 bar - and the two roots give
+
+```text root             A^R/RT      Z          A^R/RT + Z   A^R/RT - ln Z + Z liquid-like     -2.558039   0.003344   -2.554695    3.145800 vapour-like     -0.015548   0.984493    0.968946    0.984573 ```
+
+The wrong form picks the liquid and calls a plain vapour unstable; the right one picks the vapour. Nothing else about the model changes.
+
 ## Algorithm
 
 A model rather than a calculation: what this page pins down is the procedure,

@@ -34,6 +34,10 @@ A transposed digit in 0.26992 produces a coefficient that is wrong by a fraction
 
 An open search confirms the DOI, the title and the journal. It does not contain the coefficients, which is exactly the situation `unverified` describes: the equation is standard and the citation is not confirmed. It is not `source_needed`, because the equation is standard and the worked example below is derived from it and runs.
 
+#### Why the coefficients are separate calculations
+
+The shape this namespace does not use is one calc per equation of state, taking a component and returning a Z factor. That shape hides the constants: the Z factor is computed *from* the coefficient, so no check on it can see a wrong one. Splitting the constitutive coefficients out gives each its own worked example and its own cross-language test, and it makes a modification cheap - PRSV changes the temperature dependence of `kappa` and nothing else, so it is one new calc rather than a fork of the whole chain.
+
 #### The fitted range is unconfirmed too
 
 The range of acentric factors the correlation was fitted over has not been established either, and no bound is asserted for it here. See `assumptions`.

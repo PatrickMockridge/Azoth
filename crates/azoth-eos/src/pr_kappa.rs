@@ -4,35 +4,20 @@
 //! kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2
 //! ```
 //!
-//! Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State."
-//! Ind. Eng. Chem. Fundam. 15(1), 59-64. DOI 10.1021/i160057a011
+//! Spec: `specs/calcs/eos/pr_kappa.yaml`, which carries the citation, what a
+//! transposed digit in the polynomial costs, and why a negative `kappa` is returned
+//! with a warning rather than refused.
 //!
-//! Spec: `specs/calcs/eos/pr_kappa.yaml`
-//!
-//! # Where this sits in the equation of state
-//!
-//! `kappa` is the whole temperature dependence of the Peng-Robinson attraction
-//! term, in one number:
+//! `kappa` is the whole temperature dependence of the Peng-Robinson attraction term, in
+//! one number:
 //!
 //! ```text
 //! alpha(T) = (1 + kappa*(1 - sqrt(Tr)))**2
 //! a(T)     = 0.45724 * R**2 * Tc**2 / Pc * alpha(T)
 //! ```
 //!
-//! It is a property of the substance alone - no temperature, no pressure - which is
-//! what makes it worth a calculation of its own rather than a line inside one. A
-//! transposed digit in 0.26992 is not caught by anything downstream: the Z factor,
-//! the fugacity coefficient and the phase split it feeds all still converge and all
-//! still pass their own consistency checks, and all are slightly wrong.
-//!
-//! # The sign of kappa
-//!
-//! `kappa` is negative for `omega < -0.23338349942403008`, which the polynomial's
-//! quadratic term makes reachable - helium is at -0.385. A negative coefficient
-//! makes `alpha` *grow* with temperature, which is not a statement about any
-//! fluid. It is returned rather than refused, carrying a warning: the arithmetic
-//! is well defined and a caller inspecting the limit deliberately should not be
-//! stopped. See the spec's `valid_range` rationale.
+//! It is a property of the substance alone - no temperature, no pressure - which is what
+//! makes it a calculation of its own rather than a line inside one.
 
 use azoth_core::{Result, apply_checks};
 

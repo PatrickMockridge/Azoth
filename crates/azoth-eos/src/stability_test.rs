@@ -1,83 +1,19 @@
 //! `eos.stability_test` - the tangent-plane stability test.
 //!
-//! Whether a feed at a fixed temperature and pressure is stable as a single phase.
-//! The question [`crate::pt_flash`] cannot ask: successive substitution finds *a*
-//! stationary point, and a flash that converges to `x = y = z` has shown that its own
-//! starting point was not a split, not that the feed is single phase.
+//! Whether a feed at a fixed temperature and pressure is stable as a single phase. The
+//! question [`crate::pt_flash`] cannot ask: successive substitution finds *a* stationary
+//! point, and a flash converging to `x = y = z` has shown that its own starting point was
+//! not a split, not that the feed is single phase.
 //!
-//! Spec: `specs/models/eos/stability_test.yaml`
+//! Spec: `specs/models/eos/stability_test.yaml`, which carries the criterion, the two
+//! Wilson trials and what they cost, the root the feed is placed on, and the iteration
+//! cap.
 //!
-//! # The criterion
-//!
-//! Michelsen's tangent-plane distance. With the feed's own chemical potentials as the
-//! reference,
-//!
-//! ```text
-//! d_i    = ln z_i + ln phi_i(z)     the reference, from the feed itself
-//! w_i    = W_i / sum(W)             a trial composition
-//! ln W_i = d_i - ln phi_i(w)        iterated to a stationary point
-//! tm     = 1 - sum(W)               the distance at that point
-//! ```
-//!
-//! and the feed is unstable if any trial reaches `tm < 0`. A trial that converges to
-//! the feed itself has `sum(W) = 1` and `tm = 0` - which is exactly why the threshold
-//! is `-1e-8` and not zero, and why no separate trivial-solution test is needed: a
-//! trivial trial cannot fall below it.
-//!
-//! # Two trials, and what that costs
-//!
-//! Both are seeded from Wilson K-values, one vapour-like (`z_i K_i`) and one
-//! liquid-like (`z_i / K_i`). Wilson assumes gas-liquid equilibrium, so a feed
-//! unstable to a *liquid-liquid* split can come back `stable`. That is a real false
-//! negative, stated in the spec's assumptions and not detectable from here. NeqSim
-//! carries a supplementary pure-component trial for it, gated on model-family-name
-//! heuristics that have no place in a spec; it is deliberately not ported.
-//!
-//! # What the feed's own root is
-//!
-//! `ln phi_i(z)` needs the feed to sit on *a* root of the cubic, and in the two-phase
-//! region there are three. The feed is placed at the **lower Gibbs energy** of the
-//! admissible roots.
-//!
-//! With `G / RT = A / RT + Z` and `A = A^ideal + A^R`, the ideal part carries
-//! `-n ln V` - and **`V` is not the same at two roots**, so the ideal part is not the
-//! same either. Reducing it, with `sum(n) = 1` and `V = Z R T / P`, leaves only
-//! `-ln Z` differing between roots at one `(T, P, n)`. The comparison is therefore
-//!
-//! ```text
-//! A^R / RT - ln Z + Z
-//! ```
-//!
-//! **and not `A^R / RT + Z`.** Measured, because the wrong form is plausible and
-//! quiet: pure methane at 150 K and 1 bar is superheated vapour - its saturation
-//! pressure there is about 10 bar - and the two roots give
-//!
-//! ```text
-//! root             A^R/RT      Z          A^R/RT + Z   A^R/RT - ln Z + Z
-//! liquid-like     -2.558039   0.003344   -2.554695    3.145800
-//! vapour-like     -0.015548   0.984493    0.968946    0.984573
-//! ```
-//!
-//! The wrong form picks the liquid and calls a plain vapour unstable; the right one
-//! picks the vapour. Nothing else about the model changes, which is what made it
-//! worth measuring rather than reasoning about.
-//!
-//! A single admissible root is the common case and is taken directly.
-//!
-//! # An unconverged trial raises
-//!
-//! A tangent-plane distance bounds stability only at a *stationary point*, so a `tm`
-//! read from a partially-converged iterate is a fact about the iteration rather than
-//! about the mixture. Discarding it would turn "could not tell" into "stable", which
-//! is the failure this library is organised against - so it raises
-//! [`AzothError::SolverNotConverged`], the rule the flash already applies to its own
-//! loop.
-//!
-//! The cap is 2000 rather than the flash's 100, and the spec's notes
-//! record why: successive substitution here is linear with a ratio near 0.93 in
-//! `ln W`, so a trial on an ordinary liquid measured **507** iterations to reach the
-//! tolerance. A cap and not a target - the other trial on the same state settled in
-//! 22.
+//! Michelsen's tangent-plane distance, at each of two trial compositions: the feed is
+//! unstable if either trial reaches a stationary point below the tangent plane. An
+//! **unconverged trial raises** rather than being discarded - a tangent-plane distance
+//! bounds stability only at a stationary point, and discarding a partial one would turn
+//! "could not tell" into "stable".
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, apply_checks};

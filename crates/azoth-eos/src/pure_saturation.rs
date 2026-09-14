@@ -1,47 +1,14 @@
 //! `eos.pure_saturation` - pure-component saturation pressure.
 //!
 //! The pressure at which a pure component's vapour and liquid roots have equal
-//! fugacity, found by bisection. A *model* rather than a calculation: what the spec
-//! pins down is the procedure, not an equation, and this module reads the procedure
-//! from the generated table rather than choosing it.
+//! fugacity, found by bisection on reduced pressure.
 //!
-//! Spec: `specs/models/eos/pure_saturation.yaml`
+//! Spec: `specs/models/eos/pure_saturation.yaml`, which carries the procedure - the
+//! bracketing rule, the tolerance and the cap - since a procedure that differs between
+//! two implementations reaches a slightly different answer.
 //!
-//! # This composes the kernels and adds a search, and nothing else
-//!
-//! Every number it computes comes from a registered calculation:
-//! [`crate::pr_kappa`] for the attraction coefficient, [`crate::pr_alpha_ab`] for the
-//! reduced parameters at a trial pressure, [`crate::pr_z_factor`] for the roots and
-//! their admissibility, and [`crate::pr_departure`] for the two fugacity coefficients.
-//! The only thing here that is not a kernel is the loop that searches for the
-//! pressure where the two agree.
-//!
-//! That is deliberate, and it is the model layer's whole contract: a second
-//! implementation of the Peng-Robinson equation living in the model layer would be a
-//! *third* implementation of it - untested, uncited, and cross-checked by nothing -
-//! while the two that exist still claimed to be the independent pair.
-//!
-//! # The algorithm
-//!
-//! 1. **Bracket.** Scan the reduced pressure upward from the spec's `lower` to its
-//!    `upper` in `steps` points, and take the *last* one at which the cubic still has
-//!    three admissible roots. That is the spinodal; above it there is one root, no
-//!    liquid branch, and nothing to equate.
-//!
-//!    The window is **one-sided**, which is worth stating because it is easy to
-//!    assume otherwise: a cubic has three real roots at every pressure below the
-//!    spinodal, including pressures so low that the "liquid" root describes a molar
-//!    volume no liquid could have. The bracket's lower end is therefore the scan's
-//!    first point and is arbitrary on purpose - the residual is positive and
-//!    monotonically decreasing below the saturation pressure, so the bracket only has
-//!    to straddle the root, not be tight.
-//!
-//! 2. **Bisect** on the reduced pressure until the bracket's *width* meets the
-//!    tolerance, relatively. Not until the residual is small: the residual is the
-//!    thing being solved for, so stopping on it would be circular whenever the two
-//!    fugacities disagree for a reason other than the pressure.
-//!
-//! 3. **Return** the bracket's midpoint times `Pc`.
+//! Every number is a registered calc's: [`crate::pr_kappa`], [`crate::pr_alpha_ab`],
+//! [`crate::pr_z_factor`] and [`crate::pr_departure`]. Only the search is here.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature, pascals};
 use azoth_core::{AzothError, Result, apply_checks};
@@ -149,9 +116,8 @@ pub fn pure_saturation(
         Some((liquid.ln_phi, vapour.ln_phi))
     };
 
-    // 1. Bracket. Linear and with the spec's step count, so both implementations
-    //    land on the same point - the scan's resolution is the one thing that moves
-    //    the answer, and it is in the spec for that reason.
+    // 1. Bracket. Linear and with the spec's step count, so both implementations land
+    //    on the same point.
     let mut upper = None;
     for step in 0..bracket.steps {
         let fraction = f64::from(step) / f64::from(bracket.steps - 1);

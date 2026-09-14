@@ -5,23 +5,8 @@
 //! b_mix = z1*b1 + z2*b2
 //! ```
 //!
-//! Spec: `specs/calcs/eos/vdw1f_mix_binary.yaml`
-//!
-//! # Why two components and not N
-//!
-//! The quadratic form for `a_mix` is a double sum, so a general version takes a
-//! composition vector and a matrix of `kij`. The calc registry is scalar - its
-//! inputs are named quantities with units, and there is no vector or matrix type -
-//! so two components is the largest it can express. The general case belongs to the
-//! model layer, and that layer's spec requires it to reduce to this calc at N = 2.
-//!
-//! # The two terms a reader should check
-//!
-//! Written longhand rather than as a loop, so the double sum's three distinct parts
-//! are visible: the two pure terms, and the cross term carrying `k12`. An
-//! implementation that got the cross term's factor of two wrong, or that transposed
-//! `z1` and `z2` in it, would still look like a weighted average at a mid-range
-//! composition - which is why the pure-component limits are a spec test.
+//! Spec: `specs/calcs/eos/vdw1f_mix_binary.yaml`, which carries the provenance and why
+//! the registry's scalar inputs stop at two components.
 
 use azoth_core::{Result, apply_checks};
 
@@ -78,6 +63,8 @@ pub fn vdw1f_mix_binary(
     )?;
 
     let z2 = 1.0 - z1;
+    // The double sum written out longhand: the two pure terms and the cross term
+    // carrying `k12`.
     let a_mix = z1 * z1 * a1 + 2.0 * z1 * z2 * (1.0 - k12) * (a1 * a2).sqrt() + z2 * z2 * a2;
     let b_mix = z1 * b1 + z2 * b2;
 

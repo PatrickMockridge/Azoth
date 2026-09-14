@@ -4,34 +4,9 @@
 //! beta = -(z1*(K1 - 1) + z2*(K2 - 1)) / ((K1 - 1)*(K2 - 1))     z2 = 1 - z1
 //! ```
 //!
-//! Rachford, H. H.; Rice, J. D. (1952). "Procedure for Use of Electronic Digital
-//! Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium."
-//! J. Pet. Technol. 4(10), 19-3. DOI 10.2118/952327-G
-//!
-//! Spec: `specs/calcs/eos/rachford_rice_binary.yaml`
-//!
-//! # The closed form is ours, not the paper's
-//!
-//! Rachford-Rice is normally an equation to *solve*: for N components it is
-//! nonlinear in `beta` and needs iteration. For two components it is linear, and
-//! multiplying through by the two denominators clears them:
-//!
-//! ```text
-//! z1*A/(1 + beta*A) + z2*B/(1 + beta*B) = 0        A = K1 - 1, B = K2 - 1
-//! z1*A*(1 + beta*B) + z2*B*(1 + beta*A) = 0
-//! z1*A + z2*B + beta*A*B*(z1 + z2) = 0
-//! beta = -(z1*A + z2*B) / (A*B)                    since z1 + z2 = 1
-//! ```
-//!
-//! That is algebra, and the spec attributes it to nobody.
-//!
-//! # beta outside [0, 1] is a warning, not an error
-//!
-//! Outside that interval the feed is single phase and the solution is the
-//! tangent-plane value rather than a phase split. It is still returned, carrying
-//! `OUT_OF_VALID_RANGE`, because the value is meaningful: `beta < 0` says the feed
-//! is subcooled liquid and `beta > 1` says superheated vapour, and clamping would
-//! throw that away. What a caller must not do is read it as a vapour fraction.
+//! Spec: `specs/calcs/eos/rachford_rice_binary.yaml`, which carries the provenance, the
+//! derivation of the closed form, and why a `beta` outside `[0, 1]` is a warning rather
+//! than an error.
 
 use azoth_core::{Result, apply_checks};
 

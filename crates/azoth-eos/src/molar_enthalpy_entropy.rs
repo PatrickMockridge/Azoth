@@ -1,34 +1,16 @@
 //! `eos.molar_enthalpy_entropy` - the absolute enthalpy and entropy of a mixture.
 //!
-//! Spec: `specs/models/eos/molar_enthalpy_entropy.yaml`
-//!
-//! # The composition, which is the whole of what is ours here
-//!
 //! ```text
 //! H = H_ig(T_ref) + integral Cp dT      + H_dep
 //! S = S_ig(T_ref) + integral Cp/T dT    - R ln(P/P_ref) - R sum z_i ln z_i + S_dep
 //! ```
 //!
-//! Nothing in it is a discovery: the departure functions are [`crate::mixture`]'s, the
-//! integrals are exact integrals of the polynomial
-//! [`crate::ideal_gas_cp`] registers, and the mixing term is the ideal-gas entropy of
-//! mixing. What this module is for is *which term goes where*.
+//! Spec: `specs/models/eos/molar_enthalpy_entropy.yaml`, which carries the assembly -
+//! which term belongs on which side - and what the caller is responsible for: the
+//! datum, the coefficients and the compressibility factor.
 //!
-//! # Three things that are easy to get wrong and are therefore stated
-//!
-//! 1. **The datum is the caller's.** [`IdealGasModel::h_ref`] and
-//!    [`IdealGasModel::s_ref`] are per-component ideal-gas values at the reference
-//!    state, and nothing checks that two calls used the same source. Two enthalpies
-//!    from different datums are not comparable and subtracting them gives a plausible
-//!    number rather than an error - which is the failure this model is most likely to
-//!    cause and cannot detect.
-//! 2. **The entropy of mixing is an ideal-gas term, not a departure.** The departure
-//!    functions are defined against the ideal-gas *mixture* at the same state, so
-//!    `-R sum_i z_i ln z_i` belongs on the ideal-gas side. A caller who expected it in
-//!    `s_departure` would find the two disagreeing by exactly that term.
-//! 3. **The root is the caller's.** `compressibility` is an input rather than a
-//!    solved-for quantity, because which root describes the phase is a choice a caller
-//!    holding a `Z` has already made, and re-deriving it would silently overrule them.
+//! The departure functions are [`crate::mixture`]'s and the integrals are exact
+//! integrals of the polynomial [`crate::ideal_gas_cp`] registers.
 
 use azoth_core::units::{
     Pressure, ThermodynamicTemperature, joules_per_mole, joules_per_mole_kelvin,

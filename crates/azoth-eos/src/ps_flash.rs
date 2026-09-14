@@ -2,28 +2,15 @@
 //!
 //! Spec: `specs/models/eos/ps_flash.yaml`
 //!
-//! # What this model is for
+//! An outer bisection on temperature, for an **isentropic** unit operation - a
+//! compressor, an expander, a turbine or a nozzle, assumed ideal - whose outlet
+//! temperature is not known because entropy is conserved and temperature is not. The
+//! bracket, the loop, the phase branch and the warning handling live in
+//! [`crate::flash_property`], shared with `eos.ph_flash`.
 //!
-//! An **isentropic** unit operation: a compressor or an expander assumed ideal, a
-//! turbine, a nozzle. Each knows the pressure it leaves at and the entropy it started
-//! with, and none of them knows the temperature that results - because entropy is
-//! conserved and temperature is not.
-//!
-//! ```text
-//! S(T) = (1 - beta) * S_liquid(x, Z_l) + beta * S_vapour(y, Z_v)
-//! ```
-//!
-//! The bracket, the loop, the phase branch and the warning handling are shared with
-//! `eos.ph_flash` in [`crate::flash_property`] rather than copied. What is here is the
-//! entropy half.
-//!
-//! # The difference that is not just a different letter
-//!
-//! Each phase's entropy is computed at *that phase's own composition*, so the weighted
-//! sum carries the entropy of mixing. That is the physically correct assembly and it is
-//! not optional arithmetic: a model that summed the phase entropies at the feed
-//! composition would conserve entropy across a phase change, which is wrong, and would
-//! do it in a way no single-phase test could see.
+//! Each phase's entropy is taken at *that phase's own composition*, so the weighted sum
+//! carries the entropy of mixing; summing the phases at the feed composition instead
+//! would conserve entropy across a phase change, which is wrong.
 
 use azoth_core::units::{MolarHeatCapacity, Pressure, ThermodynamicTemperature, kelvins};
 use azoth_core::{Result, apply_checks};

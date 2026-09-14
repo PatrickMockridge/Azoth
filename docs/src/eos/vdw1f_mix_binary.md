@@ -34,6 +34,8 @@ The quadratic form for `a_mix` is a double sum over components, so a general ver
 
 A general N-component version belongs to the model layer, and the spec for the flash records that the model layer must reduce to this calc at N = 2. That is the contract that keeps the two from drifting apart.
 
+The reduction is to within a couple of ulps rather than bit-identical: this calc writes the cross term longhand, the model layer's double sum runs `i` then `j`, and the two associate differently. A bit-equality claim would be a claim about summation order rather than about the mixing rule.
+
 #### The k12 this library does not ship
 
 `k12` is a fitted parameter - one per binary pair - and a table of them is the databank this library deliberately has none of. It is an input. The worked example uses a round illustrative value and says so.

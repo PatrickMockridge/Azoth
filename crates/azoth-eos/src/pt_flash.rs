@@ -1,58 +1,12 @@
 //! `eos.pt_flash` - the isothermal two-phase flash.
 //!
-//! The two-phase split of a mixture at a fixed temperature and pressure, by
-//! successive substitution from Wilson K-value estimates. A *model* rather than a
-//! calculation: what the spec pins down is the procedure, and this module reads the
-//! procedure from the generated table rather than choosing it.
-//!
 //! Spec: `specs/models/eos/pt_flash.yaml`
 //!
-//! # The algorithm
-//!
-//! 1. **Initialise** every `K_i` from Wilson's correlation,
-//!    `K_i = (Pc_i / P) * exp(5.373 * (1 + omega_i) * (1 - Tc_i / T))`.
-//! 2. **Solve Rachford-Rice** for the vapour fraction, by bisection on
-//!    `g(beta) = sum_i z_i (K_i - 1) / (1 + beta (K_i - 1))`.
-//! 3. **Compose** the two phases, `x_i = z_i / (1 + beta (K_i - 1))` and
-//!    `y_i = K_i x_i`.
-//! 4. **Evaluate** `ln phi_i` in each phase from the mixture form, at the liquid
-//!    root for `x` and the vapour root for `y`.
-//! 5. **Update** `K_i = exp(ln phi_i^L - ln phi_i^V)` and stop when the rms change
-//!    in `ln K` meets the tolerance.
-//! 6. **Re-evaluate once** at the converged `K`, so the returned `beta`, `x`, `y`
-//!    and `K` are one consistent state rather than one state and its predecessor's
-//!    vapour fraction.
-//!
-//! # The Rachford-Rice bracket, which is not the textbook one
-//!
-//! The usual bracket is `1/(1 - K_max) < beta < 1/(1 - K_min)`. That is correct
-//! **only when the K-values straddle one**. When every `K_i` is on the same side of
-//! 1 the interval is empty and inverted, and a bisection given it converges to
-//! whatever the arithmetic lands on - measured, before this was fixed, as a negative
-//! molar composition for an all-liquid feed and a bracket of `(-0.0022, 0)` for a
-//! vapour fraction that came back as `-0.129`.
-//!
-//! `g` is strictly decreasing between its poles at `1/(1 - K_i)`, `g(0) = Kbar - 1`,
-//! and the interval is the one containing zero:
-//!
-//! ```text
-//! lower = min(0, 1/(1 - K_max))       upper = max(0, 1/(1 - K_min))
-//! ```
-//!
-//! which is also exactly the interval on which `1 + beta (K_i - 1) > 0` for every
-//! `i` - so it is what keeps both compositions positive. The two are the same fact.
-//!
-//! # The trivial solution
-//!
-//! Successive substitution finds *a* stationary point; whether the feed was stable is
-//! a different question, and without a tangent-plane analysis this model cannot ask
-//! it. For a single-phase feed the iteration converges to `x = y = z`, and that is
-//! reported as [`Phase::Trivial`] with **no** vapour fraction - at the trivial
-//! solution `g` is identically zero and `beta` is indeterminate, not merely out of
-//! range. See [`crate::results::PtFlashResult`] for the measurement.
-//!
-//! Which single phase the feed is, this model does not say. That is the stability
-//! test's job and the largest honest gap in this layer.
+//! The two-phase split of a mixture at a fixed temperature and pressure: Wilson
+//! K-value estimates, then successive substitution, with Rachford-Rice bisected each
+//! iteration. A *model* rather than a calculation - what the spec pins down is the
+//! procedure, and this module reads the procedure from the generated table rather than
+//! choosing it.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, apply_checks};
@@ -66,41 +20,19 @@ use crate::results::{Phase, PtFlashResult};
 /// The interval on which Rachford-Rice has its physical root, or `None` if it has
 /// none.
 ///
-/// `g(beta) = sum_i z_i (K_i - 1) / (1 + beta (K_i - 1))` has poles at
-/// `1/(1 - K_i)`, is strictly decreasing between consecutive poles, and jumps from
-/// `-inf` to `+inf` across each one. So the sign of `g` on each interval between
-/// poles is fixed by the values at the ends, and the whole root structure follows
-/// from the poles:
-///
-/// * The leftmost interval runs from `g = 0-` at `-inf` down to `-inf` at the first
-///   pole: no root.
-/// * The rightmost runs from `+inf` at the last pole down to `0+` at `+inf`: no
-///   root.
-/// * **Every** bounded interval between two consecutive poles has exactly one root.
-///   There are `n - 1` of them, and only one has both phases positive.
-///
-/// The one the flash wants is the interval on which `1 + beta (K_i - 1) > 0` for
-/// every `i`, because that is what keeps `x_i = z_i / (1 + beta (K_i - 1))` and
-/// `y_i = K_i x_i` non-negative. Solving those inequalities gives
+/// `g(beta) = sum_i z_i (K_i - 1) / (1 + beta (K_i - 1))` has poles at `1/(1 - K_i)`,
+/// so the root the flash wants is the interval on which `1 + beta (K_i - 1) > 0` for
+/// every `i` - the one that keeps `x_i = z_i / (1 + beta (K_i - 1))` and `y_i = K_i x_i`
+/// non-negative:
 ///
 /// ```text
 /// max over {i : K_i > 1} of 1/(1 - K_i)  <  beta  <  min over {i : K_i < 1} of 1/(1 - K_i)
 /// ```
 ///
-/// - and that interval exists **only when the K-values straddle one**.
-///
-/// # The textbook bracket is a special case of this, not the rule
-///
-/// The usual statement is `1/(1 - K_max) < beta < 1/(1 - K_min)`, which is what the
-/// two expressions above collapse to when some `K_i > 1` and some `K_i < 1`. When
-/// every K-value is on the same side of one, that statement gives an empty inverted
-/// interval and `g` has no root there at all - so a bisection handed it converges to
-/// whichever end it happens to walk toward, and returns a number.
-///
-/// **No root is not a numerical failure.** It is a proof that the feed has no
-/// two-phase solution at these K-values: `sum_i y_i = sum_i K_i x_i = 1` with every
-/// `K_i < 1` and `sum_i x_i = 1` requires `1 < 1`, and with every `K_i > 1` it
-/// requires `1 > 1`. Either way the feed is single phase, and `None` says so.
+/// It exists only when the K-values straddle one. `None` says they do not, which is a
+/// proof that the feed has no two-phase solution at these K-values rather than a
+/// numerical failure: `sum_i y_i = sum_i K_i x_i = 1` alongside `sum_i x_i = 1` needs
+/// every `K_i` below one and above one at once.
 fn rachford_rice_bounds(k: &[f64]) -> Option<(f64, f64)> {
     let mut lo = f64::NEG_INFINITY;
     let mut hi = f64::INFINITY;
@@ -184,8 +116,8 @@ fn rms_delta(ln_k_new: &[f64], k: &[f64]) -> f64 {
 ///
 /// `|ln K_i| < 1e-8` for every `i` means the two phases have converged onto the
 /// feed. It is compared against the *K-values* and never against `beta`, which is
-/// indeterminate there; the spec's notes record the feed that a `beta`
-/// test would have mislabelled.
+/// indeterminate there - see the spec's correction 2 for the feed a `beta` test would
+/// have mislabelled.
 const TRIVIAL_TOLERANCE: f64 = 1.0e-08;
 
 /// The isothermal two-phase flash of a mixture at a temperature and pressure.
@@ -431,8 +363,7 @@ enum Outcome {
 /// Whether the K-values have converged onto the feed.
 ///
 /// Compared against the *K-values* and never against `beta`, which is indeterminate
-/// there; the spec's notes record the feed that a `beta` test would
-/// have mislabelled.
+/// there.
 fn is_trivial(k: &[f64]) -> bool {
     k.iter().all(|value| value.ln().abs() < TRIVIAL_TOLERANCE)
 }

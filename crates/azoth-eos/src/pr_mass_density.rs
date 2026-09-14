@@ -4,26 +4,8 @@
 //! rho = M/v
 //! ```
 //!
-//! Spec: `specs/calcs/eos/pr_mass_density.yaml`
-//!
-//! # Why one division earns a calc
-//!
-//! It is the last step of the path a caller actually wants - `pr_z_factor` gives a
-//! compressibility factor, `pr_molar_volume` turns it into a volume, and this turns
-//! that into the density somebody asked for. It is also the step where the units are
-//! load-bearing in both directions, and the one that gives `kg/mol` its first
-//! consumer: that unit has been in the vocabulary since the vocabulary was made
-//! checkable, with a correct conversion path and no calculation using it. A unit
-//! whose conversion is tested is not a defect, but it is a unit nothing has ever
-//! proved works end to end. This is that proof.
-//!
-//! # The unit that catches people
-//!
-//! Molar masses are conventionally quoted in `g/mol` and this takes `kg/mol`, a
-//! factor of 1000 apart. The units layer cannot catch it - both are plausible
-//! magnitudes of the same dimension - so the spec says so in the input's
-//! description, in the derivation and in the assumptions, which is as much as a
-//! comment can do.
+//! Spec: `specs/calcs/eos/pr_mass_density.yaml`, which carries why one division earns
+//! a calc and the `g/mol`-versus-`kg/mol` trap that the units layer cannot catch.
 
 use azoth_core::units::{MolarMass, MolarVolume, kilograms_per_cubic_meter};
 use azoth_core::{Result, apply_checks};

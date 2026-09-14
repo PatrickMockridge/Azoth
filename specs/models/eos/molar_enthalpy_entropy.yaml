@@ -309,7 +309,14 @@ cases:
       What makes it checkable without external data: `h_departure` must equal
       `R * T * h_dep_rt` for the mixture, and `s_departure` must equal `R * s_dep_r`
       for it - both of which reduce, at `N = 1`, to `eos.pr_departure`'s registered
-      departures bit-identically. See the test files, which assert that reduction
+      departures.
+
+      The **enthalpy** reduction is bit-identical and the test asserts it with
+      equality. The **entropy** one is within an ulp rather than identical: the
+      mixture form computes `h_dep_rt - sum_i z_i ln phi_i`, so the sum is taken in a
+      different order from the pure expression's, and the test allows 1e-14 rather
+      than equality. This paragraph said both were bit-identical, which the test it
+      points at does not claim. See the test files, which assert both reductions
       directly rather than through a value quoted here.
 
   - id: the_same_state_with_the_ideal_gas_terms_off
