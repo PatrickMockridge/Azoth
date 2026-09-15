@@ -41,6 +41,8 @@ pub enum Alpha {
     Pr78,
     /// Twu's `m`, from `eos.twu_kappa`.
     Twu,
+    /// Twu-Coon's non-Soave correlation, with `m = omega`.
+    TwuCoon,
 }
 
 impl Alpha {
@@ -52,6 +54,7 @@ impl Alpha {
             Alpha::Srk => "srk",
             Alpha::Pr78 => "pr78",
             Alpha::Twu => "twu",
+            Alpha::TwuCoon => "twucoon",
         }
     }
 }
@@ -65,8 +68,9 @@ impl std::str::FromStr for Alpha {
             "srk" => Ok(Alpha::Srk),
             "pr78" => Ok(Alpha::Pr78),
             "twu" => Ok(Alpha::Twu),
+            "twucoon" => Ok(Alpha::TwuCoon),
             other => Err(format!(
-                "unknown alpha `{other}`; expected `pr`, `srk`, `pr78` or `twu`"
+                "unknown alpha `{other}`; expected `pr`, `srk`, `pr78`, `twu` or `twucoon`"
             )),
         }
     }
@@ -121,5 +125,57 @@ impl AlphaTerm for RkAlpha {
 
     fn psi_t(&self, _tr: f64) -> f64 {
         0.0
+    }
+}
+
+/// Twu-Coon's correlation, a non-Soave `alpha` with the acentric factor as `m`.
+///
+/// `alpha = Tr^a exp(b(1 - Tr^c)) + m (Tr^d exp(e(1 - Tr^f)) - Tr^a exp(b(1 - Tr^c)))`,
+/// with six constants and `m = omega`. The logarithmic derivative and its temperature
+/// derivative follow from `A = Tr^a exp(b(1 - Tr^c))` and `D = Tr^d exp(e(1 - Tr^f))`.
+#[derive(Debug, Clone, Copy)]
+pub struct TwuCoon {
+    /// The acentric factor, Twu-Coon's `m`.
+    pub omega: f64,
+}
+
+impl TwuCoon {
+    /// `(alpha, d alpha/d Tr, d2 alpha/d Tr^2)` at `Tr`, the three quantities the trait
+    /// methods reduce to. `A` and `D` are the two power-exponential terms; `la`/`ld`
+    /// are their logarithmic derivatives and `la2`/`ld2` the derivative of those.
+    fn values(&self, tr: f64) -> (f64, f64, f64) {
+        let tr_c = tr.powf(2.29528);
+        let tr_f = tr.powf(2.63165);
+        let a_term = tr.powf(-0.201158) * (0.141599 * (1.0 - tr_c)).exp();
+        let d_term = tr.powf(-0.660145) * (0.500315 * (1.0 - tr_f)).exp();
+
+        let la = -0.201158 / tr - 0.141599 * 2.29528 * tr_c / tr;
+        let ld = -0.660145 / tr - 0.500315 * 2.63165 * tr_f / tr;
+
+        let alpha = a_term + self.omega * (d_term - a_term);
+        let d_alpha = a_term * la + self.omega * (d_term * ld - a_term * la);
+
+        let la2 = 0.201158 / (tr * tr) - 0.141599 * 2.29528 * 1.29528 * tr_c / (tr * tr);
+        let ld2 = 0.660145 / (tr * tr) - 0.500315 * 2.63165 * 1.63165 * tr_f / (tr * tr);
+        let d2_alpha = a_term * (la * la + la2)
+            + self.omega * (d_term * (ld * ld + ld2) - a_term * (la * la + la2));
+
+        (alpha, d_alpha, d2_alpha)
+    }
+}
+
+impl AlphaTerm for TwuCoon {
+    fn alpha(&self, tr: f64) -> f64 {
+        self.values(tr).0
+    }
+
+    fn psi(&self, tr: f64) -> f64 {
+        let (alpha, d_alpha, _) = self.values(tr);
+        tr * d_alpha / alpha
+    }
+
+    fn psi_t(&self, tr: f64) -> f64 {
+        let (alpha, d_alpha, d2_alpha) = self.values(tr);
+        tr * d_alpha / alpha + tr * tr * (d2_alpha * alpha - d_alpha * d_alpha) / (alpha * alpha)
     }
 }

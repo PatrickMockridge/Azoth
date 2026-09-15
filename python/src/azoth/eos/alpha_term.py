@@ -59,3 +59,42 @@ class RkAlpha:
 
     def psi_t(self, _tr: float) -> float:
         return 0.0
+
+
+class TwuCoon:
+    """Twu-Coon's correlation, a non-Soave ``alpha`` with the acentric factor as ``m``."""
+
+    def __init__(self, omega: float) -> None:
+        self.omega = omega
+
+    def _values(self, tr: float) -> tuple[float, float, float]:
+        tr_c = tr**2.29528
+        tr_f = tr**2.63165
+        a_term = tr**-0.201158 * math.exp(0.141599 * (1.0 - tr_c))
+        d_term = tr**-0.660145 * math.exp(0.500315 * (1.0 - tr_f))
+
+        la = -0.201158 / tr - 0.141599 * 2.29528 * tr_c / tr
+        ld = -0.660145 / tr - 0.500315 * 2.63165 * tr_f / tr
+
+        alpha = a_term + self.omega * (d_term - a_term)
+        d_alpha = a_term * la + self.omega * (d_term * ld - a_term * la)
+
+        la2 = 0.201158 / (tr * tr) - 0.141599 * 2.29528 * 1.29528 * tr_c / (tr * tr)
+        ld2 = 0.660145 / (tr * tr) - 0.500315 * 2.63165 * 1.63165 * tr_f / (tr * tr)
+        d2_alpha = a_term * (la * la + la2) + self.omega * (
+            d_term * (ld * ld + ld2) - a_term * (la * la + la2)
+        )
+        return alpha, d_alpha, d2_alpha
+
+    def alpha(self, tr: float) -> float:
+        return self._values(tr)[0]
+
+    def psi(self, tr: float) -> float:
+        alpha, d_alpha, _ = self._values(tr)
+        return tr * d_alpha / alpha
+
+    def psi_t(self, tr: float) -> float:
+        alpha, d_alpha, d2_alpha = self._values(tr)
+        return tr * d_alpha / alpha + tr * tr * (d2_alpha * alpha - d_alpha * d_alpha) / (
+            alpha * alpha
+        )

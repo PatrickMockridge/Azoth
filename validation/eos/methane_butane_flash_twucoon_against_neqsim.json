@@ -1,0 +1,27 @@
+{
+  "id": "methane_butane_flash_twucoon_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemSrkEos with AttractiveTermTwuCoon - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "The first non-Soave alpha term. Twu-Coon's alpha is a power-exponential form with the acentric factor as m, and it differs from Soave's on this mixture by 3e-3 in the vapour fraction - which is the point of a non-Soave correlation, and what this case pins."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemSrkEos with `setAttractiveTerm(11)` - Twu-Coon, whose `alpha = Tr^a exp(b(1 - Tr^c)) + m (Tr^d exp(e(1 - Tr^f)) - Tr^a exp(b(1 - Tr^c)))` with m = omega. NeqSim printed:\n\n  beta 0.8438249323942838\n  k    [8.617093937701139, 0.33060995558835987]\n  x    [0.0807809495386212, 0.9192190504613789]\n  y    [0.6960970305509907, 0.3039029694490092]\n  Zl   0.10576064211730973\n  Zv   0.895107367868144\n\nazoth reproduces all six to 5e-12 on beta and at or better on the rest, the same residue the other cubic cases show. The logarithmic derivative `psi = Tr d(alpha)/dTr / alpha` and its temperature derivative are derived from the same two power-exponential terms, so the departure functions agree too.",
+  "eos": "srk",
+  "alpha": "twucoon",
+  "inputs": {
+    "components": ["methane", "n-butane"],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [0.6, 0.4]
+  },
+  "expected": {
+    "beta": 0.8438249323942838,
+    "k": [8.617093937701139, 0.33060995558835987],
+    "x": [0.0807809495386212, 0.9192190504613789],
+    "y": [0.6960970305509907, 0.3039029694490092],
+    "z_liquid": 0.10576064211730973,
+    "z_vapour": 0.895107367868144
+  },
+  "tolerance": 1.0e-10
+}

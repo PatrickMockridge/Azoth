@@ -11,10 +11,10 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
 
-use crate::alpha_term::{Alpha, AlphaTerm, RkAlpha, Soave};
+use crate::alpha_term::{Alpha, AlphaTerm, RkAlpha, Soave, TwuCoon};
 use crate::cubic::Cubic;
 use crate::{
-    pr78_kappa, pr_alpha_ab, pr_kappa, pr_z_factor, rk_alpha_ab, srk_alpha_ab, srk_kappa,
+    pr_alpha_ab, pr_kappa, pr_z_factor, pr78_kappa, rk_alpha_ab, srk_alpha_ab, srk_kappa,
     srk_z_factor, twu_kappa,
 };
 
@@ -281,40 +281,60 @@ impl Mixture {
             // is kappa-free.
             let (a_reduced, b_reduced, psi_value, psi_t_value) = match self.cubic {
                 Cubic::Pr | Cubic::Srk => {
-                    let (kappa_value, kappa_warnings) = match self.alpha {
-                        Alpha::Pr => {
-                            let kappa = pr_kappa(component.omega)?;
-                            (kappa.kappa, kappa.warnings)
-                        }
-                        Alpha::Srk => {
-                            let kappa = srk_kappa(component.omega)?;
-                            (kappa.kappa, kappa.warnings)
-                        }
-                        Alpha::Pr78 => {
-                            let kappa = pr78_kappa(component.omega)?;
-                            (kappa.kappa, kappa.warnings)
-                        }
-                        Alpha::Twu => {
-                            let kappa = twu_kappa(component.omega)?;
-                            (kappa.kappa, kappa.warnings)
-                        }
-                    };
-                    warnings.extend(kappa_warnings);
-                    let term = Soave { kappa: kappa_value };
-                    let (a_reduced, b_reduced, ab_warnings) = if self.cubic == Cubic::Pr {
-                        let ab = pr_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)?;
-                        (ab.a_reduced, ab.b_reduced, ab.warnings)
+                    if self.alpha == Alpha::TwuCoon {
+                        let term = TwuCoon {
+                            omega: component.omega,
+                        };
+                        let alpha = term.alpha(reduced_temperature);
+                        let a_reduced = self.cubic.omega_a() * alpha * reduced_pressure
+                            / (reduced_temperature * reduced_temperature);
+                        let b_reduced =
+                            self.cubic.omega_b() * reduced_pressure / reduced_temperature;
+                        (
+                            a_reduced,
+                            b_reduced,
+                            term.psi(reduced_temperature),
+                            term.psi_t(reduced_temperature),
+                        )
                     } else {
-                        let ab = srk_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)?;
-                        (ab.a_reduced, ab.b_reduced, ab.warnings)
-                    };
-                    warnings.extend(ab_warnings);
-                    (
-                        a_reduced,
-                        b_reduced,
-                        term.psi(reduced_temperature),
-                        term.psi_t(reduced_temperature),
-                    )
+                        let (kappa_value, kappa_warnings) = match self.alpha {
+                            Alpha::Pr => {
+                                let kappa = pr_kappa(component.omega)?;
+                                (kappa.kappa, kappa.warnings)
+                            }
+                            Alpha::Srk => {
+                                let kappa = srk_kappa(component.omega)?;
+                                (kappa.kappa, kappa.warnings)
+                            }
+                            Alpha::Pr78 => {
+                                let kappa = pr78_kappa(component.omega)?;
+                                (kappa.kappa, kappa.warnings)
+                            }
+                            Alpha::Twu => {
+                                let kappa = twu_kappa(component.omega)?;
+                                (kappa.kappa, kappa.warnings)
+                            }
+                            Alpha::TwuCoon => unreachable!("handled above"),
+                        };
+                        warnings.extend(kappa_warnings);
+                        let term = Soave { kappa: kappa_value };
+                        let (a_reduced, b_reduced, ab_warnings) = if self.cubic == Cubic::Pr {
+                            let ab =
+                                pr_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)?;
+                            (ab.a_reduced, ab.b_reduced, ab.warnings)
+                        } else {
+                            let ab =
+                                srk_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)?;
+                            (ab.a_reduced, ab.b_reduced, ab.warnings)
+                        };
+                        warnings.extend(ab_warnings);
+                        (
+                            a_reduced,
+                            b_reduced,
+                            term.psi(reduced_temperature),
+                            term.psi_t(reduced_temperature),
+                        )
+                    }
                 }
                 Cubic::Rk => {
                     let ab = rk_alpha_ab(reduced_temperature, reduced_pressure)?;
