@@ -6,6 +6,7 @@ Every calculation in this section is generated from its specification. Each page
 
 | Calculation | Equation | Source |
 |---|---|---|
+| [`eos.antoine_vapor_pressure`](./antoine_vapor_pressure.md) | $p_{\mathrm{sat}} = \begin{cases} 10^{5}\,10^{\,A - B/(T + C - 273.15)} & \text{pow10}\\ 10^{\,A - B/(T + C)} & \text{pow10kpa}\\ 10^{5}\,e^{\,A - B/(T + C)} & \text{exp}\\ e^{\,(A x + B x^{3/2} + C x^{3} + D x^{6})/(1-x)}\,P_c,\ x = 1 - T/T_c & \text{wagner} \end{cases}$ | NeqSim's `getAntoineVaporPressure` |
 | [`eos.heat_of_vaporization`](./heat_of_vaporization.md) | $\Delta h_{\mathrm{vap}} = 10^{-3}\,c_0\,\left(1 - T_r\right)^{c_1 + c_2 T_r + c_3 T_r^{2}}$ | NeqSim's `getPureComponentHeatOfVaporization` |
 | [`eos.ideal_gas_cp`](./ideal_gas_cp.md) | $C_{p}^{\mathrm{ig}} = c_{0} + c_{1}T + c_{2}T^{2} + c_{3}T^{3} + c_{4}T^{4}$ | NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0 |
 | [`eos.liquid_heat_capacity`](./liquid_heat_capacity.md) | $c_{p}^{\mathrm{liq}} = 10^{-3}\,\left(c_0 + c_1 T + c_2 T^{2} + c_3 T^{3} + c_4 T^{4}\right)$ | NeqSim's `getPureComponentCpLiquid` |

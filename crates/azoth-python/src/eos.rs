@@ -15,8 +15,8 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyCriticalPointResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
-    PyLiquidHeatCapacityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
+    PyAntoineVaporPressureResult, PyCriticalPointResult, PyHeatOfVaporizationResult,
+    PyIdealGasCpResult, PyLiquidHeatCapacityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
     PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
     PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
     PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
@@ -346,6 +346,32 @@ pub fn liquid_heat_capacity(
 ) -> PyResult<PyLiquidHeatCapacityResult> {
     azoth_eos::liquid_heat_capacity(c0, c1, c2, c3, c4, kelvins(T))
         .map(|r| PyLiquidHeatCapacityResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The pure-component vapour pressure, from NeqSim's Antoine correlation.
+#[pyfunction]
+#[pyo3(signature = (A, B, C, D, E, form, Tc, Pc, T))]
+#[pyo3(text_signature = "(A, B, C, D, E, form, Tc, Pc, T)")]
+#[allow(non_snake_case)] // `A`-`E`, `Tc`, `Pc` and `T` are the symbols in the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn antoine_vapor_pressure(
+    py: Python<'_>,
+    A: f64,
+    B: f64,
+    C: f64,
+    D: f64,
+    E: f64,
+    form: &str,
+    Tc: f64,
+    Pc: f64,
+    T: f64,
+) -> PyResult<PyAntoineVaporPressureResult> {
+    let form: azoth_eos::AntoineForm = form
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::antoine_vapor_pressure(A, B, C, D, E, form, kelvins(Tc), pascals(Pc), kelvins(T))
+        .map(|r| PyAntoineVaporPressureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

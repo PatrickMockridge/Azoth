@@ -811,6 +811,24 @@ impl CalcResult for LiquidHeatCapacityResult {
     }
 }
 
+/// Result of `eos.antoine_vapor_pressure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AntoineVaporPressureResult {
+    /// The pure-component vapour pressure.
+    pub p_sat: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for AntoineVaporPressureResult {
+    const CALC_ID: &'static str = "eos.antoine_vapor_pressure";
+    const FIELDS: &'static [&'static str] = &["p_sat", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SrkAlphaAbResult {

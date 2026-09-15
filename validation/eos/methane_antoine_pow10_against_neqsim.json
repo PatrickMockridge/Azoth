@@ -1,0 +1,25 @@
+{
+  "id": "methane_antoine_pow10_against_neqsim",
+  "calc": "eos.antoine_vapor_pressure",
+  "source": {
+    "attribution": "NeqSim 3.20.0, `getAntoineVaporPressure` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "NeqSim's Antoine vapour-pressure correlation, the `pow10` form, for methane. The coefficients are NeqSim's internal scale and the `1e5` factors recover pascals from NeqSim's bar output."
+  },
+  "derivation": "The driver ran `getAntoineVaporPressure(300.0)` for methane and printed `562.5298119539252` bar.\n\nazoth's `eos.antoine_vapor_pressure` with form `pow10` reproduces it exactly.",
+  "inputs": {
+    "A": 5.23243,
+    "B": 891.0098,
+    "C": 332.0975,
+    "D": 0.0,
+    "E": 0.0,
+    "form": "pow10",
+    "Tc": 190.56,
+    "Pc": 4599000.0,
+    "T": 300.0
+  },
+  "expected": {
+    "p_sat": 56252981.19539252
+  },
+  "tolerance": 1e-12
+}

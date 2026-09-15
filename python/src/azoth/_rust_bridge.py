@@ -26,6 +26,7 @@ from typing import Any
 from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.result import (
+    AntoineVaporPressureResult,
     BubblePressureResult,
     ChokedFlowAreaResult,
     ColebrookResult,
@@ -489,6 +490,28 @@ def liquid_heat_capacity(
     )
     return LiquidHeatCapacityResult(
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def antoine_vapor_pressure(
+    A: float, B: float, C: float, D: float, E: float, form: str, Tc: Q, Pc: Q, T: Q
+) -> AntoineVaporPressureResult:
+    """The pure-component vapour pressure, computed in Rust."""
+    spec = _spec_for("eos.antoine_vapor_pressure")
+    result = _core.antoine_vapor_pressure(
+        A,
+        B,
+        C,
+        D,
+        E,
+        form,
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "Pc", Pc),
+        input_to_si(spec, "T", T),
+    )
+    return AntoineVaporPressureResult(
+        p_sat=from_si(result.p_sat.magnitude_si, result.p_sat.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -66,6 +66,7 @@ from __future__ import annotations
 
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    AntoineVaporPressureResult,
     BubblePressureResult,
     CriticalPointResult,
     DewPressureResult,
@@ -108,6 +109,7 @@ __all__ = [
     "Component",
     "IdealGasModel",
     "Mixture",
+    "antoine_vapor_pressure",
     "available_components",
     "bubble_pressure",
     "component",
@@ -151,6 +153,7 @@ _PR_MASS_DENSITY = "eos.pr_mass_density"
 _PR_PENELOUX_SHIFT = "eos.pr_peneloux_shift"
 _SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
 _HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
+_ANTOINE_VAPOR_PRESSURE = "eos.antoine_vapor_pressure"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
@@ -475,6 +478,23 @@ def liquid_heat_capacity(
     See :func:`azoth.eos.reference.liquid_heat_capacity`.
     """
     return resolve(_LIQUID_HEAT_CAPACITY)(c0=c0, c1=c1, c2=c2, c3=c3, c4=c4, T=T)  # type: ignore[no-any-return]
+
+
+def antoine_vapor_pressure(
+    A: float, B: float, C: float, D: float, E: float, form: str, Tc: Q, Pc: Q, T: Q
+) -> AntoineVaporPressureResult:
+    """The pure-component vapour pressure at a temperature.
+
+    ``A``-``E`` are the raw ``ANTOINEA``-``ANTOINEE`` NeqSim ships, ``form`` one of
+    ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or ``"wagner"``, and ``Tc``/``Pc`` the
+    critical constants.
+
+    Raises:
+        OutOfRangeError: if ``T``, ``Tc`` or ``Pc`` is not positive.
+
+    See :func:`azoth.eos.reference.antoine_vapor_pressure`.
+    """
+    return resolve(_ANTOINE_VAPOR_PRESSURE)(A=A, B=B, C=C, D=D, E=E, form=form, Tc=Tc, Pc=Pc, T=T)  # type: ignore[no-any-return]
 
 
 def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureResult:

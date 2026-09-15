@@ -168,6 +168,11 @@ def collect_lists(mapping: dict[str, Any]) -> list[tuple[str, list[str]]]:
     ]
 
 
+def collect_strings(mapping: dict[str, Any]) -> list[tuple[str, str]]:
+    """Scalar strings: an enum or categorical input, whose value is a name."""
+    return [(k, v) for k, v in mapping.items() if isinstance(v, str)]
+
+
 def collect_vectors(mapping: dict[str, Any]) -> list[tuple[str, list[float]]]:
     """Lists of numbers: a composition, or one constant per component."""
     return [
@@ -248,6 +253,7 @@ def emit_test_case(
 ) -> str:
     numbers = collect_numbers(inputs)
     lists = collect_lists(inputs)
+    strings = collect_strings(inputs)
     vectors = collect_vectors(inputs)
     matrices = collect_matrices(inputs)
     expected_numbers = collect_numbers(expected)
@@ -263,6 +269,12 @@ def emit_test_case(
         if not items:
             return "&[]"
         inner = ", ".join(f"({rust_str(k)}, {rust_slice_str(v)})" for k, v in items)
+        return f"&[{inner}]"
+
+    def string_pairs(items: list[tuple[str, str]]) -> str:
+        if not items:
+            return "&[]"
+        inner = ", ".join(f"({rust_str(k)}, {rust_str(v)})" for k, v in items)
         return f"&[{inner}]"
 
     def number_slice_pairs(items: list[tuple[str, list[float]]]) -> str:
@@ -286,6 +298,7 @@ def emit_test_case(
         f"{indent}    tolerance: {rust_f64(tolerance)},\n"
         f"{indent}    numbers: {pairs(numbers)},\n"
         f"{indent}    lists: {list_pairs(lists)},\n"
+        f"{indent}    strings: {string_pairs(strings)},\n"
         f"{indent}    vectors: {number_slice_pairs(vectors)},\n"
         f"{indent}    matrices: {number_slice_pairs(matrices)},\n"
         f"{indent}    expected: {pairs(expected_numbers)},\n"

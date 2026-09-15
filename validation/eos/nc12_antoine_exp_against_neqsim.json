@@ -1,0 +1,25 @@
+{
+  "id": "nc12_antoine_exp_against_neqsim",
+  "calc": "eos.antoine_vapor_pressure",
+  "source": {
+    "attribution": "NeqSim 3.20.0, `getAntoineVaporPressure` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "NeqSim's Antoine vapour-pressure correlation, the `exp` form, for n-dodecane. The coefficients are NeqSim's internal scale and the `1e5` factors recover pascals from NeqSim's bar output."
+  },
+  "derivation": "The driver ran `getAntoineVaporPressure(300.0)` for n-dodecane and printed `0.000422459629836369` bar.\n\nazoth's `eos.antoine_vapor_pressure` with form `exp` reproduces it exactly.",
+  "inputs": {
+    "A": -7.76451,
+    "B": 1.45838,
+    "C": -2.7758,
+    "D": -1.23303,
+    "E": 0.0,
+    "form": "exp",
+    "Tc": 658.0,
+    "Pc": 1820000.0,
+    "T": 300.0
+  },
+  "expected": {
+    "p_sat": 42.2459629836369
+  },
+  "tolerance": 1e-12
+}

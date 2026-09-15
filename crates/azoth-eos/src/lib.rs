@@ -33,6 +33,7 @@ pub fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
 }
 
 pub mod alpha_term;
+pub mod antoine_vapor_pressure;
 pub mod bubble_pressure;
 pub mod card;
 pub mod critical_point;
@@ -75,6 +76,7 @@ pub mod twu_kappa;
 pub mod vdw1f_mix_binary;
 
 pub use alpha_term::Alpha;
+pub use antoine_vapor_pressure::{AntoineForm, antoine_vapor_pressure, form_from_type};
 pub use bubble_pressure::bubble_pressure;
 pub use critical_point::critical_point;
 pub use cubic::Cubic;
@@ -100,13 +102,13 @@ pub use pt_flash::pt_flash;
 pub use pure_saturation::pure_saturation;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use results::{
-    BubblePressureResult, CriticalPointResult, DewPressureResult, HeatOfVaporizationResult,
-    IdealGasCpResult, LiquidHeatCapacityResult, MolarEnthalpyEntropyResult, Phase, Pr78KappaResult,
-    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
-    RachfordRiceBinaryResult, RkAlphaAbResult, RkDepartureResult, RootStructure, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, StabilityVerdict, TwuKappaResult, Vdw1fMixBinaryResult,
+    AntoineVaporPressureResult, BubblePressureResult, CriticalPointResult, DewPressureResult,
+    HeatOfVaporizationResult, IdealGasCpResult, LiquidHeatCapacityResult, MolarEnthalpyEntropyResult,
+    Phase, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RkAlphaAbResult, RkDepartureResult,
+    RootStructure, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult,
+    SrkZFactorResult, StabilityTestResult, StabilityVerdict, TwuKappaResult, Vdw1fMixBinaryResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;

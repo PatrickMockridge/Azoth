@@ -387,6 +387,8 @@ def kwargs_for(calc: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, 
         kind = declaration.get("type", "quantity")
         if kind == "fitting_list":
             kwargs[name] = list(value)
+        elif kind in ("enum", "string"):
+            kwargs[name] = value
         elif kind == "quantity" and declaration.get("unit") != "dimensionless":
             kwargs[name] = quantity(float(value), declaration["unit"])
         else:

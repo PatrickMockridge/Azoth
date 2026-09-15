@@ -110,6 +110,11 @@ class KComponent:
 # cannot disagree about a field.
 
 @final
+class AntoineVaporPressureResult:
+    p_sat: Qty
+    warnings: list[Warning]
+
+@final
 class BubblePressureResult:
     pressure: Qty
     incipient: list[float]
@@ -422,6 +427,17 @@ class ConductionPlaneWallResult:
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
 
+def antoine_vapor_pressure(
+    A: float,
+    B: float,
+    C: float,
+    D: float,
+    E: float,
+    form: str,
+    Tc: float,
+    Pc: float,
+    T: float,
+) -> AntoineVaporPressureResult: ...
 def bubble_pressure(
     Tc: list[float],
     Pc: list[float],

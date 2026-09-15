@@ -75,6 +75,8 @@ pub struct TestCase {
     pub numbers: &'static [(&'static str, f64)],
     /// List-valued inputs, by name - a list of fitting ids.
     pub lists: &'static [(&'static str, &'static [&'static str])],
+    /// String-valued inputs, by name - an enum or categorical input whose value is a name.
+    pub strings: &'static [(&'static str, &'static str)],
     /// Vector-valued inputs, by name: one number per component, or a composition.
     ///
     /// Separate from [`Self::lists`] because the two are different things that both
@@ -111,6 +113,12 @@ impl TestCase {
     #[must_use]
     pub fn list(&self, name: &str) -> Option<&'static [&'static str]> {
         self.lists.iter().find(|(k, _)| *k == name).map(|(_, v)| *v)
+    }
+
+    /// Fetch a string-valued input. `None` if the spec does not supply it.
+    #[must_use]
+    pub fn string(&self, name: &str) -> Option<&'static str> {
+        self.strings.iter().find(|(k, _)| *k == name).map(|(_, v)| *v)
     }
 
     /// Fetch a vector-valued input.

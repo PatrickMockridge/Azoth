@@ -1,0 +1,25 @@
+{
+  "id": "ethylene_antoine_pow10kpa_against_neqsim",
+  "calc": "eos.antoine_vapor_pressure",
+  "source": {
+    "attribution": "NeqSim 3.20.0, `getAntoineVaporPressure` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "NeqSim's Antoine vapour-pressure correlation, the `pow10kpa` form, for ethylene. The coefficients are NeqSim's internal scale and the `1e5` factors recover pascals from NeqSim's bar output."
+  },
+  "derivation": "The driver ran `getAntoineVaporPressure(300.0)` for ethylene and printed `64.20836723287002` bar.\n\nazoth's `eos.antoine_vapor_pressure` with form `pow10kpa` reproduces it exactly.",
+  "inputs": {
+    "A": 8.91382,
+    "B": 596.526,
+    "C": -16.78,
+    "D": 0.0,
+    "E": 0.0,
+    "form": "pow10kpa",
+    "Tc": 282.35,
+    "Pc": 5041800.0,
+    "T": 300.0
+  },
+  "expected": {
+    "p_sat": 6420836.723287002
+  },
+  "tolerance": 1e-12
+}

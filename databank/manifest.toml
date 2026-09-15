@@ -142,48 +142,34 @@ as = "cpe"
 unit = "J/(mol*K5)"
 [[upstreams.files.columns]]
 name = "AntoineVapPresLiqType"
-disposition = "dropped"
-reason = "empty-upstream: zero over all 173 rows kept"
+disposition = "vendored"
+as = "antoine_type"
+unit = "text"
 [[upstreams.files.columns]]
 name = "ANTOINEA"
-disposition = "vendored"
+disposition = "used"
 as = "antoinea"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` \
-    in `thermo/component/`"""
 [[upstreams.files.columns]]
 name = "ANTOINEB"
-disposition = "vendored"
+disposition = "used"
 as = "antoineb"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` \
-    in `thermo/component/`"""
 [[upstreams.files.columns]]
 name = "ANTOINEC"
-disposition = "vendored"
+disposition = "used"
 as = "antoinec"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` \
-    in `thermo/component/`"""
 [[upstreams.files.columns]]
 name = "ANTOINED"
-disposition = "vendored"
+disposition = "used"
 as = "antoined"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` \
-    in `thermo/component/`"""
 [[upstreams.files.columns]]
 name = "ANTOINEE"
-disposition = "vendored"
+disposition = "used"
 as = "antoinee"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the Antoine vapour-pressure correlation; NeqSim reads `ANTOINEA`-`ANTOINEE` \
-    in `thermo/component/`"""
 [[upstreams.files.columns]]
 name = "DIPOLEMOMENT"
 disposition = "used"

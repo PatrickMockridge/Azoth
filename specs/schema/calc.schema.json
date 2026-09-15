@@ -188,9 +188,10 @@
       "description": "Where a value came from, for a reader. Optional everywhere and validated nowhere: the engineer supplying data is responsible for knowing its provenance and whether they may use it."
     },
     "value": {
-      "description": "A scalar quantity, or a list of identifiers for list-valued inputs such as a fitting list.",
+      "description": "A scalar quantity, a symbolic value for an enum or string input, or a list of identifiers for list-valued inputs such as a fitting list.",
       "oneOf": [
         { "type": "number" },
+        { "type": "string" },
         { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
       ]
     },

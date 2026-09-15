@@ -189,17 +189,20 @@ def test_every_batchable_calc_has_a_batch_arm() -> None:
         _batch_function(calc_id)
 
 
-def test_the_excluded_set_is_exactly_crane_k_factors() -> None:
-    """The one calc with no batch form, asserted so the exclusion stays a decision.
+def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
+    """The calcs with no batch form, asserted so the exclusion stays a decision.
 
     `crane_k_factors` takes `fittings`, a list of registry ids the spec declares with no
     unit. There is no column shape for a per-element list of names, and sharing one list
-    across the batch would compute the same answer N times. Stating that here means a
-    future calc with a categorical input lands in this assertion and has to be argued for,
-    rather than quietly joining the exclusion.
+    across the batch would compute the same answer N times. `eos.antoine_vapor_pressure`
+    takes `form`, a categorical enum input with no unit, which has no float-array column
+    shape either. Stating both here means a future calc with a categorical input lands in
+    this assertion and has to be argued for, rather than quietly joining the exclusion.
     """
     excluded = {calc["id"] for calc in h.CALCS} - set(batchable())
-    assert excluded == {"hydraulics.crane_k_factors"}, sorted(excluded)
+    assert excluded == {"hydraulics.crane_k_factors", "eos.antoine_vapor_pressure"}, sorted(
+        excluded
+    )
 
 
 def test_batch_of_one_equals_scalar_including_warnings() -> None:

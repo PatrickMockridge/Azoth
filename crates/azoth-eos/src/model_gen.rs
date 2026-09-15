@@ -62,6 +62,7 @@ static BUBBLE_PRESSURE_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 300.0)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("x", &[0.2, 0.8])],
         matrices: &[],
         expected: &[
@@ -85,6 +86,7 @@ static BUBBLE_PRESSURE_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 320.0)],
         lists: &[("components", &["methane", "propane", "n-butane"])],
+        strings: &[],
         vectors: &[("x", &[0.2, 0.3, 0.5])],
         matrices: &[],
         expected: &[
@@ -185,6 +187,7 @@ static CRITICAL_POINT_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[],
         lists: &[("components", &["propane"])],
+        strings: &[],
         vectors: &[("z", &[1.0])],
         matrices: &[],
         expected: &[
@@ -204,6 +207,7 @@ static CRITICAL_POINT_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.4, 0.6])],
         matrices: &[],
         expected: &[
@@ -290,6 +294,7 @@ static DEW_PRESSURE_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 300.0)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("y", &[0.8, 0.2])],
         matrices: &[],
         expected: &[
@@ -313,6 +318,7 @@ static DEW_PRESSURE_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 300.0)],
         lists: &[("components", &["methane", "propane", "n-butane"])],
+        strings: &[],
         vectors: &[("y", &[0.5, 0.3, 0.2])],
         matrices: &[],
         expected: &[
@@ -417,6 +423,7 @@ static MOLAR_ENTHALPY_ENTROPY_CASES: &[TestCase] = &[
             ("compressibility", 0.8274482588400789),
         ],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[
@@ -443,6 +450,7 @@ static MOLAR_ENTHALPY_ENTROPY_CASES: &[TestCase] = &[
             ("compressibility", 0.8274482588400789),
         ],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[
@@ -493,6 +501,7 @@ static PH_FLASH_CASES: &[TestCase] = &[
         tolerance: 1e-07,
         numbers: &[("P", 2000000.0), ("H", -5121.329517317873)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[("T", 300.0), ("beta", 0.6824887179287704)],
@@ -507,6 +516,7 @@ static PH_FLASH_CASES: &[TestCase] = &[
         tolerance: 1e-07,
         numbers: &[("P", 2000000.0), ("H", 7539.490325636567)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[("T", 399.99999997477255)],
@@ -571,6 +581,7 @@ static PS_FLASH_CASES: &[TestCase] = &[
         tolerance: 1e-07,
         numbers: &[("P", 2000000.0), ("S", -33.37924808318274)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[("T", 300.00000000000006), ("beta", 0.6824887179287709)],
@@ -585,6 +596,7 @@ static PS_FLASH_CASES: &[TestCase] = &[
         tolerance: 1e-07,
         numbers: &[("P", 2000000.0), ("S", 4.29557591174716)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[("T", 400.0)],
@@ -681,6 +693,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 330.0), ("P", 2500000.0)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[
@@ -710,6 +723,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 350.0), ("P", 5000000.0)],
         lists: &[("components", &["methane", "propane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.5, 0.3, 0.2])],
         matrices: &[],
         expected: &[
@@ -751,6 +765,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 300.0), ("P", 3000000.0)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.1, 0.9])],
         matrices: &[],
         expected: &[
@@ -847,6 +862,7 @@ static PURE_SATURATION_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 300.0)],
         lists: &[("components", &["propane"])],
+        strings: &[],
         vectors: &[],
         matrices: &[],
         expected: &[("p_sat", 997905.585109325)],
@@ -861,6 +877,7 @@ static PURE_SATURATION_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 280.0)],
         lists: &[("components", &["co2"])],
+        strings: &[],
         vectors: &[],
         matrices: &[],
         expected: &[("p_sat", 4150449.601020932)],
@@ -951,6 +968,7 @@ static STABILITY_TEST_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 330.0), ("P", 2500000.0)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[],
@@ -968,6 +986,7 @@ static STABILITY_TEST_CASES: &[TestCase] = &[
         tolerance: 1e-09,
         numbers: &[("T", 430.0), ("P", 6000000.0)],
         lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[],

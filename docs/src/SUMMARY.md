@@ -12,6 +12,7 @@
   - [The keycard as a capability](./calculus/capability.md)
   - [The vocabulary table](./calculus/vocabulary.md)
 - [Equations of state](./eos/index.md)
+  - [Antoine vapour pressure from NeqSim's correlation](./eos/antoine_vapor_pressure.md)
   - [Heat of vaporisation from NeqSim's correlation](./eos/heat_of_vaporization.md)
   - [Ideal-gas heat capacity from a polynomial](./eos/ideal_gas_cp.md)
   - [Liquid heat capacity from NeqSim's polynomial](./eos/liquid_heat_capacity.md)

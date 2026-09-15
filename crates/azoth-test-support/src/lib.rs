@@ -68,6 +68,18 @@ pub fn input(case: &TestCase, name: &str) -> f64 {
     })
 }
 
+/// A string-valued input from a test case, with a clear message if the spec omitted it.
+#[track_caller]
+pub fn input_str(case: &TestCase, name: &str) -> &'static str {
+    case.string(name).unwrap_or_else(|| {
+        panic!(
+            "test `{}` does not supply input `{name}`; it has {:?}",
+            case.id,
+            case.strings.iter().map(|(k, _)| *k).collect::<Vec<_>>()
+        )
+    })
+}
+
 /// An expected output from a test case.
 #[track_caller]
 pub fn expected(case: &TestCase, name: &str) -> f64 {

@@ -17,12 +17,12 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    BubblePressureResult, CriticalPointResult, DewPressureResult, HeatOfVaporizationResult,
-    IdealGasCpResult, LiquidHeatCapacityResult, MolarEnthalpyEntropyResult, PhFlashResult,
-    Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult,
-    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RkAlphaAbResult,
-    RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    AntoineVaporPressureResult, BubblePressureResult, CriticalPointResult, DewPressureResult,
+    HeatOfVaporizationResult, IdealGasCpResult, LiquidHeatCapacityResult, MolarEnthalpyEntropyResult,
+    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
+    PrsvKappaResult, PsFlashResult, PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult,
+    RkAlphaAbResult, RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
     Vdw1fMixBinaryResult,
 };
@@ -949,6 +949,45 @@ impl From<&LiquidHeatCapacityResult> for PyLiquidHeatCapacityResult {
             cp: PyQty {
                 magnitude_si: r.cp.value,
                 unit: "J/(mol*K)".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.antoine_vapor_pressure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "AntoineVaporPressureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyAntoineVaporPressureResult {
+    /// The pure-component vapour pressure, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub p_sat: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyAntoineVaporPressureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "AntoineVaporPressureResult(p_sat={} {})",
+            self.p_sat.magnitude_si, self.p_sat.unit
+        )
+    }
+}
+
+impl From<&AntoineVaporPressureResult> for PyAntoineVaporPressureResult {
+    fn from(r: &AntoineVaporPressureResult) -> Self {
+        Self {
+            p_sat: PyQty {
+                magnitude_si: r.p_sat.value,
+                unit: "Pa".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -2250,6 +2289,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         SrkPenelouxShiftResult::CALC_ID => SrkPenelouxShiftResult::FIELDS.to_vec(),
         HeatOfVaporizationResult::CALC_ID => HeatOfVaporizationResult::FIELDS.to_vec(),
         LiquidHeatCapacityResult::CALC_ID => LiquidHeatCapacityResult::FIELDS.to_vec(),
+        AntoineVaporPressureResult::CALC_ID => AntoineVaporPressureResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
@@ -2309,6 +2349,7 @@ pub fn calc_ids() -> Vec<String> {
         SrkPenelouxShiftResult::CALC_ID.to_string(),
         HeatOfVaporizationResult::CALC_ID.to_string(),
         LiquidHeatCapacityResult::CALC_ID.to_string(),
+        AntoineVaporPressureResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

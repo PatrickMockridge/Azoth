@@ -89,6 +89,12 @@ COLUMNS = (
     "umrcpa_mc3",
     "umrcpa_mc4",
     "umrcpa_mc5",
+    "antoine_type",
+    "antoinea",
+    "antoineb",
+    "antoinec",
+    "antoined",
+    "antoinee",
     "citation",
 )
 
@@ -128,6 +134,12 @@ class DatabankEntry:
     #: correlation's short name. Empty for a substance a keycard supplied, which has
     #: no such columns.
     alpha_params: dict[str, tuple[float, ...]]
+    #: The five Antoine coefficients ``A``-``E``, NeqSim's internal scale. A
+    #: keycard-supplied substance has none, so the tuple is all zero.
+    antoine: tuple[float, float, float, float, float]
+    #: The raw `AntoineVapPresLiqType` label, the messy upstream vocabulary
+    #: :func:`form_from_type` cleans.
+    antoine_type: str
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
@@ -149,6 +161,11 @@ class DatabankEntry:
             else:
                 params = self.alpha_params.get(alpha, ())
         return Component(Tc=self.Tc, Pc=self.Pc, omega=self.omega, alpha_params=params)
+
+    def antoine_form(self) -> str:
+        """The cleaned Antoine form this entry's coefficients belong to, one of
+        ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or ``"wagner"``."""
+        return form_from_type(self.antoine_type)
 
     def __repr__(self) -> str:
         return f"DatabankEntry({self.name!r}, Tc={self.Tc}, Pc={self.Pc}, omega={self.omega})"
@@ -212,6 +229,14 @@ def _table() -> dict[str, DatabankEntry]:
                     float(row["umrcpa_mc5"]),
                 ),
             },
+            antoine=(
+                float(row["antoinea"]),
+                float(row["antoineb"]),
+                float(row["antoinec"]),
+                float(row["antoined"]),
+                float(row["antoinee"]),
+            ),
+            antoine_type=row["antoine_type"],
             citation=row["citation"],
         )
     return entries
@@ -219,6 +244,22 @@ def _table() -> dict[str, DatabankEntry]:
 
 def _three(row: Mapping[str, str], a: str, b: str, c: str) -> tuple[float, float, float]:
     return (float(row[a]), float(row[b]), float(row[c]))
+
+
+def form_from_type(label: str) -> str:
+    """Map NeqSim's raw ``AntoineVapPresLiqType`` label onto the clean form name.
+
+    ``exp`` and ``log`` are one formula under two names, and ``loglog``/``log10``
+    have no branch in NeqSim's dispatch, so they fall through to Wagner - a defect
+    this reproduces rather than silently repairs.
+    """
+    if label == "pow10":
+        return "pow10"
+    if label == "pow10KPa":
+        return "pow10kpa"
+    if label in ("exp", "log"):
+        return "exp"
+    return "wagner"
 
 
 @cache
@@ -299,6 +340,8 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # an enthalpy path; without it, it is a cubic only.
             cp=_cp(override),
             alpha_params={},
+            antoine=(0.0, 0.0, 0.0, 0.0, 0.0),
+            antoine_type="",
             citation=None,
             source="keycard",
         )

@@ -120,9 +120,25 @@ public class FlashTp {
         + fluid.getPhase(0).getComponent(1).getPureComponentCpLiquid(300.0) + " J/(mol*K)");
   }
 
+  /** The four Antoine forms `eos.antoine_vapor_pressure` ports, one component each. */
+  static void antoine() {
+    SystemInterface fluid = new SystemPrEos(300.0, 10.0);
+    fluid.addComponent("methane", 1.0);
+    fluid.addComponent("ethylene", 1.0);
+    fluid.addComponent("nc12", 1.0);
+    fluid.addComponent("223-TM-C4", 1.0);
+    String[] forms = {"pow10", "pow10KPa", "log", "loglog"};
+    for (int i = 0; i < 4; i++) {
+      System.out.println(fluid.getPhase(0).getComponent(i).getName() + "  (" + forms[i]
+          + ")  psat(300 K) = "
+          + fluid.getPhase(0).getComponent(i).getAntoineVaporPressure(300.0) + " bar");
+    }
+  }
+
   public static void main(String[] args) {
     volcorr();
     corr();
+    antoine();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 1);
     flash("propane, 1.0, 300 K, 9 bar",

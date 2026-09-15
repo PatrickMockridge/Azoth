@@ -219,6 +219,10 @@ def parameter_type(declaration: dict[str, Any]) -> str:
         return "list[str]"
     if kind in ("vector", "matrix"):
         return "list[float]"
+    if kind == "boolean":
+        return "bool"
+    if kind in ("enum", "string"):
+        return "str"
     return "float"
 
 

@@ -386,6 +386,16 @@ class LiquidHeatCapacityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class AntoineVaporPressureResult(_HasWarnings):
+    """Result of ``eos.antoine_vapor_pressure``."""
+
+    #: The pure-component vapour pressure.
+    p_sat: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Vdw1fMixBinaryResult(_HasWarnings):
     """Result of ``eos.vdw1f_mix_binary``.
 
