@@ -30,4 +30,9 @@ import Azoth.Rho
 #print axioms Azoth.Rho.quote_injective
 #print axioms Azoth.Rho.drop_injective
 #print axioms Azoth.Rho.round_trip
-#print axioms Azoth.Rho.reduction_decreases_size
+#print axioms Azoth.Rho.out_injective
+#print axioms Azoth.Rho.in_injective
+#print axioms Azoth.Rho.subst0_var_zero
+#print axioms Azoth.Rho.subst0_var_succ
+#print axioms Azoth.Rho.subst0_under_binder
+#print axioms Azoth.Rho.comm_reduction

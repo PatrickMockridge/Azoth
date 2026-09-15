@@ -25,14 +25,16 @@ inverses.
 so quoting a process and dropping it back is the identity, and a process carried
 on a channel and re-entered is the process that was carried.
 
-*Status: the binder-free fragment is **proved**; the barbed-congruence claim is
-still **specified**. `Azoth/Rho.lean` formalises `@P` and `*x` and proves the
+*Status: the reflection and communication fragment is **proved**; the
+barbed-congruence claim is still **specified**. `Azoth/Rho.lean` formalises the
+operators — `@P`, `*x`, and the communication prefixes `out`/`in` — and proves the
 round-trip *reduction* `drop (quote P) → P` (`Azoth.Rho.round_trip`), the
-injectivity of quoting and dropping (`Azoth.Rho.quote_injective`,
-`Azoth.Rho.drop_injective`), and that the reduction terminates
-(`Azoth.Rho.reduction_decreases_size`). What it does not yet have is the input and
-output prefixes of pi, so the barbed-congruence reading `reflection_is_a_bijection`
-is written when `Azoth.Process` gives the round trip something to be congruent with.*
+injectivity of quoting, dropping, sending and receiving (`Azoth.Rho.quote_injective`,
+`drop_injective`, `out_injective`, `in_injective`), the capture-avoiding substitution
+and its round-trip (`Azoth.Rho.subst0_var_zero`, `subst0_var_succ`,
+`subst0_under_binder`), and the communication reduction (`Azoth.Rho.comm_reduction`).
+What it does not yet have is the barbed-congruence reading `reflection_is_a_bijection`,
+which `Azoth.Barb` builds on this.*
 
 This is the claim that makes an interoperation surface possible rather than
 aspirational. A flowsheet handed to another tool, or stored in a file, or drawn in
