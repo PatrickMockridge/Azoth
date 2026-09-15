@@ -11,10 +11,11 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
 
-use crate::alpha_term::{AlphaTerm, RkAlpha, Soave};
+use crate::alpha_term::{Alpha, AlphaTerm, RkAlpha, Soave};
 use crate::cubic::Cubic;
 use crate::{
-    pr_alpha_ab, pr_kappa, pr_z_factor, rk_alpha_ab, srk_alpha_ab, srk_kappa, srk_z_factor,
+    pr78_kappa, pr_alpha_ab, pr_kappa, pr_z_factor, rk_alpha_ab, srk_alpha_ab, srk_kappa,
+    srk_z_factor, twu_kappa,
 };
 
 /// Which root of the cubic a phase claims.
@@ -121,6 +122,7 @@ pub struct Mixture {
     components: Vec<Component>,
     kij: Vec<f64>,
     cubic: Cubic,
+    alpha: Alpha,
 }
 
 impl Mixture {
@@ -185,6 +187,7 @@ impl Mixture {
             components,
             kij,
             cubic: Cubic::default(),
+            alpha: Alpha::default(),
         })
     }
 
@@ -213,13 +216,34 @@ impl Mixture {
         self.cubic
     }
 
+    /// The alpha correlation this mixture's attraction term uses.
+    #[must_use]
+    pub fn alpha(&self) -> Alpha {
+        self.alpha
+    }
+
     /// This mixture, evaluated under a different cubic.
     ///
     /// The default is Peng-Robinson; this swaps in Soave-Redlich-Kwong (or any later
-    /// cubic) without rebuilding the components or the interaction matrix.
+    /// cubic) without rebuilding the components or the interaction matrix, and resets
+    /// the alpha term to the cubic's own Soave correlation.
     #[must_use]
     pub fn with_cubic(mut self, cubic: Cubic) -> Self {
         self.cubic = cubic;
+        self.alpha = match cubic {
+            Cubic::Pr => Alpha::Pr,
+            Cubic::Srk | Cubic::Rk => Alpha::Srk,
+        };
+        self
+    }
+
+    /// This mixture, with its alpha correlation changed.
+    ///
+    /// The Soave variants share the alpha form and differ only in the `m` correlation,
+    /// so switching between them keeps the cubic's shape and changes one coefficient.
+    #[must_use]
+    pub fn with_alpha(mut self, alpha: Alpha) -> Self {
+        self.alpha = alpha;
         self
     }
 
@@ -252,32 +276,42 @@ impl Mixture {
         for component in &self.components {
             let reduced_temperature = t.value / component.tc.value;
             let reduced_pressure = p.value / component.pc.value;
-            // The kappa correlation and the reduced parameters belong to the cubic
-            // this mixture is: SRK and PR share the Soave alpha form but differ in
-            // both the coefficient and the Omega constants; RK is kappa-free.
+            // The kappa correlation belongs to the alpha term; the Omega constants to
+            // the cubic. SRK and PR share the Soave alpha form and differ in both; RK
+            // is kappa-free.
             let (a_reduced, b_reduced, psi_value, psi_t_value) = match self.cubic {
-                Cubic::Pr => {
-                    let kappa = pr_kappa(component.omega)?;
-                    warnings.extend(kappa.warnings);
-                    let ab = pr_alpha_ab(kappa.kappa, reduced_temperature, reduced_pressure)?;
-                    warnings.extend(ab.warnings);
-                    let term = Soave { kappa: kappa.kappa };
+                Cubic::Pr | Cubic::Srk => {
+                    let (kappa_value, kappa_warnings) = match self.alpha {
+                        Alpha::Pr => {
+                            let kappa = pr_kappa(component.omega)?;
+                            (kappa.kappa, kappa.warnings)
+                        }
+                        Alpha::Srk => {
+                            let kappa = srk_kappa(component.omega)?;
+                            (kappa.kappa, kappa.warnings)
+                        }
+                        Alpha::Pr78 => {
+                            let kappa = pr78_kappa(component.omega)?;
+                            (kappa.kappa, kappa.warnings)
+                        }
+                        Alpha::Twu => {
+                            let kappa = twu_kappa(component.omega)?;
+                            (kappa.kappa, kappa.warnings)
+                        }
+                    };
+                    warnings.extend(kappa_warnings);
+                    let term = Soave { kappa: kappa_value };
+                    let (a_reduced, b_reduced, ab_warnings) = if self.cubic == Cubic::Pr {
+                        let ab = pr_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)?;
+                        (ab.a_reduced, ab.b_reduced, ab.warnings)
+                    } else {
+                        let ab = srk_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)?;
+                        (ab.a_reduced, ab.b_reduced, ab.warnings)
+                    };
+                    warnings.extend(ab_warnings);
                     (
-                        ab.a_reduced,
-                        ab.b_reduced,
-                        term.psi(reduced_temperature),
-                        term.psi_t(reduced_temperature),
-                    )
-                }
-                Cubic::Srk => {
-                    let kappa = srk_kappa(component.omega)?;
-                    warnings.extend(kappa.warnings);
-                    let ab = srk_alpha_ab(kappa.kappa, reduced_temperature, reduced_pressure)?;
-                    warnings.extend(ab.warnings);
-                    let term = Soave { kappa: kappa.kappa };
-                    (
-                        ab.a_reduced,
-                        ab.b_reduced,
+                        a_reduced,
+                        b_reduced,
                         term.psi(reduced_temperature),
                         term.psi_t(reduced_temperature),
                     )

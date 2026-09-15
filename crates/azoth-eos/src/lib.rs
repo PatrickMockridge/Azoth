@@ -70,6 +70,7 @@ pub mod stability_test;
 pub mod twu_kappa;
 pub mod vdw1f_mix_binary;
 
+pub use alpha_term::Alpha;
 pub use bubble_pressure::bubble_pressure;
 pub use critical_point::critical_point;
 pub use cubic::Cubic;

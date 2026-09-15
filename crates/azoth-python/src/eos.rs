@@ -328,6 +328,7 @@ pub(crate) fn build_mixture(
     omega: &[f64],
     kij: Vec<f64>,
     eos: &str,
+    alpha: &str,
 ) -> PyResult<azoth_eos::Mixture> {
     let n = Tc.len();
     if Pc.len() != n || omega.len() != n {
@@ -345,14 +346,17 @@ pub(crate) fn build_mixture(
     let cubic: azoth_eos::Cubic = eos
         .parse()
         .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    let alpha: azoth_eos::Alpha = alpha
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
     azoth_eos::Mixture::new(components, kij)
-        .map(|m| m.with_cubic(cubic))
+        .map(|m| m.with_cubic(cubic).with_alpha(alpha))
         .map_err(|e| to_pyerr(py, e))
 }
 
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z, eos = "pr"))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z, eos = \"pr\")")]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z, eos = "pr", alpha = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z, eos = \"pr\", alpha = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn pt_flash(
@@ -365,8 +369,9 @@ pub fn pt_flash(
     P: f64,
     z: Vec<f64>,
     eos: &str,
+    alpha: &str,
 ) -> PyResult<PyPtFlashResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos, alpha)?;
     azoth_eos::pt_flash(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyPtFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
@@ -381,7 +386,7 @@ pub fn pt_flash(
 /// isenthalpic flash does not need an entropy - and are taken because they belong to
 /// the same model.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = "pr"))]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = "pr", alpha = "pr"))]
 #[pyo3(
     text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = \"pr\")"
 )]
@@ -402,8 +407,9 @@ pub fn ph_flash(
     H: f64,
     z: Vec<f64>,
     eos: &str,
+    alpha: &str,
 ) -> PyResult<PyPhFlashResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos, alpha)?;
     let ideal_gas = azoth_eos::IdealGasModel {
         cp_a,
         cp_b,
@@ -422,7 +428,7 @@ pub fn ph_flash(
 /// or an expander assumed ideal knows the pressure it leaves at and the entropy it
 /// arrived with, and not the temperature that results.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = "pr"))]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = "pr", alpha = "pr"))]
 #[pyo3(
     text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = \"pr\")"
 )]
@@ -443,8 +449,9 @@ pub fn ps_flash(
     S: f64,
     z: Vec<f64>,
     eos: &str,
+    alpha: &str,
 ) -> PyResult<PyPsFlashResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos, alpha)?;
     let ideal_gas = azoth_eos::IdealGasModel {
         cp_a,
         cp_b,
@@ -474,8 +481,8 @@ pub fn ps_flash(
 /// in a fixed order - vapour-like first - so a caller reads `tm[0]` as the vapour-like
 /// trial rather than having to look it up.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z, eos = "pr"))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z, eos = \"pr\")")]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z, eos = "pr", alpha = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z, eos = \"pr\", alpha = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn stability_test(
@@ -488,8 +495,9 @@ pub fn stability_test(
     P: f64,
     z: Vec<f64>,
     eos: &str,
+    alpha: &str,
 ) -> PyResult<PyStabilityTestResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos, alpha)?;
     azoth_eos::stability_test(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyStabilityTestResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
@@ -502,8 +510,8 @@ pub fn stability_test(
 /// temperature and a composition - and differ only in which composition it is,
 /// which is why they are two functions rather than one with a switch.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, T, held, eos = "pr"))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held, eos = \"pr\")")]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, held, eos = "pr", alpha = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held, eos = \"pr\", alpha = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn bubble_pressure(
@@ -515,8 +523,9 @@ pub fn bubble_pressure(
     T: f64,
     held: Vec<f64>,
     eos: &str,
+    alpha: &str,
 ) -> PyResult<PyPhaseBoundaryResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos, alpha)?;
     azoth_eos::bubble_pressure(&mixture, kelvins(T), &held)
         .map(|r| PyPhaseBoundaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
@@ -529,8 +538,8 @@ pub fn bubble_pressure(
 /// the same six arguments as the boundary models and returns four state variables
 /// instead of one pressure.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, z, eos = "pr"))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, z, eos = \"pr\")")]
+#[pyo3(signature = (Tc, Pc, omega, kij, z, eos = "pr", alpha = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, z, eos = \"pr\", alpha = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `z` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn critical_point(
@@ -541,8 +550,9 @@ pub fn critical_point(
     kij: Vec<f64>,
     z: Vec<f64>,
     eos: &str,
+    alpha: &str,
 ) -> PyResult<PyCriticalPointResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos, alpha)?;
     azoth_eos::critical_point(&mixture, &z)
         .map(|r| PyCriticalPointResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
@@ -550,8 +560,8 @@ pub fn critical_point(
 
 /// The pressure at which a vapour of composition `held` first condenses.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, T, held, eos = "pr"))]
-#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held, eos = \"pr\")")]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, held, eos = "pr", alpha = "pr"))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, held, eos = \"pr\", alpha = \"pr\")")]
 #[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn dew_pressure(
@@ -563,8 +573,9 @@ pub fn dew_pressure(
     T: f64,
     held: Vec<f64>,
     eos: &str,
+    alpha: &str,
 ) -> PyResult<PyPhaseBoundaryResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos, alpha)?;
     azoth_eos::dew_pressure(&mixture, kelvins(T), &held)
         .map(|r| PyPhaseBoundaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
@@ -605,11 +616,11 @@ pub fn ideal_gas_cp(
 #[pyfunction]
 #[pyo3(signature = (
     Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z,
-    compressibility, eos = "pr"
+    compressibility, eos = "pr", alpha = "pr"
 ))]
 #[pyo3(text_signature = "(
     Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z,
-    compressibility, eos = \"pr\"
+    compressibility, eos = \"pr\", alpha = \"pr\"
 )")]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -629,8 +640,9 @@ pub fn molar_enthalpy_entropy(
     z: Vec<f64>,
     compressibility: f64,
     eos: &str,
+    alpha: &str,
 ) -> PyResult<PyMolarEnthalpyEntropyResult> {
-    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos)?;
+    let mixture = build_mixture(py, &Tc, &Pc, &omega, kij, eos, alpha)?;
     let ideal_gas = azoth_eos::IdealGasModel {
         cp_a,
         cp_b,

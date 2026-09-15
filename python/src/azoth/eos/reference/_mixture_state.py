@@ -29,6 +29,7 @@ from azoth.core.warnings import Warning
 from azoth.eos.alpha_term import RkAlpha, Soave
 from azoth.eos.cubic import PR, Cubic
 from azoth.eos.mixture import Mixture
+from azoth.eos.reference.pr78_kappa import pr78_kappa
 from azoth.eos.reference.pr_alpha_ab import pr_alpha_ab
 from azoth.eos.reference.pr_kappa import pr_kappa
 from azoth.eos.reference.pr_z_factor import pr_z_factor
@@ -36,6 +37,7 @@ from azoth.eos.reference.rk_alpha_ab import rk_alpha_ab
 from azoth.eos.reference.srk_alpha_ab import srk_alpha_ab
 from azoth.eos.reference.srk_kappa import srk_kappa
 from azoth.eos.reference.srk_z_factor import srk_z_factor
+from azoth.eos.reference.twu_kappa import twu_kappa
 
 #: Wilson's constant. Some sources print 5.37 and the paper is dated 1968 in some
 #: and 1969 in others; the discrepancy is recorded in the model specs' references
@@ -127,6 +129,21 @@ class PhaseState(NamedTuple):
     cp_dep_r: float
 
 
+def _soave_kappa(alpha: str, omega: float) -> tuple[float, tuple[Warning, ...]]:
+    """The Soave ``m`` for one component, from the alpha correlation named."""
+    if alpha == "srk":
+        srk_result = srk_kappa(omega)
+        return srk_result.kappa, srk_result.warnings
+    if alpha == "pr78":
+        pr78_result = pr78_kappa(omega)
+        return pr78_result.kappa, pr78_result.warnings
+    if alpha == "twu":
+        twu_result = twu_kappa(omega)
+        return twu_result.kappa, twu_result.warnings
+    pr_result = pr_kappa(omega)
+    return pr_result.kappa, pr_result.warnings
+
+
 def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) -> ReducedParameters:
     """``(A_i, B_i, psi_i, T*dpsi_i/dT, warnings)`` for every component at a state."""
     a: list[float] = []
@@ -148,26 +165,23 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
             b_reduced = rk_ab.b_reduced
             psi_value = rk_term.psi(reduced_temperature)
             psi_t_value = rk_term.psi_t(reduced_temperature)
-        elif mixture.cubic.name == "srk":
-            srk_result = srk_kappa(component.omega)
-            srk_ab = srk_alpha_ab(srk_result.kappa, reduced_temperature, reduced_pressure)
-            warnings.extend(srk_result.warnings)
-            warnings.extend(srk_ab.warnings)
-            srk_term = Soave(kappa=srk_result.kappa)
-            a_reduced = srk_ab.a_reduced
-            b_reduced = srk_ab.b_reduced
-            psi_value = srk_term.psi(reduced_temperature)
-            psi_t_value = srk_term.psi_t(reduced_temperature)
         else:
-            pr_result = pr_kappa(component.omega)
-            pr_ab = pr_alpha_ab(pr_result.kappa, reduced_temperature, reduced_pressure)
-            warnings.extend(pr_result.warnings)
-            warnings.extend(pr_ab.warnings)
-            pr_term = Soave(kappa=pr_result.kappa)
-            a_reduced = pr_ab.a_reduced
-            b_reduced = pr_ab.b_reduced
-            psi_value = pr_term.psi(reduced_temperature)
-            psi_t_value = pr_term.psi_t(reduced_temperature)
+            # The kappa correlation belongs to the alpha term; the Omega to the cubic.
+            kappa_value, kappa_warnings = _soave_kappa(mixture.alpha, component.omega)
+            warnings.extend(kappa_warnings)
+            if mixture.cubic.name == "pr":
+                pr_ab = pr_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)
+                warnings.extend(pr_ab.warnings)
+                a_reduced = pr_ab.a_reduced
+                b_reduced = pr_ab.b_reduced
+            else:
+                srk_ab = srk_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)
+                warnings.extend(srk_ab.warnings)
+                a_reduced = srk_ab.a_reduced
+                b_reduced = srk_ab.b_reduced
+            term = Soave(kappa=kappa_value)
+            psi_value = term.psi(reduced_temperature)
+            psi_t_value = term.psi_t(reduced_temperature)
         # The alpha term's own two derivatives, so the form lives in one place rather
         # than being restated per call site.
         a.append(a_reduced)

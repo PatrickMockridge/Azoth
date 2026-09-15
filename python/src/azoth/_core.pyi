@@ -410,6 +410,7 @@ def bubble_pressure(
     T: float,
     x: list[float],
     eos: str = "pr",
+    alpha: str = "pr",
 ) -> BubblePressureResult: ...
 def critical_point(
     Tc: list[float],
@@ -418,6 +419,7 @@ def critical_point(
     kij: list[float],
     z: list[float],
     eos: str = "pr",
+    alpha: str = "pr",
 ) -> CriticalPointResult: ...
 def dew_pressure(
     Tc: list[float],
@@ -427,6 +429,7 @@ def dew_pressure(
     T: float,
     y: list[float],
     eos: str = "pr",
+    alpha: str = "pr",
 ) -> DewPressureResult: ...
 def ideal_gas_cp(
     cp_a: float,
@@ -451,6 +454,7 @@ def molar_enthalpy_entropy(
     z: list[float],
     compressibility: float,
     eos: str = "pr",
+    alpha: str = "pr",
 ) -> MolarEnthalpyEntropyResult: ...
 def ph_flash(
     Tc: list[float],
@@ -466,6 +470,7 @@ def ph_flash(
     H: float,
     z: list[float],
     eos: str = "pr",
+    alpha: str = "pr",
 ) -> PhFlashResult: ...
 def pr78_kappa(omega: float) -> Pr78KappaResult: ...
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
@@ -495,6 +500,7 @@ def ps_flash(
     S: float,
     z: list[float],
     eos: str = "pr",
+    alpha: str = "pr",
 ) -> PsFlashResult: ...
 def pt_flash(
     Tc: list[float],
@@ -505,6 +511,7 @@ def pt_flash(
     P: float,
     z: list[float],
     eos: str = "pr",
+    alpha: str = "pr",
 ) -> PtFlashResult: ...
 def pure_saturation(Tc: float, Pc: float, omega: float, T: float) -> PureSaturationResult: ...
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
@@ -529,6 +536,7 @@ def stability_test(
     P: float,
     z: list[float],
     eos: str = "pr",
+    alpha: str = "pr",
 ) -> StabilityTestResult: ...
 def twu_kappa(omega: float) -> TwuKappaResult: ...
 def vdw1f_mix_binary(

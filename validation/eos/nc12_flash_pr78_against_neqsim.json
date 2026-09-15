@@ -1,0 +1,23 @@
+{
+  "id": "nc12_flash_pr78_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with AttractiveTermPr1978 - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "A heavy pure component (n-dodecane, omega = 0.5764) above its critical temperature, so the 1978 alpha term's heavier-acentric branch applies - the branch the plain Peng-Robinson form does not reach. The compressibility is the physics and matches to the last printed digit."
+  },
+  "derivation": "The driver was run for n-dodecane (nc12) at 500 K and 15 bar on SystemPrEos with `setAttractiveTerm(6)` - the 1978 Peng-Robinson term, whose m is `0.379642 + 1.48503 omega - 0.164423 omega^2 + 0.01666 omega^3` for omega above 0.49. NeqSim printed:\n\n  beta 1.0\n  Zl   0.11148976303340165\n  Zv   0.11148976303340165\n\nazoth reproduces the compressibility to 1e-17: `eos.pr78_kappa` gives 1.21506628 for nc12's omega, and the PR cubic with that coefficient gives z = 0.11148976303340166. The plain PR term gives z = 0.11159545873860424 - the difference is the whole point of the 1978 branch, and this case pins that azoth takes it. `beta` is omitted for the same reason the pure-propane cases omit it: NeqSim reports 1.0 for a single-phase feed and azoth reports the absence.",
+  "eos": "pr",
+  "alpha": "pr78",
+  "inputs": {
+    "components": ["nc12"],
+    "T": 500.0,
+    "P": 1500000.0,
+    "z": [1.0]
+  },
+  "expected": {
+    "z_liquid": 0.11148976303340165,
+    "z_vapour": 0.11148976303340165
+  },
+  "tolerance": 1.0e-10
+}

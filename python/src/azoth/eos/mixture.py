@@ -76,6 +76,7 @@ class Mixture:
     components: tuple[Component, ...]
     kij: tuple[tuple[float, ...], ...] = field(default=())
     cubic: Cubic = field(default=PR)
+    alpha: str = field(default="pr")
 
     def __post_init__(self) -> None:
         if not self.components:
@@ -121,6 +122,7 @@ def mixture(
     components: Iterable[Component],
     kij: Mapping[tuple[int, int], float] | None = None,
     cubic: Cubic = PR,
+    alpha: str = "pr",
 ) -> Mixture:
     """A :class:`Mixture` from a component list and sparse interaction pairs.
 
@@ -163,4 +165,5 @@ def mixture(
         components=resolved,
         kij=tuple(tuple(row) for row in matrix),
         cubic=cubic,
+        alpha=alpha,
     )

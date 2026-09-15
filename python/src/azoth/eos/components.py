@@ -332,15 +332,37 @@ def kij_for(
 
 
 def _cubic(name: str) -> Cubic:
-    """The cubic named by its short name, ``"pr"`` or ``"srk"``."""
+    """The cubic named by its short name, ``"pr"``, ``"srk"`` or ``"rk"``."""
     try:
         return CUBICS[name]
     except KeyError:
-        raise InvalidInputError("eos", f"unknown cubic {name!r}; expected 'pr' or 'srk'") from None
+        raise InvalidInputError(
+            "eos", f"unknown cubic {name!r}; expected 'pr', 'srk' or 'rk'"
+        ) from None
+
+
+#: The Soave alpha correlations, keyed by short name. Each feeds the one Soave alpha
+#: form with a different `m`.
+_ALPHAS: frozenset[str] = frozenset({"pr", "srk", "pr78", "twu"})
+
+
+def _alpha_name(cubic_name: str, alpha: str | None) -> str:
+    """The alpha correlation named, defaulting to the cubic's own Soave form."""
+    if alpha is None:
+        return "srk" if cubic_name == "srk" else "pr"
+    if alpha not in _ALPHAS:
+        raise InvalidInputError(
+            "alpha", f"unknown alpha {alpha!r}; expected one of {sorted(_ALPHAS)}"
+        )
+    return alpha
 
 
 def from_names(
-    names: list[str], *, card: keycard.Keycard | None = None, eos: str = "pr"
+    names: list[str],
+    *,
+    card: keycard.Keycard | None = None,
+    eos: str = "pr",
+    alpha: str | None = None,
 ) -> Mixture:
     """A :class:`~azoth.eos.mixture.Mixture` from a list of databank names.
 
@@ -357,13 +379,20 @@ def from_names(
         InvalidInputError: if the list is empty, or a pair is malformed.
     """
     cubic = _cubic(eos)
+    alpha_name = _alpha_name(eos, alpha)
     resolved = [name.strip().lower() for name in names]
     components = tuple(component(name, card=card) for name in resolved)
-    return mixture(components, kij=kij_for(tuple(resolved), card=card), cubic=cubic)
+    return mixture(
+        components, kij=kij_for(tuple(resolved), card=card), cubic=cubic, alpha=alpha_name
+    )
 
 
 def mixture_of(
-    names: list[str], *, card: keycard.Keycard | None = None, eos: str = "pr"
+    names: list[str],
+    *,
+    card: keycard.Keycard | None = None,
+    eos: str = "pr",
+    alpha: str | None = None,
 ) -> tuple[Mixture, IdealGasModel]:
     """A mixture and its ideal-gas model, from a list of databank names.
 
@@ -408,6 +437,7 @@ def mixture_of(
             tuple(e.component() for e in entries),
             kij=kij_for(tuple(resolved), card=card),
             cubic=_cubic(eos),
+            alpha=_alpha_name(eos, alpha),
         ),
         IdealGasModel(
             cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]

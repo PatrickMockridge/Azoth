@@ -23,6 +23,55 @@ pub trait AlphaTerm {
     fn psi_t(&self, tr: f64) -> f64;
 }
 
+/// Which alpha correlation a mixture's attraction term uses.
+///
+/// The alpha *form* is shared by the Soave variants - they differ only in the `m`
+/// correlation, so each is a distinct kappa calc feeding the same [`Soave`] term. RK's
+/// `1/sqrt(Tr)` is the odd one out and stays coupled to [`crate::cubic::Cubic::Rk`].
+/// This is NeqSim's `attractiveTermNumber`, the axis that is independent of the cubic's
+/// shape.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Alpha {
+    /// Peng-Robinson's `m`, from `eos.pr_kappa`.
+    #[default]
+    Pr,
+    /// Soave's `m`, from `eos.srk_kappa`.
+    Srk,
+    /// The 1978 Peng-Robinson `m`, from `eos.pr78_kappa`.
+    Pr78,
+    /// Twu's `m`, from `eos.twu_kappa`.
+    Twu,
+}
+
+impl Alpha {
+    /// The short name that crosses the Python boundary.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Alpha::Pr => "pr",
+            Alpha::Srk => "srk",
+            Alpha::Pr78 => "pr78",
+            Alpha::Twu => "twu",
+        }
+    }
+}
+
+impl std::str::FromStr for Alpha {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "pr" => Ok(Alpha::Pr),
+            "srk" => Ok(Alpha::Srk),
+            "pr78" => Ok(Alpha::Pr78),
+            "twu" => Ok(Alpha::Twu),
+            other => Err(format!(
+                "unknown alpha `{other}`; expected `pr`, `srk`, `pr78` or `twu`"
+            )),
+        }
+    }
+}
+
 /// Soave's correlation: `alpha = (1 + m(1 - sqrt(Tr)))**2`.
 ///
 /// Peng-Robinson and Soave-Redlich-Kwong share this form and differ only in the

@@ -538,6 +538,7 @@ def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
         input_to_si(spec, "P", P),
         list(z),
         mixture.cubic.name,
+        mixture.alpha,
     )
     return PtFlashResult(
         beta=result.beta,
@@ -584,6 +585,7 @@ def ph_flash(mixture: Any, ideal_gas: Any, P: Q, H: Q, z: Sequence[float]) -> Ph
         input_to_si(spec, "H", H),
         list(z),
         mixture.cubic.name,
+        mixture.alpha,
     )
     return PhFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
@@ -621,6 +623,7 @@ def ps_flash(mixture: Any, ideal_gas: Any, P: Q, S: Q, z: Sequence[float]) -> Ps
         input_to_si(spec, "S", S),
         list(z),
         mixture.cubic.name,
+        mixture.alpha,
     )
     return PsFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
@@ -659,6 +662,7 @@ def stability_test(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> StabilityTes
         input_to_si(spec, "P", P),
         list(z),
         mixture.cubic.name,
+        mixture.alpha,
     )
     return StabilityTestResult(
         verdict=_StabilityVerdict(result.verdict),
@@ -707,6 +711,7 @@ def bubble_pressure(mixture: Any, T: Q, x: Sequence[float]) -> BubblePressureRes
         input_to_si(spec, "T", T),
         list(x),
         mixture.cubic.name,
+        mixture.alpha,
     )
     return _boundary_result(raw, BubblePressureResult, liquid_first=True)  # type: ignore[no-any-return]
 
@@ -725,6 +730,7 @@ def critical_point(mixture: Any, z: Sequence[float]) -> CriticalPointResult:
         mixture.flattened_kij(),
         list(z),
         mixture.cubic.name,
+        mixture.alpha,
     )
     return CriticalPointResult(
         tc=from_si(raw.tc.magnitude_si, "K"),
@@ -753,6 +759,7 @@ def dew_pressure(mixture: Any, T: Q, y: Sequence[float]) -> DewPressureResult:
         input_to_si(spec, "T", T),
         list(y),
         mixture.cubic.name,
+        mixture.alpha,
     )
     return _boundary_result(raw, DewPressureResult, liquid_first=False)  # type: ignore[no-any-return]
 
@@ -782,6 +789,7 @@ def molar_enthalpy_entropy(
         list(z),
         compressibility,
         mixture.cubic.name,
+        mixture.alpha,
     )
     return MolarEnthalpyEntropyResult(
         h=from_si(result.h.magnitude_si, result.h.unit),
