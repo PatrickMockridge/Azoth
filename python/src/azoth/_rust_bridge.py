@@ -36,9 +36,11 @@ from azoth.core.result import (
     DewPressureResult,
     FlowRegime,
     HaalandResult,
+    HeatOfVaporizationResult,
     IdealGasCpResult,
     KComponent,
     KFactorsResult,
+    LiquidHeatCapacityResult,
     MolarEnthalpyEntropyResult,
     OrificeFlowResult,
     PhFlashResult,
@@ -449,6 +451,44 @@ def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:
     )
     return SrkPenelouxShiftResult(
         c=from_si(result.c.magnitude_si, result.c.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def heat_of_vaporization(
+    c0: float, c1: float, c2: float, c3: float, Tc: Q, T: Q
+) -> HeatOfVaporizationResult:
+    """The pure-component heat of vaporisation, computed in Rust."""
+    spec = _spec_for("eos.heat_of_vaporization")
+    result = _core.heat_of_vaporization(
+        c0,
+        c1,
+        c2,
+        c3,
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "T", T),
+    )
+    return HeatOfVaporizationResult(
+        hov=from_si(result.hov.magnitude_si, result.hov.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def liquid_heat_capacity(
+    c0: float, c1: float, c2: float, c3: float, c4: float, T: Q
+) -> LiquidHeatCapacityResult:
+    """The pure-component liquid heat capacity, computed in Rust."""
+    spec = _spec_for("eos.liquid_heat_capacity")
+    result = _core.liquid_heat_capacity(
+        c0,
+        c1,
+        c2,
+        c3,
+        c4,
+        input_to_si(spec, "T", T),
+    )
+    return LiquidHeatCapacityResult(
+        cp=from_si(result.cp.magnitude_si, result.cp.unit),
         warnings=_warnings(result.warnings),
     )
 

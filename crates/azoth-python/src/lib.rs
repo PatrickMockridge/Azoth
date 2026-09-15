@@ -144,6 +144,8 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pr_mass_density, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_peneloux_shift, m)?)?;
     m.add_function(wrap_pyfunction!(eos::srk_peneloux_shift, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::heat_of_vaporization, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::liquid_heat_capacity, m)?)?;
 
     // Models: the same shape, a different spec tree and generator.
     m.add_function(wrap_pyfunction!(eos::pure_saturation, m)?)?;

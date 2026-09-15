@@ -144,7 +144,17 @@ class DewPressureResult:
     warnings: list[Warning]
 
 @final
+class HeatOfVaporizationResult:
+    hov: Qty
+    warnings: list[Warning]
+
+@final
 class IdealGasCpResult:
+    cp: Qty
+    warnings: list[Warning]
+
+@final
+class LiquidHeatCapacityResult:
     cp: Qty
     warnings: list[Warning]
 
@@ -444,6 +454,14 @@ def dew_pressure(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> DewPressureResult: ...
+def heat_of_vaporization(
+    c0: float,
+    c1: float,
+    c2: float,
+    c3: float,
+    Tc: float,
+    T: float,
+) -> HeatOfVaporizationResult: ...
 def ideal_gas_cp(
     cp_a: float,
     cp_b: float,
@@ -452,6 +470,14 @@ def ideal_gas_cp(
     cp_e: float,
     T: float,
 ) -> IdealGasCpResult: ...
+def liquid_heat_capacity(
+    c0: float,
+    c1: float,
+    c2: float,
+    c3: float,
+    c4: float,
+    T: float,
+) -> LiquidHeatCapacityResult: ...
 def molar_enthalpy_entropy(
     Tc: list[float],
     Pc: list[float],

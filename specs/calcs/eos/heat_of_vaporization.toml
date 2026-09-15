@@ -1,0 +1,84 @@
+id = "eos.heat_of_vaporization"
+name = "Heat of vaporisation from NeqSim's correlation"
+equation = "hov = 1e-3 * c0 * (1 - Tr)**(c1 + c2*Tr + c3*Tr**2)"
+latex = '''\Delta h_{\mathrm{vap}} = 10^{-3}\,c_0\,\left(1 - T_r\right)^{c_1 + c_2 T_r + c_3 T_r^{2}}'''
+assumptions = ["the four coefficients are the raw `heatofvaporizationcoefs1..4` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/mol` from them. NOT CHECKED - the coefficients come from the caller.\n", "`Tr` is reduced against the critical temperature the caller supplies.\n", "the correlation is a fit of limited range; NeqSim's own data is inconsistent across components (methane's `c0` is three orders of magnitude smaller than n-butane's), which this calc reproduces rather than repairs.\n", "this calc returns a pure-component property and says nothing about a mixture or a phase.\n"]
+references = ["Watson, K. M. (1943). \\\"Thermodynamics of the Liquid State.\\\" Ind. Eng. Chem. 35(4), 398-406. DOI 10.1021/ie50400a004."]
+[source]
+standard = "NeqSim's `getPureComponentHeatOfVaporization`"
+edition = "the correlation NeqSim 3.20.0 evaluates in `thermo/component/Component.java`, ported verbatim"
+[inputs]
+[inputs.c0]
+unit = "dimensionless"
+description = "The first heat-of-vaporisation coefficient, NeqSim's internal scale.\n"
+[inputs.c1]
+unit = "dimensionless"
+description = "The exponent's constant term.\n"
+[inputs.c2]
+unit = "dimensionless"
+description = "The exponent's linear term.\n"
+[inputs.c3]
+unit = "dimensionless"
+description = "The exponent's quadratic term.\n"
+[inputs.Tc]
+unit = "K"
+description = "Critical temperature of the pure component.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature.\n"
+[outputs]
+[outputs.hov]
+unit = "J/mol"
+description = "The pure-component heat of vaporisation at `T`.\n"
+[[valid_range]]
+quantity = "Tc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Tc` is the divisor in `Tr = T/Tc`; zero or negative is not a critical temperature.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "n-butane, c0 = 5.21e7, c1 = 0.32, c2 = -0.212, c3 = 0.258, Tc = 425.12 K, at T = 300 K:\n\n  Tr = 300 / 425.12            = 0.7056831012420023\n  1 - Tr                      = 0.2943168987579977\n  exponent = 0.32 - 0.212*Tr + 0.258*Tr**2\n            = 0.32 - 0.1496026256... + 0.128547...\n            = 0.29887625149635627\n  (1 - Tr)**exponent          = 0.6938114739234226\n  1e-3 * c0                   = 52100.0\n  hov = 52100.0 * 0.6938114739234226 = 36147.57779141032 J/mol\n"
+tolerance = 1e-12
+[worked_example.inputs]
+c0 = 52100000.0
+c1 = 0.32
+c2 = -0.212
+c3 = 0.258
+Tc = 425.12
+T = 300.0
+[worked_example.expected]
+hov = 36147.57779141032
+[implementations]
+python = "azoth.eos.heat_of_vaporization"
+rust = "azoth_eos::heat_of_vaporization"
+[[tests]]
+id = "n_butane_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "methane_at_a_constant_heat_of_vaporisation"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at methane's coefficients, c0 = 8170, c1 = c2 = c3 = 0, Tc = 190.56 K, at T = 300 K:\n\n  exponent = 0, so (1 - Tr)**0 = 1\n  hov = 1e-3 * 8170 * 1 = 8.17 J/mol\n\nwhich reproduces NeqSim's value for methane, whose `c0` is three orders of magnitude smaller than the other components' - a data inconsistency this calc does not repair.\n"
+tolerance = 1e-12
+[tests.inputs]
+c0 = 8170.0
+c1 = 0.0
+c2 = 0.0
+c3 = 0.0
+Tc = 190.56
+T = 300.0
+[tests.expected]
+hov = 8.17
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

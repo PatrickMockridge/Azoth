@@ -775,6 +775,42 @@ impl CalcResult for SrkPenelouxShiftResult {
     }
 }
 
+/// Result of `eos.heat_of_vaporization`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HeatOfVaporizationResult {
+    /// The pure-component heat of vaporisation.
+    pub hov: MolarEnergy,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HeatOfVaporizationResult {
+    const CALC_ID: &'static str = "eos.heat_of_vaporization";
+    const FIELDS: &'static [&'static str] = &["hov", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.liquid_heat_capacity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LiquidHeatCapacityResult {
+    /// The pure-component liquid heat capacity.
+    pub cp: MolarHeatCapacity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for LiquidHeatCapacityResult {
+    const CALC_ID: &'static str = "eos.liquid_heat_capacity";
+    const FIELDS: &'static [&'static str] = &["cp", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SrkAlphaAbResult {

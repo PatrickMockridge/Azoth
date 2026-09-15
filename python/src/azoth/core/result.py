@@ -366,6 +366,26 @@ class SrkPenelouxShiftResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HeatOfVaporizationResult(_HasWarnings):
+    """Result of ``eos.heat_of_vaporization``."""
+
+    #: The pure-component heat of vaporisation.
+    hov: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class LiquidHeatCapacityResult(_HasWarnings):
+    """Result of ``eos.liquid_heat_capacity``."""
+
+    #: The pure-component liquid heat capacity.
+    cp: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Vdw1fMixBinaryResult(_HasWarnings):
     """Result of ``eos.vdw1f_mix_binary``.
 

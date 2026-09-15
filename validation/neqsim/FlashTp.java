@@ -109,8 +109,20 @@ public class FlashTp {
     }
   }
 
+  /** The pure-component correlations `eos.heat_of_vaporization` and `eos.liquid_heat_capacity` port. */
+  static void corr() {
+    SystemInterface fluid = new SystemPrEos(300.0, 10.0);
+    fluid.addComponent("n-butane", 1.0);
+    fluid.addComponent("water", 1.0);
+    System.out.println("n-butane  hov(300 K) = "
+        + fluid.getPhase(0).getComponent(0).getPureComponentHeatOfVaporization(300.0) + " J/mol");
+    System.out.println("water     cpL(300 K) = "
+        + fluid.getPhase(0).getComponent(1).getPureComponentCpLiquid(300.0) + " J/(mol*K)");
+  }
+
   public static void main(String[] args) {
     volcorr();
+    corr();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 1);
     flash("propane, 1.0, 300 K, 9 bar",

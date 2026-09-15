@@ -62,7 +62,9 @@ Four sections, and the difference between them is the point:
 <!-- BEGIN GENERATED: implemented -->
 **Equations of state** - [`eos/index.md`](./eos/index.md):
 
+- [`eos.heat_of_vaporization`](./eos/heat_of_vaporization.md)
 - [`eos.ideal_gas_cp`](./eos/ideal_gas_cp.md)
+- [`eos.liquid_heat_capacity`](./eos/liquid_heat_capacity.md)
 - [`eos.pr78_kappa`](./eos/pr78_kappa.md)
 - [`eos.pr_alpha_ab`](./eos/pr_alpha_ab.md)
 - [`eos.pr_departure`](./eos/pr_departure.md)

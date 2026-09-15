@@ -1,0 +1,78 @@
+id = "eos.liquid_heat_capacity"
+name = "Liquid heat capacity from NeqSim's polynomial"
+equation = "cp = 1e-3 * (c0 + c1*T + c2*T**2 + c3*T**3 + c4*T**4)"
+latex = '''c_{p}^{\mathrm{liq}} = 10^{-3}\,\left(c_0 + c_1 T + c_2 T^{2} + c_3 T^{3} + c_4 T^{4}\right)'''
+assumptions = ["the five coefficients are the raw `cpliquid1..5` NeqSim ships, in its internal unit; the `1e-3` in the equation is what recovers `J/(mol*K)` from them. NOT CHECKED - the coefficients come from the caller.\n", "the polynomial is a fit of limited range; it is zero for most hydrocarbons NeqSim ships, which carry only an ideal-gas heat capacity.\n", "this calc returns a pure-component property and says nothing about a mixture.\n"]
+references = ["Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. (2001). \\\"The Properties of Gases and Liquids\\\", 5th ed. McGraw-Hill."]
+[source]
+standard = "NeqSim's `getPureComponentCpLiquid`"
+edition = "the correlation NeqSim 3.20.0 evaluates in `thermo/component/Component.java`, ported verbatim"
+[inputs]
+[inputs.c0]
+unit = "dimensionless"
+description = "The constant term, NeqSim's internal scale.\n"
+[inputs.c1]
+unit = "dimensionless"
+description = "The coefficient of `T`.\n"
+[inputs.c2]
+unit = "dimensionless"
+description = "The coefficient of `T**2`.\n"
+[inputs.c3]
+unit = "dimensionless"
+description = "The coefficient of `T**3`.\n"
+[inputs.c4]
+unit = "dimensionless"
+description = "The coefficient of `T**4`.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature.\n"
+[outputs]
+[outputs.cp]
+unit = "J/(mol*K)"
+description = "The pure-component liquid heat capacity at `T`.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "Water, c0 = 276370, c1 = -2090.1, c2 = 8.125, c3 = -0.014116, c4 = 9.37e-6, at T = 300 K:\n\n  c0              = 276370.0\n  c1*T            = -2090.1 * 300 = -627030.0\n  c2*T**2         = 8.125 * 90000 = 731250.0\n  c3*T**3         = -0.014116 * 2.7e7 = -381132.0\n  c4*T**4         = 9.37e-6 * 8.1e9 = 75897.0\n  sum             = 75355.0\n  cp = 1e-3 * 75355.0 = 75.355 J/(mol*K)\n"
+tolerance = 1e-12
+[worked_example.inputs]
+c0 = 276370.0
+c1 = -2090.1
+c2 = 8.125
+c3 = -0.014116
+c4 = 9.37e-6
+T = 300.0
+[worked_example.expected]
+cp = 75.355
+[implementations]
+python = "azoth.eos.liquid_heat_capacity"
+rust = "azoth_eos::liquid_heat_capacity"
+[[tests]]
+id = "water_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_hydrocarbon_without_liquid_coefficients"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at n-butane's coefficients - all zero, which is how NeqSim ships most hydrocarbons:\n\n  cp = 1e-3 * 0 = 0.0 J/(mol*K)\n"
+tolerance = 1e-12
+[tests.inputs]
+c0 = 0.0
+c1 = 0.0
+c2 = 0.0
+c3 = 0.0
+c4 = 0.0
+T = 300.0
+[tests.expected]
+cp = 0.0
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

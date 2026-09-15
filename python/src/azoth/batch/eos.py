@@ -23,7 +23,9 @@ from azoth.core.result import RootStructure
 from azoth.core.warnings import Warning
 
 __all__ = [
+    "HeatOfVaporizationBatch",
     "IdealGasCpBatch",
+    "LiquidHeatCapacityBatch",
     "Pr78KappaBatch",
     "PrAlphaAbBatch",
     "PrDepartureBatch",
@@ -43,7 +45,9 @@ __all__ = [
     "SrkZFactorBatch",
     "TwuKappaBatch",
     "Vdw1fMixBinaryBatch",
+    "heat_of_vaporization",
     "ideal_gas_cp",
+    "liquid_heat_capacity",
     "pr78_kappa",
     "pr_alpha_ab",
     "pr_departure",
@@ -77,6 +81,8 @@ _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
 _PR_PENELOUX_SHIFT = "eos.pr_peneloux_shift"
 _SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
+_HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
+_LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _SRK_KAPPA = "eos.srk_kappa"
 _SRK_ALPHA_AB = "eos.srk_alpha_ab"
 _SRK_Z_FACTOR = "eos.srk_z_factor"
@@ -557,6 +563,88 @@ def srk_peneloux_shift(
             "Pc": sequence(Pc, "Pc"),
         },
         _build_srk_peneloux_shift,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class HeatOfVaporizationBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.heat_of_vaporization`."""
+
+    #: Heat of vaporisation per element, in J/mol.
+    hov: array[float]
+
+
+def _build_heat_of_vaporization(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> HeatOfVaporizationBatch:
+    return HeatOfVaporizationBatch(warnings=warnings, units=units, hov=columns["hov"])  # type: ignore[arg-type]
+
+
+def heat_of_vaporization(
+    *,
+    c0: Sequence[float],
+    c1: Sequence[float],
+    c2: Sequence[float],
+    c3: Sequence[float],
+    Tc: Sequence[float],
+    T: Sequence[float],
+) -> HeatOfVaporizationBatch:
+    """The pure-component heat of vaporisation, over arrays."""
+    result: HeatOfVaporizationBatch = run(
+        _HEAT_OF_VAPORIZATION,
+        {
+            "c0": sequence(c0, "c0"),
+            "c1": sequence(c1, "c1"),
+            "c2": sequence(c2, "c2"),
+            "c3": sequence(c3, "c3"),
+            "Tc": sequence(Tc, "Tc"),
+            "T": sequence(T, "T"),
+        },
+        _build_heat_of_vaporization,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class LiquidHeatCapacityBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.liquid_heat_capacity`."""
+
+    #: Liquid heat capacity per element, in J/(mol*K).
+    cp: array[float]
+
+
+def _build_liquid_heat_capacity(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> LiquidHeatCapacityBatch:
+    return LiquidHeatCapacityBatch(warnings=warnings, units=units, cp=columns["cp"])  # type: ignore[arg-type]
+
+
+def liquid_heat_capacity(
+    *,
+    c0: Sequence[float],
+    c1: Sequence[float],
+    c2: Sequence[float],
+    c3: Sequence[float],
+    c4: Sequence[float],
+    T: Sequence[float],
+) -> LiquidHeatCapacityBatch:
+    """The pure-component liquid heat capacity, over arrays."""
+    result: LiquidHeatCapacityBatch = run(
+        _LIQUID_HEAT_CAPACITY,
+        {
+            "c0": sequence(c0, "c0"),
+            "c1": sequence(c1, "c1"),
+            "c2": sequence(c2, "c2"),
+            "c3": sequence(c3, "c3"),
+            "c4": sequence(c4, "c4"),
+            "T": sequence(T, "T"),
+        },
+        _build_liquid_heat_capacity,
     )
     return result
 

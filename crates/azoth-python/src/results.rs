@@ -17,13 +17,14 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
-    MolarEnthalpyEntropyResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
-    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PureSaturationResult,
-    RachfordRiceBinaryResult, RkAlphaAbResult, RkDepartureResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, TwuKappaResult, Vdw1fMixBinaryResult,
+    BubblePressureResult, CriticalPointResult, DewPressureResult, HeatOfVaporizationResult,
+    IdealGasCpResult, LiquidHeatCapacityResult, MolarEnthalpyEntropyResult, PhFlashResult,
+    Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RkAlphaAbResult,
+    RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
+    Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -870,6 +871,84 @@ impl From<&SrkPenelouxShiftResult> for PySrkPenelouxShiftResult {
             c: PyQty {
                 magnitude_si: r.c.value,
                 unit: "m**3/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.heat_of_vaporization`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HeatOfVaporizationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHeatOfVaporizationResult {
+    /// The pure-component heat of vaporisation, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub hov: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHeatOfVaporizationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HeatOfVaporizationResult(hov={} {})",
+            self.hov.magnitude_si, self.hov.unit
+        )
+    }
+}
+
+impl From<&HeatOfVaporizationResult> for PyHeatOfVaporizationResult {
+    fn from(r: &HeatOfVaporizationResult) -> Self {
+        Self {
+            hov: PyQty {
+                magnitude_si: r.hov.value,
+                unit: "J/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.liquid_heat_capacity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LiquidHeatCapacityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLiquidHeatCapacityResult {
+    /// The pure-component liquid heat capacity, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub cp: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyLiquidHeatCapacityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "LiquidHeatCapacityResult(cp={} {})",
+            self.cp.magnitude_si, self.cp.unit
+        )
+    }
+}
+
+impl From<&LiquidHeatCapacityResult> for PyLiquidHeatCapacityResult {
+    fn from(r: &LiquidHeatCapacityResult) -> Self {
+        Self {
+            cp: PyQty {
+                magnitude_si: r.cp.value,
+                unit: "J/(mol*K)".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -2169,6 +2248,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrMassDensityResult::CALC_ID => PrMassDensityResult::FIELDS.to_vec(),
         PrPenelouxShiftResult::CALC_ID => PrPenelouxShiftResult::FIELDS.to_vec(),
         SrkPenelouxShiftResult::CALC_ID => SrkPenelouxShiftResult::FIELDS.to_vec(),
+        HeatOfVaporizationResult::CALC_ID => HeatOfVaporizationResult::FIELDS.to_vec(),
+        LiquidHeatCapacityResult::CALC_ID => LiquidHeatCapacityResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
@@ -2226,6 +2307,8 @@ pub fn calc_ids() -> Vec<String> {
         PrMassDensityResult::CALC_ID.to_string(),
         PrPenelouxShiftResult::CALC_ID.to_string(),
         SrkPenelouxShiftResult::CALC_ID.to_string(),
+        HeatOfVaporizationResult::CALC_ID.to_string(),
+        LiquidHeatCapacityResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

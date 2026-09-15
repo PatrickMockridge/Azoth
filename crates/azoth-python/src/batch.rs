@@ -827,6 +827,55 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "c", "m**3/mol", c);
         }
 
+        "eos.heat_of_vaporization" => {
+            let (c0, c1, c2, c3, tc, t) = (
+                take(&inputs, "c0")?,
+                take(&inputs, "c1")?,
+                take(&inputs, "c2")?,
+                take(&inputs, "c3")?,
+                take(&inputs, "Tc")?,
+                take(&inputs, "T")?,
+            );
+            let mut hov = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::heat_of_vaporization(
+                        c0[i],
+                        c1[i],
+                        c2[i],
+                        c3[i],
+                        kelvins(tc[i]),
+                        kelvins(t[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                hov.push(r.hov.value);
+            }
+            push_values(&mut columns, "hov", "J/mol", hov);
+        }
+
+        "eos.liquid_heat_capacity" => {
+            let (c0, c1, c2, c3, c4, t) = (
+                take(&inputs, "c0")?,
+                take(&inputs, "c1")?,
+                take(&inputs, "c2")?,
+                take(&inputs, "c3")?,
+                take(&inputs, "c4")?,
+                take(&inputs, "T")?,
+            );
+            let mut cp = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::liquid_heat_capacity(c0[i], c1[i], c2[i], c3[i], c4[i], kelvins(t[i])),
+                    &mut warnings,
+                )?;
+                cp.push(r.cp.value);
+            }
+            push_values(&mut columns, "cp", "J/(mol*K)", cp);
+        }
+
         other => {
             return Err(pyo3::exceptions::PyNotImplementedError::new_err(format!(
                 "no batch arm for `{other}`"

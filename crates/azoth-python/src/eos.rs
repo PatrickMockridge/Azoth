@@ -15,7 +15,8 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyCriticalPointResult, PyIdealGasCpResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
+    PyCriticalPointResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
+    PyLiquidHeatCapacityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
     PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
     PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
     PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
@@ -307,6 +308,44 @@ pub fn srk_peneloux_shift(
 ) -> PyResult<PySrkPenelouxShiftResult> {
     azoth_eos::srk_peneloux_shift(omega, kelvins(Tc), pascals(Pc))
         .map(|r| PySrkPenelouxShiftResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The pure-component heat of vaporisation, from NeqSim's correlation.
+#[pyfunction]
+#[pyo3(signature = (c0, c1, c2, c3, Tc, T))]
+#[pyo3(text_signature = "(c0, c1, c2, c3, Tc, T)")]
+#[allow(non_snake_case)] // `Tc` and `T` are the symbols in the published equation
+pub fn heat_of_vaporization(
+    py: Python<'_>,
+    c0: f64,
+    c1: f64,
+    c2: f64,
+    c3: f64,
+    Tc: f64,
+    T: f64,
+) -> PyResult<PyHeatOfVaporizationResult> {
+    azoth_eos::heat_of_vaporization(c0, c1, c2, c3, kelvins(Tc), kelvins(T))
+        .map(|r| PyHeatOfVaporizationResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The pure-component liquid heat capacity, from NeqSim's polynomial.
+#[pyfunction]
+#[pyo3(signature = (c0, c1, c2, c3, c4, T))]
+#[pyo3(text_signature = "(c0, c1, c2, c3, c4, T)")]
+#[allow(non_snake_case)] // `T` is the symbol in the published equation
+pub fn liquid_heat_capacity(
+    py: Python<'_>,
+    c0: f64,
+    c1: f64,
+    c2: f64,
+    c3: f64,
+    c4: f64,
+    T: f64,
+) -> PyResult<PyLiquidHeatCapacityResult> {
+    azoth_eos::liquid_heat_capacity(c0, c1, c2, c3, c4, kelvins(T))
+        .map(|r| PyLiquidHeatCapacityResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

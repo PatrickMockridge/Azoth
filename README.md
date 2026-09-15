@@ -130,7 +130,9 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.bubble_pressure` | Bubble-point pressure — a *model* |
 | `eos.critical_point` | Mixture critical point — a *model* |
 | `eos.dew_pressure` | Dew-point pressure — a *model* |
+| `eos.heat_of_vaporization` | Heat of vaporisation from NeqSim's correlation |
 | `eos.ideal_gas_cp` | Ideal-gas heat capacity from a polynomial |
+| `eos.liquid_heat_capacity` | Liquid heat capacity from NeqSim's polynomial |
 | `eos.molar_enthalpy_entropy` | Molar enthalpy and entropy of a mixture — a *model* |
 | `eos.ph_flash` | Pressure-enthalpy flash — a *model* |
 | `eos.pr78_kappa` | Peng-Robinson (1978) attraction-parameter coefficient |

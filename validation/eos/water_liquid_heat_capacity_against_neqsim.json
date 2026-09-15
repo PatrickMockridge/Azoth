@@ -1,0 +1,22 @@
+{
+  "id": "water_liquid_heat_capacity_against_neqsim",
+  "calc": "eos.liquid_heat_capacity",
+  "source": {
+    "attribution": "NeqSim 3.20.0, `getPureComponentCpLiquid` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "NeqSim's pure-component liquid heat-capacity polynomial. The coefficients are NeqSim's internal scale, and the equation's `1e-3` recovers `J/(mol*K)`."
+  },
+  "derivation": "The driver ran `getPureComponentCpLiquid(300.0)` for water (c0 = 276370, c1 = -2090.1, c2 = 8.125, c3 = -0.014116, c4 = 9.37e-6) and printed `75.355` J/(mol*K).\n\nazoth's `eos.liquid_heat_capacity` reproduces it exactly.",
+  "inputs": {
+    "c0": 276370.0,
+    "c1": -2090.1,
+    "c2": 8.125,
+    "c3": -0.014116,
+    "c4": 9.37e-06,
+    "T": 300.0
+  },
+  "expected": {
+    "cp": 75.355
+  },
+  "tolerance": 1e-12
+}

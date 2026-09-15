@@ -69,7 +69,9 @@ from azoth.core.result import (
     BubblePressureResult,
     CriticalPointResult,
     DewPressureResult,
+    HeatOfVaporizationResult,
     IdealGasCpResult,
+    LiquidHeatCapacityResult,
     MolarEnthalpyEntropyResult,
     PhFlashResult,
     Pr78KappaResult,
@@ -113,7 +115,9 @@ __all__ = [
     "dew_pressure",
     "from_model",
     "from_names",
+    "heat_of_vaporization",
     "ideal_gas_cp",
+    "liquid_heat_capacity",
     "mixture",
     "molar_enthalpy_entropy",
     "ph_flash",
@@ -146,6 +150,8 @@ _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
 _PR_PENELOUX_SHIFT = "eos.pr_peneloux_shift"
 _SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
+_HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
+_LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
@@ -438,6 +444,37 @@ def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:
     See :func:`azoth.eos.reference.srk_peneloux_shift`.
     """
     return resolve(_SRK_PENELOUX_SHIFT)(omega=omega, Tc=Tc, Pc=Pc)  # type: ignore[no-any-return]
+
+
+def heat_of_vaporization(
+    c0: float, c1: float, c2: float, c3: float, Tc: Q, T: Q
+) -> HeatOfVaporizationResult:
+    """The pure-component heat of vaporisation at a temperature.
+
+    ``c0..c3`` are the raw ``heatofvaporizationcoefs1..4`` NeqSim ships, in its
+    internal scale, and ``Tc`` the critical temperature.
+
+    Raises:
+        OutOfRangeError: if ``Tc`` or ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.heat_of_vaporization`.
+    """
+    return resolve(_HEAT_OF_VAPORIZATION)(c0=c0, c1=c1, c2=c2, c3=c3, Tc=Tc, T=T)  # type: ignore[no-any-return]
+
+
+def liquid_heat_capacity(
+    c0: float, c1: float, c2: float, c3: float, c4: float, T: Q
+) -> LiquidHeatCapacityResult:
+    """The pure-component liquid heat capacity at a temperature.
+
+    ``c0..c4`` are the raw ``cpliquid1..5`` NeqSim ships, in its internal scale.
+
+    Raises:
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.liquid_heat_capacity`.
+    """
+    return resolve(_LIQUID_HEAT_CAPACITY)(c0=c0, c1=c1, c2=c2, c3=c3, c4=c4, T=T)  # type: ignore[no-any-return]
 
 
 def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureResult:
