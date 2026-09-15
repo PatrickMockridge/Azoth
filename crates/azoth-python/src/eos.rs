@@ -28,8 +28,8 @@ use crate::results::{
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
     PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult,
     PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
-    PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyWilkeChangDiffusivityResult,
-    PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
+    PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyVuFlashResult,
+    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -1266,6 +1266,61 @@ pub fn pu_flash(
     azoth_eos::pu_flash(&mixture, &ideal_gas, pascals(P), joules_per_mole(U), &z)
         .map(|r| PyPuFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// The volume-internal-energy flash of a mixture (V,U -> P,T).
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, V, U, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, V, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)]
+#[allow(clippy::too_many_arguments)]
+pub fn vu_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    V: f64,
+    U: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyVuFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    let ideal_gas = azoth_eos::IdealGasModel {
+        cp_a,
+        cp_b,
+        cp_c,
+        cp_d,
+        cp_e,
+    };
+    azoth_eos::vu_flash(
+        &mixture,
+        &ideal_gas,
+        cubic_meters_per_mole(V),
+        joules_per_mole(U),
+        &z,
+    )
+    .map(|r| PyVuFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Whether a feed at a temperature and pressure is stable as a single phase.

@@ -90,6 +90,7 @@ from azoth.core.result import (
     UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
+    VuFlashResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
@@ -1288,6 +1289,42 @@ def pu_flash(mixture: Any, ideal_gas: Any, P: Q, U: Q, z: Sequence[float]) -> Pu
         [list(c.alpha_params) for c in mixture.components],
     )
     return PuFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def vu_flash(mixture: Any, ideal_gas: Any, V: Q, U: Q, z: Sequence[float]) -> VuFlashResult:
+    """The volume-internal-energy flash of a mixture, solved in Rust."""
+    spec = _models_gen.model("eos.vu_flash")
+    result = _core.vu_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "V", V),
+        input_to_si(spec, "U", U),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return VuFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
         T=from_si(result.T.magnitude_si, result.T.unit),
         beta=result.beta,
         x=tuple(result.x),

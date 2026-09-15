@@ -1,0 +1,98 @@
+id = "eos.vu_flash"
+name = "Volume-internal-energy flash"
+kind = "procedure"
+references = [
+    "Michelsen, M. L.; Mollerup, J. M. (2004). \"Thermodynamic Models: Fundamentals and Computational Aspects.\" Tie-Line Publications.",
+]
+assumptions = [
+    "the iteration is a decoupled 2x2 Newton in the Q-function form `Q_P = P(V - Vspec)/(R T)` and `Q_T = (Uspec + P Vspec - H)/(T R)`, with diagonal derivatives only and one inner flash per step.",
+    "a trial state the inner flash cannot settle is backed off, not fatal: the damping is reduced.",
+    "the flash at each trial state is converged, not exact: the volume and internal energy inverted are those of a converged approximation.",
+    "no check that the feed is stable: the model asks where the volume and energy are satisfied, not whether the state found is the equilibrium one.",
+]
+[source]
+standard = "Standard thermodynamics, as in Michelsen & Mollerup"
+edition = "The procedure is the ordinary one: a closed vessel at fixed volume and internal energy has a unique pressure and temperature."
+[algorithm]
+scheme = "vu_flash_newton_2x2"
+convergence = "relative"
+tolerance = 1e-08
+max_iterations = 100
+initialisation = "ideal_gas"
+[algorithm.inner]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 300
+[algorithm.inner.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.V]
+unit = "m**3/mol"
+description = "the molar volume the mixture is to reach, on a one-mole basis."
+[inputs.U]
+unit = "J/mol"
+description = "the molar internal energy the mixture is to reach."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the feed's mole fractions. Checked rather than renormalised."
+[outputs]
+[outputs.P]
+unit = "Pa"
+description = "the pressure that satisfies the volume and internal energy. This is one of the two answers."
+[outputs.T]
+unit = "K"
+description = "the temperature that satisfies the volume and internal energy. This is the other answer."
+[outputs.beta]
+unit = "dimensionless"
+description = "the vapour fraction at the answer. Absent for a single-phase feed."
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions at the answer"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions at the answer"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`K_i = y_i / x_i` at the answer"
+[outputs.phase]
+type = "enum"
+values = ["all_liquid", "two_phase", "all_vapour"]
+description = "which phase the feed is in at the answer"
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the liquid root of the cubic at the answer"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root"
+[outputs.iterations]
+unit = "dimensionless"
+description = "Newton iterations taken"
+[outputs.residual]
+unit = "dimensionless"
+description = "the larger of the relative volume and internal-energy residuals at the answer"
+[[valid_range]]
+quantity = "V"
+min = 0.0
+min_inclusive = false
+severity = "error"
+rationale = "a molar volume; zero and below are not states"
+[implementations]
+python = "azoth.eos.vu_flash"
+rust = "azoth_eos::vu_flash"

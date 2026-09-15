@@ -118,6 +118,7 @@ from azoth.core.result import (
     UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
+    VuFlashResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
@@ -185,6 +186,7 @@ __all__ = [
     "unifac_activity_coefficients",
     "uniquac_activity_coefficients",
     "vdw1f_mix_binary",
+    "vu_flash",
     "wilke_chang_diffusivity",
     "wilke_chang_phi",
     "wilke_viscosity",
@@ -235,6 +237,7 @@ _HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
 _SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
 _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
+_VU_FLASH = "eos.vu_flash"
 _WILKE_VISCOSITY = "eos.wilke_viscosity"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 _RACKETT_MOLAR_VOLUME = "eos.rackett_molar_volume"
@@ -973,6 +976,27 @@ def pu_flash(
     """
     return resolve(_PU_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, P=P, U=U, z=z
+    )
+
+
+def vu_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, V: Q, U: Q, z: list[float]
+) -> VuFlashResult:
+    """The pressure and temperature a mixture reaches at a volume and internal energy.
+
+    A closed vessel: both state variables are answers. ``V`` is the one-mole-basis molar
+    volume and ``U`` the molar internal energy.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``V`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.vu_flash`.
+    """
+    return resolve(_VU_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, V=V, U=U, z=z
     )
 
 

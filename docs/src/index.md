@@ -116,6 +116,7 @@ Four sections, and the difference between them is the point:
 - [`eos.tv_flash`](./eos/tv_flash.md) — Temperature-volume flash
 - [`eos.unifac_activity_coefficients`](./eos/unifac_activity_coefficients.md) — Activity coefficients from the UNIFAC group-contribution model
 - [`eos.uniquac_activity_coefficients`](./eos/uniquac_activity_coefficients.md) — Activity coefficients from the UNIQUAC model
+- [`eos.vu_flash`](./eos/vu_flash.md) — Volume-internal-energy flash
 - [`eos.wilke_viscosity`](./eos/wilke_viscosity.md) — Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities
 - [`eos.wilson_activity_coefficients`](./eos/wilson_activity_coefficients.md) — Activity coefficients from the paraffin-wax Wilson model
 

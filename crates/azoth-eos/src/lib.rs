@@ -92,6 +92,7 @@ pub mod tyn_calus_diffusivity;
 pub mod unifac_activity_coefficients;
 pub mod uniquac_activity_coefficients;
 pub mod vdw1f_mix_binary;
+pub mod vu_flash;
 pub mod wilke_chang_diffusivity;
 pub mod wilke_viscosity;
 pub mod wilson_activity_coefficients;
@@ -145,8 +146,8 @@ pub use results::{
     SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, StabilityVerdict, ThFlashResult, TsFlashResult, TuFlashResult,
     TwuKappaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, VuFlashResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -166,6 +167,7 @@ pub use tyn_calus_diffusivity::tyn_calus_diffusivity;
 pub use unifac_activity_coefficients::unifac_activity_coefficients;
 pub use uniquac_activity_coefficients::uniquac_activity_coefficients;
 pub use vdw1f_mix_binary::vdw1f_mix_binary;
+pub use vu_flash::vu_flash;
 pub use wilke_chang_diffusivity::wilke_chang_diffusivity;
 pub use wilke_viscosity::wilke_viscosity;
 pub use wilson_activity_coefficients::wilson_activity_coefficients;

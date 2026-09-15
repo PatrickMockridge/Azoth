@@ -20,6 +20,7 @@
 //!   - specs/models/eos/tv_flash.toml
 //!   - specs/models/eos/unifac_activity_coefficients.toml
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
+//!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/wilke_viscosity.toml
 //!   - specs/models/eos/wilson_activity_coefficients.toml
 //!
@@ -1717,6 +1718,69 @@ pub static UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
     cases: UNIQUAC_ACTIVITY_COEFFICIENTS_CASES,
 };
 
+static VU_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "V",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "a molar volume; zero and below are not states",
+    },
+}];
+
+static VU_FLASH_CASES: &[TestCase] = &[TestCase {
+    id: "single_phase_vapour_round_trip",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 0.001,
+    numbers: &[("V", 0.003204528495751204), ("U", 4750.934519634818)],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[("P", 1000000.0), ("T", 400.0)],
+    expected_vectors: &[],
+}];
+
+static VU_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+};
+
+static VU_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "vu_flash_newton_2x2",
+    convergence: "relative",
+    tolerance: 1e-08,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("ideal_gas"),
+    initial_temperature: None,
+    inner: Some(&VU_FLASH_INNER),
+};
+
+/// Registry entry for `eos.vu_flash`.
+pub static VU_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.vu_flash",
+    kind: "procedure",
+    algorithm: Some(&VU_FLASH_ALGORITHM),
+    checks: VU_FLASH_CHECKS,
+    cases: VU_FLASH_CASES,
+};
+
 static WILKE_VISCOSITY_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -1899,6 +1963,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &TV_FLASH_SPEC,
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,
+    &VU_FLASH_SPEC,
     &WILKE_VISCOSITY_SPEC,
     &WILSON_ACTIVITY_COEFFICIENTS_SPEC,
 ];

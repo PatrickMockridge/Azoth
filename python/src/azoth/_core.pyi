@@ -507,6 +507,21 @@ class Vdw1fMixBinaryResult:
     warnings: list[Warning]
 
 @final
+class VuFlashResult:
+    P: Qty
+    T: Qty
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    phase: str
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class WilkeChangDiffusivityResult:
     d: Qty
     warnings: list[Warning]
@@ -960,6 +975,23 @@ def vdw1f_mix_binary(
     b2: float,
     k12: float,
 ) -> Vdw1fMixBinaryResult: ...
+def vu_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    cp_e: list[float],
+    V: float,
+    U: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> VuFlashResult: ...
 def wilke_chang_diffusivity(
     phi: float,
     M: float,

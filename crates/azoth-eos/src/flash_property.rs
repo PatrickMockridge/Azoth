@@ -892,6 +892,148 @@ pub fn solve_pressure(
     })
 }
 
+/// Invert `(V, U) = (v_spec, u_spec)` for `(P, T)` together, by upstream's
+/// `OptimizedVUflash`.
+///
+/// A decoupled 2x2 Newton in the Q-function form `Q_P = P(V - Vspec)/(R T)` and
+/// `Q_T = (Uspec + P Vspec - H)/(T R)`, with the diagonal derivatives only. One inner
+/// [`pt_flash`] per iteration. This is the one solver that moves both state variables, so
+/// it does not share the single-variable `solve_temperature`/`solve_pressure` loop.
+///
+/// # Errors
+/// * [`AzothError::SolverNotConverged`] if the iteration reaches its cap without both the
+///   volume and the internal-energy specification being met to the upstream's `1e-3`
+///   relative acceptance.
+#[allow(clippy::too_many_arguments)] // The signature is the solver's contract.
+pub fn solve_pressure_temperature(
+    mixture: &Mixture,
+    ideal_gas: &IdealGasModel,
+    v_spec: f64,
+    u_spec: f64,
+    z: &[f64],
+    algorithm: &ModelAlgorithm,
+    start_pressure: f64,
+    start_temperature: f64,
+) -> Result<Solution> {
+    let cap = algorithm.max_iterations;
+    let mut pressure = start_pressure.max(1.0);
+    let mut temperature = start_temperature.max(50.0);
+    let mut damping = 0.8;
+    let mut stagnation = 0;
+
+    let mut evaluation = evaluate(
+        mixture,
+        ideal_gas,
+        kelvins(temperature),
+        pascals(pressure),
+        z,
+        Property::Enthalpy,
+    )?;
+    let mut warnings = evaluation.flash.warnings.clone();
+
+    let mut iterations = 0;
+    let mut last_error = f64::MAX;
+
+    loop {
+        iterations += 1;
+        let h = evaluation.value;
+        let v = evaluation.volume;
+        let cp = evaluation.cp;
+        let tk = temperature;
+        let pk = pressure;
+
+        let q_p = pk * (v - v_spec) / (MOLAR_GAS_CONSTANT * tk);
+        let q_t = (u_spec + pk * v_spec - h) / (tk * MOLAR_GAS_CONSTANT);
+        let dvdp = slope_pressure(
+            mixture,
+            ideal_gas,
+            kelvins(tk),
+            z,
+            Property::Volume,
+            pk,
+            -v / pk,
+        );
+        let mut dq_pp =
+            (v - v_spec) / (MOLAR_GAS_CONSTANT * tk) + pk * dvdp / (MOLAR_GAS_CONSTANT * tk);
+        let mut dq_tt = -cp / (tk * MOLAR_GAS_CONSTANT) - q_t / tk;
+        if dq_pp.abs() < 1.0e-12 {
+            dq_pp = dq_pp.signum() * 1.0e-12;
+        }
+        if dq_tt.abs() < 1.0e-12 {
+            dq_tt = dq_tt.signum() * 1.0e-12;
+        }
+
+        let delta_p = (-damping * q_p / dq_pp).clamp(-0.3 * pk, 0.3 * pk);
+        let delta_t = (-damping * q_t / dq_tt).clamp(-50.0, 50.0);
+        let ny_p = (pk + delta_p).clamp(100.0, 2.0e8);
+        let ny_t = (tk + delta_t).clamp(50.0, 5000.0);
+
+        match evaluate(
+            mixture,
+            ideal_gas,
+            kelvins(ny_t),
+            pascals(ny_p),
+            z,
+            Property::Enthalpy,
+        ) {
+            Ok(next) => {
+                pressure = ny_p;
+                temperature = ny_t;
+                evaluation = next;
+                warnings.extend(evaluation.flash.warnings.iter().cloned());
+            }
+            Err(ref e) if is_temperature_dependent_failure(e) => {
+                damping = (damping * 0.7).max(0.05);
+            }
+            Err(e) => return Err(e),
+        }
+
+        let pres_error = ((ny_p - pk) / ny_p.max(0.1)).abs();
+        let temp_error = ((ny_t - tk) / ny_t.max(1.0)).abs();
+        let total_error = pres_error + temp_error;
+        let vol_err = ((evaluation.volume - v_spec) / v_spec).abs();
+        let h_target = u_spec + ny_p * v_spec;
+        let h_err = ((evaluation.value - h_target) / h_target.abs().max(1.0)).abs();
+
+        if total_error < 1.0e-6 && vol_err < 1.0e-6 && h_err < 1.0e-5 {
+            break;
+        }
+        if total_error < last_error {
+            damping = (damping * 1.1).min(0.8);
+            stagnation = 0;
+        } else {
+            damping = (damping * 0.7).max(0.05);
+            stagnation += 1;
+        }
+        let _ = stagnation;
+        last_error = total_error;
+
+        if iterations >= cap {
+            break;
+        }
+    }
+
+    let vol_err = ((evaluation.volume - v_spec) / v_spec).abs();
+    let h_target = u_spec + pressure * v_spec;
+    let h_err = ((evaluation.value - h_target) / h_target.abs().max(1.0)).abs();
+    if vol_err >= 1.0e-3 || h_err >= 1.0e-3 {
+        return Err(AzothError::SolverNotConverged {
+            iterations,
+            residual: vol_err.max(h_err),
+            tolerance: 1.0e-3,
+        });
+    }
+
+    Ok(Solution {
+        temperature,
+        pressure,
+        residual: vol_err.max(h_err),
+        flash: evaluation.flash,
+        iterations,
+        warnings: distinct(&warnings),
+    })
+}
+
 /// One of each distinct warning, in first-seen order.
 ///
 /// The search evaluates the flash many times, so the same caveat arrives many times.

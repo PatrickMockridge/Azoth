@@ -713,6 +713,101 @@ def solve_pressure(
     }
 
 
+def solve_pressure_temperature(
+    mixture: Mixture,
+    ideal_gas: IdealGasModel,
+    v_spec: float,
+    u_spec: float,
+    z: list[float],
+    algorithm: dict[str, Any],
+    start_pressure: float,
+    start_temperature: float,
+) -> dict[str, Any]:
+    """Invert ``(V, U) = (v_spec, u_spec)`` for ``(P, T)`` together, by ``OptimizedVUflash``.
+
+    A decoupled 2x2 Newton in the Q-function form, with one inner flash per step.
+    """
+    cap = int(algorithm["max_iterations"])
+    pressure = max(start_pressure, 1.0)
+    temperature = max(start_temperature, 50.0)
+    damping = 0.8
+    stagnation = 0
+
+    value, cp, volume, flash = _evaluate(mixture, ideal_gas, temperature, pressure, z, "h")
+    warnings: list[Warning] = list(flash.warnings)
+
+    iterations = 0
+    last_error = float("inf")
+
+    while True:
+        iterations += 1
+        h = value
+        v = volume
+        tk = temperature
+        pk = pressure
+
+        q_p = pk * (v - v_spec) / (MOLAR_GAS_CONSTANT * tk)
+        q_t = (u_spec + pk * v_spec - h) / (tk * MOLAR_GAS_CONSTANT)
+        dvdp = _slope_pressure(mixture, ideal_gas, tk, z, "v", pk, -v / pk)
+        dq_pp = (v - v_spec) / (MOLAR_GAS_CONSTANT * tk) + pk * dvdp / (MOLAR_GAS_CONSTANT * tk)
+        dq_tt = -cp / (tk * MOLAR_GAS_CONSTANT) - q_t / tk
+        if abs(dq_pp) < 1.0e-12:
+            dq_pp = math.copysign(1.0e-12, dq_pp)
+        if abs(dq_tt) < 1.0e-12:
+            dq_tt = math.copysign(1.0e-12, dq_tt)
+
+        delta_p = min(max(-damping * q_p / dq_pp, -0.3 * pk), 0.3 * pk)
+        delta_t = min(max(-damping * q_t / dq_tt, -50.0), 50.0)
+        ny_p = min(max(pk + delta_p, 100.0), 2.0e8)
+        ny_t = min(max(tk + delta_t, 50.0), 5000.0)
+
+        try:
+            value, cp, volume, flash = _evaluate(mixture, ideal_gas, ny_t, ny_p, z, "h")
+        except Exception as error_raised:
+            if not _temperature_dependent(error_raised):
+                raise
+            damping = max(damping * 0.7, 0.05)
+        else:
+            pressure = ny_p
+            temperature = ny_t
+            warnings.extend(flash.warnings)
+
+        pres_error = abs((ny_p - pk) / max(ny_p, 0.1))
+        temp_error = abs((ny_t - tk) / max(ny_t, 1.0))
+        total_error = pres_error + temp_error
+        vol_err = abs((volume - v_spec) / v_spec)
+        h_target = u_spec + ny_p * v_spec
+        h_err = abs((value - h_target) / max(abs(h_target), 1.0))
+
+        if total_error < 1.0e-6 and vol_err < 1.0e-6 and h_err < 1.0e-5:
+            break
+        if total_error < last_error:
+            damping = min(damping * 1.1, 0.8)
+            stagnation = 0
+        else:
+            damping = max(damping * 0.7, 0.05)
+            stagnation += 1
+        last_error = total_error
+
+        if iterations >= cap:
+            break
+
+    vol_err = abs((volume - v_spec) / v_spec)
+    h_target = u_spec + pressure * v_spec
+    h_err = abs((value - h_target) / max(abs(h_target), 1.0))
+    if vol_err >= 1.0e-3 or h_err >= 1.0e-3:
+        raise SolverNotConvergedError(iterations, max(vol_err, h_err), 1.0e-3)
+
+    return {
+        "T": temperature,
+        "P": pressure,
+        "residual": max(vol_err, h_err),
+        "state": {"phase": str(flash.phase), "flash": flash, "warnings": list(flash.warnings)},
+        "iterations": iterations,
+        "warnings": distinct_warnings(warnings),
+    }
+
+
 def distinct_warnings(warnings: list[Warning]) -> tuple[Warning, ...]:
     """One of each distinct warning, in first-seen order.
 

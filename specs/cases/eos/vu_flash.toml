@@ -1,0 +1,12 @@
+model = "eos.vu_flash"
+[[cases]]
+id = "single_phase_vapour_round_trip"
+tolerance = 1e-03
+[cases.inputs]
+components = ["methane", "n-butane"]
+V = 0.003204528495751204
+U = 4750.934519634818
+z = [0.6, 0.4]
+[cases.expected]
+P = 1000000.0
+T = 400.0

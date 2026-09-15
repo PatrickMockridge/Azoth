@@ -554,6 +554,40 @@ class WilsonActivityCoefficientsResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class VuFlashResult(_HasWarnings):
+    """Result of ``eos.vu_flash``.
+
+    A closed vessel at fixed volume and internal energy: both the pressure and the
+    temperature are answers, reported alongside the phase split.
+    """
+
+    #: The pressure that satisfies the volume and internal energy.
+    P: Q
+    #: The temperature that satisfies the volume and internal energy.
+    T: Q
+    #: The vapour fraction at the answer, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Newton steps taken.
+    iterations: int
+    #: The larger of the relative volume and internal-energy residuals at the answer.
+    residual: float
+    #: Caveats, deduplicated.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Vdw1fMixBinaryResult(_HasWarnings):
     """Result of ``eos.vdw1f_mix_binary``.
 
