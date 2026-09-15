@@ -9,7 +9,7 @@ to unit operations.
 ## A team is a process
 
 A **role** is a named process: a procedure quoted as `@role` and re-entered as
-`*role` ([Reflection](./rho.md)). A **team** is the parallel composition of its
+`*role` ([Reflection](../calculus/rho.md)). A **team** is the parallel composition of its
 roles:
 
 ```
@@ -18,7 +18,7 @@ team  ::=  chair | scribe | process | safety | ...
 
 Each role reads the channels it owns and writes the channels downstream roles
 read, as a unit operation reads its inlets and writes its outlets
-([Processes](./process.md)). The channels carry **findings**, not streams: a
+([Processes](../calculus/process.md)). The channels carry **findings**, not streams: a
 deviation, a cause, a safeguard.
 
 **Claim (a team is a composition).** A team is barbed-bisimilar to the parallel
@@ -44,7 +44,7 @@ turns the procedure into data, and `*` re-enters it.
 **Claim (a HAZOP worksheet round-trips).** Quoting a HAZOP and dropping it back is
 the same HAZOP.
 
-*Status: **specified**, and it is not independent of [rho.md](./rho.md)'s round
+*Status: **specified**, and it is not independent of [rho.md](../calculus/rho.md)'s round
 trip: it is that theorem at the process `hazop`. It is named here because a reader
 checking the orchestration layer wants the instance, not the general statement.*
 

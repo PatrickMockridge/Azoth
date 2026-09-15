@@ -1,52 +1,68 @@
 # azoth
 
-**An opinionated port of NeqSim to Rust, with every calculation mirrored in Python.**
+azoth is a chemical-engineering calculation library — equations of state, flashes,
+property models, and the hydraulics and heat-transfer correlations around them — with an
+agentic layer on top. Every calculation is written twice, in Rust and in Python, and the
+two are cross-checked against each other. The algorithms are carried across from
+[NeqSim](https://github.com/equinor/neqsim), Equinor's open-source Java process simulator,
+under Apache-2.0 and credited in [`NOTICE`](NOTICE) rather than re-derived — but the port
+is the substrate, not the point.
 
-azoth is a thermodynamic and process library: equations of state, flashes, property
-models and unit operations. The algorithms are carried across from
-[NeqSim](https://github.com/equinor/neqsim), Equinor's open-source Java process
-simulator, under Apache-2.0 and credited in [`NOTICE`](NOTICE) rather than re-derived.
+## What makes azoth different
 
-What is azoth's own is the structure around them, and that is where the opinions are:
+**Two real implementations, not a binding.** Every calculation exists as a hand-written
+Rust kernel and a hand-written Python kernel, and the test suite runs both on the same
+inputs and compares them by tolerance — a bug has to be made twice, in two languages,
+before it reaches you.
 
-- **Composable by construction.** azoth's formal layer is a development in the
-  calculus of constructions — the dependent type theory Lean implements — in which the
-  dimension group is proved (`lean/Azoth/Dim.lean`) and the 24-unit vocabulary is data
-  compiled into proved theorems (`lean/Azoth/Vocabulary.lean`). Above them, pi and rho
-  specify a unit operation as a pure function on typed channels, so conservation is
-  linearity and the balances are lemmas rather than checks. The crates are a small core
-  with no cross-dependency, so a new domain is a new crate. What
-  [the calculus of thermodynamic dimensionality](docs/src/calculus/index.md) states
-  once, every calculation is an instance of.
-- **A standard, not an encyclopaedia.** No single project ships every fluid and every
-  correlation. azoth ships a *standard* others author against: the keycard (TOML data,
-  checked on load), a new equation as one spec plus one Rust file and one Python file,
-  and a `PropertyProvider` for fluid data it cannot ship. There is no runtime plugin
-  registry - a calculation exists twice, once per language, or not at all.
-- **The keycard is where responsibility sits.** The library implements; the engineer
-  decides. A name outside the vocabulary is refused when the card is loaded; a
-  coefficient must declare a unit, checked against the spec's declared unit; errors are
-  typed and range violations are warnings. What azoth ships is NeqSim's, vendored; what
-  you add is yours, and the responsibility for it is yours too.
-- **Python is a real second implementation**, not a binding to a black box. Every
-  calculation exists twice and the two are compared case by case, so azoth works in a
-  notebook or a conda environment with no Rust toolchain at all.
+**A spec file is the source, not documentation.** One TOML file per calculation declares
+its inputs, outputs, valid ranges, assumptions and tests. Generators compile that one file
+into the Rust and Python registries, the type stubs, the documentation and the test plan,
+and CI regenerates them all and fails on a diff. A spec is not a document that is supposed
+to match the code; it is the thing the code was made from.
 
-[the specification](docs/src/architecture/specification.md) is the normative statement
-of all four, and [`SPEC.md`](SPEC.md) points at it - why Rust rather than Java, what is
-in scope and what deliberately is not, and what it costs to add a calculation. Where
-another document disagrees with the specification, that document is wrong.
+**Provenance is split three ways, deliberately.** An external validation case is
+`verified`, `unverified` or `source_needed`; a shipped data value carries a `verify_status`;
+and a spec refuses to carry a status field at all — so confidence is produced, never
+manufactured.
 
-**Status: early.** What is implemented is the table below, and it is generated from the
-specs rather than maintained by hand: a hydraulics kernel through Darcy-Weisbach
-pressure drop, steady conduction, the Peng-Robinson equation of state through a
-two-phase flash, stability testing and mixture critical points. The unit-operation tier
-and the **flowsheet** above it are designed in
-[the specification](docs/src/architecture/specification.md) and not built. The fitting coefficients azoth
-ships are **placeholders, not engineering data**;
-see [Not for design work yet](#not-for-design-work-yet), and
-[the specification](docs/src/architecture/specification.md) has the programme. The
-order in which the rest of NeqSim is ported is [ROADMAP.md](ROADMAP.md).
+**NeqSim runs as a differential oracle, not a source of truth.** A Java driver prints the
+numbers azoth reports, and those numbers are committed beside the driver, so a divergence
+from NeqSim is a finding, never a failure, and the comparison is reproducible by anyone.
+
+**An agentic layer, not a chatbot.** Ninety skills under `skills/` teach an agent how to
+call the library, and a four-role HAZOP team chains them; the orchestration is stated in
+the same process calculus the flowsheet layer will use.
+
+**A formal layer in Lean.** The dimension group is proved (`lean/Azoth/Dim.lean`) and the
+25-unit vocabulary compiles into proved theorems (`lean/Azoth/Vocabulary.lean`). A unit
+operation is a process on typed channels, so conservation is linearity and the balances are
+lemmas rather than checks.
+
+Three disciplines run through everything:
+
+- **No runtime plugin registry.** A calculation exists twice, once per language, or not at
+  all — a new equation is one spec plus one Rust file and one Python file, not a
+  `register()` call.
+- **The keycard is where responsibility sits.** TOML data you pass as a value, checked on
+  load: a name outside the vocabulary is refused, a coefficient must declare a unit. The
+  library implements; the engineer decides.
+- **Units are not floats.** Quantities cross the API as `pint` objects; a bare number where
+  a length is expected is a `UnitMismatchError`, not a silent thousand-fold error.
+
+[the specification](docs/src/architecture/specification.md) is the normative statement of
+all of this — why Rust rather than Java, what is in scope and what deliberately is not, and
+what it costs to add a calculation. Where another document disagrees with the specification,
+that document is wrong.
+
+## Status: early
+
+What is implemented is the table below, and it is generated from the specs rather than
+maintained by hand. The unit-operation tier and the **flowsheet** above it are designed in
+[the specification](docs/src/architecture/specification.md) and not built. The fitting
+coefficients azoth ships are **placeholders, not engineering data**; see
+[Not for design work yet](#not-for-design-work-yet). The order in which the rest of NeqSim
+is ported is [ROADMAP.md](ROADMAP.md).
 
 ## Install
 
@@ -327,16 +343,21 @@ Reynolds number: a verified artifact means the code is what it claims to be.
 
 ## Documentation
 
-```bash
-mdbook build docs && xdg-open docs/book/index.html
-```
+The book lives in [docs/src](docs/src/index.md); build it with
+`mdbook build docs && xdg-open docs/book/index.html`. Every calc page carries the
+equation in LaTeX and in the form the library evaluates, its source, its notes, inputs
+and outputs, the validated range with the reason for each bound, the assumptions that
+are *not* checked, a worked example, and the tests - including which are deliberately
+skipped and why. A model page carries its algorithm where a calc page carries its
+solver, because a model's spec fixes a *loop* rather than an equation.
 
-Every calc page carries the equation in LaTeX and in the form the library
-evaluates, its source, its notes, inputs and outputs, the validated range with the
-reason for each bound, the assumptions that are *not* checked, a worked example, and
-the tests - including which are deliberately skipped and why. A model page carries
-its algorithm where a calc page carries its solver, because a model's spec fixes a
-*loop* rather than an equation.
+There are two entry points:
+
+- **Use the library** — [the book front door](docs/src/index.md), then a calculation page,
+  then the [batch API](docs/src/index.md#the-batch-api) for arrays.
+- **Build on the agentic layer** — [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md) for
+  the agent entry, [the agentic section](docs/src/agentic/index.md) for the skills and the
+  HAZOP team, and [agents/README.md](agents/README.md) for the runtime setup.
 
 ## Contributing
 

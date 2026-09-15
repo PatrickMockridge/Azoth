@@ -74,7 +74,6 @@ CALCULUS: tuple[tuple[str, str, int], ...] = (
     ("Reflection and feedback", "calculus/rho.md", 1),
     ("The keycard as a capability", "calculus/capability.md", 1),
     ("The vocabulary table", "calculus/vocabulary.md", 1),
-    ("Orchestration", "calculus/orchestration.md", 1),
 )
 
 #: The agentic layer, a hand-written section that documents the skills an agent
@@ -85,6 +84,7 @@ AGENTIC: tuple[tuple[str, str, int], ...] = (
     ("The agentic layer", "agentic/index.md", 0),
     ("Skills", "agentic/skills.md", 1),
     ("The skills roadmap", "agentic/roadmap.md", 1),
+    ("Orchestration", "agentic/orchestration.md", 1),
 )
 
 

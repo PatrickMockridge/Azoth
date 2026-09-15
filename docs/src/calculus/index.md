@@ -42,7 +42,7 @@ one part of this whose authority is a generator rather than a proof.
 ## Status: the vocabulary is proved, the rest is specification
 
 **The vocabulary is proved.** The development is in `lean/`, and
-`tools/check_lean_axioms.py` refuses a gap in any theorem it claims — twenty-eight
+`tools/check_lean_axioms.py` refuses a gap in any theorem it claims — twenty-nine
 today: four about the dimension group, that its exponent vectors name it and read
 back unchanged, and one per canonical unit checking that the table's exponents name
 the dimension `lean-units` calls by that name. That is

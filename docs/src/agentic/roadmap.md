@@ -47,12 +47,14 @@ the physics behind them:
 
 The tranches are the P0–P12 order in
 [The specification](../architecture/specification.md), mapped one-to-one to NeqSim's
-classes in [`ROADMAP.md`](../../../ROADMAP.md).
+classes in [`ROADMAP.md`](../../../ROADMAP.md). `(done)` means the `azoth`-basis skills
+for that domain are written, not that every class in the tranche is ported — the 25
+alpha functions of P2, for example, are still ahead.
 
 ## The two speeds
 
-- **Now, at `azoth`-basis**: the six `library/` skills, and the `eos/`,
-  `hydraulics/` and `thermal/` skills that drive the 42 implemented calculations.
+- **Now, at `azoth`-basis**: the four `azoth`-basis `library/` skills, and the `eos/`,
+  `hydraulics/` and `thermal/` skills that drive the 43 implemented calculations.
 - **As a tranche lands**: the `screening` placeholder for a domain is promoted to
   `azoth`-basis in the same commit, and its `tranche` field is removed.
 

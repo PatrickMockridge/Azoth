@@ -79,12 +79,13 @@ Every `SKILL.md` carries these headings, in this order:
 ## Skill vs agent
 
 A **skill** is a reusable method or body of knowledge. An **agent** is an
-orchestrator that chains skills and carries no method of its own. Agents do not exist
-yet; when they do they live under [`agents/`](../../../agents/README.md).
+orchestrator that chains skills and carries no method of its own. The one agent today is
+the HAZOP team under [`agents/hazop/`](../../../agents/hazop/README.md); its formal
+statement is [Orchestration](./orchestration.md).
 
 ## The skills today
 
-Thirteen `azoth`-basis skills cover what the library implements: six under
+Eleven `azoth`-basis skills cover what the library implements: four under
 `library/`, four under `eos/`, two under `hydraulics/` and one under `thermal/`.
 [`azoth-run-calculation`](../../../skills/library/run-calculation/SKILL.md) is the
 first and the pattern the rest follow. The remainder of NeqSim's catalog is mapped,

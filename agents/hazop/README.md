@@ -2,7 +2,7 @@
 
 The first agent: four roles chaining the `safety` and `process` skills through the
 HAZOP pipeline `guideword → deviation → cause → consequence → safeguard`, specified
-in [`docs/src/calculus/orchestration.md`](../../docs/src/calculus/orchestration.md).
+in [`docs/src/agentic/orchestration.md`](../../docs/src/agentic/orchestration.md).
 
 Roles, and the skills each chains:
 

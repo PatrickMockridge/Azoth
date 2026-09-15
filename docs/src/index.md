@@ -1,6 +1,14 @@
 # azoth
 
-**An opinionated port of NeqSim to Rust, with every calculation mirrored in Python.**
+This book is the **human entry point** for azoth: how to install it, pick a calculation,
+read its page, and call it. The **agentic entry point** is
+[the agentic section](./agentic/index.md) and, at the repository root, `CLAUDE.md` and
+`AGENTS.md`.
+
+Start here: `pip install azoth`, pick a calculation from
+[What is implemented](#what-is-implemented), read its page for the equation, range and
+worked example, then call it as the page shows or over arrays with
+[the batch API](#the-batch-api).
 
 Every calculation in this book ships with its equation, where the equation came
 from, the range in which it is validated, its assumptions, a worked example, and
@@ -213,8 +221,8 @@ stub, and this page — and each of those is now either derived from the calcula
 own id or emitted by a generator. What is left is the boilerplate that attaches a Rust
 function to a Python name, plus **a batch arm in each language**, which is hand-written
 because a wrapper's signature and result class carry judgement the spec does not.
-[Contributing](https://github.com/PatrickMockridge/Azoth/blob/main/CONTRIBUTING.md)
-has the current count, measured rather than remembered.
+The [PR template](../../.github/PULL_REQUEST_TEMPLATE.md) is the checklist for that
+remaining boilerplate.
 
 [the specification](./architecture/specification.md) carries the same decision table for the
 other kinds of addition — a component or a fluid, which is a keycard and no code at all,

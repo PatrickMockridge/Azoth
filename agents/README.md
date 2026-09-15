@@ -11,7 +11,7 @@ The orchestration layer: skills combined into agents, and agents composed into t
 - An **agent** is an orchestrator that chains skills and carries no engineering method
   of its own; the method lives in a skill.
 - A **team** is a composition of role-processes over message channels. The formal
-  statement is [`docs/src/calculus/orchestration.md`](../docs/src/calculus/orchestration.md):
+  statement is [`docs/src/agentic/orchestration.md`](../docs/src/agentic/orchestration.md):
   a role is a named process, a team its parallel composition.
 
 The one agent today is **HAZOP**: four roles — chair, process, safety, scribe — over
@@ -30,15 +30,15 @@ for that path.
    repository).
 2. **Install the runtime** — `pip install 'azoth[agent]'` pulls
    `deepseek-harness-sdk` and its bundled `dsh` runtime binary.
-3. **Export the skills** — `python tools/export_dsh_skills.py` writes the catalog into
-   `.dsh/skills/`, which DeepSeek Harness discovers at project rank.
+3. **Export the skills** — `python tools/export_skills.py --target dsh` writes the
+   catalog into `.dsh/skills/`, which DeepSeek Harness discovers at project rank.
 
 ## Run the HAZOP team
 
 The team runs through `python/azoth/agents`, the one place that imports
 `deepseek_harness_sdk` — so the dev-preview runtime stays behind a thin boundary. The
 agent definition is [`agents/hazop/README.md`](hazop/README.md); the formal spec is
-[`docs/src/calculus/orchestration.md`](../docs/src/calculus/orchestration.md).
+[`docs/src/agentic/orchestration.md`](../docs/src/agentic/orchestration.md).
 
 ## Caveats
 

@@ -61,12 +61,12 @@ are separate implementations of the same declared arithmetic, and they are compa
 by case in the same process with the iteration counts required to match. This is the
 property the port exists to preserve, and it is the one thing that must not be generated.
 
-**Everything that names them is generated.** A new calculation currently costs eleven hand
+**Everything that names them is generated.** A new calculation used to cost eleven hand
 edits across Rust and Python on top of its two kernels — result structs, transport
-classes, registration lines, `__all__` entries, dispatch wrappers. Every one of those is a
-function of the spec's `inputs:`, `outputs:` and the id. They are being moved into a
-generator, which reduces a ported calculation to **four hand-written files**: the spec,
-the Rust kernel, the Python kernel, and the test.
+classes, registration lines, `__all__` entries, dispatch wrappers. Each of those is a
+function of the spec's `inputs:`, `outputs:` and the id, and is now derived from the id or
+emitted by a generator, which reduces a ported calculation to **four hand-written files**:
+the spec, the Rust kernel, the Python kernel, and the test.
 
 **A spec declares every result field, in both directions.** A field the spec does not name
 cannot be emitted by a generator, and a declared output with no field is a promise the
@@ -83,7 +83,7 @@ implements something is evidence it can be implemented, not evidence it is right
 `CriticalPointFlash` is correct by inspection and validated nowhere.
 
 **NeqSim runs as a differential oracle, and it does not gate the build.** The checkout at
-`/tmp/neqsim-check/neqsim` is built (Java 21, `target/neqsim-3.20.0.jar`) and ships 29
+`/tmp/neqsim-check/neqsim` is built (Java 21, `target/neqsim-3.20.0.jar`) and ships 18
 paired input/output flash cases plus literature benchmarks. A divergence from NeqSim is a
 finding, never a failure: the oracle is a second opinion, not a source of truth.
 

@@ -6,8 +6,8 @@ azoth is a chemical-engineering calculation library with an agentic layer on top
   each a `SKILL.md`. To load them into Claude Code or OpenCode, run
   `python tools/export_skills.py` (writes `.claude/skills/` and `.opencode/skills/`).
 - **Orchestration** is in [`agents/README.md`](agents/README.md). The one agent is a
-  HAZOP team of four roles, defined in `.claude/agents/` and `.opencode/agents/`;
-  run `/hazop` to start a study.
+  HAZOP team of four roles, defined in `agents/hazop/README.md` and exported to
+  `.claude/agents/` and `.opencode/agents/`; run `/hazop` to start a study.
 
 Setup:
 
