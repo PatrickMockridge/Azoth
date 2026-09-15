@@ -827,6 +827,25 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "c", "m**3/mol", c);
         }
 
+        "eos.rackett_molar_volume" => {
+            let (omega, tc, pc, t) = (
+                take(&inputs, "omega")?,
+                take(&inputs, "Tc")?,
+                take(&inputs, "Pc")?,
+                take(&inputs, "T")?,
+            );
+            let mut v = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::rackett_molar_volume(omega[i], kelvins(tc[i]), pascals(pc[i]), kelvins(t[i])),
+                    &mut warnings,
+                )?;
+                v.push(r.v.value);
+            }
+            push_values(&mut columns, "v", "m**3/mol", v);
+        }
+
         "eos.heat_of_vaporization" => {
             let (c0, c1, c2, c3, tc, t) = (
                 take(&inputs, "c0")?,

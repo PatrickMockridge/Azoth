@@ -76,6 +76,7 @@ Four sections, and the difference between them is the point:
 - [`eos.pr_z_factor`](./eos/pr_z_factor.md)
 - [`eos.prsv_kappa`](./eos/prsv_kappa.md)
 - [`eos.rachford_rice_binary`](./eos/rachford_rice_binary.md)
+- [`eos.rackett_molar_volume`](./eos/rackett_molar_volume.md)
 - [`eos.rk_alpha_ab`](./eos/rk_alpha_ab.md)
 - [`eos.rk_departure`](./eos/rk_departure.md)
 - [`eos.srk_alpha_ab`](./eos/srk_alpha_ab.md)

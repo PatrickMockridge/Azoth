@@ -36,6 +36,7 @@ __all__ = [
     "PrZFactorBatch",
     "PrsvKappaBatch",
     "RachfordRiceBinaryBatch",
+    "RackettMolarVolumeBatch",
     "RkAlphaAbBatch",
     "RkDepartureBatch",
     "SrkAlphaAbBatch",
@@ -58,6 +59,7 @@ __all__ = [
     "pr_z_factor",
     "prsv_kappa",
     "rachford_rice_binary",
+    "rackett_molar_volume",
     "rk_alpha_ab",
     "rk_departure",
     "srk_alpha_ab",
@@ -76,6 +78,7 @@ _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
+_RACKETT_MOLAR_VOLUME = "eos.rackett_molar_volume"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
@@ -563,6 +566,39 @@ def srk_peneloux_shift(
             "Pc": sequence(Pc, "Pc"),
         },
         _build_srk_peneloux_shift,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class RackettMolarVolumeBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.rackett_molar_volume`."""
+
+    #: Saturated liquid molar volume per element, in m**3/mol.
+    v: array[float]
+
+
+def _build_rackett_molar_volume(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> RackettMolarVolumeBatch:
+    return RackettMolarVolumeBatch(warnings=warnings, units=units, v=columns["v"])  # type: ignore[arg-type]
+
+
+def rackett_molar_volume(
+    *, omega: Sequence[float], Tc: Sequence[float], Pc: Sequence[float], T: Sequence[float]
+) -> RackettMolarVolumeBatch:
+    """The saturated liquid molar volume, over arrays."""
+    result: RackettMolarVolumeBatch = run(
+        _RACKETT_MOLAR_VOLUME,
+        {
+            "omega": sequence(omega, "omega"),
+            "Tc": sequence(Tc, "Tc"),
+            "Pc": sequence(Pc, "Pc"),
+            "T": sequence(T, "T"),
+        },
+        _build_rackett_molar_volume,
     )
     return result
 

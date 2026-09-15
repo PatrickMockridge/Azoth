@@ -396,6 +396,16 @@ class AntoineVaporPressureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class RackettMolarVolumeResult(_HasWarnings):
+    """Result of ``eos.rackett_molar_volume``."""
+
+    #: The saturated liquid molar volume.
+    v: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Vdw1fMixBinaryResult(_HasWarnings):
     """Result of ``eos.vdw1f_mix_binary``.
 

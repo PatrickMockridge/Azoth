@@ -88,6 +88,7 @@ from azoth.core.result import (
     PtFlashResult,
     PureSaturationResult,
     RachfordRiceBinaryResult,
+    RackettMolarVolumeResult,
     RkAlphaAbResult,
     RkDepartureResult,
     SrkAlphaAbResult,
@@ -135,6 +136,7 @@ __all__ = [
     "pt_flash",
     "pure_saturation",
     "rachford_rice_binary",
+    "rackett_molar_volume",
     "rk_alpha_ab",
     "rk_departure",
     "srk_alpha_ab",
@@ -173,6 +175,7 @@ _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
+_RACKETT_MOLAR_VOLUME = "eos.rackett_molar_volume"
 _SRK_KAPPA = "eos.srk_kappa"
 _SRK_ALPHA_AB = "eos.srk_alpha_ab"
 _SRK_Z_FACTOR = "eos.srk_z_factor"
@@ -495,6 +498,17 @@ def antoine_vapor_pressure(
     See :func:`azoth.eos.reference.antoine_vapor_pressure`.
     """
     return resolve(_ANTOINE_VAPOR_PRESSURE)(A=A, B=B, C=C, D=D, E=E, form=form, Tc=Tc, Pc=Pc, T=T)  # type: ignore[no-any-return]
+
+
+def rackett_molar_volume(omega: float, Tc: Q, Pc: Q, T: Q) -> RackettMolarVolumeResult:
+    """The saturated liquid molar volume of a pure component, from the Rackett equation.
+
+    Raises:
+        OutOfRangeError: if ``Tc``, ``Pc`` or ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.rackett_molar_volume`.
+    """
+    return resolve(_RACKETT_MOLAR_VOLUME)(omega=omega, Tc=Tc, Pc=Pc, T=T)  # type: ignore[no-any-return]
 
 
 def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureResult:

@@ -1,0 +1,81 @@
+id = "eos.rackett_molar_volume"
+name = "Saturated liquid molar volume from the Rackett equation"
+equation = "v = (R*Tc/Pc)*Z_RA**(1 + (1 - Tr)**(2/7)),  Z_RA = 0.29056 - 0.08775*omega"
+latex = '''V_s = \frac{R\,T_c}{P_c}\,Z_{\mathrm{RA}}^{\,1 + (1 - T_r)^{2/7}}, \qquad Z_{\mathrm{RA}} = 0.29056 - 0.08775\,\omega'''
+assumptions = ["the acentric factor, critical temperature and critical pressure are those of the component intended. NOT CHECKED - all three come from the caller.\n", "`Z_RA` is the Yamada-Gunn correlation `0.29056 - 0.08775*omega`; this library ships no databank Rackett Z, so the correlation is the whole value.\n", "`R` is the exact molar gas constant from the 2019 SI definition, the same value `eos.pr_molar_volume` uses.\n", "the volume is the *saturated liquid* molar volume; it is not corrected for compression above the vapour pressure.\n", "the correlation is a fit of limited range; for a mixture the Li (1971) mixing rules compose these pure volumes, which is a model this calc does not do.\n"]
+references = ["Rackett, H. G. (1970). \\\"Equation of state for saturated liquids.\\\" J. Chem. Eng. Data 15(4), 514-517. DOI 10.1021/je60047a012.", "Spencer, C. F.; Danner, R. P. (1972). \\\"Improved equation for prediction of saturated liquid density.\\\" J. Chem. Eng. Data 17(2), 236-241. DOI 10.1021/je60053a012."]
+[source]
+standard = "Spencer, C. F.; Danner, R. P. (1972)"
+edition = "Improved equation for prediction of saturated liquid density. J. Chem. Eng. Data, 17(2), 236-241"
+doi = "10.1021/je60053a012"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "Acentric factor of the pure component, as in `eos.pr_kappa`.\n"
+[inputs.Tc]
+unit = "K"
+description = "Critical temperature of the pure component.\n"
+[inputs.Pc]
+unit = "Pa"
+description = "Critical pressure of the pure component.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature, below the critical temperature for the correlation to hold.\n"
+[outputs]
+[outputs.v]
+unit = "m**3/mol"
+description = "The saturated liquid molar volume at `T`.\n"
+[[valid_range]]
+quantity = "Tc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Tc` is the divisor in `Tr = T/Tc`; zero or negative is not a critical temperature.\n"
+[[valid_range]]
+quantity = "Pc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Pc` is a divisor; a non-positive value is not a critical pressure.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "Propane-like, omega = 0.152, Tc = 369.83 K, Pc = 4.248e6 Pa, at T = 298.15 K:\n\n  Z_RA = 0.29056 - 0.08775*0.152 = 0.277222\n  Tr = 298.15 / 369.83        = 0.8061812183976421\n  1 - Tr                      = 0.19381878160235788\n  (1 - Tr)**(2/7)             = 0.6257470586990008\n  exponent = 1 + 0.6257470586990008 = 1.6257470586990008\n  R*Tc/Pc = 8.31446261815324 * 369.83 / 4.248e6 = 0.000723855393143035\n  v = 0.000723855393143035 * 0.277222**1.6257470586990008 = 8.991467403942754e-05 m**3/mol\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.152
+Tc = 369.83
+Pc = 4248000.0
+T = 298.15
+[worked_example.expected]
+v = 8.991467403942754e-05
+[implementations]
+python = "azoth.eos.rackett_molar_volume"
+rust = "azoth_eos::rackett_molar_volume"
+[[tests]]
+id = "propane_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "n_hexane_reproduces_the_nist_density"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at n-hexane's omega = 0.3013, Tc = 507.6 K, Pc = 3.025e6 Pa, T = 298.15 K:\n\n  Z_RA = 0.29056 - 0.08775*0.3013 = 0.264121\n  v = 1.3105219903246124e-04 m**3/mol\n\nwith n-hexane's M = 0.086177 kg/mol this is rho = 657.58 kg/m**3, within 0.4% of the NIST value ~655 kg/m**3.\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.3013
+Tc = 507.6
+Pc = 3025000.0
+T = 298.15
+[tests.expected]
+v = 1.3105219903246124e-04
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

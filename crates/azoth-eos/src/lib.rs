@@ -62,6 +62,7 @@ pub mod ps_flash;
 pub mod pt_flash;
 pub mod pure_saturation;
 pub mod rachford_rice_binary;
+pub mod rackett_molar_volume;
 pub mod results;
 pub mod rk_alpha_ab;
 pub mod rk_departure;
@@ -101,13 +102,15 @@ pub use ps_flash::ps_flash;
 pub use pt_flash::pt_flash;
 pub use pure_saturation::pure_saturation;
 pub use rachford_rice_binary::rachford_rice_binary;
+pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
     AntoineVaporPressureResult, BubblePressureResult, CriticalPointResult, DewPressureResult,
     HeatOfVaporizationResult, IdealGasCpResult, LiquidHeatCapacityResult, MolarEnthalpyEntropyResult,
     Phase, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult,
     PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, RkAlphaAbResult, RkDepartureResult,
-    RootStructure, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, RootStructure, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult,
     SrkZFactorResult, StabilityTestResult, StabilityVerdict, TwuKappaResult, Vdw1fMixBinaryResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;

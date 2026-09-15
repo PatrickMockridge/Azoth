@@ -20,7 +20,7 @@ use crate::results::{
     PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
     PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
     PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
-    PyRachfordRiceBinaryResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
+    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
     PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
     PyStabilityTestResult, PyTwuKappaResult, PyVdw1fMixBinaryResult,
 };
@@ -372,6 +372,23 @@ pub fn antoine_vapor_pressure(
         .map_err(pyo3::exceptions::PyValueError::new_err)?;
     azoth_eos::antoine_vapor_pressure(A, B, C, D, E, form, kelvins(Tc), pascals(Pc), kelvins(T))
         .map(|r| PyAntoineVaporPressureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The saturated liquid molar volume, from the Spencer-Danner Rackett equation.
+#[pyfunction]
+#[pyo3(signature = (omega, Tc, Pc, T))]
+#[pyo3(text_signature = "(omega, Tc, Pc, T)")]
+#[allow(non_snake_case)] // `Tc`, `Pc` and `T` are the symbols in the published equation
+pub fn rackett_molar_volume(
+    py: Python<'_>,
+    omega: f64,
+    Tc: f64,
+    Pc: f64,
+    T: f64,
+) -> PyResult<PyRackettMolarVolumeResult> {
+    azoth_eos::rackett_molar_volume(omega, kelvins(Tc), pascals(Pc), kelvins(T))
+        .map(|r| PyRackettMolarVolumeResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

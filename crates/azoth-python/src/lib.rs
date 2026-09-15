@@ -147,6 +147,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::heat_of_vaporization, m)?)?;
     m.add_function(wrap_pyfunction!(eos::liquid_heat_capacity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::antoine_vapor_pressure, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::rackett_molar_volume, m)?)?;
 
     // Models: the same shape, a different spec tree and generator.
     m.add_function(wrap_pyfunction!(eos::pure_saturation, m)?)?;

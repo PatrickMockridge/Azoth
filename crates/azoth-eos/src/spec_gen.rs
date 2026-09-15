@@ -16,6 +16,7 @@
 //!   - specs/calcs/eos/pr_z_factor.toml
 //!   - specs/calcs/eos/prsv_kappa.toml
 //!   - specs/calcs/eos/rachford_rice_binary.toml
+//!   - specs/calcs/eos/rackett_molar_volume.toml
 //!   - specs/calcs/eos/rk_alpha_ab.toml
 //!   - specs/calcs/eos/rk_departure.toml
 //!   - specs/calcs/eos/srk_alpha_ab.toml
@@ -1940,6 +1941,126 @@ pub static RACHFORD_RICE_BINARY_SPEC: CalcSpec = CalcSpec {
     tests: RACHFORD_RICE_BINARY_TESTS,
 };
 
+/// Registry entry for `eos.rackett_molar_volume`.
+static RACKETT_MOLAR_VOLUME_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Tc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`Tc` is the divisor in `Tr = T/Tc`; zero or negative is not a critical temperature.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Pc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`Pc` is a divisor; a non-positive value is not a critical pressure.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+];
+
+static RACKETT_MOLAR_VOLUME_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "n_hexane_reproduces_the_nist_density",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("omega", 0.3013),
+            ("Tc", 507.6),
+            ("Pc", 3025000.0),
+            ("T", 298.15),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("v", 0.00013105219903246124)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.rackett_molar_volume`.
+///
+/// Public and addressable directly, so a calc can hold `&RACKETT_MOLAR_VOLUME_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static RACKETT_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
+    id: "eos.rackett_molar_volume",
+    checks: RACKETT_MOLAR_VOLUME_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "propane_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("omega", 0.152),
+            ("Tc", 369.83),
+            ("Pc", 4248000.0),
+            ("T", 298.15),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("v", 8.991467403942754e-05)],
+        expected_vectors: &[],
+    },
+    tests: RACKETT_MOLAR_VOLUME_TESTS,
+};
+
 /// Registry entry for `eos.rk_alpha_ab`.
 static RK_ALPHA_AB_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -2921,6 +3042,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &PR_Z_FACTOR_SPEC,
     &PRSV_KAPPA_SPEC,
     &RACHFORD_RICE_BINARY_SPEC,
+    &RACKETT_MOLAR_VOLUME_SPEC,
     &RK_ALPHA_AB_SPEC,
     &RK_DEPARTURE_SPEC,
     &SRK_ALPHA_AB_SPEC,

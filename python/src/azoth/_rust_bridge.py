@@ -59,6 +59,7 @@ from azoth.core.result import (
     PumpPowerResult,
     PureSaturationResult,
     RachfordRiceBinaryResult,
+    RackettMolarVolumeResult,
     ReynoldsNumberResult,
     RkAlphaAbResult,
     RkDepartureResult,
@@ -512,6 +513,21 @@ def antoine_vapor_pressure(
     )
     return AntoineVaporPressureResult(
         p_sat=from_si(result.p_sat.magnitude_si, result.p_sat.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def rackett_molar_volume(omega: float, Tc: Q, Pc: Q, T: Q) -> RackettMolarVolumeResult:
+    """The saturated liquid molar volume, computed in Rust."""
+    spec = _spec_for("eos.rackett_molar_volume")
+    result = _core.rackett_molar_volume(
+        omega,
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "Pc", Pc),
+        input_to_si(spec, "T", T),
+    )
+    return RackettMolarVolumeResult(
+        v=from_si(result.v.magnitude_si, result.v.unit),
         warnings=_warnings(result.warnings),
     )
 

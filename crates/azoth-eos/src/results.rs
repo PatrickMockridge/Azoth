@@ -829,6 +829,24 @@ impl CalcResult for AntoineVaporPressureResult {
     }
 }
 
+/// Result of `eos.rackett_molar_volume`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RackettMolarVolumeResult {
+    /// The saturated liquid molar volume.
+    pub v: MolarVolume,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for RackettMolarVolumeResult {
+    const CALC_ID: &'static str = "eos.rackett_molar_volume";
+    const FIELDS: &'static [&'static str] = &["v", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SrkAlphaAbResult {

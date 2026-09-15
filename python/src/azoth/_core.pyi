@@ -290,6 +290,11 @@ class RachfordRiceBinaryResult:
     warnings: list[Warning]
 
 @final
+class RackettMolarVolumeResult:
+    v: Qty
+    warnings: list[Warning]
+
+@final
 class RkAlphaAbResult:
     alpha: float
     a_reduced: float
@@ -575,6 +580,12 @@ def pt_flash(
 ) -> PtFlashResult: ...
 def pure_saturation(Tc: float, Pc: float, omega: float, T: float) -> PureSaturationResult: ...
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
+def rackett_molar_volume(
+    omega: float,
+    Tc: float,
+    Pc: float,
+    T: float,
+) -> RackettMolarVolumeResult: ...
 def rk_alpha_ab(Tr: float, Pr: float) -> RkAlphaAbResult: ...
 def rk_departure(a_reduced: float, b_reduced: float, z: float) -> RkDepartureResult: ...
 def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult: ...

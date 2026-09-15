@@ -22,7 +22,8 @@ use azoth_eos::results::{
     PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
     PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
     PrsvKappaResult, PsFlashResult, PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult,
-    RkAlphaAbResult, RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SrkAlphaAbResult,
+    SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
     Vdw1fMixBinaryResult,
 };
@@ -988,6 +989,45 @@ impl From<&AntoineVaporPressureResult> for PyAntoineVaporPressureResult {
             p_sat: PyQty {
                 magnitude_si: r.p_sat.value,
                 unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.rackett_molar_volume`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "RackettMolarVolumeResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyRackettMolarVolumeResult {
+    /// The saturated liquid molar volume, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub v: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyRackettMolarVolumeResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "RackettMolarVolumeResult(v={} {})",
+            self.v.magnitude_si, self.v.unit
+        )
+    }
+}
+
+impl From<&RackettMolarVolumeResult> for PyRackettMolarVolumeResult {
+    fn from(r: &RackettMolarVolumeResult) -> Self {
+        Self {
+            v: PyQty {
+                magnitude_si: r.v.value,
+                unit: "m**3/mol".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -2290,6 +2330,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HeatOfVaporizationResult::CALC_ID => HeatOfVaporizationResult::FIELDS.to_vec(),
         LiquidHeatCapacityResult::CALC_ID => LiquidHeatCapacityResult::FIELDS.to_vec(),
         AntoineVaporPressureResult::CALC_ID => AntoineVaporPressureResult::FIELDS.to_vec(),
+        RackettMolarVolumeResult::CALC_ID => RackettMolarVolumeResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
@@ -2350,6 +2391,7 @@ pub fn calc_ids() -> Vec<String> {
         HeatOfVaporizationResult::CALC_ID.to_string(),
         LiquidHeatCapacityResult::CALC_ID.to_string(),
         AntoineVaporPressureResult::CALC_ID.to_string(),
+        RackettMolarVolumeResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
