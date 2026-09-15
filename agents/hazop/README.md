@@ -21,3 +21,5 @@ with `*` is the same run.
 
 Runnable via `python/azoth/agents` (the DeepSeek Harness boundary). The runtime is
 a dev preview; this file fixes the agent, and the runtime executes it.
+
+Setup: [`agents/README.md`](../README.md).

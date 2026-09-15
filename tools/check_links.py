@@ -42,8 +42,10 @@ ROOT_PAGES = (
     "CODE_OF_CONDUCT.md",
     "SECURITY.md",
     "SPEC.md",
+    "AGENTS.md",
     "validation/README.md",
     "databank/README.md",
+    "agents/README.md",
 )
 
 #: Markdown inline links and images: `[text](target)` and `![alt](target)`.

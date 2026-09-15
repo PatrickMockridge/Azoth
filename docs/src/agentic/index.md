@@ -11,7 +11,8 @@ under [`skills/`](../../../skills/README.md), their machine-readable metadata in
 [`tools/validate_skills.py`](../../../tools/validate_skills.py) holds every skill to
 the shape set out on [Skills](./skills.md).
 
-What exists today is **specialisms** — one skill and the standard it follows.
-Orchestration, and the agentic engineering teams built on it, come later under
-[`agents/`](../../../agents/README.md), where an agent chains skills and carries no
-method of its own.
+What exists today is **skills and the first agent**. Ninety skills under `skills/`,
+a HAZOP team of four roles under [`agents/`](../../../agents/README.md), and the formal
+statement of a team as a composition of role-processes in
+[Orchestration](../calculus/orchestration.md). Setup is in
+[`agents/README.md`](../../../agents/README.md).
