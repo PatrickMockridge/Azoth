@@ -73,6 +73,78 @@ theorem barbed_bisim_refl (P : Process) : BarbedBisim P P := by
   · intro y' hred
     exact ⟨y', ReducesStar.step hred (ReducesStar.refl y'), rfl⟩
 
+/-- Bisimulation is symmetric: the symmetric closure of a bisimulation is one. -/
+theorem barbed_bisim_symm {P Q : Process} (h : BarbedBisim P Q) : BarbedBisim Q P := by
+  rcases h with ⟨R, hisBisim, hPQ⟩
+  refine ⟨fun x y => R x y ∨ R y x, ?_, Or.inr hPQ⟩
+  intro x y hxy
+  rcases hxy with hxy | hyx
+  · rcases hisBisim hxy with ⟨hbarb, hredL, hredR⟩
+    exact ⟨hbarb,
+      (fun x' hx' => by
+        rcases hredL x' hx' with ⟨y', hstar, hR⟩
+        exact ⟨y', hstar, Or.inl hR⟩),
+      (fun y' hy' => by
+        rcases hredR y' hy' with ⟨x', hstar, hR⟩
+        exact ⟨x', hstar, Or.inl hR⟩)⟩
+  · rcases hisBisim hyx with ⟨hbarb, hredL, hredR⟩
+    exact ⟨(fun a => (hbarb a).symm),
+      (fun x' hx' => by
+        rcases hredR x' hx' with ⟨y', hstar, hR⟩
+        exact ⟨y', hstar, Or.inr hR⟩),
+      (fun y' hy' => by
+        rcases hredL y' hy' with ⟨x', hstar, hR⟩
+        exact ⟨x', hstar, Or.inr hR⟩)⟩
+
+/-- If a bisimulation relates `y` and `z`, a multi-step reduction of `y` is matched
+by a multi-step reduction of `z`. -/
+theorem bisim_matches_star {Rel : Process → Process → Prop} (hisBisim : IsBisim Rel)
+    {y y' z : Process} (hyy' : ReducesStar y y') (hyz : Rel y z) :
+    ∃ z', ReducesStar z z' ∧ Rel y' z' := by
+  induction hyy' generalizing z with
+  | refl _ => exact ⟨z, ReducesStar.refl z, hyz⟩
+  | @step y y1 y' hred hstar ih =>
+      rcases (hisBisim hyz).2.1 y1 hred with ⟨z1, hzz1, hy1z1⟩
+      rcases ih hy1z1 with ⟨z', hz1z', hy'z'⟩
+      exact ⟨z', reduces_star_trans hzz1 hz1z', hy'z'⟩
+
+/-- The reverse: a multi-step reduction of the second process is matched by the
+first. -/
+theorem bisim_matches_star_right {Rel : Process → Process → Prop} (hisBisim : IsBisim Rel)
+    {x y y' : Process} (hyy' : ReducesStar y y') (hxy : Rel x y) :
+    ∃ x', ReducesStar x x' ∧ Rel x' y' := by
+  induction hyy' generalizing x with
+  | refl _ => exact ⟨x, ReducesStar.refl x, hxy⟩
+  | @step y y1 y' hred hstar ih =>
+      rcases (hisBisim hxy).2.2 y1 hred with ⟨x1, hxx1, hx1y1⟩
+      rcases ih hx1y1 with ⟨x', hx1x', hx'y'⟩
+      exact ⟨x', reduces_star_trans hxx1 hx1x', hx'y'⟩
+
+/-- Bisimulation is transitive: the composition of two bisimulations is one. -/
+theorem barbed_bisim_trans {P Q R : Process} (h1 : BarbedBisim P Q) (h2 : BarbedBisim Q R) :
+    BarbedBisim P R := by
+  rcases h1 with ⟨R1, hisBisim1, hPQ⟩
+  rcases h2 with ⟨R2, hisBisim2, hQR⟩
+  let S := fun x z => ∃ y, R1 x y ∧ R2 y z
+  have hS : IsBisim S := by
+    intro x z hxz
+    rcases hxz with ⟨y, hxy, hyz⟩
+    rcases hisBisim1 hxy with ⟨hbarb1, hredL1, _⟩
+    rcases hisBisim2 hyz with ⟨hbarb2, _, hredR2⟩
+    constructor
+    · intro a
+      exact (hbarb1 a).trans (hbarb2 a)
+    constructor
+    · intro x' hx'
+      rcases hredL1 x' hx' with ⟨y', hyy', hx'y'⟩
+      rcases bisim_matches_star hisBisim2 hyy' hyz with ⟨z', hzz', hy'z'⟩
+      exact ⟨z', hzz', ⟨y', hx'y', hy'z'⟩⟩
+    · intro z' hz'
+      rcases hredR2 z' hz' with ⟨y', hyy', hy'z'⟩
+      rcases bisim_matches_star_right hisBisim1 hyy' hxy with ⟨x', hxx', hx'y'⟩
+      exact ⟨x', hxx', ⟨y', hx'y', hy'z'⟩⟩
+  exact ⟨S, hS, ⟨Q, hPQ, hQR⟩⟩
+
 end Barb
 
 end Azoth
