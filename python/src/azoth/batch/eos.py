@@ -23,6 +23,7 @@ from azoth.core.result import RootStructure
 from azoth.core.warnings import Warning
 
 __all__ = [
+    "CostaldMolarVolumeBatch",
     "HeatOfVaporizationBatch",
     "IdealGasCpBatch",
     "LiquidHeatCapacityBatch",
@@ -46,6 +47,7 @@ __all__ = [
     "SrkZFactorBatch",
     "TwuKappaBatch",
     "Vdw1fMixBinaryBatch",
+    "costald_molar_volume",
     "heat_of_vaporization",
     "ideal_gas_cp",
     "liquid_heat_capacity",
@@ -77,6 +79,7 @@ _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
+_COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 _RACKETT_MOLAR_VOLUME = "eos.rackett_molar_volume"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
@@ -566,6 +569,47 @@ def srk_peneloux_shift(
             "Pc": sequence(Pc, "Pc"),
         },
         _build_srk_peneloux_shift,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class CostaldMolarVolumeBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.costald_molar_volume`."""
+
+    #: Saturated liquid molar volume per element, in m**3/mol.
+    v: array[float]
+
+
+def _build_costald_molar_volume(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> CostaldMolarVolumeBatch:
+    return CostaldMolarVolumeBatch(warnings=warnings, units=units, v=columns["v"])  # type: ignore[arg-type]
+
+
+def costald_molar_volume(
+    *,
+    omega: Sequence[float],
+    Tc: Sequence[float],
+    Vc: Sequence[float],
+    M: Sequence[float],
+    rho_normal: Sequence[float],
+    T: Sequence[float],
+) -> CostaldMolarVolumeBatch:
+    """The saturated liquid molar volume, over arrays."""
+    result: CostaldMolarVolumeBatch = run(
+        _COSTALD_MOLAR_VOLUME,
+        {
+            "omega": sequence(omega, "omega"),
+            "Tc": sequence(Tc, "Tc"),
+            "Vc": sequence(Vc, "Vc"),
+            "M": sequence(M, "M"),
+            "rho_normal": sequence(rho_normal, "rho_normal"),
+            "T": sequence(T, "T"),
+        },
+        _build_costald_molar_volume,
     )
     return result
 

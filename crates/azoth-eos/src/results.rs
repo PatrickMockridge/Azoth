@@ -847,6 +847,24 @@ impl CalcResult for RackettMolarVolumeResult {
     }
 }
 
+/// Result of `eos.costald_molar_volume`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CostaldMolarVolumeResult {
+    /// The saturated liquid molar volume.
+    pub v: MolarVolume,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CostaldMolarVolumeResult {
+    const CALC_ID: &'static str = "eos.costald_molar_volume";
+    const FIELDS: &'static [&'static str] = &["v", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SrkAlphaAbResult {

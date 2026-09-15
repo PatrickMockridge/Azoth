@@ -127,6 +127,11 @@ class BubblePressureResult:
     warnings: list[Warning]
 
 @final
+class CostaldMolarVolumeResult:
+    v: Qty
+    warnings: list[Warning]
+
+@final
 class CriticalPointResult:
     tc: Qty
     pc: Qty
@@ -454,6 +459,14 @@ def bubble_pressure(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> BubblePressureResult: ...
+def costald_molar_volume(
+    omega: float,
+    Tc: float,
+    Vc: float,
+    M: float,
+    rho_normal: float,
+    T: float,
+) -> CostaldMolarVolumeResult: ...
 def critical_point(
     Tc: list[float],
     Pc: list[float],

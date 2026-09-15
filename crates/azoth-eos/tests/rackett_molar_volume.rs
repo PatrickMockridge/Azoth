@@ -59,5 +59,8 @@ fn every_case_in_the_spec() {
         }
         executed += 1;
     }
-    assert!(executed >= 2, "expected several active cases, ran {executed}");
+    assert!(
+        executed >= 2,
+        "expected several active cases, ran {executed}"
+    );
 }

@@ -1,0 +1,91 @@
+id = "eos.costald_molar_volume"
+name = "Saturated liquid molar volume from the COSTALD equation"
+equation = "v = V* * V_R0 * (1 - omega*V_Rdelta),  V_R0 = 1 - 1.52816*tau**(1/3) + 1.43907*tau**(2/3) - 0.81446*tau + 0.190454*tau**(4/3),  V_Rdelta = (-0.296123 + 0.386914*Tr - 0.0427258*Tr**2 - 0.0480645*Tr**3)/(Tr - 1.00001),  tau = 1 - Tr"
+latex = '''V_s = V^{*}\,V_R^{(0)}\,(1 - \omega V_R^{(\delta)})'''
+assumptions = ["the acentric factor, critical constants, molar mass and normal liquid density are those of the component intended. NOT CHECKED - they come from the caller.\n", "the characteristic volume `V*` is back-calculated from the normal liquid density at 288.71 K, falling back to the critical volume when the density is absent or the reduced standard temperature reaches 0.9 - the same order NeqSim's `getCharacteristicVolume` follows.\n", "the volume is the *saturated* liquid molar volume; the Aalto compressed-liquid correction and the NASTALD polar correction are not applied here (the latter is name-based and belongs to a later model).\n", "the correlation is valid below the critical temperature; above it the saturated volume is undefined.\n"]
+references = ["Hankinson, R. W.; Thomson, G. H. (1979). \\\"A new correlation for saturated densities of liquids and their mixtures.\\\" AIChE J. 25(4), 653-663. DOI 10.1002/aic.690250412."]
+[source]
+standard = "Hankinson, R. W.; Thomson, G. H. (1979)"
+edition = "A new correlation for saturated densities of liquids and their mixtures. AIChE J., 25(4), 653-663"
+doi = "10.1002/aic.690250412"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "Acentric factor of the pure component.\n"
+[inputs.Tc]
+unit = "K"
+description = "Critical temperature of the pure component.\n"
+[inputs.Vc]
+unit = "m**3/mol"
+description = "Critical volume; the characteristic-volume fallback when no normal liquid density is supplied.\n"
+[inputs.M]
+unit = "kg/mol"
+description = "Molar mass, for the characteristic-volume back-calculation.\n"
+[inputs.rho_normal]
+unit = "kg/m**3"
+description = "Normal liquid density at 288.71 K; zero when unknown, in which case `Vc` is the characteristic volume.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature, below the critical temperature.\n"
+[outputs]
+[outputs.v]
+unit = "m**3/mol"
+description = "The saturated liquid molar volume at `T`.\n"
+[[valid_range]]
+quantity = "Tc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Tc` is the divisor in `Tr = T/Tc`; zero or negative is not a critical temperature.\n"
+[[valid_range]]
+quantity = "Vc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A critical volume is positive; a non-positive value is not a substance.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "n-hexane, omega = 0.3013, Tc = 507.6 K, Vc = 3.7e-4 m**3/mol, M = 0.086177 kg/mol, rho_normal = 664 kg/m**3, at T = 298.15 K:\n\n  Tr_std = 288.71 / 507.6 = 0.5687746256895192\n  V_R0(Tr_std)  = 0.37770057227628073\n  V_Rdelta(Tr_std) = 0.2289284633940725\n  factor = 0.37770057227628073 * (1 - 0.3013*0.2289284633940725) = 0.35164824245087495\n  V_molar_std = 0.086177 / 664 = 0.00012978463855421688 m**3/mol\n  V* = 0.00012978463855421688 / 0.35164824245087495 = 0.00036907518049758976 m**3/mol\n\n  Tr = 298.15 / 507.6 = 0.5873719464144995\n  V_R0 = 0.38235768189745517\n  V_Rdelta = 0.22620631480355938\n  v = 0.00036907518049758976 * 0.38235768189745517 * (1 - 0.3013*0.22620631480355938) = 0.0001315006475383877 m**3/mol\n\nwhich, with n-hexane's M, is rho = 655.34 kg/m**3 - the NIST value.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.3013
+Tc = 507.6
+Vc = 0.00037
+M = 0.086177
+rho_normal = 664.0
+T = 298.15
+[worked_example.expected]
+v = 0.0001315006475383877
+[implementations]
+python = "azoth.eos.costald_molar_volume"
+rust = "azoth_eos::costald_molar_volume"
+[[tests]]
+id = "n_hexane_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "n_decane_uses_the_characteristic_volume"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at n-decane's omega = 0.4923, Tc = 617.7 K, Vc = 6.03e-4 m**3/mol, M = 0.142285 kg/mol, rho_normal = 734 kg/m**3, T = 300 K:\n\n  v = 0.00019615343276749308 m**3/mol, giving rho = 725.38 kg/m**3 - the NIST value ~726 kg/m**3.\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.4923
+Tc = 617.7
+Vc = 0.000603
+M = 0.142285
+rho_normal = 734.0
+T = 300.0
+[tests.expected]
+v = 0.00019615343276749308
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

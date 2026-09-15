@@ -8,19 +8,20 @@
 //! step with the spec.
 
 use azoth_core::units::{
-    cubic_meters_per_mole, joules_per_mole, joules_per_mole_kelvin, kelvins, kilograms_per_mole,
-    pascals,
+    cubic_meters_per_mole, joules_per_mole, joules_per_mole_kelvin, kelvins,
+    kilograms_per_cubic_meter, kilograms_per_mole, pascals,
 };
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyAntoineVaporPressureResult, PyCriticalPointResult, PyHeatOfVaporizationResult,
-    PyIdealGasCpResult, PyLiquidHeatCapacityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
-    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
-    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
+    PyAntoineVaporPressureResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
+    PyHeatOfVaporizationResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
+    PyMolarEnthalpyEntropyResult, PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult,
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
+    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
     PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
     PyStabilityTestResult, PyTwuKappaResult, PyVdw1fMixBinaryResult,
 };
@@ -390,6 +391,32 @@ pub fn rackett_molar_volume(
     azoth_eos::rackett_molar_volume(omega, kelvins(Tc), pascals(Pc), kelvins(T))
         .map(|r| PyRackettMolarVolumeResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// The saturated liquid molar volume, from the Hankinson-Thomson COSTALD equation.
+#[pyfunction]
+#[pyo3(signature = (omega, Tc, Vc, M, rho_normal, T))]
+#[pyo3(text_signature = "(omega, Tc, Vc, M, rho_normal, T)")]
+#[allow(non_snake_case)] // `Tc`, `Vc`, `M` and `T` are the symbols in the published equation
+pub fn costald_molar_volume(
+    py: Python<'_>,
+    omega: f64,
+    Tc: f64,
+    Vc: f64,
+    M: f64,
+    rho_normal: f64,
+    T: f64,
+) -> PyResult<PyCostaldMolarVolumeResult> {
+    azoth_eos::costald_molar_volume(
+        omega,
+        kelvins(Tc),
+        cubic_meters_per_mole(Vc),
+        kilograms_per_mole(M),
+        kilograms_per_cubic_meter(rho_normal),
+        kelvins(T),
+    )
+    .map(|r| PyCostaldMolarVolumeResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// The saturation pressure of a pure component.

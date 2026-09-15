@@ -118,7 +118,10 @@ impl TestCase {
     /// Fetch a string-valued input. `None` if the spec does not supply it.
     #[must_use]
     pub fn string(&self, name: &str) -> Option<&'static str> {
-        self.strings.iter().find(|(k, _)| *k == name).map(|(_, v)| *v)
+        self.strings
+            .iter()
+            .find(|(k, _)| *k == name)
+            .map(|(_, v)| *v)
     }
 
     /// Fetch a vector-valued input.

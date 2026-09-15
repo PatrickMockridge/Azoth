@@ -68,6 +68,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
+    CostaldMolarVolumeResult,
     CriticalPointResult,
     DewPressureResult,
     HeatOfVaporizationResult,
@@ -114,6 +115,7 @@ __all__ = [
     "available_components",
     "bubble_pressure",
     "component",
+    "costald_molar_volume",
     "critical_point",
     "dew_pressure",
     "from_model",
@@ -160,6 +162,7 @@ _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
+_COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
 _PH_FLASH = "eos.ph_flash"
@@ -509,6 +512,21 @@ def rackett_molar_volume(omega: float, Tc: Q, Pc: Q, T: Q) -> RackettMolarVolume
     See :func:`azoth.eos.reference.rackett_molar_volume`.
     """
     return resolve(_RACKETT_MOLAR_VOLUME)(omega=omega, Tc=Tc, Pc=Pc, T=T)  # type: ignore[no-any-return]
+
+
+def costald_molar_volume(
+    omega: float, Tc: Q, Vc: Q, M: Q, rho_normal: Q, T: Q
+) -> CostaldMolarVolumeResult:
+    """The saturated liquid molar volume of a pure component, from the COSTALD equation.
+
+    Raises:
+        OutOfRangeError: if ``Tc``, ``Vc`` or ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.costald_molar_volume`.
+    """
+    return resolve(_COSTALD_MOLAR_VOLUME)(  # type: ignore[no-any-return]
+        omega=omega, Tc=Tc, Vc=Vc, M=M, rho_normal=rho_normal, T=T
+    )
 
 
 def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureResult:

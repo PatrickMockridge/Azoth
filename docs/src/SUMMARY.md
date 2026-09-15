@@ -13,6 +13,7 @@
   - [The vocabulary table](./calculus/vocabulary.md)
 - [Equations of state](./eos/index.md)
   - [Antoine vapour pressure from NeqSim's correlation](./eos/antoine_vapor_pressure.md)
+  - [Saturated liquid molar volume from the COSTALD equation](./eos/costald_molar_volume.md)
   - [Heat of vaporisation from NeqSim's correlation](./eos/heat_of_vaporization.md)
   - [Ideal-gas heat capacity from a polynomial](./eos/ideal_gas_cp.md)
   - [Liquid heat capacity from NeqSim's polynomial](./eos/liquid_heat_capacity.md)
@@ -60,4 +61,5 @@
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
 - [The agentic layer](./agentic/index.md)
   - [Skills](./agentic/skills.md)
+  - [The skills roadmap](./agentic/roadmap.md)
 - [Solvers](./theory/solvers.md)

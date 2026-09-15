@@ -32,6 +32,7 @@ from azoth.core.result import (
     ColebrookResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
+    CostaldMolarVolumeResult,
     CriticalPointResult,
     DarcyWeisbachResult,
     DewPressureResult,
@@ -527,6 +528,25 @@ def rackett_molar_volume(omega: float, Tc: Q, Pc: Q, T: Q) -> RackettMolarVolume
         input_to_si(spec, "T", T),
     )
     return RackettMolarVolumeResult(
+        v=from_si(result.v.magnitude_si, result.v.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def costald_molar_volume(
+    omega: float, Tc: Q, Vc: Q, M: Q, rho_normal: Q, T: Q
+) -> CostaldMolarVolumeResult:
+    """The saturated liquid molar volume, computed in Rust."""
+    spec = _spec_for("eos.costald_molar_volume")
+    result = _core.costald_molar_volume(
+        omega,
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "Vc", Vc),
+        input_to_si(spec, "M", M),
+        input_to_si(spec, "rho_normal", rho_normal),
+        input_to_si(spec, "T", T),
+    )
+    return CostaldMolarVolumeResult(
         v=from_si(result.v.magnitude_si, result.v.unit),
         warnings=_warnings(result.warnings),
     )

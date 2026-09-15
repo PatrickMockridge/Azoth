@@ -131,8 +131,7 @@ pub fn antoine_vapor_pressure(
         AntoineForm::Exp => 1e5 * (A - B / (t + C)).exp(),
         AntoineForm::Wagner => {
             let x = 1.0 - t / Tc.value;
-            ((A * x + B * x.powf(1.5) + C * x.powi(3) + D * x.powi(6)) / (1.0 - x)).exp()
-                * Pc.value
+            ((A * x + B * x.powf(1.5) + C * x.powi(3) + D * x.powi(6)) / (1.0 - x)).exp() * Pc.value
         }
     };
 

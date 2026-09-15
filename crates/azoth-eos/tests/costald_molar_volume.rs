@@ -1,22 +1,21 @@
-//! Spec-driven tests for `eos.antoine_vapor_pressure`.
+//! Spec-driven tests for `eos.costald_molar_volume`.
 
-use azoth_core::units::{kelvins, pascals};
-use azoth_eos::antoine_vapor_pressure;
+use azoth_core::units::{
+    cubic_meters_per_mole, kelvins, kilograms_per_cubic_meter, kilograms_per_mole,
+};
+use azoth_eos::costald_molar_volume;
 use azoth_eos::spec_gen;
 use azoth_test_support as common;
 
-const CALC_ID: &str = "eos.antoine_vapor_pressure";
+const CALC_ID: &str = "eos.costald_molar_volume";
 
-fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::AntoineVaporPressureResult {
-    antoine_vapor_pressure(
-        common::input(case, "A"),
-        common::input(case, "B"),
-        common::input(case, "C"),
-        common::input(case, "D"),
-        common::input(case, "E"),
-        common::input_str(case, "form").parse().unwrap(),
+fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::CostaldMolarVolumeResult {
+    costald_molar_volume(
+        common::input(case, "omega"),
         kelvins(common::input(case, "Tc")),
-        pascals(common::input(case, "Pc")),
+        cubic_meters_per_mole(common::input(case, "Vc")),
+        kilograms_per_mole(common::input(case, "M")),
+        kilograms_per_cubic_meter(common::input(case, "rho_normal")),
         kelvins(common::input(case, "T")),
     )
     .unwrap_or_else(|e| panic!("test `{}` should compute but failed: {e}", case.id))
@@ -36,25 +35,23 @@ fn every_case_in_the_spec() {
             "worked_example" | "reference" => {
                 let result = call(case);
                 common::assert_close(
-                    result.p_sat.value,
-                    common::expected(case, "p_sat"),
+                    result.v.value,
+                    common::expected(case, "v"),
                     case.tolerance,
-                    &format!("{}::{} (p_sat)", spec.id, case.id),
+                    &format!("{}::{} (v)", spec.id, case.id),
                 );
                 common::assert_consistent(&result, &format!("{}::{}", spec.id, case.id));
                 common::assert_warnings_agree_with_spec(
                     spec,
                     &result.warnings,
                     |quantity| match quantity {
-                        "A" => Some(common::input(case, "A")),
-                        "B" => Some(common::input(case, "B")),
-                        "C" => Some(common::input(case, "C")),
-                        "D" => Some(common::input(case, "D")),
-                        "E" => Some(common::input(case, "E")),
+                        "omega" => Some(common::input(case, "omega")),
                         "Tc" => Some(common::input(case, "Tc")),
-                        "Pc" => Some(common::input(case, "Pc")),
+                        "Vc" => Some(common::input(case, "Vc")),
+                        "M" => Some(common::input(case, "M")),
+                        "rho_normal" => Some(common::input(case, "rho_normal")),
                         "T" => Some(common::input(case, "T")),
-                        "p_sat" => Some(result.p_sat.value),
+                        "v" => Some(result.v.value),
                         _ => None,
                     },
                     &format!("{}::{}", spec.id, case.id),

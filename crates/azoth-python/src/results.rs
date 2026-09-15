@@ -17,13 +17,13 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    AntoineVaporPressureResult, BubblePressureResult, CriticalPointResult, DewPressureResult,
-    HeatOfVaporizationResult, IdealGasCpResult, LiquidHeatCapacityResult, MolarEnthalpyEntropyResult,
-    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult,
+    AntoineVaporPressureResult, BubblePressureResult, CostaldMolarVolumeResult,
+    CriticalPointResult, DewPressureResult, HeatOfVaporizationResult, IdealGasCpResult,
+    LiquidHeatCapacityResult, MolarEnthalpyEntropyResult, PhFlashResult, Pr78KappaResult,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
     Vdw1fMixBinaryResult,
 };
@@ -1024,6 +1024,45 @@ impl PyRackettMolarVolumeResult {
 
 impl From<&RackettMolarVolumeResult> for PyRackettMolarVolumeResult {
     fn from(r: &RackettMolarVolumeResult) -> Self {
+        Self {
+            v: PyQty {
+                magnitude_si: r.v.value,
+                unit: "m**3/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.costald_molar_volume`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CostaldMolarVolumeResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCostaldMolarVolumeResult {
+    /// The saturated liquid molar volume, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub v: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCostaldMolarVolumeResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CostaldMolarVolumeResult(v={} {})",
+            self.v.magnitude_si, self.v.unit
+        )
+    }
+}
+
+impl From<&CostaldMolarVolumeResult> for PyCostaldMolarVolumeResult {
+    fn from(r: &CostaldMolarVolumeResult) -> Self {
         Self {
             v: PyQty {
                 magnitude_si: r.v.value,
@@ -2331,6 +2370,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         LiquidHeatCapacityResult::CALC_ID => LiquidHeatCapacityResult::FIELDS.to_vec(),
         AntoineVaporPressureResult::CALC_ID => AntoineVaporPressureResult::FIELDS.to_vec(),
         RackettMolarVolumeResult::CALC_ID => RackettMolarVolumeResult::FIELDS.to_vec(),
+        CostaldMolarVolumeResult::CALC_ID => CostaldMolarVolumeResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
@@ -2392,6 +2432,7 @@ pub fn calc_ids() -> Vec<String> {
         LiquidHeatCapacityResult::CALC_ID.to_string(),
         AntoineVaporPressureResult::CALC_ID.to_string(),
         RackettMolarVolumeResult::CALC_ID.to_string(),
+        CostaldMolarVolumeResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

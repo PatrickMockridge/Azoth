@@ -827,6 +827,34 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "c", "m**3/mol", c);
         }
 
+        "eos.costald_molar_volume" => {
+            let (omega, tc, vc, m, rho, t) = (
+                take(&inputs, "omega")?,
+                take(&inputs, "Tc")?,
+                take(&inputs, "Vc")?,
+                take(&inputs, "M")?,
+                take(&inputs, "rho_normal")?,
+                take(&inputs, "T")?,
+            );
+            let mut v = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::costald_molar_volume(
+                        omega[i],
+                        kelvins(tc[i]),
+                        cubic_meters_per_mole(vc[i]),
+                        kilograms_per_mole(m[i]),
+                        kilograms_per_cubic_meter(rho[i]),
+                        kelvins(t[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                v.push(r.v.value);
+            }
+            push_values(&mut columns, "v", "m**3/mol", v);
+        }
+
         "eos.rackett_molar_volume" => {
             let (omega, tc, pc, t) = (
                 take(&inputs, "omega")?,
@@ -838,7 +866,12 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             for i in 0..n {
                 let r = element(
                     py,
-                    eos::rackett_molar_volume(omega[i], kelvins(tc[i]), pascals(pc[i]), kelvins(t[i])),
+                    eos::rackett_molar_volume(
+                        omega[i],
+                        kelvins(tc[i]),
+                        pascals(pc[i]),
+                        kelvins(t[i]),
+                    ),
                     &mut warnings,
                 )?;
                 v.push(r.v.value);
