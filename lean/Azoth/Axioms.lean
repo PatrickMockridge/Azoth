@@ -22,6 +22,7 @@ that page too. A theorem this file does not name is a theorem nothing gates.
 import Azoth.Dim
 import Azoth.Vocabulary
 import Azoth.Rho
+import Azoth.Barb
 
 #print axioms Azoth.Dim.ofExponentsOn_nil
 #print axioms Azoth.Dim.ofExponents_nil
@@ -38,3 +39,6 @@ import Azoth.Rho
 #print axioms Azoth.Rho.comm_reduction
 #print axioms Azoth.Rho.round_trip_congr
 #print axioms Azoth.Rho.round_trip_par
+#print axioms Azoth.Barb.reduces_star_refl
+#print axioms Azoth.Barb.reduces_star_trans
+#print axioms Azoth.Barb.barbed_bisim_refl
