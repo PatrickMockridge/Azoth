@@ -284,6 +284,7 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
         # mixture, not beside it).
         params.append('eos: str = "pr"')
         params.append('alpha: str = "pr"')
+        params.append("alpha_params: list[list[float]] | None = None")
     return params
 
 

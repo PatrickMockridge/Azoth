@@ -1,0 +1,27 @@
+{
+  "id": "nc12_flash_mollerup_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with AttractiveTermMollerup - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Mollerup's correlation, three fitted parameters from the `schwartzentruber1..3` columns. A single pure component pins the compressibility rather than a two-phase split, because Mollerup's methane alpha is constant (its parameters are all zero) and a methane/n-butane feed stays single phase at every point tried."
+  },
+  "derivation": "The driver was run for n-dodecane (nc12) at 500 K and 15 bar on SystemPrEos with `setAttractiveTerm(3)` - Mollerup, whose `alpha = 1 + p0 (Tc/T - 1) + p1 (T/Tc) ln(T/Tc) + p2 (T/Tc - 1)` with nc12's `[0.0789, -1.16, 0.0]`. NeqSim printed:\n\n  beta 1.0\n  Zl   0.11375239710073916\n  Zv   0.11375239710073916\n\nazoth reproduces the compressibility to 1e-17. `beta` is omitted as in the other single-phase cases.",
+  "eos": "pr",
+  "alpha": "mollerup",
+  "inputs": {
+    "components": [
+      "nc12"
+    ],
+    "T": 500.0,
+    "P": 1500000.0,
+    "z": [
+      1.0
+    ]
+  },
+  "expected": {
+    "z_liquid": 0.11375239710073916,
+    "z_vapour": 0.11375239710073916
+  },
+  "tolerance": 1e-10
+}

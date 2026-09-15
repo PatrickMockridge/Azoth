@@ -47,6 +47,20 @@ pub enum Alpha {
     Gassem2001,
     /// Danesh's Soave form with `m` scaled by 1.21 above the critical temperature.
     Danesh,
+    /// Schwartzentruber's correlation, three fitted parameters.
+    Schwartzentruber,
+    /// Mollerup's correlation, three fitted parameters.
+    Mollerup,
+    /// Mathias-Copeman's correlation, three fitted parameters.
+    MatCop,
+    /// Mathias-Copeman on Peng-Robinson, three fitted parameters.
+    MatCopPr,
+    /// Mathias-Copeman for UMR-PRU, three fitted parameters.
+    MatCopPrUmr,
+    /// Five-parameter Mathias-Copeman for UMR-CPA.
+    MatCop5PrUmr,
+    /// Delft (1998), methane-specific, Soave otherwise.
+    Delft1998,
 }
 
 impl Alpha {
@@ -61,6 +75,13 @@ impl Alpha {
             Alpha::TwuCoon => "twucoon",
             Alpha::Gassem2001 => "gassem2001",
             Alpha::Danesh => "danesh",
+            Alpha::Schwartzentruber => "schwartzentruber",
+            Alpha::Mollerup => "mollerup",
+            Alpha::MatCop => "matcop",
+            Alpha::MatCopPr => "matcop_pr",
+            Alpha::MatCopPrUmr => "matcop_prumr",
+            Alpha::MatCop5PrUmr => "matcop_5prumr",
+            Alpha::Delft1998 => "delft1998",
         }
     }
 }
@@ -77,9 +98,17 @@ impl std::str::FromStr for Alpha {
             "twucoon" => Ok(Alpha::TwuCoon),
             "gassem2001" => Ok(Alpha::Gassem2001),
             "danesh" => Ok(Alpha::Danesh),
+            "schwartzentruber" => Ok(Alpha::Schwartzentruber),
+            "mollerup" => Ok(Alpha::Mollerup),
+            "matcop" => Ok(Alpha::MatCop),
+            "matcop_pr" => Ok(Alpha::MatCopPr),
+            "matcop_prumr" => Ok(Alpha::MatCopPrUmr),
+            "matcop_5prumr" => Ok(Alpha::MatCop5PrUmr),
+            "delft1998" => Ok(Alpha::Delft1998),
             other => Err(format!(
                 "unknown alpha `{other}`; expected `pr`, `srk`, `pr78`, `twu`, `twucoon`, \
-                 `gassem2001` or `danesh`"
+                 `gassem2001`, `danesh`, `schwartzentruber`, `mollerup`, `matcop`, \
+                 `matcop_pr`, `matcop_prumr`, `matcop_5prumr` or `delft1998`"
             )),
         }
     }
@@ -269,5 +298,261 @@ impl AlphaTerm for Gassem2001 {
         let g = self.g();
         let tr_g = tr.powf(g);
         Self::B * tr - g * g * Self::A * tr_g - Self::B * (1.0 + g).powi(2) * tr_g * tr
+    }
+}
+
+/// The `T * d(psi)/dT` of a squared form `alpha = S**2`, from `S` and its two `Tr`
+/// derivatives. `psi = 2 Tr S'/S` and `psi_t = psi + 2 Tr**2 (S S'' - S'**2)/S**2`.
+fn squared_psi_t(s: f64, ds: f64, dds: f64, tr: f64) -> f64 {
+    2.0 * tr * ds / s + 2.0 * tr * tr * (s * dds - ds * ds) / (s * s)
+}
+
+/// The Mathias-Copeman polynomial `S = 1 + sum_k c_k (1 - sqrt(Tr))**k` and its first
+/// two `Tr` derivatives.
+fn matcop_polynomial(params: &[f64], tr: f64) -> (f64, f64, f64) {
+    let sqrt_tr = tr.sqrt();
+    let u = 1.0 - sqrt_tr;
+    let du = -0.5 / sqrt_tr;
+    let ddu = 0.25 / (tr * sqrt_tr);
+    let mut s = 1.0;
+    let mut ds = 0.0;
+    let mut dds = 0.0;
+    let mut u_pow = 1.0; // u**(k-1) at the start of iteration k
+    let mut u_pow_minus = 0.0; // u**(k-2); unused for k = 1
+    for (i, &c) in params.iter().enumerate() {
+        let k = (i + 1) as f64;
+        let u_k = u_pow * u; // u**k
+        s += c * u_k;
+        ds += c * k * u_pow * du;
+        dds += c * (k * (k - 1.0) * u_pow_minus * du * du + k * u_pow * ddu);
+        u_pow_minus = u_pow;
+        u_pow = u_k;
+    }
+    (s, ds, dds)
+}
+
+/// Mathias-Copeman's base `m` for the SRK variant: `0.48 + 1.574 w - 0.175 w**2`.
+pub fn matcop_kappa(omega: f64) -> f64 {
+    0.48 + 1.574 * omega - 0.175 * omega * omega
+}
+
+/// The UMR-PRU quartic `m`: `0.384401 + 1.52276 w - 0.213808 w**2 + 0.034616 w**3
+/// - 0.001976 w**4`.
+pub fn umr_kappa(omega: f64) -> f64 {
+    0.384401 + 1.52276 * omega - 0.213808 * omega * omega + 0.034616 * omega.powi(3)
+        - 0.001976 * omega.powi(4)
+}
+
+/// Schwartzentruber's correlation, a squared form with three fitted parameters.
+///
+/// `alpha = (1 + m(1 - sqrt(Tr)) - p0 (1 - Tr)(1 + p1 Tr + p2 Tr**2))**2`, with
+/// `m = 0.48508 + 1.55191 w - 0.15613 w**2`. The `Tr > 100` high-temperature form
+/// NeqSim also carries is not ported; it is an extrapolation no ordinary state reaches.
+#[derive(Debug, Clone)]
+pub struct Schwartzentruber {
+    /// The acentric factor, for `m`.
+    pub omega: f64,
+    /// The three fitted parameters, from the `schwartzentruber1..3` columns.
+    pub params: Vec<f64>,
+}
+
+impl Schwartzentruber {
+    fn kappa(&self) -> f64 {
+        0.48508 + 1.55191 * self.omega - 0.15613 * self.omega * self.omega
+    }
+
+    /// `(S, dS/dTr, d2S/dTr2)` at `Tr`, where `alpha = S**2`.
+    fn polynomial(&self, tr: f64) -> (f64, f64, f64) {
+        let m = self.kappa();
+        let p0 = self.params.first().copied().unwrap_or(0.0);
+        let p1 = self.params.get(1).copied().unwrap_or(0.0);
+        let p2 = self.params.get(2).copied().unwrap_or(0.0);
+        let sqrt_tr = tr.sqrt();
+        let q = 1.0 + (p1 - 1.0) * tr + (p2 - p1) * tr * tr - p2 * tr * tr * tr;
+        let dq = p1 - 1.0 + 2.0 * (p2 - p1) * tr - 3.0 * p2 * tr * tr;
+        let ddq = 2.0 * (p2 - p1) - 6.0 * p2 * tr;
+        let s = 1.0 + m * (1.0 - sqrt_tr) - p0 * q;
+        let ds = -m / (2.0 * sqrt_tr) - p0 * dq;
+        let dds = m / (4.0 * tr * sqrt_tr) - p0 * ddq;
+        (s, ds, dds)
+    }
+}
+
+impl AlphaTerm for Schwartzentruber {
+    fn alpha(&self, tr: f64) -> f64 {
+        let (s, _, _) = self.polynomial(tr);
+        s * s
+    }
+
+    fn psi(&self, tr: f64) -> f64 {
+        let (s, ds, _) = self.polynomial(tr);
+        2.0 * tr * ds / s
+    }
+
+    fn psi_t(&self, tr: f64) -> f64 {
+        let (s, ds, dds) = self.polynomial(tr);
+        squared_psi_t(s, ds, dds, tr)
+    }
+}
+
+/// Mollerup's correlation, a three-parameter non-Soave form.
+///
+/// `alpha = 1 + p0 (1/Tr - 1) + p1 Tr ln(Tr) + p2 (Tr - 1)`. The parameters are the
+/// same `schwartzentruber1..3` columns Schwartzentruber reads.
+#[derive(Debug, Clone)]
+pub struct Mollerup {
+    /// The three fitted parameters.
+    pub params: Vec<f64>,
+}
+
+impl Mollerup {
+    /// `(alpha, d alpha/dTr, d2 alpha/dTr2)` at `Tr`.
+    fn values(&self, tr: f64) -> (f64, f64, f64) {
+        let p0 = self.params.first().copied().unwrap_or(0.0);
+        let p1 = self.params.get(1).copied().unwrap_or(0.0);
+        let p2 = self.params.get(2).copied().unwrap_or(0.0);
+        let ln_tr = tr.ln();
+        let alpha = 1.0 + p0 * (1.0 / tr - 1.0) + p1 * tr * ln_tr + p2 * (tr - 1.0);
+        let d_alpha = -p0 / (tr * tr) + p1 * (ln_tr + 1.0) + p2;
+        let d2_alpha = 2.0 * p0 / (tr * tr * tr) + p1 / tr;
+        (alpha, d_alpha, d2_alpha)
+    }
+}
+
+impl AlphaTerm for Mollerup {
+    fn alpha(&self, tr: f64) -> f64 {
+        self.values(tr).0
+    }
+
+    fn psi(&self, tr: f64) -> f64 {
+        let (alpha, d_alpha, _) = self.values(tr);
+        tr * d_alpha / alpha
+    }
+
+    fn psi_t(&self, tr: f64) -> f64 {
+        let (alpha, d_alpha, d2_alpha) = self.values(tr);
+        tr * d_alpha / alpha + tr * tr * (d2_alpha * alpha - d_alpha * d_alpha) / (alpha * alpha)
+    }
+}
+
+/// When Mathias-Copeman's polynomial is replaced by the base Soave alpha.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatCopFallback {
+    /// Never: the polynomial is used at every temperature.
+    None,
+    /// Above the critical temperature, or when the first coefficient is unset.
+    Supercritical,
+    /// Only when the first coefficient is unset.
+    Unset,
+    /// Only when every coefficient is unset.
+    AllUnset,
+}
+
+/// Mathias-Copeman's correlation, a squared polynomial with three or five fitted
+/// parameters.
+///
+/// `alpha = (1 + sum_k c_k (1 - sqrt(Tr))**k)**2`. The four NeqSim variants share the
+/// form and differ in the base `m`, the coefficient count, and the fallback to the base
+/// Soave alpha.
+#[derive(Debug, Clone)]
+pub struct MatCop {
+    /// The base `m`, used when the first coefficient is unset and for the Soave fallback.
+    pub kappa: f64,
+    /// The Mathias-Copeman coefficients `c1..cn`.
+    pub params: Vec<f64>,
+    /// When the base Soave alpha replaces the polynomial.
+    pub fallback: MatCopFallback,
+}
+
+impl MatCop {
+    /// The coefficients with `c1` replaced by `kappa` when it is effectively zero.
+    fn coefficients(&self) -> Vec<f64> {
+        let mut c = self.params.clone();
+        if let Some(c0) = c.first_mut()
+            && c0.abs() < 1e-12
+        {
+            *c0 = self.kappa;
+        }
+        c
+    }
+
+    fn use_soave(&self, c: &[f64], tr: f64) -> bool {
+        match self.fallback {
+            MatCopFallback::None => false,
+            MatCopFallback::Supercritical => tr > 1.0 || c.first().is_none_or(|p| *p < 1e-20),
+            MatCopFallback::Unset => c.first().is_none_or(|p| *p < 1e-20),
+            MatCopFallback::AllUnset => c.iter().all(|p| p.abs() < 1e-20),
+        }
+    }
+}
+
+impl AlphaTerm for MatCop {
+    fn alpha(&self, tr: f64) -> f64 {
+        let c = self.coefficients();
+        if self.use_soave(&c, tr) {
+            return Soave { kappa: self.kappa }.alpha(tr);
+        }
+        let (s, _, _) = matcop_polynomial(&c, tr);
+        s * s
+    }
+
+    fn psi(&self, tr: f64) -> f64 {
+        let c = self.coefficients();
+        if self.use_soave(&c, tr) {
+            return Soave { kappa: self.kappa }.psi(tr);
+        }
+        let (s, ds, _) = matcop_polynomial(&c, tr);
+        2.0 * tr * ds / s
+    }
+
+    fn psi_t(&self, tr: f64) -> f64 {
+        let c = self.coefficients();
+        if self.use_soave(&c, tr) {
+            return Soave { kappa: self.kappa }.psi_t(tr);
+        }
+        let (s, ds, dds) = matcop_polynomial(&c, tr);
+        squared_psi_t(s, ds, dds, tr)
+    }
+}
+
+/// Delft (1998)'s correlation: a fitted cubic for methane, the 1978 Peng-Robinson
+/// Soave form for everything else.
+#[derive(Debug, Clone, Copy)]
+pub struct Delft1998 {
+    /// The 1978 Peng-Robinson `m`, for the non-methane branch.
+    pub kappa: f64,
+    /// Whether this component is methane, whose fitted cubic replaces the Soave form.
+    pub is_methane: bool,
+}
+
+impl AlphaTerm for Delft1998 {
+    fn alpha(&self, tr: f64) -> f64 {
+        if self.is_methane {
+            0.969617 + 0.20089 * tr - 0.3256987 * tr * tr + 0.06653 * tr * tr * tr
+        } else {
+            Soave { kappa: self.kappa }.alpha(tr)
+        }
+    }
+
+    fn psi(&self, tr: f64) -> f64 {
+        if self.is_methane {
+            let alpha = 0.969617 + 0.20089 * tr - 0.3256987 * tr * tr + 0.06653 * tr * tr * tr;
+            let d_alpha = 0.20089 - 2.0 * 0.3256987 * tr + 3.0 * 0.06653 * tr * tr;
+            tr * d_alpha / alpha
+        } else {
+            Soave { kappa: self.kappa }.psi(tr)
+        }
+    }
+
+    fn psi_t(&self, tr: f64) -> f64 {
+        if self.is_methane {
+            let alpha = 0.969617 + 0.20089 * tr - 0.3256987 * tr * tr + 0.06653 * tr * tr * tr;
+            let d_alpha = 0.20089 - 2.0 * 0.3256987 * tr + 3.0 * 0.06653 * tr * tr;
+            let d2_alpha = -2.0 * 0.3256987 + 6.0 * 0.06653 * tr;
+            tr * d_alpha / alpha
+                + tr * tr * (d2_alpha * alpha - d_alpha * d_alpha) / (alpha * alpha)
+        } else {
+            Soave { kappa: self.kappa }.psi_t(tr)
+        }
     }
 }

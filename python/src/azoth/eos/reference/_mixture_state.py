@@ -26,7 +26,20 @@ from typing import Any, NamedTuple
 
 from azoth.core.errors import OutOfRangeError
 from azoth.core.warnings import Warning
-from azoth.eos.alpha_term import Danesh, Gassem2001, RkAlpha, Soave, TwuCoon
+from azoth.eos.alpha_term import (
+    Danesh,
+    Delft1998,
+    Gassem2001,
+    MatCop,
+    MatCopFallback,
+    Mollerup,
+    RkAlpha,
+    Schwartzentruber,
+    Soave,
+    TwuCoon,
+    matcop_kappa,
+    umr_kappa,
+)
 from azoth.eos.cubic import PR, Cubic
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference.pr78_kappa import pr78_kappa
@@ -144,6 +157,17 @@ def _soave_kappa(alpha: str, omega: float) -> tuple[float, tuple[Warning, ...]]:
     return pr_result.kappa, pr_result.warnings
 
 
+def _non_soave(
+    cubic: Cubic, term: Any, reduced_temperature: float, reduced_pressure: float
+) -> tuple[float, float, float, float]:
+    """The reduced parameters of a non-Soave alpha term, from its `alpha`, `psi` and
+    `psi_t`."""
+    alpha = term.alpha(reduced_temperature)
+    a_reduced = cubic.omega_a * alpha * reduced_pressure / reduced_temperature**2
+    b_reduced = cubic.omega_b * reduced_pressure / reduced_temperature
+    return a_reduced, b_reduced, term.psi(reduced_temperature), term.psi_t(reduced_temperature)
+
+
 def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) -> ReducedParameters:
     """``(A_i, B_i, psi_i, T*dpsi_i/dT, warnings)`` for every component at a state."""
     a: list[float] = []
@@ -166,31 +190,96 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
             psi_value = rk_term.psi(reduced_temperature)
             psi_t_value = rk_term.psi_t(reduced_temperature)
         elif mixture.alpha == "twucoon":
-            # Twu-Coon's non-Soave correlation, with the acentric factor as `m`.
-            twu_coon_term = TwuCoon(omega=component.omega)
-            alpha = twu_coon_term.alpha(reduced_temperature)
-            a_reduced = mixture.cubic.omega_a * alpha * reduced_pressure / reduced_temperature**2
-            b_reduced = mixture.cubic.omega_b * reduced_pressure / reduced_temperature
-            psi_value = twu_coon_term.psi(reduced_temperature)
-            psi_t_value = twu_coon_term.psi_t(reduced_temperature)
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic, TwuCoon(omega=component.omega), reduced_temperature, reduced_pressure
+            )
         elif mixture.alpha == "gassem2001":
-            # Gassem et al. (2001)'s non-Soave correlation, the acentric factor in the
-            # exponent rather than the amplitude.
-            gassem_term = Gassem2001(omega=component.omega)
-            alpha = gassem_term.alpha(reduced_temperature)
-            a_reduced = mixture.cubic.omega_a * alpha * reduced_pressure / reduced_temperature**2
-            b_reduced = mixture.cubic.omega_b * reduced_pressure / reduced_temperature
-            psi_value = gassem_term.psi(reduced_temperature)
-            psi_t_value = gassem_term.psi_t(reduced_temperature)
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic,
+                Gassem2001(omega=component.omega),
+                reduced_temperature,
+                reduced_pressure,
+            )
         elif mixture.alpha == "danesh":
             danesh_kappa = pr78_kappa(component.omega)
             warnings.extend(danesh_kappa.warnings)
-            danesh_term = Danesh(kappa=danesh_kappa.kappa)
-            alpha = danesh_term.alpha(reduced_temperature)
-            a_reduced = mixture.cubic.omega_a * alpha * reduced_pressure / reduced_temperature**2
-            b_reduced = mixture.cubic.omega_b * reduced_pressure / reduced_temperature
-            psi_value = danesh_term.psi(reduced_temperature)
-            psi_t_value = danesh_term.psi_t(reduced_temperature)
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic,
+                Danesh(kappa=danesh_kappa.kappa),
+                reduced_temperature,
+                reduced_pressure,
+            )
+        elif mixture.alpha == "schwartzentruber":
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic,
+                Schwartzentruber(omega=component.omega, params=component.alpha_params),
+                reduced_temperature,
+                reduced_pressure,
+            )
+        elif mixture.alpha == "mollerup":
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic,
+                Mollerup(params=component.alpha_params),
+                reduced_temperature,
+                reduced_pressure,
+            )
+        elif mixture.alpha == "matcop":
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic,
+                MatCop(
+                    kappa=matcop_kappa(component.omega),
+                    params=component.alpha_params,
+                    fallback=MatCopFallback.NONE,
+                ),
+                reduced_temperature,
+                reduced_pressure,
+            )
+        elif mixture.alpha == "matcop_pr":
+            matcop_kappa_value = pr_kappa(component.omega)
+            warnings.extend(matcop_kappa_value.warnings)
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic,
+                MatCop(
+                    kappa=matcop_kappa_value.kappa,
+                    params=component.alpha_params,
+                    fallback=MatCopFallback.SUPERCRITICAL,
+                ),
+                reduced_temperature,
+                reduced_pressure,
+            )
+        elif mixture.alpha == "matcop_prumr":
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic,
+                MatCop(
+                    kappa=umr_kappa(component.omega),
+                    params=component.alpha_params,
+                    fallback=MatCopFallback.UNSET,
+                ),
+                reduced_temperature,
+                reduced_pressure,
+            )
+        elif mixture.alpha == "matcop_5prumr":
+            matcop5_kappa_value = pr_kappa(component.omega)
+            warnings.extend(matcop5_kappa_value.warnings)
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic,
+                MatCop(
+                    kappa=matcop5_kappa_value.kappa,
+                    params=component.alpha_params,
+                    fallback=MatCopFallback.ALL_UNSET,
+                ),
+                reduced_temperature,
+                reduced_pressure,
+            )
+        elif mixture.alpha == "delft1998":
+            delft_kappa = pr78_kappa(component.omega)
+            warnings.extend(delft_kappa.warnings)
+            a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                mixture.cubic,
+                Delft1998(kappa=delft_kappa.kappa, is_methane=component.alpha_params == (1.0,)),
+                reduced_temperature,
+                reduced_pressure,
+            )
         else:
             # The kappa correlation belongs to the alpha term; the Omega to the cubic.
             kappa_value, kappa_warnings = _soave_kappa(mixture.alpha, component.omega)

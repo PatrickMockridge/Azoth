@@ -9,6 +9,7 @@ new branch in the model layer.
 from __future__ import annotations
 
 import math
+from enum import Enum
 
 
 class Soave:
@@ -156,3 +157,196 @@ class Gassem2001:
         g = self._g()
         tr_g = math.pow(tr, g)
         return self.B * tr - g * g * self.A * tr_g - self.B * (1.0 + g) ** 2 * tr_g * tr
+
+
+def _squared_psi_t(s: float, ds: float, dds: float, tr: float) -> float:
+    """`T * d(psi)/dT` for a squared form `alpha = S**2`, from `S` and its derivatives."""
+    return 2.0 * tr * ds / s + 2.0 * tr * tr * (s * dds - ds * ds) / (s * s)
+
+
+def _matcop_polynomial(params: tuple[float, ...], tr: float) -> tuple[float, float, float]:
+    """The Mathias-Copeman polynomial `S = 1 + sum_k c_k (1 - sqrt(Tr))**k` and its
+    first two `Tr` derivatives."""
+    sqrt_tr = math.sqrt(tr)
+    u = 1.0 - sqrt_tr
+    du = -0.5 / sqrt_tr
+    ddu = 0.25 / (tr * sqrt_tr)
+    s = 1.0
+    ds = 0.0
+    dds = 0.0
+    u_pow = 1.0
+    u_pow_minus = 0.0
+    for i, c in enumerate(params):
+        k = i + 1.0
+        u_k = u_pow * u
+        s += c * u_k
+        ds += c * k * u_pow * du
+        dds += c * (k * (k - 1.0) * u_pow_minus * du * du + k * u_pow * ddu)
+        u_pow_minus = u_pow
+        u_pow = u_k
+    return s, ds, dds
+
+
+def matcop_kappa(omega: float) -> float:
+    """Mathias-Copeman's base ``m`` for the SRK variant."""
+    return 0.48 + 1.574 * omega - 0.175 * omega * omega
+
+
+def umr_kappa(omega: float) -> float:
+    """The UMR-PRU quartic ``m``."""
+    return (
+        0.384401 + 1.52276 * omega - 0.213808 * omega**2 + 0.034616 * omega**3 - 0.001976 * omega**4
+    )
+
+
+class Schwartzentruber:
+    """Schwartzentruber's correlation, a squared form with three fitted parameters."""
+
+    def __init__(self, omega: float, params: tuple[float, ...]) -> None:
+        self.omega = omega
+        self.params = params
+
+    def _kappa(self) -> float:
+        return 0.48508 + 1.55191 * self.omega - 0.15613 * self.omega**2
+
+    def _polynomial(self, tr: float) -> tuple[float, float, float]:
+        m = self._kappa()
+        p0 = self.params[0] if self.params else 0.0
+        p1 = self.params[1] if len(self.params) > 1 else 0.0
+        p2 = self.params[2] if len(self.params) > 2 else 0.0
+        sqrt_tr = math.sqrt(tr)
+        q = 1.0 + (p1 - 1.0) * tr + (p2 - p1) * tr * tr - p2 * tr * tr * tr
+        dq = p1 - 1.0 + 2.0 * (p2 - p1) * tr - 3.0 * p2 * tr * tr
+        ddq = 2.0 * (p2 - p1) - 6.0 * p2 * tr
+        s = 1.0 + m * (1.0 - sqrt_tr) - p0 * q
+        ds = -m / (2.0 * sqrt_tr) - p0 * dq
+        dds = m / (4.0 * tr * sqrt_tr) - p0 * ddq
+        return s, ds, dds
+
+    def alpha(self, tr: float) -> float:
+        s, _, _ = self._polynomial(tr)
+        return s * s
+
+    def psi(self, tr: float) -> float:
+        s, ds, _ = self._polynomial(tr)
+        return 2.0 * tr * ds / s
+
+    def psi_t(self, tr: float) -> float:
+        s, ds, dds = self._polynomial(tr)
+        return _squared_psi_t(s, ds, dds, tr)
+
+
+class Mollerup:
+    """Mollerup's correlation, a three-parameter non-Soave form."""
+
+    def __init__(self, params: tuple[float, ...]) -> None:
+        self.params = params
+
+    def _values(self, tr: float) -> tuple[float, float, float]:
+        p0 = self.params[0] if self.params else 0.0
+        p1 = self.params[1] if len(self.params) > 1 else 0.0
+        p2 = self.params[2] if len(self.params) > 2 else 0.0
+        ln_tr = math.log(tr)
+        alpha = 1.0 + p0 * (1.0 / tr - 1.0) + p1 * tr * ln_tr + p2 * (tr - 1.0)
+        d_alpha = -p0 / (tr * tr) + p1 * (ln_tr + 1.0) + p2
+        d2_alpha = 2.0 * p0 / (tr * tr * tr) + p1 / tr
+        return alpha, d_alpha, d2_alpha
+
+    def alpha(self, tr: float) -> float:
+        return self._values(tr)[0]
+
+    def psi(self, tr: float) -> float:
+        alpha, d_alpha, _ = self._values(tr)
+        return tr * d_alpha / alpha
+
+    def psi_t(self, tr: float) -> float:
+        alpha, d_alpha, d2_alpha = self._values(tr)
+        return tr * d_alpha / alpha + tr * tr * (d2_alpha * alpha - d_alpha * d_alpha) / (
+            alpha * alpha
+        )
+
+
+class MatCopFallback(Enum):
+    """When Mathias-Copeman's polynomial is replaced by the base Soave alpha."""
+
+    NONE = "none"
+    SUPERCRITICAL = "supercritical"
+    UNSET = "unset"
+    ALL_UNSET = "all_unset"
+
+
+class MatCop:
+    """Mathias-Copeman's correlation, a squared polynomial with three or five fitted
+    parameters."""
+
+    def __init__(self, kappa: float, params: tuple[float, ...], fallback: MatCopFallback) -> None:
+        self.kappa = kappa
+        self.params = params
+        self.fallback = fallback
+
+    def _coefficients(self) -> list[float]:
+        c = list(self.params)
+        if c and abs(c[0]) < 1e-12:
+            c[0] = self.kappa
+        return c
+
+    def _use_soave(self, c: list[float], tr: float) -> bool:
+        if self.fallback is MatCopFallback.NONE:
+            return False
+        if self.fallback is MatCopFallback.SUPERCRITICAL:
+            return tr > 1.0 or (c[0] < 1e-20 if c else True)
+        if self.fallback is MatCopFallback.UNSET:
+            return c[0] < 1e-20 if c else True
+        return all(abs(p) < 1e-20 for p in c)
+
+    def alpha(self, tr: float) -> float:
+        c = self._coefficients()
+        if self._use_soave(c, tr):
+            return Soave(self.kappa).alpha(tr)
+        s, _, _ = _matcop_polynomial(tuple(c), tr)
+        return s * s
+
+    def psi(self, tr: float) -> float:
+        c = self._coefficients()
+        if self._use_soave(c, tr):
+            return Soave(self.kappa).psi(tr)
+        s, ds, _ = _matcop_polynomial(tuple(c), tr)
+        return 2.0 * tr * ds / s
+
+    def psi_t(self, tr: float) -> float:
+        c = self._coefficients()
+        if self._use_soave(c, tr):
+            return Soave(self.kappa).psi_t(tr)
+        s, ds, dds = _matcop_polynomial(tuple(c), tr)
+        return _squared_psi_t(s, ds, dds, tr)
+
+
+class Delft1998:
+    """Delft (1998)'s correlation: a fitted cubic for methane, the 1978 Peng-Robinson
+    Soave form for everything else."""
+
+    def __init__(self, kappa: float, is_methane: bool) -> None:
+        self.kappa = kappa
+        self.is_methane = is_methane
+
+    def alpha(self, tr: float) -> float:
+        if self.is_methane:
+            return 0.969617 + 0.20089 * tr - 0.3256987 * tr * tr + 0.06653 * tr * tr * tr
+        return Soave(self.kappa).alpha(tr)
+
+    def psi(self, tr: float) -> float:
+        if self.is_methane:
+            alpha = 0.969617 + 0.20089 * tr - 0.3256987 * tr * tr + 0.06653 * tr * tr * tr
+            d_alpha = 0.20089 - 2.0 * 0.3256987 * tr + 3.0 * 0.06653 * tr * tr
+            return tr * d_alpha / alpha
+        return Soave(self.kappa).psi(tr)
+
+    def psi_t(self, tr: float) -> float:
+        if self.is_methane:
+            alpha = 0.969617 + 0.20089 * tr - 0.3256987 * tr * tr + 0.06653 * tr * tr * tr
+            d_alpha = 0.20089 - 2.0 * 0.3256987 * tr + 3.0 * 0.06653 * tr * tr
+            d2_alpha = -2.0 * 0.3256987 + 6.0 * 0.06653 * tr
+            return tr * d_alpha / alpha + tr * tr * (d2_alpha * alpha - d_alpha * d_alpha) / (
+                alpha * alpha
+            )
+        return Soave(self.kappa).psi_t(tr)

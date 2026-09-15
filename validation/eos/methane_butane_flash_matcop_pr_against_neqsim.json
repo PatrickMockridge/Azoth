@@ -1,0 +1,42 @@
+{
+  "id": "methane_butane_flash_matcop_pr_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Mathias-Copeman on Peng-Robinson, three fitted parameters from the `mcpr1..3` columns; above the critical temperature it falls back to the base Soave form. NeqSim's hardcoded water/TEG overrides are not ported - azoth reads the databank columns for every substance."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemPrEos with `setAttractiveTerm(13)`. NeqSim printed:\n\n  beta 0.8433573916547272\n  k    [7.295657476424182, 0.3384006329637498]\n  x    [0.0950948602189571, 0.9049051397810428]\n  y    [0.6937795279259453, 0.3062204720740547]\n  Zl   0.0931920882237041\n  Zv   0.8683284583490157\n\nazoth reproduces all six to the same residue the other cubic cases show.",
+  "eos": "pr",
+  "alpha": "matcop_pr",
+  "inputs": {
+    "components": [
+      "methane",
+      "n-butane"
+    ],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [
+      0.6,
+      0.4
+    ]
+  },
+  "expected": {
+    "beta": 0.8433573916547272,
+    "k": [
+      7.295657476424182,
+      0.3384006329637498
+    ],
+    "x": [
+      0.0950948602189571,
+      0.9049051397810428
+    ],
+    "y": [
+      0.6937795279259453,
+      0.3062204720740547
+    ],
+    "z_liquid": 0.0931920882237041,
+    "z_vapour": 0.8683284583490157
+  },
+  "tolerance": 1e-10
+}

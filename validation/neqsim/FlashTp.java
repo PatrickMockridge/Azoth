@@ -118,6 +118,20 @@ public class FlashTp {
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 9);
     flash("PR+Danesh nc12, 1.0, 500 K, 15 bar",
         500.0, 15.0, new String[] {"nc12"}, new double[] {1.0}, "pr", 9);
+    flash("PR+Schwartzentruber methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 2);
+    flash("PR+Mollerup methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 3);
+    flash("PR+MatCop methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 4);
+    flash("PR+MatCopPR methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 13);
+    flash("PR+MatCopPRUMR methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 17);
+    flash("PR+MatCop5PRUMR methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 22);
+    flash("PR+Delft1998 methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 7);
     flash("PR+PR78 nc12, 1.0, 500 K, 15 bar",
         500.0, 15.0, new String[] {"nc12"}, new double[] {1.0}, "pr", 6);
   }

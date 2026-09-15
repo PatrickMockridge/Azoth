@@ -41,11 +41,16 @@ class Component:
         Tc: critical temperature.
         Pc: critical pressure.
         omega: acentric factor.
+        alpha_params: fitted parameters for the alpha correlations that need them,
+            in the order the correlation reads them. Empty for a component built
+            without a fitted set, which is every caller-supplied component and every
+            correlation that needs none.
     """
 
     Tc: Q
     Pc: Q
     omega: float
+    alpha_params: tuple[float, ...] = ()
 
     def __post_init__(self) -> None:
         for name in ("Tc", "Pc"):

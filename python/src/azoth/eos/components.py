@@ -75,6 +75,20 @@ COLUMNS = (
     "cpc",
     "cpd",
     "cpe",
+    "schwartzentruber1",
+    "schwartzentruber2",
+    "schwartzentruber3",
+    "mc1",
+    "mc2",
+    "mc3",
+    "mcpr1",
+    "mcpr2",
+    "mcpr3",
+    "umrcpa_mc1",
+    "umrcpa_mc2",
+    "umrcpa_mc3",
+    "umrcpa_mc4",
+    "umrcpa_mc5",
     "citation",
 )
 
@@ -110,15 +124,31 @@ class DatabankEntry:
     #: adds has no enthalpy until its coefficients are supplied too. ``None`` says that
     #: rather than a row of zeros standing in for a polynomial.
     cp: tuple[float, float, float, float, float] | None
+    #: Fitted parameters for the alpha correlations that need them, keyed by the
+    #: correlation's short name. Empty for a substance a keycard supplied, which has
+    #: no such columns.
+    alpha_params: dict[str, tuple[float, ...]]
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
     #: needs when a result turns out to depend on which file was in play.
     source: str = "databank"
 
-    def component(self) -> Component:
-        """This entry as the thing a calculation takes."""
-        return Component(Tc=self.Tc, Pc=self.Pc, omega=self.omega)
+    def component(self, alpha: str | None = None) -> Component:
+        """This entry as the thing a calculation takes.
+
+        ``alpha`` names the alpha correlation, so the entry can attach the fitted
+        parameters that correlation reads. Delft (1998) is the one correlation whose
+        parameter is a flag rather than a fitted value: methane gets the fitted
+        cubic, everything else the Soave form.
+        """
+        params: tuple[float, ...] = ()
+        if alpha is not None:
+            if alpha == "delft1998":
+                params = (1.0,) if self.name == "methane" else ()
+            else:
+                params = self.alpha_params.get(alpha, ())
+        return Component(Tc=self.Tc, Pc=self.Pc, omega=self.omega, alpha_params=params)
 
     def __repr__(self) -> str:
         return f"DatabankEntry({self.name!r}, Tc={self.Tc}, Pc={self.Pc}, omega={self.omega})"
@@ -163,9 +193,32 @@ def _table() -> dict[str, DatabankEntry]:
                 float(row["cpd"]),
                 float(row["cpe"]),
             ),
+            alpha_params={
+                "schwartzentruber": _three(
+                    row, "schwartzentruber1", "schwartzentruber2", "schwartzentruber3"
+                ),
+                "mollerup": _three(
+                    row, "schwartzentruber1", "schwartzentruber2", "schwartzentruber3"
+                ),
+                "matcop": _three(row, "mc1", "mc2", "mc3"),
+                "matcop_pr": _three(row, "mcpr1", "mcpr2", "mcpr3"),
+                # `matcop_prumr` reads no databank columns: NeqSim's term 17 is
+                # constructed without parameters, so it reduces to the base Soave form.
+                "matcop_5prumr": (
+                    float(row["umrcpa_mc1"]),
+                    float(row["umrcpa_mc2"]),
+                    float(row["umrcpa_mc3"]),
+                    float(row["umrcpa_mc4"]),
+                    float(row["umrcpa_mc5"]),
+                ),
+            },
             citation=row["citation"],
         )
     return entries
+
+
+def _three(row: Mapping[str, str], a: str, b: str, c: str) -> tuple[float, float, float]:
+    return (float(row[a]), float(row[b]), float(row[c]))
 
 
 @cache
@@ -245,6 +298,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # The card may also supply the polynomial, in which case the substance has
             # an enthalpy path; without it, it is a cubic only.
             cp=_cp(override),
+            alpha_params={},
             citation=None,
             source="keycard",
         )
@@ -342,9 +396,27 @@ def _cubic(name: str) -> Cubic:
 
 
 #: The alpha correlations, keyed by short name. Four feed the one Soave alpha form
-#: with a different `m`; `twucoon` and `gassem2001` are non-Soave correlations, and
-#: `danesh` is Soave's form with `m` scaled by 1.21 above the critical temperature.
-_ALPHAS: frozenset[str] = frozenset({"pr", "srk", "pr78", "twu", "twucoon", "gassem2001", "danesh"})
+#: with a different `m`; `twucoon` and `gassem2001` are non-Soave correlations,
+#: `danesh` is Soave's form with `m` scaled by 1.21 above the critical temperature,
+#: and the parameterized forms read fitted per-component columns.
+_ALPHAS: frozenset[str] = frozenset(
+    {
+        "pr",
+        "srk",
+        "pr78",
+        "twu",
+        "twucoon",
+        "gassem2001",
+        "danesh",
+        "schwartzentruber",
+        "mollerup",
+        "matcop",
+        "matcop_pr",
+        "matcop_prumr",
+        "matcop_5prumr",
+        "delft1998",
+    }
+)
 
 
 def _alpha_name(cubic_name: str, alpha: str | None) -> str:
@@ -382,7 +454,7 @@ def from_names(
     cubic = _cubic(eos)
     alpha_name = _alpha_name(eos, alpha)
     resolved = [name.strip().lower() for name in names]
-    components = tuple(component(name, card=card) for name in resolved)
+    components = tuple(entry(name, card=card).component(alpha=alpha_name) for name in resolved)
     return mixture(
         components, kij=kij_for(tuple(resolved), card=card), cubic=cubic, alpha=alpha_name
     )
@@ -435,7 +507,7 @@ def mixture_of(
 
     return (
         mixture(
-            tuple(e.component() for e in entries),
+            tuple(e.component(alpha=_alpha_name(eos, alpha)) for e in entries),
             kij=kij_for(tuple(resolved), card=card),
             cubic=_cubic(eos),
             alpha=_alpha_name(eos, alpha),

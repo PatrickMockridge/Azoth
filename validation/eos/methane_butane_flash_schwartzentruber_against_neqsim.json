@@ -1,0 +1,42 @@
+{
+  "id": "methane_butane_flash_schwartzentruber_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Schwartzentruber's correlation, three fitted parameters from the `schwartzentruber1..3` columns. azoth's `psi_t` follows the true second derivative; NeqSim's `diffdiffalphaT` is the same form, so the departure functions agree. NeqSim's `Tr > 100` high-temperature extrapolation is not ported - no ordinary state reaches it."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemPrEos with `setAttractiveTerm(2)`. NeqSim printed:\n\n  beta 0.801215312486502\n  k    [8.531955901511383, 0.29768899599101184]\n  x    [0.08529126054174284, 0.9147087394582571]\n  y    [0.7277012737264675, 0.2722987262735325]\n  Zl   0.09169667326343119\n  Zv   0.886558418261009\n\nazoth reproduces all six to the same residue the other cubic cases show.",
+  "eos": "pr",
+  "alpha": "schwartzentruber",
+  "inputs": {
+    "components": [
+      "methane",
+      "n-butane"
+    ],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [
+      0.6,
+      0.4
+    ]
+  },
+  "expected": {
+    "beta": 0.801215312486502,
+    "k": [
+      8.531955901511383,
+      0.29768899599101184
+    ],
+    "x": [
+      0.08529126054174284,
+      0.9147087394582571
+    ],
+    "y": [
+      0.7277012737264675,
+      0.2722987262735325
+    ],
+    "z_liquid": 0.09169667326343119,
+    "z_vapour": 0.886558418261009
+  },
+  "tolerance": 1e-10
+}

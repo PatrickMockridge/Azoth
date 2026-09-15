@@ -1,0 +1,42 @@
+{
+  "id": "methane_butane_flash_delft1998_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Delft (1998): a fitted cubic for methane, the 1978 Peng-Robinson Soave form for every other component. azoth carries the methane flag as a per-component parameter resolved from the name, keeping `Component` name-free."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemPrEos with `setAttractiveTerm(7)`. NeqSim printed:\n\n  beta 0.8470804194612649\n  k    [8.3955496276076, 0.33419665927591624]\n  x    [0.08259200947280676, 0.9174079905271932]\n  y    [0.6934053143727822, 0.30659468562721764]\n  Zl   0.0934606764907983\n  Zv   0.877354596737476\n\nazoth reproduces all six to the same residue the other cubic cases show.",
+  "eos": "pr",
+  "alpha": "delft1998",
+  "inputs": {
+    "components": [
+      "methane",
+      "n-butane"
+    ],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [
+      0.6,
+      0.4
+    ]
+  },
+  "expected": {
+    "beta": 0.8470804194612649,
+    "k": [
+      8.3955496276076,
+      0.33419665927591624
+    ],
+    "x": [
+      0.08259200947280676,
+      0.9174079905271932
+    ],
+    "y": [
+      0.6934053143727822,
+      0.30659468562721764
+    ],
+    "z_liquid": 0.0934606764907983,
+    "z_vapour": 0.877354596737476
+  },
+  "tolerance": 1e-10
+}

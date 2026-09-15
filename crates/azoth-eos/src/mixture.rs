@@ -11,7 +11,10 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
 
-use crate::alpha_term::{Alpha, AlphaTerm, Danesh, Gassem2001, RkAlpha, Soave, TwuCoon};
+use crate::alpha_term::{
+    Alpha, AlphaTerm, Danesh, Delft1998, Gassem2001, MatCop, MatCopFallback, Mollerup, RkAlpha,
+    Schwartzentruber, Soave, TwuCoon, matcop_kappa, umr_kappa,
+};
 use crate::cubic::Cubic;
 use crate::{
     pr_alpha_ab, pr_kappa, pr_z_factor, pr78_kappa, rk_alpha_ab, srk_alpha_ab, srk_kappa,
@@ -73,7 +76,7 @@ pub struct PhaseState {
 ///
 /// A caller-supplied record, and deliberately carrying **no name**: a name would
 /// invite a lookup rather than a value the caller supplied.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Component {
     /// Critical temperature.
     pub tc: ThermodynamicTemperature,
@@ -81,6 +84,10 @@ pub struct Component {
     pub pc: Pressure,
     /// Acentric factor.
     pub omega: f64,
+    /// Fitted parameters for the alpha correlations that need them, in the order the
+    /// correlation reads them. Empty for a component built without a fitted set, which
+    /// is every caller-supplied component and every correlation that needs none.
+    pub alpha_params: Vec<f64>,
 }
 
 impl Component {
@@ -107,7 +114,23 @@ impl Component {
                 });
             }
         }
-        Ok(Self { tc, pc, omega })
+        Ok(Self {
+            tc,
+            pc,
+            omega,
+            alpha_params: Vec::new(),
+        })
+    }
+
+    /// This component, with fitted alpha parameters attached.
+    ///
+    /// Only the parameterized correlations read them; the rest ignore the field. The
+    /// values are caller-supplied, exactly like `Tc`, `Pc` and `omega`, and carry no
+    /// name - the caller resolved them from a name and passed the numbers.
+    #[must_use]
+    pub fn with_alpha_params(mut self, params: Vec<f64>) -> Self {
+        self.alpha_params = params;
+        self
     }
 }
 
@@ -279,54 +302,77 @@ impl Mixture {
             // The kappa correlation belongs to the alpha term; the Omega constants to
             // the cubic. SRK and PR share the Soave alpha form and differ in both; RK
             // is kappa-free.
+            let cubic = self.cubic;
+            let non_soave = |term: &dyn AlphaTerm| -> (f64, f64, f64, f64) {
+                let alpha = term.alpha(reduced_temperature);
+                let a_reduced = cubic.omega_a() * alpha * reduced_pressure
+                    / (reduced_temperature * reduced_temperature);
+                let b_reduced = cubic.omega_b() * reduced_pressure / reduced_temperature;
+                (
+                    a_reduced,
+                    b_reduced,
+                    term.psi(reduced_temperature),
+                    term.psi_t(reduced_temperature),
+                )
+            };
             let (a_reduced, b_reduced, psi_value, psi_t_value) = match self.cubic {
-                Cubic::Pr | Cubic::Srk => {
-                    if self.alpha == Alpha::TwuCoon {
-                        let term = TwuCoon {
-                            omega: component.omega,
-                        };
-                        let alpha = term.alpha(reduced_temperature);
-                        let a_reduced = self.cubic.omega_a() * alpha * reduced_pressure
-                            / (reduced_temperature * reduced_temperature);
-                        let b_reduced =
-                            self.cubic.omega_b() * reduced_pressure / reduced_temperature;
-                        (
-                            a_reduced,
-                            b_reduced,
-                            term.psi(reduced_temperature),
-                            term.psi_t(reduced_temperature),
-                        )
-                    } else if self.alpha == Alpha::Gassem2001 {
-                        let term = Gassem2001 {
-                            omega: component.omega,
-                        };
-                        let alpha = term.alpha(reduced_temperature);
-                        let a_reduced = self.cubic.omega_a() * alpha * reduced_pressure
-                            / (reduced_temperature * reduced_temperature);
-                        let b_reduced =
-                            self.cubic.omega_b() * reduced_pressure / reduced_temperature;
-                        (
-                            a_reduced,
-                            b_reduced,
-                            term.psi(reduced_temperature),
-                            term.psi_t(reduced_temperature),
-                        )
-                    } else if self.alpha == Alpha::Danesh {
+                Cubic::Pr | Cubic::Srk => match self.alpha {
+                    Alpha::TwuCoon => non_soave(&TwuCoon {
+                        omega: component.omega,
+                    }),
+                    Alpha::Gassem2001 => non_soave(&Gassem2001 {
+                        omega: component.omega,
+                    }),
+                    Alpha::Danesh => {
                         let kappa = pr78_kappa(component.omega)?;
                         warnings.extend(kappa.warnings);
-                        let term = Danesh { kappa: kappa.kappa };
-                        let alpha = term.alpha(reduced_temperature);
-                        let a_reduced = self.cubic.omega_a() * alpha * reduced_pressure
-                            / (reduced_temperature * reduced_temperature);
-                        let b_reduced =
-                            self.cubic.omega_b() * reduced_pressure / reduced_temperature;
-                        (
-                            a_reduced,
-                            b_reduced,
-                            term.psi(reduced_temperature),
-                            term.psi_t(reduced_temperature),
-                        )
-                    } else {
+                        non_soave(&Danesh { kappa: kappa.kappa })
+                    }
+                    Alpha::Schwartzentruber => non_soave(&Schwartzentruber {
+                        omega: component.omega,
+                        params: component.alpha_params.clone(),
+                    }),
+                    Alpha::Mollerup => non_soave(&Mollerup {
+                        params: component.alpha_params.clone(),
+                    }),
+                    Alpha::MatCop => non_soave(&MatCop {
+                        kappa: matcop_kappa(component.omega),
+                        params: component.alpha_params.clone(),
+                        fallback: MatCopFallback::None,
+                    }),
+                    Alpha::MatCopPr => {
+                        let kappa = pr_kappa(component.omega)?;
+                        warnings.extend(kappa.warnings);
+                        non_soave(&MatCop {
+                            kappa: kappa.kappa,
+                            params: component.alpha_params.clone(),
+                            fallback: MatCopFallback::Supercritical,
+                        })
+                    }
+                    Alpha::MatCopPrUmr => non_soave(&MatCop {
+                        kappa: umr_kappa(component.omega),
+                        params: component.alpha_params.clone(),
+                        fallback: MatCopFallback::Unset,
+                    }),
+                    Alpha::MatCop5PrUmr => {
+                        let kappa = pr_kappa(component.omega)?;
+                        warnings.extend(kappa.warnings);
+                        non_soave(&MatCop {
+                            kappa: kappa.kappa,
+                            params: component.alpha_params.clone(),
+                            fallback: MatCopFallback::AllUnset,
+                        })
+                    }
+                    Alpha::Delft1998 => {
+                        let kappa = pr78_kappa(component.omega)?;
+                        warnings.extend(kappa.warnings);
+                        let is_methane = component.alpha_params.first().copied() == Some(1.0);
+                        non_soave(&Delft1998 {
+                            kappa: kappa.kappa,
+                            is_methane,
+                        })
+                    }
+                    Alpha::Pr | Alpha::Srk | Alpha::Pr78 | Alpha::Twu => {
                         let (kappa_value, kappa_warnings) = match self.alpha {
                             Alpha::Pr => {
                                 let kappa = pr_kappa(component.omega)?;
@@ -344,13 +390,11 @@ impl Mixture {
                                 let kappa = twu_kappa(component.omega)?;
                                 (kappa.kappa, kappa.warnings)
                             }
-                            Alpha::TwuCoon | Alpha::Gassem2001 | Alpha::Danesh => {
-                                unreachable!("handled above")
-                            }
+                            _ => unreachable!("handled above"),
                         };
                         warnings.extend(kappa_warnings);
                         let term = Soave { kappa: kappa_value };
-                        let (a_reduced, b_reduced, ab_warnings) = if self.cubic == Cubic::Pr {
+                        let (a_reduced, b_reduced, ab_warnings) = if cubic == Cubic::Pr {
                             let ab =
                                 pr_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)?;
                             (ab.a_reduced, ab.b_reduced, ab.warnings)
@@ -367,7 +411,7 @@ impl Mixture {
                             term.psi_t(reduced_temperature),
                         )
                     }
-                }
+                },
                 Cubic::Rk => {
                     let ab = rk_alpha_ab(reduced_temperature, reduced_pressure)?;
                     warnings.extend(ab.warnings);

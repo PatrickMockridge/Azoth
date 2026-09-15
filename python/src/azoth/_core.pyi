@@ -411,6 +411,7 @@ def bubble_pressure(
     x: list[float],
     eos: str = "pr",
     alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
 ) -> BubblePressureResult: ...
 def critical_point(
     Tc: list[float],
@@ -420,6 +421,7 @@ def critical_point(
     z: list[float],
     eos: str = "pr",
     alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
 ) -> CriticalPointResult: ...
 def dew_pressure(
     Tc: list[float],
@@ -430,6 +432,7 @@ def dew_pressure(
     y: list[float],
     eos: str = "pr",
     alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
 ) -> DewPressureResult: ...
 def ideal_gas_cp(
     cp_a: float,
@@ -455,6 +458,7 @@ def molar_enthalpy_entropy(
     compressibility: float,
     eos: str = "pr",
     alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
 ) -> MolarEnthalpyEntropyResult: ...
 def ph_flash(
     Tc: list[float],
@@ -471,6 +475,7 @@ def ph_flash(
     z: list[float],
     eos: str = "pr",
     alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
 ) -> PhFlashResult: ...
 def pr78_kappa(omega: float) -> Pr78KappaResult: ...
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
@@ -501,6 +506,7 @@ def ps_flash(
     z: list[float],
     eos: str = "pr",
     alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
 ) -> PsFlashResult: ...
 def pt_flash(
     Tc: list[float],
@@ -512,6 +518,7 @@ def pt_flash(
     z: list[float],
     eos: str = "pr",
     alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
 ) -> PtFlashResult: ...
 def pure_saturation(Tc: float, Pc: float, omega: float, T: float) -> PureSaturationResult: ...
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
@@ -537,6 +544,7 @@ def stability_test(
     z: list[float],
     eos: str = "pr",
     alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
 ) -> StabilityTestResult: ...
 def twu_kappa(omega: float) -> TwuKappaResult: ...
 def vdw1f_mix_binary(

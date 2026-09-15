@@ -1,0 +1,42 @@
+{
+  "id": "methane_butane_flash_matcop_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Mathias-Copeman's correlation, three fitted parameters from the `mc1..3` columns, with `c1` replaced by the base `m` when effectively zero."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemPrEos with `setAttractiveTerm(4)`. NeqSim printed:\n\n  beta 0.8114305865146109\n  k    [13.000518101563108, 0.2897411832553591]\n  x    [0.05587847393668241, 0.9441215260633177]\n  y    [0.7264491119015599, 0.2735508880984402]\n  Zl   0.09244715555553443\n  Zv   0.9107980234148848\n\nazoth reproduces all six to the same residue the other cubic cases show.",
+  "eos": "pr",
+  "alpha": "matcop",
+  "inputs": {
+    "components": [
+      "methane",
+      "n-butane"
+    ],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [
+      0.6,
+      0.4
+    ]
+  },
+  "expected": {
+    "beta": 0.8114305865146109,
+    "k": [
+      13.000518101563108,
+      0.2897411832553591
+    ],
+    "x": [
+      0.05587847393668241,
+      0.9441215260633177
+    ],
+    "y": [
+      0.7264491119015599,
+      0.2735508880984402
+    ],
+    "z_liquid": 0.09244715555553443,
+    "z_vapour": 0.9107980234148848
+  },
+  "tolerance": 1e-10
+}

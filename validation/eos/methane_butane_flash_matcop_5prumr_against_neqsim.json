@@ -1,0 +1,42 @@
+{
+  "id": "methane_butane_flash_matcop_5prumr_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "The five-parameter Mathias-Copeman form, coefficients from the `umrcpa_mc1..5` columns, falling back to the base Soave form when every coefficient is unset."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemPrEos with `setAttractiveTerm(22)`. NeqSim printed:\n\n  beta 0.8417175886604888\n  k    [7.2194756704175935, 0.33777150909544695]\n  x    [0.09623030507857866, 0.9037696949214213]\n  y    [0.6947323462716603, 0.30526765372833975]\n  Zl   0.09312109495085798\n  Zv   0.8678701574483977\n\nazoth reproduces all six to the same residue the other cubic cases show.",
+  "eos": "pr",
+  "alpha": "matcop_5prumr",
+  "inputs": {
+    "components": [
+      "methane",
+      "n-butane"
+    ],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [
+      0.6,
+      0.4
+    ]
+  },
+  "expected": {
+    "beta": 0.8417175886604888,
+    "k": [
+      7.2194756704175935,
+      0.33777150909544695
+    ],
+    "x": [
+      0.09623030507857866,
+      0.9037696949214213
+    ],
+    "y": [
+      0.6947323462716603,
+      0.30526765372833975
+    ],
+    "z_liquid": 0.09312109495085798,
+    "z_vapour": 0.8678701574483977
+  },
+  "tolerance": 1e-10
+}

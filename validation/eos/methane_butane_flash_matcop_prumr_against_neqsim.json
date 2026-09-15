@@ -1,0 +1,42 @@
+{
+  "id": "methane_butane_flash_matcop_prumr_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Mathias-Copeman for UMR-PRU. NeqSim's term 17 is constructed without fitted parameters, so it reduces to the base Soave form with the UMR quartic `m`; azoth reproduces that rather than reading a column."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemPrEos with `setAttractiveTerm(17)`. NeqSim printed:\n\n  beta 0.8391262906616233\n  k    [7.3949442690635125, 0.33457228732617333]\n  x    [0.09424825128124303, 0.905751748718757]\n  y    [0.6969605656814846, 0.3030394343185153]\n  Zl   0.09304758084514327\n  Zv   0.8700159474157213\n\nazoth reproduces all six to the same residue the other cubic cases show.",
+  "eos": "pr",
+  "alpha": "matcop_prumr",
+  "inputs": {
+    "components": [
+      "methane",
+      "n-butane"
+    ],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [
+      0.6,
+      0.4
+    ]
+  },
+  "expected": {
+    "beta": 0.8391262906616233,
+    "k": [
+      7.3949442690635125,
+      0.33457228732617333
+    ],
+    "x": [
+      0.09424825128124303,
+      0.905751748718757
+    ],
+    "y": [
+      0.6969605656814846,
+      0.3030394343185153
+    ],
+    "z_liquid": 0.09304758084514327,
+    "z_vapour": 0.8700159474157213
+  },
+  "tolerance": 1e-10
+}
