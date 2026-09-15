@@ -44,3 +44,6 @@ import Azoth.Barb
 #print axioms Azoth.Barb.barbed_bisim_refl
 #print axioms Azoth.Barb.barbed_bisim_symm
 #print axioms Azoth.Barb.barbed_bisim_trans
+#print axioms Azoth.Barb.barb_par
+#print axioms Azoth.Barb.barb_nil
+#print axioms Azoth.Barb.barb_drop

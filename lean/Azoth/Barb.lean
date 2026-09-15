@@ -145,6 +145,29 @@ theorem barbed_bisim_trans {P Q R : Process} (h1 : BarbedBisim P Q) (h2 : Barbed
       exact ⟨x', hxx', ⟨y', hx'y', hy'z'⟩⟩
   exact ⟨S, hS, ⟨Q, hPQ, hQR⟩⟩
 
+/-- The barbs of a parallel composition are the union of the component barbs. -/
+theorem barb_par (P Q : Process) (a : Name) :
+    Barb (Process.par P Q) a ↔ Barb P a ∨ Barb Q a := by
+  constructor
+  · intro h
+    cases h with
+    | par_left hP => exact Or.inl hP
+    | par_right hQ => exact Or.inr hQ
+  · intro h
+    rcases h with hP | hQ
+    · exact Barb.par_left hP
+    · exact Barb.par_right hQ
+
+/-- The inactive process offers nothing. -/
+theorem barb_nil (a : Name) : ¬ Barb Process.nil a := by
+  intro h
+  cases h
+
+/-- A dropped name offers nothing. -/
+theorem barb_drop (x : Name) (a : Name) : ¬ Barb (Process.drop x) a := by
+  intro h
+  cases h
+
 end Barb
 
 end Azoth
