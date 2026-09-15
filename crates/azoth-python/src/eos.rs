@@ -26,8 +26,8 @@ use crate::results::{
     PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyTwuKappaResult,
-    PyTynCalusDiffusivityResult, PyVdw1fMixBinaryResult, PyWilkeChangDiffusivityResult,
-    PyWilkeViscosityResult,
+    PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult, PyVdw1fMixBinaryResult,
+    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -658,6 +658,26 @@ pub fn nrtl_activity_coefficients(
 ) -> PyResult<PyNrtlActivityCoefficientsResult> {
     azoth_eos::nrtl_activity_coefficients(T, &x, &Dij, &alpha)
         .map(|r| PyNrtlActivityCoefficientsResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The activity coefficients of a mixture, from UNIFAC. A *model* rather than a
+/// calculation: its arguments are vectors and matrices.
+#[pyfunction]
+#[pyo3(signature = (T, x, groups, group_r, group_q, aij))]
+#[pyo3(text_signature = "(T, x, groups, group_r, group_q, aij)")]
+#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
+pub fn unifac_activity_coefficients(
+    py: Python<'_>,
+    T: f64,
+    x: Vec<f64>,
+    groups: Vec<Vec<f64>>,
+    group_r: Vec<f64>,
+    group_q: Vec<f64>,
+    aij: Vec<Vec<f64>>,
+) -> PyResult<PyUnifacActivityCoefficientsResult> {
+    azoth_eos::unifac_activity_coefficients(T, &x, &groups, &group_r, &group_q, &aij)
+        .map(|r| PyUnifacActivityCoefficientsResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

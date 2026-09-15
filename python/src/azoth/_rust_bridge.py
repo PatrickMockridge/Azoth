@@ -81,6 +81,7 @@ from azoth.core.result import (
     SwameeJainResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
+    UnifacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
@@ -679,6 +680,31 @@ def nrtl_activity_coefficients(
         [list(row) for row in alpha],
     )
     return NrtlActivityCoefficientsResult(
+        ln_gamma=tuple(result.ln_gamma),
+        gamma=tuple(result.gamma),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def unifac_activity_coefficients(
+    T: Q,
+    x: Sequence[float],
+    groups: Sequence[Sequence[float]],
+    group_r: Sequence[float],
+    group_q: Sequence[float],
+    aij: Sequence[Sequence[Q]],
+) -> UnifacActivityCoefficientsResult:
+    """The activity coefficients of a mixture, computed in Rust."""
+    spec = _models_gen.model("eos.unifac_activity_coefficients")
+    result = _core.unifac_activity_coefficients(
+        input_to_si(spec, "T", T),
+        list(x),
+        [list(row) for row in groups],
+        list(group_r),
+        list(group_q),
+        [[input_to_si(spec, "aij", value) for value in row] for row in aij],
+    )
+    return UnifacActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),
         gamma=tuple(result.gamma),
         warnings=_warnings(result.warnings),

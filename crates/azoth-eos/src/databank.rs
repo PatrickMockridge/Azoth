@@ -27,6 +27,12 @@ const COMPONENTS_CSV: &str = include_str!("../../../data/components/components.c
 /// The compiled interaction table, generated from NeqSim's `INTER.csv`.
 const KIJ_CSV: &str = include_str!("../../../data/components/kij.csv");
 
+/// The compiled UNIFAC tables, generated from NeqSim's `UNIFACcomp.csv`,
+/// `UNIFACGroupParam.csv` and `UNIFACInterParam.csv`.
+const UNIFAC_COMP_CSV: &str = include_str!("../../../data/components/UNIFACcomp.csv");
+const UNIFAC_GROUP_CSV: &str = include_str!("../../../data/components/UNIFACGroupParam.csv");
+const UNIFAC_INTER_CSV: &str = include_str!("../../../data/components/UNIFACInterParam.csv");
+
 /// Repo-relative path of the component table, which is how Python addresses the same
 /// file. A constant rather than a string restated at the call site for the reason the
 /// whole databank exists: two copies of a path can disagree.
@@ -578,6 +584,209 @@ pub fn nrtl_dij(names: &[&str]) -> Vec<f64> {
         }
     }
     out
+}
+
+/// The resolved UNIFAC inputs for a mixture, each matrix flattened row-major.
+///
+/// `groups` is `N x G` (one row per component, one column per group), `group_r` and
+/// `group_q` are length `G`, and `aij` is `G x G` (`a_{mn}` in Kelvin). `G` is the
+/// union of the named components' subgroups, sorted by subgroup number, with absent
+/// groups counted zero.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UnifacParameters {
+    /// Per-component group counts, `N x G` row-major.
+    pub groups: Vec<f64>,
+    /// The volume `R` of each group, length `G`.
+    pub group_r: Vec<f64>,
+    /// The surface area `Q` of each group, length `G`.
+    pub group_q: Vec<f64>,
+    /// The main-group interaction matrix, `G x G` row-major, in Kelvin.
+    pub aij: Vec<f64>,
+}
+
+/// The parsed UNIFAC tables: group constants by subgroup, main-group interactions,
+/// and per-component group memberships.
+struct UnifacTables {
+    /// Subgroup number -> `(R, Q, main group)`.
+    group: HashMap<i64, (f64, f64, i64)>,
+    /// `(main group, main group)` -> `a_mn`.
+    aij: HashMap<(i64, i64), f64>,
+    /// Lower-cased name -> `[(subgroup, count)]`.
+    members: HashMap<String, Vec<(i64, i64)>>,
+}
+
+fn unifac_tables() -> &'static UnifacTables {
+    static TABLES: OnceLock<UnifacTables> = OnceLock::new();
+    TABLES.get_or_init(|| parse_unifac().expect("the embedded UNIFAC tables should parse"))
+}
+
+/// One integer field of a record, parsed strictly.
+fn integer(record: &csv::StringRecord, index: usize, column: &str, row: usize) -> Result<i64> {
+    let raw = record.get(index).unwrap_or("").trim();
+    raw.parse::<i64>().map_err(|_| AzothError::InvalidInput {
+        field: "databank".to_string(),
+        reason: format!("row {row}: `{column}` is {raw:?}, which is not an integer"),
+    })
+}
+
+fn parse_unifac() -> Result<UnifacTables> {
+    let mut group = HashMap::new();
+    {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(UNIFAC_GROUP_CSV.as_bytes());
+        let header = reader.headers().map_err(csv_failure)?.clone();
+        let mut idx = HashMap::new();
+        for name in ["secondary", "volumer", "surfareaq", "main"] {
+            idx.insert(name, column(&header, name)?);
+        }
+        for (offset, record) in reader.records().enumerate() {
+            let record = record.map_err(csv_failure)?;
+            let row = offset + 2;
+            group.insert(
+                integer(&record, idx["secondary"], "secondary", row)?,
+                (
+                    number(&record, idx["volumer"], "volumer", row)?,
+                    number(&record, idx["surfareaq"], "surfareaq", row)?,
+                    integer(&record, idx["main"], "main", row)?,
+                ),
+            );
+        }
+    }
+
+    let mut aij = HashMap::new();
+    {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(UNIFAC_INTER_CSV.as_bytes());
+        let header = reader.headers().map_err(csv_failure)?.clone();
+        let main_idx = column(&header, "maingroup")?;
+        let mut n_idx = HashMap::new();
+        for n in 1..=64 {
+            n_idx.insert(n, column(&header, &format!("n{n}"))?);
+        }
+        for (offset, record) in reader.records().enumerate() {
+            let record = record.map_err(csv_failure)?;
+            let row = offset + 2;
+            let main = integer(&record, main_idx, "maingroup", row)?;
+            for (n, &idx) in &n_idx {
+                let raw = record.get(idx).unwrap_or("").trim();
+                let value = if raw.is_empty() {
+                    0.0
+                } else {
+                    raw.parse::<f64>().map_err(|_| AzothError::InvalidInput {
+                        field: "databank".to_string(),
+                        reason: format!("row {row}: `n{n}` is {raw:?}, which is not a number"),
+                    })?
+                };
+                aij.insert((main, *n), value);
+            }
+        }
+    }
+
+    let mut members = HashMap::new();
+    {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(UNIFAC_COMP_CSV.as_bytes());
+        let header = reader.headers().map_err(csv_failure)?.clone();
+        let name_idx = column(&header, "name")?;
+        let mut sub_idx = HashMap::new();
+        for s in 1..=140 {
+            sub_idx.insert(s, column(&header, &format!("sub{s}"))?);
+        }
+        for (offset, record) in reader.records().enumerate() {
+            let record = record.map_err(csv_failure)?;
+            let name = record.get(name_idx).unwrap_or("").trim().to_lowercase();
+            if name.is_empty() {
+                continue;
+            }
+            let mut subs = Vec::new();
+            for (s, &idx) in &sub_idx {
+                let count = integer(&record, idx, &format!("sub{s}"), offset + 2)?;
+                if count > 0 {
+                    subs.push((*s, count));
+                }
+            }
+            members.insert(name, subs);
+        }
+    }
+
+    Ok(UnifacTables {
+        group,
+        aij,
+        members,
+    })
+}
+
+/// The UNIFAC inputs for a list of names, resolved from the vendored group tables.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if `names` is empty.
+/// * [`AzothError::PropertyUnavailable`] if a name has no UNIFAC group assignment.
+#[allow(clippy::missing_panics_doc)]
+pub fn unifac_parameters(names: &[&str]) -> Result<UnifacParameters> {
+    let tables = unifac_tables();
+    let n = names.len();
+    if n == 0 {
+        return Err(AzothError::invalid_input(
+            "components",
+            "a mixture needs at least one component",
+        ));
+    }
+    let mut union: Vec<i64> = Vec::new();
+    let mut resolved: Vec<&Vec<(i64, i64)>> = Vec::with_capacity(n);
+    for name in names {
+        let key = name.trim().to_lowercase();
+        let subs = tables.members.get(&key).ok_or_else(|| {
+            AzothError::property_unavailable(
+                key,
+                "UNIFAC group assignment".to_string(),
+                "not in UNIFACcomp.csv; a UNIFAC activity coefficient needs a group \
+                 decomposition for every component"
+                    .to_string(),
+            )
+        })?;
+        for &(s, _) in subs {
+            if !union.contains(&s) {
+                union.push(s);
+            }
+        }
+        resolved.push(subs);
+    }
+    union.sort_unstable();
+    let g = union.len();
+
+    let mut group_r = vec![0.0; g];
+    let mut group_q = vec![0.0; g];
+    let mut aij = vec![0.0; g * g];
+    for (k, &s) in union.iter().enumerate() {
+        let (r, q, main) = *tables.group.get(&s).expect("a subgroup with a member row");
+        group_r[k] = r;
+        group_q[k] = q;
+        for (m, &t) in union.iter().enumerate() {
+            let (_, _, main_t) = *tables.group.get(&t).expect("a subgroup with a member row");
+            aij[k * g + m] = tables.aij.get(&(main, main_t)).copied().unwrap_or(0.0);
+        }
+    }
+
+    let mut groups = vec![0.0; n * g];
+    for (i, subs) in resolved.iter().enumerate() {
+        for &(s, count) in subs.iter() {
+            let k = union
+                .iter()
+                .position(|&x| x == s)
+                .expect("a member subgroup in the union");
+            groups[i * g + k] = count as f64;
+        }
+    }
+
+    Ok(UnifacParameters {
+        groups,
+        group_r,
+        group_q,
+        aij,
+    })
 }
 
 /// A mixture and its ideal-gas model, built from substance names, which come back

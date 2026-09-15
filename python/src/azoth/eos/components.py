@@ -56,6 +56,9 @@ from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
 COMPONENTS_CSV = "data/components/components.csv"
 KIJ_CSV = "data/components/kij.csv"
+UNIFAC_COMP_CSV = "data/components/UNIFACcomp.csv"
+UNIFAC_GROUP_CSV = "data/components/UNIFACGroupParam.csv"
+UNIFAC_INTER_CSV = "data/components/UNIFACInterParam.csv"
 
 #: Columns the loader reads, in order. Named rather than positional because this
 #: file's shape is the generator's contract, and a column inserted in the middle
@@ -518,6 +521,111 @@ def nrtl_parameters(
     return tuple(tuple(r) for r in alpha), tuple(tuple(r) for r in dij)
 
 
+@cache
+def _unifac_group() -> dict[int, tuple[float, float, int]]:
+    """UNIFAC group constants, keyed by subgroup number: `(R, Q, main group)`."""
+    out: dict[int, tuple[float, float, int]] = {}
+    for row in _rows(find(UNIFAC_GROUP_CSV).read_text(encoding="utf-8")):
+        out[int(row["secondary"])] = (
+            float(row["volumer"]),
+            float(row["surfareaq"]),
+            int(row["main"]),
+        )
+    return out
+
+
+@cache
+def _unifac_aij() -> dict[tuple[int, int], float]:
+    """UNIFAC main-group interactions `a_mn` (Kelvin), keyed by main-group pair."""
+    out: dict[tuple[int, int], float] = {}
+    for row in _rows(find(UNIFAC_INTER_CSV).read_text(encoding="utf-8")):
+        m = int(row["maingroup"])
+        for key, value in row.items():
+            if key.startswith("n") and value.strip():
+                out[(m, int(key[1:]))] = float(value)
+    return out
+
+
+@cache
+def _unifac_members() -> dict[str, tuple[tuple[int, int], ...]]:
+    """UNIFAC group memberships, keyed by name: `(subgroup, count)` tuples."""
+    out: dict[str, tuple[tuple[int, int], ...]] = {}
+    for row in _rows(find(UNIFAC_COMP_CSV).read_text(encoding="utf-8")):
+        name = row["name"].strip().lower()
+        subs = tuple(
+            (int(key[3:]), int(value))
+            for key, value in row.items()
+            if key.startswith("sub") and value.strip() not in ("", "0")
+        )
+        out[name] = subs
+    return out
+
+
+def unifac_parameters(
+    names: Sequence[str],
+) -> tuple[
+    tuple[tuple[float, ...], ...],
+    tuple[float, ...],
+    tuple[float, ...],
+    tuple[tuple[float, ...], ...],
+]:
+    """The UNIFAC inputs for a list of components, by name.
+
+    Returns ``(groups, group_r, group_q, aij)``. ``groups`` is `N x G` (one row per
+    component, one column per group), ``group_r``/``group_q`` are length `G`, and
+    ``aij`` is `G x G` (Kelvin). `G` is the union of the named components' subgroups,
+    sorted by subgroup number, with absent groups counted zero.
+
+    This is the name-to-matrix resolution `eos.unifac_activity_coefficients` leaves to
+    the caller, the way :func:`nrtl_parameters` resolves NRTL's matrices.
+
+    Raises:
+        PropertyUnavailableError: if a name has no UNIFAC group assignment.
+    """
+    group = _unifac_group()
+    aij_table = _unifac_aij()
+    members = _unifac_members()
+
+    union: list[int] = []
+    for name in names:
+        subs = members.get(name.strip().lower())
+        if subs is None:
+            raise PropertyUnavailableError(
+                name,
+                "UNIFAC group assignment",
+                "not in UNIFACcomp.csv; a UNIFAC activity coefficient needs a group "
+                "decomposition for every component",
+            )
+        for subgroup, _ in subs:
+            if subgroup not in union:
+                union.append(subgroup)
+    union.sort()
+    g = len(union)
+
+    group_r = [0.0] * g
+    group_q = [0.0] * g
+    aij = [[0.0] * g for _ in range(g)]
+    for k, subgroup in enumerate(union):
+        r, q, main = group[subgroup]
+        group_r[k] = r
+        group_q[k] = q
+        for m, other in enumerate(union):
+            _, _, other_main = group[other]
+            aij[k][m] = aij_table.get((main, other_main), 0.0)
+
+    groups = [[0.0] * g for _ in range(len(names))]
+    for i, name in enumerate(names):
+        for subgroup, count in members[name.strip().lower()]:
+            groups[i][union.index(subgroup)] = float(count)
+
+    return (
+        tuple(tuple(row) for row in groups),
+        tuple(group_r),
+        tuple(group_q),
+        tuple(tuple(row) for row in aij),
+    )
+
+
 def _cubic(name: str) -> Cubic:
     """The cubic named by its short name, ``"pr"``, ``"srk"`` or ``"rk"``."""
     try:
@@ -701,5 +809,6 @@ __all__ = [
     "from_names",
     "kij_for",
     "nrtl_parameters",
+    "unifac_parameters",
     "wilke_chang_phi",
 ]

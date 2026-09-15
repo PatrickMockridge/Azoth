@@ -87,8 +87,31 @@ fn the_nrtl_matrices_resolve_from_names() {
 fn the_nrtl_energy_is_directional() {
     // `g_ij != g_ji`: reversing the name order swaps the off-diagonal energy, while the
     // symmetric `alpha` is unchanged.
-    assert_eq!(databank::nrtl_dij(&["water", "methanol"]), vec![0.0, 610.6, -48.68, 0.0]);
-    assert_eq!(databank::nrtl_alpha(&["water", "methanol"]), vec![0.0, 0.303, 0.303, 0.0]);
+    assert_eq!(
+        databank::nrtl_dij(&["water", "methanol"]),
+        vec![0.0, 610.6, -48.68, 0.0]
+    );
+    assert_eq!(
+        databank::nrtl_alpha(&["water", "methanol"]),
+        vec![0.0, 0.303, 0.303, 0.0]
+    );
+}
+
+#[test]
+fn the_unifac_parameters_resolve_from_names() {
+    // The resolved inputs for methanol/water: two subgroups, one per component.
+    let p = databank::unifac_parameters(&["methanol", "water"]).expect("methanol and water");
+    assert_eq!(p.groups, vec![1.0, 0.0, 0.0, 1.0]);
+    assert_eq!(p.group_r, vec![1.4311, 0.92]);
+    assert_eq!(p.group_q, vec![1.432, 1.4]);
+    assert_eq!(p.aij, vec![0.0, -181.0, 289.6, 0.0]);
+}
+
+#[test]
+fn a_name_without_unifac_groups_is_refused() {
+    // The databank ships UNIFAC groups for a subset of its substances; a name without
+    // one is a caller error, not a silent ideal-mixture default.
+    assert!(databank::unifac_parameters(&["methane", "unobtainium"]).is_err());
 }
 
 #[test]

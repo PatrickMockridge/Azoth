@@ -1,0 +1,68 @@
+id = "eos.unifac_activity_coefficients"
+name = "Activity coefficients from the UNIFAC group-contribution model"
+kind = "direct"
+assumptions = [
+    "the caller resolved `groups`, `group_r`, `group_q` and `aij` from the databank by name - this model takes the numbers, not the names, the way `eos.nrtl_activity_coefficients` takes its matrices.\n",
+    "`groups` is `N x G`, one row per component and one column per group, over the union of the named components' subgroups sorted by subgroup number; absent groups are counted zero, and every component therefore has `G` groups.\n",
+    "`aij[m][n]` is `a_{main(m), main(n)}` in Kelvin, so `tau = aij/T` is dimensionless; it is directional (`a_mn != a_nm` in general).\n",
+    "the combinatorial term uses `Z = 10`, so `l_i = 5 (R_i - Q_i) - (R_i - 1)`.\n",
+    "`x` is checked (non-negative, sums to one) rather than renormalised.\n",
+]
+references = [
+    "Fredenslund, A.; Jones, R. L.; Prausnitz, J. M. (1975). \"Group-contribution estimation of activity coefficients in nonideal liquid mixtures.\" AIChE Journal 21(6), 1086-1099.",
+    "Hansen, H. K.; Rasmussen, P.; Fredenslund, A.; Schiller, M.; Gmehling, J. (1991). \"Vapor-liquid equilibria by UNIFAC group contribution. 5. Revision and extension.\" Ind. Eng. Chem. Res. 30(10), 2352-2355.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEUnifac`/`PhaseGEUnifac` are the port source; NeqSim 3.20.0's classic UNIFAC fails at runtime, so there is no differential oracle.\n",
+]
+[source]
+standard = "Fredenslund et al. (1975); Hansen et al. (1991)"
+edition = "AIChE Journal 21(6), 1086-1099; Ind. Eng. Chem. Res. 30(10), 2352-2355"
+doi = "10.1002/aic.690210607"
+[inputs]
+[inputs.T]
+unit = "K"
+description = "absolute temperature\n"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "mole fractions; non-negative and summing to one.\n"
+[inputs.groups]
+type = "matrix"
+unit = "dimensionless"
+shape = "N x G, one row per component, one column per group"
+description = "the group counts: `groups[i][k]` is the count of the k-th group in component i\n"
+[inputs.group_r]
+type = "vector"
+unit = "dimensionless"
+length = "one per group"
+description = "the volume `R` of each group\n"
+[inputs.group_q]
+type = "vector"
+unit = "dimensionless"
+length = "one per group"
+description = "the surface area `Q` of each group\n"
+[inputs.aij]
+type = "matrix"
+unit = "K"
+shape = "G x G, the main-group interaction matrix"
+description = "`aij[m][n] = a_{main(m), main(n)}` in Kelvin\n"
+[outputs]
+[outputs.ln_gamma]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the natural logarithm of the activity coefficient of each component\n"
+[outputs.gamma]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the activity coefficient of each component\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states\n"
+[implementations]
+python = "azoth.eos.unifac_activity_coefficients"
+rust = "azoth_eos::unifac_activity_coefficients"

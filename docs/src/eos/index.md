@@ -56,4 +56,5 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.pt_flash`](./pt_flash.md) | `successive_substitution_flash` | Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982) |
 | [`eos.pure_saturation`](./pure_saturation.md) | `saturation_pressure_bisection` | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |
+| [`eos.unifac_activity_coefficients`](./unifac_activity_coefficients.md) | `direct composition` | Fredenslund et al. (1975); Hansen et al. (1991) |
 | [`eos.wilke_viscosity`](./wilke_viscosity.md) | `direct composition` | Wilke, C. R. (1950); Chung et al. (1988) |

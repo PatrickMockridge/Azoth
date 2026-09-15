@@ -53,6 +53,15 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "databank" / "sources" / "neqsim"
 OUT_DIR = ROOT / "data" / "components"
 
+#: The UNIFAC tables, re-rendered like the component and interaction tables so their
+#: compiled headers match the manifest's `as` names. The values are carried verbatim:
+#: group-contribution parameters need no unit conversion and no row filtering.
+UNIFAC_FILES = (
+    ("neqsim/UNIFACcomp.csv", "UNIFACcomp.csv"),
+    ("neqsim/UNIFACGroupParam.csv", "UNIFACGroupParam.csv"),
+    ("neqsim/UNIFACInterParam.csv", "UNIFACInterParam.csv"),
+)
+
 #: The NeqSim release this was generated from, for the `citation` column and for
 #: `NOTICE`. A version and a commit, because a databank is only reproducible against
 #: one revision of the file it came from.
@@ -309,6 +318,29 @@ def build_kij(source: Path, known: set[str]) -> list[dict[str, str]]:
     return out
 
 
+def _unifac_columns(file_id: str) -> tuple[tuple[str, str], ...]:
+    """The carried columns of one UNIFAC table, as `(compiled, upstream)` pairs."""
+    found, problems = manifest_module.read()
+    if problems:
+        raise SystemExit("gen_databank: " + "\n  ".join(problems))
+    return tuple(
+        (column.as_field or "", column.name)
+        for column in found.file(file_id).columns
+        if column.disposition in manifest_module.CARRIED
+    )
+
+
+def build_unifac(source: Path, file_id: str) -> tuple[tuple[str, ...], list[dict[str, str]]]:
+    """One UNIFAC table, re-rendered with the manifest's `as` header, values verbatim."""
+    columns = _unifac_columns(file_id)
+    header = tuple(as_field for as_field, _ in columns)
+    rows: list[dict[str, str]] = []
+    with (source).open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            rows.append({as_field: (row.get(upstream) or "").strip() for as_field, upstream in columns})
+    return header, rows
+
+
 def render(header: tuple[str, ...], rows: list[dict[str, str]]) -> str:
     """A file's whole contents, as it will be written."""
     buffer = io.StringIO()
@@ -387,6 +419,7 @@ def main(argv: list[str] | None = None) -> int:
     outputs = [
         (OUT_DIR / "components.csv", COMPONENT_HEADER, components),
         (OUT_DIR / "kij.csv", KIJ_HEADER, kij),
+        *[(OUT_DIR / name, *build_unifac(resources / name, file_id)) for file_id, name in UNIFAC_FILES],
     ]
 
     if args.check:

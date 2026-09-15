@@ -405,6 +405,12 @@ class TynCalusDiffusivityResult:
     warnings: list[Warning]
 
 @final
+class UnifacActivityCoefficientsResult:
+    ln_gamma: list[float]
+    gamma: list[float]
+    warnings: list[Warning]
+
+@final
 class Vdw1fMixBinaryResult:
     a_mix: float
     b_mix: float
@@ -733,6 +739,14 @@ def tyn_calus_diffusivity(
     T: float,
     eta: float,
 ) -> TynCalusDiffusivityResult: ...
+def unifac_activity_coefficients(
+    T: float,
+    x: list[float],
+    groups: list[list[float]],
+    group_r: list[float],
+    group_q: list[float],
+    aij: list[list[float]],
+) -> UnifacActivityCoefficientsResult: ...
 def vdw1f_mix_binary(
     z1: float,
     a1: float,

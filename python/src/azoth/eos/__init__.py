@@ -109,6 +109,7 @@ from azoth.core.result import (
     StabilityTestResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
+    UnifacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
@@ -167,6 +168,7 @@ __all__ = [
     "stability_test",
     "twu_kappa",
     "tyn_calus_diffusivity",
+    "unifac_activity_coefficients",
     "vdw1f_mix_binary",
     "wilke_chang_diffusivity",
     "wilke_chang_phi",
@@ -203,6 +205,7 @@ _PRSV_KAPPA = "eos.prsv_kappa"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
+_UNIFAC_ACTIVITY_COEFFICIENTS = "eos.unifac_activity_coefficients"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
 _SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
@@ -780,6 +783,39 @@ def nrtl_activity_coefficients(
     """
     return resolve(_NRTL_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
         T=T, x=x, Dij=Dij, alpha=alpha
+    )
+
+
+def unifac_activity_coefficients(
+    T: Q,
+    x: Sequence[float],
+    groups: Sequence[Sequence[float]],
+    group_r: Sequence[float],
+    group_q: Sequence[float],
+    aij: Sequence[Sequence[Q]],
+) -> UnifacActivityCoefficientsResult:
+    """The activity coefficients of a mixture, from UNIFAC.
+
+    ``groups[i][k]`` is the count of group ``k`` in component ``i`` over the union of
+    the named components' groups, ``group_r``/``group_q`` are the per-group volume and
+    surface area, and ``aij[m][n] = a_{main(m), main(n)}`` in Kelvin. The component
+    volume and area follow from the group sums, the combinatorial term uses ``Z = 10``,
+    and the residual is the standard ``ln gamma^R_i`` sum. ``x`` is checked rather than
+    renormalised.
+
+    The group tables are the caller's: resolve them from names with
+    :func:`azoth.eos.components.unifac_parameters`, which is what this model's own spec
+    leaves to the caller.
+
+    Raises:
+        InvalidInputError: if the shapes disagree, a group count is negative, or ``x``
+            is not a composition.
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.unifac_activity_coefficients`.
+    """
+    return resolve(_UNIFAC_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
+        T=T, x=x, groups=groups, group_r=group_r, group_q=group_q, aij=aij
     )
 
 

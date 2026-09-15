@@ -12,6 +12,7 @@
 //!   - specs/models/eos/pt_flash.toml
 //!   - specs/models/eos/pure_saturation.toml
 //!   - specs/models/eos/stability_test.toml
+//!   - specs/models/eos/unifac_activity_coefficients.toml
 //!   - specs/models/eos/wilke_viscosity.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
@@ -1167,6 +1168,87 @@ pub static STABILITY_TEST_SPEC: ModelSpec = ModelSpec {
     cases: STABILITY_TEST_CASES,
 };
 
+static UNIFAC_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute temperature; zero and below are not states",
+    },
+}];
+
+static UNIFAC_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
+    TestCase {
+        id: "acetone_n_hexane_equimolar_at_298_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("x", &[0.5, 0.5]),
+            ("group_r", &[0.9011, 0.6744, 1.6724]),
+            ("group_q", &[0.848, 0.54, 1.488]),
+        ],
+        matrices: &[
+            ("groups", &[1.0, 0.0, 1.0, 2.0, 4.0, 0.0]),
+            (
+                "aij",
+                &[0.0, 0.0, 476.4, 0.0, 0.0, 476.4, 26.76, 26.76, 0.0],
+            ),
+        ],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[0.42003577558486405, 0.4424161881344282]),
+            ("gamma", &[1.522016005657412, 1.556463387246744]),
+        ],
+    },
+    TestCase {
+        id: "methanol_water_equimolar_at_298_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("x", &[0.5, 0.5]),
+            ("group_r", &[1.4311, 0.92]),
+            ("group_q", &[1.432, 1.4]),
+        ],
+        matrices: &[
+            ("groups", &[1.0, 0.0, 0.0, 1.0]),
+            ("aij", &[0.0, -181.0, 289.6, 0.0]),
+        ],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[0.109465434560284, 0.18285472222380844]),
+            ("gamma", &[1.1156815062468024, 1.200639969105366]),
+        ],
+    },
+];
+
+/// Registry entry for `eos.unifac_activity_coefficients`.
+pub static UNIFAC_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
+    id: "eos.unifac_activity_coefficients",
+    kind: "direct",
+    algorithm: None,
+    checks: UNIFAC_ACTIVITY_COEFFICIENTS_CHECKS,
+    cases: UNIFAC_ACTIVITY_COEFFICIENTS_CASES,
+};
+
 static WILKE_VISCOSITY_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -1293,6 +1375,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PT_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
     &STABILITY_TEST_SPEC,
+    &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
     &WILKE_VISCOSITY_SPEC,
 ];
 

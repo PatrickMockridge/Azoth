@@ -1,0 +1,29 @@
+model = "eos.unifac_activity_coefficients"
+[[cases]]
+id = "acetone_n_hexane_equimolar_at_298_15_k"
+tolerance = 1e-09
+source = "Standard UNIFAC (Hansen et al. 1991) for acetone/n-hexane 0.5/0.5 at 298.15 K; the group tables are NeqSim's UNIFACcomp/UNIFACGroupParam/UNIFACInterParam."
+[cases.inputs]
+T = 298.15
+x = [0.5, 0.5]
+groups = [[1.0, 0.0, 1.0], [2.0, 4.0, 0.0]]
+group_r = [0.9011, 0.6744, 1.6724]
+group_q = [0.848, 0.54, 1.488]
+aij = [[0.0, 0.0, 476.4], [0.0, 0.0, 476.4], [26.76, 26.76, 0.0]]
+[cases.expected]
+ln_gamma = [0.42003577558486405, 0.4424161881344282]
+gamma = [1.522016005657412, 1.556463387246744]
+[[cases]]
+id = "methanol_water_equimolar_at_298_15_k"
+tolerance = 1e-09
+source = "Standard UNIFAC (Hansen et al. 1991) for methanol/water 0.5/0.5 at 298.15 K; the group tables are NeqSim's UNIFACcomp/UNIFACGroupParam/UNIFACInterParam."
+[cases.inputs]
+T = 298.15
+x = [0.5, 0.5]
+groups = [[1.0, 0.0], [0.0, 1.0]]
+group_r = [1.4311, 0.92]
+group_q = [1.432, 1.4]
+aij = [[0.0, -181.0], [289.6, 0.0]]
+[cases.expected]
+ln_gamma = [0.109465434560284, 0.18285472222380844]
+gamma = [1.1156815062468024, 1.200639969105366]

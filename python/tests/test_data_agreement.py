@@ -346,6 +346,15 @@ def test_the_nrtl_matrices_resolve_from_names() -> None:
     assert reversed_dij == ((0.0, 610.6), (-48.68, 0.0))
 
 
+def test_the_unifac_parameters_resolve_from_names() -> None:
+    """The UNIFAC group tables, resolved into the inputs `eos.unifac_activity_coefficients` takes."""
+    groups, group_r, group_q, aij = components.unifac_parameters(["methanol", "water"])
+    assert groups == ((1.0, 0.0), (0.0, 1.0))
+    assert group_r == (1.4311, 0.92)
+    assert group_q == (1.432, 1.4)
+    assert aij == ((0.0, -181.0), (289.6, 0.0))
+
+
 def test_an_unknown_fluid_fails_rather_than_returning_nothing() -> None:
     """An empty list for an unknown name would make a typo look like an empty table.
 
