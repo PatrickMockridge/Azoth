@@ -25,7 +25,7 @@ use azoth_eos::results::{
     PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
     RkAlphaAbResult, RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
-    Vdw1fMixBinaryResult,
+    Vdw1fMixBinaryResult, WilkeViscosityResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1102,6 +1102,45 @@ impl PyChungViscosityResult {
 
 impl From<&ChungViscosityResult> for PyChungViscosityResult {
     fn from(r: &ChungViscosityResult) -> Self {
+        Self {
+            mu: PyQty {
+                magnitude_si: r.mu.value,
+                unit: "Pa*s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.wilke_viscosity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "WilkeViscosityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyWilkeViscosityResult {
+    /// The gas mixture dynamic viscosity, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub mu: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyWilkeViscosityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "WilkeViscosityResult(mu={} {})",
+            self.mu.magnitude_si, self.mu.unit
+        )
+    }
+}
+
+impl From<&WilkeViscosityResult> for PyWilkeViscosityResult {
+    fn from(r: &WilkeViscosityResult) -> Self {
         Self {
             mu: PyQty {
                 magnitude_si: r.mu.value,
@@ -2411,6 +2450,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         RackettMolarVolumeResult::CALC_ID => RackettMolarVolumeResult::FIELDS.to_vec(),
         CostaldMolarVolumeResult::CALC_ID => CostaldMolarVolumeResult::FIELDS.to_vec(),
         ChungViscosityResult::CALC_ID => ChungViscosityResult::FIELDS.to_vec(),
+        WilkeViscosityResult::CALC_ID => WilkeViscosityResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),

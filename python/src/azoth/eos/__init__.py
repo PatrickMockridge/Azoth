@@ -64,6 +64,8 @@ see :func:`azoth.backends` and :func:`azoth.use_backend`.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from azoth._dispatch import resolve
 from azoth.core.result import (
     AntoineVaporPressureResult,
@@ -101,6 +103,7 @@ from azoth.core.result import (
     StabilityTestResult,
     TwuKappaResult,
     Vdw1fMixBinaryResult,
+    WilkeViscosityResult,
 )
 from azoth.core.units import Q
 from azoth.eos.components import available as available_components
@@ -151,6 +154,7 @@ __all__ = [
     "stability_test",
     "twu_kappa",
     "vdw1f_mix_binary",
+    "wilke_viscosity",
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
@@ -180,6 +184,7 @@ _PRSV_KAPPA = "eos.prsv_kappa"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
+_WILKE_VISCOSITY = "eos.wilke_viscosity"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 _RACKETT_MOLAR_VOLUME = "eos.rackett_molar_volume"
 _SRK_KAPPA = "eos.srk_kappa"
@@ -548,6 +553,41 @@ def chung_viscosity(
     """
     return resolve(_CHUNG_VISCOSITY)(  # type: ignore[no-any-return]
         omega=omega, Tc=Tc, Vc=Vc, M=M, dipole=dipole, kappa=kappa, T=T, V=V
+    )
+
+
+def wilke_viscosity(
+    Tc: Sequence[Q],
+    Vc: Sequence[Q],
+    M: Sequence[Q],
+    omega: Sequence[float],
+    dipole: Sequence[float],
+    kappa: Sequence[float],
+    T: Q,
+    V: Q,
+    z: Sequence[float],
+) -> WilkeViscosityResult:
+    """The gas mixture dynamic viscosity, from Wilke's rule over Chung viscosities.
+
+    Each pure-component viscosity is :func:`chung_viscosity`'s at the *mixture*
+    molar volume ``V``, then mixed: ``mu = sum_i z_i mu_i / sum_j z_j phi_ij``.
+    ``z`` is checked rather than renormalised - a composition that does not sum to
+    one is a mistake, not a request to renormalise.
+
+    The six per-component constants are the caller's: resolve them from a name with
+    :func:`azoth.eos.components.entry`, which is what this model's own spec leaves to
+    the caller.
+
+    Raises:
+        InvalidInputError: if the vectors disagree in length, or ``z`` is not a
+            composition.
+        OutOfRangeError: if ``T`` or ``V`` is not positive, or a component's
+            ``Tc``/``Vc`` is not positive.
+
+    See :func:`azoth.eos.reference.wilke_viscosity`.
+    """
+    return resolve(_WILKE_VISCOSITY)(  # type: ignore[no-any-return]
+        Tc=Tc, Vc=Vc, M=M, omega=omega, dipole=dipole, kappa=kappa, T=T, V=V, z=z
     )
 
 

@@ -24,6 +24,7 @@ use crate::results::{
     PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
     PySrkZFactorResult, PyStabilityTestResult, PyTwuKappaResult, PyVdw1fMixBinaryResult,
+    PyWilkeViscosityResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -448,6 +449,30 @@ pub fn chung_viscosity(
     )
     .map(|r| PyChungViscosityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// The gas mixture dynamic viscosity, from Wilke's rule over the pure Chung
+/// viscosities. A *model* rather than a calculation: its arguments are vectors.
+#[pyfunction]
+#[pyo3(signature = (Tc, Vc, M, omega, dipole, kappa, T, V, z))]
+#[pyo3(text_signature = "(Tc, Vc, M, omega, dipole, kappa, T, V, z)")]
+#[allow(non_snake_case)] // `Tc`, `Vc`, `M`, `T` and `V` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn wilke_viscosity(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Vc: Vec<f64>,
+    M: Vec<f64>,
+    omega: Vec<f64>,
+    dipole: Vec<f64>,
+    kappa: Vec<f64>,
+    T: f64,
+    V: f64,
+    z: Vec<f64>,
+) -> PyResult<PyWilkeViscosityResult> {
+    azoth_eos::wilke_viscosity(&Tc, &Vc, &M, &omega, &dipole, &kappa, T, V, &z)
+        .map(|r| PyWilkeViscosityResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// The saturation pressure of a pure component.

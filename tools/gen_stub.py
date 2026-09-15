@@ -272,10 +272,20 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
     taken = set(inspect.signature(getattr(module, name)).parameters)
 
     params: list[str] = []
-    if "mixture" in taken:
-        params += ["Tc: list[float]", "Pc: list[float]", "omega: list[float]", "kij: list[float]"]
-    else:
-        params += ["Tc: float", "Pc: float", "omega: float"]
+    if "components" in model["inputs"]:
+        # A model that names a fluid resolves the names into a flattened mixture
+        # (four vectors) or, for a pure-component model, the critical constants as
+        # scalars. A model with no `components` input - one that takes per-component
+        # vectors directly - has no such prefix to add.
+        if "mixture" in taken:
+            params += [
+                "Tc: list[float]",
+                "Pc: list[float]",
+                "omega: list[float]",
+                "kij: list[float]",
+            ]
+        else:
+            params += ["Tc: float", "Pc: float", "omega: float"]
     if "ideal_gas" in taken:
         params += [f"{n}: list[float]" for n in ("cp_a", "cp_b", "cp_c", "cp_d", "cp_e")]
     for parameter, declaration in model["inputs"].items():

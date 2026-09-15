@@ -1,0 +1,49 @@
+model = "eos.wilke_viscosity"
+[[cases]]
+id = "methane_propane_equimolar_at_300_k"
+tolerance = 1e-09
+source = "NeqSim 3.20.0 `ChungViscosityMethod.calcViscosity` for methane/propane 0.5/0.5 at 300 K, 10 bar, at the phase's molar volume."
+[cases.inputs]
+Tc = [190.56, 369.83]
+Vc = [9.9e-5, 0.000203]
+M = [0.016043, 0.044097]
+omega = [0.0115, 0.1523]
+dipole = [0.0, 0.0]
+kappa = [0.0, 0.0]
+T = 300.0
+V = 0.0022987856717900145
+z = [0.5, 0.5]
+[cases.expected]
+mu = 9.543074369236108e-06
+[[cases]]
+id = "methane_butane_propane_at_350_k"
+tolerance = 1e-09
+source = "NeqSim 3.20.0 `ChungViscosityMethod.calcViscosity` for methane/n-butane/propane 0.5/0.3/0.2 at 350 K, 15 bar, at the phase's molar volume."
+[cases.inputs]
+Tc = [190.56, 425.12, 369.83]
+Vc = [9.9e-5, 0.000255, 0.000203]
+M = [0.016043, 0.058123, 0.044097]
+omega = [0.0115, 0.2002, 0.1523]
+dipole = [0.0, 0.0, 0.0]
+kappa = [0.0, 0.0, 0.0]
+T = 350.0
+V = 0.0017565092156106297
+z = [0.5, 0.3, 0.2]
+[cases.expected]
+mu = 1.0826970028242582e-05
+[[cases]]
+id = "methane_rich_propane_at_300_k"
+tolerance = 1e-09
+source = "NeqSim 3.20.0 `ChungViscosityMethod.calcViscosity` for methane/propane 0.8/0.2 at 300 K, 10 bar, at the phase's molar volume."
+[cases.inputs]
+Tc = [190.56, 369.83]
+Vc = [9.9e-5, 0.000203]
+M = [0.016043, 0.044097]
+omega = [0.0115, 0.1523]
+dipole = [0.0, 0.0]
+kappa = [0.0, 0.0]
+T = 300.0
+V = 0.0023956252115606555
+z = [0.8, 0.2]
+[cases.expected]
+mu = 1.0447753047985489e-05

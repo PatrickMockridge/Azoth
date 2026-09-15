@@ -375,6 +375,11 @@ class Vdw1fMixBinaryResult:
     warnings: list[Warning]
 
 @final
+class WilkeViscosityResult:
+    mu: Qty
+    warnings: list[Warning]
+
+@final
 class ChokedFlowAreaResult:
     a: Qty
     warnings: list[Warning]
@@ -648,6 +653,17 @@ def vdw1f_mix_binary(
     b2: float,
     k12: float,
 ) -> Vdw1fMixBinaryResult: ...
+def wilke_viscosity(
+    Tc: list[float],
+    Vc: list[float],
+    M: list[float],
+    omega: list[float],
+    dipole: list[float],
+    kappa: list[float],
+    T: float,
+    V: float,
+    z: list[float],
+) -> WilkeViscosityResult: ...
 def choked_flow_area(m_dot: float, P0: float, rho0: float, k: float) -> ChokedFlowAreaResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...
 def crane_k_factors(fittings: list[str], f_t: float) -> KFactorsResult: ...

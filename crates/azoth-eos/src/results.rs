@@ -884,6 +884,24 @@ impl CalcResult for ChungViscosityResult {
     }
 }
 
+/// Result of `eos.wilke_viscosity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WilkeViscosityResult {
+    /// The gas mixture dynamic viscosity.
+    pub mu: DynamicViscosity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for WilkeViscosityResult {
+    const CALC_ID: &'static str = "eos.wilke_viscosity";
+    const FIELDS: &'static [&'static str] = &["mu", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SrkAlphaAbResult {

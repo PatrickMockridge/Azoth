@@ -100,6 +100,7 @@ Four sections, and the difference between them is the point:
 - [`eos.pt_flash`](./eos/pt_flash.md) — Pressure-temperature flash
 - [`eos.pure_saturation`](./eos/pure_saturation.md) — Pure-component saturation pressure
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
+- [`eos.wilke_viscosity`](./eos/wilke_viscosity.md) — Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities
 
 **Hydraulics** - [`hydraulics/index.md`](./hydraulics/index.md):
 

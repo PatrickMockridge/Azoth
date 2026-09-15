@@ -47,6 +47,7 @@
   - [Pressure-temperature flash](./eos/pt_flash.md)
   - [Pure-component saturation pressure](./eos/pure_saturation.md)
   - [Tangent-plane stability test](./eos/stability_test.md)
+  - [Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities](./eos/wilke_viscosity.md)
 - [Hydraulics](./hydraulics/index.md)
   - [Choked-flow throat area for an ideal gas](./hydraulics/choked_flow_area.md)
   - [Liquid flow through a control valve from its flow coefficient](./hydraulics/control_valve_cv.md)

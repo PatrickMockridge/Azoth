@@ -10,6 +10,7 @@
 //!   - specs/models/eos/pt_flash.toml
 //!   - specs/models/eos/pure_saturation.toml
 //!   - specs/models/eos/stability_test.toml
+//!   - specs/models/eos/wilke_viscosity.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
 //! on any difference.
@@ -1017,6 +1018,120 @@ pub static STABILITY_TEST_SPEC: ModelSpec = ModelSpec {
     cases: STABILITY_TEST_CASES,
 };
 
+static WILKE_VISCOSITY_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "V",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`V` is the divisor in `y = Vc/(6*V)` inside the pure-component viscosity; a molar volume must be positive.",
+        },
+    },
+];
+
+static WILKE_VISCOSITY_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methane_propane_equimolar_at_300_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0), ("V", 0.0022987856717900145)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("Tc", &[190.56, 369.83]),
+            ("Vc", &[9.9e-05, 0.000203]),
+            ("M", &[0.016043, 0.044097]),
+            ("omega", &[0.0115, 0.1523]),
+            ("dipole", &[0.0, 0.0]),
+            ("kappa", &[0.0, 0.0]),
+            ("z", &[0.5, 0.5]),
+        ],
+        matrices: &[],
+        expected: &[("mu", 9.543074369236108e-06)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "methane_butane_propane_at_350_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 350.0), ("V", 0.0017565092156106297)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("Tc", &[190.56, 425.12, 369.83]),
+            ("Vc", &[9.9e-05, 0.000255, 0.000203]),
+            ("M", &[0.016043, 0.058123, 0.044097]),
+            ("omega", &[0.0115, 0.2002, 0.1523]),
+            ("dipole", &[0.0, 0.0, 0.0]),
+            ("kappa", &[0.0, 0.0, 0.0]),
+            ("z", &[0.5, 0.3, 0.2]),
+        ],
+        matrices: &[],
+        expected: &[("mu", 1.0826970028242582e-05)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "methane_rich_propane_at_300_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0), ("V", 0.0023956252115606555)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("Tc", &[190.56, 369.83]),
+            ("Vc", &[9.9e-05, 0.000203]),
+            ("M", &[0.016043, 0.044097]),
+            ("omega", &[0.0115, 0.1523]),
+            ("dipole", &[0.0, 0.0]),
+            ("kappa", &[0.0, 0.0]),
+            ("z", &[0.8, 0.2]),
+        ],
+        matrices: &[],
+        expected: &[("mu", 1.0447753047985489e-05)],
+        expected_vectors: &[],
+    },
+];
+
+/// Registry entry for `eos.wilke_viscosity`.
+pub static WILKE_VISCOSITY_SPEC: ModelSpec = ModelSpec {
+    id: "eos.wilke_viscosity",
+    kind: "direct",
+    algorithm: None,
+    checks: WILKE_VISCOSITY_CHECKS,
+    cases: WILKE_VISCOSITY_CASES,
+};
+
 static ALL_MODELS: &[&ModelSpec] = &[
     &BUBBLE_PRESSURE_SPEC,
     &CRITICAL_POINT_SPEC,
@@ -1027,6 +1142,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PT_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
     &STABILITY_TEST_SPEC,
+    &WILKE_VISCOSITY_SPEC,
 ];
 
 /// Every model in this namespace, in id order.

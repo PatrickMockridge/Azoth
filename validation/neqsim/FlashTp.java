@@ -157,9 +157,33 @@ public class FlashTp {
     }
   }
 
+  /** The Wilke mixture viscosity, for `eos.wilke_viscosity`. */
+  static void wilke() {
+    String[][] names = {
+      {"methane", "propane"}, {"methane", "n-butane", "propane"}, {"methane", "propane"}};
+    double[][] moles = {{0.5, 0.5}, {0.5, 0.3, 0.2}, {0.8, 0.2}};
+    double[] temps = {300.0, 350.0, 300.0};
+    double[] press = {10.0, 15.0, 10.0};
+    System.out.println("Wilke mixture viscosity (V in m**3/mol; NeqSim's molarVolume field is 1e5 * this):");
+    for (int k = 0; k < names.length; k++) {
+      SystemInterface fluid = new SystemPrEos(temps[k], press[k]);
+      for (int i = 0; i < names[k].length; i++) {
+        fluid.addComponent(names[k][i], moles[k][i]);
+      }
+      fluid.setMixingRule("classic");
+      new ThermodynamicOperations(fluid).TPflash();
+      fluid.initProperties();
+      PhysicalProperties pp = fluid.getPhase(0).getPhysicalProperties();
+      ChungViscosityMethod chung = new ChungViscosityMethod(pp);
+      System.out.println("  " + String.join("+", names[k]) + "  V = "
+          + fluid.getPhase(0).getMolarVolume() * 1e-5 + "  mu = " + chung.calcViscosity() + " Pa*s");
+    }
+  }
+
   public static void main(String[] args) {
     volcorr();
     chung();
+    wilke();
     corr();
     antoine();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",

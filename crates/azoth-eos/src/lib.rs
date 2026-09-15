@@ -77,6 +77,7 @@ pub mod srk_z_factor;
 pub mod stability_test;
 pub mod twu_kappa;
 pub mod vdw1f_mix_binary;
+pub mod wilke_viscosity;
 
 pub use alpha_term::Alpha;
 pub use antoine_vapor_pressure::{AntoineForm, antoine_vapor_pressure, form_from_type};
@@ -116,6 +117,7 @@ pub use results::{
     RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
     RootStructure, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult,
     SrkZFactorResult, StabilityTestResult, StabilityVerdict, TwuKappaResult, Vdw1fMixBinaryResult,
+    WilkeViscosityResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -127,3 +129,4 @@ pub use srk_z_factor::srk_z_factor;
 pub use stability_test::stability_test;
 pub use twu_kappa::twu_kappa;
 pub use vdw1f_mix_binary::vdw1f_mix_binary;
+pub use wilke_viscosity::wilke_viscosity;

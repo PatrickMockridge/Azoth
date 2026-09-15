@@ -1,0 +1,25 @@
+{
+  "id": "methane_propane_wilke_viscosity_against_neqsim",
+  "calc": "eos.wilke_viscosity",
+  "source": {
+    "attribution": "NeqSim 3.20.0, `ChungViscosityMethod.calcViscosity` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "NeqSim's Wilke mixture viscosity for methane/propane 0.5/0.5 at 300 K, 10 bar. The per-component constants are the databank's, and the molar volume is NeqSim's PR-EoS value recovered from its internal `molarVolume` field by the `1e5` the driver prints."
+  },
+  "derivation": "The driver ran `calcViscosity()` for methane/propane 0.5/0.5 at 300 K, 10 bar and printed `mu = 9.54307436923611E-6 Pa*s` at `V = 0.0022987856717900145 m**3/mol`.\n\nazoth's `eos.wilke_viscosity` reproduces it exactly.",
+  "inputs": {
+    "Tc": [190.56, 369.83],
+    "Vc": [9.9e-5, 0.000203],
+    "M": [0.016043, 0.044097],
+    "omega": [0.0115, 0.1523],
+    "dipole": [0.0, 0.0],
+    "kappa": [0.0, 0.0],
+    "T": 300.0,
+    "V": 0.0022987856717900145,
+    "z": [0.5, 0.5]
+  },
+  "expected": {
+    "mu": 9.54307436923611e-6
+  },
+  "tolerance": 1e-12
+}

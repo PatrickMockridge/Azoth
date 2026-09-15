@@ -426,6 +426,16 @@ class ChungViscosityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class WilkeViscosityResult(_HasWarnings):
+    """Result of ``eos.wilke_viscosity``."""
+
+    #: The gas mixture dynamic viscosity.
+    mu: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Vdw1fMixBinaryResult(_HasWarnings):
     """Result of ``eos.vdw1f_mix_binary``.
 

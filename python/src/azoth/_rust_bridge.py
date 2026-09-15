@@ -75,6 +75,7 @@ from azoth.core.result import (
     SwameeJainResult,
     TwuKappaResult,
     Vdw1fMixBinaryResult,
+    WilkeViscosityResult,
 )
 from azoth.core.result import Phase as _Phase
 from azoth.core.result import StabilityVerdict as _StabilityVerdict
@@ -569,6 +570,36 @@ def chung_viscosity(
         input_to_si(spec, "V", V),
     )
     return ChungViscosityResult(
+        mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def wilke_viscosity(
+    Tc: Sequence[Q],
+    Vc: Sequence[Q],
+    M: Sequence[Q],
+    omega: Sequence[float],
+    dipole: Sequence[float],
+    kappa: Sequence[float],
+    T: Q,
+    V: Q,
+    z: Sequence[float],
+) -> WilkeViscosityResult:
+    """The gas mixture dynamic viscosity, computed in Rust."""
+    spec = _models_gen.model("eos.wilke_viscosity")
+    result = _core.wilke_viscosity(
+        [input_to_si(spec, "Tc", value) for value in Tc],
+        [input_to_si(spec, "Vc", value) for value in Vc],
+        [input_to_si(spec, "M", value) for value in M],
+        list(omega),
+        list(dipole),
+        list(kappa),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "V", V),
+        list(z),
+    )
+    return WilkeViscosityResult(
         mu=from_si(result.mu.magnitude_si, result.mu.unit),
         warnings=_warnings(result.warnings),
     )
