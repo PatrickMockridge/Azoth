@@ -114,6 +114,10 @@ public class FlashTp {
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 8);
     flash("PR+LeeKesler methane/n-butane, 0.6/0.4, 330 K, 25 bar",
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 21);
+    flash("PR+Danesh methane/n-butane, 0.6/0.4, 330 K, 25 bar",
+        330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 9);
+    flash("PR+Danesh nc12, 1.0, 500 K, 15 bar",
+        500.0, 15.0, new String[] {"nc12"}, new double[] {1.0}, "pr", 9);
     flash("PR+PR78 nc12, 1.0, 500 K, 15 bar",
         500.0, 15.0, new String[] {"nc12"}, new double[] {1.0}, "pr", 6);
   }

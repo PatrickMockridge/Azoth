@@ -1,0 +1,27 @@
+{
+  "id": "methane_butane_flash_danesh_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with AttractiveTermPrDanesh - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Danesh's correlation is Soave's form with `m` scaled by 1.21 above the critical temperature, so a component above its critical temperature (methane at 330 K) attracts more than the plain correlation. azoth's `psi_t` follows the true second derivative with the scaled `m`, where NeqSim's `diffdiffalphaT` mixes the scaled and unscaled `m`; heat-capacity departures therefore diverge for this term."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemPrEos with `setAttractiveTerm(9)` - Danesh, whose `alpha = (1 + mMod(1 - sqrt(Tr)))^2` with `mMod = 1.21 m` when `Tr > 1` and `m` otherwise. The base `m` is PR1978's: a second run on nc12 at 500 K (where `Tr < 1`, so `mMod = m`) printed the identical z-factor as PR1978, `0.11148976303340165`, which is the constructor's PR1978 `m` - NeqSim's `AttractiveTermPrDanesh` overrides `init()` to PR76, but that override is not reached after `setAttractiveTerm`. NeqSim printed:\n\n  beta 0.8450712996622322\n  k    [7.880734733127551, 0.33569870823884596]\n  x    [0.08804481377820278, 0.9119551862217973]\n  y    [0.6938578220136274, 0.3061421779863725]\n  Zl   0.09332854362310947\n  Zv   0.8734038606947708\n\nazoth reproduces all six to 4e-12 on beta and at or better on the rest, the same residue the other cubic cases show.",
+  "eos": "pr",
+  "alpha": "danesh",
+  "inputs": {
+    "components": ["methane", "n-butane"],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [0.6, 0.4]
+  },
+  "expected": {
+    "beta": 0.8450712996622322,
+    "k": [7.880734733127551, 0.33569870823884596],
+    "x": [0.08804481377820278, 0.9119551862217973],
+    "y": [0.6938578220136274, 0.3061421779863725],
+    "z_liquid": 0.09332854362310947,
+    "z_vapour": 0.8734038606947708
+  },
+  "tolerance": 1.0e-10
+}

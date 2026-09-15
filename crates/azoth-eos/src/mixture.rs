@@ -11,7 +11,7 @@
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning};
 
-use crate::alpha_term::{Alpha, AlphaTerm, Gassem2001, RkAlpha, Soave, TwuCoon};
+use crate::alpha_term::{Alpha, AlphaTerm, Danesh, Gassem2001, RkAlpha, Soave, TwuCoon};
 use crate::cubic::Cubic;
 use crate::{
     pr_alpha_ab, pr_kappa, pr_z_factor, pr78_kappa, rk_alpha_ab, srk_alpha_ab, srk_kappa,
@@ -311,6 +311,21 @@ impl Mixture {
                             term.psi(reduced_temperature),
                             term.psi_t(reduced_temperature),
                         )
+                    } else if self.alpha == Alpha::Danesh {
+                        let kappa = pr78_kappa(component.omega)?;
+                        warnings.extend(kappa.warnings);
+                        let term = Danesh { kappa: kappa.kappa };
+                        let alpha = term.alpha(reduced_temperature);
+                        let a_reduced = self.cubic.omega_a() * alpha * reduced_pressure
+                            / (reduced_temperature * reduced_temperature);
+                        let b_reduced =
+                            self.cubic.omega_b() * reduced_pressure / reduced_temperature;
+                        (
+                            a_reduced,
+                            b_reduced,
+                            term.psi(reduced_temperature),
+                            term.psi_t(reduced_temperature),
+                        )
                     } else {
                         let (kappa_value, kappa_warnings) = match self.alpha {
                             Alpha::Pr => {
@@ -329,7 +344,9 @@ impl Mixture {
                                 let kappa = twu_kappa(component.omega)?;
                                 (kappa.kappa, kappa.warnings)
                             }
-                            Alpha::TwuCoon | Alpha::Gassem2001 => unreachable!("handled above"),
+                            Alpha::TwuCoon | Alpha::Gassem2001 | Alpha::Danesh => {
+                                unreachable!("handled above")
+                            }
                         };
                         warnings.extend(kappa_warnings);
                         let term = Soave { kappa: kappa_value };

@@ -45,6 +45,8 @@ pub enum Alpha {
     TwuCoon,
     /// Gassem et al. (2001)'s non-Soave exponential correlation.
     Gassem2001,
+    /// Danesh's Soave form with `m` scaled by 1.21 above the critical temperature.
+    Danesh,
 }
 
 impl Alpha {
@@ -58,6 +60,7 @@ impl Alpha {
             Alpha::Twu => "twu",
             Alpha::TwuCoon => "twucoon",
             Alpha::Gassem2001 => "gassem2001",
+            Alpha::Danesh => "danesh",
         }
     }
 }
@@ -73,9 +76,10 @@ impl std::str::FromStr for Alpha {
             "twu" => Ok(Alpha::Twu),
             "twucoon" => Ok(Alpha::TwuCoon),
             "gassem2001" => Ok(Alpha::Gassem2001),
+            "danesh" => Ok(Alpha::Danesh),
             other => Err(format!(
-                "unknown alpha `{other}`; expected `pr`, `srk`, `pr78`, `twu`, `twucoon` or \
-                 `gassem2001`"
+                "unknown alpha `{other}`; expected `pr`, `srk`, `pr78`, `twu`, `twucoon`, \
+                 `gassem2001` or `danesh`"
             )),
         }
     }
@@ -108,6 +112,46 @@ impl AlphaTerm for Soave {
         let sqrt_tr = tr.sqrt();
         -self.kappa * (1.0 + self.kappa) * tr
             / (2.0 * sqrt_tr * (1.0 + self.kappa * (1.0 - sqrt_tr)).powi(2))
+    }
+}
+
+/// Danesh's correlation: Soave's form with `m` scaled by 1.21 above the critical
+/// temperature. The base `m` is `eos.pr78_kappa`, the same value NeqSim's
+/// `AttractiveTermPrDanesh` carries after its constructor runs.
+#[derive(Debug, Clone, Copy)]
+pub struct Danesh {
+    /// The base coefficient `m`, from `eos.pr78_kappa`.
+    pub kappa: f64,
+}
+
+impl Danesh {
+    /// `1.21 m` above the critical temperature, `m` otherwise.
+    fn m_mod(&self, tr: f64) -> f64 {
+        if tr > 1.0 {
+            1.21 * self.kappa
+        } else {
+            self.kappa
+        }
+    }
+}
+
+impl AlphaTerm for Danesh {
+    fn alpha(&self, tr: f64) -> f64 {
+        let m_mod = self.m_mod(tr);
+        let attraction = 1.0 + m_mod * (1.0 - tr.sqrt());
+        attraction * attraction
+    }
+
+    fn psi(&self, tr: f64) -> f64 {
+        let m_mod = self.m_mod(tr);
+        let sqrt_tr = tr.sqrt();
+        -m_mod * sqrt_tr / (1.0 + m_mod * (1.0 - sqrt_tr))
+    }
+
+    fn psi_t(&self, tr: f64) -> f64 {
+        let m_mod = self.m_mod(tr);
+        let sqrt_tr = tr.sqrt();
+        -m_mod * (1.0 + m_mod) * tr / (2.0 * sqrt_tr * (1.0 + m_mod * (1.0 - sqrt_tr)).powi(2))
     }
 }
 

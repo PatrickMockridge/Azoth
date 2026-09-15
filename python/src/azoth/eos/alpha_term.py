@@ -44,6 +44,32 @@ class Soave:
         )
 
 
+class Danesh:
+    """Danesh's correlation: Soave's form with ``m`` scaled by 1.21 above the critical
+    temperature. The base ``m`` is ``eos.pr78_kappa``.
+    """
+
+    def __init__(self, kappa: float) -> None:
+        self.kappa = kappa
+
+    def _m_mod(self, tr: float) -> float:
+        return self.kappa * 1.21 if tr > 1.0 else self.kappa
+
+    def alpha(self, tr: float) -> float:
+        m_mod = self._m_mod(tr)
+        return (1.0 + m_mod * (1.0 - math.sqrt(tr))) ** 2
+
+    def psi(self, tr: float) -> float:
+        m_mod = self._m_mod(tr)
+        sqrt_tr = math.sqrt(tr)
+        return -m_mod * sqrt_tr / (1.0 + m_mod * (1.0 - sqrt_tr))
+
+    def psi_t(self, tr: float) -> float:
+        m_mod = self._m_mod(tr)
+        sqrt_tr = math.sqrt(tr)
+        return -m_mod * (1.0 + m_mod) * tr / (2.0 * sqrt_tr * (1.0 + m_mod * (1.0 - sqrt_tr)) ** 2)
+
+
 class RkAlpha:
     """Redlich-Kwong's original correlation: ``alpha = 1/sqrt(Tr)``.
 
@@ -123,8 +149,7 @@ class Gassem2001:
     def psi(self, tr: float) -> float:
         g = self._g()
         return tr * (
-            self.B * (1.0 - math.pow(tr, g))
-            - g * math.pow(tr, g - 1.0) * (self.A + self.B * tr)
+            self.B * (1.0 - math.pow(tr, g)) - g * math.pow(tr, g - 1.0) * (self.A + self.B * tr)
         )
 
     def psi_t(self, tr: float) -> float:

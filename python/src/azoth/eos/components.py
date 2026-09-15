@@ -342,8 +342,9 @@ def _cubic(name: str) -> Cubic:
 
 
 #: The alpha correlations, keyed by short name. Four feed the one Soave alpha form
-#: with a different `m`; `twucoon` and `gassem2001` are non-Soave correlations.
-_ALPHAS: frozenset[str] = frozenset({"pr", "srk", "pr78", "twu", "twucoon", "gassem2001"})
+#: with a different `m`; `twucoon` and `gassem2001` are non-Soave correlations, and
+#: `danesh` is Soave's form with `m` scaled by 1.21 above the critical temperature.
+_ALPHAS: frozenset[str] = frozenset({"pr", "srk", "pr78", "twu", "twucoon", "gassem2001", "danesh"})
 
 
 def _alpha_name(cubic_name: str, alpha: str | None) -> str:
