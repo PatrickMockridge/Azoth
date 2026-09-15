@@ -95,6 +95,8 @@ COLUMNS = (
     "antoinec",
     "antoined",
     "antoinee",
+    "dipole_moment_debye",
+    "viscosity_correction_factor",
     "citation",
 )
 
@@ -140,6 +142,10 @@ class DatabankEntry:
     #: The raw `AntoineVapPresLiqType` label, the messy upstream vocabulary
     #: :func:`form_from_type` cleans.
     antoine_type: str
+    #: Dipole moment in debye, and NeqSim's viscosity correction factor. A
+    #: keycard-supplied substance has none, so both are zero.
+    dipole_moment_debye: float
+    viscosity_correction_factor: float
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
@@ -237,6 +243,8 @@ def _table() -> dict[str, DatabankEntry]:
                 float(row["antoinee"]),
             ),
             antoine_type=row["antoine_type"],
+            dipole_moment_debye=float(row["dipole_moment_debye"]),
+            viscosity_correction_factor=float(row["viscosity_correction_factor"]),
             citation=row["citation"],
         )
     return entries
@@ -342,6 +350,8 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             alpha_params={},
             antoine=(0.0, 0.0, 0.0, 0.0, 0.0),
             antoine_type="",
+            dipole_moment_debye=0.0,
+            viscosity_correction_factor=0.0,
             citation=None,
             source="keycard",
         )
