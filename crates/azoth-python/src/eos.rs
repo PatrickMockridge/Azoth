@@ -22,11 +22,11 @@ use crate::results::{
     PyNrtlActivityCoefficientsResult, PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult,
     PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
     PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
-    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
-    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyTwuKappaResult,
-    PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
+    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyTvFlashResult,
+    PyTwuKappaResult, PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
     PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyWilkeChangDiffusivityResult,
     PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
@@ -952,6 +952,116 @@ pub fn ps_flash(
         &z,
     )
     .map(|r| PyPsFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The pressure at which a mixture has a given molar volume at a temperature.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, V, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, V, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and the rest are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn tv_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    V: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyTvFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    let ideal_gas = azoth_eos::IdealGasModel {
+        cp_a,
+        cp_b,
+        cp_c,
+        cp_d,
+        cp_e,
+    };
+    azoth_eos::tv_flash(
+        &mixture,
+        &ideal_gas,
+        kelvins(T),
+        cubic_meters_per_mole(V),
+        &z,
+    )
+    .map(|r| PyTvFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The temperature at which a mixture has a given molar volume at a pressure.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `P` and the rest are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pv_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    P: f64,
+    V: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyPvFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    let ideal_gas = azoth_eos::IdealGasModel {
+        cp_a,
+        cp_b,
+        cp_c,
+        cp_d,
+        cp_e,
+    };
+    azoth_eos::pv_flash(
+        &mixture,
+        &ideal_gas,
+        pascals(P),
+        cubic_meters_per_mole(V),
+        &z,
+    )
+    .map(|r| PyPvFlashResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

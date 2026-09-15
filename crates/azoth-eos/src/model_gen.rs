@@ -11,7 +11,9 @@
 //!   - specs/models/eos/ps_flash.toml
 //!   - specs/models/eos/pt_flash.toml
 //!   - specs/models/eos/pure_saturation.toml
+//!   - specs/models/eos/pv_flash.toml
 //!   - specs/models/eos/stability_test.toml
+//!   - specs/models/eos/tv_flash.toml
 //!   - specs/models/eos/unifac_activity_coefficients.toml
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
 //!   - specs/models/eos/wilke_viscosity.toml
@@ -1063,6 +1065,86 @@ pub static PURE_SATURATION_SPEC: ModelSpec = ModelSpec {
     cases: PURE_SATURATION_CASES,
 };
 
+static PV_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "V",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a molar volume; zero and below are not states",
+        },
+    },
+];
+
+static PV_FLASH_CASES: &[TestCase] = &[TestCase {
+    id: "two_phase_round_trip",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-05,
+    numbers: &[("P", 1000000.0), ("V", 0.0019610505645240935)],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[("T", 300.0), ("beta", 0.8356955)],
+    expected_vectors: &[],
+}];
+
+static PV_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+};
+
+static PV_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "pv_flash_inverse_temperature_newton",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: Some(300.0),
+    inner: Some(&PV_FLASH_INNER),
+};
+
+/// Registry entry for `eos.pv_flash`.
+pub static PV_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pv_flash",
+    kind: "procedure",
+    algorithm: Some(&PV_FLASH_ALGORITHM),
+    checks: PV_FLASH_CHECKS,
+    cases: PV_FLASH_CASES,
+};
+
 static STABILITY_TEST_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -1168,6 +1250,86 @@ pub static STABILITY_TEST_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&STABILITY_TEST_ALGORITHM),
     checks: STABILITY_TEST_CHECKS,
     cases: STABILITY_TEST_CASES,
+};
+
+static TV_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "V",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a molar volume; zero and below are not states, and the ideal-gas pressure estimate divides by it",
+        },
+    },
+];
+
+static TV_FLASH_CASES: &[TestCase] = &[TestCase {
+    id: "two_phase_round_trip",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-05,
+    numbers: &[("T", 300.0), ("V", 0.0019610505645240935)],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[("P", 1000000.0), ("beta", 0.8356955)],
+    expected_vectors: &[],
+}];
+
+static TV_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+};
+
+static TV_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "tv_flash_inverse_pressure_newton",
+    convergence: "relative",
+    tolerance: 1e-08,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("ideal_gas"),
+    initial_temperature: None,
+    inner: Some(&TV_FLASH_INNER),
+};
+
+/// Registry entry for `eos.tv_flash`.
+pub static TV_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.tv_flash",
+    kind: "procedure",
+    algorithm: Some(&TV_FLASH_ALGORITHM),
+    checks: TV_FLASH_CHECKS,
+    cases: TV_FLASH_CASES,
 };
 
 static UNIFAC_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -1472,7 +1634,9 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PS_FLASH_SPEC,
     &PT_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
+    &PV_FLASH_SPEC,
     &STABILITY_TEST_SPEC,
+    &TV_FLASH_SPEC,
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,
     &WILKE_VISCOSITY_SPEC,

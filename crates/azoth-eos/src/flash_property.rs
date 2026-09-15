@@ -316,9 +316,10 @@ pub fn solve_temperature(
     match which {
         Property::Entropy => solve_entropy(mixture, ideal_gas, p, target, z, algorithm),
         Property::Enthalpy => solve_enthalpy(mixture, ideal_gas, p, target, z, algorithm),
-        Property::Volume | Property::InternalEnergy => Err(AzothError::invalid_input(
+        Property::Volume => solve_volume(mixture, ideal_gas, p, target, z, algorithm),
+        Property::InternalEnergy => Err(AzothError::invalid_input(
             "property",
-            "volume and internal energy are inverted over pressure, not temperature",
+            "internal energy is inverted over pressure, not temperature",
         )),
     }
 }
@@ -431,6 +432,136 @@ fn solve_entropy(
                     // response. The state that was good stays good, so nothing is lost
                     // but the progress this step would have made, and the residual is
                     // read from the state that remains.
+                    factor *= 0.5;
+                    correct_factor = false;
+                }
+                Err(e) => return Err(e),
+            }
+        }
+
+        error_old = error;
+        error = (target - evaluation.value).abs();
+        if iterations > 3 && (error - error_old).abs() <= tolerance && error <= stagnation {
+            stagnant += 1;
+        } else {
+            stagnant = 0;
+        }
+
+        if (error + error_old) <= tolerance && iterations >= 3 {
+            break;
+        }
+        if stagnant >= STAGNANT_LIMIT || iterations >= cap {
+            break;
+        }
+    }
+
+    if error > tolerance {
+        return Err(AzothError::SolverNotConverged {
+            iterations,
+            residual: error,
+            tolerance,
+        });
+    }
+
+    Ok(Solution {
+        temperature,
+        pressure: p.value,
+        residual: error,
+        flash: evaluation.flash,
+        iterations,
+        warnings: distinct(&warnings),
+    })
+}
+
+/// The relative term in the volume solver's tolerance, upstream's `PVflash` test
+/// `|V - Vspec|/Vspec < 1e-9`.
+const RELATIVE_VOLUME_TOLERANCE: f64 = 1.0e-9;
+
+/// Invert the volume, by upstream's `PVflash.solveQ`, in temperature.
+///
+/// The same Newton-over-temperature structure as [`solve_entropy`]: volume rises with
+/// temperature at fixed pressure, so the residual `target - V` has derivative `-dV/dT`.
+fn solve_volume(
+    mixture: &Mixture,
+    ideal_gas: &IdealGasModel,
+    p: Pressure,
+    target: f64,
+    z: &[f64],
+    algorithm: &ModelAlgorithm,
+) -> Result<Solution> {
+    let tolerance = algorithm
+        .tolerance
+        .max(target.abs() * RELATIVE_VOLUME_TOLERANCE);
+    let stagnation = STAGNANT_RESIDUAL.min(tolerance);
+    let cap = algorithm.max_iterations;
+
+    let mut temperature = start_temperature(algorithm);
+    let mut evaluation = evaluate(
+        mixture,
+        ideal_gas,
+        kelvins(temperature),
+        p,
+        z,
+        Property::Volume,
+    )?;
+    let mut warnings = evaluation.flash.warnings.clone();
+
+    // Upstream's initial values, kept because the damping rule reads them.
+    let mut iterations = 1;
+    let mut error = 1.0_f64;
+    let mut error_old = 1.0e10_f64;
+    let mut factor = INITIAL_FACTOR;
+    let mut correct_factor = true;
+    let mut stagnant = 0;
+
+    loop {
+        if error > error_old && factor > MIN_FACTOR && correct_factor {
+            factor *= 0.5;
+        } else if error < error_old && correct_factor {
+            factor = 1.0;
+        }
+        iterations += 1;
+
+        let residual = target - evaluation.value;
+        let derivative = -slope(
+            mixture,
+            ideal_gas,
+            p,
+            z,
+            Property::Volume,
+            temperature,
+            evaluation.volume / temperature,
+        );
+        if derivative.is_finite() && derivative != 0.0 {
+            let mut candidate = temperature - factor * residual / derivative;
+
+            if !candidate.is_finite() {
+                candidate = temperature + 1.0;
+                correct_factor = false;
+            } else if candidate < 0.0 {
+                candidate = (temperature - MAX_STEP).abs();
+                correct_factor = false;
+            } else if (temperature - candidate).abs() > MAX_STEP {
+                candidate = temperature - (temperature - candidate).signum() * MAX_STEP;
+                correct_factor = false;
+            } else {
+                correct_factor = true;
+            }
+
+            match evaluate(
+                mixture,
+                ideal_gas,
+                kelvins(candidate),
+                p,
+                z,
+                Property::Volume,
+            ) {
+                Ok(next) => {
+                    temperature = candidate;
+                    evaluation = next;
+                    warnings.extend(evaluation.flash.warnings.iter().cloned());
+                }
+                Err(ref e) if is_temperature_dependent_failure(e) => {
                     factor *= 0.5;
                     correct_factor = false;
                 }
@@ -673,6 +804,10 @@ pub fn solve_pressure(
 ) -> Result<Solution> {
     let tolerance = algorithm.tolerance;
     let cap = algorithm.max_iterations;
+    // The residual is relative to the target's magnitude, so a value like a molar volume
+    // - whose answer differs from the target only in the last bits - is not compared by a
+    // subtraction that cancels to machine noise.
+    let scale = target.abs().max(1.0);
 
     let mut pressure = start_pressure.max(1.0);
     let mut evaluation = evaluate(mixture, ideal_gas, t, pascals(pressure), z, which)?;
@@ -695,13 +830,13 @@ pub fn solve_pressure(
         }
         iterations += 1;
 
-        let residual = evaluation.value - target;
+        let residual = (evaluation.value - target) / scale;
         let fallback = match which {
             Property::Volume => -evaluation.volume / pressure,
             Property::Enthalpy | Property::InternalEnergy => evaluation.volume,
             Property::Entropy => -evaluation.volume / t.value,
         };
-        let derivative = slope_pressure(mixture, ideal_gas, t, z, which, pressure, fallback);
+        let derivative = slope_pressure(mixture, ideal_gas, t, z, which, pressure, fallback) / scale;
         if derivative.is_finite() && derivative != 0.0 {
             let mut candidate = pressure - factor * residual / derivative;
 
@@ -749,7 +884,7 @@ pub fn solve_pressure(
         }
 
         error_old = error;
-        error = (evaluation.value - target).abs();
+        error = ((evaluation.value - target) / scale).abs();
 
         if (error + error_old) <= tolerance && iterations >= 3 {
             break;

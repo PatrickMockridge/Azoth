@@ -107,7 +107,9 @@ Four sections, and the difference between them is the point:
 - [`eos.ps_flash`](./eos/ps_flash.md) — Pressure-entropy flash
 - [`eos.pt_flash`](./eos/pt_flash.md) — Pressure-temperature flash
 - [`eos.pure_saturation`](./eos/pure_saturation.md) — Pure-component saturation pressure
+- [`eos.pv_flash`](./eos/pv_flash.md) — Pressure-volume flash
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
+- [`eos.tv_flash`](./eos/tv_flash.md) — Temperature-volume flash
 - [`eos.unifac_activity_coefficients`](./eos/unifac_activity_coefficients.md) — Activity coefficients from the UNIFAC group-contribution model
 - [`eos.uniquac_activity_coefficients`](./eos/uniquac_activity_coefficients.md) — Activity coefficients from the UNIQUAC model
 - [`eos.wilke_viscosity`](./eos/wilke_viscosity.md) — Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities

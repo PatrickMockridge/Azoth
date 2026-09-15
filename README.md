@@ -155,6 +155,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.ps_flash` | Pressure-entropy flash — a *model* |
 | `eos.pt_flash` | Pressure-temperature flash — a *model* |
 | `eos.pure_saturation` | Pure-component saturation pressure — a *model* |
+| `eos.pv_flash` | Pressure-volume flash — a *model* |
 | `eos.rachford_rice_binary` | Rachford-Rice vapour fraction, for a binary |
 | `eos.rackett_molar_volume` | Saturated liquid molar volume from the Rackett equation |
 | `eos.rk_alpha_ab` | Redlich-Kwong alpha function and reduced attraction parameters |
@@ -166,6 +167,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.srk_peneloux_shift` | Soave-Redlich-Kwong Peneloux volume-translation parameter |
 | `eos.srk_z_factor` | Soave-Redlich-Kwong compressibility factor |
 | `eos.stability_test` | Tangent-plane stability test — a *model* |
+| `eos.tv_flash` | Temperature-volume flash — a *model* |
 | `eos.twu_kappa` | Twu attraction-parameter coefficient |
 | `eos.tyn_calus_diffusivity` | Liquid binary diffusivity from the Tyn-Calus correlation |
 | `eos.unifac_activity_coefficients` | Activity coefficients from the UNIFAC group-contribution model — a *model* |

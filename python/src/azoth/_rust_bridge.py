@@ -65,6 +65,7 @@ from azoth.core.result import (
     PtFlashResult,
     PumpPowerResult,
     PureSaturationResult,
+    PvFlashResult,
     RachfordRiceBinaryResult,
     RackettMolarVolumeResult,
     ReynoldsNumberResult,
@@ -79,6 +80,7 @@ from azoth.core.result import (
     SrkZFactorResult,
     StabilityTestResult,
     SwameeJainResult,
+    TvFlashResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult,
@@ -1037,6 +1039,76 @@ def ps_flash(mixture: Any, ideal_gas: Any, P: Q, S: Q, z: Sequence[float]) -> Ps
         [list(c.alpha_params) for c in mixture.components],
     )
     return PsFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tv_flash(mixture: Any, ideal_gas: Any, T: Q, V: Q, z: Sequence[float]) -> TvFlashResult:
+    """The temperature-volume flash of a mixture, solved in Rust."""
+    spec = _models_gen.model("eos.tv_flash")
+    result = _core.tv_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "V", V),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return TvFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pv_flash(mixture: Any, ideal_gas: Any, P: Q, V: Q, z: Sequence[float]) -> PvFlashResult:
+    """The pressure-volume flash of a mixture, solved in Rust."""
+    spec = _models_gen.model("eos.pv_flash")
+    result = _core.pv_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "V", V),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PvFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
         beta=result.beta,
         x=tuple(result.x),

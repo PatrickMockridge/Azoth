@@ -401,6 +401,102 @@ impl CalcResult for PsFlashResult {
     }
 }
 
+/// Result of `eos.tv_flash`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TvFlashResult {
+    /// The pressure that satisfies the volume. This is the model's answer.
+    pub pressure: Pressure,
+    /// The vapour fraction at that pressure, or `None` for a single-phase feed.
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions at the answer.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions at the answer.
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i` at the answer.
+    pub k: Vec<f64>,
+    /// Which phase the feed is in at the answer.
+    pub phase: Phase,
+    /// The liquid root of the cubic at the answer.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// Newton steps taken.
+    pub iterations: u32,
+    /// `(V(P) - V_target) / |V_target|` at the answer, signed.
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TvFlashResult {
+    const CALC_ID: &'static str = "eos.tv_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "P",
+        "beta",
+        "x",
+        "y",
+        "k",
+        "phase",
+        "z_liquid",
+        "z_vapour",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.pv_flash`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PvFlashResult {
+    /// The temperature that satisfies the volume. This is the model's answer.
+    pub temperature: ThermodynamicTemperature,
+    /// The vapour fraction at that temperature, or `None` for a single-phase feed.
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions at the answer.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions at the answer.
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i` at the answer.
+    pub k: Vec<f64>,
+    /// Which phase the feed is in at the answer.
+    pub phase: Phase,
+    /// The liquid root of the cubic at the answer.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// Newton steps taken.
+    pub iterations: u32,
+    /// `V(T) - V_target` at the answer, signed.
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PvFlashResult {
+    const CALC_ID: &'static str = "eos.pv_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "T",
+        "beta",
+        "x",
+        "y",
+        "k",
+        "phase",
+        "z_liquid",
+        "z_vapour",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Whether a feed is stable as a single phase.
 ///
 /// Two values rather than a boolean because the *asymmetry* between them is the

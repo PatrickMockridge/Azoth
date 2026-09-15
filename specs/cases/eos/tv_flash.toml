@@ -1,0 +1,12 @@
+model = "eos.tv_flash"
+[[cases]]
+id = "two_phase_round_trip"
+tolerance = 1e-05
+[cases.inputs]
+components = ["methane", "n-butane"]
+T = 300.0
+V = 0.0019610505645240935
+z = [0.6, 0.4]
+[cases.expected]
+P = 1000000.0
+beta = 0.8356955

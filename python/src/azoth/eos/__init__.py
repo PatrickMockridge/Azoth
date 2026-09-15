@@ -96,6 +96,7 @@ from azoth.core.result import (
     PsFlashResult,
     PtFlashResult,
     PureSaturationResult,
+    PvFlashResult,
     RachfordRiceBinaryResult,
     RackettMolarVolumeResult,
     RkAlphaAbResult,
@@ -107,6 +108,7 @@ from azoth.core.result import (
     SrkPenelouxShiftResult,
     SrkZFactorResult,
     StabilityTestResult,
+    TvFlashResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult,
@@ -157,6 +159,7 @@ __all__ = [
     "prsv_kappa",
     "pt_flash",
     "pure_saturation",
+    "pv_flash",
     "rachford_rice_binary",
     "rackett_molar_volume",
     "rk_alpha_ab",
@@ -168,6 +171,7 @@ __all__ = [
     "srk_peneloux_shift",
     "srk_z_factor",
     "stability_test",
+    "tv_flash",
     "twu_kappa",
     "tyn_calus_diffusivity",
     "unifac_activity_coefficients",
@@ -199,6 +203,8 @@ _CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
 _PH_FLASH = "eos.ph_flash"
 _PS_FLASH = "eos.ps_flash"
+_TV_FLASH = "eos.tv_flash"
+_PV_FLASH = "eos.pv_flash"
 _PT_FLASH = "eos.pt_flash"
 _STABILITY_TEST = "eos.stability_test"
 _PURE_SATURATION = "eos.pure_saturation"
@@ -1112,6 +1118,51 @@ def ps_flash(
     """
     return resolve(_PS_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, P=P, S=S, z=z
+    )
+
+
+def tv_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, T: Q, V: Q, z: list[float]
+) -> TvFlashResult:
+    """The pressure a mixture reaches at a temperature for a given molar volume.
+
+    The volume companion to :func:`ph_flash`, for a closed vessel at a known temperature
+    and volume: ``V`` is the one-mole-basis molar volume, and the answer is the pressure
+    the equilibrium split produces at it.
+
+    **Read ``phase``, not ``beta``**, for the same reason as :func:`ph_flash`.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``T`` or ``V`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.tv_flash`.
+    """
+    return resolve(_TV_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, T=T, V=V, z=z
+    )
+
+
+def pv_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, P: Q, V: Q, z: list[float]
+) -> PvFlashResult:
+    """The temperature a mixture reaches at a pressure for a given molar volume.
+
+    The companion to :func:`tv_flash` with the specified pair exchanged: ``P`` is held
+    fixed and ``T`` is solved for.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``P`` or ``V`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.pv_flash`.
+    """
+    return resolve(_PV_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, P=P, V=V, z=z
     )
 
 

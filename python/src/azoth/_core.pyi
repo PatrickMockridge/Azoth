@@ -321,6 +321,20 @@ class PureSaturationResult:
     warnings: list[Warning]
 
 @final
+class PvFlashResult:
+    T: Qty
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    phase: str
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class RachfordRiceBinaryResult:
     beta: float
     warnings: list[Warning]
@@ -392,6 +406,20 @@ class StabilityTestResult:
     w: list[list[float]]
     iterations: list[int]
     min_t_over_tc: float
+    warnings: list[Warning]
+
+@final
+class TvFlashResult:
+    P: Qty
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    phase: str
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
     warnings: list[Warning]
 
 @final
@@ -705,6 +733,23 @@ def pt_flash(
     alpha_params: list[list[float]] | None = None,
 ) -> PtFlashResult: ...
 def pure_saturation(Tc: float, Pc: float, omega: float, T: float) -> PureSaturationResult: ...
+def pv_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    cp_e: list[float],
+    P: float,
+    V: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> PvFlashResult: ...
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
 def rackett_molar_volume(
     omega: float,
@@ -744,6 +789,23 @@ def stability_test(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> StabilityTestResult: ...
+def tv_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    cp_e: list[float],
+    T: float,
+    V: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> TvFlashResult: ...
 def twu_kappa(omega: float) -> TwuKappaResult: ...
 def tyn_calus_diffusivity(
     VA: float,

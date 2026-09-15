@@ -278,8 +278,10 @@ def solve_temperature(
         return _solve_enthalpy(mixture, ideal_gas, p_si, target, z, algorithm)
     if which == "s":
         return _solve_entropy(mixture, ideal_gas, p_si, target, z, algorithm)
+    if which == "v":
+        return _solve_volume(mixture, ideal_gas, p_si, target, z, algorithm)
     raise InvalidInputError(
-        "property", "volume and internal energy are inverted over pressure, not temperature"
+        "property", "internal energy is inverted over pressure, not temperature"
     )
 
 
@@ -346,6 +348,94 @@ def _solve_entropy(
                 # response. The state that was good stays good, so nothing is lost but
                 # the progress this step would have made, and the residual is read from
                 # the state that remains.
+                factor *= 0.5
+                correct_factor = False
+            else:
+                temperature = candidate
+                warnings.extend(flash.warnings)
+
+        error_old = error
+        error = abs(target - value)
+        if iterations > 3 and abs(error - error_old) <= tolerance and error <= stagnation:
+            stagnant += 1
+        else:
+            stagnant = 0
+
+        if (error + error_old) <= tolerance and iterations >= 3:
+            break
+        if stagnant >= STAGNANT_LIMIT or iterations >= cap:
+            break
+
+    if error > tolerance:
+        raise SolverNotConvergedError(iterations, error, tolerance)
+
+    return {
+        "T": temperature,
+        "residual": error,
+        "state": {"phase": str(flash.phase), "flash": flash, "warnings": list(flash.warnings)},
+        "iterations": iterations,
+        "warnings": distinct_warnings(warnings),
+    }
+
+
+#: The relative term in the volume solver's tolerance, upstream's ``PVflash`` test
+#: ``|V - Vspec|/Vspec < 1e-9``.
+RELATIVE_VOLUME_TOLERANCE = 1.0e-9
+
+
+def _solve_volume(
+    mixture: Mixture,
+    ideal_gas: IdealGasModel,
+    p_si: float,
+    target: float,
+    z: list[float],
+    algorithm: dict[str, Any],
+) -> dict[str, Any]:
+    """Invert the volume, by upstream's ``PVflash.solveQ``, in temperature."""
+    tolerance = max(float(algorithm["tolerance"]), abs(target) * RELATIVE_VOLUME_TOLERANCE)
+    stagnation = min(STAGNANT_RESIDUAL, tolerance)
+    cap = int(algorithm["max_iterations"])
+
+    temperature = _start_temperature(algorithm)
+    value, _, volume, flash = _evaluate(mixture, ideal_gas, temperature, p_si, z, "v")
+    warnings: list[Warning] = list(flash.warnings)
+
+    iterations = 1
+    error = 1.0
+    error_old = 1.0e10
+    factor = INITIAL_FACTOR
+    correct_factor = True
+    stagnant = 0
+
+    while True:
+        if error > error_old and factor > MIN_FACTOR and correct_factor:
+            factor *= 0.5
+        elif error < error_old and correct_factor:
+            factor = 1.0
+        iterations += 1
+
+        residual = target - value
+        derivative = -_slope(mixture, ideal_gas, p_si, z, "v", temperature, volume / temperature)
+        if math.isfinite(derivative) and derivative != 0.0:
+            candidate = temperature - factor * residual / derivative
+
+            if not math.isfinite(candidate):
+                candidate = temperature + 1.0
+                correct_factor = False
+            elif candidate < 0.0:
+                candidate = abs(temperature - MAX_STEP)
+                correct_factor = False
+            elif abs(temperature - candidate) > MAX_STEP:
+                candidate = temperature - math.copysign(MAX_STEP, temperature - candidate)
+                correct_factor = False
+            else:
+                correct_factor = True
+
+            try:
+                value, _, volume, flash = _evaluate(mixture, ideal_gas, candidate, p_si, z, "v")
+            except Exception as error_raised:
+                if not _temperature_dependent(error_raised):
+                    raise
                 factor *= 0.5
                 correct_factor = False
             else:
@@ -535,6 +625,10 @@ def solve_pressure(
     """
     tolerance = float(algorithm["tolerance"])
     cap = int(algorithm["max_iterations"])
+    # The residual is relative to the target's magnitude, so a value like a molar volume
+    # - whose answer differs from the target only in the last bits - is not compared by a
+    # subtraction that cancels to machine noise.
+    scale = max(abs(target), 1.0)
 
     pressure = max(start_pressure, 1.0)
     value, _, volume, flash = _evaluate(mixture, ideal_gas, t_si, pressure, z, which)
@@ -556,14 +650,14 @@ def solve_pressure(
             factor = 1.0
         iterations += 1
 
-        residual = value - target
+        residual = (value - target) / scale
         if which == "v":
             fallback = -volume / pressure
         elif which == "s":
             fallback = -volume / t_si
         else:
             fallback = volume
-        derivative = _slope_pressure(mixture, ideal_gas, t_si, z, which, pressure, fallback)
+        derivative = _slope_pressure(mixture, ideal_gas, t_si, z, which, pressure, fallback) / scale
         if math.isfinite(derivative) and derivative != 0.0:
             candidate = pressure - factor * residual / derivative
 
@@ -602,7 +696,7 @@ def solve_pressure(
                 warnings.extend(flash.warnings)
 
         error_old = error
-        error = abs(value - target)
+        error = abs((value - target) / scale)
 
         if (error + error_old) <= tolerance and iterations >= 3:
             break
