@@ -65,6 +65,10 @@ ALLOWED = {"propext", "Classical.choice", "Quot.sound"}
 #: `'Azoth.Dim.foo' depends on axioms: [propext, Quot.sound]`
 _DEPENDS = re.compile(r"^'?(?P<name>[A-Za-z0-9_.«»]+)'? depends on axioms: \[(?P<axioms>.*)\]$")
 
+#: `'Azoth.Rho.quote_injective' does not depend on any axioms` - the empty case,
+#: which `#print axioms` spells differently from a zero-entry list.
+_EMPTY = re.compile(r"^'?(?P<name>[A-Za-z0-9_.«»]+)'? does not depend on any axioms$")
+
 #: Every `#print axioms` line in the gate file, which is what it exists for.
 _PRINTED = re.compile(r"^\s*#print axioms\s+(?P<name>[A-Za-z0-9_.]+)\s*$", re.MULTILINE)
 
@@ -100,11 +104,12 @@ def main() -> int:
             )
             return 1
         for line in proc.stdout.splitlines():
-            match = _DEPENDS.match(line.strip())
-            if match:
+            if match := _DEPENDS.match(line.strip()):
                 reported[match.group("name")] = [
                     a.strip() for a in match.group("axioms").split(",") if a.strip()
                 ]
+            elif match := _EMPTY.match(line.strip()):
+                reported[match.group("name")] = []
 
     if not claimed:
         # Files that print nothing would otherwise pass every check below by

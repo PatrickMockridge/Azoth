@@ -25,9 +25,14 @@ inverses.
 so quoting a process and dropping it back is the identity, and a process carried
 on a channel and re-entered is the process that was carried.
 
-*Status: **specified**. There is no reflection operator here and nothing that
-carries a process as a value, so `Azoth.Rho.reflection_is_a_bijection` is written
-when there is an interoperation surface for it to describe.*
+*Status: the binder-free fragment is **proved**; the barbed-congruence claim is
+still **specified**. `Azoth/Rho.lean` formalises `@P` and `*x` and proves the
+round-trip *reduction* `drop (quote P) → P` (`Azoth.Rho.round_trip`), the
+injectivity of quoting and dropping (`Azoth.Rho.quote_injective`,
+`Azoth.Rho.drop_injective`), and that the reduction terminates
+(`Azoth.Rho.reduction_decreases_size`). What it does not yet have is the input and
+output prefixes of pi, so the barbed-congruence reading `reflection_is_a_bijection`
+is written when `Azoth.Process` gives the round trip something to be congruent with.*
 
 This is the claim that makes an interoperation surface possible rather than
 aspirational. A flowsheet handed to another tool, or stored in a file, or drawn in

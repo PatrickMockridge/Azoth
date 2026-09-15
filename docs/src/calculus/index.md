@@ -18,9 +18,10 @@ inlet and an outlet, and "the mole balance closes" is either a consequence of ho
 its channels are used or it is a sentence in a specification that nothing checks.
 That is the second thing.
 
-Five layers, each a Lean module and a page here. **Two of the modules exist** —
-`Azoth/Dim.lean` and `Azoth/Vocabulary.lean` — and the other three are the ones
-their tranches will write:
+Five layers, each a Lean module and a page here. **Two of the modules exist in
+full, and a third in part.** `Azoth/Dim.lean` and `Azoth/Vocabulary.lean` are the
+full ones; `Azoth/Rho.lean` carries the binder-free reflection fragment. The rest
+are the ones their tranches will write:
 
 | Layer | What it fixes | Lean | Page |
 |---|---|---|---|
@@ -28,7 +29,7 @@ their tranches will write:
 | Vocabulary | which units a spec may declare, and what each one is | `Azoth/Vocabulary.lean` ✅ | [The vocabulary table](./vocabulary.md) |
 | Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` | [Barbs](./barbs.md) |
 | Processes | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` | [Processes](./process.md) |
-| Reflection | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` | [Reflection](./rho.md) |
+| Reflection | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` (binder-free) | [Reflection](./rho.md) |
 | Capability | the keycard as authority a process holds rather than a global it reads | `Azoth/Capability.lean` | [The keycard](./capability.md) |
 
 The two that exist are the ones written against a **vocabulary** — the canonical

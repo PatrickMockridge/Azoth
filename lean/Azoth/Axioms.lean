@@ -21,8 +21,13 @@ that page too. A theorem this file does not name is a theorem nothing gates.
 
 import Azoth.Dim
 import Azoth.Vocabulary
+import Azoth.Rho
 
 #print axioms Azoth.Dim.ofExponentsOn_nil
 #print axioms Azoth.Dim.ofExponents_nil
 #print axioms Azoth.Dim.ofExponentsOn_singleton
 #print axioms Azoth.Dim.exponents_ofExponents
+#print axioms Azoth.Rho.quote_injective
+#print axioms Azoth.Rho.drop_injective
+#print axioms Azoth.Rho.round_trip
+#print axioms Azoth.Rho.reduction_decreases_size
