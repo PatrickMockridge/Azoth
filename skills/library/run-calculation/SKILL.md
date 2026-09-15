@@ -18,7 +18,7 @@ call.
 ## Inputs
 
 - Domain functions under `azoth.hydraulics.*`, `azoth.eos.*` and `azoth.thermal.*`.
-- Quantities built with `azoth.ureg.Quantity` (alias `azoth.Q`); plain floats only
+- Quantities built with `azoth.ureg.Quantity`; plain floats only
   for genuinely dimensionless inputs such as an acentric factor, a Reynolds number
   or a friction factor.
 - A keycard, passed as `card=...` where one is wanted.

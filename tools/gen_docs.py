@@ -83,6 +83,7 @@ CALCULUS: tuple[tuple[str, str, int], ...] = (
 AGENTIC: tuple[tuple[str, str, int], ...] = (
     ("The agentic layer", "agentic/index.md", 0),
     ("Skills", "agentic/skills.md", 1),
+    ("The skills roadmap", "agentic/roadmap.md", 1),
 )
 
 

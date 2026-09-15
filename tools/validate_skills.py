@@ -7,7 +7,7 @@ A skill is a `SKILL.md` plus examples and tests, and `skills.toml` is the one pl
 its name, trigger and basis are written down. That record is worth having only if it
 cannot rot, and rot here is silent in both directions: a skill added without a
 catalog entry is undiscoverable, and an entry whose `path` points at a `SKILL.md`
-that was renamed is a trigger that loads nothing. Neither breaks the build; both
+that does not exist is a trigger that loads nothing. Neither breaks the build; both
 leave an agent unable to find the skill.
 
 # What it checks
@@ -36,6 +36,10 @@ SKILLS_DIR = ROOT / "skills"
 #: numbers are produced. Mirrors NeqSim's enum, with `azoth` where NeqSim has
 #: `neqsim-java`: the skill drives the validated library rather than a placeholder.
 BASIS = ("azoth", "screening", "advisory", "data-retrieval", "hybrid")
+
+#: The port tranche a `screening` skill is backed by, one of the P0-P12 tranches in
+#: `docs/src/architecture/specification.md`. `azoth`-basis skills omit it.
+TRANCHES = frozenset(f"P{i}" for i in range(13))
 
 NAME = re.compile(r"^azoth-[a-z0-9]+(-[a-z0-9]+)*$")
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
@@ -87,6 +91,12 @@ def problems(entries: list[dict[str, object]]) -> list[str]:
         basis = entry.get("calculation_basis")
         if basis not in BASIS:
             found.append(f"{where}: calculation_basis {basis!r} is not one of {BASIS}")
+
+        tranche = entry.get("tranche")
+        if tranche is not None and tranche not in TRANCHES:
+            found.append(f"{where}: tranche {tranche!r} is not one of P0..P12")
+        if basis == "screening" and tranche is None:
+            found.append(f"{where}: a screening skill names the tranche that will back it")
 
         path = str(entry.get("path", ""))
         resolved = ROOT / path

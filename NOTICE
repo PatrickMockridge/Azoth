@@ -106,3 +106,21 @@ decisions already live - rather than in a block kept for the purpose. What each
 spec says is how its implementation differs from NeqSim's and why, because those
 differences are the part a reader cannot recover from either side.
 
+--------------------------------------------------------------------------------
+NeqSim community skills
+--------------------------------------------------------------------------------
+
+  Project:   NeqSim community skills - https://github.com/equinor/neqsim-community-skills
+  Licence:   Apache License, Version 2.0
+             http://www.apache.org/licenses/LICENSE-2.0
+  Copyright: Copyright Equinor ASA and the NeqSim contributors
+  Reused:    the `SKILL.md` guidance adapted into `skills/`
+
+The `SKILL.md` guidance under `skills/` for the engineering domains azoth has not
+yet ported (process, safety, flow-assurance, pvt, subsea, field-development,
+environment, subsurface, reporting, engineering-data) is adapted from the NeqSim
+community-skills catalog by `tools/port_skills.py`. The YAML frontmatter is dropped,
+the `neqsim-*` name is rewritten to `azoth-*`, the sections are renamed to azoth's
+standard, and each `screening` skill is annotated with the port tranche that will
+back it. The Python screening code is not ported - only the guidance.
+

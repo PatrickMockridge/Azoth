@@ -27,6 +27,20 @@ skill has no logic of its own — the normal case, because the method is azoth's
 - A domain folder is added only when an existing one is unsuitable; the first is
   `library`, for skills about using azoth itself.
 
+## Domains
+
+Skills are grouped under `skills/<domain>/`:
+
+- `library/` — cross-cutting skills about using and extending azoth itself.
+- `eos/`, `hydraulics/`, `thermal/` — `azoth`-basis skills for the calculations the
+  library implements today.
+- NeqSim's ten engineering domains — `process/`, `safety/`, `flow-assurance/`,
+  `pvt/`, `subsea/`, `field-development/`, `environment/`, `subsurface/`,
+  `reporting/`, `engineering-data/` — where a `screening`/`advisory`/`data-retrieval`
+  skill is a placeholder until the port reaches the tranche that backs it.
+
+See [The roadmap](./roadmap.md) for which tranche backs each domain.
+
 ## The manifest
 
 Machine-readable metadata lives in [`skills.toml`](../../../skills.toml) — the single
@@ -43,6 +57,7 @@ enforces:
 | `version` | semantic version `x.y.z` |
 | `description` | must contain `USE WHEN:`, so an agent can decide when to load it |
 | `calculation_basis` | `azoth`, `screening`, `advisory`, `data-retrieval` or `hybrid` |
+| `tranche` | optional; the `P0`–`P12` tranche that will back a `screening` skill |
 | `path` | a real `SKILL.md` under `skills/` |
 | `tags` | a non-empty list |
 
@@ -67,8 +82,10 @@ A **skill** is a reusable method or body of knowledge. An **agent** is an
 orchestrator that chains skills and carries no method of its own. Agents do not exist
 yet; when they do they live under [`agents/`](../../../agents/README.md).
 
-## The first skill
+## The skills today
 
+Thirteen `azoth`-basis skills cover what the library implements: six under
+`library/`, four under `eos/`, two under `hydraulics/` and one under `thermal/`.
 [`azoth-run-calculation`](../../../skills/library/run-calculation/SKILL.md) is the
-one skill today, and the pattern the rest will follow: teach an agent to call azoth,
-read a result's warnings, and supply a keycard.
+first and the pattern the rest follow. The remainder of NeqSim's catalog is mapped,
+tranche by tranche, on [The roadmap](./roadmap.md).
