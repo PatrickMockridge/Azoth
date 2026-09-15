@@ -13,13 +13,14 @@
 //! and neither is fatal when a trial temperature cannot be evaluated.
 
 use azoth_core::spec::ModelAlgorithm;
-use azoth_core::units::{Pressure, ThermodynamicTemperature, kelvins};
+use azoth_core::units::{Pressure, ThermodynamicTemperature, kelvins, pascals};
 use azoth_core::{AzothError, Result, Warning};
 
 use crate::mixture::{Mixture, RootSide};
 use crate::molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
+use crate::pr_molar_volume::MOLAR_GAS_CONSTANT;
 use crate::pt_flash::pt_flash;
-use crate::results::{Phase, PtFlashResult};
+use crate::results::{MolarEnthalpyEntropyResult, Phase, PtFlashResult};
 
 /// The largest temperature step one iteration may take, in kelvin.
 ///
@@ -64,31 +65,59 @@ const RETRY_LIMIT: u32 = 15;
 /// `true` meant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Property {
-    /// The molar enthalpy, in J/mol. Inverted by `eos.ph_flash`.
+    /// The molar enthalpy, in J/mol. Inverted by `eos.ph_flash` and `eos.th_flash`.
     Enthalpy,
-    /// The molar entropy, in J/(mol*K). Inverted by `eos.ps_flash`.
+    /// The molar entropy, in J/(mol*K). Inverted by `eos.ps_flash` and `eos.ts_flash`.
     Entropy,
+    /// The molar volume, in m**3/mol. Inverted by `eos.tv_flash` and `eos.pv_flash`.
+    Volume,
+    /// The molar internal energy `U = H - P*V`, in J/mol. Inverted by `eos.tu_flash`,
+    /// `eos.pu_flash` and `eos.vu_flash`.
+    InternalEnergy,
 }
 
-impl Property {
-    /// The property of a phase, in its base unit.
-    fn of(self, phase: &crate::results::MolarEnthalpyEntropyResult) -> f64 {
-        match self {
-            Self::Enthalpy => phase.h.value,
-            Self::Entropy => phase.s.value,
+/// The molar properties of one phase at a state, the ones an inversion assembles.
+///
+/// `h`, `s` and `cp` come from [`molar_enthalpy_entropy`]; `v` is `z*R*T/P` for the
+/// phase's compressibility factor, the same arithmetic `eos.pr_molar_volume` does.
+struct PhaseProperties {
+    h: f64,
+    s: f64,
+    cp: f64,
+    v: f64,
+}
+
+impl PhaseProperties {
+    fn of(state: &MolarEnthalpyEntropyResult, z: f64, t: f64, p: f64) -> Self {
+        Self {
+            h: state.h.value,
+            s: state.s.value,
+            cp: state.cp.value,
+            v: z * MOLAR_GAS_CONSTANT * t / p,
+        }
+    }
+
+    fn value(&self, which: Property, pressure: f64) -> f64 {
+        match which {
+            Property::Enthalpy => self.h,
+            Property::Entropy => self.s,
+            Property::Volume => self.v,
+            Property::InternalEnergy => self.h - pressure * self.v,
         }
     }
 }
 
-/// One evaluation of the property at a trial temperature.
+/// One evaluation of the property at a trial state.
 ///
-/// Carries the heat capacity alongside the value because the Newton step needs it:
-/// `dS/dT = cp/T` and, in reciprocal temperature, `dH/d(1/T) = -T**2 * cp`. Computing it
-/// in the same call as the property is what keeps the step's derivative and the value it
+/// Carries the heat capacity and the molar volume alongside the value because the Newton
+/// step needs a derivative: `cp` for a temperature step (`dS/dT = cp/T`,
+/// `dH/d(1/T) = -T**2*cp`) and the volume for a pressure step (`dH/dP ~ V`). Computing
+/// them in the same call as the property keeps the step's derivative and the value it
 /// corrects describing the same state.
 struct Evaluation {
     value: f64,
     cp: f64,
+    volume: f64,
     flash: PtFlashResult,
 }
 
@@ -124,17 +153,22 @@ fn evaluate(
     which: Property,
 ) -> Result<Evaluation> {
     let flash = pt_flash(mixture, t, p, z)?;
+    let tk = t.value;
+    let pk = p.value;
 
-    let (value, cp) = match flash.phase {
+    let (value, cp, volume) = match flash.phase {
         Phase::TwoPhase => {
             let liquid =
                 molar_enthalpy_entropy(mixture, ideal_gas, t, p, &flash.x, flash.z_liquid)?;
             let vapour =
                 molar_enthalpy_entropy(mixture, ideal_gas, t, p, &flash.y, flash.z_vapour)?;
+            let liquid_p = PhaseProperties::of(&liquid, flash.z_liquid, tk, pk);
+            let vapour_p = PhaseProperties::of(&vapour, flash.z_vapour, tk, pk);
             let beta = flash.beta.unwrap_or(0.0);
             (
-                (1.0 - beta) * which.of(&liquid) + beta * which.of(&vapour),
-                (1.0 - beta) * liquid.cp.value + beta * vapour.cp.value,
+                (1.0 - beta) * liquid_p.value(which, pk) + beta * vapour_p.value(which, pk),
+                (1.0 - beta) * liquid_p.cp + beta * vapour_p.cp,
+                (1.0 - beta) * liquid_p.v + beta * vapour_p.v,
             )
         }
         // One phase, so the whole feed is in it and *its* root describes it. `beta` is
@@ -151,11 +185,17 @@ fn evaluate(
             let reduced = mixture.reduced_parameters(t, p)?;
             let root = mixture.phase_state(&reduced, z, side)?.z;
             let state = molar_enthalpy_entropy(mixture, ideal_gas, t, p, z, root)?;
-            (which.of(&state), state.cp.value)
+            let properties = PhaseProperties::of(&state, root, tk, pk);
+            (properties.value(which, pk), properties.cp, properties.v)
         }
     };
 
-    Ok(Evaluation { value, cp, flash })
+    Ok(Evaluation {
+        value,
+        cp,
+        volume,
+        flash,
+    })
 }
 
 /// The derivative of the property with respect to temperature, at constant pressure.
@@ -206,11 +246,43 @@ fn slope(
     }
 }
 
-/// The outcome of inverting a property for temperature.
+/// The derivative of the property with respect to pressure, at constant temperature.
+///
+/// The pressure-side twin of [`slope`], a central difference over pressure. The fallback
+/// is a crude single-phase estimate: `dV/dP ~ -V/P`, `dH/dP ~ V` and, by the Maxwell
+/// relation `dS/dP = -dV/dT`, `dS/dP ~ -V/T`.
+fn slope_pressure(
+    mixture: &Mixture,
+    ideal_gas: &IdealGasModel,
+    t: ThermodynamicTemperature,
+    z: &[f64],
+    which: Property,
+    pressure: f64,
+    fallback: f64,
+) -> f64 {
+    let delta = (1.0e-4 * pressure).max(1.0);
+    let above = evaluate(mixture, ideal_gas, t, pascals(pressure + delta), z, which);
+    let below = evaluate(
+        mixture,
+        ideal_gas,
+        t,
+        pascals((pressure - delta).max(1.0)),
+        z,
+        which,
+    );
+    match (above, below) {
+        (Ok(hi), Ok(lo)) => (hi.value - lo.value) / (2.0 * delta),
+        _ => fallback,
+    }
+}
+
+/// The outcome of inverting a property for temperature or pressure.
 pub struct Solution {
-    /// The temperature the property was found at.
+    /// The temperature at the answer - the one solved for, or the fixed one.
     pub temperature: f64,
-    /// How far the property at that temperature is from the one asked for.
+    /// The pressure at the answer - the one solved for, or the fixed one.
+    pub pressure: f64,
+    /// How far the property at that state is from the one asked for.
     pub residual: f64,
     /// The flash at the answer.
     pub flash: PtFlashResult,
@@ -244,6 +316,10 @@ pub fn solve_temperature(
     match which {
         Property::Entropy => solve_entropy(mixture, ideal_gas, p, target, z, algorithm),
         Property::Enthalpy => solve_enthalpy(mixture, ideal_gas, p, target, z, algorithm),
+        Property::Volume | Property::InternalEnergy => Err(AzothError::invalid_input(
+            "property",
+            "volume and internal energy are inverted over pressure, not temperature",
+        )),
     }
 }
 
@@ -388,6 +464,7 @@ fn solve_entropy(
 
     Ok(Solution {
         temperature,
+        pressure: p.value,
         residual: error,
         flash: evaluation.flash,
         iterations,
@@ -565,6 +642,134 @@ fn solve_enthalpy(
 
     Ok(Solution {
         temperature,
+        pressure: p.value,
+        residual: error,
+        flash: evaluation.flash,
+        iterations,
+        warnings: distinct(&warnings),
+    })
+}
+
+/// Invert `X(T, P) = target` for `P`, at a fixed temperature.
+///
+/// Newton over pressure with a central-difference slope, the same damping, step clamp
+/// and recovery as [`solve_temperature`]. Upstream's `TVflash`, `THflash`, `TSflash` and
+/// `TUflash` all reduce to this; they differ only in which property is inverted.
+///
+/// # Errors
+/// * [`AzothError::SolverNotConverged`] if the iteration reaches its cap without the
+///   residual falling below the tolerance, or if the first evaluation fails outright.
+/// * [`AzothError::InvalidInput`] from [`property_at`].
+#[allow(clippy::too_many_arguments)] // The signature is the solver's contract.
+pub fn solve_pressure(
+    mixture: &Mixture,
+    ideal_gas: &IdealGasModel,
+    t: ThermodynamicTemperature,
+    target: f64,
+    z: &[f64],
+    which: Property,
+    algorithm: &ModelAlgorithm,
+    start_pressure: f64,
+) -> Result<Solution> {
+    let tolerance = algorithm.tolerance;
+    let cap = algorithm.max_iterations;
+
+    let mut pressure = start_pressure.max(1.0);
+    let mut evaluation = evaluate(mixture, ideal_gas, t, pascals(pressure), z, which)?;
+    let mut warnings = evaluation.flash.warnings.clone();
+
+    // Upstream's initial values, kept because the damping rule reads them: a first
+    // iteration counts as an improvement on `1.0e10` and so takes a half step.
+    let mut iterations = 1;
+    let mut error = 1.0_f64;
+    let mut error_old = 1.0e10_f64;
+    let mut factor = INITIAL_FACTOR;
+    let mut correct_factor = true;
+    let mut retries = 0;
+
+    loop {
+        if error > error_old && factor > MIN_FACTOR && correct_factor {
+            factor *= 0.5;
+        } else if error < error_old && correct_factor {
+            factor = 1.0;
+        }
+        iterations += 1;
+
+        let residual = evaluation.value - target;
+        let fallback = match which {
+            Property::Volume => -evaluation.volume / pressure,
+            Property::Enthalpy | Property::InternalEnergy => evaluation.volume,
+            Property::Entropy => -evaluation.volume / t.value,
+        };
+        let derivative = slope_pressure(mixture, ideal_gas, t, z, which, pressure, fallback);
+        if derivative.is_finite() && derivative != 0.0 {
+            let mut candidate = pressure - factor * residual / derivative;
+
+            if !candidate.is_finite() {
+                candidate = pressure * 1.1;
+                correct_factor = false;
+            } else if candidate <= 0.0 {
+                candidate = pressure / 2.0;
+                correct_factor = false;
+            } else if (pressure - candidate).abs() > 0.5 * pressure {
+                candidate = pressure - (pressure - candidate).signum() * 0.5 * pressure;
+                correct_factor = false;
+            } else {
+                correct_factor = true;
+            }
+
+            // A trial pressure the inner flash cannot settle is backed off towards the
+            // last one that worked, as in [`solve_enthalpy`].
+            let next = loop {
+                match evaluate(mixture, ideal_gas, t, pascals(candidate), z, which) {
+                    Ok(next) => break Some(next),
+                    Err(ref e) if is_temperature_dependent_failure(e) => {
+                        retries += 1;
+                        if retries > RETRY_LIMIT {
+                            return Err(AzothError::SolverNotConverged {
+                                iterations,
+                                residual: error,
+                                tolerance,
+                            });
+                        }
+                        candidate = 0.5 * (candidate + pressure);
+                        if (candidate - pressure).abs() < 1.0 {
+                            break None;
+                        }
+                    }
+                    Err(e) => return Err(e),
+                }
+            };
+
+            if let Some(next) = next {
+                pressure = candidate;
+                evaluation = next;
+                warnings.extend(evaluation.flash.warnings.iter().cloned());
+            }
+        }
+
+        error_old = error;
+        error = (evaluation.value - target).abs();
+
+        if (error + error_old) <= tolerance && iterations >= 3 {
+            break;
+        }
+        if iterations >= cap {
+            break;
+        }
+    }
+
+    if error > tolerance {
+        return Err(AzothError::SolverNotConverged {
+            iterations,
+            residual: error,
+            tolerance,
+        });
+    }
+
+    Ok(Solution {
+        temperature: t.value,
+        pressure,
         residual: error,
         flash: evaluation.flash,
         iterations,

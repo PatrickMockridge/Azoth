@@ -28,13 +28,14 @@ from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel, molar_enthalpy_entropy
+from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT
 from azoth.eos.reference.pt_flash import pt_flash
 
 #: Which molar property is being inverted.
-Property = Literal["h", "s"]
+Property = Literal["h", "s", "v", "u"]
 
 #: The unit each property is reported in, for the conversion at the boundary.
-UNIT_OF: dict[str, str] = {"h": "J/mol", "s": "J/(mol*K)"}
+UNIT_OF: dict[str, str] = {"h": "J/mol", "s": "J/(mol*K)", "v": "m**3/mol", "u": "J/mol"}
 
 TWO_PHASE = "two_phase"
 ALL_LIQUID = "all_liquid"
@@ -86,7 +87,7 @@ def property_at(
     Returns:
         ``(the property in its base unit, the flash's own result as a mapping)``.
     """
-    value, _, flash = _evaluate(mixture, ideal_gas, t_si, p_si, z, which)
+    value, _, _, flash = _evaluate(mixture, ideal_gas, t_si, p_si, z, which)
     return value, {"phase": str(flash.phase), "flash": flash, "warnings": list(flash.warnings)}
 
 
@@ -97,11 +98,11 @@ def _evaluate(
     p_si: float,
     z: list[float],
     which: Property,
-) -> tuple[float, float, Any]:
-    """The property and the heat capacity at a state, on whichever branch the flash picks.
+) -> tuple[float, float, float, Any]:
+    """The property, the heat capacity and the volume at a state, on the branch picked.
 
-    Carries the heat capacity alongside the value because the Newton step needs it:
-    ``dS/dT = cp/T`` and, in reciprocal temperature, ``dH/d(1/T) = -T**2 * cp``.
+    Carries the heat capacity and the volume alongside the value because the Newton step
+    needs a derivative: ``cp`` for a temperature step and the volume for a pressure step.
     """
     flash = pt_flash(mixture, from_si(t_si, "K"), from_si(p_si, "Pa"), z)
     phase = str(flash.phase)
@@ -115,12 +116,19 @@ def _evaluate(
             # `TypeError` at a caller's feet rather than here.
             raise InvalidInputError("phase", "a two-phase flash reported no vapour fraction")
 
-        liquid = _phase_state(mixture, ideal_gas, t_si, p_si, list(flash.x), flash.z_liquid)
-        vapour = _phase_state(mixture, ideal_gas, t_si, p_si, list(flash.y), flash.z_vapour)
-        value = (1.0 - beta) * _property_of(liquid, which) + beta * _property_of(vapour, which)
+        liquid, liquid_v = _phase_state(
+            mixture, ideal_gas, t_si, p_si, list(flash.x), flash.z_liquid
+        )
+        vapour, vapour_v = _phase_state(
+            mixture, ideal_gas, t_si, p_si, list(flash.y), flash.z_vapour
+        )
+        value = (1.0 - beta) * _property_of(liquid, liquid_v, which, p_si) + beta * _property_of(
+            vapour, vapour_v, which, p_si
+        )
         cp = (1.0 - beta) * float(liquid.cp.to_base_units().magnitude) + beta * float(
             vapour.cp.to_base_units().magnitude
         )
+        volume = (1.0 - beta) * liquid_v + beta * vapour_v
     else:
         # One phase, so the whole feed is in it and *its* root describes it. `beta` is
         # deliberately not used - see the module docstring - and neither are
@@ -129,11 +137,11 @@ def _evaluate(
         # and its cubic root is a different number from the feed's.
         reduced = reduced_parameters(mixture, t_si, p_si)
         root = phase_state(reduced, mixture.kij, z, liquid=(phase == ALL_LIQUID)).z
-        state = _phase_state(mixture, ideal_gas, t_si, p_si, z, root)
-        value = _property_of(state, which)
+        state, volume = _phase_state(mixture, ideal_gas, t_si, p_si, z, root)
+        value = _property_of(state, volume, which, p_si)
         cp = float(state.cp.to_base_units().magnitude)
 
-    return value, cp, flash
+    return value, cp, volume, flash
 
 
 def _phase_state(
@@ -143,9 +151,9 @@ def _phase_state(
     p_si: float,
     composition: list[float],
     root: float,
-) -> Any:
-    """One phase's state, in its base unit."""
-    return molar_enthalpy_entropy(
+) -> tuple[Any, float]:
+    """One phase's state, in its base unit, and its molar volume."""
+    state = molar_enthalpy_entropy(
         mixture,
         ideal_gas,
         from_si(t_si, "K"),
@@ -153,10 +161,15 @@ def _phase_state(
         composition,
         root,
     )
+    return state, root * MOLAR_GAS_CONSTANT * t_si / p_si
 
 
-def _property_of(state: Any, which: Property) -> float:
+def _property_of(state: Any, volume: float, which: Property, p_si: float) -> float:
     """The property a state carries, in its base unit."""
+    if which == "v":
+        return volume
+    if which == "u":
+        return float(state.h.to_base_units().magnitude) - p_si * volume
     quantity: Q = getattr(state, which)
     return float(quantity.to_base_units().magnitude)
 
@@ -199,8 +212,34 @@ def _slope(
     """
     delta = max(1.0e-4 * temperature, 1.0e-6)
     try:
-        above, _, _ = _evaluate(mixture, ideal_gas, temperature + delta, p_si, z, which)
-        below, _, _ = _evaluate(mixture, ideal_gas, max(temperature - delta, 1.0), p_si, z, which)
+        above, _, _, _ = _evaluate(mixture, ideal_gas, temperature + delta, p_si, z, which)
+        below, _, _, _ = _evaluate(
+            mixture, ideal_gas, max(temperature - delta, 1.0), p_si, z, which
+        )
+    except Exception:
+        return fallback
+    return (above - below) / (2.0 * delta)
+
+
+def _slope_pressure(
+    mixture: Mixture,
+    ideal_gas: IdealGasModel,
+    t_si: float,
+    z: list[float],
+    which: Property,
+    pressure: float,
+    fallback: float,
+) -> float:
+    """The derivative of the property with respect to pressure, at constant temperature.
+
+    The pressure-side twin of :func:`_slope`, a central difference over pressure. The
+    fallback is a crude single-phase estimate: ``dV/dP ~ -V/P``, ``dH/dP ~ V`` and, by
+    the Maxwell relation ``dS/dP = -dV/dT``, ``dS/dP ~ -V/T``.
+    """
+    delta = max(1.0e-4 * pressure, 1.0)
+    try:
+        above, _, _, _ = _evaluate(mixture, ideal_gas, t_si, pressure + delta, z, which)
+        below, _, _, _ = _evaluate(mixture, ideal_gas, t_si, max(pressure - delta, 1.0), z, which)
     except Exception:
         return fallback
     return (above - below) / (2.0 * delta)
@@ -237,7 +276,11 @@ def solve_temperature(
     """
     if which == "h":
         return _solve_enthalpy(mixture, ideal_gas, p_si, target, z, algorithm)
-    return _solve_entropy(mixture, ideal_gas, p_si, target, z, algorithm)
+    if which == "s":
+        return _solve_entropy(mixture, ideal_gas, p_si, target, z, algorithm)
+    raise InvalidInputError(
+        "property", "volume and internal energy are inverted over pressure, not temperature"
+    )
 
 
 def _solve_entropy(
@@ -254,7 +297,7 @@ def _solve_entropy(
     cap = int(algorithm["max_iterations"])
 
     temperature = _start_temperature(algorithm)
-    value, cp, flash = _evaluate(mixture, ideal_gas, temperature, p_si, z, "s")
+    value, cp, _, flash = _evaluate(mixture, ideal_gas, temperature, p_si, z, "s")
     warnings: list[Warning] = list(flash.warnings)
 
     # Upstream's initial values, kept because the damping rule reads them: a first
@@ -295,7 +338,7 @@ def _solve_entropy(
                 correct_factor = True
 
             try:
-                value, cp, flash = _evaluate(mixture, ideal_gas, candidate, p_si, z, "s")
+                value, cp, _, flash = _evaluate(mixture, ideal_gas, candidate, p_si, z, "s")
             except Exception as error_raised:
                 if not _temperature_dependent(error_raised):
                     raise
@@ -361,7 +404,7 @@ def _solve_enthalpy(
         )
 
     temperature = _start_temperature(algorithm)
-    value, cp, flash = _evaluate(mixture, ideal_gas, temperature, p_si, z, "h")
+    value, cp, _, flash = _evaluate(mixture, ideal_gas, temperature, p_si, z, "h")
     warnings: list[Warning] = list(flash.warnings)
 
     # Upstream's initial values, kept because the damping rule reads them: a first
@@ -421,7 +464,7 @@ def _solve_enthalpy(
             accepted = False
             while True:
                 try:
-                    value, cp, flash = _evaluate(mixture, ideal_gas, candidate, p_si, z, "h")
+                    value, cp, _, flash = _evaluate(mixture, ideal_gas, candidate, p_si, z, "h")
                     accepted = True
                     break
                 except Exception as error_raised:
@@ -458,6 +501,120 @@ def _solve_enthalpy(
 
     return {
         "T": temperature,
+        "residual": error,
+        "state": {"phase": str(flash.phase), "flash": flash, "warnings": list(flash.warnings)},
+        "iterations": iterations,
+        "warnings": distinct_warnings(warnings),
+    }
+
+
+def solve_pressure(
+    mixture: Mixture,
+    ideal_gas: IdealGasModel,
+    t_si: float,
+    target: float,
+    z: list[float],
+    which: Property,
+    algorithm: dict[str, Any],
+    start_pressure: float,
+) -> dict[str, Any]:
+    """Invert ``X(T, P) = target`` for ``P``, at a fixed temperature.
+
+    Newton over pressure with a central-difference slope, the same damping, step clamp
+    and recovery as :func:`solve_temperature`. Upstream's ``TVflash``, ``THflash``,
+    ``TSflash`` and ``TUflash`` all reduce to this; they differ only in which property is
+    inverted.
+
+    Returns:
+        A mapping with ``T``, ``P``, ``residual``, ``state``, ``iterations`` and
+        ``warnings``.
+
+    Raises:
+        SolverNotConvergedError: if the iteration reaches its cap without the residual
+            falling below the tolerance.
+    """
+    tolerance = float(algorithm["tolerance"])
+    cap = int(algorithm["max_iterations"])
+
+    pressure = max(start_pressure, 1.0)
+    value, _, volume, flash = _evaluate(mixture, ideal_gas, t_si, pressure, z, which)
+    warnings: list[Warning] = list(flash.warnings)
+
+    # Upstream's initial values, kept because the damping rule reads them: a first
+    # iteration counts as an improvement on ``1.0e10`` and so takes a half step.
+    iterations = 1
+    error = 1.0
+    error_old = 1.0e10
+    factor = INITIAL_FACTOR
+    correct_factor = True
+    retries = 0
+
+    while True:
+        if error > error_old and factor > MIN_FACTOR and correct_factor:
+            factor *= 0.5
+        elif error < error_old and correct_factor:
+            factor = 1.0
+        iterations += 1
+
+        residual = value - target
+        if which == "v":
+            fallback = -volume / pressure
+        elif which == "s":
+            fallback = -volume / t_si
+        else:
+            fallback = volume
+        derivative = _slope_pressure(mixture, ideal_gas, t_si, z, which, pressure, fallback)
+        if math.isfinite(derivative) and derivative != 0.0:
+            candidate = pressure - factor * residual / derivative
+
+            if not math.isfinite(candidate):
+                candidate = pressure * 1.1
+                correct_factor = False
+            elif candidate <= 0.0:
+                candidate = pressure / 2.0
+                correct_factor = False
+            elif abs(pressure - candidate) > 0.5 * pressure:
+                candidate = pressure - math.copysign(0.5 * pressure, pressure - candidate)
+                correct_factor = False
+            else:
+                correct_factor = True
+
+            accepted = False
+            while True:
+                try:
+                    value, _, volume, flash = _evaluate(
+                        mixture, ideal_gas, t_si, candidate, z, which
+                    )
+                    accepted = True
+                    break
+                except Exception as error_raised:
+                    if not _temperature_dependent(error_raised):
+                        raise
+                    retries += 1
+                    if retries > RETRY_LIMIT:
+                        raise SolverNotConvergedError(iterations, error, tolerance) from None
+                    candidate = 0.5 * (candidate + pressure)
+                    if abs(candidate - pressure) < 1.0:
+                        break
+
+            if accepted:
+                pressure = candidate
+                warnings.extend(flash.warnings)
+
+        error_old = error
+        error = abs(value - target)
+
+        if (error + error_old) <= tolerance and iterations >= 3:
+            break
+        if iterations >= cap:
+            break
+
+    if error > tolerance:
+        raise SolverNotConvergedError(iterations, error, tolerance)
+
+    return {
+        "T": t_si,
+        "P": pressure,
         "residual": error,
         "state": {"phase": str(flash.phase), "flash": flash, "warnings": list(flash.warnings)},
         "iterations": iterations,
