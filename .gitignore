@@ -29,6 +29,11 @@ htmlcov/
 # --- mdBook ---
 docs/book/
 
+# --- DeepSeek Harness ---
+# `tools/export_dsh_skills.py` writes azoth's catalog into dsh's project root so
+# dsh can discover it. Generated from skills.toml, so never committed.
+.dsh/
+
 # --- Lean ---
 # `.lake` holds the compiled oleans and the packages Lake fetched, which for
 # Mathlib is several gigabytes. `lake build` reproduces it from the pins in

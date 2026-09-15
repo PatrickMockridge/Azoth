@@ -44,6 +44,11 @@ dev = [
   # objects safely.
   "jsonschema>=4.20",
 ]
+agent = [
+  # Running an orchestration needs the DeepSeek Harness runtime; exporting the
+  # skills (`tools/export_dsh_skills.py`) and using the library do not.
+  "deepseek-harness-sdk",
+]
 
 [project.urls]
 Homepage = "https://github.com/PatrickMockridge/Azoth"
@@ -174,4 +179,10 @@ ignore_errors = true
 # package would be a new dev dependency for one import, and the tools that use the
 # same libraries are already outside `files`.
 module = ["jsonschema", "referencing"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# The orchestration runtime publishes no type information and is an optional extra,
+# absent from an environment that has not installed `azoth[agent]`.
+module = ["deepseek_harness_sdk"]
 ignore_missing_imports = true
