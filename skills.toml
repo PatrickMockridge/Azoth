@@ -1,0 +1,17 @@
+# The catalog of azoth skills: the single machine-readable source of truth.
+#
+# An agent discovers a skill by reading this file — the name, the `USE WHEN:` trigger
+# in the description, and the path to the `SKILL.md` it should open. Nothing here is
+# repeated in the `SKILL.md`, so there is no second copy to drift.
+#
+# Validated by tools/validate_skills.py.
+
+catalog_version = "1.0"
+
+[[skill]]
+name = "azoth-run-calculation"
+version = "0.1.0"
+description = "Call the azoth library to compute an EOS, flash or hydraulic result and read its warnings. USE WHEN: a task needs to run a calculation with azoth, look up a result, supply a keycard, or check the warnings on a result."
+calculation_basis = "azoth"
+path = "skills/library/run-calculation/SKILL.md"
+tags = ["library", "usage", "units", "keycard"]

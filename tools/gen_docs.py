@@ -76,6 +76,15 @@ CALCULUS: tuple[tuple[str, str, int], ...] = (
     ("The vocabulary table", "calculus/vocabulary.md", 1),
 )
 
+#: The agentic layer, a hand-written section that documents the skills an agent
+#: loads to use azoth. Listed after the generated calculation pages rather than with
+#: the architecture and calculus above, because it is a layer *over* the library
+#: rather than a foundation under it.
+AGENTIC: tuple[tuple[str, str, int], ...] = (
+    ("The agentic layer", "agentic/index.md", 0),
+    ("Skills", "agentic/skills.md", 1),
+)
+
 
 def namespace_dir(namespace: str) -> Path:
     """Where a namespace's pages live.
@@ -507,6 +516,9 @@ def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | N
             key=lambda m: m["id"],
         ):
             out += f"  - [{model['name']}](./{namespace}/{model['id'].split('.')[-1]}.md)\n"
+
+    for title, filename, depth in AGENTIC:
+        out += f"{'  ' * depth}- [{title}](./{filename})\n"
 
     out += "- [Solvers](./theory/solvers.md)\n"
     return out

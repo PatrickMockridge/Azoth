@@ -40,6 +40,10 @@ jobs:
       # done with it. It also prints the tally, because the interesting number is how
       # many columns are absent because the model does not exist yet.
       - run: python tools/check_manifest.py
+      # The skill catalog against the SKILL.md files it points at, and each SKILL.md
+      # against the required sections. Needs no `azoth` import, so it runs before the
+      # library is built.
+      - run: python tools/validate_skills.py
       # The shipped data files against the vendored copies of NeqSim's tables. Needs
       # no NeqSim checkout, because the sources are committed - which is what lets
       # this run here rather than only on a machine that has one.
@@ -109,6 +113,11 @@ jobs:
         env:
           # Absent on a runner, but stated so a developer copying this command
           # does not get a different result because their shell sets it.
+          PYTHONPATH: ""
+      # The skill tests: smoke checks that the API the skills document still exists.
+      # Collected separately because the main run is scoped to python/tests.
+      - run: .venv/bin/python -m pytest skills
+        env:
           PYTHONPATH: ""
 
   wheel-data:
