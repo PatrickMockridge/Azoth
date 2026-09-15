@@ -34,6 +34,7 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.twu_kappa`](./twu_kappa.md) | $\kappa = 0.48 + 1.574\,\omega - 0.175\,\omega^{2}$ | Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991) |
 | [`eos.tyn_calus_diffusivity`](./tyn_calus_diffusivity.md) | $D_{AB}^0 = 8.93\times10^{-8}\,\frac{V_B^{0.267}\,T}{\eta_B\,V_A^{0.433}}$ | Tyn, M. T.; Calus, W. F. (1975) |
 | [`eos.vdw1f_mix_binary`](./vdw1f_mix_binary.md) | $a_{\mathrm{mix}} = z_{1}^{2}a_{1} + 2z_{1}z_{2}\left(1 - k_{12}\right)\sqrt{a_{1}a_{2}} + z_{2}^{2}a_{2}, \qquad b_{\mathrm{mix}} = z_{1}b_{1} + z_{2}b_{2}$ | van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text |
+| [`eos.wilke_chang_diffusivity`](./wilke_chang_diffusivity.md) | $D_{AB}^0 = 7.4\times10^{-8}\,\frac{(\phi_B M_B)^{1/2}\,T}{\eta_B\,V_A^{0.6}}$ | Wilke, C. R.; Chang, P. (1955) |
 
 ## Models
 

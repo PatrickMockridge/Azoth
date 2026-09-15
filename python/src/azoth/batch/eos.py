@@ -50,6 +50,7 @@ __all__ = [
     "TwuKappaBatch",
     "TynCalusDiffusivityBatch",
     "Vdw1fMixBinaryBatch",
+    "WilkeChangDiffusivityBatch",
     "chung_conductivity",
     "chung_viscosity",
     "costald_molar_volume",
@@ -77,6 +78,7 @@ __all__ = [
     "twu_kappa",
     "tyn_calus_diffusivity",
     "vdw1f_mix_binary",
+    "wilke_chang_diffusivity",
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
@@ -106,6 +108,7 @@ _RK_DEPARTURE = "eos.rk_departure"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
+_WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -1242,5 +1245,44 @@ def tyn_calus_diffusivity(
             "eta": sequence(eta, "eta"),
         },
         _build_tyn_calus_diffusivity,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class WilkeChangDiffusivityBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.wilke_chang_diffusivity`."""
+
+    #: Binary diffusion coefficient per element, in m**2/s.
+    d: array[float]
+
+
+def _build_wilke_chang_diffusivity(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> WilkeChangDiffusivityBatch:
+    return WilkeChangDiffusivityBatch(warnings=warnings, units=units, d=columns["d"])  # type: ignore[arg-type]
+
+
+def wilke_chang_diffusivity(
+    *,
+    phi: Sequence[float],
+    M: Sequence[float],
+    T: Sequence[float],
+    eta: Sequence[float],
+    VA: Sequence[float],
+) -> WilkeChangDiffusivityBatch:
+    """The liquid binary diffusivity, over arrays."""
+    result: WilkeChangDiffusivityBatch = run(
+        _WILKE_CHANG_DIFFUSIVITY,
+        {
+            "phi": sequence(phi, "phi"),
+            "M": sequence(M, "M"),
+            "T": sequence(T, "T"),
+            "eta": sequence(eta, "eta"),
+            "VA": sequence(VA, "VA"),
+        },
+        _build_wilke_chang_diffusivity,
     )
     return result

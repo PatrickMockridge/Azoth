@@ -166,6 +166,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::wilke_viscosity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::mason_saxena_conductivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::tyn_calus_diffusivity, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::wilke_chang_diffusivity, m)?)?;
 
     // Introspection.
     m.add_function(wrap_pyfunction!(batch::batch_run, m)?)?;

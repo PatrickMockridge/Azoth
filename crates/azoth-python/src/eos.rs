@@ -25,7 +25,7 @@ use crate::results::{
     PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
     PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
     PyStabilityTestResult, PyTwuKappaResult, PyTynCalusDiffusivityResult, PyVdw1fMixBinaryResult,
-    PyWilkeViscosityResult,
+    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -502,6 +502,30 @@ pub fn tyn_calus_diffusivity(
         pascal_seconds(eta),
     )
     .map(|r| PyTynCalusDiffusivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The liquid binary diffusivity, from the Wilke-Chang correlation.
+#[pyfunction]
+#[pyo3(signature = (phi, M, T, eta, VA))]
+#[pyo3(text_signature = "(phi, M, T, eta, VA)")]
+#[allow(non_snake_case)] // `M`, `T` and `VA` are the symbols in the published equation
+pub fn wilke_chang_diffusivity(
+    py: Python<'_>,
+    phi: f64,
+    M: f64,
+    T: f64,
+    eta: f64,
+    VA: f64,
+) -> PyResult<PyWilkeChangDiffusivityResult> {
+    azoth_eos::wilke_chang_diffusivity(
+        phi,
+        kilograms_per_mole(M),
+        kelvins(T),
+        pascal_seconds(eta),
+        cubic_meters_per_mole(VA),
+    )
+    .map(|r| PyWilkeChangDiffusivityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

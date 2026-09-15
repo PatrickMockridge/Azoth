@@ -1,0 +1,88 @@
+id = "eos.wilke_chang_diffusivity"
+name = "Liquid binary diffusivity from the Wilke-Chang correlation"
+equation = "D = 7.4e-8 * (phi*M)**0.5 * T / (eta*VA**0.6)   [cm**2/s],  with phi the solvent association parameter, M in g/mol, VA in cm**3/mol, eta in cP and T in K; VA is clamped to [20, 600] cm**3/mol and eta to [0.01, 500] cP, and D*1e-4 recovers m**2/s."
+latex = '''D_{AB}^0 = 7.4\times10^{-8}\,\frac{(\phi_B M_B)^{1/2}\,T}{\eta_B\,V_A^{0.6}}'''
+assumptions = ["`phi` is the solvent association parameter; the caller resolves it from the solvent's name with `components.wilke_chang_phi` (water 2.26, methanol 1.9, non-associated 1.0).\n", "`VA` is the solute liquid molar volume at the normal boiling point; the caller gets it as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.\n", "`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n", "the molar volume and viscosity are clamped to NeqSim's `[20, 600]` cm**3/mol and `[0.01, 500]` cP; the correlation is not applied outside them.\n", "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n"]
+references = ["Wilke, C. R.; Chang, P. (1955). \\\"Correlation of diffusion coefficients in dilute solutions.\\\" AIChE J. 1(2), 264-270. DOI 10.1002/aic.690010222."]
+[source]
+standard = "Wilke, C. R.; Chang, P. (1955)"
+edition = "Correlation of diffusion coefficients in dilute solutions. AIChE J. 1(2), 264-270"
+doi = "10.1002/aic.690010222"
+[inputs]
+[inputs.phi]
+unit = "dimensionless"
+description = "Solvent association parameter; see `components.wilke_chang_phi`.\n"
+[inputs.M]
+unit = "kg/mol"
+description = "Solvent molar mass.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature.\n"
+[inputs.eta]
+unit = "Pa*s"
+description = "Solvent dynamic viscosity at `T`.\n"
+[inputs.VA]
+unit = "m**3/mol"
+description = "Solute molar volume at its normal boiling point.\n"
+[outputs]
+[outputs.d]
+unit = "m**2/s"
+description = "The binary diffusion coefficient at infinite dilution, the published equation's D.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "methanol in water at 298.15 K: phi = 2.26 (water), M = 18.015 g/mol, VA = 40.2033 cm**3/mol, eta = 0.89154 cP:\n\n  M = 0.018015 kg/mol -> 18.015 g/mol\n  VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol (no clamp, within [20, 600])\n  eta = 8.915447896200597e-4 Pa*s -> 0.89154 cP\n  D = 7.4e-8 * (2.26 * 18.015)**0.5 * 298.15 / (0.89154 * 40.2033**0.6) = 1.7212261801805907e-5 cm**2/s\n  D = 1.7212261801805907e-9 m**2/s\n\nwhich is NeqSim 3.20.0 `WilkeChangDiffusivity`'s value at the same state.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+phi = 2.26
+M = 0.018015
+T = 298.15
+eta = 8.915447896200597e-4
+VA = 4.0203262233375156e-5
+[worked_example.expected]
+d = 1.7212261801805907e-9
+[implementations]
+python = "azoth.eos.wilke_chang_diffusivity"
+rust = "azoth_eos::wilke_chang_diffusivity"
+[[tests]]
+id = "methanol_in_water_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "methanol_in_benzene_non_associated_solvent"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0 `WilkeChangDiffusivity.calcBinaryDiffusionCoefficient` for methanol in benzene at 298.15 K (phi = 1.0):\n\n  d = 2.31970859841983e-9 m**2/s.\n"
+tolerance = 1e-12
+[tests.inputs]
+phi = 1.0
+M = 0.078114
+T = 298.15
+eta = 9.163064908813372e-4
+VA = 4.0203262233375156e-5
+[tests.expected]
+d = 2.31970859841983e-9
+[[tests]]
+id = "water_in_methanol_clamps_the_solute_volume"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0 `WilkeChangDiffusivity.calcBinaryDiffusionCoefficient` for water in methanol at 298.15 K (phi = 1.9), where water's 18.03 cm**3/mol volume is clamped to the 20 cm**3/mol lower bound:\n\n  d = 5.631553559227048e-9 m**2/s.\n"
+tolerance = 1e-12
+[tests.inputs]
+phi = 1.9
+M = 0.032042
+T = 298.15
+eta = 5.06590365150855e-4
+VA = 1.8033033033033032e-5
+[tests.expected]
+d = 5.631553559227048e-9
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

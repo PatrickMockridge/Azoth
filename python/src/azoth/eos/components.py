@@ -292,6 +292,40 @@ def available(*, card: keycard.Keycard | None = None) -> tuple[str, ...]:
     return tuple(sorted(set(_table()) | extra))
 
 
+#: NeqSim's Wilke-Chang association parameters, keyed by solvent name. The six
+#: uppercase keys (`MEG`, `DEG`, `TEG`, `MDEA`, `MEA`, `DEA`) are never matched by
+#: the lowercased lookup below, so they fall through to 1.0 exactly as NeqSim's own
+#: `getAssociationParameter` does.
+_WILKE_CHANG_PHI = {
+    "water": 2.26,
+    "h2o": 2.26,
+    "d2o": 2.26,
+    "methanol": 1.9,
+    "ethanol": 1.5,
+    "1-propanol": 1.2,
+    "2-propanol": 1.2,
+    "1-butanol": 1.0,
+    "n-butanol": 1.0,
+    "MEG": 1.5,
+    "DEG": 1.4,
+    "TEG": 1.3,
+    "MDEA": 1.5,
+    "MEA": 1.7,
+    "DEA": 1.5,
+    "acetic acid": 1.3,
+    "formic acid": 1.6,
+}
+
+
+def wilke_chang_phi(name: str) -> float:
+    """The Wilke-Chang association parameter for a solvent, by name.
+
+    A non-associated solvent - most hydrocarbons - is 1.0. The lookup is lowercased,
+    mirroring NeqSim, which is why the six uppercase keys in the table never match.
+    """
+    return _WILKE_CHANG_PHI.get(name.strip().lower(), 1.0)
+
+
 def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
     """One substance's full record, with any keycard override already applied.
 
@@ -620,4 +654,5 @@ __all__ = [
     "from_model",
     "from_names",
     "kij_for",
+    "wilke_chang_phi",
 ]

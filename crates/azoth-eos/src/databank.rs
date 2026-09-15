@@ -434,6 +434,27 @@ pub fn kij(first: &str, second: &str, overlay: Option<&Overlay>) -> f64 {
         .unwrap_or(0.0)
 }
 
+/// The Wilke-Chang association parameter for a solvent, by name.
+///
+/// A name resolves through a lowercased lookup against NeqSim's table; a solvent
+/// that is not listed - a non-associated one, most hydrocarbons - is 1.0. NeqSim's
+/// table mixes cases: the six uppercase keys (`MEG`, `DEG`, `TEG`, `MDEA`, `MEA`,
+/// `DEA`) are never matched by the lowercased lookup, so they fall through to 1.0
+/// exactly as NeqSim's own `getAssociationParameter` does.
+#[must_use]
+pub fn wilke_chang_phi(name: &str) -> f64 {
+    match name.trim().to_lowercase().as_str() {
+        "water" | "h2o" | "d2o" => 2.26,
+        "methanol" => 1.9,
+        "ethanol" => 1.5,
+        "1-propanol" | "2-propanol" => 1.2,
+        "1-butanol" | "n-butanol" => 1.0,
+        "acetic acid" => 1.3,
+        "formic acid" => 1.6,
+        _ => 1.0,
+    }
+}
+
 /// Every substance name available, sorted: the table plus whatever an overlay adds.
 #[must_use]
 pub fn names(overlay: Option<&Overlay>) -> Vec<String> {

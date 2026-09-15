@@ -956,6 +956,24 @@ impl CalcResult for TynCalusDiffusivityResult {
     }
 }
 
+/// Result of `eos.wilke_chang_diffusivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WilkeChangDiffusivityResult {
+    /// The binary diffusion coefficient.
+    pub d: DiffusionCoefficient,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for WilkeChangDiffusivityResult {
+    const CALC_ID: &'static str = "eos.wilke_chang_diffusivity";
+    const FIELDS: &'static [&'static str] = &["d", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SrkAlphaAbResult {

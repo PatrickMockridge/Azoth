@@ -390,6 +390,11 @@ class Vdw1fMixBinaryResult:
     warnings: list[Warning]
 
 @final
+class WilkeChangDiffusivityResult:
+    d: Qty
+    warnings: list[Warning]
+
+@final
 class WilkeViscosityResult:
     mu: Qty
     warnings: list[Warning]
@@ -695,6 +700,13 @@ def vdw1f_mix_binary(
     b2: float,
     k12: float,
 ) -> Vdw1fMixBinaryResult: ...
+def wilke_chang_diffusivity(
+    phi: float,
+    M: float,
+    T: float,
+    eta: float,
+    VA: float,
+) -> WilkeChangDiffusivityResult: ...
 def wilke_viscosity(
     Tc: list[float],
     Vc: list[float],

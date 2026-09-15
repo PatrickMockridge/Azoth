@@ -30,6 +30,7 @@
 //!   - specs/calcs/eos/twu_kappa.toml
 //!   - specs/calcs/eos/tyn_calus_diffusivity.toml
 //!   - specs/calcs/eos/vdw1f_mix_binary.toml
+//!   - specs/calcs/eos/wilke_chang_diffusivity.toml
 //!
 //! Tables for the `eos` namespace. Every namespace has its own generated
 //! file, because a crate is the unit of compilation and a calculation must be able
@@ -3581,6 +3582,117 @@ pub static VDW1F_MIX_BINARY_SPEC: CalcSpec = CalcSpec {
     tests: VDW1F_MIX_BINARY_TESTS,
 };
 
+/// Registry entry for `eos.wilke_chang_diffusivity`.
+static WILKE_CHANG_DIFFUSIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "An absolute temperature; zero and below are not states.",
+    },
+}];
+
+static WILKE_CHANG_DIFFUSIVITY_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "methanol_in_benzene_non_associated_solvent",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("phi", 1.0),
+            ("M", 0.078114),
+            ("T", 298.15),
+            ("eta", 0.0009163064908813372),
+            ("VA", 4.020326223337516e-05),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 2.31970859841983e-09)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "water_in_methanol_clamps_the_solute_volume",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("phi", 1.9),
+            ("M", 0.032042),
+            ("T", 298.15),
+            ("eta", 0.000506590365150855),
+            ("VA", 1.8033033033033033e-05),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 5.631553559227048e-09)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.wilke_chang_diffusivity`.
+///
+/// Public and addressable directly, so a calc can hold `&WILKE_CHANG_DIFFUSIVITY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static WILKE_CHANG_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.wilke_chang_diffusivity",
+    checks: WILKE_CHANG_DIFFUSIVITY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "methanol_in_water_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("phi", 2.26),
+            ("M", 0.018015),
+            ("T", 298.15),
+            ("eta", 0.0008915447896200597),
+            ("VA", 4.020326223337516e-05),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 1.7212261801805907e-09)],
+        expected_vectors: &[],
+    },
+    tests: WILKE_CHANG_DIFFUSIVITY_TESTS,
+};
+
 /// Every calculation in the registry, sorted by id.
 static ALL_SPECS: &[&CalcSpec] = &[
     &ANTOINE_VAPOR_PRESSURE_SPEC,
@@ -3611,6 +3723,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &TWU_KAPPA_SPEC,
     &TYN_CALUS_DIFFUSIVITY_SPEC,
     &VDW1F_MIX_BINARY_SPEC,
+    &WILKE_CHANG_DIFFUSIVITY_SPEC,
 ];
 
 /// All specs, in a stable order.

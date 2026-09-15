@@ -106,11 +106,12 @@ from azoth.core.result import (
     TwuKappaResult,
     TynCalusDiffusivityResult,
     Vdw1fMixBinaryResult,
+    WilkeChangDiffusivityResult,
     WilkeViscosityResult,
 )
 from azoth.core.units import Q
 from azoth.eos.components import available as available_components
-from azoth.eos.components import component, from_model, from_names
+from azoth.eos.components import component, from_model, from_names, wilke_chang_phi
 from azoth.eos.mixture import Component, Mixture, mixture
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
@@ -160,6 +161,8 @@ __all__ = [
     "twu_kappa",
     "tyn_calus_diffusivity",
     "vdw1f_mix_binary",
+    "wilke_chang_diffusivity",
+    "wilke_chang_phi",
     "wilke_viscosity",
 ]
 
@@ -192,6 +195,7 @@ _PRSV_KAPPA = "eos.prsv_kappa"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
+_WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _WILKE_VISCOSITY = "eos.wilke_viscosity"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
@@ -600,6 +604,25 @@ def tyn_calus_diffusivity(VA: Q, VB: Q, T: Q, eta: Q) -> TynCalusDiffusivityResu
     """
     return resolve(_TYN_CALUS_DIFFUSIVITY)(  # type: ignore[no-any-return]
         VA=VA, VB=VB, T=T, eta=eta
+    )
+
+
+def wilke_chang_diffusivity(phi: float, M: Q, T: Q, eta: Q, VA: Q) -> WilkeChangDiffusivityResult:
+    """The binary diffusion coefficient at infinite dilution, from the Wilke-Chang correlation.
+
+    ``phi`` is the solvent association parameter - resolve it from the solvent's
+    name with :func:`wilke_chang_phi` (water 2.26, methanol 1.9, non-associated
+    1.0). ``VA`` is the solute molar volume at the normal boiling point, and
+    ``eta`` the solvent viscosity; both are clamped to NeqSim's limits before the
+    correlation is applied.
+
+    Raises:
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.wilke_chang_diffusivity`.
+    """
+    return resolve(_WILKE_CHANG_DIFFUSIVITY)(  # type: ignore[no-any-return]
+        phi=phi, M=M, T=T, eta=eta, VA=VA
     )
 
 

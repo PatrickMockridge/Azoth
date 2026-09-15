@@ -943,6 +943,32 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "d", "m**2/s", d);
         }
 
+        "eos.wilke_chang_diffusivity" => {
+            let (phi, m, t, eta, va) = (
+                take(&inputs, "phi")?,
+                take(&inputs, "M")?,
+                take(&inputs, "T")?,
+                take(&inputs, "eta")?,
+                take(&inputs, "VA")?,
+            );
+            let mut d = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::wilke_chang_diffusivity(
+                        phi[i],
+                        kilograms_per_mole(m[i]),
+                        kelvins(t[i]),
+                        pascal_seconds(eta[i]),
+                        cubic_meters_per_mole(va[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                d.push(r.d.value);
+            }
+            push_values(&mut columns, "d", "m**2/s", d);
+        }
+
         "eos.rackett_molar_volume" => {
             let (omega, tc, pc, t) = (
                 take(&inputs, "omega")?,

@@ -78,6 +78,7 @@ from azoth.core.result import (
     TwuKappaResult,
     TynCalusDiffusivityResult,
     Vdw1fMixBinaryResult,
+    WilkeChangDiffusivityResult,
     WilkeViscosityResult,
 )
 from azoth.core.result import Phase as _Phase
@@ -669,6 +670,22 @@ def tyn_calus_diffusivity(VA: Q, VB: Q, T: Q, eta: Q) -> TynCalusDiffusivityResu
         input_to_si(spec, "eta", eta),
     )
     return TynCalusDiffusivityResult(
+        d=from_si(result.d.magnitude_si, result.d.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def wilke_chang_diffusivity(phi: float, M: Q, T: Q, eta: Q, VA: Q) -> WilkeChangDiffusivityResult:
+    """The liquid binary diffusivity, computed in Rust."""
+    spec = _spec_for("eos.wilke_chang_diffusivity")
+    result = _core.wilke_chang_diffusivity(
+        phi,
+        input_to_si(spec, "M", M),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "eta", eta),
+        input_to_si(spec, "VA", VA),
+    )
+    return WilkeChangDiffusivityResult(
         d=from_si(result.d.magnitude_si, result.d.unit),
         warnings=_warnings(result.warnings),
     )
