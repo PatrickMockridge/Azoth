@@ -114,6 +114,7 @@ from azoth.core.result import (
     Vdw1fMixBinaryResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 )
 from azoth.core.units import Q
 from azoth.eos.components import available as available_components
@@ -175,6 +176,7 @@ __all__ = [
     "wilke_chang_diffusivity",
     "wilke_chang_phi",
     "wilke_viscosity",
+    "wilson_activity_coefficients",
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
@@ -209,6 +211,7 @@ _TWU_KAPPA = "eos.twu_kappa"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _UNIFAC_ACTIVITY_COEFFICIENTS = "eos.unifac_activity_coefficients"
 _UNIQUAC_ACTIVITY_COEFFICIENTS = "eos.uniquac_activity_coefficients"
+_WILSON_ACTIVITY_COEFFICIENTS = "eos.wilson_activity_coefficients"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
 _SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
@@ -849,6 +852,34 @@ def uniquac_activity_coefficients(
     """
     return resolve(_UNIQUAC_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
         T=T, x=x, r=r, q=q, aij=aij
+    )
+
+
+def wilson_activity_coefficients(
+    T: Q,
+    x: Sequence[float],
+    M: Sequence[Q],
+    Tc: Sequence[Q],
+) -> WilsonActivityCoefficientsResult:
+    """The activity coefficients of a mixture, from the paraffin-wax Wilson model.
+
+    ``M`` is molar mass in kg/mol and ``Tc`` the critical temperature in K; ``Lambda_ij``
+    is ``1.0`` for ``i == j`` or the heavier first component, else
+    ``exp(-(lambda_j - lambda_i) / (R T))``. ``x`` is checked rather than renormalised;
+    a supercritical component yields NaN, as in NeqSim.
+
+    The two per-component constants are the caller's: resolve them from a name with
+    :func:`azoth.eos.components.entry`.
+
+    Raises:
+        InvalidInputError: if the vectors disagree in length, or ``x`` is not a
+            composition.
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.wilson_activity_coefficients`.
+    """
+    return resolve(_WILSON_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
+        T=T, x=x, M=M, Tc=Tc
     )
 
 

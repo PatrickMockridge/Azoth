@@ -88,6 +88,7 @@ pub mod uniquac_activity_coefficients;
 pub mod vdw1f_mix_binary;
 pub mod wilke_chang_diffusivity;
 pub mod wilke_viscosity;
+pub mod wilson_activity_coefficients;
 
 pub use alpha_term::Alpha;
 pub use antoine_vapor_pressure::{AntoineForm, antoine_vapor_pressure, form_from_type};
@@ -136,7 +137,7 @@ pub use results::{
     SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
     StabilityVerdict, TwuKappaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -154,3 +155,4 @@ pub use uniquac_activity_coefficients::uniquac_activity_coefficients;
 pub use vdw1f_mix_binary::vdw1f_mix_binary;
 pub use wilke_chang_diffusivity::wilke_chang_diffusivity;
 pub use wilke_viscosity::wilke_viscosity;
+pub use wilson_activity_coefficients::wilson_activity_coefficients;

@@ -17,6 +17,7 @@
 
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
+import neqsim.thermo.system.SystemGEWilson;
 import neqsim.thermo.system.SystemNRTL;
 import neqsim.thermo.system.SystemSrkEos;
 import neqsim.thermo.system.SystemRKEos;
@@ -255,6 +256,36 @@ public class FlashTp {
     }
   }
 
+  /** The paraffin-wax Wilson activity coefficients, for `eos.wilson_activity_coefficients`. */
+  static void wilson() {
+    String[][] names = {{"n-butane", "nc12"}};
+    double[][] moles = {{0.5, 0.5}};
+    System.out.println("Wilson activity coefficients (gamma = exp(ln gamma)):");
+    for (int k = 0; k < names.length; k++) {
+      SystemGEWilson system = new SystemGEWilson(298.15, 1.0);
+      for (int i = 0; i < names[k].length; i++) {
+        system.addComponent(names[k][i], moles[k][i]);
+      }
+      system.createDatabase(true);
+      system.setMixingRule("classic");
+      new ThermodynamicOperations(system).TPflash();
+      StringBuilder x = new StringBuilder();
+      StringBuilder gamma = new StringBuilder();
+      for (int i = 0; i < names[k].length; i++) {
+        if (i > 0) {
+          x.append(", ");
+          gamma.append(", ");
+        }
+        x.append(system.getPhase(1).getComponent(i).getx());
+        gamma.append(((neqsim.thermo.component.ComponentGEWilson) system.getPhase(1).getComponent(i))
+            .getWilsonActivityCoefficient(system.getPhase(1)));
+      }
+      System.out.println("  " + String.join("+", names[k]));
+      System.out.println("    x     [" + x + "]");
+      System.out.println("    gamma [" + gamma + "]");
+    }
+  }
+
   public static void main(String[] args) {
     volcorr();
     chung();
@@ -264,6 +295,7 @@ public class FlashTp {
     corr();
     antoine();
     nrtl();
+    wilson();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 1);
     flash("propane, 1.0, 300 K, 9 bar",

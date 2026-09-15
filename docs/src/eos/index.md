@@ -59,3 +59,4 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.unifac_activity_coefficients`](./unifac_activity_coefficients.md) | `direct composition` | Fredenslund et al. (1975); Hansen et al. (1991) |
 | [`eos.uniquac_activity_coefficients`](./uniquac_activity_coefficients.md) | `direct composition` | Abrams, D. S.; Prausnitz, J. M. (1975) |
 | [`eos.wilke_viscosity`](./wilke_viscosity.md) | `direct composition` | Wilke, C. R. (1950); Chung et al. (1988) |
+| [`eos.wilson_activity_coefficients`](./wilson_activity_coefficients.md) | `direct composition` | Coutinho et al. (1995) |

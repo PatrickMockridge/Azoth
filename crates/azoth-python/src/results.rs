@@ -29,6 +29,7 @@ use azoth_eos::results::{
     SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
     TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
     Vdw1fMixBinaryResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1547,6 +1548,46 @@ impl From<&UniquacActivityCoefficientsResult> for PyUniquacActivityCoefficientsR
     }
 }
 
+/// Result of `eos.wilson_activity_coefficients`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "WilsonActivityCoefficientsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyWilsonActivityCoefficientsResult {
+    /// The natural logarithm of each activity coefficient.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// The activity coefficient of each component.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyWilsonActivityCoefficientsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "WilsonActivityCoefficientsResult(ln_gamma={:?}, gamma={:?})",
+            self.ln_gamma, self.gamma
+        )
+    }
+}
+
+impl From<&WilsonActivityCoefficientsResult> for PyWilsonActivityCoefficientsResult {
+    fn from(r: &WilsonActivityCoefficientsResult) -> Self {
+        Self {
+            ln_gamma: r.ln_gamma.clone(),
+            gamma: r.gamma.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`, transported.
 #[pyclass(
     frozen,
@@ -2855,6 +2896,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         }
         UniquacActivityCoefficientsResult::CALC_ID => {
             UniquacActivityCoefficientsResult::FIELDS.to_vec()
+        }
+        WilsonActivityCoefficientsResult::CALC_ID => {
+            WilsonActivityCoefficientsResult::FIELDS.to_vec()
         }
         TynCalusDiffusivityResult::CALC_ID => TynCalusDiffusivityResult::FIELDS.to_vec(),
         WilkeChangDiffusivityResult::CALC_ID => WilkeChangDiffusivityResult::FIELDS.to_vec(),

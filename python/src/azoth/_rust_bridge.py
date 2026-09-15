@@ -86,6 +86,7 @@ from azoth.core.result import (
     Vdw1fMixBinaryResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 )
 from azoth.core.result import Phase as _Phase
 from azoth.core.result import StabilityVerdict as _StabilityVerdict
@@ -729,6 +730,27 @@ def uniquac_activity_coefficients(
         [[input_to_si(spec, "aij", value) for value in row] for row in aij],
     )
     return UniquacActivityCoefficientsResult(
+        ln_gamma=tuple(result.ln_gamma),
+        gamma=tuple(result.gamma),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def wilson_activity_coefficients(
+    T: Q,
+    x: Sequence[float],
+    M: Sequence[Q],
+    Tc: Sequence[Q],
+) -> WilsonActivityCoefficientsResult:
+    """The activity coefficients of a mixture, computed in Rust."""
+    spec = _models_gen.model("eos.wilson_activity_coefficients")
+    result = _core.wilson_activity_coefficients(
+        input_to_si(spec, "T", T),
+        list(x),
+        [input_to_si(spec, "M", value) for value in M],
+        [input_to_si(spec, "Tc", value) for value in Tc],
+    )
+    return WilsonActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),
         gamma=tuple(result.gamma),
         warnings=_warnings(result.warnings),

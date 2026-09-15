@@ -433,6 +433,12 @@ class WilkeViscosityResult:
     warnings: list[Warning]
 
 @final
+class WilsonActivityCoefficientsResult:
+    ln_gamma: list[float]
+    gamma: list[float]
+    warnings: list[Warning]
+
+@final
 class ChokedFlowAreaResult:
     a: Qty
     warnings: list[Warning]
@@ -786,6 +792,12 @@ def wilke_viscosity(
     V: float,
     z: list[float],
 ) -> WilkeViscosityResult: ...
+def wilson_activity_coefficients(
+    T: float,
+    x: list[float],
+    M: list[float],
+    Tc: list[float],
+) -> WilsonActivityCoefficientsResult: ...
 def choked_flow_area(m_dot: float, P0: float, rho0: float, k: float) -> ChokedFlowAreaResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...
 def crane_k_factors(fittings: list[str], f_t: float) -> KFactorsResult: ...

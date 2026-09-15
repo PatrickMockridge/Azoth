@@ -59,6 +59,7 @@
   - [Activity coefficients from the UNIFAC group-contribution model](./eos/unifac_activity_coefficients.md)
   - [Activity coefficients from the UNIQUAC model](./eos/uniquac_activity_coefficients.md)
   - [Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities](./eos/wilke_viscosity.md)
+  - [Activity coefficients from the paraffin-wax Wilson model](./eos/wilson_activity_coefficients.md)
 - [Hydraulics](./hydraulics/index.md)
   - [Choked-flow throat area for an ideal gas](./hydraulics/choked_flow_area.md)
   - [Liquid flow through a control valve from its flow coefficient](./hydraulics/control_valve_cv.md)

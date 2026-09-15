@@ -28,7 +28,7 @@ use crate::results::{
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyTwuKappaResult,
     PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
     PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyWilkeChangDiffusivityResult,
-    PyWilkeViscosityResult,
+    PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -698,6 +698,24 @@ pub fn uniquac_activity_coefficients(
 ) -> PyResult<PyUniquacActivityCoefficientsResult> {
     azoth_eos::uniquac_activity_coefficients(T, &x, &r, &q, &aij)
         .map(|r| PyUniquacActivityCoefficientsResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The activity coefficients of a mixture, from the paraffin-wax Wilson model. A
+/// *model* rather than a calculation: its arguments are vectors.
+#[pyfunction]
+#[pyo3(signature = (T, x, M, Tc))]
+#[pyo3(text_signature = "(T, x, M, Tc)")]
+#[allow(non_snake_case)] // `M`, `Tc`, `T` and `x` are the symbols in the chemistry
+pub fn wilson_activity_coefficients(
+    py: Python<'_>,
+    T: f64,
+    x: Vec<f64>,
+    M: Vec<f64>,
+    Tc: Vec<f64>,
+) -> PyResult<PyWilsonActivityCoefficientsResult> {
+    azoth_eos::wilson_activity_coefficients(T, &x, &M, &Tc)
+        .map(|r| PyWilsonActivityCoefficientsResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

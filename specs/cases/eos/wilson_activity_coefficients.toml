@@ -1,0 +1,13 @@
+model = "eos.wilson_activity_coefficients"
+[[cases]]
+id = "n_butane_nc12_equimolar_at_298_15_k"
+tolerance = 1e-09
+source = "NeqSim 3.20.0 `ComponentGEWilson.getWilsonActivityCoefficient` for n-butane/nc12 0.5/0.5 at 298.15 K."
+[cases.inputs]
+T = 298.15
+x = [0.5, 0.5]
+M = [0.058123, 0.1703]
+Tc = [425.12, 658.0]
+[cases.expected]
+ln_gamma = [0.19314718055973779, 0.49999935609153545]
+gamma = [1.213061319425015, 1.648720209074888]

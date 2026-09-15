@@ -142,6 +142,7 @@ ARGUMENT_BUILDERS = {
     "eos.wilke_viscosity": _vector_model_kwargs,
     "eos.mason_saxena_conductivity": _vector_model_kwargs,
     "eos.nrtl_activity_coefficients": _vector_model_kwargs,
+    "eos.wilson_activity_coefficients": _vector_model_kwargs,
 }
 
 

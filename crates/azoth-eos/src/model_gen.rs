@@ -15,6 +15,7 @@
 //!   - specs/models/eos/unifac_activity_coefficients.toml
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
 //!   - specs/models/eos/wilke_viscosity.toml
+//!   - specs/models/eos/wilson_activity_coefficients.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
 //! on any difference.
@@ -1412,6 +1413,54 @@ pub static WILKE_VISCOSITY_SPEC: ModelSpec = ModelSpec {
     cases: WILKE_VISCOSITY_CASES,
 };
 
+static WILSON_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute temperature; zero and below are not states",
+    },
+}];
+
+static WILSON_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[TestCase {
+    id: "n_butane_nc12_equimolar_at_298_15_k",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-09,
+    numbers: &[("T", 298.15)],
+    lists: &[],
+    strings: &[],
+    vectors: &[
+        ("x", &[0.5, 0.5]),
+        ("M", &[0.058123, 0.1703]),
+        ("Tc", &[425.12, 658.0]),
+    ],
+    matrices: &[],
+    expected: &[],
+    expected_vectors: &[
+        ("ln_gamma", &[0.19314718055973779, 0.49999935609153545]),
+        ("gamma", &[1.213061319425015, 1.648720209074888]),
+    ],
+}];
+
+/// Registry entry for `eos.wilson_activity_coefficients`.
+pub static WILSON_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
+    id: "eos.wilson_activity_coefficients",
+    kind: "direct",
+    algorithm: None,
+    checks: WILSON_ACTIVITY_COEFFICIENTS_CHECKS,
+    cases: WILSON_ACTIVITY_COEFFICIENTS_CASES,
+};
+
 static ALL_MODELS: &[&ModelSpec] = &[
     &BUBBLE_PRESSURE_SPEC,
     &CRITICAL_POINT_SPEC,
@@ -1427,6 +1476,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,
     &WILKE_VISCOSITY_SPEC,
+    &WILSON_ACTIVITY_COEFFICIENTS_SPEC,
 ];
 
 /// Every model in this namespace, in id order.
