@@ -139,6 +139,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.pr_kappa` | Peng-Robinson attraction-parameter coefficient |
 | `eos.pr_mass_density` | Mass density from a molar volume |
 | `eos.pr_molar_volume` | Molar volume from a compressibility factor |
+| `eos.pr_peneloux_shift` | Peng-Robinson Peneloux volume-translation parameter |
 | `eos.pr_z_factor` | Peng-Robinson compressibility factor |
 | `eos.prsv_kappa` | Peng-Robinson-Stryjek-Vera alpha-function coefficient |
 | `eos.ps_flash` | Pressure-entropy flash — a *model* |
@@ -150,6 +151,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.srk_alpha_ab` | Soave-Redlich-Kwong alpha function and reduced attraction parameters |
 | `eos.srk_departure` | Soave-Redlich-Kwong fugacity coefficient and departure functions |
 | `eos.srk_kappa` | Soave-Redlich-Kwong attraction-parameter coefficient |
+| `eos.srk_peneloux_shift` | Soave-Redlich-Kwong Peneloux volume-translation parameter |
 | `eos.srk_z_factor` | Soave-Redlich-Kwong compressibility factor |
 | `eos.stability_test` | Tangent-plane stability test — a *model* |
 | `eos.twu_kappa` | Twu attraction-parameter coefficient |

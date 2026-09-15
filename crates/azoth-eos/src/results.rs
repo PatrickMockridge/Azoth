@@ -739,6 +739,42 @@ impl CalcResult for SrkKappaResult {
     }
 }
 
+/// Result of `eos.pr_peneloux_shift`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrPenelouxShiftResult {
+    /// The Peneloux volume-translation parameter.
+    pub c: MolarVolume,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrPenelouxShiftResult {
+    const CALC_ID: &'static str = "eos.pr_peneloux_shift";
+    const FIELDS: &'static [&'static str] = &["c", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.srk_peneloux_shift`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SrkPenelouxShiftResult {
+    /// The Peneloux volume-translation parameter.
+    pub c: MolarVolume,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SrkPenelouxShiftResult {
+    const CALC_ID: &'static str = "eos.srk_peneloux_shift";
+    const FIELDS: &'static [&'static str] = &["c", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SrkAlphaAbResult {

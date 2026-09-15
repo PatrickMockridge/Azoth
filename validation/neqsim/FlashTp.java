@@ -19,6 +19,8 @@ import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
 import neqsim.thermo.system.SystemSrkEos;
 import neqsim.thermo.system.SystemRKEos;
+import neqsim.thermo.system.SystemPrEosvolcor;
+import neqsim.thermo.system.SystemSrkPenelouxEos;
 import neqsim.thermodynamicoperations.ThermodynamicOperations;
 
 public class FlashTp {
@@ -91,7 +93,24 @@ public class FlashTp {
     System.out.println("  z_vapour " + fluid.getPhase(0).getZ());
   }
 
+  /** The per-component Peneloux volume-translation parameter, for `eos.*_peneloux_shift`. */
+  static void volcorr() {
+    SystemInterface pr = new SystemPrEosvolcor(300.0, 10.0);
+    SystemInterface srk = new SystemSrkPenelouxEos(300.0, 10.0);
+    String[] names = {"methane", "n-butane", "propane"};
+    for (String name : names) {
+      pr.addComponent(name, 1.0);
+      srk.addComponent(name, 1.0);
+    }
+    System.out.println("Peneloux volume correction (m**3/mol; NeqSim prints 1e5 * this):");
+    for (int i = 0; i < names.length; i++) {
+      System.out.println("  PR  " + names[i] + "  c = " + pr.getPhase(0).getComponent(i).getVolumeCorrection());
+      System.out.println("  SRK " + names[i] + "  c = " + srk.getPhase(0).getComponent(i).getVolumeCorrection());
+    }
+  }
+
   public static void main(String[] args) {
+    volcorr();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 1);
     flash("propane, 1.0, 300 K, 9 bar",

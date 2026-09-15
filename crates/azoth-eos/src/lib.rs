@@ -52,6 +52,7 @@ pub mod pr_departure;
 pub mod pr_kappa;
 pub mod pr_mass_density;
 pub mod pr_molar_volume;
+pub mod pr_peneloux_shift;
 pub mod pr_z_factor;
 pub mod prsv_kappa;
 pub mod ps_flash;
@@ -65,6 +66,7 @@ pub mod spec_gen;
 pub mod srk_alpha_ab;
 pub mod srk_departure;
 pub mod srk_kappa;
+pub mod srk_peneloux_shift;
 pub mod srk_z_factor;
 pub mod stability_test;
 pub mod twu_kappa;
@@ -85,6 +87,7 @@ pub use pr_departure::pr_departure;
 pub use pr_kappa::pr_kappa;
 pub use pr_mass_density::pr_mass_density;
 pub use pr_molar_volume::{MOLAR_GAS_CONSTANT, pr_molar_volume};
+pub use pr_peneloux_shift::pr_peneloux_shift;
 pub use pr_z_factor::pr_z_factor;
 pub use pr78_kappa::pr78_kappa;
 pub use prsv_kappa::prsv_kappa;
@@ -95,16 +98,18 @@ pub use rachford_rice_binary::rachford_rice_binary;
 pub use results::{
     BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
     MolarEnthalpyEntropyResult, Phase, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
-    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult,
-    PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RkAlphaAbResult,
-    RkDepartureResult, RootStructure, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
-    SrkZFactorResult, StabilityTestResult, StabilityVerdict, TwuKappaResult, Vdw1fMixBinaryResult,
+    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, RkAlphaAbResult, RkDepartureResult, RootStructure, SrkAlphaAbResult,
+    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, StabilityVerdict, TwuKappaResult, Vdw1fMixBinaryResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
 pub use srk_alpha_ab::srk_alpha_ab;
 pub use srk_departure::srk_departure;
 pub use srk_kappa::srk_kappa;
+pub use srk_peneloux_shift::srk_peneloux_shift;
 pub use srk_z_factor::srk_z_factor;
 pub use stability_test::stability_test;
 pub use twu_kappa::twu_kappa;

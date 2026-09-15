@@ -78,6 +78,7 @@ from azoth.core.result import (
     PrKappaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
+    PrPenelouxShiftResult,
     PrsvKappaResult,
     PrZFactorResult,
     PsFlashResult,
@@ -89,6 +90,7 @@ from azoth.core.result import (
     SrkAlphaAbResult,
     SrkDepartureResult,
     SrkKappaResult,
+    SrkPenelouxShiftResult,
     SrkZFactorResult,
     StabilityTestResult,
     TwuKappaResult,
@@ -121,6 +123,7 @@ __all__ = [
     "pr_kappa",
     "pr_mass_density",
     "pr_molar_volume",
+    "pr_peneloux_shift",
     "pr_z_factor",
     "prsv_kappa",
     "pt_flash",
@@ -131,6 +134,7 @@ __all__ = [
     "srk_alpha_ab",
     "srk_departure",
     "srk_kappa",
+    "srk_peneloux_shift",
     "srk_z_factor",
     "stability_test",
     "twu_kappa",
@@ -140,6 +144,8 @@ __all__ = [
 _PR_KAPPA = "eos.pr_kappa"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
+_PR_PENELOUX_SHIFT = "eos.pr_peneloux_shift"
+_SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
@@ -402,6 +408,36 @@ def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
     See :func:`azoth.eos.reference.pr_mass_density`.
     """
     return resolve(_PR_MASS_DENSITY)(M=M, v=v)  # type: ignore[no-any-return]
+
+
+def pr_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> PrPenelouxShiftResult:
+    """The Peng-Robinson Peneloux volume-translation parameter.
+
+    The shift is subtracted from the untranslated molar volume: ``v_corr = v - c``,
+    with ``v`` from :func:`pr_molar_volume`. It corrects the volume and density and
+    does not change phase equilibrium.
+
+    Raises:
+        OutOfRangeError: if ``Tc`` or ``Pc`` is not positive.
+
+    See :func:`azoth.eos.reference.pr_peneloux_shift`.
+    """
+    return resolve(_PR_PENELOUX_SHIFT)(omega=omega, Tc=Tc, Pc=Pc)  # type: ignore[no-any-return]
+
+
+def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:
+    """The Soave-Redlich-Kwong Peneloux volume-translation parameter.
+
+    The shift is subtracted from the untranslated molar volume: ``v_corr = v - c``,
+    with ``v`` from :func:`pr_molar_volume`. It corrects the volume and density and
+    does not change phase equilibrium.
+
+    Raises:
+        OutOfRangeError: if ``Tc`` or ``Pc`` is not positive.
+
+    See :func:`azoth.eos.reference.srk_peneloux_shift`.
+    """
+    return resolve(_SRK_PENELOUX_SHIFT)(omega=omega, Tc=Tc, Pc=Pc)  # type: ignore[no-any-return]
 
 
 def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureResult:

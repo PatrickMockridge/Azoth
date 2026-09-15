@@ -19,9 +19,10 @@ use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
     MolarEnthalpyEntropyResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
-    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult,
-    PsFlashResult, PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RkAlphaAbResult,
-    RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkZFactorResult,
+    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, RkAlphaAbResult, RkDepartureResult, SrkAlphaAbResult,
+    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, TwuKappaResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
@@ -792,6 +793,84 @@ impl From<&SrkKappaResult> for PySrkKappaResult {
     fn from(r: &SrkKappaResult) -> Self {
         Self {
             kappa: r.kappa,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_peneloux_shift`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrPenelouxShiftResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrPenelouxShiftResult {
+    /// The Peneloux volume-translation parameter, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub c: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrPenelouxShiftResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrPenelouxShiftResult(c={} {})",
+            self.c.magnitude_si, self.c.unit
+        )
+    }
+}
+
+impl From<&PrPenelouxShiftResult> for PyPrPenelouxShiftResult {
+    fn from(r: &PrPenelouxShiftResult) -> Self {
+        Self {
+            c: PyQty {
+                magnitude_si: r.c.value,
+                unit: "m**3/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.srk_peneloux_shift`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SrkPenelouxShiftResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySrkPenelouxShiftResult {
+    /// The Peneloux volume-translation parameter, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub c: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySrkPenelouxShiftResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SrkPenelouxShiftResult(c={} {})",
+            self.c.magnitude_si, self.c.unit
+        )
+    }
+}
+
+impl From<&SrkPenelouxShiftResult> for PySrkPenelouxShiftResult {
+    fn from(r: &SrkPenelouxShiftResult) -> Self {
+        Self {
+            c: PyQty {
+                magnitude_si: r.c.value,
+                unit: "m**3/mol".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }
@@ -2088,6 +2167,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
         PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
         PrMassDensityResult::CALC_ID => PrMassDensityResult::FIELDS.to_vec(),
+        PrPenelouxShiftResult::CALC_ID => PrPenelouxShiftResult::FIELDS.to_vec(),
+        SrkPenelouxShiftResult::CALC_ID => SrkPenelouxShiftResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
@@ -2143,6 +2224,8 @@ pub fn calc_ids() -> Vec<String> {
         RachfordRiceBinaryResult::CALC_ID.to_string(),
         PrMolarVolumeResult::CALC_ID.to_string(),
         PrMassDensityResult::CALC_ID.to_string(),
+        PrPenelouxShiftResult::CALC_ID.to_string(),
+        SrkPenelouxShiftResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

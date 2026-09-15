@@ -30,6 +30,7 @@ __all__ = [
     "PrKappaBatch",
     "PrMassDensityBatch",
     "PrMolarVolumeBatch",
+    "PrPenelouxShiftBatch",
     "PrZFactorBatch",
     "PrsvKappaBatch",
     "RachfordRiceBinaryBatch",
@@ -38,6 +39,7 @@ __all__ = [
     "SrkAlphaAbBatch",
     "SrkDepartureBatch",
     "SrkKappaBatch",
+    "SrkPenelouxShiftBatch",
     "SrkZFactorBatch",
     "TwuKappaBatch",
     "Vdw1fMixBinaryBatch",
@@ -48,6 +50,7 @@ __all__ = [
     "pr_kappa",
     "pr_mass_density",
     "pr_molar_volume",
+    "pr_peneloux_shift",
     "pr_z_factor",
     "prsv_kappa",
     "rachford_rice_binary",
@@ -56,6 +59,7 @@ __all__ = [
     "srk_alpha_ab",
     "srk_departure",
     "srk_kappa",
+    "srk_peneloux_shift",
     "srk_z_factor",
     "twu_kappa",
     "vdw1f_mix_binary",
@@ -71,6 +75,8 @@ _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 _PR_MOLAR_VOLUME = "eos.pr_molar_volume"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _PR_MASS_DENSITY = "eos.pr_mass_density"
+_PR_PENELOUX_SHIFT = "eos.pr_peneloux_shift"
+_SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
 _SRK_KAPPA = "eos.srk_kappa"
 _SRK_ALPHA_AB = "eos.srk_alpha_ab"
 _SRK_Z_FACTOR = "eos.srk_z_factor"
@@ -487,6 +493,70 @@ def pr_mass_density(*, M: Sequence[float], v: Sequence[float]) -> PrMassDensityB
         _PR_MASS_DENSITY,
         {"M": sequence(M, "M"), "v": sequence(v, "v")},
         _build_mass_density,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrPenelouxShiftBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_peneloux_shift`."""
+
+    #: Volume-translation parameter per element, in m**3/mol.
+    c: array[float]
+
+
+def _build_pr_peneloux_shift(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrPenelouxShiftBatch:
+    return PrPenelouxShiftBatch(warnings=warnings, units=units, c=columns["c"])  # type: ignore[arg-type]
+
+
+def pr_peneloux_shift(
+    *, omega: Sequence[float], Tc: Sequence[float], Pc: Sequence[float]
+) -> PrPenelouxShiftBatch:
+    """The Peng-Robinson Peneloux volume-translation parameter, over arrays."""
+    result: PrPenelouxShiftBatch = run(
+        _PR_PENELOUX_SHIFT,
+        {
+            "omega": sequence(omega, "omega"),
+            "Tc": sequence(Tc, "Tc"),
+            "Pc": sequence(Pc, "Pc"),
+        },
+        _build_pr_peneloux_shift,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class SrkPenelouxShiftBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.srk_peneloux_shift`."""
+
+    #: Volume-translation parameter per element, in m**3/mol.
+    c: array[float]
+
+
+def _build_srk_peneloux_shift(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> SrkPenelouxShiftBatch:
+    return SrkPenelouxShiftBatch(warnings=warnings, units=units, c=columns["c"])  # type: ignore[arg-type]
+
+
+def srk_peneloux_shift(
+    *, omega: Sequence[float], Tc: Sequence[float], Pc: Sequence[float]
+) -> SrkPenelouxShiftBatch:
+    """The Soave-Redlich-Kwong Peneloux volume-translation parameter, over arrays."""
+    result: SrkPenelouxShiftBatch = run(
+        _SRK_PENELOUX_SHIFT,
+        {
+            "omega": sequence(omega, "omega"),
+            "Tc": sequence(Tc, "Tc"),
+            "Pc": sequence(Pc, "Pc"),
+        },
+        _build_srk_peneloux_shift,
     )
     return result
 

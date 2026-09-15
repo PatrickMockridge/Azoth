@@ -17,11 +17,11 @@ use crate::errors::to_pyerr;
 use crate::results::{
     PyCriticalPointResult, PyIdealGasCpResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
     PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
-    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult,
-    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
+    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
+    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
     PyRachfordRiceBinaryResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
-    PySrkDepartureResult, PySrkKappaResult, PySrkZFactorResult, PyStabilityTestResult,
-    PyTwuKappaResult, PyVdw1fMixBinaryResult,
+    PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
+    PyStabilityTestResult, PyTwuKappaResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -270,6 +270,43 @@ pub fn pr_molar_volume(py: Python<'_>, z: f64, T: f64, P: f64) -> PyResult<PyPrM
 pub fn pr_mass_density(py: Python<'_>, M: f64, v: f64) -> PyResult<PyPrMassDensityResult> {
     azoth_eos::pr_mass_density(kilograms_per_mole(M), cubic_meters_per_mole(v))
         .map(|r| PyPrMassDensityResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Peng-Robinson Peneloux volume-translation parameter.
+///
+/// `Tc` in kelvin and `Pc` in pascals in, a volume shift in `m**3/mol` out - the
+/// quantity subtracted from `eos.pr_molar_volume` to correct a reported volume.
+#[pyfunction]
+#[pyo3(signature = (omega, Tc, Pc))]
+#[pyo3(text_signature = "(omega, Tc, Pc)")]
+#[allow(non_snake_case)] // `Tc` and `Pc` are the symbols in the published equation
+pub fn pr_peneloux_shift(
+    py: Python<'_>,
+    omega: f64,
+    Tc: f64,
+    Pc: f64,
+) -> PyResult<PyPrPenelouxShiftResult> {
+    azoth_eos::pr_peneloux_shift(omega, kelvins(Tc), pascals(Pc))
+        .map(|r| PyPrPenelouxShiftResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Soave-Redlich-Kwong Peneloux volume-translation parameter.
+///
+/// `Tc` in kelvin and `Pc` in pascals in, a volume shift in `m**3/mol` out.
+#[pyfunction]
+#[pyo3(signature = (omega, Tc, Pc))]
+#[pyo3(text_signature = "(omega, Tc, Pc)")]
+#[allow(non_snake_case)] // `Tc` and `Pc` are the symbols in the published equation
+pub fn srk_peneloux_shift(
+    py: Python<'_>,
+    omega: f64,
+    Tc: f64,
+    Pc: f64,
+) -> PyResult<PySrkPenelouxShiftResult> {
+    azoth_eos::srk_peneloux_shift(omega, kelvins(Tc), pascals(Pc))
+        .map(|r| PySrkPenelouxShiftResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

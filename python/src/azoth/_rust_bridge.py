@@ -48,6 +48,7 @@ from azoth.core.result import (
     PrKappaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
+    PrPenelouxShiftResult,
     PrsvKappaResult,
     PrZFactorResult,
     PsFlashResult,
@@ -62,6 +63,7 @@ from azoth.core.result import (
     SrkAlphaAbResult,
     SrkDepartureResult,
     SrkKappaResult,
+    SrkPenelouxShiftResult,
     SrkZFactorResult,
     StabilityTestResult,
     SwameeJainResult,
@@ -419,6 +421,34 @@ def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
     )
     return PrMassDensityResult(
         rho=from_si(result.rho.magnitude_si, result.rho.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pr_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> PrPenelouxShiftResult:
+    """The Peng-Robinson Peneloux volume-translation parameter, computed in Rust."""
+    spec = _spec_for("eos.pr_peneloux_shift")
+    result = _core.pr_peneloux_shift(
+        omega,
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "Pc", Pc),
+    )
+    return PrPenelouxShiftResult(
+        c=from_si(result.c.magnitude_si, result.c.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:
+    """The Soave-Redlich-Kwong Peneloux volume-translation parameter, in Rust."""
+    spec = _spec_for("eos.srk_peneloux_shift")
+    result = _core.srk_peneloux_shift(
+        omega,
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "Pc", Pc),
+    )
+    return SrkPenelouxShiftResult(
+        c=from_si(result.c.magnitude_si, result.c.unit),
         warnings=_warnings(result.warnings),
     )
 

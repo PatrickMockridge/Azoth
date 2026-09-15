@@ -346,6 +346,26 @@ class PrMassDensityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PrPenelouxShiftResult(_HasWarnings):
+    """Result of ``eos.pr_peneloux_shift``."""
+
+    #: The Peneloux volume-translation parameter.
+    c: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SrkPenelouxShiftResult(_HasWarnings):
+    """Result of ``eos.srk_peneloux_shift``."""
+
+    #: The Peneloux volume-translation parameter.
+    c: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Vdw1fMixBinaryResult(_HasWarnings):
     """Result of ``eos.vdw1f_mix_binary``.
 

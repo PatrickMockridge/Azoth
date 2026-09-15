@@ -791,6 +791,42 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "rho", "kg/m**3", rho);
         }
 
+        "eos.pr_peneloux_shift" => {
+            let (omega, tc, pc) = (
+                take(&inputs, "omega")?,
+                take(&inputs, "Tc")?,
+                take(&inputs, "Pc")?,
+            );
+            let mut c = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::pr_peneloux_shift(omega[i], kelvins(tc[i]), pascals(pc[i])),
+                    &mut warnings,
+                )?;
+                c.push(r.c.value);
+            }
+            push_values(&mut columns, "c", "m**3/mol", c);
+        }
+
+        "eos.srk_peneloux_shift" => {
+            let (omega, tc, pc) = (
+                take(&inputs, "omega")?,
+                take(&inputs, "Tc")?,
+                take(&inputs, "Pc")?,
+            );
+            let mut c = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::srk_peneloux_shift(omega[i], kelvins(tc[i]), pascals(pc[i])),
+                    &mut warnings,
+                )?;
+                c.push(r.c.value);
+            }
+            push_values(&mut columns, "c", "m**3/mol", c);
+        }
+
         other => {
             return Err(pyo3::exceptions::PyNotImplementedError::new_err(format!(
                 "no batch arm for `{other}`"

@@ -1,0 +1,19 @@
+{
+  "id": "methane_pr_peneloux_shift_against_neqsim",
+  "calc": "eos.pr_peneloux_shift",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEosvolcor with the Peneloux volume correction - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "The Peng-Robinson Peneloux shift. NeqSim's `getVolumeCorrection()` is printed in its internal unit - `R` in J/(mol*K) against `Pc` in bar, which is `1e5` times the SI `m**3/mol` - so the expected value below is the printed number divided by `1e5`. azoth uses the exact molar gas constant, NeqSim the truncated `8.3144621`, a relative difference of 6e-8 that the tolerance absorbs."
+  },
+  "derivation": "The driver was run on SystemPrEosvolcor systems and printed `getVolumeCorrection()` for methane at omega = 0.0115, Tc = 190.55999999999997 K, Pc = 4599000.0 Pa:\n\n  NeqSim printed  -0.5147087677131006\n  SI value       -0.5147087677131006 * 1e-5 = -5.147087677131007e-06\n\nazoth reproduces it to the 6e-8 the gas-constant choice allows.",
+  "inputs": {
+    "omega": 0.0115,
+    "Tc": 190.55999999999997,
+    "Pc": 4599000.0
+  },
+  "expected": {
+    "c": -5.147087677131007e-06
+  },
+  "tolerance": 1e-07
+}

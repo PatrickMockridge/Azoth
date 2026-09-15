@@ -212,6 +212,11 @@ class PrMolarVolumeResult:
     warnings: list[Warning]
 
 @final
+class PrPenelouxShiftResult:
+    c: Qty
+    warnings: list[Warning]
+
+@final
 class PrZFactorResult:
     z_min: float
     z_max: float
@@ -302,6 +307,11 @@ class SrkDepartureResult:
 @final
 class SrkKappaResult:
     kappa: float
+    warnings: list[Warning]
+
+@final
+class SrkPenelouxShiftResult:
+    c: Qty
     warnings: list[Warning]
 
 @final
@@ -489,6 +499,7 @@ def pr_departure(
 def pr_kappa(omega: float) -> PrKappaResult: ...
 def pr_mass_density(M: float, v: float) -> PrMassDensityResult: ...
 def pr_molar_volume(z: float, T: float, P: float) -> PrMolarVolumeResult: ...
+def pr_peneloux_shift(omega: float, Tc: float, Pc: float) -> PrPenelouxShiftResult: ...
 def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult: ...
 def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult: ...
 def ps_flash(
@@ -533,6 +544,7 @@ def srk_departure(
     Tr: float,
 ) -> SrkDepartureResult: ...
 def srk_kappa(omega: float) -> SrkKappaResult: ...
+def srk_peneloux_shift(omega: float, Tc: float, Pc: float) -> SrkPenelouxShiftResult: ...
 def srk_z_factor(a_reduced: float, b_reduced: float) -> SrkZFactorResult: ...
 def stability_test(
     Tc: list[float],

@@ -9,6 +9,7 @@
 //!   - specs/calcs/eos/pr_kappa.toml
 //!   - specs/calcs/eos/pr_mass_density.toml
 //!   - specs/calcs/eos/pr_molar_volume.toml
+//!   - specs/calcs/eos/pr_peneloux_shift.toml
 //!   - specs/calcs/eos/pr_z_factor.toml
 //!   - specs/calcs/eos/prsv_kappa.toml
 //!   - specs/calcs/eos/rachford_rice_binary.toml
@@ -17,6 +18,7 @@
 //!   - specs/calcs/eos/srk_alpha_ab.toml
 //!   - specs/calcs/eos/srk_departure.toml
 //!   - specs/calcs/eos/srk_kappa.toml
+//!   - specs/calcs/eos/srk_peneloux_shift.toml
 //!   - specs/calcs/eos/srk_z_factor.toml
 //!   - specs/calcs/eos/twu_kappa.toml
 //!   - specs/calcs/eos/vdw1f_mix_binary.toml
@@ -905,6 +907,98 @@ pub static PR_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
     },
     tests: PR_MOLAR_VOLUME_TESTS,
+};
+
+/// Registry entry for `eos.pr_peneloux_shift`.
+static PR_PENELOUX_SHIFT_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Tc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`Tc` is a factor in the numerator, so a non-positive value would give a non-positive or reversed shift, and a critical temperature at or below zero is not a substance.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Pc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`Pc` is a divisor; zero pressure is not a critical point and a negative one is not a state.",
+        },
+    },
+];
+
+static PR_PENELOUX_SHIFT_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "methane_at_a_very_different_acentric_factor",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("omega", 0.01142), ("Tc", 190.56), ("Pc", 4599000.0)],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("c", -5.148298028001139e-06)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.pr_peneloux_shift`.
+///
+/// Public and addressable directly, so a calc can hold `&PR_PENELOUX_SHIFT_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static PR_PENELOUX_SHIFT_SPEC: CalcSpec = CalcSpec {
+    id: "eos.pr_peneloux_shift",
+    checks: PR_PENELOUX_SHIFT_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "propane_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("omega", 0.152), ("Tc", 369.83), ("Pc", 4248000.0)],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("c", -6.349504285100194e-06)],
+        expected_vectors: &[],
+    },
+    tests: PR_PENELOUX_SHIFT_TESTS,
 };
 
 /// Registry entry for `eos.pr_z_factor`.
@@ -1919,6 +2013,98 @@ pub static SRK_KAPPA_SPEC: CalcSpec = CalcSpec {
     tests: SRK_KAPPA_TESTS,
 };
 
+/// Registry entry for `eos.srk_peneloux_shift`.
+static SRK_PENELOUX_SHIFT_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Tc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`Tc` is a factor in the numerator, so a non-positive value would give a non-positive or reversed shift, and a critical temperature at or below zero is not a substance.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Pc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`Pc` is a divisor; zero pressure is not a critical point and a negative one is not a state.",
+        },
+    },
+];
+
+static SRK_PENELOUX_SHIFT_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "methane_at_a_very_different_acentric_factor",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("omega", 0.01142), ("Tc", 190.56), ("Pc", 4599000.0)],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("c", 6.814784334802521e-07)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.srk_peneloux_shift`.
+///
+/// Public and addressable directly, so a calc can hold `&SRK_PENELOUX_SHIFT_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static SRK_PENELOUX_SHIFT_SPEC: CalcSpec = CalcSpec {
+    id: "eos.srk_peneloux_shift",
+    checks: SRK_PENELOUX_SHIFT_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "propane_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("omega", 0.152), ("Tc", 369.83), ("Pc", 4248000.0)],
+        lists: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("c", 5.072202290436595e-06)],
+        expected_vectors: &[],
+    },
+    tests: SRK_PENELOUX_SHIFT_TESTS,
+};
+
 /// Registry entry for `eos.srk_z_factor`.
 static SRK_Z_FACTOR_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -2263,6 +2449,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &PR_KAPPA_SPEC,
     &PR_MASS_DENSITY_SPEC,
     &PR_MOLAR_VOLUME_SPEC,
+    &PR_PENELOUX_SHIFT_SPEC,
     &PR_Z_FACTOR_SPEC,
     &PRSV_KAPPA_SPEC,
     &RACHFORD_RICE_BINARY_SPEC,
@@ -2271,6 +2458,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &SRK_ALPHA_AB_SPEC,
     &SRK_DEPARTURE_SPEC,
     &SRK_KAPPA_SPEC,
+    &SRK_PENELOUX_SHIFT_SPEC,
     &SRK_Z_FACTOR_SPEC,
     &TWU_KAPPA_SPEC,
     &VDW1F_MIX_BINARY_SPEC,
