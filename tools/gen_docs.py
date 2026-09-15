@@ -526,28 +526,13 @@ def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | N
     return out
 
 
-#: The name of the generated block inside the two hand-written files that list every
-#: calculation. README.md and docs/src/index.md are the front door and are written by
-#: hand - but both carry a list that must contain every id, and a list somebody has to
-#: remember to edit is a list that eventually does not.
+#: The name of the generated block inside the hand-written file that lists every
+#: calculation. docs/src/index.md is the book's front door and is written by hand - but
+#: it carries a list that must contain every id, and a list somebody has to remember to
+#: edit is a list that eventually does not.
 BLOCK = "implemented"
 _BEGIN = "<!-- BEGIN GENERATED: {name} -->"
 _END = "<!-- END GENERATED: {name} -->"
-
-
-def render_implemented_table(calcs: list[dict[str, Any]], models: list[dict[str, Any]]) -> str:
-    """Every calc and model as a table row, for the README.
-
-    One row each, in id order, with the spec's own `name`. Those names are what the
-    book's navigation already uses, so the README and the book cannot describe the
-    same calculation differently.
-    """
-    model_ids = {m["id"] for m in models}
-    rows = ["| Calculation | What it does |", "|---|---|"]
-    for entry in sorted([*calcs, *models], key=lambda e: e["id"]):
-        suffix = " — a *model*" if entry["id"] in model_ids else ""
-        rows.append(f"| `{entry['id']}` | {entry['name']}{suffix} |")
-    return "\n".join(rows)
 
 
 def render_implemented_lists(calcs: list[dict[str, Any]], models: list[dict[str, Any]]) -> str:
@@ -718,11 +703,10 @@ def main() -> int:
         for model in mine:
             outputs[directory / f"{model['id'].split('.')[-1]}.md"] = render_model(model)
 
-    # The two hand-written files that list every calculation. Their generated block is
-    # spliced into the existing prose rather than replacing the file, so these are
-    # handled apart from `outputs`.
+    # The hand-written front door that lists every calculation. Its generated block is
+    # spliced into the existing prose rather than replacing the file, so it is handled
+    # apart from `outputs`.
     blocks = {
-        ROOT / "README.md": render_implemented_table(calcs, models),
         DOCS_SRC / "index.md": render_implemented_lists(calcs, models),
     }
 
