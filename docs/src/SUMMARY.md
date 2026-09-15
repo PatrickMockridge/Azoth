@@ -11,6 +11,7 @@
   - [Reflection and feedback](./calculus/rho.md)
   - [The keycard as a capability](./calculus/capability.md)
   - [The vocabulary table](./calculus/vocabulary.md)
+  - [Orchestration](./calculus/orchestration.md)
 - [Equations of state](./eos/index.md)
   - [Antoine vapour pressure from NeqSim's correlation](./eos/antoine_vapor_pressure.md)
   - [Gas thermal conductivity from the Chung correlation](./eos/chung_conductivity.md)

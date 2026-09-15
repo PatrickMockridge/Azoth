@@ -19,15 +19,16 @@ its channels are used or it is a sentence in a specification that nothing checks
 That is the second thing.
 
 Five layers, each a Lean module and a page here. **Two of the modules exist in
-full, and a third in part.** `Azoth/Dim.lean` and `Azoth/Vocabulary.lean` are the
-full ones; `Azoth/Rho.lean` carries the binder-free reflection fragment. The rest
-are the ones their tranches will write:
+full, and two in part.** `Azoth/Dim.lean` and `Azoth/Vocabulary.lean` are the full
+ones; `Azoth/Rho.lean` carries the process calculus and reflection, and
+`Azoth/Barb.lean` the barbs and barbed bisimulation. The rest are the ones their
+tranches will write:
 
 | Layer | What it fixes | Lean | Page |
 |---|---|---|---|
 | Dimensions | what a unit's dimension is, and when two are equal | `Azoth/Dim.lean` ✅ | [Dimensions](./dimensions.md) |
 | Vocabulary | which units a spec may declare, and what each one is | `Azoth/Vocabulary.lean` ✅ | [The vocabulary table](./vocabulary.md) |
-| Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` | [Barbs](./barbs.md) |
+| Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` (barbed bisimulation) | [Barbs](./barbs.md) |
 | Processes | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` | [Processes](./process.md) |
 | Reflection | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` (binder-free) | [Reflection](./rho.md) |
 | Capability | the keycard as authority a process holds rather than a global it reads | `Azoth/Capability.lean` | [The keycard](./capability.md) |
@@ -48,13 +49,15 @@ the dimension `lean-units` calls by that name. That is
 [The vocabulary table](./vocabulary.md), and it is the whole of what this section
 has checked against anything.
 
-**Everything else here is a specification.** [Processes](./process.md),
-[Barbs](./barbs.md), [Reflection](./rho.md) and [The keycard](./capability.md)
-state the layers that tranches F4 and F7 will build, and **none of those layers
-exists**: there is no channel type in Rust or Python, no `Kind`, no process
-calculus, no card. A proof about them today would be a proof about nothing — it
-could not be falsified by any test this repository can run, which is the only thing
-a proof in this tree is for.
+**The rest is partly specification, partly proved fragments.** [Processes](./process.md)
+and [The keycard](./capability.md) state layers that tranches F4 and F7 will build,
+and neither exists: there is no channel type in Rust or Python, no `Kind`, no card.
+[Reflection](./rho.md) and [Barbs](./barbs.md) are different: `Azoth/Rho.lean`
+proves the process calculus, the round trip, and the communication reduction, and
+`Azoth/Barb.lean` proves barbed bisimulation is an equivalence — the general
+machinery, before the thermodynamic channels that would falsify the stronger
+claims. A proof about a layer that does not exist is a proof about nothing, which
+is why the *remaining* claims stay specifications.
 
 So each claim names its theorem and says which of three things it is:
 
