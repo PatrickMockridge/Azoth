@@ -49,6 +49,7 @@ from azoth.core.result import (
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
     MolarEnthalpyEntropyResult,
+    NrtlActivityCoefficientsResult,
     OrificeFlowResult,
     PhFlashResult,
     Pr78KappaResult,
@@ -659,6 +660,27 @@ def mason_saxena_conductivity(
     )
     return MasonSaxenaConductivityResult(
         k=from_si(result.k.magnitude_si, result.k.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def nrtl_activity_coefficients(
+    T: Q,
+    x: Sequence[float],
+    Dij: Sequence[Sequence[Q]],
+    alpha: Sequence[Sequence[float]],
+) -> NrtlActivityCoefficientsResult:
+    """The activity coefficients of a mixture, computed in Rust."""
+    spec = _models_gen.model("eos.nrtl_activity_coefficients")
+    result = _core.nrtl_activity_coefficients(
+        input_to_si(spec, "T", T),
+        list(x),
+        [[input_to_si(spec, "Dij", value) for value in row] for row in Dij],
+        [list(row) for row in alpha],
+    )
+    return NrtlActivityCoefficientsResult(
+        ln_gamma=tuple(result.ln_gamma),
+        gamma=tuple(result.gamma),
         warnings=_warnings(result.warnings),
     )
 

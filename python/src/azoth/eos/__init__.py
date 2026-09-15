@@ -82,6 +82,7 @@ from azoth.core.result import (
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
     MolarEnthalpyEntropyResult,
+    NrtlActivityCoefficientsResult,
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
@@ -140,6 +141,7 @@ __all__ = [
     "mason_saxena_conductivity",
     "mixture",
     "molar_enthalpy_entropy",
+    "nrtl_activity_coefficients",
     "ph_flash",
     "pr78_kappa",
     "pr_alpha_ab",
@@ -182,6 +184,7 @@ _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _MASON_SAXENA_CONDUCTIVITY = "eos.mason_saxena_conductivity"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
+_NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _CHUNG_CONDUCTIVITY = "eos.chung_conductivity"
 _CHUNG_VISCOSITY = "eos.chung_viscosity"
@@ -749,6 +752,34 @@ def mason_saxena_conductivity(
     """
     return resolve(_MASON_SAXENA_CONDUCTIVITY)(  # type: ignore[no-any-return]
         Cv0=Cv0, M=M, omega=omega, Tc=Tc, Vc=Vc, dipole=dipole, kappa=kappa, T=T, z=z
+    )
+
+
+def nrtl_activity_coefficients(
+    T: Q,
+    x: Sequence[float],
+    Dij: Sequence[Sequence[Q]],
+    alpha: Sequence[Sequence[float]],
+) -> NrtlActivityCoefficientsResult:
+    """The activity coefficients of a mixture, from NRTL (Renon-Prausnitz).
+
+    ``Dij[i][j] = g_ij`` in Kelvin, ``tau_ij = g_ij / T`` and
+    ``G_ij = exp(-alpha_ij tau_ij)``. ``alpha`` is symmetric and both matrices have a
+    zero diagonal; ``x`` is checked rather than renormalised.
+
+    The two matrices are the caller's: resolve them from name pairs with
+    :func:`azoth.eos.components.nrtl_parameters`, which is what this model's own spec
+    leaves to the caller.
+
+    Raises:
+        InvalidInputError: if the matrices are not ``N x N``, ``alpha`` is not
+            symmetric, a diagonal is not zero, or ``x`` is not a composition.
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.nrtl_activity_coefficients`.
+    """
+    return resolve(_NRTL_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
+        T=T, x=x, Dij=Dij, alpha=alpha
     )
 
 

@@ -208,6 +208,12 @@ class MolarEnthalpyEntropyResult:
     warnings: list[Warning]
 
 @final
+class NrtlActivityCoefficientsResult:
+    ln_gamma: list[float]
+    gamma: list[float]
+    warnings: list[Warning]
+
+@final
 class PhFlashResult:
     T: Qty
     beta: float | None
@@ -613,6 +619,12 @@ def molar_enthalpy_entropy(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> MolarEnthalpyEntropyResult: ...
+def nrtl_activity_coefficients(
+    T: float,
+    x: list[float],
+    Dij: list[list[float]],
+    alpha: list[list[float]],
+) -> NrtlActivityCoefficientsResult: ...
 def ph_flash(
     Tc: list[float],
     Pc: list[float],

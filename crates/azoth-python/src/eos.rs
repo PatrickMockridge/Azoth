@@ -19,10 +19,10 @@ use crate::results::{
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
     PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMolarEnthalpyEntropyResult,
-    PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult,
-    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
-    PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
+    PyNrtlActivityCoefficientsResult, PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult,
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
     PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyTwuKappaResult,
@@ -640,6 +640,24 @@ pub fn mason_saxena_conductivity(
 ) -> PyResult<PyMasonSaxenaConductivityResult> {
     azoth_eos::mason_saxena_conductivity(&Cv0, &M, &omega, &Tc, &Vc, &dipole, &kappa, T, &z)
         .map(|r| PyMasonSaxenaConductivityResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The activity coefficients of a mixture, from NRTL. A *model* rather than a
+/// calculation: its arguments are vectors and matrices.
+#[pyfunction]
+#[pyo3(signature = (T, x, Dij, alpha))]
+#[pyo3(text_signature = "(T, x, Dij, alpha)")]
+#[allow(non_snake_case)] // `Dij` and `T` are the symbols in the chemistry
+pub fn nrtl_activity_coefficients(
+    py: Python<'_>,
+    T: f64,
+    x: Vec<f64>,
+    Dij: Vec<Vec<f64>>,
+    alpha: Vec<Vec<f64>>,
+) -> PyResult<PyNrtlActivityCoefficientsResult> {
+    azoth_eos::nrtl_activity_coefficients(T, &x, &Dij, &alpha)
+        .map(|r| PyNrtlActivityCoefficientsResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

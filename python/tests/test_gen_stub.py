@@ -42,7 +42,7 @@ def gen_stub() -> ModuleType:
         ({"unit": "K"}, "float"),
         ({"type": "quantity", "unit": "Pa"}, "float"),
         ({"type": "vector", "length": "one per component"}, "list[float]"),
-        ({"type": "matrix", "shape": "N x N"}, "list[float]"),
+        ({"type": "matrix", "shape": "N x N"}, "list[list[float]]"),
         ({"type": "fitting_list"}, "list[str]"),
     ],
 )

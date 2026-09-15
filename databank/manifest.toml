@@ -1179,22 +1179,19 @@ reason = """\
     359 of the 516 in-scope pairs."""
 [[upstreams.files.columns]]
 name = "NRTLALPHA"
-disposition = "vendored"
+disposition = "used"
 as = "nrtlalpha"
-unit = "neqsim-internal"
-reason = "not-ported: the NRTL activity model; NeqSim's `PhaseGENRTL`"
+unit = "dimensionless"
 [[upstreams.files.columns]]
 name = "NRTLGIJ"
-disposition = "vendored"
+disposition = "used"
 as = "nrtlgij"
-unit = "neqsim-internal"
-reason = "not-ported: the NRTL activity model; NeqSim's `PhaseGENRTL`"
+unit = "K"
 [[upstreams.files.columns]]
 name = "NRTLGJI"
-disposition = "vendored"
+disposition = "used"
 as = "nrtlgji"
-unit = "neqsim-internal"
-reason = "not-ported: the NRTL activity model; NeqSim's `PhaseGENRTL`"
+unit = "K"
 [[upstreams.files.columns]]
 name = "GIJVISC"
 disposition = "vendored"

@@ -506,6 +506,18 @@ class WilkeViscosityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class NrtlActivityCoefficientsResult(_HasWarnings):
+    """Result of ``eos.nrtl_activity_coefficients``."""
+
+    #: The natural logarithm of each activity coefficient.
+    ln_gamma: tuple[float, ...]
+    #: The activity coefficient of each component.
+    gamma: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Vdw1fMixBinaryResult(_HasWarnings):
     """Result of ``eos.vdw1f_mix_binary``.
 

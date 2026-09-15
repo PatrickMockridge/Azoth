@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import csv
 import io
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import cache
 
@@ -282,6 +282,23 @@ def _kij() -> dict[tuple[str, str], float]:
     return pairs
 
 
+@cache
+def _nrtl() -> dict[tuple[str, str], tuple[float, float]]:
+    """NRTL `(alpha, gij)`, keyed by ordered pair and stored both ways round.
+
+    `gij` is the Kelvin energy for the ordered key `(first, second)`, so the reversed
+    key carries the reversed energy; `alpha` is symmetric and appears under both keys.
+    """
+    pairs: dict[tuple[str, str], tuple[float, float]] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        a = row["component_a"]
+        b = row["component_b"]
+        alpha = float(row["nrtlalpha"])
+        pairs[(a, b)] = (alpha, float(row["nrtlgij"]))
+        pairs[(b, a)] = (alpha, float(row["nrtlgji"]))
+    return pairs
+
+
 def available(*, card: keycard.Keycard | None = None) -> tuple[str, ...]:
     """Every name available, sorted: the databank plus whatever a card adds.
 
@@ -472,6 +489,35 @@ def kij_for(
     return pairs
 
 
+def nrtl_parameters(
+    names: Sequence[str],
+) -> tuple[tuple[tuple[float, ...], ...], tuple[tuple[float, ...], ...]]:
+    """The NRTL `alpha` and `Dij` matrices for a list of components, by name.
+
+    Returns ``(alpha, dij)`` as nested ``N x N`` tuples. ``alpha`` is symmetric with a
+    zero diagonal; ``dij[i][j] = g_ij`` (Kelvin) is directional, so ``dij[i][j]`` and
+    ``dij[j][i]`` differ in general. A pair the databank does not carry is ``0.0``, and
+    the diagonal is zero.
+
+    This is the name-to-matrix resolution `eos.nrtl_activity_coefficients` leaves to
+    the caller, the way :func:`kij_for` resolves `kij` for :func:`azoth.eos.mixture`.
+    """
+    table = _nrtl()
+    n = len(names)
+    alpha = [[0.0] * n for _ in range(n)]
+    dij = [[0.0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            row = table.get((names[i].strip().lower(), names[j].strip().lower()))
+            if row is None:
+                continue
+            alpha[i][j] = row[0]
+            dij[i][j] = row[1]
+    return tuple(tuple(r) for r in alpha), tuple(tuple(r) for r in dij)
+
+
 def _cubic(name: str) -> Cubic:
     """The cubic named by its short name, ``"pr"``, ``"srk"`` or ``"rk"``."""
     try:
@@ -654,5 +700,6 @@ __all__ = [
     "from_model",
     "from_names",
     "kij_for",
+    "nrtl_parameters",
     "wilke_chang_phi",
 ]

@@ -938,6 +938,26 @@ impl CalcResult for MasonSaxenaConductivityResult {
     }
 }
 
+/// Result of `eos.nrtl_activity_coefficients`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NrtlActivityCoefficientsResult {
+    /// The natural logarithm of each activity coefficient.
+    pub ln_gamma: Vec<f64>,
+    /// The activity coefficient of each component.
+    pub gamma: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for NrtlActivityCoefficientsResult {
+    const CALC_ID: &'static str = "eos.nrtl_activity_coefficients";
+    const FIELDS: &'static [&'static str] = &["ln_gamma", "gamma", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.tyn_calus_diffusivity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TynCalusDiffusivityResult {

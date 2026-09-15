@@ -1,0 +1,13 @@
+model = "eos.nrtl_activity_coefficients"
+[[cases]]
+id = "methanol_water_equimolar_at_298_15_k"
+tolerance = 1e-09
+source = "NeqSim 3.20.0 `ComponentGeNRTL.getGamma` for methanol/water 0.5/0.5 at 298.15 K, with NRTLALPHA/NRTLGIJ/NRTLGJI from INTER.csv."
+[cases.inputs]
+T = 298.15
+x = [0.5, 0.5]
+Dij = [[0.0, -48.68], [610.6, 0.0]]
+alpha = [[0.0, 0.303], [0.303, 0.0]]
+[cases.expected]
+ln_gamma = [0.20959527138156164, 0.4228402301695509]
+gamma = [1.2331788561677834, 1.5262904213232393]

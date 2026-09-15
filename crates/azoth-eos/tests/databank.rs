@@ -75,6 +75,23 @@ fn a_pair_the_databank_does_not_carry_falls_back_to_the_ideal_mixture() {
 }
 
 #[test]
+fn the_nrtl_matrices_resolve_from_names() {
+    // NRTLALPHA/NRTLGIJ/NRTLGJI from INTER.csv for methanol/water, flattened row-major.
+    let dij = databank::nrtl_dij(&["methanol", "water"]);
+    let alpha = databank::nrtl_alpha(&["methanol", "water"]);
+    assert_eq!(dij, vec![0.0, -48.68, 610.6, 0.0]);
+    assert_eq!(alpha, vec![0.0, 0.303, 0.303, 0.0]);
+}
+
+#[test]
+fn the_nrtl_energy_is_directional() {
+    // `g_ij != g_ji`: reversing the name order swaps the off-diagonal energy, while the
+    // symmetric `alpha` is unchanged.
+    assert_eq!(databank::nrtl_dij(&["water", "methanol"]), vec![0.0, 610.6, -48.68, 0.0]);
+    assert_eq!(databank::nrtl_alpha(&["water", "methanol"]), vec![0.0, 0.303, 0.303, 0.0]);
+}
+
+#[test]
 fn an_empty_mixture_is_refused() {
     assert!(databank::mixture_of(&[], None).is_err());
 }

@@ -1,0 +1,21 @@
+{
+  "id": "methanol_water_nrtl_against_neqsim",
+  "calc": "eos.nrtl_activity_coefficients",
+  "source": {
+    "attribution": "NeqSim 3.20.0, `ComponentGeNRTL.getGamma` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "NeqSim's NRTL activity coefficients for methanol/water 0.5/0.5 at 298.15 K, 1 bar - a state where the flash is all liquid, so the liquid composition is the feed. NRTLALPHA/NRTLGIJ/NRTLGJI are the INTER.csv values azoth's databank carries as nrtlalpha/nrtlgij/nrtlgji."
+  },
+  "derivation": "The driver ran `SystemNRTL` + `createDatabase(true)` + `setMixingRule(\"classic\")` + `TPflash()`, then read `getPhase(1).getActivityCoefficient(k)` and printed `gamma [1.2331788561678412, 1.5262904213231678]` at `x [0.5, 0.5]`.\n\nazoth's `eos.nrtl_activity_coefficients` reproduces it (ln_gamma is the log of NeqSim's gamma, since NeqSim's `getLnGamma()` returns 0 for NRTL).",
+  "inputs": {
+    "T": 298.15,
+    "x": [0.5, 0.5],
+    "Dij": [[0.0, -48.68], [610.6, 0.0]],
+    "alpha": [[0.0, 0.303], [0.303, 0.0]]
+  },
+  "expected": {
+    "ln_gamma": [0.2095952713816084, 0.42284023016950406],
+    "gamma": [1.2331788561678412, 1.5262904213231678]
+  },
+  "tolerance": 1e-10
+}

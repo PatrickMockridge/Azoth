@@ -50,6 +50,7 @@
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities](./eos/mason_saxena_conductivity.md)
   - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)
+  - [Activity coefficients from the NRTL local-composition model](./eos/nrtl_activity_coefficients.md)
   - [Pressure-enthalpy flash](./eos/ph_flash.md)
   - [Pressure-entropy flash](./eos/ps_flash.md)
   - [Pressure-temperature flash](./eos/pt_flash.md)

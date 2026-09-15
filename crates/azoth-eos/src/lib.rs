@@ -53,6 +53,7 @@ pub mod mason_saxena_conductivity;
 pub mod mixture;
 pub mod model_gen;
 pub mod molar_enthalpy_entropy;
+pub mod nrtl_activity_coefficients;
 pub mod ph_flash;
 pub mod phase_boundary;
 pub mod pr78_kappa;
@@ -103,6 +104,7 @@ pub use liquid_heat_capacity::liquid_heat_capacity;
 pub use mason_saxena_conductivity::mason_saxena_conductivity;
 pub use mixture::{Component, Mixture, PhaseState, ReducedParameters, RootSide};
 pub use molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
+pub use nrtl_activity_coefficients::nrtl_activity_coefficients;
 pub use ph_flash::ph_flash;
 pub use phase_boundary::{Incipient, PhaseBoundary, phase_boundary_pressure};
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
@@ -123,14 +125,15 @@ pub use results::{
     AntoineVaporPressureResult, BubblePressureResult, ChungConductivityResult,
     ChungViscosityResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
     DewPressureResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
-    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult, Phase,
-    Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult,
-    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
-    RkDepartureResult, RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, StabilityVerdict, TwuKappaResult, TynCalusDiffusivityResult,
-    Vdw1fMixBinaryResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult,
+    NrtlActivityCoefficientsResult, Phase, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
+    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
+    RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
+    StabilityVerdict, TwuKappaResult, TynCalusDiffusivityResult, Vdw1fMixBinaryResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;

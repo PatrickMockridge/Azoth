@@ -21,13 +21,14 @@ use azoth_eos::results::{
     ChungViscosityResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
     DewPressureResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult,
-    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
-    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, TwuKappaResult, TynCalusDiffusivityResult, Vdw1fMixBinaryResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult,
+    NrtlActivityCoefficientsResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
+    PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
+    TynCalusDiffusivityResult, Vdw1fMixBinaryResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1426,6 +1427,46 @@ impl From<&WilkeViscosityResult> for PyWilkeViscosityResult {
     }
 }
 
+/// Result of `eos.nrtl_activity_coefficients`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "NrtlActivityCoefficientsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyNrtlActivityCoefficientsResult {
+    /// The natural logarithm of each activity coefficient.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// The activity coefficient of each component.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyNrtlActivityCoefficientsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "NrtlActivityCoefficientsResult(ln_gamma={:?}, gamma={:?})",
+            self.ln_gamma, self.gamma
+        )
+    }
+}
+
+impl From<&NrtlActivityCoefficientsResult> for PyNrtlActivityCoefficientsResult {
+    fn from(r: &NrtlActivityCoefficientsResult) -> Self {
+        Self {
+            ln_gamma: r.ln_gamma.clone(),
+            gamma: r.gamma.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`, transported.
 #[pyclass(
     frozen,
@@ -2728,6 +2769,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChungConductivityResult::CALC_ID => ChungConductivityResult::FIELDS.to_vec(),
         WilkeViscosityResult::CALC_ID => WilkeViscosityResult::FIELDS.to_vec(),
         MasonSaxenaConductivityResult::CALC_ID => MasonSaxenaConductivityResult::FIELDS.to_vec(),
+        NrtlActivityCoefficientsResult::CALC_ID => NrtlActivityCoefficientsResult::FIELDS.to_vec(),
         TynCalusDiffusivityResult::CALC_ID => TynCalusDiffusivityResult::FIELDS.to_vec(),
         WilkeChangDiffusivityResult::CALC_ID => WilkeChangDiffusivityResult::FIELDS.to_vec(),
         HaydukMinhasDiffusivityResult::CALC_ID => HaydukMinhasDiffusivityResult::FIELDS.to_vec(),

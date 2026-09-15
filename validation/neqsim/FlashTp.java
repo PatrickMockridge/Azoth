@@ -17,6 +17,7 @@
 
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
+import neqsim.thermo.system.SystemNRTL;
 import neqsim.thermo.system.SystemSrkEos;
 import neqsim.thermo.system.SystemRKEos;
 import neqsim.thermo.system.SystemPrEosvolcor;
@@ -225,6 +226,35 @@ public class FlashTp {
     }
   }
 
+  /** The NRTL activity coefficients, for `eos.nrtl_activity_coefficients`. */
+  static void nrtl() {
+    String[][] names = {{"methanol", "water"}, {"ethanol", "water"}};
+    double[][] moles = {{0.5, 0.5}, {0.5, 0.5}};
+    System.out.println("NRTL activity coefficients (liquid phase; gamma = exp(ln gamma)):");
+    for (int k = 0; k < names.length; k++) {
+      SystemNRTL system = new SystemNRTL(298.15, 1.0);
+      for (int i = 0; i < names[k].length; i++) {
+        system.addComponent(names[k][i], moles[k][i]);
+      }
+      system.createDatabase(true);
+      system.setMixingRule("classic");
+      new ThermodynamicOperations(system).TPflash();
+      StringBuilder x = new StringBuilder();
+      StringBuilder gamma = new StringBuilder();
+      for (int i = 0; i < names[k].length; i++) {
+        if (i > 0) {
+          x.append(", ");
+          gamma.append(", ");
+        }
+        x.append(system.getPhase(1).getComponent(i).getx());
+        gamma.append(system.getPhase(1).getActivityCoefficient(i));
+      }
+      System.out.println("  " + String.join("+", names[k]));
+      System.out.println("    x     [" + x + "]");
+      System.out.println("    gamma [" + gamma + "]");
+    }
+  }
+
   public static void main(String[] args) {
     volcorr();
     chung();
@@ -233,6 +263,7 @@ public class FlashTp {
     masonSaxena();
     corr();
     antoine();
+    nrtl();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 1);
     flash("propane, 1.0, 300 K, 9 bar",

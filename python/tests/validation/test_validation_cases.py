@@ -141,6 +141,7 @@ ARGUMENT_BUILDERS = {
     "eos.molar_enthalpy_entropy": _enthalpy_kwargs,
     "eos.wilke_viscosity": _vector_model_kwargs,
     "eos.mason_saxena_conductivity": _vector_model_kwargs,
+    "eos.nrtl_activity_coefficients": _vector_model_kwargs,
 }
 
 

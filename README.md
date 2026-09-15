@@ -141,6 +141,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.liquid_heat_capacity` | Liquid heat capacity from NeqSim's polynomial |
 | `eos.mason_saxena_conductivity` | Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities — a *model* |
 | `eos.molar_enthalpy_entropy` | Molar enthalpy and entropy of a mixture — a *model* |
+| `eos.nrtl_activity_coefficients` | Activity coefficients from the NRTL local-composition model — a *model* |
 | `eos.ph_flash` | Pressure-enthalpy flash — a *model* |
 | `eos.pr78_kappa` | Peng-Robinson (1978) attraction-parameter coefficient |
 | `eos.pr_alpha_ab` | Peng-Robinson alpha function and reduced attraction parameters |

@@ -203,8 +203,24 @@ impl Overlay {
     }
 }
 
+/// One interaction-pair record from `INTER.csv`, keyed by the ordered pair of names
+/// exactly as they appear in the file.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Interaction {
+    /// The cubic binary interaction parameter, symmetric.
+    kij: f64,
+    /// The NRTL non-randomness parameter, symmetric.
+    alpha: f64,
+    /// The NRTL energy parameter for the ordered pair `(first, second)`: the `g_ij` in
+    /// `tau_ij = g_ij / T`, in Kelvin. Directional - `g_ij` differs from `g_ji`.
+    gij: f64,
+}
+
 /// The two parsed tables: substances by name, and interaction parameters by pair.
-type Tables = (HashMap<String, Entry>, HashMap<(String, String), f64>);
+type Tables = (
+    HashMap<String, Entry>,
+    HashMap<(String, String), Interaction>,
+);
 
 /// The parsed tables, read once.
 fn tables() -> &'static Tables {
@@ -307,13 +323,20 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
     Ok(out)
 }
 
-fn parse_kij() -> Result<HashMap<(String, String), f64>> {
+fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
         .from_reader(KIJ_CSV.as_bytes());
     let header = reader.headers().map_err(csv_failure)?.clone();
     let mut index = HashMap::new();
-    for name in ["component_a", "component_b", "kij_pr"] {
+    for name in [
+        "component_a",
+        "component_b",
+        "kij_pr",
+        "nrtlalpha",
+        "nrtlgij",
+        "nrtlgji",
+    ] {
         index.insert(name, column(&header, name)?);
     }
 
@@ -341,9 +364,29 @@ fn parse_kij() -> Result<HashMap<(String, String), f64>> {
             field: "databank".to_string(),
             reason: format!("row {}: `kij_pr` is {raw:?}", offset + 2),
         })?;
-        // Stored both ways, so a caller need not know which name came first.
-        out.insert((a.clone(), b.clone()), value);
-        out.insert((b, a), value);
+        let row = offset + 2;
+        let alpha = number(&record, index["nrtlalpha"], "nrtlalpha", row)?;
+        let gij = number(&record, index["nrtlgij"], "nrtlgij", row)?;
+        let gji = number(&record, index["nrtlgji"], "nrtlgji", row)?;
+        // `kij` and `alpha` are symmetric, stored both ways round so a caller need not
+        // know which name came first. `gij` is directional, so the reversed key carries
+        // the reversed energy.
+        out.insert(
+            (a.clone(), b.clone()),
+            Interaction {
+                kij: value,
+                alpha,
+                gij,
+            },
+        );
+        out.insert(
+            (b, a),
+            Interaction {
+                kij: value,
+                alpha,
+                gij: gji,
+            },
+        );
     }
     Ok(out)
 }
@@ -430,8 +473,7 @@ pub fn kij(first: &str, second: &str, overlay: Option<&Overlay>) -> f64 {
     tables()
         .1
         .get(&(first.trim().to_lowercase(), second.trim().to_lowercase()))
-        .copied()
-        .unwrap_or(0.0)
+        .map_or(0.0, |interaction| interaction.kij)
 }
 
 /// The Wilke-Chang association parameter for a solvent, by name.
@@ -489,9 +531,52 @@ pub fn all_kij() -> Vec<(String, String, f64)> {
         .1
         .iter()
         .filter(|((a, b), _)| a < b)
-        .map(|((a, b), value)| (a.clone(), b.clone(), *value))
+        .map(|((a, b), interaction)| (a.clone(), b.clone(), interaction.kij))
         .collect();
     out.sort_by(|left, right| (&left.0, &left.1).cmp(&(&right.0, &right.1)));
+    out
+}
+
+/// The NRTL non-randomness matrix for a list of names, flattened row-major.
+///
+/// `alpha[i][j] = alpha_ij`, symmetric; the diagonal and any pair the table does not
+/// carry are `0.0`, the ideal-mixture default.
+#[must_use]
+pub fn nrtl_alpha(names: &[&str]) -> Vec<f64> {
+    let table = &tables().1;
+    let n = names.len();
+    let mut out = vec![0.0; n * n];
+    for (i, a) in names.iter().enumerate() {
+        for (j, b) in names.iter().enumerate() {
+            if i != j {
+                out[i * n + j] = table
+                    .get(&(a.trim().to_lowercase(), b.trim().to_lowercase()))
+                    .map_or(0.0, |interaction| interaction.alpha);
+            }
+        }
+    }
+    out
+}
+
+/// The NRTL energy matrix `Dij` for a list of names, flattened row-major.
+///
+/// `dij[i][j] = g_ij`, the Kelvin energy in `tau_ij = g_ij / T`; directional, so
+/// `dij[i][j]` and `dij[j][i]` differ in general. The diagonal and any absent pair are
+/// `0.0`.
+#[must_use]
+pub fn nrtl_dij(names: &[&str]) -> Vec<f64> {
+    let table = &tables().1;
+    let n = names.len();
+    let mut out = vec![0.0; n * n];
+    for (i, a) in names.iter().enumerate() {
+        for (j, b) in names.iter().enumerate() {
+            if i != j {
+                out[i * n + j] = table
+                    .get(&(a.trim().to_lowercase(), b.trim().to_lowercase()))
+                    .map_or(0.0, |interaction| interaction.gij);
+            }
+        }
+    }
     out
 }
 

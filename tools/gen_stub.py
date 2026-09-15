@@ -217,8 +217,10 @@ def parameter_type(declaration: dict[str, Any]) -> str:
     kind = declaration.get("type", "quantity")
     if kind == "fitting_list":
         return "list[str]"
-    if kind in ("vector", "matrix"):
+    if kind == "vector":
         return "list[float]"
+    if kind == "matrix":
+        return "list[list[float]]"
     if kind == "boolean":
         return "bool"
     if kind in ("enum", "string"):

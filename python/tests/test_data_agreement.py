@@ -332,6 +332,20 @@ def test_every_interaction_row_agrees_field_by_field() -> None:
         )
 
 
+def test_the_nrtl_matrices_resolve_from_names() -> None:
+    """The NRTL columns, resolved into the matrices `eos.nrtl_activity_coefficients` takes.
+
+    `alpha` is symmetric with a zero diagonal; `dij` is directional (`g_ij != g_ji`),
+    so reversing the name order swaps the off-diagonal energy.
+    """
+    alpha, dij = components.nrtl_parameters(["methanol", "water"])
+    assert alpha == ((0.0, 0.303), (0.303, 0.0))
+    assert dij == ((0.0, -48.68), (610.6, 0.0))
+
+    _, reversed_dij = components.nrtl_parameters(["water", "methanol"])
+    assert reversed_dij == ((0.0, 610.6), (-48.68, 0.0))
+
+
 def test_an_unknown_fluid_fails_rather_than_returning_nothing() -> None:
     """An empty list for an unknown name would make a typo look like an empty table.
 

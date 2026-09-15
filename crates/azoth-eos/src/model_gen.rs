@@ -6,6 +6,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
+//!   - specs/models/eos/nrtl_activity_coefficients.toml
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/ps_flash.toml
 //!   - specs/models/eos/pt_flash.toml
@@ -575,6 +576,53 @@ pub static MOLAR_ENTHALPY_ENTROPY_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: MOLAR_ENTHALPY_ENTROPY_CHECKS,
     cases: MOLAR_ENTHALPY_ENTROPY_CASES,
+};
+
+static NRTL_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute temperature; zero and below are not states",
+    },
+}];
+
+static NRTL_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[TestCase {
+    id: "methanol_water_equimolar_at_298_15_k",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-09,
+    numbers: &[("T", 298.15)],
+    lists: &[],
+    strings: &[],
+    vectors: &[("x", &[0.5, 0.5])],
+    matrices: &[
+        ("Dij", &[0.0, -48.68, 610.6, 0.0]),
+        ("alpha", &[0.0, 0.303, 0.303, 0.0]),
+    ],
+    expected: &[],
+    expected_vectors: &[
+        ("ln_gamma", &[0.20959527138156164, 0.4228402301695509]),
+        ("gamma", &[1.2331788561677834, 1.5262904213232393]),
+    ],
+}];
+
+/// Registry entry for `eos.nrtl_activity_coefficients`.
+pub static NRTL_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
+    id: "eos.nrtl_activity_coefficients",
+    kind: "direct",
+    algorithm: None,
+    checks: NRTL_ACTIVITY_COEFFICIENTS_CHECKS,
+    cases: NRTL_ACTIVITY_COEFFICIENTS_CASES,
 };
 
 static PH_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -1239,6 +1287,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
+    &NRTL_ACTIVITY_COEFFICIENTS_SPEC,
     &PH_FLASH_SPEC,
     &PS_FLASH_SPEC,
     &PT_FLASH_SPEC,
