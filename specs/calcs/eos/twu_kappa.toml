@@ -1,0 +1,55 @@
+id = "eos.twu_kappa"
+name = "Twu attraction-parameter coefficient"
+equation = "kappa = 0.48 + 1.574*omega - 0.175*omega**2"
+latex = '''\kappa = 0.48 + 1.574\,\omega - 0.175\,\omega^{2}'''
+assumptions = ["the acentric factor supplied is correct for the component intended. NOT CHECKED.\n", "the coefficient is Twu's, which differs from Soave's only in the last constant: 0.175 against 0.176.\n", "the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.\n"]
+references = ["Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991). \\\"A Cubic Equation of State with a New Alpha Function and a New Mixing Rule.\\\" Fluid Phase Equilibria 69, 33-50. DOI 10.1016/0378-3812(91)90024-2.", "NeqSim 3.20.0, `neqsim.thermo.component.attractiveeosterm.AttractiveTermTwu`."]
+[source]
+standard = "Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991)"
+edition = "A Cubic Equation of State with a New Alpha Function and a New Mixing Rule. Fluid Phase Equilibria, 69, 33-50"
+doi = "10.1016/0378-3812(91)90024-2"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "Acentric factor of the pure component, as defined by Pitzer at a reduced temperature of 0.7.\n"
+[outputs]
+[outputs.kappa]
+unit = "dimensionless"
+description = "Twu's coefficient, for the same Soave alpha form: alpha = (1 + kappa*(1 - sqrt(Tr)))**2.\n"
+[[valid_range]]
+quantity = "kappa"
+min = 0
+min_inclusive = false
+severity = "warning"
+rationale = "The polynomial passes through zero at omega = -0.296092 and omega = 9.290661, and kappa is negative below the lower one.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "Propane-like, omega = 0.152:\n\n  1.574 * omega    = 1.574 * 0.152     = 0.239248\n  omega**2         = 0.152 * 0.152     = 0.023104\n  0.175 * omega**2 = 0.175 * 0.023104  = 0.0040432\n  0.48 + 0.239248  = 0.719248\n  0.719248 - 0.0040432 = 0.7152048\n\nkappa = 0.7152048.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.152
+[worked_example.expected]
+kappa = 0.7152048
+[implementations]
+python = "azoth.eos.twu_kappa"
+rust = "azoth_eos::twu_kappa"
+[[tests]]
+id = "propane_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "methane_at_a_very_different_acentric_factor"
+type = "reference"
+status = "active"
+source = "Derived from the equation above, at methane's acentric factor, omega = 0.01142:\n\n  kappa = 0.48 + 1.574*0.01142 - 0.175*0.01142**2 = 0.49795225713\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.01142
+[tests.expected]
+kappa = 0.49795225712999996
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "skipped"
+skip_reason = "Both the input and the output are dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.\n"

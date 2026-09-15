@@ -42,6 +42,7 @@ from azoth.core.result import (
     MolarEnthalpyEntropyResult,
     OrificeFlowResult,
     PhFlashResult,
+    Pr78KappaResult,
     PrAlphaAbResult,
     PrDepartureResult,
     PrKappaResult,
@@ -64,6 +65,7 @@ from azoth.core.result import (
     SrkZFactorResult,
     StabilityTestResult,
     SwameeJainResult,
+    TwuKappaResult,
     Vdw1fMixBinaryResult,
 )
 from azoth.core.result import Phase as _Phase
@@ -239,6 +241,18 @@ def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult:
     """
     result = _core.prsv_kappa(omega, Tr, kappa1)
     return PrsvKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
+
+
+def pr78_kappa(omega: float) -> Pr78KappaResult:
+    """The 1978 Peng-Robinson alpha-function coefficient, computed in Rust."""
+    result = _core.pr78_kappa(omega)
+    return Pr78KappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
+
+
+def twu_kappa(omega: float) -> TwuKappaResult:
+    """Twu's alpha-function coefficient, computed in Rust."""
+    result = _core.twu_kappa(omega)
+    return TwuKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
 
 
 def pr_departure(

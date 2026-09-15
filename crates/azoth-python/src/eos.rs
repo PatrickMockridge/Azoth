@@ -16,11 +16,12 @@ use pyo3::prelude::*;
 use crate::errors::to_pyerr;
 use crate::results::{
     PyCriticalPointResult, PyIdealGasCpResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
-    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
-    PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult, PySrkDepartureResult,
-    PySrkKappaResult, PySrkZFactorResult, PyStabilityTestResult, PyVdw1fMixBinaryResult,
+    PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
+    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult,
+    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
+    PyRachfordRiceBinaryResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
+    PySrkDepartureResult, PySrkKappaResult, PySrkZFactorResult, PyStabilityTestResult,
+    PyTwuKappaResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -78,6 +79,26 @@ pub fn pr_z_factor(py: Python<'_>, a_reduced: f64, b_reduced: f64) -> PyResult<P
 pub fn prsv_kappa(py: Python<'_>, omega: f64, Tr: f64, kappa1: f64) -> PyResult<PyPrsvKappaResult> {
     azoth_eos::prsv_kappa(omega, Tr, kappa1)
         .map(|r| PyPrsvKappaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The 1978 Peng-Robinson alpha-function coefficient.
+#[pyfunction]
+#[pyo3(signature = (omega))]
+#[pyo3(text_signature = "(omega)")]
+pub fn pr78_kappa(py: Python<'_>, omega: f64) -> PyResult<PyPr78KappaResult> {
+    azoth_eos::pr78_kappa(omega)
+        .map(|r| PyPr78KappaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Twu's alpha-function coefficient.
+#[pyfunction]
+#[pyo3(signature = (omega))]
+#[pyo3(text_signature = "(omega)")]
+pub fn twu_kappa(py: Python<'_>, omega: f64) -> PyResult<PyTwuKappaResult> {
+    azoth_eos::twu_kappa(omega)
+        .map(|r| PyTwuKappaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

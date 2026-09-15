@@ -869,6 +869,42 @@ impl CalcResult for RkDepartureResult {
     }
 }
 
+/// Result of `eos.pr78_kappa`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Pr78KappaResult {
+    /// The 1978 Peng-Robinson alpha-function coefficient. Dimensionless.
+    pub kappa: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for Pr78KappaResult {
+    const CALC_ID: &'static str = "eos.pr78_kappa";
+    const FIELDS: &'static [&'static str] = &["kappa", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.twu_kappa`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TwuKappaResult {
+    /// Twu's alpha-function coefficient. Dimensionless.
+    pub kappa: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TwuKappaResult {
+    const CALC_ID: &'static str = "eos.twu_kappa";
+    const FIELDS: &'static [&'static str] = &["kappa", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.critical_point`.
 ///
 /// The four state variables of a mixture critical point. `z_c` is here because it is the

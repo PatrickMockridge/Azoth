@@ -63,6 +63,7 @@ Four sections, and the difference between them is the point:
 **Equations of state** - [`eos/index.md`](./eos/index.md):
 
 - [`eos.ideal_gas_cp`](./eos/ideal_gas_cp.md)
+- [`eos.pr78_kappa`](./eos/pr78_kappa.md)
 - [`eos.pr_alpha_ab`](./eos/pr_alpha_ab.md)
 - [`eos.pr_departure`](./eos/pr_departure.md)
 - [`eos.pr_kappa`](./eos/pr_kappa.md)
@@ -77,6 +78,7 @@ Four sections, and the difference between them is the point:
 - [`eos.srk_departure`](./eos/srk_departure.md)
 - [`eos.srk_kappa`](./eos/srk_kappa.md)
 - [`eos.srk_z_factor`](./eos/srk_z_factor.md)
+- [`eos.twu_kappa`](./eos/twu_kappa.md)
 - [`eos.vdw1f_mix_binary`](./eos/vdw1f_mix_binary.md)
 
 *Models* — whose specs fix a procedure rather than an equation:

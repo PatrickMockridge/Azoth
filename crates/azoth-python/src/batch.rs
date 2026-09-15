@@ -516,6 +516,26 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "kappa", "dimensionless", kappa);
         }
 
+        "eos.pr78_kappa" => {
+            let omega = take(&inputs, "omega")?;
+            let mut kappa = Vec::with_capacity(n);
+            for value in &omega {
+                let r = element(py, eos::pr78_kappa(*value), &mut warnings)?;
+                kappa.push(r.kappa);
+            }
+            push_values(&mut columns, "kappa", "dimensionless", kappa);
+        }
+
+        "eos.twu_kappa" => {
+            let omega = take(&inputs, "omega")?;
+            let mut kappa = Vec::with_capacity(n);
+            for value in &omega {
+                let r = element(py, eos::twu_kappa(*value), &mut warnings)?;
+                kappa.push(r.kappa);
+            }
+            push_values(&mut columns, "kappa", "dimensionless", kappa);
+        }
+
         "eos.srk_alpha_ab" => {
             let (kappa, tr, pr) = (
                 take(&inputs, "kappa")?,

@@ -18,11 +18,11 @@ use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     BubblePressureResult, CriticalPointResult, DewPressureResult, IdealGasCpResult,
-    MolarEnthalpyEntropyResult, PhFlashResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RkAlphaAbResult,
+    MolarEnthalpyEntropyResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
+    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrZFactorResult, PrsvKappaResult,
+    PsFlashResult, PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RkAlphaAbResult,
     RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkZFactorResult,
-    StabilityTestResult, Vdw1fMixBinaryResult,
+    StabilityTestResult, TwuKappaResult, Vdw1fMixBinaryResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -627,6 +627,80 @@ impl PyPrsvKappaResult {
 
 impl From<&PrsvKappaResult> for PyPrsvKappaResult {
     fn from(r: &PrsvKappaResult) -> Self {
+        Self {
+            kappa: r.kappa,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr78_kappa`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "Pr78KappaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPr78KappaResult {
+    /// The 1978 Peng-Robinson alpha-function coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub kappa: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPr78KappaResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "Pr78KappaResult(kappa={}, {} warning(s))",
+            self.kappa,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&Pr78KappaResult> for PyPr78KappaResult {
+    fn from(r: &Pr78KappaResult) -> Self {
+        Self {
+            kappa: r.kappa,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.twu_kappa`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TwuKappaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTwuKappaResult {
+    /// Twu's alpha-function coefficient. Dimensionless.
+    #[pyo3(get)]
+    pub kappa: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTwuKappaResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TwuKappaResult(kappa={}, {} warning(s))",
+            self.kappa,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&TwuKappaResult> for PyTwuKappaResult {
+    fn from(r: &TwuKappaResult) -> Self {
         Self {
             kappa: r.kappa,
             warnings: transport(&r.warnings),
@@ -2008,6 +2082,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         SrkDepartureResult::CALC_ID => SrkDepartureResult::FIELDS.to_vec(),
         RkAlphaAbResult::CALC_ID => RkAlphaAbResult::FIELDS.to_vec(),
         RkDepartureResult::CALC_ID => RkDepartureResult::FIELDS.to_vec(),
+        Pr78KappaResult::CALC_ID => Pr78KappaResult::FIELDS.to_vec(),
+        TwuKappaResult::CALC_ID => TwuKappaResult::FIELDS.to_vec(),
         Vdw1fMixBinaryResult::CALC_ID => Vdw1fMixBinaryResult::FIELDS.to_vec(),
         RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
         PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
@@ -2061,6 +2137,8 @@ pub fn calc_ids() -> Vec<String> {
         SrkDepartureResult::CALC_ID.to_string(),
         RkAlphaAbResult::CALC_ID.to_string(),
         RkDepartureResult::CALC_ID.to_string(),
+        Pr78KappaResult::CALC_ID.to_string(),
+        TwuKappaResult::CALC_ID.to_string(),
         Vdw1fMixBinaryResult::CALC_ID.to_string(),
         RachfordRiceBinaryResult::CALC_ID.to_string(),
         PrMolarVolumeResult::CALC_ID.to_string(),

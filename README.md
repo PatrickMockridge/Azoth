@@ -133,6 +133,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.ideal_gas_cp` | Ideal-gas heat capacity from a polynomial |
 | `eos.molar_enthalpy_entropy` | Molar enthalpy and entropy of a mixture — a *model* |
 | `eos.ph_flash` | Pressure-enthalpy flash — a *model* |
+| `eos.pr78_kappa` | Peng-Robinson (1978) attraction-parameter coefficient |
 | `eos.pr_alpha_ab` | Peng-Robinson alpha function and reduced attraction parameters |
 | `eos.pr_departure` | Peng-Robinson fugacity coefficient and departure functions |
 | `eos.pr_kappa` | Peng-Robinson attraction-parameter coefficient |
@@ -151,6 +152,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.srk_kappa` | Soave-Redlich-Kwong attraction-parameter coefficient |
 | `eos.srk_z_factor` | Soave-Redlich-Kwong compressibility factor |
 | `eos.stability_test` | Tangent-plane stability test — a *model* |
+| `eos.twu_kappa` | Twu attraction-parameter coefficient |
 | `eos.vdw1f_mix_binary` | van der Waals one-fluid mixing, for a binary |
 | `hydraulics.choked_flow_area` | Choked-flow throat area for an ideal gas |
 | `hydraulics.control_valve_cv` | Liquid flow through a control valve from its flow coefficient |

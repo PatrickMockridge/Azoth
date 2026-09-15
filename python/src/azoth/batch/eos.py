@@ -24,6 +24,7 @@ from azoth.core.warnings import Warning
 
 __all__ = [
     "IdealGasCpBatch",
+    "Pr78KappaBatch",
     "PrAlphaAbBatch",
     "PrDepartureBatch",
     "PrKappaBatch",
@@ -38,8 +39,10 @@ __all__ = [
     "SrkDepartureBatch",
     "SrkKappaBatch",
     "SrkZFactorBatch",
+    "TwuKappaBatch",
     "Vdw1fMixBinaryBatch",
     "ideal_gas_cp",
+    "pr78_kappa",
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
@@ -54,6 +57,7 @@ __all__ = [
     "srk_departure",
     "srk_kappa",
     "srk_z_factor",
+    "twu_kappa",
     "vdw1f_mix_binary",
 ]
 
@@ -73,6 +77,8 @@ _SRK_Z_FACTOR = "eos.srk_z_factor"
 _SRK_DEPARTURE = "eos.srk_departure"
 _RK_ALPHA_AB = "eos.rk_alpha_ab"
 _RK_DEPARTURE = "eos.rk_departure"
+_PR78_KAPPA = "eos.pr78_kappa"
+_TWU_KAPPA = "eos.twu_kappa"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -808,5 +814,63 @@ def rk_departure(
             "z": sequence(z, "z"),
         },
         _build_rk_departure,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class Pr78KappaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr78_kappa`."""
+
+    #: The 1978 Peng-Robinson alpha-function coefficient per element. Dimensionless.
+    kappa: array[float]
+
+
+def _build_pr78_kappa(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> Pr78KappaBatch:
+    return Pr78KappaBatch(warnings=warnings, units=units, kappa=columns["kappa"])  # type: ignore[arg-type]
+
+
+def pr78_kappa(*, omega: Sequence[float]) -> Pr78KappaBatch:
+    """The 1978 Peng-Robinson alpha-function coefficient, over an array.
+
+    See :func:`azoth.eos.pr78_kappa` for the calculation itself.
+    """
+    result: Pr78KappaBatch = run(
+        _PR78_KAPPA,
+        {"omega": sequence(omega, "omega")},
+        _build_pr78_kappa,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class TwuKappaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.twu_kappa`."""
+
+    #: Twu's alpha-function coefficient per element. Dimensionless.
+    kappa: array[float]
+
+
+def _build_twu_kappa(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> TwuKappaBatch:
+    return TwuKappaBatch(warnings=warnings, units=units, kappa=columns["kappa"])  # type: ignore[arg-type]
+
+
+def twu_kappa(*, omega: Sequence[float]) -> TwuKappaBatch:
+    """Twu's alpha-function coefficient, over an array.
+
+    See :func:`azoth.eos.twu_kappa` for the calculation itself.
+    """
+    result: TwuKappaBatch = run(
+        _TWU_KAPPA,
+        {"omega": sequence(omega, "omega")},
+        _build_twu_kappa,
     )
     return result

@@ -7,6 +7,7 @@ Every calculation in this section is generated from its specification. Each page
 | Calculation | Equation | Source |
 |---|---|---|
 | [`eos.ideal_gas_cp`](./ideal_gas_cp.md) | $C_{p}^{\mathrm{ig}} = c_{0} + c_{1}T + c_{2}T^{2} + c_{3}T^{3} + c_{4}T^{4}$ | NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0 |
+| [`eos.pr78_kappa`](./pr78_kappa.md) | $\kappa = \begin{cases} 0.379642 + 1.48503\,\omega - 0.164423\,\omega^{2} + 0.01666\,\omega^{3} & \omega > 0.49 \\ 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2} & \text{otherwise} \end{cases}$ | Peng, D. Y.; Robinson, D. B. (1978) |
 | [`eos.pr_alpha_ab`](./pr_alpha_ab.md) | $\alpha = \left[1 + \kappa\left(1 - \sqrt{T_{r}}\right)\right]^{2}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pr_departure`](./pr_departure.md) | $\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad C = \frac{A}{2\sqrt{2}B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - CI, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + C\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + C\psi I, \qquad \frac{C_{p}^{R}}{R} = \frac{H^{R}}{RT} + T\left(\frac{\partial}{\partial T}\frac{H^{R}}{RT}\right)_{P}$ | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pr_kappa`](./pr_kappa.md) | $\kappa = 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2}$ | Peng, D. Y.; Robinson, D. B. (1976) |
@@ -21,6 +22,7 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.srk_departure`](./srk_departure.md) | $\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + B}{z}, \qquad C = \frac{A}{B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - CI, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + C\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + C\psi I$ | Soave, G. (1972) |
 | [`eos.srk_kappa`](./srk_kappa.md) | $\kappa = 0.48 + 1.574\,\omega - 0.176\,\omega^{2}$ | Soave, G. (1972) |
 | [`eos.srk_z_factor`](./srk_z_factor.md) | $z^{3} - z^{2} + \left(A - B - B^{2}\right)z - AB = 0$ | Redlich, O.; Kwong, J. N. S. (1949) |
+| [`eos.twu_kappa`](./twu_kappa.md) | $\kappa = 0.48 + 1.574\,\omega - 0.175\,\omega^{2}$ | Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991) |
 | [`eos.vdw1f_mix_binary`](./vdw1f_mix_binary.md) | $a_{\mathrm{mix}} = z_{1}^{2}a_{1} + 2z_{1}z_{2}\left(1 - k_{12}\right)\sqrt{a_{1}a_{2}} + z_{2}^{2}a_{2}, \qquad b_{\mathrm{mix}} = z_{1}b_{1} + z_{2}b_{2}$ | van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text |
 
 ## Models

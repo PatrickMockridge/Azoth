@@ -490,6 +490,26 @@ class SrkKappaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class Pr78KappaResult(_HasWarnings):
+    """Result of ``eos.pr78_kappa``."""
+
+    #: The 1978 Peng-Robinson alpha-function coefficient. Dimensionless.
+    kappa: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TwuKappaResult(_HasWarnings):
+    """Result of ``eos.twu_kappa``."""
+
+    #: Twu's alpha-function coefficient. Dimensionless.
+    kappa: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SrkAlphaAbResult(_HasWarnings):
     """Result of ``eos.srk_alpha_ab``."""
 

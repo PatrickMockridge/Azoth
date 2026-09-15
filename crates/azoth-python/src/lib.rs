@@ -43,11 +43,12 @@ mod thermal;
 use results::{
     PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
     PyCriticalPointResult, PyDarcyWeisbachResult, PyHaalandResult, PyKComponent, PyKFactorsResult,
-    PyOrificeFlowResult, PyPhFlashResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
-    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
-    PyReynoldsNumberResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
-    PySrkDepartureResult, PySrkKappaResult, PySrkZFactorResult, PySwameeJainResult,
+    PyOrificeFlowResult, PyPhFlashResult, PyPr78KappaResult, PyPrAlphaAbResult,
+    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
+    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPumpPowerResult,
+    PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult, PyReynoldsNumberResult,
+    PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult, PySrkDepartureResult,
+    PySrkKappaResult, PySrkZFactorResult, PySwameeJainResult, PyTwuKappaResult,
     PyVdw1fMixBinaryResult, PyWarning,
 };
 
@@ -70,12 +71,14 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPrKappaResult>()?;
     m.add_class::<PyPrAlphaAbResult>()?;
     m.add_class::<PyPrZFactorResult>()?;
+    m.add_class::<PyPr78KappaResult>()?;
     m.add_class::<PyPrsvKappaResult>()?;
     m.add_class::<PyPrDepartureResult>()?;
     m.add_class::<PySrkKappaResult>()?;
     m.add_class::<PySrkAlphaAbResult>()?;
     m.add_class::<PySrkZFactorResult>()?;
     m.add_class::<PySrkDepartureResult>()?;
+    m.add_class::<PyTwuKappaResult>()?;
     m.add_class::<PyRkAlphaAbResult>()?;
     m.add_class::<PyRkDepartureResult>()?;
     m.add_class::<PyVdw1fMixBinaryResult>()?;
@@ -125,6 +128,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pr_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_alpha_ab, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_z_factor, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr78_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(eos::prsv_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_departure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::srk_kappa, m)?)?;
@@ -133,6 +137,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::srk_departure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::rk_alpha_ab, m)?)?;
     m.add_function(wrap_pyfunction!(eos::rk_departure, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::twu_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(eos::vdw1f_mix_binary, m)?)?;
     m.add_function(wrap_pyfunction!(eos::rachford_rice_binary, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_molar_volume, m)?)?;

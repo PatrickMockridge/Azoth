@@ -72,6 +72,7 @@ from azoth.core.result import (
     IdealGasCpResult,
     MolarEnthalpyEntropyResult,
     PhFlashResult,
+    Pr78KappaResult,
     PrAlphaAbResult,
     PrDepartureResult,
     PrKappaResult,
@@ -90,6 +91,7 @@ from azoth.core.result import (
     SrkKappaResult,
     SrkZFactorResult,
     StabilityTestResult,
+    TwuKappaResult,
     Vdw1fMixBinaryResult,
 )
 from azoth.core.units import Q
@@ -113,6 +115,7 @@ __all__ = [
     "mixture",
     "molar_enthalpy_entropy",
     "ph_flash",
+    "pr78_kappa",
     "pr_alpha_ab",
     "pr_departure",
     "pr_kappa",
@@ -130,6 +133,7 @@ __all__ = [
     "srk_kappa",
     "srk_z_factor",
     "stability_test",
+    "twu_kappa",
     "vdw1f_mix_binary",
 ]
 
@@ -150,6 +154,8 @@ _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DEPARTURE = "eos.pr_departure"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
+_PR78_KAPPA = "eos.pr78_kappa"
+_TWU_KAPPA = "eos.twu_kappa"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 _SRK_KAPPA = "eos.srk_kappa"
@@ -218,6 +224,27 @@ def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult:
     See :func:`azoth.eos.reference.prsv_kappa`.
     """
     return resolve(_PRSV_KAPPA)(omega=omega, Tr=Tr, kappa1=kappa1)  # type: ignore[no-any-return]
+
+
+def pr78_kappa(omega: float) -> Pr78KappaResult:
+    """The 1978 Peng-Robinson alpha-function coefficient for a pure component.
+
+    The 1976 form for light components, a heavier-acentric branch for ``omega`` above
+    0.49. Both feed the same Soave alpha function.
+
+    See :func:`azoth.eos.reference.pr78_kappa`.
+    """
+    return resolve(_PR78_KAPPA)(omega=omega)  # type: ignore[no-any-return]
+
+
+def twu_kappa(omega: float) -> TwuKappaResult:
+    """Twu's alpha-function coefficient for a pure component.
+
+    Differs from Soave's only in the last constant, 0.175 against 0.176.
+
+    See :func:`azoth.eos.reference.twu_kappa`.
+    """
+    return resolve(_TWU_KAPPA)(omega=omega)  # type: ignore[no-any-return]
 
 
 def pr_departure(

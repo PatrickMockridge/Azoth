@@ -177,6 +177,11 @@ class PhFlashResult:
     warnings: list[Warning]
 
 @final
+class Pr78KappaResult:
+    kappa: float
+    warnings: list[Warning]
+
+@final
 class PrAlphaAbResult:
     alpha: float
     a_reduced: float
@@ -319,6 +324,11 @@ class StabilityTestResult:
     warnings: list[Warning]
 
 @final
+class TwuKappaResult:
+    kappa: float
+    warnings: list[Warning]
+
+@final
 class Vdw1fMixBinaryResult:
     a_mix: float
     b_mix: float
@@ -457,6 +467,7 @@ def ph_flash(
     z: list[float],
     eos: str = "pr",
 ) -> PhFlashResult: ...
+def pr78_kappa(omega: float) -> Pr78KappaResult: ...
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
 def pr_departure(
     a_reduced: float,
@@ -519,6 +530,7 @@ def stability_test(
     z: list[float],
     eos: str = "pr",
 ) -> StabilityTestResult: ...
+def twu_kappa(omega: float) -> TwuKappaResult: ...
 def vdw1f_mix_binary(
     z1: float,
     a1: float,

@@ -1,0 +1,60 @@
+id = "eos.pr78_kappa"
+name = "Peng-Robinson (1978) attraction-parameter coefficient"
+equation = """\
+    kappa = 0.379642 + 1.48503*omega - 0.164423*omega**2 + 0.01666*omega**3   if omega > 0.49\n\
+    kappa = 0.37464 + 1.54226*omega - 0.26992*omega**2                        otherwise\n\
+    """
+latex = """\
+    \\kappa = \\begin{cases} 0.379642 + 1.48503\\,\\omega - 0.164423\\,\\omega^{2} + \
+    0.01666\\,\\omega^{3} & \\omega > 0.49 \\\\ 0.37464 + 1.54226\\,\\omega - \
+    0.26992\\,\\omega^{2} & \\text{otherwise} \\end{cases}"""
+assumptions = ["the acentric factor supplied is correct for the component intended. NOT CHECKED.\n", "the coefficient applies to the 1978 Peng-Robinson alpha function: the 1976 form for light components, a heavier-acentric branch for omega above 0.49.\n", "the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.\n"]
+references = ["Peng, D. Y.; Robinson, D. B. (1978). \\\"The Characterization of the Heptanes and Heavier Fractions for the GPA Peng-Robinson Programs.\\\" GPA Research Report RR-28.", "Peng, D. Y.; Robinson, D. B. (1976). \\\"A New Two-Constant Equation of State.\\\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.", "NeqSim 3.20.0, `neqsim.thermo.component.attractiveeosterm.AttractiveTermPr1978`."]
+[source]
+standard = "Peng, D. Y.; Robinson, D. B. (1978)"
+edition = "The Characterization of the Heptanes and Heavier Fractions for the GPA Peng-Robinson Programs. GPA Research Report RR-28"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "Acentric factor of the pure component, as defined by Pitzer at a reduced temperature of 0.7.\n"
+[outputs]
+[outputs.kappa]
+unit = "dimensionless"
+description = "The coefficient in the 1978 Peng-Robinson alpha function, alpha = (1 + kappa*(1 - sqrt(Tr)))**2.\n"
+[[valid_range]]
+quantity = "kappa"
+min = 0
+min_inclusive = false
+severity = "warning"
+rationale = "The light branch passes through zero at omega = -0.23338349942403008, below which kappa is negative. The heavy branch is positive for every omega above 0.49.\n"
+[worked_example]
+source = "derived from the equations above"
+derivation = "A heavy component, omega = 0.6 - above the 0.49 threshold, so the heavier branch applies:\n\n  1.48503 * omega      = 1.48503 * 0.6       = 0.891018\n  0.164423 * omega**2  = 0.164423 * 0.36     = 0.05919228\n  0.01666 * omega**3   = 0.01666 * 0.216     = 0.00359856\n  0.379642 + 0.891018  = 1.27066\n  1.27066 - 0.05919228 = 1.21146772\n  1.21146772 + 0.00359856 = 1.21506628\n\nkappa = 1.21506628.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.6
+[worked_example.expected]
+kappa = 1.2150662799999998
+[implementations]
+python = "azoth.eos.pr78_kappa"
+rust = "azoth_eos::pr78_kappa"
+[[tests]]
+id = "heavy_component_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_light_component_reduces_to_the_1976_form"
+type = "reference"
+status = "active"
+source = "Derived from the equations above, at omega = 0.152 - below 0.49, so the light branch applies and the result is exactly the 1976 coefficient `eos.pr_kappa` gives:\n\n  kappa = 0.37464 + 1.54226*0.152 - 0.26992*0.152**2 = 0.60282728832\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.152
+[tests.expected]
+kappa = 0.60282728832
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "skipped"
+skip_reason = "Both the input and the output are dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision.\n"
