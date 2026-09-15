@@ -2,18 +2,18 @@
 
 azoth is a chemical-engineering calculation library — equations of state, flashes,
 property models, and the hydraulics and heat-transfer correlations around them — with an
-agentic layer on top. Every calculation is written twice, in Rust and in Python, and the
-two are cross-checked against each other. The algorithms are carried across from
+agentic layer on top. The algorithms are carried across from
 [NeqSim](https://github.com/equinor/neqsim), Equinor's open-source Java process simulator,
 under Apache-2.0 and credited in [`NOTICE`](NOTICE) rather than re-derived — but the port
 is the substrate, not the point.
 
 ## What makes azoth different
 
-**Two real implementations, not a binding.** Every calculation exists as a hand-written
-Rust kernel and a hand-written Python kernel, and the test suite runs both on the same
-inputs and compares them by tolerance — a bug has to be made twice, in two languages,
-before it reaches you.
+**Rust for the engine, Python for the ecosystem.** Python is where the basic calculations
+and the rich ecosystem live — data science, AI SDKs, notebooks. Rust is where the engine
+lives: safe at compile time, it expresses the process calculus natively in its type system
+and composes into very large — or many concurrent — simulations that run in minutes where
+Python would take days.
 
 **A spec file is the source, not documentation.** One TOML file per calculation declares
 its inputs, outputs, valid ranges, assumptions and tests. Generators compile that one file
@@ -41,9 +41,8 @@ lemmas rather than checks.
 
 Three disciplines run through everything:
 
-- **No runtime plugin registry.** A calculation exists twice, once per language, or not at
-  all — a new equation is one spec plus one Rust file and one Python file, not a
-  `register()` call.
+- **No runtime plugin registry.** A calculation's id is its address — it is added by
+  writing it, not by a `register()` call.
 - **The keycard is where responsibility sits.** TOML data you pass as a value, checked on
   load: a name outside the vocabulary is refused, a coefficient must declare a unit. The
   library implements; the engineer decides.
@@ -272,9 +271,9 @@ specs/**/*.toml        one file per calculation, model, case, and the unit vocab
 
 Every generated file comes from a file in this repository, and CI regenerates all of
 them and fails on a diff - so a spec is not a document that is supposed to match the
-code, it is the thing the code was made from. Python is the reference implementation
-and Rust the second one, with PyO3 binding them; both run the same arithmetic on the
-same numbers, and the test suite compares them by tolerance.
+code, it is the thing the code was made from. The generators emit into Rust and Python
+alike, and PyO3 binds the Rust core into Python: Python for the ecosystem, Rust for the
+engine.
 
 The pipeline in full, what is true and where it is written, and the three rules a port
 follows are on **[Architecture](docs/src/architecture/index.md)**.
@@ -282,8 +281,7 @@ follows are on **[Architecture](docs/src/architecture/index.md)**.
 ## Extending it
 
 There are three ways in. There is no runtime plugin registry - no `register()` call and
-no loading at run time - which means a calculation always exists twice, once in each
-language, as the two-implementation rule requires.
+no loading at run time - a calculation is added by writing it, not by registering it.
 [the specification](docs/src/architecture/specification.md) has the three.
 
 Most of what you would want to change is **data, not arithmetic**. A **keycard** is one

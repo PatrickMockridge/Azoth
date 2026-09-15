@@ -448,8 +448,8 @@ def render_model(spec: dict[str, Any]) -> str:
             "A **direct** model: a computation over vectors, with no iteration and "
             "therefore no algorithm block. It is here because a calculation's inputs "
             "are scalars, so a composition vector has nowhere in the calc registry to "
-            "go - and it is a model rather than a library function so that it has two "
-            "implementations like everything else.\n"
+            "go - and it is a model rather than a library function so that it goes "
+            "through the spec-driven pipeline like everything else.\n"
         )
     else:
         parts.append(

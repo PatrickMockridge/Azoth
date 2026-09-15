@@ -1,7 +1,7 @@
 # The specification
 
-**An opinionated port of [NeqSim](https://github.com/equinor/neqsim) to Rust, with every
-calculation mirrored in Python.**
+**An opinionated port of [NeqSim](https://github.com/equinor/neqsim), in Python for the
+ecosystem and Rust for the engine.**
 
 This page is normative: where a docstring, a comment or a habit disagrees with it, this
 page wins and the other thing is a bug. It has three parts — the port, the keycard, and
@@ -56,10 +56,12 @@ python tools/check_manifest.py
 format is specified in [Spec files](./spec-files.md). It names the inputs and outputs with
 their units, the valid range, the assumptions that are *not* checked, and the cases.
 
-**Two kernels are hand-written, and only two.** One Rust file and one Python file. They
-are separate implementations of the same declared arithmetic, and they are compared case
-by case in the same process with the iteration counts required to match. This is the
-property the port exists to preserve, and it is the one thing that must not be generated.
+**Two kernels are hand-written, and only two.** One Rust file and one Python file. Rust
+is the engine - compile-time safety, the process calculus expressed natively, and fast
+composition into large or concurrent simulations. Python is the surface - basic
+calculations and the data-science and AI-SDK ecosystem. They implement the same declared
+arithmetic, hand-written and never generated; that there are two means they are compared
+case by case, and that comparison is a test, not the reason there are two.
 
 **Everything that names them is generated.** A new calculation used to cost eleven hand
 edits across Rust and Python on top of its two kernels — result structs, transport

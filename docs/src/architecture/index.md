@@ -1,8 +1,8 @@
 # Architecture
 
 azoth is a chemical-engineering calculation and data library: the thermodynamics,
-hydraulics and heat transfer of a process, implemented twice and held to each other.
-It is a port of Equinor's [NeqSim](https://github.com/equinor/neqsim), and what it
+hydraulics and heat transfer of a process, in Python for the ecosystem and Rust for the
+engine. It is a port of Equinor's [NeqSim](https://github.com/equinor/neqsim), and what it
 carries is what NeqSim carries, named as NeqSim names it.
 
 Everything on this page is stated once, here. A later page that repeats it is wrong,
@@ -54,25 +54,26 @@ build.
 `tools/check_lean_axioms.py` reads `lean/Azoth/Axioms.lean` and refuses any axiom the
 development was not allowed to use, so the Lean half is checked rather than trusted.
 
-## Two implementations, one answer
+## Two languages, two jobs
 
-Python is the reference implementation; Rust is the second, and the two are bound by
-PyO3. Units cross the public API as `pint` quantities on one side and `uom` quantities
-on the other, and both extract the SI base magnitude before doing arithmetic - so the
-two run the same operations on the same numbers rather than each trusting a units
-library to arrive at them by a different route.
+Python is the ecosystem-facing surface: basic calculations, notebooks, and the
+data-science and AI-SDK tooling around them. Rust is the engine: safe at compile time, it
+expresses the process calculus natively in its type system, and it composes into very
+large - or many concurrent - simulations that run in minutes where Python would take
+days. PyO3 binds the two into one library, and units cross the public API as `pint`
+quantities on one side and `uom` quantities on the other, both extracting the SI base
+magnitude before doing arithmetic - so the two run the same operations on the same
+numbers.
 
-Every case in every spec runs through both, and the comparison is **by tolerance and
-not bit-equality**: `log10` and `sqrt` are not correctly-rounded in general and `libm`
-differs between platforms. Where a procedure iterates, the iteration counts are
-required to match. Bit-equality is asserted separately and only for one platform and
-build.
+Because both exist, every case in every spec runs through both, and the comparison is
+**by tolerance and not bit-equality**: `log10` and `sqrt` are not correctly-rounded in
+general and `libm` differs between platforms. Where a procedure iterates, the iteration
+counts are required to match. Bit-equality is asserted separately and only for one
+platform and build. The data files are embedded on both sides with `include_str!`, and a
+test compares the embedded bytes against the file on disk rather than comparing parsed
+values, because two files can parse into the same numbers.
 
-Rust is not here for speed. For a single call the PyO3 boundary costs more than the
-arithmetic saves. Its value is being an independent implementation of the same
-document - which is also why the data files are embedded on both sides with
-`include_str!` and a test compares the embedded bytes against the file on disk rather
-than comparing parsed values: two files can parse into the same numbers.
+That comparison is a test, not the reason there are two languages.
 
 ## The port
 
