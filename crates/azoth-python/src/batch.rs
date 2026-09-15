@@ -969,6 +969,16 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "d", "m**2/s", d);
         }
 
+        "eos.co2_water_diffusivity" => {
+            let t = take(&inputs, "T")?;
+            let mut d = Vec::with_capacity(n);
+            for &ti in &t {
+                let r = element(py, eos::co2_water_diffusivity(kelvins(ti)), &mut warnings)?;
+                d.push(r.d.value);
+            }
+            push_values(&mut columns, "d", "m**2/s", d);
+        }
+
         "eos.rackett_molar_volume" => {
             let (omega, tc, pc, t) = (
                 take(&inputs, "omega")?,

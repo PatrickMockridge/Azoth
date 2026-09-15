@@ -16,13 +16,14 @@ use pyo3::prelude::*;
 use crate::errors::to_pyerr;
 use crate::results::{
     PyAntoineVaporPressureResult, PyChungConductivityResult, PyChungViscosityResult,
-    PyCostaldMolarVolumeResult, PyCriticalPointResult, PyHaydukMinhasDiffusivityResult,
-    PyHeatOfVaporizationResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
-    PyMasonSaxenaConductivityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
-    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
-    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
+    PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
+    PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMolarEnthalpyEntropyResult,
+    PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult,
+    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
+    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
+    PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
+    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyTwuKappaResult,
     PyTynCalusDiffusivityResult, PyVdw1fMixBinaryResult, PyWilkeChangDiffusivityResult,
@@ -580,6 +581,17 @@ pub fn siddiqi_lucas_diffusivity(
     )
     .map(|r| PySiddiqiLucasDiffusivityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// The CO2-in-water binary diffusivity, from NeqSim's `CO2water` correlation.
+#[pyfunction]
+#[pyo3(signature = (T))]
+#[pyo3(text_signature = "(T)")]
+#[allow(non_snake_case)] // `T` is the symbol in the published equation
+pub fn co2_water_diffusivity(py: Python<'_>, T: f64) -> PyResult<PyCo2WaterDiffusivityResult> {
+    azoth_eos::co2_water_diffusivity(kelvins(T))
+        .map(|r| PyCo2WaterDiffusivityResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// The gas mixture dynamic viscosity, from Wilke's rule over the pure Chung

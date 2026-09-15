@@ -31,6 +31,7 @@ from azoth.core.result import (
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
+    Co2WaterDiffusivityResult,
     ColebrookResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
@@ -721,6 +722,16 @@ def siddiqi_lucas_diffusivity(
         input_to_si(spec, "eta", eta),
     )
     return SiddiqiLucasDiffusivityResult(
+        d=from_si(result.d.magnitude_si, result.d.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def co2_water_diffusivity(T: Q) -> Co2WaterDiffusivityResult:
+    """The CO2-in-water binary diffusivity, computed in Rust."""
+    spec = _spec_for("eos.co2_water_diffusivity")
+    result = _core.co2_water_diffusivity(input_to_si(spec, "T", T))
+    return Co2WaterDiffusivityResult(
         d=from_si(result.d.magnitude_si, result.d.unit),
         warnings=_warnings(result.warnings),
     )

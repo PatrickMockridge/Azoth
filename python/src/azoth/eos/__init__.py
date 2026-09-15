@@ -72,6 +72,7 @@ from azoth.core.result import (
     BubblePressureResult,
     ChungConductivityResult,
     ChungViscosityResult,
+    Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DewPressureResult,
@@ -202,6 +203,7 @@ _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
 _SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
+_CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _WILKE_VISCOSITY = "eos.wilke_viscosity"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
@@ -666,6 +668,19 @@ def siddiqi_lucas_diffusivity(
     return resolve(_SIDDIQI_LUCAS_DIFFUSIVITY)(  # type: ignore[no-any-return]
         form=form, VA=VA, VB=VB, T=T, eta=eta
     )
+
+
+def co2_water_diffusivity(T: Q) -> Co2WaterDiffusivityResult:
+    """The CO2-in-water binary diffusivity, from NeqSim's `CO2water` correlation.
+
+    Temperature-only: the correlation carries no solute or solvent argument.
+
+    Raises:
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.co2_water_diffusivity`.
+    """
+    return resolve(_CO2_WATER_DIFFUSIVITY)(T=T)  # type: ignore[no-any-return]
 
 
 def wilke_viscosity(

@@ -137,6 +137,11 @@ class ChungViscosityResult:
     warnings: list[Warning]
 
 @final
+class Co2WaterDiffusivityResult:
+    d: Qty
+    warnings: list[Warning]
+
+@final
 class CostaldMolarVolumeResult:
     v: Qty
     warnings: list[Warning]
@@ -519,6 +524,7 @@ def chung_viscosity(
     T: float,
     V: float,
 ) -> ChungViscosityResult: ...
+def co2_water_diffusivity(T: float) -> Co2WaterDiffusivityResult: ...
 def costald_molar_volume(
     omega: float,
     Tc: float,

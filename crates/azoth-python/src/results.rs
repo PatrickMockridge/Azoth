@@ -18,8 +18,8 @@ use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     AntoineVaporPressureResult, BubblePressureResult, ChungConductivityResult,
-    ChungViscosityResult, CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult,
-    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
+    ChungViscosityResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
+    DewPressureResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult,
     PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
     PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
@@ -1338,6 +1338,45 @@ impl PySiddiqiLucasDiffusivityResult {
 
 impl From<&SiddiqiLucasDiffusivityResult> for PySiddiqiLucasDiffusivityResult {
     fn from(r: &SiddiqiLucasDiffusivityResult) -> Self {
+        Self {
+            d: PyQty {
+                magnitude_si: r.d.value,
+                unit: "m**2/s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.co2_water_diffusivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "Co2WaterDiffusivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCo2WaterDiffusivityResult {
+    /// The binary diffusion coefficient, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub d: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCo2WaterDiffusivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "Co2WaterDiffusivityResult(d={} {})",
+            self.d.magnitude_si, self.d.unit
+        )
+    }
+}
+
+impl From<&Co2WaterDiffusivityResult> for PyCo2WaterDiffusivityResult {
+    fn from(r: &Co2WaterDiffusivityResult) -> Self {
         Self {
             d: PyQty {
                 magnitude_si: r.d.value,
@@ -2693,6 +2732,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         WilkeChangDiffusivityResult::CALC_ID => WilkeChangDiffusivityResult::FIELDS.to_vec(),
         HaydukMinhasDiffusivityResult::CALC_ID => HaydukMinhasDiffusivityResult::FIELDS.to_vec(),
         SiddiqiLucasDiffusivityResult::CALC_ID => SiddiqiLucasDiffusivityResult::FIELDS.to_vec(),
+        Co2WaterDiffusivityResult::CALC_ID => Co2WaterDiffusivityResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
@@ -2761,6 +2801,7 @@ pub fn calc_ids() -> Vec<String> {
         WilkeChangDiffusivityResult::CALC_ID.to_string(),
         HaydukMinhasDiffusivityResult::CALC_ID.to_string(),
         SiddiqiLucasDiffusivityResult::CALC_ID.to_string(),
+        Co2WaterDiffusivityResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

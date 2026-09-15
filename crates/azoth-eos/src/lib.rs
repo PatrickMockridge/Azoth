@@ -38,6 +38,7 @@ pub mod bubble_pressure;
 pub mod card;
 pub mod chung_conductivity;
 pub mod chung_viscosity;
+pub mod co2_water_diffusivity;
 pub mod costald_molar_volume;
 pub mod critical_point;
 pub mod cubic;
@@ -90,6 +91,7 @@ pub use antoine_vapor_pressure::{AntoineForm, antoine_vapor_pressure, form_from_
 pub use bubble_pressure::bubble_pressure;
 pub use chung_conductivity::chung_conductivity;
 pub use chung_viscosity::chung_viscosity;
+pub use co2_water_diffusivity::co2_water_diffusivity;
 pub use costald_molar_volume::costald_molar_volume;
 pub use critical_point::critical_point;
 pub use cubic::Cubic;
@@ -119,8 +121,8 @@ pub use rachford_rice_binary::rachford_rice_binary;
 pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
     AntoineVaporPressureResult, BubblePressureResult, ChungConductivityResult,
-    ChungViscosityResult, CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult,
-    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
+    ChungViscosityResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
+    DewPressureResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult, Phase,
     Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult,
     PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PtFlashResult,

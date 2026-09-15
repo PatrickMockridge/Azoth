@@ -486,6 +486,16 @@ class SiddiqiLucasDiffusivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class Co2WaterDiffusivityResult(_HasWarnings):
+    """Result of ``eos.co2_water_diffusivity``."""
+
+    #: The binary diffusion coefficient.
+    d: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WilkeViscosityResult(_HasWarnings):
     """Result of ``eos.wilke_viscosity``."""
 

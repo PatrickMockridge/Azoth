@@ -5,6 +5,7 @@
 //!   - specs/calcs/eos/antoine_vapor_pressure.toml
 //!   - specs/calcs/eos/chung_conductivity.toml
 //!   - specs/calcs/eos/chung_viscosity.toml
+//!   - specs/calcs/eos/co2_water_diffusivity.toml
 //!   - specs/calcs/eos/costald_molar_volume.toml
 //!   - specs/calcs/eos/hayduk_minhas_diffusivity.toml
 //!   - specs/calcs/eos/heat_of_vaporization.toml
@@ -540,6 +541,84 @@ pub static CHUNG_VISCOSITY_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
     },
     tests: CHUNG_VISCOSITY_TESTS,
+};
+
+/// Registry entry for `eos.co2_water_diffusivity`.
+static CO2_WATER_DIFFUSIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "An absolute temperature; zero and below are not states.",
+    },
+}];
+
+static CO2_WATER_DIFFUSIVITY_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "warmer_water",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 323.15)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 3.5891345129268157e-09)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.co2_water_diffusivity`.
+///
+/// Public and addressable directly, so a calc can hold `&CO2_WATER_DIFFUSIVITY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static CO2_WATER_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.co2_water_diffusivity",
+    checks: CO2_WATER_DIFFUSIVITY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "co2_in_water_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 298.15)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 2.0208212539579613e-09)],
+        expected_vectors: &[],
+    },
+    tests: CO2_WATER_DIFFUSIVITY_TESTS,
 };
 
 /// Registry entry for `eos.costald_molar_volume`.
@@ -3874,6 +3953,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &ANTOINE_VAPOR_PRESSURE_SPEC,
     &CHUNG_CONDUCTIVITY_SPEC,
     &CHUNG_VISCOSITY_SPEC,
+    &CO2_WATER_DIFFUSIVITY_SPEC,
     &COSTALD_MOLAR_VOLUME_SPEC,
     &HAYDUK_MINHAS_DIFFUSIVITY_SPEC,
     &HEAT_OF_VAPORIZATION_SPEC,

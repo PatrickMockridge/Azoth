@@ -25,6 +25,7 @@ from azoth.core.warnings import Warning
 __all__ = [
     "ChungConductivityBatch",
     "ChungViscosityBatch",
+    "Co2WaterDiffusivityBatch",
     "CostaldMolarVolumeBatch",
     "HeatOfVaporizationBatch",
     "IdealGasCpBatch",
@@ -53,6 +54,7 @@ __all__ = [
     "WilkeChangDiffusivityBatch",
     "chung_conductivity",
     "chung_viscosity",
+    "co2_water_diffusivity",
     "costald_molar_volume",
     "heat_of_vaporization",
     "ideal_gas_cp",
@@ -88,6 +90,7 @@ _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _CHUNG_CONDUCTIVITY = "eos.chung_conductivity"
+_CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _CHUNG_VISCOSITY = "eos.chung_viscosity"
 _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
@@ -581,6 +584,32 @@ def srk_peneloux_shift(
             "Pc": sequence(Pc, "Pc"),
         },
         _build_srk_peneloux_shift,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class Co2WaterDiffusivityBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.co2_water_diffusivity`."""
+
+    #: Binary diffusion coefficient per element, in m**2/s.
+    d: array[float]
+
+
+def _build_co2_water_diffusivity(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> Co2WaterDiffusivityBatch:
+    return Co2WaterDiffusivityBatch(warnings=warnings, units=units, d=columns["d"])  # type: ignore[arg-type]
+
+
+def co2_water_diffusivity(*, T: Sequence[float]) -> Co2WaterDiffusivityBatch:
+    """The CO2-in-water binary diffusivity, over arrays."""
+    result: Co2WaterDiffusivityBatch = run(
+        _CO2_WATER_DIFFUSIVITY,
+        {"T": sequence(T, "T")},
+        _build_co2_water_diffusivity,
     )
     return result
 

@@ -131,6 +131,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.bubble_pressure` | Bubble-point pressure — a *model* |
 | `eos.chung_conductivity` | Gas thermal conductivity from the Chung correlation |
 | `eos.chung_viscosity` | Gas viscosity from the Chung correlation |
+| `eos.co2_water_diffusivity` | CO2-in-water binary diffusivity from the Tammi correlation |
 | `eos.costald_molar_volume` | Saturated liquid molar volume from the COSTALD equation |
 | `eos.critical_point` | Mixture critical point — a *model* |
 | `eos.dew_pressure` | Dew-point pressure — a *model* |
