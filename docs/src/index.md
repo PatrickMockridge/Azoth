@@ -98,8 +98,10 @@ Four sections, and the difference between them is the point:
 *Models* — whose specs fix a procedure rather than an equation:
 
 - [`eos.bubble_pressure`](./eos/bubble_pressure.md) — Bubble-point pressure
+- [`eos.bubble_temperature`](./eos/bubble_temperature.md) — Bubble-point temperature
 - [`eos.critical_point`](./eos/critical_point.md) — Mixture critical point
 - [`eos.dew_pressure`](./eos/dew_pressure.md) — Dew-point pressure
+- [`eos.dew_temperature`](./eos/dew_temperature.md) — Dew-point temperature
 - [`eos.mason_saxena_conductivity`](./eos/mason_saxena_conductivity.md) — Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities
 - [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — Molar enthalpy and entropy of a mixture
 - [`eos.nrtl_activity_coefficients`](./eos/nrtl_activity_coefficients.md) — Activity coefficients from the NRTL local-composition model

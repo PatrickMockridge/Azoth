@@ -28,6 +28,7 @@ from azoth._registry_gen import spec as _spec_for
 from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
+    BubbleTemperatureResult,
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
@@ -39,6 +40,7 @@ from azoth.core.result import (
     CriticalPointResult,
     DarcyWeisbachResult,
     DewPressureResult,
+    DewTemperatureResult,
     FlowRegime,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
@@ -1360,6 +1362,23 @@ def _boundary_result(raw: Any, result_type: Any, *, liquid_first: bool) -> Any:
     )
 
 
+def _boundary_temperature_result(raw: Any, result_type: Any) -> Any:
+    """Unpack a temperature boundary, whose scalar is a temperature rather than a
+    pressure. The `z_liquid` and `z_vapour` fields already name the phases they say
+    they do, so there is no swap here."""
+    return result_type(
+        temperature=from_si(raw.temperature.magnitude_si, raw.temperature.unit),
+        incipient=tuple(raw.incipient),
+        k=tuple(raw.k),
+        z_liquid=raw.z_liquid,
+        z_vapour=raw.z_vapour,
+        min_t_over_tc=raw.min_t_over_tc,
+        iterations=raw.iterations,
+        residual=raw.residual,
+        warnings=_warnings(raw.warnings),
+    )
+
+
 def bubble_pressure(mixture: Any, T: Q, x: Sequence[float]) -> BubblePressureResult:
     """The bubble-point pressure of a mixture, computed in Rust.
 
@@ -1380,6 +1399,27 @@ def bubble_pressure(mixture: Any, T: Q, x: Sequence[float]) -> BubblePressureRes
         [list(c.alpha_params) for c in mixture.components],
     )
     return _boundary_result(raw, BubblePressureResult, liquid_first=True)  # type: ignore[no-any-return]
+
+
+def bubble_temperature(mixture: Any, P: Q, x: Sequence[float]) -> BubbleTemperatureResult:
+    """The bubble-point temperature of a mixture, computed in Rust.
+
+    The mirror of :func:`bubble_pressure`: the held composition crosses as a list and
+    the pressure is the fixed variable instead of the temperature.
+    """
+    spec = _models_gen.model("eos.bubble_temperature")
+    raw = _core.bubble_temperature(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "P", P),
+        list(x),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return _boundary_temperature_result(raw, BubbleTemperatureResult)  # type: ignore[no-any-return]
 
 
 def critical_point(mixture: Any, z: Sequence[float]) -> CriticalPointResult:
@@ -1430,6 +1470,27 @@ def dew_pressure(mixture: Any, T: Q, y: Sequence[float]) -> DewPressureResult:
         [list(c.alpha_params) for c in mixture.components],
     )
     return _boundary_result(raw, DewPressureResult, liquid_first=False)  # type: ignore[no-any-return]
+
+
+def dew_temperature(mixture: Any, P: Q, y: Sequence[float]) -> DewTemperatureResult:
+    """The dew-point temperature of a mixture, computed in Rust.
+
+    The mirror of the bubble point: the held phase is the vapour, so the answer is the
+    temperature at which that vapour first gives off liquid at a fixed pressure.
+    """
+    spec = _models_gen.model("eos.dew_temperature")
+    raw = _core.dew_temperature(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "P", P),
+        list(y),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return _boundary_temperature_result(raw, DewTemperatureResult)  # type: ignore[no-any-return]
 
 
 def molar_enthalpy_entropy(

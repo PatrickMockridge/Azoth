@@ -602,6 +602,90 @@ impl CalcResult for PuFlashResult {
     }
 }
 
+/// Result of `eos.bubble_temperature`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BubbleTemperatureResult {
+    /// The bubble-point temperature.
+    pub temperature: ThermodynamicTemperature,
+    /// The composition of the vapour that first appears.
+    pub incipient: Vec<f64>,
+    /// K-values at the converged temperature.
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the converged state.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components at the answer.
+    pub min_t_over_tc: f64,
+    /// Temperature updates taken.
+    pub iterations: u32,
+    /// `|sum_i x_i K_i - 1|` at the last completed step.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for BubbleTemperatureResult {
+    const CALC_ID: &'static str = "eos.bubble_temperature";
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "incipient",
+        "k",
+        "z_liquid",
+        "z_vapour",
+        "min_t_over_tc",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.dew_temperature`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DewTemperatureResult {
+    /// The dew-point temperature.
+    pub temperature: ThermodynamicTemperature,
+    /// The composition of the liquid that first appears.
+    pub incipient: Vec<f64>,
+    /// K-values at the converged temperature.
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the converged state.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components at the answer.
+    pub min_t_over_tc: f64,
+    /// Temperature updates taken.
+    pub iterations: u32,
+    /// `|sum_i x_i / K_i - 1|` at the last completed step.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for DewTemperatureResult {
+    const CALC_ID: &'static str = "eos.dew_temperature";
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "incipient",
+        "k",
+        "z_liquid",
+        "z_vapour",
+        "min_t_over_tc",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.vu_flash`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VuFlashResult {

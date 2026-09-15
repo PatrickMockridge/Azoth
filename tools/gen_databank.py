@@ -337,7 +337,9 @@ def build_unifac(source: Path, file_id: str) -> tuple[tuple[str, ...], list[dict
     rows: list[dict[str, str]] = []
     with (source).open(newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
-            rows.append({as_field: (row.get(upstream) or "").strip() for as_field, upstream in columns})
+            rows.append(
+                {as_field: (row.get(upstream) or "").strip() for as_field, upstream in columns}
+            )
     return header, rows
 
 
@@ -419,7 +421,10 @@ def main(argv: list[str] | None = None) -> int:
     outputs = [
         (OUT_DIR / "components.csv", COMPONENT_HEADER, components),
         (OUT_DIR / "kij.csv", KIJ_HEADER, kij),
-        *[(OUT_DIR / name, *build_unifac(resources / name, file_id)) for file_id, name in UNIFAC_FILES],
+        *[
+            (OUT_DIR / name, *build_unifac(resources / name, file_id))
+            for file_id, name in UNIFAC_FILES
+        ],
     ]
 
     if args.check:

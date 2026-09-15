@@ -70,12 +70,14 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
+    BubbleTemperatureResult,
     ChungConductivityResult,
     ChungViscosityResult,
     Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DewPressureResult,
+    DewTemperatureResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     IdealGasCpResult,
@@ -136,12 +138,14 @@ __all__ = [
     "antoine_vapor_pressure",
     "available_components",
     "bubble_pressure",
+    "bubble_temperature",
     "chung_conductivity",
     "chung_viscosity",
     "component",
     "costald_molar_volume",
     "critical_point",
     "dew_pressure",
+    "dew_temperature",
     "from_model",
     "from_names",
     "hayduk_minhas_diffusivity",
@@ -206,11 +210,13 @@ _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
+_BUBBLE_TEMPERATURE = "eos.bubble_temperature"
 _CHUNG_CONDUCTIVITY = "eos.chung_conductivity"
 _CHUNG_VISCOSITY = "eos.chung_viscosity"
 _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
+_DEW_TEMPERATURE = "eos.dew_temperature"
 _PH_FLASH = "eos.ph_flash"
 _PS_FLASH = "eos.ps_flash"
 _TH_FLASH = "eos.th_flash"
@@ -1024,6 +1030,29 @@ def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureRes
     return resolve(_BUBBLE_PRESSURE)(mixture=mixture, T=T, x=x)  # type: ignore[no-any-return]
 
 
+def bubble_temperature(mixture: Mixture, P: Q, x: list[float]) -> BubbleTemperatureResult:
+    """The temperature at which a liquid of composition ``x`` first gives off vapour.
+
+    The companion of :func:`dew_temperature`: the same iteration with the other phase
+    held, which is why the argument is ``x`` here and ``y`` there.
+
+    ``x`` is the liquid's composition and is taken as given - whether that liquid is
+    stable is not asked.
+
+    Raises:
+        InvalidInputError: if the mixture has one component - a pure component's
+            bubble point is its saturation pressure, which :func:`pure_saturation`
+            computes - or if ``x`` is not a composition.
+        OutOfRangeError: if ``P`` is not positive, or if the mixture has no bubble
+            point at this pressure. That is a real state and not a solver failure:
+            a mixture above its critical condition has neither a bubble nor a dew
+            point, and the error names ``min_t_over_tc``.
+
+    See :func:`azoth.eos.reference.bubble_temperature`.
+    """
+    return resolve(_BUBBLE_TEMPERATURE)(mixture=mixture, P=P, x=x)  # type: ignore[no-any-return]
+
+
 def critical_point(mixture: Mixture, z: list[float]) -> CriticalPointResult:
     """The critical point of a mixture of composition ``z``.
 
@@ -1061,6 +1090,20 @@ def dew_pressure(mixture: Mixture, T: Q, y: list[float]) -> DewPressureResult:
     See :func:`azoth.eos.reference.dew_pressure`.
     """
     return resolve(_DEW_PRESSURE)(mixture=mixture, T=T, y=y)  # type: ignore[no-any-return]
+
+
+def dew_temperature(mixture: Mixture, P: Q, y: list[float]) -> DewTemperatureResult:
+    """The temperature at which a vapour of composition ``y`` first gives off liquid.
+
+    Raises:
+        InvalidInputError: if the mixture has one component, or if ``y`` is not a
+            composition.
+        OutOfRangeError: if ``P`` is not positive, or if the mixture has no dew point
+            at this pressure.
+
+    See :func:`azoth.eos.reference.dew_temperature`.
+    """
+    return resolve(_DEW_TEMPERATURE)(mixture=mixture, P=P, y=y)  # type: ignore[no-any-return]
 
 
 def ideal_gas_cp(

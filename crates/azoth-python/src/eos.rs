@@ -19,11 +19,12 @@ use crate::results::{
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
     PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMolarEnthalpyEntropyResult,
-    PyNrtlActivityCoefficientsResult, PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult,
-    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PyNrtlActivityCoefficientsResult, PyPhFlashResult, PyPhaseBoundaryResult,
+    PyPhaseBoundaryTemperatureResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
+    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
+    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult,
+    PyPureSaturationResult, PyPvFlashResult, PyRachfordRiceBinaryResult,
+    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
     PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult,
@@ -1471,6 +1472,72 @@ pub fn dew_pressure(
     )?;
     azoth_eos::dew_pressure(&mixture, kelvins(T), &held)
         .map(|r| PyPhaseBoundaryResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The temperature at which a liquid of composition `held` first gives off vapour.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, P, held, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, P, held, eos = \"pr\", alpha = \"pr\")")]
+#[allow(non_snake_case)] // `Tc`, `Pc` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn bubble_temperature(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    P: f64,
+    held: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyPhaseBoundaryTemperatureResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::bubble_temperature(&mixture, pascals(P), &held)
+        .map(|r| PyPhaseBoundaryTemperatureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The temperature at which a vapour of composition `held` first gives off liquid.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, P, held, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, P, held, eos = \"pr\", alpha = \"pr\")")]
+#[allow(non_snake_case)] // `Tc`, `Pc` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn dew_temperature(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    P: f64,
+    held: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyPhaseBoundaryTemperatureResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::dew_temperature(&mixture, pascals(P), &held)
+        .map(|r| PyPhaseBoundaryTemperatureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

@@ -1,0 +1,31 @@
+model = "eos.dew_temperature"
+[[cases]]
+id = "methane_and_butane_at_300_k"
+tolerance = 1e-09
+[cases.inputs]
+components = ["methane", "n-butane"]
+P = 1567347.3649394324
+y = [0.8, 0.2]
+[cases.expected]
+temperature = 299.99999999996708766
+incipient = [0.07356449416596675, 0.92643550583403311]
+k = [10.87481140283680325, 0.21588119058535227]
+z_liquid = 0.05929085850301092
+z_vapour = 0.92182360063247604
+min_t_over_tc = 0.70568310124192479
+iterations = 6
+[[cases]]
+id = "methane_propane_and_butane_at_300_k"
+tolerance = 1e-09
+[cases.inputs]
+components = ["methane", "propane", "n-butane"]
+P = 1036545.9819627925
+y = [0.5, 0.3, 0.2]
+[cases.expected]
+temperature = 299.99999999994776090
+incipient = [0.03255340258615442, 0.30977859057318857, 0.65766800684065685]
+k = [15.35937752363549613, 0.96843361397147432, 0.30410480351724356]
+z_liquid = 0.03830037886818703
+z_vapour = 0.90314355830109105
+min_t_over_tc = 0.70568310124187938
+iterations = 5

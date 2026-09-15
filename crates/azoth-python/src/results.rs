@@ -17,9 +17,10 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    AntoineVaporPressureResult, BubblePressureResult, ChungConductivityResult,
-    ChungViscosityResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DewPressureResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
+    AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult,
+    ChungConductivityResult, ChungViscosityResult, Co2WaterDiffusivityResult,
+    CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, DewTemperatureResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult,
     NrtlActivityCoefficientsResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
     PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
@@ -2325,6 +2326,95 @@ impl From<&DewPressureResult> for PyPhaseBoundaryResult {
     }
 }
 
+/// Result of `eos.bubble_temperature` or `eos.dew_temperature`, transported.
+///
+/// The temperature twin of [`PyPhaseBoundaryResult`]: same shape, but the answer is a
+/// temperature rather than a pressure, so the scalar field is `temperature` in kelvin.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PhaseBoundaryTemperatureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPhaseBoundaryTemperatureResult {
+    /// The boundary temperature.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// The incipient phase's composition.
+    #[pyo3(get)]
+    pub incipient: Vec<f64>,
+    /// K-values at the converged temperature.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the converged state.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// Temperature updates taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The final residual.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPhaseBoundaryTemperatureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PhaseBoundaryTemperatureResult(temperature={} {}, {} iteration(s))",
+            self.temperature.magnitude_si, self.temperature.unit, self.iterations
+        )
+    }
+}
+
+impl From<&BubbleTemperatureResult> for PyPhaseBoundaryTemperatureResult {
+    fn from(r: &BubbleTemperatureResult) -> Self {
+        Self {
+            temperature: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            incipient: r.incipient.clone(),
+            k: r.k.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+impl From<&DewTemperatureResult> for PyPhaseBoundaryTemperatureResult {
+    fn from(r: &DewTemperatureResult) -> Self {
+        Self {
+            temperature: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            incipient: r.incipient.clone(),
+            k: r.k.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PtFlashResult> for PyPtFlashResult {
     fn from(r: &PtFlashResult) -> Self {
         Self {
@@ -2671,14 +2761,20 @@ impl From<&PvFlashResult> for PyPvFlashResult {
 
 /// The pressure-specified flashes `eos.th_flash`, `eos.ts_flash` and `eos.tu_flash`
 /// share this transport shape.
+///
+/// `#[rustfmt::skip]`: rustfmt cannot settle the indentation of the `#[pyclass]`
+/// attribute's arguments here - the `name = $py_name` metavariable breaks its
+/// indentation calculation, and each run re-indents by another level. Skipping the
+/// whole macro keeps the three structs it expands to formatted once, by hand.
+#[rustfmt::skip]
 macro_rules! py_pressure_flash_result {
     ($name:ident, $py_name:literal) => {
         #[pyclass(
-                                    frozen,
-                                    skip_from_py_object,
-                                    module = "azoth._core",
-                                    name = $py_name
-                                )]
+            frozen,
+            skip_from_py_object,
+            module = "azoth._core",
+            name = $py_name
+        )]
         #[derive(Debug, Clone, PartialEq)]
         #[allow(non_snake_case)] // `P` is the symbol the spec and the Python result both use
         pub struct $name {
@@ -3325,8 +3421,10 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         VuFlashResult::CALC_ID => VuFlashResult::FIELDS.to_vec(),
         StabilityTestResult::CALC_ID => StabilityTestResult::FIELDS.to_vec(),
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
+        BubbleTemperatureResult::CALC_ID => BubbleTemperatureResult::FIELDS.to_vec(),
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
+        DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
         // Unit operations. In the same table for the same reason the models are: a

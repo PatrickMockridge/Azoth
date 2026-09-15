@@ -1,0 +1,83 @@
+id = "eos.dew_temperature"
+name = "Dew-point temperature"
+kind = "procedure"
+assumptions = [
+    "A component's `Tc`, `Pc`, `omega` and every `kij` come from the databank (`data/components/`, from NeqSim's `COMP.csv` and `INTER.csv`) with the keycard's overrides applied.",
+    "the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses.",
+    "the model is for mixtures, and refuses a single component: for one component the two phases have the same composition by construction.",
+    "the temperature is solved for at a fixed pressure.",
+    "the vapour composition is the caller's and is taken as given; its stability is not asked.",
+    "no energy balance. The dew-point temperature is a statement about phase equilibrium at one temperature and pressure, not about how a stream got there.",
+]
+references = [
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part II. Phase-split calculation.\" Fluid Phase Equilibria 9(1), 21-40. DOI 10.1016/0378-3812(82)85002-4.",
+    "Wilson, G. M. (1969). \"A Modified Redlich-Kwong Equation of State, Application to General Physical Data Calculations.\" Paper 15C, AIChE 65th National Meeting.",
+]
+[source]
+standard = "Michelsen, M. L. (1982)"
+edition = "The isothermal flash problem. Part II. Phase-split calculation. Fluid Phase Equilibria 9(1), 21-40."
+doi = "10.1016/0378-3812(82)85002-4"
+[algorithm]
+scheme = "dew_temperature_successive_substitution"
+initialisation = "wilson_raoult"
+convergence = "absolute"
+tolerance = 1e-12
+max_iterations = 200
+initial_temperature = 300.0
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure. The dew-point temperature is sought at this pressure; the temperature is what is solved for."
+[inputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the vapour's mole fractions. Checked rather than renormalised."
+[outputs]
+[outputs.temperature]
+unit = "K"
+description = "the dew-point temperature"
+[outputs.incipient]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the composition of the the liquid that first appears."
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "K-values at the converged temperature, `K_i = y_i / x_i = phi_i^L / phi_i^V`."
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the liquid root of the cubic at the converged state"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root"
+[outputs.min_t_over_tc]
+unit = "dimensionless"
+description = "the smallest `T / Tc_i` over the components at the answer."
+[outputs.iterations]
+unit = "dimensionless"
+description = "temperature updates taken"
+[outputs.residual]
+unit = "dimensionless"
+description = "`|sum_i x_i / K_i - 1|` at the last completed step."
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "min_t_over_tc"
+max = 1.0
+max_inclusive = false
+severity = "warning"
+rationale = "Above the nearest component's critical temperature the iteration converges more slowly and the answer is less trustworthy."
+[implementations]
+python = "azoth.eos.dew_temperature"
+rust = "azoth_eos::dew_temperature"

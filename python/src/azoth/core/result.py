@@ -1277,6 +1277,59 @@ class DewPressureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class BubbleTemperatureResult(_HasWarnings):
+    """Result of ``eos.bubble_temperature``.
+
+    Shares its shape with :class:`DewTemperatureResult` rather than being one type with
+    a switch, because the two differ in *which* composition is the input - ``x`` here
+    and ``y`` there - and a shared field would have to be named after neither.
+    """
+
+    #: The bubble-point temperature.
+    temperature: Q
+    #: The composition of the vapour that first appears.
+    incipient: tuple[float, ...]
+    #: K-values at the converged temperature.
+    k: tuple[float, ...]
+    #: The liquid root of the cubic at the converged state.
+    z_liquid: float
+    #: The vapour root.
+    z_vapour: float
+    #: The smallest ``T / Tc_i`` over the components.
+    min_t_over_tc: float
+    #: Temperature updates taken.
+    iterations: int
+    #: ``|sum_i x_i K_i - 1|`` at the last completed step.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DewTemperatureResult(_HasWarnings):
+    """Result of ``eos.dew_temperature``."""
+
+    #: The dew-point temperature.
+    temperature: Q
+    #: The composition of the liquid that first appears.
+    incipient: tuple[float, ...]
+    #: K-values at the converged temperature.
+    k: tuple[float, ...]
+    #: The liquid root of the cubic at the converged state.
+    z_liquid: float
+    #: The vapour root.
+    z_vapour: float
+    #: The smallest ``T / Tc_i`` over the components.
+    min_t_over_tc: float
+    #: Temperature updates taken.
+    iterations: int
+    #: ``|sum_i x_i / K_i - 1|`` at the last completed step.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class IdealGasCpResult(_HasWarnings):
     """Result of ``eos.ideal_gas_cp``.
 

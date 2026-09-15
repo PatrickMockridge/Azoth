@@ -127,6 +127,18 @@ class BubblePressureResult:
     warnings: list[Warning]
 
 @final
+class BubbleTemperatureResult:
+    temperature: Qty
+    incipient: list[float]
+    k: list[float]
+    z_liquid: float
+    z_vapour: float
+    min_t_over_tc: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class ChungConductivityResult:
     k: Qty
     warnings: list[Warning]
@@ -159,6 +171,18 @@ class CriticalPointResult:
 @final
 class DewPressureResult:
     pressure: Qty
+    incipient: list[float]
+    k: list[float]
+    z_liquid: float
+    z_vapour: float
+    min_t_over_tc: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
+class DewTemperatureResult:
+    temperature: Qty
     incipient: list[float]
     k: list[float]
     z_liquid: float
@@ -627,6 +651,17 @@ def bubble_pressure(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> BubblePressureResult: ...
+def bubble_temperature(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    P: float,
+    x: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> BubbleTemperatureResult: ...
 def chung_conductivity(
     Cv0: float,
     M: float,
@@ -677,6 +712,17 @@ def dew_pressure(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> DewPressureResult: ...
+def dew_temperature(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    P: float,
+    y: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> DewTemperatureResult: ...
 def hayduk_minhas_diffusivity(
     form: str,
     VA: float,

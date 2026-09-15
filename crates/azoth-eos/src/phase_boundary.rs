@@ -77,7 +77,7 @@ pub struct PhaseBoundary {
 /// Extrapolated without complaint for a component above its critical temperature,
 /// where it is a large number with no physical meaning - which is what a starting
 /// guess needs and why it is not reported to the caller.
-fn wilson_psat(mixture: &Mixture, t: ThermodynamicTemperature) -> Vec<f64> {
+pub(crate) fn wilson_psat(mixture: &Mixture, t: ThermodynamicTemperature) -> Vec<f64> {
     mixture
         .components()
         .iter()
@@ -267,7 +267,7 @@ pub fn phase_boundary_pressure(
 }
 
 /// A composition must be one entry per component, in `[0, 1]`, summing to one.
-fn check_composition(values: &[f64], n: usize, field: &str) -> Result<()> {
+pub(crate) fn check_composition(values: &[f64], n: usize, field: &str) -> Result<()> {
     if values.len() != n {
         return Err(AzothError::invalid_input(
             field,

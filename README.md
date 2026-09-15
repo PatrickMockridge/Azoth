@@ -129,12 +129,14 @@ leaves the flow regime unchecked, and the result says so.
 |---|---|
 | `eos.antoine_vapor_pressure` | Antoine vapour pressure from NeqSim's correlation |
 | `eos.bubble_pressure` | Bubble-point pressure — a *model* |
+| `eos.bubble_temperature` | Bubble-point temperature — a *model* |
 | `eos.chung_conductivity` | Gas thermal conductivity from the Chung correlation |
 | `eos.chung_viscosity` | Gas viscosity from the Chung correlation |
 | `eos.co2_water_diffusivity` | CO2-in-water binary diffusivity from the Tammi correlation |
 | `eos.costald_molar_volume` | Saturated liquid molar volume from the COSTALD equation |
 | `eos.critical_point` | Mixture critical point — a *model* |
 | `eos.dew_pressure` | Dew-point pressure — a *model* |
+| `eos.dew_temperature` | Dew-point temperature — a *model* |
 | `eos.hayduk_minhas_diffusivity` | Liquid binary diffusivity from the Hayduk-Minhas correlation |
 | `eos.heat_of_vaporization` | Heat of vaporisation from NeqSim's correlation |
 | `eos.ideal_gas_cp` | Ideal-gas heat capacity from a polynomial |

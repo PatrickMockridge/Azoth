@@ -1,0 +1,31 @@
+model = "eos.bubble_temperature"
+[[cases]]
+id = "methane_and_butane_at_300_k"
+tolerance = 1e-09
+[cases.inputs]
+components = ["methane", "n-butane"]
+P = 3950960.4937437344
+x = [0.2, 0.8]
+[cases.expected]
+temperature = 300.00000000025073632
+incipient = [0.89039504172479012, 0.10960495827520991]
+k = [4.45197520862496177, 0.13700619784404350]
+z_liquid = 0.14280100289848424
+z_vapour = 0.86368765374943213
+min_t_over_tc = 0.70568310124259204
+iterations = 7
+[[cases]]
+id = "methane_propane_and_butane_at_320_k"
+tolerance = 1e-09
+[cases.inputs]
+components = ["methane", "propane", "n-butane"]
+P = 4664798.1363369655
+x = [0.2, 0.3, 0.5]
+[cases.expected]
+temperature = 320.00000000016291324
+incipient = [0.72419782338099448, 0.15815748612382310, 0.11764469049518243]
+k = [3.62098911690529812, 0.52719162041279111, 0.23528938099038602]
+z_liquid = 0.16569665300349931
+z_vapour = 0.79283595371870741
+min_t_over_tc = 0.75272864132518558
+iterations = 10

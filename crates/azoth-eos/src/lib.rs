@@ -35,6 +35,7 @@ pub fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
 pub mod alpha_term;
 pub mod antoine_vapor_pressure;
 pub mod bubble_pressure;
+pub mod bubble_temperature;
 pub mod card;
 pub mod chung_conductivity;
 pub mod chung_viscosity;
@@ -44,6 +45,7 @@ pub mod critical_point;
 pub mod cubic;
 pub mod databank;
 pub mod dew_pressure;
+pub mod dew_temperature;
 pub mod flash_property;
 pub mod hayduk_minhas_diffusivity;
 pub mod heat_of_vaporization;
@@ -75,6 +77,7 @@ pub mod rackett_molar_volume;
 pub mod results;
 pub mod rk_alpha_ab;
 pub mod rk_departure;
+pub mod saturation_temperature;
 pub mod siddiqi_lucas_diffusivity;
 pub mod spec_gen;
 pub mod srk_alpha_ab;
@@ -100,6 +103,7 @@ pub mod wilson_activity_coefficients;
 pub use alpha_term::Alpha;
 pub use antoine_vapor_pressure::{AntoineForm, antoine_vapor_pressure, form_from_type};
 pub use bubble_pressure::bubble_pressure;
+pub use bubble_temperature::bubble_temperature;
 pub use chung_conductivity::chung_conductivity;
 pub use chung_viscosity::chung_viscosity;
 pub use co2_water_diffusivity::co2_water_diffusivity;
@@ -107,6 +111,7 @@ pub use costald_molar_volume::costald_molar_volume;
 pub use critical_point::critical_point;
 pub use cubic::Cubic;
 pub use dew_pressure::dew_pressure;
+pub use dew_temperature::dew_temperature;
 pub use hayduk_minhas_diffusivity::{HaydukMinhasForm, hayduk_minhas_diffusivity};
 pub use heat_of_vaporization::heat_of_vaporization;
 pub use ideal_gas_cp::ideal_gas_cp;
@@ -134,9 +139,10 @@ pub use pv_flash::pv_flash;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
-    AntoineVaporPressureResult, BubblePressureResult, ChungConductivityResult,
-    ChungViscosityResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DewPressureResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
+    AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult,
+    ChungConductivityResult, ChungViscosityResult, Co2WaterDiffusivityResult,
+    CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, DewTemperatureResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult,
     NrtlActivityCoefficientsResult, Phase, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
     PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
