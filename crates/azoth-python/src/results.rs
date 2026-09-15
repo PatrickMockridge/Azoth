@@ -24,12 +24,13 @@ use azoth_eos::results::{
     NrtlActivityCoefficientsResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
     PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
     PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
-    PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, TvFlashResult, TwuKappaResult, TynCalusDiffusivityResult,
-    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    PuFlashResult, PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, ThFlashResult, TsFlashResult, TuFlashResult, TvFlashResult,
+    TwuKappaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -2668,6 +2669,175 @@ impl From<&PvFlashResult> for PyPvFlashResult {
     }
 }
 
+/// The pressure-specified flashes `eos.th_flash`, `eos.ts_flash` and `eos.tu_flash`
+/// share this transport shape.
+macro_rules! py_pressure_flash_result {
+    ($name:ident, $py_name:literal) => {
+        #[pyclass(
+                            frozen,
+                            skip_from_py_object,
+                            module = "azoth._core",
+                            name = $py_name
+                        )]
+        #[derive(Debug, Clone, PartialEq)]
+        #[allow(non_snake_case)] // `P` is the symbol the spec and the Python result both use
+        pub struct $name {
+            /// The pressure that satisfies the property.
+            #[pyo3(get)]
+            pub P: PyQty,
+            /// The vapour fraction, or `None` for a single-phase feed.
+            #[pyo3(get)]
+            pub beta: Option<f64>,
+            /// Liquid-phase mole fractions.
+            #[pyo3(get)]
+            pub x: Vec<f64>,
+            /// Vapour-phase mole fractions.
+            #[pyo3(get)]
+            pub y: Vec<f64>,
+            /// `K_i = y_i / x_i`.
+            #[pyo3(get)]
+            pub k: Vec<f64>,
+            /// The spec's spelling of the phase.
+            #[pyo3(get)]
+            pub phase: String,
+            /// The liquid root of the cubic.
+            #[pyo3(get)]
+            pub z_liquid: f64,
+            /// The vapour root.
+            #[pyo3(get)]
+            pub z_vapour: f64,
+            /// Newton steps taken.
+            #[pyo3(get)]
+            pub iterations: u32,
+            /// The relative property residual at the answer.
+            #[pyo3(get)]
+            pub residual: f64,
+            /// Caveats, deduplicated.
+            #[pyo3(get)]
+            pub warnings: Vec<PyWarning>,
+        }
+
+        #[pymethods]
+        impl $name {
+            fn __repr__(&self) -> String {
+                format!(
+                    concat!($py_name, "(P={} Pa, phase={}, beta={:?})"),
+                    self.P.magnitude_si, self.phase, self.beta
+                )
+            }
+        }
+    };
+}
+
+py_pressure_flash_result!(PyThFlashResult, "ThFlashResult");
+py_pressure_flash_result!(PyTsFlashResult, "TsFlashResult");
+py_pressure_flash_result!(PyTuFlashResult, "TuFlashResult");
+
+macro_rules! py_pressure_flash_from {
+    ($name:ident, $src:ident) => {
+        impl From<&$src> for $name {
+            fn from(r: &$src) -> Self {
+                Self {
+                    P: PyQty {
+                        magnitude_si: r.pressure.value,
+                        unit: "Pa".to_string(),
+                    },
+                    beta: r.beta,
+                    x: r.x.clone(),
+                    y: r.y.clone(),
+                    k: r.k.clone(),
+                    phase: r.phase.as_str().to_string(),
+                    z_liquid: r.z_liquid,
+                    z_vapour: r.z_vapour,
+                    iterations: r.iterations,
+                    residual: r.residual,
+                    warnings: transport(&r.warnings),
+                }
+            }
+        }
+    };
+}
+
+py_pressure_flash_from!(PyThFlashResult, ThFlashResult);
+py_pressure_flash_from!(PyTsFlashResult, TsFlashResult);
+py_pressure_flash_from!(PyTuFlashResult, TuFlashResult);
+
+/// Result of `eos.pu_flash`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PuFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` is the symbol the spec and the Python result both use
+pub struct PyPuFlashResult {
+    /// The temperature that satisfies the internal energy.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The vapour fraction, or `None` for a single-phase feed.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The liquid root of the cubic.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// Newton steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The relative internal-energy residual at the answer.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPuFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PuFlashResult(T={} K, phase={}, beta={:?})",
+            self.T.magnitude_si, self.phase, self.beta
+        )
+    }
+}
+
+impl From<&PuFlashResult> for PyPuFlashResult {
+    fn from(r: &PuFlashResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            beta: r.beta,
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            phase: r.phase.as_str().to_string(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.stability_test`, transported.
 ///
 /// The first result here whose fields are all vectors or lists, and the first whose
@@ -3065,6 +3235,10 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PsFlashResult::CALC_ID => PsFlashResult::FIELDS.to_vec(),
         TvFlashResult::CALC_ID => TvFlashResult::FIELDS.to_vec(),
         PvFlashResult::CALC_ID => PvFlashResult::FIELDS.to_vec(),
+        ThFlashResult::CALC_ID => ThFlashResult::FIELDS.to_vec(),
+        TsFlashResult::CALC_ID => TsFlashResult::FIELDS.to_vec(),
+        TuFlashResult::CALC_ID => TuFlashResult::FIELDS.to_vec(),
+        PuFlashResult::CALC_ID => PuFlashResult::FIELDS.to_vec(),
         StabilityTestResult::CALC_ID => StabilityTestResult::FIELDS.to_vec(),
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),

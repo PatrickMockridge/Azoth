@@ -10,9 +10,13 @@
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/ps_flash.toml
 //!   - specs/models/eos/pt_flash.toml
+//!   - specs/models/eos/pu_flash.toml
 //!   - specs/models/eos/pure_saturation.toml
 //!   - specs/models/eos/pv_flash.toml
 //!   - specs/models/eos/stability_test.toml
+//!   - specs/models/eos/th_flash.toml
+//!   - specs/models/eos/ts_flash.toml
+//!   - specs/models/eos/tu_flash.toml
 //!   - specs/models/eos/tv_flash.toml
 //!   - specs/models/eos/unifac_activity_coefficients.toml
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
@@ -974,6 +978,69 @@ pub static PT_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: PT_FLASH_CASES,
 };
 
+static PU_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "P",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "a positive state variable",
+    },
+}];
+
+static PU_FLASH_CASES: &[TestCase] = &[TestCase {
+    id: "two_phase_round_trip",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-05,
+    numbers: &[("P", 1000000.0), ("U", -4179.034516413562)],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[("T", 300.0), ("beta", 0.8356955)],
+    expected_vectors: &[],
+}];
+
+static PU_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+};
+
+static PU_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "pu_flash_inverse_temperature_newton",
+    convergence: "relative",
+    tolerance: 1e-08,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: Some(300.0),
+    inner: Some(&PU_FLASH_INNER),
+};
+
+/// Registry entry for `eos.pu_flash`.
+pub static PU_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pu_flash",
+    kind: "procedure",
+    algorithm: Some(&PU_FLASH_ALGORITHM),
+    checks: PU_FLASH_CHECKS,
+    cases: PU_FLASH_CASES,
+};
+
 static PURE_SATURATION_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -1250,6 +1317,195 @@ pub static STABILITY_TEST_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&STABILITY_TEST_ALGORITHM),
     checks: STABILITY_TEST_CHECKS,
     cases: STABILITY_TEST_CASES,
+};
+
+static TH_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "a positive state variable",
+    },
+}];
+
+static TH_FLASH_CASES: &[TestCase] = &[TestCase {
+    id: "two_phase_round_trip",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-05,
+    numbers: &[("T", 300.0), ("H", -2217.9839518894687)],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[("P", 1000000.0), ("beta", 0.8356955)],
+    expected_vectors: &[],
+}];
+
+static TH_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+};
+
+static TH_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "th_flash_inverse_pressure_newton",
+    convergence: "relative",
+    tolerance: 1e-08,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("one_bar"),
+    initial_temperature: None,
+    inner: Some(&TH_FLASH_INNER),
+};
+
+/// Registry entry for `eos.th_flash`.
+pub static TH_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.th_flash",
+    kind: "procedure",
+    algorithm: Some(&TH_FLASH_ALGORITHM),
+    checks: TH_FLASH_CHECKS,
+    cases: TH_FLASH_CASES,
+};
+
+static TS_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "a positive state variable",
+    },
+}];
+
+static TS_FLASH_CASES: &[TestCase] = &[TestCase {
+    id: "two_phase_round_trip",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-05,
+    numbers: &[("T", 300.0), ("S", -19.62457613786449)],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[("P", 1000000.0), ("beta", 0.8356955)],
+    expected_vectors: &[],
+}];
+
+static TS_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+};
+
+static TS_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "ts_flash_inverse_pressure_newton",
+    convergence: "relative",
+    tolerance: 1e-08,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("one_bar"),
+    initial_temperature: None,
+    inner: Some(&TS_FLASH_INNER),
+};
+
+/// Registry entry for `eos.ts_flash`.
+pub static TS_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.ts_flash",
+    kind: "procedure",
+    algorithm: Some(&TS_FLASH_ALGORITHM),
+    checks: TS_FLASH_CHECKS,
+    cases: TS_FLASH_CASES,
+};
+
+static TU_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "a positive state variable",
+    },
+}];
+
+static TU_FLASH_CASES: &[TestCase] = &[TestCase {
+    id: "two_phase_round_trip",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-05,
+    numbers: &[("T", 300.0), ("U", -4179.034516413562)],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[("P", 1000000.0), ("beta", 0.8356955)],
+    expected_vectors: &[],
+}];
+
+static TU_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+};
+
+static TU_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "tu_flash_inverse_pressure_newton",
+    convergence: "relative",
+    tolerance: 1e-08,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("one_bar"),
+    initial_temperature: None,
+    inner: Some(&TU_FLASH_INNER),
+};
+
+/// Registry entry for `eos.tu_flash`.
+pub static TU_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.tu_flash",
+    kind: "procedure",
+    algorithm: Some(&TU_FLASH_ALGORITHM),
+    checks: TU_FLASH_CHECKS,
+    cases: TU_FLASH_CASES,
 };
 
 static TV_FLASH_CHECKS: &[SpecCheck] = &[
@@ -1633,9 +1889,13 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PH_FLASH_SPEC,
     &PS_FLASH_SPEC,
     &PT_FLASH_SPEC,
+    &PU_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
     &PV_FLASH_SPEC,
     &STABILITY_TEST_SPEC,
+    &TH_FLASH_SPEC,
+    &TS_FLASH_SPEC,
+    &TU_FLASH_SPEC,
     &TV_FLASH_SPEC,
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,

@@ -497,6 +497,111 @@ impl CalcResult for PvFlashResult {
     }
 }
 
+/// The pressure-specified flashes `eos.th_flash`, `eos.ts_flash` and `eos.tu_flash`
+/// share this shape: the pressure is the answer, the rest is the inner flash.
+macro_rules! pressure_flash_result {
+    ($name:ident, $id:literal) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct $name {
+            /// The pressure that satisfies the property. This is the model's answer.
+            pub pressure: Pressure,
+            /// The vapour fraction at that pressure, or `None` for a single-phase feed.
+            pub beta: Option<f64>,
+            /// Liquid-phase mole fractions at the answer.
+            pub x: Vec<f64>,
+            /// Vapour-phase mole fractions at the answer.
+            pub y: Vec<f64>,
+            /// `K_i = y_i / x_i` at the answer.
+            pub k: Vec<f64>,
+            /// Which phase the feed is in at the answer.
+            pub phase: Phase,
+            /// The liquid root of the cubic at the answer.
+            pub z_liquid: f64,
+            /// The vapour root.
+            pub z_vapour: f64,
+            /// Newton steps taken.
+            pub iterations: u32,
+            /// The relative property residual at the answer, signed.
+            pub residual: f64,
+            /// Caveats, deduplicated.
+            pub warnings: Vec<Warning>,
+        }
+
+        impl CalcResult for $name {
+            const CALC_ID: &'static str = $id;
+            const FIELDS: &'static [&'static str] = &[
+                "P",
+                "beta",
+                "x",
+                "y",
+                "k",
+                "phase",
+                "z_liquid",
+                "z_vapour",
+                "iterations",
+                "residual",
+                "warnings",
+            ];
+
+            fn warnings(&self) -> &[Warning] {
+                &self.warnings
+            }
+        }
+    };
+}
+
+pressure_flash_result!(ThFlashResult, "eos.th_flash");
+pressure_flash_result!(TsFlashResult, "eos.ts_flash");
+pressure_flash_result!(TuFlashResult, "eos.tu_flash");
+
+/// Result of `eos.pu_flash`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PuFlashResult {
+    /// The temperature that satisfies the internal energy. This is the model's answer.
+    pub temperature: ThermodynamicTemperature,
+    /// The vapour fraction at that temperature, or `None` for a single-phase feed.
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions at the answer.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions at the answer.
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i` at the answer.
+    pub k: Vec<f64>,
+    /// Which phase the feed is in at the answer.
+    pub phase: Phase,
+    /// The liquid root of the cubic at the answer.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// Newton steps taken.
+    pub iterations: u32,
+    /// The relative internal-energy residual at the answer, signed.
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PuFlashResult {
+    const CALC_ID: &'static str = "eos.pu_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "T",
+        "beta",
+        "x",
+        "y",
+        "k",
+        "phase",
+        "z_liquid",
+        "z_vapour",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Whether a feed is stable as a single phase.
 ///
 /// Two values rather than a boolean because the *asymmetry* between them is the

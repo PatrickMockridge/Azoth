@@ -313,6 +313,20 @@ class PtFlashResult:
     warnings: list[Warning]
 
 @final
+class PuFlashResult:
+    T: Qty
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    phase: str
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class PureSaturationResult:
     p_sat: Qty
     ln_phi: float
@@ -406,6 +420,48 @@ class StabilityTestResult:
     w: list[list[float]]
     iterations: list[int]
     min_t_over_tc: float
+    warnings: list[Warning]
+
+@final
+class ThFlashResult:
+    P: Qty
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    phase: str
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
+class TsFlashResult:
+    P: Qty
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    phase: str
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
+class TuFlashResult:
+    P: Qty
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    phase: str
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
     warnings: list[Warning]
 
 @final
@@ -732,6 +788,23 @@ def pt_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> PtFlashResult: ...
+def pu_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    cp_e: list[float],
+    P: float,
+    U: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> PuFlashResult: ...
 def pure_saturation(Tc: float, Pc: float, omega: float, T: float) -> PureSaturationResult: ...
 def pv_flash(
     Tc: list[float],
@@ -789,6 +862,57 @@ def stability_test(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> StabilityTestResult: ...
+def th_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    cp_e: list[float],
+    T: float,
+    H: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> ThFlashResult: ...
+def ts_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    cp_e: list[float],
+    T: float,
+    S: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> TsFlashResult: ...
+def tu_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    cp_e: list[float],
+    T: float,
+    U: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> TuFlashResult: ...
 def tv_flash(
     Tc: list[float],
     Pc: list[float],

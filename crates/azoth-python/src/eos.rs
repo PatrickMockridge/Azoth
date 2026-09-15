@@ -22,11 +22,12 @@ use crate::results::{
     PyNrtlActivityCoefficientsResult, PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult,
     PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
     PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
     PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
-    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyTvFlashResult,
-    PyTwuKappaResult, PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
+    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
+    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult,
+    PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
     PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyWilkeChangDiffusivityResult,
     PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
@@ -1063,6 +1064,208 @@ pub fn pv_flash(
     )
     .map(|r| PyPvFlashResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// The th-flash flash (T,H -> P).
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, H, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)]
+#[allow(clippy::too_many_arguments)]
+pub fn th_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    H: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyThFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    let ideal_gas = azoth_eos::IdealGasModel {
+        cp_a,
+        cp_b,
+        cp_c,
+        cp_d,
+        cp_e,
+    };
+    azoth_eos::th_flash(&mixture, &ideal_gas, kelvins(T), joules_per_mole(H), &z)
+        .map(|r| PyThFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The ts-flash flash (T,S -> P).
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, S, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)]
+#[allow(clippy::too_many_arguments)]
+pub fn ts_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    S: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyTsFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    let ideal_gas = azoth_eos::IdealGasModel {
+        cp_a,
+        cp_b,
+        cp_c,
+        cp_d,
+        cp_e,
+    };
+    azoth_eos::ts_flash(
+        &mixture,
+        &ideal_gas,
+        kelvins(T),
+        joules_per_mole_kelvin(S),
+        &z,
+    )
+    .map(|r| PyTsFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The tu-flash flash (T,U -> P).
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, U, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, T, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)]
+#[allow(clippy::too_many_arguments)]
+pub fn tu_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    U: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyTuFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    let ideal_gas = azoth_eos::IdealGasModel {
+        cp_a,
+        cp_b,
+        cp_c,
+        cp_d,
+        cp_e,
+    };
+    azoth_eos::tu_flash(&mixture, &ideal_gas, kelvins(T), joules_per_mole(U), &z)
+        .map(|r| PyTuFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The pu-flash flash (P,U -> T).
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, U, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, cp_a, cp_b, cp_c, cp_d, cp_e, P, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)]
+#[allow(clippy::too_many_arguments)]
+pub fn pu_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    P: f64,
+    U: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyPuFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    let ideal_gas = azoth_eos::IdealGasModel {
+        cp_a,
+        cp_b,
+        cp_c,
+        cp_d,
+        cp_e,
+    };
+    azoth_eos::pu_flash(&mixture, &ideal_gas, pascals(P), joules_per_mole(U), &z)
+        .map(|r| PyPuFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// Whether a feed at a temperature and pressure is stable as a single phase.

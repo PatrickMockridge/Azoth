@@ -1042,6 +1042,130 @@ class StabilityVerdict(StrEnum):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ThFlashResult(_HasWarnings):
+    """Result of ``eos.th_flash``.
+
+    Same shape as :class:TvFlashResult, with the pressure as the answer.
+    """
+
+    #: The pressure that satisfies the property. This is the model's answer.
+    P: Q
+    #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Newton steps taken.
+    iterations: int
+    #: The relative property residual at the answer.
+    residual: float
+    #: Caveats, deduplicated.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TsFlashResult(_HasWarnings):
+    """Result of ``eos.ts_flash``.
+
+    Same shape as :class:TvFlashResult, with the pressure as the answer.
+    """
+
+    #: The pressure that satisfies the property. This is the model's answer.
+    P: Q
+    #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Newton steps taken.
+    iterations: int
+    #: The relative property residual at the answer.
+    residual: float
+    #: Caveats, deduplicated.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TuFlashResult(_HasWarnings):
+    """Result of ``eos.tu_flash``.
+
+    Same shape as :class:TvFlashResult, with the pressure as the answer.
+    """
+
+    #: The pressure that satisfies the property. This is the model's answer.
+    P: Q
+    #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Newton steps taken.
+    iterations: int
+    #: The relative property residual at the answer.
+    residual: float
+    #: Caveats, deduplicated.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PuFlashResult(_HasWarnings):
+    """Result of ``eos.pu_flash``.
+
+    Same shape as :class:PvFlashResult, with the temperature as the answer.
+    """
+
+    #: The temperature that satisfies the property. This is the model's answer.
+    T: Q
+    #: The vapour fraction at that temperature, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Newton steps taken.
+    iterations: int
+    #: The relative property residual at the answer.
+    residual: float
+    #: Caveats, deduplicated.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class StabilityTestResult(_HasWarnings):
     """Result of ``eos.stability_test``.
 

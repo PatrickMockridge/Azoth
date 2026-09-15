@@ -1,0 +1,95 @@
+id = "eos.ts_flash"
+name = "Temperature-entropy flash"
+kind = "procedure"
+references = [
+    "Michelsen, M. L.; Mollerup, J. M. (2004). \"Thermodynamic Models: Fundamentals and Computational Aspects.\" Tie-Line Publications.",
+]
+assumptions = [
+    "the iteration is quasi-Newton in pressure (or temperature) with a central-difference slope; every step is clamped.",
+    "a trial state the inner flash cannot settle is backed off, not fatal: the gap is halved back towards the last state that worked.",
+    "the flash at each trial state is converged, not exact: the property inverted is that of a converged approximation.",
+    "no check that the feed is stable: the model asks where the property is satisfied, not whether the state found is the equilibrium one.",
+]
+[source]
+standard = "Standard thermodynamics, as in Michelsen & Mollerup"
+edition = "The procedure is the ordinary one: the molar property of a mixture is a monotonic function of the solved variable."
+[algorithm]
+scheme = "ts_flash_inverse_pressure_newton"
+convergence = "relative"
+tolerance = 1e-08
+max_iterations = 200
+initialisation = "one_bar"
+[algorithm.inner]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 300
+[algorithm.inner.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature. Held fixed; the pressure is what is solved for."
+[inputs.S]
+unit = "J/(mol*K)"
+description = "the molar entropy the mixture is to reach, as a difference from the datum above; it may be negative."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the feed's mole fractions. Checked rather than renormalised."
+[outputs]
+[outputs.P]
+unit = "Pa"
+description = "the pressure that satisfies the entropy. This is the answer."
+[outputs.beta]
+unit = "dimensionless"
+description = "the vapour fraction at the answer. Absent for a single-phase feed."
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions at the answer"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions at the answer"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`K_i = y_i / x_i` at the answer"
+[outputs.phase]
+type = "enum"
+values = ["all_liquid", "two_phase", "all_vapour"]
+description = "which phase the feed is in at the answer"
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the liquid root of the cubic at the answer"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root"
+[outputs.iterations]
+unit = "dimensionless"
+description = "Newton iterations taken"
+[outputs.residual]
+unit = "dimensionless"
+description = "`(S(P) - S_target) / |S_target|` at the answer, signed"
+[[valid_range]]
+quantity = "T"
+min = 0.0
+min_inclusive = false
+severity = "error"
+rationale = "a positive state variable"
+[implementations]
+python = "azoth.eos.ts_flash"
+rust = "azoth_eos::ts_flash"

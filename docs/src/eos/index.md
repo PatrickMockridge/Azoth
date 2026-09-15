@@ -54,9 +54,13 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.ph_flash`](./ph_flash.md) | `ph_flash_inverse_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.pt_flash`](./pt_flash.md) | `successive_substitution_flash` | Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982) |
+| [`eos.pu_flash`](./pu_flash.md) | `pu_flash_inverse_temperature_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.pure_saturation`](./pure_saturation.md) | `saturation_pressure_bisection` | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pv_flash`](./pv_flash.md) | `pv_flash_inverse_temperature_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |
+| [`eos.th_flash`](./th_flash.md) | `th_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
+| [`eos.ts_flash`](./ts_flash.md) | `ts_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
+| [`eos.tu_flash`](./tu_flash.md) | `tu_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.tv_flash`](./tv_flash.md) | `tv_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.unifac_activity_coefficients`](./unifac_activity_coefficients.md) | `direct composition` | Fredenslund et al. (1975); Hansen et al. (1991) |
 | [`eos.uniquac_activity_coefficients`](./uniquac_activity_coefficients.md) | `direct composition` | Abrams, D. S.; Prausnitz, J. M. (1975) |

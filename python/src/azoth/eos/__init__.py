@@ -95,6 +95,7 @@ from azoth.core.result import (
     PrZFactorResult,
     PsFlashResult,
     PtFlashResult,
+    PuFlashResult,
     PureSaturationResult,
     PvFlashResult,
     RachfordRiceBinaryResult,
@@ -108,6 +109,9 @@ from azoth.core.result import (
     SrkPenelouxShiftResult,
     SrkZFactorResult,
     StabilityTestResult,
+    ThFlashResult,
+    TsFlashResult,
+    TuFlashResult,
     TvFlashResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
@@ -158,6 +162,7 @@ __all__ = [
     "pr_z_factor",
     "prsv_kappa",
     "pt_flash",
+    "pu_flash",
     "pure_saturation",
     "pv_flash",
     "rachford_rice_binary",
@@ -171,6 +176,9 @@ __all__ = [
     "srk_peneloux_shift",
     "srk_z_factor",
     "stability_test",
+    "th_flash",
+    "ts_flash",
+    "tu_flash",
     "tv_flash",
     "twu_kappa",
     "tyn_calus_diffusivity",
@@ -203,6 +211,10 @@ _CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
 _PH_FLASH = "eos.ph_flash"
 _PS_FLASH = "eos.ps_flash"
+_TH_FLASH = "eos.th_flash"
+_TS_FLASH = "eos.ts_flash"
+_TU_FLASH = "eos.tu_flash"
+_PU_FLASH = "eos.pu_flash"
 _TV_FLASH = "eos.tv_flash"
 _PV_FLASH = "eos.pv_flash"
 _PT_FLASH = "eos.pt_flash"
@@ -886,6 +898,81 @@ def wilson_activity_coefficients(
     """
     return resolve(_WILSON_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
         T=T, x=x, M=M, Tc=Tc
+    )
+
+
+def th_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, T: Q, H: Q, z: list[float]
+) -> ThFlashResult:
+    """The pressure a mixture reaches at a temperature for a given molar enthalpy.
+
+    The temperature-enthalpy companion to :func:`ph_flash`, with the specified pair
+    exchanged: ``T`` is held fixed and ``P`` is solved for.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``T`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.th_flash`.
+    """
+    return resolve(_TH_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, T=T, H=H, z=z
+    )
+
+
+def ts_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, T: Q, S: Q, z: list[float]
+) -> TsFlashResult:
+    """The pressure a mixture reaches at a temperature for a given molar entropy.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``T`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.ts_flash`.
+    """
+    return resolve(_TS_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, T=T, S=S, z=z
+    )
+
+
+def tu_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, T: Q, U: Q, z: list[float]
+) -> TuFlashResult:
+    """The pressure a mixture reaches at a temperature for a given molar internal energy.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``T`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.tu_flash`.
+    """
+    return resolve(_TU_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, T=T, U=U, z=z
+    )
+
+
+def pu_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, P: Q, U: Q, z: list[float]
+) -> PuFlashResult:
+    """The temperature a mixture reaches at a pressure for a given molar internal energy.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``P`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.pu_flash`.
+    """
+    return resolve(_PU_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, P=P, U=U, z=z
     )
 
 

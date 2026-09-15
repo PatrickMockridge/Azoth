@@ -315,12 +315,11 @@ pub fn solve_temperature(
 ) -> Result<Solution> {
     match which {
         Property::Entropy => solve_entropy(mixture, ideal_gas, p, target, z, algorithm),
-        Property::Enthalpy => solve_enthalpy(mixture, ideal_gas, p, target, z, algorithm),
+        Property::Enthalpy => solve_reciprocal(mixture, ideal_gas, p, target, z, which, algorithm),
         Property::Volume => solve_volume(mixture, ideal_gas, p, target, z, algorithm),
-        Property::InternalEnergy => Err(AzothError::invalid_input(
-            "property",
-            "internal energy is inverted over pressure, not temperature",
-        )),
+        Property::InternalEnergy => {
+            solve_reciprocal(mixture, ideal_gas, p, target, z, which, algorithm)
+        }
     }
 }
 
@@ -603,18 +602,20 @@ fn solve_volume(
     })
 }
 
-/// Invert the enthalpy, by upstream's `PHflash.solveQ`, in reciprocal temperature.
+/// Invert a property in reciprocal temperature, by upstream's `PHflash.solveQ` /
+/// `PUflash.solveQ`.
 ///
-/// The variable is `1/T` rather than `T` because an enthalpy against temperature is close
+/// The variable is `1/T` rather than `T` because a property against temperature is close
 /// to linear in the reciprocal, which makes the Newton step a good model over a much
 /// wider range - the reason upstream solves it this way and the reason the step clamp is
 /// applied to the temperature it converts back to.
-fn solve_enthalpy(
+fn solve_reciprocal(
     mixture: &Mixture,
     ideal_gas: &IdealGasModel,
     p: Pressure,
     target: f64,
     z: &[f64],
+    which: Property,
     algorithm: &ModelAlgorithm,
 ) -> Result<Solution> {
     let tolerance = algorithm.tolerance;
@@ -633,14 +634,7 @@ fn solve_enthalpy(
     }
 
     let mut temperature = start_temperature(algorithm);
-    let mut evaluation = evaluate(
-        mixture,
-        ideal_gas,
-        kelvins(temperature),
-        p,
-        z,
-        Property::Enthalpy,
-    )?;
+    let mut evaluation = evaluate(mixture, ideal_gas, kelvins(temperature), p, z, which)?;
     let mut warnings = evaluation.flash.warnings.clone();
 
     // Upstream's initial values, kept because the damping rule reads them: a first
@@ -672,15 +666,7 @@ fn solve_enthalpy(
         let residual = (evaluation.value - target) / scale;
         let derivative = -temperature
             * temperature
-            * slope(
-                mixture,
-                ideal_gas,
-                p,
-                z,
-                Property::Enthalpy,
-                temperature,
-                evaluation.cp,
-            )
+            * slope(mixture, ideal_gas, p, z, which, temperature, evaluation.cp)
             / scale;
         if derivative.is_finite() && derivative != 0.0 {
             let reciprocal = 1.0 / temperature - factor * residual / derivative;
@@ -710,14 +696,7 @@ fn solve_enthalpy(
             // aborting the whole inversion there would make the model fail wherever its
             // path crossed such a region.
             let next = loop {
-                match evaluate(
-                    mixture,
-                    ideal_gas,
-                    kelvins(candidate),
-                    p,
-                    z,
-                    Property::Enthalpy,
-                ) {
+                match evaluate(mixture, ideal_gas, kelvins(candidate), p, z, which) {
                     Ok(next) => break Some(next),
                     Err(ref e) if is_temperature_dependent_failure(e) => {
                         retries += 1;
@@ -836,7 +815,8 @@ pub fn solve_pressure(
             Property::Enthalpy | Property::InternalEnergy => evaluation.volume,
             Property::Entropy => -evaluation.volume / t.value,
         };
-        let derivative = slope_pressure(mixture, ideal_gas, t, z, which, pressure, fallback) / scale;
+        let derivative =
+            slope_pressure(mixture, ideal_gas, t, z, which, pressure, fallback) / scale;
         if derivative.is_finite() && derivative != 0.0 {
             let mut candidate = pressure - factor * residual / derivative;
 

@@ -274,15 +274,11 @@ def solve_temperature(
         InvalidInputError: from :func:`property_at`, for arguments that are the caller's
             error at every temperature.
     """
-    if which == "h":
-        return _solve_enthalpy(mixture, ideal_gas, p_si, target, z, algorithm)
+    if which in ("h", "u"):
+        return _solve_reciprocal(mixture, ideal_gas, p_si, target, z, which, algorithm)
     if which == "s":
         return _solve_entropy(mixture, ideal_gas, p_si, target, z, algorithm)
-    if which == "v":
-        return _solve_volume(mixture, ideal_gas, p_si, target, z, algorithm)
-    raise InvalidInputError(
-        "property", "internal energy is inverted over pressure, not temperature"
-    )
+    return _solve_volume(mixture, ideal_gas, p_si, target, z, algorithm)
 
 
 def _solve_entropy(
@@ -466,12 +462,13 @@ def _solve_volume(
     }
 
 
-def _solve_enthalpy(
+def _solve_reciprocal(
     mixture: Mixture,
     ideal_gas: IdealGasModel,
     p_si: float,
     target: float,
     z: list[float],
+    which: Property,
     algorithm: dict[str, Any],
 ) -> dict[str, Any]:
     """Invert the enthalpy, by upstream's ``PHflash.solveQ``, in reciprocal temperature.
@@ -494,7 +491,7 @@ def _solve_enthalpy(
         )
 
     temperature = _start_temperature(algorithm)
-    value, cp, _, flash = _evaluate(mixture, ideal_gas, temperature, p_si, z, "h")
+    value, cp, _, flash = _evaluate(mixture, ideal_gas, temperature, p_si, z, which)
     warnings: list[Warning] = list(flash.warnings)
 
     # Upstream's initial values, kept because the damping rule reads them: a first
@@ -526,7 +523,7 @@ def _solve_enthalpy(
         derivative = (
             -temperature
             * temperature
-            * _slope(mixture, ideal_gas, p_si, z, "h", temperature, cp)
+            * _slope(mixture, ideal_gas, p_si, z, which, temperature, cp)
             / scale
         )
         if math.isfinite(derivative) and derivative != 0.0:
@@ -554,7 +551,7 @@ def _solve_enthalpy(
             accepted = False
             while True:
                 try:
-                    value, cp, _, flash = _evaluate(mixture, ideal_gas, candidate, p_si, z, "h")
+                    value, cp, _, flash = _evaluate(mixture, ideal_gas, candidate, p_si, z, which)
                     accepted = True
                     break
                 except Exception as error_raised:

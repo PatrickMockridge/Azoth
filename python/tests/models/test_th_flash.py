@@ -1,0 +1,55 @@
+"""Tests for the ``eos.th_flash`` model.
+
+The spec's cases pin the answers; the round-trip below proves the model *inverts* the
+property without knowing the pressure - compute the
+property at a state the test chose, ask for it back, and require the answer that comes
+out to be the one that went in.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+import pytest
+
+import _helpers as h
+from azoth import _models_gen, ureg
+from azoth.eos import IdealGasModel, Mixture, component, mixture, th_flash
+from azoth.eos.reference._flash_property import property_at
+
+MODEL_ID = "eos.th_flash"
+Q = ureg.Quantity
+
+SPEC = _models_gen.model(MODEL_ID)
+CASES = SPEC["cases"]
+
+METHANE = component("methane")
+BUTANE = component("n-butane")
+
+
+def a_mixture() -> Mixture:
+    return mixture([METHANE, BUTANE], kij={(0, 1): 0.01289789})
+
+
+def an_ideal_gas() -> IdealGasModel:
+    return IdealGasModel(
+        cp_a=(3.0, 5.0), cp_b=(0.0, 0.0), cp_c=(0.0, 0.0), cp_d=(0.0, 0.0), cp_e=(0.0, 0.0)
+    )
+
+
+@pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])
+def test_spec_case(case: dict[str, Any]) -> None:
+    result = th_flash(**h.model_kwargs(SPEC, case["inputs"]))
+    for name, expected_value in case["expected"].items():
+        got = getattr(result, name)
+        if name == "P":
+            got = got.to("Pa").magnitude
+        h.assert_close(got, expected_value, case["tolerance"], f"{case['id']} ({name})")
+
+
+def test_the_round_trip_inverts_the_property() -> None:
+    fluid, ideal_gas = a_mixture(), an_ideal_gas()
+    z = [0.6, 0.4]
+    target, _ = property_at(fluid, ideal_gas, 300.0, 1.0e6, z, "h")
+    result = th_flash(fluid, ideal_gas, Q(300.0, "K"), Q(target, "J/mol"), z)
+    h.assert_close(result.P.to("Pa").magnitude, 1000000.0, 1e-4, "P")

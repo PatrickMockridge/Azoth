@@ -67,6 +67,7 @@ pub mod pr_z_factor;
 pub mod prsv_kappa;
 pub mod ps_flash;
 pub mod pt_flash;
+pub mod pu_flash;
 pub mod pure_saturation;
 pub mod pv_flash;
 pub mod rachford_rice_binary;
@@ -82,6 +83,9 @@ pub mod srk_kappa;
 pub mod srk_peneloux_shift;
 pub mod srk_z_factor;
 pub mod stability_test;
+pub mod th_flash;
+pub mod ts_flash;
+pub mod tu_flash;
 pub mod tv_flash;
 pub mod twu_kappa;
 pub mod tyn_calus_diffusivity;
@@ -123,6 +127,7 @@ pub use pr78_kappa::pr78_kappa;
 pub use prsv_kappa::prsv_kappa;
 pub use ps_flash::ps_flash;
 pub use pt_flash::pt_flash;
+pub use pu_flash::pu_flash;
 pub use pure_saturation::pure_saturation;
 pub use pv_flash::pv_flash;
 pub use rachford_rice_binary::rachford_rice_binary;
@@ -134,11 +139,12 @@ pub use results::{
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult,
     NrtlActivityCoefficientsResult, Phase, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
     PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
-    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
-    RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
-    StabilityVerdict, TwuKappaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PuFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
+    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, StabilityVerdict, ThFlashResult, TsFlashResult, TuFlashResult,
+    TwuKappaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, WilkeChangDiffusivityResult,
     WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
@@ -151,6 +157,9 @@ pub use srk_kappa::srk_kappa;
 pub use srk_peneloux_shift::srk_peneloux_shift;
 pub use srk_z_factor::srk_z_factor;
 pub use stability_test::stability_test;
+pub use th_flash::th_flash;
+pub use ts_flash::ts_flash;
+pub use tu_flash::tu_flash;
 pub use tv_flash::tv_flash;
 pub use twu_kappa::twu_kappa;
 pub use tyn_calus_diffusivity::tyn_calus_diffusivity;

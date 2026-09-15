@@ -106,9 +106,13 @@ Four sections, and the difference between them is the point:
 - [`eos.ph_flash`](./eos/ph_flash.md) — Pressure-enthalpy flash
 - [`eos.ps_flash`](./eos/ps_flash.md) — Pressure-entropy flash
 - [`eos.pt_flash`](./eos/pt_flash.md) — Pressure-temperature flash
+- [`eos.pu_flash`](./eos/pu_flash.md) — Pressure-internal-energy flash
 - [`eos.pure_saturation`](./eos/pure_saturation.md) — Pure-component saturation pressure
 - [`eos.pv_flash`](./eos/pv_flash.md) — Pressure-volume flash
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
+- [`eos.th_flash`](./eos/th_flash.md) — Temperature-enthalpy flash
+- [`eos.ts_flash`](./eos/ts_flash.md) — Temperature-entropy flash
+- [`eos.tu_flash`](./eos/tu_flash.md) — Temperature-internal-energy flash
 - [`eos.tv_flash`](./eos/tv_flash.md) — Temperature-volume flash
 - [`eos.unifac_activity_coefficients`](./eos/unifac_activity_coefficients.md) — Activity coefficients from the UNIFAC group-contribution model
 - [`eos.uniquac_activity_coefficients`](./eos/uniquac_activity_coefficients.md) — Activity coefficients from the UNIQUAC model
