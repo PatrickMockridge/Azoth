@@ -5,9 +5,9 @@ definitions; DeepSeek Harness is the *executor*. This module is the one place in
 `python/src/azoth` that may import `deepseek_harness_sdk`, so the dev-preview runtime
 stays behind a thin boundary and nothing else in the library depends on it.
 
-The adapter that makes azoth's skills loadable in dsh is
-`tools/export_dsh_skills.py`; the swarm/subagent orchestration API lands with the
-first agent, not here.
+The adapter that makes azoth's skills loadable in each tool is
+`tools/export_skills.py`; the swarm/subagent orchestration API lands with the first
+agent, not here.
 """
 
 from __future__ import annotations

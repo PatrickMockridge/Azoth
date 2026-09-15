@@ -43,6 +43,7 @@ ROOT_PAGES = (
     "SECURITY.md",
     "SPEC.md",
     "AGENTS.md",
+    "CLAUDE.md",
     "validation/README.md",
     "databank/README.md",
     "agents/README.md",
