@@ -337,6 +337,22 @@ class PtFlashResult:
     warnings: list[Warning]
 
 @final
+class PtPhaseEnvelopeResult:
+    dew_temperature: list[float]
+    dew_pressure: list[float]
+    bubble_temperature: list[float]
+    bubble_pressure: list[float]
+    cricondenbar_temperature: Qty
+    cricondenbar_pressure: Qty
+    cricondentherm_temperature: Qty
+    cricondentherm_pressure: Qty
+    critical_temperature: Qty
+    critical_pressure: Qty
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class PuFlashResult:
     T: Qty
     beta: float | None
@@ -849,6 +865,17 @@ def pt_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> PtFlashResult: ...
+def pt_phase_envelope(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    P: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> PtPhaseEnvelopeResult: ...
 def pu_flash(
     Tc: list[float],
     Pc: list[float],

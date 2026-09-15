@@ -29,7 +29,7 @@ pub const TRIVIAL_TOLERANCE: f64 = 1.0e-02;
 ///
 /// The estimate here is used for a saturation-pressure guess rather than a
 /// K-value, but it is the same correlation and the same constant.
-const WILSON_CONSTANT: f64 = 5.373;
+pub(crate) const WILSON_CONSTANT: f64 = 5.373;
 
 /// Which phase appears at the boundary being sought.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -108,6 +108,7 @@ Four sections, and the difference between them is the point:
 - [`eos.ph_flash`](./eos/ph_flash.md) — Pressure-enthalpy flash
 - [`eos.ps_flash`](./eos/ps_flash.md) — Pressure-entropy flash
 - [`eos.pt_flash`](./eos/pt_flash.md) — Pressure-temperature flash
+- [`eos.pt_phase_envelope`](./eos/pt_phase_envelope.md) — PT phase envelope
 - [`eos.pu_flash`](./eos/pu_flash.md) — Pressure-internal-energy flash
 - [`eos.pure_saturation`](./eos/pure_saturation.md) — Pure-component saturation pressure
 - [`eos.pv_flash`](./eos/pv_flash.md) — Pressure-volume flash

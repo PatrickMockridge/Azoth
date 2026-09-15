@@ -20,11 +20,11 @@ use crate::results::{
     PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
     PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMolarEnthalpyEntropyResult,
     PyNrtlActivityCoefficientsResult, PyPhFlashResult, PyPhaseBoundaryResult,
-    PyPhaseBoundaryTemperatureResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
-    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
-    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult,
-    PyPureSaturationResult, PyPvFlashResult, PyRachfordRiceBinaryResult,
-    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
+    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
+    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
+    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
     PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult,
@@ -841,6 +841,39 @@ pub fn pt_flash(
     )?;
     azoth_eos::pt_flash(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyPtFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The PT phase envelope of a mixture of composition `z`, traced from a low pressure.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, P, z, eos = \"pr\", alpha = \"pr\")")]
+#[allow(non_snake_case)] // `Tc`, `Pc` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pt_phase_envelope(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyPhaseEnvelopeResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::pt_phase_envelope(&mixture, pascals(P), &z)
+        .map(|r| PyPhaseEnvelopeResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

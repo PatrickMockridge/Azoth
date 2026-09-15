@@ -28,6 +28,7 @@ from azoth.eos.reference.pr_z_factor import pr_z_factor
 from azoth.eos.reference.prsv_kappa import prsv_kappa
 from azoth.eos.reference.ps_flash import ps_flash
 from azoth.eos.reference.pt_flash import pt_flash
+from azoth.eos.reference.pt_phase_envelope import pt_phase_envelope
 from azoth.eos.reference.pure_saturation import pure_saturation
 from azoth.eos.reference.rachford_rice_binary import rachford_rice_binary
 from azoth.eos.reference.stability_test import stability_test
@@ -55,6 +56,7 @@ __all__ = [
     "prsv_kappa",
     "ps_flash",
     "pt_flash",
+    "pt_phase_envelope",
     "pure_saturation",
     "rachford_rice_binary",
     "stability_test",

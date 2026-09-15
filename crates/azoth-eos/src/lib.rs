@@ -69,6 +69,7 @@ pub mod pr_z_factor;
 pub mod prsv_kappa;
 pub mod ps_flash;
 pub mod pt_flash;
+pub mod pt_phase_envelope;
 pub mod pu_flash;
 pub mod pure_saturation;
 pub mod pv_flash;
@@ -133,6 +134,7 @@ pub use pr78_kappa::pr78_kappa;
 pub use prsv_kappa::prsv_kappa;
 pub use ps_flash::ps_flash;
 pub use pt_flash::pt_flash;
+pub use pt_phase_envelope::pt_phase_envelope;
 pub use pu_flash::pu_flash;
 pub use pure_saturation::pure_saturation;
 pub use pv_flash::pv_flash;
@@ -146,10 +148,10 @@ pub use results::{
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult,
     NrtlActivityCoefficientsResult, Phase, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
     PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PuFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
-    RkDepartureResult, RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
+    PuFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
+    RkAlphaAbResult, RkDepartureResult, RootStructure, SiddiqiLucasDiffusivityResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, StabilityVerdict, ThFlashResult, TsFlashResult, TuFlashResult,
     TwuKappaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, VuFlashResult,

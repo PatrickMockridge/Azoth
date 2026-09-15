@@ -12,6 +12,7 @@
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/ps_flash.toml
 //!   - specs/models/eos/pt_flash.toml
+//!   - specs/models/eos/pt_phase_envelope.toml
 //!   - specs/models/eos/pu_flash.toml
 //!   - specs/models/eos/pure_saturation.toml
 //!   - specs/models/eos/pv_flash.toml
@@ -1201,6 +1202,94 @@ pub static PT_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: PT_FLASH_CASES,
 };
 
+static PT_PHASE_ENVELOPE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "critical_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the critical pressure is a positive pressure, or the trace never reached the critical point",
+        },
+    },
+];
+
+static PT_PHASE_ENVELOPE_CASES: &[TestCase] = &[TestCase {
+    id: "methane_butane_from_1_bar",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-06,
+    numbers: &[("P", 100000.0)],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[0.5, 0.5])],
+    matrices: &[],
+    expected: &[
+        ("critical_temperature", 367.45728926351524),
+        ("critical_pressure", 10350775.913640998),
+        ("cricondenbar_temperature", 338.16618376710414),
+        ("cricondenbar_pressure", 10991706.162864981),
+        ("cricondentherm_temperature", 384.01823820905895),
+        ("cricondentherm_pressure", 7700041.689284624),
+        ("iterations", 64.0),
+    ],
+    expected_vectors: &[],
+}];
+
+static PT_PHASE_ENVELOPE_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "natural_parameter_newton",
+    convergence: "absolute",
+    tolerance: 1e-05,
+    max_iterations: 50,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: None,
+    inner: None,
+};
+
+static PT_PHASE_ENVELOPE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "phase_envelope_continuation",
+    convergence: "absolute",
+    tolerance: 0.01,
+    max_iterations: 9980,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: Some(&PT_PHASE_ENVELOPE_INNER),
+};
+
+/// Registry entry for `eos.pt_phase_envelope`.
+pub static PT_PHASE_ENVELOPE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pt_phase_envelope",
+    kind: "procedure",
+    algorithm: Some(&PT_PHASE_ENVELOPE_ALGORITHM),
+    checks: PT_PHASE_ENVELOPE_CHECKS,
+    cases: PT_PHASE_ENVELOPE_CASES,
+};
+
 static PU_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -2177,6 +2266,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PH_FLASH_SPEC,
     &PS_FLASH_SPEC,
     &PT_FLASH_SPEC,
+    &PT_PHASE_ENVELOPE_SPEC,
     &PU_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
     &PV_FLASH_SPEC,

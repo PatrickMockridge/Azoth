@@ -1,0 +1,16 @@
+model = "eos.pt_phase_envelope"
+[[cases]]
+id = "methane_butane_from_1_bar"
+tolerance = 1e-06
+[cases.inputs]
+components = ["methane", "n-butane"]
+z = [0.5, 0.5]
+P = 100000.0
+[cases.expected]
+critical_temperature = 367.45728926351524
+critical_pressure = 10350775.913640998
+cricondenbar_temperature = 338.16618376710414
+cricondenbar_pressure = 10991706.162864981
+cricondentherm_temperature = 384.01823820905895
+cricondentherm_pressure = 7700041.689284624
+iterations = 64

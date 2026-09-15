@@ -65,6 +65,7 @@ from azoth.core.result import (
     PrZFactorResult,
     PsFlashResult,
     PtFlashResult,
+    PtPhaseEnvelopeResult,
     PuFlashResult,
     PumpPowerResult,
     PureSaturationResult,
@@ -972,6 +973,41 @@ def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
         iterations=result.iterations,
         residual=result.residual,
         warnings=_warnings(result.warnings),
+    )
+
+
+def pt_phase_envelope(mixture: Any, P: Q, z: Sequence[float]) -> PtPhaseEnvelopeResult:
+    """The PT phase envelope of a mixture, computed in Rust.
+
+    The two branches cross as parallel temperature and pressure lists; the scalar
+    characteristic points cross as pint quantities.
+    """
+    spec = _models_gen.model("eos.pt_phase_envelope")
+    raw = _core.pt_phase_envelope(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PtPhaseEnvelopeResult(
+        dew_temperature=tuple(raw.dew_temperature),
+        dew_pressure=tuple(raw.dew_pressure),
+        bubble_temperature=tuple(raw.bubble_temperature),
+        bubble_pressure=tuple(raw.bubble_pressure),
+        cricondenbar_temperature=from_si(raw.cricondenbar_temperature.magnitude_si, "K"),
+        cricondenbar_pressure=from_si(raw.cricondenbar_pressure.magnitude_si, "Pa"),
+        cricondentherm_temperature=from_si(raw.cricondentherm_temperature.magnitude_si, "K"),
+        cricondentherm_pressure=from_si(raw.cricondentherm_pressure.magnitude_si, "Pa"),
+        critical_temperature=from_si(raw.critical_temperature.magnitude_si, "K"),
+        critical_pressure=from_si(raw.critical_pressure.magnitude_si, "Pa"),
+        iterations=raw.iterations,
+        residual=raw.residual,
+        warnings=_warnings(raw.warnings),
     )
 
 

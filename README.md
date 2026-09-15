@@ -156,6 +156,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.prsv_kappa` | Peng-Robinson-Stryjek-Vera alpha-function coefficient |
 | `eos.ps_flash` | Pressure-entropy flash — a *model* |
 | `eos.pt_flash` | Pressure-temperature flash — a *model* |
+| `eos.pt_phase_envelope` | PT phase envelope — a *model* |
 | `eos.pu_flash` | Pressure-internal-energy flash — a *model* |
 | `eos.pure_saturation` | Pure-component saturation pressure — a *model* |
 | `eos.pv_flash` | Pressure-volume flash — a *model* |

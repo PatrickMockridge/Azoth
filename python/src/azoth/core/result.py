@@ -926,6 +926,44 @@ class PtFlashResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PtPhaseEnvelopeResult(_HasWarnings):
+    """Result of ``eos.pt_phase_envelope``.
+
+    The dew and bubble branches of the phase envelope, each a parallel pair of
+    temperature and pressure arrays traced upward from the starting pressure to the
+    critical point, together with the cricondenbar, cricondentherm and the critical
+    point itself.
+    """
+
+    #: The dew-point temperatures, in trace order.
+    dew_temperature: tuple[float, ...]
+    #: The dew-point pressures, parallel to ``dew_temperature``.
+    dew_pressure: tuple[float, ...]
+    #: The bubble-point temperatures, in trace order.
+    bubble_temperature: tuple[float, ...]
+    #: The bubble-point pressures, parallel to ``bubble_temperature``.
+    bubble_pressure: tuple[float, ...]
+    #: The temperature at the cricondenbar.
+    cricondenbar_temperature: Q
+    #: The cricondenbar pressure.
+    cricondenbar_pressure: Q
+    #: The cricondentherm temperature.
+    cricondentherm_temperature: Q
+    #: The pressure at the cricondentherm.
+    cricondentherm_pressure: Q
+    #: The critical temperature.
+    critical_temperature: Q
+    #: The critical pressure.
+    critical_pressure: Q
+    #: The number of continuation points traced.
+    iterations: int
+    #: The temperature gap between the two branches' endpoints, in kelvin.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PhFlashResult(_HasWarnings):
     """Result of ``eos.ph_flash``.
 

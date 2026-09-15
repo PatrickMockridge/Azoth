@@ -686,6 +686,60 @@ impl CalcResult for DewTemperatureResult {
     }
 }
 
+/// Result of `eos.pt_phase_envelope`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PtPhaseEnvelopeResult {
+    /// The dew-point temperatures along the envelope.
+    pub dew_temperature: Vec<f64>,
+    /// The dew-point pressures, parallel to `dew_temperature`.
+    pub dew_pressure: Vec<f64>,
+    /// The bubble-point temperatures along the envelope.
+    pub bubble_temperature: Vec<f64>,
+    /// The bubble-point pressures, parallel to `bubble_temperature`.
+    pub bubble_pressure: Vec<f64>,
+    /// The temperature at the cricondenbar.
+    pub cricondenbar_temperature: ThermodynamicTemperature,
+    /// The cricondenbar pressure.
+    pub cricondenbar_pressure: Pressure,
+    /// The cricondentherm temperature.
+    pub cricondentherm_temperature: ThermodynamicTemperature,
+    /// The pressure at the cricondentherm.
+    pub cricondentherm_pressure: Pressure,
+    /// The critical temperature.
+    pub critical_temperature: ThermodynamicTemperature,
+    /// The critical pressure.
+    pub critical_pressure: Pressure,
+    /// The number of continuation points traced.
+    pub iterations: u32,
+    /// The temperature gap between the two branches' endpoints, in kelvin.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PtPhaseEnvelopeResult {
+    const CALC_ID: &'static str = "eos.pt_phase_envelope";
+    const FIELDS: &'static [&'static str] = &[
+        "dew_temperature",
+        "dew_pressure",
+        "bubble_temperature",
+        "bubble_pressure",
+        "cricondenbar_temperature",
+        "cricondenbar_pressure",
+        "cricondentherm_temperature",
+        "cricondentherm_pressure",
+        "critical_temperature",
+        "critical_pressure",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.vu_flash`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VuFlashResult {

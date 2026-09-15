@@ -97,6 +97,7 @@ from azoth.core.result import (
     PrZFactorResult,
     PsFlashResult,
     PtFlashResult,
+    PtPhaseEnvelopeResult,
     PuFlashResult,
     PureSaturationResult,
     PvFlashResult,
@@ -167,6 +168,7 @@ __all__ = [
     "pr_z_factor",
     "prsv_kappa",
     "pt_flash",
+    "pt_phase_envelope",
     "pu_flash",
     "pure_saturation",
     "pv_flash",
@@ -226,6 +228,7 @@ _PU_FLASH = "eos.pu_flash"
 _TV_FLASH = "eos.tv_flash"
 _PV_FLASH = "eos.pv_flash"
 _PT_FLASH = "eos.pt_flash"
+_PT_PHASE_ENVELOPE = "eos.pt_phase_envelope"
 _STABILITY_TEST = "eos.stability_test"
 _PURE_SATURATION = "eos.pure_saturation"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
@@ -1202,6 +1205,22 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
     See :func:`azoth.eos.reference.pt_flash`.
     """
     return resolve(_PT_FLASH)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelopeResult:
+    """The PT phase envelope of a mixture of composition ``z``, traced from ``P``.
+
+    The dew and bubble branches are traced upward from ``P`` to the critical point and
+    reported as parallel temperature and pressure arrays.
+
+    Raises:
+        InvalidInputError: if the mixture has one component, or if ``z`` is not a
+            composition.
+        OutOfRangeError: if ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.pt_phase_envelope`.
+    """
+    return resolve(_PT_PHASE_ENVELOPE)(mixture=mixture, P=P, z=z)  # type: ignore[no-any-return]
 
 
 def ph_flash(

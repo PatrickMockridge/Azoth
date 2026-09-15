@@ -56,6 +56,7 @@
   - [Pressure-enthalpy flash](./eos/ph_flash.md)
   - [Pressure-entropy flash](./eos/ps_flash.md)
   - [Pressure-temperature flash](./eos/pt_flash.md)
+  - [PT phase envelope](./eos/pt_phase_envelope.md)
   - [Pressure-internal-energy flash](./eos/pu_flash.md)
   - [Pure-component saturation pressure](./eos/pure_saturation.md)
   - [Pressure-volume flash](./eos/pv_flash.md)

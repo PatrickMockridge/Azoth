@@ -25,13 +25,14 @@ use azoth_eos::results::{
     NrtlActivityCoefficientsResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
     PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
     PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
-    PuFlashResult, PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
-    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, ThFlashResult, TsFlashResult, TuFlashResult, TvFlashResult,
-    TwuKappaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, VuFlashResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
+    SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult, TsFlashResult,
+    TuFlashResult, TvFlashResult, TwuKappaResult, TynCalusDiffusivityResult,
+    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -3346,6 +3347,94 @@ pub fn solver_kinds() -> Vec<String> {
         .collect()
 }
 
+/// Result of `eos.pt_phase_envelope`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PhaseEnvelopeResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPhaseEnvelopeResult {
+    /// The dew-point temperatures, in kelvin.
+    #[pyo3(get)]
+    pub dew_temperature: Vec<f64>,
+    /// The dew-point pressures, in pascal.
+    #[pyo3(get)]
+    pub dew_pressure: Vec<f64>,
+    /// The bubble-point temperatures, in kelvin.
+    #[pyo3(get)]
+    pub bubble_temperature: Vec<f64>,
+    /// The bubble-point pressures, in pascal.
+    #[pyo3(get)]
+    pub bubble_pressure: Vec<f64>,
+    /// The temperature at the cricondenbar.
+    #[pyo3(get)]
+    pub cricondenbar_temperature: PyQty,
+    /// The cricondenbar pressure.
+    #[pyo3(get)]
+    pub cricondenbar_pressure: PyQty,
+    /// The cricondentherm temperature.
+    #[pyo3(get)]
+    pub cricondentherm_temperature: PyQty,
+    /// The pressure at the cricondentherm.
+    #[pyo3(get)]
+    pub cricondentherm_pressure: PyQty,
+    /// The critical temperature.
+    #[pyo3(get)]
+    pub critical_temperature: PyQty,
+    /// The critical pressure.
+    #[pyo3(get)]
+    pub critical_pressure: PyQty,
+    /// The number of continuation points traced.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The distance between the two branches' endpoints.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+impl From<&PtPhaseEnvelopeResult> for PyPhaseEnvelopeResult {
+    fn from(r: &PtPhaseEnvelopeResult) -> Self {
+        Self {
+            dew_temperature: r.dew_temperature.clone(),
+            dew_pressure: r.dew_pressure.clone(),
+            bubble_temperature: r.bubble_temperature.clone(),
+            bubble_pressure: r.bubble_pressure.clone(),
+            cricondenbar_temperature: PyQty {
+                magnitude_si: r.cricondenbar_temperature.value,
+                unit: "K".to_string(),
+            },
+            cricondenbar_pressure: PyQty {
+                magnitude_si: r.cricondenbar_pressure.value,
+                unit: "Pa".to_string(),
+            },
+            cricondentherm_temperature: PyQty {
+                magnitude_si: r.cricondentherm_temperature.value,
+                unit: "K".to_string(),
+            },
+            cricondentherm_pressure: PyQty {
+                magnitude_si: r.cricondentherm_pressure.value,
+                unit: "Pa".to_string(),
+            },
+            critical_temperature: PyQty {
+                magnitude_si: r.critical_temperature.value,
+                unit: "K".to_string(),
+            },
+            critical_pressure: PyQty {
+                magnitude_si: r.critical_pressure.value,
+                unit: "Pa".to_string(),
+            },
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// The public field names of a calc's result, in declaration order.
 ///
 /// Returns an empty list for an unknown id rather than raising: this is an
@@ -3410,6 +3499,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
         PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
+        PtPhaseEnvelopeResult::CALC_ID => PtPhaseEnvelopeResult::FIELDS.to_vec(),
         PhFlashResult::CALC_ID => PhFlashResult::FIELDS.to_vec(),
         PsFlashResult::CALC_ID => PsFlashResult::FIELDS.to_vec(),
         TvFlashResult::CALC_ID => TvFlashResult::FIELDS.to_vec(),
