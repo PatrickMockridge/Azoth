@@ -20,12 +20,13 @@ use azoth_eos::results::{
     AntoineVaporPressureResult, BubblePressureResult, ChungConductivityResult,
     ChungViscosityResult, CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult,
     HeatOfVaporizationResult, IdealGasCpResult, LiquidHeatCapacityResult,
-    MolarEnthalpyEntropyResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
-    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PureSaturationResult,
-    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
-    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, TwuKappaResult, Vdw1fMixBinaryResult, WilkeViscosityResult,
+    MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult, PhFlashResult, Pr78KappaResult,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
+    Vdw1fMixBinaryResult, WilkeViscosityResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1141,6 +1142,45 @@ impl PyChungConductivityResult {
 
 impl From<&ChungConductivityResult> for PyChungConductivityResult {
     fn from(r: &ChungConductivityResult) -> Self {
+        Self {
+            k: PyQty {
+                magnitude_si: r.k.value,
+                unit: "W/(m*K)".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.mason_saxena_conductivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MasonSaxenaConductivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMasonSaxenaConductivityResult {
+    /// The gas mixture thermal conductivity, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub k: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMasonSaxenaConductivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MasonSaxenaConductivityResult(k={} {})",
+            self.k.magnitude_si, self.k.unit
+        )
+    }
+}
+
+impl From<&MasonSaxenaConductivityResult> for PyMasonSaxenaConductivityResult {
+    fn from(r: &MasonSaxenaConductivityResult) -> Self {
         Self {
             k: PyQty {
                 magnitude_si: r.k.value,
@@ -2491,6 +2531,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChungViscosityResult::CALC_ID => ChungViscosityResult::FIELDS.to_vec(),
         ChungConductivityResult::CALC_ID => ChungConductivityResult::FIELDS.to_vec(),
         WilkeViscosityResult::CALC_ID => WilkeViscosityResult::FIELDS.to_vec(),
+        MasonSaxenaConductivityResult::CALC_ID => MasonSaxenaConductivityResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),

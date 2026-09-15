@@ -95,6 +95,7 @@ Four sections, and the difference between them is the point:
 - [`eos.bubble_pressure`](./eos/bubble_pressure.md) — Bubble-point pressure
 - [`eos.critical_point`](./eos/critical_point.md) — Mixture critical point
 - [`eos.dew_pressure`](./eos/dew_pressure.md) — Dew-point pressure
+- [`eos.mason_saxena_conductivity`](./eos/mason_saxena_conductivity.md) — Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities
 - [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — Molar enthalpy and entropy of a mixture
 - [`eos.ph_flash`](./eos/ph_flash.md) — Pressure-enthalpy flash
 - [`eos.ps_flash`](./eos/ps_flash.md) — Pressure-entropy flash

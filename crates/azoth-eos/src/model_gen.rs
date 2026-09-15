@@ -4,6 +4,7 @@
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/critical_point.toml
 //!   - specs/models/eos/dew_pressure.toml
+//!   - specs/models/eos/mason_saxena_conductivity.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/ps_flash.toml
@@ -360,6 +361,106 @@ pub static DEW_PRESSURE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&DEW_PRESSURE_ALGORITHM),
     checks: DEW_PRESSURE_CHECKS,
     cases: DEW_PRESSURE_CASES,
+};
+
+static MASON_SAXENA_CONDUCTIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute temperature; zero and below are not states",
+    },
+}];
+
+static MASON_SAXENA_CONDUCTIVITY_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methane_propane_equimolar_at_300_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("Cv0", &[27.544151394, 65.809299386]),
+            ("M", &[0.016043, 0.044097]),
+            ("omega", &[0.0115, 0.1523]),
+            ("Tc", &[190.56, 369.83]),
+            ("Vc", &[9.9e-05, 0.000203]),
+            ("dipole", &[0.0, 0.0]),
+            ("kappa", &[0.0, 0.0]),
+            ("z", &[0.5, 0.5]),
+        ],
+        matrices: &[],
+        expected: &[("k", 0.025062059480046174)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "methane_butane_propane_at_350_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 350.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("Cv0", &[29.759775410875, 103.48780432975, 75.539766125375]),
+            ("M", &[0.016043, 0.058123, 0.044097]),
+            ("omega", &[0.0115, 0.2002, 0.1523]),
+            ("Tc", &[190.56, 425.12, 369.83]),
+            ("Vc", &[9.9e-05, 0.000255, 0.000203]),
+            ("dipole", &[0.0, 0.0, 0.0]),
+            ("kappa", &[0.0, 0.0, 0.0]),
+            ("z", &[0.5, 0.3, 0.2]),
+        ],
+        matrices: &[],
+        expected: &[("k", 0.03158159895228681)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "methane_rich_propane_at_300_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("Cv0", &[27.544151394, 65.809299386]),
+            ("M", &[0.016043, 0.044097]),
+            ("omega", &[0.0115, 0.1523]),
+            ("Tc", &[190.56, 369.83]),
+            ("Vc", &[9.9e-05, 0.000203]),
+            ("dipole", &[0.0, 0.0]),
+            ("kappa", &[0.0, 0.0]),
+            ("z", &[0.8, 0.2]),
+        ],
+        matrices: &[],
+        expected: &[("k", 0.030199640093392578)],
+        expected_vectors: &[],
+    },
+];
+
+/// Registry entry for `eos.mason_saxena_conductivity`.
+pub static MASON_SAXENA_CONDUCTIVITY_SPEC: ModelSpec = ModelSpec {
+    id: "eos.mason_saxena_conductivity",
+    kind: "direct",
+    algorithm: None,
+    checks: MASON_SAXENA_CONDUCTIVITY_CHECKS,
+    cases: MASON_SAXENA_CONDUCTIVITY_CASES,
 };
 
 static MOLAR_ENTHALPY_ENTROPY_CHECKS: &[SpecCheck] = &[
@@ -1136,6 +1237,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &BUBBLE_PRESSURE_SPEC,
     &CRITICAL_POINT_SPEC,
     &DEW_PRESSURE_SPEC,
+    &MASON_SAXENA_CONDUCTIVITY_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &PH_FLASH_SPEC,
     &PS_FLASH_SPEC,

@@ -43,6 +43,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.bubble_pressure`](./bubble_pressure.md) | `bubble_pressure_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.critical_point`](./critical_point.md) | `heidemann_khalil_critical` | Heidemann, R. A.; Khalil, A. M. (1980) |
 | [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_successive_substitution` | Michelsen, M. L. (1982) |
+| [`eos.mason_saxena_conductivity`](./mason_saxena_conductivity.md) | `direct composition` | Mason, E. A.; Saxena, S. C. (1958); Chung et al. (1988) |
 | [`eos.molar_enthalpy_entropy`](./molar_enthalpy_entropy.md) | `direct composition` | The composition of ideal-gas and residual contributions |
 | [`eos.ph_flash`](./ph_flash.md) | `ph_flash_inverse_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |

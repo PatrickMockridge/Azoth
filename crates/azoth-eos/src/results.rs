@@ -920,6 +920,24 @@ impl CalcResult for ChungConductivityResult {
     }
 }
 
+/// Result of `eos.mason_saxena_conductivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MasonSaxenaConductivityResult {
+    /// The gas mixture thermal conductivity.
+    pub k: ThermalConductivity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for MasonSaxenaConductivityResult {
+    const CALC_ID: &'static str = "eos.mason_saxena_conductivity";
+    const FIELDS: &'static [&'static str] = &["k", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SrkAlphaAbResult {

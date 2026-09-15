@@ -17,14 +17,14 @@ use crate::errors::to_pyerr;
 use crate::results::{
     PyAntoineVaporPressureResult, PyChungConductivityResult, PyChungViscosityResult,
     PyCostaldMolarVolumeResult, PyCriticalPointResult, PyHeatOfVaporizationResult,
-    PyIdealGasCpResult, PyLiquidHeatCapacityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
-    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
-    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
-    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
-    PySrkZFactorResult, PyStabilityTestResult, PyTwuKappaResult, PyVdw1fMixBinaryResult,
-    PyWilkeViscosityResult,
+    PyIdealGasCpResult, PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult,
+    PyMolarEnthalpyEntropyResult, PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult,
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
+    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
+    PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
+    PyStabilityTestResult, PyTwuKappaResult, PyVdw1fMixBinaryResult, PyWilkeViscosityResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -503,6 +503,31 @@ pub fn wilke_viscosity(
 ) -> PyResult<PyWilkeViscosityResult> {
     azoth_eos::wilke_viscosity(&Tc, &Vc, &M, &omega, &dipole, &kappa, T, V, &z)
         .map(|r| PyWilkeViscosityResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The gas mixture thermal conductivity, from Mason-Saxena mixing over the pure
+/// Chung conductivities. A *model* rather than a calculation: its arguments are
+/// vectors.
+#[pyfunction]
+#[pyo3(signature = (Cv0, M, omega, Tc, Vc, dipole, kappa, T, z))]
+#[pyo3(text_signature = "(Cv0, M, omega, Tc, Vc, dipole, kappa, T, z)")]
+#[allow(non_snake_case)] // `Cv0`, `Tc`, `Vc`, `M` and `T` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn mason_saxena_conductivity(
+    py: Python<'_>,
+    Cv0: Vec<f64>,
+    M: Vec<f64>,
+    omega: Vec<f64>,
+    Tc: Vec<f64>,
+    Vc: Vec<f64>,
+    dipole: Vec<f64>,
+    kappa: Vec<f64>,
+    T: f64,
+    z: Vec<f64>,
+) -> PyResult<PyMasonSaxenaConductivityResult> {
+    azoth_eos::mason_saxena_conductivity(&Cv0, &M, &omega, &Tc, &Vc, &dipole, &kappa, T, &z)
+        .map(|r| PyMasonSaxenaConductivityResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

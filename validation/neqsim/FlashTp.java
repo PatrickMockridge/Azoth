@@ -202,11 +202,35 @@ public class FlashTp {
     }
   }
 
+  /** The Mason-Saxena mixture conductivity, for `eos.mason_saxena_conductivity`. */
+  static void masonSaxena() {
+    String[][] names = {
+      {"methane", "propane"}, {"methane", "n-butane", "propane"}, {"methane", "propane"}};
+    double[][] moles = {{0.5, 0.5}, {0.5, 0.3, 0.2}, {0.8, 0.2}};
+    double[] temps = {300.0, 350.0, 300.0};
+    double[] press = {10.0, 15.0, 10.0};
+    System.out.println("Mason-Saxena mixture conductivity (W/(m*K)):");
+    for (int k = 0; k < names.length; k++) {
+      SystemInterface fluid = new SystemPrEos(temps[k], press[k]);
+      for (int i = 0; i < names[k].length; i++) {
+        fluid.addComponent(names[k][i], moles[k][i]);
+      }
+      fluid.setMixingRule("classic");
+      new ThermodynamicOperations(fluid).TPflash();
+      fluid.initProperties();
+      PhysicalProperties pp = fluid.getPhase(0).getPhysicalProperties();
+      ChungConductivityMethod cond = new ChungConductivityMethod(pp);
+      System.out.println("  " + String.join("+", names[k])
+          + "  k = " + cond.calcConductivity() + " W/(m*K)");
+    }
+  }
+
   public static void main(String[] args) {
     volcorr();
     chung();
     wilke();
     chungCond();
+    masonSaxena();
     corr();
     antoine();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",

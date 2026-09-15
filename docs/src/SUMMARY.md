@@ -42,6 +42,7 @@
   - [Bubble-point pressure](./eos/bubble_pressure.md)
   - [Mixture critical point](./eos/critical_point.md)
   - [Dew-point pressure](./eos/dew_pressure.md)
+  - [Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities](./eos/mason_saxena_conductivity.md)
   - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)
   - [Pressure-enthalpy flash](./eos/ph_flash.md)
   - [Pressure-entropy flash](./eos/ps_flash.md)

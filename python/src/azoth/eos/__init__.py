@@ -78,6 +78,7 @@ from azoth.core.result import (
     HeatOfVaporizationResult,
     IdealGasCpResult,
     LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult,
     MolarEnthalpyEntropyResult,
     PhFlashResult,
     Pr78KappaResult,
@@ -130,6 +131,7 @@ __all__ = [
     "heat_of_vaporization",
     "ideal_gas_cp",
     "liquid_heat_capacity",
+    "mason_saxena_conductivity",
     "mixture",
     "molar_enthalpy_entropy",
     "ph_flash",
@@ -167,6 +169,7 @@ _SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
 _HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
 _ANTOINE_VAPOR_PRESSURE = "eos.antoine_vapor_pressure"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
+_MASON_SAXENA_CONDUCTIVITY = "eos.mason_saxena_conductivity"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
@@ -611,6 +614,40 @@ def wilke_viscosity(
     """
     return resolve(_WILKE_VISCOSITY)(  # type: ignore[no-any-return]
         Tc=Tc, Vc=Vc, M=M, omega=omega, dipole=dipole, kappa=kappa, T=T, V=V, z=z
+    )
+
+
+def mason_saxena_conductivity(
+    Cv0: Sequence[Q],
+    M: Sequence[Q],
+    omega: Sequence[float],
+    Tc: Sequence[Q],
+    Vc: Sequence[Q],
+    dipole: Sequence[float],
+    kappa: Sequence[float],
+    T: Q,
+    z: Sequence[float],
+) -> MasonSaxenaConductivityResult:
+    """The gas mixture thermal conductivity, by Mason-Saxena mixing over Chung values.
+
+    Each pure-component conductivity is :func:`chung_conductivity`'s at ``T``,
+    then mixed: ``k = sum_i z_i k_i / sum_j z_j A_ij`` with
+    ``A_ij = (1 + sqrt(k_i/k_j) (M_i/M_j)**0.25)**2 / sqrt(8 (1 + M_i/M_j))``.
+    ``z`` is checked rather than renormalised.
+
+    The seven per-component constants are the caller's: resolve them from a name
+    with :func:`azoth.eos.components.entry`.
+
+    Raises:
+        InvalidInputError: if the vectors disagree in length, or ``z`` is not a
+            composition.
+        OutOfRangeError: if ``T`` is not positive, or a component's ``Tc``/``Vc``
+            is not positive.
+
+    See :func:`azoth.eos.reference.mason_saxena_conductivity`.
+    """
+    return resolve(_MASON_SAXENA_CONDUCTIVITY)(  # type: ignore[no-any-return]
+        Cv0=Cv0, M=M, omega=omega, Tc=Tc, Vc=Vc, dipole=dipole, kappa=kappa, T=T, z=z
     )
 
 

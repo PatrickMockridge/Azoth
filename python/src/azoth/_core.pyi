@@ -179,6 +179,11 @@ class LiquidHeatCapacityResult:
     warnings: list[Warning]
 
 @final
+class MasonSaxenaConductivityResult:
+    k: Qty
+    warnings: list[Warning]
+
+@final
 class MolarEnthalpyEntropyResult:
     h: Qty
     s: Qty
@@ -547,6 +552,17 @@ def liquid_heat_capacity(
     c4: float,
     T: float,
 ) -> LiquidHeatCapacityResult: ...
+def mason_saxena_conductivity(
+    Cv0: list[float],
+    M: list[float],
+    omega: list[float],
+    Tc: list[float],
+    Vc: list[float],
+    dipole: list[float],
+    kappa: list[float],
+    T: float,
+    z: list[float],
+) -> MasonSaxenaConductivityResult: ...
 def molar_enthalpy_entropy(
     Tc: list[float],
     Pc: list[float],

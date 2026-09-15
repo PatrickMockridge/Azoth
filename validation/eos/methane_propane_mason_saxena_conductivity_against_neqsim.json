@@ -1,0 +1,25 @@
+{
+  "id": "methane_propane_mason_saxena_conductivity_against_neqsim",
+  "calc": "eos.mason_saxena_conductivity",
+  "source": {
+    "attribution": "NeqSim 3.20.0, `ChungConductivityMethod.calcConductivity` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "NeqSim's Mason-Saxena mixture thermal conductivity for methane/propane 0.5/0.5 at 300 K, 10 bar. The per-component constants and `Cv0` values are the databank's at 300 K."
+  },
+  "derivation": "The driver ran `calcConductivity()` for methane/propane 0.5/0.5 at 300 K, 10 bar and printed `k = 0.025062059480046174 W/(m*K)`.\n\nazoth's `eos.mason_saxena_conductivity` reproduces it exactly.",
+  "inputs": {
+    "Cv0": [27.544151394, 65.809299386],
+    "M": [0.016043, 0.044097],
+    "omega": [0.0115, 0.1523],
+    "Tc": [190.56, 369.83],
+    "Vc": [9.9e-5, 0.000203],
+    "dipole": [0.0, 0.0],
+    "kappa": [0.0, 0.0],
+    "T": 300.0,
+    "z": [0.5, 0.5]
+  },
+  "expected": {
+    "k": 0.025062059480046174
+  },
+  "tolerance": 1e-12
+}

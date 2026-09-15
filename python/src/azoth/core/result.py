@@ -436,6 +436,16 @@ class ChungConductivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class MasonSaxenaConductivityResult(_HasWarnings):
+    """Result of ``eos.mason_saxena_conductivity``."""
+
+    #: The gas mixture thermal conductivity.
+    k: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WilkeViscosityResult(_HasWarnings):
     """Result of ``eos.wilke_viscosity``."""
 

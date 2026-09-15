@@ -45,6 +45,7 @@ from azoth.core.result import (
     KComponent,
     KFactorsResult,
     LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult,
     MolarEnthalpyEntropyResult,
     OrificeFlowResult,
     PhFlashResult,
@@ -623,6 +624,36 @@ def wilke_viscosity(
     )
     return WilkeViscosityResult(
         mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def mason_saxena_conductivity(
+    Cv0: Sequence[Q],
+    M: Sequence[Q],
+    omega: Sequence[float],
+    Tc: Sequence[Q],
+    Vc: Sequence[Q],
+    dipole: Sequence[float],
+    kappa: Sequence[float],
+    T: Q,
+    z: Sequence[float],
+) -> MasonSaxenaConductivityResult:
+    """The gas mixture thermal conductivity, computed in Rust."""
+    spec = _models_gen.model("eos.mason_saxena_conductivity")
+    result = _core.mason_saxena_conductivity(
+        [input_to_si(spec, "Cv0", value) for value in Cv0],
+        [input_to_si(spec, "M", value) for value in M],
+        list(omega),
+        [input_to_si(spec, "Tc", value) for value in Tc],
+        [input_to_si(spec, "Vc", value) for value in Vc],
+        list(dipole),
+        list(kappa),
+        input_to_si(spec, "T", T),
+        list(z),
+    )
+    return MasonSaxenaConductivityResult(
+        k=from_si(result.k.magnitude_si, result.k.unit),
         warnings=_warnings(result.warnings),
     )
 

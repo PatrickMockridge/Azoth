@@ -47,6 +47,7 @@ pub mod flash_property;
 pub mod heat_of_vaporization;
 pub mod ideal_gas_cp;
 pub mod liquid_heat_capacity;
+pub mod mason_saxena_conductivity;
 pub mod mixture;
 pub mod model_gen;
 pub mod molar_enthalpy_entropy;
@@ -92,6 +93,7 @@ pub use dew_pressure::dew_pressure;
 pub use heat_of_vaporization::heat_of_vaporization;
 pub use ideal_gas_cp::ideal_gas_cp;
 pub use liquid_heat_capacity::liquid_heat_capacity;
+pub use mason_saxena_conductivity::mason_saxena_conductivity;
 pub use mixture::{Component, Mixture, PhaseState, ReducedParameters, RootSide};
 pub use molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
 pub use ph_flash::ph_flash;
@@ -114,9 +116,9 @@ pub use results::{
     AntoineVaporPressureResult, BubblePressureResult, ChungConductivityResult,
     ChungViscosityResult, CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult,
     HeatOfVaporizationResult, IdealGasCpResult, LiquidHeatCapacityResult,
-    MolarEnthalpyEntropyResult, Phase, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult,
-    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
+    MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult, Phase, Pr78KappaResult,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
     RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
     RootStructure, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult,
     SrkZFactorResult, StabilityTestResult, StabilityVerdict, TwuKappaResult, Vdw1fMixBinaryResult,

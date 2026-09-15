@@ -123,13 +123,13 @@ def _enthalpy_kwargs(case: dict[str, Any]) -> dict[str, Any]:
 #: One entry today. It grows by one line per model whose arguments are objects
 #: rather than numbers, which is the point of it being a table rather than a branch
 #: buried in `_call` - a reader can see the whole of the exception list at once.
-def _wilke_kwargs(case: dict[str, Any]) -> dict[str, Any]:
-    """Rebuild the Wilke model's per-component vectors from a case's numbers.
+def _vector_model_kwargs(case: dict[str, Any]) -> dict[str, Any]:
+    """Rebuild a raw-vector model's per-component lists from a case's numbers.
 
-    `eos.wilke_viscosity` takes six parallel per-component vectors plus state and
-    composition - no objects, unlike the flash - so a case states the numbers and
-    this turns them into the lists the function takes, the same `_declared` path
-    the model's own spec-driven tests use.
+    `eos.wilke_viscosity` and `eos.mason_saxena_conductivity` take parallel
+    per-component vectors plus state and composition - no objects, unlike the flash -
+    so a case states the numbers and this turns them into the lists the function
+    takes, the same `_declared` path the models' own spec-driven tests use.
     """
     spec = _spec(case["calc"])
     assert spec is not None
@@ -139,7 +139,8 @@ def _wilke_kwargs(case: dict[str, Any]) -> dict[str, Any]:
 ARGUMENT_BUILDERS = {
     "eos.pt_flash": _mixture_kwargs,
     "eos.molar_enthalpy_entropy": _enthalpy_kwargs,
-    "eos.wilke_viscosity": _wilke_kwargs,
+    "eos.wilke_viscosity": _vector_model_kwargs,
+    "eos.mason_saxena_conductivity": _vector_model_kwargs,
 }
 
 
