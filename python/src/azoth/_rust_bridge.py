@@ -82,6 +82,7 @@ from azoth.core.result import (
     TwuKappaResult,
     TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
@@ -705,6 +706,29 @@ def unifac_activity_coefficients(
         [[input_to_si(spec, "aij", value) for value in row] for row in aij],
     )
     return UnifacActivityCoefficientsResult(
+        ln_gamma=tuple(result.ln_gamma),
+        gamma=tuple(result.gamma),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def uniquac_activity_coefficients(
+    T: Q,
+    x: Sequence[float],
+    r: Sequence[float],
+    q: Sequence[float],
+    aij: Sequence[Sequence[Q]],
+) -> UniquacActivityCoefficientsResult:
+    """The activity coefficients of a mixture, computed in Rust."""
+    spec = _models_gen.model("eos.uniquac_activity_coefficients")
+    result = _core.uniquac_activity_coefficients(
+        input_to_si(spec, "T", T),
+        list(x),
+        list(r),
+        list(q),
+        [[input_to_si(spec, "aij", value) for value in row] for row in aij],
+    )
+    return UniquacActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),
         gamma=tuple(result.gamma),
         warnings=_warnings(result.warnings),

@@ -169,6 +169,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.twu_kappa` | Twu attraction-parameter coefficient |
 | `eos.tyn_calus_diffusivity` | Liquid binary diffusivity from the Tyn-Calus correlation |
 | `eos.unifac_activity_coefficients` | Activity coefficients from the UNIFAC group-contribution model — a *model* |
+| `eos.uniquac_activity_coefficients` | Activity coefficients from the UNIQUAC model — a *model* |
 | `eos.vdw1f_mix_binary` | van der Waals one-fluid mixing, for a binary |
 | `eos.wilke_chang_diffusivity` | Liquid binary diffusivity from the Wilke-Chang correlation |
 | `eos.wilke_viscosity` | Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities — a *model* |

@@ -109,6 +109,7 @@ Four sections, and the difference between them is the point:
 - [`eos.pure_saturation`](./eos/pure_saturation.md) — Pure-component saturation pressure
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
 - [`eos.unifac_activity_coefficients`](./eos/unifac_activity_coefficients.md) — Activity coefficients from the UNIFAC group-contribution model
+- [`eos.uniquac_activity_coefficients`](./eos/uniquac_activity_coefficients.md) — Activity coefficients from the UNIQUAC model
 - [`eos.wilke_viscosity`](./eos/wilke_viscosity.md) — Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities
 
 **Hydraulics** - [`hydraulics/index.md`](./hydraulics/index.md):

@@ -13,6 +13,7 @@
 //!   - specs/models/eos/pure_saturation.toml
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/unifac_activity_coefficients.toml
+//!   - specs/models/eos/uniquac_activity_coefficients.toml
 //!   - specs/models/eos/wilke_viscosity.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
@@ -1249,6 +1250,54 @@ pub static UNIFAC_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
     cases: UNIFAC_ACTIVITY_COEFFICIENTS_CASES,
 };
 
+static UNIQUAC_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute temperature; zero and below are not states",
+    },
+}];
+
+static UNIQUAC_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[TestCase {
+    id: "methanol_water_equimolar_at_298_15_k",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-09,
+    numbers: &[("T", 298.15)],
+    lists: &[],
+    strings: &[],
+    vectors: &[
+        ("x", &[0.5, 0.5]),
+        ("r", &[1.4311, 0.92]),
+        ("q", &[1.432, 1.4]),
+    ],
+    matrices: &[("aij", &[0.0, -71.0, 209.0, 0.0])],
+    expected: &[],
+    expected_vectors: &[
+        ("ln_gamma", &[0.1976568551186017, 0.29402288919456004]),
+        ("gamma", &[1.2185441848728196, 1.3418146163712932]),
+    ],
+}];
+
+/// Registry entry for `eos.uniquac_activity_coefficients`.
+pub static UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
+    id: "eos.uniquac_activity_coefficients",
+    kind: "direct",
+    algorithm: None,
+    checks: UNIQUAC_ACTIVITY_COEFFICIENTS_CHECKS,
+    cases: UNIQUAC_ACTIVITY_COEFFICIENTS_CASES,
+};
+
 static WILKE_VISCOSITY_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -1376,6 +1425,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PURE_SATURATION_SPEC,
     &STABILITY_TEST_SPEC,
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
+    &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,
     &WILKE_VISCOSITY_SPEC,
 ];
 

@@ -110,6 +110,7 @@ from azoth.core.result import (
     TwuKappaResult,
     TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
@@ -169,6 +170,7 @@ __all__ = [
     "twu_kappa",
     "tyn_calus_diffusivity",
     "unifac_activity_coefficients",
+    "uniquac_activity_coefficients",
     "vdw1f_mix_binary",
     "wilke_chang_diffusivity",
     "wilke_chang_phi",
@@ -206,6 +208,7 @@ _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _UNIFAC_ACTIVITY_COEFFICIENTS = "eos.unifac_activity_coefficients"
+_UNIQUAC_ACTIVITY_COEFFICIENTS = "eos.uniquac_activity_coefficients"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
 _SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
@@ -816,6 +819,36 @@ def unifac_activity_coefficients(
     """
     return resolve(_UNIFAC_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
         T=T, x=x, groups=groups, group_r=group_r, group_q=group_q, aij=aij
+    )
+
+
+def uniquac_activity_coefficients(
+    T: Q,
+    x: Sequence[float],
+    r: Sequence[float],
+    q: Sequence[float],
+    aij: Sequence[Sequence[Q]],
+) -> UniquacActivityCoefficientsResult:
+    """The activity coefficients of a mixture, from UNIQUAC (Abrams-Prausnitz).
+
+    ``phi_i = r_i x_i / sum r_j x_j`` and ``theta_i = q_i x_i / sum q_j x_j`` are the
+    volume and surface fractions, ``tau_ij = exp(-aij[i][j] / T)``, and the
+    combinatorial and residual terms are the standard sums. ``aij`` is directional with
+    a zero diagonal; ``x`` is checked rather than renormalised.
+
+    The three parameters are the caller's: the van der Waals ``r``/``q`` are the group
+    sums `eos.unifac_activity_coefficients` computes, and ``aij`` has no NeqSim table,
+    so it is supplied directly.
+
+    Raises:
+        InvalidInputError: if the vectors disagree in length, ``aij`` is not ``N x N``
+            with a zero diagonal, or ``x`` is not a composition.
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.uniquac_activity_coefficients`.
+    """
+    return resolve(_UNIQUAC_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
+        T=T, x=x, r=r, q=q, aij=aij
     )
 
 

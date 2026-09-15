@@ -27,8 +27,8 @@ use azoth_eos::results::{
     PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
     RkDepartureResult, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult,
     SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
-    TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult,
+    TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    Vdw1fMixBinaryResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1507,6 +1507,46 @@ impl From<&UnifacActivityCoefficientsResult> for PyUnifacActivityCoefficientsRes
     }
 }
 
+/// Result of `eos.uniquac_activity_coefficients`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "UniquacActivityCoefficientsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyUniquacActivityCoefficientsResult {
+    /// The natural logarithm of each activity coefficient.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// The activity coefficient of each component.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyUniquacActivityCoefficientsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "UniquacActivityCoefficientsResult(ln_gamma={:?}, gamma={:?})",
+            self.ln_gamma, self.gamma
+        )
+    }
+}
+
+impl From<&UniquacActivityCoefficientsResult> for PyUniquacActivityCoefficientsResult {
+    fn from(r: &UniquacActivityCoefficientsResult) -> Self {
+        Self {
+            ln_gamma: r.ln_gamma.clone(),
+            gamma: r.gamma.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`, transported.
 #[pyclass(
     frozen,
@@ -2812,6 +2852,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         NrtlActivityCoefficientsResult::CALC_ID => NrtlActivityCoefficientsResult::FIELDS.to_vec(),
         UnifacActivityCoefficientsResult::CALC_ID => {
             UnifacActivityCoefficientsResult::FIELDS.to_vec()
+        }
+        UniquacActivityCoefficientsResult::CALC_ID => {
+            UniquacActivityCoefficientsResult::FIELDS.to_vec()
         }
         TynCalusDiffusivityResult::CALC_ID => TynCalusDiffusivityResult::FIELDS.to_vec(),
         WilkeChangDiffusivityResult::CALC_ID => WilkeChangDiffusivityResult::FIELDS.to_vec(),

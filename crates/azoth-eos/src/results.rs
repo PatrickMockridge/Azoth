@@ -978,6 +978,26 @@ impl CalcResult for UnifacActivityCoefficientsResult {
     }
 }
 
+/// Result of `eos.uniquac_activity_coefficients`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UniquacActivityCoefficientsResult {
+    /// The natural logarithm of each activity coefficient.
+    pub ln_gamma: Vec<f64>,
+    /// The activity coefficient of each component.
+    pub gamma: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for UniquacActivityCoefficientsResult {
+    const CALC_ID: &'static str = "eos.uniquac_activity_coefficients";
+    const FIELDS: &'static [&'static str] = &["ln_gamma", "gamma", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.tyn_calus_diffusivity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TynCalusDiffusivityResult {

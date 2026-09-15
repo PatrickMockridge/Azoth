@@ -1,0 +1,14 @@
+model = "eos.uniquac_activity_coefficients"
+[[cases]]
+id = "methanol_water_equimolar_at_298_15_k"
+tolerance = 1e-09
+source = "Standard UNIQUAC (Abrams-Prausnitz 1975) for methanol/water 0.5/0.5 at 298.15 K; r/q are the van der Waals parameters and aij a representative UNIQUAC pair."
+[cases.inputs]
+T = 298.15
+x = [0.5, 0.5]
+r = [1.4311, 0.92]
+q = [1.432, 1.4]
+aij = [[0.0, -71.0], [209.0, 0.0]]
+[cases.expected]
+ln_gamma = [0.1976568551186017, 0.29402288919456004]
+gamma = [1.2185441848728196, 1.3418146163712932]

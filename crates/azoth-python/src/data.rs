@@ -184,6 +184,21 @@ pub fn data_files() -> Vec<PyDataFile> {
             path: databank::KIJ_PATH.to_string(),
             text: databank::embedded_kij().to_string(),
         },
+        PyDataFile {
+            name: "unifaccomp".to_string(),
+            path: databank::UNIFAC_COMP_PATH.to_string(),
+            text: databank::embedded_unifac_comp().to_string(),
+        },
+        PyDataFile {
+            name: "unifacgroupparam".to_string(),
+            path: databank::UNIFAC_GROUP_PATH.to_string(),
+            text: databank::embedded_unifac_group().to_string(),
+        },
+        PyDataFile {
+            name: "unifacinterparam".to_string(),
+            path: databank::UNIFAC_INTER_PATH.to_string(),
+            text: databank::embedded_unifac_inter().to_string(),
+        },
     ];
     for fluid in fluids::available_fluids() {
         if let (Some(path), Some(text)) =

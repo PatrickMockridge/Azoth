@@ -57,6 +57,7 @@
   - [Pure-component saturation pressure](./eos/pure_saturation.md)
   - [Tangent-plane stability test](./eos/stability_test.md)
   - [Activity coefficients from the UNIFAC group-contribution model](./eos/unifac_activity_coefficients.md)
+  - [Activity coefficients from the UNIQUAC model](./eos/uniquac_activity_coefficients.md)
   - [Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities](./eos/wilke_viscosity.md)
 - [Hydraulics](./hydraulics/index.md)
   - [Choked-flow throat area for an ideal gas](./hydraulics/choked_flow_area.md)

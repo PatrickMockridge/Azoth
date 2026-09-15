@@ -84,6 +84,7 @@ pub mod stability_test;
 pub mod twu_kappa;
 pub mod tyn_calus_diffusivity;
 pub mod unifac_activity_coefficients;
+pub mod uniquac_activity_coefficients;
 pub mod vdw1f_mix_binary;
 pub mod wilke_chang_diffusivity;
 pub mod wilke_viscosity;
@@ -134,7 +135,8 @@ pub use results::{
     RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult,
     SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
     StabilityVerdict, TwuKappaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
-    Vdw1fMixBinaryResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -148,6 +150,7 @@ pub use stability_test::stability_test;
 pub use twu_kappa::twu_kappa;
 pub use tyn_calus_diffusivity::tyn_calus_diffusivity;
 pub use unifac_activity_coefficients::unifac_activity_coefficients;
+pub use uniquac_activity_coefficients::uniquac_activity_coefficients;
 pub use vdw1f_mix_binary::vdw1f_mix_binary;
 pub use wilke_chang_diffusivity::wilke_chang_diffusivity;
 pub use wilke_viscosity::wilke_viscosity;

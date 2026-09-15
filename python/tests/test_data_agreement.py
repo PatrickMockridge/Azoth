@@ -204,6 +204,9 @@ def test_the_two_sides_agree_on_which_files_exist() -> None:
         "data/fittings/crane_k_factors.csv",
         "data/components/components.csv",
         "data/components/kij.csv",
+        "data/components/UNIFACcomp.csv",
+        "data/components/UNIFACGroupParam.csv",
+        "data/components/UNIFACInterParam.csv",
     } | {f"data/fluids/{name}.csv" for name in available_fluids()}
     assert rust_paths == expected, (
         f"the extension embeds {sorted(rust_paths)} but this build of the Python side "
@@ -347,7 +350,7 @@ def test_the_nrtl_matrices_resolve_from_names() -> None:
 
 
 def test_the_unifac_parameters_resolve_from_names() -> None:
-    """The UNIFAC group tables, resolved into the inputs `eos.unifac_activity_coefficients` takes."""
+    """The UNIFAC group tables, resolved into the inputs `unifac_activity_coefficients` takes."""
     groups, group_r, group_q, aij = components.unifac_parameters(["methanol", "water"])
     assert groups == ((1.0, 0.0), (0.0, 1.0))
     assert group_r == (1.4311, 0.92)

@@ -41,6 +41,11 @@ pub const COMPONENTS_PATH: &str = "data/components/components.csv";
 /// Repo-relative path of the interaction table.
 pub const KIJ_PATH: &str = "data/components/kij.csv";
 
+/// Repo-relative paths of the three UNIFAC tables.
+pub const UNIFAC_COMP_PATH: &str = "data/components/UNIFACcomp.csv";
+pub const UNIFAC_GROUP_PATH: &str = "data/components/UNIFACGroupParam.csv";
+pub const UNIFAC_INTER_PATH: &str = "data/components/UNIFACInterParam.csv";
+
 /// The exact bytes this build embedded for the component table.
 ///
 /// Exposed so the Python side can compare bytes rather than parsed values - parsed
@@ -55,6 +60,23 @@ pub fn embedded_components() -> &'static str {
 #[must_use]
 pub fn embedded_kij() -> &'static str {
     KIJ_CSV
+}
+
+/// The exact bytes this build embedded for each UNIFAC table, so the Python side can
+/// compare bytes rather than parsed values.
+#[must_use]
+pub fn embedded_unifac_comp() -> &'static str {
+    UNIFAC_COMP_CSV
+}
+
+#[must_use]
+pub fn embedded_unifac_group() -> &'static str {
+    UNIFAC_GROUP_CSV
+}
+
+#[must_use]
+pub fn embedded_unifac_inter() -> &'static str {
+    UNIFAC_INTER_CSV
 }
 
 /// One substance's constants, in the units the compiled table holds them in.
