@@ -13,6 +13,7 @@
   - [The vocabulary table](./calculus/vocabulary.md)
 - [Equations of state](./eos/index.md)
   - [Antoine vapour pressure from NeqSim's correlation](./eos/antoine_vapor_pressure.md)
+  - [Gas thermal conductivity from the Chung correlation](./eos/chung_conductivity.md)
   - [Gas viscosity from the Chung correlation](./eos/chung_viscosity.md)
   - [Saturated liquid molar volume from the COSTALD equation](./eos/costald_molar_volume.md)
   - [Heat of vaporisation from NeqSim's correlation](./eos/heat_of_vaporization.md)

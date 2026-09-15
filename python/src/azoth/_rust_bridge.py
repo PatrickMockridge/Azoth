@@ -29,6 +29,7 @@ from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
     ChokedFlowAreaResult,
+    ChungConductivityResult,
     ChungViscosityResult,
     ColebrookResult,
     ConductionPlaneWallResult,
@@ -571,6 +572,27 @@ def chung_viscosity(
     )
     return ChungViscosityResult(
         mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def chung_conductivity(
+    Cv0: Q, M: Q, omega: float, Tc: Q, Vc: Q, dipole: float, kappa: float, T: Q
+) -> ChungConductivityResult:
+    """The gas thermal conductivity, computed in Rust."""
+    spec = _spec_for("eos.chung_conductivity")
+    result = _core.chung_conductivity(
+        input_to_si(spec, "Cv0", Cv0),
+        input_to_si(spec, "M", M),
+        omega,
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "Vc", Vc),
+        dipole,
+        kappa,
+        input_to_si(spec, "T", T),
+    )
+    return ChungConductivityResult(
+        k=from_si(result.k.magnitude_si, result.k.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -15,9 +15,9 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyAntoineVaporPressureResult, PyChungViscosityResult, PyCostaldMolarVolumeResult,
-    PyCriticalPointResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
-    PyLiquidHeatCapacityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
+    PyAntoineVaporPressureResult, PyChungConductivityResult, PyChungViscosityResult,
+    PyCostaldMolarVolumeResult, PyCriticalPointResult, PyHeatOfVaporizationResult,
+    PyIdealGasCpResult, PyLiquidHeatCapacityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
     PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
     PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
     PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
@@ -448,6 +448,37 @@ pub fn chung_viscosity(
         cubic_meters_per_mole(V),
     )
     .map(|r| PyChungViscosityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The gas thermal conductivity, from the Chung correlation.
+#[pyfunction]
+#[pyo3(signature = (Cv0, M, omega, Tc, Vc, dipole, kappa, T))]
+#[pyo3(text_signature = "(Cv0, M, omega, Tc, Vc, dipole, kappa, T)")]
+#[allow(non_snake_case)] // `Cv0`, `Tc`, `Vc`, `M` and `T` are the symbols in the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn chung_conductivity(
+    py: Python<'_>,
+    Cv0: f64,
+    M: f64,
+    omega: f64,
+    Tc: f64,
+    Vc: f64,
+    dipole: f64,
+    kappa: f64,
+    T: f64,
+) -> PyResult<PyChungConductivityResult> {
+    azoth_eos::chung_conductivity(
+        joules_per_mole_kelvin(Cv0),
+        kilograms_per_mole(M),
+        omega,
+        kelvins(Tc),
+        cubic_meters_per_mole(Vc),
+        dipole,
+        kappa,
+        kelvins(T),
+    )
+    .map(|r| PyChungConductivityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

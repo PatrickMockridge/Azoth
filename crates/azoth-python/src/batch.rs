@@ -25,9 +25,9 @@
 
 use azoth_core::Warning;
 use azoth_core::units::{
-    cubic_meters_per_mole, cubic_meters_per_second, kelvin_intervals, kelvins,
-    kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters, meters_per_second,
-    pascal_seconds, pascals, square_meters, watts_per_meter_kelvin,
+    cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole_kelvin, kelvin_intervals,
+    kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters,
+    meters_per_second, pascal_seconds, pascals, square_meters, watts_per_meter_kelvin,
 };
 use azoth_eos as eos;
 use azoth_hydraulics as hyd;
@@ -885,6 +885,38 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
                 mu.push(r.mu.value);
             }
             push_values(&mut columns, "mu", "Pa*s", mu);
+        }
+
+        "eos.chung_conductivity" => {
+            let (cv0, m, omega, tc, vc, dipole, kappa, t) = (
+                take(&inputs, "Cv0")?,
+                take(&inputs, "M")?,
+                take(&inputs, "omega")?,
+                take(&inputs, "Tc")?,
+                take(&inputs, "Vc")?,
+                take(&inputs, "dipole")?,
+                take(&inputs, "kappa")?,
+                take(&inputs, "T")?,
+            );
+            let mut k = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::chung_conductivity(
+                        joules_per_mole_kelvin(cv0[i]),
+                        kilograms_per_mole(m[i]),
+                        omega[i],
+                        kelvins(tc[i]),
+                        cubic_meters_per_mole(vc[i]),
+                        dipole[i],
+                        kappa[i],
+                        kelvins(t[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                k.push(r.k.value);
+            }
+            push_values(&mut columns, "k", "W/(m*K)", k);
         }
 
         "eos.rackett_molar_volume" => {

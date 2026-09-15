@@ -63,6 +63,7 @@ Four sections, and the difference between them is the point:
 **Equations of state** - [`eos/index.md`](./eos/index.md):
 
 - [`eos.antoine_vapor_pressure`](./eos/antoine_vapor_pressure.md)
+- [`eos.chung_conductivity`](./eos/chung_conductivity.md)
 - [`eos.chung_viscosity`](./eos/chung_viscosity.md)
 - [`eos.costald_molar_volume`](./eos/costald_molar_volume.md)
 - [`eos.heat_of_vaporization`](./eos/heat_of_vaporization.md)

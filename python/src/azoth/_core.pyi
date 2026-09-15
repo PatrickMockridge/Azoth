@@ -127,6 +127,11 @@ class BubblePressureResult:
     warnings: list[Warning]
 
 @final
+class ChungConductivityResult:
+    k: Qty
+    warnings: list[Warning]
+
+@final
 class ChungViscosityResult:
     mu: Qty
     warnings: list[Warning]
@@ -469,6 +474,16 @@ def bubble_pressure(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> BubblePressureResult: ...
+def chung_conductivity(
+    Cv0: float,
+    M: float,
+    omega: float,
+    Tc: float,
+    Vc: float,
+    dipole: float,
+    kappa: float,
+    T: float,
+) -> ChungConductivityResult: ...
 def chung_viscosity(
     omega: float,
     Tc: float,

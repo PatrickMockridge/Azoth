@@ -70,6 +70,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
+    ChungConductivityResult,
     ChungViscosityResult,
     CostaldMolarVolumeResult,
     CriticalPointResult,
@@ -118,6 +119,7 @@ __all__ = [
     "antoine_vapor_pressure",
     "available_components",
     "bubble_pressure",
+    "chung_conductivity",
     "chung_viscosity",
     "component",
     "costald_molar_volume",
@@ -168,6 +170,7 @@ _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
+_CHUNG_CONDUCTIVITY = "eos.chung_conductivity"
 _CHUNG_VISCOSITY = "eos.chung_viscosity"
 _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _CRITICAL_POINT = "eos.critical_point"
@@ -553,6 +556,26 @@ def chung_viscosity(
     """
     return resolve(_CHUNG_VISCOSITY)(  # type: ignore[no-any-return]
         omega=omega, Tc=Tc, Vc=Vc, M=M, dipole=dipole, kappa=kappa, T=T, V=V
+    )
+
+
+def chung_conductivity(
+    Cv0: Q, M: Q, omega: float, Tc: Q, Vc: Q, dipole: float, kappa: float, T: Q
+) -> ChungConductivityResult:
+    """The gas thermal conductivity of a pure component, from the Chung correlation.
+
+    ``Cv0`` is the ideal-gas heat capacity at constant volume at ``T`` (``Cp0 - R``;
+    take ``Cp0`` from :func:`ideal_gas_cp`). ``dipole`` is in debye and ``kappa`` the
+    dimensionless viscosity correction factor. The viscosity inside the correlation
+    is the *dilute-gas* Chung viscosity, not :func:`chung_viscosity`'s dense-gas form.
+
+    Raises:
+        OutOfRangeError: if ``Tc``, ``Vc`` or ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.chung_conductivity`.
+    """
+    return resolve(_CHUNG_CONDUCTIVITY)(  # type: ignore[no-any-return]
+        Cv0=Cv0, M=M, omega=omega, Tc=Tc, Vc=Vc, dipole=dipole, kappa=kappa, T=T
     )
 
 

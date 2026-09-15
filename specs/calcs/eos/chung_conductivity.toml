@@ -1,0 +1,118 @@
+id = "eos.chung_conductivity"
+name = "Gas thermal conductivity from the Chung correlation"
+equation = "mu_r = 131.3*dipole/sqrt(Vc_cm3*Tc),  Fc = 1 - 0.2756*omega + 0.059035*mu_r**4 + kappa,  T* = 1.2593*T/Tc,  Omega_v = 1.16145*T*^-0.14874 + 0.52487*exp(-0.77320*T*) + 2.16178*exp(-2.43787*T*),  eta0 = 40.785*Fc*sqrt(M_g*T)/(Vc_cm3**(2/3)*Omega_v)   [microPoise],  alpha = Cv0/R - 1.5,  beta = 0.7862 - 0.7109*omega + 1.3168*omega**2,  Z = 2 + 10.5*(T/Tc)**2,  psi = 1 + alpha*((0.215 + 0.28288*alpha - 1.061*beta + 0.26665*Z)/(0.6366 + beta*Z + 1.061*alpha*beta)),  k = 3.75*R*psi*eta0*1e-7/M   [W/(m*K)],  with Vc_cm3 = 1e6*Vc[m**3/mol], M_g = 1000*M[kg/mol] and R = 8.3144621 J/(mol*K)"
+latex = '''k = 3.75\,\frac{R}{M}\,\eta_0\,\Psi,\qquad \Psi = 1 + \alpha\left(\frac{0.215 + 0.28288\alpha - 1.061\beta + 0.26665 Z}{0.6366 + \beta Z + 1.061\alpha\beta}\right)'''
+assumptions = ["the ideal-gas constant-volume heat capacity, molar mass, critical constants and correction factors are those of the gas whose conductivity is wanted. NOT CHECKED - they come from the caller.\n", "`Cv0` is the ideal-gas heat capacity at constant volume at `T`, i.e. `Cp0 - R`; the caller gets `Cp0` from `eos.ideal_gas_cp`.\n", "the viscosity inside the correlation is the *dilute-gas* Chung viscosity (the `40.785` form), not the dense-gas `eos.chung_viscosity`.\n", "the gas constant is NeqSim's `8.3144621` J/(mol*K), not the exact SI value, so the port reproduces NeqSim to the last digit.\n"]
+references = ["Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988). \\\"Generalized multiparameter correlation for nonpolar and polar fluid transport properties.\\\" Ind. Eng. Chem. Res. 27(4), 671-679. DOI 10.1021/ie00076a024."]
+[source]
+standard = "Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988)"
+edition = "Generalized multiparameter correlation for nonpolar and polar fluid transport properties. Ind. Eng. Chem. Res. 27(4), 671-679"
+doi = "10.1021/ie00076a024"
+[inputs]
+[inputs.Cv0]
+unit = "J/(mol*K)"
+description = "Ideal-gas heat capacity at constant volume at `T`; `Cp0 - R`.\n"
+[inputs.M]
+unit = "kg/mol"
+description = "Molar mass of the pure component.\n"
+[inputs.omega]
+unit = "dimensionless"
+description = "Acentric factor of the pure component.\n"
+[inputs.Tc]
+unit = "K"
+description = "Critical temperature of the pure component.\n"
+[inputs.Vc]
+unit = "m**3/mol"
+description = "Critical volume of the pure component.\n"
+[inputs.dipole]
+unit = "dimensionless"
+description = "Dipole moment in debye; zero for a nonpolar component.\n"
+[inputs.kappa]
+unit = "dimensionless"
+description = "The viscosity correction factor, zero for most components.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature.\n"
+[outputs]
+[outputs.k]
+unit = "W/(m*K)"
+description = "The gas thermal conductivity, the published equation's lambda.\n"
+[[valid_range]]
+quantity = "Tc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Tc` is the divisor in `T* = 1.2593*T/Tc`; zero or negative is not a critical temperature.\n"
+[[valid_range]]
+quantity = "Vc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A critical volume is positive; a non-positive value is not a substance.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "methane, Cv0 = 27.544151394 J/(mol*K), M = 0.016043 kg/mol, omega = 0.0115, Tc = 190.56 K, Vc = 9.9e-5 m**3/mol, dipole = 0 debye, kappa = 0, at T = 300 K:\n\n  mu_r = 0\n  Fc = 1 - 0.2756*0.0115 = 0.9968306\n  T* = 1.2593 * 300 / 190.56 = 1.982525188916877\n  Omega_v = 1.16145*T*^-0.14874 + 0.52487*exp(-0.77320*T*) + 2.16178*exp(-2.43787*T*) = 1.179576645518974\n  eta0 = 40.785 * 0.9968306 * sqrt(16.043*300) / (99**(2/3) * 1.179576645518974) = 111.73149724549657 microPoise\n  alpha = 27.544151394 / 8.3144621 - 1.5 = 1.81280016226185\n  beta = 0.7862 - 0.7109*0.0115 + 1.3168*0.0115**2 = 0.7781987968\n  Z = 2 + 10.5*(300/190.56)**2 = 28.023656643973375\n  psi = 1 + alpha*((0.215 + 0.28288*alpha - 1.061*beta + 0.26665*Z)/(0.6366 + beta*Z + 1.061*alpha*beta)) = 1.5583961077549813\n  k = 3.75 * 8.3144621 * 1.5583961077549813 * 111.73149724549657e-7 / 0.016043 = 0.03384023073765177 W/(m*K)\n\nwhich is NeqSim 3.20.0 `ChungConductivityMethod`'s value at the same state.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+Cv0 = 27.544151394
+M = 0.016043
+omega = 0.0115
+Tc = 190.56
+Vc = 9.9e-5
+dipole = 0.0
+kappa = 0.0
+T = 300.0
+[worked_example.expected]
+k = 0.03384023073765177
+[implementations]
+python = "azoth.eos.chung_conductivity"
+rust = "azoth_eos::chung_conductivity"
+[[tests]]
+id = "methane_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "propane_matches_neqsim"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0 `ChungConductivityMethod.calcPureComponentConductivity` for propane at 300 K:\n\n  k = 0.01746969711123719 W/(m*K).\n"
+tolerance = 1e-12
+[tests.inputs]
+Cv0 = 65.809299386
+M = 0.044097
+omega = 0.1523
+Tc = 369.83
+Vc = 0.000203
+dipole = 0.0
+kappa = 0.0
+T = 300.0
+[tests.expected]
+k = 0.01746969711123719
+[[tests]]
+id = "methanol_exercises_dipole_and_correction"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0 `ChungConductivityMethod.calcPureComponentConductivity` for methanol at 350 K:\n\n  k = 0.022615665154001992 W/(m*K).\n"
+tolerance = 1e-12
+[tests.inputs]
+Cv0 = 39.535176124375
+M = 0.032042
+omega = 0.559
+Tc = 512.64
+Vc = 9.9e-5
+dipole = 1.7
+kappa = 0.215
+T = 350.0
+[tests.expected]
+k = 0.022615665154001992
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

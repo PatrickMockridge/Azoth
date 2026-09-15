@@ -23,6 +23,7 @@ from azoth.core.result import RootStructure
 from azoth.core.warnings import Warning
 
 __all__ = [
+    "ChungConductivityBatch",
     "ChungViscosityBatch",
     "CostaldMolarVolumeBatch",
     "HeatOfVaporizationBatch",
@@ -48,6 +49,7 @@ __all__ = [
     "SrkZFactorBatch",
     "TwuKappaBatch",
     "Vdw1fMixBinaryBatch",
+    "chung_conductivity",
     "chung_viscosity",
     "costald_molar_volume",
     "heat_of_vaporization",
@@ -81,6 +83,7 @@ _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
+_CHUNG_CONDUCTIVITY = "eos.chung_conductivity"
 _CHUNG_VISCOSITY = "eos.chung_viscosity"
 _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
@@ -572,6 +575,51 @@ def srk_peneloux_shift(
             "Pc": sequence(Pc, "Pc"),
         },
         _build_srk_peneloux_shift,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class ChungConductivityBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.chung_conductivity`."""
+
+    #: Gas thermal conductivity per element, in W/(m*K).
+    k: array[float]
+
+
+def _build_chung_conductivity(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> ChungConductivityBatch:
+    return ChungConductivityBatch(warnings=warnings, units=units, k=columns["k"])  # type: ignore[arg-type]
+
+
+def chung_conductivity(
+    *,
+    Cv0: Sequence[float],
+    M: Sequence[float],
+    omega: Sequence[float],
+    Tc: Sequence[float],
+    Vc: Sequence[float],
+    dipole: Sequence[float],
+    kappa: Sequence[float],
+    T: Sequence[float],
+) -> ChungConductivityBatch:
+    """The gas thermal conductivity, over arrays."""
+    result: ChungConductivityBatch = run(
+        _CHUNG_CONDUCTIVITY,
+        {
+            "Cv0": sequence(Cv0, "Cv0"),
+            "M": sequence(M, "M"),
+            "omega": sequence(omega, "omega"),
+            "Tc": sequence(Tc, "Tc"),
+            "Vc": sequence(Vc, "Vc"),
+            "dipole": sequence(dipole, "dipole"),
+            "kappa": sequence(kappa, "kappa"),
+            "T": sequence(T, "T"),
+        },
+        _build_chung_conductivity,
     )
     return result
 

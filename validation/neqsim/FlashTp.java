@@ -23,6 +23,7 @@ import neqsim.thermo.system.SystemPrEosvolcor;
 import neqsim.thermo.system.SystemSrkPenelouxEos;
 import neqsim.thermodynamicoperations.ThermodynamicOperations;
 import neqsim.physicalproperties.methods.gasphysicalproperties.viscosity.ChungViscosityMethod;
+import neqsim.physicalproperties.methods.gasphysicalproperties.conductivity.ChungConductivityMethod;
 import neqsim.physicalproperties.system.PhysicalProperties;
 
 public class FlashTp {
@@ -180,10 +181,32 @@ public class FlashTp {
     }
   }
 
+  /** The pure-component Chung conductivity, for `eos.chung_conductivity`. */
+  static void chungCond() {
+    String[] names = {"methane", "propane", "methanol"};
+    double[] temps = {300.0, 300.0, 350.0};
+    double[] press = {10.0, 9.0, 10.0};
+    System.out.println("Chung pure-component conductivity (W/(m*K)):");
+    for (int i = 0; i < names.length; i++) {
+      SystemInterface fluid = new SystemPrEos(temps[i], press[i]);
+      fluid.addComponent(names[i], 1.0);
+      fluid.setMixingRule("classic");
+      new ThermodynamicOperations(fluid).TPflash();
+      fluid.initProperties();
+      PhysicalProperties pp = fluid.getPhase(0).getPhysicalProperties();
+      ChungConductivityMethod cond = new ChungConductivityMethod(pp);
+      cond.calcPureComponentConductivity();
+      System.out.println("  " + names[i] + "  Cv0 = "
+          + fluid.getPhase(0).getComponent(0).getCv0(temps[i])
+          + "  k = " + cond.pureComponentConductivity[0] + " W/(m*K)");
+    }
+  }
+
   public static void main(String[] args) {
     volcorr();
     chung();
     wilke();
+    chungCond();
     corr();
     antoine();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",

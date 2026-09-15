@@ -7,7 +7,7 @@
 
 use azoth_core::units::{
     DynamicViscosity, MassDensity, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure,
-    ThermodynamicTemperature,
+    ThermalConductivity, ThermodynamicTemperature,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -896,6 +896,24 @@ pub struct WilkeViscosityResult {
 impl CalcResult for WilkeViscosityResult {
     const CALC_ID: &'static str = "eos.wilke_viscosity";
     const FIELDS: &'static [&'static str] = &["mu", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.chung_conductivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChungConductivityResult {
+    /// The gas thermal conductivity.
+    pub k: ThermalConductivity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ChungConductivityResult {
+    const CALC_ID: &'static str = "eos.chung_conductivity";
+    const FIELDS: &'static [&'static str] = &["k", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings
