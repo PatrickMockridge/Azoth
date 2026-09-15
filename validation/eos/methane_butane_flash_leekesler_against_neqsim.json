@@ -1,0 +1,27 @@
+{
+  "id": "methane_butane_flash_leekesler_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with AttractiveTermPrLeeKesler - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "Not a new correlation: NeqSim's `AttractiveTermPrLeeKesler` (term 21) is the Soave m-factor applied on Peng-Robinson's geometry, which is exactly azoth's `eos=\"pr\", alpha=\"srk\"`. NeqSim's own class doc confirms the name is a misnomer - it implements the Soave m, not the standard PR76 m. This case pins that the polymorphic selector's cross-combination reproduces the term rather than shipping a redundant `leekesler` alias."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemPrEos with `setAttractiveTerm(21)` - LeeKesler, whose `m = 0.48 + 1.574 w - 0.176 w^2` on PR's `(delta1, delta2) = (1 + sqrt2, 1 - sqrt2)` geometry. NeqSim printed:\n\n  beta 0.8027938821907967\n  k    [8.473683324669329, 0.2993232755668308]\n  x    [0.08571640106678441, 0.9142835989332155]\n  y    [0.7263336383702793, 0.27366636162972074]\n  Zl   0.09175512685305852\n  Zv   0.885814897504651\n\nazoth's `eos=\"pr\", alpha=\"srk\"` reproduces all six to 7e-12 on beta, the same residue as the other cubic cases.",
+  "eos": "pr",
+  "alpha": "srk",
+  "inputs": {
+    "components": ["methane", "n-butane"],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [0.6, 0.4]
+  },
+  "expected": {
+    "beta": 0.8027938821907967,
+    "k": [8.473683324669329, 0.2993232755668308],
+    "x": [0.08571640106678441, 0.9142835989332155],
+    "y": [0.7263336383702793, 0.27366636162972074],
+    "z_liquid": 0.09175512685305852,
+    "z_vapour": 0.885814897504651
+  },
+  "tolerance": 1.0e-10
+}
