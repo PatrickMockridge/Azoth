@@ -43,6 +43,8 @@ pub enum Alpha {
     Twu,
     /// Twu-Coon's non-Soave correlation, with `m = omega`.
     TwuCoon,
+    /// Gassem et al. (2001)'s non-Soave exponential correlation.
+    Gassem2001,
 }
 
 impl Alpha {
@@ -55,6 +57,7 @@ impl Alpha {
             Alpha::Pr78 => "pr78",
             Alpha::Twu => "twu",
             Alpha::TwuCoon => "twucoon",
+            Alpha::Gassem2001 => "gassem2001",
         }
     }
 }
@@ -69,8 +72,10 @@ impl std::str::FromStr for Alpha {
             "pr78" => Ok(Alpha::Pr78),
             "twu" => Ok(Alpha::Twu),
             "twucoon" => Ok(Alpha::TwuCoon),
+            "gassem2001" => Ok(Alpha::Gassem2001),
             other => Err(format!(
-                "unknown alpha `{other}`; expected `pr`, `srk`, `pr78`, `twu` or `twucoon`"
+                "unknown alpha `{other}`; expected `pr`, `srk`, `pr78`, `twu`, `twucoon` or \
+                 `gassem2001`"
             )),
         }
     }
@@ -177,5 +182,48 @@ impl AlphaTerm for TwuCoon {
     fn psi_t(&self, tr: f64) -> f64 {
         let (alpha, d_alpha, d2_alpha) = self.values(tr);
         tr * d_alpha / alpha + tr * tr * (d2_alpha * alpha - d_alpha * d_alpha) / (alpha * alpha)
+    }
+}
+
+/// Gassem et al. (2001)'s correlation, a non-Soave `alpha` with the acentric factor in
+/// the exponent.
+///
+/// `alpha = exp((A + B Tr)(1 - Tr^g))` with `g = C + D w + E w**2`, five constants and
+/// `w` the acentric factor. The logarithmic derivative is
+/// `Tr (B (1 - Tr^g) - g Tr^(g-1) (A + B Tr))`, and its temperature derivative is
+/// `B Tr - g**2 A Tr^g - B (1 + g)**2 Tr^(g+1)`.
+#[derive(Debug, Clone, Copy)]
+pub struct Gassem2001 {
+    /// The acentric factor, Gassem's `w`.
+    pub omega: f64,
+}
+
+impl Gassem2001 {
+    const A: f64 = 2.0;
+    const B: f64 = 0.836;
+    const C: f64 = 0.134;
+    const D: f64 = 0.508;
+    const E: f64 = -0.0467;
+
+    /// The exponent `g = C + D w + E w**2`, a constant per component.
+    fn g(&self) -> f64 {
+        Self::C + Self::D * self.omega + Self::E * self.omega * self.omega
+    }
+}
+
+impl AlphaTerm for Gassem2001 {
+    fn alpha(&self, tr: f64) -> f64 {
+        ((Self::A + Self::B * tr) * (1.0 - tr.powf(self.g()))).exp()
+    }
+
+    fn psi(&self, tr: f64) -> f64 {
+        let g = self.g();
+        tr * (Self::B * (1.0 - tr.powf(g)) - g * tr.powf(g - 1.0) * (Self::A + Self::B * tr))
+    }
+
+    fn psi_t(&self, tr: f64) -> f64 {
+        let g = self.g();
+        let tr_g = tr.powf(g);
+        Self::B * tr - g * g * Self::A * tr_g - Self::B * (1.0 + g).powi(2) * tr_g * tr
     }
 }

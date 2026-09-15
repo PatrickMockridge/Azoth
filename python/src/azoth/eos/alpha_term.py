@@ -98,3 +98,36 @@ class TwuCoon:
         return tr * d_alpha / alpha + tr * tr * (d2_alpha * alpha - d_alpha * d_alpha) / (
             alpha * alpha
         )
+
+
+class Gassem2001:
+    """Gassem et al. (2001)'s correlation, a non-Soave ``alpha`` with the acentric factor
+    in the exponent: ``alpha = exp((A + B Tr)(1 - Tr**g))`` with ``g = C + D w + E w**2``.
+    """
+
+    A = 2.0
+    B = 0.836
+    C = 0.134
+    D = 0.508
+    E = -0.0467
+
+    def __init__(self, omega: float) -> None:
+        self.omega = omega
+
+    def _g(self) -> float:
+        return self.C + self.D * self.omega + self.E * self.omega**2
+
+    def alpha(self, tr: float) -> float:
+        return math.exp((self.A + self.B * tr) * (1.0 - math.pow(tr, self._g())))
+
+    def psi(self, tr: float) -> float:
+        g = self._g()
+        return tr * (
+            self.B * (1.0 - math.pow(tr, g))
+            - g * math.pow(tr, g - 1.0) * (self.A + self.B * tr)
+        )
+
+    def psi_t(self, tr: float) -> float:
+        g = self._g()
+        tr_g = math.pow(tr, g)
+        return self.B * tr - g * g * self.A * tr_g - self.B * (1.0 + g) ** 2 * tr_g * tr

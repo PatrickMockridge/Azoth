@@ -1,0 +1,27 @@
+{
+  "id": "methane_butane_flash_gassem2001_against_neqsim",
+  "calc": "eos.pt_flash",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemPrEos with AttractiveTermPrGassem2001 - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "The second non-Soave alpha term. Gassem et al. (2001)'s alpha is exponential, `exp((A + B Tr)(1 - Tr^g))` with `g = C + D w + E w^2`, and it differs from Soave's on this mixture by 2e-3 in the vapour fraction. azoth's first derivative `psi` matches NeqSim's `diffalphaT`; the second derivative `psi_t` follows the true derivative, where NeqSim's `diffdiffalphaT` is a leftover Soave expression rather than Gassem's second derivative, so heat-capacity departures for this term do not reproduce NeqSim's."
+  },
+  "derivation": "The driver was run for methane 0.6 / n-butane 0.4 at 330 K and 25 bar on SystemPrEos with `setAttractiveTerm(8)` - Gassem2001, whose `alpha = exp((A + B Tr)(1 - Tr^g))` with `A = 2.0`, `B = 0.836` and `g = 0.134 + 0.508 w - 0.0467 w^2`. NeqSim printed:\n\n  beta 0.8457685365122634\n  k    [7.37935630557903, 0.3395494843888847]\n  x    [0.09381656803751078, 0.9061834319624892]\n  y    [0.6923058829153875, 0.3076941170846124]\n  Zl   0.09329220668560115\n  Zv   0.8687148708000851\n\nazoth reproduces all six to 5e-12 on beta and at or better on the rest, the same residue the other cubic cases show. The logarithmic derivative `psi = Tr d(alpha)/dTr / alpha` and its temperature derivative follow from the same exponent, so the departure functions agree on the first derivative and diverge only on the second, where NeqSim's `diffdiffalphaT` is not Gassem's second derivative.",
+  "eos": "pr",
+  "alpha": "gassem2001",
+  "inputs": {
+    "components": ["methane", "n-butane"],
+    "T": 330.0,
+    "P": 2500000.0,
+    "z": [0.6, 0.4]
+  },
+  "expected": {
+    "beta": 0.8457685365122634,
+    "k": [7.37935630557903, 0.3395494843888847],
+    "x": [0.09381656803751078, 0.9061834319624892],
+    "y": [0.6923058829153875, 0.3076941170846124],
+    "z_liquid": 0.09329220668560115,
+    "z_vapour": 0.8687148708000851
+  },
+  "tolerance": 1.0e-10
+}

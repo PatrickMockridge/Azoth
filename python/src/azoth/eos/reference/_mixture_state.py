@@ -26,7 +26,7 @@ from typing import Any, NamedTuple
 
 from azoth.core.errors import OutOfRangeError
 from azoth.core.warnings import Warning
-from azoth.eos.alpha_term import RkAlpha, Soave, TwuCoon
+from azoth.eos.alpha_term import Gassem2001, RkAlpha, Soave, TwuCoon
 from azoth.eos.cubic import PR, Cubic
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference.pr78_kappa import pr78_kappa
@@ -173,6 +173,15 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
             b_reduced = mixture.cubic.omega_b * reduced_pressure / reduced_temperature
             psi_value = twu_coon_term.psi(reduced_temperature)
             psi_t_value = twu_coon_term.psi_t(reduced_temperature)
+        elif mixture.alpha == "gassem2001":
+            # Gassem et al. (2001)'s non-Soave correlation, the acentric factor in the
+            # exponent rather than the amplitude.
+            gassem_term = Gassem2001(omega=component.omega)
+            alpha = gassem_term.alpha(reduced_temperature)
+            a_reduced = mixture.cubic.omega_a * alpha * reduced_pressure / reduced_temperature**2
+            b_reduced = mixture.cubic.omega_b * reduced_pressure / reduced_temperature
+            psi_value = gassem_term.psi(reduced_temperature)
+            psi_t_value = gassem_term.psi_t(reduced_temperature)
         else:
             # The kappa correlation belongs to the alpha term; the Omega to the cubic.
             kappa_value, kappa_warnings = _soave_kappa(mixture.alpha, component.omega)
