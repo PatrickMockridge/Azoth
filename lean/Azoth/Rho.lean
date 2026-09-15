@@ -134,6 +134,42 @@ theorem comm_reduction (a b : Name) :
     Reduces (.par (.out a b .nil) (.in a (.drop (.free 0)))) (.par .nil (.drop b)) := by
   simpa using (Reduces.comm a b .nil (.drop (.free 0)))
 
+/- Structural congruence: the least equivalence, closed under every constructor,
+containing the reduction. This is the `≅` of the round trip in `rho.md`, which the
+page calls out as "structural". Barbed bisimulation, the stronger observational
+equivalence, is a separate layer. -/
+mutual
+  /-- Names are congruent when their indices agree and their quoted processes are. -/
+  inductive NameCongr : Name → Name → Prop where
+    | free {n : Nat} : NameCongr (.free n) (.free n)
+    | quote {P Q : Process} : StructCongr P Q → NameCongr (.quote P) (.quote Q)
+
+  /-- Processes are congruent under the least equivalence containing the reduction
+  and closed under every constructor. -/
+  inductive StructCongr : Process → Process → Prop where
+    | refl (P : Process) : StructCongr P P
+    | symm {P Q : Process} : StructCongr P Q → StructCongr Q P
+    | trans {P Q R : Process} : StructCongr P Q → StructCongr Q R → StructCongr P R
+    | red {P Q : Process} : Reduces P Q → StructCongr P Q
+    | par {P P' Q Q' : Process} : StructCongr P P' → StructCongr Q Q' →
+        StructCongr (Process.par P Q) (Process.par P' Q')
+    | out {a a' b b' : Name} {P P' : Process} :
+        NameCongr a a' → NameCongr b b' → StructCongr P P' →
+        StructCongr (Process.out a b P) (Process.out a' b' P')
+    | in {a a' : Name} {P P' : Process} :
+        NameCongr a a' → StructCongr P P' → StructCongr (Process.in a P) (Process.in a' P')
+    | drop {x x' : Name} : NameCongr x x' → StructCongr (Process.drop x) (Process.drop x')
+end
+
+/-- The round trip is structural: quoting and dropping is the identity up to `≅`. -/
+theorem round_trip_congr (P : Process) : StructCongr (Process.drop (Name.quote P)) P :=
+  StructCongr.red (Reduces.drop_quote P)
+
+/-- The round trip composes with a parallel context. -/
+theorem round_trip_par (P Q : Process) :
+    StructCongr (Process.par (Process.drop (Name.quote P)) Q) (Process.par P Q) :=
+  StructCongr.par (StructCongr.red (Reduces.drop_quote P)) (StructCongr.refl Q)
+
 end Rho
 
 end Azoth

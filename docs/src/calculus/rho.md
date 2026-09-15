@@ -25,16 +25,18 @@ inverses.
 so quoting a process and dropping it back is the identity, and a process carried
 on a channel and re-entered is the process that was carried.
 
-*Status: the reflection and communication fragment is **proved**; the
-barbed-congruence claim is still **specified**. `Azoth/Rho.lean` formalises the
-operators — `@P`, `*x`, and the communication prefixes `out`/`in` — and proves the
-round-trip *reduction* `drop (quote P) → P` (`Azoth.Rho.round_trip`), the
-injectivity of quoting, dropping, sending and receiving (`Azoth.Rho.quote_injective`,
-`drop_injective`, `out_injective`, `in_injective`), the capture-avoiding substitution
-and its round-trip (`Azoth.Rho.subst0_var_zero`, `subst0_var_succ`,
-`subst0_under_binder`), and the communication reduction (`Azoth.Rho.comm_reduction`).
-What it does not yet have is the barbed-congruence reading `reflection_is_a_bijection`,
-which `Azoth.Barb` builds on this.*
+*Status: the reflection and communication fragment, and the round trip **as
+structural congruence**, are **proved**; the barbed-congruence reading is still
+**specified**. `Azoth/Rho.lean` formalises the operators — `@P`, `*x`, and the
+communication prefixes `out`/`in` — and proves the round-trip *reduction*
+`drop (quote P) → P` (`Azoth.Rho.round_trip`), the injectivity of quoting, dropping,
+sending and receiving (`Azoth.Rho.quote_injective`, `drop_injective`,
+`out_injective`, `in_injective`), the capture-avoiding substitution and its
+round-trip (`Azoth.Rho.subst0_var_zero`, `subst0_var_succ`, `subst0_under_binder`),
+the communication reduction (`Azoth.Rho.comm_reduction`), and the round trip as `≅`
+(`Azoth.Rho.round_trip_congr` — the `*@P ≅ P` half of `reflection_is_a_bijection`;
+`@*x ≅ x` is the same theorem at `P = drop x`). What remains *specified* is the
+stronger barbed-bisimulation reading, a coinductive layer.*
 
 This is the claim that makes an interoperation surface possible rather than
 aspirational. A flowsheet handed to another tool, or stored in a file, or drawn in

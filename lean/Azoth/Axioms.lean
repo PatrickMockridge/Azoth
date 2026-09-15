@@ -36,3 +36,5 @@ import Azoth.Rho
 #print axioms Azoth.Rho.subst0_var_succ
 #print axioms Azoth.Rho.subst0_under_binder
 #print axioms Azoth.Rho.comm_reduction
+#print axioms Azoth.Rho.round_trip_congr
+#print axioms Azoth.Rho.round_trip_par
