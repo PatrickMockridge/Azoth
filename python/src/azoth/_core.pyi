@@ -379,6 +379,11 @@ class TwuKappaResult:
     warnings: list[Warning]
 
 @final
+class TynCalusDiffusivityResult:
+    d: Qty
+    warnings: list[Warning]
+
+@final
 class Vdw1fMixBinaryResult:
     a_mix: float
     b_mix: float
@@ -676,6 +681,12 @@ def stability_test(
     alpha_params: list[list[float]] | None = None,
 ) -> StabilityTestResult: ...
 def twu_kappa(omega: float) -> TwuKappaResult: ...
+def tyn_calus_diffusivity(
+    VA: float,
+    VB: float,
+    T: float,
+    eta: float,
+) -> TynCalusDiffusivityResult: ...
 def vdw1f_mix_binary(
     z1: float,
     a1: float,

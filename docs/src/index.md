@@ -88,6 +88,7 @@ Four sections, and the difference between them is the point:
 - [`eos.srk_peneloux_shift`](./eos/srk_peneloux_shift.md)
 - [`eos.srk_z_factor`](./eos/srk_z_factor.md)
 - [`eos.twu_kappa`](./eos/twu_kappa.md)
+- [`eos.tyn_calus_diffusivity`](./eos/tyn_calus_diffusivity.md)
 - [`eos.vdw1f_mix_binary`](./eos/vdw1f_mix_binary.md)
 
 *Models* — whose specs fix a procedure rather than an equation:

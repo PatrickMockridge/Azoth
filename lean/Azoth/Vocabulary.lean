@@ -30,6 +30,7 @@ def units : List (String × Units.Dimension) :=
     ("mol/s", Dim.ofExponents [0, 0, -1, 0, 0, 1, 0]),
     ("kg/m**3", Dim.ofExponents [-3, 1, 0, 0, 0, 0, 0]),
     ("m/s", Dim.ofExponents [1, 0, -1, 0, 0, 0, 0]),
+    ("m**2/s", Dim.ofExponents [2, 0, -1, 0, 0, 0, 0]),
     ("Pa", Dim.ofExponents [-1, 1, -2, 0, 0, 0, 0]),
     ("Pa*s", Dim.ofExponents [-1, 1, -1, 0, 0, 0, 0]),
     ("K", Dim.ofExponents [0, 0, 0, 0, 1, 0, 0]),
@@ -109,6 +110,12 @@ theorem u_kg_per_m_pow_3_dimension :
     `Dimension.Speed`. -/
 theorem u_m_per_s_dimension :
     dimOf "m/s" = some (Dimension.Speed) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "m**2/s" carries the dimension `lean-units` calls
+    `Dimension.Area / Dimension.Time`. -/
+theorem u_m_pow_2_per_s_dimension :
+    dimOf "m**2/s" = some (Dimension.Area / Dimension.Time) := by
   simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
 
 /-- "Pa" carries the dimension `lean-units` calls

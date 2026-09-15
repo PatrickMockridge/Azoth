@@ -163,6 +163,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.srk_z_factor` | Soave-Redlich-Kwong compressibility factor |
 | `eos.stability_test` | Tangent-plane stability test — a *model* |
 | `eos.twu_kappa` | Twu attraction-parameter coefficient |
+| `eos.tyn_calus_diffusivity` | Liquid binary diffusivity from the Tyn-Calus correlation |
 | `eos.vdw1f_mix_binary` | van der Waals one-fluid mixing, for a binary |
 | `eos.wilke_viscosity` | Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities — a *model* |
 | `hydraulics.choked_flow_area` | Choked-flow throat area for an ideal gas |

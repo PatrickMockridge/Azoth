@@ -31,6 +31,9 @@ exponents = [-1, 1, -2, 0, 0, 0, 0]
 id = "dynamic_viscosity"
 exponents = [-1, 1, -1, 0, 0, 0, 0]
 [[dimensions]]
+id = "diffusion_coefficient"
+exponents = [2, 0, -1, 0, 0, 0, 0]
+[[dimensions]]
 id = "thermodynamic_temperature"
 exponents = [0, 0, 0, 0, 1, 0, 0]
 [[dimensions]]
@@ -119,6 +122,12 @@ dimension = "velocity"
 pint = "meter/second"
 uom = "velocity::meter_per_second"
 rust_ctor = "meters_per_second"
+[[units]]
+id = "m**2/s"
+dimension = "diffusion_coefficient"
+pint = "meter**2/second"
+uom = "diffusion_coefficient::square_meter_per_second"
+rust_ctor = "square_meters_per_second"
 [[units]]
 id = "Pa"
 dimension = "pressure"

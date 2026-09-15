@@ -446,6 +446,16 @@ class MasonSaxenaConductivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TynCalusDiffusivityResult(_HasWarnings):
+    """Result of ``eos.tyn_calus_diffusivity``."""
+
+    #: The binary diffusion coefficient.
+    d: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WilkeViscosityResult(_HasWarnings):
     """Result of ``eos.wilke_viscosity``."""
 

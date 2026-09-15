@@ -25,6 +25,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "mol/s",
     "kg/m**3",
     "m/s",
+    "m**2/s",
     "Pa",
     "Pa*s",
     "K",
@@ -53,6 +54,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("mol/s", [0, 0, -1, 0, 0, 1, 0]),
     ("kg/m**3", [-3, 1, 0, 0, 0, 0, 0]),
     ("m/s", [1, 0, -1, 0, 0, 0, 0]),
+    ("m**2/s", [2, 0, -1, 0, 0, 0, 0]),
     ("Pa", [-1, 1, -2, 0, 0, 0, 0]),
     ("Pa*s", [-1, 1, -1, 0, 0, 0, 0]),
     ("K", [0, 0, 0, 0, 1, 0, 0]),
@@ -98,6 +100,9 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
         crate::units::kilograms_per_cubic_meter(v).value
     }),
     ("m/s", |v| crate::units::meters_per_second(v).value),
+    ("m**2/s", |v| {
+        crate::units::square_meters_per_second(v).value
+    }),
     ("Pa", |v| crate::units::pascals(v).value),
     ("Pa*s", |v| crate::units::pascal_seconds(v).value),
     ("K", |v| crate::units::kelvins(v).value),
@@ -171,6 +176,7 @@ mod dimension_assertions {
         let _: uom::si::f64::MassRate = crate::units::kilograms_per_second(1.0);
         let _: uom::si::f64::MassDensity = crate::units::kilograms_per_cubic_meter(1.0);
         let _: uom::si::f64::Velocity = crate::units::meters_per_second(1.0);
+        let _: uom::si::f64::DiffusionCoefficient = crate::units::square_meters_per_second(1.0);
         let _: uom::si::f64::Pressure = crate::units::pascals(1.0);
         let _: uom::si::f64::DynamicViscosity = crate::units::pascal_seconds(1.0);
         let _: uom::si::f64::ThermodynamicTemperature = crate::units::kelvins(1.0);

@@ -76,6 +76,7 @@ from azoth.core.result import (
     StabilityTestResult,
     SwameeJainResult,
     TwuKappaResult,
+    TynCalusDiffusivityResult,
     Vdw1fMixBinaryResult,
     WilkeViscosityResult,
 )
@@ -654,6 +655,21 @@ def mason_saxena_conductivity(
     )
     return MasonSaxenaConductivityResult(
         k=from_si(result.k.magnitude_si, result.k.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tyn_calus_diffusivity(VA: Q, VB: Q, T: Q, eta: Q) -> TynCalusDiffusivityResult:
+    """The liquid binary diffusivity, computed in Rust."""
+    spec = _spec_for("eos.tyn_calus_diffusivity")
+    result = _core.tyn_calus_diffusivity(
+        input_to_si(spec, "VA", VA),
+        input_to_si(spec, "VB", VB),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "eta", eta),
+    )
+    return TynCalusDiffusivityResult(
+        d=from_si(result.d.magnitude_si, result.d.unit),
         warnings=_warnings(result.warnings),
     )
 

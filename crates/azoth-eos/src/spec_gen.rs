@@ -28,6 +28,7 @@
 //!   - specs/calcs/eos/srk_peneloux_shift.toml
 //!   - specs/calcs/eos/srk_z_factor.toml
 //!   - specs/calcs/eos/twu_kappa.toml
+//!   - specs/calcs/eos/tyn_calus_diffusivity.toml
 //!   - specs/calcs/eos/vdw1f_mix_binary.toml
 //!
 //! Tables for the `eos` namespace. Every namespace has its own generated
@@ -3318,6 +3319,114 @@ pub static TWU_KAPPA_SPEC: CalcSpec = CalcSpec {
     tests: TWU_KAPPA_TESTS,
 };
 
+/// Registry entry for `eos.tyn_calus_diffusivity`.
+static TYN_CALUS_DIFFUSIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "An absolute temperature; zero and below are not states.",
+    },
+}];
+
+static TYN_CALUS_DIFFUSIVITY_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "methanol_in_benzene",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("VA", 4.020326223337516e-05),
+            ("VB", 8.816478555304741e-05),
+            ("T", 298.15),
+            ("eta", 0.0009163064908813372),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 1.9408598476710993e-09)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "methanol_in_water_clamps_the_solvent_volume",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("VA", 4.020326223337516e-05),
+            ("VB", 1.8033033033033033e-05),
+            ("T", 298.15),
+            ("eta", 0.0008915447896200597),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 1.3423722774680064e-09)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.tyn_calus_diffusivity`.
+///
+/// Public and addressable directly, so a calc can hold `&TYN_CALUS_DIFFUSIVITY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static TYN_CALUS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.tyn_calus_diffusivity",
+    checks: TYN_CALUS_DIFFUSIVITY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "benzene_in_toluene_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("VA", 8.816478555304741e-05),
+            ("VB", 0.00010578760045924226),
+            ("T", 298.15),
+            ("eta", 0.0009163501315189954),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 1.4502274002446276e-09)],
+        expected_vectors: &[],
+    },
+    tests: TYN_CALUS_DIFFUSIVITY_TESTS,
+};
+
 /// Registry entry for `eos.vdw1f_mix_binary`.
 static VDW1F_MIX_BINARY_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -3500,6 +3609,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &SRK_PENELOUX_SHIFT_SPEC,
     &SRK_Z_FACTOR_SPEC,
     &TWU_KAPPA_SPEC,
+    &TYN_CALUS_DIFFUSIVITY_SPEC,
     &VDW1F_MIX_BINARY_SPEC,
 ];
 

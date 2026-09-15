@@ -919,6 +919,30 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "k", "W/(m*K)", k);
         }
 
+        "eos.tyn_calus_diffusivity" => {
+            let (va, vb, t, eta) = (
+                take(&inputs, "VA")?,
+                take(&inputs, "VB")?,
+                take(&inputs, "T")?,
+                take(&inputs, "eta")?,
+            );
+            let mut d = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::tyn_calus_diffusivity(
+                        cubic_meters_per_mole(va[i]),
+                        cubic_meters_per_mole(vb[i]),
+                        kelvins(t[i]),
+                        pascal_seconds(eta[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                d.push(r.d.value);
+            }
+            push_values(&mut columns, "d", "m**2/s", d);
+        }
+
         "eos.rackett_molar_volume" => {
             let (omega, tc, pc, t) = (
                 take(&inputs, "omega")?,

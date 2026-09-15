@@ -6,8 +6,8 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    DynamicViscosity, MassDensity, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure,
-    ThermalConductivity, ThermodynamicTemperature,
+    DiffusionCoefficient, DynamicViscosity, MassDensity, MolarEnergy, MolarHeatCapacity,
+    MolarVolume, Pressure, ThermalConductivity, ThermodynamicTemperature,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -932,6 +932,24 @@ pub struct MasonSaxenaConductivityResult {
 impl CalcResult for MasonSaxenaConductivityResult {
     const CALC_ID: &'static str = "eos.mason_saxena_conductivity";
     const FIELDS: &'static [&'static str] = &["k", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.tyn_calus_diffusivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TynCalusDiffusivityResult {
+    /// The binary diffusion coefficient.
+    pub d: DiffusionCoefficient,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TynCalusDiffusivityResult {
+    const CALC_ID: &'static str = "eos.tyn_calus_diffusivity";
+    const FIELDS: &'static [&'static str] = &["d", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

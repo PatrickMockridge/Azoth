@@ -26,7 +26,7 @@ use azoth_eos::results::{
     PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
     RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
-    Vdw1fMixBinaryResult, WilkeViscosityResult,
+    TynCalusDiffusivityResult, Vdw1fMixBinaryResult, WilkeViscosityResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1185,6 +1185,45 @@ impl From<&MasonSaxenaConductivityResult> for PyMasonSaxenaConductivityResult {
             k: PyQty {
                 magnitude_si: r.k.value,
                 unit: "W/(m*K)".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.tyn_calus_diffusivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TynCalusDiffusivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTynCalusDiffusivityResult {
+    /// The binary diffusion coefficient, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub d: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTynCalusDiffusivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TynCalusDiffusivityResult(d={} {})",
+            self.d.magnitude_si, self.d.unit
+        )
+    }
+}
+
+impl From<&TynCalusDiffusivityResult> for PyTynCalusDiffusivityResult {
+    fn from(r: &TynCalusDiffusivityResult) -> Self {
+        Self {
+            d: PyQty {
+                magnitude_si: r.d.value,
+                unit: "m**2/s".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -2532,6 +2571,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChungConductivityResult::CALC_ID => ChungConductivityResult::FIELDS.to_vec(),
         WilkeViscosityResult::CALC_ID => WilkeViscosityResult::FIELDS.to_vec(),
         MasonSaxenaConductivityResult::CALC_ID => MasonSaxenaConductivityResult::FIELDS.to_vec(),
+        TynCalusDiffusivityResult::CALC_ID => TynCalusDiffusivityResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
@@ -2596,6 +2636,7 @@ pub fn calc_ids() -> Vec<String> {
         CostaldMolarVolumeResult::CALC_ID.to_string(),
         ChungViscosityResult::CALC_ID.to_string(),
         ChungConductivityResult::CALC_ID.to_string(),
+        TynCalusDiffusivityResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

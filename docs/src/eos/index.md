@@ -32,6 +32,7 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.srk_peneloux_shift`](./srk_peneloux_shift.md) | $c = 0.40768\,\left(0.29441 - Z_{\mathrm{RA}}\right)\frac{R\,T_c}{P_c}, \qquad Z_{\mathrm{RA}} = 0.29056 - 0.08775\,\omega$ | Péneloux, A.; Rauzy, E.; Fréze, R. (1982) |
 | [`eos.srk_z_factor`](./srk_z_factor.md) | $z^{3} - z^{2} + \left(A - B - B^{2}\right)z - AB = 0$ | Redlich, O.; Kwong, J. N. S. (1949) |
 | [`eos.twu_kappa`](./twu_kappa.md) | $\kappa = 0.48 + 1.574\,\omega - 0.175\,\omega^{2}$ | Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991) |
+| [`eos.tyn_calus_diffusivity`](./tyn_calus_diffusivity.md) | $D_{AB}^0 = 8.93\times10^{-8}\,\frac{V_B^{0.267}\,T}{\eta_B\,V_A^{0.433}}$ | Tyn, M. T.; Calus, W. F. (1975) |
 | [`eos.vdw1f_mix_binary`](./vdw1f_mix_binary.md) | $a_{\mathrm{mix}} = z_{1}^{2}a_{1} + 2z_{1}z_{2}\left(1 - k_{12}\right)\sqrt{a_{1}a_{2}} + z_{2}^{2}a_{2}, \qquad b_{\mathrm{mix}} = z_{1}b_{1} + z_{2}b_{2}$ | van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text |
 
 ## Models

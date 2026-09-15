@@ -48,6 +48,7 @@ __all__ = [
     "SrkPenelouxShiftBatch",
     "SrkZFactorBatch",
     "TwuKappaBatch",
+    "TynCalusDiffusivityBatch",
     "Vdw1fMixBinaryBatch",
     "chung_conductivity",
     "chung_viscosity",
@@ -74,6 +75,7 @@ __all__ = [
     "srk_peneloux_shift",
     "srk_z_factor",
     "twu_kappa",
+    "tyn_calus_diffusivity",
     "vdw1f_mix_binary",
 ]
 
@@ -103,6 +105,7 @@ _RK_ALPHA_AB = "eos.rk_alpha_ab"
 _RK_DEPARTURE = "eos.rk_departure"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
+_TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -1206,5 +1209,38 @@ def twu_kappa(*, omega: Sequence[float]) -> TwuKappaBatch:
         _TWU_KAPPA,
         {"omega": sequence(omega, "omega")},
         _build_twu_kappa,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class TynCalusDiffusivityBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.tyn_calus_diffusivity`."""
+
+    #: Binary diffusion coefficient per element, in m**2/s.
+    d: array[float]
+
+
+def _build_tyn_calus_diffusivity(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> TynCalusDiffusivityBatch:
+    return TynCalusDiffusivityBatch(warnings=warnings, units=units, d=columns["d"])  # type: ignore[arg-type]
+
+
+def tyn_calus_diffusivity(
+    *, VA: Sequence[float], VB: Sequence[float], T: Sequence[float], eta: Sequence[float]
+) -> TynCalusDiffusivityBatch:
+    """The liquid binary diffusivity, over arrays."""
+    result: TynCalusDiffusivityBatch = run(
+        _TYN_CALUS_DIFFUSIVITY,
+        {
+            "VA": sequence(VA, "VA"),
+            "VB": sequence(VB, "VB"),
+            "T": sequence(T, "T"),
+            "eta": sequence(eta, "eta"),
+        },
+        _build_tyn_calus_diffusivity,
     )
     return result

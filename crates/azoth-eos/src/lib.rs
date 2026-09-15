@@ -78,6 +78,7 @@ pub mod srk_peneloux_shift;
 pub mod srk_z_factor;
 pub mod stability_test;
 pub mod twu_kappa;
+pub mod tyn_calus_diffusivity;
 pub mod vdw1f_mix_binary;
 pub mod wilke_viscosity;
 
@@ -121,8 +122,8 @@ pub use results::{
     PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
     RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
     RootStructure, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult,
-    SrkZFactorResult, StabilityTestResult, StabilityVerdict, TwuKappaResult, Vdw1fMixBinaryResult,
-    WilkeViscosityResult,
+    SrkZFactorResult, StabilityTestResult, StabilityVerdict, TwuKappaResult,
+    TynCalusDiffusivityResult, Vdw1fMixBinaryResult, WilkeViscosityResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -133,5 +134,6 @@ pub use srk_peneloux_shift::srk_peneloux_shift;
 pub use srk_z_factor::srk_z_factor;
 pub use stability_test::stability_test;
 pub use twu_kappa::twu_kappa;
+pub use tyn_calus_diffusivity::tyn_calus_diffusivity;
 pub use vdw1f_mix_binary::vdw1f_mix_binary;
 pub use wilke_viscosity::wilke_viscosity;

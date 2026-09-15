@@ -38,6 +38,7 @@
   - [Soave-Redlich-Kwong Peneloux volume-translation parameter](./eos/srk_peneloux_shift.md)
   - [Soave-Redlich-Kwong compressibility factor](./eos/srk_z_factor.md)
   - [Twu attraction-parameter coefficient](./eos/twu_kappa.md)
+  - [Liquid binary diffusivity from the Tyn-Calus correlation](./eos/tyn_calus_diffusivity.md)
   - [van der Waals one-fluid mixing, for a binary](./eos/vdw1f_mix_binary.md)
   - [Bubble-point pressure](./eos/bubble_pressure.md)
   - [Mixture critical point](./eos/critical_point.md)

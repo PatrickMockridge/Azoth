@@ -9,7 +9,7 @@
 
 use azoth_core::units::{
     cubic_meters_per_mole, joules_per_mole, joules_per_mole_kelvin, kelvins,
-    kilograms_per_cubic_meter, kilograms_per_mole, pascals,
+    kilograms_per_cubic_meter, kilograms_per_mole, pascal_seconds, pascals,
 };
 use pyo3::prelude::*;
 
@@ -24,7 +24,8 @@ use crate::results::{
     PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
     PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
     PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
-    PyStabilityTestResult, PyTwuKappaResult, PyVdw1fMixBinaryResult, PyWilkeViscosityResult,
+    PyStabilityTestResult, PyTwuKappaResult, PyTynCalusDiffusivityResult, PyVdw1fMixBinaryResult,
+    PyWilkeViscosityResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -479,6 +480,28 @@ pub fn chung_conductivity(
         kelvins(T),
     )
     .map(|r| PyChungConductivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The liquid binary diffusivity, from the Tyn-Calus correlation.
+#[pyfunction]
+#[pyo3(signature = (VA, VB, T, eta))]
+#[pyo3(text_signature = "(VA, VB, T, eta)")]
+#[allow(non_snake_case)] // `VA`, `VB` and `T` are the symbols in the published equation
+pub fn tyn_calus_diffusivity(
+    py: Python<'_>,
+    VA: f64,
+    VB: f64,
+    T: f64,
+    eta: f64,
+) -> PyResult<PyTynCalusDiffusivityResult> {
+    azoth_eos::tyn_calus_diffusivity(
+        cubic_meters_per_mole(VA),
+        cubic_meters_per_mole(VB),
+        kelvins(T),
+        pascal_seconds(eta),
+    )
+    .map(|r| PyTynCalusDiffusivityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

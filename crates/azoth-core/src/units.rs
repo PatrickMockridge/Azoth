@@ -15,14 +15,14 @@
 //! resistance coefficient - are plain `f64`, here and in the Python API.
 
 pub use uom::si::f64::{
-    Area, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate, MolarEnergy,
-    MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
+    Area, DiffusionCoefficient, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate,
+    MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
     TemperatureInterval, ThermalConductivity, ThermodynamicTemperature, Velocity, VolumeRate,
 };
 pub use uom::si::{
-    area::square_meter, dynamic_viscosity::pascal_second,
-    heat_transfer::watt_per_square_meter_kelvin, length::meter, length::millimeter,
-    mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
+    area::square_meter, diffusion_coefficient::square_meter_per_second,
+    dynamic_viscosity::pascal_second, heat_transfer::watt_per_square_meter_kelvin, length::meter,
+    length::millimeter, mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
     molar_energy::joule_per_mole, molar_heat_capacity::joule_per_kelvin_mole,
     molar_mass::kilogram_per_mole, molar_volume::cubic_meter_per_mole, power::watt,
     pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
@@ -53,6 +53,12 @@ pub fn millimeters(value: f64) -> Length {
 #[must_use]
 pub fn meters_per_second(value: f64) -> Velocity {
     Velocity::new::<meter_per_second>(value)
+}
+
+/// A diffusion coefficient in square metres per second.
+#[must_use]
+pub fn square_meters_per_second(value: f64) -> DiffusionCoefficient {
+    DiffusionCoefficient::new::<square_meter_per_second>(value)
 }
 
 /// A mass density in kilograms per cubic metre.

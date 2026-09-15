@@ -104,6 +104,7 @@ from azoth.core.result import (
     SrkZFactorResult,
     StabilityTestResult,
     TwuKappaResult,
+    TynCalusDiffusivityResult,
     Vdw1fMixBinaryResult,
     WilkeViscosityResult,
 )
@@ -157,6 +158,7 @@ __all__ = [
     "srk_z_factor",
     "stability_test",
     "twu_kappa",
+    "tyn_calus_diffusivity",
     "vdw1f_mix_binary",
     "wilke_viscosity",
 ]
@@ -189,6 +191,7 @@ _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
+_TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _WILKE_VISCOSITY = "eos.wilke_viscosity"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
@@ -579,6 +582,24 @@ def chung_conductivity(
     """
     return resolve(_CHUNG_CONDUCTIVITY)(  # type: ignore[no-any-return]
         Cv0=Cv0, M=M, omega=omega, Tc=Tc, Vc=Vc, dipole=dipole, kappa=kappa, T=T
+    )
+
+
+def tyn_calus_diffusivity(VA: Q, VB: Q, T: Q, eta: Q) -> TynCalusDiffusivityResult:
+    """The binary diffusion coefficient at infinite dilution, from the Tyn-Calus correlation.
+
+    ``VA`` and ``VB`` are the solute and solvent liquid molar volumes at the normal
+    boiling point (``M/rho_normal``, or the Tyn-Calus estimate ``0.285*Vc**1.048``
+    when the density is unknown); ``eta`` is the solvent viscosity. All three are
+    clamped to NeqSim's limits before the correlation is applied.
+
+    Raises:
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.tyn_calus_diffusivity`.
+    """
+    return resolve(_TYN_CALUS_DIFFUSIVITY)(  # type: ignore[no-any-return]
+        VA=VA, VB=VB, T=T, eta=eta
     )
 
 
