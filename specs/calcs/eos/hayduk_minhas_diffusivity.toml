@@ -1,0 +1,70 @@
+id = "eos.hayduk_minhas_diffusivity"
+name = "Liquid binary diffusivity from the Hayduk-Minhas correlation"
+equation = "paraffin: D = 13.3e-8 * T**1.47 * eta**(10.2/VA - 0.791) / VA**0.71;  aqueous: D = 1.25e-8 * (VA**-0.19 - 0.292) * T**1.52 * eta**(9.58/VA - 1.12),  with VA in cm**3/mol, eta in cP and T in K; VA is clamped to [20, 500] cm**3/mol and eta to [0.1, 100] cP, the aqueous volume term is floored at 0.01, and D*1e-4 recovers m**2/s."
+latex = '''D_{AB}^0 = 13.3\times10^{-8}\,\frac{T^{1.47}\,\eta_B^{10.2/V_A - 0.791}}{V_A^{0.71}}\quad(\text{paraffin}),\qquad 1.25\times10^{-8}\,\left(V_A^{-0.19}-0.292\right)T^{1.52}\,\eta_B^{9.58/V_A - 1.12}\quad(\text{aqueous})'''
+assumptions = ["`form` selects the solvent correlation: `paraffin` for hydrocarbons, `aqueous` for water-rich solvents; NeqSim auto-detects water content when the form is not set, which a scalar calc cannot, so the caller chooses.\n", "`VA` is the solute liquid molar volume at the normal boiling point; the caller gets it as `M/rho_normal`, or the Tyn-Calus estimate `0.285*Vc**1.048` when the density is unknown.\n", "`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n", "the molar volume and viscosity are clamped to NeqSim's `[20, 500]` cm**3/mol and `[0.1, 100]` cP; the correlation is not applied outside them.\n", "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n"]
+references = ["Hayduk, W.; Minhas, B. S. (1982). \\\"Correlations for prediction of molecular diffusivities in liquids.\\\" Can. J. Chem. Eng. 60(2), 295-299. DOI 10.1002/cjce.5450600213."]
+[source]
+standard = "Hayduk, W.; Minhas, B. S. (1982)"
+edition = "Correlations for prediction of molecular diffusivities in liquids. Can. J. Chem. Eng. 60(2), 295-299"
+doi = "10.1002/cjce.5450600213"
+[inputs]
+[inputs.form]
+type = "enum"
+values = ["paraffin", "aqueous"]
+description = "The solvent correlation: `paraffin` or `aqueous`.\n"
+[inputs.VA]
+unit = "m**3/mol"
+description = "Solute molar volume at its normal boiling point.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature.\n"
+[inputs.eta]
+unit = "Pa*s"
+description = "Solvent dynamic viscosity at `T`.\n"
+[outputs]
+[outputs.d]
+unit = "m**2/s"
+description = "The binary diffusion coefficient at infinite dilution, the published equation's D.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "methanol in benzene (paraffin) at 298.15 K: VA = 40.2033 cm**3/mol, eta = 0.91631 cP:\n\n  VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol (no clamp, within [20, 500])\n  eta = 9.163064908813372e-4 Pa*s -> 0.91631 cP\n  exponent = 10.2 / 40.2033 - 0.791 = -0.53728\n  D = 13.3e-8 * 298.15**1.47 * 0.91631**-0.53728 / 40.2033**0.71 = 4.391778089044218e-5 cm**2/s\n  D = 4.391778089044218e-9 m**2/s\n\nwhich is NeqSim 3.20.0 `HaydukMinhasDiffusivity`'s value at the same state.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+form = "paraffin"
+VA = 4.0203262233375156e-5
+T = 298.15
+eta = 9.163064908813372e-4
+[worked_example.expected]
+d = 4.391778089044218e-9
+[implementations]
+python = "azoth.eos.hayduk_minhas_diffusivity"
+rust = "azoth_eos::hayduk_minhas_diffusivity"
+[[tests]]
+id = "methanol_in_benzene_paraffin_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "methanol_in_water_aqueous"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0 `HaydukMinhasDiffusivity.calcBinaryDiffusionCoefficient` (aqueous) for methanol in water at 298.15 K:\n\n  d = 1.6252933415200594e-9 m**2/s.\n"
+tolerance = 1e-12
+[tests.inputs]
+form = "aqueous"
+VA = 4.0203262233375156e-5
+T = 298.15
+eta = 8.915447896200597e-4
+[tests.expected]
+d = 1.6252933415200594e-9
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

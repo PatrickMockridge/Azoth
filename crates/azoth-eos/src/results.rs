@@ -974,6 +974,42 @@ impl CalcResult for WilkeChangDiffusivityResult {
     }
 }
 
+/// Result of `eos.hayduk_minhas_diffusivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HaydukMinhasDiffusivityResult {
+    /// The binary diffusion coefficient.
+    pub d: DiffusionCoefficient,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HaydukMinhasDiffusivityResult {
+    const CALC_ID: &'static str = "eos.hayduk_minhas_diffusivity";
+    const FIELDS: &'static [&'static str] = &["d", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.siddiqi_lucas_diffusivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SiddiqiLucasDiffusivityResult {
+    /// The binary diffusion coefficient.
+    pub d: DiffusionCoefficient,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SiddiqiLucasDiffusivityResult {
+    const CALC_ID: &'static str = "eos.siddiqi_lucas_diffusivity";
+    const FIELDS: &'static [&'static str] = &["d", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SrkAlphaAbResult {

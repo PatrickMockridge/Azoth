@@ -200,9 +200,12 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
     this assertion and has to be argued for, rather than quietly joining the exclusion.
     """
     excluded = {calc["id"] for calc in h.CALCS} - set(batchable())
-    assert excluded == {"hydraulics.crane_k_factors", "eos.antoine_vapor_pressure"}, sorted(
-        excluded
-    )
+    assert excluded == {
+        "hydraulics.crane_k_factors",
+        "eos.antoine_vapor_pressure",
+        "eos.hayduk_minhas_diffusivity",
+        "eos.siddiqi_lucas_diffusivity",
+    }, sorted(excluded)
 
 
 def test_batch_of_one_equals_scalar_including_warnings() -> None:

@@ -164,6 +164,11 @@ class DewPressureResult:
     warnings: list[Warning]
 
 @final
+class HaydukMinhasDiffusivityResult:
+    d: Qty
+    warnings: list[Warning]
+
+@final
 class HeatOfVaporizationResult:
     hov: Qty
     warnings: list[Warning]
@@ -327,6 +332,11 @@ class RkDepartureResult:
     h_dep_rt: float
     s_dep_r: float
     cp_dep_r: float
+    warnings: list[Warning]
+
+@final
+class SiddiqiLucasDiffusivityResult:
+    d: Qty
     warnings: list[Warning]
 
 @final
@@ -538,6 +548,12 @@ def dew_pressure(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> DewPressureResult: ...
+def hayduk_minhas_diffusivity(
+    form: str,
+    VA: float,
+    T: float,
+    eta: float,
+) -> HaydukMinhasDiffusivityResult: ...
 def heat_of_vaporization(
     c0: float,
     c1: float,
@@ -662,6 +678,13 @@ def rackett_molar_volume(
 ) -> RackettMolarVolumeResult: ...
 def rk_alpha_ab(Tr: float, Pr: float) -> RkAlphaAbResult: ...
 def rk_departure(a_reduced: float, b_reduced: float, z: float) -> RkDepartureResult: ...
+def siddiqi_lucas_diffusivity(
+    form: str,
+    VA: float,
+    VB: float,
+    T: float,
+    eta: float,
+) -> SiddiqiLucasDiffusivityResult: ...
 def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult: ...
 def srk_departure(
     a_reduced: float,

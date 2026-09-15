@@ -19,15 +19,15 @@ use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     AntoineVaporPressureResult, BubblePressureResult, ChungConductivityResult,
     ChungViscosityResult, CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult,
-    HeatOfVaporizationResult, IdealGasCpResult, LiquidHeatCapacityResult,
-    MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult, PhFlashResult, Pr78KappaResult,
-    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
-    RkDepartureResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
-    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TwuKappaResult,
-    TynCalusDiffusivityResult, Vdw1fMixBinaryResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
+    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult,
+    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
+    PrsvKappaResult, PsFlashResult, PtFlashResult, PureSaturationResult, RachfordRiceBinaryResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, TwuKappaResult, TynCalusDiffusivityResult, Vdw1fMixBinaryResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1260,6 +1260,84 @@ impl PyWilkeChangDiffusivityResult {
 
 impl From<&WilkeChangDiffusivityResult> for PyWilkeChangDiffusivityResult {
     fn from(r: &WilkeChangDiffusivityResult) -> Self {
+        Self {
+            d: PyQty {
+                magnitude_si: r.d.value,
+                unit: "m**2/s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.hayduk_minhas_diffusivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HaydukMinhasDiffusivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHaydukMinhasDiffusivityResult {
+    /// The binary diffusion coefficient, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub d: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHaydukMinhasDiffusivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HaydukMinhasDiffusivityResult(d={} {})",
+            self.d.magnitude_si, self.d.unit
+        )
+    }
+}
+
+impl From<&HaydukMinhasDiffusivityResult> for PyHaydukMinhasDiffusivityResult {
+    fn from(r: &HaydukMinhasDiffusivityResult) -> Self {
+        Self {
+            d: PyQty {
+                magnitude_si: r.d.value,
+                unit: "m**2/s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.siddiqi_lucas_diffusivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SiddiqiLucasDiffusivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySiddiqiLucasDiffusivityResult {
+    /// The binary diffusion coefficient, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub d: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySiddiqiLucasDiffusivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SiddiqiLucasDiffusivityResult(d={} {})",
+            self.d.magnitude_si, self.d.unit
+        )
+    }
+}
+
+impl From<&SiddiqiLucasDiffusivityResult> for PySiddiqiLucasDiffusivityResult {
+    fn from(r: &SiddiqiLucasDiffusivityResult) -> Self {
         Self {
             d: PyQty {
                 magnitude_si: r.d.value,
@@ -2613,6 +2691,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         MasonSaxenaConductivityResult::CALC_ID => MasonSaxenaConductivityResult::FIELDS.to_vec(),
         TynCalusDiffusivityResult::CALC_ID => TynCalusDiffusivityResult::FIELDS.to_vec(),
         WilkeChangDiffusivityResult::CALC_ID => WilkeChangDiffusivityResult::FIELDS.to_vec(),
+        HaydukMinhasDiffusivityResult::CALC_ID => HaydukMinhasDiffusivityResult::FIELDS.to_vec(),
+        SiddiqiLucasDiffusivityResult::CALC_ID => SiddiqiLucasDiffusivityResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
@@ -2679,6 +2759,8 @@ pub fn calc_ids() -> Vec<String> {
         ChungConductivityResult::CALC_ID.to_string(),
         TynCalusDiffusivityResult::CALC_ID.to_string(),
         WilkeChangDiffusivityResult::CALC_ID.to_string(),
+        HaydukMinhasDiffusivityResult::CALC_ID.to_string(),
+        SiddiqiLucasDiffusivityResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

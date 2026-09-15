@@ -16,16 +16,17 @@ use pyo3::prelude::*;
 use crate::errors::to_pyerr;
 use crate::results::{
     PyAntoineVaporPressureResult, PyChungConductivityResult, PyChungViscosityResult,
-    PyCostaldMolarVolumeResult, PyCriticalPointResult, PyHeatOfVaporizationResult,
-    PyIdealGasCpResult, PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult,
-    PyMolarEnthalpyEntropyResult, PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult,
-    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
-    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
-    PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
-    PyStabilityTestResult, PyTwuKappaResult, PyTynCalusDiffusivityResult, PyVdw1fMixBinaryResult,
-    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
+    PyCostaldMolarVolumeResult, PyCriticalPointResult, PyHaydukMinhasDiffusivityResult,
+    PyHeatOfVaporizationResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
+    PyMasonSaxenaConductivityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
+    PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
+    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
+    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
+    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
+    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyTwuKappaResult,
+    PyTynCalusDiffusivityResult, PyVdw1fMixBinaryResult, PyWilkeChangDiffusivityResult,
+    PyWilkeViscosityResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -526,6 +527,58 @@ pub fn wilke_chang_diffusivity(
         cubic_meters_per_mole(VA),
     )
     .map(|r| PyWilkeChangDiffusivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The liquid binary diffusivity, from the Hayduk-Minhas correlation.
+#[pyfunction]
+#[pyo3(signature = (form, VA, T, eta))]
+#[pyo3(text_signature = "(form, VA, T, eta)")]
+#[allow(non_snake_case)] // `VA` and `T` are the symbols in the published equation
+pub fn hayduk_minhas_diffusivity(
+    py: Python<'_>,
+    form: &str,
+    VA: f64,
+    T: f64,
+    eta: f64,
+) -> PyResult<PyHaydukMinhasDiffusivityResult> {
+    let form: azoth_eos::HaydukMinhasForm = form
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::hayduk_minhas_diffusivity(
+        form,
+        cubic_meters_per_mole(VA),
+        kelvins(T),
+        pascal_seconds(eta),
+    )
+    .map(|r| PyHaydukMinhasDiffusivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The liquid binary diffusivity, from the Siddiqi-Lucas correlation.
+#[pyfunction]
+#[pyo3(signature = (form, VA, VB, T, eta))]
+#[pyo3(text_signature = "(form, VA, VB, T, eta)")]
+#[allow(non_snake_case)] // `VA`, `VB` and `T` are the symbols in the published equation
+pub fn siddiqi_lucas_diffusivity(
+    py: Python<'_>,
+    form: &str,
+    VA: f64,
+    VB: f64,
+    T: f64,
+    eta: f64,
+) -> PyResult<PySiddiqiLucasDiffusivityResult> {
+    let form: azoth_eos::SiddiqiLucasForm = form
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::siddiqi_lucas_diffusivity(
+        form,
+        cubic_meters_per_mole(VA),
+        cubic_meters_per_mole(VB),
+        kelvins(T),
+        pascal_seconds(eta),
+    )
+    .map(|r| PySiddiqiLucasDiffusivityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

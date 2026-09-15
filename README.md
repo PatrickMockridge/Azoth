@@ -134,6 +134,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.costald_molar_volume` | Saturated liquid molar volume from the COSTALD equation |
 | `eos.critical_point` | Mixture critical point — a *model* |
 | `eos.dew_pressure` | Dew-point pressure — a *model* |
+| `eos.hayduk_minhas_diffusivity` | Liquid binary diffusivity from the Hayduk-Minhas correlation |
 | `eos.heat_of_vaporization` | Heat of vaporisation from NeqSim's correlation |
 | `eos.ideal_gas_cp` | Ideal-gas heat capacity from a polynomial |
 | `eos.liquid_heat_capacity` | Liquid heat capacity from NeqSim's polynomial |
@@ -156,6 +157,7 @@ leaves the flow regime unchecked, and the result says so.
 | `eos.rackett_molar_volume` | Saturated liquid molar volume from the Rackett equation |
 | `eos.rk_alpha_ab` | Redlich-Kwong alpha function and reduced attraction parameters |
 | `eos.rk_departure` | Redlich-Kwong fugacity coefficient and departure functions |
+| `eos.siddiqi_lucas_diffusivity` | Liquid binary diffusivity from the Siddiqi-Lucas correlation |
 | `eos.srk_alpha_ab` | Soave-Redlich-Kwong alpha function and reduced attraction parameters |
 | `eos.srk_departure` | Soave-Redlich-Kwong fugacity coefficient and departure functions |
 | `eos.srk_kappa` | Soave-Redlich-Kwong attraction-parameter coefficient |

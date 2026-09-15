@@ -40,6 +40,7 @@ from azoth.core.result import (
     DewPressureResult,
     FlowRegime,
     HaalandResult,
+    HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     IdealGasCpResult,
     KComponent,
@@ -68,6 +69,7 @@ from azoth.core.result import (
     RkAlphaAbResult,
     RkDepartureResult,
     RootStructure,
+    SiddiqiLucasDiffusivityResult,
     SrkAlphaAbResult,
     SrkDepartureResult,
     SrkKappaResult,
@@ -686,6 +688,39 @@ def wilke_chang_diffusivity(phi: float, M: Q, T: Q, eta: Q, VA: Q) -> WilkeChang
         input_to_si(spec, "VA", VA),
     )
     return WilkeChangDiffusivityResult(
+        d=from_si(result.d.magnitude_si, result.d.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hayduk_minhas_diffusivity(form: str, VA: Q, T: Q, eta: Q) -> HaydukMinhasDiffusivityResult:
+    """The liquid binary diffusivity, computed in Rust."""
+    spec = _spec_for("eos.hayduk_minhas_diffusivity")
+    result = _core.hayduk_minhas_diffusivity(
+        form,
+        input_to_si(spec, "VA", VA),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "eta", eta),
+    )
+    return HaydukMinhasDiffusivityResult(
+        d=from_si(result.d.magnitude_si, result.d.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def siddiqi_lucas_diffusivity(
+    form: str, VA: Q, VB: Q, T: Q, eta: Q
+) -> SiddiqiLucasDiffusivityResult:
+    """The liquid binary diffusivity, computed in Rust."""
+    spec = _spec_for("eos.siddiqi_lucas_diffusivity")
+    result = _core.siddiqi_lucas_diffusivity(
+        form,
+        input_to_si(spec, "VA", VA),
+        input_to_si(spec, "VB", VB),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "eta", eta),
+    )
+    return SiddiqiLucasDiffusivityResult(
         d=from_si(result.d.magnitude_si, result.d.unit),
         warnings=_warnings(result.warnings),
     )

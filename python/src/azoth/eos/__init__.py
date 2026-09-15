@@ -75,6 +75,7 @@ from azoth.core.result import (
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DewPressureResult,
+    HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     IdealGasCpResult,
     LiquidHeatCapacityResult,
@@ -97,6 +98,7 @@ from azoth.core.result import (
     RackettMolarVolumeResult,
     RkAlphaAbResult,
     RkDepartureResult,
+    SiddiqiLucasDiffusivityResult,
     SrkAlphaAbResult,
     SrkDepartureResult,
     SrkKappaResult,
@@ -130,6 +132,7 @@ __all__ = [
     "dew_pressure",
     "from_model",
     "from_names",
+    "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
     "ideal_gas_cp",
     "liquid_heat_capacity",
@@ -152,6 +155,7 @@ __all__ = [
     "rackett_molar_volume",
     "rk_alpha_ab",
     "rk_departure",
+    "siddiqi_lucas_diffusivity",
     "srk_alpha_ab",
     "srk_departure",
     "srk_kappa",
@@ -196,6 +200,8 @@ _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
+_HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
+_SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _WILKE_VISCOSITY = "eos.wilke_viscosity"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
@@ -623,6 +629,42 @@ def wilke_chang_diffusivity(phi: float, M: Q, T: Q, eta: Q, VA: Q) -> WilkeChang
     """
     return resolve(_WILKE_CHANG_DIFFUSIVITY)(  # type: ignore[no-any-return]
         phi=phi, M=M, T=T, eta=eta, VA=VA
+    )
+
+
+def hayduk_minhas_diffusivity(form: str, VA: Q, T: Q, eta: Q) -> HaydukMinhasDiffusivityResult:
+    """The binary diffusion coefficient at infinite dilution, from Hayduk-Minhas.
+
+    ``form`` is ``"paraffin"`` (hydrocarbon solvent) or ``"aqueous"``. ``VA`` is
+    the solute molar volume at the normal boiling point and ``eta`` the solvent
+    viscosity; both are clamped to NeqSim's limits before the correlation is
+    applied.
+
+    Raises:
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.hayduk_minhas_diffusivity`.
+    """
+    return resolve(_HAYDUK_MINHAS_DIFFUSIVITY)(  # type: ignore[no-any-return]
+        form=form, VA=VA, T=T, eta=eta
+    )
+
+
+def siddiqi_lucas_diffusivity(
+    form: str, VA: Q, VB: Q, T: Q, eta: Q
+) -> SiddiqiLucasDiffusivityResult:
+    """The binary diffusion coefficient at infinite dilution, from Siddiqi-Lucas.
+
+    ``form`` is ``"aqueous"`` or ``"organic"``. ``VA`` and ``VB`` are the solute
+    and solvent molar volumes and ``eta`` the solvent viscosity.
+
+    Raises:
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.siddiqi_lucas_diffusivity`.
+    """
+    return resolve(_SIDDIQI_LUCAS_DIFFUSIVITY)(  # type: ignore[no-any-return]
+        form=form, VA=VA, VB=VB, T=T, eta=eta
     )
 
 

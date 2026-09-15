@@ -6,6 +6,7 @@
 //!   - specs/calcs/eos/chung_conductivity.toml
 //!   - specs/calcs/eos/chung_viscosity.toml
 //!   - specs/calcs/eos/costald_molar_volume.toml
+//!   - specs/calcs/eos/hayduk_minhas_diffusivity.toml
 //!   - specs/calcs/eos/heat_of_vaporization.toml
 //!   - specs/calcs/eos/ideal_gas_cp.toml
 //!   - specs/calcs/eos/liquid_heat_capacity.toml
@@ -22,6 +23,7 @@
 //!   - specs/calcs/eos/rackett_molar_volume.toml
 //!   - specs/calcs/eos/rk_alpha_ab.toml
 //!   - specs/calcs/eos/rk_departure.toml
+//!   - specs/calcs/eos/siddiqi_lucas_diffusivity.toml
 //!   - specs/calcs/eos/srk_alpha_ab.toml
 //!   - specs/calcs/eos/srk_departure.toml
 //!   - specs/calcs/eos/srk_kappa.toml
@@ -662,6 +664,92 @@ pub static COSTALD_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
     },
     tests: COSTALD_MOLAR_VOLUME_TESTS,
+};
+
+/// Registry entry for `eos.hayduk_minhas_diffusivity`.
+static HAYDUK_MINHAS_DIFFUSIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "An absolute temperature; zero and below are not states.",
+    },
+}];
+
+static HAYDUK_MINHAS_DIFFUSIVITY_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "methanol_in_water_aqueous",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("VA", 4.020326223337516e-05),
+            ("T", 298.15),
+            ("eta", 0.0008915447896200597),
+        ],
+        lists: &[],
+        strings: &[("form", "aqueous")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 1.6252933415200594e-09)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.hayduk_minhas_diffusivity`.
+///
+/// Public and addressable directly, so a calc can hold `&HAYDUK_MINHAS_DIFFUSIVITY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static HAYDUK_MINHAS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.hayduk_minhas_diffusivity",
+    checks: HAYDUK_MINHAS_DIFFUSIVITY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "methanol_in_benzene_paraffin_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("VA", 4.020326223337516e-05),
+            ("T", 298.15),
+            ("eta", 0.0009163064908813372),
+        ],
+        lists: &[],
+        strings: &[("form", "paraffin")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 4.391778089044218e-09)],
+        expected_vectors: &[],
+    },
+    tests: HAYDUK_MINHAS_DIFFUSIVITY_TESTS,
 };
 
 /// Registry entry for `eos.heat_of_vaporization`.
@@ -2729,6 +2817,94 @@ pub static RK_DEPARTURE_SPEC: CalcSpec = CalcSpec {
     tests: RK_DEPARTURE_TESTS,
 };
 
+/// Registry entry for `eos.siddiqi_lucas_diffusivity`.
+static SIDDIQI_LUCAS_DIFFUSIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "An absolute temperature; zero and below are not states.",
+    },
+}];
+
+static SIDDIQI_LUCAS_DIFFUSIVITY_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "methanol_in_water_aqueous",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("VA", 4.020326223337516e-05),
+            ("VB", 1.8033033033033033e-05),
+            ("T", 298.15),
+            ("eta", 0.0008915447896200597),
+        ],
+        lists: &[],
+        strings: &[("form", "aqueous")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 1.3237073569782807e-09)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.siddiqi_lucas_diffusivity`.
+///
+/// Public and addressable directly, so a calc can hold `&SIDDIQI_LUCAS_DIFFUSIVITY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static SIDDIQI_LUCAS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.siddiqi_lucas_diffusivity",
+    checks: SIDDIQI_LUCAS_DIFFUSIVITY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "methanol_in_benzene_organic_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("VA", 4.020326223337516e-05),
+            ("VB", 8.816478555304741e-05),
+            ("T", 298.15),
+            ("eta", 0.0009163064908813372),
+        ],
+        lists: &[],
+        strings: &[("form", "organic")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("d", 1.984475615508378e-09)],
+        expected_vectors: &[],
+    },
+    tests: SIDDIQI_LUCAS_DIFFUSIVITY_TESTS,
+};
+
 /// Registry entry for `eos.srk_alpha_ab`.
 static SRK_ALPHA_AB_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -3699,6 +3875,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &CHUNG_CONDUCTIVITY_SPEC,
     &CHUNG_VISCOSITY_SPEC,
     &COSTALD_MOLAR_VOLUME_SPEC,
+    &HAYDUK_MINHAS_DIFFUSIVITY_SPEC,
     &HEAT_OF_VAPORIZATION_SPEC,
     &IDEAL_GAS_CP_SPEC,
     &LIQUID_HEAT_CAPACITY_SPEC,
@@ -3715,6 +3892,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &RACKETT_MOLAR_VOLUME_SPEC,
     &RK_ALPHA_AB_SPEC,
     &RK_DEPARTURE_SPEC,
+    &SIDDIQI_LUCAS_DIFFUSIVITY_SPEC,
     &SRK_ALPHA_AB_SPEC,
     &SRK_DEPARTURE_SPEC,
     &SRK_KAPPA_SPEC,

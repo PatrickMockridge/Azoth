@@ -1,0 +1,75 @@
+id = "eos.siddiqi_lucas_diffusivity"
+name = "Liquid binary diffusivity from the Siddiqi-Lucas correlation"
+equation = "aqueous: D = 2.98e-7 * eta**-1.026 * VA**-0.5473 * T;  organic: D = 9.89e-8 * eta**-0.907 * VA**-0.45 * VB**0.265 * T,  with VA and VB in cm**3/mol, eta in cP and T in K; eta is floored at 0.01 cP, and D*1e-4 recovers m**2/s."
+latex = '''D_{AB}^0 = 2.98\times10^{-7}\,\frac{\eta_B^{-1.026}\,T}{V_A^{0.5473}}\quad(\text{aqueous}),\qquad 9.89\times10^{-8}\,\frac{\eta_B^{-0.907}\,V_B^{0.265}\,T}{V_A^{0.45}}\quad(\text{organic})'''
+assumptions = ["`form` selects the solvent correlation: `aqueous` for water-rich solvents, `organic` otherwise; NeqSim auto-detects water content when the form is not set, which a scalar calc cannot, so the caller chooses.\n", "`VA` and `VB` are the solute and solvent liquid molar volumes; the caller gets them as `M/rho_normal`, or `Vc` directly (Siddiqi-Lucas's fallback, unlike the other methods' Tyn-Calus estimate).\n", "`eta` is the *solvent* viscosity at `T`, in cP; a caller converts a Pa*s viscosity by multiplying by 1000.\n", "the viscosity is floored at NeqSim's 0.01 cP; the correlation is not applied below it.\n", "the correlation is for a *binary* pair at infinite dilution of the solute in the solvent.\n"]
+references = ["Siddiqi, M. A.; Lucas, K. (1986). \\\"Correlations for prediction of diffusion in liquids.\\\" Can. J. Chem. Eng. 64(5), 839-843. DOI 10.1002/cjce.5450640519."]
+[source]
+standard = "Siddiqi, M. A.; Lucas, K. (1986)"
+edition = "Correlations for prediction of diffusion in liquids. Can. J. Chem. Eng. 64(5), 839-843"
+doi = "10.1002/cjce.5450640519"
+[inputs]
+[inputs.form]
+type = "enum"
+values = ["aqueous", "organic"]
+description = "The solvent correlation: `aqueous` or `organic`.\n"
+[inputs.VA]
+unit = "m**3/mol"
+description = "Solute molar volume at its normal boiling point.\n"
+[inputs.VB]
+unit = "m**3/mol"
+description = "Solvent molar volume at its normal boiling point.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature.\n"
+[inputs.eta]
+unit = "Pa*s"
+description = "Solvent dynamic viscosity at `T`.\n"
+[outputs]
+[outputs.d]
+unit = "m**2/s"
+description = "The binary diffusion coefficient at infinite dilution, the published equation's D.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "methanol in benzene (organic) at 298.15 K: VA = 40.2033 cm**3/mol, VB = 88.1648 cm**3/mol, eta = 0.91631 cP:\n\n  VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol\n  VB = 8.816478555304741e-5 m**3/mol -> 88.1648 cm**3/mol\n  eta = 9.163064908813372e-4 Pa*s -> 0.91631 cP\n  D = 9.89e-8 * 0.91631**-0.907 * 40.2033**-0.45 * 88.1648**0.265 * 298.15 = 1.984475615508378e-5 cm**2/s\n  D = 1.984475615508378e-9 m**2/s\n\nwhich is NeqSim 3.20.0 `SiddiqiLucasMethod`'s value at the same state.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+form = "organic"
+VA = 4.0203262233375156e-5
+VB = 8.816478555304741e-5
+T = 298.15
+eta = 9.163064908813372e-4
+[worked_example.expected]
+d = 1.984475615508378e-9
+[implementations]
+python = "azoth.eos.siddiqi_lucas_diffusivity"
+rust = "azoth_eos::siddiqi_lucas_diffusivity"
+[[tests]]
+id = "methanol_in_benzene_organic_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "methanol_in_water_aqueous"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0 `SiddiqiLucasMethod.calcBinaryDiffusionCoefficient` (aqueous) for methanol in water at 298.15 K:\n\n  d = 1.3237073569782807e-9 m**2/s.\n"
+tolerance = 1e-12
+[tests.inputs]
+form = "aqueous"
+VA = 4.0203262233375156e-5
+VB = 1.8033033033033032e-5
+T = 298.15
+eta = 8.915447896200597e-4
+[tests.expected]
+d = 1.3237073569782807e-9
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
