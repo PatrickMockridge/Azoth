@@ -22,6 +22,8 @@ import neqsim.thermo.system.SystemRKEos;
 import neqsim.thermo.system.SystemPrEosvolcor;
 import neqsim.thermo.system.SystemSrkPenelouxEos;
 import neqsim.thermodynamicoperations.ThermodynamicOperations;
+import neqsim.physicalproperties.methods.gasphysicalproperties.viscosity.ChungViscosityMethod;
+import neqsim.physicalproperties.system.PhysicalProperties;
 
 public class FlashTp {
   /** The cubic `cubic` selects: "pr", "srk" or "rk". */
@@ -135,8 +137,29 @@ public class FlashTp {
     }
   }
 
+  /** The pure-component Chung viscosity, for `eos.chung_viscosity`. */
+  static void chung() {
+    String[] names = {"methane", "propane", "MDEA"};
+    double[] temps = {300.0, 300.0, 400.0};
+    double[] press = {10.0, 9.0, 10.0};
+    System.out.println("Chung pure-component viscosity (V in m**3/mol; NeqSim's molarVolume field is 1e5 * this):");
+    for (int i = 0; i < names.length; i++) {
+      SystemInterface fluid = new SystemPrEos(temps[i], press[i]);
+      fluid.addComponent(names[i], 1.0);
+      fluid.setMixingRule("classic");
+      new ThermodynamicOperations(fluid).TPflash();
+      fluid.initProperties();
+      PhysicalProperties pp = fluid.getPhase(0).getPhysicalProperties();
+      ChungViscosityMethod chung = new ChungViscosityMethod(pp);
+      chung.initChungPureComponentViscosity();
+      System.out.println("  " + names[i] + "  V = " + fluid.getPhase(0).getMolarVolume() * 1e-5
+          + "  mu = " + chung.pureComponentViscosity[0] * 1e-7 + " Pa*s");
+    }
+  }
+
   public static void main(String[] args) {
     volcorr();
+    chung();
     corr();
     antoine();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",

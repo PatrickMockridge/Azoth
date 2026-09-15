@@ -1,0 +1,124 @@
+id = "eos.chung_viscosity"
+name = "Gas viscosity from the Chung correlation"
+equation = "mu_r = 131.3*dipole/sqrt(Vc_cm3*Tc),  Fc = 1 - 0.2756*omega + 0.059035*mu_r**4 + kappa,  E_j = c[j][0] + c[j][1]*omega + c[j][2]*mu_r**4 + c[j][3]*kappa,  T* = 1.2593*T/Tc,  Omega_v = 1.16145*T*^-0.14874 + 0.52487*exp(-0.77320*T*) + 2.16178*exp(-2.43787*T*),  y = Vc/(6*V),  G1 = (1 - 0.5*y)/(1 - y)**3,  G2 = (E0*(1 - exp(-E3*y))/y + E1*G1*exp(E4*y) + E2*G1)/(E0*E3 + E1 + E2),  eta** = E6*y**2*G2*exp(E7 + E8/T* + E9*T**-2),  eta* = sqrt(T*)/Omega_v * (Fc*(1/G2 + E5*y)) + eta**,  mu = eta* * 36.344 * sqrt(M_g*Tc)/Vc_cm3**(2/3)   [microPoise],  with Vc_cm3 = 1e6*Vc[m**3/mol] and M_g = 1000*M[kg/mol]; the coefficient rows c[j] are [6.324,50.412,-51.680,1189.0], [1.210e-3,-1.154e-3,-6.257e-3,0.03728], [5.283,254.209,-168.48,3898.0], [6.623,38.096,-8.464,31.42], [19.745,7.630,-14.354,31.53], [-1.9,-12.537,4.985,-18.15], [24.275,3.450,-11.291,69.35], [0.7972,1.117,0.01235,-4.117], [-0.2382,0.06770,-0.8163,4.025], [0.06863,0.3479,0.5926,-0.727]"
+latex = '''\eta = \eta^{*}\,36.344\,\frac{\sqrt{M\,T_c}}{V_c^{2/3}}\quad[\mu P],\qquad \eta^{*} = \frac{\sqrt{T^{*}}}{\Omega_v}\left[F_c\left(\frac{1}{G_2} + E_5\,y\right)\right] + E_6\,y^{2}\,G_2\,\exp\!\left(E_7 + \frac{E_8}{T^{*}} + \frac{E_9}{T^{*2}}\right)'''
+assumptions = ["the pure-component constants and the fluid molar volume are those of the gas whose viscosity is wanted. NOT CHECKED - they come from the caller.\n", "the dipole moment is in debye and the viscosity correction factor dimensionless, matching how `data/components/components.csv` stores them.\n", "the molar volume is the *molar* volume (m**3/mol), not the mass density; the dense-gas correction `y = Vc/(6*V)` needs it.\n", "the correlation is a *gas* correlation; the dense-gas term keeps it usable into the compressed region but not for a liquid.\n"]
+references = ["Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988). \\\"Generalized multiparameter correlation for nonpolar and polar fluid transport properties.\\\" Ind. Eng. Chem. Res. 27(4), 671-679. DOI 10.1021/ie00076a024."]
+[source]
+standard = "Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988)"
+edition = "Generalized multiparameter correlation for nonpolar and polar fluid transport properties. Ind. Eng. Chem. Res. 27(4), 671-679"
+doi = "10.1021/ie00076a024"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "Acentric factor of the pure component.\n"
+[inputs.Tc]
+unit = "K"
+description = "Critical temperature of the pure component.\n"
+[inputs.Vc]
+unit = "m**3/mol"
+description = "Critical volume of the pure component.\n"
+[inputs.M]
+unit = "kg/mol"
+description = "Molar mass of the pure component.\n"
+[inputs.dipole]
+unit = "dimensionless"
+description = "Dipole moment in debye; zero for a nonpolar component.\n"
+[inputs.kappa]
+unit = "dimensionless"
+description = "The viscosity correction factor, zero for most components.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature.\n"
+[inputs.V]
+unit = "m**3/mol"
+description = "Molar volume of the gas at `T`, feeding the dense-gas correction.\n"
+[outputs]
+[outputs.mu]
+unit = "Pa*s"
+description = "The gas dynamic viscosity.\n"
+[[valid_range]]
+quantity = "Tc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`Tc` is the divisor in `T* = 1.2593*T/Tc` and in `sqrt(Vc*Tc)`; zero or negative is not a critical temperature.\n"
+[[valid_range]]
+quantity = "Vc"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A critical volume is positive; a non-positive value is not a substance.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "V"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`V` is the divisor in `y = Vc/(6*V)`; a molar volume must be positive.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "methane, omega = 0.0115, Tc = 190.56 K, Vc = 9.9e-5 m**3/mol, M = 0.016043 kg/mol, dipole = 0 debye, kappa = 0, at T = 300 K and V = 2.4409707154781444e-3 m**3/mol (the PR-EoS molar volume at 300 K, 10 bar):\n\n  Vc_cm3 = 9.9e-5 * 1e6 = 99 cm**3/mol;  M_g = 0.016043 * 1000 = 16.043 g/mol\n  mu_r = 131.3 * 0 / sqrt(99 * 190.56) = 0\n  Fc = 1 - 0.2756*0.0115 = 0.9968306\n  T* = 1.2593 * 300 / 190.56 = 1.982525188916877\n  Omega_v = 1.16145*T*^-0.14874 + 0.52487*exp(-0.77320*T*) + 2.16178*exp(-2.43787*T*) = 1.179576645518974\n  y = 9.9e-5 / (6 * 2.4409707154781444e-3) = 0.006759605879486322\n  G1 = (1 - 0.5*y)/(1 - y)**3 = 1.017106813023400\n  G2 = (E0*(1 - exp(-E3*y))/y + E1*G1*exp(E4*y) + E2*G1)/(E0*E3 + E1 + E2) = 0.982363336860928\n  eta** = E6*y**2*G2*exp(E7 + E8/T* + E9/T*^2) = 0.002217161026721926\n  eta* = sqrt(T*)/Omega_v * (Fc*(1/G2 + E5*y)) + eta** = 1.197021703056253\n  mu = 1.197021703056253 * 36.344 * sqrt(16.043*190.56) / 99**(2/3) = 112.400941543013303 microPoise\n  mu = 1.124009415430133e-05 Pa*s\n\nwhich is NeqSim 3.20.0 `ChungViscosityMethod`'s value at the same state.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.0115
+Tc = 190.56
+Vc = 9.9e-5
+M = 0.016043
+dipole = 0.0
+kappa = 0.0
+T = 300.0
+V = 0.0024409707154781444
+[worked_example.expected]
+mu = 1.124009415430133e-05
+[implementations]
+python = "azoth.eos.chung_viscosity"
+rust = "azoth_eos::chung_viscosity"
+[[tests]]
+id = "methane_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "mdea_exercises_dipole_and_correction"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0 `ChungViscosityMethod.initChungPureComponentViscosity` for MDEA at T = 400 K, V = 1.267668796335155e-4 m**3/mol (its PR-EoS molar volume at 10 bar):\n\n  mu = 1.60360025064361329e-04 Pa*s.\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 1.242
+Tc = 677.0
+Vc = 9.9e-5
+M = 0.1191632
+dipole = 1.7
+kappa = 0.215
+T = 400.0
+V = 0.0001267668796335155
+[tests.expected]
+mu = 1.6036002506436133e-04
+[[tests]]
+id = "propane_matches_neqsim"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0 `ChungViscosityMethod.initChungPureComponentViscosity` for propane at T = 300 K, V = 2.31743119817252e-3 m**3/mol (its PR-EoS molar volume at 9 bar):\n\n  mu = 8.491510723076993e-06 Pa*s.\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.1523
+Tc = 369.83
+Vc = 0.000203
+M = 0.044097
+dipole = 0.0
+kappa = 0.0
+T = 300.0
+V = 0.00231743119817252
+[tests.expected]
+mu = 8.491510723076993e-06
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

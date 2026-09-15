@@ -23,6 +23,7 @@ from azoth.core.result import RootStructure
 from azoth.core.warnings import Warning
 
 __all__ = [
+    "ChungViscosityBatch",
     "CostaldMolarVolumeBatch",
     "HeatOfVaporizationBatch",
     "IdealGasCpBatch",
@@ -47,6 +48,7 @@ __all__ = [
     "SrkZFactorBatch",
     "TwuKappaBatch",
     "Vdw1fMixBinaryBatch",
+    "chung_viscosity",
     "costald_molar_volume",
     "heat_of_vaporization",
     "ideal_gas_cp",
@@ -79,6 +81,7 @@ _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
+_CHUNG_VISCOSITY = "eos.chung_viscosity"
 _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
 _RACKETT_MOLAR_VOLUME = "eos.rackett_molar_volume"
@@ -569,6 +572,51 @@ def srk_peneloux_shift(
             "Pc": sequence(Pc, "Pc"),
         },
         _build_srk_peneloux_shift,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class ChungViscosityBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.chung_viscosity`."""
+
+    #: Gas dynamic viscosity per element, in Pa*s.
+    mu: array[float]
+
+
+def _build_chung_viscosity(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> ChungViscosityBatch:
+    return ChungViscosityBatch(warnings=warnings, units=units, mu=columns["mu"])  # type: ignore[arg-type]
+
+
+def chung_viscosity(
+    *,
+    omega: Sequence[float],
+    Tc: Sequence[float],
+    Vc: Sequence[float],
+    M: Sequence[float],
+    dipole: Sequence[float],
+    kappa: Sequence[float],
+    T: Sequence[float],
+    V: Sequence[float],
+) -> ChungViscosityBatch:
+    """The gas dynamic viscosity, over arrays."""
+    result: ChungViscosityBatch = run(
+        _CHUNG_VISCOSITY,
+        {
+            "omega": sequence(omega, "omega"),
+            "Tc": sequence(Tc, "Tc"),
+            "Vc": sequence(Vc, "Vc"),
+            "M": sequence(M, "M"),
+            "dipole": sequence(dipole, "dipole"),
+            "kappa": sequence(kappa, "kappa"),
+            "T": sequence(T, "T"),
+            "V": sequence(V, "V"),
+        },
+        _build_chung_viscosity,
     )
     return result
 

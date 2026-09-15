@@ -29,6 +29,7 @@ from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
     ChokedFlowAreaResult,
+    ChungViscosityResult,
     ColebrookResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
@@ -548,6 +549,27 @@ def costald_molar_volume(
     )
     return CostaldMolarVolumeResult(
         v=from_si(result.v.magnitude_si, result.v.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def chung_viscosity(
+    omega: float, Tc: Q, Vc: Q, M: Q, dipole: float, kappa: float, T: Q, V: Q
+) -> ChungViscosityResult:
+    """The gas dynamic viscosity, computed in Rust."""
+    spec = _spec_for("eos.chung_viscosity")
+    result = _core.chung_viscosity(
+        omega,
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "Vc", Vc),
+        input_to_si(spec, "M", M),
+        dipole,
+        kappa,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "V", V),
+    )
+    return ChungViscosityResult(
+        mu=from_si(result.mu.magnitude_si, result.mu.unit),
         warnings=_warnings(result.warnings),
     )
 

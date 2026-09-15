@@ -1,0 +1,24 @@
+{
+  "id": "methane_chung_viscosity_against_neqsim",
+  "calc": "eos.chung_viscosity",
+  "source": {
+    "attribution": "NeqSim 3.20.0, `ChungViscosityMethod.initChungPureComponentViscosity` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "verification": "verified",
+    "notes": "NeqSim's pure-component Chung viscosity for methane at 300 K, 10 bar. The molar-volume input is NeqSim's PR-EoS molar volume, recovered from its internal `molarVolume` field by the `1e5` the driver prints; the `1e-7` recovers `Pa*s` from NeqSim's microPoise output."
+  },
+  "derivation": "The driver ran `initChungPureComponentViscosity()` for methane at 300 K, 10 bar and printed `mu = 1.1240094154301327E-5 Pa*s` at `V = 0.0024409707154781444 m**3/mol`.\n\nazoth's `eos.chung_viscosity` reproduces it exactly.",
+  "inputs": {
+    "omega": 0.0115,
+    "Tc": 190.56,
+    "Vc": 9.9e-5,
+    "M": 0.016043,
+    "dipole": 0.0,
+    "kappa": 0.0,
+    "T": 300.0,
+    "V": 0.0024409707154781444
+  },
+  "expected": {
+    "mu": 1.1240094154301327e-5
+  },
+  "tolerance": 1e-12
+}

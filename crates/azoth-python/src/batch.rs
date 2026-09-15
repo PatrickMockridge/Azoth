@@ -855,6 +855,38 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "v", "m**3/mol", v);
         }
 
+        "eos.chung_viscosity" => {
+            let (omega, tc, vc, m, dipole, kappa, t, v) = (
+                take(&inputs, "omega")?,
+                take(&inputs, "Tc")?,
+                take(&inputs, "Vc")?,
+                take(&inputs, "M")?,
+                take(&inputs, "dipole")?,
+                take(&inputs, "kappa")?,
+                take(&inputs, "T")?,
+                take(&inputs, "V")?,
+            );
+            let mut mu = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::chung_viscosity(
+                        omega[i],
+                        kelvins(tc[i]),
+                        cubic_meters_per_mole(vc[i]),
+                        kilograms_per_mole(m[i]),
+                        dipole[i],
+                        kappa[i],
+                        kelvins(t[i]),
+                        cubic_meters_per_mole(v[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                mu.push(r.mu.value);
+            }
+            push_values(&mut columns, "mu", "Pa*s", mu);
+        }
+
         "eos.rackett_molar_volume" => {
             let (omega, tc, pc, t) = (
                 take(&inputs, "omega")?,

@@ -6,7 +6,8 @@
 //! `crates/azoth-core/src/result.rs` for why the duplication is deliberate.
 
 use azoth_core::units::{
-    MassDensity, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure, ThermodynamicTemperature,
+    DynamicViscosity, MassDensity, MolarEnergy, MolarHeatCapacity, MolarVolume, Pressure,
+    ThermodynamicTemperature,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -859,6 +860,24 @@ pub struct CostaldMolarVolumeResult {
 impl CalcResult for CostaldMolarVolumeResult {
     const CALC_ID: &'static str = "eos.costald_molar_volume";
     const FIELDS: &'static [&'static str] = &["v", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.chung_viscosity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChungViscosityResult {
+    /// The gas dynamic viscosity.
+    pub mu: DynamicViscosity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ChungViscosityResult {
+    const CALC_ID: &'static str = "eos.chung_viscosity";
+    const FIELDS: &'static [&'static str] = &["mu", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

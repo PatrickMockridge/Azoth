@@ -15,15 +15,15 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyAntoineVaporPressureResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
-    PyHeatOfVaporizationResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
-    PyMolarEnthalpyEntropyResult, PyPhFlashResult, PyPhaseBoundaryResult, PyPr78KappaResult,
-    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult, PyRachfordRiceBinaryResult,
-    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
-    PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
-    PyStabilityTestResult, PyTwuKappaResult, PyVdw1fMixBinaryResult,
+    PyAntoineVaporPressureResult, PyChungViscosityResult, PyCostaldMolarVolumeResult,
+    PyCriticalPointResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
+    PyLiquidHeatCapacityResult, PyMolarEnthalpyEntropyResult, PyPhFlashResult,
+    PyPhaseBoundaryResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult,
+    PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult,
+    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPureSaturationResult,
+    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
+    PySrkZFactorResult, PyStabilityTestResult, PyTwuKappaResult, PyVdw1fMixBinaryResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -416,6 +416,37 @@ pub fn costald_molar_volume(
         kelvins(T),
     )
     .map(|r| PyCostaldMolarVolumeResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The gas dynamic viscosity, from the Chung correlation.
+#[pyfunction]
+#[pyo3(signature = (omega, Tc, Vc, M, dipole, kappa, T, V))]
+#[pyo3(text_signature = "(omega, Tc, Vc, M, dipole, kappa, T, V)")]
+#[allow(non_snake_case)] // `Tc`, `Vc`, `M`, `T` and `V` are the symbols in the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn chung_viscosity(
+    py: Python<'_>,
+    omega: f64,
+    Tc: f64,
+    Vc: f64,
+    M: f64,
+    dipole: f64,
+    kappa: f64,
+    T: f64,
+    V: f64,
+) -> PyResult<PyChungViscosityResult> {
+    azoth_eos::chung_viscosity(
+        omega,
+        kelvins(Tc),
+        cubic_meters_per_mole(Vc),
+        kilograms_per_mole(M),
+        dipole,
+        kappa,
+        kelvins(T),
+        cubic_meters_per_mole(V),
+    )
+    .map(|r| PyChungViscosityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

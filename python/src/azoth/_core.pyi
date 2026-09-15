@@ -127,6 +127,11 @@ class BubblePressureResult:
     warnings: list[Warning]
 
 @final
+class ChungViscosityResult:
+    mu: Qty
+    warnings: list[Warning]
+
+@final
 class CostaldMolarVolumeResult:
     v: Qty
     warnings: list[Warning]
@@ -459,6 +464,16 @@ def bubble_pressure(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> BubblePressureResult: ...
+def chung_viscosity(
+    omega: float,
+    Tc: float,
+    Vc: float,
+    M: float,
+    dipole: float,
+    kappa: float,
+    T: float,
+    V: float,
+) -> ChungViscosityResult: ...
 def costald_molar_volume(
     omega: float,
     Tc: float,

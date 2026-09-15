@@ -68,6 +68,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
+    ChungViscosityResult,
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DewPressureResult,
@@ -114,6 +115,7 @@ __all__ = [
     "antoine_vapor_pressure",
     "available_components",
     "bubble_pressure",
+    "chung_viscosity",
     "component",
     "costald_molar_volume",
     "critical_point",
@@ -162,6 +164,7 @@ _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
+_CHUNG_VISCOSITY = "eos.chung_viscosity"
 _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
@@ -526,6 +529,25 @@ def costald_molar_volume(
     """
     return resolve(_COSTALD_MOLAR_VOLUME)(  # type: ignore[no-any-return]
         omega=omega, Tc=Tc, Vc=Vc, M=M, rho_normal=rho_normal, T=T
+    )
+
+
+def chung_viscosity(
+    omega: float, Tc: Q, Vc: Q, M: Q, dipole: float, kappa: float, T: Q, V: Q
+) -> ChungViscosityResult:
+    """The gas dynamic viscosity of a pure component, from the Chung correlation.
+
+    ``dipole`` is in debye and ``kappa`` the dimensionless viscosity correction
+    factor; ``V`` is the gas's molar volume, which the dense-gas correction
+    ``y = Vc/(6*V)`` consumes.
+
+    Raises:
+        OutOfRangeError: if ``Tc``, ``Vc``, ``T`` or ``V`` is not positive.
+
+    See :func:`azoth.eos.reference.chung_viscosity`.
+    """
+    return resolve(_CHUNG_VISCOSITY)(  # type: ignore[no-any-return]
+        omega=omega, Tc=Tc, Vc=Vc, M=M, dipole=dipole, kappa=kappa, T=T, V=V
     )
 
 

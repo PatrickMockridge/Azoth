@@ -129,6 +129,7 @@ leaves the flow regime unchecked, and the result says so.
 |---|---|
 | `eos.antoine_vapor_pressure` | Antoine vapour pressure from NeqSim's correlation |
 | `eos.bubble_pressure` | Bubble-point pressure — a *model* |
+| `eos.chung_viscosity` | Gas viscosity from the Chung correlation |
 | `eos.costald_molar_volume` | Saturated liquid molar volume from the COSTALD equation |
 | `eos.critical_point` | Mixture critical point — a *model* |
 | `eos.dew_pressure` | Dew-point pressure — a *model* |

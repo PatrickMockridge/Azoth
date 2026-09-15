@@ -36,6 +36,7 @@ pub mod alpha_term;
 pub mod antoine_vapor_pressure;
 pub mod bubble_pressure;
 pub mod card;
+pub mod chung_viscosity;
 pub mod costald_molar_volume;
 pub mod critical_point;
 pub mod cubic;
@@ -80,6 +81,7 @@ pub mod vdw1f_mix_binary;
 pub use alpha_term::Alpha;
 pub use antoine_vapor_pressure::{AntoineForm, antoine_vapor_pressure, form_from_type};
 pub use bubble_pressure::bubble_pressure;
+pub use chung_viscosity::chung_viscosity;
 pub use costald_molar_volume::costald_molar_volume;
 pub use critical_point::critical_point;
 pub use cubic::Cubic;
@@ -106,10 +108,10 @@ pub use pure_saturation::pure_saturation;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
-    AntoineVaporPressureResult, BubblePressureResult, CostaldMolarVolumeResult,
-    CriticalPointResult, DewPressureResult, HeatOfVaporizationResult, IdealGasCpResult,
-    LiquidHeatCapacityResult, MolarEnthalpyEntropyResult, Phase, Pr78KappaResult, PrAlphaAbResult,
-    PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    AntoineVaporPressureResult, BubblePressureResult, ChungViscosityResult,
+    CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, HeatOfVaporizationResult,
+    IdealGasCpResult, LiquidHeatCapacityResult, MolarEnthalpyEntropyResult, Phase, Pr78KappaResult,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
     PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PtFlashResult, PureSaturationResult,
     RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
     RootStructure, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult,
