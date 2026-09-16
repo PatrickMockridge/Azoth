@@ -79,6 +79,7 @@ Four sections, and the difference between them is the point:
 - [`eos.heat_of_vaporization`](./eos/heat_of_vaporization.md)
 - [`eos.ideal_gas_cp`](./eos/ideal_gas_cp.md)
 - [`eos.liquid_heat_capacity`](./eos/liquid_heat_capacity.md)
+- [`eos.matcop5_prumr_alpha`](./eos/matcop5_prumr_alpha.md)
 - [`eos.matcop_alpha`](./eos/matcop_alpha.md)
 - [`eos.matcop_pr_alpha`](./eos/matcop_pr_alpha.md)
 - [`eos.matcop_prumr_alpha`](./eos/matcop_prumr_alpha.md)

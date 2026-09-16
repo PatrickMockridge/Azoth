@@ -526,6 +526,16 @@ class ThermalConductivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class Matcop5PrumrAlphaResult(_HasWarnings):
+    """Result of ``eos.matcop5_prumr_alpha``."""
+
+    #: The temperature-dependent alpha function. Dimensionless.
+    alpha: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class MatcopAlphaResult(_HasWarnings):
     """Result of ``eos.matcop_alpha``."""
 

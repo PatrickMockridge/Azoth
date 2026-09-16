@@ -232,6 +232,11 @@ class MasonSaxenaConductivityResult:
     warnings: list[Warning]
 
 @final
+class Matcop5PrumrAlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class MatcopAlphaResult:
     alpha: float
     warnings: list[Warning]
@@ -854,6 +859,15 @@ def mason_saxena_conductivity(
     T: float,
     z: list[float],
 ) -> MasonSaxenaConductivityResult: ...
+def matcop5_prumr_alpha(
+    omega: float,
+    mc1: float,
+    mc2: float,
+    mc3: float,
+    mc4: float,
+    mc5: float,
+    Tr: float,
+) -> Matcop5PrumrAlphaResult: ...
 def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaResult: ...
 def matcop_pr_alpha(
     omega: float,

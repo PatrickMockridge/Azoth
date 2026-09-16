@@ -515,6 +515,30 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "alpha", "dimensionless", alpha);
         }
 
+        "eos.matcop5_prumr_alpha" => {
+            let (omega, mc1, mc2, mc3, mc4, mc5, tr) = (
+                take(&inputs, "omega")?,
+                take(&inputs, "mc1")?,
+                take(&inputs, "mc2")?,
+                take(&inputs, "mc3")?,
+                take(&inputs, "mc4")?,
+                take(&inputs, "mc5")?,
+                take(&inputs, "Tr")?,
+            );
+            let mut alpha = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::matcop5_prumr_alpha(
+                        omega[i], mc1[i], mc2[i], mc3[i], mc4[i], mc5[i], tr[i],
+                    ),
+                    &mut warnings,
+                )?;
+                alpha.push(r.alpha);
+            }
+            push_values(&mut columns, "alpha", "dimensionless", alpha);
+        }
+
         "eos.mollerup_alpha" => {
             let (p1, p2, p3, tr) = (
                 take(&inputs, "p1")?,

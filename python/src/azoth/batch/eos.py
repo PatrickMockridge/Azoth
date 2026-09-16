@@ -30,6 +30,7 @@ __all__ = [
     "HeatOfVaporizationBatch",
     "IdealGasCpBatch",
     "LiquidHeatCapacityBatch",
+    "Matcop5PrumrAlphaBatch",
     "MatcopAlphaBatch",
     "MatcopPrAlphaBatch",
     "MatcopPrumrAlphaBatch",
@@ -69,6 +70,7 @@ __all__ = [
     "heat_of_vaporization",
     "ideal_gas_cp",
     "liquid_heat_capacity",
+    "matcop5_prumr_alpha",
     "matcop_alpha",
     "matcop_pr_alpha",
     "matcop_prumr_alpha",
@@ -104,6 +106,7 @@ __all__ = [
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
+_MATCOP5_PRUMR_ALPHA = "eos.matcop5_prumr_alpha"
 _MATCOP_ALPHA = "eos.matcop_alpha"
 _MATCOP_PR_ALPHA = "eos.matcop_pr_alpha"
 _MATCOP_PRUMR_ALPHA = "eos.matcop_prumr_alpha"
@@ -287,6 +290,49 @@ def matcop_prumr_alpha(
             "Tr": sequence(Tr, "Tr"),
         },
         _build_matcop_prumr,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class Matcop5PrumrAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.matcop5_prumr_alpha`."""
+
+    #: The five-parameter Mathias-Copeman alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_matcop5_prumr(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> Matcop5PrumrAlphaBatch:
+    return Matcop5PrumrAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def matcop5_prumr_alpha(
+    *,
+    omega: Sequence[float],
+    mc1: Sequence[float],
+    mc2: Sequence[float],
+    mc3: Sequence[float],
+    mc4: Sequence[float],
+    mc5: Sequence[float],
+    Tr: Sequence[float],
+) -> Matcop5PrumrAlphaBatch:
+    """The five-parameter Mathias-Copeman alpha function, over arrays."""
+    result: Matcop5PrumrAlphaBatch = run(
+        _MATCOP5_PRUMR_ALPHA,
+        {
+            "omega": sequence(omega, "omega"),
+            "mc1": sequence(mc1, "mc1"),
+            "mc2": sequence(mc2, "mc2"),
+            "mc3": sequence(mc3, "mc3"),
+            "mc4": sequence(mc4, "mc4"),
+            "mc5": sequence(mc5, "mc5"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_matcop5_prumr,
     )
     return result
 

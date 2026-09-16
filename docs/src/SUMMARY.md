@@ -24,6 +24,7 @@
   - [Heat of vaporisation from NeqSim's correlation](./eos/heat_of_vaporization.md)
   - [Ideal-gas heat capacity from a polynomial](./eos/ideal_gas_cp.md)
   - [Liquid heat capacity from NeqSim's polynomial](./eos/liquid_heat_capacity.md)
+  - [Five-parameter Mathias-Copeman alpha function](./eos/matcop5_prumr_alpha.md)
   - [Mathias-Copeman alpha function](./eos/matcop_alpha.md)
   - [Mathias-Copeman alpha function with a Peng-Robinson supercritical fallback](./eos/matcop_pr_alpha.md)
   - [Mathias-Copeman alpha function with the UMR-PR fallback](./eos/matcop_prumr_alpha.md)

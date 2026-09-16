@@ -83,6 +83,7 @@ from azoth.core.result import (
     IdealGasCpResult,
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult,
     MatcopAlphaResult,
     MatcopPrAlphaResult,
     MatcopPrumrAlphaResult,
@@ -220,6 +221,7 @@ _HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
 _ANTOINE_VAPOR_PRESSURE = "eos.antoine_vapor_pressure"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _MASON_SAXENA_CONDUCTIVITY = "eos.mason_saxena_conductivity"
+_MATCOP5_PRUMR_ALPHA = "eos.matcop5_prumr_alpha"
 _MATCOP_ALPHA = "eos.matcop_alpha"
 _MATCOP_PR_ALPHA = "eos.matcop_pr_alpha"
 _MATCOP_PRUMR_ALPHA = "eos.matcop_prumr_alpha"
@@ -336,6 +338,27 @@ def matcop_prumr_alpha(
     See :func:`azoth.eos.reference.matcop_prumr_alpha`.
     """
     return resolve(_MATCOP_PRUMR_ALPHA)(omega=omega, mc1=mc1, mc2=mc2, mc3=mc3, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def matcop5_prumr_alpha(
+    omega: float,
+    mc1: float,
+    mc2: float,
+    mc3: float,
+    mc4: float,
+    mc5: float,
+    Tr: float,
+) -> Matcop5PrumrAlphaResult:
+    """The five-parameter Mathias-Copeman alpha function for a pure component.
+
+    ``mc1`` .. ``mc5`` are the fitted Mathias-Copeman coefficients; ``omega`` the acentric
+    factor, used only for the fallback; ``Tr`` the reduced temperature.
+
+    See :func:`azoth.eos.reference.matcop5_prumr_alpha`.
+    """
+    return resolve(_MATCOP5_PRUMR_ALPHA)(  # type: ignore[no-any-return]
+        omega=omega, mc1=mc1, mc2=mc2, mc3=mc3, mc4=mc4, mc5=mc5, Tr=Tr
+    )
 
 
 def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult:

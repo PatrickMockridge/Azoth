@@ -21,20 +21,21 @@ use azoth_eos::results::{
     ChungConductivityResult, ChungViscosityResult, Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, DewTemperatureResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
-    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MatcopAlphaResult,
-    MatcopPrAlphaResult, MatcopPrumrAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, PhFlashResult, Pr78KappaResult,
-    PrAlphaAbResult, PrDaneshAlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
-    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
-    PuFlashResult, PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
-    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
+    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult,
+    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDepartureResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
+    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
+    SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
+    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -602,6 +603,39 @@ impl PyMatcopPrumrAlphaResult {
 
 impl From<&MatcopPrumrAlphaResult> for PyMatcopPrumrAlphaResult {
     fn from(r: &MatcopPrumrAlphaResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.matcop5_prumr_alpha`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "Matcop5PrumrAlphaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMatcop5PrumrAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMatcop5PrumrAlphaResult {
+    fn __repr__(&self) -> String {
+        format!("Matcop5PrumrAlphaResult(alpha={})", self.alpha)
+    }
+}
+
+impl From<&Matcop5PrumrAlphaResult> for PyMatcop5PrumrAlphaResult {
+    fn from(r: &Matcop5PrumrAlphaResult) -> Self {
         Self {
             alpha: r.alpha,
             warnings: transport(&r.warnings),
@@ -3869,6 +3903,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChokedFlowAreaResult::CALC_ID => ChokedFlowAreaResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
+        Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),
         MatcopPrAlphaResult::CALC_ID => MatcopPrAlphaResult::FIELDS.to_vec(),
         MatcopPrumrAlphaResult::CALC_ID => MatcopPrumrAlphaResult::FIELDS.to_vec(),
@@ -3972,6 +4007,7 @@ pub fn calc_ids() -> Vec<String> {
         ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
         PrKappaResult::CALC_ID.to_string(),
+        Matcop5PrumrAlphaResult::CALC_ID.to_string(),
         MatcopAlphaResult::CALC_ID.to_string(),
         MatcopPrAlphaResult::CALC_ID.to_string(),
         MatcopPrumrAlphaResult::CALC_ID.to_string(),

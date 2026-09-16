@@ -51,6 +51,7 @@ from azoth.core.result import (
     KFactorsResult,
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult,
     MatcopAlphaResult,
     MatcopPrAlphaResult,
     MatcopPrumrAlphaResult,
@@ -263,6 +264,14 @@ def matcop_prumr_alpha(
     """The Mathias-Copeman alpha with the UMR-PR fallback, computed in Rust."""
     result = _core.matcop_prumr_alpha(omega, mc1, mc2, mc3, Tr)
     return MatcopPrumrAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
+
+
+def matcop5_prumr_alpha(
+    omega: float, mc1: float, mc2: float, mc3: float, mc4: float, mc5: float, Tr: float
+) -> Matcop5PrumrAlphaResult:
+    """The five-parameter Mathias-Copeman alpha function, computed in Rust."""
+    result = _core.matcop5_prumr_alpha(omega, mc1, mc2, mc3, mc4, mc5, Tr)
+    return Matcop5PrumrAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult:
