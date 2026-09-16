@@ -100,6 +100,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "azoth-process"
+version = "0.1.0"
+dependencies = [
+ "azoth-core",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "azoth-python"
 version = "0.1.0"
 dependencies = [

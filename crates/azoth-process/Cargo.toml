@@ -1,0 +1,16 @@
+[package]
+name = "azoth-process"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Unit operations and flowsheets: the process layer on typed, directional channels"
+
+[dependencies]
+azoth-core.workspace = true
+serde.workspace = true
+toml.workspace = true
+
+[lints]
+workspace = true

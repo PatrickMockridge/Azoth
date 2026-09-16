@@ -10,6 +10,86 @@
 /// from it, so a different order permutes all of them at once.
 pub const SLOTS: [&str; 7] = ["L", "M", "T", "I", "Th", "N", "J"];
 
+/// Every named dimension a channel field may declare, in the vocabulary's own
+/// words. A dimension id is the canonical name for one exponent tuple; two
+/// fields are compatible exactly when their dimensions' tuples are equal.
+pub const DIMENSION_IDS: &[&str] = &[
+    "dimensionless",
+    "length",
+    "area",
+    "volume_rate",
+    "mass_rate",
+    "molar_flow",
+    "mass_density",
+    "velocity",
+    "pressure",
+    "dynamic_viscosity",
+    "diffusion_coefficient",
+    "thermodynamic_temperature",
+    "power",
+    "specific_heat_capacity",
+    "thermal_conductivity",
+    "heat_transfer",
+    "molar_mass",
+    "molar_volume",
+    "molar_energy",
+    "molar_heat_capacity",
+    "molar_heat_capacity_coefficient_2",
+    "molar_heat_capacity_coefficient_3",
+    "molar_heat_capacity_coefficient_4",
+    "molar_heat_capacity_coefficient_5",
+];
+
+/// Each dimension id, as exponents in [`SLOTS`] order.
+pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
+    ("dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("length", [1, 0, 0, 0, 0, 0, 0]),
+    ("area", [2, 0, 0, 0, 0, 0, 0]),
+    ("volume_rate", [3, 0, -1, 0, 0, 0, 0]),
+    ("mass_rate", [0, 1, -1, 0, 0, 0, 0]),
+    ("molar_flow", [0, 0, -1, 0, 0, 1, 0]),
+    ("mass_density", [-3, 1, 0, 0, 0, 0, 0]),
+    ("velocity", [1, 0, -1, 0, 0, 0, 0]),
+    ("pressure", [-1, 1, -2, 0, 0, 0, 0]),
+    ("dynamic_viscosity", [-1, 1, -1, 0, 0, 0, 0]),
+    ("diffusion_coefficient", [2, 0, -1, 0, 0, 0, 0]),
+    ("thermodynamic_temperature", [0, 0, 0, 0, 1, 0, 0]),
+    ("power", [2, 1, -3, 0, 0, 0, 0]),
+    ("specific_heat_capacity", [2, 0, -2, 0, -1, 0, 0]),
+    ("thermal_conductivity", [1, 1, -3, 0, -1, 0, 0]),
+    ("heat_transfer", [0, 1, -3, 0, -1, 0, 0]),
+    ("molar_mass", [0, 1, 0, 0, 0, -1, 0]),
+    ("molar_volume", [3, 0, 0, 0, 0, -1, 0]),
+    ("molar_energy", [2, 1, -2, 0, 0, -1, 0]),
+    ("molar_heat_capacity", [2, 1, -2, 0, -1, -1, 0]),
+    (
+        "molar_heat_capacity_coefficient_2",
+        [2, 1, -2, 0, -2, -1, 0],
+    ),
+    (
+        "molar_heat_capacity_coefficient_3",
+        [2, 1, -2, 0, -3, -1, 0],
+    ),
+    (
+        "molar_heat_capacity_coefficient_4",
+        [2, 1, -2, 0, -4, -1, 0],
+    ),
+    (
+        "molar_heat_capacity_coefficient_5",
+        [2, 1, -2, 0, -5, -1, 0],
+    ),
+];
+
+/// The exponents of one named dimension, or `None` if the id is not in the
+/// vocabulary.
+#[must_use]
+pub fn dimension_exponents(id: &str) -> Option<[i8; 7]> {
+    DIMENSION_EXPONENTS
+        .iter()
+        .find(|(n, _)| *n == id)
+        .map(|(_, d)| *d)
+}
+
 /// Every canonical unit string a spec may declare.
 ///
 /// A name here is a claim that this crate has a correct conversion path for

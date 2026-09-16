@@ -265,6 +265,36 @@ def emit_rust(table: dict[str, Any]) -> str:
         "/// from it, so a different order permutes all of them at once.",
         f"pub const SLOTS: [&str; {len(slots)}] = [{', '.join(json.dumps(s) for s in slots)}];",
         "",
+        "/// Every named dimension a channel field may declare, in the vocabulary's own",
+        "/// words. A dimension id is the canonical name for one exponent tuple; two",
+        "/// fields are compatible exactly when their dimensions' tuples are equal.",
+        "pub const DIMENSION_IDS: &[&str] = &[",
+    ]
+    for dimension in table["dimensions"]:
+        out.append(f"    {json.dumps(dimension['id'])},")
+    out += [
+        "];",
+        "",
+        "/// Each dimension id, as exponents in [`SLOTS`] order.",
+        f"pub const DIMENSION_EXPONENTS: &[(&str, [i8; {len(slots)}])] = &[",
+    ]
+    for dimension in table["dimensions"]:
+        out.append(
+            f"    ({json.dumps(dimension['id'])}, {rust_i8_array(dimension['exponents'])}),"
+        )
+    out += [
+        "];",
+        "",
+        "/// The exponents of one named dimension, or `None` if the id is not in the",
+        "/// vocabulary.",
+        "#[must_use]",
+        f"pub fn dimension_exponents(id: &str) -> Option<[i8; {len(slots)}]> {{",
+        "    DIMENSION_EXPONENTS",
+        "        .iter()",
+        "        .find(|(n, _)| *n == id)",
+        "        .map(|(_, d)| *d)",
+        "}",
+        "",
         "/// Every canonical unit string a spec may declare.",
         "///",
         "/// A name here is a claim that this crate has a correct conversion path for",
