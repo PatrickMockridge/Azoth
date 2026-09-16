@@ -4,7 +4,7 @@
 //! coefficient is the NRTL formula with two twists. First, `G_ij = B_i exp(-alpha_ij
 //! tau_ij)` - the weight is the row's co-volume, which does not cancel. Second, the
 //! `tau` matrix is mixed: pairs the database marks `HV` carry the fitted NRTL parameters
-//! (`tau = Dij / T`), and every other pair carries the cubic's own excess energy,
+//! (`tau = Dij / T + DijT`), and every other pair carries the cubic's own excess energy,
 //! `tau = Lambda * (A_j/B_j - 2 sqrt(A_i A_j)/(B_i + B_j) (1 - kij))`, so the rule stays
 //! consistent with the pure-component equation of state.
 
@@ -17,6 +17,7 @@ fn matrices(
     b: &[f64],
     kij: &[f64],
     hv_gij: &[f64],
+    hv_gij_t: &[f64],
     hv_alpha: &[f64],
     hv_pairs: &[bool],
     lambda: f64,
@@ -27,7 +28,7 @@ fn matrices(
     for i in 0..n {
         for j in 0..n {
             let tau_ij = if hv_pairs[i * n + j] {
-                hv_gij[i * n + j] / t_kelvin
+                hv_gij[i * n + j] / t_kelvin + hv_gij_t[i * n + j]
             } else {
                 lambda
                     * (a[j] / b[j]
@@ -48,9 +49,10 @@ fn matrices(
 /// The natural logarithms of the activity coefficients for the Huron-Vidal GE model.
 ///
 /// `a` and `b` are the *reduced* attraction and repulsion (`ReducedParameters::a` and
-/// `::b`), `kij` the interaction matrix, `hv_gij` the fitted `Dij` in Kelvin (zero for
-/// pairs not marked `hv_pairs`), `hv_alpha` the fitted non-randomness, and `lambda` the
-/// cubic's Huron-Vidal constant `ln((1+delta1)/(1+delta2)) / (delta1 - delta2)`.
+/// `::b`), `kij` the interaction matrix, `hv_gij` the fitted `Dij` in Kelvin, `hv_gij_t`
+/// its temperature coefficient `DijT`, `hv_alpha` the fitted non-randomness, and `lambda`
+/// the cubic's Huron-Vidal constant `ln((1+delta1)/(1+delta2)) / (delta1 - delta2)`.
+/// `hv_gij`, `hv_gij_t` and `hv_alpha` are zero for pairs not marked `hv_pairs`.
 #[must_use]
 #[allow(clippy::too_many_arguments)] // the signature is the GE model's inputs
 pub fn hv_ln_gamma(
@@ -60,12 +62,15 @@ pub fn hv_ln_gamma(
     b: &[f64],
     kij: &[f64],
     hv_gij: &[f64],
+    hv_gij_t: &[f64],
     hv_alpha: &[f64],
     hv_pairs: &[bool],
     lambda: f64,
 ) -> Vec<f64> {
     let n = x.len();
-    let (tau, g) = matrices(x, t_kelvin, a, b, kij, hv_gij, hv_alpha, hv_pairs, lambda);
+    let (tau, g) = matrices(
+        x, t_kelvin, a, b, kij, hv_gij, hv_gij_t, hv_alpha, hv_pairs, lambda,
+    );
     (0..n)
         .map(|i| {
             let mut first_num = 0.0;
@@ -103,12 +108,15 @@ pub fn hv_d_ln_gamma_dn(
     b: &[f64],
     kij: &[f64],
     hv_gij: &[f64],
+    hv_gij_t: &[f64],
     hv_alpha: &[f64],
     hv_pairs: &[bool],
     lambda: f64,
 ) -> Vec<f64> {
     let n = x.len();
-    let (tau, g) = matrices(x, t_kelvin, a, b, kij, hv_gij, hv_alpha, hv_pairs, lambda);
+    let (tau, g) = matrices(
+        x, t_kelvin, a, b, kij, hv_gij, hv_gij_t, hv_alpha, hv_pairs, lambda,
+    );
 
     // The first NRTL term's numerator and denominator, per component.
     let mut a_term = vec![0.0; n];
