@@ -35,6 +35,12 @@ from azoth._registry_gen import CALCS  # noqa: E402
 #: extension signature is the transport shape; a calc's is its declared inputs.
 MODEL_IDS = frozenset(model["id"] for model in MODELS)
 
+#: The models whose mixture transport carries the per-component molar mass beside the
+#: critical constants. A model that resolves names against the databank gets the mass
+#: for free; the stub has to say it does, or the bridge's extra vector would be a
+#: signature mismatch.
+MOLAR_MASS_MODELS = frozenset({"eos.viscosity"})
+
 STUB = ROOT / "python" / "src" / "azoth" / "_core.pyi"
 
 DOCSTRING = """Type stub for the compiled extension.
@@ -309,6 +315,8 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
                 "omega: list[float]",
                 "kij: list[float]",
             ]
+            if model["id"] in MOLAR_MASS_MODELS:
+                params.append("molar_mass: list[float]")
         else:
             params += ["Tc: float", "Pc: float", "omega: float"]
     if "ideal_gas" in taken:

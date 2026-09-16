@@ -566,6 +566,11 @@ class Vdw1fMixBinaryResult:
     warnings: list[Warning]
 
 @final
+class ViscosityResult:
+    mu: Qty
+    warnings: list[Warning]
+
+@final
 class VuFlashResult:
     P: Qty
     T: Qty
@@ -1073,6 +1078,19 @@ def vdw1f_mix_binary(
     b2: float,
     k12: float,
 ) -> Vdw1fMixBinaryResult: ...
+def viscosity(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    molar_mass: list[float],
+    T: float,
+    P: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> ViscosityResult: ...
 def vu_flash(
     Tc: list[float],
     Pc: list[float],

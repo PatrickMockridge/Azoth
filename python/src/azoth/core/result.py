@@ -506,6 +506,16 @@ class ParachorSurfaceTensionResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ViscosityResult(_HasWarnings):
+    """Result of ``eos.viscosity``."""
+
+    #: The liquid dynamic viscosity, in Pa*s.
+    mu: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WilkeViscosityResult(_HasWarnings):
     """Result of ``eos.wilke_viscosity``."""
 

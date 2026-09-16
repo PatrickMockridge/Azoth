@@ -169,7 +169,13 @@ class DatabankEntry:
                 params = (1.0,) if self.name == "methane" else ()
             else:
                 params = self.alpha_params.get(alpha, ())
-        return Component(Tc=self.Tc, Pc=self.Pc, omega=self.omega, alpha_params=params)
+        return Component(
+            Tc=self.Tc,
+            Pc=self.Pc,
+            omega=self.omega,
+            molar_mass=self.molar_mass,
+            alpha_params=params,
+        )
 
     def antoine_form(self) -> str:
         """The cleaned Antoine form this entry's coefficients belong to, one of

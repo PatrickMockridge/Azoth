@@ -25,6 +25,7 @@ from typing import Any
 
 from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.errors import PropertyUnavailableError
 from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
@@ -94,6 +95,7 @@ from azoth.core.result import (
     UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
+    ViscosityResult,
     VuFlashResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
@@ -855,6 +857,35 @@ def parachor_surface_tension(
     )
     return ParachorSurfaceTensionResult(
         sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def viscosity(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> ViscosityResult:
+    """The liquid viscosity from the Pedersen correlation, computed in Rust."""
+    spec = _models_gen.model("eos.viscosity")
+    molar_mass = []
+    for c in mixture.components:
+        if c.molar_mass is None:
+            raise PropertyUnavailableError(
+                "component", "molar mass", "a card-added component needs its own molar mass"
+            )
+        molar_mass.append(c.molar_mass.to_base_units().magnitude)
+    result = _core.viscosity(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        molar_mass,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return ViscosityResult(
+        mu=from_si(result.mu.magnitude_si, result.mu.unit),
         warnings=_warnings(result.warnings),
     )
 

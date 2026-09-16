@@ -31,7 +31,7 @@ use azoth_eos::results::{
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult, TsFlashResult,
     TuFlashResult, TvFlashResult, TwuKappaResult, TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
@@ -1425,6 +1425,45 @@ impl From<&ParachorSurfaceTensionResult> for PyParachorSurfaceTensionResult {
             sigma: PyQty {
                 magnitude_si: r.sigma.value,
                 unit: "N/m".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.viscosity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ViscosityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyViscosityResult {
+    /// The liquid viscosity, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub mu: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyViscosityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ViscosityResult(mu={} {})",
+            self.mu.magnitude_si, self.mu.unit
+        )
+    }
+}
+
+impl From<&ViscosityResult> for PyViscosityResult {
+    fn from(r: &ViscosityResult) -> Self {
+        Self {
+            mu: PyQty {
+                magnitude_si: r.mu.value,
+                unit: "Pa*s".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -3557,6 +3596,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
+        ViscosityResult::CALC_ID => ViscosityResult::FIELDS.to_vec(),
         // Unit operations. In the same table for the same reason the models are: a
         // result's shape is a cross-language contract whether or not its spec calls it
         // a calculation.

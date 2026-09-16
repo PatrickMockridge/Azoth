@@ -23,6 +23,7 @@
 //!   - specs/models/eos/tv_flash.toml
 //!   - specs/models/eos/unifac_activity_coefficients.toml
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
+//!   - specs/models/eos/viscosity.toml
 //!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/wilke_viscosity.toml
 //!   - specs/models/eos/wilson_activity_coefficients.toml
@@ -2029,6 +2030,64 @@ pub static UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
     cases: UNIQUAC_ACTIVITY_COEFFICIENTS_CASES,
 };
 
+static VISCOSITY_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static VISCOSITY_CASES: &[TestCase] = &[TestCase {
+    id: "n_butane_at_250_k_and_1_bar",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-09,
+    numbers: &[("T", 250.0), ("P", 100000.0)],
+    lists: &[("components", &["n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[1.0])],
+    matrices: &[],
+    expected: &[("mu", 0.00027260541411752915)],
+    expected_vectors: &[],
+}];
+
+/// Registry entry for `eos.viscosity`.
+pub static VISCOSITY_SPEC: ModelSpec = ModelSpec {
+    id: "eos.viscosity",
+    kind: "direct",
+    algorithm: None,
+    checks: VISCOSITY_CHECKS,
+    cases: VISCOSITY_CASES,
+};
+
 static VU_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -2277,6 +2336,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &TV_FLASH_SPEC,
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,
+    &VISCOSITY_SPEC,
     &VU_FLASH_SPEC,
     &WILKE_VISCOSITY_SPEC,
     &WILSON_ACTIVITY_COEFFICIENTS_SPEC,

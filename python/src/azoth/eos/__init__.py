@@ -122,6 +122,7 @@ from azoth.core.result import (
     UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
+    ViscosityResult,
     VuFlashResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
@@ -211,6 +212,7 @@ _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _MASON_SAXENA_CONDUCTIVITY = "eos.mason_saxena_conductivity"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
+_VISCOSITY = "eos.viscosity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _BUBBLE_TEMPERATURE = "eos.bubble_temperature"
@@ -1187,6 +1189,26 @@ def molar_enthalpy_entropy(
     return resolve(_MOLAR_ENTHALPY_ENTROPY)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, T=T, P=P, z=z, compressibility=compressibility
     )
+
+
+def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:
+    """The liquid viscosity of a mixture, from the Pedersen (PFCT) correlation.
+
+    ``mixture`` must carry each component's molar mass - :func:`from_names` resolves
+    it from the databank; a caller-supplied component without one is refused.
+
+    This is the **liquid** correlation; the gas viscosity is
+    :func:`azoth.eos.chung_viscosity` / :func:`azoth.eos.wilke_viscosity`.
+
+    Raises:
+        InvalidInputError: if the composition is the wrong length, has a negative
+            entry, or does not sum to one.
+        PropertyUnavailableError: if a component carries no molar mass.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.viscosity`.
+    """
+    return resolve(_VISCOSITY)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
 
 
 def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:

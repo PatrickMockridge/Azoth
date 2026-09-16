@@ -1,0 +1,52 @@
+id = "eos.viscosity"
+name = "Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation"
+kind = "direct"
+assumptions = [
+    "the correlation is NeqSim's liquid default (`PFCTViscosityMethodHeavyOil`): a methane SRK reference flash, a Tc/Pc/molar-mass mixing rule, the reference-viscosity correlation and a corresponding-states scaling.",
+    "the reference is pure methane solved with the SRK equation of state; the mixture's own cubic and alpha are not consulted.",
+    "a component's `Tc`, `Pc`, `omega`, every `kij` and its molar mass come from the databank with the keycard's overrides applied; a card-added component without a molar mass is refused.",
+    "the four corresponding-states correction factors are their defaults (1.0).",
+    "this is a liquid-phase correlation; it is not the gas viscosity (`eos.chung_viscosity` / `eos.wilke_viscosity`).",
+]
+references = [
+    "Pedersen, K. S.; Fredenslund, A.; Christensen, P. L.; Thomassen, P. (1984). \"Viscosity of crude oils.\" Chem. Eng. Sci. 39(6), 1011-1016. DOI 10.1016/0009-2509(84)87009-8.",
+]
+[source]
+standard = "NeqSim 3.20.0 `PFCTViscosityMethodHeavyOil`"
+edition = "`calcViscosity` and `getRefComponentViscosity`, ported verbatim"
+doi = "10.1016/0009-2509(84)87009-8"
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature of the state"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure of the state"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, checked rather than renormalised"
+[outputs]
+[outputs.mu]
+unit = "Pa*s"
+description = "the liquid dynamic viscosity"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.viscosity"
+rust = "azoth_eos::viscosity"

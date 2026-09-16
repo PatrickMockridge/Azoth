@@ -50,6 +50,7 @@ class Component:
     Tc: Q
     Pc: Q
     omega: float
+    molar_mass: Q | None = None
     alpha_params: tuple[float, ...] = ()
 
     def __post_init__(self) -> None:

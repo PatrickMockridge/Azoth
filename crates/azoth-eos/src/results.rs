@@ -1721,3 +1721,21 @@ impl CalcResult for ParachorSurfaceTensionResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.viscosity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ViscosityResult {
+    /// The liquid viscosity, in Pa·s.
+    pub mu: DynamicViscosity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ViscosityResult {
+    const CALC_ID: &'static str = "eos.viscosity";
+    const FIELDS: &'static [&'static str] = &["mu", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
