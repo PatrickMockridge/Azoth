@@ -1,0 +1,26 @@
+id = "unit_ops.splitter"
+name = "Splitter"
+[source]
+standard = "NeqSim process/equipment/splitter/Splitter.java"
+[parameters.split_factors]
+unit = "dimensionless"
+description = "the fraction of the feed to each outlet, one entry per outlet, summing to 1"
+[[ports]]
+name = "feed"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "products"
+direction = "out"
+multiplicity = "many"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

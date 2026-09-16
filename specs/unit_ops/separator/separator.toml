@@ -1,0 +1,37 @@
+id = "unit_ops.separator"
+name = "Separator"
+[source]
+standard = "NeqSim process/equipment/separator/Separator.java"
+[parameters.temperature]
+unit = "K"
+description = "the flash temperature; defaults to the feed's temperature when omitted"
+[parameters.efficiency]
+unit = "dimensionless"
+description = "separation efficiency, between 0 and 1"
+[[ports]]
+name = "feed"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "vapour"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "liquid"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

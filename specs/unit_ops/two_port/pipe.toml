@@ -1,0 +1,31 @@
+id = "unit_ops.pipe"
+name = "Pipe"
+[source]
+standard = "NeqSim process/equipment/pipeline/AdiabaticPipe.java"
+[parameters.length]
+unit = "m"
+description = "pipe length"
+[parameters.diameter]
+unit = "m"
+description = "internal pipe diameter"
+[parameters.roughness]
+unit = "m"
+description = "sand-grain roughness height"
+[[ports]]
+name = "inlet"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

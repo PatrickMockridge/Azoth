@@ -1,0 +1,28 @@
+id = "unit_ops.expander"
+name = "Expander"
+[source]
+standard = "NeqSim process/equipment/expander/Expander.java"
+[parameters.outlet_pressure]
+unit = "Pa"
+description = "the pressure the expander lets the stream down to"
+[parameters.isentropic_efficiency]
+unit = "dimensionless"
+description = "the expander's isentropic efficiency, between 0 and 1"
+[[ports]]
+name = "inlet"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

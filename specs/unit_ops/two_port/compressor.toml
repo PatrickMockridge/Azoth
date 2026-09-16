@@ -1,0 +1,28 @@
+id = "unit_ops.compressor"
+name = "Compressor"
+[source]
+standard = "NeqSim process/equipment/compressor/Compressor.java"
+[parameters.outlet_pressure]
+unit = "Pa"
+description = "the pressure the compressor raises the stream to"
+[parameters.isentropic_efficiency]
+unit = "dimensionless"
+description = "the compressor's isentropic efficiency, between 0 and 1"
+[[ports]]
+name = "inlet"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

@@ -1,0 +1,26 @@
+id = "unit_ops.mixer"
+name = "Mixer"
+[source]
+standard = "NeqSim process/equipment/mixer/Mixer.java"
+[parameters.outlet_pressure]
+unit = "Pa"
+description = "a specified outlet pressure; when omitted, the mixer joins at its feeds' pressure"
+[[ports]]
+name = "feed"
+direction = "in"
+multiplicity = "many"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "product"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

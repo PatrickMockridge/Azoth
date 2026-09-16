@@ -1,0 +1,49 @@
+id = "unit_ops.heat_exchanger"
+name = "Heat exchanger"
+[source]
+standard = "NeqSim process/equipment/heatexchanger/HeatExchanger.java"
+[parameters.duty]
+unit = "W"
+description = "the heat transferred from the hot to the cold stream"
+[parameters.hot_outlet_temperature]
+unit = "K"
+description = "a target temperature for the hot stream's outlet"
+[parameters.cold_outlet_temperature]
+unit = "K"
+description = "a target temperature for the cold stream's outlet"
+[[ports]]
+name = "hot_in"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "hot_out"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "cold_in"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "cold_out"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

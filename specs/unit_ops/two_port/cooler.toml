@@ -1,0 +1,31 @@
+id = "unit_ops.cooler"
+name = "Cooler"
+[source]
+standard = "NeqSim process/equipment/heatexchanger/Cooler.java"
+[parameters.outlet_temperature]
+unit = "K"
+description = "the temperature the stream is cooled to"
+[parameters.duty]
+unit = "W"
+description = "the heat removed; an alternative to specifying the outlet temperature"
+[parameters.pressure_drop]
+unit = "Pa"
+description = "the pressure loss across the cooler"
+[[ports]]
+name = "inlet"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

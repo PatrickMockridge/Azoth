@@ -1,0 +1,23 @@
+id = "unit_ops.manifold"
+name = "Manifold"
+[source]
+standard = "NeqSim process/equipment/manifold/Manifold.java"
+[[ports]]
+name = "feed"
+direction = "in"
+multiplicity = "many"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

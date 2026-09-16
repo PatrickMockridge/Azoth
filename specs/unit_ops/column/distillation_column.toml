@@ -1,0 +1,37 @@
+id = "unit_ops.distillation_column"
+name = "Distillation column"
+[source]
+standard = "NeqSim process/equipment/distillation/DistillationColumn.java"
+[parameters.reflux_ratio]
+unit = "dimensionless"
+description = "the reflux ratio"
+[parameters.number_of_stages]
+unit = "dimensionless"
+description = "the number of theoretical stages"
+[[ports]]
+name = "feed"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "distillate"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "bottoms"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

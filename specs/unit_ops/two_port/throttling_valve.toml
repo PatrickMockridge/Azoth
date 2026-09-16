@@ -1,0 +1,28 @@
+id = "unit_ops.throttling_valve"
+name = "Throttling valve"
+[source]
+standard = "NeqSim process/equipment/valve/ThrottlingValve.java"
+[parameters.outlet_pressure]
+unit = "Pa"
+description = "the pressure the valve drops the stream to"
+[parameters.valve_opening]
+unit = "dimensionless"
+description = "the valve opening as a fraction, from 0 to 1"
+[[ports]]
+name = "inlet"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "outlet"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
