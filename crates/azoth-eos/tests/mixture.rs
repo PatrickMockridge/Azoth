@@ -13,7 +13,7 @@
 use azoth_core::units::{kelvins, pascals};
 use azoth_eos::databank;
 use azoth_eos::mixture::{Mixture, ReducedParameters, RootSide};
-use azoth_eos::{Alpha, Cubic, pr_z_factor};
+use azoth_eos::{Alpha, Cubic, MixingRule, SoreideWhitsonRole, pr_z_factor};
 
 /// The pair, with the interaction parameter NeqSim fits for it.
 ///
@@ -337,6 +337,7 @@ fn one_component_state(a: f64, b: f64) -> ReducedParameters {
         b: vec![b],
         psi: vec![0.0],
         psi_t: vec![0.0],
+        reduced_temperatures: vec![1.0],
         kij: vec![0.0],
         warnings: Vec::new(),
     }
@@ -610,5 +611,43 @@ fn the_volume_translation_mixes_linearly_and_subtracts() {
     assert!(
         (v - mixture.volume_shift(&x)) < v,
         "the translation subtracts from the untranslated molar volume"
+    );
+}
+
+/// The Soreide-Whitson rule changes the aqueous `a_mix` through the mixture layer.
+///
+/// `MixingRule::phase_kij` is oracle-checked in `mixing_rule.rs`; this checks the other
+/// half of the port - that `reduced_parameters` carries the reduced temperatures the rule
+/// reads, and that `mixture_parameters` actually resolves against the phase composition
+/// rather than the base matrix.
+#[test]
+fn the_soreide_whitson_rule_changes_the_aqueous_a_mix() {
+    let (base, _) = databank::mixture_of(&["water", "methane"], None).expect("the pair resolves");
+    let k = base.kij(0, 1);
+    let mixture = base.with_mixing_rule(MixingRule::SoreideWhitson {
+        kij: vec![0.0, k, k, 0.0],
+        roles: vec![SoreideWhitsonRole::Water, SoreideWhitsonRole::Hydrocarbon],
+        salinity: 2.0,
+    });
+    let reduced = mixture
+        .reduced_parameters(kelvins(300.0), pascals(10_000_000.0))
+        .expect("a state");
+
+    for (i, component) in mixture.components().iter().enumerate() {
+        assert!(
+            (reduced.reduced_temperatures[i] - 300.0 / component.tc.value).abs() < 1e-15,
+            "reduced temperature {i} should be T / Tc"
+        );
+    }
+
+    // The aqueous a_mix differs from the base-kij a_mix, because the (methane, water)
+    // interaction is replaced by the salinity correlation.
+    let aqueous = mixture.mixture_parameters(&reduced, &[0.9, 0.1]);
+    let (a0, a1) = (reduced.a[0], reduced.a[1]);
+    let base_a_mix =
+        0.9 * 0.9 * a0 + 2.0 * 0.9 * 0.1 * (a0 * a1).sqrt() * (1.0 - k) + 0.1 * 0.1 * a1;
+    assert!(
+        (aqueous.0 - base_a_mix).abs() > 1e-9,
+        "the aqueous a_mix must reflect the salinity correlation, not the base kij"
     );
 }

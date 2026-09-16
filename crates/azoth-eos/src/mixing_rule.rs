@@ -42,6 +42,38 @@ pub enum MixingRule {
         /// `kij_t * T`.
         inverse_temperature: Vec<bool>,
     },
+    /// The salinity-dependent Soreide-Whitson aqueous rule, NeqSim's
+    /// `WhitsonSoreideMixingRule`.
+    ///
+    /// For the water-rich phase the water-gas interactions are replaced by the salinity
+    /// correlations; every other pair keeps the base `kij`. The rule is *asymmetric* -
+    /// the correlation applies only where the second component is water, exactly as
+    /// NeqSim writes it - and phase-dependent, so it is resolved by
+    /// [`MixingRule::phase_kij`] rather than [`MixingRule::effective_kij`].
+    SoreideWhitson {
+        /// The base interaction matrix, as in [`MixingRule::Classic`].
+        kij: Vec<f64>,
+        /// One role per component, in component order.
+        roles: Vec<SoreideWhitsonRole>,
+        /// Equivalent NaCl molality, in mol/kg water.
+        salinity: f64,
+    },
+}
+
+/// A component's role in the Soreide-Whitson aqueous correlation.
+///
+/// Resolved from the component name at construction - azoth's `Component` carries no
+/// name, so the caller that named it also assigns the role.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SoreideWhitsonRole {
+    /// Water, `H2O`.
+    Water,
+    /// Nitrogen, `N2`.
+    Nitrogen,
+    /// Carbon dioxide, `CO2`.
+    CarbonDioxide,
+    /// A hydrocarbon, or any other gas NeqSim's `else` branch routes here.
+    Hydrocarbon,
 }
 
 impl MixingRule {
@@ -55,7 +87,8 @@ impl MixingRule {
         let kij = match self {
             MixingRule::Classic { kij }
             | MixingRule::ClassicT { kij, .. }
-            | MixingRule::ClassicT2 { kij, .. } => kij,
+            | MixingRule::ClassicT2 { kij, .. }
+            | MixingRule::SoreideWhitson { kij, .. } => kij,
         };
         kij[i * n + j]
     }
@@ -101,6 +134,83 @@ impl MixingRule {
                     }
                 })
                 .collect(),
+            MixingRule::SoreideWhitson { kij, .. } => kij.clone(),
         }
+    }
+
+    /// The interaction matrix at a phase's composition, flattened row-major.
+    ///
+    /// The phase-independent rules resolve their matrix once per state in
+    /// [`MixingRule::effective_kij`] and this simply returns it. The Soreide-Whitson
+    /// rule is phase-dependent - its salinity correlation applies only to the
+    /// water-rich phase - so it is computed here, where the composition is known.
+    ///
+    /// `base` is the state's resolved matrix, `reduced_temperatures` the per-component
+    /// `T/Tc`, and `acentric_factors` the per-component `omega`.
+    #[must_use]
+    pub fn phase_kij(
+        &self,
+        base: &[f64],
+        reduced_temperatures: &[f64],
+        acentric_factors: &[f64],
+        x: &[f64],
+    ) -> Vec<f64> {
+        let MixingRule::SoreideWhitson {
+            roles, salinity, ..
+        } = self
+        else {
+            return base.to_vec();
+        };
+        let n = x.len();
+        // NeqSim's `water.x > 0.8` gate: the aqueous correlation applies only to the
+        // water-rich phase; every other phase keeps the base matrix.
+        let is_aqueous = roles
+            .iter()
+            .zip(x)
+            .any(|(&role, &xi)| role == SoreideWhitsonRole::Water && xi > 0.8);
+        if !is_aqueous {
+            return base.to_vec();
+        }
+        let s = *salinity;
+        (0..n)
+            .flat_map(|i| {
+                (0..n).map(move |j| {
+                    if roles[j] != SoreideWhitsonRole::Water {
+                        return base[i * n + j];
+                    }
+                    let tr = reduced_temperatures[i];
+                    match roles[i] {
+                        SoreideWhitsonRole::Nitrogen => {
+                            0.997
+                                * (-1.70235 * (1.0 + 0.025587 * s.powf(0.75))
+                                    + 0.44338 * (1.0 + 0.08126 * s.powf(0.75)) * tr)
+                        }
+                        SoreideWhitsonRole::CarbonDioxide => {
+                            // NeqSim's ladder has a 0.8 branch above 3.5 mol/kg, but the
+                            // 0.9 branch above 2.0 fires first, so it is unreachable.
+                            let multip_k = if s > 2.0 { 0.9 } else { 1.0 };
+                            multip_k
+                                * 0.989
+                                * (-0.31092 * (1.0 + 0.15587 * s.powf(0.75))
+                                    + 0.2358 * (1.0 + 0.17837 * s.powf(0.98)) * tr
+                                    - 21.2566 * (-6.7222_f64.powf(tr) - s).exp())
+                        }
+                        SoreideWhitsonRole::Water => 0.0,
+                        SoreideWhitsonRole::Hydrocarbon => {
+                            let c0 = 0.017407;
+                            let c1 = 0.033516;
+                            let c2 = 0.011478;
+                            let a0 = 1.112 - 1.7369 * acentric_factors[i].powf(-0.1);
+                            let a1 = 1.1001 + 0.83 * acentric_factors[i];
+                            let a2 = -0.15742 - 1.0988 * acentric_factors[i];
+                            0.777
+                                * ((1.0 + c0 * s) * a0
+                                    + (1.0 + c1 * s) * a1 * tr
+                                    + (1.0 + c2 * s) * a2 * tr * tr)
+                        }
+                    }
+                })
+            })
+            .collect()
     }
 }

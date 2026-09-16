@@ -310,11 +310,13 @@ impl Mixture {
         let mut b = Vec::with_capacity(self.len());
         let mut psi = Vec::with_capacity(self.len());
         let mut psi_t = Vec::with_capacity(self.len());
+        let mut reduced_temperatures = Vec::with_capacity(self.len());
         let mut warnings = Vec::new();
 
         for component in &self.components {
             let reduced_temperature = t.value / component.tc.value;
             let reduced_pressure = p.value / component.pc.value;
+            reduced_temperatures.push(reduced_temperature);
             // The kappa correlation belongs to the alpha term; the Omega constants to
             // the cubic. SRK and PR share the Soave alpha form and differ in both; RK
             // is kappa-free.
@@ -455,6 +457,7 @@ impl Mixture {
             b,
             psi,
             psi_t,
+            reduced_temperatures,
             kij: self.mixing_rule.effective_kij(t.value),
             warnings,
         })
@@ -525,6 +528,7 @@ impl Mixture {
             ));
         }
 
+        let kij = self.phase_kij(reduced, x);
         let (a_mix, b_mix) = self.mixture_parameters(reduced, x);
         // Written as an explicit test rather than `!(z > b_mix)`, which reads as a
         // double negative and is the shape clippy flags. Both reject NaN; the
@@ -544,9 +548,7 @@ impl Mixture {
         let cross: Vec<f64> = (0..n)
             .map(|i| {
                 (0..n)
-                    .map(|j| {
-                        x[j] * (1.0 - reduced.kij[i * n + j]) * (reduced.a[i] * reduced.a[j]).sqrt()
-                    })
+                    .map(|j| x[j] * (1.0 - kij[i * n + j]) * (reduced.a[i] * reduced.a[j]).sqrt())
                     .sum::<f64>()
             })
             .collect();
@@ -575,10 +577,8 @@ impl Mixture {
         let mut weighted_psi_t = 0.0;
         for i in 0..n {
             for j in 0..n {
-                let weight = x[i]
-                    * x[j]
-                    * (1.0 - reduced.kij[i * n + j])
-                    * (reduced.a[i] * reduced.a[j]).sqrt();
+                let weight =
+                    x[i] * x[j] * (1.0 - kij[i * n + j]) * (reduced.a[i] * reduced.a[j]).sqrt();
                 let psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j]);
                 weight_total += weight;
                 weighted_psi += weight * psi_pair;
@@ -632,6 +632,17 @@ impl Mixture {
         })
     }
 
+    /// The phase-dependent interaction matrix for a composition.
+    ///
+    /// The phase-independent rules resolve their matrix in [`Self::reduced_parameters`];
+    /// this returns it untouched. The Soreide-Whitson rule resolves here, against the
+    /// phase composition, because its salinity correlation is phase-dependent.
+    fn phase_kij(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
+        let acentric: Vec<f64> = self.components.iter().map(|c| c.omega).collect();
+        self.mixing_rule
+            .phase_kij(&reduced.kij, &reduced.reduced_temperatures, &acentric, x)
+    }
+
     /// The van der Waals one-fluid mixture parameters for a composition.
     ///
     /// ```text
@@ -645,14 +656,13 @@ impl Mixture {
     #[must_use]
     pub fn mixture_parameters(&self, reduced: &ReducedParameters, x: &[f64]) -> (f64, f64) {
         let n = self.len();
+        let kij = self.phase_kij(reduced, x);
         let b_mix = (0..n).map(|i| x[i] * reduced.b[i]).sum();
         let mut a_mix = 0.0;
         for i in 0..n {
             for j in 0..n {
-                a_mix += x[i]
-                    * x[j]
-                    * (1.0 - reduced.kij[i * n + j])
-                    * (reduced.a[i] * reduced.a[j]).sqrt();
+                a_mix +=
+                    x[i] * x[j] * (1.0 - kij[i * n + j]) * (reduced.a[i] * reduced.a[j]).sqrt();
             }
         }
         (a_mix, b_mix)
@@ -710,7 +720,7 @@ impl Mixture {
         compressibility: f64,
     ) -> Result<f64> {
         let count = self.check_mole_numbers(n)?;
-        let (b_hat, a_ij) = self.scaled_constants(reduced, compressibility, count);
+        let (b_hat, a_ij) = self.scaled_constants(reduced, compressibility, n);
         let total: f64 = n.iter().sum();
         let b_sum: f64 = (0..count).map(|i| n[i] * b_hat[i]).sum();
         self.check_b_sum(b_sum, compressibility)?;
@@ -752,7 +762,7 @@ impl Mixture {
         compressibility: f64,
     ) -> Result<Vec<Vec<f64>>> {
         let count = self.check_mole_numbers(n)?;
-        let (b_hat, a_ij) = self.scaled_constants(reduced, compressibility, count);
+        let (b_hat, a_ij) = self.scaled_constants(reduced, compressibility, n);
         let total: f64 = n.iter().sum();
         let b_sum: f64 = (0..count).map(|i| n[i] * b_hat[i]).sum();
         self.check_b_sum(b_sum, compressibility)?;
@@ -898,14 +908,20 @@ impl Mixture {
         &self,
         reduced: &ReducedParameters,
         compressibility: f64,
-        count: usize,
+        n: &[f64],
     ) -> (Vec<f64>, Vec<Vec<f64>>) {
+        let count = n.len();
+        // The Soreide-Whitson correlation keys on the mole *fraction* of water, so the
+        // mole numbers are normalised for it; the phase-independent rules ignore it.
+        let mut x: Vec<f64> = n.to_vec();
+        normalise(&mut x);
+        let kij = self.phase_kij(reduced, &x);
         let a_hat: Vec<f64> = reduced.a.iter().map(|v| v / compressibility).collect();
         let b_hat: Vec<f64> = reduced.b.iter().map(|v| v / compressibility).collect();
         let a_ij: Vec<Vec<f64>> = (0..count)
             .map(|i| {
                 (0..count)
-                    .map(|j| (1.0 - reduced.kij[i * count + j]) * (a_hat[i] * a_hat[j]).sqrt())
+                    .map(|j| (1.0 - kij[i * count + j]) * (a_hat[i] * a_hat[j]).sqrt())
                     .collect()
             })
             .collect();
@@ -979,6 +995,12 @@ pub struct ReducedParameters {
     /// `pr_departure` at one component, which is the property the whole mixture layer
     /// is checked against.
     pub psi_t: Vec<f64>,
+    /// `Tr_i = T / Tc_i`, one per component.
+    ///
+    /// The reduced temperature the alpha terms were evaluated at. Carried because the
+    /// Soreide-Whitson mixing rule reads it again when it resolves its phase-dependent
+    /// interaction matrix.
+    pub reduced_temperatures: Vec<f64>,
     /// The interaction matrix at this state's temperature, flattened row-major.
     ///
     /// The mixing rule's temperature dependence is resolved here, once per

@@ -3,7 +3,7 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_eos::databank;
-use azoth_eos::mixing_rule::MixingRule;
+use azoth_eos::mixing_rule::{MixingRule, SoreideWhitsonRole};
 
 /// A symmetric 2 x 2 interaction matrix with `k01 = k10 = k`.
 fn pair_matrix(k: f64) -> Vec<f64> {
@@ -46,6 +46,62 @@ fn classic_t2_resolves_each_pair_against_its_own_form() {
     // The diagonal is zero under either form.
     assert_eq!(effective[0], 0.0);
     assert_eq!(effective[3], 0.0);
+}
+
+/// The Soreide-Whitson aqueous correlations, against NeqSim 3.20.0's
+/// `getkijWhitsonSoreideAqueous` (LEGACY) at S = 2 mol/kg, T = 300 K.
+///
+/// The four components are water, methane, nitrogen and CO2 in that order, with the
+/// reduced temperatures and acentric factors NeqSim resolves for them. The expected
+/// values are NeqSim's output, recorded rather than recomputed.
+#[test]
+fn soreide_whitson_reproduces_neqsims_aqueous_kij() {
+    use SoreideWhitsonRole::{CarbonDioxide, Hydrocarbon, Nitrogen, Water};
+
+    let base = vec![
+        0.0, 0.485, 0.4778, 0.1896, 0.485, 0.0, 0.0311, 0.107, 0.4778, 0.0311, 0.0, 0.0, 0.1896,
+        0.107, 0.0, 0.0,
+    ];
+    let rule = MixingRule::SoreideWhitson {
+        kij: base.clone(),
+        roles: vec![Water, Hydrocarbon, Nitrogen, CarbonDioxide],
+        salinity: 2.0,
+    };
+    let tr = [
+        0.463_463_618_105_978_7,
+        1.574_307_304_785_894_4,
+        2.379_064_234_734_338_3,
+        0.986_225_714_191_788_1,
+    ];
+    let omega = [0.344, 0.0115, 0.0403, 0.2276];
+
+    // A non-aqueous phase (water.x < 0.8) keeps the base matrix untouched.
+    let gas = rule.phase_kij(&base, &tr, &omega, &[0.2, 0.3, 0.2, 0.3]);
+    assert_eq!(gas, base);
+
+    // The water-rich phase applies the correlation only where the *second* component
+    // is water - NeqSim's asymmetry - so (gas, water) entries differ from (water, gas).
+    let kij = rule.phase_kij(&base, &tr, &omega, &[0.9, 0.05, 0.03, 0.02]);
+    assert!(
+        (kij[4] - (-0.175_225_767_447_587_53)).abs() < 1e-12,
+        "methane-water HC"
+    );
+    assert!(
+        (kij[8] - (-0.574_890_598_658_567_8)).abs() < 1e-12,
+        "nitrogen-water N2"
+    );
+    assert!(
+        (kij[12] - (-0.081_272_539_490_276_38)).abs() < 1e-12,
+        "CO2-water CO2"
+    );
+    // The water-first entries keep the base kij.
+    assert_eq!(kij[1], 0.485, "water-methane");
+    assert_eq!(kij[2], 0.4778, "water-nitrogen");
+    assert_eq!(kij[3], 0.1896, "water-CO2");
+    // The water-water and the gas-gas pairs are zero and the base respectively.
+    assert_eq!(kij[0], 0.0);
+    assert_eq!(kij[5], 0.0);
+    assert_eq!(kij[6], 0.0311, "methane-nitrogen");
 }
 
 #[test]

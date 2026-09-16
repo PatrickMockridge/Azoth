@@ -143,7 +143,7 @@ pub use matcop_pr_alpha::matcop_pr_alpha;
 pub use matcop_prumr_alpha::matcop_prumr_alpha;
 pub use matcop_prumr_new_alpha::matcop_prumr_new_alpha;
 pub use matcop5_prumr_alpha::matcop5_prumr_alpha;
-pub use mixing_rule::MixingRule;
+pub use mixing_rule::{MixingRule, SoreideWhitsonRole};
 pub use mixture::{Component, Mixture, PhaseState, ReducedParameters, RootSide};
 pub use molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
 pub use mollerup_alpha::mollerup_alpha;
