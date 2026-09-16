@@ -5,9 +5,9 @@
 #![allow(clippy::needless_range_loop)]
 
 use azoth_eos::bwrs::{
-    BwrsCoefficients, R_MPA, be, be_dt, be_dt_dt, bp, bp_dt, bp_dt_dt, d_helmholtz_drho,
+    BwrsCoefficients, R_MPA, R_SI, be, be_dt, be_dt_dt, bp, bp_dt, bp_dt_dt, d_helmholtz_drho,
     d_helmholtz_dt, d2_helmholtz_drho2, d2_helmholtz_dt2, d2_helmholtz_dtdrho, d3_helmholtz_drho3,
-    helmholtz, pressure,
+    departure, helmholtz, pressure, solve_density,
 };
 
 /// The methane coefficients, verbatim from NeqSim's `MBWR32param` table.
@@ -480,4 +480,151 @@ fn mixed_derivative_matches_ad() {
         d2_helmholtz_dtdrho(t, rho, &b, &e, &bt, &et, gamma),
         series.d1(),
     );
+}
+
+fn departure_at(t: f64, rho: f64, c: &BwrsCoefficients) -> azoth_eos::bwrs::BwrsDeparture {
+    let b = bp(t, &c.a);
+    let bt = bp_dt(t, &c.a);
+    let btt = bp_dt_dt(t, &c.a);
+    let e = be(t, &c.a);
+    let et = be_dt(t, &c.a);
+    let ett = be_dt_dt(t, &c.a);
+    departure(t, rho, &b, &bt, &btt, &e, &et, &ett, c.gamma())
+}
+
+/// The energy departures reproduce NeqSim's `getAresTV`, `getHresTP`, `getSresTP` and
+/// `getGresTP`.
+///
+/// The heat capacities `getCvres` and `getCpres` are *not* reproduced: they read NeqSim's
+/// hand-written `getFexpdTdT` (and its cross-derivative kin), which is ~0.5-3% off
+/// depending on the state, whereas the closed-form `F_TT` here is checked against forward
+/// AD and a finite difference in the tests below.
+#[test]
+fn departure_reproduces_neqsim() {
+    // (name, T, rho, Ares, Hres, Sres, Gres).
+    let cases: [(&str, f64, f64, f64, f64, f64, f64); 3] = [
+        (
+            "methane",
+            300.0,
+            4.078009498897e-01,
+            -4.264862207444e+01,
+            -1.563684951278e+02,
+            -3.802675737903e-01,
+            -4.228822299074e+01,
+        ),
+        (
+            "methane",
+            400.0,
+            3.020550316125e-01,
+            -1.539247012517e+01,
+            -9.137062615646e+01,
+            -1.900316887898e-01,
+            -1.535795064055e+01,
+        ),
+        (
+            "ethane",
+            300.0,
+            5.038801034558e-01,
+            -5.150544737412e+02,
+            -1.875376932375e+03,
+            -4.736018062536e+00,
+            -4.545715136145e+02,
+        ),
+    ];
+    for (name, t, rho, a, h, s, g) in cases {
+        let c = match name {
+            "methane" => methane(),
+            _ => ethane(),
+        };
+        let d = departure_at(t, rho, &c);
+        assert_close(d.a_res, a);
+        assert_close(d.h_res, h);
+        assert_close(d.s_res, s);
+        assert_close(d.g_res, g);
+        // The Gibbs-Helmholtz identity ties the four energy departures together.
+        assert_close(d.h_res - t * d.s_res, d.g_res);
+    }
+}
+
+/// `Cv` and `Cp` reproduce the second temperature derivative by finite difference, the
+/// independent check that NeqSim's hand-written `getFexpdTdT` recurrence fails.
+#[test]
+fn cv_and_cp_match_finite_difference() {
+    let c = ethane();
+    let t = 320.0;
+    let rho = 1.7;
+    let gamma = c.gamma();
+    let d = departure_at(t, rho, &c);
+
+    let h = 1e-4;
+    let ft = |temp: f64| {
+        d_helmholtz_dt(
+            temp,
+            rho,
+            &bp(temp, &c.a),
+            &be(temp, &c.a),
+            &bp_dt(temp, &c.a),
+            &be_dt(temp, &c.a),
+            gamma,
+        )
+    };
+    let f_tt_fd = (ft(t + h) - ft(t - h)) / (2.0 * h);
+    let f_t = ft(t);
+    // Cv = -R (2 T F_T + T^2 F_TT), the residual isochoric heat capacity. The finite
+    // difference carries a truncation error the `t^2` factor amplifies, so the tolerance
+    // here is looser than the closed-form checks.
+    assert!(
+        (d.cv_res - (-R_SI * (2.0 * t * f_t + t * t * f_tt_fd))).abs() < 1e-5 * d.cv_res.abs(),
+        "cv {} vs finite difference {}",
+        d.cv_res,
+        -R_SI * (2.0 * t * f_t + t * t * f_tt_fd)
+    );
+
+    // Cp - Cv = R (Z + rho T F_rhoT)^2 / (1 + 2 rho F_rho + rho^2 F_rhorho), the isobaric
+    // relation; here it is checked against the closed departure result.
+    let phi_rho = rho * d_helmholtz_drho(t, rho, &bp(t, &c.a), &be(t, &c.a), gamma);
+    let phi_rho_rho = rho * rho * d2_helmholtz_drho2(t, rho, &bp(t, &c.a), &be(t, &c.a), gamma);
+    let phi_rho_t = rho
+        * t
+        * d2_helmholtz_dtdrho(
+            t,
+            rho,
+            &bp(t, &c.a),
+            &be(t, &c.a),
+            &bp_dt(t, &c.a),
+            &be_dt(t, &c.a),
+            gamma,
+        );
+    let z = 1.0 + phi_rho;
+    let cp_minus_cv = R_SI * (z + phi_rho_t).powi(2) / (1.0 + 2.0 * phi_rho + phi_rho_rho);
+    assert!(
+        ((d.cp_res - d.cv_res) - (cp_minus_cv - R_SI)).abs() < 1e-6 * (cp_minus_cv - R_SI).abs(),
+        "cp - cv {} vs closed {}",
+        d.cp_res - d.cv_res,
+        cp_minus_cv - R_SI
+    );
+}
+
+/// The density solver recovers the molar density NeqSim's (correct) volume solver reaches
+/// for the same target pressure.
+#[test]
+fn solve_density_reproduces_neqsim_molar_density() {
+    // (name, T, P in MPa, rho) — the target pressures are 10 and 50 bara.
+    let cases: [(&str, f64, f64, f64); 3] = [
+        ("methane", 300.0, 1.0, 4.078009498897e-01),
+        ("methane", 300.0, 5.0, 2.180940796827e+00),
+        ("ethane", 300.0, 1.0, 5.038801034558e-01),
+    ];
+    for (name, t, p, rho_expected) in cases {
+        let c = match name {
+            "methane" => methane(),
+            _ => ethane(),
+        };
+        let b = bp(t, &c.a);
+        let e = be(t, &c.a);
+        let rho = solve_density(t, p, &b, &e, c.gamma());
+        assert_close(rho, rho_expected);
+        // The solved density is a fixed point of the pressure equation.
+        assert_close(pressure(rho, &b, &e, c.gamma()), p);
+    }
 }

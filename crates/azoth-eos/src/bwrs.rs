@@ -36,6 +36,9 @@
 /// The gas constant in the units the MBWR-32 coefficients are calibrated in, `L.MPa/(mol.K)`.
 pub const R_MPA: f64 = 8.3144621e-3;
 
+/// The gas constant in SI units, `J/(mol.K)`, the conversion for the residual properties.
+pub const R_SI: f64 = 8.3144621;
+
 /// The 32 MBWR-32 coefficients and the critical density of one substance.
 ///
 /// `a[0..31]` and `rhoc` come verbatim from NeqSim's `MBWR32param` table; `rhoc` is in
@@ -374,4 +377,97 @@ pub fn d2_helmholtz_dtdrho(
     }
     let el = (-gamma * rho * rho).exp();
     (pol + el * g_t) / (R_MPA * t)
+}
+
+/// The residual (departure) properties of one state, molar and in SI.
+///
+/// The six are the standard Helmholtz residual properties - `A_res = R T F`, the
+/// temperature derivatives giving `S`, `H` and `G`, and the `Cp` from the isobaric relation
+/// `Cp - Cv = R (Z + rho T F_rhoT)^2 / (1 + 2 rho F_rho + rho^2 F_rhop)`. `S`, `H` and `G`
+/// are the `(T, P)` departures, which is what a mixture's enthalpy and entropy read.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct BwrsDeparture {
+    /// Residual Helmholtz energy, J/mol.
+    pub a_res: f64,
+    /// Residual entropy at `(T, P)`, J/(mol.K).
+    pub s_res: f64,
+    /// Residual enthalpy, J/mol.
+    pub h_res: f64,
+    /// Residual Gibbs energy, J/mol.
+    pub g_res: f64,
+    /// Residual isochoric heat capacity, J/(mol.K).
+    pub cv_res: f64,
+    /// Residual isobaric heat capacity, J/(mol.K).
+    pub cp_res: f64,
+}
+
+/// The residual properties, from the dimensionless Helmholtz and its derivatives.
+#[must_use]
+#[allow(clippy::too_many_arguments)] // the signature carries the full coefficient set
+pub fn departure(
+    t: f64,
+    rho: f64,
+    b: &[f64; 9],
+    bt: &[f64; 9],
+    btt: &[f64; 9],
+    e: &[f64; 6],
+    et: &[f64; 6],
+    ett: &[f64; 6],
+    gamma: f64,
+) -> BwrsDeparture {
+    let f = helmholtz(t, rho, b, e, gamma);
+    let phi_rho = rho * d_helmholtz_drho(t, rho, b, e, gamma);
+    let phi_t = t * d_helmholtz_dt(t, rho, b, e, bt, et, gamma);
+    let phi_rho_rho = rho * rho * d2_helmholtz_drho2(t, rho, b, e, gamma);
+    let phi_t_t = t * t * d2_helmholtz_dt2(t, rho, b, e, bt, et, btt, ett, gamma);
+    let phi_rho_t = rho * t * d2_helmholtz_dtdrho(t, rho, b, e, bt, et, gamma);
+
+    let z = 1.0 + phi_rho;
+    BwrsDeparture {
+        a_res: R_SI * t * f,
+        s_res: R_SI * (z.ln() - f - phi_t),
+        h_res: R_SI * t * (phi_rho - phi_t),
+        g_res: R_SI * t * (f + phi_rho - z.ln()),
+        cv_res: -R_SI * (2.0 * phi_t + phi_t_t),
+        cp_res: R_SI
+            * (-(2.0 * phi_t + phi_t_t)
+                + (z + phi_rho_t).powi(2) / (1.0 + 2.0 * phi_rho + phi_rho_rho)
+                - 1.0),
+    }
+}
+
+/// `dP/drho` at constant temperature, in MPa per mol/L, differentiated directly from the
+/// pressure polynomial.
+#[must_use]
+pub fn d_pressure_drho(rho: f64, b: &[f64; 9], e: &[f64; 6], gamma: f64) -> f64 {
+    let mut dp = 0.0;
+    let mut rp = 1.0;
+    for (i, &bi) in b.iter().enumerate() {
+        dp += (i as f64 + 1.0) * bi * rp;
+        rp *= rho;
+    }
+    let el = (-gamma * rho * rho).exp();
+    let mut tail = 0.0;
+    let mut rp = rho * rho;
+    for (i, &ei) in e.iter().enumerate() {
+        let n = (3 + 2 * i) as f64;
+        tail += ei * rp * (n - 2.0 * gamma * rho * rho);
+        rp *= rho * rho;
+    }
+    dp + el * tail
+}
+
+/// Solve `P(rho) = p_target` for the molar density by Newton's method from the ideal-gas
+/// guess. `p_target` in MPa, the returned `rho` in mol/L.
+#[must_use]
+pub fn solve_density(t: f64, p_target: f64, b: &[f64; 9], e: &[f64; 6], gamma: f64) -> f64 {
+    let mut rho = p_target / (R_MPA * t);
+    for _ in 0..100 {
+        let step = (pressure(rho, b, e, gamma) - p_target) / d_pressure_drho(rho, b, e, gamma);
+        rho -= step;
+        if step.abs() < 1e-12 * rho.abs() {
+            break;
+        }
+    }
+    rho
 }
