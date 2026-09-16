@@ -92,6 +92,7 @@ from azoth.core.result import (
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
+    TwucoonAlphaResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult,
@@ -294,6 +295,12 @@ def twu_kappa(omega: float) -> TwuKappaResult:
     """Twu's alpha-function coefficient, computed in Rust."""
     result = _core.twu_kappa(omega)
     return TwuKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
+
+
+def twucoon_alpha(omega: float, Tr: float) -> TwucoonAlphaResult:
+    """The Twu-Coon alpha function, computed in Rust."""
+    result = _core.twucoon_alpha(omega, Tr)
+    return TwucoonAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def pr_departure(

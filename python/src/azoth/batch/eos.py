@@ -51,6 +51,7 @@ __all__ = [
     "SrkPenelouxShiftBatch",
     "SrkZFactorBatch",
     "TwuKappaBatch",
+    "TwucoonAlphaBatch",
     "TynCalusDiffusivityBatch",
     "Vdw1fMixBinaryBatch",
     "WilkeChangDiffusivityBatch",
@@ -82,6 +83,7 @@ __all__ = [
     "srk_peneloux_shift",
     "srk_z_factor",
     "twu_kappa",
+    "twucoon_alpha",
     "tyn_calus_diffusivity",
     "vdw1f_mix_binary",
     "wilke_chang_diffusivity",
@@ -116,6 +118,7 @@ _RK_ALPHA_AB = "eos.rk_alpha_ab"
 _RK_DEPARTURE = "eos.rk_departure"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
+_TWUCOON_ALPHA = "eos.twucoon_alpha"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 
@@ -1321,6 +1324,32 @@ def twu_kappa(*, omega: Sequence[float]) -> TwuKappaBatch:
         _TWU_KAPPA,
         {"omega": sequence(omega, "omega")},
         _build_twu_kappa,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class TwucoonAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.twucoon_alpha`."""
+
+    #: The Twu-Coon alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_twucoon(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> TwucoonAlphaBatch:
+    return TwucoonAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def twucoon_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> TwucoonAlphaBatch:
+    """The Twu-Coon alpha function, over arrays."""
+    result: TwucoonAlphaBatch = run(
+        _TWUCOON_ALPHA,
+        {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
+        _build_twucoon,
     )
     return result
 

@@ -101,6 +101,7 @@ Four sections, and the difference between them is the point:
 - [`eos.srk_peneloux_shift`](./eos/srk_peneloux_shift.md)
 - [`eos.srk_z_factor`](./eos/srk_z_factor.md)
 - [`eos.twu_kappa`](./eos/twu_kappa.md)
+- [`eos.twucoon_alpha`](./eos/twucoon_alpha.md)
 - [`eos.tyn_calus_diffusivity`](./eos/tyn_calus_diffusivity.md)
 - [`eos.vdw1f_mix_binary`](./eos/vdw1f_mix_binary.md)
 - [`eos.wilke_chang_diffusivity`](./eos/wilke_chang_diffusivity.md)

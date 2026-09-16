@@ -792,6 +792,16 @@ class TwuKappaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TwucoonAlphaResult(_HasWarnings):
+    """Result of ``eos.twucoon_alpha``."""
+
+    #: The temperature-dependent alpha function. Dimensionless.
+    alpha: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SrkAlphaAbResult(_HasWarnings):
     """Result of ``eos.srk_alpha_ab``."""
 
