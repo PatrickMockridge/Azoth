@@ -18,6 +18,7 @@
 //!   - specs/models/eos/pv_flash.toml
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/th_flash.toml
+//!   - specs/models/eos/thermal_conductivity.toml
 //!   - specs/models/eos/ts_flash.toml
 //!   - specs/models/eos/tu_flash.toml
 //!   - specs/models/eos/tv_flash.toml
@@ -1695,6 +1696,64 @@ pub static TH_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: TH_FLASH_CASES,
 };
 
+static THERMAL_CONDUCTIVITY_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static THERMAL_CONDUCTIVITY_CASES: &[TestCase] = &[TestCase {
+    id: "n_butane_at_250_k_and_1_bar",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-05,
+    numbers: &[("T", 250.0), ("P", 100000.0)],
+    lists: &[("components", &["n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[1.0])],
+    matrices: &[],
+    expected: &[("k", 0.11961650179494385)],
+    expected_vectors: &[],
+}];
+
+/// Registry entry for `eos.thermal_conductivity`.
+pub static THERMAL_CONDUCTIVITY_SPEC: ModelSpec = ModelSpec {
+    id: "eos.thermal_conductivity",
+    kind: "direct",
+    algorithm: None,
+    checks: THERMAL_CONDUCTIVITY_CHECKS,
+    cases: THERMAL_CONDUCTIVITY_CASES,
+};
+
 static TS_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -2331,6 +2390,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PV_FLASH_SPEC,
     &STABILITY_TEST_SPEC,
     &TH_FLASH_SPEC,
+    &THERMAL_CONDUCTIVITY_SPEC,
     &TS_FLASH_SPEC,
     &TU_FLASH_SPEC,
     &TV_FLASH_SPEC,

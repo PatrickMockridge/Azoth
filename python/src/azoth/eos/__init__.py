@@ -113,6 +113,7 @@ from azoth.core.result import (
     SrkPenelouxShiftResult,
     SrkZFactorResult,
     StabilityTestResult,
+    ThermalConductivityResult,
     ThFlashResult,
     TsFlashResult,
     TuFlashResult,
@@ -213,6 +214,7 @@ _MASON_SAXENA_CONDUCTIVITY = "eos.mason_saxena_conductivity"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _VISCOSITY = "eos.viscosity"
+_THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _BUBBLE_TEMPERATURE = "eos.bubble_temperature"
@@ -1209,6 +1211,30 @@ def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:
     See :func:`azoth.eos.reference.viscosity`.
     """
     return resolve(_VISCOSITY)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def thermal_conductivity(
+    mixture: Mixture, ideal_gas: IdealGasModel, T: Q, P: Q, z: list[float]
+) -> ThermalConductivityResult:
+    """The liquid thermal conductivity of a mixture, from the Pedersen (PFCT) correlation.
+
+    ``mixture`` must carry each component's molar mass and ``ideal_gas`` its heat-capacity
+    coefficients - :func:`mixture_of` resolves both from the databank.
+
+    This is the **liquid** correlation; the gas thermal conductivity is
+    :func:`azoth.eos.chung_conductivity` / :func:`azoth.eos.mason_saxena_conductivity`.
+
+    Raises:
+        InvalidInputError: if the composition is the wrong length, has a negative
+            entry, or does not sum to one.
+        PropertyUnavailableError: if a component carries no molar mass.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.thermal_conductivity`.
+    """
+    return resolve(_THERMAL_CONDUCTIVITY)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, T=T, P=P, z=z
+    )
 
 
 def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:

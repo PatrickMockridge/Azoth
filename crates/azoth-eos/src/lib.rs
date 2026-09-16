@@ -89,6 +89,7 @@ pub mod srk_peneloux_shift;
 pub mod srk_z_factor;
 pub mod stability_test;
 pub mod th_flash;
+pub mod thermal_conductivity;
 pub mod ts_flash;
 pub mod tu_flash;
 pub mod tv_flash;
@@ -156,10 +157,10 @@ pub use results::{
     RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, RootStructure,
     SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict, ThFlashResult,
-    TsFlashResult, TuFlashResult, TwuKappaResult, TynCalusDiffusivityResult,
-    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult,
+    TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -171,6 +172,7 @@ pub use srk_peneloux_shift::srk_peneloux_shift;
 pub use srk_z_factor::srk_z_factor;
 pub use stability_test::stability_test;
 pub use th_flash::th_flash;
+pub use thermal_conductivity::thermal_conductivity;
 pub use ts_flash::ts_flash;
 pub use tu_flash::tu_flash;
 pub use tv_flash::tv_flash;

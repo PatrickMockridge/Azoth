@@ -23,16 +23,16 @@ use crate::{srk_alpha_ab, srk_departure, srk_kappa, srk_z_factor};
 /// one place `R` does not cancel out of the cubic, and NeqSim's `getDensity()` uses its
 /// own (truncated) value, so matching the oracle means using it rather than
 /// [`crate::pr_molar_volume::MOLAR_GAS_CONSTANT`].
-const NEQSIM_GAS_CONSTANT: f64 = 8.314_462_1;
+pub(crate) const NEQSIM_GAS_CONSTANT: f64 = 8.314_462_1;
 
 /// Methane's critical temperature, K - the reference component's.
-const METHANE_TC: f64 = 190.56;
+pub(crate) const METHANE_TC: f64 = 190.56;
 /// Methane's critical pressure, Pa.
-const METHANE_PC: f64 = 4.599e6;
+pub(crate) const METHANE_PC: f64 = 4.599e6;
 /// Methane's molar mass, kg/mol.
-const METHANE_M: f64 = 0.016043;
+pub(crate) const METHANE_M: f64 = 0.016043;
 /// Methane's acentric factor.
-const METHANE_OMEGA: f64 = 0.0115;
+pub(crate) const METHANE_OMEGA: f64 = 0.0115;
 
 /// The `GVcoef` polynomial of `PFCTViscosityMethodHeavyOil`, in the order it is read.
 const GVCOEF: [f64; 9] = [
@@ -70,7 +70,7 @@ const CRIT_MOL_DENS: f64 = 10.15;
 /// The stable root is the one with the lower `ln_phi` - lower fugacity is lower Gibbs,
 /// which is what NeqSim's `getLowestGibbsEnergyPhase()` selects. `srk_z_factor`
 /// already discards the middle (unstable) root, so only `z_min` and `z_max` remain.
-fn methane_srk_density(t: f64, p_pa: f64) -> Result<f64> {
+pub(crate) fn methane_srk_density(t: f64, p_pa: f64) -> Result<f64> {
     let kappa = srk_kappa(METHANE_OMEGA)?.kappa;
     let tr = t / METHANE_TC;
     let pr = p_pa / METHANE_PC;

@@ -1,0 +1,11 @@
+model = "eos.thermal_conductivity"
+[[cases]]
+id = "n_butane_at_250_k_and_1_bar"
+tolerance = 1e-05
+[cases.inputs]
+components = ["n-butane"]
+T = 250.0
+P = 100000.0
+z = [1.0]
+[cases.expected]
+k = 0.11961650179494385

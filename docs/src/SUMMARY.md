@@ -65,6 +65,7 @@
   - [Pressure-volume flash](./eos/pv_flash.md)
   - [Tangent-plane stability test](./eos/stability_test.md)
   - [Temperature-enthalpy flash](./eos/th_flash.md)
+  - [Liquid thermal conductivity from the Pedersen (PFCT) correlation](./eos/thermal_conductivity.md)
   - [Temperature-entropy flash](./eos/ts_flash.md)
   - [Temperature-internal-energy flash](./eos/tu_flash.md)
   - [Temperature-volume flash](./eos/tv_flash.md)

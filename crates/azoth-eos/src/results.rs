@@ -1739,3 +1739,21 @@ impl CalcResult for ViscosityResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.thermal_conductivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ThermalConductivityResult {
+    /// The liquid thermal conductivity, in W/(m·K).
+    pub k: ThermalConductivity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ThermalConductivityResult {
+    const CALC_ID: &'static str = "eos.thermal_conductivity";
+    const FIELDS: &'static [&'static str] = &["k", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

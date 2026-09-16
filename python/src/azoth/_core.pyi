@@ -496,6 +496,11 @@ class ThFlashResult:
     warnings: list[Warning]
 
 @final
+class ThermalConductivityResult:
+    k: Qty
+    warnings: list[Warning]
+
+@final
 class TsFlashResult:
     P: Qty
     beta: float | None
@@ -997,6 +1002,24 @@ def th_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> ThFlashResult: ...
+def thermal_conductivity(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    molar_mass: list[float],
+    cp_a: list[float],
+    cp_b: list[float],
+    cp_c: list[float],
+    cp_d: list[float],
+    cp_e: list[float],
+    T: float,
+    P: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> ThermalConductivityResult: ...
 def ts_flash(
     Tc: list[float],
     Pc: list[float],

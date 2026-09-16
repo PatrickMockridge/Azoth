@@ -86,6 +86,7 @@ from azoth.core.result import (
     SrkZFactorResult,
     StabilityTestResult,
     SwameeJainResult,
+    ThermalConductivityResult,
     ThFlashResult,
     TsFlashResult,
     TuFlashResult,
@@ -886,6 +887,42 @@ def viscosity(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> ViscosityResult:
     )
     return ViscosityResult(
         mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def thermal_conductivity(
+    mixture: Any, ideal_gas: Any, T: Q, P: Q, z: Sequence[float]
+) -> ThermalConductivityResult:
+    """The liquid thermal conductivity from the Pedersen correlation, computed in Rust."""
+    spec = _models_gen.model("eos.thermal_conductivity")
+    molar_mass = []
+    for c in mixture.components:
+        if c.molar_mass is None:
+            raise PropertyUnavailableError(
+                "component", "molar mass", "a card-added component needs its own molar mass"
+            )
+        molar_mass.append(c.molar_mass.to_base_units().magnitude)
+    result = _core.thermal_conductivity(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        molar_mass,
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return ThermalConductivityResult(
+        k=from_si(result.k.magnitude_si, result.k.unit),
         warnings=_warnings(result.warnings),
     )
 

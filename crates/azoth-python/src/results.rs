@@ -28,11 +28,11 @@ use azoth_eos::results::{
     PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
     RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
     SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
-    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult, TsFlashResult,
-    TuFlashResult, TvFlashResult, TwuKappaResult, TynCalusDiffusivityResult,
-    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
+    TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1464,6 +1464,45 @@ impl From<&ViscosityResult> for PyViscosityResult {
             mu: PyQty {
                 magnitude_si: r.mu.value,
                 unit: "Pa*s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.thermal_conductivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ThermalConductivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyThermalConductivityResult {
+    /// The liquid thermal conductivity, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub k: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyThermalConductivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ThermalConductivityResult(k={} {})",
+            self.k.magnitude_si, self.k.unit
+        )
+    }
+}
+
+impl From<&ThermalConductivityResult> for PyThermalConductivityResult {
+    fn from(r: &ThermalConductivityResult) -> Self {
+        Self {
+            k: PyQty {
+                magnitude_si: r.k.value,
+                unit: "W/(m*K)".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -3597,6 +3636,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
         ViscosityResult::CALC_ID => ViscosityResult::FIELDS.to_vec(),
+        ThermalConductivityResult::CALC_ID => ThermalConductivityResult::FIELDS.to_vec(),
         // Unit operations. In the same table for the same reason the models are: a
         // result's shape is a cross-language contract whether or not its spec calls it
         // a calculation.

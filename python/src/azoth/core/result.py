@@ -516,6 +516,16 @@ class ViscosityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ThermalConductivityResult(_HasWarnings):
+    """Result of ``eos.thermal_conductivity``."""
+
+    #: The liquid thermal conductivity, in W/(m*K).
+    k: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WilkeViscosityResult(_HasWarnings):
     """Result of ``eos.wilke_viscosity``."""
 
