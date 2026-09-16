@@ -24,6 +24,20 @@ pub enum Command {
 
     /// List the fitting ids the registry knows about.
     Fittings,
+
+    /// Validate a flowsheet against the unit-operation palette.
+    Check(CheckArgs),
+}
+
+#[derive(Debug, clap::Args)]
+pub struct CheckArgs {
+    /// The flowsheet to validate.
+    #[arg(long)]
+    pub flowsheet: std::path::PathBuf,
+
+    /// The palette directory. Defaults to the shipped `specs/unit_ops`.
+    #[arg(long, default_value = "specs/unit_ops")]
+    pub palette: std::path::PathBuf,
 }
 
 #[derive(Debug, clap::Args)]

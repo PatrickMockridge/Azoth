@@ -6,6 +6,7 @@
 //! report - and the rendering in [`report`]. What is left in `main.rs` is resolving the
 //! arguments into a calculation and printing what comes back.
 
+pub mod check;
 pub mod cli;
 pub mod pipe;
 pub mod report;

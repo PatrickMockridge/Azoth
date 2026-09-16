@@ -1,0 +1,53 @@
+id = "flowsheets.demo"
+name = "Feed, pump, heat, separate, recycle"
+
+feeds = ["feed_1"]
+products = ["vapour_product"]
+
+[[instances]]
+id = "mix1"
+unit = "unit_ops.mixer"
+
+[[instances]]
+id = "p1"
+unit = "unit_ops.pump"
+[instances.parameters]
+outlet_pressure = 2.0e6
+isentropic_efficiency = 0.75
+
+[[instances]]
+id = "hx1"
+unit = "unit_ops.heater"
+[instances.parameters]
+outlet_temperature = 320.0
+
+[[instances]]
+id = "sep1"
+unit = "unit_ops.separator"
+[instances.parameters]
+temperature = 290.0
+
+[[connections]]
+from = "feed_1"
+to = "mix1.feed"
+
+[[connections]]
+from = "mix1.product"
+to = "p1.inlet"
+
+[[connections]]
+from = "p1.outlet"
+to = "hx1.inlet"
+
+[[connections]]
+from = "hx1.outlet"
+to = "sep1.feed"
+
+[[connections]]
+from = "sep1.vapour"
+to = "vapour_product"
+
+[[recycles]]
+stream = "recycle_1"
+from = "sep1.liquid"
+to = "mix1.feed"
