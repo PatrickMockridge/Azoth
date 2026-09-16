@@ -354,14 +354,14 @@ def test_registry_matches_the_spec_files() -> None:
     )
 
 
-#: The two files a reader meets azoth through, and the two that list every calculation.
+#: The book's front door, which lists every calculation.
 #:
-#: They are hand-written prose - the README's install and quick-start sections, the
-#: index's account of how the pieces fit - with one *generated* block each, spliced
-#: between markers by `tools/gen_docs.py`. Until that block existed these were two
-#: places a new calc had to be announced by hand, and the drift was silent: the
-#: library gained a calculation and the front page did not mention it.
-CALC_LIST_FILES = ("README.md", "docs/src/index.md")
+#: It is hand-written prose - the account of how the pieces fit - with one
+#: *generated* block spliced between markers by `tools/gen_docs.py`. The README is
+#: not here: it links the book rather than carrying its own list, so this is the one
+#: place a new calc has to be announced, and the drift is silent when it is not - the
+#: library gains a calculation and the front page does not mention it.
+CALC_LIST_FILES = ("docs/src/index.md",)
 
 
 @pytest.mark.parametrize("relative_path", CALC_LIST_FILES)
