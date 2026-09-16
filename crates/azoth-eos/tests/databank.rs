@@ -35,6 +35,30 @@ fn a_name_resolves_to_the_constants_neqsim_ships() {
 }
 
 #[test]
+fn the_transport_fields_carry_what_neqsim_ships() {
+    // Molar mass and critical volume feed the density a pipe kernel assembles; the
+    // dipole feeds the gas viscosity. Water is the non-zero-dipole case, so a default
+    // of zero cannot pass.
+    let methane = databank::entry("methane", None).expect("methane");
+    let water = databank::entry("water", None).expect("water");
+    let molar_mass = methane.molar_mass.expect("the table carries molar mass");
+    assert!(
+        (molar_mass - 0.016_043).abs() < 1e-6,
+        "molar mass: {molar_mass}"
+    );
+    assert!(
+        (methane.critical_volume.expect("critical volume") - 9.9e-5).abs() < 1e-9,
+        "critical volume: {:?}",
+        methane.critical_volume
+    );
+    assert!(
+        (water.dipole.expect("dipole") - 1.8).abs() < 1e-9,
+        "dipole: {:?}",
+        water.dipole
+    );
+}
+
+#[test]
 fn a_name_is_matched_without_regard_to_case_or_surrounding_space() {
     let lower = databank::entry("methane", None).expect("methane");
     let padded = databank::entry("  METHANE  ", None).expect("METHANE");

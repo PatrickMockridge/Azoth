@@ -94,6 +94,12 @@ pub struct Entry {
     /// an overlay added: a card supplies the parameters a cubic needs. `mixture_of`
     /// refuses such a name rather than defaulting to zeros.
     pub cp: Option<[f64; 5]>,
+    /// Molar mass, in kg/mol.
+    pub molar_mass: Option<f64>,
+    /// Critical molar volume, in m³/mol.
+    pub critical_volume: Option<f64>,
+    /// Dipole moment, in debye.
+    pub dipole: Option<f64>,
 }
 
 impl Entry {
@@ -315,6 +321,9 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "cpc",
         "cpd",
         "cpe",
+        "molar_mass_kg_per_mol",
+        "critical_volume_m3_per_mol",
+        "dipole_moment_debye",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -345,6 +354,24 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                 // `Some` for everything the table carries: it holds the polynomial for
                 // every row it has, and `mixture_of` refuses a name without one.
                 cp: Some(cp),
+                molar_mass: Some(number(
+                    &record,
+                    index["molar_mass_kg_per_mol"],
+                    "molar_mass_kg_per_mol",
+                    row,
+                )?),
+                critical_volume: Some(number(
+                    &record,
+                    index["critical_volume_m3_per_mol"],
+                    "critical_volume_m3_per_mol",
+                    row,
+                )?),
+                dipole: Some(number(
+                    &record,
+                    index["dipole_moment_debye"],
+                    "dipole_moment_debye",
+                    row,
+                )?),
             },
         );
     }
@@ -474,6 +501,11 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // The card may also supply the polynomial, in which case the substance
                 // has an enthalpy path; without it, it is a cubic only.
                 cp: over.cp,
+                // A card states the parameters a cubic reads; it carries no molar mass,
+                // critical volume or dipole, so a card-added substance has none.
+                molar_mass: None,
+                critical_volume: None,
+                dipole: None,
             })
         }
         (Some(base), Some(over)) => Ok(Entry {
@@ -483,6 +515,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             pc: over.pc.unwrap_or(base.pc),
             omega: over.omega.unwrap_or(base.omega),
             cp: over.cp.or(base.cp),
+            molar_mass: base.molar_mass,
+            critical_volume: base.critical_volume,
+            dipole: base.dipole,
             name: base.name,
         }),
     }
