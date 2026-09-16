@@ -2027,3 +2027,21 @@ impl CalcResult for SoreideWhitsonAlphaResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.umrpr_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UmrprAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for UmrprAlphaResult {
+    const CALC_ID: &'static str = "eos.umrpr_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

@@ -66,6 +66,7 @@ __all__ = [
     "TwucoonParamAlphaBatch",
     "TwucoonStatoilAlphaBatch",
     "TynCalusDiffusivityBatch",
+    "UmrprAlphaBatch",
     "Vdw1fMixBinaryBatch",
     "WilkeChangDiffusivityBatch",
     "chung_conductivity",
@@ -111,6 +112,7 @@ __all__ = [
     "twucoon_param_alpha",
     "twucoon_statoil_alpha",
     "tyn_calus_diffusivity",
+    "umrpr_alpha",
     "vdw1f_mix_binary",
     "wilke_chang_diffusivity",
 ]
@@ -159,6 +161,7 @@ _TWUCOON_ALPHA = "eos.twucoon_alpha"
 _TWUCOON_PARAM_ALPHA = "eos.twucoon_param_alpha"
 _TWUCOON_STATOIL_ALPHA = "eos.twucoon_statoil_alpha"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
+_UMRPR_ALPHA = "eos.umrpr_alpha"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 
 
@@ -1858,6 +1861,32 @@ def tyn_calus_diffusivity(
             "eta": sequence(eta, "eta"),
         },
         _build_tyn_calus_diffusivity,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class UmrprAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.umrpr_alpha`."""
+
+    #: The UMR-PR alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_umrpr(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> UmrprAlphaBatch:
+    return UmrprAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def umrpr_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> UmrprAlphaBatch:
+    """The UMR-PR alpha function, over arrays."""
+    result: UmrprAlphaBatch = run(
+        _UMRPR_ALPHA,
+        {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
+        _build_umrpr,
     )
     return result
 

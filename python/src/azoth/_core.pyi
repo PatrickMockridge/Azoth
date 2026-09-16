@@ -628,6 +628,11 @@ class TynCalusDiffusivityResult:
     warnings: list[Warning]
 
 @final
+class UmrprAlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class UnifacActivityCoefficientsResult:
     ln_gamma: list[float]
     gamma: list[float]
@@ -1202,6 +1207,7 @@ def tyn_calus_diffusivity(
     T: float,
     eta: float,
 ) -> TynCalusDiffusivityResult: ...
+def umrpr_alpha(omega: float, Tr: float) -> UmrprAlphaResult: ...
 def unifac_activity_coefficients(
     T: float,
     x: list[float],

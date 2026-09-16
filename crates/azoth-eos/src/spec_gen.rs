@@ -48,6 +48,7 @@
 //!   - specs/calcs/eos/twucoon_param_alpha.toml
 //!   - specs/calcs/eos/twucoon_statoil_alpha.toml
 //!   - specs/calcs/eos/tyn_calus_diffusivity.toml
+//!   - specs/calcs/eos/umrpr_alpha.toml
 //!   - specs/calcs/eos/vdw1f_mix_binary.toml
 //!   - specs/calcs/eos/wilke_chang_diffusivity.toml
 //!
@@ -4893,6 +4894,67 @@ pub static TYN_CALUS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
     tests: TYN_CALUS_DIFFUSIVITY_TESTS,
 };
 
+/// Registry entry for `eos.umrpr_alpha`.
+static UMRPR_ALPHA_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "Tr",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "the formula takes a square root of `Tr`; zero and below are not states",
+    },
+}];
+
+static UMRPR_ALPHA_TESTS: &[TestCase] = &[TestCase {
+    id: "round_trip_units",
+    kind: "property",
+    property: Some("unit_round_trip"),
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-12,
+    numbers: &[],
+    lists: &[],
+    strings: &[],
+    vectors: &[],
+    matrices: &[],
+    expected: &[],
+    expected_vectors: &[],
+}];
+
+/// Registered spec for `eos.umrpr_alpha`.
+///
+/// Public and addressable directly, so a calc can hold `&UMRPR_ALPHA_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static UMRPR_ALPHA_SPEC: CalcSpec = CalcSpec {
+    id: "eos.umrpr_alpha",
+    checks: UMRPR_ALPHA_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("omega", 0.1), ("Tr", 0.7)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("alpha", 1.1822586823466172)],
+        expected_vectors: &[],
+    },
+    tests: UMRPR_ALPHA_TESTS,
+};
+
 /// Registry entry for `eos.vdw1f_mix_binary`.
 static VDW1F_MIX_BINARY_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -5206,6 +5268,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &TWUCOON_PARAM_ALPHA_SPEC,
     &TWUCOON_STATOIL_ALPHA_SPEC,
     &TYN_CALUS_DIFFUSIVITY_SPEC,
+    &UMRPR_ALPHA_SPEC,
     &VDW1F_MIX_BINARY_SPEC,
     &WILKE_CHANG_DIFFUSIVITY_SPEC,
 ];

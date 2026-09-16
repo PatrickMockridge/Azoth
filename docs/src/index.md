@@ -116,6 +116,7 @@ Four sections, and the difference between them is the point:
 - [`eos.twucoon_param_alpha`](./eos/twucoon_param_alpha.md)
 - [`eos.twucoon_statoil_alpha`](./eos/twucoon_statoil_alpha.md)
 - [`eos.tyn_calus_diffusivity`](./eos/tyn_calus_diffusivity.md)
+- [`eos.umrpr_alpha`](./eos/umrpr_alpha.md)
 - [`eos.vdw1f_mix_binary`](./eos/vdw1f_mix_binary.md)
 - [`eos.wilke_chang_diffusivity`](./eos/wilke_chang_diffusivity.md)
 

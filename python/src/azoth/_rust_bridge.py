@@ -108,6 +108,7 @@ from azoth.core.result import (
     TwucoonStatoilAlphaResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
+    UmrprAlphaResult,
     UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
@@ -870,6 +871,12 @@ def wilson_activity_coefficients(
         gamma=tuple(result.gamma),
         warnings=_warnings(result.warnings),
     )
+
+
+def umrpr_alpha(omega: float, Tr: float) -> UmrprAlphaResult:
+    """The UMR-PR alpha function, computed in Rust."""
+    result = _core.umrpr_alpha(omega, Tr)
+    return UmrprAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def tyn_calus_diffusivity(VA: Q, VB: Q, T: Q, eta: Q) -> TynCalusDiffusivityResult:

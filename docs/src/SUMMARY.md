@@ -61,6 +61,7 @@
   - [Twu-Coon parameter alpha function](./eos/twucoon_param_alpha.md)
   - [Twu-Coon Statoil alpha function](./eos/twucoon_statoil_alpha.md)
   - [Liquid binary diffusivity from the Tyn-Calus correlation](./eos/tyn_calus_diffusivity.md)
+  - [UMR-PR alpha function](./eos/umrpr_alpha.md)
   - [van der Waals one-fluid mixing, for a binary](./eos/vdw1f_mix_binary.md)
   - [Liquid binary diffusivity from the Wilke-Chang correlation](./eos/wilke_chang_diffusivity.md)
   - [Bubble-point pressure](./eos/bubble_pressure.md)

@@ -52,6 +52,7 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.twucoon_param_alpha`](./twucoon_param_alpha.md) | $\alpha = T_r^{c(b-1)} \exp\left(a\left(1 - T_r^{bc}\right)\right)$ | NeqSim 3.20.0 `AttractiveTermTwuCoonParam` |
 | [`eos.twucoon_statoil_alpha`](./twucoon_statoil_alpha.md) | $\alpha = T_r^{c(b-1)} \exp\left(a\left(1 - T_r^{bc}\right)\right)$ | NeqSim 3.20.0 `AttractiveTermTwuCoonStatoil` |
 | [`eos.tyn_calus_diffusivity`](./tyn_calus_diffusivity.md) | $D_{AB}^0 = 8.93\times10^{-8}\,\frac{V_B^{0.267}\,T}{\eta_B\,V_A^{0.433}}$ | Tyn, M. T.; Calus, W. F. (1975) |
+| [`eos.umrpr_alpha`](./umrpr_alpha.md) | $\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.384401 + 1.52276\omega - 0.213808\omega^2 + 0.034616\omega^3 - 0.001976\omega^4$ | NeqSim 3.20.0 `AttractiveTermUMRPRU` |
 | [`eos.vdw1f_mix_binary`](./vdw1f_mix_binary.md) | $a_{\mathrm{mix}} = z_{1}^{2}a_{1} + 2z_{1}z_{2}\left(1 - k_{12}\right)\sqrt{a_{1}a_{2}} + z_{2}^{2}a_{2}, \qquad b_{\mathrm{mix}} = z_{1}b_{1} + z_{2}b_{2}$ | van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text |
 | [`eos.wilke_chang_diffusivity`](./wilke_chang_diffusivity.md) | $D_{AB}^0 = 7.4\times10^{-8}\,\frac{(\phi_B M_B)^{1/2}\,T}{\eta_B\,V_A^{0.6}}$ | Wilke, C. R.; Chang, P. (1955) |
 

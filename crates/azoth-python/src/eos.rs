@@ -33,7 +33,7 @@ use crate::results::{
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
     PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
     PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
-    PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
+    PyTynCalusDiffusivityResult, PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult,
     PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
     PyVuFlashResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
     PyWilsonActivityCoefficientsResult,
@@ -935,6 +935,17 @@ pub fn nrtl_activity_coefficients(
 ) -> PyResult<PyNrtlActivityCoefficientsResult> {
     azoth_eos::nrtl_activity_coefficients(T, &x, &Dij, &alpha)
         .map(|r| PyNrtlActivityCoefficientsResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The UMR-PR alpha function.
+#[pyfunction]
+#[pyo3(signature = (omega, Tr))]
+#[pyo3(text_signature = "(omega, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn umrpr_alpha(py: Python<'_>, omega: f64, Tr: f64) -> PyResult<PyUmrprAlphaResult> {
+    azoth_eos::umrpr_alpha(omega, Tr)
+        .map(|r| PyUmrprAlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

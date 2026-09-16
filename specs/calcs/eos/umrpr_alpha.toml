@@ -1,0 +1,48 @@
+id = "eos.umrpr_alpha"
+name = "UMR-PR alpha function"
+equation = "alpha = (1 + m*(1 - sqrt(Tr)))**2 with m = 0.384401 + 1.52276*omega - 0.213808*omega**2 + 0.034616*omega**3 - 0.001976*omega**4"
+latex = '''\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.384401 + 1.52276\omega - 0.213808\omega^2 + 0.034616\omega^3 - 0.001976\omega^4'''
+assumptions = ["the `m` is the UMR-PR kappa, a fourth-order fit in the acentric factor.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+references = ["Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011."]
+[source]
+standard = "NeqSim 3.20.0 `AttractiveTermUMRPRU`"
+edition = "`alpha(temperature)`, ported verbatim"
+doi = "10.1021/i160057a011"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "the acentric factor\n"
+[inputs.Tr]
+unit = "dimensionless"
+description = "the reduced temperature\n"
+[outputs]
+[outputs.alpha]
+unit = "dimensionless"
+description = "the temperature-dependent alpha function\n"
+[[valid_range]]
+quantity = "Tr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the formula takes a square root of `Tr`; zero and below are not states\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "omega = 0.1, Tr = 0.7:\n\n  m = 0.384401 + 1.52276*0.1 - 0.213808*0.01 + 0.034616*0.001 - 0.001976*0.0001 = 0.5345733384\n  sqrt(Tr) = sqrt(0.7) = 0.8366600265340756\n  1 - sqrt(Tr) = 0.16333997346592444\n  m*(1 - sqrt(Tr)) = 0.5345733384*0.16333997346592444 = 0.08731719490984663\n  alpha = (1 + 0.08731719490984663)**2 = 1.1822586823466172\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.1
+Tr = 0.7
+[worked_example.expected]
+alpha = 1.1822586823466172
+[implementations]
+python = "azoth.eos.umrpr_alpha"
+rust = "azoth_eos::umrpr_alpha"
+[[tests]]
+id = "worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

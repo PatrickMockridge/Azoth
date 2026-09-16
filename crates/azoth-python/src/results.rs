@@ -34,9 +34,10 @@ use azoth_eos::results::{
     SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
     TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrprAlphaResult,
+    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -2049,6 +2050,39 @@ impl From<&NrtlActivityCoefficientsResult> for PyNrtlActivityCoefficientsResult 
         Self {
             ln_gamma: r.ln_gamma.clone(),
             gamma: r.gamma.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.umrpr_alpha`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "UmrprAlphaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyUmrprAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyUmrprAlphaResult {
+    fn __repr__(&self) -> String {
+        format!("UmrprAlphaResult(alpha={})", self.alpha)
+    }
+}
+
+impl From<&UmrprAlphaResult> for PyUmrprAlphaResult {
+    fn from(r: &UmrprAlphaResult) -> Self {
+        Self {
+            alpha: r.alpha,
             warnings: transport(&r.warnings),
         }
     }
@@ -4120,6 +4154,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
             WilsonActivityCoefficientsResult::FIELDS.to_vec()
         }
         TynCalusDiffusivityResult::CALC_ID => TynCalusDiffusivityResult::FIELDS.to_vec(),
+        UmrprAlphaResult::CALC_ID => UmrprAlphaResult::FIELDS.to_vec(),
         WilkeChangDiffusivityResult::CALC_ID => WilkeChangDiffusivityResult::FIELDS.to_vec(),
         HaydukMinhasDiffusivityResult::CALC_ID => HaydukMinhasDiffusivityResult::FIELDS.to_vec(),
         SchwartzentruberAlphaResult::CALC_ID => SchwartzentruberAlphaResult::FIELDS.to_vec(),
@@ -4217,6 +4252,7 @@ pub fn calc_ids() -> Vec<String> {
         ChungViscosityResult::CALC_ID.to_string(),
         ChungConductivityResult::CALC_ID.to_string(),
         TynCalusDiffusivityResult::CALC_ID.to_string(),
+        UmrprAlphaResult::CALC_ID.to_string(),
         WilkeChangDiffusivityResult::CALC_ID.to_string(),
         HaydukMinhasDiffusivityResult::CALC_ID.to_string(),
         SchwartzentruberAlphaResult::CALC_ID.to_string(),

@@ -784,6 +784,16 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "alpha", "dimensionless", alpha);
         }
 
+        "eos.umrpr_alpha" => {
+            let (omega, tr) = (take(&inputs, "omega")?, take(&inputs, "Tr")?);
+            let mut alpha = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(py, eos::umrpr_alpha(omega[i], tr[i]), &mut warnings)?;
+                alpha.push(r.alpha);
+            }
+            push_values(&mut columns, "alpha", "dimensionless", alpha);
+        }
+
         "eos.srk_alpha_ab" => {
             let (kappa, tr, pr) = (
                 take(&inputs, "kappa")?,

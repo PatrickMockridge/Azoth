@@ -135,6 +135,7 @@ from azoth.core.result import (
     TwucoonStatoilAlphaResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
+    UmrprAlphaResult,
     UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
@@ -271,6 +272,7 @@ _TWUCOON_ALPHA = "eos.twucoon_alpha"
 _TWUCOON_PARAM_ALPHA = "eos.twucoon_param_alpha"
 _TWUCOON_STATOIL_ALPHA = "eos.twucoon_statoil_alpha"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
+_UMRPR_ALPHA = "eos.umrpr_alpha"
 _UNIFAC_ACTIVITY_COEFFICIENTS = "eos.unifac_activity_coefficients"
 _UNIQUAC_ACTIVITY_COEFFICIENTS = "eos.uniquac_activity_coefficients"
 _WILSON_ACTIVITY_COEFFICIENTS = "eos.wilson_activity_coefficients"
@@ -926,6 +928,17 @@ def soreide_whitson_alpha(salinity: float, Tr: float) -> SoreideWhitsonAlphaResu
     See :func:`azoth.eos.reference.soreide_whitson_alpha`.
     """
     return resolve(_SOREIDE_WHITSON_ALPHA)(salinity=salinity, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def umrpr_alpha(omega: float, Tr: float) -> UmrprAlphaResult:
+    """The UMR-PR alpha function for a pure component.
+
+    ``omega`` is the acentric factor; ``Tr`` the reduced temperature. The ``m`` is the
+    UMR-PR kappa.
+
+    See :func:`azoth.eos.reference.umrpr_alpha`.
+    """
+    return resolve(_UMRPR_ALPHA)(omega=omega, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def siddiqi_lucas_diffusivity(
