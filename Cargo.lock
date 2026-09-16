@@ -104,6 +104,7 @@ name = "azoth-process"
 version = "0.1.0"
 dependencies = [
  "azoth-core",
+ "azoth-eos",
  "serde",
  "toml",
 ]

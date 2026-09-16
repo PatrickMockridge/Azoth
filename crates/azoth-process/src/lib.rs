@@ -11,9 +11,13 @@
 pub mod channel;
 pub mod check;
 pub mod flowsheet;
+pub mod kernels;
+pub mod stream;
 pub mod unit_op;
 
 pub use channel::{Direction, FieldType, Multiplicity, Port, Shape};
 pub use check::{Diagnostic, validate, validate_palette};
 pub use flowsheet::{Connection, Flowsheet, Instance, Recycle};
+pub use kernels::{mixer, separator, splitter};
+pub use stream::Stream;
 pub use unit_op::{Param, Source, UnitOpSpec};
