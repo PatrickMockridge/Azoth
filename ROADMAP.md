@@ -39,9 +39,9 @@ foundation the rest stands on:
 
 - the single `databank → keycard → every calculation` path, so a calculation names its
   components and every constant it reads comes through one route;
-- the `not-yet` columns the manifest names for `eos.ideal_gas_cp` and
-  `eos.molar_enthalpy_entropy` — the ideal-gas Cp polynomial and the reference-state
-  quantities those two models still take from the caller.
+- the `not-yet` columns the manifest names — the collision and liquid-viscosity
+  constants `eos.viscosity` and `eos.thermal_conductivity` read. `eos.molar_enthalpy_entropy`
+  already reads the databank, and `eos.ideal_gas_cp` stays a scalar calc by design.
 
 ### Tier 1 — oil and gas
 
@@ -201,10 +201,11 @@ in this order:
 
 Known blockers that gate P11/P12 kernels:
 
-- `pipe` waits on `databank::Entry` carrying **molar mass, critical volume and dipole**,
-  without which density and viscosity cannot be assembled from a `Mixture`.
-- `compressor`/`expander` wait on the deferred **molar-entropy field `s`** and an
-  `entropy_at` helper.
-- `eos.critical_point` needs a general symmetric eigensolver (cyclic Jacobi) for N ≥ 3.
+- `pipe` waits on density and viscosity assembled from a `Mixture` — the P1 transport
+  models that read the collision and liquid-viscosity columns the manifest marks
+  `not-yet`. The databank fields it also needs (molar mass, critical volume, dipole)
+  are carried.
+- `compressor`/`expander` wait on the **molar-entropy field `s`** on the stream record;
+  the `entropy_at` helper already exists (`ps_flash`).
 - `eos.pt_phase_envelope`'s dew branch and critical point need NeqSim's analytic Jacobian
   and `calcCrit` for a tight port; the central-difference version is approximate.
