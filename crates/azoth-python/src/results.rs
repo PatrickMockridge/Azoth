@@ -31,10 +31,10 @@ use azoth_eos::results::{
     RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
     SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TynCalusDiffusivityResult,
-    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -878,6 +878,39 @@ impl PyTwucoonAlphaResult {
 
 impl From<&TwucoonAlphaResult> for PyTwucoonAlphaResult {
     fn from(r: &TwucoonAlphaResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.twucoon_param_alpha`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TwucoonParamAlphaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTwucoonParamAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTwucoonParamAlphaResult {
+    fn __repr__(&self) -> String {
+        format!("TwucoonParamAlphaResult(alpha={})", self.alpha)
+    }
+}
+
+impl From<&TwucoonParamAlphaResult> for PyTwucoonParamAlphaResult {
+    fn from(r: &TwucoonParamAlphaResult) -> Self {
         Self {
             alpha: r.alpha,
             warnings: transport(&r.warnings),
@@ -3754,6 +3787,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         Pr78KappaResult::CALC_ID => Pr78KappaResult::FIELDS.to_vec(),
         TwuKappaResult::CALC_ID => TwuKappaResult::FIELDS.to_vec(),
         TwucoonAlphaResult::CALC_ID => TwucoonAlphaResult::FIELDS.to_vec(),
+        TwucoonParamAlphaResult::CALC_ID => TwucoonParamAlphaResult::FIELDS.to_vec(),
         Vdw1fMixBinaryResult::CALC_ID => Vdw1fMixBinaryResult::FIELDS.to_vec(),
         RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
         PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
@@ -3853,6 +3887,7 @@ pub fn calc_ids() -> Vec<String> {
         Pr78KappaResult::CALC_ID.to_string(),
         TwuKappaResult::CALC_ID.to_string(),
         TwucoonAlphaResult::CALC_ID.to_string(),
+        TwucoonParamAlphaResult::CALC_ID.to_string(),
         Vdw1fMixBinaryResult::CALC_ID.to_string(),
         RachfordRiceBinaryResult::CALC_ID.to_string(),
         PrMolarVolumeResult::CALC_ID.to_string(),

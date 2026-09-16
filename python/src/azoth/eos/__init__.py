@@ -123,6 +123,7 @@ from azoth.core.result import (
     TuFlashResult,
     TvFlashResult,
     TwucoonAlphaResult,
+    TwucoonParamAlphaResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult,
@@ -252,6 +253,7 @@ _PRSV_KAPPA = "eos.prsv_kappa"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _TWUCOON_ALPHA = "eos.twucoon_alpha"
+_TWUCOON_PARAM_ALPHA = "eos.twucoon_param_alpha"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _UNIFAC_ACTIVITY_COEFFICIENTS = "eos.unifac_activity_coefficients"
 _UNIQUAC_ACTIVITY_COEFFICIENTS = "eos.uniquac_activity_coefficients"
@@ -410,6 +412,18 @@ def twucoon_alpha(omega: float, Tr: float) -> TwucoonAlphaResult:
     See :func:`azoth.eos.reference.twucoon_alpha`.
     """
     return resolve(_TWUCOON_ALPHA)(omega=omega, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def twucoon_param_alpha(a: float, b: float, c: float, Tr: float) -> TwucoonParamAlphaResult:
+    """The Twu-Coon parameter alpha function for a pure component.
+
+    ``a``, ``b`` and ``c`` are the fitted Twu-Coon parameters; ``Tr`` the reduced
+    temperature. The alpha is cubic-agnostic - the ``a`` and ``b`` it scales are the
+    cubic's own.
+
+    See :func:`azoth.eos.reference.twucoon_param_alpha`.
+    """
+    return resolve(_TWUCOON_PARAM_ALPHA)(a=a, b=b, c=c, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def pr_departure(

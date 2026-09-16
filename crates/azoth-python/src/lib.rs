@@ -144,6 +144,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::rk_departure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::twu_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(eos::twucoon_alpha, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::twucoon_param_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::vdw1f_mix_binary, m)?)?;
     m.add_function(wrap_pyfunction!(eos::rachford_rice_binary, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_molar_volume, m)?)?;

@@ -37,6 +37,7 @@
 //!   - specs/calcs/eos/srk_z_factor.toml
 //!   - specs/calcs/eos/twu_kappa.toml
 //!   - specs/calcs/eos/twucoon_alpha.toml
+//!   - specs/calcs/eos/twucoon_param_alpha.toml
 //!   - specs/calcs/eos/tyn_calus_diffusivity.toml
 //!   - specs/calcs/eos/vdw1f_mix_binary.toml
 //!   - specs/calcs/eos/wilke_chang_diffusivity.toml
@@ -4001,6 +4002,67 @@ pub static TWUCOON_ALPHA_SPEC: CalcSpec = CalcSpec {
     tests: TWUCOON_ALPHA_TESTS,
 };
 
+/// Registry entry for `eos.twucoon_param_alpha`.
+static TWUCOON_PARAM_ALPHA_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "Tr",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "the formula takes fractional powers of `Tr`; zero and below are not states",
+    },
+}];
+
+static TWUCOON_PARAM_ALPHA_TESTS: &[TestCase] = &[TestCase {
+    id: "round_trip_units",
+    kind: "property",
+    property: Some("unit_round_trip"),
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-12,
+    numbers: &[],
+    lists: &[],
+    strings: &[],
+    vectors: &[],
+    matrices: &[],
+    expected: &[],
+    expected_vectors: &[],
+}];
+
+/// Registered spec for `eos.twucoon_param_alpha`.
+///
+/// Public and addressable directly, so a calc can hold `&TWUCOON_PARAM_ALPHA_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static TWUCOON_PARAM_ALPHA_SPEC: CalcSpec = CalcSpec {
+    id: "eos.twucoon_param_alpha",
+    checks: TWUCOON_PARAM_ALPHA_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("a", 0.1), ("b", 0.5), ("c", 2.0), ("Tr", 0.7)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("alpha", 1.4720779056478814)],
+        expected_vectors: &[],
+    },
+    tests: TWUCOON_PARAM_ALPHA_TESTS,
+};
+
 /// Registry entry for `eos.tyn_calus_diffusivity`.
 static TYN_CALUS_DIFFUSIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
@@ -4411,6 +4473,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &SRK_Z_FACTOR_SPEC,
     &TWU_KAPPA_SPEC,
     &TWUCOON_ALPHA_SPEC,
+    &TWUCOON_PARAM_ALPHA_SPEC,
     &TYN_CALUS_DIFFUSIVITY_SPEC,
     &VDW1F_MIX_BINARY_SPEC,
     &WILKE_CHANG_DIFFUSIVITY_SPEC,

@@ -1,0 +1,56 @@
+id = "eos.twucoon_param_alpha"
+name = "Twu-Coon parameter alpha function"
+equation = "alpha = Tr**(c*(b-1)) * exp(a*(1 - Tr**(b*c)))"
+latex = '''\alpha = T_r^{c(b-1)} \exp\left(a\left(1 - T_r^{bc}\right)\right)'''
+assumptions = ["the three parameters are the caller's fitted Twu-Coon parameters, not the cubic's `a` and `b`.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+references = ["Twu, C. H.; Coon, J. E.; Cunningham, J. R. (1995). \"A new generalized alpha function for a cubic equation of state. Part 1. Peng-Robinson equation.\" Fluid Phase Equilib. 105, 49-59. DOI 10.1016/0378-3812(94)02601-V."]
+[source]
+standard = "NeqSim 3.20.0 `AttractiveTermTwuCoonParam`"
+edition = "`alpha(temperature)`, ported verbatim"
+doi = "10.1016/0378-3812(94)02601-V"
+[inputs]
+[inputs.a]
+unit = "dimensionless"
+description = "the first Twu-Coon parameter\n"
+[inputs.b]
+unit = "dimensionless"
+description = "the second Twu-Coon parameter\n"
+[inputs.c]
+unit = "dimensionless"
+description = "the third Twu-Coon parameter\n"
+[inputs.Tr]
+unit = "dimensionless"
+description = "the reduced temperature\n"
+[outputs]
+[outputs.alpha]
+unit = "dimensionless"
+description = "the temperature-dependent alpha function\n"
+[[valid_range]]
+quantity = "Tr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the formula takes fractional powers of `Tr`; zero and below are not states\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "a = 0.1, b = 0.5, c = 2.0, Tr = 0.7:\n\n  c*(b-1) = 2.0*(0.5-1) = -1.0\n  Tr**(c*(b-1)) = 0.7**-1.0 = 1.4285714285714286\n  b*c = 0.5*2.0 = 1.0\n  Tr**(b*c) = 0.7**1.0 = 0.7\n  1 - Tr**(b*c) = 0.3\n  a*(1 - Tr**(b*c)) = 0.1*0.3 = 0.03\n  exp(0.03) = 1.030454533953517\n  alpha = 1.4285714285714286 * 1.030454533953517 = 1.4720779056478814\n"
+tolerance = 1e-12
+[worked_example.inputs]
+a = 0.1
+b = 0.5
+c = 2.0
+Tr = 0.7
+[worked_example.expected]
+alpha = 1.4720779056478814
+[implementations]
+python = "azoth.eos.twucoon_param_alpha"
+rust = "azoth_eos::twucoon_param_alpha"
+[[tests]]
+id = "worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

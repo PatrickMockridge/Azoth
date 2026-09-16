@@ -55,6 +55,7 @@ __all__ = [
     "SrkZFactorBatch",
     "TwuKappaBatch",
     "TwucoonAlphaBatch",
+    "TwucoonParamAlphaBatch",
     "TynCalusDiffusivityBatch",
     "Vdw1fMixBinaryBatch",
     "WilkeChangDiffusivityBatch",
@@ -90,6 +91,7 @@ __all__ = [
     "srk_z_factor",
     "twu_kappa",
     "twucoon_alpha",
+    "twucoon_param_alpha",
     "tyn_calus_diffusivity",
     "vdw1f_mix_binary",
     "wilke_chang_diffusivity",
@@ -128,6 +130,7 @@ _RK_DEPARTURE = "eos.rk_departure"
 _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _TWUCOON_ALPHA = "eos.twucoon_alpha"
+_TWUCOON_PARAM_ALPHA = "eos.twucoon_param_alpha"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 
@@ -1446,6 +1449,39 @@ def twucoon_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> TwucoonAlph
         _TWUCOON_ALPHA,
         {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
         _build_twucoon,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class TwucoonParamAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.twucoon_param_alpha`."""
+
+    #: The Twu-Coon parameter alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_twucoon_param(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> TwucoonParamAlphaBatch:
+    return TwucoonParamAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def twucoon_param_alpha(
+    *, a: Sequence[float], b: Sequence[float], c: Sequence[float], Tr: Sequence[float]
+) -> TwucoonParamAlphaBatch:
+    """The Twu-Coon parameter alpha function, over arrays."""
+    result: TwucoonParamAlphaBatch = run(
+        _TWUCOON_PARAM_ALPHA,
+        {
+            "a": sequence(a, "a"),
+            "b": sequence(b, "b"),
+            "c": sequence(c, "c"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_twucoon_param,
     )
     return result
 

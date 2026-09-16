@@ -29,10 +29,11 @@ use crate::results::{
     PyRkDepartureResult, PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult,
     PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult,
     PyThFlashResult, PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult,
-    PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult, PyTynCalusDiffusivityResult,
-    PyUnifacActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
-    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWilkeChangDiffusivityResult,
-    PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
+    PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult,
+    PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
+    PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
+    PyVuFlashResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
+    PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -181,6 +182,23 @@ pub fn twu_kappa(py: Python<'_>, omega: f64) -> PyResult<PyTwuKappaResult> {
 pub fn twucoon_alpha(py: Python<'_>, omega: f64, Tr: f64) -> PyResult<PyTwucoonAlphaResult> {
     azoth_eos::twucoon_alpha(omega, Tr)
         .map(|r| PyTwucoonAlphaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Twu-Coon parameter alpha function.
+#[pyfunction]
+#[pyo3(signature = (a, b, c, Tr))]
+#[pyo3(text_signature = "(a, b, c, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn twucoon_param_alpha(
+    py: Python<'_>,
+    a: f64,
+    b: f64,
+    c: f64,
+    Tr: f64,
+) -> PyResult<PyTwucoonParamAlphaResult> {
+    azoth_eos::twucoon_param_alpha(a, b, c, Tr)
+        .map(|r| PyTwucoonParamAlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

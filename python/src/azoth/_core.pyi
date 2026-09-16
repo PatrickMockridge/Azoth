@@ -573,6 +573,11 @@ class TwucoonAlphaResult:
     warnings: list[Warning]
 
 @final
+class TwucoonParamAlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class TynCalusDiffusivityResult:
     d: Qty
     warnings: list[Warning]
@@ -1102,6 +1107,7 @@ def tv_flash(
 ) -> TvFlashResult: ...
 def twu_kappa(omega: float) -> TwuKappaResult: ...
 def twucoon_alpha(omega: float, Tr: float) -> TwucoonAlphaResult: ...
+def twucoon_param_alpha(a: float, b: float, c: float, Tr: float) -> TwucoonParamAlphaResult: ...
 def tyn_calus_diffusivity(
     VA: float,
     VB: float,

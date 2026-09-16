@@ -802,6 +802,16 @@ class TwucoonAlphaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TwucoonParamAlphaResult(_HasWarnings):
+    """Result of ``eos.twucoon_param_alpha``."""
+
+    #: The temperature-dependent alpha function. Dimensionless.
+    alpha: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PrDaneshAlphaResult(_HasWarnings):
     """Result of ``eos.pr_danesh_alpha``."""
 

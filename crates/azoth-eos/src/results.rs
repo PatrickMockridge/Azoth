@@ -1682,6 +1682,24 @@ impl CalcResult for TwucoonAlphaResult {
     }
 }
 
+/// Result of `eos.twucoon_param_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TwucoonParamAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TwucoonParamAlphaResult {
+    const CALC_ID: &'static str = "eos.twucoon_param_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.pr_danesh_alpha`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PrDaneshAlphaResult {
