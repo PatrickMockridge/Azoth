@@ -68,6 +68,7 @@ from azoth.core.result import (
     PrDepartureResult,
     PrGassem2001AlphaResult,
     PrKappaResult,
+    PrLeeKeslerAlphaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
     PrPenelouxShiftResult,
@@ -299,6 +300,12 @@ def pr_gassem2001_alpha(omega: float, Tr: float) -> PrGassem2001AlphaResult:
     """The Gassem (2001) alpha function, computed in Rust."""
     result = _core.pr_gassem2001_alpha(omega, Tr)
     return PrGassem2001AlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
+
+
+def pr_lee_kesler_alpha(omega: float, Tr: float) -> PrLeeKeslerAlphaResult:
+    """The Peng-Robinson alpha with a Soave-form m-factor, computed in Rust."""
+    result = _core.pr_lee_kesler_alpha(omega, Tr)
+    return PrLeeKeslerAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:

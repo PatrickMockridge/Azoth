@@ -127,6 +127,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Equations of state.
     m.add_function(wrap_pyfunction!(eos::pr_kappa, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_lee_kesler_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::matcop5_prumr_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::matcop_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::matcop_pr_alpha, m)?)?;

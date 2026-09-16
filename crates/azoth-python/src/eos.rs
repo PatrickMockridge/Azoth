@@ -24,9 +24,9 @@ use crate::results::{
     PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult, PyPhFlashResult,
     PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
     PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDepartureResult,
-    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
-    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
     PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
@@ -187,6 +187,21 @@ pub fn pr_gassem2001_alpha(
 ) -> PyResult<PyPrGassem2001AlphaResult> {
     azoth_eos::pr_gassem2001_alpha(omega, Tr)
         .map(|r| PyPrGassem2001AlphaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Peng-Robinson alpha function with a Soave-form m-factor.
+#[pyfunction]
+#[pyo3(signature = (omega, Tr))]
+#[pyo3(text_signature = "(omega, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn pr_lee_kesler_alpha(
+    py: Python<'_>,
+    omega: f64,
+    Tr: f64,
+) -> PyResult<PyPrLeeKeslerAlphaResult> {
+    azoth_eos::pr_lee_kesler_alpha(omega, Tr)
+        .map(|r| PyPrLeeKeslerAlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

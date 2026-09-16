@@ -37,6 +37,7 @@
   - [Peng-Robinson fugacity coefficient and departure functions](./eos/pr_departure.md)
   - [Gassem (2001) alpha function](./eos/pr_gassem2001_alpha.md)
   - [Peng-Robinson attraction-parameter coefficient](./eos/pr_kappa.md)
+  - [Peng-Robinson alpha function with a Soave-form m-factor](./eos/pr_lee_kesler_alpha.md)
   - [Mass density from a molar volume](./eos/pr_mass_density.md)
   - [Molar volume from a compressibility factor](./eos/pr_molar_volume.md)
   - [Peng-Robinson Peneloux volume-translation parameter](./eos/pr_peneloux_shift.md)

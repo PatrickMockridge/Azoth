@@ -1955,3 +1955,21 @@ impl CalcResult for MatcopPrumrNewAlphaResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.pr_lee_kesler_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrLeeKeslerAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrLeeKeslerAlphaResult {
+    const CALC_ID: &'static str = "eos.pr_lee_kesler_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

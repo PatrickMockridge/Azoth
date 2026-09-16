@@ -99,6 +99,7 @@ from azoth.core.result import (
     PrDepartureResult,
     PrGassem2001AlphaResult,
     PrKappaResult,
+    PrLeeKeslerAlphaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
     PrPenelouxShiftResult,
@@ -256,6 +257,7 @@ _PURE_SATURATION = "eos.pure_saturation"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
 _PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
+_PR_LEE_KESLER_ALPHA = "eos.pr_lee_kesler_alpha"
 _PR_DEPARTURE = "eos.pr_departure"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
@@ -417,6 +419,17 @@ def pr_gassem2001_alpha(omega: float, Tr: float) -> PrGassem2001AlphaResult:
     See :func:`azoth.eos.reference.pr_gassem2001_alpha`.
     """
     return resolve(_PR_GASSEM2001_ALPHA)(omega=omega, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def pr_lee_kesler_alpha(omega: float, Tr: float) -> PrLeeKeslerAlphaResult:
+    """The Peng-Robinson alpha function with a Soave-form m-factor.
+
+    ``omega`` is the acentric factor; ``Tr`` the reduced temperature. The alpha is
+    cubic-agnostic - the ``a`` and ``b`` it scales are the cubic's own.
+
+    See :func:`azoth.eos.reference.pr_lee_kesler_alpha`.
+    """
+    return resolve(_PR_LEE_KESLER_ALPHA)(omega=omega, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:

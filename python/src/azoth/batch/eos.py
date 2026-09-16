@@ -43,6 +43,7 @@ __all__ = [
     "PrDepartureBatch",
     "PrGassem2001AlphaBatch",
     "PrKappaBatch",
+    "PrLeeKeslerAlphaBatch",
     "PrMassDensityBatch",
     "PrMolarVolumeBatch",
     "PrPenelouxShiftBatch",
@@ -84,6 +85,7 @@ __all__ = [
     "pr_departure",
     "pr_gassem2001_alpha",
     "pr_kappa",
+    "pr_lee_kesler_alpha",
     "pr_mass_density",
     "pr_molar_volume",
     "pr_peneloux_shift",
@@ -117,6 +119,7 @@ _MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
 _PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
+_PR_LEE_KESLER_ALPHA = "eos.pr_lee_kesler_alpha"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
@@ -466,6 +469,32 @@ def pr_gassem2001_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> PrGas
         _PR_GASSEM2001_ALPHA,
         {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
         _build_gassem,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrLeeKeslerAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_lee_kesler_alpha`."""
+
+    #: The Peng-Robinson alpha with a Soave-form m-factor, per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_lee_kesler(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrLeeKeslerAlphaBatch:
+    return PrLeeKeslerAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def pr_lee_kesler_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> PrLeeKeslerAlphaBatch:
+    """The Peng-Robinson alpha with a Soave-form m-factor, over arrays."""
+    result: PrLeeKeslerAlphaBatch = run(
+        _PR_LEE_KESLER_ALPHA,
+        {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
+        _build_lee_kesler,
     )
     return result
 

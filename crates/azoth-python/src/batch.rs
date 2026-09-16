@@ -456,6 +456,16 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "kappa", "dimensionless", kappa);
         }
 
+        "eos.pr_lee_kesler_alpha" => {
+            let (omega, tr) = (take(&inputs, "omega")?, take(&inputs, "Tr")?);
+            let mut alpha = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(py, eos::pr_lee_kesler_alpha(omega[i], tr[i]), &mut warnings)?;
+                alpha.push(r.alpha);
+            }
+            push_values(&mut columns, "alpha", "dimensionless", alpha);
+        }
+
         "eos.matcop_alpha" => {
             let (mc1, mc2, mc3, tr) = (
                 take(&inputs, "mc1")?,

@@ -26,11 +26,11 @@ use azoth_eos::results::{
     MolarEnthalpyEntropyResult, MollerupAlphaResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
     PrDaneshAlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
+    PuFlashResult, PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
     TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
@@ -768,6 +768,39 @@ impl PyPrGassem2001AlphaResult {
 
 impl From<&PrGassem2001AlphaResult> for PyPrGassem2001AlphaResult {
     fn from(r: &PrGassem2001AlphaResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_lee_kesler_alpha`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrLeeKeslerAlphaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrLeeKeslerAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrLeeKeslerAlphaResult {
+    fn __repr__(&self) -> String {
+        format!("PrLeeKeslerAlphaResult(alpha={})", self.alpha)
+    }
+}
+
+impl From<&PrLeeKeslerAlphaResult> for PyPrLeeKeslerAlphaResult {
+    fn from(r: &PrLeeKeslerAlphaResult) -> Self {
         Self {
             alpha: r.alpha,
             warnings: transport(&r.warnings),
@@ -3936,6 +3969,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChokedFlowAreaResult::CALC_ID => ChokedFlowAreaResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
+        PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
         Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),
         MatcopPrAlphaResult::CALC_ID => MatcopPrAlphaResult::FIELDS.to_vec(),
@@ -4041,6 +4075,7 @@ pub fn calc_ids() -> Vec<String> {
         ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
         PrKappaResult::CALC_ID.to_string(),
+        PrLeeKeslerAlphaResult::CALC_ID.to_string(),
         Matcop5PrumrAlphaResult::CALC_ID.to_string(),
         MatcopAlphaResult::CALC_ID.to_string(),
         MatcopPrAlphaResult::CALC_ID.to_string(),
