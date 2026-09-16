@@ -80,6 +80,7 @@ Four sections, and the difference between them is the point:
 - [`eos.ideal_gas_cp`](./eos/ideal_gas_cp.md)
 - [`eos.liquid_heat_capacity`](./eos/liquid_heat_capacity.md)
 - [`eos.matcop_alpha`](./eos/matcop_alpha.md)
+- [`eos.matcop_pr_alpha`](./eos/matcop_pr_alpha.md)
 - [`eos.mollerup_alpha`](./eos/mollerup_alpha.md)
 - [`eos.parachor_surface_tension`](./eos/parachor_surface_tension.md)
 - [`eos.pr78_kappa`](./eos/pr78_kappa.md)

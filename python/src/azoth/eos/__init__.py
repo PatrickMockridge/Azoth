@@ -84,6 +84,7 @@ from azoth.core.result import (
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
     MatcopAlphaResult,
+    MatcopPrAlphaResult,
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
     NrtlActivityCoefficientsResult,
@@ -219,6 +220,7 @@ _ANTOINE_VAPOR_PRESSURE = "eos.antoine_vapor_pressure"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _MASON_SAXENA_CONDUCTIVITY = "eos.mason_saxena_conductivity"
 _MATCOP_ALPHA = "eos.matcop_alpha"
+_MATCOP_PR_ALPHA = "eos.matcop_pr_alpha"
 _MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
@@ -303,6 +305,21 @@ def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaRe
     See :func:`azoth.eos.reference.matcop_alpha`.
     """
     return resolve(_MATCOP_ALPHA)(mc1=mc1, mc2=mc2, mc3=mc3, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def matcop_pr_alpha(
+    omega: float, mc1: float, mc2: float, mc3: float, Tr: float
+) -> MatcopPrAlphaResult:
+    """The Mathias-Copeman alpha function for a pure component, with the standard
+    Peng-Robinson alpha above the critical point.
+
+    ``mc1``, ``mc2`` and ``mc3`` are the fitted Mathias-Copeman coefficients; ``omega`` the
+    acentric factor, used only for the supercritical fallback; ``Tr`` the reduced
+    temperature.
+
+    See :func:`azoth.eos.reference.matcop_pr_alpha`.
+    """
+    return resolve(_MATCOP_PR_ALPHA)(omega=omega, mc1=mc1, mc2=mc2, mc3=mc3, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult:

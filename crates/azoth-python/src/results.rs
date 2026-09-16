@@ -22,14 +22,14 @@ use azoth_eos::results::{
     CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, DewTemperatureResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MatcopAlphaResult,
-    MolarEnthalpyEntropyResult, MollerupAlphaResult, NrtlActivityCoefficientsResult,
-    ParachorSurfaceTensionResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
-    PrDaneshAlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    MatcopPrAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, PhFlashResult, Pr78KappaResult,
+    PrAlphaAbResult, PrDaneshAlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
+    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
+    PuFlashResult, PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
     TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
@@ -536,6 +536,39 @@ impl PyMatcopAlphaResult {
 
 impl From<&MatcopAlphaResult> for PyMatcopAlphaResult {
     fn from(r: &MatcopAlphaResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.matcop_pr_alpha`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MatcopPrAlphaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMatcopPrAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMatcopPrAlphaResult {
+    fn __repr__(&self) -> String {
+        format!("MatcopPrAlphaResult(alpha={})", self.alpha)
+    }
+}
+
+impl From<&MatcopPrAlphaResult> for PyMatcopPrAlphaResult {
+    fn from(r: &MatcopPrAlphaResult) -> Self {
         Self {
             alpha: r.alpha,
             warnings: transport(&r.warnings),
@@ -3804,6 +3837,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),
+        MatcopPrAlphaResult::CALC_ID => MatcopPrAlphaResult::FIELDS.to_vec(),
         MollerupAlphaResult::CALC_ID => MollerupAlphaResult::FIELDS.to_vec(),
         PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
         PrDaneshAlphaResult::CALC_ID => PrDaneshAlphaResult::FIELDS.to_vec(),
@@ -3905,6 +3939,7 @@ pub fn calc_ids() -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID.to_string(),
         PrKappaResult::CALC_ID.to_string(),
         MatcopAlphaResult::CALC_ID.to_string(),
+        MatcopPrAlphaResult::CALC_ID.to_string(),
         MollerupAlphaResult::CALC_ID.to_string(),
         PrAlphaAbResult::CALC_ID.to_string(),
         PrDaneshAlphaResult::CALC_ID.to_string(),

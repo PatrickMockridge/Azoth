@@ -237,6 +237,11 @@ class MatcopAlphaResult:
     warnings: list[Warning]
 
 @final
+class MatcopPrAlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class MolarEnthalpyEntropyResult:
     h: Qty
     s: Qty
@@ -845,6 +850,13 @@ def mason_saxena_conductivity(
     z: list[float],
 ) -> MasonSaxenaConductivityResult: ...
 def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaResult: ...
+def matcop_pr_alpha(
+    omega: float,
+    mc1: float,
+    mc2: float,
+    mc3: float,
+    Tr: float,
+) -> MatcopPrAlphaResult: ...
 def molar_enthalpy_entropy(
     Tc: list[float],
     Pc: list[float],

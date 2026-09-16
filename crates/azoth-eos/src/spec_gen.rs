@@ -12,6 +12,7 @@
 //!   - specs/calcs/eos/ideal_gas_cp.toml
 //!   - specs/calcs/eos/liquid_heat_capacity.toml
 //!   - specs/calcs/eos/matcop_alpha.toml
+//!   - specs/calcs/eos/matcop_pr_alpha.toml
 //!   - specs/calcs/eos/mollerup_alpha.toml
 //!   - specs/calcs/eos/parachor_surface_tension.toml
 //!   - specs/calcs/eos/pr78_kappa.toml
@@ -1247,6 +1248,96 @@ pub static MATCOP_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
     },
     tests: MATCOP_ALPHA_TESTS,
+};
+
+/// Registry entry for `eos.matcop_pr_alpha`.
+static MATCOP_PR_ALPHA_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "Tr",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "the formula takes a square root of `Tr`; zero and below are not states",
+    },
+}];
+
+static MATCOP_PR_ALPHA_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "supercritical_falls_back_to_pr",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("omega", 0.1),
+            ("mc1", 0.5),
+            ("mc2", 0.2),
+            ("mc3", -0.1),
+            ("Tr", 1.5),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("alpha", 0.777477260954653)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.matcop_pr_alpha`.
+///
+/// Public and addressable directly, so a calc can hold `&MATCOP_PR_ALPHA_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static MATCOP_PR_ALPHA_SPEC: CalcSpec = CalcSpec {
+    id: "eos.matcop_pr_alpha",
+    checks: MATCOP_PR_ALPHA_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("omega", 0.1),
+            ("mc1", 0.5),
+            ("mc2", 0.2),
+            ("mc3", -0.1),
+            ("Tr", 0.7),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("alpha", 1.180634768967036)],
+        expected_vectors: &[],
+    },
+    tests: MATCOP_PR_ALPHA_TESTS,
 };
 
 /// Registry entry for `eos.mollerup_alpha`.
@@ -4510,6 +4601,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &IDEAL_GAS_CP_SPEC,
     &LIQUID_HEAT_CAPACITY_SPEC,
     &MATCOP_ALPHA_SPEC,
+    &MATCOP_PR_ALPHA_SPEC,
     &MOLLERUP_ALPHA_SPEC,
     &PARACHOR_SURFACE_TENSION_SPEC,
     &PR78_KAPPA_SPEC,
