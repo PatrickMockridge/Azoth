@@ -4,6 +4,7 @@
 - [Architecture](./architecture/index.md)
   - [The specification](./architecture/specification.md)
   - [Spec files](./architecture/spec-files.md)
+  - [The process schema](./architecture/process-schema.md)
 - [The calculus of thermodynamic dimensionality](./calculus/index.md)
   - [Dimensions](./calculus/dimensions.md)
   - [Barbs](./calculus/barbs.md)

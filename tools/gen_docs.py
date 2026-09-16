@@ -60,6 +60,7 @@ ARCHITECTURE: tuple[tuple[str, str, int], ...] = (
     ("Architecture", "architecture/index.md", 0),
     ("The specification", "architecture/specification.md", 1),
     ("Spec files", "architecture/spec-files.md", 1),
+    ("The process schema", "architecture/process-schema.md", 1),
 )
 
 #: The calculus, a peer of the architecture. Both are hand-written and listed here
