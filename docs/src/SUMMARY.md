@@ -50,6 +50,7 @@
   - [Redlich-Kwong fugacity coefficient and departure functions](./eos/rk_departure.md)
   - [Schwartzentruber-Renon alpha function](./eos/schwartzentruber_alpha.md)
   - [Liquid binary diffusivity from the Siddiqi-Lucas correlation](./eos/siddiqi_lucas_diffusivity.md)
+  - [Soreide-Whitson alpha function for water](./eos/soreide_whitson_alpha.md)
   - [Soave-Redlich-Kwong alpha function and reduced attraction parameters](./eos/srk_alpha_ab.md)
   - [Soave-Redlich-Kwong fugacity coefficient and departure functions](./eos/srk_departure.md)
   - [Soave-Redlich-Kwong attraction-parameter coefficient](./eos/srk_kappa.md)

@@ -105,6 +105,7 @@ Four sections, and the difference between them is the point:
 - [`eos.rk_departure`](./eos/rk_departure.md)
 - [`eos.schwartzentruber_alpha`](./eos/schwartzentruber_alpha.md)
 - [`eos.siddiqi_lucas_diffusivity`](./eos/siddiqi_lucas_diffusivity.md)
+- [`eos.soreide_whitson_alpha`](./eos/soreide_whitson_alpha.md)
 - [`eos.srk_alpha_ab`](./eos/srk_alpha_ab.md)
 - [`eos.srk_departure`](./eos/srk_departure.md)
 - [`eos.srk_kappa`](./eos/srk_kappa.md)

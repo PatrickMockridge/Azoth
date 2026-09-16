@@ -90,6 +90,7 @@ from azoth.core.result import (
     RootStructure,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
+    SoreideWhitsonAlphaResult,
     SrkAlphaAbResult,
     SrkDepartureResult,
     SrkKappaResult,
@@ -923,6 +924,12 @@ def schwartzentruber_alpha(
     """The Schwartzentruber-Renon alpha function, computed in Rust."""
     result = _core.schwartzentruber_alpha(omega, p1, p2, p3, Tr)
     return SchwartzentruberAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
+
+
+def soreide_whitson_alpha(salinity: float, Tr: float) -> SoreideWhitsonAlphaResult:
+    """The Soreide-Whitson alpha function for water, computed in Rust."""
+    result = _core.soreide_whitson_alpha(salinity, Tr)
+    return SoreideWhitsonAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def siddiqi_lucas_diffusivity(

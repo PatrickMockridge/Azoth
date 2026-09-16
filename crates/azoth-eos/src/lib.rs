@@ -92,6 +92,7 @@ pub mod rk_departure;
 pub mod saturation_temperature;
 pub mod schwartzentruber_alpha;
 pub mod siddiqi_lucas_diffusivity;
+pub mod soreide_whitson_alpha;
 pub mod spec_gen;
 pub mod srk_alpha_ab;
 pub mod srk_departure;
@@ -182,18 +183,19 @@ pub use results::{
     PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
     PuFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
     RkAlphaAbResult, RkDepartureResult, RootStructure, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
-    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict, ThFlashResult,
-    ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,
-    TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
-    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
+    StabilityVerdict, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
+    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
 pub use schwartzentruber_alpha::schwartzentruber_alpha;
 pub use siddiqi_lucas_diffusivity::{SiddiqiLucasForm, siddiqi_lucas_diffusivity};
+pub use soreide_whitson_alpha::soreide_whitson_alpha;
 pub use srk_alpha_ab::srk_alpha_ab;
 pub use srk_departure::srk_departure;
 pub use srk_kappa::srk_kappa;

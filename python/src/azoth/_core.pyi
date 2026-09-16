@@ -493,6 +493,11 @@ class SiddiqiLucasDiffusivityResult:
     warnings: list[Warning]
 
 @final
+class SoreideWhitsonAlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class SrkAlphaAbResult:
     alpha: float
     a_reduced: float
@@ -1077,6 +1082,7 @@ def siddiqi_lucas_diffusivity(
     T: float,
     eta: float,
 ) -> SiddiqiLucasDiffusivityResult: ...
+def soreide_whitson_alpha(salinity: float, Tr: float) -> SoreideWhitsonAlphaResult: ...
 def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult: ...
 def srk_departure(
     a_reduced: float,

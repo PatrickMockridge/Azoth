@@ -29,13 +29,14 @@ use crate::results::{
     PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
     PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
     PyRkDepartureResult, PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult,
-    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
-    PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
-    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
-    PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
-    PyUnifacActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
-    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWilkeChangDiffusivityResult,
-    PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
+    PySoreideWhitsonAlphaResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
+    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
+    PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
+    PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
+    PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
+    PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
+    PyVuFlashResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
+    PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -792,6 +793,21 @@ pub fn schwartzentruber_alpha(
 ) -> PyResult<PySchwartzentruberAlphaResult> {
     azoth_eos::schwartzentruber_alpha(omega, p1, p2, p3, Tr)
         .map(|r| PySchwartzentruberAlphaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Soreide-Whitson alpha function for water.
+#[pyfunction]
+#[pyo3(signature = (salinity, Tr))]
+#[pyo3(text_signature = "(salinity, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn soreide_whitson_alpha(
+    py: Python<'_>,
+    salinity: f64,
+    Tr: f64,
+) -> PyResult<PySoreideWhitsonAlphaResult> {
+    azoth_eos::soreide_whitson_alpha(salinity, Tr)
+        .map(|r| PySoreideWhitsonAlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

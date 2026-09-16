@@ -2009,3 +2009,21 @@ impl CalcResult for SchwartzentruberAlphaResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.soreide_whitson_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SoreideWhitsonAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SoreideWhitsonAlphaResult {
+    const CALC_ID: &'static str = "eos.soreide_whitson_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

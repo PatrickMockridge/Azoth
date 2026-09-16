@@ -118,6 +118,7 @@ from azoth.core.result import (
     RkDepartureResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
+    SoreideWhitsonAlphaResult,
     SrkAlphaAbResult,
     SrkDepartureResult,
     SrkKappaResult,
@@ -277,6 +278,7 @@ _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
 _SCHWARTZENTRUBER_ALPHA = "eos.schwartzentruber_alpha"
 _SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
+_SOREIDE_WHITSON_ALPHA = "eos.soreide_whitson_alpha"
 _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
@@ -914,6 +916,16 @@ def schwartzentruber_alpha(
     See :func:`azoth.eos.reference.schwartzentruber_alpha`.
     """
     return resolve(_SCHWARTZENTRUBER_ALPHA)(omega=omega, p1=p1, p2=p2, p3=p3, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def soreide_whitson_alpha(salinity: float, Tr: float) -> SoreideWhitsonAlphaResult:
+    """The Soreide-Whitson alpha function for water.
+
+    ``salinity`` is the molality (mol NaCl / kg H2O); ``Tr`` the reduced temperature.
+
+    See :func:`azoth.eos.reference.soreide_whitson_alpha`.
+    """
+    return resolve(_SOREIDE_WHITSON_ALPHA)(salinity=salinity, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def siddiqi_lucas_diffusivity(

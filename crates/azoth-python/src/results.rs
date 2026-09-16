@@ -30,8 +30,8 @@ use azoth_eos::results::{
     PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
     PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
     RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
-    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
     TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
@@ -2174,6 +2174,39 @@ impl From<&WilsonActivityCoefficientsResult> for PyWilsonActivityCoefficientsRes
     }
 }
 
+/// Result of `eos.soreide_whitson_alpha`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SoreideWhitsonAlphaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySoreideWhitsonAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySoreideWhitsonAlphaResult {
+    fn __repr__(&self) -> String {
+        format!("SoreideWhitsonAlphaResult(alpha={})", self.alpha)
+    }
+}
+
+impl From<&SoreideWhitsonAlphaResult> for PySoreideWhitsonAlphaResult {
+    fn from(r: &SoreideWhitsonAlphaResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.srk_alpha_ab`, transported.
 #[pyclass(
     frozen,
@@ -4090,6 +4123,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         WilkeChangDiffusivityResult::CALC_ID => WilkeChangDiffusivityResult::FIELDS.to_vec(),
         HaydukMinhasDiffusivityResult::CALC_ID => HaydukMinhasDiffusivityResult::FIELDS.to_vec(),
         SchwartzentruberAlphaResult::CALC_ID => SchwartzentruberAlphaResult::FIELDS.to_vec(),
+        SoreideWhitsonAlphaResult::CALC_ID => SoreideWhitsonAlphaResult::FIELDS.to_vec(),
         SiddiqiLucasDiffusivityResult::CALC_ID => SiddiqiLucasDiffusivityResult::FIELDS.to_vec(),
         Co2WaterDiffusivityResult::CALC_ID => Co2WaterDiffusivityResult::FIELDS.to_vec(),
         ParachorSurfaceTensionResult::CALC_ID => ParachorSurfaceTensionResult::FIELDS.to_vec(),
@@ -4186,6 +4220,7 @@ pub fn calc_ids() -> Vec<String> {
         WilkeChangDiffusivityResult::CALC_ID.to_string(),
         HaydukMinhasDiffusivityResult::CALC_ID.to_string(),
         SchwartzentruberAlphaResult::CALC_ID.to_string(),
+        SoreideWhitsonAlphaResult::CALC_ID.to_string(),
         SiddiqiLucasDiffusivityResult::CALC_ID.to_string(),
         Co2WaterDiffusivityResult::CALC_ID.to_string(),
         ParachorSurfaceTensionResult::CALC_ID.to_string(),

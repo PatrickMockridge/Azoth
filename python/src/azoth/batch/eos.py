@@ -55,6 +55,7 @@ __all__ = [
     "RkAlphaAbBatch",
     "RkDepartureBatch",
     "SchwartzentruberAlphaBatch",
+    "SoreideWhitsonAlphaBatch",
     "SrkAlphaAbBatch",
     "SrkDepartureBatch",
     "SrkKappaBatch",
@@ -99,6 +100,7 @@ __all__ = [
     "rk_alpha_ab",
     "rk_departure",
     "schwartzentruber_alpha",
+    "soreide_whitson_alpha",
     "srk_alpha_ab",
     "srk_departure",
     "srk_kappa",
@@ -145,6 +147,7 @@ _HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _SRK_KAPPA = "eos.srk_kappa"
 _SCHWARTZENTRUBER_ALPHA = "eos.schwartzentruber_alpha"
+_SOREIDE_WHITSON_ALPHA = "eos.soreide_whitson_alpha"
 _SRK_ALPHA_AB = "eos.srk_alpha_ab"
 _SRK_Z_FACTOR = "eos.srk_z_factor"
 _SRK_DEPARTURE = "eos.srk_departure"
@@ -1397,6 +1400,34 @@ def schwartzentruber_alpha(
             "Tr": sequence(Tr, "Tr"),
         },
         _build_schwartzentruber,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class SoreideWhitsonAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.soreide_whitson_alpha`."""
+
+    #: The Soreide-Whitson alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_soreide_whitson(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> SoreideWhitsonAlphaBatch:
+    return SoreideWhitsonAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def soreide_whitson_alpha(
+    *, salinity: Sequence[float], Tr: Sequence[float]
+) -> SoreideWhitsonAlphaBatch:
+    """The Soreide-Whitson alpha function, over arrays."""
+    result: SoreideWhitsonAlphaBatch = run(
+        _SOREIDE_WHITSON_ALPHA,
+        {"salinity": sequence(salinity, "salinity"), "Tr": sequence(Tr, "Tr")},
+        _build_soreide_whitson,
     )
     return result
 

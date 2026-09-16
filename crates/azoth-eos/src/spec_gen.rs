@@ -37,6 +37,7 @@
 //!   - specs/calcs/eos/rk_departure.toml
 //!   - specs/calcs/eos/schwartzentruber_alpha.toml
 //!   - specs/calcs/eos/siddiqi_lucas_diffusivity.toml
+//!   - specs/calcs/eos/soreide_whitson_alpha.toml
 //!   - specs/calcs/eos/srk_alpha_ab.toml
 //!   - specs/calcs/eos/srk_departure.toml
 //!   - specs/calcs/eos/srk_kappa.toml
@@ -3932,6 +3933,84 @@ pub static SIDDIQI_LUCAS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
     tests: SIDDIQI_LUCAS_DIFFUSIVITY_TESTS,
 };
 
+/// Registry entry for `eos.soreide_whitson_alpha`.
+static SOREIDE_WHITSON_ALPHA_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Tr",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the formula takes `1/Tr`; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "salinity",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the formula takes a fractional power of `salinity`; negative salinity is not a state",
+        },
+    },
+];
+
+static SOREIDE_WHITSON_ALPHA_TESTS: &[TestCase] = &[TestCase {
+    id: "round_trip_units",
+    kind: "property",
+    property: Some("unit_round_trip"),
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-12,
+    numbers: &[],
+    lists: &[],
+    strings: &[],
+    vectors: &[],
+    matrices: &[],
+    expected: &[],
+    expected_vectors: &[],
+}];
+
+/// Registered spec for `eos.soreide_whitson_alpha`.
+///
+/// Public and addressable directly, so a calc can hold `&SOREIDE_WHITSON_ALPHA_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static SOREIDE_WHITSON_ALPHA_SPEC: CalcSpec = CalcSpec {
+    id: "eos.soreide_whitson_alpha",
+    checks: SOREIDE_WHITSON_ALPHA_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("salinity", 1.0), ("Tr", 0.7)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("alpha", 1.3125796067429514)],
+        expected_vectors: &[],
+    },
+    tests: SOREIDE_WHITSON_ALPHA_TESTS,
+};
+
 /// Registry entry for `eos.srk_alpha_ab`.
 static SRK_ALPHA_AB_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -5116,6 +5195,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &RK_DEPARTURE_SPEC,
     &SCHWARTZENTRUBER_ALPHA_SPEC,
     &SIDDIQI_LUCAS_DIFFUSIVITY_SPEC,
+    &SOREIDE_WHITSON_ALPHA_SPEC,
     &SRK_ALPHA_AB_SPEC,
     &SRK_DEPARTURE_SPEC,
     &SRK_KAPPA_SPEC,

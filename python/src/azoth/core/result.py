@@ -486,6 +486,16 @@ class SchwartzentruberAlphaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SoreideWhitsonAlphaResult(_HasWarnings):
+    """Result of ``eos.soreide_whitson_alpha``."""
+
+    #: The temperature-dependent alpha function. Dimensionless.
+    alpha: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SiddiqiLucasDiffusivityResult(_HasWarnings):
     """Result of ``eos.siddiqi_lucas_diffusivity``."""
 
