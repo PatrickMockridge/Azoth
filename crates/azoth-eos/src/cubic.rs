@@ -35,6 +35,13 @@ pub enum Cubic {
     /// `alpha = 1/sqrt(Tr)` instead of Soave's correlation. The shape is identical to
     /// [`Cubic::Srk`]; only the alpha term in [`crate::alpha_term`] differs.
     Rk,
+    /// Twu-Sim-Tassone: Soave's attraction and repulsion constants with Peng-Robinson's
+    /// geometry, and Twu's alpha. NeqSim's `ComponentTST`.
+    ///
+    /// `omega = (0.427481, 0.086641)` - Soave's constants rounded to six decimals, as
+    /// NeqSim writes them - and `delta = (1 + sqrt(2), 1 - sqrt(2))`. The root finder
+    /// is shared with Peng-Robinson; only the constants here and the Twu alpha differ.
+    Tst,
 }
 
 impl Cubic {
@@ -45,6 +52,7 @@ impl Cubic {
             Cubic::Pr => 0.45724333333,
             Cubic::Srk => 0.4274802335403413,
             Cubic::Rk => 0.4274802335403413,
+            Cubic::Tst => 0.427481,
         }
     }
 
@@ -55,6 +63,7 @@ impl Cubic {
             Cubic::Pr => 0.077803333,
             Cubic::Srk => 0.08664034996495773,
             Cubic::Rk => 0.08664034996495773,
+            Cubic::Tst => 0.086641,
         }
     }
 
@@ -65,6 +74,7 @@ impl Cubic {
             Cubic::Pr => 1.0 + std::f64::consts::SQRT_2,
             Cubic::Srk => 1.0,
             Cubic::Rk => 1.0,
+            Cubic::Tst => 1.0 + std::f64::consts::SQRT_2,
         }
     }
 
@@ -75,6 +85,7 @@ impl Cubic {
             Cubic::Pr => 1.0 - std::f64::consts::SQRT_2,
             Cubic::Srk => 0.0,
             Cubic::Rk => 0.0,
+            Cubic::Tst => 1.0 - std::f64::consts::SQRT_2,
         }
     }
 
@@ -85,6 +96,7 @@ impl Cubic {
             Cubic::Pr => 2.0 * std::f64::consts::SQRT_2,
             Cubic::Srk => 1.0,
             Cubic::Rk => 1.0,
+            Cubic::Tst => 2.0 * std::f64::consts::SQRT_2,
         }
     }
 
@@ -95,6 +107,7 @@ impl Cubic {
             Cubic::Pr => 2.0,
             Cubic::Srk => 1.0,
             Cubic::Rk => 1.0,
+            Cubic::Tst => 2.0,
         }
     }
 
@@ -105,6 +118,7 @@ impl Cubic {
             Cubic::Pr => -1.0,
             Cubic::Srk => 0.0,
             Cubic::Rk => 0.0,
+            Cubic::Tst => -1.0,
         }
     }
 
@@ -191,6 +205,7 @@ impl Cubic {
             Cubic::Pr => "pr",
             Cubic::Srk => "srk",
             Cubic::Rk => "rk",
+            Cubic::Tst => "tst",
         }
     }
 }
@@ -203,8 +218,9 @@ impl std::str::FromStr for Cubic {
             "pr" => Ok(Cubic::Pr),
             "srk" => Ok(Cubic::Srk),
             "rk" => Ok(Cubic::Rk),
+            "tst" => Ok(Cubic::Tst),
             other => Err(format!(
-                "unknown cubic `{other}`; expected `pr`, `srk` or `rk`"
+                "unknown cubic `{other}`; expected `pr`, `srk`, `rk` or `tst`"
             )),
         }
     }

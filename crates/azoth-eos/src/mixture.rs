@@ -237,6 +237,7 @@ impl Mixture {
         self.alpha = match cubic {
             Cubic::Pr => Alpha::Pr,
             Cubic::Srk | Cubic::Rk => Alpha::Srk,
+            Cubic::Tst => Alpha::Twu,
         };
         self
     }
@@ -421,6 +422,11 @@ impl Mixture {
                         term.psi_t(reduced_temperature),
                     )
                 }
+                Cubic::Tst => {
+                    let kappa = twu_kappa(component.omega)?;
+                    warnings.extend(kappa.warnings);
+                    non_soave(&Soave { kappa: kappa.kappa })
+                }
             };
             a.push(a_reduced);
             b.push(b_reduced);
@@ -456,7 +462,9 @@ impl Mixture {
     ) -> Result<PhaseState> {
         let (a_mix, b_mix) = self.mixture_parameters(reduced, x);
         let (z_min, z_max) = match self.cubic {
-            Cubic::Pr => {
+            // TST shares Peng-Robinson's `delta`, so its cubic is PR's; only the omega
+            // constants and the alpha term differ.
+            Cubic::Pr | Cubic::Tst => {
                 let roots = pr_z_factor(a_mix, b_mix)?;
                 (roots.z_min, roots.z_max)
             }

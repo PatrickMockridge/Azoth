@@ -13,6 +13,7 @@
 use azoth_core::units::{kelvins, pascals};
 use azoth_eos::databank;
 use azoth_eos::mixture::{Mixture, ReducedParameters, RootSide};
+use azoth_eos::{Alpha, Cubic, pr_z_factor};
 
 /// The pair, with the interaction parameter NeqSim fits for it.
 ///
@@ -513,4 +514,62 @@ fn both_implementations_agree_on_the_helmholtz_layer() {
             );
         }
     }
+}
+
+/// The Twu-Sim-Tassone cubic: Soave's constants, Peng-Robinson's geometry, Twu's alpha.
+///
+/// `ComponentTST` is the one cubic in NeqSim's set that is not a setting of the three
+/// shapes `Cubic` already carried - it pairs Soave's `omega` pair (rounded to six
+/// decimals) with Peng-Robinson's `delta`. The reduction checks all three axes at once:
+/// the geometry literals, the alpha the builder selects, and the reduced `a`/`b` the
+/// mixture actually computes.
+#[test]
+fn the_tst_cubic_reduces_to_its_constants() {
+    assert_eq!(Cubic::Tst.omega_a(), 0.427481);
+    assert_eq!(Cubic::Tst.omega_b(), 0.086641);
+    assert_eq!(Cubic::Tst.delta1(), 1.0 + std::f64::consts::SQRT_2);
+    assert_eq!(Cubic::Tst.delta2(), 1.0 - std::f64::consts::SQRT_2);
+
+    let entry = databank::entry("methane", None).expect("the databank has it");
+    let mixture = databank::mixture_of(&["methane"], None)
+        .expect("methane resolves")
+        .0
+        .with_cubic(Cubic::Tst);
+    assert_eq!(mixture.alpha(), Alpha::Twu);
+
+    let (t, p) = (300.0, 1_000_000.0);
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("a state");
+    let tr = t / entry.tc;
+    let pr = p / entry.pc;
+    let kappa = azoth_eos::twu_kappa(entry.omega)
+        .expect("a coefficient")
+        .kappa;
+    let alpha = (1.0 + kappa * (1.0 - tr.sqrt())).powi(2);
+
+    assert!(
+        (reduced.a[0] - Cubic::Tst.omega_a() * alpha * pr / (tr * tr)).abs() < 1e-12,
+        "a_reduced {} against the TST constant",
+        reduced.a[0]
+    );
+    assert!(
+        (reduced.b[0] - Cubic::Tst.omega_b() * pr / tr).abs() < 1e-12,
+        "b_reduced {} against the TST constant",
+        reduced.b[0]
+    );
+
+    let psi_expected = -kappa * tr.sqrt() / (1.0 + kappa * (1.0 - tr.sqrt()));
+    assert!(
+        (reduced.psi[0] - psi_expected).abs() < 1e-12,
+        "psi {} against Twu's Soave form",
+        reduced.psi[0]
+    );
+
+    // Peng-Robinson geometry means the vapour root is `pr_z_factor`'s, not `srk_z_factor`'s.
+    let state = mixture
+        .phase_state(&reduced, &[1.0], RootSide::Vapour)
+        .expect("a phase");
+    let roots = pr_z_factor(reduced.a[0], reduced.b[0]).expect("roots");
+    assert_eq!(state.z, roots.z_max);
 }

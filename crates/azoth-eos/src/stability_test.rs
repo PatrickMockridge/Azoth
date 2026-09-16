@@ -64,7 +64,7 @@ fn ln(value: f64) -> f64 {
 fn feed_state(mixture: &Mixture, reduced: &ReducedParameters, z: &[f64]) -> Result<PhaseState> {
     let (a_mix, b_mix) = mixture.mixture_parameters(reduced, z);
     let (z_min, z_max) = match mixture.cubic() {
-        Cubic::Pr => {
+        Cubic::Pr | Cubic::Tst => {
             let roots = pr_z_factor(a_mix, b_mix)?;
             (roots.z_min, roots.z_max)
         }
