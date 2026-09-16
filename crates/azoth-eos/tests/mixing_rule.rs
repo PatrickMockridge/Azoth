@@ -32,6 +32,23 @@ fn classic_t_resolves_kij_inversely_or_linearly() {
 }
 
 #[test]
+fn classic_t2_resolves_each_pair_against_its_own_form() {
+    let rule = MixingRule::ClassicT2 {
+        kij: pair_matrix(0.05),
+        kij_t: pair_matrix(10.0),
+        inverse_temperature: vec![false, false, true, true],
+    };
+    let effective = rule.effective_kij(300.0);
+    // The (0,1) interaction is flagged linear: `k0 + kt * T`, plain `T`.
+    assert_eq!(effective[1], 0.05 + 10.0 * 300.0);
+    // The (1,0) interaction is flagged inverse: `k0 + kt / T`.
+    assert_eq!(effective[2], 0.05 + 10.0 / 300.0);
+    // The diagonal is zero under either form.
+    assert_eq!(effective[0], 0.0);
+    assert_eq!(effective[3], 0.0);
+}
+
+#[test]
 fn classic_rule_is_unchanged_by_temperature() {
     let classic = MixingRule::Classic {
         kij: pair_matrix(0.05),

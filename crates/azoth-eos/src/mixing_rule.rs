@@ -28,6 +28,20 @@ pub enum MixingRule {
         /// `true` for the `kij_t / T` form; `false` for the linear-in-`T` form.
         inverse_temperature: bool,
     },
+    /// Per-pair temperature-dependent `kij`, NeqSim's `ClassicSRKT2`.
+    ///
+    /// Each interaction picks its own form - `kij(T) = kij + kij_t * T` where its flag
+    /// is false, `kij(T) = kij + kij_t / T` where it is true. The linear form is plain
+    /// `T`, not [`MixingRule::ClassicT`]'s `T / 273.15 - 1`.
+    ClassicT2 {
+        /// The constant part, as in [`MixingRule::Classic`].
+        kij: Vec<f64>,
+        /// The temperature coefficient, one entry per interaction.
+        kij_t: Vec<f64>,
+        /// One flag per interaction: `true` for the `kij_t / T` form, `false` for
+        /// `kij_t * T`.
+        inverse_temperature: Vec<bool>,
+    },
 }
 
 impl MixingRule {
@@ -39,7 +53,9 @@ impl MixingRule {
     #[must_use]
     pub fn base_kij(&self, i: usize, j: usize, n: usize) -> f64 {
         let kij = match self {
-            MixingRule::Classic { kij } | MixingRule::ClassicT { kij, .. } => kij,
+            MixingRule::Classic { kij }
+            | MixingRule::ClassicT { kij, .. }
+            | MixingRule::ClassicT2 { kij, .. } => kij,
         };
         kij[i * n + j]
     }
@@ -66,6 +82,22 @@ impl MixingRule {
                         k0 + kt / t_kelvin
                     } else {
                         k0 + kt * (t_kelvin / 273.15 - 1.0)
+                    }
+                })
+                .collect(),
+            MixingRule::ClassicT2 {
+                kij,
+                kij_t,
+                inverse_temperature,
+            } => kij
+                .iter()
+                .zip(kij_t)
+                .zip(inverse_temperature)
+                .map(|((k0, kt), inverse)| {
+                    if *inverse {
+                        k0 + kt / t_kelvin
+                    } else {
+                        k0 + kt * t_kelvin
                     }
                 })
                 .collect(),
