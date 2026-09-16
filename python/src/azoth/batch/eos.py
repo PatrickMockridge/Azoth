@@ -56,6 +56,7 @@ __all__ = [
     "TwuKappaBatch",
     "TwucoonAlphaBatch",
     "TwucoonParamAlphaBatch",
+    "TwucoonStatoilAlphaBatch",
     "TynCalusDiffusivityBatch",
     "Vdw1fMixBinaryBatch",
     "WilkeChangDiffusivityBatch",
@@ -92,6 +93,7 @@ __all__ = [
     "twu_kappa",
     "twucoon_alpha",
     "twucoon_param_alpha",
+    "twucoon_statoil_alpha",
     "tyn_calus_diffusivity",
     "vdw1f_mix_binary",
     "wilke_chang_diffusivity",
@@ -131,6 +133,7 @@ _PR78_KAPPA = "eos.pr78_kappa"
 _TWU_KAPPA = "eos.twu_kappa"
 _TWUCOON_ALPHA = "eos.twucoon_alpha"
 _TWUCOON_PARAM_ALPHA = "eos.twucoon_param_alpha"
+_TWUCOON_STATOIL_ALPHA = "eos.twucoon_statoil_alpha"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 
@@ -1482,6 +1485,39 @@ def twucoon_param_alpha(
             "Tr": sequence(Tr, "Tr"),
         },
         _build_twucoon_param,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class TwucoonStatoilAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.twucoon_statoil_alpha`."""
+
+    #: The Twu-Coon Statoil alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_twucoon_statoil(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> TwucoonStatoilAlphaBatch:
+    return TwucoonStatoilAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def twucoon_statoil_alpha(
+    *, a: Sequence[float], b: Sequence[float], c: Sequence[float], Tr: Sequence[float]
+) -> TwucoonStatoilAlphaBatch:
+    """The Twu-Coon Statoil alpha function, over arrays."""
+    result: TwucoonStatoilAlphaBatch = run(
+        _TWUCOON_STATOIL_ALPHA,
+        {
+            "a": sequence(a, "a"),
+            "b": sequence(b, "b"),
+            "c": sequence(c, "c"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_twucoon_statoil,
     )
     return result
 

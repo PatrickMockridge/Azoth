@@ -97,6 +97,7 @@ from azoth.core.result import (
     TvFlashResult,
     TwucoonAlphaResult,
     TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult,
@@ -329,6 +330,12 @@ def twucoon_param_alpha(a: float, b: float, c: float, Tr: float) -> TwucoonParam
     """The Twu-Coon parameter alpha function, computed in Rust."""
     result = _core.twucoon_param_alpha(a, b, c, Tr)
     return TwucoonParamAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
+
+
+def twucoon_statoil_alpha(a: float, b: float, c: float, Tr: float) -> TwucoonStatoilAlphaResult:
+    """The Twu-Coon Statoil alpha function, computed in Rust."""
+    result = _core.twucoon_statoil_alpha(a, b, c, Tr)
+    return TwucoonStatoilAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def pr_departure(

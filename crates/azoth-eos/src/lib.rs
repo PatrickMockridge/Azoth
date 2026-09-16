@@ -100,6 +100,7 @@ pub mod tv_flash;
 pub mod twu_kappa;
 pub mod twucoon_alpha;
 pub mod twucoon_param_alpha;
+pub mod twucoon_statoil_alpha;
 pub mod tyn_calus_diffusivity;
 pub mod unifac_activity_coefficients;
 pub mod uniquac_activity_coefficients;
@@ -169,10 +170,10 @@ pub use results::{
     RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult,
     SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
     StabilityVerdict, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TynCalusDiffusivityResult,
-    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -191,6 +192,7 @@ pub use tv_flash::tv_flash;
 pub use twu_kappa::twu_kappa;
 pub use twucoon_alpha::twucoon_alpha;
 pub use twucoon_param_alpha::twucoon_param_alpha;
+pub use twucoon_statoil_alpha::twucoon_statoil_alpha;
 pub use tyn_calus_diffusivity::tyn_calus_diffusivity;
 pub use unifac_activity_coefficients::unifac_activity_coefficients;
 pub use uniquac_activity_coefficients::uniquac_activity_coefficients;

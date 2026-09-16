@@ -30,7 +30,7 @@ use crate::results::{
     PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult,
     PyThFlashResult, PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult,
     PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult,
-    PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
+    PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
     PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
     PyVuFlashResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
     PyWilsonActivityCoefficientsResult,
@@ -199,6 +199,23 @@ pub fn twucoon_param_alpha(
 ) -> PyResult<PyTwucoonParamAlphaResult> {
     azoth_eos::twucoon_param_alpha(a, b, c, Tr)
         .map(|r| PyTwucoonParamAlphaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Twu-Coon Statoil alpha function.
+#[pyfunction]
+#[pyo3(signature = (a, b, c, Tr))]
+#[pyo3(text_signature = "(a, b, c, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn twucoon_statoil_alpha(
+    py: Python<'_>,
+    a: f64,
+    b: f64,
+    c: f64,
+    Tr: f64,
+) -> PyResult<PyTwucoonStatoilAlphaResult> {
+    azoth_eos::twucoon_statoil_alpha(a, b, c, Tr)
+        .map(|r| PyTwucoonStatoilAlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
