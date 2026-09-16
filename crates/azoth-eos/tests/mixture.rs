@@ -338,6 +338,7 @@ fn one_component_state(a: f64, b: f64) -> ReducedParameters {
         psi: vec![0.0],
         psi_t: vec![0.0],
         reduced_temperatures: vec![1.0],
+        t_kelvin: 300.0,
         kij: vec![0.0],
         warnings: Vec::new(),
     }
@@ -649,5 +650,47 @@ fn the_soreide_whitson_rule_changes_the_aqueous_a_mix() {
     assert!(
         (aqueous.0 - base_a_mix).abs() > 1e-9,
         "the aqueous a_mix must reflect the salinity correlation, not the base kij"
+    );
+}
+
+/// The Huron-Vidal rule reproduces NeqSim's CLASSIC_HV water/ethanol liquid phase.
+///
+/// `a_mix` and the fugacity coefficients are checked against a NeqSim 3.20.0 TP flash
+/// at T = 350 K, P = 1 bar, x = 0.5/0.5, with the fitted NRTL parameters its database
+/// carries. The tolerance is the databank's, not the port's.
+#[test]
+fn the_huron_vidal_rule_matches_neqsims_water_ethanol_phase() {
+    let (base, _) = databank::mixture_of(&["water", "ethanol"], None).expect("the pair resolves");
+    let k = base.kij(0, 1);
+    let mixture = base
+        .with_cubic(Cubic::Srk)
+        .with_mixing_rule(MixingRule::HuronVidal {
+            kij: vec![0.0, k, k, 0.0],
+            hv_gij: vec![0.0, -2612.51, 2207.03, 0.0],
+            hv_gij_t: vec![0.0, 7.3, -4.6, 0.0],
+            hv_alpha: vec![0.0, 0.2245, 0.2245, 0.0],
+            hv_pairs: vec![false, true, true, false],
+        });
+    let reduced = mixture
+        .reduced_parameters(kelvins(350.0), pascals(100_000.0))
+        .expect("a state");
+    let state = mixture
+        .phase_state(&reduced, &[0.5, 0.5], RootSide::Liquid)
+        .expect("a phase");
+
+    assert!(
+        (state.a_mix - 0.017_011).abs() < 1e-3,
+        "a_mix {}",
+        state.a_mix
+    );
+    assert!(
+        (state.ln_phi[0] - (-0.553_545)).abs() < 1e-3,
+        "ln phi water {}",
+        state.ln_phi[0]
+    );
+    assert!(
+        (state.ln_phi[1] - 0.167_826).abs() < 1e-3,
+        "ln phi ethanol {}",
+        state.ln_phi[1]
     );
 }

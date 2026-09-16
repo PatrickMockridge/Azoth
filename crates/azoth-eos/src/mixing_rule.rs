@@ -58,6 +58,25 @@ pub enum MixingRule {
         /// Equivalent NaCl molality, in mol/kg water.
         salinity: f64,
     },
+    /// The Huron-Vidal rule, NeqSim's `SRKHuronVidal2`.
+    ///
+    /// The attraction parameter mixes the pure components' `a_i/b_i` with the excess
+    /// Gibbs energy of the co-volume-weighted NRTL in [`crate::hv_ge`], so this rule
+    /// resolves its `a_mix` and fugacity in the mixture layer rather than through a
+    /// `kij` matrix. `kij` is the interaction matrix the NRTL's non-`hv_pairs` read.
+    HuronVidal {
+        /// The base interaction matrix, as in [`MixingRule::Classic`].
+        kij: Vec<f64>,
+        /// The fitted NRTL energy `Dij`, in Kelvin.
+        hv_gij: Vec<f64>,
+        /// The temperature coefficient `DijT`.
+        hv_gij_t: Vec<f64>,
+        /// The fitted non-randomness `alpha`.
+        hv_alpha: Vec<f64>,
+        /// One flag per interaction: `true` for the fitted NRTL pair, `false` for the
+        /// cubic's own excess energy.
+        hv_pairs: Vec<bool>,
+    },
 }
 
 /// A component's role in the Soreide-Whitson aqueous correlation.
@@ -88,7 +107,8 @@ impl MixingRule {
             MixingRule::Classic { kij }
             | MixingRule::ClassicT { kij, .. }
             | MixingRule::ClassicT2 { kij, .. }
-            | MixingRule::SoreideWhitson { kij, .. } => kij,
+            | MixingRule::SoreideWhitson { kij, .. }
+            | MixingRule::HuronVidal { kij, .. } => kij,
         };
         kij[i * n + j]
     }
@@ -134,7 +154,9 @@ impl MixingRule {
                     }
                 })
                 .collect(),
-            MixingRule::SoreideWhitson { kij, .. } => kij.clone(),
+            MixingRule::SoreideWhitson { kij, .. } | MixingRule::HuronVidal { kij, .. } => {
+                kij.clone()
+            }
         }
     }
 

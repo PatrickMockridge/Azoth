@@ -458,6 +458,7 @@ impl Mixture {
             psi,
             psi_t,
             reduced_temperatures,
+            t_kelvin: t.value,
             kij: self.mixing_rule.effective_kij(t.value),
             warnings,
         })
@@ -557,16 +558,34 @@ impl Mixture {
         let coefficient = self.cubic.coefficient(a_mix, b_mix);
         let ln_z_minus_b = (z - b_mix).ln();
 
-        let ln_phi: Vec<f64> = (0..n)
-            .map(|i| {
-                let b_ratio = reduced.b[i] / b_mix;
-                // The factor that is 1 for a pure component: `2 * sum_j x_j A_ij / A
-                // - B_i / B`. At N = 1 the sum is `A_11 = A` with `k11 = 0`, so it is
-                // `2 - 1`, and this whole expression becomes `pr_departure`'s.
-                let factor = 2.0 * cross[i] / a_mix - b_ratio;
-                b_ratio * (z - 1.0) - ln_z_minus_b - coefficient * factor * i_term
-            })
-            .collect();
+        let ln_phi: Vec<f64> = if matches!(self.mixing_rule, MixingRule::HuronVidal { .. }) {
+            // The Huron-Vidal fugacity carries the activity coefficient and a volume-
+            // derivative term that the classic `factor * i_term` form cannot express.
+            let ader = self.hv_ader(reduced, x);
+            let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
+            let delta1 = self.cubic.delta1();
+            let delta2 = self.cubic.delta2();
+            (0..n)
+                .map(|i| {
+                    let b_i = reduced.b[i];
+                    let fv = alpha_mix * b_i * z / ((z + delta1 * b_mix) * (z + delta2 * b_mix));
+                    -ln_z_minus_b + b_i / (z - b_mix)
+                        - (ader[i] / self.cubic.delta_diff()) * i_term
+                        - fv
+                })
+                .collect()
+        } else {
+            (0..n)
+                .map(|i| {
+                    let b_ratio = reduced.b[i] / b_mix;
+                    // The factor that is 1 for a pure component: `2 * sum_j x_j A_ij / A
+                    // - B_i / B`. At N = 1 the sum is `A_11 = A` with `k11 = 0`, so it is
+                    // `2 - 1`, and this whole expression becomes `pr_departure`'s.
+                    let factor = 2.0 * cross[i] / a_mix - b_ratio;
+                    b_ratio * (z - 1.0) - ln_z_minus_b - coefficient * factor * i_term
+                })
+                .collect()
+        };
 
         // The mixture's departure functions. `psi_bar` is the composition-weighted
         // average of the components' `psi`, and the two lines below are then
@@ -643,6 +662,36 @@ impl Mixture {
             .phase_kij(&reduced.kij, &reduced.reduced_temperatures, &acentric, x)
     }
 
+    /// The Huron-Vidal attraction coefficients `A_i/B_i - ln gamma_i / Lambda`.
+    fn hv_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
+        let MixingRule::HuronVidal {
+            kij,
+            hv_gij,
+            hv_gij_t,
+            hv_alpha,
+            hv_pairs,
+        } = &self.mixing_rule
+        else {
+            unreachable!("hv_ader is only called for the Huron-Vidal rule");
+        };
+        let lambda = self.cubic.hv_constant();
+        let ln_gamma = crate::hv_ge::hv_ln_gamma(
+            x,
+            reduced.t_kelvin,
+            &reduced.a,
+            &reduced.b,
+            kij,
+            hv_gij,
+            hv_gij_t,
+            hv_alpha,
+            hv_pairs,
+            lambda,
+        );
+        (0..self.len())
+            .map(|i| reduced.a[i] / reduced.b[i] - ln_gamma[i] / lambda)
+            .collect()
+    }
+
     /// The van der Waals one-fluid mixture parameters for a composition.
     ///
     /// ```text
@@ -656,8 +705,13 @@ impl Mixture {
     #[must_use]
     pub fn mixture_parameters(&self, reduced: &ReducedParameters, x: &[f64]) -> (f64, f64) {
         let n = self.len();
-        let kij = self.phase_kij(reduced, x);
         let b_mix = (0..n).map(|i| x[i] * reduced.b[i]).sum();
+        if matches!(self.mixing_rule, MixingRule::HuronVidal { .. }) {
+            let ader = self.hv_ader(reduced, x);
+            let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
+            return (b_mix * alpha_mix, b_mix);
+        }
+        let kij = self.phase_kij(reduced, x);
         let mut a_mix = 0.0;
         for i in 0..n {
             for j in 0..n {
@@ -1001,6 +1055,10 @@ pub struct ReducedParameters {
     /// Soreide-Whitson mixing rule reads it again when it resolves its phase-dependent
     /// interaction matrix.
     pub reduced_temperatures: Vec<f64>,
+    /// The state's absolute temperature, in Kelvin.
+    ///
+    /// The Huron-Vidal mixing rule reads it for its NRTL `tau = Dij / T + DijT`.
+    pub t_kelvin: f64,
     /// The interaction matrix at this state's temperature, flattened row-major.
     ///
     /// The mixing rule's temperature dependence is resolved here, once per

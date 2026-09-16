@@ -140,6 +140,16 @@ impl Cubic {
         a / (self.delta_diff() * b)
     }
 
+    /// The Huron-Vidal constant `ln((1+delta1)/(1+delta2)) / (delta1 - delta2)`.
+    ///
+    /// The geometry factor that turns the excess Gibbs energy at infinite pressure into
+    /// the attraction parameter. `ln(2)` for Soave, `ln((2+sqrt2)/(2-sqrt2))/(2 sqrt2)`
+    /// for Peng-Robinson.
+    #[must_use]
+    pub fn hv_constant(self) -> f64 {
+        ((1.0 + self.delta1()) / (1.0 + self.delta2())).ln() / self.delta_diff()
+    }
+
     /// The monic cubic `z**3 + c2 z**2 + c1 z + c0` in the reduced parameters.
     #[must_use]
     pub fn z_coefficients(self, a: f64, b: f64) -> (f64, f64, f64) {
