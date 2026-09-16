@@ -199,6 +199,11 @@ pub fn data_files() -> Vec<PyDataFile> {
             path: databank::UNIFAC_INTER_PATH.to_string(),
             text: databank::embedded_unifac_inter().to_string(),
         },
+        PyDataFile {
+            name: "mbwr32".to_string(),
+            path: databank::MBWR32_PATH.to_string(),
+            text: databank::embedded_mbwr32().to_string(),
+        },
     ];
     for fluid in fluids::available_fluids() {
         if let (Some(path), Some(text)) =

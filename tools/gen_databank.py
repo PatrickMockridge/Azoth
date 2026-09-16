@@ -53,13 +53,15 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "databank" / "sources" / "neqsim"
 OUT_DIR = ROOT / "data" / "components"
 
-#: The UNIFAC tables, re-rendered like the component and interaction tables so their
-#: compiled headers match the manifest's `as` names. The values are carried verbatim:
-#: group-contribution parameters need no unit conversion and no row filtering.
-UNIFAC_FILES = (
-    ("neqsim/UNIFACcomp.csv", "UNIFACcomp.csv"),
-    ("neqsim/UNIFACGroupParam.csv", "UNIFACGroupParam.csv"),
-    ("neqsim/UNIFACInterParam.csv", "UNIFACInterParam.csv"),
+#: The small tables carried verbatim, re-rendered like the component and interaction
+#: tables so their compiled headers match the manifest's `as` names: group-contribution
+#: parameters and the MBWR-32 coefficients need no unit conversion and no row filtering.
+#: Each entry is `(manifest id, source file, compiled name)`.
+VENDORED_FILES = (
+    ("neqsim/UNIFACcomp.csv", "UNIFACcomp.csv", "UNIFACcomp.csv"),
+    ("neqsim/UNIFACGroupParam.csv", "UNIFACGroupParam.csv", "UNIFACGroupParam.csv"),
+    ("neqsim/UNIFACInterParam.csv", "UNIFACInterParam.csv", "UNIFACInterParam.csv"),
+    ("neqsim/MBWR32param.csv", "MBWR32param.csv", "mbwr32.csv"),
 )
 
 #: The NeqSim release this was generated from, for the `citation` column and for
@@ -422,8 +424,8 @@ def main(argv: list[str] | None = None) -> int:
         (OUT_DIR / "components.csv", COMPONENT_HEADER, components),
         (OUT_DIR / "kij.csv", KIJ_HEADER, kij),
         *[
-            (OUT_DIR / name, *build_unifac(resources / name, file_id))
-            for file_id, name in UNIFAC_FILES
+            (OUT_DIR / compiled, *build_unifac(resources / source, file_id))
+            for file_id, source, compiled in VENDORED_FILES
         ],
     ]
 

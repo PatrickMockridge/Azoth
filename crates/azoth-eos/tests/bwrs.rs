@@ -92,6 +92,20 @@ fn ethane() -> BwrsCoefficients {
     }
 }
 
+/// The databank lookup returns the same coefficients the oracle tests hardcode.
+#[test]
+fn databank_lookup_matches_the_verbatim_coefficients() {
+    assert_eq!(
+        azoth_eos::databank::bwrs_coefficients("methane"),
+        Some(methane())
+    );
+    assert_eq!(
+        azoth_eos::databank::bwrs_coefficients("ethane"),
+        Some(ethane())
+    );
+    assert_eq!(azoth_eos::databank::bwrs_coefficients("water"), None);
+}
+
 fn assert_close(actual: f64, expected: f64) {
     let tol = (expected.abs() * 1e-11).max(1e-18);
     assert!(

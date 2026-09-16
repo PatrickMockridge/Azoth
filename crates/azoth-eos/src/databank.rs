@@ -18,6 +18,7 @@ use std::sync::OnceLock;
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, Result};
 
+use crate::bwrs::BwrsCoefficients;
 use crate::mixture::{Component, Mixture};
 use crate::molar_enthalpy_entropy::IdealGasModel;
 
@@ -33,6 +34,9 @@ const UNIFAC_COMP_CSV: &str = include_str!("../../../data/components/UNIFACcomp.
 const UNIFAC_GROUP_CSV: &str = include_str!("../../../data/components/UNIFACGroupParam.csv");
 const UNIFAC_INTER_CSV: &str = include_str!("../../../data/components/UNIFACInterParam.csv");
 
+/// The compiled MBWR-32 coefficient table, generated from NeqSim's `MBWR32param.csv`.
+const MBWR32_CSV: &str = include_str!("../../../data/components/mbwr32.csv");
+
 /// Repo-relative path of the component table, which is how Python addresses the same
 /// file. A constant rather than a string restated at the call site for the reason the
 /// whole databank exists: two copies of a path can disagree.
@@ -45,6 +49,7 @@ pub const KIJ_PATH: &str = "data/components/kij.csv";
 pub const UNIFAC_COMP_PATH: &str = "data/components/UNIFACcomp.csv";
 pub const UNIFAC_GROUP_PATH: &str = "data/components/UNIFACGroupParam.csv";
 pub const UNIFAC_INTER_PATH: &str = "data/components/UNIFACInterParam.csv";
+pub const MBWR32_PATH: &str = "data/components/mbwr32.csv";
 
 /// The exact bytes this build embedded for the component table.
 ///
@@ -77,6 +82,12 @@ pub fn embedded_unifac_group() -> &'static str {
 #[must_use]
 pub fn embedded_unifac_inter() -> &'static str {
     UNIFAC_INTER_CSV
+}
+
+/// The exact bytes this build embedded for the MBWR-32 table.
+#[must_use]
+pub fn embedded_mbwr32() -> &'static str {
+    MBWR32_CSV
 }
 
 /// One substance's constants, in the units the compiled table holds them in.
@@ -561,6 +572,44 @@ pub fn wilke_chang_phi(name: &str) -> f64 {
         "formic acid" => 1.6,
         _ => 1.0,
     }
+}
+
+/// The MBWR-32 coefficients of a substance by name, if the table carries it.
+///
+/// Only methane and ethane have MBWR-32 parameters in NeqSim's `mbwr32param`; every
+/// other name is `None`, and a BWRS model refuses it rather than estimating a density.
+#[must_use]
+pub fn bwrs_coefficients(name: &str) -> Option<BwrsCoefficients> {
+    fn parse() -> HashMap<String, BwrsCoefficients> {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(MBWR32_CSV.as_bytes());
+        let mut out = HashMap::new();
+        for record in reader.records().flatten() {
+            // Columns: id, name, a0..a31, rhoc.
+            let name = record.get(1).unwrap_or("").trim().to_lowercase();
+            if name.is_empty() {
+                continue;
+            }
+            let mut a = [0.0; 32];
+            for (i, slot) in a.iter_mut().enumerate() {
+                *slot = record
+                    .get(2 + i)
+                    .unwrap_or("")
+                    .trim()
+                    .parse()
+                    .unwrap_or(0.0);
+            }
+            let rhoc = record.get(34).unwrap_or("").trim().parse().unwrap_or(0.0);
+            out.insert(name, BwrsCoefficients { a, rhoc });
+        }
+        out
+    }
+    static TABLE: OnceLock<HashMap<String, BwrsCoefficients>> = OnceLock::new();
+    TABLE
+        .get_or_init(parse)
+        .get(&name.trim().to_lowercase())
+        .copied()
 }
 
 /// Every substance name available, sorted: the table plus whatever an overlay adds.
