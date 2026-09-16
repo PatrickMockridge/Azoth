@@ -105,7 +105,8 @@ pub struct Entry {
 impl Entry {
     /// The cubic's record for this substance.
     pub fn component(&self) -> Result<Component> {
-        Component::new(kelvins(self.tc), pascals(self.pc), self.omega)
+        Ok(Component::new(kelvins(self.tc), pascals(self.pc), self.omega)?
+            .with_molar_mass(self.molar_mass))
     }
 }
 

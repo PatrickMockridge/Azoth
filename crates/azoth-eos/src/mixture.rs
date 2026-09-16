@@ -84,6 +84,10 @@ pub struct Component {
     pub pc: Pressure,
     /// Acentric factor.
     pub omega: f64,
+    /// Molar mass in kg/mol. `None` for a component built from critical constants
+    /// alone; a transport correlation that needs it refuses `None` rather than
+    /// defaulting to a zero molar mass.
+    pub molar_mass: Option<f64>,
     /// Fitted parameters for the alpha correlations that need them, in the order the
     /// correlation reads them. Empty for a component built without a fitted set, which
     /// is every caller-supplied component and every correlation that needs none.
@@ -118,8 +122,19 @@ impl Component {
             tc,
             pc,
             omega,
+            molar_mass: None,
             alpha_params: Vec::new(),
         })
+    }
+
+    /// This component, with its molar mass attached.
+    ///
+    /// The databank populates it; a caller-supplied component may, and a transport
+    /// correlation that needs the mass refuses one that did not.
+    #[must_use]
+    pub fn with_molar_mass(mut self, molar_mass: Option<f64>) -> Self {
+        self.molar_mass = molar_mass;
+        self
     }
 
     /// This component, with fitted alpha parameters attached.
