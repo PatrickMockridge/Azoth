@@ -52,7 +52,7 @@ satisfy for the result to mean what it says.
 
 - the alpha uses the 1978 Peng-Robinson coefficient, the same `m` as `pr78_kappa`.
 
-- NeqSim's class also carries a methane-specific cubic polynomial (`0.969617 + 0.20089*Tr - 0.3256987*Tr**2 + 0.06653*Tr**3`) keyed on the component name; that branch is a component identity, not a scalar function of `omega` and `Tr`, so this calc ports the general form and names the methane branch rather than expressing it.
+- NeqSim's class also carries a methane-specific polynomial keyed on the component name; that branch is a component identity, not a scalar function of `omega` and `Tr`, so this calc ports the general form and names the methane branch.
 
 
 

@@ -381,7 +381,7 @@ CALCS: Final[tuple[dict[str, Any], ...]] = (
         "inputs": {'omega': {'unit': 'dimensionless', 'description': 'the acentric factor\n'}, 'Tr': {'unit': 'dimensionless', 'description': 'the reduced temperature\n'}},
         "outputs": {'alpha': {'unit': 'dimensionless', 'description': 'the temperature-dependent alpha function\n'}},
         "valid_range": [{'quantity': 'Tr', 'min': 0, 'min_inclusive': False, 'severity': 'error', 'rationale': 'the formula takes a square root of `Tr`; zero and below are not states\n'}],
-        "assumptions": ['the alpha uses the 1978 Peng-Robinson coefficient, the same `m` as `pr78_kappa`.\n', "NeqSim's class also carries a methane-specific cubic polynomial (`0.969617 + 0.20089*Tr - 0.3256987*Tr**2 + 0.06653*Tr**3`) keyed on the component name; that branch is a component identity, not a scalar function of `omega` and `Tr`, so this calc ports the general form and names the methane branch rather than expressing it.\n"],
+        "assumptions": ['the alpha uses the 1978 Peng-Robinson coefficient, the same `m` as `pr78_kappa`.\n', "NeqSim's class also carries a methane-specific polynomial keyed on the component name; that branch is a component identity, not a scalar function of `omega` and `Tr`, so this calc ports the general form and names the methane branch.\n"],
         "references": ['Peng, D. Y.; Robinson, D. B. (1978). "The Characterization of the Heptanes and Heavier Fractions for the GPA Peng-Robinson Programs." GPA Research Report RR-28.', 'Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.'],
         "solver": None,
         "data": None,

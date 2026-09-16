@@ -2,7 +2,7 @@ id = "eos.pr_delft1998_alpha"
 name = "Peng-Robinson alpha function, Delft (1998)"
 equation = "alpha = (1 + m*(1 - sqrt(Tr)))**2, with m the 1978 Peng-Robinson coefficient (0.379642 + 1.48503*omega - 0.164423*omega**2 + 0.01666*omega**3 for omega > 0.49, else 0.37464 + 1.54226*omega - 0.26992*omega**2)"
 latex = '''\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = \begin{cases} 0.379642 + 1.48503\omega - 0.164423\omega^2 + 0.01666\omega^3 & \omega > 0.49 \\ 0.37464 + 1.54226\omega - 0.26992\omega^2 & \text{otherwise} \end{cases}'''
-assumptions = ["the alpha uses the 1978 Peng-Robinson coefficient, the same `m` as `pr78_kappa`.\n", "NeqSim's class also carries a methane-specific cubic polynomial (`0.969617 + 0.20089*Tr - 0.3256987*Tr**2 + 0.06653*Tr**3`) keyed on the component name; that branch is a component identity, not a scalar function of `omega` and `Tr`, so this calc ports the general form and names the methane branch rather than expressing it.\n"]
+assumptions = ["the alpha uses the 1978 Peng-Robinson coefficient, the same `m` as `pr78_kappa`.\n", "NeqSim's class also carries a methane-specific polynomial keyed on the component name; that branch is a component identity, not a scalar function of `omega` and `Tr`, so this calc ports the general form and names the methane branch.\n"]
 references = ["Peng, D. Y.; Robinson, D. B. (1978). \"The Characterization of the Heptanes and Heavier Fractions for the GPA Peng-Robinson Programs.\" GPA Research Report RR-28.", "Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011."]
 [source]
 standard = "NeqSim 3.20.0 `AttractiveTermPrDelft1998`"
