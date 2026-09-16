@@ -17,7 +17,8 @@
 pub use uom::si::f64::{
     Area, DiffusionCoefficient, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate,
     MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
-    TemperatureInterval, ThermalConductivity, ThermodynamicTemperature, Velocity, VolumeRate,
+    SurfaceTension, TemperatureInterval, ThermalConductivity, ThermodynamicTemperature, Velocity,
+    VolumeRate,
 };
 pub use uom::si::{
     area::square_meter, diffusion_coefficient::square_meter_per_second,
@@ -26,9 +27,9 @@ pub use uom::si::{
     molar_energy::joule_per_mole, molar_heat_capacity::joule_per_kelvin_mole,
     molar_mass::kilogram_per_mole, molar_volume::cubic_meter_per_mole, power::watt,
     pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
-    temperature_interval::kelvin as kelvin_interval, thermal_conductivity::watt_per_meter_kelvin,
-    thermodynamic_temperature::kelvin, velocity::meter_per_second,
-    volume_rate::cubic_meter_per_second,
+    surface_tension::newton_per_meter, temperature_interval::kelvin as kelvin_interval,
+    thermal_conductivity::watt_per_meter_kelvin, thermodynamic_temperature::kelvin,
+    velocity::meter_per_second, volume_rate::cubic_meter_per_second,
 };
 
 /// A length in metres.
@@ -154,6 +155,12 @@ pub fn watts_per_meter_kelvin(value: f64) -> ThermalConductivity {
 #[must_use]
 pub fn watts_per_square_meter_kelvin(value: f64) -> HeatTransfer {
     HeatTransfer::new::<watt_per_square_meter_kelvin>(value)
+}
+
+/// A surface tension in newtons per metre.
+#[must_use]
+pub fn newtons_per_meter(value: f64) -> SurfaceTension {
+    SurfaceTension::new::<newton_per_meter>(value)
 }
 
 /// A molar volume in cubic metres per mole.

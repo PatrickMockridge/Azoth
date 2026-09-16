@@ -49,6 +49,9 @@ exponents = [1, 1, -3, 0, -1, 0, 0]
 id = "heat_transfer"
 exponents = [0, 1, -3, 0, -1, 0, 0]
 [[dimensions]]
+id = "surface_tension"
+exponents = [0, 1, -2, 0, 0, 0, 0]
+[[dimensions]]
 id = "molar_mass"
 exponents = [0, 1, 0, 0, 0, -1, 0]
 [[dimensions]]
@@ -170,6 +173,12 @@ dimension = "heat_transfer"
 pint = "watt/(meter**2*kelvin)"
 uom = "heat_transfer::watt_per_square_meter_kelvin"
 rust_ctor = "watts_per_square_meter_kelvin"
+[[units]]
+id = "N/m"
+dimension = "surface_tension"
+pint = "newton/meter"
+uom = "surface_tension::newton_per_meter"
+rust_ctor = "newtons_per_meter"
 [[units]]
 id = "kg/mol"
 dimension = "molar_mass"
