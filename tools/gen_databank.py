@@ -93,9 +93,6 @@ CONVERSIONS: dict[str, Callable[[str], object]] = {
     # carbon number, which is what a Soreide-Whitson kij does, so the comma is a decimal
     # point and the fix is stated here rather than applied silently to the source.
     "KIJWhitsonSoriede": lambda v: float(v.replace(",", ".")),
-    # An integer selector, not a magnitude: the model number the LIQVISC columns
-    # are the coefficients of. Kept whole rather than carried as `3.0`.
-    "LIQVISCMODEL": lambda v: int(float(v)),
 }
 
 

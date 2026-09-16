@@ -100,13 +100,6 @@ pub struct Entry {
     pub critical_volume: Option<f64>,
     /// Dipole moment, in debye.
     pub dipole: Option<f64>,
-    /// The liquid viscosity model selector, naming which correlation the `liqvisc`
-    /// coefficients belong to.
-    pub liqviscmodel: Option<i64>,
-    /// The four liquid viscosity correlation coefficients.
-    pub liqvisc: Option<[f64; 4]>,
-    /// The three liquid thermal conductivity correlation coefficients.
-    pub liquid_conductivity: Option<[f64; 3]>,
 }
 
 impl Entry {
@@ -331,14 +324,6 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "molar_mass_kg_per_mol",
         "critical_volume_m3_per_mol",
         "dipole_moment_debye",
-        "liqviscmodel",
-        "liqvisc1",
-        "liqvisc2",
-        "liqvisc3",
-        "liqvisc4",
-        "liquidconductivity1",
-        "liquidconductivity2",
-        "liquidconductivity3",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -387,38 +372,6 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     "dipole_moment_debye",
                     row,
                 )?),
-                liqviscmodel: Some(integer(
-                    &record,
-                    index["liqviscmodel"],
-                    "liqviscmodel",
-                    row,
-                )?),
-                liqvisc: Some([
-                    number(&record, index["liqvisc1"], "liqvisc1", row)?,
-                    number(&record, index["liqvisc2"], "liqvisc2", row)?,
-                    number(&record, index["liqvisc3"], "liqvisc3", row)?,
-                    number(&record, index["liqvisc4"], "liqvisc4", row)?,
-                ]),
-                liquid_conductivity: Some([
-                    number(
-                        &record,
-                        index["liquidconductivity1"],
-                        "liquidconductivity1",
-                        row,
-                    )?,
-                    number(
-                        &record,
-                        index["liquidconductivity2"],
-                        "liquidconductivity2",
-                        row,
-                    )?,
-                    number(
-                        &record,
-                        index["liquidconductivity3"],
-                        "liquidconductivity3",
-                        row,
-                    )?,
-                ]),
             },
         );
     }
@@ -553,9 +506,6 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 molar_mass: None,
                 critical_volume: None,
                 dipole: None,
-                liqviscmodel: None,
-                liqvisc: None,
-                liquid_conductivity: None,
             })
         }
         (Some(base), Some(over)) => Ok(Entry {
@@ -568,9 +518,6 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             molar_mass: base.molar_mass,
             critical_volume: base.critical_volume,
             dipole: base.dipole,
-            liqviscmodel: base.liqviscmodel,
-            liqvisc: base.liqvisc,
-            liquid_conductivity: base.liquid_conductivity,
             name: base.name,
         }),
     }
