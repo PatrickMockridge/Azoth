@@ -19,13 +19,13 @@ use crate::results::{
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
     PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMatcopAlphaResult,
-    PyMatcopPrAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
-    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
-    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDepartureResult,
-    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
-    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMolarEnthalpyEntropyResult,
+    PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
+    PyPhFlashResult, PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult,
+    PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
+    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
     PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
@@ -83,6 +83,24 @@ pub fn matcop_pr_alpha(
 ) -> PyResult<PyMatcopPrAlphaResult> {
     azoth_eos::matcop_pr_alpha(omega, mc1, mc2, mc3, Tr)
         .map(|r| PyMatcopPrAlphaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Mathias-Copeman alpha function with the UMR-PR fallback.
+#[pyfunction]
+#[pyo3(signature = (omega, mc1, mc2, mc3, Tr))]
+#[pyo3(text_signature = "(omega, mc1, mc2, mc3, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn matcop_prumr_alpha(
+    py: Python<'_>,
+    omega: f64,
+    mc1: f64,
+    mc2: f64,
+    mc3: f64,
+    Tr: f64,
+) -> PyResult<PyMatcopPrumrAlphaResult> {
+    azoth_eos::matcop_prumr_alpha(omega, mc1, mc2, mc3, Tr)
+        .map(|r| PyMatcopPrumrAlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

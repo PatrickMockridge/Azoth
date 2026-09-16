@@ -242,6 +242,11 @@ class MatcopPrAlphaResult:
     warnings: list[Warning]
 
 @final
+class MatcopPrumrAlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class MolarEnthalpyEntropyResult:
     h: Qty
     s: Qty
@@ -857,6 +862,13 @@ def matcop_pr_alpha(
     mc3: float,
     Tr: float,
 ) -> MatcopPrAlphaResult: ...
+def matcop_prumr_alpha(
+    omega: float,
+    mc1: float,
+    mc2: float,
+    mc3: float,
+    Tr: float,
+) -> MatcopPrumrAlphaResult: ...
 def molar_enthalpy_entropy(
     Tc: list[float],
     Pc: list[float],

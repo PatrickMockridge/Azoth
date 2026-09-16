@@ -1901,3 +1901,21 @@ impl CalcResult for MatcopPrAlphaResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.matcop_prumr_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MatcopPrumrAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for MatcopPrumrAlphaResult {
+    const CALC_ID: &'static str = "eos.matcop_prumr_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

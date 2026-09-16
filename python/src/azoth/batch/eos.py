@@ -32,6 +32,7 @@ __all__ = [
     "LiquidHeatCapacityBatch",
     "MatcopAlphaBatch",
     "MatcopPrAlphaBatch",
+    "MatcopPrumrAlphaBatch",
     "MollerupAlphaBatch",
     "ParachorSurfaceTensionBatch",
     "Pr78KappaBatch",
@@ -70,6 +71,7 @@ __all__ = [
     "liquid_heat_capacity",
     "matcop_alpha",
     "matcop_pr_alpha",
+    "matcop_prumr_alpha",
     "mollerup_alpha",
     "parachor_surface_tension",
     "pr78_kappa",
@@ -104,6 +106,7 @@ __all__ = [
 _PR_KAPPA = "eos.pr_kappa"
 _MATCOP_ALPHA = "eos.matcop_alpha"
 _MATCOP_PR_ALPHA = "eos.matcop_pr_alpha"
+_MATCOP_PRUMR_ALPHA = "eos.matcop_prumr_alpha"
 _MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
@@ -245,6 +248,45 @@ def matcop_pr_alpha(
             "Tr": sequence(Tr, "Tr"),
         },
         _build_matcop_pr,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class MatcopPrumrAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.matcop_prumr_alpha`."""
+
+    #: The Mathias-Copeman alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_matcop_prumr(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> MatcopPrumrAlphaBatch:
+    return MatcopPrumrAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def matcop_prumr_alpha(
+    *,
+    omega: Sequence[float],
+    mc1: Sequence[float],
+    mc2: Sequence[float],
+    mc3: Sequence[float],
+    Tr: Sequence[float],
+) -> MatcopPrumrAlphaBatch:
+    """The Mathias-Copeman alpha with the UMR-PR fallback, over arrays."""
+    result: MatcopPrumrAlphaBatch = run(
+        _MATCOP_PRUMR_ALPHA,
+        {
+            "omega": sequence(omega, "omega"),
+            "mc1": sequence(mc1, "mc1"),
+            "mc2": sequence(mc2, "mc2"),
+            "mc3": sequence(mc3, "mc3"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_matcop_prumr,
     )
     return result
 
