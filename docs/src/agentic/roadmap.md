@@ -61,3 +61,11 @@ alpha functions of P2, for example, are still ahead.
 A `screening` skill is not a promise the library will compute the result — it is an
 honest marker that it does not yet. Until its tranche lands, its
 `Related Azoth functionality` section names the NeqSim class that does, today.
+
+## The agentic surface
+
+The tool schema and session an agent drives — the reflection surface an editor and a
+notebook share with a model — is gated on P12, like the unit-operation tier it describes.
+It is stated in [The middleware](../architecture/middleware.md), not here: a skill is an
+instruction an agent reads, a tool schema is the machine-readable form of the same
+commands.

@@ -52,7 +52,10 @@ checking the orchestration layer wants the instance, not the general statement.*
 
 [`agents/hazop/`](../../../agents/hazop/README.md) is the first agent: the roles
 above, the skills each chains, and the pipeline, in the terms this page fixes. It
-is runnable through `python/azoth/agents`, the DeepSeek Harness boundary.
+is runnable through `python/azoth/agents`, the DeepSeek Harness boundary. The tool
+schema a model is handed — `@tool` and `*tool`, the same reflection surface a GUI
+side panel or a notebook offers — is [the middleware](../architecture/middleware.md),
+deferred until P12.
 
 ## What is not here
 

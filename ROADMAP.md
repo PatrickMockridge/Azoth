@@ -181,3 +181,30 @@ complete rather than silent about them:
   NeqSim's parallel one and is not the port source.
 - **`statistics/`, `util/`, `mcp/`, `mathlib/`, `integration/`, `datapresentation/`,
   `api/`** — infrastructure and tooling, not physics.
+
+## Beyond the port
+
+The interoperation surface — the middleware that a flowsheet editor, a notebook and an
+agent all drive — is built after the port, not beside it. Its shape is
+[The middleware](docs/src/architecture/middleware.md), and it gates on the backend closing
+in this order:
+
+1. **Tier 0** — the one data path closes: the `not-yet` ideal-gas Cp and reference-state
+   columns that `eos.ideal_gas_cp` and `eos.molar_enthalpy_entropy` still take from the
+   caller.
+2. **P1** — transport properties; the pipe and equipment kernels need density and
+   viscosity from a mixture.
+3. **P2–P10** — the physics.
+4. **P11** — a kernel for every palette entry, not six of 25.
+5. **P12** — the flowsheet executor: topological order, a recycle fixed point, a session,
+   structured diagnostics, the TOML/JSON round trip and a result codec.
+
+Known blockers that gate P11/P12 kernels:
+
+- `pipe` waits on `databank::Entry` carrying **molar mass, critical volume and dipole**,
+  without which density and viscosity cannot be assembled from a `Mixture`.
+- `compressor`/`expander` wait on the deferred **molar-entropy field `s`** and an
+  `entropy_at` helper.
+- `eos.critical_point` needs a general symmetric eigensolver (cyclic Jacobi) for N ≥ 3.
+- `eos.pt_phase_envelope`'s dew branch and critical point need NeqSim's analytic Jacobian
+  and `calcCrit` for a tight port; the central-difference version is approximate.

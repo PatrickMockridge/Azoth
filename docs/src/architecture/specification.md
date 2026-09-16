@@ -110,10 +110,16 @@ are vendored and reachable.
 | P11 | Unit operations | `process/equipment/` |
 | P12 | Flowsheets | — |
 
-Beyond P12: mechanical design, safety, cost, electrical, automation, the MCP server,
-`standards/`, `statistics/`, `fluidmechanics/` and `pvtsimulation/`. They are last because
-they are engineering deliverables rather than thermodynamics — a statement about **order**,
-not about whether they belong.
+Beyond P12: the interoperation surface — the middleware a flowsheet editor, a notebook
+and an agent all drive, with the MCP server as its later projection — and then mechanical
+design, safety, cost, electrical, automation, `standards/`, `statistics/`,
+`fluidmechanics/` and `pvtsimulation/`. They are last because they are engineering
+deliverables rather than thermodynamics — a statement about **order**, not about whether
+they belong.
+
+The middleware's shape is [The middleware](./middleware.md), and it is deferred until P12
+closes — an interoperation surface sits on top of the kernels and the executor, not beside
+them.
 
 ---
 
