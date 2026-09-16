@@ -36,6 +36,7 @@ pub mod alpha_term;
 pub mod antoine_vapor_pressure;
 pub mod bubble_pressure;
 pub mod bubble_temperature;
+pub mod bwrs;
 pub mod card;
 pub mod chung_conductivity;
 pub mod chung_viscosity;
