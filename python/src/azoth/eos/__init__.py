@@ -87,6 +87,7 @@ from azoth.core.result import (
     MatcopAlphaResult,
     MatcopPrAlphaResult,
     MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult,
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
     NrtlActivityCoefficientsResult,
@@ -225,6 +226,7 @@ _MATCOP5_PRUMR_ALPHA = "eos.matcop5_prumr_alpha"
 _MATCOP_ALPHA = "eos.matcop_alpha"
 _MATCOP_PR_ALPHA = "eos.matcop_pr_alpha"
 _MATCOP_PRUMR_ALPHA = "eos.matcop_prumr_alpha"
+_MATCOP_PRUMR_NEW_ALPHA = "eos.matcop_prumr_new_alpha"
 _MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
@@ -338,6 +340,28 @@ def matcop_prumr_alpha(
     See :func:`azoth.eos.reference.matcop_prumr_alpha`.
     """
     return resolve(_MATCOP_PRUMR_ALPHA)(omega=omega, mc1=mc1, mc2=mc2, mc3=mc3, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def matcop_prumr_new_alpha(
+    omega: float,
+    mc1: float,
+    mc2: float,
+    mc3: float,
+    mc4: float,
+    mc5: float,
+    Tr: float,
+) -> MatcopPrumrNewAlphaResult:
+    """The five-parameter Mathias-Copeman alpha function for a pure component, UMR-PR
+    new variant.
+
+    ``mc1`` .. ``mc5`` are the fitted Mathias-Copeman coefficients; ``omega`` the acentric
+    factor, used only for the fallback; ``Tr`` the reduced temperature.
+
+    See :func:`azoth.eos.reference.matcop_prumr_new_alpha`.
+    """
+    return resolve(_MATCOP_PRUMR_NEW_ALPHA)(  # type: ignore[no-any-return]
+        omega=omega, mc1=mc1, mc2=mc2, mc3=mc3, mc4=mc4, mc5=mc5, Tr=Tr
+    )
 
 
 def matcop5_prumr_alpha(

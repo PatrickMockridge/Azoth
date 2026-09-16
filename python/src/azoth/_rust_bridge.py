@@ -55,6 +55,7 @@ from azoth.core.result import (
     MatcopAlphaResult,
     MatcopPrAlphaResult,
     MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult,
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
     NrtlActivityCoefficientsResult,
@@ -264,6 +265,14 @@ def matcop_prumr_alpha(
     """The Mathias-Copeman alpha with the UMR-PR fallback, computed in Rust."""
     result = _core.matcop_prumr_alpha(omega, mc1, mc2, mc3, Tr)
     return MatcopPrumrAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
+
+
+def matcop_prumr_new_alpha(
+    omega: float, mc1: float, mc2: float, mc3: float, mc4: float, mc5: float, Tr: float
+) -> MatcopPrumrNewAlphaResult:
+    """The five-parameter Mathias-Copeman alpha, UMR-PR new variant, in Rust."""
+    result = _core.matcop_prumr_new_alpha(omega, mc1, mc2, mc3, mc4, mc5, Tr)
+    return MatcopPrumrNewAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def matcop5_prumr_alpha(

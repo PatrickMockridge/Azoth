@@ -34,6 +34,7 @@ __all__ = [
     "MatcopAlphaBatch",
     "MatcopPrAlphaBatch",
     "MatcopPrumrAlphaBatch",
+    "MatcopPrumrNewAlphaBatch",
     "MollerupAlphaBatch",
     "ParachorSurfaceTensionBatch",
     "Pr78KappaBatch",
@@ -74,6 +75,7 @@ __all__ = [
     "matcop_alpha",
     "matcop_pr_alpha",
     "matcop_prumr_alpha",
+    "matcop_prumr_new_alpha",
     "mollerup_alpha",
     "parachor_surface_tension",
     "pr78_kappa",
@@ -110,6 +112,7 @@ _MATCOP5_PRUMR_ALPHA = "eos.matcop5_prumr_alpha"
 _MATCOP_ALPHA = "eos.matcop_alpha"
 _MATCOP_PR_ALPHA = "eos.matcop_pr_alpha"
 _MATCOP_PRUMR_ALPHA = "eos.matcop_prumr_alpha"
+_MATCOP_PRUMR_NEW_ALPHA = "eos.matcop_prumr_new_alpha"
 _MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
@@ -290,6 +293,49 @@ def matcop_prumr_alpha(
             "Tr": sequence(Tr, "Tr"),
         },
         _build_matcop_prumr,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class MatcopPrumrNewAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.matcop_prumr_new_alpha`."""
+
+    #: The five-parameter Mathias-Copeman alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_matcop_prumr_new(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> MatcopPrumrNewAlphaBatch:
+    return MatcopPrumrNewAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def matcop_prumr_new_alpha(
+    *,
+    omega: Sequence[float],
+    mc1: Sequence[float],
+    mc2: Sequence[float],
+    mc3: Sequence[float],
+    mc4: Sequence[float],
+    mc5: Sequence[float],
+    Tr: Sequence[float],
+) -> MatcopPrumrNewAlphaBatch:
+    """The five-parameter Mathias-Copeman alpha, UMR-PR new variant, over arrays."""
+    result: MatcopPrumrNewAlphaBatch = run(
+        _MATCOP_PRUMR_NEW_ALPHA,
+        {
+            "omega": sequence(omega, "omega"),
+            "mc1": sequence(mc1, "mc1"),
+            "mc2": sequence(mc2, "mc2"),
+            "mc3": sequence(mc3, "mc3"),
+            "mc4": sequence(mc4, "mc4"),
+            "mc5": sequence(mc5, "mc5"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_matcop_prumr_new,
     )
     return result
 

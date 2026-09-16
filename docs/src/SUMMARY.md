@@ -28,6 +28,7 @@
   - [Mathias-Copeman alpha function](./eos/matcop_alpha.md)
   - [Mathias-Copeman alpha function with a Peng-Robinson supercritical fallback](./eos/matcop_pr_alpha.md)
   - [Mathias-Copeman alpha function with the UMR-PR fallback](./eos/matcop_prumr_alpha.md)
+  - [Five-parameter Mathias-Copeman alpha function, UMR-PR new variant](./eos/matcop_prumr_new_alpha.md)
   - [Mollerup alpha function](./eos/mollerup_alpha.md)
   - [Surface tension from the parachor (Macleod-Sugden)](./eos/parachor_surface_tension.md)
   - [Peng-Robinson (1978) attraction-parameter coefficient](./eos/pr78_kappa.md)
