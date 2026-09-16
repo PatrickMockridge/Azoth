@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""Generate the documentation from the calc specs.
+"""Generate the calculation appendix of the documentation from the calc specs.
 
-Reads every spec under specs/calcs/ and writes:
+Reads every spec under specs/calcs/ and writes the generated appendix — the
+per-namespace index pages, one page per calc and per model, and the solvers page —
+and splices the calculation list into the hand-written table of contents:
 
-  docs/src/SUMMARY.md              the mdBook table of contents
-  docs/src/hydraulics/index.md     an index of the calcs
-  docs/src/hydraulics/<id>.md      one page per calc
+  docs/src/SUMMARY.md              the `calcs` appendix, spliced between markers
+  docs/src/<namespace>/index.md    an index of the namespace's calcs
+  docs/src/<namespace>/<id>.md     one page per calc and per model
   docs/src/theory/solvers.md       the solver contract, gathered from the specs
+
+The book itself — the prose pages and the table of contents that lists them — is
+hand-written. This generator owns only the spec-derived appendix, so a calc and its
+reader-facing page cannot drift apart.
 
 CI regenerates these and fails if `git diff` is non-empty, which is what makes
 "the docs are generated from the registry" a property of the build rather than a
@@ -55,38 +61,10 @@ NAMESPACES = {
     "process": "Unit operations",
 }
 
-#: The architecture section, first in the book, with each page's depth under it.
-ARCHITECTURE: tuple[tuple[str, str, int], ...] = (
-    ("Architecture", "architecture/index.md", 0),
-    ("The specification", "architecture/specification.md", 1),
-    ("Spec files", "architecture/spec-files.md", 1),
-    ("The process schema", "architecture/process-schema.md", 1),
-)
-
-#: The calculus, a peer of the architecture. Both are hand-written and listed here
-#: ahead of the generated calculation pages, so a reader meets the formal layer before
-#: its consequences. mdBook silently drops a page that is not named in the summary,
-#: and `tools/check_links.py` fails the build for one that is missing.
-CALCULUS: tuple[tuple[str, str, int], ...] = (
-    ("The calculus of thermodynamic dimensionality", "calculus/index.md", 0),
-    ("Dimensions", "calculus/dimensions.md", 1),
-    ("Barbs", "calculus/barbs.md", 1),
-    ("Processes and channels", "calculus/process.md", 1),
-    ("Reflection and feedback", "calculus/rho.md", 1),
-    ("The keycard as a capability", "calculus/capability.md", 1),
-    ("The vocabulary table", "calculus/vocabulary.md", 1),
-)
-
-#: The agentic layer, a hand-written section that documents the skills an agent
-#: loads to use azoth. Listed after the generated calculation pages rather than with
-#: the architecture and calculus above, because it is a layer *over* the library
-#: rather than a foundation under it.
-AGENTIC: tuple[tuple[str, str, int], ...] = (
-    ("The agentic layer", "agentic/index.md", 0),
-    ("Skills", "agentic/skills.md", 1),
-    ("The skills roadmap", "agentic/roadmap.md", 1),
-    ("Orchestration", "agentic/orchestration.md", 1),
-)
+#: The book's prose pages — architecture, calculus, agentic — are listed by hand in
+#: `docs/src/SUMMARY.md`. This generator owns only the calculation appendix: the
+#: namespace sections of the summary (spliced between markers below), the per-calc and
+#: per-model pages, the namespace index pages, and the solvers page.
 
 
 def namespace_dir(namespace: str) -> Path:
@@ -489,49 +467,39 @@ def render_model(spec: dict[str, Any]) -> str:
     return "".join(parts)
 
 
-def render_summary(calcs: list[dict[str, Any]], models: list[dict[str, Any]] | None = None) -> str:
-    out = "# Summary\n\n- [azoth](./index.md)\n"
-    for title, filename, depth in (*ARCHITECTURE, *CALCULUS):
-        out += f"{'  ' * depth}- [{title}](./{filename})\n"
+def render_calc_summary(
+    calcs: list[dict[str, Any]], models: list[dict[str, Any]] | None = None
+) -> str:
+    """The namespace sections of the summary: every calc and model, linked.
 
+    Spliced between markers in the hand-written `docs/src/SUMMARY.md`, so the prose
+    sections are authored by hand and the calculation appendix stays derived from the
+    specs. A namespace that has models and no calculations still gets a section.
+    """
     by_namespace: dict[str, list[dict[str, Any]]] = {}
     for calc in calcs:
         by_namespace.setdefault(calc["id"].split(".")[0], []).append(calc)
-    # A namespace that has models and no calculations still gets a section.
-    #
-    # It did not. This mapping was built from `calcs` alone, which was every namespace
-    # there was until `process` arrived carrying a unit operation and no calculations
-    # at all - so its page was generated and never listed. That is the same omission
-    # `test_registry_contract.py` records about models not being announced: a list that
-    # was complete when it was written, and a second thing that grew beside it. Here it
-    # is worse than an omission, because `tools/check_links.py` fails the build for any
-    # page missing from the summary, so the failure a reader met was a build error.
     for model in models or []:
         by_namespace.setdefault(model["id"].split(".")[0], [])
 
+    out: list[str] = []
     for namespace in sorted(by_namespace):
         title = namespace_title(namespace)
-        out += f"- [{title}](./{namespace}/index.md)\n"
+        out.append(f"- [{title}](./{namespace}/index.md)")
         for calc in by_namespace[namespace]:
-            out += f"  - [{calc['name']}](./{namespace}/{calc['id'].split('.')[-1]}.md)\n"
+            out.append(f"  - [{calc['name']}](./{namespace}/{calc['id'].split('.')[-1]}.md)")
         for model in sorted(
             (m for m in (models or []) if m["id"].split(".")[0] == namespace),
             key=lambda m: m["id"],
         ):
-            out += f"  - [{model['name']}](./{namespace}/{model['id'].split('.')[-1]}.md)\n"
-
-    for title, filename, depth in AGENTIC:
-        out += f"{'  ' * depth}- [{title}](./{filename})\n"
-
-    out += "- [Solvers](./theory/solvers.md)\n"
-    return out
+            out.append(f"  - [{model['name']}](./{namespace}/{model['id'].split('.')[-1]}.md)")
+    return "\n".join(out)
 
 
-#: The name of the generated block inside the hand-written file that lists every
-#: calculation. docs/src/index.md is the book's front door and is written by hand - but
-#: it carries a list that must contain every id, and a list somebody has to remember to
-#: edit is a list that eventually does not.
-BLOCK = "implemented"
+#: The generated blocks spliced into hand-written files. `docs/src/index.md` carries the
+#: `implemented` list at the book's front door; `docs/src/SUMMARY.md` carries the `calcs`
+#: appendix. Both lists are spec-derived, so a list somebody has to remember to edit is a
+#: list that eventually does not.
 _BEGIN = "<!-- BEGIN GENERATED: {name} -->"
 _END = "<!-- END GENERATED: {name} -->"
 
@@ -688,7 +656,7 @@ def main() -> int:
     for model in models:
         model["cases"] = instances.get(model["id"], [])
 
-    outputs: dict[Path, str] = {DOCS_SRC / "SUMMARY.md": render_summary(calcs, models)}
+    outputs: dict[Path, str] = {}
     outputs[THEORY_DIR / "solvers.md"] = render_theory_solvers(calcs)
     for namespace in sorted(
         {c["id"].split(".")[0] for c in calcs} | {m["id"].split(".")[0] for m in models}
@@ -704,11 +672,11 @@ def main() -> int:
         for model in mine:
             outputs[directory / f"{model['id'].split('.')[-1]}.md"] = render_model(model)
 
-    # The hand-written front door that lists every calculation. Its generated block is
-    # spliced into the existing prose rather than replacing the file, so it is handled
-    # apart from `outputs`.
-    blocks = {
-        DOCS_SRC / "index.md": render_implemented_lists(calcs, models),
+    # The generated blocks spliced into hand-written files rather than replacing them:
+    # the front door's `implemented` list and the table of contents' `calcs` appendix.
+    splices = {
+        DOCS_SRC / "index.md": ("implemented", render_implemented_lists(calcs, models)),
+        DOCS_SRC / "SUMMARY.md": ("calcs", render_calc_summary(calcs, models)),
     }
 
     stale: list[Path] = []
@@ -721,9 +689,9 @@ def main() -> int:
         else:
             path.write_text(content, encoding="utf-8")
 
-    for path, body in blocks.items():
+    for path, (name, body) in splices.items():
         current = path.read_text(encoding="utf-8")
-        updated = replace_block(current, BLOCK, body, str(path))
+        updated = replace_block(current, name, body, str(path))
         if args.check:
             if current != updated:
                 stale.append(path)
