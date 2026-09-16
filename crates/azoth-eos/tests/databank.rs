@@ -59,6 +59,28 @@ fn the_transport_fields_carry_what_neqsim_ships() {
 }
 
 #[test]
+fn the_liquid_transport_fields_carry_what_neqsim_ships() {
+    // The liquid viscosity and conductivity correlations read the model selector and
+    // its coefficients. n-butane is model 2, which a selector defaulted to the common
+    // model 3 would silently get wrong.
+    let methane = databank::entry("methane", None).expect("methane");
+    let butane = databank::entry("n-butane", None).expect("n-butane");
+    assert_eq!(methane.liqviscmodel, Some(3));
+    assert_eq!(butane.liqviscmodel, Some(2));
+    let v = methane.liqvisc.expect("the table carries liquid viscosity");
+    assert!((v[0] - -26.87).abs() < 1e-9, "liqvisc1: {}", v[0]);
+    assert!((v[1] - 1150.0).abs() < 1e-9, "liqvisc2: {}", v[1]);
+    let c = methane
+        .liquid_conductivity
+        .expect("the table carries liquid conductivity");
+    assert!(
+        (c[0] - 0.290_304).abs() < 1e-9,
+        "liquidconductivity1: {}",
+        c[0]
+    );
+}
+
+#[test]
 fn a_name_is_matched_without_regard_to_case_or_surrounding_space() {
     let lower = databank::entry("methane", None).expect("methane");
     let padded = databank::entry("  METHANE  ", None).expect("METHANE");

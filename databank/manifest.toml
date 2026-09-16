@@ -217,38 +217,29 @@ reason = "not-yet: the collision model's core radius; eos.viscosity is planned a
 consumer = "roadmap:2b"
 [[upstreams.files.columns]]
 name = "LIQVISCMODEL"
-disposition = "dropped"
-reason = """\
-    not-a-value: a selector naming which viscosity correlation the following columns belong \
-    to"""
+disposition = "used"
+as = "liqviscmodel"
+unit = "neqsim-internal"
 [[upstreams.files.columns]]
 name = "LIQVISC1"
-disposition = "vendored"
+disposition = "used"
 as = "liqvisc1"
 unit = "neqsim-internal"
-reason = "not-yet: liquid viscosity; eos.viscosity is planned and unimplemented"
-consumer = "roadmap:2b"
 [[upstreams.files.columns]]
 name = "LIQVISC2"
-disposition = "vendored"
+disposition = "used"
 as = "liqvisc2"
 unit = "neqsim-internal"
-reason = "not-yet: liquid viscosity; eos.viscosity is planned and unimplemented"
-consumer = "roadmap:2b"
 [[upstreams.files.columns]]
 name = "LIQVISC3"
-disposition = "vendored"
+disposition = "used"
 as = "liqvisc3"
 unit = "neqsim-internal"
-reason = "not-yet: liquid viscosity; eos.viscosity is planned and unimplemented"
-consumer = "roadmap:2b"
 [[upstreams.files.columns]]
 name = "LIQVISC4"
-disposition = "vendored"
+disposition = "used"
 as = "liqvisc4"
 unit = "neqsim-internal"
-reason = "not-yet: liquid viscosity; eos.viscosity is planned and unimplemented"
-consumer = "roadmap:2b"
 [[upstreams.files.columns]]
 name = "GIBBSENERGYOFFORMATION"
 disposition = "vendored"
@@ -357,31 +348,19 @@ reason = """\
     `SCHWARTZENTRUBER1`-`3` in `thermo/component/`"""
 [[upstreams.files.columns]]
 name = "LIQUIDCONDUCTIVITY1"
-disposition = "vendored"
+disposition = "used"
 as = "liquidconductivity1"
 unit = "neqsim-internal"
-reason = """\
-    not-yet: liquid thermal conductivity; eos.thermal_conductivity is planned and \
-    unimplemented"""
-consumer = "roadmap:2b"
 [[upstreams.files.columns]]
 name = "LIQUIDCONDUCTIVITY2"
-disposition = "vendored"
+disposition = "used"
 as = "liquidconductivity2"
 unit = "neqsim-internal"
-reason = """\
-    not-yet: liquid thermal conductivity; eos.thermal_conductivity is planned and \
-    unimplemented"""
-consumer = "roadmap:2b"
 [[upstreams.files.columns]]
 name = "LIQUIDCONDUCTIVITY3"
-disposition = "vendored"
+disposition = "used"
 as = "liquidconductivity3"
 unit = "neqsim-internal"
-reason = """\
-    not-yet: liquid thermal conductivity; eos.thermal_conductivity is planned and \
-    unimplemented"""
-consumer = "roadmap:2b"
 [[upstreams.files.columns]]
 name = "PARACHOR"
 disposition = "vendored"
