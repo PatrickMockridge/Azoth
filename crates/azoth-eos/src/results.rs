@@ -1700,6 +1700,24 @@ impl CalcResult for PrDaneshAlphaResult {
     }
 }
 
+/// Result of `eos.pr_gassem2001_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrGassem2001AlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrGassem2001AlphaResult {
+    const CALC_ID: &'static str = "eos.pr_gassem2001_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.critical_point`.
 ///
 /// The four state variables of a mixture critical point. `z_c` is here because it is the

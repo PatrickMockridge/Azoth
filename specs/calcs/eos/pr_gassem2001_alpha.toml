@@ -1,0 +1,47 @@
+id = "eos.pr_gassem2001_alpha"
+name = "Gassem (2001) alpha function"
+equation = "alpha = exp((A + B*Tr)*(1 - Tr**(C + D*omega + E*omega**2))),  with A = 2.0, B = 0.836, C = 0.134, D = 0.508, E = -0.0467"
+latex = '''\alpha = \exp\!\left[(A + B T_r)\left(1 - T_r^{\,C + D\omega + E\omega^2}\right)\right]'''
+assumptions = ["the five constants are NeqSim's, fitted for reservoir-fluid components; the acentric factor is the caller's.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+references = ["Gassem, K. A.; Danner, R. P. (2001). \"An alternative alpha function for the Peng-Robinson equation of state.\" J. Chem. Eng. Data."]
+[source]
+standard = "NeqSim 3.20.0 `AttractiveTermPrGassem2001`"
+edition = "`alpha(temperature)`, ported verbatim"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "the acentric factor\n"
+[inputs.Tr]
+unit = "dimensionless"
+description = "the reduced temperature\n"
+[outputs]
+[outputs.alpha]
+unit = "dimensionless"
+description = "the temperature-dependent alpha function\n"
+[[valid_range]]
+quantity = "Tr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the formula takes fractional powers of `Tr`; zero and below are not states\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "omega = 0.152, Tr = 0.7:\n\n  C + D*omega + E*omega**2 = 0.134 + 0.508*0.152 - 0.0467*0.152**2 = 0.2101370432\n  Tr**(...) = 0.7**0.2101370432 = 0.9277893011932157\n  1 - Tr**(...) = 0.07221069880678432\n  A + B*Tr = 2.0 + 0.836*0.7 = 2.5852\n  (A + B*Tr)*(1 - Tr**(...)) = 0.18667909855529882\n  alpha = exp(0.18667909855529882) = 1.2052404595821262\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.152
+Tr = 0.7
+[worked_example.expected]
+alpha = 1.2052404595821262
+[implementations]
+python = "azoth.eos.pr_gassem2001_alpha"
+rust = "azoth_eos::pr_gassem2001_alpha"
+[[tests]]
+id = "worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

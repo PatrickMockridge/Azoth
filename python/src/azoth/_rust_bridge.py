@@ -61,6 +61,7 @@ from azoth.core.result import (
     PrAlphaAbResult,
     PrDaneshAlphaResult,
     PrDepartureResult,
+    PrGassem2001AlphaResult,
     PrKappaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
@@ -247,6 +248,12 @@ def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:
     """The Danesh alpha function, computed in Rust."""
     result = _core.pr_danesh_alpha(omega, Tr)
     return PrDaneshAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
+
+
+def pr_gassem2001_alpha(omega: float, Tr: float) -> PrGassem2001AlphaResult:
+    """The Gassem (2001) alpha function, computed in Rust."""
+    result = _core.pr_gassem2001_alpha(omega, Tr)
+    return PrGassem2001AlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:

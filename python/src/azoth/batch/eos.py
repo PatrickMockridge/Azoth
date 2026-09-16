@@ -36,6 +36,7 @@ __all__ = [
     "PrAlphaAbBatch",
     "PrDaneshAlphaBatch",
     "PrDepartureBatch",
+    "PrGassem2001AlphaBatch",
     "PrKappaBatch",
     "PrMassDensityBatch",
     "PrMolarVolumeBatch",
@@ -69,6 +70,7 @@ __all__ = [
     "pr_alpha_ab",
     "pr_danesh_alpha",
     "pr_departure",
+    "pr_gassem2001_alpha",
     "pr_kappa",
     "pr_mass_density",
     "pr_molar_volume",
@@ -95,6 +97,7 @@ _PR_KAPPA = "eos.pr_kappa"
 _MATCOP_ALPHA = "eos.matcop_alpha"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
+_PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
@@ -217,6 +220,34 @@ def pr_danesh_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> PrDaneshA
         _PR_DANESH_ALPHA,
         {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
         _build_danesh,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrGassem2001AlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_gassem2001_alpha`."""
+
+    #: The Gassem (2001) alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_gassem(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrGassem2001AlphaBatch:
+    return PrGassem2001AlphaBatch(
+        warnings=warnings, units=units, alpha=columns["alpha"]  # type: ignore[arg-type]
+    )
+
+
+def pr_gassem2001_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> PrGassem2001AlphaBatch:
+    """The Gassem (2001) alpha function, over arrays."""
+    result: PrGassem2001AlphaBatch = run(
+        _PR_GASSEM2001_ALPHA,
+        {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
+        _build_gassem,
     )
     return result
 

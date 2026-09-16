@@ -22,9 +22,9 @@ use crate::results::{
     PyMolarEnthalpyEntropyResult, PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
     PyPhFlashResult, PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult,
     PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
-    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
-    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
     PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
     PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
@@ -74,6 +74,21 @@ pub fn matcop_alpha(
 pub fn pr_danesh_alpha(py: Python<'_>, omega: f64, Tr: f64) -> PyResult<PyPrDaneshAlphaResult> {
     azoth_eos::pr_danesh_alpha(omega, Tr)
         .map(|r| PyPrDaneshAlphaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Gassem (2001) alpha function.
+#[pyfunction]
+#[pyo3(signature = (omega, Tr))]
+#[pyo3(text_signature = "(omega, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn pr_gassem2001_alpha(
+    py: Python<'_>,
+    omega: f64,
+    Tr: f64,
+) -> PyResult<PyPrGassem2001AlphaResult> {
+    azoth_eos::pr_gassem2001_alpha(omega, Tr)
+        .map(|r| PyPrGassem2001AlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

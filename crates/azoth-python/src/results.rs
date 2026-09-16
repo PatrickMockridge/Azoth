@@ -24,16 +24,16 @@ use azoth_eos::results::{
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MatcopAlphaResult,
     MolarEnthalpyEntropyResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult,
     PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDepartureResult,
-    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
-    PuFlashResult, PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
-    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TynCalusDiffusivityResult,
-    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
+    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
+    SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
+    TwucoonAlphaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -568,6 +568,39 @@ impl PyPrDaneshAlphaResult {
 
 impl From<&PrDaneshAlphaResult> for PyPrDaneshAlphaResult {
     fn from(r: &PrDaneshAlphaResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_gassem2001_alpha`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrGassem2001AlphaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrGassem2001AlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrGassem2001AlphaResult {
+    fn __repr__(&self) -> String {
+        format!("PrGassem2001AlphaResult(alpha={})", self.alpha)
+    }
+}
+
+impl From<&PrGassem2001AlphaResult> for PyPrGassem2001AlphaResult {
+    fn from(r: &PrGassem2001AlphaResult) -> Self {
         Self {
             alpha: r.alpha,
             warnings: transport(&r.warnings),
@@ -3673,6 +3706,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),
         PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
         PrDaneshAlphaResult::CALC_ID => PrDaneshAlphaResult::FIELDS.to_vec(),
+        PrGassem2001AlphaResult::CALC_ID => PrGassem2001AlphaResult::FIELDS.to_vec(),
         PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
         PrsvKappaResult::CALC_ID => PrsvKappaResult::FIELDS.to_vec(),
         PrDepartureResult::CALC_ID => PrDepartureResult::FIELDS.to_vec(),
@@ -3770,6 +3804,7 @@ pub fn calc_ids() -> Vec<String> {
         MatcopAlphaResult::CALC_ID.to_string(),
         PrAlphaAbResult::CALC_ID.to_string(),
         PrDaneshAlphaResult::CALC_ID.to_string(),
+        PrGassem2001AlphaResult::CALC_ID.to_string(),
         PrZFactorResult::CALC_ID.to_string(),
         PrsvKappaResult::CALC_ID.to_string(),
         PrDepartureResult::CALC_ID.to_string(),

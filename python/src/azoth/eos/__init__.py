@@ -92,6 +92,7 @@ from azoth.core.result import (
     PrAlphaAbResult,
     PrDaneshAlphaResult,
     PrDepartureResult,
+    PrGassem2001AlphaResult,
     PrKappaResult,
     PrMassDensityResult,
     PrMolarVolumeResult,
@@ -242,6 +243,7 @@ _STABILITY_TEST = "eos.stability_test"
 _PURE_SATURATION = "eos.pure_saturation"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
+_PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
 _PR_DEPARTURE = "eos.pr_departure"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
@@ -306,6 +308,17 @@ def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:
     See :func:`azoth.eos.reference.pr_danesh_alpha`.
     """
     return resolve(_PR_DANESH_ALPHA)(omega=omega, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def pr_gassem2001_alpha(omega: float, Tr: float) -> PrGassem2001AlphaResult:
+    """The Gassem (2001) alpha function for a pure component.
+
+    ``omega`` is the acentric factor; ``Tr`` the reduced temperature. The alpha is
+    cubic-agnostic - the ``a`` and ``b`` it scales are the cubic's own.
+
+    See :func:`azoth.eos.reference.pr_gassem2001_alpha`.
+    """
+    return resolve(_PR_GASSEM2001_ALPHA)(omega=omega, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:

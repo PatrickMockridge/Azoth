@@ -85,6 +85,7 @@ Four sections, and the difference between them is the point:
 - [`eos.pr_alpha_ab`](./eos/pr_alpha_ab.md)
 - [`eos.pr_danesh_alpha`](./eos/pr_danesh_alpha.md)
 - [`eos.pr_departure`](./eos/pr_departure.md)
+- [`eos.pr_gassem2001_alpha`](./eos/pr_gassem2001_alpha.md)
 - [`eos.pr_kappa`](./eos/pr_kappa.md)
 - [`eos.pr_mass_density`](./eos/pr_mass_density.md)
 - [`eos.pr_molar_volume`](./eos/pr_molar_volume.md)

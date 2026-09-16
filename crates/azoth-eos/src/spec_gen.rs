@@ -17,6 +17,7 @@
 //!   - specs/calcs/eos/pr_alpha_ab.toml
 //!   - specs/calcs/eos/pr_danesh_alpha.toml
 //!   - specs/calcs/eos/pr_departure.toml
+//!   - specs/calcs/eos/pr_gassem2001_alpha.toml
 //!   - specs/calcs/eos/pr_kappa.toml
 //!   - specs/calcs/eos/pr_mass_density.toml
 //!   - specs/calcs/eos/pr_molar_volume.toml
@@ -1813,6 +1814,67 @@ pub static PR_DEPARTURE_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
     },
     tests: PR_DEPARTURE_TESTS,
+};
+
+/// Registry entry for `eos.pr_gassem2001_alpha`.
+static PR_GASSEM2001_ALPHA_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "Tr",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "the formula takes fractional powers of `Tr`; zero and below are not states",
+    },
+}];
+
+static PR_GASSEM2001_ALPHA_TESTS: &[TestCase] = &[TestCase {
+    id: "round_trip_units",
+    kind: "property",
+    property: Some("unit_round_trip"),
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-12,
+    numbers: &[],
+    lists: &[],
+    strings: &[],
+    vectors: &[],
+    matrices: &[],
+    expected: &[],
+    expected_vectors: &[],
+}];
+
+/// Registered spec for `eos.pr_gassem2001_alpha`.
+///
+/// Public and addressable directly, so a calc can hold `&PR_GASSEM2001_ALPHA_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static PR_GASSEM2001_ALPHA_SPEC: CalcSpec = CalcSpec {
+    id: "eos.pr_gassem2001_alpha",
+    checks: PR_GASSEM2001_ALPHA_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("omega", 0.152), ("Tr", 0.7)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("alpha", 1.2052404595821262)],
+        expected_vectors: &[],
+    },
+    tests: PR_GASSEM2001_ALPHA_TESTS,
 };
 
 /// Registry entry for `eos.pr_kappa`.
@@ -4267,6 +4329,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &PR_ALPHA_AB_SPEC,
     &PR_DANESH_ALPHA_SPEC,
     &PR_DEPARTURE_SPEC,
+    &PR_GASSEM2001_ALPHA_SPEC,
     &PR_KAPPA_SPEC,
     &PR_MASS_DENSITY_SPEC,
     &PR_MOLAR_VOLUME_SPEC,

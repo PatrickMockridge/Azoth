@@ -30,6 +30,7 @@
   - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)
   - [Danesh alpha function](./eos/pr_danesh_alpha.md)
   - [Peng-Robinson fugacity coefficient and departure functions](./eos/pr_departure.md)
+  - [Gassem (2001) alpha function](./eos/pr_gassem2001_alpha.md)
   - [Peng-Robinson attraction-parameter coefficient](./eos/pr_kappa.md)
   - [Mass density from a molar volume](./eos/pr_mass_density.md)
   - [Molar volume from a compressibility factor](./eos/pr_molar_volume.md)

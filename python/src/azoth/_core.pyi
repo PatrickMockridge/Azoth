@@ -301,6 +301,11 @@ class PrDepartureResult:
     warnings: list[Warning]
 
 @final
+class PrGassem2001AlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class PrKappaResult:
     kappa: float
     warnings: list[Warning]
@@ -882,6 +887,7 @@ def pr_departure(
     kappa: float,
     Tr: float,
 ) -> PrDepartureResult: ...
+def pr_gassem2001_alpha(omega: float, Tr: float) -> PrGassem2001AlphaResult: ...
 def pr_kappa(omega: float) -> PrKappaResult: ...
 def pr_mass_density(M: float, v: float) -> PrMassDensityResult: ...
 def pr_molar_volume(z: float, T: float, P: float) -> PrMolarVolumeResult: ...
