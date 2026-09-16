@@ -37,6 +37,7 @@ pub mod antoine_vapor_pressure;
 pub mod bubble_pressure;
 pub mod bubble_temperature;
 pub mod bwrs;
+pub mod bwrs_mixture;
 pub mod card;
 pub mod chung_conductivity;
 pub mod chung_viscosity;
