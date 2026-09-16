@@ -336,6 +336,7 @@ fn one_component_state(a: f64, b: f64) -> ReducedParameters {
         b: vec![b],
         psi: vec![0.0],
         psi_t: vec![0.0],
+        kij: vec![0.0],
         warnings: Vec::new(),
     }
 }

@@ -16,6 +16,7 @@ use crate::alpha_term::{
     Schwartzentruber, Soave, TwuCoon, matcop_kappa, umr_kappa,
 };
 use crate::cubic::Cubic;
+use crate::mixing_rule::MixingRule;
 use crate::{
     pr_alpha_ab, pr_kappa, pr_z_factor, pr78_kappa, rk_alpha_ab, srk_alpha_ab, srk_kappa,
     srk_z_factor, twu_kappa,
@@ -158,7 +159,7 @@ impl Component {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mixture {
     components: Vec<Component>,
-    kij: Vec<f64>,
+    mixing_rule: MixingRule,
     cubic: Cubic,
     alpha: Alpha,
 }
@@ -185,45 +186,10 @@ impl Mixture {
                 "a mixture needs at least one component",
             ));
         }
-        if kij.len() != n * n {
-            return Err(AzothError::invalid_input(
-                "kij",
-                format!(
-                    "kij has {} entries but a mixture of {n} components needs an N x N \
-                     matrix flattened row-major, which is {}",
-                    kij.len(),
-                    n * n
-                ),
-            ));
-        }
-        for i in 0..n {
-            if kij[i * n + i] != 0.0 {
-                return Err(AzothError::invalid_input(
-                    "kij",
-                    format!(
-                        "kij[{i}][{i}] is {} but the diagonal must be zero: a component \
-                         does not interact with itself, and a non-zero diagonal \
-                         silently rescales that component's attraction",
-                        kij[i * n + i]
-                    ),
-                ));
-            }
-            for j in (i + 1)..n {
-                let (forward, backward) = (kij[i * n + j], kij[j * n + i]);
-                if forward != backward {
-                    return Err(AzothError::invalid_input(
-                        "kij",
-                        format!(
-                            "kij[{i}][{j}] is {forward} but kij[{j}][{i}] is {backward}; \
-                             the matrix must be symmetric"
-                        ),
-                    ));
-                }
-            }
-        }
+        check_kij(n, &kij)?;
         Ok(Self {
             components,
-            kij,
+            mixing_rule: MixingRule::Classic { kij },
             cubic: Cubic::default(),
             alpha: Alpha::default(),
         })
@@ -285,10 +251,27 @@ impl Mixture {
         self
     }
 
+    /// This mixture, with its mixing rule changed.
+    ///
+    /// The default is the classic constant-`kij` rule; this swaps in a temperature-
+    /// dependent `kij` (or, later, a Huron-Vidal or Wong-Sandler rule) without
+    /// rebuilding the components. The rule's matrices must already satisfy the same
+    /// invariant [`Mixture::new`] enforces - `N x N`, symmetric, zero diagonal - and a
+    /// rule that does not is a caller error with the same silent failure mode the
+    /// constructor's check exists to prevent.
+    #[must_use]
+    pub fn with_mixing_rule(mut self, mixing_rule: MixingRule) -> Self {
+        self.mixing_rule = mixing_rule;
+        self
+    }
+
     /// The interaction parameter between components `i` and `j`.
+    ///
+    /// The constant part, before any temperature correction - the matrix this mixture
+    /// was built from.
     #[must_use]
     pub fn kij(&self, i: usize, j: usize) -> f64 {
-        self.kij[i * self.components.len() + j]
+        self.mixing_rule.base_kij(i, j, self.components.len())
     }
 
     /// The reduced parameters `(A_i, B_i)` for every component at a state.
@@ -449,6 +432,7 @@ impl Mixture {
             b,
             psi,
             psi_t,
+            kij: self.mixing_rule.effective_kij(t.value),
             warnings,
         })
     }
@@ -535,7 +519,9 @@ impl Mixture {
         let cross: Vec<f64> = (0..n)
             .map(|i| {
                 (0..n)
-                    .map(|j| x[j] * (1.0 - self.kij(i, j)) * (reduced.a[i] * reduced.a[j]).sqrt())
+                    .map(|j| {
+                        x[j] * (1.0 - reduced.kij[i * n + j]) * (reduced.a[i] * reduced.a[j]).sqrt()
+                    })
                     .sum::<f64>()
             })
             .collect();
@@ -564,8 +550,10 @@ impl Mixture {
         let mut weighted_psi_t = 0.0;
         for i in 0..n {
             for j in 0..n {
-                let weight =
-                    x[i] * x[j] * (1.0 - self.kij(i, j)) * (reduced.a[i] * reduced.a[j]).sqrt();
+                let weight = x[i]
+                    * x[j]
+                    * (1.0 - reduced.kij[i * n + j])
+                    * (reduced.a[i] * reduced.a[j]).sqrt();
                 let psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j]);
                 weight_total += weight;
                 weighted_psi += weight * psi_pair;
@@ -636,8 +624,10 @@ impl Mixture {
         let mut a_mix = 0.0;
         for i in 0..n {
             for j in 0..n {
-                a_mix +=
-                    x[i] * x[j] * (1.0 - self.kij(i, j)) * (reduced.a[i] * reduced.a[j]).sqrt();
+                a_mix += x[i]
+                    * x[j]
+                    * (1.0 - reduced.kij[i * n + j])
+                    * (reduced.a[i] * reduced.a[j]).sqrt();
             }
         }
         (a_mix, b_mix)
@@ -875,7 +865,7 @@ impl Mixture {
         let a_ij: Vec<Vec<f64>> = (0..count)
             .map(|i| {
                 (0..count)
-                    .map(|j| (1.0 - self.kij(i, j)) * (a_hat[i] * a_hat[j]).sqrt())
+                    .map(|j| (1.0 - reduced.kij[i * count + j]) * (a_hat[i] * a_hat[j]).sqrt())
                     .collect()
             })
             .collect();
@@ -949,7 +939,57 @@ pub struct ReducedParameters {
     /// `pr_departure` at one component, which is the property the whole mixture layer
     /// is checked against.
     pub psi_t: Vec<f64>,
+    /// The interaction matrix at this state's temperature, flattened row-major.
+    ///
+    /// The mixing rule's temperature dependence is resolved here, once per
+    /// `reduced_parameters` call, so the flash's per-iteration mixing reads a plain
+    /// matrix rather than re-evaluating the rule.
+    pub kij: Vec<f64>,
     /// Warnings raised while computing them - in practice `pr_kappa`'s
     /// `kappa < 0` for a component with a sufficiently negative acentric factor.
     pub warnings: Vec<Warning>,
+}
+
+/// Validate an interaction matrix: `N x N` long, zero diagonal, symmetric.
+///
+/// Shared by [`Mixture::new`] and any rule constructor, so the invariant is checked
+/// once at construction rather than re-derived at every evaluation.
+fn check_kij(n: usize, kij: &[f64]) -> Result<()> {
+    if kij.len() != n * n {
+        return Err(AzothError::invalid_input(
+            "kij",
+            format!(
+                "kij has {} entries but a mixture of {n} components needs an N x N \
+                 matrix flattened row-major, which is {}",
+                kij.len(),
+                n * n
+            ),
+        ));
+    }
+    for i in 0..n {
+        if kij[i * n + i] != 0.0 {
+            return Err(AzothError::invalid_input(
+                "kij",
+                format!(
+                    "kij[{i}][{i}] is {} but the diagonal must be zero: a component \
+                     does not interact with itself, and a non-zero diagonal \
+                     silently rescales that component's attraction",
+                    kij[i * n + i]
+                ),
+            ));
+        }
+        for j in (i + 1)..n {
+            let (forward, backward) = (kij[i * n + j], kij[j * n + i]);
+            if forward != backward {
+                return Err(AzothError::invalid_input(
+                    "kij",
+                    format!(
+                        "kij[{i}][{j}] is {forward} but kij[{j}][{i}] is {backward}; \
+                         the matrix must be symmetric"
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
 }
