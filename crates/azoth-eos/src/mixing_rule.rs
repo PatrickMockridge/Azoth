@@ -77,6 +77,22 @@ pub enum MixingRule {
         /// cubic's own excess energy.
         hv_pairs: Vec<bool>,
     },
+    /// The Wong-Sandler rule, NeqSim's `WongSandlerMixingRule`.
+    ///
+    /// Like [`MixingRule::HuronVidal`] but with a GE-dependent `b_mix` instead of the
+    /// classic co-volume sum. NeqSim reads the cached, DijT-free activity coefficients
+    /// for this rule, so it resolves separately from [`MixingRule::HuronVidal`].
+    WongSandler {
+        /// The interaction matrix the rule's `b_mix` and the NRTL's classic pairs read.
+        kij: Vec<f64>,
+        /// The fitted NRTL energy `Dij`, in Kelvin.
+        hv_gij: Vec<f64>,
+        /// The fitted non-randomness `alpha`.
+        hv_alpha: Vec<f64>,
+        /// One flag per interaction: `true` for the fitted NRTL pair, `false` for the
+        /// cubic's own excess energy.
+        hv_pairs: Vec<bool>,
+    },
 }
 
 /// A component's role in the Soreide-Whitson aqueous correlation.
@@ -108,7 +124,8 @@ impl MixingRule {
             | MixingRule::ClassicT { kij, .. }
             | MixingRule::ClassicT2 { kij, .. }
             | MixingRule::SoreideWhitson { kij, .. }
-            | MixingRule::HuronVidal { kij, .. } => kij,
+            | MixingRule::HuronVidal { kij, .. }
+            | MixingRule::WongSandler { kij, .. } => kij,
         };
         kij[i * n + j]
     }
@@ -154,9 +171,9 @@ impl MixingRule {
                     }
                 })
                 .collect(),
-            MixingRule::SoreideWhitson { kij, .. } | MixingRule::HuronVidal { kij, .. } => {
-                kij.clone()
-            }
+            MixingRule::SoreideWhitson { kij, .. }
+            | MixingRule::HuronVidal { kij, .. }
+            | MixingRule::WongSandler { kij, .. } => kij.clone(),
         }
     }
 

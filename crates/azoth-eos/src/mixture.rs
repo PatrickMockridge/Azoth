@@ -558,24 +558,24 @@ impl Mixture {
         let coefficient = self.cubic.coefficient(a_mix, b_mix);
         let ln_z_minus_b = (z - b_mix).ln();
 
-        let ln_phi: Vec<f64> = if matches!(self.mixing_rule, MixingRule::HuronVidal { .. }) {
-            // The Huron-Vidal fugacity carries the activity coefficient and a volume-
-            // derivative term that the classic `factor * i_term` form cannot express.
-            let ader = self.hv_ader(reduced, x);
-            let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
-            let delta1 = self.cubic.delta1();
-            let delta2 = self.cubic.delta2();
-            (0..n)
-                .map(|i| {
-                    let b_i = reduced.b[i];
-                    let fv = alpha_mix * b_i * z / ((z + delta1 * b_mix) * (z + delta2 * b_mix));
-                    -ln_z_minus_b + b_i / (z - b_mix)
-                        - (ader[i] / self.cubic.delta_diff()) * i_term
-                        - fv
-                })
-                .collect()
-        } else {
-            (0..n)
+        let ln_phi: Vec<f64> = match &self.mixing_rule {
+            MixingRule::HuronVidal { .. } | MixingRule::WongSandler { .. } => {
+                // The GE rules carry the activity coefficient and a volume-derivative
+                // term that the classic `factor * i_term` form cannot express.
+                let (ader, alpha_mix, b_der) = self.ge_state(reduced, x);
+                let delta1 = self.cubic.delta1();
+                let delta2 = self.cubic.delta2();
+                (0..n)
+                    .map(|i| {
+                        let bd = b_der[i];
+                        let fv = alpha_mix * bd * z / ((z + delta1 * b_mix) * (z + delta2 * b_mix));
+                        -ln_z_minus_b + bd / (z - b_mix)
+                            - (ader[i] / self.cubic.delta_diff()) * i_term
+                            - fv
+                    })
+                    .collect()
+            }
+            _ => (0..n)
                 .map(|i| {
                     let b_ratio = reduced.b[i] / b_mix;
                     // The factor that is 1 for a pure component: `2 * sum_j x_j A_ij / A
@@ -584,7 +584,7 @@ impl Mixture {
                     let factor = 2.0 * cross[i] / a_mix - b_ratio;
                     b_ratio * (z - 1.0) - ln_z_minus_b - coefficient * factor * i_term
                 })
-                .collect()
+                .collect(),
         };
 
         // The mixture's departure functions. `psi_bar` is the composition-weighted
@@ -662,18 +662,18 @@ impl Mixture {
             .phase_kij(&reduced.kij, &reduced.reduced_temperatures, &acentric, x)
     }
 
-    /// The Huron-Vidal attraction coefficients `A_i/B_i - ln gamma_i / Lambda`.
-    fn hv_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
-        let MixingRule::HuronVidal {
-            kij,
-            hv_gij,
-            hv_gij_t,
-            hv_alpha,
-            hv_pairs,
-        } = &self.mixing_rule
-        else {
-            unreachable!("hv_ader is only called for the Huron-Vidal rule");
-        };
+    /// The GE-model attraction coefficients `A_i/B_i - ln gamma_i / Lambda`.
+    #[allow(clippy::too_many_arguments)] // the signature is the GE model's inputs
+    fn ge_ader(
+        &self,
+        reduced: &ReducedParameters,
+        x: &[f64],
+        kij: &[f64],
+        hv_gij: &[f64],
+        hv_gij_t: &[f64],
+        hv_alpha: &[f64],
+        hv_pairs: &[bool],
+    ) -> Vec<f64> {
         let lambda = self.cubic.hv_constant();
         let ln_gamma = crate::hv_ge::hv_ln_gamma(
             x,
@@ -692,6 +692,83 @@ impl Mixture {
             .collect()
     }
 
+    /// The Huron-Vidal attraction coefficients.
+    fn hv_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
+        let MixingRule::HuronVidal {
+            kij,
+            hv_gij,
+            hv_gij_t,
+            hv_alpha,
+            hv_pairs,
+        } = &self.mixing_rule
+        else {
+            unreachable!("hv_ader is only called for the Huron-Vidal rule");
+        };
+        self.ge_ader(reduced, x, kij, hv_gij, hv_gij_t, hv_alpha, hv_pairs)
+    }
+
+    /// The Wong-Sandler attraction coefficients, from the DijT-free activity
+    /// coefficients NeqSim reads for this rule.
+    fn ws_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
+        let MixingRule::WongSandler {
+            kij,
+            hv_gij,
+            hv_alpha,
+            hv_pairs,
+        } = &self.mixing_rule
+        else {
+            unreachable!("ws_ader is only called for the Wong-Sandler rule");
+        };
+        let hv_gij_t = vec![0.0; self.len() * self.len()];
+        self.ge_ader(reduced, x, kij, hv_gij, &hv_gij_t, hv_alpha, hv_pairs)
+    }
+
+    /// The Wong-Sandler `b_mix` and its composition derivative `BDER`.
+    fn ws_b_mix(&self, reduced: &ReducedParameters, x: &[f64], ader: &[f64]) -> (f64, Vec<f64>) {
+        let MixingRule::WongSandler { kij, .. } = &self.mixing_rule else {
+            unreachable!("ws_b_mix is only called for the Wong-Sandler rule");
+        };
+        let n = self.len();
+        let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
+        let mut qf1 = vec![0.0; n];
+        let mut q = 0.0;
+        for i in 0..n {
+            let mut ss = 0.0;
+            for j in 0..n {
+                ss += x[j]
+                    * (1.0 - kij[j * n + i])
+                    * (reduced.b[j] + reduced.b[i] - reduced.a[j] - reduced.a[i]);
+            }
+            qf1[i] = ss;
+            q += x[i] * ss;
+        }
+        let denom = 1.0 - alpha_mix;
+        let b_mix = 0.5 * q / denom;
+        let bder: Vec<f64> = (0..n)
+            .map(|i| (qf1[i] - b_mix * (1.0 - ader[i])) / denom)
+            .collect();
+        (b_mix, bder)
+    }
+
+    /// The GE-rule state `(ader, alpha_mix, b_der)` the fugacity is written in.
+    fn ge_state(&self, reduced: &ReducedParameters, x: &[f64]) -> (Vec<f64>, f64, Vec<f64>) {
+        let n = self.len();
+        match &self.mixing_rule {
+            MixingRule::HuronVidal { .. } => {
+                let ader = self.hv_ader(reduced, x);
+                let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
+                (ader, alpha_mix, reduced.b.clone())
+            }
+            MixingRule::WongSandler { .. } => {
+                let ader = self.ws_ader(reduced, x);
+                let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
+                let (_, bder) = self.ws_b_mix(reduced, x, &ader);
+                (ader, alpha_mix, bder)
+            }
+            _ => unreachable!("ge_state is only called for GE rules"),
+        }
+    }
+
     /// The van der Waals one-fluid mixture parameters for a composition.
     ///
     /// ```text
@@ -705,21 +782,34 @@ impl Mixture {
     #[must_use]
     pub fn mixture_parameters(&self, reduced: &ReducedParameters, x: &[f64]) -> (f64, f64) {
         let n = self.len();
-        let b_mix = (0..n).map(|i| x[i] * reduced.b[i]).sum();
-        if matches!(self.mixing_rule, MixingRule::HuronVidal { .. }) {
-            let ader = self.hv_ader(reduced, x);
-            let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
-            return (b_mix * alpha_mix, b_mix);
-        }
-        let kij = self.phase_kij(reduced, x);
-        let mut a_mix = 0.0;
-        for i in 0..n {
-            for j in 0..n {
-                a_mix +=
-                    x[i] * x[j] * (1.0 - kij[i * n + j]) * (reduced.a[i] * reduced.a[j]).sqrt();
+        match &self.mixing_rule {
+            MixingRule::HuronVidal { .. } => {
+                let ader = self.hv_ader(reduced, x);
+                let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
+                let b_mix = (0..n).map(|i| x[i] * reduced.b[i]).sum();
+                (b_mix * alpha_mix, b_mix)
+            }
+            MixingRule::WongSandler { .. } => {
+                let ader = self.ws_ader(reduced, x);
+                let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
+                let (b_mix, _) = self.ws_b_mix(reduced, x, &ader);
+                (b_mix * alpha_mix, b_mix)
+            }
+            _ => {
+                let kij = self.phase_kij(reduced, x);
+                let b_mix = (0..n).map(|i| x[i] * reduced.b[i]).sum();
+                let mut a_mix = 0.0;
+                for i in 0..n {
+                    for j in 0..n {
+                        a_mix += x[i]
+                            * x[j]
+                            * (1.0 - kij[i * n + j])
+                            * (reduced.a[i] * reduced.a[j]).sqrt();
+                    }
+                }
+                (a_mix, b_mix)
             }
         }
-        (a_mix, b_mix)
     }
 
     /// The mixture's volume translation, the composition-weighted sum of the

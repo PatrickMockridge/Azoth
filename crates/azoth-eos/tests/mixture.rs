@@ -694,3 +694,40 @@ fn the_huron_vidal_rule_matches_neqsims_water_ethanol_phase() {
         state.ln_phi[1]
     );
 }
+
+/// The Wong-Sandler rule reproduces NeqSim's water/ethanol liquid phase.
+///
+/// Same GE model as Huron-Vidal, but a GE-dependent `b_mix` and the DijT-free activity
+/// coefficients NeqSim reads for this rule. Checked against a NeqSim 3.20.0 flash at
+/// T = 350 K, P = 1 bar, x = 0.5/0.5.
+#[test]
+fn the_wong_sandler_rule_matches_neqsims_water_ethanol_phase() {
+    let (base, _) = databank::mixture_of(&["water", "ethanol"], None).expect("the pair resolves");
+    let k = base.kij(0, 1);
+    let mixture = base
+        .with_cubic(Cubic::Srk)
+        .with_mixing_rule(MixingRule::WongSandler {
+            kij: vec![0.0, k, k, 0.0],
+            hv_gij: vec![0.0, -2612.51, 2207.03, 0.0],
+            hv_alpha: vec![0.0, 0.2245, 0.2245, 0.0],
+            hv_pairs: vec![false, true, true, false],
+        });
+    let reduced = mixture
+        .reduced_parameters(kelvins(350.0), pascals(100_000.0))
+        .expect("a state");
+    let state = mixture
+        .phase_state(&reduced, &[0.5, 0.5], RootSide::Liquid)
+        .expect("a phase");
+
+    assert!((state.z - 0.001_348_2).abs() < 1e-3, "z {}", state.z);
+    assert!(
+        (state.ln_phi[0] - (-1.605_35)).abs() < 1e-3,
+        "ln phi water {}",
+        state.ln_phi[0]
+    );
+    assert!(
+        (state.ln_phi[1] - (-1.332_47)).abs() < 1e-3,
+        "ln phi ethanol {}",
+        state.ln_phi[1]
+    );
+}
