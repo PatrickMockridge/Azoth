@@ -573,3 +573,42 @@ fn the_tst_cubic_reduces_to_its_constants() {
     let roots = pr_z_factor(reduced.a[0], reduced.b[0]).expect("roots");
     assert_eq!(state.z, roots.z_max);
 }
+
+/// The volume translation mixes linearly and subtracts from the untranslated volume.
+///
+/// `ComponentPRvolcor`/`ComponentSrkvolcor` are PR/SRK plus a per-component Peneloux
+/// shift; the shift mixes like the co-volume and is subtracted from `pr_molar_volume`'s
+/// `v = z R T/P`. The check is the two-component linear mix, then the corrected volume
+/// formed from the untranslated one.
+#[test]
+fn the_volume_translation_mixes_linearly_and_subtracts() {
+    let (base, _) =
+        databank::mixture_of(&["methane", "n-butane"], None).expect("the pair resolves");
+    let k = base.kij(0, 1);
+    let methane = base.components()[0].clone().with_volume_shift(1.0e-6);
+    let butane = base.components()[1].clone().with_volume_shift(3.0e-6);
+    let mixture = Mixture::new(vec![methane, butane], vec![0.0, k, k, 0.0]).expect("a mixture");
+
+    let x = [0.25, 0.75];
+    let c_mix = 0.25 * 1.0e-6 + 0.75 * 3.0e-6;
+    assert!(
+        (mixture.volume_shift(&x) - c_mix).abs() < 1e-18,
+        "the shift is the composition-weighted sum, not {}",
+        mixture.volume_shift(&x)
+    );
+
+    let reduced = mixture
+        .reduced_parameters(kelvins(330.0), pascals(2_500_000.0))
+        .expect("a state");
+    let state = mixture
+        .phase_state(&reduced, &x, RootSide::Vapour)
+        .expect("a phase");
+    let v = azoth_eos::pr_molar_volume(state.z, kelvins(330.0), pascals(2_500_000.0))
+        .expect("a volume")
+        .v
+        .value;
+    assert!(
+        (v - mixture.volume_shift(&x)) < v,
+        "the translation subtracts from the untranslated molar volume"
+    );
+}

@@ -93,6 +93,12 @@ pub struct Component {
     /// correlation reads them. Empty for a component built without a fitted set, which
     /// is every caller-supplied component and every correlation that needs none.
     pub alpha_params: Vec<f64>,
+    /// The volume-translation parameter in m³/mol, subtracted from the untranslated
+    /// molar volume: `v_corr = v - c`. Zero for a component without a translation,
+    /// which is the plain PR/SRK/RK forms. The Peneloux shift of
+    /// [`crate::pr_peneloux_shift`] or [`crate::srk_peneloux_shift`] is one source; a
+    /// fitted constant is another.
+    pub volume_shift: f64,
 }
 
 impl Component {
@@ -125,6 +131,7 @@ impl Component {
             omega,
             molar_mass: None,
             alpha_params: Vec::new(),
+            volume_shift: 0.0,
         })
     }
 
@@ -146,6 +153,16 @@ impl Component {
     #[must_use]
     pub fn with_alpha_params(mut self, params: Vec<f64>) -> Self {
         self.alpha_params = params;
+        self
+    }
+
+    /// This component, with its volume-translation parameter attached.
+    ///
+    /// Subtracted from the untranslated molar volume; see the field. The value is
+    /// caller-supplied, like `Tc`, `Pc` and `omega`, and carries no name.
+    #[must_use]
+    pub fn with_volume_shift(mut self, volume_shift: f64) -> Self {
+        self.volume_shift = volume_shift;
         self
     }
 }
@@ -639,6 +656,21 @@ impl Mixture {
             }
         }
         (a_mix, b_mix)
+    }
+
+    /// The mixture's volume translation, the composition-weighted sum of the
+    /// components' shifts.
+    ///
+    /// NeqSim mixes the Peneloux translation linearly, like the co-volume `b`, and
+    /// subtracts the result from the untranslated molar volume:
+    /// `v_corr = v - sum_i x_i c_i`. The untranslated `v` is [`crate::pr_molar_volume`],
+    /// and the per-component `c_i` are [`crate::pr_peneloux_shift`] or
+    /// [`crate::srk_peneloux_shift`].
+    #[must_use]
+    pub fn volume_shift(&self, x: &[f64]) -> f64 {
+        (0..self.len())
+            .map(|i| x[i] * self.components[i].volume_shift)
+            .sum()
     }
 
     /// `A^R/(R T)` - the residual Helmholtz energy, at a set of mole numbers.
