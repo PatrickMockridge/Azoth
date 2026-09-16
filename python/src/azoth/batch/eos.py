@@ -34,6 +34,7 @@ __all__ = [
     "ParachorSurfaceTensionBatch",
     "Pr78KappaBatch",
     "PrAlphaAbBatch",
+    "PrDaneshAlphaBatch",
     "PrDepartureBatch",
     "PrKappaBatch",
     "PrMassDensityBatch",
@@ -66,6 +67,7 @@ __all__ = [
     "parachor_surface_tension",
     "pr78_kappa",
     "pr_alpha_ab",
+    "pr_danesh_alpha",
     "pr_departure",
     "pr_kappa",
     "pr_mass_density",
@@ -92,6 +94,7 @@ __all__ = [
 _PR_KAPPA = "eos.pr_kappa"
 _MATCOP_ALPHA = "eos.matcop_alpha"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
+_PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
 _PR_DEPARTURE = "eos.pr_departure"
@@ -188,6 +191,32 @@ def matcop_alpha(
             "Tr": sequence(Tr, "Tr"),
         },
         _build_matcop,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrDaneshAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_danesh_alpha`."""
+
+    #: The Danesh alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_danesh(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrDaneshAlphaBatch:
+    return PrDaneshAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def pr_danesh_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> PrDaneshAlphaBatch:
+    """The Danesh alpha function, over arrays."""
+    result: PrDaneshAlphaBatch = run(
+        _PR_DANESH_ALPHA,
+        {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
+        _build_danesh,
     )
     return result
 

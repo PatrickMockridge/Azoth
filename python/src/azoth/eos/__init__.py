@@ -90,6 +90,7 @@ from azoth.core.result import (
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
+    PrDaneshAlphaResult,
     PrDepartureResult,
     PrKappaResult,
     PrMassDensityResult,
@@ -240,6 +241,7 @@ _PT_PHASE_ENVELOPE = "eos.pt_phase_envelope"
 _STABILITY_TEST = "eos.stability_test"
 _PURE_SATURATION = "eos.pure_saturation"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
+_PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
 _PR_DEPARTURE = "eos.pr_departure"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
@@ -293,6 +295,17 @@ def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaRe
     See :func:`azoth.eos.reference.matcop_alpha`.
     """
     return resolve(_MATCOP_ALPHA)(mc1=mc1, mc2=mc2, mc3=mc3, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:
+    """The Danesh alpha function for a pure component.
+
+    ``omega`` is the acentric factor; ``Tr`` the reduced temperature. Above ``Tr = 1``
+    the Peng-Robinson Soave coefficient is multiplied by 1.21.
+
+    See :func:`azoth.eos.reference.pr_danesh_alpha`.
+    """
+    return resolve(_PR_DANESH_ALPHA)(omega=omega, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:

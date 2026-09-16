@@ -288,6 +288,11 @@ class PrAlphaAbResult:
     warnings: list[Warning]
 
 @final
+class PrDaneshAlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class PrDepartureResult:
     ln_phi: float
     h_dep_rt: float
@@ -869,6 +874,7 @@ def ph_flash(
 ) -> PhFlashResult: ...
 def pr78_kappa(omega: float) -> Pr78KappaResult: ...
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
+def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult: ...
 def pr_departure(
     a_reduced: float,
     b_reduced: float,

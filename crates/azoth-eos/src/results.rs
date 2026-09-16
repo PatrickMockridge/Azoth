@@ -1682,6 +1682,24 @@ impl CalcResult for TwucoonAlphaResult {
     }
 }
 
+/// Result of `eos.pr_danesh_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrDaneshAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrDaneshAlphaResult {
+    const CALC_ID: &'static str = "eos.pr_danesh_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.critical_point`.
 ///
 /// The four state variables of a mixture critical point. `z_c` is here because it is the

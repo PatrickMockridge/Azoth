@@ -23,12 +23,12 @@ use azoth_eos::results::{
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MatcopAlphaResult,
     MolarEnthalpyEntropyResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult,
-    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDepartureResult,
+    PrKappaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
+    PuFlashResult, PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
     TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
@@ -535,6 +535,39 @@ impl PyMatcopAlphaResult {
 
 impl From<&MatcopAlphaResult> for PyMatcopAlphaResult {
     fn from(r: &MatcopAlphaResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_danesh_alpha`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrDaneshAlphaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrDaneshAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrDaneshAlphaResult {
+    fn __repr__(&self) -> String {
+        format!("PrDaneshAlphaResult(alpha={})", self.alpha)
+    }
+}
+
+impl From<&PrDaneshAlphaResult> for PyPrDaneshAlphaResult {
+    fn from(r: &PrDaneshAlphaResult) -> Self {
         Self {
             alpha: r.alpha,
             warnings: transport(&r.warnings),
@@ -3639,6 +3672,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),
         PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
+        PrDaneshAlphaResult::CALC_ID => PrDaneshAlphaResult::FIELDS.to_vec(),
         PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
         PrsvKappaResult::CALC_ID => PrsvKappaResult::FIELDS.to_vec(),
         PrDepartureResult::CALC_ID => PrDepartureResult::FIELDS.to_vec(),
@@ -3735,6 +3769,7 @@ pub fn calc_ids() -> Vec<String> {
         PrKappaResult::CALC_ID.to_string(),
         MatcopAlphaResult::CALC_ID.to_string(),
         PrAlphaAbResult::CALC_ID.to_string(),
+        PrDaneshAlphaResult::CALC_ID.to_string(),
         PrZFactorResult::CALC_ID.to_string(),
         PrsvKappaResult::CALC_ID.to_string(),
         PrDepartureResult::CALC_ID.to_string(),

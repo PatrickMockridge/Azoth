@@ -59,6 +59,7 @@ from azoth.core.result import (
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
+    PrDaneshAlphaResult,
     PrDepartureResult,
     PrKappaResult,
     PrMassDensityResult,
@@ -240,6 +241,12 @@ def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaRe
     """The Mathias-Copeman alpha function, computed in Rust."""
     result = _core.matcop_alpha(mc1, mc2, mc3, Tr)
     return MatcopAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
+
+
+def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:
+    """The Danesh alpha function, computed in Rust."""
+    result = _core.pr_danesh_alpha(omega, Tr)
+    return PrDaneshAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:

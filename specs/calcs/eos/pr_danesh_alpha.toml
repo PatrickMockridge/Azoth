@@ -1,0 +1,59 @@
+id = "eos.pr_danesh_alpha"
+name = "Danesh alpha function"
+equation = "m = 0.37464 + 1.54226*omega - 0.26992*omega**2,  m_mod = 1.21*m above Tr = 1 else m,  alpha = (1 + m_mod*(1 - sqrt(Tr)))**2"
+latex = '''\alpha = \left(1 + \tilde m\left(1 - \sqrt{T_r}\right)\right)^2,\qquad \tilde m = \begin{cases}1.21\,m & T_r > 1 \\ m & \text{otherwise}\end{cases}'''
+assumptions = ["the 1.21 factor above the critical is NeqSim's, applied to the Peng-Robinson Soave coefficient to damp the attraction past `Tr = 1`.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
+references = ["Danesh, A.; Xu, D.-H.; Todd, A. C. (1991). \"Comparative study of the cubic equations of state for predicting phase behaviour and volumetric properties of injection gas-reservoir oil systems.\" Fluid Phase Equilib. 63, 259-278. DOI 10.1016/0378-3812(91)80034-S."]
+[source]
+standard = "NeqSim 3.20.0 `AttractiveTermPrDanesh`"
+edition = "`alpha(temperature)`, ported verbatim"
+doi = "10.1016/0378-3812(91)80034-S"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "the acentric factor\n"
+[inputs.Tr]
+unit = "dimensionless"
+description = "the reduced temperature\n"
+[outputs]
+[outputs.alpha]
+unit = "dimensionless"
+description = "the temperature-dependent alpha function\n"
+[[valid_range]]
+quantity = "Tr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the formula takes a square root of `Tr`; zero and below are not states\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "omega = 0.152, Tr = 0.7:\n\n  m = 0.37464 + 1.54226*0.152 - 0.26992*0.152**2 = 0.60282728832\n  m_mod = m (Tr = 0.7 < 1) = 0.60282728832\n  1 - sqrt(Tr) = 1 - sqrt(0.7) = 0.16333997346592444\n  alpha = (1 + 0.60282728832*0.16333997346592444)**2 = 1.2066270990034567\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.152
+Tr = 0.7
+[worked_example.expected]
+alpha = 1.2066270990034567
+[implementations]
+python = "azoth.eos.pr_danesh_alpha"
+rust = "azoth_eos::pr_danesh_alpha"
+[[tests]]
+id = "worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "above_critical"
+type = "reference"
+status = "active"
+source = "the 1.21 damping above `Tr = 1`, retraced from the equation: omega = 0.152, Tr = 1.5, m_mod = 1.21*m = 0.7294210188672, alpha = (1 + 0.7294210188672*(1 - sqrt(1.5)))**2.\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.152
+Tr = 1.5
+[tests.expected]
+alpha = 0.6990069699021141
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

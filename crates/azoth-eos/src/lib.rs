@@ -62,6 +62,7 @@ pub mod ph_flash;
 pub mod phase_boundary;
 pub mod pr78_kappa;
 pub mod pr_alpha_ab;
+pub mod pr_danesh_alpha;
 pub mod pr_departure;
 pub mod pr_kappa;
 pub mod pr_mass_density;
@@ -131,6 +132,7 @@ pub use parachor_surface_tension::parachor_surface_tension;
 pub use ph_flash::ph_flash;
 pub use phase_boundary::{Incipient, PhaseBoundary, phase_boundary_pressure};
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
+pub use pr_danesh_alpha::pr_danesh_alpha;
 pub use pr_departure::pr_departure;
 pub use pr_kappa::pr_kappa;
 pub use pr_mass_density::pr_mass_density;
@@ -154,14 +156,14 @@ pub use results::{
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MatcopAlphaResult,
     MolarEnthalpyEntropyResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult,
-    Phase, Pr78KappaResult, PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult,
-    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult,
-    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
-    RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
-    StabilityVerdict, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TwuKappaResult, TwucoonAlphaResult, TynCalusDiffusivityResult,
+    Phase, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDepartureResult, PrKappaResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
+    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
+    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, StabilityVerdict, ThFlashResult, ThermalConductivityResult, TsFlashResult,
+    TuFlashResult, TwuKappaResult, TwucoonAlphaResult, TynCalusDiffusivityResult,
     UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
     ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
