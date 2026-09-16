@@ -18,6 +18,6 @@ pub mod unit_op;
 pub use channel::{Direction, FieldType, Multiplicity, Port, Shape};
 pub use check::{Diagnostic, validate, validate_palette};
 pub use flowsheet::{Connection, Flowsheet, Instance, Recycle};
-pub use kernels::{mixer, separator, splitter};
+pub use kernels::{heat_exchanger, mixer, pump, separator, splitter, throttling_valve};
 pub use stream::Stream;
 pub use unit_op::{Param, Source, UnitOpSpec};

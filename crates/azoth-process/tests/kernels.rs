@@ -1,7 +1,7 @@
 //! The kernels' balance invariants: moles and enthalpy are conserved.
 
-use azoth_core::units::{kelvins, pascals};
-use azoth_process::{Stream, mixer, separator, splitter};
+use azoth_core::units::{kelvins, pascals, watts};
+use azoth_process::{Stream, heat_exchanger, mixer, pump, separator, splitter, throttling_valve};
 
 fn close(a: f64, b: f64) {
     let scale = 1.0 + a.abs() + b.abs();
@@ -60,4 +60,35 @@ fn a_separator_conserves_moles() {
             );
         }
     }
+}
+
+#[test]
+fn a_valve_is_isenthalpic() {
+    let feed = binary(0.5, 100.0, 5e5, 300.0);
+    let out = throttling_valve(&feed, pascals(1e5)).expect("valve");
+
+    close(out.h.value, feed.h.value);
+    close(out.p.value, 1e5);
+    close(out.n, feed.n);
+}
+
+#[test]
+fn a_heat_exchanger_conserves_energy() {
+    let hot = binary(1.0, 50.0, 1e5, 350.0);
+    let cold = binary(0.0, 50.0, 1e5, 300.0);
+    let duty = watts(2_000.0);
+    let (hot_out, cold_out) = heat_exchanger(&hot, &cold, duty).expect("heat_exchanger");
+
+    close((hot.h.value - hot_out.h.value) * hot.n, duty.value);
+    close((cold_out.h.value - cold.h.value) * cold.n, duty.value);
+}
+
+#[test]
+fn a_pump_raises_pressure_and_adds_work() {
+    let feed = binary(0.0, 100.0, 5e5, 250.0);
+    let out = pump(&feed, pascals(2e6), 0.75).expect("pump");
+
+    close(out.p.value, 2e6);
+    close(out.n, feed.n);
+    assert!(out.h.value > feed.h.value, "the pump adds work as enthalpy");
 }
