@@ -1718,6 +1718,24 @@ impl CalcResult for PrGassem2001AlphaResult {
     }
 }
 
+/// Result of `eos.mollerup_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MollerupAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for MollerupAlphaResult {
+    const CALC_ID: &'static str = "eos.mollerup_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.critical_point`.
 ///
 /// The four state variables of a mixture critical point. `z_c` is here because it is the

@@ -31,6 +31,7 @@ __all__ = [
     "IdealGasCpBatch",
     "LiquidHeatCapacityBatch",
     "MatcopAlphaBatch",
+    "MollerupAlphaBatch",
     "ParachorSurfaceTensionBatch",
     "Pr78KappaBatch",
     "PrAlphaAbBatch",
@@ -65,6 +66,7 @@ __all__ = [
     "ideal_gas_cp",
     "liquid_heat_capacity",
     "matcop_alpha",
+    "mollerup_alpha",
     "parachor_surface_tension",
     "pr78_kappa",
     "pr_alpha_ab",
@@ -95,6 +97,7 @@ __all__ = [
 
 _PR_KAPPA = "eos.pr_kappa"
 _MATCOP_ALPHA = "eos.matcop_alpha"
+_MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
 _PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
@@ -194,6 +197,39 @@ def matcop_alpha(
             "Tr": sequence(Tr, "Tr"),
         },
         _build_matcop,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class MollerupAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.mollerup_alpha`."""
+
+    #: The Mollerup alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_mollerup(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> MollerupAlphaBatch:
+    return MollerupAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def mollerup_alpha(
+    *, p1: Sequence[float], p2: Sequence[float], p3: Sequence[float], Tr: Sequence[float]
+) -> MollerupAlphaBatch:
+    """The Mollerup alpha function, over arrays."""
+    result: MollerupAlphaBatch = run(
+        _MOLLERUP_ALPHA,
+        {
+            "p1": sequence(p1, "p1"),
+            "p2": sequence(p2, "p2"),
+            "p3": sequence(p3, "p3"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_mollerup,
     )
     return result
 

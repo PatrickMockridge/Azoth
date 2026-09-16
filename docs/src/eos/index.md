@@ -16,6 +16,7 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.ideal_gas_cp`](./ideal_gas_cp.md) | $C_{p}^{\mathrm{ig}} = c_{0} + c_{1}T + c_{2}T^{2} + c_{3}T^{3} + c_{4}T^{4}$ | NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0 |
 | [`eos.liquid_heat_capacity`](./liquid_heat_capacity.md) | $c_{p}^{\mathrm{liq}} = 10^{-3}\,\left(c_0 + c_1 T + c_2 T^{2} + c_3 T^{3} + c_4 T^{4}\right)$ | NeqSim's `getPureComponentCpLiquid` |
 | [`eos.matcop_alpha`](./matcop_alpha.md) | $\alpha = \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2$ | NeqSim 3.20.0 `AttractiveTermMatCop` |
+| [`eos.mollerup_alpha`](./mollerup_alpha.md) | $\alpha = 1 + p_1\left(\frac{1}{T_r} - 1\right) + p_2\,T_r\ln T_r + p_3\left(T_r - 1\right)$ | NeqSim 3.20.0 `AttractiveTermMollerup` |
 | [`eos.parachor_surface_tension`](./parachor_surface_tension.md) | $\sigma = 10^{-3}\,\left[P\,10^{-6}\left(\frac{\rho_L}{M} - \frac{\rho_V}{M}\right)\right]^4$ | NeqSim 3.20.0 `ParachorSurfaceTension` |
 | [`eos.pr78_kappa`](./pr78_kappa.md) | $\kappa = \begin{cases} 0.379642 + 1.48503\,\omega - 0.164423\,\omega^{2} + 0.01666\,\omega^{3} & \omega > 0.49 \\ 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2} & \text{otherwise} \end{cases}$ | Peng, D. Y.; Robinson, D. B. (1978) |
 | [`eos.pr_alpha_ab`](./pr_alpha_ab.md) | $\alpha = \left[1 + \kappa\left(1 - \sqrt{T_{r}}\right)\right]^{2}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}$ | Peng, D. Y.; Robinson, D. B. (1976) |

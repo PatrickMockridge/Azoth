@@ -85,6 +85,7 @@ from azoth.core.result import (
     MasonSaxenaConductivityResult,
     MatcopAlphaResult,
     MolarEnthalpyEntropyResult,
+    MollerupAlphaResult,
     NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult,
     PhFlashResult,
@@ -216,6 +217,7 @@ _ANTOINE_VAPOR_PRESSURE = "eos.antoine_vapor_pressure"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _MASON_SAXENA_CONDUCTIVITY = "eos.mason_saxena_conductivity"
 _MATCOP_ALPHA = "eos.matcop_alpha"
+_MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _VISCOSITY = "eos.viscosity"
@@ -297,6 +299,18 @@ def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaRe
     See :func:`azoth.eos.reference.matcop_alpha`.
     """
     return resolve(_MATCOP_ALPHA)(mc1=mc1, mc2=mc2, mc3=mc3, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult:
+    """The Mollerup alpha function for a pure component.
+
+    ``p1``, ``p2`` and ``p3`` are the fitted Mollerup parameters; ``Tr`` the reduced
+    temperature. The alpha is cubic-agnostic - the ``a`` and ``b`` it scales are the
+    cubic's own.
+
+    See :func:`azoth.eos.reference.mollerup_alpha`.
+    """
+    return resolve(_MOLLERUP_ALPHA)(p1=p1, p2=p2, p3=p3, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:

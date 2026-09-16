@@ -19,17 +19,17 @@ use crate::results::{
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
     PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMatcopAlphaResult,
-    PyMolarEnthalpyEntropyResult, PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
-    PyPhFlashResult, PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult,
-    PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
-    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
-    PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
-    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
-    PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
-    PyTwuKappaResult, PyTwucoonAlphaResult, PyTynCalusDiffusivityResult,
+    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult,
+    PyParachorSurfaceTensionResult, PyPhFlashResult, PyPhaseBoundaryResult,
+    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
+    PyPrDaneshAlphaResult, PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult,
+    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
+    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
+    PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
+    PyRkDepartureResult, PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult,
+    PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult,
+    PyThFlashResult, PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult,
+    PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult, PyTynCalusDiffusivityResult,
     PyUnifacActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
     PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWilkeChangDiffusivityResult,
     PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
@@ -63,6 +63,23 @@ pub fn matcop_alpha(
 ) -> PyResult<PyMatcopAlphaResult> {
     azoth_eos::matcop_alpha(mc1, mc2, mc3, Tr)
         .map(|r| PyMatcopAlphaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Mollerup alpha function.
+#[pyfunction]
+#[pyo3(signature = (p1, p2, p3, Tr))]
+#[pyo3(text_signature = "(p1, p2, p3, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn mollerup_alpha(
+    py: Python<'_>,
+    p1: f64,
+    p2: f64,
+    p3: f64,
+    Tr: f64,
+) -> PyResult<PyMollerupAlphaResult> {
+    azoth_eos::mollerup_alpha(p1, p2, p3, Tr)
+        .map(|r| PyMollerupAlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

@@ -53,6 +53,7 @@ from azoth.core.result import (
     MasonSaxenaConductivityResult,
     MatcopAlphaResult,
     MolarEnthalpyEntropyResult,
+    MollerupAlphaResult,
     NrtlActivityCoefficientsResult,
     OrificeFlowResult,
     ParachorSurfaceTensionResult,
@@ -242,6 +243,12 @@ def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaRe
     """The Mathias-Copeman alpha function, computed in Rust."""
     result = _core.matcop_alpha(mc1, mc2, mc3, Tr)
     return MatcopAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
+
+
+def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult:
+    """The Mollerup alpha function, computed in Rust."""
+    result = _core.mollerup_alpha(p1, p2, p3, Tr)
+    return MollerupAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:

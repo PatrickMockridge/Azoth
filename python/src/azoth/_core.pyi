@@ -251,6 +251,11 @@ class MolarEnthalpyEntropyResult:
     warnings: list[Warning]
 
 @final
+class MollerupAlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class NrtlActivityCoefficientsResult:
     ln_gamma: list[float]
     gamma: list[float]
@@ -848,6 +853,7 @@ def molar_enthalpy_entropy(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> MolarEnthalpyEntropyResult: ...
+def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult: ...
 def nrtl_activity_coefficients(
     T: float,
     x: list[float],

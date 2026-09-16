@@ -475,6 +475,25 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "alpha", "dimensionless", alpha);
         }
 
+        "eos.mollerup_alpha" => {
+            let (p1, p2, p3, tr) = (
+                take(&inputs, "p1")?,
+                take(&inputs, "p2")?,
+                take(&inputs, "p3")?,
+                take(&inputs, "Tr")?,
+            );
+            let mut alpha = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::mollerup_alpha(p1[i], p2[i], p3[i], tr[i]),
+                    &mut warnings,
+                )?;
+                alpha.push(r.alpha);
+            }
+            push_values(&mut columns, "alpha", "dimensionless", alpha);
+        }
+
         "eos.pr_danesh_alpha" => {
             let (omega, tr) = (take(&inputs, "omega")?, take(&inputs, "Tr")?);
             let mut alpha = Vec::with_capacity(n);
