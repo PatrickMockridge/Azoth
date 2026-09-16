@@ -68,6 +68,7 @@ pub mod phase_boundary;
 pub mod pr78_kappa;
 pub mod pr_alpha_ab;
 pub mod pr_danesh_alpha;
+pub mod pr_delft1998_alpha;
 pub mod pr_departure;
 pub mod pr_gassem2001_alpha;
 pub mod pr_kappa;
@@ -147,6 +148,7 @@ pub use ph_flash::ph_flash;
 pub use phase_boundary::{Incipient, PhaseBoundary, phase_boundary_pressure};
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
 pub use pr_danesh_alpha::pr_danesh_alpha;
+pub use pr_delft1998_alpha::pr_delft1998_alpha;
 pub use pr_departure::pr_departure;
 pub use pr_gassem2001_alpha::pr_gassem2001_alpha;
 pub use pr_kappa::pr_kappa;
@@ -174,12 +176,12 @@ pub use results::{
     MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
     MolarEnthalpyEntropyResult, MollerupAlphaResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, Phase, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
-    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
-    RkDepartureResult, RootStructure, SiddiqiLucasDiffusivityResult, SrkAlphaAbResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
+    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
+    PuFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
+    RkAlphaAbResult, RkDepartureResult, RootStructure, SiddiqiLucasDiffusivityResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, StabilityVerdict, ThFlashResult, ThermalConductivityResult, TsFlashResult,
     TuFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,

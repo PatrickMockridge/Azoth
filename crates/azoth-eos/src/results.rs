@@ -1973,3 +1973,21 @@ impl CalcResult for PrLeeKeslerAlphaResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.pr_delft1998_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrDelft1998AlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PrDelft1998AlphaResult {
+    const CALC_ID: &'static str = "eos.pr_delft1998_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

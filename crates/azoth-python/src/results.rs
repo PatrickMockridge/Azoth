@@ -25,17 +25,18 @@ use azoth_eos::results::{
     MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
     MolarEnthalpyEntropyResult, MollerupAlphaResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
-    PrDaneshAlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
-    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
-    PuFlashResult, PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SiddiqiLucasDiffusivityResult,
-    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UnifacActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
+    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
+    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
+    SiddiqiLucasDiffusivityResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
+    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -735,6 +736,39 @@ impl PyPrDaneshAlphaResult {
 
 impl From<&PrDaneshAlphaResult> for PyPrDaneshAlphaResult {
     fn from(r: &PrDaneshAlphaResult) -> Self {
+        Self {
+            alpha: r.alpha,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_delft1998_alpha`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrDelft1998AlphaResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrDelft1998AlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    #[pyo3(get)]
+    pub alpha: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrDelft1998AlphaResult {
+    fn __repr__(&self) -> String {
+        format!("PrDelft1998AlphaResult(alpha={})", self.alpha)
+    }
+}
+
+impl From<&PrDelft1998AlphaResult> for PyPrDelft1998AlphaResult {
+    fn from(r: &PrDelft1998AlphaResult) -> Self {
         Self {
             alpha: r.alpha,
             warnings: transport(&r.warnings),
@@ -3978,6 +4012,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         MollerupAlphaResult::CALC_ID => MollerupAlphaResult::FIELDS.to_vec(),
         PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
         PrDaneshAlphaResult::CALC_ID => PrDaneshAlphaResult::FIELDS.to_vec(),
+        PrDelft1998AlphaResult::CALC_ID => PrDelft1998AlphaResult::FIELDS.to_vec(),
         PrGassem2001AlphaResult::CALC_ID => PrGassem2001AlphaResult::FIELDS.to_vec(),
         PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
         PrsvKappaResult::CALC_ID => PrsvKappaResult::FIELDS.to_vec(),
@@ -4084,6 +4119,7 @@ pub fn calc_ids() -> Vec<String> {
         MollerupAlphaResult::CALC_ID.to_string(),
         PrAlphaAbResult::CALC_ID.to_string(),
         PrDaneshAlphaResult::CALC_ID.to_string(),
+        PrDelft1998AlphaResult::CALC_ID.to_string(),
         PrGassem2001AlphaResult::CALC_ID.to_string(),
         PrZFactorResult::CALC_ID.to_string(),
         PrsvKappaResult::CALC_ID.to_string(),

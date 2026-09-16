@@ -23,16 +23,16 @@ use crate::results::{
     PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
     PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult, PyPhFlashResult,
     PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
-    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDepartureResult,
-    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
-    PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
-    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
-    PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
-    PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
-    PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
+    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
+    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
+    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
+    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
+    PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
+    PyRkDepartureResult, PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult,
+    PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult,
+    PyThFlashResult, PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult,
+    PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult,
+    PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
     PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
     PyVuFlashResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
     PyWilsonActivityCoefficientsResult,
@@ -172,6 +172,21 @@ pub fn mollerup_alpha(
 pub fn pr_danesh_alpha(py: Python<'_>, omega: f64, Tr: f64) -> PyResult<PyPrDaneshAlphaResult> {
     azoth_eos::pr_danesh_alpha(omega, Tr)
         .map(|r| PyPrDaneshAlphaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Peng-Robinson alpha function, Delft (1998).
+#[pyfunction]
+#[pyo3(signature = (omega, Tr))]
+#[pyo3(text_signature = "(omega, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn pr_delft1998_alpha(
+    py: Python<'_>,
+    omega: f64,
+    Tr: f64,
+) -> PyResult<PyPrDelft1998AlphaResult> {
+    azoth_eos::pr_delft1998_alpha(omega, Tr)
+        .map(|r| PyPrDelft1998AlphaResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

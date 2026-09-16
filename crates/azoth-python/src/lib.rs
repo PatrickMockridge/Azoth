@@ -135,6 +135,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::matcop_prumr_new_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::mollerup_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_danesh_alpha, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pr_delft1998_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_gassem2001_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_alpha_ab, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_z_factor, m)?)?;

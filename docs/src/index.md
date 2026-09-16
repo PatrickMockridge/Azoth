@@ -89,6 +89,7 @@ Four sections, and the difference between them is the point:
 - [`eos.pr78_kappa`](./eos/pr78_kappa.md)
 - [`eos.pr_alpha_ab`](./eos/pr_alpha_ab.md)
 - [`eos.pr_danesh_alpha`](./eos/pr_danesh_alpha.md)
+- [`eos.pr_delft1998_alpha`](./eos/pr_delft1998_alpha.md)
 - [`eos.pr_departure`](./eos/pr_departure.md)
 - [`eos.pr_gassem2001_alpha`](./eos/pr_gassem2001_alpha.md)
 - [`eos.pr_kappa`](./eos/pr_kappa.md)

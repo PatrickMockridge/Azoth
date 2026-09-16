@@ -65,6 +65,7 @@ from azoth.core.result import (
     Pr78KappaResult,
     PrAlphaAbResult,
     PrDaneshAlphaResult,
+    PrDelft1998AlphaResult,
     PrDepartureResult,
     PrGassem2001AlphaResult,
     PrKappaResult,
@@ -294,6 +295,12 @@ def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:
     """The Danesh alpha function, computed in Rust."""
     result = _core.pr_danesh_alpha(omega, Tr)
     return PrDaneshAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
+
+
+def pr_delft1998_alpha(omega: float, Tr: float) -> PrDelft1998AlphaResult:
+    """The Peng-Robinson alpha, Delft (1998), computed in Rust."""
+    result = _core.pr_delft1998_alpha(omega, Tr)
+    return PrDelft1998AlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def pr_gassem2001_alpha(omega: float, Tr: float) -> PrGassem2001AlphaResult:

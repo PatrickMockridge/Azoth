@@ -872,6 +872,16 @@ class PrDaneshAlphaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PrDelft1998AlphaResult(_HasWarnings):
+    """Result of ``eos.pr_delft1998_alpha``."""
+
+    #: The temperature-dependent alpha function. Dimensionless.
+    alpha: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PrGassem2001AlphaResult(_HasWarnings):
     """Result of ``eos.pr_gassem2001_alpha``."""
 

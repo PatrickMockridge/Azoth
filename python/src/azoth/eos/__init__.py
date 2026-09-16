@@ -96,6 +96,7 @@ from azoth.core.result import (
     Pr78KappaResult,
     PrAlphaAbResult,
     PrDaneshAlphaResult,
+    PrDelft1998AlphaResult,
     PrDepartureResult,
     PrGassem2001AlphaResult,
     PrKappaResult,
@@ -256,6 +257,7 @@ _STABILITY_TEST = "eos.stability_test"
 _PURE_SATURATION = "eos.pure_saturation"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
+_PR_DELFT1998_ALPHA = "eos.pr_delft1998_alpha"
 _PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
 _PR_LEE_KESLER_ALPHA = "eos.pr_lee_kesler_alpha"
 _PR_DEPARTURE = "eos.pr_departure"
@@ -408,6 +410,17 @@ def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:
     See :func:`azoth.eos.reference.pr_danesh_alpha`.
     """
     return resolve(_PR_DANESH_ALPHA)(omega=omega, Tr=Tr)  # type: ignore[no-any-return]
+
+
+def pr_delft1998_alpha(omega: float, Tr: float) -> PrDelft1998AlphaResult:
+    """The Peng-Robinson alpha function, Delft (1998), for a pure component.
+
+    ``omega`` is the acentric factor; ``Tr`` the reduced temperature. The ``m`` is the
+    1978 Peng-Robinson coefficient.
+
+    See :func:`azoth.eos.reference.pr_delft1998_alpha`.
+    """
+    return resolve(_PR_DELFT1998_ALPHA)(omega=omega, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def pr_gassem2001_alpha(omega: float, Tr: float) -> PrGassem2001AlphaResult:

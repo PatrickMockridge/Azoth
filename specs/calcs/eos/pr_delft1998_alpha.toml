@@ -1,0 +1,58 @@
+id = "eos.pr_delft1998_alpha"
+name = "Peng-Robinson alpha function, Delft (1998)"
+equation = "alpha = (1 + m*(1 - sqrt(Tr)))**2, with m the 1978 Peng-Robinson coefficient (0.379642 + 1.48503*omega - 0.164423*omega**2 + 0.01666*omega**3 for omega > 0.49, else 0.37464 + 1.54226*omega - 0.26992*omega**2)"
+latex = '''\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = \begin{cases} 0.379642 + 1.48503\omega - 0.164423\omega^2 + 0.01666\omega^3 & \omega > 0.49 \\ 0.37464 + 1.54226\omega - 0.26992\omega^2 & \text{otherwise} \end{cases}'''
+assumptions = ["the alpha uses the 1978 Peng-Robinson coefficient, the same `m` as `pr78_kappa`.\n", "NeqSim's class also carries a methane-specific cubic polynomial (`0.969617 + 0.20089*Tr - 0.3256987*Tr**2 + 0.06653*Tr**3`) keyed on the component name; that branch is a component identity, not a scalar function of `omega` and `Tr`, so this calc ports the general form and names the methane branch rather than expressing it.\n"]
+references = ["Peng, D. Y.; Robinson, D. B. (1978). \"The Characterization of the Heptanes and Heavier Fractions for the GPA Peng-Robinson Programs.\" GPA Research Report RR-28.", "Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011."]
+[source]
+standard = "NeqSim 3.20.0 `AttractiveTermPrDelft1998`"
+edition = "`alpha(temperature)`, general branch ported verbatim"
+[inputs]
+[inputs.omega]
+unit = "dimensionless"
+description = "the acentric factor\n"
+[inputs.Tr]
+unit = "dimensionless"
+description = "the reduced temperature\n"
+[outputs]
+[outputs.alpha]
+unit = "dimensionless"
+description = "the temperature-dependent alpha function\n"
+[[valid_range]]
+quantity = "Tr"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the formula takes a square root of `Tr`; zero and below are not states\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "omega = 0.1, Tr = 0.7:\n\n  omega <= 0.49, so m = 0.37464 + 1.54226*0.1 - 0.26992*0.01 = 0.5261668\n  sqrt(Tr) = sqrt(0.7) = 0.8366600265340756\n  1 - sqrt(Tr) = 0.16333997346592444\n  m*(1 - sqrt(Tr)) = 0.5261668*0.16333997346592444 = 0.08594407115065028\n  alpha = (1 + 0.08594407115065028)**2 = 1.1792745256672486\n"
+tolerance = 1e-12
+[worked_example.inputs]
+omega = 0.1
+Tr = 0.7
+[worked_example.expected]
+alpha = 1.1792745256672486
+[implementations]
+python = "azoth.eos.pr_delft1998_alpha"
+rust = "azoth_eos::pr_delft1998_alpha"
+[[tests]]
+id = "worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "heavy_acentric_uses_the_1978_branch"
+type = "reference"
+status = "active"
+source = "For omega above 0.49 the heavier 1978 branch applies, m = 0.379642 + 1.48503*0.6 - 0.164423*0.36 + 0.01666*0.216 = 1.21506628:\n\n  alpha = (1 + 1.21506628*0.16333997346592444)**2 = 1.436327689728678\n"
+tolerance = 1e-12
+[tests.inputs]
+omega = 0.6
+Tr = 0.7
+[tests.expected]
+alpha = 1.436327689728678
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

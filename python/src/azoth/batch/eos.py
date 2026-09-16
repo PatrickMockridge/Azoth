@@ -40,6 +40,7 @@ __all__ = [
     "Pr78KappaBatch",
     "PrAlphaAbBatch",
     "PrDaneshAlphaBatch",
+    "PrDelft1998AlphaBatch",
     "PrDepartureBatch",
     "PrGassem2001AlphaBatch",
     "PrKappaBatch",
@@ -82,6 +83,7 @@ __all__ = [
     "pr78_kappa",
     "pr_alpha_ab",
     "pr_danesh_alpha",
+    "pr_delft1998_alpha",
     "pr_departure",
     "pr_gassem2001_alpha",
     "pr_kappa",
@@ -118,6 +120,7 @@ _MATCOP_PRUMR_NEW_ALPHA = "eos.matcop_prumr_new_alpha"
 _MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
+_PR_DELFT1998_ALPHA = "eos.pr_delft1998_alpha"
 _PR_GASSEM2001_ALPHA = "eos.pr_gassem2001_alpha"
 _PR_LEE_KESLER_ALPHA = "eos.pr_lee_kesler_alpha"
 _PR_Z_FACTOR = "eos.pr_z_factor"
@@ -441,6 +444,32 @@ def pr_danesh_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> PrDaneshA
         _PR_DANESH_ALPHA,
         {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
         _build_danesh,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class PrDelft1998AlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.pr_delft1998_alpha`."""
+
+    #: The Peng-Robinson alpha, Delft (1998), per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_delft1998(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> PrDelft1998AlphaBatch:
+    return PrDelft1998AlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def pr_delft1998_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> PrDelft1998AlphaBatch:
+    """The Peng-Robinson alpha, Delft (1998), over arrays."""
+    result: PrDelft1998AlphaBatch = run(
+        _PR_DELFT1998_ALPHA,
+        {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
+        _build_delft1998,
     )
     return result
 

@@ -34,6 +34,7 @@
   - [Peng-Robinson (1978) attraction-parameter coefficient](./eos/pr78_kappa.md)
   - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)
   - [Danesh alpha function](./eos/pr_danesh_alpha.md)
+  - [Peng-Robinson alpha function, Delft (1998)](./eos/pr_delft1998_alpha.md)
   - [Peng-Robinson fugacity coefficient and departure functions](./eos/pr_departure.md)
   - [Gassem (2001) alpha function](./eos/pr_gassem2001_alpha.md)
   - [Peng-Robinson attraction-parameter coefficient](./eos/pr_kappa.md)
