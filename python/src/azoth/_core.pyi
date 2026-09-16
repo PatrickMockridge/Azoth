@@ -252,6 +252,11 @@ class NrtlActivityCoefficientsResult:
     warnings: list[Warning]
 
 @final
+class ParachorSurfaceTensionResult:
+    sigma: Qty
+    warnings: list[Warning]
+
+@final
 class PhFlashResult:
     T: Qty
     beta: float | None
@@ -818,6 +823,12 @@ def nrtl_activity_coefficients(
     Dij: list[list[float]],
     alpha: list[list[float]],
 ) -> NrtlActivityCoefficientsResult: ...
+def parachor_surface_tension(
+    parachor: float,
+    rho_l: float,
+    rho_v: float,
+    M: float,
+) -> ParachorSurfaceTensionResult: ...
 def ph_flash(
     Tc: list[float],
     Pc: list[float],

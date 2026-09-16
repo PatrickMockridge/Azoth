@@ -30,6 +30,7 @@ __all__ = [
     "HeatOfVaporizationBatch",
     "IdealGasCpBatch",
     "LiquidHeatCapacityBatch",
+    "ParachorSurfaceTensionBatch",
     "Pr78KappaBatch",
     "PrAlphaAbBatch",
     "PrDepartureBatch",
@@ -59,6 +60,7 @@ __all__ = [
     "heat_of_vaporization",
     "ideal_gas_cp",
     "liquid_heat_capacity",
+    "parachor_surface_tension",
     "pr78_kappa",
     "pr_alpha_ab",
     "pr_departure",
@@ -91,6 +93,7 @@ _PR_DEPARTURE = "eos.pr_departure"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _CHUNG_CONDUCTIVITY = "eos.chung_conductivity"
 _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
+_PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _CHUNG_VISCOSITY = "eos.chung_viscosity"
 _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
@@ -610,6 +613,47 @@ def co2_water_diffusivity(*, T: Sequence[float]) -> Co2WaterDiffusivityBatch:
         _CO2_WATER_DIFFUSIVITY,
         {"T": sequence(T, "T")},
         _build_co2_water_diffusivity,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class ParachorSurfaceTensionBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.parachor_surface_tension`."""
+
+    #: Surface tension per element, in N/m.
+    sigma: array[float]
+
+
+def _build_parachor_surface_tension(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> ParachorSurfaceTensionBatch:
+    return ParachorSurfaceTensionBatch(
+        warnings=warnings,
+        units=units,
+        sigma=columns["sigma"],  # type: ignore[arg-type]
+    )
+
+
+def parachor_surface_tension(
+    *,
+    parachor: Sequence[float],
+    rho_l: Sequence[float],
+    rho_v: Sequence[float],
+    M: Sequence[float],
+) -> ParachorSurfaceTensionBatch:
+    """The surface tension from the parachor correlation, over arrays."""
+    result: ParachorSurfaceTensionBatch = run(
+        _PARACHOR_SURFACE_TENSION,
+        {
+            "parachor": sequence(parachor, "parachor"),
+            "rho_l": sequence(rho_l, "rho_l"),
+            "rho_v": sequence(rho_v, "rho_v"),
+            "M": sequence(M, "M"),
+        },
+        _build_parachor_surface_tension,
     )
     return result
 

@@ -11,6 +11,7 @@
 //!   - specs/calcs/eos/heat_of_vaporization.toml
 //!   - specs/calcs/eos/ideal_gas_cp.toml
 //!   - specs/calcs/eos/liquid_heat_capacity.toml
+//!   - specs/calcs/eos/parachor_surface_tension.toml
 //!   - specs/calcs/eos/pr78_kappa.toml
 //!   - specs/calcs/eos/pr_alpha_ab.toml
 //!   - specs/calcs/eos/pr_departure.toml
@@ -1178,6 +1179,104 @@ pub static LIQUID_HEAT_CAPACITY_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
     },
     tests: LIQUID_HEAT_CAPACITY_TESTS,
+};
+
+/// Registry entry for `eos.parachor_surface_tension`.
+static PARACHOR_SURFACE_TENSION_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "M",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`M` is the divisor in `rho/M`; a non-positive molar mass is not a substance.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "rho_l",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A liquid with no density has no surface to be in tension.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "rho_v",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A negative vapour density is not a state; zero is the low-temperature limit.",
+        },
+    },
+];
+
+static PARACHOR_SURFACE_TENSION_TESTS: &[TestCase] = &[TestCase {
+    id: "round_trip_units",
+    kind: "property",
+    property: Some("unit_round_trip"),
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-12,
+    numbers: &[],
+    lists: &[],
+    strings: &[],
+    vectors: &[],
+    matrices: &[],
+    expected: &[],
+    expected_vectors: &[],
+}];
+
+/// Registered spec for `eos.parachor_surface_tension`.
+///
+/// Public and addressable directly, so a calc can hold `&PARACHOR_SURFACE_TENSION_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static PARACHOR_SURFACE_TENSION_SPEC: CalcSpec = CalcSpec {
+    id: "eos.parachor_surface_tension",
+    checks: PARACHOR_SURFACE_TENSION_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "methane_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("parachor", 77.3),
+            ("rho_l", 422.0),
+            ("rho_v", 1.82),
+            ("M", 0.016043),
+        ],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("sigma", 0.016800304320340388)],
+        expected_vectors: &[],
+    },
+    tests: PARACHOR_SURFACE_TENSION_TESTS,
 };
 
 /// Registry entry for `eos.pr78_kappa`.
@@ -3959,6 +4058,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &HEAT_OF_VAPORIZATION_SPEC,
     &IDEAL_GAS_CP_SPEC,
     &LIQUID_HEAT_CAPACITY_SPEC,
+    &PARACHOR_SURFACE_TENSION_SPEC,
     &PR78_KAPPA_SPEC,
     &PR_ALPHA_AB_SPEC,
     &PR_DEPARTURE_SPEC,

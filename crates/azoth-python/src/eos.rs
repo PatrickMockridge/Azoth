@@ -19,15 +19,15 @@ use crate::results::{
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
     PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMolarEnthalpyEntropyResult,
-    PyNrtlActivityCoefficientsResult, PyPhFlashResult, PyPhaseBoundaryResult,
-    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
-    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
-    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
-    PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
-    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
-    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult,
+    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult, PyPhFlashResult,
+    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
+    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult,
+    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
+    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
+    PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
+    PyRkDepartureResult, PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult,
+    PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult,
+    PyThFlashResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult,
     PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
     PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyVuFlashResult,
     PyWilkeChangDiffusivityResult, PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
@@ -595,6 +595,28 @@ pub fn co2_water_diffusivity(py: Python<'_>, T: f64) -> PyResult<PyCo2WaterDiffu
     azoth_eos::co2_water_diffusivity(kelvins(T))
         .map(|r| PyCo2WaterDiffusivityResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// The surface tension from the parachor (Macleod-Sugden) correlation.
+#[pyfunction]
+#[pyo3(signature = (parachor, rho_l, rho_v, M))]
+#[pyo3(text_signature = "(parachor, rho_l, rho_v, M)")]
+#[allow(non_snake_case)] // `M` is the symbol in the published equation
+pub fn parachor_surface_tension(
+    py: Python<'_>,
+    parachor: f64,
+    rho_l: f64,
+    rho_v: f64,
+    M: f64,
+) -> PyResult<PyParachorSurfaceTensionResult> {
+    azoth_eos::parachor_surface_tension(
+        parachor,
+        kilograms_per_cubic_meter(rho_l),
+        kilograms_per_cubic_meter(rho_v),
+        kilograms_per_mole(M),
+    )
+    .map(|r| PyParachorSurfaceTensionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// The gas mixture dynamic viscosity, from Wilke's rule over the pure Chung

@@ -35,6 +35,7 @@ pip install azoth          # the Python package, with the compiled Rust core
 
 ```python
 import azoth
+
 q = azoth.ureg.Quantity
 
 r = azoth.hydraulics.darcy_weisbach(

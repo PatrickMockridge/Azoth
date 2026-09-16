@@ -53,6 +53,7 @@ from azoth.core.result import (
     MolarEnthalpyEntropyResult,
     NrtlActivityCoefficientsResult,
     OrificeFlowResult,
+    ParachorSurfaceTensionResult,
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
@@ -837,6 +838,23 @@ def co2_water_diffusivity(T: Q) -> Co2WaterDiffusivityResult:
     result = _core.co2_water_diffusivity(input_to_si(spec, "T", T))
     return Co2WaterDiffusivityResult(
         d=from_si(result.d.magnitude_si, result.d.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def parachor_surface_tension(
+    parachor: float, rho_l: Q, rho_v: Q, M: Q
+) -> ParachorSurfaceTensionResult:
+    """The surface tension from the parachor correlation, computed in Rust."""
+    spec = _spec_for("eos.parachor_surface_tension")
+    result = _core.parachor_surface_tension(
+        parachor,
+        input_to_si(spec, "rho_l", rho_l),
+        input_to_si(spec, "rho_v", rho_v),
+        input_to_si(spec, "M", M),
+    )
+    return ParachorSurfaceTensionResult(
+        sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
         warnings=_warnings(result.warnings),
     )
 

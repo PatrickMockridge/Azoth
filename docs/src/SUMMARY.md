@@ -24,6 +24,7 @@
   - [Heat of vaporisation from NeqSim's correlation](./eos/heat_of_vaporization.md)
   - [Ideal-gas heat capacity from a polynomial](./eos/ideal_gas_cp.md)
   - [Liquid heat capacity from NeqSim's polynomial](./eos/liquid_heat_capacity.md)
+  - [Surface tension from the parachor (Macleod-Sugden)](./eos/parachor_surface_tension.md)
   - [Peng-Robinson (1978) attraction-parameter coefficient](./eos/pr78_kappa.md)
   - [Peng-Robinson alpha function and reduced attraction parameters](./eos/pr_alpha_ab.md)
   - [Peng-Robinson fugacity coefficient and departure functions](./eos/pr_departure.md)

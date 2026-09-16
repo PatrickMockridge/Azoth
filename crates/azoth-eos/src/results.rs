@@ -7,7 +7,7 @@
 
 use azoth_core::units::{
     DiffusionCoefficient, DynamicViscosity, MassDensity, MolarEnergy, MolarHeatCapacity,
-    MolarVolume, Pressure, ThermalConductivity, ThermodynamicTemperature,
+    MolarVolume, Pressure, SurfaceTension, ThermalConductivity, ThermodynamicTemperature,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -1698,6 +1698,24 @@ impl CalcResult for CriticalPointResult {
         "residual",
         "warnings",
     ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.parachor_surface_tension`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParachorSurfaceTensionResult {
+    /// The surface tension, in N/m.
+    pub sigma: SurfaceTension,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ParachorSurfaceTensionResult {
+    const CALC_ID: &'static str = "eos.parachor_surface_tension";
+    const FIELDS: &'static [&'static str] = &["sigma", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

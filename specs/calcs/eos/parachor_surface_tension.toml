@@ -1,0 +1,68 @@
+id = "eos.parachor_surface_tension"
+name = "Surface tension from the parachor (Macleod-Sugden)"
+equation = "sigma = 1e-3 * (parachor*1e-6*(rho_l/M - rho_v/M))**4,  with rho in kg/m**3 and M in kg/mol; the 1e-6 converts the parachor's cm**3/mol to m**3/mol and the 1e-3 recovers N/m from mN/m."
+latex = '''\sigma = 10^{-3}\,\left[P\,10^{-6}\left(\frac{\rho_L}{M} - \frac{\rho_V}{M}\right)\right]^4'''
+assumptions = ["the parachor parameter is in (mN/m)**(1/4) * cm**3/mol, the mixed unit NeqSim stores in `PARACHOR`; it is declared dimensionless because no vocabulary unit expresses a fractional power of a non-SI unit.\n", "a pure component: the two densities are the liquid and vapour of one substance at the interface state, so the mole fractions divide out.\n", "the correlation is the Macleod-Sugden estimate, good to a few percent; it is not the parachor's de-rating for a mixture, which NeqSim's `calcSurfaceTension` adds as a per-component sum.\n"]
+references = ["Macleod, D. B. (1923). \"On a relation between surface tension and density.\" Trans. Faraday Soc. 19, 38-41. DOI 10.1039/TF9231900038."]
+[source]
+standard = "NeqSim 3.20.0 `ParachorSurfaceTension`"
+edition = "`calcPureComponentSurfaceTension`, ported verbatim: `1e-3 * pow(parachor*1e-6 * (rho_l/M - rho_v/M), 4)`"
+doi = "10.1039/TF9231900038"
+[inputs]
+[inputs.parachor]
+unit = "dimensionless"
+description = "The parachor parameter, in (mN/m)**(1/4) * cm**3/mol.\n"
+[inputs.rho_l]
+unit = "kg/m**3"
+description = "The liquid mass density at the interface state.\n"
+[inputs.rho_v]
+unit = "kg/m**3"
+description = "The vapour mass density at the interface state.\n"
+[inputs.M]
+unit = "kg/mol"
+description = "The molar mass.\n"
+[outputs]
+[outputs.sigma]
+unit = "N/m"
+description = "The surface tension.\n"
+[[valid_range]]
+quantity = "M"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`M` is the divisor in `rho/M`; a non-positive molar mass is not a substance.\n"
+[[valid_range]]
+quantity = "rho_l"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "A liquid with no density has no surface to be in tension.\n"
+[[valid_range]]
+quantity = "rho_v"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "A negative vapour density is not a state; zero is the low-temperature limit.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "methane, parachor = 77.3, M = 0.016043 kg/mol, at its ~1 atm saturation (rho_l = 422.0 kg/m**3, rho_v = 1.82 kg/m**3):\n\n  rho_l/M = 422.0 / 0.016043 = 26304.307174468613 mol/m**3\n  rho_v/M = 1.82 / 0.016043 = 113.4451162500779 mol/m**3\n  difference = 26190.862058218536 mol/m**3\n  parachor*1e-6*difference = 77.3e-6 * 26190.862058218536 = 2.0245536371002926\n  sigma = 1e-3 * 2.0245536371002926**4 = 0.016800304320340388 N/m\n"
+tolerance = 1e-12
+[worked_example.inputs]
+parachor = 77.3
+rho_l = 422.0
+rho_v = 1.82
+M = 0.016043
+[worked_example.expected]
+sigma = 0.016800304320340388
+[implementations]
+python = "azoth.eos.parachor_surface_tension"
+rust = "azoth_eos::parachor_surface_tension"
+[[tests]]
+id = "methane_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

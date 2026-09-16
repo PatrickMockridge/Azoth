@@ -979,6 +979,30 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "d", "m**2/s", d);
         }
 
+        "eos.parachor_surface_tension" => {
+            let (parachor, rho_l, rho_v, m) = (
+                take(&inputs, "parachor")?,
+                take(&inputs, "rho_l")?,
+                take(&inputs, "rho_v")?,
+                take(&inputs, "M")?,
+            );
+            let mut sigma = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::parachor_surface_tension(
+                        parachor[i],
+                        kilograms_per_cubic_meter(rho_l[i]),
+                        kilograms_per_cubic_meter(rho_v[i]),
+                        kilograms_per_mole(m[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                sigma.push(r.sigma.value);
+            }
+            push_values(&mut columns, "sigma", "N/m", sigma);
+        }
+
         "eos.rackett_molar_volume" => {
             let (omega, tc, pc, t) = (
                 take(&inputs, "omega")?,

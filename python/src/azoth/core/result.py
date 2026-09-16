@@ -496,6 +496,16 @@ class Co2WaterDiffusivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ParachorSurfaceTensionResult(_HasWarnings):
+    """Result of ``eos.parachor_surface_tension``."""
+
+    #: The surface tension, in N/m.
+    sigma: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WilkeViscosityResult(_HasWarnings):
     """Result of ``eos.wilke_viscosity``."""
 

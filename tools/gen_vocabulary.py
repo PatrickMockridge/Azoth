@@ -281,9 +281,7 @@ def emit_rust(table: dict[str, Any]) -> str:
         f"pub const DIMENSION_EXPONENTS: &[(&str, [i8; {len(slots)}])] = &[",
     ]
     for dimension in table["dimensions"]:
-        out.append(
-            f"    ({json.dumps(dimension['id'])}, {rust_i8_array(dimension['exponents'])}),"
-        )
+        out.append(f"    ({json.dumps(dimension['id'])}, {rust_i8_array(dimension['exponents'])}),")
     out += [
         "];",
         "",

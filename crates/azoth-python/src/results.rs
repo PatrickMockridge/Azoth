@@ -22,8 +22,8 @@ use azoth_eos::results::{
     CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, DewTemperatureResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, MolarEnthalpyEntropyResult,
-    NrtlActivityCoefficientsResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
-    PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
+    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, PhFlashResult, Pr78KappaResult,
+    PrAlphaAbResult, PrDepartureResult, PrKappaResult, PrMassDensityResult, PrMolarVolumeResult,
     PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
     PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
     RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
@@ -1386,6 +1386,45 @@ impl From<&Co2WaterDiffusivityResult> for PyCo2WaterDiffusivityResult {
             d: PyQty {
                 magnitude_si: r.d.value,
                 unit: "m**2/s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.parachor_surface_tension`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ParachorSurfaceTensionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyParachorSurfaceTensionResult {
+    /// The surface tension, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub sigma: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyParachorSurfaceTensionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ParachorSurfaceTensionResult(sigma={} {})",
+            self.sigma.magnitude_si, self.sigma.unit
+        )
+    }
+}
+
+impl From<&ParachorSurfaceTensionResult> for PyParachorSurfaceTensionResult {
+    fn from(r: &ParachorSurfaceTensionResult) -> Self {
+        Self {
+            sigma: PyQty {
+                magnitude_si: r.sigma.value,
+                unit: "N/m".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -3495,6 +3534,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HaydukMinhasDiffusivityResult::CALC_ID => HaydukMinhasDiffusivityResult::FIELDS.to_vec(),
         SiddiqiLucasDiffusivityResult::CALC_ID => SiddiqiLucasDiffusivityResult::FIELDS.to_vec(),
         Co2WaterDiffusivityResult::CALC_ID => Co2WaterDiffusivityResult::FIELDS.to_vec(),
+        ParachorSurfaceTensionResult::CALC_ID => ParachorSurfaceTensionResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
         PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
@@ -3574,6 +3614,7 @@ pub fn calc_ids() -> Vec<String> {
         HaydukMinhasDiffusivityResult::CALC_ID.to_string(),
         SiddiqiLucasDiffusivityResult::CALC_ID.to_string(),
         Co2WaterDiffusivityResult::CALC_ID.to_string(),
+        ParachorSurfaceTensionResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

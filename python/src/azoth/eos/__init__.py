@@ -85,6 +85,7 @@ from azoth.core.result import (
     MasonSaxenaConductivityResult,
     MolarEnthalpyEntropyResult,
     NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult,
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
@@ -245,6 +246,7 @@ _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
 _SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
 _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
+_PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _VU_FLASH = "eos.vu_flash"
 _WILKE_VISCOSITY = "eos.wilke_viscosity"
@@ -723,6 +725,24 @@ def co2_water_diffusivity(T: Q) -> Co2WaterDiffusivityResult:
     See :func:`azoth.eos.reference.co2_water_diffusivity`.
     """
     return resolve(_CO2_WATER_DIFFUSIVITY)(T=T)  # type: ignore[no-any-return]
+
+
+def parachor_surface_tension(
+    parachor: float, rho_l: Q, rho_v: Q, M: Q
+) -> ParachorSurfaceTensionResult:
+    """The surface tension from the parachor (Macleod-Sugden) correlation.
+
+    ``parachor`` is in ``(mN/m)**(1/4) * cm**3/mol``, the unit NeqSim stores in
+    ``PARACHOR``.
+
+    Raises:
+        OutOfRangeError: if ``M`` or ``rho_l`` is not positive.
+
+    See :func:`azoth.eos.reference.parachor_surface_tension`.
+    """
+    return resolve(_PARACHOR_SURFACE_TENSION)(  # type: ignore[no-any-return]
+        parachor=parachor, rho_l=rho_l, rho_v=rho_v, M=M
+    )
 
 
 def wilke_viscosity(
