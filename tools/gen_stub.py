@@ -136,6 +136,20 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
         "One fitting's contribution to the total resistance coefficient.",
         (("fitting_id", "str"), ("n_ld", "float"), ("k", "float")),
     ),
+    (
+        "Stream",
+        "A material stream: composition, molar flow, pressure, temperature and molar "
+        "enthalpy. All SI magnitudes - `p` in pascals, `t` in kelvin, `h` in J/mol, "
+        "`n` in mol/s.",
+        (
+            ("components", "list[str]"),
+            ("z", "list[float]"),
+            ("n", "float"),
+            ("p", "float"),
+            ("t", "float"),
+            ("h", "float"),
+        ),
+    ),
 )
 
 #: Functions the extension exports that are not a calculation. `(signature, return)`.
@@ -164,6 +178,15 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     ("result_fields(calc_id: str)", "list[str]"),
     ("calc_ids()", "list[str]"),
     ("version()", "str"),
+    # The process layer: a stream value and the unit-operation kernels, plus the
+    # flowsheet checker.
+    ("splitter(feed: Stream, fractions: list[float])", "list[Stream]"),
+    ("mixer(inlets: list[Stream], outlet_pressure: float | None = ...)", "Stream"),
+    ("separator(feed: Stream, temperature: float)", "tuple[Stream, Stream]"),
+    ("throttling_valve(feed: Stream, outlet_pressure: float)", "Stream"),
+    ("heat_exchanger(hot: Stream, cold: Stream, duty: float)", "tuple[Stream, Stream]"),
+    ("pump(feed: Stream, outlet_pressure: float, efficiency: float)", "Stream"),
+    ("validate_flowsheet(flowsheet: str, palette_dir: str)", "list[str]"),
 )
 
 #: The exception hierarchy, re-exported from `azoth.core.errors` so both backends raise
@@ -333,6 +356,16 @@ def render_vocabulary() -> str:
         out.extend(f"    {field}: {annotation}" for field, annotation in fields)
         if name == "Qty":
             out.append("    def __init__(self, magnitude_si: float, unit: str) -> None: ...")
+        if name == "Stream":
+            out.append(
+                "    def __init__(self, components: list[str], z: list[float], n: float,"
+                " p: float, t: float) -> None: ..."
+            )
+            out.append("    @staticmethod")
+            out.append(
+                "    def from_ph(components: list[str], z: list[float], n: float, p: float,"
+                " h: float) -> Stream: ..."
+            )
         blocks.append("\n".join(out))
     return "\n\n".join(blocks)
 
