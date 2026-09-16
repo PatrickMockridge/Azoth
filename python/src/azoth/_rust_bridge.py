@@ -88,6 +88,7 @@ from azoth.core.result import (
     RkAlphaAbResult,
     RkDepartureResult,
     RootStructure,
+    SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
     SrkAlphaAbResult,
     SrkDepartureResult,
@@ -914,6 +915,14 @@ def hayduk_minhas_diffusivity(form: str, VA: Q, T: Q, eta: Q) -> HaydukMinhasDif
         d=from_si(result.d.magnitude_si, result.d.unit),
         warnings=_warnings(result.warnings),
     )
+
+
+def schwartzentruber_alpha(
+    omega: float, p1: float, p2: float, p3: float, Tr: float
+) -> SchwartzentruberAlphaResult:
+    """The Schwartzentruber-Renon alpha function, computed in Rust."""
+    result = _core.schwartzentruber_alpha(omega, p1, p2, p3, Tr)
+    return SchwartzentruberAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def siddiqi_lucas_diffusivity(

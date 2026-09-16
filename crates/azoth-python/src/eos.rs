@@ -28,14 +28,14 @@ use crate::results::{
     PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
     PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
     PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
-    PyRkDepartureResult, PySiddiqiLucasDiffusivityResult, PySrkAlphaAbResult, PySrkDepartureResult,
-    PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult,
-    PyThFlashResult, PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult,
-    PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult,
-    PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult, PyUnifacActivityCoefficientsResult,
-    PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
-    PyVuFlashResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
-    PyWilsonActivityCoefficientsResult,
+    PyRkDepartureResult, PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult,
+    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
+    PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
+    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
+    PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
+    PyUnifacActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
+    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWilkeChangDiffusivityResult,
+    PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -775,6 +775,24 @@ pub fn hayduk_minhas_diffusivity(
     )
     .map(|r| PyHaydukMinhasDiffusivityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Schwartzentruber-Renon alpha function.
+#[pyfunction]
+#[pyo3(signature = (omega, p1, p2, p3, Tr))]
+#[pyo3(text_signature = "(omega, p1, p2, p3, Tr)")]
+#[allow(non_snake_case)] // `Tr` is the symbol in the published equation
+pub fn schwartzentruber_alpha(
+    py: Python<'_>,
+    omega: f64,
+    p1: f64,
+    p2: f64,
+    p3: f64,
+    Tr: f64,
+) -> PyResult<PySchwartzentruberAlphaResult> {
+    azoth_eos::schwartzentruber_alpha(omega, p1, p2, p3, Tr)
+        .map(|r| PySchwartzentruberAlphaResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// The liquid binary diffusivity, from the Siddiqi-Lucas correlation.

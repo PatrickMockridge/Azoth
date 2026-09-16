@@ -54,6 +54,7 @@ __all__ = [
     "RackettMolarVolumeBatch",
     "RkAlphaAbBatch",
     "RkDepartureBatch",
+    "SchwartzentruberAlphaBatch",
     "SrkAlphaAbBatch",
     "SrkDepartureBatch",
     "SrkKappaBatch",
@@ -97,6 +98,7 @@ __all__ = [
     "rackett_molar_volume",
     "rk_alpha_ab",
     "rk_departure",
+    "schwartzentruber_alpha",
     "srk_alpha_ab",
     "srk_departure",
     "srk_kappa",
@@ -142,6 +144,7 @@ _SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
 _HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _SRK_KAPPA = "eos.srk_kappa"
+_SCHWARTZENTRUBER_ALPHA = "eos.schwartzentruber_alpha"
 _SRK_ALPHA_AB = "eos.srk_alpha_ab"
 _SRK_Z_FACTOR = "eos.srk_z_factor"
 _SRK_DEPARTURE = "eos.srk_departure"
@@ -1355,6 +1358,45 @@ def srk_kappa(*, omega: Sequence[float]) -> SrkKappaBatch:
         _SRK_KAPPA,
         {"omega": sequence(omega, "omega")},
         _build_srk_kappa,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class SchwartzentruberAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.schwartzentruber_alpha`."""
+
+    #: The Schwartzentruber-Renon alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_schwartzentruber(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> SchwartzentruberAlphaBatch:
+    return SchwartzentruberAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def schwartzentruber_alpha(
+    *,
+    omega: Sequence[float],
+    p1: Sequence[float],
+    p2: Sequence[float],
+    p3: Sequence[float],
+    Tr: Sequence[float],
+) -> SchwartzentruberAlphaBatch:
+    """The Schwartzentruber-Renon alpha function, over arrays."""
+    result: SchwartzentruberAlphaBatch = run(
+        _SCHWARTZENTRUBER_ALPHA,
+        {
+            "omega": sequence(omega, "omega"),
+            "p1": sequence(p1, "p1"),
+            "p2": sequence(p2, "p2"),
+            "p3": sequence(p3, "p3"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_schwartzentruber,
     )
     return result
 

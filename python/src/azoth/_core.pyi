@@ -483,6 +483,11 @@ class RkDepartureResult:
     warnings: list[Warning]
 
 @final
+class SchwartzentruberAlphaResult:
+    alpha: float
+    warnings: list[Warning]
+
+@final
 class SiddiqiLucasDiffusivityResult:
     d: Qty
     warnings: list[Warning]
@@ -1058,6 +1063,13 @@ def rackett_molar_volume(
 ) -> RackettMolarVolumeResult: ...
 def rk_alpha_ab(Tr: float, Pr: float) -> RkAlphaAbResult: ...
 def rk_departure(a_reduced: float, b_reduced: float, z: float) -> RkDepartureResult: ...
+def schwartzentruber_alpha(
+    omega: float,
+    p1: float,
+    p2: float,
+    p3: float,
+    Tr: float,
+) -> SchwartzentruberAlphaResult: ...
 def siddiqi_lucas_diffusivity(
     form: str,
     VA: float,

@@ -198,6 +198,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::tyn_calus_diffusivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::wilke_chang_diffusivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hayduk_minhas_diffusivity, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::schwartzentruber_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::siddiqi_lucas_diffusivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::co2_water_diffusivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::parachor_surface_tension, m)?)?;

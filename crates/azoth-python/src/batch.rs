@@ -750,6 +750,26 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "alpha", "dimensionless", alpha);
         }
 
+        "eos.schwartzentruber_alpha" => {
+            let (omega, p1, p2, p3, tr) = (
+                take(&inputs, "omega")?,
+                take(&inputs, "p1")?,
+                take(&inputs, "p2")?,
+                take(&inputs, "p3")?,
+                take(&inputs, "Tr")?,
+            );
+            let mut alpha = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::schwartzentruber_alpha(omega[i], p1[i], p2[i], p3[i], tr[i]),
+                    &mut warnings,
+                )?;
+                alpha.push(r.alpha);
+            }
+            push_values(&mut columns, "alpha", "dimensionless", alpha);
+        }
+
         "eos.srk_alpha_ab" => {
             let (kappa, tr, pr) = (
                 take(&inputs, "kappa")?,

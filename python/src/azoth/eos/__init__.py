@@ -116,6 +116,7 @@ from azoth.core.result import (
     RackettMolarVolumeResult,
     RkAlphaAbResult,
     RkDepartureResult,
+    SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
     SrkAlphaAbResult,
     SrkDepartureResult,
@@ -274,6 +275,7 @@ _UNIQUAC_ACTIVITY_COEFFICIENTS = "eos.uniquac_activity_coefficients"
 _WILSON_ACTIVITY_COEFFICIENTS = "eos.wilson_activity_coefficients"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
+_SCHWARTZENTRUBER_ALPHA = "eos.schwartzentruber_alpha"
 _SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
 _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
@@ -899,6 +901,19 @@ def hayduk_minhas_diffusivity(form: str, VA: Q, T: Q, eta: Q) -> HaydukMinhasDif
     return resolve(_HAYDUK_MINHAS_DIFFUSIVITY)(  # type: ignore[no-any-return]
         form=form, VA=VA, T=T, eta=eta
     )
+
+
+def schwartzentruber_alpha(
+    omega: float, p1: float, p2: float, p3: float, Tr: float
+) -> SchwartzentruberAlphaResult:
+    """The Schwartzentruber-Renon alpha function for a pure component.
+
+    ``p1``, ``p2`` and ``p3`` are the fitted Schwartzentruber-Renon parameters; ``omega``
+    the acentric factor; ``Tr`` the reduced temperature.
+
+    See :func:`azoth.eos.reference.schwartzentruber_alpha`.
+    """
+    return resolve(_SCHWARTZENTRUBER_ALPHA)(omega=omega, p1=p1, p2=p2, p3=p3, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def siddiqi_lucas_diffusivity(

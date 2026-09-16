@@ -1991,3 +1991,21 @@ impl CalcResult for PrDelft1998AlphaResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.schwartzentruber_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SchwartzentruberAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SchwartzentruberAlphaResult {
+    const CALC_ID: &'static str = "eos.schwartzentruber_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
