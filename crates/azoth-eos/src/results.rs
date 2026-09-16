@@ -1757,3 +1757,21 @@ impl CalcResult for ThermalConductivityResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.matcop_alpha`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MatcopAlphaResult {
+    /// The temperature-dependent alpha function. Dimensionless.
+    pub alpha: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for MatcopAlphaResult {
+    const CALC_ID: &'static str = "eos.matcop_alpha";
+    const FIELDS: &'static [&'static str] = &["alpha", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

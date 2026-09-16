@@ -51,6 +51,7 @@ from azoth.core.result import (
     KFactorsResult,
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
+    MatcopAlphaResult,
     MolarEnthalpyEntropyResult,
     NrtlActivityCoefficientsResult,
     OrificeFlowResult,
@@ -232,6 +233,12 @@ def pr_kappa(omega: float) -> PrKappaResult:
     """
     result = _core.pr_kappa(omega)
     return PrKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
+
+
+def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaResult:
+    """The Mathias-Copeman alpha function, computed in Rust."""
+    result = _core.matcop_alpha(mc1, mc2, mc3, Tr)
+    return MatcopAlphaResult(alpha=result.alpha, warnings=_warnings(result.warnings))
 
 
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:

@@ -30,6 +30,7 @@ __all__ = [
     "HeatOfVaporizationBatch",
     "IdealGasCpBatch",
     "LiquidHeatCapacityBatch",
+    "MatcopAlphaBatch",
     "ParachorSurfaceTensionBatch",
     "Pr78KappaBatch",
     "PrAlphaAbBatch",
@@ -60,6 +61,7 @@ __all__ = [
     "heat_of_vaporization",
     "ideal_gas_cp",
     "liquid_heat_capacity",
+    "matcop_alpha",
     "parachor_surface_tension",
     "pr78_kappa",
     "pr_alpha_ab",
@@ -86,6 +88,7 @@ __all__ = [
 ]
 
 _PR_KAPPA = "eos.pr_kappa"
+_MATCOP_ALPHA = "eos.matcop_alpha"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_Z_FACTOR = "eos.pr_z_factor"
 _PRSV_KAPPA = "eos.prsv_kappa"
@@ -149,6 +152,39 @@ def pr_kappa(*, omega: Sequence[float]) -> PrKappaBatch:
         _PR_KAPPA,
         {"omega": sequence(omega, "omega")},
         _build,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class MatcopAlphaBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.matcop_alpha`."""
+
+    #: The Mathias-Copeman alpha function per element. Dimensionless.
+    alpha: array[float]
+
+
+def _build_matcop(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> MatcopAlphaBatch:
+    return MatcopAlphaBatch(warnings=warnings, units=units, alpha=columns["alpha"])  # type: ignore[arg-type]
+
+
+def matcop_alpha(
+    *, mc1: Sequence[float], mc2: Sequence[float], mc3: Sequence[float], Tr: Sequence[float]
+) -> MatcopAlphaBatch:
+    """The Mathias-Copeman alpha function, over arrays."""
+    result: MatcopAlphaBatch = run(
+        _MATCOP_ALPHA,
+        {
+            "mc1": sequence(mc1, "mc1"),
+            "mc2": sequence(mc2, "mc2"),
+            "mc3": sequence(mc3, "mc3"),
+            "Tr": sequence(Tr, "Tr"),
+        },
+        _build_matcop,
     )
     return result
 

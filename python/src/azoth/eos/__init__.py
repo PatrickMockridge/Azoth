@@ -83,6 +83,7 @@ from azoth.core.result import (
     IdealGasCpResult,
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
+    MatcopAlphaResult,
     MolarEnthalpyEntropyResult,
     NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult,
@@ -211,6 +212,7 @@ _HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
 _ANTOINE_VAPOR_PRESSURE = "eos.antoine_vapor_pressure"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _MASON_SAXENA_CONDUCTIVITY = "eos.mason_saxena_conductivity"
+_MATCOP_ALPHA = "eos.matcop_alpha"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _VISCOSITY = "eos.viscosity"
@@ -277,6 +279,18 @@ def pr_kappa(omega: float) -> PrKappaResult:
     See :func:`azoth.eos.reference.pr_kappa`.
     """
     return resolve(_PR_KAPPA)(omega=omega)  # type: ignore[no-any-return]
+
+
+def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaResult:
+    """The Mathias-Copeman alpha function for a pure component.
+
+    ``mc1``, ``mc2`` and ``mc3`` are the fitted Mathias-Copeman parameters; ``Tr`` the
+    reduced temperature. The alpha is cubic-agnostic - the ``a`` and ``b`` it scales
+    are the cubic's own.
+
+    See :func:`azoth.eos.reference.matcop_alpha`.
+    """
+    return resolve(_MATCOP_ALPHA)(mc1=mc1, mc2=mc2, mc3=mc3, Tr=Tr)  # type: ignore[no-any-return]
 
 
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:
