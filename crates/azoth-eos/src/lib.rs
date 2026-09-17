@@ -123,6 +123,7 @@ pub mod umrpr_alpha;
 pub mod unifac_activity_coefficients;
 pub mod uniquac_activity_coefficients;
 pub mod vdw1f_mix_binary;
+pub mod vega;
 pub mod viscosity;
 pub mod vu_flash;
 pub mod wilke_chang_diffusivity;
