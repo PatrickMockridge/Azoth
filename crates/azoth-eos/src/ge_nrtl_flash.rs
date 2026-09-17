@@ -51,7 +51,7 @@ use crate::results::{GeNrtlFlashResult, Phase};
 /// ```
 /// use azoth_core::units::{kelvins, pascals};
 /// use azoth_eos::databank::{ge_nrtl_phase_parameters, mixture_of};
-/// use azoth_eos::ge_nrtl_flash;
+/// use azoth_eos::ge_nrtl_flash::ge_nrtl_flash;
 ///
 /// let names = ["methanol", "water"];
 /// let params = ge_nrtl_phase_parameters(&names, None)?;
