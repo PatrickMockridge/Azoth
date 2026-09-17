@@ -19,6 +19,8 @@ import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
 import neqsim.thermo.system.SystemGEWilson;
 import neqsim.thermo.system.SystemNRTL;
+import neqsim.thermo.system.SystemUNIFAC;
+import neqsim.thermo.system.SystemUNIFACpsrk;
 import neqsim.thermo.system.SystemSrkEos;
 import neqsim.thermo.system.SystemRKEos;
 import neqsim.thermo.system.SystemPrEosvolcor;
@@ -256,6 +258,69 @@ public class FlashTp {
     }
   }
 
+  /**
+   * The UNIFAC activity coefficients `eos.unifac_activity_coefficients` would be checked
+   * against, if NeqSim 3.20.0 could produce them.
+   *
+   * It cannot, and the two attempts below record why rather than asserting it. The
+   * number in the bracket after each is the point of it: an oracle nobody can reach is
+   * worth a measurement, not a claim.
+   *
+   * 1. Classic UNIFAC. `ComponentGEUnifac`'s constructor fills `unifacGroups` (an
+   *    ArrayList) but never `unifacGroupsArray`, which only `addUNIFACgroup` and
+   *    `setUnifacGroups` write. `getNumberOfUNIFACgroups()` reads the list and
+   *    `getUnifacGroup(i)` reads the array, so `PhaseGEUnifac.checkGroups` - reached from
+   *    `setMixingRule` - indexes a length-zero array and throws.
+   * 2. UNIFAC-PSRK. `ComponentGEUnifac`'s constructor returns early for a subclass
+   *    (`if (!this.getClass().equals(ComponentGEUnifac.class)) return;`), so a
+   *    `ComponentGEUnifacPSRK` never reads its groups at all. Nothing throws - with zero
+   *    groups the two loops in `checkGroups` never run - and the damage surfaces later
+   *    and silently: `getR`/`getQ` sum over no groups, and every gamma comes back NaN
+   *    while the flash reports a single phase. `ComponentGEUnifacUMRPRU` shares that
+   *    early return, and `PhaseGEUnifacUMRPRU` is reached only through
+   *    `SystemUMRPRUMCEosNew`.
+   */
+  static void unifac(String label, SystemInterface fluid, String[] names, double[] moles) {
+    System.out.println("  " + label);
+    try {
+      for (int i = 0; i < names.length; i++) {
+        fluid.addComponent(names[i], moles[i]);
+      }
+      fluid.createDatabase(true);
+      fluid.setMixingRule("classic");
+      new ThermodynamicOperations(fluid).TPflash();
+      fluid.initProperties();
+
+      System.out.println("    phases " + fluid.getNumberOfPhases() + "  phase 1 holds "
+          + fluid.getPhase(1).getComponent(0).getClass().getSimpleName());
+
+      StringBuilder x = new StringBuilder();
+      StringBuilder gamma = new StringBuilder();
+      for (int i = 0; i < names.length; i++) {
+        if (i > 0) {
+          x.append(", ");
+          gamma.append(", ");
+        }
+        x.append(fluid.getPhase(1).getComponent(i).getx());
+        gamma.append(fluid.getPhase(1).getActivityCoefficient(i));
+      }
+      System.out.println("    x     [" + x + "]");
+      System.out.println("    gamma [" + gamma + "]");
+    } catch (Throwable failure) {
+      System.out.println("    THREW " + failure);
+      System.out.println("      at " + failure.getStackTrace()[0]);
+    }
+  }
+
+  /** The UNIFAC attempts, for `eos.unifac_activity_coefficients`. */
+  static void unifac() {
+    System.out.println("UNIFAC activity coefficients (the oracle that is not there):");
+    String[] names = {"methanol", "water"};
+    double[] moles = {0.5, 0.5};
+    unifac("classic UNIFAC, methanol/water 0.5/0.5, 298.15 K", new SystemUNIFAC(298.15, 1.0), names, moles);
+    unifac("UNIFAC-PSRK, methanol/water 0.5/0.5, 298.15 K", new SystemUNIFACpsrk(298.15, 1.0), names, moles);
+  }
+
   /** The paraffin-wax Wilson activity coefficients, for `eos.wilson_activity_coefficients`. */
   static void wilson() {
     String[][] names = {{"n-butane", "nc12"}};
@@ -295,6 +360,7 @@ public class FlashTp {
     corr();
     antoine();
     nrtl();
+    unifac();
     wilson();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 1);
