@@ -21,10 +21,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Name | Unit | Description |
 |---|---|---|
+| `components` | - | the substances the mixture is made of, by name, resolved against NeqSim's `UNIFACcomp.csv` group decomposition and the `UNIFACGroupParam` group constants |
 | `T` | K | absolute temperature |
 | `x` | dimensionless | mole fractions; non-negative and summing to one. |
-| `r` | dimensionless | the van der Waals volume parameter of each component |
-| `q` | dimensionless | the van der Waals surface-area parameter of each component |
 | `aij` | K | the interaction energy matrix: `tau_ij = exp(-aij[i][j] / T)` |
 
 
@@ -41,7 +40,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- the caller supplies `r`, `q` and `aij` - this model takes the numbers, not the names, the way `eos.nrtl_activity_coefficients` takes its matrices. The volume and surface parameters are the van der Waals `r_i`/`q_i`, the same group sums `eos.unifac_activity_coefficients` computes.
+- `r` and `q` are resolved from the named components, as the group sums `r_i = sum_k nu_ik R_k` and `q_i = sum_k nu_ik Q_k` over the same UNIFAC decomposition `eos.unifac_activity_coefficients` uses.
+
+- `aij` stays the caller's: no upstream table carries a UNIQUAC interaction matrix. NeqSim's `ComponentGEUniquac` reads the generic `intparam`, which for a GE phase is the SRK `kij` matrix and not a UNIQUAC parameter, so there is nothing to resolve it from.
 
 - `tau_ij = exp(-aij[i][j] / T)` carries no gas constant, so `aij` is in Kelvin, and it is directional (`a_ij != a_ji`) with a zero diagonal.
 
@@ -49,12 +50,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - `x` is checked (non-negative, sums to one) rather than renormalised.
 
+- the group sums are also what NeqSim's `ComponentGEUnifac.getR`/`getQ` compute. NeqSim's own `rUNIQUAQ`/`qUNIQUAQ` columns are *not* the source: they are 0.0 for 109 of the 112 components `UNIFACcomp.csv` carries, so `ComponentGEUniquac` divides by zero for almost every mixture.
+
 
 ## Cases
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methanol_water_equimolar_at_298_15_k` | T = 298.15, x = [0.5, 0.5], r = [1.4311, 0.92], q = [1.432, 1.4], aij = [[0.0, -71.0], [209.0, 0.0]] | ln_gamma = [0.1976568551186017, 0.29402288919456004], gamma = [1.2185441848728196, 1.3418146163712932] |
+| `methanol_water_equimolar_at_298_15_k` | components = ['methanol', 'water'], T = 298.15, x = [0.5, 0.5], aij = [[0.0, -71.0], [209.0, 0.0]] | ln_gamma = [0.1976568551186017, 0.29402288919456004], gamma = [1.2185441848728196, 1.3418146163712932] |
 
 ## References
 

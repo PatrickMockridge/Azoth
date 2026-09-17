@@ -16,15 +16,15 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import UniquacActivityCoefficientsResult
 from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
+from azoth.eos.components import UniquacParameters
 
 MODEL_ID = "eos.uniquac_activity_coefficients"
 
 
 def uniquac_activity_coefficients(
+    params: UniquacParameters,
     T: Q,
     x: Sequence[float],
-    r: Sequence[float],
-    q: Sequence[float],
     aij: Sequence[Sequence[Q]],
 ) -> UniquacActivityCoefficientsResult:
     """The activity coefficients of a mixture, from UNIQUAC (Abrams-Prausnitz).
@@ -34,14 +34,15 @@ def uniquac_activity_coefficients(
     ``tau_ij = exp(-aij[i][j] / T)``. The combinatorial term is
     ``ln gamma^C_i = ln(phi_i/x_i) + 5 q_i ln(theta_i/phi_i) + l_i - (phi_i/x_i) sum
     x_j l_j`` and the residual is ``q_i (1 - ln(sum_j theta_j tau_ji) - sum_j theta_j
-    tau_ij / sum_k theta_k tau_kj)``. ``aij`` is directional with a zero diagonal;
-    ``x`` is checked rather than renormalised.
+    tau_ij / sum_k theta_k tau_kj)``. ``params`` is resolved by name through
+    :func:`azoth.eos.components.uniquac_parameters`; ``aij`` stays the caller's,
+    because no upstream table carries a UNIQUAC interaction matrix. It is directional
+    with a zero diagonal, and ``x`` is checked rather than renormalised.
 
     Args:
+        params: the resolved volume and surface parameters, by component.
         T: absolute temperature.
         x: mole fractions; non-negative and summing to one.
-        r: the van der Waals volume parameter of each component.
-        q: the van der Waals surface-area parameter of each component.
         aij: the interaction energy matrix, in Kelvin.
 
     Returns:
@@ -54,10 +55,12 @@ def uniquac_activity_coefficients(
 
     Example:
         >>> import azoth
+        >>> from azoth.eos.components import uniquac_parameters
         >>> q = azoth.ureg.Quantity
         >>> aij = [[q(0.0, "K"), q(-71.0, "K")], [q(209.0, "K"), q(0.0, "K")]]
         >>> r = uniquac_activity_coefficients(
-        ...     q(298.15, "K"), [0.5, 0.5], [1.4311, 0.92], [1.432, 1.4], aij
+        ...     uniquac_parameters(["methanol", "water"]), q(298.15, "K"),
+        ...     [0.5, 0.5], aij,
         ... )
         >>> round(r.gamma[0], 14)
         1.21854418487282
@@ -71,8 +74,8 @@ def uniquac_activity_coefficients(
 
     t = input_to_si(spec, "T", T)
     x = list(x)
-    r = list(r)
-    q = list(q)
+    r = list(params.r)
+    q = list(params.q)
     aij_si = [[input_to_si(spec, "aij", value) for value in row] for row in aij]
 
     n = len(x)
@@ -80,7 +83,7 @@ def uniquac_activity_coefficients(
         raise InvalidInputError("x", "a mixture of zero components has no activity coefficient")
     if len(r) != n or len(q) != n:
         raise InvalidInputError(
-            "r",
+            "components",
             f"the per-component vectors disagree in length: `x` has {n} entries, `r` "
             f"{len(r)} and `q` {len(q)}",
         )

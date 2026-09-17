@@ -752,6 +752,48 @@ pub struct UnifacParameters {
     pub aij: Vec<f64>,
 }
 
+/// The resolved UNIQUAC volume and surface parameters for a mixture.
+///
+/// A caller-supplied record the way [`Component`] is, and carrying **no names** for the
+/// same reason: [`uniquac_parameters`] does the lookup.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UniquacParameters {
+    /// The van der Waals volume parameter `r_i` of each component.
+    pub r: Vec<f64>,
+    /// The van der Waals surface-area parameter `q_i` of each component.
+    pub q: Vec<f64>,
+}
+
+/// The UNIQUAC `r` and `q` for a list of names, one entry per component.
+///
+/// `r_i = sum_k nu_ik R_k` and `q_i = sum_k nu_ik Q_k`, the group sums
+/// [`crate::unifac_activity_coefficients`] forms internally - which is what NeqSim's
+/// `ComponentGEUnifac.getR`/`getQ` compute, and what a UNIQUAC `r`/`q` means when no
+/// fitted value exists.
+///
+/// **Not** NeqSim's `rUNIQUAQ`/`qUNIQUAQ` columns, which `ComponentGEUniquac` reads.
+/// Those are `0.0` for 109 of the 112 components the table carries - only water, acetic
+/// acid and `H2S` have values - so a UNIQUAC built from them divides by zero for almost
+/// every real mixture. The spec's assumptions state this rather than leaving the choice
+/// looking arbitrary.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name has no group decomposition.
+pub fn uniquac_parameters(names: &[&str]) -> Result<UniquacParameters> {
+    let params = unifac_parameters(names)?;
+    let g = params.group_r.len();
+    let n = names.len();
+    let mut r = vec![0.0; n];
+    let mut q = vec![0.0; n];
+    for i in 0..n {
+        for k in 0..g {
+            r[i] += params.groups[i * g + k] * params.group_r[k];
+            q[i] += params.groups[i * g + k] * params.group_q[k];
+        }
+    }
+    Ok(UniquacParameters { r, q })
+}
+
 /// The parsed UNIFAC tables: group constants by subgroup, main-group interactions,
 /// and per-component group memberships.
 struct UnifacTables {

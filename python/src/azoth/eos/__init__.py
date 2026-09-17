@@ -160,6 +160,7 @@ from azoth.eos.components import (
     BwrsCoefficients,
     NrtlParameters,
     UnifacParameters,
+    UniquacParameters,
     bwrs_coefficients,
     component,
     from_model,
@@ -1156,10 +1157,9 @@ def unifac_activity_coefficients(
 
 
 def uniquac_activity_coefficients(
+    params: UniquacParameters,
     T: Q,
     x: Sequence[float],
-    r: Sequence[float],
-    q: Sequence[float],
     aij: Sequence[Sequence[Q]],
 ) -> UniquacActivityCoefficientsResult:
     """The activity coefficients of a mixture, from UNIQUAC (Abrams-Prausnitz).
@@ -1169,9 +1169,9 @@ def uniquac_activity_coefficients(
     combinatorial and residual terms are the standard sums. ``aij`` is directional with
     a zero diagonal; ``x`` is checked rather than renormalised.
 
-    The three parameters are the caller's: the van der Waals ``r``/``q`` are the group
-    sums `eos.unifac_activity_coefficients` computes, and ``aij`` has no NeqSim table,
-    so it is supplied directly.
+    ``params`` is the caller's: resolve the van der Waals ``r``/``q`` from the mixture's
+    components with :func:`azoth.eos.components.uniquac_parameters`. ``aij`` stays the
+    caller's too, because no upstream table carries a UNIQUAC interaction matrix.
 
     Raises:
         InvalidInputError: if the vectors disagree in length, ``aij`` is not ``N x N``
@@ -1181,7 +1181,7 @@ def uniquac_activity_coefficients(
     See :func:`azoth.eos.reference.uniquac_activity_coefficients`.
     """
     return resolve(_UNIQUAC_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
-        T=T, x=x, r=r, q=q, aij=aij
+        params=params, T=T, x=x, aij=aij
     )
 
 

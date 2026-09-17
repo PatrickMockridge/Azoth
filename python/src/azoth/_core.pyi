@@ -1345,10 +1345,10 @@ def unifac_activity_coefficients(
     x: list[float],
 ) -> UnifacActivityCoefficientsResult: ...
 def uniquac_activity_coefficients(
-    T: float,
-    x: list[float],
     r: list[float],
     q: list[float],
+    T: float,
+    x: list[float],
     aij: list[list[float]],
 ) -> UniquacActivityCoefficientsResult: ...
 def vdw1f_mix_binary(

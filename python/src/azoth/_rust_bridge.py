@@ -844,19 +844,22 @@ def unifac_activity_coefficients(
 
 
 def uniquac_activity_coefficients(
+    params: Any,
     T: Q,
     x: Sequence[float],
-    r: Sequence[float],
-    q: Sequence[float],
     aij: Sequence[Sequence[Q]],
 ) -> UniquacActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust."""
+    """The activity coefficients of a mixture, computed in Rust.
+
+    The resolved `r` and `q` cross the boundary flattened, in the dataclass's own field
+    order; `aij` crosses as the caller supplied it.
+    """
     spec = _models_gen.model("eos.uniquac_activity_coefficients")
     result = _core.uniquac_activity_coefficients(
+        list(params.r),
+        list(params.q),
         input_to_si(spec, "T", T),
         list(x),
-        list(r),
-        list(q),
         [[input_to_si(spec, "aij", value) for value in row] for row in aij],
     )
     return UniquacActivityCoefficientsResult(

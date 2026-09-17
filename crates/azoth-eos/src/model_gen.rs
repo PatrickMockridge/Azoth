@@ -3148,13 +3148,9 @@ static UNIQUAC_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[TestCase {
     skip_reason: None,
     tolerance: 1e-09,
     numbers: &[("T", 298.15)],
-    lists: &[],
+    lists: &[("components", &["methanol", "water"])],
     strings: &[],
-    vectors: &[
-        ("x", &[0.5, 0.5]),
-        ("r", &[1.4311, 0.92]),
-        ("q", &[1.432, 1.4]),
-    ],
+    vectors: &[("x", &[0.5, 0.5])],
     matrices: &[("aij", &[0.0, -71.0, 209.0, 0.0])],
     expected: &[],
     expected_vectors: &[

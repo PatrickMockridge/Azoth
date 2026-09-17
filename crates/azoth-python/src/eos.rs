@@ -979,21 +979,22 @@ pub fn unifac_activity_coefficients(
 }
 
 /// The activity coefficients of a mixture, from UNIQUAC. A *model* rather than a
-/// calculation: its arguments are vectors and a matrix.
+/// calculation: its resolved `r`/`q` cross flattened, and `aij` stays the caller's.
 #[pyfunction]
-#[pyo3(signature = (T, x, r, q, aij))]
-#[pyo3(text_signature = "(T, x, r, q, aij)")]
+#[pyo3(signature = (r, q, T, x, aij))]
+#[pyo3(text_signature = "(r, q, T, x, aij)")]
 #[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
 pub fn uniquac_activity_coefficients(
     py: Python<'_>,
-    T: f64,
-    x: Vec<f64>,
     r: Vec<f64>,
     q: Vec<f64>,
+    T: f64,
+    x: Vec<f64>,
     aij: Vec<Vec<f64>>,
 ) -> PyResult<PyUniquacActivityCoefficientsResult> {
-    azoth_eos::uniquac_activity_coefficients(T, &x, &r, &q, &aij)
-        .map(|r| PyUniquacActivityCoefficientsResult::from(&r))
+    let params = azoth_eos::databank::UniquacParameters { r, q };
+    azoth_eos::uniquac_activity_coefficients(&params, T, &x, &aij)
+        .map(|result| PyUniquacActivityCoefficientsResult::from(&result))
         .map_err(|e| to_pyerr(py, e))
 }
 

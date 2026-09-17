@@ -668,6 +668,48 @@ def unifac_parameters(names: Sequence[str]) -> UnifacParameters:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class UniquacParameters:
+    """The UNIQUAC volume and surface parameters of a mixture.
+
+    A caller-supplied record the way :class:`Component` is, and carrying **no names**
+    for the same reason: :func:`uniquac_parameters` does the lookup.
+    """
+
+    #: The van der Waals volume parameter ``r_i`` of each component.
+    r: tuple[float, ...]
+    #: The van der Waals surface-area parameter ``q_i`` of each component.
+    q: tuple[float, ...]
+
+
+def uniquac_parameters(names: Sequence[str]) -> UniquacParameters:
+    """The UNIQUAC `r` and `q` for a list of components, by name.
+
+    ``r_i = sum_k nu_ik R_k`` and ``q_i = sum_k nu_ik Q_k``, the group sums
+    :func:`unifac_parameters` forms internally - which is what NeqSim's
+    ``ComponentGEUnifac.getR``/``getQ`` compute, and what a UNIQUAC ``r``/``q`` means
+    when no fitted value exists.
+
+    **Not** NeqSim's ``rUNIQUAQ``/``qUNIQUAQ`` columns, which ``ComponentGEUniquac``
+    reads. Those are ``0.0`` for 109 of the 112 components the table carries - only
+    water, acetic acid and ``H2S`` have values - so a UNIQUAC built from them divides
+    by zero for almost every real mixture.
+
+    Raises:
+        PropertyUnavailableError: if a name has no UNIFAC group decomposition.
+    """
+    params = unifac_parameters(names)
+    g = len(params.group_r)
+    n = len(names)
+    r = [0.0] * n
+    q = [0.0] * n
+    for i in range(n):
+        for k in range(g):
+            r[i] += params.groups[i * g + k] * params.group_r[k]
+            q[i] += params.groups[i * g + k] * params.group_q[k]
+    return UniquacParameters(r=tuple(r), q=tuple(q))
+
+
 def _cubic(name: str) -> Cubic:
     """The cubic named by its short name, ``"pr"``, ``"srk"`` or ``"rk"``."""
     try:
@@ -896,6 +938,7 @@ __all__ = [
     "DatabankEntry",
     "NrtlParameters",
     "UnifacParameters",
+    "UniquacParameters",
     "available",
     "bwrs_coefficients",
     "component",
@@ -905,5 +948,6 @@ __all__ = [
     "kij_for",
     "nrtl_parameters",
     "unifac_parameters",
+    "uniquac_parameters",
     "wilke_chang_phi",
 ]

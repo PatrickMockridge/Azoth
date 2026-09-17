@@ -6,6 +6,7 @@
 
 use azoth_core::{AzothError, Result, apply_checks};
 
+use crate::databank::UniquacParameters;
 use crate::model_gen;
 use crate::results::UniquacActivityCoefficientsResult;
 
@@ -16,8 +17,10 @@ use crate::results::UniquacActivityCoefficientsResult;
 /// `tau_ij = exp(-aij[i][j] / T)`. The combinatorial term is
 /// `ln gamma^C_i = ln(phi_i/x_i) + 5 q_i ln(theta_i/phi_i) + l_i - (phi_i/x_i) sum
 /// x_j l_j`, and the residual is `q_i (1 - ln(sum_j theta_j tau_ji) - sum_j theta_j
-/// tau_ij / sum_k theta_k tau_kj)`. `aij` is directional with a zero diagonal; `x` is
-/// checked rather than renormalised.
+/// tau_ij / sum_k theta_k tau_kj)`. `params` is resolved by name through
+/// [`crate::databank::uniquac_parameters`]; `aij` stays the caller's, because no
+/// upstream table carries a UNIQUAC interaction matrix. It is directional with a zero
+/// diagonal, and `x` is checked rather than renormalised.
 ///
 /// # Errors
 /// * [`AzothError::InvalidInput`] if the vectors disagree in length, `aij` is not
@@ -26,13 +29,17 @@ use crate::results::UniquacActivityCoefficientsResult;
 ///
 /// # Example
 /// ```
+/// use azoth_eos::databank::UniquacParameters;
 /// use azoth_eos::uniquac_activity_coefficients;
 ///
+/// let params = UniquacParameters {
+///     r: vec![1.4311, 0.92],
+///     q: vec![1.432, 1.4],
+/// };
 /// let r = uniquac_activity_coefficients(
+///     &params,
 ///     298.15,
 ///     &[0.5, 0.5],
-///     &[1.4311, 0.92],
-///     &[1.432, 1.4],
 ///     &[vec![0.0, -71.0], vec![209.0, 0.0]],
 /// )?;
 /// assert!((r.gamma[0] - 1.2185441848728196).abs() < 1e-15);
@@ -40,10 +47,9 @@ use crate::results::UniquacActivityCoefficientsResult;
 /// ```
 #[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
 pub fn uniquac_activity_coefficients(
+    params: &UniquacParameters,
     T: f64,
     x: &[f64],
-    r: &[f64],
-    q: &[f64],
     aij: &[Vec<f64>],
 ) -> Result<UniquacActivityCoefficientsResult> {
     let spec = &model_gen::UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC;
@@ -58,6 +64,7 @@ pub fn uniquac_activity_coefficients(
         &mut warnings,
     )?;
 
+    let (r, q) = (&params.r, &params.q);
     let n = x.len();
     if n == 0 {
         return Err(AzothError::invalid_input(
@@ -67,7 +74,7 @@ pub fn uniquac_activity_coefficients(
     }
     if r.len() != n || q.len() != n {
         return Err(AzothError::invalid_input(
-            "r",
+            "components",
             format!(
                 "the per-component vectors disagree in length: `x` has {n} entries, `r` \
                  {} and `q` {}",
