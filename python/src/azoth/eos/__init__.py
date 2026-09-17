@@ -84,6 +84,7 @@ from azoth.core.result import (
     DewPressureResult,
     DewTemperatureResult,
     EosCgPhaseResult,
+    GeNrtlFlashResult,
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult,
@@ -203,6 +204,7 @@ __all__ = [
     "eos_cg_phase",
     "from_model",
     "from_names",
+    "ge_nrtl_flash",
     "ge_nrtl_phase",
     "gerg2008_phase",
     "hayduk_minhas_diffusivity",
@@ -288,6 +290,7 @@ _WATER_PHASE = "eos.water_phase"
 _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
+_GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
 _VISCOSITY = "eos.viscosity"
@@ -1750,6 +1753,46 @@ def ge_nrtl_phase(
     """
     return resolve(_GE_NRTL_PHASE)(  # type: ignore[no-any-return]
         params=params, T=T, P=P, x=x
+    )
+
+
+def ge_nrtl_flash(
+    params: GeNrtlPhaseParameters,
+    mixture: Mixture,
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+) -> GeNrtlFlashResult:
+    """The isothermal flash of a mixture whose liquid is an NRTL phase.
+
+    ``K_i = phi_i^L / phi_i^V``, where ``phi_i^L = gamma_i P0_i / P`` is
+    :func:`ge_nrtl_phase` and ``phi_i^V`` is the cubic. This is NeqSim's ``SystemNRTL``
+    pairing: ``PhaseSrkEos`` over ``PhaseGENRTL``.
+
+    **The cubic the mixture carries is the vapour.** A gamma-phi flash is defined by the
+    pair, so a caller who wants SRK - which is the member NeqSim pairs with its activity
+    models, and the one this model's cases are stated against - builds the mixture with
+    ``mixture_of(names, eos="srk")``. The default is Peng-Robinson and gives a
+    different vapour, and so a different answer.
+
+    ``params`` is the caller's, from
+    :func:`azoth.eos.components.ge_nrtl_phase_parameters`, which must name the same
+    components as ``mixture``.
+
+    ``beta`` is ``None`` where there is genuinely no vapour fraction to report - a feed
+    whose K-values are all on one side of one - and read ``phase`` rather than
+    guessing from the number's size.
+
+    Raises:
+        InvalidInputError: if ``params``, ``mixture`` and ``z`` disagree in length, or
+            ``z`` is not a composition.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        SolverNotConvergedError: if the iteration hits its cap.
+
+    See :func:`azoth.eos.reference.ge_nrtl_flash`.
+    """
+    return resolve(_GE_NRTL_FLASH)(  # type: ignore[no-any-return]
+        params=params, mixture=mixture, T=T, P=P, z=z
     )
 
 

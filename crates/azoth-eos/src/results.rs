@@ -1665,6 +1665,57 @@ impl CalcResult for GeNrtlPhaseResult {
     }
 }
 
+/// Result of `eos.ge_nrtl_flash`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GeNrtlFlashResult {
+    /// The vapour fraction, or `None` when the solution is trivial.
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`, the iterate the loop converges on.
+    pub k: Vec<f64>,
+    /// `ln phi_i` in the liquid, from the NRTL phase: `ln(gamma_i P0_i / P)`.
+    pub ln_phi_liquid: Vec<f64>,
+    /// `ln phi_i` in the vapour, from the cubic.
+    pub ln_phi_vapour: Vec<f64>,
+    /// The vapour root of the cubic, the largest admissible one.
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i` over the components.
+    pub min_t_over_tc: f64,
+    /// What the converged state is.
+    pub phase: Phase,
+    /// Successive-substitution steps taken.
+    pub iterations: u32,
+    /// `rms_i |ln K_i - ln K_i_previous|` at the step that met the tolerance.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for GeNrtlFlashResult {
+    const CALC_ID: &'static str = "eos.ge_nrtl_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "beta",
+        "x",
+        "y",
+        "k",
+        "ln_phi_liquid",
+        "ln_phi_vapour",
+        "z_vapour",
+        "min_t_over_tc",
+        "phase",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.nrtl_activity_coefficients`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NrtlActivityCoefficientsResult {

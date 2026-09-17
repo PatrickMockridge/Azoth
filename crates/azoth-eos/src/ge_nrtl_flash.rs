@@ -1,77 +1,96 @@
-//! `eos.pt_flash` - the isothermal two-phase flash.
+//! `eos.ge_nrtl_flash` - the isothermal flash of an SRK vapour over an NRTL liquid.
 //!
-//! Spec: `specs/models/eos/pt_flash.toml`
+//! Spec: `specs/models/eos/ge_nrtl_flash.toml`
 //!
-//! The two-phase split of a mixture at a fixed temperature and pressure: Wilson
-//! K-value estimates, then successive substitution, with Rachford-Rice bisected each
-//! iteration. A *model* rather than a calculation - what the spec pins down is the
-//! procedure, and this module reads the procedure from the generated table rather than
-//! choosing it.
+//! NeqSim's `SystemNRTL` pairs `PhaseSrkEos` with `PhaseGENRTL`, and the K-value its
+//! gamma-phi iteration updates is `K_i = phi_i^L / phi_i^V` - see `TPflash`'s
+//! `sucsSubsGammaPhi`. For an activity-coefficient liquid `phi_i^L` is
+//! `gamma_i P0_i / P`, which is [`crate::ge_nrtl_phase`] exactly, so the liquid half of
+//! this model is that model and the vapour half is the cubic.
 //!
-//! The scaffold - the Rachford-Rice bracket and bisection, the convergence measure,
-//! and what a trivial solution is - lives in [`crate::flash_iteration`], which
-//! [`crate::ge_nrtl_flash`] shares. What is here is the part that is Peng-Robinson's:
-//! both fugacity coefficients come from the cubic.
+//! The scaffold is [`crate::flash_iteration`]'s, shared with [`crate::pt_flash`]; what
+//! is here is the one line that differs, and the phase evaluations either side of it.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::algorithm_of;
+use crate::databank::GeNrtlPhaseParameters;
 use crate::flash_iteration::{
     Outcome, compositions, is_trivial, negative_flash_warning, rachford_rice, rachford_rice_bounds,
     rms_delta, single_phase_warning, trivial_warning,
 };
+use crate::ge_nrtl_phase::ge_nrtl_phase;
 use crate::mixture::{Mixture, RootSide, wilson_k};
 use crate::model_gen;
 
-use crate::results::{Phase, PtFlashResult};
+use crate::results::{GeNrtlFlashResult, Phase};
 
-/// The isothermal two-phase flash of a mixture at a temperature and pressure.
+/// The isothermal flash of a mixture whose liquid is an NRTL activity-coefficient
+/// phase and whose vapour is a cubic.
 ///
 /// `z` is the overall composition, in mole fractions, and is **checked rather than
 /// renormalised** - silently rescaling a caller's composition would make their error
 /// invisible in a way that changes every number downstream.
 ///
+/// `params` is the resolved NRTL phase parameters, by component, from
+/// [`crate::databank::ge_nrtl_phase_parameters`]. `mixture` is the same components
+/// resolved for the cubic; the two are separate arguments because the vapour reads
+/// `Tc`, `Pc`, `omega` and `kij` and the liquid reads the NRTL matrices and the
+/// Antoine correlations, and a caller that resolved them from different component
+/// lists has made an error this signature cannot see.
+///
 /// # Errors
 /// * [`AzothError::OutOfRange`] if `T` or `P` is not positive.
 /// * [`AzothError::InvalidInput`] if `z` is the wrong length, has a negative entry,
-///   or does not sum to one.
+///   does not sum to one, or if `params` and `mixture` disagree in length.
 /// * [`AzothError::SolverNotConverged`] if the iteration hits its cap.
-/// * Propagates the kernels' range checks.
+/// * Propagates the phase models' range checks.
 ///
 /// # Example
 /// ```
 /// use azoth_core::units::{kelvins, pascals};
-/// use azoth_eos::{databank, pt_flash};
+/// use azoth_eos::databank::{ge_nrtl_phase_parameters, mixture_of};
+/// use azoth_eos::ge_nrtl_flash;
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
-///     .expect("the pair resolves")
-///     .0;
-/// let r = pt_flash(&mixture, kelvins(330.0), pascals(2_500_000.0), &[0.6, 0.4])?;
+/// let names = ["methanol", "water"];
+/// let params = ge_nrtl_phase_parameters(&names, None)?;
+/// let (mixture, _) = mixture_of(&names, None)?;
+/// let r = ge_nrtl_flash(&params, &mixture, kelvins(350.0), pascals(1.0e5), &[0.5, 0.5])?;
 /// assert_eq!(r.phase, azoth_eos::Phase::TwoPhase);
-/// assert!((r.beta.expect("a split has a vapour fraction") - 0.8422055475803881).abs() < 1e-9);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
-pub fn pt_flash(
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn ge_nrtl_flash(
+    params: &GeNrtlPhaseParameters,
     mixture: &Mixture,
-    t: ThermodynamicTemperature,
-    p: Pressure,
+    T: ThermodynamicTemperature,
+    P: Pressure,
     z: &[f64],
-) -> Result<PtFlashResult> {
-    let spec = &model_gen::PT_FLASH_SPEC;
+) -> Result<GeNrtlFlashResult> {
+    let spec = &model_gen::GE_NRTL_FLASH_SPEC;
     let mut warnings = Vec::new();
 
     apply_checks(
         spec.input_checks(),
         |quantity| match quantity {
-            "T" => Some(t.value),
-            "P" => Some(p.value),
+            "T" => Some(T.value),
+            "P" => Some(P.value),
             _ => None,
         },
         &mut warnings,
     )?;
 
     let n = mixture.len();
+    if params.antoine.len() != n {
+        return Err(AzothError::invalid_input(
+            "components",
+            format!(
+                "the phase has {} component(s) but the cubic has {n}",
+                params.antoine.len()
+            ),
+        ));
+    }
     if z.len() != n {
         return Err(AzothError::invalid_input(
             "z",
@@ -102,7 +121,7 @@ pub fn pt_flash(
     let min_t_over_tc = mixture
         .components()
         .iter()
-        .map(|c| t.value / c.tc.value)
+        .map(|c| T.value / c.tc.value)
         .fold(f64::INFINITY, f64::min);
     apply_checks(
         spec.derived_checks(),
@@ -110,7 +129,7 @@ pub fn pt_flash(
         &mut warnings,
     )?;
 
-    let reduced = mixture.reduced_parameters(t, p)?;
+    let reduced = mixture.reduced_parameters(T, P)?;
     warnings.extend(reduced.warnings.iter().cloned());
 
     let algorithm = algorithm_of(spec)?;
@@ -123,12 +142,11 @@ pub fn pt_flash(
         ),
     })?;
 
-    let mut k = wilson_k(mixture, t, p);
+    let mut k = wilson_k(mixture, T, P);
     let mut iterations = 0;
     let mut residual = f64::NAN;
 
-    // How the loop finished. `None` means it is still iterating, so a value that
-    // is still `None` after the loop hit its cap is a genuine failure to converge.
+    // How the loop finished, when it finished somewhere other than convergence.
     let mut settled: Option<Outcome> = None;
 
     for step in 1..=algorithm.max_iterations {
@@ -163,7 +181,11 @@ pub fn pt_flash(
 
         let (beta, _) = rachford_rice(z, &k, bounds, inner.tolerance, inner.max_iterations);
         let (x, y) = compositions(z, &k, beta);
-        let liquid = mixture.phase_state(&reduced, &x, RootSide::Liquid)?;
+
+        // The liquid's coefficients are the NRTL phase's, and the vapour's are the
+        // cubic's. This pair of lines is the whole of what makes this flash a
+        // gamma-phi flash rather than `eos.pt_flash`.
+        let liquid = ge_nrtl_phase(params, T.value, P.value, &x)?;
         let vapour = mixture.phase_state(&reduced, &y, RootSide::Vapour)?;
 
         let ln_k_new: Vec<f64> = liquid
@@ -187,7 +209,7 @@ pub fn pt_flash(
         // The trivial solution is stated *exactly* - `x = y = z` and `K = 1` -
         // rather than as the last iterate that approached it. That iterate is a
         // function of where the bisection stopped on an identically-zero function
-        // and is not reproducible; this is. See the spec's correction 2.
+        // and is not reproducible; this is.
         Some(Outcome::Trivial) => {
             k = vec![1.0; n];
             warnings.push(trivial_warning());
@@ -232,17 +254,20 @@ pub fn pt_flash(
         }
     };
 
-    let liquid = mixture.phase_state(&reduced, &x, RootSide::Liquid)?;
+    // The one state the result reports, evaluated at the compositions actually
+    // returned rather than at the last iterate's. A feed refused by the bracket
+    // before its first evaluation reaches this with `x = y = z`, which is the
+    // single-phase answer it was classified as.
+    let liquid = ge_nrtl_phase(params, T.value, P.value, &x)?;
     let vapour = mixture.phase_state(&reduced, &y, RootSide::Vapour)?;
 
-    Ok(PtFlashResult {
+    Ok(GeNrtlFlashResult {
         beta,
         x,
         y,
         k,
         ln_phi_liquid: liquid.ln_phi,
         ln_phi_vapour: vapour.ln_phi,
-        z_liquid: liquid.z,
         z_vapour: vapour.z,
         min_t_over_tc,
         phase,

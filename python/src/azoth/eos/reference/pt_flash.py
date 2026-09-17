@@ -18,13 +18,19 @@ from azoth.core.errors import InvalidInputError, SolverNotConvergedError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import Phase, PtFlashResult
 from azoth.core.units import Q, input_to_si
-from azoth.core.warnings import Warning, WarningCode
+from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import (
     compositions,
     is_trivial,
+    negative_flash_warning,
     phase_state,
+    rachford_rice,
+    rachford_rice_bounds,
     reduced_parameters,
+    rms_delta,
+    single_phase_warning,
+    trivial_warning,
     wilson_k,
 )
 
@@ -37,63 +43,6 @@ MODEL_ID = "eos.pt_flash"
 #: indeterminate there - see the spec's correction 2 for the feed a ``beta`` test
 #: would have mislabelled.
 TRIVIAL_TOLERANCE = 1.0e-08
-
-
-def _rachford_rice_bounds(k: list[float]) -> tuple[float, float] | None:
-    """The interval on which Rachford-Rice has its physical root, or ``None``.
-
-    ``g(beta) = sum_i z_i (K_i - 1) / (1 + beta (K_i - 1))`` has poles at
-    ``1/(1 - K_i)``, so the root the flash wants is the interval on which
-    ``1 + beta (K_i - 1) > 0`` for every ``i`` - the one that keeps
-    ``x_i = z_i / (1 + beta (K_i - 1))`` and ``y_i = K_i x_i`` non-negative:
-
-    .. code-block:: text
-
-        max over {i : K_i > 1} of 1/(1 - K_i)  <  beta  <  min over {i : K_i < 1} of 1/(1 - K_i)
-
-    ``None`` is not a numerical failure: it is a proof that the feed has no
-    two-phase solution at these K-values, since ``sum_i y_i = sum_i K_i x_i = 1``
-    with ``sum_i x_i = 1`` is impossible when every K is on the same side of one.
-    """
-    lower = -math.inf
-    upper = math.inf
-    for value in k:
-        if value > 1.0:
-            lower = max(lower, 1.0 / (1.0 - value))
-        elif value < 1.0:
-            upper = min(upper, 1.0 / (1.0 - value))
-        else:
-            # ``K_i = 1`` exactly puts a pole at infinity and makes ``g`` degenerate.
-            return None
-    if lower == -math.inf or upper == math.inf:
-        return None
-    return (lower, upper)
-
-
-def _rachford_rice(
-    z: list[float], k: list[float], bounds: tuple[float, float], tolerance: float, cap: int
-) -> float:
-    """The vapour fraction that solves Rachford-Rice, by bisection."""
-
-    def g(beta: float) -> float:
-        return sum(zi * (ki - 1.0) / (1.0 + beta * (ki - 1.0)) for zi, ki in zip(z, k, strict=True))
-
-    lower, upper = bounds
-    for _ in range(cap):
-        mid = 0.5 * (lower + upper)
-        if upper - lower <= tolerance:
-            break
-        if g(mid) > 0.0:
-            lower = mid
-        else:
-            upper = mid
-    return 0.5 * (lower + upper)
-
-
-def _rms_delta(ln_k_new: list[float], k: list[float]) -> float:
-    """The rms change in ``ln K`` across one iteration."""
-    total = sum((new - math.log(old)) ** 2 for new, old in zip(ln_k_new, k, strict=True))
-    return math.sqrt(total / len(ln_k_new))
 
 
 def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
@@ -197,12 +146,12 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         # otherwise report a diverged iteration as a single-phase feed.
         if any(not math.isfinite(value) or value <= 0.0 for value in k):
             raise SolverNotConvergedError(iterations, residual, algorithm["tolerance"])
-        bounds = _rachford_rice_bounds(k)
+        bounds = rachford_rice_bounds(k)
         if bounds is None:
             settled = "all_vapour" if all(value > 1.0 for value in k) else "all_liquid"
             break
 
-        beta = _rachford_rice(list(z), k, bounds, inner["tolerance"], inner["max_iterations"])
+        beta = rachford_rice(list(z), k, bounds, inner["tolerance"], inner["max_iterations"])
         x, y = compositions(list(z), k, beta)
         liquid_state = phase_state(reduced, kij, x, liquid=True)
         vapour_state = phase_state(reduced, kij, y, liquid=False)
@@ -210,7 +159,7 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         ln_k_new = [
             lp - lv for lp, lv in zip(liquid_state.ln_phi, vapour_state.ln_phi, strict=True)
         ]
-        residual = _rms_delta(ln_k_new, k)
+        residual = rms_delta(ln_k_new, k)
         k = [math.exp(value) for value in ln_k_new]
 
         if residual <= algorithm["tolerance"]:
@@ -225,19 +174,19 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         x, y = list(z), list(z)
         phase = Phase.TRIVIAL
         beta_out = None
-        warnings.append(_trivial_warning())
+        warnings.append(trivial_warning())
     elif settled is not None:
         x, y = list(z), list(z)
         phase = Phase.ALL_VAPOUR if settled == "all_vapour" else Phase.ALL_LIQUID
         beta_out = None
-        warnings.append(_single_phase_warning(phase))
+        warnings.append(single_phase_warning(phase))
     elif residual > algorithm["tolerance"]:
         raise SolverNotConvergedError(iterations, residual, algorithm["tolerance"])
     else:
-        bounds = _rachford_rice_bounds(k)
+        bounds = rachford_rice_bounds(k)
         if bounds is None:  # pragma: no cover - guarded above
             raise SolverNotConvergedError(iterations, residual, algorithm["tolerance"])
-        beta_out = _rachford_rice(list(z), k, bounds, inner["tolerance"], inner["max_iterations"])
+        beta_out = rachford_rice(list(z), k, bounds, inner["tolerance"], inner["max_iterations"])
         x, y = compositions(list(z), k, beta_out)
         if beta_out < 0.0:
             phase = Phase.ALL_LIQUID
@@ -246,7 +195,7 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         else:
             phase = Phase.TWO_PHASE
         if phase is not Phase.TWO_PHASE:
-            warnings.append(_negative_flash_warning(phase, beta_out))
+            warnings.append(negative_flash_warning(phase, beta_out))
 
     liquid_state = phase_state(reduced, kij, x, liquid=True)
     vapour_state = phase_state(reduced, kij, y, liquid=False)
@@ -265,48 +214,4 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         iterations=iterations,
         residual=residual,
         warnings=tuple(warnings),
-    )
-
-
-def _trivial_warning() -> Warning:
-    """The caveat every trivial solution carries."""
-    return Warning(
-        code=WarningCode.TRIVIAL_SOLUTION,
-        message=(
-            "the iteration converged to x = y = z, so the feed is single phase and "
-            "there is no vapour fraction. Which single phase it is, this model does "
-            "not say - that needs a stability analysis it does not perform. `beta` is "
-            "absent rather than zero, and `phase` is `trivial`."
-        ),
-        field=None,
-    )
-
-
-def _single_phase_warning(phase: Phase) -> Warning:
-    """The caveat a feed carries when no Rachford-Rice root exists at all."""
-    which = "vapour" if phase is Phase.ALL_VAPOUR else "liquid"
-    return Warning(
-        code=WarningCode.TRIVIAL_SOLUTION,
-        message=(
-            "every K-value is on the same side of one, so the Rachford-Rice equation "
-            "has no root and the feed has no two-phase solution at this temperature "
-            f"and pressure. The feed is single-phase {which}, and `beta` is absent "
-            "rather than zero because there is no vapour fraction to report."
-        ),
-        field=None,
-    )
-
-
-def _negative_flash_warning(phase: Phase, beta: float) -> Warning:
-    """The caveat a converged-but-out-of-range vapour fraction carries."""
-    which = "superheated vapour" if phase is Phase.ALL_VAPOUR else "subcooled liquid"
-    return Warning(
-        code=WarningCode.OUT_OF_VALID_RANGE,
-        message=(
-            f"the vapour fraction is {beta}, outside [0, 1], so the feed is "
-            f"single-phase {which}. It is reported because the negative flash is a "
-            f"real reading - it is the amount of the absent phase that would have to "
-            f"be added to bring the feed to saturation - but it is not a phase split."
-        ),
-        field=None,
     )

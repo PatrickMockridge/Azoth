@@ -48,6 +48,7 @@ from azoth.core.result import (
     DewTemperatureResult,
     EosCgPhaseResult,
     FlowRegime,
+    GeNrtlFlashResult,
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     HaalandResult,
@@ -2054,6 +2055,51 @@ def ge_nrtl_phase(params: Any, T: Q, P: Q, x: Sequence[float]) -> GeNrtlPhaseRes
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),
         p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ge_nrtl_flash(params: Any, mixture: Any, T: Q, P: Q, z: Sequence[float]) -> GeNrtlFlashResult:
+    """The gamma-phi flash of an SRK vapour over an NRTL liquid, computed in Rust.
+
+    Both objects cross, in the order the stub declares them: the mixture as four
+    parallel lists plus the cubic it is evaluated under, then the resolved parameter
+    record's own fields. The record's first field is NRTL's ``alpha`` matrix, so the
+    cubic's alpha *correlation* crosses beside it as ``cubic_alpha``.
+
+    `beta` crosses as `Option<f64>` and becomes `None`, not a sentinel.
+    """
+    spec = _models_gen.model("eos.ge_nrtl_flash")
+    result = _core.ge_nrtl_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(params.alpha),
+        list(params.dij),
+        list(params.antoine_type),
+        list(params.antoine_coefficients),
+        list(params.antoine_tc),
+        list(params.antoine_pc),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return GeNrtlFlashResult(
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        ln_phi_liquid=tuple(result.ln_phi_liquid),
+        ln_phi_vapour=tuple(result.ln_phi_vapour),
+        z_vapour=result.z_vapour,
+        min_t_over_tc=result.min_t_over_tc,
+        phase=_Phase(result.phase),
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 

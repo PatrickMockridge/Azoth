@@ -437,6 +437,11 @@ def _declared(declaration: Mapping[str, Any], value: Any) -> Any:
         return [_scalar(unit, item) for item in value]
     if kind == "matrix":
         return [[_scalar(unit, item) for item in row] for row in value]
+    if kind in ("enum", "string"):
+        # A symbolic input is the name itself, not a number in any unit. Only
+        # `type = "enum"` reaches a function this way; `string` is what a
+        # calculation's `source` field is spelled with.
+        return str(value)
     return _scalar(unit, value)
 
 
@@ -465,7 +470,11 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
     names = inputs.get(_MODEL_COMPONENTS_INPUT)
     if names is not None:
         if "mixture" in takes:
-            fluid, ideal_gas = databank.mixture_of(list(names))
+            # A model may declare which cubic it is evaluated under - the gamma-phi
+            # flash does, because its vapour is half of what it is. The declaration is
+            # what builds the mixture, so a case states its own vapour rather than
+            # inheriting whatever `mixture_of` defaults to.
+            fluid, ideal_gas = databank.mixture_of(list(names), eos=inputs.get("eos", "pr"))
             kwargs["mixture"] = fluid
             if "ideal_gas" in takes:
                 kwargs["ideal_gas"] = ideal_gas
@@ -474,17 +483,11 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             # `Mixture`: `eos.bwrs_phase` is the one, and the MBWR-32 coefficients
             # resolve by name through the same databank, only the last step differs.
             kwargs["coeffs"] = [databank.bwrs_coefficients(name) for name in names]
-        elif "params" in takes:
-            # An activity model takes a resolved parameter set rather than a `Mixture`:
-            # NRTL's `alpha`/`Dij` and UNIFAC's group tables are not the critical
-            # constants a `Mixture` carries, so there is nothing there to hold them and
-            # the names resolve to the model's own record instead.
-            kwargs["params"] = parameter_set(model, names, inputs)
         elif "components" in takes:
             # The EOS-CG mixture maps its own fixed component names to indices, so the
             # names cross the boundary verbatim rather than resolved to a `Mixture`.
             kwargs["components"] = list(names)
-        else:
+        elif "params" not in takes:
             # A pure-component model takes the constants themselves rather than a
             # `Mixture`: `eos.pure_saturation` is the one, and a saturation pressure is
             # a property of one substance. The names still go through the databank -
@@ -496,6 +499,13 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
                 )
             record = databank.entry(names[0])
             kwargs.update(Tc=record.Tc, Pc=record.Pc, omega=record.omega)
+        if "params" in takes:
+            # An activity model takes a resolved parameter set of its own: NRTL's
+            # `alpha`/`Dij` and UNIFAC's group tables are not the critical constants a
+            # `Mixture` carries, so the names resolve to the model's own record instead.
+            # Resolved *beside* the mixture rather than instead of it, because the
+            # gamma-phi flash takes both - one cubic vapour, one activity-model liquid.
+            kwargs["params"] = parameter_set(model, names, inputs)
 
     for name, value in inputs.items():
         # Passed only what the function takes. `components` is resolved above - into a

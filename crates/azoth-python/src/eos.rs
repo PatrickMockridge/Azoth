@@ -18,7 +18,7 @@ use crate::results::{
     PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyArgonSolidPhaseResult, PyBwrsPhaseResult,
     PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
-    PyEosCgPhaseResult, PyGeNrtlPhaseResult, PyGerg2008PhaseResult,
+    PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGerg2008PhaseResult,
     PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyHeliumPhaseResult,
     PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
     PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
@@ -968,21 +968,113 @@ pub fn ge_nrtl_phase(
     let params = azoth_eos::databank::GeNrtlPhaseParameters {
         alpha,
         dij,
-        antoine: antoine_type
-            .into_iter()
-            .enumerate()
-            .map(|(i, antoine_type)| azoth_eos::databank::AntoineRecord {
-                antoine_type,
-                coefficients: antoine_coefficients[i * 5..i * 5 + 5]
-                    .try_into()
-                    .expect("5 coefficients per component"),
-                tc: antoine_tc[i],
-                pc: antoine_pc[i],
-            })
-            .collect(),
+        antoine: antoine_records(
+            antoine_type,
+            &antoine_coefficients,
+            &antoine_tc,
+            &antoine_pc,
+        ),
     };
     azoth_eos::ge_nrtl_phase(&params, T, P, &x)
         .map(|r| PyGeNrtlPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// One [`azoth_eos::databank::AntoineRecord`] per component, from the transport's four
+/// parallel lists.
+///
+/// The coefficients are component-major, five per component, which is the order the
+/// parameter record carries them in on the Python side.
+fn antoine_records(
+    antoine_type: Vec<String>,
+    antoine_coefficients: &[f64],
+    antoine_tc: &[f64],
+    antoine_pc: &[f64],
+) -> Vec<azoth_eos::databank::AntoineRecord> {
+    antoine_type
+        .into_iter()
+        .enumerate()
+        .map(|(i, antoine_type)| azoth_eos::databank::AntoineRecord {
+            antoine_type,
+            coefficients: antoine_coefficients[i * 5..i * 5 + 5]
+                .try_into()
+                .expect("5 coefficients per component"),
+            tc: antoine_tc[i],
+            pc: antoine_pc[i],
+        })
+        .collect()
+}
+
+/// The isothermal flash of an SRK vapour over an NRTL liquid. A *model* rather than a
+/// calculation: the mixture crosses flattened, the parameter record's own fields with
+/// it, and the NRTL matrix keeps its record name while the cubic's alpha correlation
+/// is spelled `cubic_alpha`.
+#[pyfunction]
+#[pyo3(signature = (
+    Tc,
+    Pc,
+    omega,
+    kij,
+    alpha,
+    dij,
+    antoine_type,
+    antoine_coefficients,
+    antoine_tc,
+    antoine_pc,
+    T,
+    P,
+    z,
+    eos = "pr",
+    cubic_alpha = "pr",
+    alpha_params = None
+))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, alpha, dij, antoine_type, antoine_coefficients, \
+                         antoine_tc, antoine_pc, T, P, z, eos = \"pr\", cubic_alpha = \"pr\")"
+)]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T`, `P` and `z` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
+pub fn ge_nrtl_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    alpha: Vec<f64>,
+    dij: Vec<f64>,
+    antoine_type: Vec<String>,
+    antoine_coefficients: Vec<f64>,
+    antoine_tc: Vec<f64>,
+    antoine_pc: Vec<f64>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    cubic_alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyGeNrtlFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        cubic_alpha,
+        alpha_params.as_deref(),
+    )?;
+    let params = azoth_eos::databank::GeNrtlPhaseParameters {
+        alpha,
+        dij,
+        antoine: antoine_records(
+            antoine_type,
+            &antoine_coefficients,
+            &antoine_tc,
+            &antoine_pc,
+        ),
+    };
+    azoth_eos::ge_nrtl_flash::ge_nrtl_flash(&params, &mixture, kelvins(T), pascals(P), &z)
+        .map(|r| PyGeNrtlFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

@@ -58,7 +58,9 @@ pub mod dual;
 pub mod eos_cg;
 mod eos_cg_data;
 pub mod eos_cg_phase;
+pub mod flash_iteration;
 pub mod flash_property;
+pub mod ge_nrtl_flash;
 pub mod ge_nrtl_phase;
 pub mod gerg2008;
 mod gerg2008_data;
@@ -215,27 +217,28 @@ pub use results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DewPressureResult, DewTemperatureResult, EosCgPhaseResult, GeNrtlPhaseResult,
-    Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult,
-    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
-    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult,
-    ParahydrogenSolidPhaseResult, Phase, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
-    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
-    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
-    PuFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, RootStructure, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
-    StabilityVerdict, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WaterPhaseResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    DewPressureResult, DewTemperatureResult, EosCgPhaseResult, GeNrtlFlashResult,
+    GeNrtlPhaseResult, Gerg2008PhaseResult, HaydukMinhasDiffusivityResult,
+    HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
+    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
+    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
+    MolarEnthalpyEntropyResult, MollerupAlphaResult, NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, Phase, Pr78KappaResult,
+    PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
+    RootStructure, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
+    SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict, ThFlashResult,
+    ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,
+    TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
+    UmrprAlphaResult, UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
+    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;

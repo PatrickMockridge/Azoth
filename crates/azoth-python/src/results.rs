@@ -20,17 +20,17 @@ use azoth_eos::results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DewPressureResult, DewTemperatureResult, EosCgPhaseResult, GeNrtlPhaseResult,
-    Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult,
-    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
-    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult,
-    ParahydrogenSolidPhaseResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
-    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
-    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
-    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    DewPressureResult, DewTemperatureResult, EosCgPhaseResult, GeNrtlFlashResult,
+    GeNrtlPhaseResult, Gerg2008PhaseResult, HaydukMinhasDiffusivityResult,
+    HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
+    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
+    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
+    MolarEnthalpyEntropyResult, MollerupAlphaResult, NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PhFlashResult, Pr78KappaResult,
+    PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
     RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
     SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
     SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
@@ -2110,6 +2110,82 @@ impl From<&GeNrtlPhaseResult> for PyGeNrtlPhaseResult {
                     unit: "Pa".to_string(),
                 })
                 .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.ge_nrtl_flash`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "GeNrtlFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyGeNrtlFlashResult {
+    /// The vapour fraction, or `None` when there is none to report.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// `ln phi_i` in the liquid.
+    #[pyo3(get)]
+    pub ln_phi_liquid: Vec<f64>,
+    /// `ln phi_i` in the vapour.
+    #[pyo3(get)]
+    pub ln_phi_vapour: Vec<f64>,
+    /// The vapour root of the cubic.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i`.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// The converged state, as its spec spelling.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Successive-substitution steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The convergence residual.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyGeNrtlFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GeNrtlFlashResult(phase={}, beta={:?}, x={:?}, y={:?})",
+            self.phase, self.beta, self.x, self.y
+        )
+    }
+}
+
+impl From<&GeNrtlFlashResult> for PyGeNrtlFlashResult {
+    fn from(r: &GeNrtlFlashResult) -> Self {
+        Self {
+            beta: r.beta,
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            ln_phi_liquid: r.ln_phi_liquid.clone(),
+            ln_phi_vapour: r.ln_phi_vapour.clone(),
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            phase: r.phase.as_str().to_string(),
+            iterations: r.iterations,
+            residual: r.residual,
             warnings: transport(&r.warnings),
         }
     }
@@ -4985,6 +5061,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),
         GeNrtlPhaseResult::CALC_ID => GeNrtlPhaseResult::FIELDS.to_vec(),
+        GeNrtlFlashResult::CALC_ID => GeNrtlFlashResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),

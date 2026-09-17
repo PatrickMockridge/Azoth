@@ -11,6 +11,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/ge_nrtl_flash.toml
 //!   - specs/models/eos/ge_nrtl_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
@@ -1207,6 +1208,154 @@ pub static EOS_CG_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&EOS_CG_PHASE_ALGORITHM),
     checks: EOS_CG_PHASE_CHECKS,
     cases: EOS_CG_PHASE_CASES,
+};
+
+static GE_NRTL_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states. The vapour cubic needs a positive `B`, and the phase needs a positive divisor for `gamma_i P0_i / P`.",
+        },
+    },
+];
+
+static GE_NRTL_FLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methanol_water_equimolar_at_350_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 350.0), ("P", 100000.0)],
+        lists: &[("components", &["methanol", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("beta", 0.7383788272348035),
+            ("z_vapour", 0.9861438898397017),
+        ],
+        expected_vectors: &[
+            ("x", &[0.15024680583034586, 0.8497531941696541]),
+            ("y", &[0.623923977040005, 0.37607602295999487]),
+            ("k", &[4.152660508281079, 0.4425708847658819]),
+            ("ln_phi_liquid", &[1.407971375990098, -0.8255925261695424]),
+            (
+                "ln_phi_vapour",
+                &[-0.01577783917724521, -0.0104378903674061],
+            ),
+        ],
+    },
+    TestCase {
+        id: "methanol_water_lean_at_353_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 353.0), ("P", 100000.0)],
+        lists: &[("components", &["methanol", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.4, 0.6])],
+        matrices: &[],
+        expected: &[
+            ("beta", 0.6463992350060533),
+            ("z_vapour", 0.986817566574521),
+        ],
+        expected_vectors: &[
+            ("x", &[0.10245169349074107, 0.8975483065092589]),
+            ("y", &[0.5627683064991684, 0.4372316935008316]),
+            ("k", &[5.493011265355118, 0.4871400127770868]),
+            ("ln_phi_liquid", &[1.688042232848783, -0.7293086162406686]),
+            (
+                "ln_phi_vapour",
+                &[-0.015434372366168085, -0.010104919589718743],
+            ),
+        ],
+    },
+    TestCase {
+        id: "ethanol_water_lean_at_360_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 360.0), ("P", 100000.0)],
+        lists: &[("components", &["ethanol", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.3, 0.7])],
+        matrices: &[],
+        expected: &[
+            ("beta", 0.2030182294468199),
+            ("z_vapour", 0.986420223948831),
+        ],
+        expected_vectors: &[
+            ("x", &[0.25755537830618297, 0.742444621693817]),
+            ("y", &[0.4666234103221714, 0.5333765896778285]),
+            ("k", &[1.8117401134890976, 0.7184058906117206]),
+            ("ln_phi_liquid", &[0.575275625342385, -0.33939370791304313]),
+            (
+                "ln_phi_vapour",
+                &[-0.019012146765247262, -0.008673145511841318],
+            ),
+        ],
+    },
+];
+
+static GE_NRTL_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "rachford_rice_bisection",
+    convergence: "absolute",
+    tolerance: 1e-14,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: None,
+    inner: None,
+};
+
+static GE_NRTL_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: Some(&GE_NRTL_FLASH_INNER),
+};
+
+/// Registry entry for `eos.ge_nrtl_flash`.
+pub static GE_NRTL_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.ge_nrtl_flash",
+    kind: "procedure",
+    algorithm: Some(&GE_NRTL_FLASH_ALGORITHM),
+    checks: GE_NRTL_FLASH_CHECKS,
+    cases: GE_NRTL_FLASH_CASES,
 };
 
 static GE_NRTL_PHASE_CHECKS: &[SpecCheck] = &[
@@ -3999,6 +4148,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
     &EOS_CG_PHASE_SPEC,
+    &GE_NRTL_FLASH_SPEC,
     &GE_NRTL_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,

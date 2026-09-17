@@ -1,0 +1,58 @@
+model = "eos.ge_nrtl_flash"
+[[cases]]
+id = "methanol_water_equimolar_at_350_k_1_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0 `SystemNRTL` - `PhaseSrkEos` over `PhaseGENRTL` - driven through the gamma-phi update of `TPflash.sucsSubsGammaPhi` by validation/neqsim/NrtlGammaPhiFlash.java. The tolerance is not tighter because azoth stops on `rms |d ln K|` of 1e-10 and successive substitution amplifies that into the compositions: at the stopping point the two agree to about 6e-11 relative, and the fixed point both approach is beta = 0.73837882729015591."
+[cases.inputs]
+components = ["methanol", "water"]
+T = 350.0
+P = 100000.0
+z = [0.5, 0.5]
+eos = "srk"
+[cases.expected]
+beta = 0.7383788272348035
+x = [0.15024680583034586, 0.8497531941696541]
+y = [0.623923977040005, 0.37607602295999487]
+k = [4.152660508281079, 0.4425708847658819]
+ln_phi_liquid = [1.407971375990098, -0.8255925261695424]
+ln_phi_vapour = [-0.01577783917724521, -0.0104378903674061]
+z_vapour = 0.9861438898397017
+phase = "two_phase"
+[[cases]]
+id = "methanol_water_lean_at_353_k_1_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0 `SystemNRTL`, as the first case: validation/neqsim/NrtlGammaPhiFlash.java. The second composition, where the liquid is 90 mol% water and methanol's activity coefficient is 3.0 - the region a methanol wash column works in."
+[cases.inputs]
+components = ["methanol", "water"]
+T = 353.0
+P = 100000.0
+z = [0.4, 0.6]
+eos = "srk"
+[cases.expected]
+beta = 0.6463992350060533
+x = [0.10245169349074107, 0.8975483065092589]
+y = [0.5627683064991684, 0.4372316935008316]
+k = [5.493011265355118, 0.4871400127770868]
+ln_phi_liquid = [1.688042232848783, -0.7293086162406686]
+ln_phi_vapour = [-0.015434372366168085, -0.010104919589718743]
+z_vapour = 0.986817566574521
+phase = "two_phase"
+[[cases]]
+id = "ethanol_water_lean_at_360_k_1_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0 `SystemNRTL`, as the first case: validation/neqsim/NrtlGammaPhiFlash.java. A different pair, so the case does not rest on one set of NRTL matrices and one pair of Antoine correlations agreeing by luck."
+[cases.inputs]
+components = ["ethanol", "water"]
+T = 360.0
+P = 100000.0
+z = [0.3, 0.7]
+eos = "srk"
+[cases.expected]
+beta = 0.2030182294468199
+x = [0.25755537830618297, 0.742444621693817]
+y = [0.4666234103221714, 0.5333765896778285]
+k = [1.8117401134890976, 0.7184058906117206]
+ln_phi_liquid = [0.575275625342385, -0.33939370791304313]
+ln_phi_vapour = [-0.019012146765247262, -0.008673145511841318]
+z_vapour = 0.986420223948831
+phase = "two_phase"

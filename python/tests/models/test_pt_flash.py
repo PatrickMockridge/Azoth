@@ -216,8 +216,10 @@ def test_the_mixture_parameters_and_vapour_fraction_reduce_to_the_binary_kernels
     to a couple of ulps rather than bit-for-bit, because the registered kernel
     evaluates its three terms longhand while this sums a double loop.
     """
-    from azoth.eos.reference._mixture_state import mixture_parameters as _mixture_parameters
-    from azoth.eos.reference.pt_flash import _rachford_rice, _rachford_rice_bounds
+    from azoth.eos.reference._mixture_state import (
+        mixture_parameters as _mixture_parameters,
+    )
+    from azoth.eos.reference._mixture_state import rachford_rice, rachford_rice_bounds
 
     fluid = methane_butane()
     for t_c, p_pa in ((330.0, 2.5e6), (300.0, 3.0e6), (350.0, 5.0e6)):
@@ -244,9 +246,9 @@ def test_the_mixture_parameters_and_vapour_fraction_reduce_to_the_binary_kernels
     for t_c, p_pa, z in ((330.0, 2.5e6, [0.6, 0.4]), (300.0, 3.0e6, [0.1, 0.9])):
         result = pt_flash(fluid, T=Q(t_c, "K"), P=Q(p_pa, "Pa"), z=z)
         assert result.beta is not None
-        bounds = _rachford_rice_bounds(list(result.k))
+        bounds = rachford_rice_bounds(list(result.k))
         assert bounds is not None
-        beta = _rachford_rice(list(z), list(result.k), bounds, 1e-14, 200)
+        beta = rachford_rice(list(z), list(result.k), bounds, 1e-14, 200)
         closed_form = rachford_rice_binary(z[0], result.k[0], result.k[1])
         h.assert_close(beta, closed_form.beta, 1e-12, f"beta at T={t_c}")
 

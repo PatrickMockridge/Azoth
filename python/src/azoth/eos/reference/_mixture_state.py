@@ -25,7 +25,8 @@ import math
 from typing import Any, NamedTuple
 
 from azoth.core.errors import OutOfRangeError
-from azoth.core.warnings import Warning
+from azoth.core.result import Phase
+from azoth.core.warnings import Warning, WarningCode
 from azoth.eos.alpha_term import (
     Danesh,
     Delft1998,
@@ -637,6 +638,111 @@ def criticality_matrix(
         ]
         for i in range(count)
     ]
+
+
+def rachford_rice_bounds(k: list[float]) -> tuple[float, float] | None:
+    """The interval on which Rachford-Rice has its physical root, or ``None``.
+
+    ``g(beta) = sum_i z_i (K_i - 1) / (1 + beta (K_i - 1))`` has a pole at
+    ``1/(1 - K_i)`` for every component, so the root a flash wants - the one that
+    keeps ``x_i`` and ``y_i`` non-negative - lies between the largest pole below it
+    and the smallest above it. It exists only when the K-values straddle one, so
+    ``None`` is a proof that the feed has no two-phase solution rather than a failure
+    to bracket: ``sum_i K_i x_i = 1`` alongside ``sum_i x_i = 1`` needs every ``K_i``
+    below one and above one at once.
+    """
+    lo = -math.inf
+    hi = math.inf
+    for value in k:
+        if value > 1.0:
+            lo = max(lo, 1.0 / (1.0 - value))
+        elif value < 1.0:
+            hi = min(hi, 1.0 / (1.0 - value))
+        else:
+            # `K_i = 1` exactly puts a pole at infinity and makes `g` degenerate.
+            return None
+    if not (math.isfinite(lo) and math.isfinite(hi)) or lo >= hi:
+        return None
+    return lo, hi
+
+
+def rachford_rice(
+    z: list[float],
+    k: list[float],
+    bounds: tuple[float, float],
+    tolerance: float,
+    max_iterations: int,
+) -> float:
+    """The vapour fraction that solves Rachford-Rice, by bisection.
+
+    ``bounds`` must be the interval :func:`rachford_rice_bounds` returned, on which
+    ``g`` is continuous, strictly decreasing and positive at the lower end.
+    """
+    lo, hi = bounds
+
+    def g(beta: float) -> float:
+        return sum(zi * (ki - 1.0) / (1.0 + beta * (ki - 1.0)) for zi, ki in zip(z, k, strict=True))
+
+    for _ in range(max_iterations):
+        if hi - lo <= tolerance:
+            break
+        mid = 0.5 * (lo + hi)
+        if g(mid) > 0.0:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def rms_delta(ln_k_new: list[float], k: list[float]) -> float:
+    """The rms change in ``ln K`` across one iteration."""
+    n = len(ln_k_new)
+    total = sum((new - math.log(old)) ** 2 for new, old in zip(ln_k_new, k, strict=True))
+    return math.sqrt(total / n)
+
+
+def trivial_warning() -> Warning:
+    """The caveat every trivial solution carries."""
+    return Warning(
+        code=WarningCode.TRIVIAL_SOLUTION,
+        message=(
+            "the iteration converged to x = y = z, so the feed is single phase and "
+            "there is no vapour fraction. Which single phase it is, this model does "
+            "not say - that needs a stability analysis it does not perform. `beta` is "
+            "absent rather than zero, and `phase` is `trivial`."
+        ),
+        field=None,
+    )
+
+
+def single_phase_warning(phase: Phase) -> Warning:
+    """The caveat a feed carries when no Rachford-Rice root exists at all."""
+    which = "vapour" if phase is Phase.ALL_VAPOUR else "liquid"
+    return Warning(
+        code=WarningCode.TRIVIAL_SOLUTION,
+        message=(
+            "every K-value is on the same side of one, so the Rachford-Rice equation "
+            "has no root and the feed has no two-phase solution at this temperature "
+            f"and pressure. The feed is single-phase {which}, and `beta` is absent "
+            "rather than zero because there is no vapour fraction to report."
+        ),
+        field=None,
+    )
+
+
+def negative_flash_warning(phase: Phase, beta: float) -> Warning:
+    """The caveat a converged-but-out-of-range vapour fraction carries."""
+    which = "superheated vapour" if phase is Phase.ALL_VAPOUR else "subcooled liquid"
+    return Warning(
+        code=WarningCode.OUT_OF_VALID_RANGE,
+        message=(
+            f"the vapour fraction is {beta}, outside [0, 1], so the feed is "
+            f"single-phase {which}. It is reported because the negative flash is a "
+            f"real reading - it is the amount of the absent phase that would have to "
+            f"be added to bring the feed to saturation - but it is not a phase split."
+        ),
+        field=None,
+    )
 
 
 def compositions(z: list[float], k: list[float], beta: float) -> tuple[list[float], list[float]]:

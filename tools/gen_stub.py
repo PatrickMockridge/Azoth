@@ -282,6 +282,38 @@ def render_result_class(calc_id: str) -> str:
     return "\n".join(out)
 
 
+def parameter_record_fields(model: dict[str, Any]) -> list[str]:
+    """The transport arguments a model's `params` record contributes, in field order.
+
+    Which fields is a fact about the dataclass the parameter is *annotated* with, which
+    is where this asks - the same move as reading the signature itself. The record
+    carries the resolved parameters rather than the several loose vectors the transport
+    wants, so this is also why the annotation has to be a dataclass in
+    `azoth.eos.components`.
+
+    The element type comes from the record too, so a field the transport carries as
+    integers or as labels is not described as a list of floats. A field whose element
+    type is not one of those is a float by the same convention the kernels use: a
+    parameter set is numbers unless it says otherwise.
+    """
+    import importlib
+    import inspect
+
+    namespace, _, name = model["id"].partition(".")
+    module = importlib.import_module(f"azoth.{namespace}")
+    from azoth.eos import components as _components
+
+    annotation = inspect.signature(getattr(module, name)).parameters["params"].annotation
+    record = getattr(_components, annotation)
+    hints = get_type_hints(record)
+    fields: list[str] = []
+    for field in dataclasses.fields(record):
+        element = get_args(hints[field.name])
+        kind = {int: "int", str: "str"}.get(element[0] if element else None, "float")
+        fields.append(f"{field.name}: list[{kind}]")
+    return fields
+
+
 def transport_parameters(model: dict[str, Any]) -> list[str]:
     """The arguments a model's extension function takes, in the transport vocabulary.
 
@@ -323,6 +355,13 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             ]
             if model["id"] in MOLAR_MASS_MODELS:
                 params.append("molar_mass: list[float]")
+            if "params" in taken:
+                # A model that takes both a mixture and a parameter record - the
+                # gamma-phi flash, whose vapour is a cubic and whose liquid is an
+                # activity model - carries the record's own fields here, right after
+                # the mixture's. The names are the record's, so whoever writes the
+                # pyfunction reads them from the same place this does.
+                params += parameter_record_fields(model)
         elif "coeffs" in taken:
             # A non-cubic reference EOS resolves the names into per-component coefficient
             # sets, flattened into the 32-coefficient `a` and the critical density.
@@ -337,20 +376,7 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             # itself one line up, and the reason `params` carries a resolved record
             # rather than the several loose vectors the transport wants. The field order
             # is the transport order, and the kernel rebuilds by shape.
-            from azoth.eos import components as _components
-
-            annotation = inspect.signature(getattr(module, name)).parameters["params"].annotation
-            record = getattr(_components, annotation)
-            hints = get_type_hints(record)
-            for field in dataclasses.fields(record):
-                # The element type comes from the record too, so a field the transport
-                # carries as integers or as labels is not described as a list of floats.
-                # A field whose element type is not one of these is a float by the same
-                # convention the kernels use: a parameter set is numbers unless it says
-                # otherwise.
-                element = get_args(hints[field.name])
-                kind = {int: "int", str: "str"}.get(element[0] if element else None, "float")
-                params.append(f"{field.name}: list[{kind}]")
+            params += parameter_record_fields(model)
         elif "components" in taken:
             # The EOS-CG mixture maps its own fixed component names, so the names cross
             # the boundary verbatim rather than as a flattened mixture.
@@ -377,7 +403,10 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
         # boundary arguments the spec does not declare (they travel *inside* the
         # mixture, not beside it).
         params.append('eos: str = "pr"')
-        params.append('alpha: str = "pr"')
+        # `alpha` is what NRTL calls its first matrix, so a model that carries both a
+        # mixture and a parameter record spells this argument out rather than letting
+        # the two collide.
+        params.append('cubic_alpha: str = "pr"' if "params" in taken else 'alpha: str = "pr"')
         params.append("alpha_params: list[list[float]] | None = None")
     return params
 
