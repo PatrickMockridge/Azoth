@@ -11,6 +11,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/ge_nrtl_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
 //!   - specs/models/eos/hydrogen_phase.toml
@@ -1206,6 +1207,91 @@ pub static EOS_CG_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&EOS_CG_PHASE_ALGORITHM),
     checks: EOS_CG_PHASE_CHECKS,
     cases: EOS_CG_PHASE_CASES,
+};
+
+static GE_NRTL_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static GE_NRTL_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methanol_water_equimolar_at_298_15_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15), ("P", 100000.0)],
+        lists: &[("components", &["methanol", "water"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.2331788561677834, 1.5262904213232393]),
+            ("ln_gamma", &[0.2095952713815616, 0.42284023016955086]),
+            ("ln_phi", &[-1.5658530965838922, -3.0258410151978015]),
+            ("p_sat", &[16940.747558344778, 3178.7528699883305]),
+        ],
+    },
+    TestCase {
+        id: "ethanol_water_equimolar_at_350_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 350.0), ("P", 100000.0)],
+        lists: &[("components", &["ethanol", "water"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.0061354062518342, 1.2908387491361855]),
+            ("ln_gamma", &[0.006116661279835519, 0.2552922002184329]),
+            ("ln_phi", &[-0.0368209604820562, -0.6216821329673664]),
+            ("p_sat", &[95797.11447554835, 41603.98070870418]),
+        ],
+    },
+];
+
+/// Registry entry for `eos.ge_nrtl_phase`.
+pub static GE_NRTL_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.ge_nrtl_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: GE_NRTL_PHASE_CHECKS,
+    cases: GE_NRTL_PHASE_CASES,
 };
 
 static GERG2008_PHASE_CHECKS: &[SpecCheck] = &[
@@ -3913,6 +3999,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
     &EOS_CG_PHASE_SPEC,
+    &GE_NRTL_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
     &HYDROGEN_PHASE_SPEC,

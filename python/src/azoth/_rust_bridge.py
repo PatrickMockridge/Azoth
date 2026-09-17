@@ -48,6 +48,7 @@ from azoth.core.result import (
     DewTemperatureResult,
     EosCgPhaseResult,
     FlowRegime,
+    GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
@@ -2026,6 +2027,33 @@ def eos_cg_phase(components: Sequence[str], T: Q, P: Q, z: Sequence[float]) -> E
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ge_nrtl_phase(params: Any, T: Q, P: Q, x: Sequence[float]) -> GeNrtlPhaseResult:
+    """The fugacity coefficients of an NRTL liquid, computed in Rust.
+
+    The resolved record crosses flattened, one list per field, in the dataclass's own
+    order.
+    """
+    spec = _models_gen.model("eos.ge_nrtl_phase")
+    result = _core.ge_nrtl_phase(
+        list(params.alpha),
+        list(params.dij),
+        list(params.antoine_type),
+        list(params.antoine_coefficients),
+        list(params.antoine_tc),
+        list(params.antoine_pc),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+    )
+    return GeNrtlPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        ln_phi=tuple(result.ln_phi),
+        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
         warnings=_warnings(result.warnings),
     )
 

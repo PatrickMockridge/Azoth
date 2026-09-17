@@ -344,11 +344,12 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             hints = get_type_hints(record)
             for field in dataclasses.fields(record):
                 # The element type comes from the record too, so a field the transport
-                # carries as integers is not described as a list of floats. Everything
-                # else here is a float by convention; the Van Laar acid model's identity
-                # is the one field that is not.
+                # carries as integers or as labels is not described as a list of floats.
+                # A field whose element type is not one of these is a float by the same
+                # convention the kernels use: a parameter set is numbers unless it says
+                # otherwise.
                 element = get_args(hints[field.name])
-                kind = "int" if element and element[0] is int else "float"
+                kind = {int: "int", str: "str"}.get(element[0] if element else None, "float")
                 params.append(f"{field.name}: list[{kind}]")
         elif "components" in taken:
             # The EOS-CG mixture maps its own fixed component names, so the names cross

@@ -202,6 +202,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::wilke_viscosity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::mason_saxena_conductivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::nrtl_activity_coefficients, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::ge_nrtl_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::umrpr_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::unifac_activity_coefficients, m)?)?;
     m.add_function(wrap_pyfunction!(eos::unifac_psrk_activity_coefficients, m)?)?;

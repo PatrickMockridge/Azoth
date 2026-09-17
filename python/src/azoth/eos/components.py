@@ -503,6 +503,34 @@ def kij_for(
 
 
 @dataclass(frozen=True, slots=True)
+class GeNrtlPhaseParameters:
+    """The parameters of an NRTL activity-coefficient *phase*.
+
+    The NRTL matrices :class:`NrtlParameters` carries, beside what a phase needs and an
+    activity coefficient does not: each component's pure-liquid vapour pressure, because
+    the phase's fugacity coefficient is ``gamma_i P0_i / P``.
+
+    **Flat rather than a nested record per component.** The transport carries a record's
+    own fields flattened, one list per field, so a list of records would have nothing to
+    cross in. The vapour-pressure columns are therefore parallel to the NRTL matrices
+    and to each other, five coefficients per component in ``antoine_coefficients``.
+    """
+
+    #: ``alpha[i][j]``, ``N x N`` row-major. Symmetric with a zero diagonal.
+    alpha: tuple[float, ...]
+    #: ``dij[i][j] = g_ij`` in kelvin, ``N x N`` row-major. Directional.
+    dij: tuple[float, ...]
+    #: NeqSim's Antoine label for each component, in order.
+    antoine_type: tuple[str, ...]
+    #: The five coefficients ``A``-``E`` of each component, component-major.
+    antoine_coefficients: tuple[float, ...]
+    #: Critical temperature of each component, in K.
+    antoine_tc: tuple[float, ...]
+    #: Critical pressure of each component, in Pa.
+    antoine_pc: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class NrtlParameters:
     """The NRTL parameters of a mixture, both matrices flattened row-major.
 
@@ -988,6 +1016,52 @@ def unifac_umrpru_parameters(names: Sequence[str], parameters: str) -> UnifacUmr
     )
 
 
+def ge_nrtl_phase_parameters(
+    names: Sequence[str], *, card: keycard.Keycard | None = None
+) -> GeNrtlPhaseParameters:
+    """The parameters of an NRTL phase for a list of components, by name.
+
+    The NRTL matrices come from :func:`nrtl_parameters`, so the phase and
+    ``eos.nrtl_activity_coefficients`` cannot disagree about them; this adds each
+    component's Antoine vapour-pressure correlation beside them.
+
+    Raises:
+        PropertyUnavailableError: if a name is in neither the databank nor the keycard,
+            or if the databank carries it without an Antoine correlation - which is what
+            a keycard-added substance is, since a card states the parameters a cubic
+            reads and not these.
+    """
+    nrtl = nrtl_parameters(names)
+
+    kinds: list[str] = []
+    coefficients: list[float] = []
+    tcs: list[float] = []
+    pcs: list[float] = []
+    for name in names:
+        record = entry(name, card=card)
+        if record.antoine == (0.0, 0.0, 0.0, 0.0, 0.0):
+            raise PropertyUnavailableError(
+                name,
+                "Antoine vapour-pressure coefficients",
+                "the phase's fugacity coefficient is `gamma_i P0_i / P`, so every "
+                "component needs a correlation; a keycard supplies the parameters a "
+                "cubic reads and not these",
+            )
+        kinds.append(record.antoine_form())
+        coefficients.extend(record.antoine)
+        tcs.append(record.Tc.to_base_units().magnitude)
+        pcs.append(record.Pc.to_base_units().magnitude)
+
+    return GeNrtlPhaseParameters(
+        alpha=nrtl.alpha,
+        dij=nrtl.dij,
+        antoine_type=tuple(kinds),
+        antoine_coefficients=tuple(coefficients),
+        antoine_tc=tuple(tcs),
+        antoine_pc=tuple(pcs),
+    )
+
+
 def _cubic(name: str) -> Cubic:
     """The cubic named by its short name, ``"pr"``, ``"srk"`` or ``"rk"``."""
     try:
@@ -1214,6 +1288,7 @@ from azoth.eos.mixture import mixture  # noqa: E402
 __all__ = [
     "BwrsCoefficients",
     "DatabankEntry",
+    "GeNrtlPhaseParameters",
     "NrtlParameters",
     "UnifacParameters",
     "UnifacPsrkParameters",
@@ -1226,6 +1301,7 @@ __all__ = [
     "entry",
     "from_model",
     "from_names",
+    "ge_nrtl_phase_parameters",
     "kij_for",
     "nrtl_parameters",
     "unifac_parameters",

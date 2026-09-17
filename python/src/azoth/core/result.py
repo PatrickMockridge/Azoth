@@ -1880,6 +1880,22 @@ class EosCgPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class GeNrtlPhaseResult(_HasWarnings):
+    """Result of ``eos.ge_nrtl_phase``."""
+
+    #: The NRTL activity coefficient of each component.
+    gamma: tuple[float, ...]
+    #: The natural logarithm of each activity coefficient.
+    ln_gamma: tuple[float, ...]
+    #: The natural logarithm of each fugacity coefficient, ``ln(gamma_i P0_i / P)``.
+    ln_phi: tuple[float, ...]
+    #: The pure-component saturation pressure of each component at ``T``.
+    p_sat: tuple[Q, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Gerg2008PhaseResult(_HasWarnings):
     """Result of ``eos.gerg2008_phase``.
 

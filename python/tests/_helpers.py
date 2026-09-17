@@ -544,6 +544,7 @@ def parameters_of(model: Mapping[str, Any]) -> set[str]:
 #: inputs are consumed here and do **not** also reach the model function, which is why
 #: the tuple is part of the entry rather than left to the caller to notice.
 PARAMETER_RESOLVERS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "GeNrtlPhaseParameters": ("ge_nrtl_phase_parameters", ()),
     "NrtlParameters": ("nrtl_parameters", ()),
     "UnifacParameters": ("unifac_parameters", ()),
     "UnifacPsrkParameters": ("unifac_psrk_parameters", ()),

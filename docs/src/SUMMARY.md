@@ -74,6 +74,7 @@
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Dew-point temperature](./eos/dew_temperature.md)
   - [EOS-CG phase state](./eos/eos_cg_phase.md)
+  - [Fugacity coefficients of an NRTL activity-coefficient liquid](./eos/ge_nrtl_phase.md)
   - [GERG-2008 phase state](./eos/gerg2008_phase.md)
   - [Helium reference phase state](./eos/helium_phase.md)
   - [Hydrogen reference phase state](./eos/hydrogen_phase.md)

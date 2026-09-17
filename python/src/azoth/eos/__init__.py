@@ -84,6 +84,7 @@ from azoth.core.result import (
     DewPressureResult,
     DewTemperatureResult,
     EosCgPhaseResult,
+    GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
@@ -162,6 +163,7 @@ from azoth.core.result import (
 from azoth.core.units import Q
 from azoth.eos.components import (
     BwrsCoefficients,
+    GeNrtlPhaseParameters,
     NrtlParameters,
     UnifacParameters,
     UnifacPsrkParameters,
@@ -201,6 +203,7 @@ __all__ = [
     "eos_cg_phase",
     "from_model",
     "from_names",
+    "ge_nrtl_phase",
     "gerg2008_phase",
     "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
@@ -285,6 +288,7 @@ _WATER_PHASE = "eos.water_phase"
 _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
+_GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
@@ -1719,6 +1723,34 @@ def eos_cg_phase(components: list[str], T: Q, P: Q, z: list[float]) -> EosCgPhas
     See :func:`azoth.eos.reference.eos_cg_phase`.
     """
     return resolve(_EOS_CG_PHASE)(components=components, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def ge_nrtl_phase(
+    params: GeNrtlPhaseParameters,
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+) -> GeNrtlPhaseResult:
+    """The fugacity coefficients of a liquid whose non-ideality is NRTL's.
+
+    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``PhaseGENRTL`` liquid: there is no
+    cubic in it, because an activity-coefficient phase's non-ideality is ``gamma`` and
+    its standard state is the pure liquid at the state's temperature.
+
+    ``params`` is the caller's: resolve it from the mixture's components with
+    :func:`azoth.eos.components.ge_nrtl_phase_parameters`, which carries the NRTL
+    matrices *and* each component's vapour-pressure correlation.
+
+    Raises:
+        InvalidInputError: if ``params`` and ``x`` disagree in length, or ``x`` is not a
+            composition.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.ge_nrtl_phase`.
+    """
+    return resolve(_GE_NRTL_PHASE)(  # type: ignore[no-any-return]
+        params=params, T=T, P=P, x=x
+    )
 
 
 def gerg2008_phase(components: list[str], T: Q, P: Q, z: list[float]) -> Gerg2008PhaseResult:

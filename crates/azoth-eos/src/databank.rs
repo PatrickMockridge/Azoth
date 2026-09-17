@@ -161,6 +161,13 @@ pub struct Entry {
     /// an overlay added: a card supplies the parameters a cubic needs. `mixture_of`
     /// refuses such a name rather than defaulting to zeros.
     pub cp: Option<[f64; 5]>,
+    /// The Antoine coefficients `A`-`E` and the form they belong to, as the table
+    /// states them.
+    ///
+    /// Read for `eos.ge_nrtl_phase`, whose liquid fugacity is `gamma_i P0_i / P`: `P0_i`
+    /// is this correlation, and the phase needs it per component. `None` for a substance
+    /// an overlay added, which carries the parameters a *cubic* needs and not these.
+    pub antoine: Option<([f64; 5], String)>,
     /// Molar mass, in kg/mol.
     pub molar_mass: Option<f64>,
     /// Critical molar volume, in m³/mol.
@@ -423,6 +430,12 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "molar_mass_kg_per_mol",
         "critical_volume_m3_per_mol",
         "dipole_moment_debye",
+        "antoine_type",
+        "antoinea",
+        "antoineb",
+        "antoinec",
+        "antoined",
+        "antoinee",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -471,6 +484,20 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     "dipole_moment_debye",
                     row,
                 )?),
+                antoine: Some((
+                    [
+                        number(&record, index["antoinea"], "antoinea", row)?,
+                        number(&record, index["antoineb"], "antoineb", row)?,
+                        number(&record, index["antoinec"], "antoinec", row)?,
+                        number(&record, index["antoined"], "antoined", row)?,
+                        number(&record, index["antoinee"], "antoinee", row)?,
+                    ],
+                    record
+                        .get(index["antoine_type"])
+                        .unwrap_or("")
+                        .trim()
+                        .to_string(),
+                )),
             },
         );
     }
@@ -653,10 +680,12 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // has an enthalpy path; without it, it is a cubic only.
                 cp: over.cp,
                 // A card states the parameters a cubic reads; it carries no molar mass,
-                // critical volume or dipole, so a card-added substance has none.
+                // critical volume, dipole or Antoine coefficients, so a card-added
+                // substance has none.
                 molar_mass: None,
                 critical_volume: None,
                 dipole: None,
+                antoine: None,
             })
         }
         (Some(base), Some(over)) => Ok(Entry {
@@ -669,6 +698,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             molar_mass: base.molar_mass,
             critical_volume: base.critical_volume,
             dipole: base.dipole,
+            antoine: base.antoine,
             name: base.name,
         }),
     }
@@ -962,6 +992,81 @@ pub fn wong_sandler_parameters(
         }
     }
     Ok(out)
+}
+
+/// One component's pure-liquid vapour-pressure correlation, as the table states it.
+///
+/// The coefficients, the label naming which of NeqSim's four Antoine forms they belong
+/// to, and the critical constants the Wagner form reads. Carried whole rather than
+/// resolved to a `p_sat`, because the phase evaluates it at its own temperature.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AntoineRecord {
+    /// NeqSim's own label, which `form_from_type` turns into the arithmetic.
+    pub antoine_type: String,
+    /// The five coefficients `A`-`E`, in NeqSim's internal scale.
+    pub coefficients: [f64; 5],
+    /// Critical temperature, in K.
+    pub tc: f64,
+    /// Critical pressure, in Pa.
+    pub pc: f64,
+}
+
+/// The resolved parameters of an NRTL activity-coefficient *phase*.
+///
+/// The NRTL matrices [`NrtlParameters`] carries, beside what a phase needs and an
+/// activity coefficient does not: each component's pure-liquid vapour pressure, because
+/// the phase's fugacity coefficient is `gamma_i P0_i / P`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GeNrtlPhaseParameters {
+    /// `alpha[i][j]`, `N x N` row-major. Symmetric with a zero diagonal.
+    pub alpha: Vec<f64>,
+    /// `dij[i][j] = g_ij` in kelvin, `N x N` row-major. Directional.
+    pub dij: Vec<f64>,
+    /// One vapour-pressure correlation per component, in order.
+    pub antoine: Vec<AntoineRecord>,
+}
+
+/// The NRTL phase parameters for a list of names.
+///
+/// The activity-coefficient matrices resolve through [`nrtl_parameters`], so the phase
+/// and `eos.nrtl_activity_coefficients` cannot disagree about them; this adds the
+/// per-component vapour pressure beside them.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
+///   overlay, or if the databank carries it without an Antoine correlation - which is
+///   what an overlay-added substance is, since a card states the parameters a cubic
+///   reads.
+pub fn ge_nrtl_phase_parameters(
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<GeNrtlPhaseParameters> {
+    let nrtl = nrtl_parameters(names, overlay)?;
+    let mut antoine = Vec::with_capacity(names.len());
+    for name in names {
+        let entry = entry(name, overlay)?;
+        let Some((coefficients, antoine_type)) = entry.antoine else {
+            return Err(AzothError::property_unavailable(
+                entry.name,
+                "Antoine vapour-pressure coefficients".to_string(),
+                "the phase's fugacity coefficient is `gamma_i P0_i / P`, so every \
+                 component needs a correlation; a keycard supplies the parameters a \
+                 cubic reads and not these"
+                    .to_string(),
+            ));
+        };
+        antoine.push(AntoineRecord {
+            antoine_type,
+            coefficients,
+            tc: entry.tc,
+            pc: entry.pc,
+        });
+    }
+    Ok(GeNrtlPhaseParameters {
+        alpha: nrtl.alpha,
+        dij: nrtl.dij,
+        antoine,
+    })
 }
 
 /// The resolved NRTL parameters for a mixture, both matrices flattened row-major.

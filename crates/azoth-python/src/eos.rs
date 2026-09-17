@@ -18,29 +18,29 @@ use crate::results::{
     PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyArgonSolidPhaseResult, PyBwrsPhaseResult,
     PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
-    PyEosCgPhaseResult, PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult,
-    PyHeatOfVaporizationResult, PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult,
-    PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult,
-    PyMatcopAlphaResult, PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult,
-    PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
-    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
-    PyParahydrogenSolidPhaseResult, PyPhFlashResult, PyPhaseBoundaryResult,
-    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
-    PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult, PyPrDepartureResult,
-    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
-    PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
-    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
-    PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
-    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
-    PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
-    PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
-    PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
-    PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
-    PyVuFlashResult, PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
-    PyWilsonActivityCoefficientsResult,
+    PyEosCgPhaseResult, PyGeNrtlPhaseResult, PyGerg2008PhaseResult,
+    PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyHeliumPhaseResult,
+    PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
+    PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
+    PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
+    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult,
+    PyParachorSurfaceTensionResult, PyParahydrogenSolidPhaseResult, PyPhFlashResult,
+    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
+    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
+    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
+    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
+    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
+    PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
+    PyRkDepartureResult, PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult,
+    PySoreideWhitsonAlphaResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
+    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
+    PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
+    PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
+    PyTynCalusDiffusivityResult, PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult,
+    PyUnifacPsrkActivityCoefficientsResult, PyUnifacUmrpruActivityCoefficientsResult,
+    PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult,
+    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWaterPhaseResult,
+    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -940,6 +940,49 @@ pub fn nrtl_activity_coefficients(
     let params = azoth_eos::databank::NrtlParameters { alpha, dij };
     azoth_eos::nrtl_activity_coefficients(&params, T, &x)
         .map(|r| PyNrtlActivityCoefficientsResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The fugacity coefficients of an NRTL activity-coefficient liquid. A *model* rather
+/// than a calculation: the resolved phase parameters cross flattened, one list per
+/// field of `GeNrtlPhaseParameters`, and the Antoine record's own fields with them.
+#[pyfunction]
+#[pyo3(signature = (alpha, dij, antoine_type, antoine_coefficients, antoine_tc, antoine_pc, T, P, x))]
+#[pyo3(
+    text_signature = "(alpha, dij, antoine_type, antoine_coefficients, antoine_tc, antoine_pc, T, P, x)"
+)]
+#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
+pub fn ge_nrtl_phase(
+    py: Python<'_>,
+    alpha: Vec<f64>,
+    dij: Vec<f64>,
+    antoine_type: Vec<String>,
+    antoine_coefficients: Vec<f64>,
+    antoine_tc: Vec<f64>,
+    antoine_pc: Vec<f64>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+) -> PyResult<PyGeNrtlPhaseResult> {
+    let params = azoth_eos::databank::GeNrtlPhaseParameters {
+        alpha,
+        dij,
+        antoine: antoine_type
+            .into_iter()
+            .enumerate()
+            .map(|(i, antoine_type)| azoth_eos::databank::AntoineRecord {
+                antoine_type,
+                coefficients: antoine_coefficients[i * 5..i * 5 + 5]
+                    .try_into()
+                    .expect("5 coefficients per component"),
+                tc: antoine_tc[i],
+                pc: antoine_pc[i],
+            })
+            .collect(),
+    };
+    azoth_eos::ge_nrtl_phase(&params, T, P, &x)
+        .map(|r| PyGeNrtlPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

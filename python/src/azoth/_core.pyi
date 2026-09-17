@@ -260,6 +260,14 @@ class EosCgPhaseResult:
     warnings: list[Warning]
 
 @final
+class GeNrtlPhaseResult:
+    gamma: list[float]
+    ln_gamma: list[float]
+    ln_phi: list[float]
+    p_sat: list[Qty]
+    warnings: list[Warning]
+
+@final
 class Gerg2008PhaseResult:
     z_factor: float
     u: Qty
@@ -985,6 +993,17 @@ def dew_temperature(
     alpha_params: list[list[float]] | None = None,
 ) -> DewTemperatureResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
+def ge_nrtl_phase(
+    alpha: list[float],
+    dij: list[float],
+    antoine_type: list[str],
+    antoine_coefficients: list[float],
+    antoine_tc: list[float],
+    antoine_pc: list[float],
+    T: float,
+    P: float,
+    x: list[float],
+) -> GeNrtlPhaseResult: ...
 def gerg2008_phase(
     components: list[str],
     T: float,
