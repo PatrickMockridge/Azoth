@@ -736,6 +736,12 @@ class UnifacActivityCoefficientsResult:
     warnings: list[Warning]
 
 @final
+class UnifacPsrkActivityCoefficientsResult:
+    ln_gamma: list[float]
+    gamma: list[float]
+    warnings: list[Warning]
+
+@final
 class UniquacActivityCoefficientsResult:
     ln_gamma: list[float]
     gamma: list[float]
@@ -1350,6 +1356,16 @@ def unifac_activity_coefficients(
     T: float,
     x: list[float],
 ) -> UnifacActivityCoefficientsResult: ...
+def unifac_psrk_activity_coefficients(
+    groups: list[float],
+    group_r: list[float],
+    group_q: list[float],
+    aij: list[float],
+    bij: list[float],
+    cij: list[float],
+    T: float,
+    x: list[float],
+) -> UnifacPsrkActivityCoefficientsResult: ...
 def uniquac_activity_coefficients(
     r: list[float],
     q: list[float],

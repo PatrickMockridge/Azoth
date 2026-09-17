@@ -32,6 +32,7 @@
 //!   - specs/models/eos/tu_flash.toml
 //!   - specs/models/eos/tv_flash.toml
 //!   - specs/models/eos/unifac_activity_coefficients.toml
+//!   - specs/models/eos/unifac_psrk_activity_coefficients.toml
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
 //!   - specs/models/eos/van_laar_acid_activity_coefficients.toml
 //!   - specs/models/eos/viscosity.toml
@@ -3125,6 +3126,88 @@ pub static UNIFAC_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
     cases: UNIFAC_ACTIVITY_COEFFICIENTS_CASES,
 };
 
+static UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute temperature; zero and below are not states",
+    },
+}];
+
+static UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methanol_water_equimolar_at_298_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15)],
+        lists: &[("components", &["methanol", "water"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[0.109465434560284, 0.18285472222380844]),
+            ("gamma", &[1.1156815062468024, 1.200639969105366]),
+        ],
+    },
+    TestCase {
+        id: "water_methane_equimolar_at_250_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 250.0)],
+        lists: &[("components", &["water", "methane"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[0.8381920105028207, 0.9674010863177143]),
+            ("gamma", &[2.3121827932351917, 2.631097570496052]),
+        ],
+    },
+    TestCase {
+        id: "water_methane_equimolar_at_400_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 400.0)],
+        lists: &[("components", &["water", "methane"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[0.887381334379193, 0.8684378121136531]),
+            ("gamma", &[2.4287612030473236, 2.3831849613326668]),
+        ],
+    },
+];
+
+/// Registry entry for `eos.unifac_psrk_activity_coefficients`.
+pub static UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
+    id: "eos.unifac_psrk_activity_coefficients",
+    kind: "direct",
+    algorithm: None,
+    checks: UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_CHECKS,
+    cases: UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_CASES,
+};
+
 static UNIQUAC_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -3768,6 +3851,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &TU_FLASH_SPEC,
     &TV_FLASH_SPEC,
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
+    &UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,
     &VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_SPEC,
     &VISCOSITY_SPEC,

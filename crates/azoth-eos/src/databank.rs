@@ -34,6 +34,12 @@ const UNIFAC_COMP_CSV: &str = include_str!("../../../data/components/UNIFACcomp.
 const UNIFAC_GROUP_CSV: &str = include_str!("../../../data/components/UNIFACGroupParam.csv");
 const UNIFAC_INTER_CSV: &str = include_str!("../../../data/components/UNIFACInterParam.csv");
 
+/// The compiled UNIFAC-PSRK interaction tables, generated from NeqSim's
+/// `UNIFACInterParamB.csv` and `UNIFACInterParamC.csv`, the `b` and `c` of
+/// `a_mn(T) = a + b T + c T^2`.
+const UNIFAC_INTER_B_CSV: &str = include_str!("../../../data/components/UNIFACInterParamB.csv");
+const UNIFAC_INTER_C_CSV: &str = include_str!("../../../data/components/UNIFACInterParamC.csv");
+
 /// The compiled MBWR-32 coefficient table, generated from NeqSim's `MBWR32param.csv`.
 const MBWR32_CSV: &str = include_str!("../../../data/components/mbwr32.csv");
 
@@ -49,6 +55,8 @@ pub const KIJ_PATH: &str = "data/components/kij.csv";
 pub const UNIFAC_COMP_PATH: &str = "data/components/UNIFACcomp.csv";
 pub const UNIFAC_GROUP_PATH: &str = "data/components/UNIFACGroupParam.csv";
 pub const UNIFAC_INTER_PATH: &str = "data/components/UNIFACInterParam.csv";
+pub const UNIFAC_INTER_B_PATH: &str = "data/components/UNIFACInterParamB.csv";
+pub const UNIFAC_INTER_C_PATH: &str = "data/components/UNIFACInterParamC.csv";
 pub const MBWR32_PATH: &str = "data/components/mbwr32.csv";
 
 /// The exact bytes this build embedded for the component table.
@@ -82,6 +90,16 @@ pub fn embedded_unifac_group() -> &'static str {
 #[must_use]
 pub fn embedded_unifac_inter() -> &'static str {
     UNIFAC_INTER_CSV
+}
+
+#[must_use]
+pub fn embedded_unifac_inter_b() -> &'static str {
+    UNIFAC_INTER_B_CSV
+}
+
+#[must_use]
+pub fn embedded_unifac_inter_c() -> &'static str {
+    UNIFAC_INTER_C_CSV
 }
 
 /// The exact bytes this build embedded for the MBWR-32 table.
@@ -851,6 +869,11 @@ struct UnifacTables {
     group: HashMap<i64, (f64, f64, i64)>,
     /// `(main group, main group)` -> `a_mn`.
     aij: HashMap<(i64, i64), f64>,
+    /// `(main group, main group)` -> `b_mn`, the linear term of UNIFAC-PSRK's
+    /// temperature-dependent interaction.
+    bij: HashMap<(i64, i64), f64>,
+    /// `(main group, main group)` -> `c_mn`, the quadratic term of the same.
+    cij: HashMap<(i64, i64), f64>,
     /// Lower-cased name -> `[(subgroup, count)]`.
     members: HashMap<String, Vec<(i64, i64)>>,
 }
@@ -894,35 +917,9 @@ fn parse_unifac() -> Result<UnifacTables> {
         }
     }
 
-    let mut aij = HashMap::new();
-    {
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(UNIFAC_INTER_CSV.as_bytes());
-        let header = reader.headers().map_err(csv_failure)?.clone();
-        let main_idx = column(&header, "maingroup")?;
-        let mut n_idx = HashMap::new();
-        for n in 1..=64 {
-            n_idx.insert(n, column(&header, &format!("n{n}"))?);
-        }
-        for (offset, record) in reader.records().enumerate() {
-            let record = record.map_err(csv_failure)?;
-            let row = offset + 2;
-            let main = integer(&record, main_idx, "maingroup", row)?;
-            for (n, &idx) in &n_idx {
-                let raw = record.get(idx).unwrap_or("").trim();
-                let value = if raw.is_empty() {
-                    0.0
-                } else {
-                    raw.parse::<f64>().map_err(|_| AzothError::InvalidInput {
-                        field: "databank".to_string(),
-                        reason: format!("row {row}: `n{n}` is {raw:?}, which is not a number"),
-                    })?
-                };
-                aij.insert((main, *n), value);
-            }
-        }
-    }
+    let aij = parse_interaction_table(UNIFAC_INTER_CSV)?;
+    let bij = parse_interaction_table(UNIFAC_INTER_B_CSV)?;
+    let cij = parse_interaction_table(UNIFAC_INTER_C_CSV)?;
 
     let mut members = HashMap::new();
     {
@@ -955,8 +952,45 @@ fn parse_unifac() -> Result<UnifacTables> {
     Ok(UnifacTables {
         group,
         aij,
+        bij,
+        cij,
         members,
     })
+}
+
+/// One main-group interaction table, keyed by `(main group, main group)`.
+///
+/// The three of them - `a`, and UNIFAC-PSRK's `b` and `c` - have the same shape, so
+/// they are read the same way rather than three times over.
+fn parse_interaction_table(text: &str) -> Result<HashMap<(i64, i64), f64>> {
+    let mut out = HashMap::new();
+    let mut reader = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(text.as_bytes());
+    let header = reader.headers().map_err(csv_failure)?.clone();
+    let main_idx = column(&header, "maingroup")?;
+    let mut n_idx = HashMap::new();
+    for n in 1..=64 {
+        n_idx.insert(n, column(&header, &format!("n{n}"))?);
+    }
+    for (offset, record) in reader.records().enumerate() {
+        let record = record.map_err(csv_failure)?;
+        let row = offset + 2;
+        let main = integer(&record, main_idx, "maingroup", row)?;
+        for (n, &idx) in &n_idx {
+            let raw = record.get(idx).unwrap_or("").trim();
+            let value = if raw.is_empty() {
+                0.0
+            } else {
+                raw.parse::<f64>().map_err(|_| AzothError::InvalidInput {
+                    field: "databank".to_string(),
+                    reason: format!("row {row}: `n{n}` is {raw:?}, which is not a number"),
+                })?
+            };
+            out.insert((main, *n), value);
+        }
+    }
+    Ok(out)
 }
 
 /// The UNIFAC inputs for a list of names, resolved from the vendored group tables.
@@ -964,9 +998,105 @@ fn parse_unifac() -> Result<UnifacTables> {
 /// # Errors
 /// * [`AzothError::InvalidInput`] if `names` is empty.
 /// * [`AzothError::PropertyUnavailable`] if a name has no UNIFAC group assignment.
-#[allow(clippy::missing_panics_doc)]
 pub fn unifac_parameters(names: &[&str]) -> Result<UnifacParameters> {
     let tables = unifac_tables();
+    let basis = unifac_basis(names, tables)?;
+    let g = basis.union.len();
+
+    let mut aij = vec![0.0; g * g];
+    for (k, &s) in basis.union.iter().enumerate() {
+        let (_, _, main) = *tables.group.get(&s).expect("a subgroup with a member row");
+        for (m, &t) in basis.union.iter().enumerate() {
+            let (_, _, main_t) = *tables.group.get(&t).expect("a subgroup with a member row");
+            aij[k * g + m] = tables.aij.get(&(main, main_t)).copied().unwrap_or(0.0);
+        }
+    }
+
+    Ok(UnifacParameters {
+        groups: basis.groups,
+        group_r: basis.group_r,
+        group_q: basis.group_q,
+        aij,
+    })
+}
+
+/// The resolved UNIFAC-PSRK inputs for a mixture, each matrix flattened row-major.
+///
+/// The same basis as [`UnifacParameters`], with the interaction split into the three
+/// terms UNIFAC-PSRK fits separately: `a_mn(T) = a_mn + b_mn T + c_mn T^2`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UnifacPsrkParameters {
+    /// Per-component group counts, `N x G` row-major.
+    pub groups: Vec<f64>,
+    /// The volume `R` of each group, length `G`.
+    pub group_r: Vec<f64>,
+    /// The surface area `Q` of each group, length `G`.
+    pub group_q: Vec<f64>,
+    /// The constant term of the interaction, `G x G` row-major, in Kelvin.
+    pub aij: Vec<f64>,
+    /// The linear term, `G x G` row-major, in Kelvin per Kelvin.
+    pub bij: Vec<f64>,
+    /// The quadratic term, `G x G` row-major, in Kelvin per Kelvin squared.
+    pub cij: Vec<f64>,
+}
+
+/// The UNIFAC-PSRK inputs for a list of names, resolved from the vendored tables.
+///
+/// `NeqSim`'s `ComponentGEUnifacPSRK.calcaij` is
+/// `aij + bij * T + cij * T^2`, reading `UNIFACInterParamB` and `UNIFACInterParamC`
+/// beside the `a` table the plain UNIFAC model uses. The three are resolved over the
+/// same group union, so the matrices line up column for column.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if `names` is empty.
+/// * [`AzothError::PropertyUnavailable`] if a name has no UNIFAC group assignment.
+pub fn unifac_psrk_parameters(names: &[&str]) -> Result<UnifacPsrkParameters> {
+    let tables = unifac_tables();
+    let basis = unifac_basis(names, tables)?;
+    let g = basis.union.len();
+
+    let mut aij = vec![0.0; g * g];
+    let mut bij = vec![0.0; g * g];
+    let mut cij = vec![0.0; g * g];
+    for (k, &s) in basis.union.iter().enumerate() {
+        let (_, _, main) = *tables.group.get(&s).expect("a subgroup with a member row");
+        for (m, &t) in basis.union.iter().enumerate() {
+            let (_, _, main_t) = *tables.group.get(&t).expect("a subgroup with a member row");
+            let key = (main, main_t);
+            aij[k * g + m] = tables.aij.get(&key).copied().unwrap_or(0.0);
+            bij[k * g + m] = tables.bij.get(&key).copied().unwrap_or(0.0);
+            cij[k * g + m] = tables.cij.get(&key).copied().unwrap_or(0.0);
+        }
+    }
+
+    Ok(UnifacPsrkParameters {
+        groups: basis.groups,
+        group_r: basis.group_r,
+        group_q: basis.group_q,
+        aij,
+        bij,
+        cij,
+    })
+}
+
+/// The group basis both UNIFAC resolutions share: the per-component counts, the
+/// per-group constants, and the union of subgroups the columns are ordered by.
+///
+/// Built once and handed to both models rather than called twice, so the two cannot
+/// order their columns differently - a difference that would permute every interaction
+/// matrix without changing anything a case could see.
+pub(crate) struct UnifacBasis {
+    /// Per-component group counts, `N x G` row-major.
+    pub groups: Vec<f64>,
+    /// The volume `R` of each group, length `G`.
+    pub group_r: Vec<f64>,
+    /// The surface area `Q` of each group, length `G`.
+    pub group_q: Vec<f64>,
+    /// The subgroups the columns are ordered by, ascending.
+    pub union: Vec<i64>,
+}
+
+fn unifac_basis(names: &[&str], tables: &UnifacTables) -> Result<UnifacBasis> {
     let n = names.len();
     if n == 0 {
         return Err(AzothError::invalid_input(
@@ -999,15 +1129,10 @@ pub fn unifac_parameters(names: &[&str]) -> Result<UnifacParameters> {
 
     let mut group_r = vec![0.0; g];
     let mut group_q = vec![0.0; g];
-    let mut aij = vec![0.0; g * g];
     for (k, &s) in union.iter().enumerate() {
-        let (r, q, main) = *tables.group.get(&s).expect("a subgroup with a member row");
+        let (r, q, _) = *tables.group.get(&s).expect("a subgroup with a member row");
         group_r[k] = r;
         group_q[k] = q;
-        for (m, &t) in union.iter().enumerate() {
-            let (_, _, main_t) = *tables.group.get(&t).expect("a subgroup with a member row");
-            aij[k * g + m] = tables.aij.get(&(main, main_t)).copied().unwrap_or(0.0);
-        }
     }
 
     let mut groups = vec![0.0; n * g];
@@ -1020,12 +1145,11 @@ pub fn unifac_parameters(names: &[&str]) -> Result<UnifacParameters> {
             groups[i * g + k] = count as f64;
         }
     }
-
-    Ok(UnifacParameters {
+    Ok(UnifacBasis {
         groups,
         group_r,
         group_q,
-        aij,
+        union,
     })
 }
 

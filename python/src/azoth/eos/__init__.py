@@ -146,6 +146,7 @@ from azoth.core.result import (
     TynCalusDiffusivityResult,
     UmrprAlphaResult,
     UnifacActivityCoefficientsResult,
+    UnifacPsrkActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
@@ -161,6 +162,7 @@ from azoth.eos.components import (
     BwrsCoefficients,
     NrtlParameters,
     UnifacParameters,
+    UnifacPsrkParameters,
     UniquacParameters,
     VanLaarAcidParameters,
     bwrs_coefficients,
@@ -241,6 +243,7 @@ __all__ = [
     "twu_kappa",
     "tyn_calus_diffusivity",
     "unifac_activity_coefficients",
+    "unifac_psrk_activity_coefficients",
     "uniquac_activity_coefficients",
     "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
@@ -318,6 +321,7 @@ _TWUCOON_STATOIL_ALPHA = "eos.twucoon_statoil_alpha"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _UMRPR_ALPHA = "eos.umrpr_alpha"
 _UNIFAC_ACTIVITY_COEFFICIENTS = "eos.unifac_activity_coefficients"
+_UNIFAC_PSRK_ACTIVITY_COEFFICIENTS = "eos.unifac_psrk_activity_coefficients"
 _UNIQUAC_ACTIVITY_COEFFICIENTS = "eos.uniquac_activity_coefficients"
 _VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS = "eos.van_laar_acid_activity_coefficients"
 _WILSON_ACTIVITY_COEFFICIENTS = "eos.wilson_activity_coefficients"
@@ -1185,6 +1189,34 @@ def van_laar_acid_activity_coefficients(
     See :func:`azoth.eos.reference.van_laar_acid_activity_coefficients`.
     """
     return resolve(_VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
+        params=params, T=T, x=x
+    )
+
+
+def unifac_psrk_activity_coefficients(
+    params: UnifacPsrkParameters,
+    T: Q,
+    x: Sequence[float],
+) -> UnifacPsrkActivityCoefficientsResult:
+    """The activity coefficients of a mixture, from UNIFAC with PSRK's interaction
+    parameters.
+
+    Identical to :func:`unifac_activity_coefficients` except that the main-group
+    interaction is a function of temperature: ``a_mn(T) = a_mn + b_mn T + c_mn T**2``,
+    NeqSim's ``ComponentGEUnifacPSRK.calcaij``. A mixture whose pairs all have
+    ``b = c = 0`` therefore reduces to plain UNIFAC exactly.
+
+    ``params`` is the caller's: resolve it from the mixture's components with
+    :func:`azoth.eos.components.unifac_psrk_parameters`.
+
+    Raises:
+        InvalidInputError: if the shapes disagree, a group count is negative, or ``x``
+            is not a composition.
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.unifac_psrk_activity_coefficients`.
+    """
+    return resolve(_UNIFAC_PSRK_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
         params=params, T=T, x=x
     )
 

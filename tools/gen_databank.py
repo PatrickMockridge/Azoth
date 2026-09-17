@@ -61,6 +61,8 @@ VENDORED_FILES = (
     ("neqsim/UNIFACcomp.csv", "UNIFACcomp.csv", "UNIFACcomp.csv"),
     ("neqsim/UNIFACGroupParam.csv", "UNIFACGroupParam.csv", "UNIFACGroupParam.csv"),
     ("neqsim/UNIFACInterParam.csv", "UNIFACInterParam.csv", "UNIFACInterParam.csv"),
+    ("neqsim/UNIFACInterParamB.csv", "UNIFACInterParamB.csv", "UNIFACInterParamB.csv"),
+    ("neqsim/UNIFACInterParamC.csv", "UNIFACInterParamC.csv", "UNIFACInterParamC.csv"),
     ("neqsim/MBWR32param.csv", "MBWR32param.csv", "mbwr32.csv"),
 )
 

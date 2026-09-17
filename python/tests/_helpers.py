@@ -532,6 +532,7 @@ def parameters_of(model: Mapping[str, Any]) -> set[str]:
 PARAMETER_RESOLVERS: dict[str, str] = {
     "NrtlParameters": "nrtl_parameters",
     "UnifacParameters": "unifac_parameters",
+    "UnifacPsrkParameters": "unifac_psrk_parameters",
     "UniquacParameters": "uniquac_parameters",
     "VanLaarAcidParameters": "van_laar_acid_parameters",
 }

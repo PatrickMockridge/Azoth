@@ -59,6 +59,8 @@ KIJ_CSV = "data/components/kij.csv"
 UNIFAC_COMP_CSV = "data/components/UNIFACcomp.csv"
 UNIFAC_GROUP_CSV = "data/components/UNIFACGroupParam.csv"
 UNIFAC_INTER_CSV = "data/components/UNIFACInterParam.csv"
+UNIFAC_INTER_B_CSV = "data/components/UNIFACInterParamB.csv"
+UNIFAC_INTER_C_CSV = "data/components/UNIFACInterParamC.csv"
 MBWR32_CSV = "data/components/mbwr32.csv"
 
 #: Columns the loader reads, in order. Named rather than positional because this
@@ -567,8 +569,17 @@ def _unifac_group() -> dict[int, tuple[float, float, int]]:
 @cache
 def _unifac_aij() -> dict[tuple[int, int], float]:
     """UNIFAC main-group interactions `a_mn` (Kelvin), keyed by main-group pair."""
+    return _unifac_interaction(UNIFAC_INTER_CSV)
+
+
+def _unifac_interaction(path: str) -> dict[tuple[int, int], float]:
+    """One main-group interaction table, keyed by main-group pair.
+
+    The three of them - `a`, and UNIFAC-PSRK's `b` and `c` - have the same shape, so
+    they are read the same way rather than three times over.
+    """
     out: dict[tuple[int, int], float] = {}
-    for row in _rows(find(UNIFAC_INTER_CSV).read_text(encoding="utf-8")):
+    for row in _rows(find(path).read_text(encoding="utf-8")):
         m = int(row["maingroup"])
         for key, value in row.items():
             if key.startswith("n") and value.strip():
@@ -756,6 +767,95 @@ def van_laar_acid_parameters(names: Sequence[str]) -> VanLaarAcidParameters:
         entry(name)
         index.append(_ACID_INDEX.get(name.strip().lower(), 0))
     return VanLaarAcidParameters(acid_index=tuple(index))
+
+
+@dataclass(frozen=True, slots=True)
+class UnifacPsrkParameters:
+    """The UNIFAC-PSRK parameters of a mixture, each matrix flattened row-major.
+
+    The same basis as :class:`UnifacParameters`, with the interaction split into the
+    three terms UNIFAC-PSRK fits separately: ``a_mn(T) = a_mn + b_mn T + c_mn T**2``.
+    """
+
+    #: Per-component group counts, ``N x G`` row-major.
+    groups: tuple[float, ...]
+    #: The volume ``R`` of each group, length ``G``.
+    group_r: tuple[float, ...]
+    #: The surface area ``Q`` of each group, length ``G``.
+    group_q: tuple[float, ...]
+    #: The constant term of the interaction, ``G x G`` row-major, in kelvin.
+    aij: tuple[float, ...]
+    #: The linear term, ``G x G`` row-major, in kelvin per kelvin.
+    bij: tuple[float, ...]
+    #: The quadratic term, ``G x G`` row-major, in kelvin per kelvin squared.
+    cij: tuple[float, ...]
+
+
+def unifac_psrk_parameters(names: Sequence[str]) -> UnifacPsrkParameters:
+    """The UNIFAC-PSRK inputs for a list of components, by name.
+
+    ``a``, ``b`` and ``c`` are resolved from NeqSim's ``UNIFACInterParam``,
+    ``UNIFACInterParamB`` and ``UNIFACInterParamC`` over the same group union, so the
+    three matrices line up column for column. The interaction is
+    ``a_mn(T) = a_mn + b_mn T + c_mn T**2``, NeqSim's
+    ``ComponentGEUnifacPSRK.calcaij``.
+
+    A pair the tables do not carry is zero in all three terms, so a mixture whose pairs
+    all have ``b = c = 0`` reduces this to plain :func:`unifac_parameters` exactly.
+
+    Raises:
+        PropertyUnavailableError: if a name has no UNIFAC group assignment.
+    """
+    group = _unifac_group()
+    members = _unifac_members()
+    a_table = _unifac_aij()
+    b_table = _unifac_interaction(UNIFAC_INTER_B_CSV)
+    c_table = _unifac_interaction(UNIFAC_INTER_C_CSV)
+
+    union: list[int] = []
+    for name in names:
+        subs = members.get(name.strip().lower())
+        if subs is None:
+            raise PropertyUnavailableError(
+                name,
+                "UNIFAC group assignment",
+                "not in UNIFACcomp.csv; a UNIFAC activity coefficient needs a group "
+                "decomposition for every component",
+            )
+        for subgroup, _ in subs:
+            if subgroup not in union:
+                union.append(subgroup)
+    union.sort()
+    g = len(union)
+
+    group_r = [0.0] * g
+    group_q = [0.0] * g
+    aij = [0.0] * (g * g)
+    bij = [0.0] * (g * g)
+    cij = [0.0] * (g * g)
+    for k, subgroup in enumerate(union):
+        r, q, main = group[subgroup]
+        group_r[k] = r
+        group_q[k] = q
+        for m, other in enumerate(union):
+            _, _, other_main = group[other]
+            aij[k * g + m] = a_table.get((main, other_main), 0.0)
+            bij[k * g + m] = b_table.get((main, other_main), 0.0)
+            cij[k * g + m] = c_table.get((main, other_main), 0.0)
+
+    groups = [0.0] * (len(names) * g)
+    for i, name in enumerate(names):
+        for subgroup, count in members[name.strip().lower()]:
+            groups[i * g + union.index(subgroup)] = float(count)
+
+    return UnifacPsrkParameters(
+        groups=tuple(groups),
+        group_r=tuple(group_r),
+        group_q=tuple(group_q),
+        aij=tuple(aij),
+        bij=tuple(bij),
+        cij=tuple(cij),
+    )
 
 
 def _cubic(name: str) -> Cubic:
@@ -986,6 +1086,7 @@ __all__ = [
     "DatabankEntry",
     "NrtlParameters",
     "UnifacParameters",
+    "UnifacPsrkParameters",
     "UniquacParameters",
     "VanLaarAcidParameters",
     "available",
@@ -997,6 +1098,7 @@ __all__ = [
     "kij_for",
     "nrtl_parameters",
     "unifac_parameters",
+    "unifac_psrk_parameters",
     "uniquac_parameters",
     "van_laar_acid_parameters",
     "wilke_chang_phi",

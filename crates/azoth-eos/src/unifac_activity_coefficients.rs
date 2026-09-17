@@ -146,13 +146,45 @@ pub fn unifac_activity_coefficients(
         ));
     }
 
-    let (group_r, group_q, aij) = (&params.group_r, &params.group_q, &params.aij);
+    let (ln_gamma, gamma) = unifac_ln_gamma(
+        &params.groups,
+        &params.group_r,
+        &params.group_q,
+        &params.aij,
+        T,
+        x,
+    );
+
+    Ok(UnifacActivityCoefficientsResult {
+        ln_gamma,
+        gamma,
+        warnings,
+    })
+}
+
+/// The UNIFAC activity coefficients from a resolved group basis and interaction matrix.
+///
+/// The whole of the physics, shared by `eos.unifac_activity_coefficients` and
+/// `eos.unifac_psrk_activity_coefficients`, which differ only in where the interaction
+/// matrix comes from: the PSRK one evaluates `a + b T + c T^2` at the state's
+/// temperature before calling this. Everything here is checked by the caller, so this
+/// assumes `groups` is `N x G`, `aij` is `G x G` and `x` is a composition of `N`.
+pub(crate) fn unifac_ln_gamma(
+    groups: &[f64],
+    group_r: &[f64],
+    group_q: &[f64],
+    aij: &[f64],
+    t: f64,
+    x: &[f64],
+) -> (Vec<f64>, Vec<f64>) {
+    let n = x.len();
+    let g = group_r.len();
     let mut ri = vec![0.0; n];
     let mut qi = vec![0.0; n];
     for i in 0..n {
         for k in 0..g {
-            ri[i] += params.groups[i * g + k] * group_r[k];
-            qi[i] += params.groups[i * g + k] * group_q[k];
+            ri[i] += groups[i * g + k] * group_r[k];
+            qi[i] += groups[i * g + k] * group_q[k];
         }
     }
 
@@ -175,18 +207,18 @@ pub fn unifac_activity_coefficients(
         let denom: f64 = (0..n).map(|j| x[j] * qi[j]).sum();
         let mut qmix = vec![0.0; g];
         for l in 0..g {
-            let num: f64 = (0..n).map(|j| x[j] * params.groups[j * g + l]).sum();
+            let num: f64 = (0..n).map(|j| x[j] * groups[j * g + l]).sum();
             qmix[l] = group_q[l] * num / denom;
         }
         let mut qcomp = vec![0.0; g];
         for l in 0..g {
-            qcomp[l] = group_q[l] * params.groups[i * g + l] / qi[i];
+            qcomp[l] = group_q[l] * groups[i * g + l] / qi[i];
         }
         let mut lng_r = 0.0;
         for k in 0..g {
-            lng_r += params.groups[i * g + k]
-                * (ln_gamma_group(k, &qmix, group_q, aij, T, g)
-                    - ln_gamma_group(k, &qcomp, group_q, aij, T, g));
+            lng_r += groups[i * g + k]
+                * (ln_gamma_group(k, &qmix, group_q, aij, t, g)
+                    - ln_gamma_group(k, &qcomp, group_q, aij, t, g));
         }
 
         let lng = lng_c + lng_r;
@@ -194,9 +226,5 @@ pub fn unifac_activity_coefficients(
         gamma[i] = lng.exp();
     }
 
-    Ok(UnifacActivityCoefficientsResult {
-        ln_gamma,
-        gamma,
-        warnings,
-    })
+    (ln_gamma, gamma)
 }
