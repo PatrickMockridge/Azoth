@@ -75,6 +75,7 @@ from azoth.core.result import (
     BwrsPhaseResult,
     ChungConductivityResult,
     ChungViscosityResult,
+    Co2PhaseResult,
     Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult,
     CriticalPointResult,
@@ -173,6 +174,7 @@ __all__ = [
     "bwrs_phase",
     "chung_conductivity",
     "chung_viscosity",
+    "co2_phase",
     "component",
     "costald_molar_volume",
     "critical_point",
@@ -249,6 +251,7 @@ _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BWRS_PHASE = "eos.bwrs_phase"
 _AMMONIA_PHASE = "eos.ammonia_phase"
+_CO2_PHASE = "eos.co2_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
@@ -1480,6 +1483,21 @@ def ammonia_phase(T: Q, P: Q) -> AmmoniaPhaseResult:
     See :func:`azoth.eos.reference.ammonia_phase`.
     """
     return resolve(_AMMONIA_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
+
+
+def co2_phase(T: Q, P: Q) -> Co2PhaseResult:
+    """The Span-Wagner CO2 phase state at a temperature and pressure.
+
+    Pure CO2, so there is no composition: the density is solved from the pressure by
+    Newton from the ideal-gas guess (the gas-like root), and the Helmholtz derivatives
+    give the compressibility factor and the property set.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.co2_phase`.
+    """
+    return resolve(_CO2_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
 
 
 def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:

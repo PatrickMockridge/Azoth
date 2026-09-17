@@ -93,6 +93,24 @@ fn properties_reproduce_neqsim() {
     }
 }
 
+/// The model assembles the density solve and the property set into the phase state the
+/// spec's worked examples name.
+#[test]
+fn co2_phase_model_matches_the_worked_example() {
+    let r = azoth_eos::co2_phase(
+        azoth_core::units::kelvins(300.0),
+        azoth_core::units::pascals(1_000_000.0),
+    )
+    .unwrap();
+    assert_close(r.z_factor, 0.949_642_798_244_906_5);
+    assert_close(r.u.value, 19585.01385891386);
+    assert_close(r.h.value, 21953.75822164444);
+    assert_close(r.s.value, 100.7545463049290);
+    assert_close(r.cv.value, 30.02159842182409);
+    assert_close(r.cp.value, 40.52761701934760);
+    assert_close(r.g.value, -8272.605669834247);
+}
+
 /// The property set satisfies the Gibbs identity and the `cp - cv` relation.
 #[test]
 fn properties_satisfy_the_thermodynamic_identities() {

@@ -5,6 +5,7 @@
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/bubble_temperature.toml
 //!   - specs/models/eos/bwrs_phase.toml
+//!   - specs/models/eos/co2_phase.toml
 //!   - specs/models/eos/critical_point.toml
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
@@ -478,6 +479,131 @@ pub static BWRS_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&BWRS_PHASE_ALGORITHM),
     checks: BWRS_PHASE_CHECKS,
     cases: BWRS_PHASE_CASES,
+};
+
+static CO2_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static CO2_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "gas_at_10_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0), ("P", 1000000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9496427982449065),
+            ("u", 19585.01385891386),
+            ("h", 21953.75822164444),
+            ("s", 100.754546304929),
+            ("cv", 30.02159842182409),
+            ("cp", 40.5276170193476),
+            ("g", -8272.605669834247),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "gas_at_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 250.0), ("P", 100000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9910804757839274),
+            ("u", 18448.49242476431),
+            ("h", 20508.57955644186),
+            ("s", 114.1463065955995),
+            ("cv", 26.76607117465508),
+            ("cp", 35.42837300640891),
+            ("g", -8027.997092458026),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "dense_at_50_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 350.0), ("P", 5000000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.8437487158617321),
+            ("u", 20201.48425031786),
+            ("h", 22656.8592477497),
+            ("s", 90.84828162369554),
+            ("cv", 34.21361584125806),
+            ("cp", 52.26455362012712),
+            ("g", -9140.039320543745),
+        ],
+        expected_vectors: &[],
+    },
+];
+
+static CO2_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "newton_density_solve",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("ideal_gas"),
+    initial_temperature: None,
+    inner: None,
+};
+
+/// Registry entry for `eos.co2_phase`.
+pub static CO2_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.co2_phase",
+    kind: "procedure",
+    algorithm: Some(&CO2_PHASE_ALGORITHM),
+    checks: CO2_PHASE_CHECKS,
+    cases: CO2_PHASE_CASES,
 };
 
 static CRITICAL_POINT_CHECKS: &[SpecCheck] = &[
@@ -2600,6 +2726,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &BUBBLE_PRESSURE_SPEC,
     &BUBBLE_TEMPERATURE_SPEC,
     &BWRS_PHASE_SPEC,
+    &CO2_PHASE_SPEC,
     &CRITICAL_POINT_SPEC,
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
