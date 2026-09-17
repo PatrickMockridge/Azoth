@@ -23,6 +23,7 @@ import Azoth.Dim
 import Azoth.Vocabulary
 import Azoth.Rho
 import Azoth.Barb
+import Azoth.Capability
 
 #print axioms Azoth.Dim.ofExponentsOn_nil
 #print axioms Azoth.Dim.ofExponents_nil
@@ -47,3 +48,14 @@ import Azoth.Barb
 #print axioms Azoth.Barb.barb_par
 #print axioms Azoth.Barb.barb_nil
 #print axioms Azoth.Barb.barb_drop
+
+-- The keycard as a capability, `docs/src/calculus/capability.md`'s three claims and the
+-- witness that keeps the second from being vacuous. Naming the witness theorems here as
+-- well as the claims is deliberate: a gate whose only gated theorems are the ones it
+-- satisfies is a gate that cannot fail.
+#print axioms Azoth.Capability.run_deterministic
+#print axioms Azoth.Capability.run_exists_unique
+#print axioms Azoth.Capability.run_derives_in_grant
+#print axioms Azoth.Capability.witness_datum_is_outside
+#print axioms Azoth.Capability.the_gate_refuses
+#print axioms Azoth.Capability.the_gate_can_succeed

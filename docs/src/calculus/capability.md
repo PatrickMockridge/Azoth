@@ -6,6 +6,10 @@ accountable for a value being right. This page says what that makes the card *as
 thing in the calculus* — and the answer is that it is authority a process holds,
 not a file a process reads.
 
+The page is the specification and `lean/Azoth/Capability.lean` is its proof; where the two
+disagree, the page is right and the module is a bug. Each claim below names the theorem it
+is proved by.
+
 ## A capability is a name
 
 The encoding is three processes and one restriction:
@@ -40,13 +44,12 @@ result:
 ∃! r.  Run c x r
 ```
 
-*Status: **specified**. The Python half of the implementation now states this claim
-rather than contradicting it - `azoth.keycard.load` stores nothing, so there is no
-card in force for a call order to change. The Rust half cannot express a card at all,
-which is a narrower failure than it sounds and is set out below. There is **no Lean
-declaration for this claim**: `Azoth.Capability` does not exist, nothing in this
-repository could falsify the statement, and the tranche that builds the Rust overlay
-is what will make it checkable.*
+*Status: **proved**, by `Azoth.Capability.run_deterministic` and its
+`∃!`-shaped form `Azoth.Capability.run_exists_unique`: one grant and one computation
+determine exactly one answer, with no card in force that a call order could change. The
+implementation states the same thing - `azoth.keycard.load` stores nothing, and
+`azoth_eos::card::Card` is a value a caller holds and passes - which is what the section
+below measures rather than asserts.*
 
 This is the property `specification.md` states as a rule — *"It is not shared. One keycard
 per process… A library whose answers depend on call order is a library that returns
@@ -60,8 +63,12 @@ does not grant:
 Run c x r   →   derives r d   →   d ∈ G
 ```
 
-*Status: **specified**. Authority is not a value here yet, so there is nothing whose
-exercise could fail to be a subset of what it holds.*
+*Status: **proved**, by `Azoth.Capability.run_derives_in_grant`. The proof is one
+step, and that is the point rather than a weakness: the content is the model's
+`Computation.rests` - an answer rests on nothing the computation did not demand - together
+with `Run` requiring the demands to lie inside the grant. A longer proof would mean the
+gate had been put somewhere other than where a computation reaches the databank, which is
+exactly the failure this claim is about.*
 
 Non-amplification is the claim that a card cannot be *added to* by using it — that
 the authority a calculation exercises is a subset of what it holds. It is the
@@ -77,8 +84,16 @@ witness in the other direction:
 computation whose result relies on `d` — and for that card, `derives r d` is not
 derivable.
 
-*Status: **specified**. It is the witness that makes the claim above non-vacuous,
-and it is proved in the same tranche - a gate that cannot fail is not a gate.*
+*Status: **proved**, and in two halves, because the witness is only a witness if both
+are. `Azoth.Capability.the_gate_refuses` shows that under the witness grant there is **no**
+answer at all - not a wrong one - while `Azoth.Capability.the_gate_can_succeed` shows that
+with the one datum added the computation runs and its answer rests on it. The difference
+between the two grants is exactly that datum, so `derives` is inhabited in the granted case
+and the gate fails in the refused one. Without the second half the claim above could hold
+by `derives` being empty.*
+
+*`Azoth.Capability.witness_datum_is_outside` is gated alongside them: it is the fact that
+makes the refusal about *this* datum rather than about the grant being empty.*
 
 The witness is what makes the claim above worth proving, and it is not optional. A
 gate that cannot fail is not a gate — the same reason `specification.md` requires a bound to
@@ -128,6 +143,22 @@ and in `azoth-eos::databank`, and `python/tests/test_data_agreement.py` asks bot
 same question and compares the answers — one case per rule rather than per value.
 That test's empty-card case is the guard that makes the rest readable: a comparison
 that ignored its argument would pass it and fail every other one.
+
+**The grant carries a model's argument, not only a calculation's, and it carries a
+matrix.** A card's `coefficients` section is keyed by id and then by input name, and
+`azoth.keycard.coefficient_value` is the single place the question is asked: an explicit
+argument wins and the card is not consulted, otherwise the card supplies the value, and if
+neither does the error names the entry to add. A vector or a matrix comes back as
+**one quantity per entry** rather than one quantity wrapping the array, because pint needs
+NumPy for an array magnitude and a coefficient is not worth a dependency; `Card`'s
+`CoefficientValue` carries the same shape on the Rust side.
+
+That path had one consumer until this tranche and has two now: `eos.uniquac_activity_
+coefficients` takes its `aij` from it, and `eos.ge_uniquac_phase` takes the same matrix as
+a *phase* parameter. UNIQUAC is the case that makes the grant load-bearing rather than
+notional, because no upstream table carries a UNIQUAC interaction matrix - so `aij` can
+arrive only as an argument or from a card, and a card that supplied it is a card whose
+holder is accountable for it.
 
 ## Disclosure, which is the other half
 
