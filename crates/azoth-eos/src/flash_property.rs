@@ -7,10 +7,21 @@
 //! warnings are deduplicated - is the same for both, and subtle enough that writing it
 //! twice would invite the two copies to disagree.
 //!
-//! The iteration is upstream's: `thermodynamicoperations/flashops/PSFlash.java` and
-//! `PHflash.java`, NeqSim 3.20.0. Both are quasi-Newton in the temperature - entropy in
-//! `T`, enthalpy in `1/T` - damped by a factor that halves whenever the residual grows,
-//! and neither is fatal when a trial temperature cannot be evaluated.
+//! The iteration is upstream's `solveQ`: `thermodynamicoperations/flashops/PSFlash.java`
+//! and `PHflash.java`, NeqSim 3.20.0, both running it for `type == 0` - which is every
+//! default caller. It is a quasi-Newton in the temperature - entropy in `T`, enthalpy in
+//! `1/T` - damped by a factor that halves whenever the residual grows, and it is not
+//! fatal when a trial temperature cannot be evaluated.
+//!
+//! Upstream carries a second scheme behind `type != 0`, `SysNewtonRhapsonPHflash`, which
+//! solves the isofugacity residuals and the energy residual together in `(u, ln T)`. It
+//! is reachable - `ThrottlingValve` and `Compressor` pass `type = 1` - and it is **not**
+//! ported. Its Jacobian entry for the energy row is `dH/dT = Cp`, and `cp` is the
+//! phase-fraction-weighted heat capacity rather than the equilibrium `dH/dT` that
+//! [`slope`] below documents the difference between; across a phase boundary the two
+//! differ by the latent heat of the split moving with temperature, which is the larger
+//! term. Measured on methane/n-butane, it converges in three steps where this one does
+//! and diverges from a cold start where this one takes eighteen. Both specs record it.
 
 use azoth_core::spec::ModelAlgorithm;
 use azoth_core::units::{Pressure, ThermodynamicTemperature, kelvins, pascals};

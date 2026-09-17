@@ -2,11 +2,14 @@
 //!
 //! Spec: `specs/models/eos/ps_flash.toml`
 //!
-//! An outer bisection on temperature, for an **isentropic** unit operation - a
+//! A damped quasi-Newton on temperature, for an **isentropic** unit operation - a
 //! compressor, an expander, a turbine or a nozzle, assumed ideal - whose outlet
-//! temperature is not known because entropy is conserved and temperature is not. The
-//! bracket, the loop, the phase branch and the warning handling live in
-//! [`crate::flash_property`], shared with `eos.ph_flash`.
+//! temperature is not known because entropy is conserved and temperature is not.
+//! Upstream's `PSFlash.solveQ`, which is the scheme NeqSim runs by default - see the
+//! spec's assumption on the second-order alternative it carries.
+//!
+//! The damping, the step clamp, the trial-temperature recovery and the phase branch live
+//! in [`crate::flash_property`], shared with `eos.ph_flash`.
 //!
 //! Each phase's entropy is taken at *that phase's own composition*, so the weighted sum
 //! carries the entropy of mixing; summing the phases at the feed composition instead
@@ -44,10 +47,9 @@ pub fn entropy_at(
 /// # Errors
 /// * [`azoth_core::AzothError::OutOfRange`] if `p` is not positive, or a range check on the answer
 ///   fails.
-/// * [`azoth_core::AzothError::InvalidInput`] if the spec declares no bracket, which would be a
-///   generator bug rather than a caller's.
-/// * [`azoth_core::AzothError::SolverNotConverged`] if no temperature on the bracket covers the
-///   requested entropy, or if the bisection reaches its cap.
+/// * [`azoth_core::AzothError::InvalidInput`] if the spec declares no starting temperature,
+///   which would be a generator bug rather than a caller's.
+/// * [`azoth_core::AzothError::SolverNotConverged`] if the iteration reaches its cap.
 ///
 /// # Example
 /// ```

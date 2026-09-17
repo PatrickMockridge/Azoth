@@ -2,14 +2,15 @@
 //!
 //! Spec: `specs/models/eos/ph_flash.toml`
 //!
-//! An outer bisection on temperature, over the enthalpy assembled from two things this
-//! crate already has: the phase split at a trial temperature, from [`crate::pt_flash`],
-//! and each phase's enthalpy, from [`crate::molar_enthalpy_entropy`]. The enthalpy rises
-//! monotonically with temperature at a fixed pressure, which is what makes the bisection
-//! well posed.
+//! A damped quasi-Newton on temperature, in `1/T`, over the enthalpy assembled from two
+//! things this crate already has: the phase split at a trial temperature, from
+//! [`crate::pt_flash`], and each phase's enthalpy, from
+//! [`crate::molar_enthalpy_entropy`]. Upstream's `PHflash.solveQ`, which is the scheme
+//! NeqSim runs by default - see the spec's assumption on the second-order alternative it
+//! carries.
 //!
-//! The bracket, the loop and the phase branch live in [`crate::flash_property`], shared
-//! with `eos.ps_flash`.
+//! The damping, the step clamp, the trial-temperature recovery and the phase branch live
+//! in [`crate::flash_property`], shared with `eos.ps_flash`.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, kelvins};
 use azoth_core::{Result, apply_checks};
@@ -48,10 +49,9 @@ pub fn enthalpy_at(
 /// # Errors
 /// * [`azoth_core::AzothError::OutOfRange`] if `p` is not positive, or a range check on the answer
 ///   fails.
-/// * [`azoth_core::AzothError::InvalidInput`] if the spec declares no bracket, which would be a
-///   generator bug rather than a caller's.
-/// * [`azoth_core::AzothError::SolverNotConverged`] if no temperature on the bracket covers the
-///   requested enthalpy, or if the bisection reaches its cap.
+/// * [`azoth_core::AzothError::InvalidInput`] if the spec declares no starting temperature,
+///   which would be a generator bug rather than a caller's.
+/// * [`azoth_core::AzothError::SolverNotConverged`] if the iteration reaches its cap.
 ///
 /// # Example
 /// ```

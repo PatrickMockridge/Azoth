@@ -79,6 +79,7 @@ not an equation, and both implementations read it from here.
 - the flash at each trial temperature is converged, not exact: the entropy inverted is that of a converged approximation.
 - no check that the feed is stable: the model asks where the energy balance is satisfied, not whether the state found is the equilibrium one.
 - **the entropy is a difference from a supplied datum.** It is not an absolute quantity and is not comparable with a value computed from a different reference state.
+- NeqSim carries a second S-flash scheme, `SysNewtonRhapsonPHflash` with its entropy residual, which `QfuncFlash` selects. It is not ported: its Jacobian sets `dS/dT = Cp/T`, which this library measures to be wrong across a phase boundary, and it converges no faster where this scheme is fast.
 
 ## Cases
 
