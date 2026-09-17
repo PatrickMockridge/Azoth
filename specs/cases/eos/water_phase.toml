@@ -1,0 +1,57 @@
+model = "eos.water_phase"
+[[cases]]
+id = "subcooled_liquid_1_mpa"
+tolerance = 1e-09
+[cases.inputs]
+T = 300.0
+P = 1000000.0
+[cases.expected]
+z_factor = 0.007244437998302719
+u = 2026.525392109388
+h = 2044.595599751971
+s = 7.077282723476562
+cv = 74.36217680601320
+cp = 75.27815042731845
+g = -78.58921729099703
+[[cases]]
+id = "subcooled_liquid_5_mpa"
+tolerance = 1e-09
+[cases.inputs]
+T = 500.0
+P = 5000000.0
+[cases.expected]
+z_factor = 0.02599492030038509
+u = 17474.61863648531
+h = 17582.68628037763
+s = 46.41646185365476
+cv = 58.00635694412464
+cp = 83.56244307544678
+g = -5625.544646449750
+[[cases]]
+id = "superheated_vapour_0_1_mpa"
+tolerance = 1e-09
+[cases.inputs]
+T = 400.0
+P = 100000.0
+[cases.expected]
+z_factor = 0.9892213858361777
+u = 45898.92126131650
+h = 49188.88170650791
+s = 135.1578527432070
+cv = 27.17571680600745
+cp = 36.17575750369828
+g = -4874.259390774879
+[[cases]]
+id = "superheated_vapour_10_mpa"
+tolerance = 1e-09
+[cases.inputs]
+T = 600.0
+P = 10000000.0
+[cases.expected]
+z_factor = 0.7255997212984295
+u = 47180.15827766464
+h = 50799.96636556177
+s = 104.0450172030427
+cv = 47.30749121738625
+cp = 92.61110351342010
+g = -11627.04395626384

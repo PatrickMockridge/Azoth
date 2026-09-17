@@ -31,6 +31,7 @@
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
 //!   - specs/models/eos/viscosity.toml
 //!   - specs/models/eos/vu_flash.toml
+//!   - specs/models/eos/water_phase.toml
 //!   - specs/models/eos/wilke_viscosity.toml
 //!   - specs/models/eos/wilson_activity_coefficients.toml
 //!
@@ -2788,6 +2789,143 @@ pub static VU_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: VU_FLASH_CASES,
 };
 
+static WATER_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static WATER_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "subcooled_liquid_1_mpa",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0), ("P", 1000000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.007244437998302719),
+            ("u", 2026.525392109388),
+            ("h", 2044.595599751971),
+            ("s", 7.077282723476562),
+            ("cv", 74.3621768060132),
+            ("cp", 75.27815042731845),
+            ("g", -78.58921729099703),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "subcooled_liquid_5_mpa",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 500.0), ("P", 5000000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.02599492030038509),
+            ("u", 17474.61863648531),
+            ("h", 17582.68628037763),
+            ("s", 46.41646185365476),
+            ("cv", 58.00635694412464),
+            ("cp", 83.56244307544678),
+            ("g", -5625.54464644975),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "superheated_vapour_0_1_mpa",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 400.0), ("P", 100000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9892213858361777),
+            ("u", 45898.9212613165),
+            ("h", 49188.88170650791),
+            ("s", 135.157852743207),
+            ("cv", 27.17571680600745),
+            ("cp", 36.17575750369828),
+            ("g", -4874.259390774879),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "superheated_vapour_10_mpa",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 600.0), ("P", 10000000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.7255997212984295),
+            ("u", 47180.15827766464),
+            ("h", 50799.96636556177),
+            ("s", 104.0450172030427),
+            ("cv", 47.30749121738625),
+            ("cp", 92.6111035134201),
+            ("g", -11627.04395626384),
+        ],
+        expected_vectors: &[],
+    },
+];
+
+/// Registry entry for `eos.water_phase`.
+pub static WATER_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.water_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: WATER_PHASE_CHECKS,
+    cases: WATER_PHASE_CASES,
+};
+
 static WILKE_VISCOSITY_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -2981,6 +3119,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,
     &VISCOSITY_SPEC,
     &VU_FLASH_SPEC,
+    &WATER_PHASE_SPEC,
     &WILKE_VISCOSITY_SPEC,
     &WILSON_ACTIVITY_COEFFICIENTS_SPEC,
 ];

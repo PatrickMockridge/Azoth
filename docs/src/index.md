@@ -152,6 +152,7 @@ Four sections, and the difference between them is the point:
 - [`eos.uniquac_activity_coefficients`](./eos/uniquac_activity_coefficients.md) — Activity coefficients from the UNIQUAC model
 - [`eos.viscosity`](./eos/viscosity.md) — Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation
 - [`eos.vu_flash`](./eos/vu_flash.md) — Volume-internal-energy flash
+- [`eos.water_phase`](./eos/water_phase.md) — Water reference phase state
 - [`eos.wilke_viscosity`](./eos/wilke_viscosity.md) — Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities
 - [`eos.wilson_activity_coefficients`](./eos/wilson_activity_coefficients.md) — Activity coefficients from the paraffin-wax Wilson model
 

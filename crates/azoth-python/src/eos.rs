@@ -36,8 +36,8 @@ use crate::results::{
     PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
     PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
     PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
-    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWilkeChangDiffusivityResult,
-    PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
+    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWaterPhaseResult,
+    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -2021,6 +2021,16 @@ pub fn hydrogen_phase(
 ) -> PyResult<PyHydrogenPhaseResult> {
     azoth_eos::hydrogen_phase(kelvins(T), pascals(P), hydrogen_type)
         .map(|r| PyHydrogenPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The IAPWS-IF97 water phase state, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (T, P))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn water_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyWaterPhaseResult> {
+    azoth_eos::water_phase(kelvins(T), pascals(P))
+        .map(|r| PyWaterPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

@@ -1,0 +1,61 @@
+id = "eos.water_phase"
+name = "Water reference phase state"
+kind = "direct"
+assumptions = [
+    "the fluid is pure water; the equation of state is the IAPWS-IF97 industrial formulation of NeqSim's `thermo.util.steam.Iapws_if97`, a Gibbs-energy form rather than the single Helmholtz form of the other reference equations.",
+    "the region is selected by the Region 4 saturation curve: subcooled liquid (Region 1) at or below `Tsat(p)` and superheated vapour (Region 2) above it; Regions 3 (near-critical) and 5 (high-temperature) are not implemented in NeqSim and are not here.",
+    "IF97 is mass-based: `R = 0.461526` kJ/(kg.K), pressure in MPa, and the properties specific; the model converts to the molar SI convention with the molar mass `M = 0.01801528` kg/mol.",
+    "the isochoric heat capacity follows the exact identity `cv = cp + R (g_pi - tau g_pitau)^2 / g_pipi` in the reduced Gibbs variables, since NeqSim's class does not expose it.",
+]
+references = [
+    "Wagner, W.; Kretzschmar, H.-J. (2008). \"International Steam Tables: Properties of Water and Steam Based on the Industrial Formulation IAPWS-IF97.\" Springer, 2nd edition.",
+    "IAPWS (2007). \"Revised Release on the IAPWS Industrial Formulation 1997 for the Thermodynamic Properties of Water and Steam.\" International Association for the Properties of Water and Steam, Lucerne.",
+    "NeqSim 3.20.0, `thermo/util/steam/Iapws_if97.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Wagner, W.; Kretzschmar, H.-J. (2008); IAPWS (2007)"
+edition = "The IAPWS-IF97 Gibbs formulation: Regions 1 and 2 as dimensionless functions of `pi = p/p*` and `tau = T*/T`, selected by the Region 4 saturation curve, differentiated for the full property set and converted mass-to-molar."
+[inputs]
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor `Z = P v/(R T)`"
+[outputs.u]
+unit = "J/mol"
+description = "the internal energy"
+[outputs.h]
+unit = "J/mol"
+description = "the enthalpy"
+[outputs.s]
+unit = "J/(mol*K)"
+description = "the entropy"
+[outputs.cv]
+unit = "J/(mol*K)"
+description = "the isochoric heat capacity"
+[outputs.cp]
+unit = "J/(mol*K)"
+description = "the isobaric heat capacity"
+[outputs.g]
+unit = "J/mol"
+description = "the Gibbs energy, `h - T s`"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.water_phase"
+rust = "azoth_eos::water_phase"

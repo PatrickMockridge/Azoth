@@ -94,6 +94,7 @@
   - [Activity coefficients from the UNIQUAC model](./eos/uniquac_activity_coefficients.md)
   - [Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation](./eos/viscosity.md)
   - [Volume-internal-energy flash](./eos/vu_flash.md)
+  - [Water reference phase state](./eos/water_phase.md)
   - [Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities](./eos/wilke_viscosity.md)
   - [Activity coefficients from the paraffin-wax Wilson model](./eos/wilson_activity_coefficients.md)
 - [Hydraulics](./hydraulics/index.md)

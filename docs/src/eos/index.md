@@ -92,5 +92,6 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.uniquac_activity_coefficients`](./uniquac_activity_coefficients.md) | `direct composition` | Abrams, D. S.; Prausnitz, J. M. (1975) |
 | [`eos.viscosity`](./viscosity.md) | `direct composition` | NeqSim 3.20.0 `PFCTViscosityMethodHeavyOil` |
 | [`eos.vu_flash`](./vu_flash.md) | `vu_flash_newton_2x2` | Standard thermodynamics, as in Michelsen & Mollerup |
+| [`eos.water_phase`](./water_phase.md) | `direct composition` | Wagner, W.; Kretzschmar, H.-J. (2008); IAPWS (2007) |
 | [`eos.wilke_viscosity`](./wilke_viscosity.md) | `direct composition` | Wilke, C. R. (1950); Chung et al. (1988) |
 | [`eos.wilson_activity_coefficients`](./wilson_activity_coefficients.md) | `direct composition` | Coutinho et al. (1995) |

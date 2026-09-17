@@ -130,6 +130,7 @@ pub mod vdw1f_mix_binary;
 pub mod vega;
 pub mod viscosity;
 pub mod vu_flash;
+pub mod water_phase;
 pub mod wilke_chang_diffusivity;
 pub mod wilke_viscosity;
 pub mod wilson_activity_coefficients;
@@ -210,8 +211,8 @@ pub use results::{
     ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,
     TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
     UmrprAlphaResult, UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult,
-    Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult, WaterPhaseResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -240,6 +241,7 @@ pub use uniquac_activity_coefficients::uniquac_activity_coefficients;
 pub use vdw1f_mix_binary::vdw1f_mix_binary;
 pub use viscosity::viscosity;
 pub use vu_flash::vu_flash;
+pub use water_phase::water_phase;
 pub use wilke_chang_diffusivity::wilke_chang_diffusivity;
 pub use wilke_viscosity::wilke_viscosity;
 pub use wilson_activity_coefficients::wilson_activity_coefficients;

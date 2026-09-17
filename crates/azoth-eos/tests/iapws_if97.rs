@@ -110,3 +110,21 @@ fn properties_satisfy_the_thermodynamic_identities() {
         assert_close(props.cv, cv_fd, 1e-4);
     }
 }
+
+/// The model converts the mass-based property set to the molar phase state the spec's
+/// worked examples name.
+#[test]
+fn water_phase_model_matches_the_worked_example() {
+    let r = azoth_eos::water_phase(
+        azoth_core::units::kelvins(300.0),
+        azoth_core::units::pascals(1_000_000.0),
+    )
+    .unwrap();
+    assert_close(r.z_factor, 0.007_244_437_998_302_719, 1e-9);
+    assert_close(r.u.value, 2_026.525_392_109_388, 1e-9);
+    assert_close(r.h.value, 2_044.595_599_751_971, 1e-9);
+    assert_close(r.s.value, 7.077_282_723_476_562, 1e-9);
+    assert_close(r.cv.value, 74.362_176_806_013_20, 1e-9);
+    assert_close(r.cp.value, 75.278_150_427_318_45, 1e-9);
+    assert_close(r.g.value, -78.589_217_290_997_03, 1e-9);
+}

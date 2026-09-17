@@ -146,6 +146,7 @@ from azoth.core.result import (
     Vdw1fMixBinaryResult,
     ViscosityResult,
     VuFlashResult,
+    WaterPhaseResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
@@ -230,6 +231,7 @@ __all__ = [
     "uniquac_activity_coefficients",
     "vdw1f_mix_binary",
     "vu_flash",
+    "water_phase",
     "wilke_chang_diffusivity",
     "wilke_chang_phi",
     "wilke_viscosity",
@@ -258,6 +260,7 @@ _AMMONIA_PHASE = "eos.ammonia_phase"
 _CO2_PHASE = "eos.co2_phase"
 _HELIUM_PHASE = "eos.helium_phase"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
+_WATER_PHASE = "eos.water_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
@@ -1536,6 +1539,22 @@ def hydrogen_phase(T: Q, P: Q, hydrogen_type: str = "normal") -> HydrogenPhaseRe
     See :func:`azoth.eos.reference.hydrogen_phase`.
     """
     return resolve(_HYDROGEN_PHASE)(T=T, P=P, hydrogen_type=hydrogen_type)  # type: ignore[no-any-return]
+
+
+def water_phase(T: Q, P: Q) -> WaterPhaseResult:
+    """The IAPWS-IF97 water phase state at a temperature and pressure.
+
+    Pure water, so there is no composition and no density solve: IF97 is a Gibbs
+    formulation in ``(P, T)``, so the region (subcooled liquid or superheated vapour)
+    is selected by the saturation temperature and the property set follows from the
+    region's Gibbs derivatives.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.water_phase`.
+    """
+    return resolve(_WATER_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
 
 
 def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:

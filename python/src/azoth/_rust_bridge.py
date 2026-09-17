@@ -119,6 +119,7 @@ from azoth.core.result import (
     Vdw1fMixBinaryResult,
     ViscosityResult,
     VuFlashResult,
+    WaterPhaseResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
@@ -1846,6 +1847,22 @@ def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
     spec = _models_gen.model("eos.helium_phase")
     result = _core.helium_phase(input_to_si(spec, "T", T), input_to_si(spec, "P", P))
     return HeliumPhaseResult(
+        z_factor=result.z_factor,
+        u=from_si(result.u.magnitude_si, result.u.unit),
+        h=from_si(result.h.magnitude_si, result.h.unit),
+        s=from_si(result.s.magnitude_si, result.s.unit),
+        cv=from_si(result.cv.magnitude_si, result.cv.unit),
+        cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def water_phase(T: Q, P: Q) -> WaterPhaseResult:
+    """The IAPWS-IF97 water phase state, computed in Rust."""
+    spec = _models_gen.model("eos.water_phase")
+    result = _core.water_phase(input_to_si(spec, "T", T), input_to_si(spec, "P", P))
+    return WaterPhaseResult(
         z_factor=result.z_factor,
         u=from_si(result.u.magnitude_si, result.u.unit),
         h=from_si(result.h.magnitude_si, result.h.unit),

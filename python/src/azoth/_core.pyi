@@ -724,6 +724,17 @@ class VuFlashResult:
     warnings: list[Warning]
 
 @final
+class WaterPhaseResult:
+    z_factor: float
+    u: Qty
+    h: Qty
+    s: Qty
+    cv: Qty
+    cp: Qty
+    g: Qty
+    warnings: list[Warning]
+
+@final
 class WilkeChangDiffusivityResult:
     d: Qty
     warnings: list[Warning]
@@ -1325,6 +1336,7 @@ def vu_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> VuFlashResult: ...
+def water_phase(T: float, P: float) -> WaterPhaseResult: ...
 def wilke_chang_diffusivity(
     phi: float,
     M: float,
