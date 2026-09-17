@@ -37,9 +37,10 @@ use crate::results::{
     PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
     PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
     PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
-    PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult,
-    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWaterPhaseResult,
-    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
+    PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
+    PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
+    PyVuFlashResult, PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
+    PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -990,6 +991,38 @@ pub fn unifac_psrk_activity_coefficients(
     };
     azoth_eos::unifac_psrk_activity_coefficients(&params, T, &x)
         .map(|r| PyUnifacPsrkActivityCoefficientsResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The activity coefficients of a mixture, from UNIFAC with the UMR-PRU parameters.
+/// A *model* rather than a calculation: the resolved basis and the three interaction
+/// matrices of the chosen set cross flattened.
+#[pyfunction]
+#[pyo3(signature = (groups, group_r, group_q, aij, bij, cij, T, x))]
+#[pyo3(text_signature = "(groups, group_r, group_q, aij, bij, cij, T, x)")]
+#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn unifac_umrpru_activity_coefficients(
+    py: Python<'_>,
+    groups: Vec<f64>,
+    group_r: Vec<f64>,
+    group_q: Vec<f64>,
+    aij: Vec<f64>,
+    bij: Vec<f64>,
+    cij: Vec<f64>,
+    T: f64,
+    x: Vec<f64>,
+) -> PyResult<PyUnifacUmrpruActivityCoefficientsResult> {
+    let params = azoth_eos::databank::UnifacUmrpruParameters {
+        groups,
+        group_r,
+        group_q,
+        aij,
+        bij,
+        cij,
+    };
+    azoth_eos::unifac_umrpru_activity_coefficients(&params, T, &x)
+        .map(|r| PyUnifacUmrpruActivityCoefficientsResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

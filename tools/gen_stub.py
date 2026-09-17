@@ -355,7 +355,12 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
     if "ideal_gas" in taken:
         params += [f"{n}: list[float]" for n in ("cp_a", "cp_b", "cp_c", "cp_d", "cp_e")]
     for parameter, declaration in model["inputs"].items():
-        if parameter == "components":
+        # `components` is the declared input every model resolves; a *second* one the
+        # function does not take is one the boundary resolved beside it - UNIFAC-UMR-PRU's
+        # parameter set, which a `params` record carries rather than a signature. Asking
+        # the signature is what keeps the two rules from diverging: `python/tests/_helpers.py`
+        # skips exactly these when it builds its own call.
+        if parameter == "components" or parameter not in taken:
             continue
         params.append(render_parameter(parameter, declaration))
     if "hydrogen_type" in taken:

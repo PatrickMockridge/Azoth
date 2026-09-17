@@ -40,6 +40,19 @@ const UNIFAC_INTER_CSV: &str = include_str!("../../../data/components/UNIFACInte
 const UNIFAC_INTER_B_CSV: &str = include_str!("../../../data/components/UNIFACInterParamB.csv");
 const UNIFAC_INTER_C_CSV: &str = include_str!("../../../data/components/UNIFACInterParamC.csv");
 
+/// The compiled UNIFAC-UMR-PRU tables, generated from NeqSim's `UNIFACcompUMRPRU.csv`
+/// and the six `UNIFACInterParam{A,B,C}_UMR{,MC}.csv` files.
+const UNIFAC_COMP_UMRPRU_CSV: &str = include_str!("../../../data/components/UNIFACcompUMRPRU.csv");
+const UNIFAC_A_UMR_CSV: &str = include_str!("../../../data/components/UNIFACInterParamA_UMR.csv");
+const UNIFAC_A_UMRMC_CSV: &str =
+    include_str!("../../../data/components/UNIFACInterParamA_UMRMC.csv");
+const UNIFAC_B_UMR_CSV: &str = include_str!("../../../data/components/UNIFACInterParamB_UMR.csv");
+const UNIFAC_B_UMRMC_CSV: &str =
+    include_str!("../../../data/components/UNIFACInterParamB_UMRMC.csv");
+const UNIFAC_C_UMR_CSV: &str = include_str!("../../../data/components/UNIFACInterParamC_UMR.csv");
+const UNIFAC_C_UMRMC_CSV: &str =
+    include_str!("../../../data/components/UNIFACInterParamC_UMRMC.csv");
+
 /// The compiled MBWR-32 coefficient table, generated from NeqSim's `MBWR32param.csv`.
 const MBWR32_CSV: &str = include_str!("../../../data/components/mbwr32.csv");
 
@@ -57,6 +70,13 @@ pub const UNIFAC_GROUP_PATH: &str = "data/components/UNIFACGroupParam.csv";
 pub const UNIFAC_INTER_PATH: &str = "data/components/UNIFACInterParam.csv";
 pub const UNIFAC_INTER_B_PATH: &str = "data/components/UNIFACInterParamB.csv";
 pub const UNIFAC_INTER_C_PATH: &str = "data/components/UNIFACInterParamC.csv";
+pub const UNIFAC_COMP_UMRPRU_PATH: &str = "data/components/UNIFACcompUMRPRU.csv";
+pub const UNIFAC_A_UMR_PATH: &str = "data/components/UNIFACInterParamA_UMR.csv";
+pub const UNIFAC_A_UMRMC_PATH: &str = "data/components/UNIFACInterParamA_UMRMC.csv";
+pub const UNIFAC_B_UMR_PATH: &str = "data/components/UNIFACInterParamB_UMR.csv";
+pub const UNIFAC_B_UMRMC_PATH: &str = "data/components/UNIFACInterParamB_UMRMC.csv";
+pub const UNIFAC_C_UMR_PATH: &str = "data/components/UNIFACInterParamC_UMR.csv";
+pub const UNIFAC_C_UMRMC_PATH: &str = "data/components/UNIFACInterParamC_UMRMC.csv";
 pub const MBWR32_PATH: &str = "data/components/mbwr32.csv";
 
 /// The exact bytes this build embedded for the component table.
@@ -100,6 +120,24 @@ pub fn embedded_unifac_inter_b() -> &'static str {
 #[must_use]
 pub fn embedded_unifac_inter_c() -> &'static str {
     UNIFAC_INTER_C_CSV
+}
+
+/// The exact bytes this build embedded for each UNIFAC-UMR-PRU table.
+#[must_use]
+pub fn embedded_unifac_comp_umrpru() -> &'static str {
+    UNIFAC_COMP_UMRPRU_CSV
+}
+
+#[must_use]
+pub fn embedded_unifac_umrpru_matrix(set: UmrpruSet, term: UmrpruTerm) -> &'static str {
+    match (set, term) {
+        (UmrpruSet::Umr, UmrpruTerm::A) => UNIFAC_A_UMR_CSV,
+        (UmrpruSet::Umrmc, UmrpruTerm::A) => UNIFAC_A_UMRMC_CSV,
+        (UmrpruSet::Umr, UmrpruTerm::B) => UNIFAC_B_UMR_CSV,
+        (UmrpruSet::Umrmc, UmrpruTerm::B) => UNIFAC_B_UMRMC_CSV,
+        (UmrpruSet::Umr, UmrpruTerm::C) => UNIFAC_C_UMR_CSV,
+        (UmrpruSet::Umrmc, UmrpruTerm::C) => UNIFAC_C_UMRMC_CSV,
+    }
 }
 
 /// The exact bytes this build embedded for the MBWR-32 table.
@@ -770,6 +808,141 @@ pub struct UnifacParameters {
     pub aij: Vec<f64>,
 }
 
+/// Which of UNIFAC-UMR-PRU's two parameter sets to read.
+///
+/// NeqSim decides this from `getComponent(0).getAttractiveTermNumber()` - the
+/// `_umrmc` tables when it is 13, 19 or 22 - and that field does not exist in this
+/// library, so the choice arrives as a named input instead of being inferred from the
+/// mixture. It is a statement about which equation of state the caller is pairing the
+/// activity model with, which is a thing the caller knows and a component record does
+/// not.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UmrpruSet {
+    /// The original UMR tables.
+    Umr,
+    /// The tables the Mathias-Copeman UMR-PRU variants share.
+    Umrmc,
+}
+
+/// One of the three terms of UNIFAC-UMR-PRU's interaction,
+/// `a_mn(T) = a_mn + b_mn (T - 298.15) + c_mn (T - 298.15)^2`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UmrpruTerm {
+    /// The constant term.
+    A,
+    /// The linear term.
+    B,
+    /// The quadratic term.
+    C,
+}
+
+/// The resolved UNIFAC-UMR-PRU inputs for a mixture, each matrix flattened row-major.
+///
+/// The interaction is evaluated about 298.15 K rather than about zero, which is the
+/// one place this differs from [`UnifacPsrkParameters`] beyond the tables it reads.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UnifacUmrpruParameters {
+    /// Per-component group counts, `N x G` row-major.
+    pub groups: Vec<f64>,
+    /// The volume `R` of each group, length `G`.
+    pub group_r: Vec<f64>,
+    /// The surface area `Q` of each group, length `G`.
+    pub group_q: Vec<f64>,
+    /// The constant term of the interaction, `G x G` row-major, in Kelvin.
+    pub aij: Vec<f64>,
+    /// The linear term, `G x G` row-major, in Kelvin per Kelvin.
+    pub bij: Vec<f64>,
+    /// The quadratic term, `G x G` row-major, in Kelvin per Kelvin squared.
+    pub cij: Vec<f64>,
+}
+
+/// The UNIFAC-UMR-PRU inputs for a list of names, resolved from the vendored tables.
+///
+/// The group decomposition comes from `UNIFACcompUMRPRU.csv`, which carries 139
+/// subgroups rather than the 133 of the plain UNIFAC table, and the interaction from
+/// the `_umr` or `_umrmc` set `set` names. The group constants are the shared
+/// `UNIFACGroupParam.csv`: only the decomposition and the interaction differ.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if `names` is empty.
+/// * [`AzothError::PropertyUnavailable`] if a name has no UMR-PRU group assignment.
+pub fn unifac_umrpru_parameters(names: &[&str], set: UmrpruSet) -> Result<UnifacUmrpruParameters> {
+    let tables = umrpru_tables();
+    let basis = unifac_basis(names, &tables.group, &tables.members)?;
+    let g = basis.union.len();
+
+    let [a, b, c] = tables.matrices(set);
+    let mut aij = vec![0.0; g * g];
+    let mut bij = vec![0.0; g * g];
+    let mut cij = vec![0.0; g * g];
+    for (k, &s) in basis.union.iter().enumerate() {
+        let (_, _, main) = *tables.group.get(&s).expect("a subgroup with a member row");
+        for (m, &t) in basis.union.iter().enumerate() {
+            let (_, _, main_t) = *tables.group.get(&t).expect("a subgroup with a member row");
+            let key = (main, main_t);
+            aij[k * g + m] = a.get(&key).copied().unwrap_or(0.0);
+            bij[k * g + m] = b.get(&key).copied().unwrap_or(0.0);
+            cij[k * g + m] = c.get(&key).copied().unwrap_or(0.0);
+        }
+    }
+
+    Ok(UnifacUmrpruParameters {
+        groups: basis.groups,
+        group_r: basis.group_r,
+        group_q: basis.group_q,
+        aij,
+        bij,
+        cij,
+    })
+}
+
+/// The parsed UNIFAC-UMR-PRU tables.
+struct UmrpruTables {
+    /// Subgroup number -> `(R, Q, main group)`, from the shared group table.
+    group: HashMap<i64, (f64, f64, i64)>,
+    /// Lower-cased name -> `[(subgroup, count)]`, from `UNIFACcompUMRPRU.csv`.
+    members: HashMap<String, Vec<(i64, i64)>>,
+    /// The six interaction tables, `[a, b, c]` for each of the two sets.
+    umr: [HashMap<(i64, i64), f64>; 3],
+    umrmc: [HashMap<(i64, i64), f64>; 3],
+}
+
+impl UmrpruTables {
+    /// The `[a, b, c]` matrices of one set.
+    fn matrices(&self, set: UmrpruSet) -> &[HashMap<(i64, i64), f64>; 3] {
+        match set {
+            UmrpruSet::Umr => &self.umr,
+            UmrpruSet::Umrmc => &self.umrmc,
+        }
+    }
+}
+
+fn umrpru_tables() -> &'static UmrpruTables {
+    static TABLES: OnceLock<UmrpruTables> = OnceLock::new();
+    TABLES.get_or_init(|| parse_umrpru().expect("the embedded UMR-PRU tables should parse"))
+}
+
+/// The UMR-PRU tables: the shared group constants, the 139-subgroup decomposition, and
+/// the six interaction matrices.
+fn parse_umrpru() -> Result<UmrpruTables> {
+    let group = parse_group_constants(UNIFAC_GROUP_CSV)?;
+    let members = parse_members(UNIFAC_COMP_UMRPRU_CSV, 140)?;
+    Ok(UmrpruTables {
+        group,
+        members,
+        umr: [
+            parse_interaction_table(UNIFAC_A_UMR_CSV)?,
+            parse_interaction_table(UNIFAC_B_UMR_CSV)?,
+            parse_interaction_table(UNIFAC_C_UMR_CSV)?,
+        ],
+        umrmc: [
+            parse_interaction_table(UNIFAC_A_UMRMC_CSV)?,
+            parse_interaction_table(UNIFAC_B_UMRMC_CSV)?,
+            parse_interaction_table(UNIFAC_C_UMRMC_CSV)?,
+        ],
+    })
+}
+
 /// The resolved UNIQUAC volume and surface parameters for a mixture.
 ///
 /// A caller-supplied record the way [`Component`] is, and carrying **no names** for the
@@ -893,61 +1066,13 @@ fn integer(record: &csv::StringRecord, index: usize, column: &str, row: usize) -
 }
 
 fn parse_unifac() -> Result<UnifacTables> {
-    let mut group = HashMap::new();
-    {
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(UNIFAC_GROUP_CSV.as_bytes());
-        let header = reader.headers().map_err(csv_failure)?.clone();
-        let mut idx = HashMap::new();
-        for name in ["secondary", "volumer", "surfareaq", "main"] {
-            idx.insert(name, column(&header, name)?);
-        }
-        for (offset, record) in reader.records().enumerate() {
-            let record = record.map_err(csv_failure)?;
-            let row = offset + 2;
-            group.insert(
-                integer(&record, idx["secondary"], "secondary", row)?,
-                (
-                    number(&record, idx["volumer"], "volumer", row)?,
-                    number(&record, idx["surfareaq"], "surfareaq", row)?,
-                    integer(&record, idx["main"], "main", row)?,
-                ),
-            );
-        }
-    }
+    let group = parse_group_constants(UNIFAC_GROUP_CSV)?;
 
     let aij = parse_interaction_table(UNIFAC_INTER_CSV)?;
     let bij = parse_interaction_table(UNIFAC_INTER_B_CSV)?;
     let cij = parse_interaction_table(UNIFAC_INTER_C_CSV)?;
 
-    let mut members = HashMap::new();
-    {
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(UNIFAC_COMP_CSV.as_bytes());
-        let header = reader.headers().map_err(csv_failure)?.clone();
-        let name_idx = column(&header, "name")?;
-        let mut sub_idx = HashMap::new();
-        for s in 1..=140 {
-            sub_idx.insert(s, column(&header, &format!("sub{s}"))?);
-        }
-        for (offset, record) in reader.records().enumerate() {
-            let record = record.map_err(csv_failure)?;
-            let name = record.get(name_idx).unwrap_or("").trim().to_lowercase();
-            if name.is_empty() {
-                continue;
-            }
-            let mut subs = Vec::new();
-            for (s, &idx) in &sub_idx {
-                let count = integer(&record, idx, &format!("sub{s}"), offset + 2)?;
-                if count > 0 {
-                    subs.push((*s, count));
-                }
-            }
-            members.insert(name, subs);
-        }
-    }
+    let members = parse_members(UNIFAC_COMP_CSV, 140)?;
 
     Ok(UnifacTables {
         group,
@@ -956,6 +1081,70 @@ fn parse_unifac() -> Result<UnifacTables> {
         cij,
         members,
     })
+}
+
+/// One group-constant table: subgroup number -> `(R, Q, main group)`.
+fn parse_group_constants(text: &str) -> Result<HashMap<i64, (f64, f64, i64)>> {
+    let mut out = HashMap::new();
+    let mut reader = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(text.as_bytes());
+    let header = reader.headers().map_err(csv_failure)?.clone();
+    let mut idx = HashMap::new();
+    for name in ["secondary", "volumer", "surfareaq", "main"] {
+        idx.insert(name, column(&header, name)?);
+    }
+    for (offset, record) in reader.records().enumerate() {
+        let record = record.map_err(csv_failure)?;
+        let row = offset + 2;
+        out.insert(
+            integer(&record, idx["secondary"], "secondary", row)?,
+            (
+                number(&record, idx["volumer"], "volumer", row)?,
+                number(&record, idx["surfareaq"], "surfareaq", row)?,
+                integer(&record, idx["main"], "main", row)?,
+            ),
+        );
+    }
+    Ok(out)
+}
+
+/// One per-component group decomposition, keyed by lower-cased name.
+///
+/// `subgroups` is how many `subN` columns to read: 140 for both of NeqSim's
+/// decompositions, whose rows carry `sub1`..`sub140` whether or not the model's own
+/// subclass loop stops earlier.
+fn parse_members(text: &str, subgroups: usize) -> Result<HashMap<String, Vec<(i64, i64)>>> {
+    let mut out = HashMap::new();
+    let mut reader = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(text.as_bytes());
+    let header = reader.headers().map_err(csv_failure)?.clone();
+    let name_idx = column(&header, "name")?;
+    let mut sub_idx: HashMap<i64, usize> = HashMap::new();
+    for s in 1..=subgroups {
+        let key = i64::try_from(s).map_err(|_| AzothError::InvalidInput {
+            field: "databank".to_string(),
+            reason: format!("`{s}` subgroups is more than the decomposition can number"),
+        })?;
+        sub_idx.insert(key, column(&header, &format!("sub{s}"))?);
+    }
+    for (offset, record) in reader.records().enumerate() {
+        let record = record.map_err(csv_failure)?;
+        let name = record.get(name_idx).unwrap_or("").trim().to_lowercase();
+        if name.is_empty() {
+            continue;
+        }
+        let mut subs = Vec::new();
+        for (s, &idx) in &sub_idx {
+            let count = integer(&record, idx, &format!("sub{s}"), offset + 2)?;
+            if count > 0 {
+                subs.push((*s, count));
+            }
+        }
+        out.insert(name, subs);
+    }
+    Ok(out)
 }
 
 /// One main-group interaction table, keyed by `(main group, main group)`.
@@ -1000,7 +1189,7 @@ fn parse_interaction_table(text: &str) -> Result<HashMap<(i64, i64), f64>> {
 /// * [`AzothError::PropertyUnavailable`] if a name has no UNIFAC group assignment.
 pub fn unifac_parameters(names: &[&str]) -> Result<UnifacParameters> {
     let tables = unifac_tables();
-    let basis = unifac_basis(names, tables)?;
+    let basis = unifac_basis(names, &tables.group, &tables.members)?;
     let g = basis.union.len();
 
     let mut aij = vec![0.0; g * g];
@@ -1052,7 +1241,7 @@ pub struct UnifacPsrkParameters {
 /// * [`AzothError::PropertyUnavailable`] if a name has no UNIFAC group assignment.
 pub fn unifac_psrk_parameters(names: &[&str]) -> Result<UnifacPsrkParameters> {
     let tables = unifac_tables();
-    let basis = unifac_basis(names, tables)?;
+    let basis = unifac_basis(names, &tables.group, &tables.members)?;
     let g = basis.union.len();
 
     let mut aij = vec![0.0; g * g];
@@ -1096,7 +1285,11 @@ pub(crate) struct UnifacBasis {
     pub union: Vec<i64>,
 }
 
-fn unifac_basis(names: &[&str], tables: &UnifacTables) -> Result<UnifacBasis> {
+fn unifac_basis(
+    names: &[&str],
+    group: &HashMap<i64, (f64, f64, i64)>,
+    members: &HashMap<String, Vec<(i64, i64)>>,
+) -> Result<UnifacBasis> {
     let n = names.len();
     if n == 0 {
         return Err(AzothError::invalid_input(
@@ -1108,7 +1301,7 @@ fn unifac_basis(names: &[&str], tables: &UnifacTables) -> Result<UnifacBasis> {
     let mut resolved: Vec<&Vec<(i64, i64)>> = Vec::with_capacity(n);
     for name in names {
         let key = name.trim().to_lowercase();
-        let subs = tables.members.get(&key).ok_or_else(|| {
+        let subs = members.get(&key).ok_or_else(|| {
             AzothError::property_unavailable(
                 key,
                 "UNIFAC group assignment".to_string(),
@@ -1130,7 +1323,7 @@ fn unifac_basis(names: &[&str], tables: &UnifacTables) -> Result<UnifacBasis> {
     let mut group_r = vec![0.0; g];
     let mut group_q = vec![0.0; g];
     for (k, &s) in union.iter().enumerate() {
-        let (r, q, _) = *tables.group.get(&s).expect("a subgroup with a member row");
+        let (r, q, _) = *group.get(&s).expect("a subgroup with a member row");
         group_r[k] = r;
         group_q[k] = q;
     }

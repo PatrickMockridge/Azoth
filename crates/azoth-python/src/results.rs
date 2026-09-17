@@ -37,10 +37,10 @@ use azoth_eos::results::{
     ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
     TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
     TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UnifacPsrkActivityCoefficientsResult, UniquacActivityCoefficientsResult,
-    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
-    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    ViscosityResult, VuFlashResult, WaterPhaseResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -2123,6 +2123,46 @@ impl PyUnifacActivityCoefficientsResult {
 
 impl From<&UnifacActivityCoefficientsResult> for PyUnifacActivityCoefficientsResult {
     fn from(r: &UnifacActivityCoefficientsResult) -> Self {
+        Self {
+            ln_gamma: r.ln_gamma.clone(),
+            gamma: r.gamma.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.unifac_umrpru_activity_coefficients`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "UnifacUmrpruActivityCoefficientsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyUnifacUmrpruActivityCoefficientsResult {
+    /// The natural logarithm of each activity coefficient.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// The activity coefficient of each component.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyUnifacUmrpruActivityCoefficientsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "UnifacUmrpruActivityCoefficientsResult(ln_gamma={:?}, gamma={:?})",
+            self.ln_gamma, self.gamma
+        )
+    }
+}
+
+impl From<&UnifacUmrpruActivityCoefficientsResult> for PyUnifacUmrpruActivityCoefficientsResult {
+    fn from(r: &UnifacUmrpruActivityCoefficientsResult) -> Self {
         Self {
             ln_gamma: r.ln_gamma.clone(),
             gamma: r.gamma.clone(),
@@ -4837,6 +4877,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         }
         UniquacActivityCoefficientsResult::CALC_ID => {
             UniquacActivityCoefficientsResult::FIELDS.to_vec()
+        }
+        UnifacUmrpruActivityCoefficientsResult::CALC_ID => {
+            UnifacUmrpruActivityCoefficientsResult::FIELDS.to_vec()
         }
         UnifacPsrkActivityCoefficientsResult::CALC_ID => {
             UnifacPsrkActivityCoefficientsResult::FIELDS.to_vec()

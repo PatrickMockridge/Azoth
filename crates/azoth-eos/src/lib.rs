@@ -137,6 +137,7 @@ pub mod tyn_calus_diffusivity;
 pub mod umrpr_alpha;
 pub mod unifac_activity_coefficients;
 pub mod unifac_psrk_activity_coefficients;
+pub mod unifac_umrpru_activity_coefficients;
 pub mod uniquac_activity_coefficients;
 pub mod van_laar_acid_activity_coefficients;
 pub mod vdw1f_mix_binary;
@@ -229,9 +230,10 @@ pub use results::{
     ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,
     TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
     UmrprAlphaResult, UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WaterPhaseResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
+    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -257,6 +259,7 @@ pub use tyn_calus_diffusivity::tyn_calus_diffusivity;
 pub use umrpr_alpha::umrpr_alpha;
 pub use unifac_activity_coefficients::unifac_activity_coefficients;
 pub use unifac_psrk_activity_coefficients::unifac_psrk_activity_coefficients;
+pub use unifac_umrpru_activity_coefficients::unifac_umrpru_activity_coefficients;
 pub use uniquac_activity_coefficients::uniquac_activity_coefficients;
 pub use van_laar_acid_activity_coefficients::van_laar_acid_activity_coefficients;
 pub use vdw1f_mix_binary::vdw1f_mix_binary;

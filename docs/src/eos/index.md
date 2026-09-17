@@ -94,6 +94,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.tv_flash`](./tv_flash.md) | `tv_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.unifac_activity_coefficients`](./unifac_activity_coefficients.md) | `direct composition` | Fredenslund et al. (1975); Hansen et al. (1991) |
 | [`eos.unifac_psrk_activity_coefficients`](./unifac_psrk_activity_coefficients.md) | `direct composition` | Holderbaum, T.; Gmehling, J. (1991) |
+| [`eos.unifac_umrpru_activity_coefficients`](./unifac_umrpru_activity_coefficients.md) | `direct composition` | Voutsas, E.; Magoulas, K.; Tassios, D. (2004) |
 | [`eos.uniquac_activity_coefficients`](./uniquac_activity_coefficients.md) | `direct composition` | Abrams, D. S.; Prausnitz, J. M. (1975) |
 | [`eos.van_laar_acid_activity_coefficients`](./van_laar_acid_activity_coefficients.md) | `direct composition` | Taleb, D.; Ponche, J. L.; Mirabel, P. (1996) |
 | [`eos.viscosity`](./viscosity.md) | `direct composition` | NeqSim 3.20.0 `PFCTViscosityMethodHeavyOil` |

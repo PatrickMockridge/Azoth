@@ -63,6 +63,25 @@ VENDORED_FILES = (
     ("neqsim/UNIFACInterParam.csv", "UNIFACInterParam.csv", "UNIFACInterParam.csv"),
     ("neqsim/UNIFACInterParamB.csv", "UNIFACInterParamB.csv", "UNIFACInterParamB.csv"),
     ("neqsim/UNIFACInterParamC.csv", "UNIFACInterParamC.csv", "UNIFACInterParamC.csv"),
+    ("neqsim/UNIFACcompUMRPRU.csv", "UNIFACcompUMRPRU.csv", "UNIFACcompUMRPRU.csv"),
+    ("neqsim/UNIFACInterParamA_UMR.csv", "UNIFACInterParamA_UMR.csv", "UNIFACInterParamA_UMR.csv"),
+    (
+        "neqsim/UNIFACInterParamA_UMRMC.csv",
+        "UNIFACInterParamA_UMRMC.csv",
+        "UNIFACInterParamA_UMRMC.csv",
+    ),
+    ("neqsim/UNIFACInterParamB_UMR.csv", "UNIFACInterParamB_UMR.csv", "UNIFACInterParamB_UMR.csv"),
+    (
+        "neqsim/UNIFACInterParamB_UMRMC.csv",
+        "UNIFACInterParamB_UMRMC.csv",
+        "UNIFACInterParamB_UMRMC.csv",
+    ),
+    ("neqsim/UNIFACInterParamC_UMR.csv", "UNIFACInterParamC_UMR.csv", "UNIFACInterParamC_UMR.csv"),
+    (
+        "neqsim/UNIFACInterParamC_UMRMC.csv",
+        "UNIFACInterParamC_UMRMC.csv",
+        "UNIFACInterParamC_UMRMC.csv",
+    ),
     ("neqsim/MBWR32param.csv", "MBWR32param.csv", "mbwr32.csv"),
 )
 

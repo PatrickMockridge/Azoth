@@ -1,0 +1,37 @@
+model = "eos.unifac_umrpru_activity_coefficients"
+[[cases]]
+id = "methanol_water_umr_at_the_reference_temperature"
+tolerance = 1e-09
+source = "Standard UNIFAC (Hansen et al. 1991) for methanol/water 0.5/0.5 at 298.15 K - the same case `eos.unifac_activity_coefficients` carries, and here the same numbers for a stated reason: at 298.15 K the offset in `a + b(T - 298.15) + c(T - 298.15)^2` vanishes, and the UMR `a` matrix's methanol/water pair happens to equal the plain UNIFAC one. Both halves of that are asserted by the model's tests rather than assumed here, so this is an external check of a coincidence the tables actually have."
+[cases.inputs]
+components = ["methanol", "water"]
+parameters = "umr"
+T = 298.15
+x = [0.5, 0.5]
+[cases.expected]
+ln_gamma = [0.109465434560284, 0.18285472222380844]
+gamma = [1.1156815062468024, 1.200639969105366]
+[[cases]]
+id = "methanol_water_umrmc_at_the_reference_temperature"
+tolerance = 1e-09
+source = "derived from NeqSim's `UNIFACInterParamA_UMRMC` table through the same model, at the same state as the case above. The two sets are a different parameterisation - their `a` matrices differ in 370 of 4 898 cells - so the answer moving here is the whole point of the parameter set being an input rather than an inference."
+[cases.inputs]
+components = ["methanol", "water"]
+parameters = "umrmc"
+T = 298.15
+x = [0.5, 0.5]
+[cases.expected]
+ln_gamma = [0.10256197762437225, 0.14055133001852516]
+gamma = [1.1080059713596933, 1.1509081541855593]
+[[cases]]
+id = "water_methane_umr_at_350_k"
+tolerance = 1e-09
+source = "derived from NeqSim's `UNIFACInterParam{A,B,C}_UMR` tables through `a_mn(T) = a_mn + b_mn (T - 298.15) + c_mn (T - 298.15)^2`. There is no differential oracle - NeqSim reaches `PhaseGEUnifacUMRPRU` only through a Mathias-Copeman cubic, which forms no GE phase - so this value is this library's own output at a pair with a non-zero offset, recorded so the offset cannot change unnoticed."
+[cases.inputs]
+components = ["water", "methane"]
+parameters = "umr"
+T = 350.0
+x = [0.5, 0.5]
+[cases.expected]
+ln_gamma = [-0.12328777284280873, -1.0201898437909107]
+gamma = [0.8840092321036971, 0.36052648996028214]

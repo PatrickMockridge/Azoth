@@ -147,6 +147,7 @@ from azoth.core.result import (
     UmrprAlphaResult,
     UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
@@ -163,6 +164,7 @@ from azoth.eos.components import (
     NrtlParameters,
     UnifacParameters,
     UnifacPsrkParameters,
+    UnifacUmrpruParameters,
     UniquacParameters,
     VanLaarAcidParameters,
     bwrs_coefficients,
@@ -244,6 +246,7 @@ __all__ = [
     "tyn_calus_diffusivity",
     "unifac_activity_coefficients",
     "unifac_psrk_activity_coefficients",
+    "unifac_umrpru_activity_coefficients",
     "uniquac_activity_coefficients",
     "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
@@ -322,6 +325,7 @@ _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _UMRPR_ALPHA = "eos.umrpr_alpha"
 _UNIFAC_ACTIVITY_COEFFICIENTS = "eos.unifac_activity_coefficients"
 _UNIFAC_PSRK_ACTIVITY_COEFFICIENTS = "eos.unifac_psrk_activity_coefficients"
+_UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS = "eos.unifac_umrpru_activity_coefficients"
 _UNIQUAC_ACTIVITY_COEFFICIENTS = "eos.uniquac_activity_coefficients"
 _VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS = "eos.van_laar_acid_activity_coefficients"
 _WILSON_ACTIVITY_COEFFICIENTS = "eos.wilson_activity_coefficients"
@@ -1217,6 +1221,36 @@ def unifac_psrk_activity_coefficients(
     See :func:`azoth.eos.reference.unifac_psrk_activity_coefficients`.
     """
     return resolve(_UNIFAC_PSRK_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
+        params=params, T=T, x=x
+    )
+
+
+def unifac_umrpru_activity_coefficients(
+    params: UnifacUmrpruParameters,
+    T: Q,
+    x: Sequence[float],
+) -> UnifacUmrpruActivityCoefficientsResult:
+    """The activity coefficients of a mixture, from UNIFAC with UMR-PRU's parameters.
+
+    The group decomposition is NeqSim's ``UNIFACcompUMRPRU`` and the interaction is
+    ``a_mn(T) = a_mn + b_mn (T - 298.15) + c_mn (T - 298.15)**2``, NeqSim's
+    ``ComponentGEUnifacUMRPRU.calcaij``. The combinatorial term and the residual are
+    the same as :func:`unifac_activity_coefficients`.
+
+    ``params`` is the caller's: resolve it from the mixture's components with
+    :func:`azoth.eos.components.unifac_umrpru_parameters`, which is also where the
+    parameter *set* is chosen - ``"umr"`` or ``"umrmc"``. NeqSim picks between them
+    from a component field this library does not carry, so it is the caller's
+    statement rather than an inference.
+
+    Raises:
+        InvalidInputError: if the shapes disagree, a group count is negative, or ``x``
+            is not a composition.
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.unifac_umrpru_activity_coefficients`.
+    """
+    return resolve(_UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
         params=params, T=T, x=x
     )
 

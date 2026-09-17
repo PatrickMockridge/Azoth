@@ -458,10 +458,12 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
 
     declared = model["inputs"]
     kwargs: dict[str, Any] = {}
+    # Read once, and before the branch below, because the final pass asks the same
+    # question of every model whether or not it names a fluid.
+    takes = parameters_of(model)
 
     names = inputs.get(_MODEL_COMPONENTS_INPUT)
     if names is not None:
-        takes = parameters_of(model)
         if "mixture" in takes:
             fluid, ideal_gas = databank.mixture_of(list(names))
             kwargs["mixture"] = fluid
@@ -477,7 +479,7 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             # NRTL's `alpha`/`Dij` and UNIFAC's group tables are not the critical
             # constants a `Mixture` carries, so there is nothing there to hold them and
             # the names resolve to the model's own record instead.
-            kwargs["params"] = parameter_set(model, names)
+            kwargs["params"] = parameter_set(model, names, inputs)
         elif "components" in takes:
             # The EOS-CG mixture maps its own fixed component names to indices, so the
             # names cross the boundary verbatim rather than resolved to a `Mixture`.
@@ -496,7 +498,12 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             kwargs.update(Tc=record.Tc, Pc=record.Pc, omega=record.omega)
 
     for name, value in inputs.items():
-        if name == _MODEL_COMPONENTS_INPUT:
+        # Passed only what the function takes. `components` is resolved above - into a
+        # `Mixture`, a coefficient set, or the names verbatim - and a parameter set's own
+        # extra inputs were consumed there too, so either would be a second, wrong answer
+        # or a keyword the function does not have. `tools/gen_stub.py` asks the same
+        # question of the same signature, which is what keeps the boundary and this in step.
+        if name == _MODEL_COMPONENTS_INPUT or name not in takes:
             continue
         kwargs[name] = _declared(declared[name], value)
     return kwargs
@@ -529,16 +536,24 @@ def parameters_of(model: Mapping[str, Any]) -> set[str]:
 #: where they are held together. Deriving `unifac_parameters` from `UnifacParameters`
 #: by string would be a convention nothing states; this is two lines a reader can
 #: check, and a model whose record is not here fails loudly rather than quietly.
-PARAMETER_RESOLVERS: dict[str, str] = {
-    "NrtlParameters": "nrtl_parameters",
-    "UnifacParameters": "unifac_parameters",
-    "UnifacPsrkParameters": "unifac_psrk_parameters",
-    "UniquacParameters": "uniquac_parameters",
-    "VanLaarAcidParameters": "van_laar_acid_parameters",
+#:
+#: Each entry is the resolving function's name and the *other declared inputs* it
+#: consumes. A record built from the component names alone needs none; UNIFAC-UMR-PRU's
+#: needs the parameter set its spec declares, because NeqSim chooses that from a
+#: component field this library does not carry and the caller states it instead. Those
+#: inputs are consumed here and do **not** also reach the model function, which is why
+#: the tuple is part of the entry rather than left to the caller to notice.
+PARAMETER_RESOLVERS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "NrtlParameters": ("nrtl_parameters", ()),
+    "UnifacParameters": ("unifac_parameters", ()),
+    "UnifacPsrkParameters": ("unifac_psrk_parameters", ()),
+    "UnifacUmrpruParameters": ("unifac_umrpru_parameters", ("parameters",)),
+    "UniquacParameters": ("uniquac_parameters", ()),
+    "VanLaarAcidParameters": ("van_laar_acid_parameters", ()),
 }
 
 
-def parameter_set(model: Mapping[str, Any], names: Sequence[str]) -> Any:
+def parameter_set(model: Mapping[str, Any], names: Sequence[str], inputs: Mapping[str, Any]) -> Any:
     """The resolved parameters a model's ``params`` argument is annotated with.
 
     Which record is a fact about the annotation, so that is where this asks - the same
@@ -555,10 +570,11 @@ def parameter_set(model: Mapping[str, Any], names: Sequence[str]) -> Any:
     module = importlib.import_module(f"azoth.{namespace}")
     annotation = inspect.signature(getattr(module, name)).parameters["params"].annotation
     try:
-        resolve = getattr(databank, PARAMETER_RESOLVERS[annotation])
+        resolver, extras = PARAMETER_RESOLVERS[annotation]
+        resolve = getattr(databank, resolver)
     except KeyError:
         raise AssertionError(
             f"{model['id']}: `params` is annotated {annotation!r}, which is not a "
             f"parameter set this knows how to resolve; known: {sorted(PARAMETER_RESOLVERS)}"
         ) from None
-    return resolve(list(names))
+    return resolve(list(names), **{extra: inputs[extra] for extra in extras})

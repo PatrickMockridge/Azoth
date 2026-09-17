@@ -61,6 +61,7 @@ UNIFAC_GROUP_CSV = "data/components/UNIFACGroupParam.csv"
 UNIFAC_INTER_CSV = "data/components/UNIFACInterParam.csv"
 UNIFAC_INTER_B_CSV = "data/components/UNIFACInterParamB.csv"
 UNIFAC_INTER_C_CSV = "data/components/UNIFACInterParamC.csv"
+UNIFAC_COMP_UMRPRU_CSV = "data/components/UNIFACcompUMRPRU.csv"
 MBWR32_CSV = "data/components/mbwr32.csv"
 
 #: Columns the loader reads, in order. Named rather than positional because this
@@ -858,6 +859,135 @@ def unifac_psrk_parameters(names: Sequence[str]) -> UnifacPsrkParameters:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class UnifacUmrpruParameters:
+    """The UNIFAC-UMR-PRU parameters of a mixture, each matrix flattened row-major.
+
+    The interaction is evaluated about 298.15 K rather than about zero:
+    ``a_mn(T) = a_mn + b_mn (T - 298.15) + c_mn (T - 298.15)**2``.
+    """
+
+    #: Per-component group counts, ``N x G`` row-major.
+    groups: tuple[float, ...]
+    #: The volume ``R`` of each group, length ``G``.
+    group_r: tuple[float, ...]
+    #: The surface area ``Q`` of each group, length ``G``.
+    group_q: tuple[float, ...]
+    #: The constant term of the interaction, ``G x G`` row-major, in kelvin.
+    aij: tuple[float, ...]
+    #: The linear term, ``G x G`` row-major, in kelvin per kelvin.
+    bij: tuple[float, ...]
+    #: The quadratic term, ``G x G`` row-major, in kelvin per kelvin squared.
+    cij: tuple[float, ...]
+
+
+#: The UMR-PRU interaction tables of each parameter set, keyed by the name the spec's
+#: enum declares. Repo-relative, because that is how every data file is addressed here.
+_UMRPRU_SETS: dict[str, tuple[str, str, str]] = {
+    "umr": (
+        "data/components/UNIFACInterParamA_UMR.csv",
+        "data/components/UNIFACInterParamB_UMR.csv",
+        "data/components/UNIFACInterParamC_UMR.csv",
+    ),
+    "umrmc": (
+        "data/components/UNIFACInterParamA_UMRMC.csv",
+        "data/components/UNIFACInterParamB_UMRMC.csv",
+        "data/components/UNIFACInterParamC_UMRMC.csv",
+    ),
+}
+
+
+@cache
+def _umrpru_members() -> dict[str, tuple[tuple[int, int], ...]]:
+    """UMR-PRU group memberships, from the 139-subgroup decomposition."""
+    out: dict[str, tuple[tuple[int, int], ...]] = {}
+    for row in _rows(find(UNIFAC_COMP_UMRPRU_CSV).read_text(encoding="utf-8")):
+        name = row["name"].strip().lower()
+        subs = tuple(
+            (int(key[3:]), int(value))
+            for key, value in row.items()
+            if key.startswith("sub") and value.strip() not in ("", "0")
+        )
+        out[name] = subs
+    return out
+
+
+def unifac_umrpru_parameters(names: Sequence[str], parameters: str) -> UnifacUmrpruParameters:
+    """The UNIFAC-UMR-PRU inputs for a list of components, by name and parameter set.
+
+    ``parameters`` names which interaction set to read, ``"umr"`` or ``"umrmc"``.
+    NeqSim decides this from ``getComponent(0).getAttractiveTermNumber()`` - the
+    ``_umrmc`` tables when it is 13, 19 or 22 - and a component here carries no such
+    field, so the caller states which equation of state they are pairing the model with.
+
+    The group decomposition is NeqSim's ``UNIFACcompUMRPRU``, which carries 139
+    subgroups rather than the 133 of ``UNIFACcomp``; the group constants are the shared
+    table, so only the decomposition and the interaction differ.
+
+    Raises:
+        PropertyUnavailableError: if a name has no UMR-PRU group assignment.
+        InvalidInputError: if ``parameters`` names no set.
+    """
+    try:
+        a_path, b_path, c_path = _UMRPRU_SETS[parameters]
+    except KeyError:
+        raise InvalidInputError(
+            "parameters",
+            f"unknown UMR-PRU parameter set {parameters!r}; expected one of {sorted(_UMRPRU_SETS)}",
+        ) from None
+
+    group = _unifac_group()
+    members = _umrpru_members()
+    a_table = _unifac_interaction(a_path)
+    b_table = _unifac_interaction(b_path)
+    c_table = _unifac_interaction(c_path)
+
+    union: list[int] = []
+    for name in names:
+        subs = members.get(name.strip().lower())
+        if subs is None:
+            raise PropertyUnavailableError(
+                name,
+                "UNIFAC-UMR-PRU group assignment",
+                "not in UNIFACcompUMRPRU.csv; a UNIFAC activity coefficient needs a "
+                "group decomposition for every component",
+            )
+        for subgroup, _ in subs:
+            if subgroup not in union:
+                union.append(subgroup)
+    union.sort()
+    g = len(union)
+
+    group_r = [0.0] * g
+    group_q = [0.0] * g
+    aij = [0.0] * (g * g)
+    bij = [0.0] * (g * g)
+    cij = [0.0] * (g * g)
+    for k, subgroup in enumerate(union):
+        r, q, main = group[subgroup]
+        group_r[k] = r
+        group_q[k] = q
+        for m, other in enumerate(union):
+            _, _, other_main = group[other]
+            aij[k * g + m] = a_table.get((main, other_main), 0.0)
+            bij[k * g + m] = b_table.get((main, other_main), 0.0)
+            cij[k * g + m] = c_table.get((main, other_main), 0.0)
+
+    groups = [0.0] * (len(names) * g)
+    for i, name in enumerate(names):
+        for subgroup, count in members[name.strip().lower()]:
+            groups[i * g + union.index(subgroup)] = float(count)
+
+    return UnifacUmrpruParameters(
+        groups=tuple(groups),
+        group_r=tuple(group_r),
+        group_q=tuple(group_q),
+        aij=tuple(aij),
+        bij=tuple(bij),
+        cij=tuple(cij),
+    )
+
+
 def _cubic(name: str) -> Cubic:
     """The cubic named by its short name, ``"pr"``, ``"srk"`` or ``"rk"``."""
     try:
@@ -1087,6 +1217,7 @@ __all__ = [
     "NrtlParameters",
     "UnifacParameters",
     "UnifacPsrkParameters",
+    "UnifacUmrpruParameters",
     "UniquacParameters",
     "VanLaarAcidParameters",
     "available",
@@ -1099,6 +1230,7 @@ __all__ = [
     "nrtl_parameters",
     "unifac_parameters",
     "unifac_psrk_parameters",
+    "unifac_umrpru_parameters",
     "uniquac_parameters",
     "van_laar_acid_parameters",
     "wilke_chang_phi",

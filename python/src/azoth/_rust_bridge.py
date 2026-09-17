@@ -120,6 +120,7 @@ from azoth.core.result import (
     UmrprAlphaResult,
     UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
@@ -889,6 +890,34 @@ def unifac_psrk_activity_coefficients(
         list(x),
     )
     return UnifacPsrkActivityCoefficientsResult(
+        ln_gamma=tuple(result.ln_gamma),
+        gamma=tuple(result.gamma),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def unifac_umrpru_activity_coefficients(
+    params: Any,
+    T: Q,
+    x: Sequence[float],
+) -> UnifacUmrpruActivityCoefficientsResult:
+    """The activity coefficients of a mixture, computed in Rust.
+
+    The resolved basis and the chosen set's three matrices cross flattened, in the
+    dataclass's own field order.
+    """
+    spec = _models_gen.model("eos.unifac_umrpru_activity_coefficients")
+    result = _core.unifac_umrpru_activity_coefficients(
+        list(params.groups),
+        list(params.group_r),
+        list(params.group_q),
+        list(params.aij),
+        list(params.bij),
+        list(params.cij),
+        input_to_si(spec, "T", T),
+        list(x),
+    )
+    return UnifacUmrpruActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),
         gamma=tuple(result.gamma),
         warnings=_warnings(result.warnings),
