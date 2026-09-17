@@ -28,12 +28,14 @@ def antoine_vapor_pressure(
     """The pure-component vapour pressure at a temperature, from NeqSim's correlation.
 
     ``A``-``E`` are the raw ``ANTOINEA``-``ANTOINEE``, ``Tc``/``Pc`` the critical
-    constants, all caller-supplied. ``E`` is the dead DIPPR-101 exponent and is
-    unused; ``Tc`` and ``Pc`` are used only by the Wagner form.
+    constants, all caller-supplied. ``E`` is the DIPPR-101 exponent, used by
+    ``dippr101`` and ignored by the others; ``Tc`` and ``Pc`` are used only by the
+    Wagner form.
 
     Args:
         A..E: the five Antoine coefficients, NeqSim's internal scale.
-        form: one of ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or ``"wagner"``.
+        form: one of ``"dippr101"``, ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or
+            ``"wagner"``.
         Tc: critical temperature.
         Pc: critical pressure.
         T: absolute temperature.
@@ -71,7 +73,11 @@ def antoine_vapor_pressure(
     apply_checks(checks.on_input, values.get, warnings)
 
     t = values["T"]
-    if form == "pow10":
+    if form == "dippr101":
+        # NeqSim returns this one in pascals already - ``exp(...) / 100000`` bar - so
+        # unlike the other bar-returning forms there is no ``1e5`` factor here.
+        p_sat = math.exp(A + B / t + C * math.log(t) + D * t**E)
+    elif form == "pow10":
         p_sat = 1e5 * 10.0 ** (A - B / (t + C - 273.15))
     elif form == "pow10kpa":
         p_sat = 10.0 ** (A - B / (t + C))

@@ -53,8 +53,11 @@ pub fn saturation(antoine: &[AntoineRecord], t: f64) -> Result<(Vec<f64>, Vec<Wa
         // No error for an unmapped label: `form_from_type` falls through to Wagner, which
         // is NeqSim's own dispatch and the reason `eos.antoine_vapor_pressure` carries the
         // same fall-through. The phase reproduces what the correlation does rather than
-        // refusing a label the upstream evaluates.
-        let form = form_from_type(&record.antoine_type);
+        // refusing a label the upstream evaluates. A non-zero `E` outranks the label,
+        // which is also NeqSim's own rule.
+        // The label alone does not name the form: twenty components carry DIPPR-101
+        // coefficients under a `log` label, so `E` decides. See `form_from_type`.
+        let form = form_from_type(&record.antoine_type, record.coefficients[4]);
         let [a, b, c, d, e] = record.coefficients;
         let saturated = antoine_vapor_pressure(
             a,

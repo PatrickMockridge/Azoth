@@ -856,7 +856,7 @@ def antoine_vapor_pressure(
     """The pure-component vapour pressure at a temperature.
 
     ``A``-``E`` are the raw ``ANTOINEA``-``ANTOINEE`` NeqSim ships, ``form`` one of
-    ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or ``"wagner"``, and ``Tc``/``Pc`` the
+    ``"dippr101"``, ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or ``"wagner"``, and ``Tc``/``Pc`` the
     critical constants.
 
     Raises:

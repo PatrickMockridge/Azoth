@@ -73,3 +73,61 @@ fn every_case_in_the_spec() {
         "expected several active cases, ran {executed}"
     );
 }
+
+/// `E` decides the form, and the label alone does not.
+///
+/// Twenty rows in NeqSim's `COMP.csv` carry DIPPR-101 coefficients under the label
+/// `log`, which names the two-term exponential instead. Reading the label alone returns
+/// `i-pentane` at 8.3e38 bar where the correlation gives 0.918, so the selection takes
+/// the fifth coefficient as well - NeqSim's own rule,
+/// `Component.usesDipprVaporPressureCorrelation`.
+#[test]
+fn a_non_zero_exponent_selects_the_dippr_form() {
+    use azoth_eos::AntoineForm::*;
+    use azoth_eos::form_from_type;
+
+    // The fix: the same label, two different forms, decided by `E`.
+    assert_eq!(form_from_type("log", 2.0), Dippr101);
+    assert_eq!(form_from_type("log", 0.0), Exp);
+    assert_eq!(form_from_type("exp", 2.0), Dippr101);
+
+    // `pow10` and `pow10KPa` keep precedence: their coefficients are log10-based and
+    // would not survive the exponential form, so a non-zero `E` does not outrank them.
+    assert_eq!(form_from_type("pow10", 2.0), Pow10);
+    assert_eq!(form_from_type("pow10KPa", 2.0), Pow10Kpa);
+
+    // `loglog`/`log10` still fall through to Wagner, which NeqSim has not changed.
+    assert_eq!(form_from_type("loglog", 0.0), Wagner);
+    assert_eq!(form_from_type("log10", 0.0), Wagner);
+}
+
+/// The DIPPR form is `exp(A + B/T + C ln T + D T**E)` in pascals.
+///
+/// Worth a test of its own because the unit factor is the one thing a reader cannot see
+/// from the equation: NeqSim returns this one in pascals already, `exp(...) / 100000` in
+/// bar, so unlike the `exp` and `pow10` forms there is no `1e5` factor on either side.
+#[test]
+fn the_dippr_form_returns_pascals_without_a_factor() {
+    use azoth_eos::AntoineForm;
+    use azoth_eos::antoine_vapor_pressure;
+
+    // i-pentane, at the state validation/eos/i_pentane_antoine_dippr101_against_neqsim.json
+    // states: NeqSim 3.20.0 at commit 8922111 returns 0.10329497716461689 bar.
+    let r = antoine_vapor_pressure(
+        72.35,
+        -5010.9,
+        -7.883,
+        8.979e-06,
+        2.0,
+        AntoineForm::Dippr101,
+        kelvins(460.43),
+        pascals(3_381_200.0),
+        kelvins(248.15),
+    )
+    .unwrap();
+    assert!(
+        (r.p_sat.value - 10329.497716461689_f64).abs() < 1e-9,
+        "got {}",
+        r.p_sat.value
+    );
+}

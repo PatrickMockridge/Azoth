@@ -1,10 +1,11 @@
 //! `eos.antoine_vapor_pressure` - NeqSim's pure-component vapour-pressure correlation.
 //!
 //! NeqSim's `getAntoineVaporPressure` dispatches on a string label and evaluates one of
-//! four correlations. The label vocabulary in the vendored data is messy - `exp` and
-//! `log` are one formula under two names, and `loglog`/`log10` have no branch and fall
+//! five correlations. The label vocabulary in the vendored data is messy - `exp` and
+//! `log` are one formula under two names, `loglog`/`log10` have no branch and fall
 //! through to Wagner - so the label is cleaned onto [`AntoineForm`] by
-//! [`form_from_type`] before the correlation is evaluated.
+//! [`form_from_type`] before the correlation is evaluated. That function also takes the
+//! fifth coefficient, because for twenty components the label names the wrong form.
 //!
 //! Spec: `specs/calcs/eos/antoine_vapor_pressure.toml`, which records the four formulas,
 //! the cleaning rule, and the dead DIPPR-101 branch.
@@ -15,9 +16,14 @@ use azoth_core::{Result, apply_checks};
 use crate::results::AntoineVaporPressureResult;
 use crate::spec_gen;
 
-/// The four vapour-pressure correlations NeqSim's `getAntoineVaporPressure` evaluates.
+/// The five vapour-pressure correlations NeqSim's `getAntoineVaporPressure` evaluates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AntoineForm {
+    /// `exp(A + B/T + C ln T + D T**E)` in pascals - the DIPPR-101 form.
+    ///
+    /// Selected by a non-zero `E` rather than by the label: the rows carrying one are
+    /// labelled `log`, which names a different correlation. See [`form_from_type`].
+    Dippr101,
     /// `1e5 * 10**(A - B/(T + C - 273.15))`.
     Pow10,
     /// `10**(A - B/(T + C))`.
@@ -33,6 +39,7 @@ impl AntoineForm {
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
+            AntoineForm::Dippr101 => "dippr101",
             AntoineForm::Pow10 => "pow10",
             AntoineForm::Pow10Kpa => "pow10kpa",
             AntoineForm::Exp => "exp",
@@ -46,12 +53,14 @@ impl std::str::FromStr for AntoineForm {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
+            "dippr101" => Ok(AntoineForm::Dippr101),
             "pow10" => Ok(AntoineForm::Pow10),
             "pow10kpa" => Ok(AntoineForm::Pow10Kpa),
             "exp" => Ok(AntoineForm::Exp),
             "wagner" => Ok(AntoineForm::Wagner),
             other => Err(format!(
-                "unknown Antoine form `{other}`; expected `pow10`, `pow10kpa`, `exp` or `wagner`"
+                "unknown Antoine form `{other}`; expected `dippr101`, `pow10`, `pow10kpa`, \
+                 `exp` or `wagner`"
             )),
         }
     }
@@ -59,11 +68,24 @@ impl std::str::FromStr for AntoineForm {
 
 /// Map NeqSim's raw `AntoineVapPresLiqType` label onto [`AntoineForm`].
 ///
-/// `exp` and `log` are one formula under two names, and `loglog`/`log10` have no
-/// branch in NeqSim's dispatch, so they fall through to Wagner - a defect this
+/// **`E` is part of the question, not only the label.** Twenty rows in NeqSim's
+/// `COMP.csv` carry DIPPR-101 coefficients - `exp(A + B/T + C ln T + D T**E)` - under
+/// the label `log`, which names the two-term exponential instead. Reading the label
+/// alone therefore picks the wrong correlation for them, by thirty to ninety orders of
+/// magnitude; `i-pentane` came out at 8.3e38 bar.
+///
+/// The rule is NeqSim's own, `Component.usesDipprVaporPressureCorrelation`: a non-zero
+/// `E` decides, except that `pow10` and `pow10KPa` keep precedence because those
+/// coefficients are log10-based and would not survive the exponential form.
+///
+/// `exp` and `log` are otherwise one formula under two names, and `loglog`/`log10`
+/// have no branch in NeqSim's dispatch, so they fall through to Wagner - a defect this
 /// reproduces rather than silently repairs.
 #[must_use]
-pub fn form_from_type(label: &str) -> AntoineForm {
+pub fn form_from_type(label: &str, e: f64) -> AntoineForm {
+    if e.abs() > 1e-12 && label != "pow10" && label != "pow10KPa" {
+        return AntoineForm::Dippr101;
+    }
     match label {
         "pow10" => AntoineForm::Pow10,
         "pow10KPa" => AntoineForm::Pow10Kpa,
@@ -75,8 +97,8 @@ pub fn form_from_type(label: &str) -> AntoineForm {
 /// The pure-component vapour pressure at a temperature, from NeqSim's correlation.
 ///
 /// `A`-`E` are the raw `ANTOINEA`-`ANTOINEE` and `Tc`/`Pc` the critical constants, all
-/// caller-supplied. `E` is the dead DIPPR-101 exponent and is unused; `Tc` and `Pc`
-/// are used only by the Wagner form.
+/// caller-supplied. `E` is the DIPPR-101 exponent, used by [`AntoineForm::Dippr101`]
+/// and ignored by the others; `Tc` and `Pc` are used only by the Wagner form.
 ///
 /// # Errors
 /// * [`azoth_core::AzothError::OutOfRange`] if `T`, `Tc` or `Pc` is not positive.
@@ -126,6 +148,9 @@ pub fn antoine_vapor_pressure(
 
     let t = T.value;
     let p_sat = match form {
+        // NeqSim returns this one in pascals already - `exp(...) / 100000` bar - so
+        // unlike the other bar-returning forms there is no `1e5` factor here.
+        AntoineForm::Dippr101 => (A + B / t + C * t.ln() + D * t.powf(E)).exp(),
         AntoineForm::Pow10 => 1e5 * (10.0_f64).powf(A - B / (t + C - 273.15)),
         AntoineForm::Pow10Kpa => (10.0_f64).powf(A - B / (t + C)),
         AntoineForm::Exp => 1e5 * (A - B / (t + C)).exp(),

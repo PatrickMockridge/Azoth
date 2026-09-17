@@ -262,3 +262,42 @@ def test_uniquac_r_and_q_are_the_group_sums_neqsim_computes() -> None:
         want_r, want_q = measured[name]
         assert params.r[i] == want_r, f"{name}: r is {params.r[i]!r}, NeqSim says {want_r!r}"
         assert params.q[i] == want_q, f"{name}: q is {params.q[i]!r}, NeqSim says {want_q!r}"
+
+
+def test_the_exponent_decides_the_antoine_form_and_the_label_does_not() -> None:
+    """Twenty rows carry DIPPR-101 coefficients under a `log` label.
+
+    The label names the two-term exponential, so reading it alone picks the wrong
+    correlation by thirty to ninety orders of magnitude: `i-pentane` comes out at 8.3e38
+    bar. The selection therefore takes the fifth coefficient too, which is NeqSim's own
+    rule (`Component.usesDipprVaporPressureCorrelation`).
+    """
+    from azoth.eos.components import form_from_type
+
+    # The fix: one label, two forms, decided by the exponent.
+    assert form_from_type("log", 2.0) == "dippr101"
+    assert form_from_type("log", 0.0) == "exp"
+    assert form_from_type("exp", 2.0) == "dippr101"
+
+    # `pow10` and `pow10KPa` keep precedence - their coefficients are log10-based and
+    # would not survive the exponential form.
+    assert form_from_type("pow10", 2.0) == "pow10"
+    assert form_from_type("pow10KPa", 2.0) == "pow10kpa"
+
+    # `loglog`/`log10` still fall through to Wagner, which NeqSim has not changed.
+    assert form_from_type("loglog", 0.0) == "wagner"
+
+
+def test_the_databank_resolves_a_dippr_row_to_the_dippr_form() -> None:
+    """The same rule, through the lookup rather than the function.
+
+    A phase reads its `P0` from the record's cleaned form, so this is the path that
+    decides which correlation a GE phase actually evaluates.
+    """
+    entry = databank.entry("i-pentane")
+    assert entry.antoine[4] == 2.0
+    assert entry.antoine_form() == "dippr101"
+
+    # And a row with no exponent is unaffected.
+    assert databank.entry("methanol").antoine[4] == 0.0
+    assert databank.entry("methanol").antoine_form() == "pow10"

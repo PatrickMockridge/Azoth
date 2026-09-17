@@ -198,8 +198,8 @@ class DatabankEntry:
 
     def antoine_form(self) -> str:
         """The cleaned Antoine form this entry's coefficients belong to, one of
-        ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or ``"wagner"``."""
-        return form_from_type(self.antoine_type)
+        ``"dippr101"``, ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or ``"wagner"``."""
+        return form_from_type(self.antoine_type, self.antoine[4])
 
     def __repr__(self) -> str:
         return f"DatabankEntry({self.name!r}, Tc={self.Tc}, Pc={self.Pc}, omega={self.omega})"
@@ -283,13 +283,26 @@ def _three(row: Mapping[str, str], a: str, b: str, c: str) -> tuple[float, float
     return (float(row[a]), float(row[b]), float(row[c]))
 
 
-def form_from_type(label: str) -> str:
+def form_from_type(label: str, e: float) -> str:
     """Map NeqSim's raw ``AntoineVapPresLiqType`` label onto the clean form name.
 
-    ``exp`` and ``log`` are one formula under two names, and ``loglog``/``log10``
-    have no branch in NeqSim's dispatch, so they fall through to Wagner - a defect
-    this reproduces rather than silently repairs.
+    **``e`` is part of the question, not only the label.** Twenty rows in NeqSim's
+    ``COMP.csv`` carry DIPPR-101 coefficients - ``exp(A + B/T + C ln T + D T**E)`` -
+    under the label ``log``, which names the two-term exponential instead. Reading the
+    label alone therefore picks the wrong correlation for them, by thirty to ninety
+    orders of magnitude; ``i-pentane`` comes out at 8.3e38 bar.
+
+    The rule is NeqSim's own, ``Component.usesDipprVaporPressureCorrelation``: a
+    non-zero ``e`` decides, except that ``pow10`` and ``pow10KPa`` keep precedence
+    because those coefficients are log10-based and would not survive the exponential
+    form.
+
+    ``exp`` and ``log`` are otherwise one formula under two names, and
+    ``loglog``/``log10`` have no branch in NeqSim's dispatch, so they fall through to
+    Wagner - a defect this reproduces rather than silently repairs.
     """
+    if abs(e) > 1e-12 and label not in ("pow10", "pow10KPa"):
+        return "dippr101"
     if label == "pow10":
         return "pow10"
     if label == "pow10KPa":

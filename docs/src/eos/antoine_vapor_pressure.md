@@ -8,6 +8,7 @@
 
 $$
 p_{\mathrm{sat}} = \begin{cases}
+e^{\,A + B/T + C \ln T + D T^{E}} & \text{dippr101}\\
 10^{5}\,10^{\,A - B/(T + C - 273.15)} & \text{pow10}\\
 10^{\,A - B/(T + C)} & \text{pow10kpa}\\
 10^{5}\,e^{\,A - B/(T + C)} & \text{exp}\\
@@ -18,7 +19,7 @@ $$
 In the form the library evaluates:
 
 ```python
-p_sat = { pow10: 1e5*10**(A - B/(T + C - 273.15)); pow10kpa: 10**(A - B/(T + C)); exp: 1e5*exp(A - B/(T + C)); wagner: exp((1-x)**-1*(A*x + B*x**1.5 + C*x**3 + D*x**6))*Pc, x = 1 - T/Tc }
+p_sat = { dippr101: exp(A + B/T + C*ln(T) + D*T**E); pow10: 1e5*10**(A - B/(T + C - 273.15)); pow10kpa: 10**(A - B/(T + C)); exp: 1e5*exp(A - B/(T + C)); wagner: exp((1-x)**-1*(A*x + B*x**1.5 + C*x**3 + D*x**6))*Pc, x = 1 - T/Tc }
 ```
 
 ## Source
@@ -35,8 +36,8 @@ the four correlations NeqSim 3.20.0 evaluates in `thermo/component/Component.jav
 | `B` | dimensionless | The second Antoine coefficient. |
 | `C` | dimensionless | The third Antoine coefficient. |
 | `D` | dimensionless | The fourth Antoine coefficient, used only by the Wagner form. |
-| `E` | dimensionless | The fifth Antoine coefficient, the dead DIPPR-101 exponent; unused. |
-| `form` | pow10 / pow10kpa / exp / wagner | The correlation form, one of the four NeqSim evaluates. |
+| `E` | dimensionless | The fifth Antoine coefficient, the DIPPR-101 exponent. Used by `dippr101` and ignored by the other four; a non-zero value also selects that form. |
+| `form` | dippr101 / pow10 / pow10kpa / exp / wagner | The correlation form, one of the five NeqSim evaluates. `dippr101` is selected by a non-zero `E` rather than by the label; see the assumptions. |
 | `Tc` | K | Critical temperature, used only by the Wagner form. |
 | `Pc` | Pa | Critical pressure, used only by the Wagner form. |
 | `T` | K | Absolute temperature. |
@@ -66,9 +67,11 @@ satisfy for the result to mean what it says.
 
 - the five coefficients are the raw `ANTOINEA`-`ANTOINEE` NeqSim ships, in its internal unit, and the `1e5` factors recover pascals from NeqSim's bar output. NOT CHECKED - the coefficients come from the caller.
 
-- `form` selects one of four correlations; the raw `AntoineVapPresLiqType` labels map as `pow10` -> `pow10`, `pow10KPa` -> `pow10kpa`, `exp`/`log` -> `exp`, `loglog`/`log10` -> `wagner` (NeqSim's dispatch has no branch for those two).
+- `form` selects one of five correlations; the raw `AntoineVapPresLiqType` labels map as `pow10` -> `pow10`, `pow10KPa` -> `pow10kpa`, `exp`/`log` -> `exp`, `loglog`/`log10` -> `wagner` (NeqSim's dispatch has no branch for those two), and any other label with a non-zero `E` -> `dippr101`.
 
-- `E` is the exponent of NeqSim's DIPPR-101 branch, which is dead code: every row carrying `E != 0` is labelled `log` and reaches the `exp` form first. It is therefore unused, and recorded here so a reader does not think it was dropped.
+- `E` decides the form and not only the label: a non-zero `E` selects `dippr101` unless the label is `pow10` or `pow10KPa`, which keep precedence because their coefficients are log10-based. This is NeqSim's own rule, `Component.usesDipprVaporPressureCorrelation`.
+
+- the rule matters because twenty rows in NeqSim's `COMP.csv` carry DIPPR-101 coefficients under the label `log`, which names the two-term exponential. Reading the label alone returns `i-pentane` at 8.3e38 bar where the correlation gives 0.918.
 
 - `Tc` and `Pc` are used only by the Wagner form; the other three ignore them.
 

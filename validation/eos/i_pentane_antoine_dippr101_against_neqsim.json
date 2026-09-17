@@ -1,0 +1,25 @@
+{
+  "id": "i_pentane_antoine_dippr101_against_neqsim",
+  "calc": "eos.antoine_vapor_pressure",
+  "source": {
+    "attribution": "NeqSim 3.20.0 at commit 8922111 (`fix(thermo): restore DIPPR-101 vapor-pressure dispatch`, PR #3773), `getAntoineVaporPressure` - the upstream this library is a port of, run from validation/neqsim/DipprOracle.java",
+    "verification": "verified",
+    "notes": "The DIPPR-101 form for i-pentane, whose row in NeqSim's `COMP.csv` carries DIPPR-101 coefficients under the label `log`. The label names the two-term exponential, so before PR #3773 NeqSim read this row through the wrong correlation and returned 8.28824e38 bar; it now returns 0.91800973328146050 bar at 298.15 K. azoth ports NeqSim's corrected dispatch, where a non-zero `E` decides the form unless the label is `pow10` or `pow10KPa`."
+  },
+  "derivation": "The driver added i-pentane to a `SystemSrkEos`, called `createDatabase(true)`, and printed `getAntoineVaporPressure(T)` at three temperatures:\n\n  248.15 K  0.10329497716461689 bar\n  298.15 K  0.91800973328146050 bar\n  350.00 K  4.2293902569698240  bar\n\nazoth's `eos.antoine_vapor_pressure` with form `dippr101` reproduces the 248.15 K figure exactly, and the model's own tests cover the other two. The coefficients are NeqSim's internal scale; the DIPPR form returns pascals directly in NeqSim (`exp(...) / 100000` bar), so unlike the `exp` and `pow10` forms this one carries no `1e5` factor in either implementation.",
+  "inputs": {
+    "A": 72.35,
+    "B": -5010.9,
+    "C": -7.883,
+    "D": 8.979e-06,
+    "E": 2.0,
+    "form": "dippr101",
+    "Tc": 460.43,
+    "Pc": 3381200.0,
+    "T": 248.15
+  },
+  "expected": {
+    "p_sat": 10329.497716461689
+  },
+  "tolerance": 1e-12
+}
