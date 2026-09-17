@@ -33,6 +33,7 @@ pub fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
 }
 
 pub mod alpha_term;
+pub mod ammonia;
 pub mod antoine_vapor_pressure;
 pub mod bubble_pressure;
 pub mod bubble_temperature;
