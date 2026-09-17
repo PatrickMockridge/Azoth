@@ -309,6 +309,9 @@ impl Overlay {
 
 /// One interaction-pair record from `INTER.csv`, keyed by the ordered pair of names
 /// exactly as they appear in the file.
+///
+/// Every directional field is stored **for this key**: the reversed key carries the
+/// reversed value, done once where the table is parsed rather than at each read.
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Interaction {
     /// The cubic binary interaction parameter, symmetric.
@@ -318,6 +321,32 @@ struct Interaction {
     /// The NRTL energy parameter for the ordered pair `(first, second)`: the `g_ij` in
     /// `tau_ij = g_ij / T`, in Kelvin. Directional - `g_ij` differs from `g_ji`.
     gij: f64,
+    /// Whether this pair carries Huron-Vidal's *fitted* parameters, from `HVTYPE`.
+    ///
+    /// NeqSim reads the same column into `classicOrHV` and tests
+    /// `mixRule[j][i].trim().equals("HV")`. `HV` is the fitted NRTL pair and `Classic`
+    /// is the cubic's own excess energy, which is not a fallback but the other branch of
+    /// the model.
+    hv: bool,
+    /// The Huron-Vidal non-randomness for this ordered pair, symmetric.
+    hv_alpha: f64,
+    /// The Huron-Vidal fitted energy `Dij` for this ordered pair, in Kelvin. Directional.
+    hv_dij: f64,
+    /// The Huron-Vidal temperature coefficient `DijT` for this ordered pair. Directional.
+    hv_dij_t: f64,
+    /// Whether this pair carries Wong-Sandler's fitted parameters, from `WSTYPE`.
+    ws: bool,
+    /// The Wong-Sandler temperature coefficient `DijT` for this ordered pair. Directional.
+    ///
+    /// A *different* column from `hv_dij_t`: NeqSim loads the HV one into `HVDijT` and
+    /// the WS one into `NRTLDijT`, and the two rules are handed the corresponding array.
+    ws_dij_t: f64,
+    /// The Wong-Sandler interaction parameter, from `KIJWSunifac`.
+    ///
+    /// `KIJWSunifac` and not `KIJWS`: NeqSim assigns `WSintparam` from `kijWS` and
+    /// overwrites it from `KIJWSunifac` on the next line, so the first read has never
+    /// had an effect.
+    kij_ws: f64,
 }
 
 /// The two parsed tables: substances by name, and interaction parameters by pair.
@@ -461,6 +490,16 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         "nrtlalpha",
         "nrtlgij",
         "nrtlgji",
+        "hvtype",
+        "hvalpha",
+        "hvgij",
+        "hvgji",
+        "hvgijt",
+        "hvgjit",
+        "wstype",
+        "wsgijt",
+        "wsgjit",
+        "kijwsunifac",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -493,15 +532,35 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         let alpha = number(&record, index["nrtlalpha"], "nrtlalpha", row)?;
         let gij = number(&record, index["nrtlgij"], "nrtlgij", row)?;
         let gji = number(&record, index["nrtlgji"], "nrtlgji", row)?;
-        // `kij` and `alpha` are symmetric, stored both ways round so a caller need not
-        // know which name came first. `gij` is directional, so the reversed key carries
-        // the reversed energy.
+
+        let hv = selector(&record, index["hvtype"], "hvtype", row)? == "HV";
+        let ws = selector(&record, index["wstype"], "wstype", row)? == "WS";
+        let hv_alpha = number(&record, index["hvalpha"], "hvalpha", row)?;
+        let hv_dij = number(&record, index["hvgij"], "hvgij", row)?;
+        let hv_dji = number(&record, index["hvgji"], "hvgji", row)?;
+        let hv_dij_t = number(&record, index["hvgijt"], "hvgijt", row)?;
+        let hv_dji_t = number(&record, index["hvgjit"], "hvgjit", row)?;
+        let ws_dij_t = number(&record, index["wsgijt"], "wsgijt", row)?;
+        let ws_dji_t = number(&record, index["wsgjit"], "wsgjit", row)?;
+        let kij_ws = number(&record, index["kijwsunifac"], "kijwsunifac", row)?;
+
+        // `kij`, `alpha`, `hv_alpha` and the two selectors are symmetric, stored both
+        // ways round so a caller need not know which name came first. `gij`, `hv_dij`,
+        // `hv_dij_t` and `ws_dij_t` are directional, so the reversed key carries the
+        // reversed value.
         out.insert(
             (a.clone(), b.clone()),
             Interaction {
                 kij: value,
                 alpha,
                 gij,
+                hv,
+                hv_alpha,
+                hv_dij,
+                hv_dij_t,
+                ws,
+                ws_dij_t,
+                kij_ws,
             },
         );
         out.insert(
@@ -510,10 +569,32 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 kij: value,
                 alpha,
                 gij: gji,
+                hv,
+                hv_alpha,
+                hv_dij: hv_dji,
+                hv_dij_t: hv_dji_t,
+                ws,
+                ws_dij_t: ws_dji_t,
+                kij_ws,
             },
         );
     }
     Ok(out)
+}
+
+/// One text field of a record, trimmed.
+///
+/// NeqSim trims and nothing else - `mixRule[j][i].trim().equals("HV")` - so the
+/// comparison this feeds is case-sensitive against the two spellings the file uses.
+fn selector(record: &csv::StringRecord, index: usize, column: &str, row: usize) -> Result<String> {
+    let raw = record.get(index).unwrap_or("").trim();
+    if raw.is_empty() {
+        return Err(AzothError::InvalidInput {
+            field: "databank".to_string(),
+            reason: format!("row {row}: `{column}` is empty; every row names its variant"),
+        });
+    }
+    Ok(raw.to_string())
 }
 
 /// One substance's constants, or a failure naming it.
@@ -749,6 +830,142 @@ pub fn nrtl_dij(names: &[&str]) -> Vec<f64> {
         }
     }
     out
+}
+
+/// The resolved Huron-Vidal parameters for a mixture, each matrix flattened row-major.
+///
+/// The `MixingRule::HuronVidal` variant's five matrices, resolved by name rather than
+/// built by hand. The pairing is NeqSim's: a pair the interaction table marks `HV`
+/// carries the fitted NRTL parameters, and every other pair carries the cubic's own
+/// excess energy, which [`MixingRule::HuronVidal`] computes from `kij`, `a` and `b`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HuronVidalParameters {
+    /// The cubic interaction matrix, as in [`MixingRule::Classic`].
+    pub kij: Vec<f64>,
+    /// The fitted NRTL energy `Dij` in kelvin, `N x N` row-major. Directional.
+    pub hv_gij: Vec<f64>,
+    /// The fitted temperature coefficient `DijT`, `N x N` row-major. Directional.
+    pub hv_gij_t: Vec<f64>,
+    /// The fitted non-randomness `alpha`, `N x N` row-major. Symmetric.
+    pub hv_alpha: Vec<f64>,
+    /// One flag per interaction: `true` where `HVTYPE` says `HV`.
+    pub hv_pairs: Vec<bool>,
+}
+
+/// The resolved Wong-Sandler parameters for a mixture, each matrix flattened row-major.
+///
+/// The same shape as [`HuronVidalParameters`] with the rule's own `kij` and `DijT`: the
+/// selectors come from `WSTYPE`, the interaction from `KIJWSunifac`, and the temperature
+/// coefficient from `WSGIJT`/`WSGJIT`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WongSandlerParameters {
+    /// The interaction matrix the rule's `b_mix` reads, from `KIJWSunifac`.
+    pub kij: Vec<f64>,
+    /// The fitted NRTL energy `Dij` in kelvin, `N x N` row-major. Directional.
+    pub hv_gij: Vec<f64>,
+    /// The fitted temperature coefficient `DijT`, `N x N` row-major. Directional.
+    ///
+    /// **Resolved and not yet consumed.** `MixingRule::WongSandler` has no slot for it,
+    /// because nothing has established which of this column and `HVGIJT` the rule is
+    /// entitled to; see `Mixture::ws_ader` for the measurement that leaves it open.
+    pub hv_gij_t: Vec<f64>,
+    /// The fitted non-randomness `alpha`, `N x N` row-major. Symmetric.
+    pub hv_alpha: Vec<f64>,
+    /// One flag per interaction: `true` where `WSTYPE` says `WS`.
+    pub hv_pairs: Vec<bool>,
+}
+
+/// The Huron-Vidal parameters for a list of names, from the interaction table.
+///
+/// The resolution the rule leaves to its caller otherwise, and the one the manifest
+/// described as missing: NeqSim's `EosMixingRuleHandler` reads `HVTYPE` into
+/// `classicOrHV` and tests `mixRule[j][i].trim().equals("HV")`, which is exactly
+/// [`HuronVidalParameters::hv_pairs`].
+///
+/// Each component must be in the databank; a pair the interaction table does not carry
+/// resolves to `Classic` with zero fitted parameters, which is the cubic's own excess
+/// energy rather than an ideal mixture.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
+///   overlay.
+pub fn huron_vidal_parameters(
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<HuronVidalParameters> {
+    for name in names {
+        entry(name, overlay)?;
+    }
+    let table = &tables().1;
+    let n = names.len();
+    let mut out = HuronVidalParameters {
+        kij: vec![0.0; n * n],
+        hv_gij: vec![0.0; n * n],
+        hv_gij_t: vec![0.0; n * n],
+        hv_alpha: vec![0.0; n * n],
+        hv_pairs: vec![false; n * n],
+    };
+    for (i, a) in names.iter().enumerate() {
+        for (j, b) in names.iter().enumerate() {
+            if i == j {
+                continue;
+            }
+            let key = (a.trim().to_lowercase(), b.trim().to_lowercase());
+            let Some(interaction) = table.get(&key) else {
+                continue;
+            };
+            out.kij[i * n + j] = interaction.kij;
+            out.hv_pairs[i * n + j] = interaction.hv;
+            out.hv_alpha[i * n + j] = interaction.hv_alpha;
+            out.hv_gij[i * n + j] = interaction.hv_dij;
+            out.hv_gij_t[i * n + j] = interaction.hv_dij_t;
+        }
+    }
+    Ok(out)
+}
+
+/// The Wong-Sandler parameters for a list of names, from the interaction table.
+///
+/// `WSTYPE` selects the pairs, `KIJWSunifac` is the interaction and `WSGIJT`/`WSGJIT`
+/// the temperature coefficient. `KIJWS` is not read, and cannot be: NeqSim assigns
+/// `WSintparam` from it and overwrites that from `KIJWSunifac` on the next line.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
+///   overlay.
+pub fn wong_sandler_parameters(
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<WongSandlerParameters> {
+    for name in names {
+        entry(name, overlay)?;
+    }
+    let table = &tables().1;
+    let n = names.len();
+    let mut out = WongSandlerParameters {
+        kij: vec![0.0; n * n],
+        hv_gij: vec![0.0; n * n],
+        hv_gij_t: vec![0.0; n * n],
+        hv_alpha: vec![0.0; n * n],
+        hv_pairs: vec![false; n * n],
+    };
+    for (i, a) in names.iter().enumerate() {
+        for (j, b) in names.iter().enumerate() {
+            if i == j {
+                continue;
+            }
+            let key = (a.trim().to_lowercase(), b.trim().to_lowercase());
+            let Some(interaction) = table.get(&key) else {
+                continue;
+            };
+            out.kij[i * n + j] = interaction.kij_ws;
+            out.hv_pairs[i * n + j] = interaction.ws;
+            out.hv_alpha[i * n + j] = interaction.hv_alpha;
+            out.hv_gij[i * n + j] = interaction.hv_dij;
+            out.hv_gij_t[i * n + j] = interaction.ws_dij_t;
+        }
+    }
+    Ok(out)
 }
 
 /// The resolved NRTL parameters for a mixture, both matrices flattened row-major.

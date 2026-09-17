@@ -81,7 +81,8 @@ pub enum MixingRule {
     ///
     /// Like [`MixingRule::HuronVidal`] but with a GE-dependent `b_mix` instead of the
     /// classic co-volume sum. NeqSim reads the cached, DijT-free activity coefficients
-    /// for this rule, so it resolves separately from [`MixingRule::HuronVidal`].
+    /// for this rule, so it resolves separately from [`MixingRule::HuronVidal`] - see
+    /// `Mixture::ws_ader` for what is settled about that and what is not.
     WongSandler {
         /// The interaction matrix the rule's `b_mix` and the NRTL's classic pairs read.
         kij: Vec<f64>,

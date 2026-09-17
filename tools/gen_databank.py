@@ -160,7 +160,14 @@ def _text_columns(source: Path) -> frozenset[str]:
     return frozenset(text)
 
 
-TEXT_COLUMNS: frozenset[str] = _text_columns(SOURCES / "COMP.csv")
+#: **Both sources, not just the component table.** This was `COMP.csv` alone, and the
+#: consequence was that `INTER.csv`'s `HVTYPE` and `WSTYPE` - the selectors saying which
+#: pairs a mixing rule's fitted columns belong to - were sent to `float` and the
+#: generator refused the file. Reading both is the same rule applied to the other file,
+#: rather than a second list: a column is text because its values are.
+TEXT_COLUMNS: frozenset[str] = _text_columns(SOURCES / "COMP.csv") | _text_columns(
+    SOURCES / "INTER.csv"
+)
 
 
 def _converter(column: str) -> Callable[[str], object]:
@@ -172,13 +179,21 @@ def _converter(column: str) -> Callable[[str], object]:
     two are told apart in the manifest rather than here, because the difference between
     "dimensionless" and "nobody has established this" is what a reader needs and a
     conversion table cannot carry it.
+
+    **`CONVERSIONS` is asked first, and the order is load-bearing.**
+    `KIJWhitsonSoriede` is the one column in both tables: six of its rows are written
+    with a comma decimal separator, which is what makes it look like text, and the
+    conversion is what repairs them. Asking `TEXT_COLUMNS` first would carry the comma
+    through as a string and quietly lose the fix.
     """
+    if column in CONVERSIONS:
+        return CONVERSIONS[column]
     if column in TEXT_COLUMNS:
         # `NAME` is lower-cased as well as trimmed: it is the key every other table and
         # the keycard join on, and `INTER.csv` holds the same names in lower case. A
         # text column carried with `str.strip` alone matches nothing.
         return (lambda v: v.strip().lower()) if column == "NAME" else str.strip
-    return CONVERSIONS.get(column, float)
+    return float
 
 
 def _component_columns() -> tuple[tuple[str, str, Callable[[str], object]], ...]:
@@ -336,7 +351,13 @@ def build_kij(source: Path, known: set[str]) -> list[dict[str, str]]:
             elif not text:
                 carried[out_name] = ""
             else:
-                carried[out_name] = repr(convert(text))
+                # `repr` for a number and `str` for a string. `repr` is here because it
+                # round-trips a float exactly, which `str` does not in general - and it
+                # is wrong for a text column, where it writes the quotes into the file:
+                # `HVTYPE` came out as `'HV'`, which parses as a float nowhere and
+                # matches `"HV"` nowhere either.
+                value = convert(text)
+                carried[out_name] = repr(value) if isinstance(value, float) else str(value)
         out.append(carried)
     return out
 

@@ -708,7 +708,24 @@ impl Mixture {
     }
 
     /// The Wong-Sandler attraction coefficients, from the DijT-free activity
-    /// coefficients NeqSim reads for this rule.
+    /// coefficients this rule reads.
+    ///
+    /// **The `DijT` question here is open, and this records why rather than a guess.**
+    /// NeqSim's `WongSandlerMixingRule` is handed `NRTLDijT` - loaded from
+    /// `WSGIJT`/`WSGJIT` - and passes it into a `PhaseGENRTLmodifiedHV`, which reads as
+    /// though a `WS` pair with a non-zero coefficient should use it. It does not settle
+    /// the question: asked for `CO2`/`water`, whose `WSGIJT` is 0.96, the rule reports
+    /// `HVDijT[0][1] = -0.842025353`, which is that pair's **`HVGIJT`**. So the field
+    /// NeqSim exposes is not the field its name suggests, and the two columns disagree.
+    ///
+    /// Trying all three - zeros, `WSGIJT` and `HVGIJT` - against a NeqSim
+    /// `SystemSrkEos` + `setMixingRule(5)` flash for `CO2`/`water` at 350 K and 5 bar
+    /// gives `ln_phi` of `[3.809, -1.202]`, `[-0.014, -0.050]` and `[3.784, -1.477]`
+    /// against NeqSim's `[10.546, -2.617]`. **None is close**, so this rule's own gap on
+    /// that pair dwarfs the coefficient being chosen, and no value of it can be
+    /// validated until that gap is closed. Forcing zeros is what the rule did when it
+    /// was checked against `water`/`ethanol` - where both coefficients are zero, so the
+    /// check could not distinguish them either.
     fn ws_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
         let MixingRule::WongSandler {
             kij,
