@@ -45,9 +45,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - a pair the interaction tables do not carry is zero in all three terms, which makes `a_mn(T)` zero and the pair ideal. A mixture whose pairs all have `b = c = 0` therefore reduces this model to plain UNIFAC exactly, at every temperature.
 
-- there is no differential oracle: NeqSim's `ComponentGEUnifacPSRK` never reads its groups, so every coefficient it produces is NaN. `validation/neqsim/FlashTp.java`'s `unifac()` measures it.
+- NeqSim's own PSRK has no usable oracle. `ComponentGEUnifacPSRK` reads no groups and returns NaN until one is supplied from NeqSim's `unifaccomp`; with one, methanol/water at 298.15 K gives `[2.9652072701594276, 3.1135350534804456]` where this model gives `[1.1156815062468024, 1.200639969105366]`.
 
-- where `b` is non-zero a case is this library's own output rather than an external value, recorded so the temperature dependence cannot change unnoticed.
+- that pair is the sharpest test there is: its `b` and `c` are zero in NeqSim's own tables, so PSRK *must* reduce to classic UNIFAC there, and classic UNIFAC's oracle gives this model's numbers exactly. NeqSim's PSRK does not reduce.
+
+- the cases are therefore this library's own output rather than external values, recorded so the temperature dependence cannot change unnoticed.
 
 - `x` is checked (non-negative, sums to one) rather than renormalised.
 

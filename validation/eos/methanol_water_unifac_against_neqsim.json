@@ -1,0 +1,20 @@
+{
+  "id": "methanol_water_unifac_against_neqsim",
+  "calc": "eos.unifac_activity_coefficients",
+  "source": {
+    "attribution": "NeqSim 3.20.0, `ComponentGEUnifac.getGamma` - the upstream this library is a port of, run from validation/neqsim/UnifacGamma.java",
+    "verification": "verified",
+    "notes": "NeqSim's classic UNIFAC activity coefficients for methanol/water 0.5/0.5 at 298.15 K. **This case used to say there was no oracle**, on the strength of NeqSim throwing an ArrayIndexOutOfBoundsException from `PhaseGEUnifac.checkGroups`. The throw is real and the conclusion drawn from it was wrong: `ComponentGEUnifac`'s constructor fills `unifacGroups` and never `unifacGroupsArray`, both writers of the array are public, and one `setUnifacGroups(getUnifacGroups2())` call puts them back in step. Nothing upstream was modified to get this measurement - the driver uses public API only."
+  },
+  "derivation": "The driver builds `SystemUNIFAC`, calls `setUnifacGroups(c.getUnifacGroups2())` on each GE component *and again after* `init(0)` - `setMixingRule` and `init` each walk the array, and `init` is also what gives the phase the moles a UNIFAC evaluation weights by - then evaluates `getExcessGibbsEnergy` and reads `getGamma`. It printed `gamma [1.1156815062468024, 1.200639969105366]` at `x [0.5, 0.5]`.\n\nazoth's `eos.unifac_activity_coefficients` reproduces it exactly. The values recorded in `specs/cases/eos/unifac_activity_coefficients.toml` as the published model's are these numbers, so the case was already checked against NeqSim without anyone knowing it.",
+  "inputs": {
+    "components": ["methanol", "water"],
+    "T": 298.15,
+    "x": [0.5, 0.5]
+  },
+  "expected": {
+    "ln_gamma": [0.109465434560284, 0.18285472222380844],
+    "gamma": [1.1156815062468024, 1.200639969105366]
+  },
+  "tolerance": 1e-10
+}

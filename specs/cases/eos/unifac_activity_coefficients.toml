@@ -2,7 +2,7 @@ model = "eos.unifac_activity_coefficients"
 [[cases]]
 id = "acetone_n_hexane_equimolar_at_298_15_k"
 tolerance = 1e-09
-source = "Standard UNIFAC (Hansen et al. 1991) for acetone/n-hexane 0.5/0.5 at 298.15 K. No differential oracle exists - see the spec's assumptions and `validation/neqsim/FlashTp.java` - so the expected values are the published model's, and the group tables resolve from NeqSim's UNIFACcomp/UNIFACGroupParam/UNIFACInterParam."
+source = "NeqSim 3.20.0 `ComponentGEUnifac.getGamma` for acetone/n-hexane 0.5/0.5 at 298.15 K, via `validation/neqsim/UnifacGamma.java`, which synchronises the group array NeqSim's own constructor leaves empty. The group tables resolve from NeqSim's UNIFACcomp/UNIFACGroupParam/UNIFACInterParam."
 [cases.inputs]
 components = ["acetone", "n-hexane"]
 T = 298.15
@@ -13,7 +13,7 @@ gamma = [1.522016005657412, 1.556463387246744]
 [[cases]]
 id = "methanol_water_equimolar_at_298_15_k"
 tolerance = 1e-09
-source = "Standard UNIFAC (Hansen et al. 1991) for methanol/water 0.5/0.5 at 298.15 K. No differential oracle exists - see the spec's assumptions and `validation/neqsim/FlashTp.java` - so the expected values are the published model's, and the group tables resolve from NeqSim's UNIFACcomp/UNIFACGroupParam/UNIFACInterParam."
+source = "NeqSim 3.20.0 `ComponentGEUnifac.getGamma` for methanol/water 0.5/0.5 at 298.15 K, via `validation/neqsim/UnifacGamma.java`, which synchronises the group array NeqSim's own constructor leaves empty. The group tables resolve from NeqSim's UNIFACcomp/UNIFACGroupParam/UNIFACInterParam."
 [cases.inputs]
 components = ["methanol", "water"]
 T = 298.15

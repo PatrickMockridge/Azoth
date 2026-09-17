@@ -49,7 +49,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - `x` is checked (non-negative, sums to one) rather than renormalised.
 
-- there is no differential oracle. Classic UNIFAC throws in `PhaseGEUnifac.checkGroups`, which reads a group array the component constructor never fills; `ComponentGEUnifacPSRK` reads no groups at all and returns NaN. `validation/neqsim/FlashTp.java`'s `unifac()` reproduces both failures.
+- there *is* a differential oracle, and reaching it needed no change to NeqSim. Classic UNIFAC throws in `PhaseGEUnifac.checkGroups`, which reads a group array the component constructor never fills; both writers of that array are public. `validation/neqsim/UnifacGamma.java` is the driver.
 
 
 ## Cases
@@ -63,5 +63,5 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - Fredenslund, A.; Jones, R. L.; Prausnitz, J. M. (1975). "Group-contribution estimation of activity coefficients in nonideal liquid mixtures." AIChE Journal 21(6), 1086-1099.
 - Hansen, H. K.; Rasmussen, P.; Fredenslund, A.; Schiller, M.; Gmehling, J. (1991). "Vapor-liquid equilibria by UNIFAC group contribution. 5. Revision and extension." Ind. Eng. Chem. Res. 30(10), 2352-2355.
-- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEUnifac`/`PhaseGEUnifac` are the port source; neither yields a differential oracle, and `validation/neqsim/FlashTp.java`'s `unifac()` measures why.
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEUnifac`/`PhaseGEUnifac` are the port source, and the two validation cases beside this spec are its `getGamma`.
 

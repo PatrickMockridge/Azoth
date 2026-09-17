@@ -73,9 +73,16 @@ fn the_databank_resolves_the_methanol_water_group_tables() {
     );
 }
 
-/// Methanol is subgroup 6 (CH3OH) and water subgroup 7 (H2O), so the union is
-/// `[6, 7]` in that order: each component's row is a one in its own column, and
+/// Methanol is subgroup 15 (CH3OH) and water subgroup 16 (H2O), so the union is
+/// `[15, 16]` in that order: each component's row is a one in its own column, and
 /// methanol - listed first - takes the first column.
+///
+/// The subgroup numbers are worth pinning because they are easy to mistake for the
+/// *main* groups the interaction matrix is keyed by: methanol's main group is 6 and
+/// water's is 7, and subgroups 6 and 7 are a different pair of groups entirely -
+/// `R = 1.1167` and `1.1173`, both in main group 2. The resolver reads the subgroup from
+/// `UNIFACcomp.csv` and the main group from `UNIFACGroupParam.csv`, which is why the two
+/// numberings appear together in one test.
 #[test]
 fn the_group_union_is_sorted_by_subgroup_and_rows_follow_it() {
     let named = databank::unifac_parameters(&["methanol", "water"]).unwrap();
