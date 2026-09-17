@@ -16,8 +16,10 @@
 //! perturbs `n_i` and renormalises the composition and density through the fixed volume),
 //! and this module does the same, so the derivative is oracle-checked against NeqSim rather
 //! than carried as a hand-derived composition derivative. NeqSim's own `getLogFugacity`
-//! is never computed for BWRS - it returns zero - and its `Z` carries the same ten-fold
-//! pressure error as `calcPressure2`; the `Z` here is the physical one.
+//! is never computed for BWRS - it returns zero - so the only faithful oracle is
+//! `getdFdN` itself, which the tests check against. Its `Z` is the physical one (only
+//! `calcPressure2` carries the ten-fold error), and this module's `Z = 1 + rho dF/drho`
+//! agrees with it.
 
 use crate::bwrs::{BwrsCoefficients, be, bp, d_helmholtz_drho, helmholtz};
 
