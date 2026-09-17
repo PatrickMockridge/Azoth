@@ -84,6 +84,7 @@ from azoth.core.result import (
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HydrogenPhaseResult,
     IdealGasCpResult,
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
@@ -186,6 +187,7 @@ __all__ = [
     "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
     "helium_phase",
+    "hydrogen_phase",
     "ideal_gas_cp",
     "liquid_heat_capacity",
     "mason_saxena_conductivity",
@@ -255,6 +257,7 @@ _BWRS_PHASE = "eos.bwrs_phase"
 _AMMONIA_PHASE = "eos.ammonia_phase"
 _CO2_PHASE = "eos.co2_phase"
 _HELIUM_PHASE = "eos.helium_phase"
+_HYDROGEN_PHASE = "eos.hydrogen_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
@@ -1516,6 +1519,23 @@ def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
     See :func:`azoth.eos.reference.helium_phase`.
     """
     return resolve(_HELIUM_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
+
+
+def hydrogen_phase(T: Q, P: Q, hydrogen_type: str = "normal") -> HydrogenPhaseResult:
+    """The Leachman hydrogen phase state at a temperature and pressure.
+
+    Pure hydrogen, so there is no composition: the density is solved from the pressure by
+    Newton from the ideal-gas guess (the gas-like root), and the Helmholtz derivatives
+    give the compressibility factor and the property set. ``hydrogen_type`` names the
+    spin-isomer: ``normal``, ``para`` or ``ortho``.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        InvalidInputError: if ``hydrogen_type`` is not a known isomer.
+
+    See :func:`azoth.eos.reference.hydrogen_phase`.
+    """
+    return resolve(_HYDROGEN_PHASE)(T=T, P=P, hydrogen_type=hydrogen_type)  # type: ignore[no-any-return]
 
 
 def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:

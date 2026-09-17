@@ -329,6 +329,10 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
         if parameter == "components":
             continue
         params.append(render_parameter(parameter, declaration))
+    if "hydrogen_type" in taken:
+        # The hydrogen spin-isomer is a boundary-only choice carried as a string, not a
+        # declared input: the spec names `T` and `P`, and the isomer is the caller's.
+        params.append('hydrogen_type: str = "normal"')
     if "mixture" in taken:
         # The cubic and the alpha correlation the mixture is evaluated under, the two
         # boundary arguments the spec does not declare (they travel *inside* the

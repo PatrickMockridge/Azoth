@@ -259,6 +259,17 @@ class HeliumPhaseResult:
     warnings: list[Warning]
 
 @final
+class HydrogenPhaseResult:
+    z_factor: float
+    u: Qty
+    h: Qty
+    s: Qty
+    cv: Qty
+    cp: Qty
+    g: Qty
+    warnings: list[Warning]
+
+@final
 class IdealGasCpResult:
     cp: Qty
     warnings: list[Warning]
@@ -914,6 +925,7 @@ def heat_of_vaporization(
     T: float,
 ) -> HeatOfVaporizationResult: ...
 def helium_phase(T: float, P: float) -> HeliumPhaseResult: ...
+def hydrogen_phase(T: float, P: float, hydrogen_type: str = "normal") -> HydrogenPhaseResult: ...
 def ideal_gas_cp(
     cp_a: float,
     cp_b: float,

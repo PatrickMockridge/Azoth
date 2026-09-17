@@ -86,6 +86,37 @@ impl CalcResult for AmmoniaPhaseResult {
     }
 }
 
+/// Result of `eos.hydrogen_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrogenPhaseResult {
+    /// The compressibility factor `Z = P/(rho R T)`.
+    pub z_factor: f64,
+    /// The internal energy.
+    pub u: MolarEnergy,
+    /// The enthalpy.
+    pub h: MolarEnergy,
+    /// The entropy.
+    pub s: MolarHeatCapacity,
+    /// The isochoric heat capacity.
+    pub cv: MolarHeatCapacity,
+    /// The isobaric heat capacity.
+    pub cp: MolarHeatCapacity,
+    /// The Gibbs energy.
+    pub g: MolarEnergy,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HydrogenPhaseResult {
+    const CALC_ID: &'static str = "eos.hydrogen_phase";
+    const FIELDS: &'static [&'static str] =
+        &["z_factor", "u", "h", "s", "cv", "cp", "g", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.helium_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HeliumPhaseResult {

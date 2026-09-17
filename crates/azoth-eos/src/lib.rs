@@ -57,6 +57,7 @@ pub mod hayduk_minhas_diffusivity;
 pub mod heat_of_vaporization;
 pub mod helium_phase;
 pub mod hv_ge;
+pub mod hydrogen_phase;
 pub mod ideal_gas_cp;
 pub mod leachman;
 pub mod liquid_heat_capacity;
@@ -150,6 +151,7 @@ pub use dew_temperature::dew_temperature;
 pub use hayduk_minhas_diffusivity::{HaydukMinhasForm, hayduk_minhas_diffusivity};
 pub use heat_of_vaporization::heat_of_vaporization;
 pub use helium_phase::helium_phase;
+pub use hydrogen_phase::hydrogen_phase;
 pub use ideal_gas_cp::ideal_gas_cp;
 pub use liquid_heat_capacity::liquid_heat_capacity;
 pub use mason_saxena_conductivity::mason_saxena_conductivity;
@@ -192,16 +194,16 @@ pub use results::{
     BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult, Co2PhaseResult,
     Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult,
     DewTemperatureResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, Phase, Pr78KappaResult,
-    PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
-    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
-    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult,
-    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
-    RootStructure, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
+    HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, Phase,
+    Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,
+    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
+    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
+    PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, RootStructure, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict, ThFlashResult,
     ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,

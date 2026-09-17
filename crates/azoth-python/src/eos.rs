@@ -19,16 +19,16 @@ use crate::results::{
     PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyHeliumPhaseResult,
-    PyIdealGasCpResult, PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult,
-    PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult, PyMatcopPrAlphaResult,
-    PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult,
-    PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
-    PyPhFlashResult, PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult,
-    PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
-    PyPrDelft1998AlphaResult, PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult,
-    PyPrLeeKeslerAlphaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
-    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
+    PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
+    PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
+    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult,
+    PyParachorSurfaceTensionResult, PyPhFlashResult, PyPhaseBoundaryResult,
+    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
+    PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult, PyPrDepartureResult,
+    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
     PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
     PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
@@ -2006,6 +2006,21 @@ pub fn co2_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyCo2PhaseResult> {
 pub fn helium_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyHeliumPhaseResult> {
     azoth_eos::helium_phase(kelvins(T), pascals(P))
         .map(|r| PyHeliumPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Leachman hydrogen phase state, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (T, P, hydrogen_type = "normal"))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn hydrogen_phase(
+    py: Python<'_>,
+    T: f64,
+    P: f64,
+    hydrogen_type: &str,
+) -> PyResult<PyHydrogenPhaseResult> {
+    azoth_eos::hydrogen_phase(kelvins(T), pascals(P), hydrogen_type)
+        .map(|r| PyHydrogenPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

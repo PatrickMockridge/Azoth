@@ -73,6 +73,7 @@
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Dew-point temperature](./eos/dew_temperature.md)
   - [Helium reference phase state](./eos/helium_phase.md)
+  - [Hydrogen reference phase state](./eos/hydrogen_phase.md)
   - [Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities](./eos/mason_saxena_conductivity.md)
   - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)
   - [Activity coefficients from the NRTL local-composition model](./eos/nrtl_activity_coefficients.md)

@@ -28,6 +28,21 @@ pub enum HydrogenType {
     Ortho,
 }
 
+impl std::str::FromStr for HydrogenType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_lowercase().as_str() {
+            "normal" => Ok(HydrogenType::Normal),
+            "para" => Ok(HydrogenType::Para),
+            "ortho" => Ok(HydrogenType::Ortho),
+            other => Err(format!(
+                "unknown hydrogen type `{other}`; expected `normal`, `para` or `ortho`"
+            )),
+        }
+    }
+}
+
 impl HydrogenType {
     /// The critical temperature, K.
     #[must_use]

@@ -124,6 +124,25 @@ fn properties_reproduce_neqsim() {
     }
 }
 
+/// The model assembles the density solve and the property set into the phase state the
+/// spec's worked examples name.
+#[test]
+fn hydrogen_phase_model_matches_the_worked_example() {
+    let r = azoth_eos::hydrogen_phase(
+        azoth_core::units::kelvins(300.0),
+        azoth_core::units::pascals(100_000.0),
+        "normal",
+    )
+    .unwrap();
+    assert_close(r.z_factor, 1.000584534646334);
+    assert_close(r.u.value, 5483.632550699886);
+    assert_close(r.h.value, 7979.443586448574);
+    assert_close(r.s.value, 107.8880264448619);
+    assert_close(r.cv.value, 20.53458433576209);
+    assert_close(r.cp.value, 28.85299070530393);
+    assert_close(r.g.value, -24386.96434700999);
+}
+
 /// The property set satisfies the Gibbs identity and the `cp - cv` relation for all types.
 #[test]
 fn properties_satisfy_the_thermodynamic_identities() {

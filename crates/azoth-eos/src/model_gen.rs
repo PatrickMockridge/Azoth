@@ -10,6 +10,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/helium_phase.toml
+//!   - specs/models/eos/hydrogen_phase.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
@@ -1072,6 +1073,108 @@ pub static HELIUM_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&HELIUM_PHASE_ALGORITHM),
     checks: HELIUM_PHASE_CHECKS,
     cases: HELIUM_PHASE_CASES,
+};
+
+static HYDROGEN_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static HYDROGEN_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "gas_at_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0), ("P", 100000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 1.000584534646334),
+            ("u", 5483.632550699886),
+            ("h", 7979.443586448574),
+            ("s", 107.8880264448619),
+            ("cv", 20.53458433576209),
+            ("cp", 28.85299070530393),
+            ("g", -24386.96434700999),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "gas_at_10_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 100.0), ("P", 1000000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9983759652275699),
+            ("u", 1773.315295196198),
+            ("h", 2603.415989860626),
+            ("s", 59.74983629167724),
+            ("cv", 14.32576936590632),
+            ("cp", 23.20854934562025),
+            ("g", -3371.567639307098),
+        ],
+        expected_vectors: &[],
+    },
+];
+
+static HYDROGEN_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "newton_density_solve",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("ideal_gas"),
+    initial_temperature: None,
+    inner: None,
+};
+
+/// Registry entry for `eos.hydrogen_phase`.
+pub static HYDROGEN_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.hydrogen_phase",
+    kind: "procedure",
+    algorithm: Some(&HYDROGEN_PHASE_ALGORITHM),
+    checks: HYDROGEN_PHASE_CHECKS,
+    cases: HYDROGEN_PHASE_CASES,
 };
 
 static MASON_SAXENA_CONDUCTIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -2857,6 +2960,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
     &HELIUM_PHASE_SPEC,
+    &HYDROGEN_PHASE_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &NRTL_ACTIVITY_COEFFICIENTS_SPEC,
