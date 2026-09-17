@@ -55,6 +55,7 @@ pub mod dew_temperature;
 pub mod flash_property;
 pub mod hayduk_minhas_diffusivity;
 pub mod heat_of_vaporization;
+pub mod helium_phase;
 pub mod hv_ge;
 pub mod ideal_gas_cp;
 pub mod liquid_heat_capacity;
@@ -147,6 +148,7 @@ pub use dew_pressure::dew_pressure;
 pub use dew_temperature::dew_temperature;
 pub use hayduk_minhas_diffusivity::{HaydukMinhasForm, hayduk_minhas_diffusivity};
 pub use heat_of_vaporization::heat_of_vaporization;
+pub use helium_phase::helium_phase;
 pub use ideal_gas_cp::ideal_gas_cp;
 pub use liquid_heat_capacity::liquid_heat_capacity;
 pub use mason_saxena_conductivity::mason_saxena_conductivity;
@@ -189,7 +191,7 @@ pub use results::{
     BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult, Co2PhaseResult,
     Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult,
     DewTemperatureResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    IdealGasCpResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
+    HeliumPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
     Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
     MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
     NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, Phase, Pr78KappaResult,

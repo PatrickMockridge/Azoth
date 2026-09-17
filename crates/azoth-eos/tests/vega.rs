@@ -134,6 +134,24 @@ fn residual_derivatives_match_finite_difference() {
     );
 }
 
+/// The model assembles the density solve and the property set into the phase state the
+/// spec's worked examples name.
+#[test]
+fn helium_phase_model_matches_the_worked_example() {
+    let r = azoth_eos::helium_phase(
+        azoth_core::units::kelvins(273.15),
+        azoth_core::units::pascals(10_000_000.0),
+    )
+    .unwrap();
+    assert_close(r.z_factor, 1.051977081289438);
+    assert_close(r.u.value, 3438.1318168916159);
+    assert_close(r.h.value, 5827.2748904468817);
+    assert_close(r.s.value, 71.90291916965856);
+    assert_close(r.cv.value, 12.577536993905438);
+    assert_close(r.cp.value, 20.811314291462409);
+    assert_close(r.g.value, -13813.007480745353);
+}
+
 /// The property set satisfies the Gibbs identity and the `cp - cv` relation.
 #[test]
 fn properties_satisfy_the_thermodynamic_identities() {

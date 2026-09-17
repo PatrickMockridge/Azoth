@@ -83,6 +83,7 @@ from azoth.core.result import (
     DewTemperatureResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
+    HeliumPhaseResult,
     IdealGasCpResult,
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
@@ -184,6 +185,7 @@ __all__ = [
     "from_names",
     "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
+    "helium_phase",
     "ideal_gas_cp",
     "liquid_heat_capacity",
     "mason_saxena_conductivity",
@@ -252,6 +254,7 @@ _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BWRS_PHASE = "eos.bwrs_phase"
 _AMMONIA_PHASE = "eos.ammonia_phase"
 _CO2_PHASE = "eos.co2_phase"
+_HELIUM_PHASE = "eos.helium_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
@@ -1498,6 +1501,21 @@ def co2_phase(T: Q, P: Q) -> Co2PhaseResult:
     See :func:`azoth.eos.reference.co2_phase`.
     """
     return resolve(_CO2_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
+
+
+def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
+    """The Vega helium phase state at a temperature and pressure.
+
+    Pure helium, so there is no composition: the density is solved from the pressure by
+    Newton from the ideal-gas guess (the gas-like root), and the Helmholtz derivatives
+    give the compressibility factor and the property set.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.helium_phase`.
+    """
+    return resolve(_HELIUM_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
 
 
 def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:

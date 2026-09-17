@@ -190,6 +190,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::bwrs_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::ammonia_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::co2_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::helium_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::viscosity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::thermal_conductivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::wilke_viscosity, m)?)?;

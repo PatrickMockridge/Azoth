@@ -9,6 +9,7 @@
 //!   - specs/models/eos/critical_point.toml
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
+//!   - specs/models/eos/helium_phase.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
@@ -946,6 +947,131 @@ pub static DEW_TEMPERATURE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&DEW_TEMPERATURE_ALGORITHM),
     checks: DEW_TEMPERATURE_CHECKS,
     cases: DEW_TEMPERATURE_CASES,
+};
+
+static HELIUM_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static HELIUM_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "gas_at_100_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 273.15), ("P", 10000000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 1.051977081289438),
+            ("u", 3438.131816891616),
+            ("h", 5827.274890446882),
+            ("s", 71.90291916965856),
+            ("cv", 12.577536993905438),
+            ("cp", 20.81131429146241),
+            ("g", -13813.007480745353),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "gas_at_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 300.0), ("P", 100000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 1.0004744912017172),
+            ("u", 3761.829372397934),
+            ("h", 6257.354515541211),
+            ("s", 112.10308031769742),
+            ("cv", 12.472686316985868),
+            ("cp", 20.786326370649327),
+            ("g", -27373.56957976801),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "dense_at_200_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 400.0), ("P", 20000000.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 1.0673228266214245),
+            ("u", 5042.388106074379),
+            ("h", 8592.078408836254),
+            ("s", 74.10811629278298),
+            ("cv", 12.608784419728487),
+            ("cp", 20.765412170856578),
+            ("g", -21051.16810827694),
+        ],
+        expected_vectors: &[],
+    },
+];
+
+static HELIUM_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "newton_density_solve",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("ideal_gas"),
+    initial_temperature: None,
+    inner: None,
+};
+
+/// Registry entry for `eos.helium_phase`.
+pub static HELIUM_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.helium_phase",
+    kind: "procedure",
+    algorithm: Some(&HELIUM_PHASE_ALGORITHM),
+    checks: HELIUM_PHASE_CHECKS,
+    cases: HELIUM_PHASE_CASES,
 };
 
 static MASON_SAXENA_CONDUCTIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -2730,6 +2856,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &CRITICAL_POINT_SPEC,
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
+    &HELIUM_PHASE_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &NRTL_ACTIVITY_COEFFICIENTS_SPEC,

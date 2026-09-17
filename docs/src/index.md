@@ -130,6 +130,7 @@ Four sections, and the difference between them is the point:
 - [`eos.critical_point`](./eos/critical_point.md) — Mixture critical point
 - [`eos.dew_pressure`](./eos/dew_pressure.md) — Dew-point pressure
 - [`eos.dew_temperature`](./eos/dew_temperature.md) — Dew-point temperature
+- [`eos.helium_phase`](./eos/helium_phase.md) — Helium reference phase state
 - [`eos.mason_saxena_conductivity`](./eos/mason_saxena_conductivity.md) — Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities
 - [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — Molar enthalpy and entropy of a mixture
 - [`eos.nrtl_activity_coefficients`](./eos/nrtl_activity_coefficients.md) — Activity coefficients from the NRTL local-composition model
