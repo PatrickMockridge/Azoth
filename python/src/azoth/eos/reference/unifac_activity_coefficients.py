@@ -16,46 +16,47 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import UnifacActivityCoefficientsResult
 from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
+from azoth.eos.components import UnifacParameters
 
 MODEL_ID = "eos.unifac_activity_coefficients"
 
 
 def _ln_gamma_group(
-    k: int, theta: list[float], group_q: list[float], aij: list[list[float]], t: float
+    k: int, theta: list[float], group_q: Sequence[float], aij: Sequence[float], t: float
 ) -> float:
+    """The residual ``ln Gamma_k`` for one group at a surface-fraction distribution.
+
+    ``aij`` is ``G x G`` row-major, so ``aij[m][n]`` is ``aij[m * g + n]``.
+    """
     g = len(group_q)
-    s1 = sum(theta[m] * math.exp(-aij[m][k] / t) for m in range(g))
+    s1 = sum(theta[m] * math.exp(-aij[m * g + k] / t) for m in range(g))
     s3 = 0.0
     for m in range(g):
-        s2 = sum(theta[n] * math.exp(-aij[n][m] / t) for n in range(g))
-        s3 += theta[m] * math.exp(-aij[k][m] / t) / s2
+        s2 = sum(theta[n] * math.exp(-aij[n * g + m] / t) for n in range(g))
+        s3 += theta[m] * math.exp(-aij[k * g + m] / t) / s2
     return group_q[k] * (1.0 - math.log(s1) - s3)
 
 
 def unifac_activity_coefficients(
+    params: UnifacParameters,
     T: Q,
     x: Sequence[float],
-    groups: Sequence[Sequence[float]],
-    group_r: Sequence[float],
-    group_q: Sequence[float],
-    aij: Sequence[Sequence[Q]],
 ) -> UnifacActivityCoefficientsResult:
     """The activity coefficients of a mixture, from UNIFAC.
 
-    ``groups[i][k]`` is the count of group ``k`` in component ``i`` over the union of
-    the named components' groups, ``group_r``/``group_q`` are the per-group volume and
-    surface area, and ``aij[m][n] = a_{main(m), main(n)}`` in Kelvin. The component
-    volume and area follow from the group sums, the combinatorial term uses ``Z = 10``,
-    and the residual is the standard ``ln gamma^R_i = sum_k nu_k^i (ln Gamma_k^mix -
-    ln Gamma_k^pure)``. ``x`` is checked rather than renormalised.
+    ``params.groups[i][k]`` is the count of group ``k`` in component ``i`` over the
+    union of the named components' groups, ``group_r``/``group_q`` are the per-group
+    volume and surface area, and ``aij[m][n] = a_{main(m), main(n)}`` in Kelvin. The
+    component volume and area follow from the group sums, the combinatorial term uses
+    ``Z = 10``, and the residual is the standard ``ln gamma^R_i = sum_k nu_k^i
+    (ln Gamma_k^mix - ln Gamma_k^pure)``. ``params`` is resolved by name through
+    :func:`azoth.eos.components.unifac_parameters`; ``x`` is checked rather than
+    renormalised.
 
     Args:
+        params: the resolved UNIFAC parameters, by component.
         T: absolute temperature.
         x: mole fractions; non-negative and summing to one.
-        groups: the group counts, one row per component.
-        group_r: the volume ``R`` of each group.
-        group_q: the surface area ``Q`` of each group.
-        aij: the main-group interaction matrix, in Kelvin.
 
     Returns:
         The natural logarithm and the value of each activity coefficient.
@@ -67,11 +68,10 @@ def unifac_activity_coefficients(
 
     Example:
         >>> import azoth
+        >>> from azoth.eos.components import unifac_parameters
         >>> q = azoth.ureg.Quantity
-        >>> aij = [[q(0.0, "K"), q(-181.0, "K")], [q(289.6, "K"), q(0.0, "K")]]
         >>> r = unifac_activity_coefficients(
-        ...     q(298.15, "K"), [0.5, 0.5], [[1.0, 0.0], [0.0, 1.0]],
-        ...     [1.4311, 0.92], [1.432, 1.4], aij,
+        ...     unifac_parameters(["methanol", "water"]), q(298.15, "K"), [0.5, 0.5]
         ... )
         >>> round(r.gamma[0], 14)
         1.1156815062468
@@ -85,10 +85,10 @@ def unifac_activity_coefficients(
 
     t = input_to_si(spec, "T", T)
     x = list(x)
-    groups = [list(row) for row in groups]
-    group_r = list(group_r)
-    group_q = list(group_q)
-    aij_si = [[input_to_si(spec, "aij", value) for value in row] for row in aij]
+    groups = params.groups
+    group_r = params.group_r
+    group_q = params.group_q
+    aij_si = params.aij
 
     n = len(x)
     g = len(group_r)
@@ -96,28 +96,22 @@ def unifac_activity_coefficients(
         raise InvalidInputError("x", "a mixture of zero components has no activity coefficient")
     if g == 0 or len(group_q) != g:
         raise InvalidInputError(
-            "group_r",
+            "components",
             f"`group_r` has {g} entries and `group_q` has {len(group_q)}; both must be "
             "the same non-empty length",
         )
-    if len(groups) != n:
+    if len(groups) != n * g:
         raise InvalidInputError(
-            "groups", f"`groups` has {len(groups)} rows but `x` has {n} entries; it must be N x G"
+            "components",
+            f"`groups` has {len(groups)} entries but `x` has {n} components and there "
+            f"are {g} groups, which needs {n * g}",
         )
-    for i in range(n):
-        if len(groups[i]) != g:
-            raise InvalidInputError(
-                "groups", f"row {i} of `groups` has {len(groups[i])} entries but must be {g}"
-            )
-        if any(count < 0.0 for count in groups[i]):
-            raise InvalidInputError("groups", f"row {i} of `groups` has a negative group count")
-    if len(aij_si) != g:
-        raise InvalidInputError("aij", f"`aij` has {len(aij_si)} rows but must be {g} x {g}")
-    for i in range(g):
-        if len(aij_si[i]) != g:
-            raise InvalidInputError(
-                "aij", f"row {i} of `aij` has {len(aij_si[i])} entries but must be {g}"
-            )
+    if any(count < 0.0 for count in groups):
+        raise InvalidInputError("components", "a group count cannot be negative")
+    if len(aij_si) != g * g:
+        raise InvalidInputError(
+            "components", f"`aij` has {len(aij_si)} entries but must be {g} x {g}"
+        )
     if any(value < 0.0 for value in x):
         bad = next(i for i, value in enumerate(x) if value < 0.0)
         raise InvalidInputError("x", f"x[{bad}] is {x[bad]} but a mole fraction cannot be negative")
@@ -129,8 +123,8 @@ def unifac_activity_coefficients(
             "it is refused instead",
         )
 
-    ri = [sum(groups[i][k] * group_r[k] for k in range(g)) for i in range(n)]
-    qi = [sum(groups[i][k] * group_q[k] for k in range(g)) for i in range(n)]
+    ri = [sum(groups[i * g + k] * group_r[k] for k in range(g)) for i in range(n)]
+    qi = [sum(groups[i * g + k] * group_q[k] for k in range(g)) for i in range(n)]
 
     ln_gamma: list[float] = []
     gamma: list[float] = []
@@ -144,10 +138,12 @@ def unifac_activity_coefficients(
         lng_c = math.log(v / x[i]) + 5.0 * qi[i] * math.log(f / v) + li - (v / x[i]) * suml
 
         denom = sum(x[j] * qi[j] for j in range(n))
-        qmix = [group_q[l] * sum(x[j] * groups[j][l] for j in range(n)) / denom for l in range(g)]
-        qcomp = [group_q[l] * groups[i][l] / qi[i] for l in range(g)]
+        qmix = [
+            group_q[l] * sum(x[j] * groups[j * g + l] for j in range(n)) / denom for l in range(g)
+        ]
+        qcomp = [group_q[l] * groups[i * g + l] / qi[i] for l in range(g)]
         lng_r = sum(
-            groups[i][k]
+            groups[i * g + k]
             * (
                 _ln_gamma_group(k, qmix, group_q, aij_si, t)
                 - _ln_gamma_group(k, qcomp, group_q, aij_si, t)

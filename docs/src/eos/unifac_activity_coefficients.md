@@ -21,12 +21,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Name | Unit | Description |
 |---|---|---|
+| `components` | - | the substances the mixture is made of, by name, resolved against NeqSim's `UNIFACcomp.csv` group decomposition and the `UNIFACGroupParam`/`UNIFACInterParam` tables |
 | `T` | K | absolute temperature |
 | `x` | dimensionless | mole fractions; non-negative and summing to one. |
-| `groups` | dimensionless | the group counts: `groups[i][k]` is the count of the k-th group in component i |
-| `group_r` | dimensionless | the volume `R` of each group |
-| `group_q` | dimensionless | the surface area `Q` of each group |
-| `aij` | K | `aij[m][n] = a_{main(m), main(n)}` in Kelvin |
 
 
 ## Outputs
@@ -42,7 +39,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- the caller resolved `groups`, `group_r`, `group_q` and `aij` from the databank by name - this model takes the numbers, not the names, the way `eos.nrtl_activity_coefficients` takes its matrices.
+- `groups`, `group_r`, `group_q` and `aij` are resolved from the named components, from NeqSim's `UNIFACcomp.csv`, `UNIFACGroupParam.csv` and `UNIFACInterParam.csv`.
 
 - `groups` is `N x G`, one row per component and one column per group, over the union of the named components' subgroups sorted by subgroup number; absent groups are counted zero, and every component therefore has `G` groups.
 
@@ -59,8 +56,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `acetone_n_hexane_equimolar_at_298_15_k` | T = 298.15, x = [0.5, 0.5], groups = [[1.0, 0.0, 1.0], [2.0, 4.0, 0.0]], group_r = [0.9011, 0.6744, 1.6724], group_q = [0.848, 0.54, 1.488], aij = [[0.0, 0.0, 476.4], [0.0, 0.0, 476.4], [26.76, 26.76, 0.0]] | ln_gamma = [0.42003577558486405, 0.4424161881344282], gamma = [1.522016005657412, 1.556463387246744] |
-| `methanol_water_equimolar_at_298_15_k` | T = 298.15, x = [0.5, 0.5], groups = [[1.0, 0.0], [0.0, 1.0]], group_r = [1.4311, 0.92], group_q = [1.432, 1.4], aij = [[0.0, -181.0], [289.6, 0.0]] | ln_gamma = [0.109465434560284, 0.18285472222380844], gamma = [1.1156815062468024, 1.200639969105366] |
+| `acetone_n_hexane_equimolar_at_298_15_k` | components = ['acetone', 'n-hexane'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.42003577558486405, 0.4424161881344282], gamma = [1.522016005657412, 1.556463387246744] |
+| `methanol_water_equimolar_at_298_15_k` | components = ['methanol', 'water'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.109465434560284, 0.18285472222380844], gamma = [1.1156815062468024, 1.200639969105366] |
 
 ## References
 

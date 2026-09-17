@@ -3085,20 +3085,10 @@ static UNIFAC_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
         skip_reason: None,
         tolerance: 1e-09,
         numbers: &[("T", 298.15)],
-        lists: &[],
+        lists: &[("components", &["acetone", "n-hexane"])],
         strings: &[],
-        vectors: &[
-            ("x", &[0.5, 0.5]),
-            ("group_r", &[0.9011, 0.6744, 1.6724]),
-            ("group_q", &[0.848, 0.54, 1.488]),
-        ],
-        matrices: &[
-            ("groups", &[1.0, 0.0, 1.0, 2.0, 4.0, 0.0]),
-            (
-                "aij",
-                &[0.0, 0.0, 476.4, 0.0, 0.0, 476.4, 26.76, 26.76, 0.0],
-            ),
-        ],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
         expected: &[],
         expected_vectors: &[
             ("ln_gamma", &[0.42003577558486405, 0.4424161881344282]),
@@ -3113,17 +3103,10 @@ static UNIFAC_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
         skip_reason: None,
         tolerance: 1e-09,
         numbers: &[("T", 298.15)],
-        lists: &[],
+        lists: &[("components", &["methanol", "water"])],
         strings: &[],
-        vectors: &[
-            ("x", &[0.5, 0.5]),
-            ("group_r", &[1.4311, 0.92]),
-            ("group_q", &[1.432, 1.4]),
-        ],
-        matrices: &[
-            ("groups", &[1.0, 0.0, 0.0, 1.0]),
-            ("aij", &[0.0, -181.0, 289.6, 0.0]),
-        ],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
         expected: &[],
         expected_vectors: &[
             ("ln_gamma", &[0.109465434560284, 0.18285472222380844]),

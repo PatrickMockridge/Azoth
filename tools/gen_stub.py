@@ -323,9 +323,19 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             params += ["a: list[float]", "rhoc: list[float]"]
         elif "params" in taken:
             # An activity model resolves the names into a parameter set of its own
-            # rather than a `Mixture`: critical constants are not what NRTL reads, so
-            # the matrices cross flattened and the kernel rebuilds them by shape.
-            params += ["alpha: list[float]", "dij: list[float]"]
+            # rather than a `Mixture`: critical constants are not what NRTL or UNIFAC
+            # reads, so each set crosses as its own fields, flattened.
+            #
+            # Which fields is a fact about the dataclass the parameter is *annotated*
+            # with, so that is where this asks - the same move as reading the signature
+            # itself one line up, and the reason `params` carries a resolved record
+            # rather than the several loose vectors the transport wants. The field order
+            # is the transport order, and the kernel rebuilds by shape.
+            from azoth.eos import components as _components
+
+            annotation = inspect.signature(getattr(module, name)).parameters["params"].annotation
+            fields = dataclasses.fields(getattr(_components, annotation))
+            params += [f"{field.name}: list[float]" for field in fields]
         elif "components" in taken:
             # The EOS-CG mixture maps its own fixed component names, so the names cross
             # the boundary verbatim rather than as a flattened mixture.

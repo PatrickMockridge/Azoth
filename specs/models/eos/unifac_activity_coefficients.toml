@@ -2,7 +2,7 @@ id = "eos.unifac_activity_coefficients"
 name = "Activity coefficients from the UNIFAC group-contribution model"
 kind = "direct"
 assumptions = [
-    "the caller resolved `groups`, `group_r`, `group_q` and `aij` from the databank by name - this model takes the numbers, not the names, the way `eos.nrtl_activity_coefficients` takes its matrices.\n",
+    "`groups`, `group_r`, `group_q` and `aij` are resolved from the named components, from NeqSim's `UNIFACcomp.csv`, `UNIFACGroupParam.csv` and `UNIFACInterParam.csv`.\n",
     "`groups` is `N x G`, one row per component and one column per group, over the union of the named components' subgroups sorted by subgroup number; absent groups are counted zero, and every component therefore has `G` groups.\n",
     "`aij[m][n]` is `a_{main(m), main(n)}` in Kelvin, so `tau = aij/T` is dimensionless; it is directional (`a_mn != a_nm` in general).\n",
     "the combinatorial term uses `Z = 10`, so `l_i = 5 (R_i - Q_i) - (R_i - 1)`.\n",
@@ -19,6 +19,10 @@ standard = "Fredenslund et al. (1975); Hansen et al. (1991)"
 edition = "AIChE Journal 21(6), 1086-1099; Ind. Eng. Chem. Res. 30(10), 2352-2355"
 doi = "10.1002/aic.690210607"
 [inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against NeqSim's `UNIFACcomp.csv` group decomposition and the `UNIFACGroupParam`/`UNIFACInterParam` tables\n"
 [inputs.T]
 unit = "K"
 description = "absolute temperature\n"
@@ -27,26 +31,6 @@ type = "vector"
 unit = "dimensionless"
 length = "one per component"
 description = "mole fractions; non-negative and summing to one.\n"
-[inputs.groups]
-type = "matrix"
-unit = "dimensionless"
-shape = "N x G, one row per component, one column per group"
-description = "the group counts: `groups[i][k]` is the count of the k-th group in component i\n"
-[inputs.group_r]
-type = "vector"
-unit = "dimensionless"
-length = "one per group"
-description = "the volume `R` of each group\n"
-[inputs.group_q]
-type = "vector"
-unit = "dimensionless"
-length = "one per group"
-description = "the surface area `Q` of each group\n"
-[inputs.aij]
-type = "matrix"
-unit = "K"
-shape = "G x G, the main-group interaction matrix"
-description = "`aij[m][n] = a_{main(m), main(n)}` in Kelvin\n"
 [outputs]
 [outputs.ln_gamma]
 type = "vector"

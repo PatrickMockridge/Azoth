@@ -953,21 +953,27 @@ pub fn umrpr_alpha(py: Python<'_>, omega: f64, Tr: f64) -> PyResult<PyUmrprAlpha
 }
 
 /// The activity coefficients of a mixture, from UNIFAC. A *model* rather than a
-/// calculation: its arguments are vectors and matrices.
+/// calculation: its resolved parameters cross the boundary flattened row-major.
 #[pyfunction]
-#[pyo3(signature = (T, x, groups, group_r, group_q, aij))]
-#[pyo3(text_signature = "(T, x, groups, group_r, group_q, aij)")]
+#[pyo3(signature = (groups, group_r, group_q, aij, T, x))]
+#[pyo3(text_signature = "(groups, group_r, group_q, aij, T, x)")]
 #[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
 pub fn unifac_activity_coefficients(
     py: Python<'_>,
-    T: f64,
-    x: Vec<f64>,
-    groups: Vec<Vec<f64>>,
+    groups: Vec<f64>,
     group_r: Vec<f64>,
     group_q: Vec<f64>,
-    aij: Vec<Vec<f64>>,
+    aij: Vec<f64>,
+    T: f64,
+    x: Vec<f64>,
 ) -> PyResult<PyUnifacActivityCoefficientsResult> {
-    azoth_eos::unifac_activity_coefficients(T, &x, &groups, &group_r, &group_q, &aij)
+    let params = azoth_eos::databank::UnifacParameters {
+        groups,
+        group_r,
+        group_q,
+        aij,
+    };
+    azoth_eos::unifac_activity_coefficients(&params, T, &x)
         .map(|r| PyUnifacActivityCoefficientsResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

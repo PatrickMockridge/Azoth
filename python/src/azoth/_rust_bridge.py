@@ -818,22 +818,23 @@ def nrtl_activity_coefficients(
 
 
 def unifac_activity_coefficients(
+    params: Any,
     T: Q,
     x: Sequence[float],
-    groups: Sequence[Sequence[float]],
-    group_r: Sequence[float],
-    group_q: Sequence[float],
-    aij: Sequence[Sequence[Q]],
 ) -> UnifacActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust."""
+    """The activity coefficients of a mixture, computed in Rust.
+
+    The resolved group tables cross the boundary flattened, in the dataclass's own
+    field order, the same vectors the Rust kernel takes.
+    """
     spec = _models_gen.model("eos.unifac_activity_coefficients")
     result = _core.unifac_activity_coefficients(
+        list(params.groups),
+        list(params.group_r),
+        list(params.group_q),
+        list(params.aij),
         input_to_si(spec, "T", T),
         list(x),
-        [list(row) for row in groups],
-        list(group_r),
-        list(group_q),
-        [[input_to_si(spec, "aij", value) for value in row] for row in aij],
     )
     return UnifacActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),

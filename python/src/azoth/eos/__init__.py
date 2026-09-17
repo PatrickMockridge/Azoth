@@ -159,6 +159,7 @@ from azoth.core.units import Q
 from azoth.eos.components import (
     BwrsCoefficients,
     NrtlParameters,
+    UnifacParameters,
     bwrs_coefficients,
     component,
     from_model,
@@ -1125,23 +1126,20 @@ def nrtl_activity_coefficients(
 
 
 def unifac_activity_coefficients(
+    params: UnifacParameters,
     T: Q,
     x: Sequence[float],
-    groups: Sequence[Sequence[float]],
-    group_r: Sequence[float],
-    group_q: Sequence[float],
-    aij: Sequence[Sequence[Q]],
 ) -> UnifacActivityCoefficientsResult:
     """The activity coefficients of a mixture, from UNIFAC.
 
-    ``groups[i][k]`` is the count of group ``k`` in component ``i`` over the union of
-    the named components' groups, ``group_r``/``group_q`` are the per-group volume and
-    surface area, and ``aij[m][n] = a_{main(m), main(n)}`` in Kelvin. The component
-    volume and area follow from the group sums, the combinatorial term uses ``Z = 10``,
-    and the residual is the standard ``ln gamma^R_i`` sum. ``x`` is checked rather than
-    renormalised.
+    ``params.groups[i][k]`` is the count of group ``k`` in component ``i`` over the
+    union of the named components' groups, ``group_r``/``group_q`` are the per-group
+    volume and surface area, and ``aij[m][n] = a_{main(m), main(n)}`` in Kelvin. The
+    component volume and area follow from the group sums, the combinatorial term uses
+    ``Z = 10``, and the residual is the standard ``ln gamma^R_i`` sum. ``x`` is checked
+    rather than renormalised.
 
-    The group tables are the caller's: resolve them from names with
+    ``params`` is the caller's: resolve it from the mixture's components with
     :func:`azoth.eos.components.unifac_parameters`, which is what this model's own spec
     leaves to the caller.
 
@@ -1153,7 +1151,7 @@ def unifac_activity_coefficients(
     See :func:`azoth.eos.reference.unifac_activity_coefficients`.
     """
     return resolve(_UNIFAC_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
-        T=T, x=x, groups=groups, group_r=group_r, group_q=group_q, aij=aij
+        params=params, T=T, x=x
     )
 
 

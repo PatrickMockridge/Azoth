@@ -1337,12 +1337,12 @@ def tyn_calus_diffusivity(
 ) -> TynCalusDiffusivityResult: ...
 def umrpr_alpha(omega: float, Tr: float) -> UmrprAlphaResult: ...
 def unifac_activity_coefficients(
-    T: float,
-    x: list[float],
-    groups: list[list[float]],
+    groups: list[float],
     group_r: list[float],
     group_q: list[float],
-    aij: list[list[float]],
+    aij: list[float],
+    T: float,
+    x: list[float],
 ) -> UnifacActivityCoefficientsResult: ...
 def uniquac_activity_coefficients(
     T: float,

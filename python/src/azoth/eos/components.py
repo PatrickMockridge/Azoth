@@ -591,23 +591,35 @@ def _unifac_members() -> dict[str, tuple[tuple[int, int], ...]]:
     return out
 
 
-def unifac_parameters(
-    names: Sequence[str],
-) -> tuple[
-    tuple[tuple[float, ...], ...],
-    tuple[float, ...],
-    tuple[float, ...],
-    tuple[tuple[float, ...], ...],
-]:
+@dataclass(frozen=True, slots=True)
+class UnifacParameters:
+    """The UNIFAC parameters of a mixture, each matrix flattened row-major.
+
+    A caller-supplied record the way :class:`Component` is, and carrying **no names**
+    for the same reason: :func:`unifac_parameters` does the lookup, and a model that
+    looked up its own inputs would answer from a file the caller never mentioned.
+    """
+
+    #: Per-component group counts, ``N x G`` row-major.
+    groups: tuple[float, ...]
+    #: The volume ``R`` of each group, length ``G``.
+    group_r: tuple[float, ...]
+    #: The surface area ``Q`` of each group, length ``G``.
+    group_q: tuple[float, ...]
+    #: The main-group interaction matrix, ``G x G`` row-major, in kelvin.
+    aij: tuple[float, ...]
+
+
+def unifac_parameters(names: Sequence[str]) -> UnifacParameters:
     """The UNIFAC inputs for a list of components, by name.
 
-    Returns ``(groups, group_r, group_q, aij)``. ``groups`` is `N x G` (one row per
-    component, one column per group), ``group_r``/``group_q`` are length `G`, and
-    ``aij`` is `G x G` (Kelvin). `G` is the union of the named components' subgroups,
-    sorted by subgroup number, with absent groups counted zero.
+    ``groups`` is `N x G` (one row per component, one column per group),
+    ``group_r``/``group_q`` are length `G`, and ``aij`` is `G x G` (Kelvin). `G` is
+    the union of the named components' subgroups, sorted by subgroup number, with
+    absent groups counted zero.
 
     This is the name-to-matrix resolution `eos.unifac_activity_coefficients` leaves to
-    the caller, the way :func:`nrtl_parameters` resolves NRTL's matrices.
+    its caller, the way :func:`nrtl_parameters` resolves NRTL's matrices.
 
     Raises:
         PropertyUnavailableError: if a name has no UNIFAC group assignment.
@@ -634,25 +646,25 @@ def unifac_parameters(
 
     group_r = [0.0] * g
     group_q = [0.0] * g
-    aij = [[0.0] * g for _ in range(g)]
+    aij = [0.0] * (g * g)
     for k, subgroup in enumerate(union):
         r, q, main = group[subgroup]
         group_r[k] = r
         group_q[k] = q
         for m, other in enumerate(union):
             _, _, other_main = group[other]
-            aij[k][m] = aij_table.get((main, other_main), 0.0)
+            aij[k * g + m] = aij_table.get((main, other_main), 0.0)
 
-    groups = [[0.0] * g for _ in range(len(names))]
+    groups = [0.0] * (len(names) * g)
     for i, name in enumerate(names):
         for subgroup, count in members[name.strip().lower()]:
-            groups[i][union.index(subgroup)] = float(count)
+            groups[i * g + union.index(subgroup)] = float(count)
 
-    return (
-        tuple(tuple(row) for row in groups),
-        tuple(group_r),
-        tuple(group_q),
-        tuple(tuple(row) for row in aij),
+    return UnifacParameters(
+        groups=tuple(groups),
+        group_r=tuple(group_r),
+        group_q=tuple(group_q),
+        aij=tuple(aij),
     )
 
 
@@ -883,6 +895,7 @@ __all__ = [
     "BwrsCoefficients",
     "DatabankEntry",
     "NrtlParameters",
+    "UnifacParameters",
     "available",
     "bwrs_coefficients",
     "component",

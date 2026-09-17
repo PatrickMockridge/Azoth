@@ -13,7 +13,7 @@ importable as a top-level ``_helpers``.
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
 import pint
@@ -474,9 +474,10 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             kwargs["coeffs"] = [databank.bwrs_coefficients(name) for name in names]
         elif "params" in takes:
             # An activity model takes a resolved parameter set rather than a `Mixture`:
-            # NRTL's `alpha`/`Dij` are not critical constants, so there is nothing in a
-            # `Mixture` to carry them and the names resolve to a matrix instead.
-            kwargs["params"] = databank.nrtl_parameters(list(names))
+            # NRTL's `alpha`/`Dij` and UNIFAC's group tables are not the critical
+            # constants a `Mixture` carries, so there is nothing there to hold them and
+            # the names resolve to the model's own record instead.
+            kwargs["params"] = parameter_set(model, names)
         elif "components" in takes:
             # The EOS-CG mixture maps its own fixed component names to indices, so the
             # names cross the boundary verbatim rather than resolved to a `Mixture`.
@@ -519,3 +520,42 @@ def parameters_of(model: Mapping[str, Any]) -> set[str]:
     if function is None:  # pragma: no cover - the registry contract covers this
         raise AssertionError(f"{model['id']}: azoth.{namespace} has no `{name}`")
     return set(inspect.signature(function).parameters)
+
+
+#: The databank function that resolves each parameter-set record a model's ``params``
+#: argument can be annotated with, keyed by the annotation's name.
+#:
+#: A record and the function that builds it are two names for one thing, and this is
+#: where they are held together. Deriving `unifac_parameters` from `UnifacParameters`
+#: by string would be a convention nothing states; this is two lines a reader can
+#: check, and a model whose record is not here fails loudly rather than quietly.
+PARAMETER_RESOLVERS: dict[str, str] = {
+    "NrtlParameters": "nrtl_parameters",
+    "UnifacParameters": "unifac_parameters",
+}
+
+
+def parameter_set(model: Mapping[str, Any], names: Sequence[str]) -> Any:
+    """The resolved parameters a model's ``params`` argument is annotated with.
+
+    Which record is a fact about the annotation, so that is where this asks - the same
+    move :func:`parameters_of` makes one level up, and what keeps the two from being
+    able to disagree: a model whose ``params`` is annotated with a record this has
+    never heard of is an error rather than a quietly wrong call.
+    """
+    import importlib
+    import inspect
+
+    from azoth.eos import components as databank
+
+    namespace, _, name = model["id"].partition(".")
+    module = importlib.import_module(f"azoth.{namespace}")
+    annotation = inspect.signature(getattr(module, name)).parameters["params"].annotation
+    try:
+        resolve = getattr(databank, PARAMETER_RESOLVERS[annotation])
+    except KeyError:
+        raise AssertionError(
+            f"{model['id']}: `params` is annotated {annotation!r}, which is not a "
+            f"parameter set this knows how to resolve; known: {sorted(PARAMETER_RESOLVERS)}"
+        ) from None
+    return resolve(list(names))
