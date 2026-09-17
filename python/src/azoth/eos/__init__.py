@@ -163,6 +163,7 @@ from azoth.core.result import (
     Vdw1fMixBinaryResult,
     ViscosityResult,
     VuFlashResult,
+    VuFlashSingleCompResult,
     WaterPhaseResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
@@ -274,6 +275,7 @@ __all__ = [
     "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
     "vu_flash",
+    "vu_flash_single_comp",
     "water_phase",
     "wilke_chang_diffusivity",
     "wilke_chang_phi",
@@ -368,6 +370,7 @@ _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _VU_FLASH = "eos.vu_flash"
+_VU_FLASH_SINGLE_COMP = "eos.vu_flash_single_comp"
 _WILKE_VISCOSITY = "eos.wilke_viscosity"
 _RACHFORD_RICE = "eos.rachford_rice"
 _RACHFORD_RICE_BINARY = "eos.rachford_rice_binary"
@@ -1485,6 +1488,33 @@ def vu_flash(
     """
     return resolve(_VU_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, V=V, U=U, z=z
+    )
+
+
+def vu_flash_single_comp(
+    mixture: Mixture, ideal_gas: IdealGasModel, P: Q, V: Q, U: Q
+) -> VuFlashSingleCompResult:
+    """The temperature and split of a **pure component** at a pressure and internal energy.
+
+    A pure component has no two-phase split for a flash to find - one K-value is either
+    above one or below it - which is why :func:`vu_flash` refuses every pure feed in the
+    two-phase region. Here the state is not unknown, it is constrained: at a pressure a
+    pure component is on its saturation line, so the temperature is the saturation
+    temperature and the split is a lever rule on the two saturated internal energies.
+
+    ``V`` is checked against the volume the answer implies rather than used to find it -
+    the pressure and the internal energy fix the volume - and an inconsistent one comes
+    back as an ``OUT_OF_VALID_RANGE`` warning.
+
+    Raises:
+        InvalidInputError: if ``mixture`` is not a single component.
+        OutOfRangeError: if ``P`` is at or above the critical pressure, or ``U`` lies
+            outside the two saturated internal energies at it.
+
+    See :func:`azoth.eos.reference.vu_flash_single_comp`.
+    """
+    return resolve(_VU_FLASH_SINGLE_COMP)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, P=P, V=V, U=U
     )
 
 

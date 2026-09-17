@@ -41,8 +41,8 @@ use azoth_eos::results::{
     TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WaterPhaseResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -4762,6 +4762,61 @@ impl From<&PuFlashResult> for PyPuFlashResult {
     }
 }
 
+/// Result of `eos.vu_flash_single_comp`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "VuFlashSingleCompResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` and `V` are the symbols the spec and the Python result both use
+pub struct PyVuFlashSingleCompResult {
+    /// The saturation temperature at the pressure asked for.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The vapour fraction, from the lever rule.
+    #[pyo3(get)]
+    pub beta: f64,
+    /// The molar volume the split implies.
+    #[pyo3(get)]
+    pub V: PyQty,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyVuFlashSingleCompResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "VuFlashSingleCompResult(T={} K, beta={}, phase={})",
+            self.T.magnitude_si, self.beta, self.phase
+        )
+    }
+}
+
+impl From<&VuFlashSingleCompResult> for PyVuFlashSingleCompResult {
+    fn from(r: &VuFlashSingleCompResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.t.value,
+                unit: "K".to_string(),
+            },
+            beta: r.beta,
+            V: PyQty {
+                magnitude_si: r.v.value,
+                unit: "m**3/mol".to_string(),
+            },
+            phase: r.phase.as_str().to_string(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.vu_flash`, transported.
 #[pyclass(
     frozen,
@@ -5366,6 +5421,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         TuFlashResult::CALC_ID => TuFlashResult::FIELDS.to_vec(),
         PuFlashResult::CALC_ID => PuFlashResult::FIELDS.to_vec(),
         VuFlashResult::CALC_ID => VuFlashResult::FIELDS.to_vec(),
+        VuFlashSingleCompResult::CALC_ID => VuFlashSingleCompResult::FIELDS.to_vec(),
         StabilityTestResult::CALC_ID => StabilityTestResult::FIELDS.to_vec(),
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
         BubbleTemperatureResult::CALC_ID => BubbleTemperatureResult::FIELDS.to_vec(),

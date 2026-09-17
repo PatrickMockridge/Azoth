@@ -1046,6 +1046,30 @@ impl CalcResult for PtPhaseEnvelopeResult {
     }
 }
 
+/// Result of `eos.vu_flash_single_comp`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct VuFlashSingleCompResult {
+    /// The saturation temperature at the pressure asked for - the state's temperature.
+    pub t: ThermodynamicTemperature,
+    /// The vapour fraction, from the lever rule on the two saturated internal energies.
+    pub beta: f64,
+    /// The molar volume the split implies.
+    pub v: MolarVolume,
+    /// Always `two_phase`; the other values are reachable only as a refusal's diagnosis.
+    pub phase: Phase,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for VuFlashSingleCompResult {
+    const CALC_ID: &'static str = "eos.vu_flash_single_comp";
+    const FIELDS: &'static [&'static str] = &["T", "beta", "V", "phase", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.vu_flash`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VuFlashResult {

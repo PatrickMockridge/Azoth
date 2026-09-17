@@ -1,0 +1,49 @@
+model = "eos.vu_flash_single_comp"
+[[cases]]
+id = "propane_at_10_bar_half_vapour"
+tolerance = 1e-07
+source = "NeqSim 3.20.0 `VUflashSingleComp`, run from validation/neqsim/VuSingleCompProbe.java, which finds the saturation temperature with a `bubblePointTemperatureFlash`, takes the two saturated internal energies, and hands their midpoint to `ThermodynamicOperations.VUflash`. It reports Tsat = 300.082994648471 K and beta = 0.5; azoth's bisection on `eos.pure_saturation` gives the temperature above, 4.5e-9 relative away - the two find the saturation line by different routes and neither claims the last digit."
+[cases.inputs]
+components = ["propane"]
+P = 1000000.0
+V = 0.001059848052516
+U = -7797.318485008
+[cases.expected]
+T = 300.082995991047
+beta = 0.5
+[[cases]]
+id = "propane_at_10_bar_a_quarter_vapour"
+tolerance = 1e-07
+source = "The same state as the case above, at a quarter of the way from the saturated liquid to the saturated vapour: `beta` is the lever rule, so it is exactly what the internal energy says, and the case exists so that the first one does not pass on a model that always answers one half."
+[cases.inputs]
+components = ["propane"]
+P = 1000000.0
+V = 0.000573324022829
+U = -10997.919357422
+[cases.expected]
+T = 300.082995991047
+beta = 0.25
+[[cases]]
+id = "propane_at_20_bar_half_vapour"
+tolerance = 1e-07
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/VuSingleCompProbe.java reports Tsat = 330.189678932095 K and beta = 0.5. A second pressure, so the case does not rest on one saturation temperature."
+[cases.inputs]
+components = ["propane"]
+P = 2000000.0
+V = 0.000523070028446
+U = -5192.179547873
+[cases.expected]
+T = 330.189683051239
+beta = 0.5
+[[cases]]
+id = "n_butane_at_2_bar_half_vapour"
+tolerance = 1e-07
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/VuSingleCompProbe.java reports Tsat = 292.041483281549 K and beta = 0.5. A second substance, whose saturation line is a different shape."
+[cases.inputs]
+components = ["n-butane"]
+P = 200000.0
+V = 0.005751905323641
+U = -10484.245165447
+[cases.expected]
+T = 292.041483332711
+beta = 0.5

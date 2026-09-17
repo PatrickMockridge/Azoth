@@ -720,6 +720,22 @@ class WilsonActivityCoefficientsResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class VuFlashSingleCompResult(_HasWarnings):
+    """Result of ``eos.vu_flash_single_comp``."""
+
+    #: The saturation temperature at the pressure asked for - the state's temperature.
+    T: Q
+    #: The vapour fraction, from the lever rule on the two saturated internal energies.
+    beta: float
+    #: The molar volume the split implies.
+    V: Q
+    #: Always ``TWO_PHASE``; the other values are reachable only as a refusal's diagnosis.
+    phase: Phase
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class VuFlashResult(_HasWarnings):
     """Result of ``eos.vu_flash``.
 

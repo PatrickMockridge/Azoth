@@ -45,6 +45,7 @@
 //!   - specs/models/eos/van_laar_acid_activity_coefficients.toml
 //!   - specs/models/eos/viscosity.toml
 //!   - specs/models/eos/vu_flash.toml
+//!   - specs/models/eos/vu_flash_single_comp.toml
 //!   - specs/models/eos/water_phase.toml
 //!   - specs/models/eos/wilke_viscosity.toml
 //!   - specs/models/eos/wilson_activity_coefficients.toml
@@ -4522,6 +4523,127 @@ pub static VU_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: VU_FLASH_CASES,
 };
 
+static VU_FLASH_SINGLE_COMP_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "P",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute pressure; zero and below are not states",
+    },
+}];
+
+static VU_FLASH_SINGLE_COMP_CASES: &[TestCase] = &[
+    TestCase {
+        id: "propane_at_10_bar_half_vapour",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-07,
+        numbers: &[
+            ("P", 1000000.0),
+            ("V", 0.001059848052516),
+            ("U", -7797.318485008),
+        ],
+        lists: &[("components", &["propane"])],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("T", 300.082995991047), ("beta", 0.5)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "propane_at_10_bar_a_quarter_vapour",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-07,
+        numbers: &[
+            ("P", 1000000.0),
+            ("V", 0.000573324022829),
+            ("U", -10997.919357422),
+        ],
+        lists: &[("components", &["propane"])],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("T", 300.082995991047), ("beta", 0.25)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "propane_at_20_bar_half_vapour",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-07,
+        numbers: &[
+            ("P", 2000000.0),
+            ("V", 0.000523070028446),
+            ("U", -5192.179547873),
+        ],
+        lists: &[("components", &["propane"])],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("T", 330.189683051239), ("beta", 0.5)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "n_butane_at_2_bar_half_vapour",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-07,
+        numbers: &[
+            ("P", 200000.0),
+            ("V", 0.005751905323641),
+            ("U", -10484.245165447),
+        ],
+        lists: &[("components", &["n-butane"])],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("T", 292.041483332711), ("beta", 0.5)],
+        expected_vectors: &[],
+    },
+];
+
+static VU_FLASH_SINGLE_COMP_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "saturation_temperature_bisection",
+    convergence: "relative",
+    tolerance: 1e-12,
+    max_iterations: 200,
+    bracket: Some(ModelBracket {
+        scheme: "subcritical_reduced_temperature",
+        lower: 1e-06,
+        upper: 0.999,
+        steps: 2,
+    }),
+    initialisation: None,
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.vu_flash_single_comp`.
+pub static VU_FLASH_SINGLE_COMP_SPEC: ModelSpec = ModelSpec {
+    id: "eos.vu_flash_single_comp",
+    kind: "procedure",
+    algorithm: Some(&VU_FLASH_SINGLE_COMP_ALGORITHM),
+    checks: VU_FLASH_SINGLE_COMP_CHECKS,
+    cases: VU_FLASH_SINGLE_COMP_CASES,
+};
+
 static WATER_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -4862,6 +4984,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_SPEC,
     &VISCOSITY_SPEC,
     &VU_FLASH_SPEC,
+    &VU_FLASH_SINGLE_COMP_SPEC,
     &WATER_PHASE_SPEC,
     &WILKE_VISCOSITY_SPEC,
     &WILSON_ACTIVITY_COEFFICIENTS_SPEC,

@@ -134,6 +134,7 @@ from azoth.core.result import (
     Vdw1fMixBinaryResult,
     ViscosityResult,
     VuFlashResult,
+    VuFlashSingleCompResult,
     WaterPhaseResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
@@ -1719,6 +1720,35 @@ def vu_flash(mixture: Any, ideal_gas: Any, V: Q, U: Q, z: Sequence[float]) -> Vu
         z_vapour=result.z_vapour,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def vu_flash_single_comp(mixture: Any, ideal_gas: Any, P: Q, V: Q, U: Q) -> VuFlashSingleCompResult:
+    """The pure-component VU state, computed in Rust."""
+    spec = _models_gen.model("eos.vu_flash_single_comp")
+    result = _core.vu_flash_single_comp(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "V", V),
+        input_to_si(spec, "U", U),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return VuFlashSingleCompResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        beta=result.beta,
+        V=from_si(result.V.magnitude_si, result.V.unit),
+        phase=_Phase(result.phase),
         warnings=_warnings(result.warnings),
     )
 

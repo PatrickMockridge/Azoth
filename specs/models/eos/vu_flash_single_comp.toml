@@ -1,0 +1,64 @@
+id = "eos.vu_flash_single_comp"
+name = "Volume-internal-energy flash of a pure component"
+kind = "procedure"
+assumptions = [
+    "A pure component has no two-phase split for a flash to find: one K-value is either above one or below it, so `eos.vu_flash`'s iteration has nothing to converge on and refuses. This model answers instead from the saturation line, where the split is a lever rule rather than an equilibrium.",
+    "the pressure fixes the saturation temperature and the internal energy fixes the split. NeqSim's `VUflashSingleComp` takes a volume and never reads it; this checks the volume those two imply against the caller's, and warns when they disagree.",
+    "the temperature is solved for by bisection on the saturation pressure `eos.pure_saturation` computes, so the temperature is only as good as that calculation - including its degradation near the critical point, which this model inherits and cannot detect.",
+    "both phases are the *pure component's*, at the saturation temperature and pressure: there is no composition to report and no fugacity equality to converge. The lever rule is exact for a pure component and would be an approximation for a mixture.",
+    "`U` must lie between the saturated liquid's and vapour's internal energies at the pressure. Outside that the state is single phase, and this model refuses rather than extrapolating a split that does not exist.",
+]
+references = [
+    "Michelsen, M. L.; Mollerup, J. M. (2004). \"Thermodynamic Models: Fundamentals and Computational Aspects.\" Tie-Line Publications.",
+]
+[source]
+standard = "Standard thermodynamics, as in Michelsen & Mollerup"
+edition = "NeqSim 3.20.0 `thermodynamicoperations/flashops/VUflashSingleComp`: the saturation temperature at the pressure, then `beta = (U - u_liq)/(u_gas - u_liq)` on the two saturated internal energies."
+doi = "10.1016/S0378-3812(01)00701-1"
+[algorithm]
+scheme = "saturation_temperature_bisection"
+convergence = "relative"
+tolerance = 1e-12
+max_iterations = 200
+[algorithm.bracket]
+scheme = "subcritical_reduced_temperature"
+lower = 1e-06
+upper = 0.999
+steps = 2
+[inputs]
+[inputs.components]
+type = "components"
+length = "exactly one"
+description = "the substance, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure the saturation temperature is found at. Must be below the component's critical pressure, or there is no saturation line to be on."
+[inputs.V]
+unit = "m**3/mol"
+description = "the one-mole-basis molar volume of the feed. Checked against the volume the answer implies rather than used to find it, and the result warns when the two disagree."
+[inputs.U]
+unit = "J/mol"
+description = "the one-mole-basis molar internal energy of the feed, which the split is found from."
+[outputs]
+[outputs.T]
+unit = "K"
+description = "the saturation temperature at `P` - the state's temperature, and the model's answer."
+[outputs.beta]
+unit = "dimensionless"
+description = "the vapour fraction, `(U - u_liq)/(u_gas - u_liq)` on the two saturated internal energies."
+[outputs.V]
+unit = "m**3/mol"
+description = "the molar volume the two phases imply, `(1 - beta) v_liq + beta v_gas`. Reported so a caller can see what the split came to, and compared with the input."
+[outputs.phase]
+type = "enum"
+values = ["two_phase", "all_liquid", "all_vapour"]
+description = "`two_phase` for every answer this model gives; the other two are reachable only as the diagnosis of a feed it refuses."
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.vu_flash_single_comp"
+rust = "azoth_eos::vu_flash_single_comp"
