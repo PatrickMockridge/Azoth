@@ -1,0 +1,73 @@
+id = "eos.bwrs_phase"
+name = "BWRS (MBWR-32) phase state"
+kind = "procedure"
+assumptions = [
+    "a component's MBWR-32 coefficients (`a0`..`a31`, `rhoc`) come from the databank (`data/components/mbwr32.csv`, from NeqSim's `MBWR32param.csv`). Only methane and ethane have them; any other name is refused rather than given an estimated density.",
+    "the equation of state is the 32-term modified Benedict-Webb-Rubin equation of Younglove and Ely, as NeqSim's `ComponentBWRS` carries it, in the coefficients' native mol/L, MPa convention.",
+    "the density solve is Newton's method from the ideal-gas guess, so it finds the gas-like root; there is no liquid-root selection or stability check.",
+    "the fugacity coefficients are differentiated numerically, the same scheme as NeqSim's `PhaseBWRSEos.getdFdN`, and so carry that finite-difference's tolerance.",
+    "the departure functions are residual - real minus ideal gas at the same temperature, pressure and composition. The ideal-gas part is not added here; a caller composes this with `eos.molar_enthalpy_entropy` for absolute values.",
+]
+references = [
+    "Younglove, B. A.; Ely, J. F. (1987). \"Thermophysical Properties of Fluids. II. Methane, Ethane, Propane, Isobutane, and Normal Butane.\" Journal of Physical and Chemical Reference Data 16(4), 577-798. DOI 10.1063/1.555785",
+    "NeqSim 3.20.0, `ComponentBWRS.java` / `PhaseBWRSEos.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Younglove, B. A.; Ely, J. F. (1987)"
+edition = "The 32-term modified Benedict-Webb-Rubin equation, integrated in closed form to the residual Helmholtz free energy and differentiated for the pressure, the fugacity and the departure functions."
+doi = "10.1063/1.555785"
+[algorithm]
+scheme = "newton_density_solve"
+initialisation = "ideal_gas"
+convergence = "absolute"
+tolerance = 1e-12
+max_iterations = 100
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the MBWR-32 databank (`data/components/mbwr32.csv`, from NeqSim's `MBWR32param.csv`)"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, checked rather than renormalised: the entries must be non-negative and sum to one to within a tolerance."
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor `Z = P/(rho R T) = 1 + rho dF/drho`"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fugacity coefficients, as logarithms"
+[outputs.h_res]
+unit = "J/mol"
+description = "the residual enthalpy, real minus ideal gas at the same temperature, pressure and composition"
+[outputs.s_res]
+unit = "J/(mol*K)"
+description = "the residual entropy, real minus ideal gas at the same temperature, pressure and composition"
+[outputs.cp_res]
+unit = "J/(mol*K)"
+description = "the residual isobaric heat capacity"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.bwrs_phase"
+rust = "azoth_eos::bwrs_phase"

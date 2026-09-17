@@ -92,6 +92,26 @@ fn ethane() -> BwrsCoefficients {
     }
 }
 
+/// The model assembles the kernel, the mixture and the departure into the phase state
+/// the spec's worked example names.
+#[test]
+fn bwrs_phase_model_matches_the_worked_example() {
+    let coeffs = vec![methane(), ethane()];
+    let r = azoth_eos::bwrs_phase(
+        &coeffs,
+        azoth_core::units::kelvins(300.0),
+        azoth_core::units::pascals(1_000_000.0),
+        &[0.5, 0.5],
+    )
+    .unwrap();
+    assert_close(r.z_factor, 0.900_272_824_234_523_2);
+    assert_close(r.ln_phi[0], -0.013_319_302_953_322_648);
+    assert_close(r.ln_phi[1], -0.177_374_966_351_585_8);
+    assert_close(r.h_res.value, -914.887_389_316_650_1);
+    assert_close(r.s_res.value, -2.256_864_493_554_733_7);
+    assert_close(r.cp_res.value, 7.100_809_443_311_604);
+}
+
 /// The databank lookup returns the same coefficients the oracle tests hardcode.
 #[test]
 fn databank_lookup_matches_the_verbatim_coefficients() {

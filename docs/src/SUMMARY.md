@@ -66,6 +66,7 @@
   - [Liquid binary diffusivity from the Wilke-Chang correlation](./eos/wilke_chang_diffusivity.md)
   - [Bubble-point pressure](./eos/bubble_pressure.md)
   - [Bubble-point temperature](./eos/bubble_temperature.md)
+  - [BWRS (MBWR-32) phase state](./eos/bwrs_phase.md)
   - [Mixture critical point](./eos/critical_point.md)
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Dew-point temperature](./eos/dew_temperature.md)

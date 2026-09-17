@@ -15,28 +15,28 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyAntoineVaporPressureResult, PyChungConductivityResult, PyChungViscosityResult,
-    PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
-    PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyIdealGasCpResult,
-    PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult,
-    PyMatcopAlphaResult, PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult,
-    PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
-    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
-    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
-    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
-    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
-    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
-    PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
-    PyRkDepartureResult, PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult,
-    PySoreideWhitsonAlphaResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
-    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
-    PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
-    PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
-    PyTynCalusDiffusivityResult, PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult,
-    PyUniquacActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
-    PyVuFlashResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
-    PyWilsonActivityCoefficientsResult,
+    PyAntoineVaporPressureResult, PyBwrsPhaseResult, PyChungConductivityResult,
+    PyChungViscosityResult, PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult,
+    PyCriticalPointResult, PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult,
+    PyIdealGasCpResult, PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult,
+    PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult, PyMatcopPrAlphaResult,
+    PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult,
+    PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
+    PyPhFlashResult, PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult,
+    PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
+    PyPrDelft1998AlphaResult, PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult,
+    PyPrLeeKeslerAlphaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
+    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
+    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
+    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
+    PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
+    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
+    PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
+    PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
+    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWilkeChangDiffusivityResult,
+    PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -1948,6 +1948,34 @@ pub fn molar_enthalpy_entropy(
     )
     .map(|r| PyMolarEnthalpyEntropyResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// The BWRS (MBWR-32) phase state, computed in Rust.
+///
+/// `a` is the 32 coefficients per component, flattened component-major; `rhoc` the
+/// per-component critical density. The bridge unpacks the named coefficients into
+/// these two vectors the same way it does the cubic's `Tc`, `Pc` and `omega`.
+#[pyfunction]
+#[pyo3(signature = (a, rhoc, T, P, z))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn bwrs_phase(
+    py: Python<'_>,
+    a: Vec<f64>,
+    rhoc: Vec<f64>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<PyBwrsPhaseResult> {
+    let n = rhoc.len();
+    let mut coeffs = Vec::with_capacity(n);
+    for (i, &r) in rhoc.iter().enumerate() {
+        let mut arr = [0.0; 32];
+        arr.copy_from_slice(&a[i * 32..(i + 1) * 32]);
+        coeffs.push(azoth_eos::bwrs::BwrsCoefficients { a: arr, rhoc: r });
+    }
+    azoth_eos::bwrs_phase(&coeffs, kelvins(T), pascals(P), &z)
+        .map(|r| PyBwrsPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// The liquid viscosity from the Pedersen (PFCT) heavy-oil correlation.

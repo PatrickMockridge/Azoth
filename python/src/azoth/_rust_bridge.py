@@ -30,6 +30,7 @@ from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
     BubbleTemperatureResult,
+    BwrsPhaseResult,
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
@@ -1776,6 +1777,30 @@ def molar_enthalpy_entropy(
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         cp_ideal=from_si(result.cp_ideal.magnitude_si, result.cp_ideal.unit),
         cp_departure=from_si(result.cp_departure.magnitude_si, result.cp_departure.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def bwrs_phase(coeffs: Any, T: Q, P: Q, z: Sequence[float]) -> BwrsPhaseResult:
+    """The BWRS (MBWR-32) phase state, computed in Rust.
+
+    The per-component coefficient sets are unpacked into the flattened ``a`` vector
+    (32 per component, component-major) and the ``rhoc`` vector the boundary carries.
+    """
+    spec = _models_gen.model("eos.bwrs_phase")
+    result = _core.bwrs_phase(
+        [v for c in coeffs for v in c.a],
+        [c.rhoc for c in coeffs],
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+    )
+    return BwrsPhaseResult(
+        z_factor=result.z_factor,
+        ln_phi=tuple(result.ln_phi),
+        h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
+        s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
+        cp_res=from_si(result.cp_res.magnitude_si, result.cp_res.unit),
         warnings=_warnings(result.warnings),
     )
 

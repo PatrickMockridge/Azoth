@@ -17,7 +17,7 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult,
+    AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult, BwrsPhaseResult,
     ChungConductivityResult, ChungViscosityResult, Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, DewTemperatureResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
@@ -2887,6 +2887,62 @@ impl From<&MolarEnthalpyEntropyResult> for PyMolarEnthalpyEntropyResult {
     }
 }
 
+/// Result of `eos.bwrs_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "BwrsPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyBwrsPhaseResult {
+    /// The compressibility factor.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// The residual enthalpy.
+    #[pyo3(get)]
+    pub h_res: PyQty,
+    /// The residual entropy.
+    #[pyo3(get)]
+    pub s_res: PyQty,
+    /// The residual isobaric heat capacity.
+    #[pyo3(get)]
+    pub cp_res: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyBwrsPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BwrsPhaseResult(z_factor={}, ln_phi={:?})",
+            self.z_factor, self.ln_phi
+        )
+    }
+}
+
+impl From<&BwrsPhaseResult> for PyBwrsPhaseResult {
+    fn from(r: &BwrsPhaseResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            z_factor: r.z_factor,
+            ln_phi: r.ln_phi.clone(),
+            h_res: qty(r.h_res.value, "J/mol"),
+            s_res: qty(r.s_res.value, "J/(mol*K)"),
+            cp_res: qty(r.cp_res.value, "J/(mol*K)"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.bubble_pressure` or `eos.dew_pressure`, transported.
 ///
 /// One transport type for two models, because the Rust results have the same shape
@@ -4180,6 +4236,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
         BubbleTemperatureResult::CALC_ID => BubbleTemperatureResult::FIELDS.to_vec(),
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
+        BwrsPhaseResult::CALC_ID => BwrsPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),

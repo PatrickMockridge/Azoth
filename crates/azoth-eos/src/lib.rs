@@ -38,6 +38,7 @@ pub mod bubble_pressure;
 pub mod bubble_temperature;
 pub mod bwrs;
 pub mod bwrs_mixture;
+pub mod bwrs_phase;
 pub mod card;
 pub mod chung_conductivity;
 pub mod chung_viscosity;
@@ -128,6 +129,7 @@ pub use alpha_term::Alpha;
 pub use antoine_vapor_pressure::{AntoineForm, antoine_vapor_pressure, form_from_type};
 pub use bubble_pressure::bubble_pressure;
 pub use bubble_temperature::bubble_temperature;
+pub use bwrs_phase::bwrs_phase;
 pub use chung_conductivity::chung_conductivity;
 pub use chung_viscosity::chung_viscosity;
 pub use co2_water_diffusivity::co2_water_diffusivity;
@@ -176,7 +178,7 @@ pub use pv_flash::pv_flash;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
-    AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult,
+    AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult, BwrsPhaseResult,
     ChungConductivityResult, ChungViscosityResult, Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, DewTemperatureResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,

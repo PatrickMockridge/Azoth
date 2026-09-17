@@ -467,6 +467,11 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             kwargs["mixture"] = fluid
             if "ideal_gas" in takes:
                 kwargs["ideal_gas"] = ideal_gas
+        elif "coeffs" in takes:
+            # A non-cubic reference EOS takes the coefficient sets rather than a
+            # `Mixture`: `eos.bwrs_phase` is the one, and the MBWR-32 coefficients
+            # resolve by name through the same databank, only the last step differs.
+            kwargs["coeffs"] = [databank.bwrs_coefficients(name) for name in names]
         else:
             # A pure-component model takes the constants themselves rather than a
             # `Mixture`: `eos.pure_saturation` is the one, and a saturation pressure is

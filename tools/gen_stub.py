@@ -317,6 +317,10 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             ]
             if model["id"] in MOLAR_MASS_MODELS:
                 params.append("molar_mass: list[float]")
+        elif "coeffs" in taken:
+            # A non-cubic reference EOS resolves the names into per-component coefficient
+            # sets, flattened into the 32-coefficient `a` and the critical density.
+            params += ["a: list[float]", "rhoc: list[float]"]
         else:
             params += ["Tc: float", "Pc: float", "omega: float"]
     if "ideal_gas" in taken:

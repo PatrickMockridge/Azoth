@@ -59,6 +59,7 @@ KIJ_CSV = "data/components/kij.csv"
 UNIFAC_COMP_CSV = "data/components/UNIFACcomp.csv"
 UNIFAC_GROUP_CSV = "data/components/UNIFACGroupParam.csv"
 UNIFAC_INTER_CSV = "data/components/UNIFACInterParam.csv"
+MBWR32_CSV = "data/components/mbwr32.csv"
 
 #: Columns the loader reads, in order. Named rather than positional because this
 #: file's shape is the generator's contract, and a column inserted in the middle
@@ -802,13 +803,64 @@ def from_model(name: str, *, card: keycard.Keycard | None = None) -> Mixture:
     return from_names(list(model.components), card=card)
 
 
+@dataclass(frozen=True, slots=True)
+class BwrsCoefficients:
+    """The MBWR-32 coefficients of one substance.
+
+    The 32 fitted coefficients ``a0``..``a31`` and the critical density ``rhoc`` in
+    mol/L, verbatim from NeqSim's ``MBWR32param`` table. Only methane and ethane have
+    them.
+    """
+
+    #: ``a0``..``a31``, in the native mol/L, MPa convention.
+    a: tuple[float, ...]
+    #: The critical density, in mol/L.
+    rhoc: float
+
+
+@cache
+def _mbwr32_table() -> dict[str, BwrsCoefficients]:
+    rows = _rows(find(MBWR32_CSV).read_text(encoding="utf-8"))
+    out: dict[str, BwrsCoefficients] = {}
+    for row in rows:
+        name = row["name"].strip().lower()
+        out[name] = BwrsCoefficients(
+            a=tuple(float(row[f"a{i}"]) for i in range(32)),
+            rhoc=float(row["rhoc"]),
+        )
+    return out
+
+
+def bwrs_coefficients(name: str) -> BwrsCoefficients:
+    """The MBWR-32 coefficients of a substance, by name.
+
+    Raises:
+        PropertyUnavailableError: if the name is not in the MBWR-32 table. Only
+            methane and ethane have parameters; anything else is refused rather than
+            given an estimated density.
+    """
+    table = _mbwr32_table()
+    key = name.strip().lower()
+    try:
+        return table[key]
+    except KeyError:
+        raise PropertyUnavailableError(
+            name,
+            "MBWR-32 coefficients",
+            "only methane and ethane have MBWR-32 parameters in NeqSim's mbwr32param; "
+            "anything else would need an estimated critical density",
+        ) from None
+
+
 # Imported at the bottom because `mixture` lives with the types this module builds
 # on, and importing it at the top would make the cycle explicit for no gain.
 from azoth.eos.mixture import mixture  # noqa: E402
 
 __all__ = [
+    "BwrsCoefficients",
     "DatabankEntry",
     "available",
+    "bwrs_coefficients",
     "component",
     "entry",
     "from_model",

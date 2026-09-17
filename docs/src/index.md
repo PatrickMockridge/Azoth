@@ -124,6 +124,7 @@ Four sections, and the difference between them is the point:
 
 - [`eos.bubble_pressure`](./eos/bubble_pressure.md) — Bubble-point pressure
 - [`eos.bubble_temperature`](./eos/bubble_temperature.md) — Bubble-point temperature
+- [`eos.bwrs_phase`](./eos/bwrs_phase.md) — BWRS (MBWR-32) phase state
 - [`eos.critical_point`](./eos/critical_point.md) — Mixture critical point
 - [`eos.dew_pressure`](./eos/dew_pressure.md) — Dew-point pressure
 - [`eos.dew_temperature`](./eos/dew_temperature.md) — Dew-point temperature

@@ -71,6 +71,7 @@ from azoth.core.result import (
     AntoineVaporPressureResult,
     BubblePressureResult,
     BubbleTemperatureResult,
+    BwrsPhaseResult,
     ChungConductivityResult,
     ChungViscosityResult,
     Co2WaterDiffusivityResult,
@@ -146,8 +147,15 @@ from azoth.core.result import (
     WilsonActivityCoefficientsResult,
 )
 from azoth.core.units import Q
+from azoth.eos.components import (
+    BwrsCoefficients,
+    bwrs_coefficients,
+    component,
+    from_model,
+    from_names,
+    wilke_chang_phi,
+)
 from azoth.eos.components import available as available_components
-from azoth.eos.components import component, from_model, from_names, wilke_chang_phi
 from azoth.eos.mixture import Component, Mixture, mixture
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
@@ -159,6 +167,8 @@ __all__ = [
     "available_components",
     "bubble_pressure",
     "bubble_temperature",
+    "bwrs_coefficients",
+    "bwrs_phase",
     "chung_conductivity",
     "chung_viscosity",
     "component",
@@ -235,6 +245,7 @@ _MATCOP_PRUMR_NEW_ALPHA = "eos.matcop_prumr_new_alpha"
 _MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
+_BWRS_PHASE = "eos.bwrs_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
@@ -1431,6 +1442,25 @@ def molar_enthalpy_entropy(
     """
     return resolve(_MOLAR_ENTHALPY_ENTROPY)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, T=T, P=P, z=z, compressibility=compressibility
+    )
+
+
+def bwrs_phase(coeffs: Sequence[BwrsCoefficients], T: Q, P: Q, z: list[float]) -> BwrsPhaseResult:
+    """The BWRS (MBWR-32) phase state of a mixture at a temperature and pressure.
+
+    ``coeffs`` are the per-component MBWR-32 coefficients - resolve them by name with
+    :func:`azoth.eos.components.bwrs_coefficients`; only methane and ethane have them.
+    The returned departures are residual, real minus ideal gas at the same state, so a
+    caller composes them with :func:`molar_enthalpy_entropy` for absolute values.
+
+    Raises:
+        InvalidInputError: if ``z`` is not a composition of ``coeffs``'s length.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.bwrs_phase`.
+    """
+    return resolve(_BWRS_PHASE)(  # type: ignore[no-any-return]
+        coeffs=coeffs, T=T, P=P, z=z
     )
 
 

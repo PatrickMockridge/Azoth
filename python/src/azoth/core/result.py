@@ -1635,3 +1635,27 @@ class CriticalPointResult(_HasWarnings):
     residual: float
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class BwrsPhaseResult(_HasWarnings):
+    """Result of ``eos.bwrs_phase``.
+
+    The BWRS (MBWR-32) phase state: the compressibility factor, the fugacity
+    coefficients and the residual departures. The departures are residual - real minus
+    ideal gas at the same state - so a caller composing them with
+    :func:`azoth.eos.molar_enthalpy_entropy` gets absolute values.
+    """
+
+    #: The compressibility factor ``Z = P/(rho R T)``.
+    z_factor: float
+    #: The fugacity coefficients, as logarithms, one per component.
+    ln_phi: tuple[float, ...]
+    #: The residual enthalpy.
+    h_res: Q
+    #: The residual entropy.
+    s_res: Q
+    #: The residual isobaric heat capacity.
+    cp_res: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]

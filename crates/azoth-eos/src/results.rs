@@ -55,6 +55,33 @@ impl CalcResult for PrAlphaAbResult {
     }
 }
 
+/// Result of `eos.bwrs_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BwrsPhaseResult {
+    /// The compressibility factor `Z = P/(rho R T)`.
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    pub ln_phi: Vec<f64>,
+    /// The residual enthalpy, real minus ideal gas at the same state.
+    pub h_res: MolarEnergy,
+    /// The residual entropy, real minus ideal gas at the same state.
+    pub s_res: MolarHeatCapacity,
+    /// The residual isobaric heat capacity.
+    pub cp_res: MolarHeatCapacity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for BwrsPhaseResult {
+    const CALC_ID: &'static str = "eos.bwrs_phase";
+    const FIELDS: &'static [&'static str] =
+        &["z_factor", "ln_phi", "h_res", "s_res", "cp_res", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// How many admissible real roots the cubic had.
 ///
 /// Reported so a caller can tell a single-root state from one where `z_min` and

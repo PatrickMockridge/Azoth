@@ -153,6 +153,15 @@ class BubbleTemperatureResult:
     warnings: list[Warning]
 
 @final
+class BwrsPhaseResult:
+    z_factor: float
+    ln_phi: list[float]
+    h_res: Qty
+    s_res: Qty
+    cp_res: Qty
+    warnings: list[Warning]
+
+@final
 class ChungConductivityResult:
     k: Qty
     warnings: list[Warning]
@@ -787,6 +796,13 @@ def bubble_temperature(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> BubbleTemperatureResult: ...
+def bwrs_phase(
+    a: list[float],
+    rhoc: list[float],
+    T: float,
+    P: float,
+    z: list[float],
+) -> BwrsPhaseResult: ...
 def chung_conductivity(
     Cv0: float,
     M: float,
