@@ -59,8 +59,8 @@ not an equation, and both implementations read it from here.
 | `z_vapour` | dimensionless | the vapour root at the vapour composition, the largest admissible one |
 | `min_t_over_tc` | dimensionless | the smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point. |
 | `phase` | two_phase / all_liquid / all_vapour / trivial | What the converged state is: `two_phase` (`beta` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`). |
-| `iterations` | dimensionless | successive-substitution steps taken, including the final evaluation of the converged state. |
-| `residual` | dimensionless | `rms_i |ln K_i - ln K_i_previous|` at the last step the loop completed. NaN when no step completed. |
+| `iterations` | dimensionless | outer steps taken, including the final evaluation of the converged state. Each is either a successive-substitution step or, past `algorithm.fallback.after`, one step of the second-order scheme. |
+| `residual` | dimensionless | the last step's own measure: `rms_i |ln K_i - ln K_i_previous|` for successive substitution, or the isofugacity residual `max_i |ln(y_i phi_i^V) - ln(x_i phi_i^L)|` for the second-order one, which stops on that rather than on a step so the two stop in the same place. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -74,7 +74,7 @@ not an equation, and both implementations read it from here.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes. PRSV would give different K-values from the same inputs and this model does not accept a coefficient.
 - the mixture fugacity coefficient is not a registered calculation: it carries the sum over `x_j a_ij` and the `b_i / b_mix` term and lives in the model layer. So does its derivative surface, which is analytic and carries no id either.
 - there is no stability test: successive substitution finds a stationary point of the flash equations, and which single phase a `trivial` feed is cannot be answered by this model.
-- no damping and no acceleration: plain successive substitution, which converges slowly near the critical point and sometimes to the wrong stationary point.
+- successive substitution runs undamped until `algorithm.fallback.after`, then the second-order scheme takes over - NeqSim's shape, one step of either per outer iteration, and only from a split: its unknowns `u = beta y` need `beta` inside `(0, 1)`.
 - the components' `Tc`, `Pc` and `omega` are taken to be mutually consistent and to describe the same substances the `kij` pairs name.
 - the two phases are assumed to be at the same temperature and pressure as the feed - a flash, not a rigorous column stage. Nothing here does an energy balance, and the feed's enthalpy is not an input.
 

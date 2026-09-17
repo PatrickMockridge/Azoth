@@ -1061,12 +1061,11 @@ fn the_derivative_surface_matches_neqsims() {
                 d.d_ln_phi_dp[i] * 1.0e5,
                 wanted_dp_bar[i]
             );
-            for j in 0..2 {
+            for (j, &wanted) in wanted_dn[i].iter().enumerate() {
                 assert!(
-                    (d.d_ln_phi_dn[i][j] - wanted_dn[i][j]).abs() < 1e-13,
-                    "{name}: dfugdx[{i}][{j}] is {} but NeqSim's is {}",
-                    d.d_ln_phi_dn[i][j],
-                    wanted_dn[i][j]
+                    (d.d_ln_phi_dn[i][j] - wanted).abs() < 1e-13,
+                    "{name}: dfugdx[{i}][{j}] is {} but NeqSim's is {wanted}",
+                    d.d_ln_phi_dn[i][j]
                 );
             }
         }

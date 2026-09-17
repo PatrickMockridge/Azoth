@@ -777,3 +777,59 @@ fn the_reported_roots_are_the_cubics_roots_at_the_reported_compositions() {
         }
     }
 }
+
+/// The second-order fallback converges a state the outer scheme barely does.
+///
+/// NeqSim's `TPflash` hands over to `SysNewtonRhapsonTPflash` once its own scheme has
+/// run `newtonLimit` steps without converging, and the state below is why: at
+/// methane/n-butane 0.6/0.4, 340 K and 120 bar, successive substitution needs 218
+/// steps and the second-order scheme, handed the twenty-five-step iterate, needs 36.
+/// The *answer* is the same to 1e-9 - the two schemes stop on different measures, so
+/// their last digits differ - and this asserts both halves of that.
+///
+/// The iteration count is the test's own sabotage detector: reversing the sign of the
+/// liquid term in the Jacobian, which is the one term a derivation can get wrong
+/// without the step ceasing to look like a step, takes the count to 244 - *worse* than
+/// the scheme it replaced, which is what a wrong descent direction does.
+#[test]
+fn the_second_order_fallback_converges_where_successive_substitution_crawls() {
+    let mixture = methane_butane();
+    for (t, p_pa, ss_only, hybrid, beta) in [
+        (340.0, 1.2e7, 218u32, 36u32, 0.209_987_152_478_907_2),
+        (340.0, 1.0e7, 53, 26, 0.490_267_200_306_349_6),
+        (350.0, 1.0e7, 68, 26, 0.585_178_563_159_136_5),
+        (320.0, 1.2e7, 88, 28, 0.130_619_212_817_249_59),
+    ] {
+        let r = pt_flash(&mixture, kelvins(t), pascals(p_pa), &[0.6, 0.4]).unwrap();
+        assert_eq!(r.phase, azoth_eos::Phase::TwoPhase, "T={t}, P={p_pa}");
+        assert!(
+            r.iterations <= hybrid,
+            "T={t}, P={p_pa}: {} steps, and the fallback should reach it in at most {hybrid} \
+             (successive substitution alone needs {ss_only})",
+            r.iterations
+        );
+        assert!(
+            (r.beta.expect("a split") - beta).abs() < 1e-9,
+            "T={t}, P={p_pa}: beta is {:?} but the state's is {beta}",
+            r.beta
+        );
+    }
+}
+
+/// A state successive substitution cannot converge inside the cap, which the
+/// fallback does.
+///
+/// It converges to the *trivial* solution rather than to a split, and that is the
+/// answer rather than a failure: NeqSim reports a single phase at this state too, and
+/// which single phase it is, `eos.pt_flash` does not claim to know.
+#[test]
+fn the_fallback_converges_a_state_the_outer_scheme_abandons() {
+    let mixture = methane_butane();
+    let r = pt_flash(&mixture, kelvins(355.0), pascals(1.2e7), &[0.6, 0.4])
+        .expect("the fallback should converge where successive substitution does not");
+    assert_eq!(r.phase, azoth_eos::Phase::Trivial);
+    assert!(
+        r.beta.is_none(),
+        "a trivial solution has no vapour fraction"
+    );
+}

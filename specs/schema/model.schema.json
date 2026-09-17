@@ -152,6 +152,20 @@
           "description": "A nested procedure the outer one runs each iteration, with the same shape as an outer algorithm.",
           "$ref": "#/$defs/algorithm"
         },
+        "fallback": {
+          "description": "A nested procedure the outer one switches to when its own scheme has not converged after `after` steps. Unlike `inner`, which runs every iteration, this replaces the outer scheme for the rest of the solve - it is what a slowly-converging outer loop hands over to, and it carries its own stopping rule because it converges on a different measure.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["after", "algorithm"],
+          "properties": {
+            "after": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "How many outer steps run before the handover, counted in the outer scheme's own iterations. A value at or above `max_iterations` means the fallback never runs, which is a spec that has stopped describing its implementation."
+            },
+            "algorithm": { "$ref": "#/$defs/algorithm" }
+          }
+        },
         "initial_temperature": {
           "type": "number",
           "exclusiveMinimum": 0,

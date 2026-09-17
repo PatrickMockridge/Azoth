@@ -12,6 +12,7 @@ choosing it.
 from __future__ import annotations
 
 import math
+from typing import Any
 
 from azoth import _models_gen
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
@@ -20,6 +21,8 @@ from azoth.core.result import Phase, PtFlashResult
 from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
+from azoth.eos.reference._flash_newton import split_at as flash_newton_split
+from azoth.eos.reference._flash_newton import step as flash_newton_step
 from azoth.eos.reference._mixture_state import (
     compositions,
     is_trivial,
@@ -43,6 +46,19 @@ MODEL_ID = "eos.pt_flash"
 #: indeterminate there - see the spec's correction 2 for the feed a ``beta`` test
 #: would have mislabelled.
 TRIVIAL_TOLERANCE = 1.0e-08
+
+
+def settled_tolerance(algorithm: dict[str, Any], from_newton: bool) -> float:
+    """The tolerance the loop settled against, which depends on which scheme finished it.
+
+    The two schemes measure different things - the outer one the change in ``ln K`` and
+    the fallback the step it took - so they carry their own stopping rules, and the
+    comparison at the end has to be against the one that actually ran.
+    """
+    fallback = algorithm.get("fallback")
+    if from_newton and fallback is not None:
+        return float(fallback["algorithm"]["tolerance"])
+    return float(algorithm["tolerance"])
 
 
 def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
@@ -129,10 +145,61 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
     k = wilson_k(mixture, t_si, p_si)
     iterations = 0
     residual = math.nan
+    # The vapour mole numbers the fallback Newton works in, seeded from the last
+    # successive-substitution iterate so the handover starts where the outer scheme
+    # had got to rather than from the feed.
+    u = [0.0] * n
+    newton_steps = 0
+    from_newton = False
+    # Whether the last outer iterate was a two-phase split. The fallback works in the
+    # vapour mole numbers `u = beta y`, which describe two phases only while `beta` is
+    # inside `(0, 1)` - a negative flash has no such `u`, and every trial the line
+    # search makes at one is infeasible and halved through.
+    splits = False
+    fallback = algorithm.get("fallback")
     settled: str | None = None
 
     for step in range(1, algorithm["max_iterations"] + 1):
         iterations = step
+
+        # The handover. NeqSim's `TPflash` runs its own scheme until `activeNewtonLimit`
+        # steps have passed and replaces it with the second-order one from then on. Two
+        # things end the handover without ending the solve: a step whose linear system
+        # is singular, and the second-order scheme's own attempt budget. Both hand the
+        # iteration back to the outer scheme - the cap that ends a solve is the outer
+        # one, never the fallback's.
+        if (
+            fallback is not None
+            and splits
+            and step >= fallback["after"]
+            and newton_steps < fallback["algorithm"]["max_iterations"]
+        ):
+            second_order = fallback["algorithm"]
+            newton_steps += 1
+            try:
+                stepped = flash_newton_step(
+                    mixture,
+                    reduced,
+                    list(z),
+                    u,
+                    second_order,
+                    temperature=t_si,
+                    pressure=p_si,
+                )
+            except SolverNotConvergedError:
+                from_newton = False
+            else:
+                u = stepped.u
+                residual = stepped.residual
+                from_newton = True
+                # The K-values follow the second-order iterate, so that a handover back
+                # at `max_iterations` resumes from the state the solve is actually in
+                # rather than re-running the outer scheme from where it handed over.
+                x_newton, y_newton = flash_newton_split(list(z), u)
+                k = [yi / xi for yi, xi in zip(y_newton, x_newton, strict=True)]
+                if residual <= second_order["tolerance"]:
+                    break
+                continue
 
         # Both guards run *before* the Rachford-Rice solve, because both are cases
         # where the bracket is a division by zero: `K_i = 1` puts a pole at
@@ -161,6 +228,8 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         ]
         residual = rms_delta(ln_k_new, k)
         k = [math.exp(value) for value in ln_k_new]
+        u = [beta * value for value in y]
+        splits = 0.0 < beta < 1.0
 
         if residual <= algorithm["tolerance"]:
             break
@@ -180,8 +249,25 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         phase = Phase.ALL_VAPOUR if settled == "all_vapour" else Phase.ALL_LIQUID
         beta_out = None
         warnings.append(single_phase_warning(phase))
-    elif residual > algorithm["tolerance"]:
-        raise SolverNotConvergedError(iterations, residual, algorithm["tolerance"])
+    elif residual > settled_tolerance(algorithm, from_newton):
+        raise SolverNotConvergedError(
+            iterations, residual, settled_tolerance(algorithm, from_newton)
+        )
+    elif from_newton:
+        # The second-order scheme converged, and it converges on its own measure - the
+        # relative step - rather than on the outer scheme's. Its answer is a state in
+        # `u`, so the phases and the K-values are read back off it.
+        beta_out = sum(u)
+        x, y = flash_newton_split(list(z), u)
+        k = [yi / xi for yi, xi in zip(y, x, strict=True)]
+        if beta_out < 0.0:
+            phase = Phase.ALL_LIQUID
+        elif beta_out > 1.0:
+            phase = Phase.ALL_VAPOUR
+        else:
+            phase = Phase.TWO_PHASE
+        if phase is not Phase.TWO_PHASE:
+            warnings.append(negative_flash_warning(phase, beta_out))
     else:
         bounds = rachford_rice_bounds(k)
         if bounds is None:  # pragma: no cover - guarded above

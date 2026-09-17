@@ -145,15 +145,17 @@ def load_models() -> list[dict[str, Any]]:
     return models
 
 
-def emit_rust_algorithm(algorithm: dict[str, Any], inner_ref: str, indent: str) -> str:
+def emit_rust_algorithm(
+    algorithm: dict[str, Any], inner_ref: str, indent: str, fallback_ref: str = "None"
+) -> str:
     """One `ModelAlgorithm` literal.
 
-    `inner_ref` is the Rust expression for this scheme's `inner` field. A nested
-    scheme is a `static` of its own rather than a literal inlined here, because a
-    `ModelAlgorithm` refers to its inner one by `&'static`, so it has to have
-    somewhere to live. Passing the reference in rather than patching a placeholder
-    afterwards keeps the two callers - leaf and parent - from having to agree about
-    the shape of the text.
+    `inner_ref` and `fallback_ref` are the Rust expressions for this scheme's `inner`
+    and `fallback` fields. A nested scheme is a `static` of its own rather than a
+    literal inlined here, because a `ModelAlgorithm` refers to its nested ones by
+    `&'static`, so they have to have somewhere to live. Passing the references in
+    rather than patching placeholders afterwards keeps the callers - leaf, parent and
+    fallback - from having to agree about the shape of the text.
     """
     bracket = algorithm.get("bracket")
     if bracket is None:
@@ -175,6 +177,16 @@ def emit_rust_algorithm(algorithm: dict[str, Any], inner_ref: str, indent: str) 
     initial_temperature_literal = (
         "None" if initial_temperature is None else f"Some({rust_f64(initial_temperature)})"
     )
+    fallback = algorithm.get("fallback")
+    if fallback is None:
+        fallback_literal = "None"
+    else:
+        fallback_literal = (
+            "Some(&ModelFallback {\n"
+            f"{indent}    after: {fallback['after']},\n"
+            f"{indent}    algorithm: &{fallback_ref},\n"
+            f"{indent}}})"
+        )
     return (
         "ModelAlgorithm {\n"
         f"{indent}    scheme: {rust_str(algorithm['scheme'])},\n"
@@ -185,6 +197,7 @@ def emit_rust_algorithm(algorithm: dict[str, Any], inner_ref: str, indent: str) 
         f"{indent}    initialisation: {initialisation_literal},\n"
         f"{indent}    initial_temperature: {initial_temperature_literal},\n"
         f"{indent}    inner: {inner_ref},\n"
+        f"{indent}    fallback: {fallback_literal},\n"
         f"{indent}}}"
     )
 
@@ -210,17 +223,28 @@ def emit_rust_model(model: dict[str, Any]) -> str:
         # `emit_rust_algorithm` costs nothing and means a second level is a spec
         # change rather than a generator change.
         inner = algorithm.get("inner")
+        fallback = algorithm.get("fallback")
         inner_static = ""
-        if inner is None:
-            outer = emit_rust_algorithm(algorithm, "None", "    ")
-        else:
+        fallback_static = ""
+        inner_ref = "None"
+        if inner is not None:
             inner_static = (
                 f"static {ident_}_INNER: ModelAlgorithm = "
                 f"{emit_rust_algorithm(inner, 'None', '    ')};\n\n"
             )
-            outer = emit_rust_algorithm(algorithm, f"Some(&{ident_}_INNER)", "    ")
+            inner_ref = f"Some(&{ident_}_INNER)"
+        fallback_ref = "None"
+        if fallback is not None:
+            fallback_static = (
+                f"static {ident_}_FALLBACK: ModelAlgorithm = "
+                f"{emit_rust_algorithm(fallback['algorithm'], 'None', '    ')};\n\n"
+            )
+            fallback_ref = f"{ident_}_FALLBACK"
+        outer = emit_rust_algorithm(algorithm, inner_ref, "    ", fallback_ref)
         algorithm_static = (
-            inner_static + f"static {ident_}_ALGORITHM: ModelAlgorithm = {outer};\n\n"
+            inner_static
+            + fallback_static
+            + f"static {ident_}_ALGORITHM: ModelAlgorithm = {outer};\n\n"
         )
         algorithm_literal = f"Some(&{ident_}_ALGORITHM)"
 
@@ -278,6 +302,7 @@ def emit_rust(models: list[dict[str, Any]], namespace: str) -> str:
         "Band",
         "ModelAlgorithm",
         "ModelBracket",
+        "ModelFallback",
         "ModelSpec",
         "RangeCheck",
         "Severity",

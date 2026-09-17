@@ -572,3 +572,44 @@ def test_the_cases_are_announced_in_the_model_docs() -> None:
     assert page.is_file(), f"{page} was not generated"
     summary = (root / "docs" / "src" / "SUMMARY.md").read_text(encoding="utf-8")
     assert "eos/pt_flash.md" in summary, "the model is not in the book's contents"
+
+
+def test_the_second_order_fallback_converges_where_successive_substitution_crawls() -> None:
+    """The handover to NeqSim's second-order scheme, and what it buys.
+
+    NeqSim's ``TPflash`` switches to ``SysNewtonRhapsonTPflash`` once its own scheme has
+    run ``newtonLimit`` steps. At methane/n-butane 0.6/0.4, 340 K and 120 bar, successive
+    substitution needs 218 steps and the second-order scheme needs 36, and the *answer*
+    is the same to 1e-9 - the two stop on different measures, so their last digits
+    differ.
+
+    The iteration count is the sabotage detector: reversing the sign of the liquid term
+    in the Jacobian takes the count to 244, worse than the scheme it replaced, which is
+    what a wrong descent direction does.
+    """
+    fluid = methane_butane()
+    for t_c, p_pa, ss_only, hybrid, beta in (
+        (340.0, 1.2e7, 218, 36, 0.2099871524789072),
+        (340.0, 1.0e7, 53, 26, 0.4902672003063496),
+        (350.0, 1.0e7, 68, 26, 0.5851785631591365),
+        (320.0, 1.2e7, 88, 28, 0.13061921281724959),
+    ):
+        r = pt_flash(fluid, T=Q(t_c, "K"), P=Q(p_pa, "Pa"), z=[0.6, 0.4])
+        assert r.phase is Phase.TWO_PHASE, f"{t_c}, {p_pa}"
+        assert r.beta is not None, f"{t_c}, {p_pa}: a split has a vapour fraction"
+        assert r.iterations <= hybrid, (
+            f"{t_c}, {p_pa}: {r.iterations} steps, and the fallback should reach it in at "
+            f"most {hybrid} (successive substitution alone needs {ss_only})"
+        )
+        h.assert_close(r.beta, beta, 1e-9, f"{t_c}, {p_pa} (beta)")
+
+
+def test_the_fallback_converges_a_state_the_outer_scheme_abandons() -> None:
+    """A state successive substitution cannot converge inside the cap, which the fallback does.
+
+    It converges to the *trivial* solution rather than to a split, and that is the
+    answer rather than a failure: NeqSim reports a single phase at this state too.
+    """
+    r = pt_flash(methane_butane(), T=Q(355.0, "K"), P=Q(1.2e7, "Pa"), z=[0.6, 0.4])
+    assert r.phase is Phase.TRIVIAL
+    assert r.beta is None, "a trivial solution has no vapour fraction"

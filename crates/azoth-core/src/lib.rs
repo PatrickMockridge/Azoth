@@ -46,7 +46,8 @@ pub use solver::{
     require_converged, require_cubic_converged,
 };
 pub use spec::{
-    CalcSpec, ModelAlgorithm, ModelBracket, ModelSpec, SolverSpec, SpecCheck, TestCase,
+    CalcSpec, ModelAlgorithm, ModelBracket, ModelFallback, ModelSpec, SolverSpec, SpecCheck,
+    TestCase,
 };
 pub use warning::{Warning, WarningCode};
 

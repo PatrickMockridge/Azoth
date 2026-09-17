@@ -53,8 +53,8 @@
 //! on any difference.
 
 use azoth_core::{
-    Band, ModelAlgorithm, ModelBracket, ModelSpec, RangeCheck, Severity, SpecCheck, TestCase,
-    WarningCode,
+    Band, ModelAlgorithm, ModelBracket, ModelFallback, ModelSpec, RangeCheck, Severity, SpecCheck,
+    TestCase, WarningCode,
 };
 
 static AMMONIA_PHASE_CHECKS: &[SpecCheck] = &[
@@ -171,6 +171,7 @@ static AMMONIA_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("ideal_gas"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.ammonia_phase`.
@@ -296,6 +297,7 @@ static ARGON_SOLID_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("zero_pressure_volume"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.argon_solid_phase`.
@@ -406,6 +408,7 @@ static BUBBLE_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson_raoult"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.bubble_pressure`.
@@ -516,6 +519,7 @@ static BUBBLE_TEMPERATURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson_raoult"),
     initial_temperature: Some(300.0),
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.bubble_temperature`.
@@ -612,6 +616,7 @@ static BWRS_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("ideal_gas"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.bwrs_phase`.
@@ -737,6 +742,7 @@ static CO2_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("ideal_gas"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.co2_phase`.
@@ -848,6 +854,7 @@ static CRITICAL_POINT_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: None,
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static CRITICAL_POINT_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -859,6 +866,7 @@ static CRITICAL_POINT_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("kay_rule_and_covolume"),
     initial_temperature: None,
     inner: Some(&CRITICAL_POINT_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.critical_point`.
@@ -969,6 +977,7 @@ static DEW_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson_raoult"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.dew_pressure`.
@@ -1079,6 +1088,7 @@ static DEW_TEMPERATURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson_raoult"),
     initial_temperature: Some(300.0),
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.dew_temperature`.
@@ -1204,6 +1214,7 @@ static EOS_CG_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("ideal_gas"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.eos_cg_phase`.
@@ -1341,6 +1352,7 @@ static GE_NRTL_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: None,
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static GE_NRTL_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -1352,6 +1364,7 @@ static GE_NRTL_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: Some(&GE_NRTL_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.ge_nrtl_flash`.
@@ -2009,6 +2022,7 @@ static GERG2008_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("ideal_gas"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.gerg2008_phase`.
@@ -2134,6 +2148,7 @@ static HELIUM_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("ideal_gas"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.helium_phase`.
@@ -2236,6 +2251,7 @@ static HYDROGEN_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("ideal_gas"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.hydrogen_phase`.
@@ -2639,6 +2655,7 @@ static PARAHYDROGEN_SOLID_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("zero_pressure_volume"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.parahydrogen_solid_phase`.
@@ -2708,6 +2725,7 @@ static PH_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static PH_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -2719,6 +2737,7 @@ static PH_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: None,
     initial_temperature: Some(300.0),
     inner: Some(&PH_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.ph_flash`.
@@ -2788,6 +2807,7 @@ static PS_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static PS_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -2799,6 +2819,7 @@ static PS_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: None,
     initial_temperature: Some(300.0),
     inner: Some(&PS_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.ps_flash`.
@@ -2972,6 +2993,19 @@ static PT_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: None,
     initial_temperature: None,
     inner: None,
+    fallback: None,
+};
+
+static PT_FLASH_FALLBACK: ModelAlgorithm = ModelAlgorithm {
+    scheme: "isofugacity_newton",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 25,
+    bracket: None,
+    initialisation: Some("from_the_outer_scheme"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
 };
 
 static PT_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -2983,6 +3017,10 @@ static PT_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: Some(&PT_FLASH_INNER),
+    fallback: Some(&ModelFallback {
+        after: 25,
+        algorithm: &PT_FLASH_FALLBACK,
+    }),
 };
 
 /// Registry entry for `eos.pt_flash`.
@@ -3060,6 +3098,7 @@ static PT_PHASE_ENVELOPE_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: None,
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static PT_PHASE_ENVELOPE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -3071,6 +3110,7 @@ static PT_PHASE_ENVELOPE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: Some(&PT_PHASE_ENVELOPE_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.pt_phase_envelope`.
@@ -3123,6 +3163,7 @@ static PU_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static PU_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -3134,6 +3175,7 @@ static PU_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: None,
     initial_temperature: Some(300.0),
     inner: Some(&PU_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.pu_flash`.
@@ -3225,6 +3267,7 @@ static PURE_SATURATION_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: None,
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.pure_saturation`.
@@ -3294,6 +3337,7 @@ static PV_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static PV_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -3305,6 +3349,7 @@ static PV_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: None,
     initial_temperature: Some(300.0),
     inner: Some(&PV_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.pv_flash`.
@@ -3476,6 +3521,7 @@ static RACHFORD_RICE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("vapour_fraction_one_half"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.rachford_rice`.
@@ -3583,6 +3629,7 @@ static STABILITY_TEST_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 /// Registry entry for `eos.stability_test`.
@@ -3635,6 +3682,7 @@ static TH_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static TH_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -3646,6 +3694,7 @@ static TH_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("one_bar"),
     initial_temperature: None,
     inner: Some(&TH_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.th_flash`.
@@ -3756,6 +3805,7 @@ static TS_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static TS_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -3767,6 +3817,7 @@ static TS_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("one_bar"),
     initial_temperature: None,
     inner: Some(&TS_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.ts_flash`.
@@ -3819,6 +3870,7 @@ static TU_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static TU_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -3830,6 +3882,7 @@ static TU_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("one_bar"),
     initial_temperature: None,
     inner: Some(&TU_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.tu_flash`.
@@ -3899,6 +3952,7 @@ static TV_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static TV_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -3910,6 +3964,7 @@ static TV_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("ideal_gas"),
     initial_temperature: None,
     inner: Some(&TV_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.tv_flash`.
@@ -4443,6 +4498,7 @@ static VU_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("wilson"),
     initial_temperature: None,
     inner: None,
+    fallback: None,
 };
 
 static VU_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
@@ -4454,6 +4510,7 @@ static VU_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
     initialisation: Some("ideal_gas"),
     initial_temperature: None,
     inner: Some(&VU_FLASH_INNER),
+    fallback: None,
 };
 
 /// Registry entry for `eos.vu_flash`.

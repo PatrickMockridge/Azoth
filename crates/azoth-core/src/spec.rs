@@ -288,6 +288,24 @@ pub struct ModelAlgorithm {
     pub initial_temperature: Option<f64>,
     /// A nested procedure the outer one runs each iteration.
     pub inner: Option<&'static ModelAlgorithm>,
+    /// A nested procedure the outer one hands over to, and how many of its own steps
+    /// run first.
+    ///
+    /// Not the same thing as [`Self::inner`]: an inner scheme runs *every* iteration,
+    /// and a fallback replaces the outer scheme once the outer one has stopped making
+    /// progress. Its stopping rule is its own, because it converges on a different
+    /// measure - a successive substitution watches `ln K` and a Newton watches the
+    /// step it took, and one tolerance cannot be the stopping rule for both.
+    pub fallback: Option<&'static ModelFallback>,
+}
+
+/// A nested procedure the outer one hands over to, with the step it hands over at.
+#[derive(Debug, Clone, Copy)]
+pub struct ModelFallback {
+    /// Outer iterations completed before the handover.
+    pub after: u32,
+    /// The procedure that takes over.
+    pub algorithm: &'static ModelAlgorithm,
 }
 
 /// One model, as the generated table carries it.
