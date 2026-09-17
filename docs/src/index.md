@@ -85,6 +85,7 @@ Four sections, and the difference between them is the point:
 - [`eos.matcop_prumr_alpha`](./eos/matcop_prumr_alpha.md)
 - [`eos.matcop_prumr_new_alpha`](./eos/matcop_prumr_new_alpha.md)
 - [`eos.mollerup_alpha`](./eos/mollerup_alpha.md)
+- [`eos.nitric_sulfuric_acid_vapor_pressure`](./eos/nitric_sulfuric_acid_vapor_pressure.md)
 - [`eos.parachor_surface_tension`](./eos/parachor_surface_tension.md)
 - [`eos.pr78_kappa`](./eos/pr78_kappa.md)
 - [`eos.pr_alpha_ab`](./eos/pr_alpha_ab.md)

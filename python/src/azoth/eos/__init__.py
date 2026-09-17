@@ -104,6 +104,7 @@ from azoth.core.result import (
     MatcopPrumrNewAlphaResult,
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
@@ -225,6 +226,7 @@ __all__ = [
     "mason_saxena_conductivity",
     "mixture",
     "molar_enthalpy_entropy",
+    "nitric_sulfuric_acid_vapor_pressure",
     "nrtl_activity_coefficients",
     "parahydrogen_solid_phase",
     "ph_flash",
@@ -307,6 +309,7 @@ _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
+_NITRIC_SULFURIC_ACID_VAPOR_PRESSURE = "eos.nitric_sulfuric_acid_vapor_pressure"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _BUBBLE_TEMPERATURE = "eos.bubble_temperature"
@@ -1130,6 +1133,28 @@ def mason_saxena_conductivity(
     return resolve(_MASON_SAXENA_CONDUCTIVITY)(  # type: ignore[no-any-return]
         Cv0=Cv0, M=M, omega=omega, Tc=Tc, Vc=Vc, dipole=dipole, kappa=kappa, T=T, z=z
     )
+
+
+def nitric_sulfuric_acid_vapor_pressure(T: Q) -> NitricSulfuricAcidVaporPressureResult:
+    """The pure-component vapour pressures of water, nitric acid and sulfuric acid.
+
+    Three correlations, not one form with three coefficient sets: water a
+    ``log10 P/mbar`` polynomial in ``1/T``, nitric acid an Antoine in ``log10 P/torr``,
+    sulfuric acid a ``ln P/atm`` straight line. They come back together because a phase
+    over this system needs all three at one state.
+
+    The nitric-acid pair is NeqSim's refit of Pennington's Antoine rather than the
+    paper's, and outside 190-298 K the answer carries ``OUT_OF_VALID_RANGE`` rather than
+    failing - the arithmetic is defined there and inspecting the extrapolation is
+    legitimate.
+
+    Raises:
+        OutOfRangeError: if ``T`` is not positive, or at or below the nitric-acid form's
+            43 K pole.
+
+    See :func:`azoth.eos.reference.nitric_sulfuric_acid_vapor_pressure`.
+    """
+    return resolve(_NITRIC_SULFURIC_ACID_VAPOR_PRESSURE)(T=T)  # type: ignore[no-any-return]
 
 
 def nrtl_activity_coefficients(

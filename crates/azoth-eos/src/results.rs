@@ -1809,6 +1809,29 @@ impl CalcResult for GeUniquacPhaseResult {
     }
 }
 
+/// Result of `eos.nitric_sulfuric_acid_vapor_pressure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NitricSulfuricAcidVaporPressureResult {
+    /// The pure-component vapour pressure of water.
+    pub p_water: Pressure,
+    /// The pure-component vapour pressure of nitric acid, from the adjusted Antoine pair.
+    pub p_nitric_acid: Pressure,
+    /// The pure-component vapour pressure of sulfuric acid.
+    pub p_sulfuric_acid: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for NitricSulfuricAcidVaporPressureResult {
+    const CALC_ID: &'static str = "eos.nitric_sulfuric_acid_vapor_pressure";
+    const FIELDS: &'static [&'static str] =
+        &["p_water", "p_nitric_acid", "p_sulfuric_acid", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.nrtl_activity_coefficients`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NrtlActivityCoefficientsResult {

@@ -71,6 +71,7 @@ from azoth.core.result import (
     MatcopPrumrNewAlphaResult,
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
     OrificeFlowResult,
     ParachorSurfaceTensionResult,
@@ -797,6 +798,18 @@ def mason_saxena_conductivity(
     )
     return MasonSaxenaConductivityResult(
         k=from_si(result.k.magnitude_si, result.k.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def nitric_sulfuric_acid_vapor_pressure(T: Q) -> NitricSulfuricAcidVaporPressureResult:
+    """The three acid-system vapour pressures, computed in Rust."""
+    spec = _spec_for("eos.nitric_sulfuric_acid_vapor_pressure")
+    result = _core.nitric_sulfuric_acid_vapor_pressure(input_to_si(spec, "T", T))
+    return NitricSulfuricAcidVaporPressureResult(
+        p_water=from_si(result.p_water.magnitude_si, result.p_water.unit),
+        p_nitric_acid=from_si(result.p_nitric_acid.magnitude_si, result.p_nitric_acid.unit),
+        p_sulfuric_acid=from_si(result.p_sulfuric_acid.magnitude_si, result.p_sulfuric_acid.unit),
         warnings=_warnings(result.warnings),
     )
 

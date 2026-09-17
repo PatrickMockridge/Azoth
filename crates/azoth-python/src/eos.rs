@@ -24,24 +24,25 @@ use crate::results::{
     PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
     PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
     PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
-    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult,
-    PyParachorSurfaceTensionResult, PyParahydrogenSolidPhaseResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
-    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
-    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
-    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
-    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
-    PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
-    PyRkDepartureResult, PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult,
-    PySoreideWhitsonAlphaResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
-    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
-    PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
-    PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
-    PyTynCalusDiffusivityResult, PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult,
-    PyUnifacPsrkActivityCoefficientsResult, PyUnifacUmrpruActivityCoefficientsResult,
-    PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult,
-    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWaterPhaseResult,
-    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
+    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNitricSulfuricAcidVaporPressureResult,
+    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
+    PyParahydrogenSolidPhaseResult, PyPhFlashResult, PyPhaseBoundaryResult,
+    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
+    PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult, PyPrDepartureResult,
+    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
+    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
+    PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
+    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
+    PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
+    PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
+    PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
+    PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
+    PyVuFlashResult, PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
+    PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -582,6 +583,20 @@ pub fn liquid_heat_capacity(
 }
 
 /// The pure-component vapour pressure, from NeqSim's Antoine correlation.
+/// The three pure-component vapour pressures of the water-nitric-sulfuric acid system.
+#[pyfunction]
+#[pyo3(signature = (T))]
+#[pyo3(text_signature = "(T)")]
+#[allow(non_snake_case)] // `T` is the symbol in the chemistry
+pub fn nitric_sulfuric_acid_vapor_pressure(
+    py: Python<'_>,
+    T: f64,
+) -> PyResult<PyNitricSulfuricAcidVaporPressureResult> {
+    azoth_eos::nitric_sulfuric_acid_vapor_pressure(kelvins(T))
+        .map(|r| PyNitricSulfuricAcidVaporPressureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 #[pyfunction]
 #[pyo3(signature = (A, B, C, D, E, form, Tc, Pc, T))]
 #[pyo3(text_signature = "(A, B, C, D, E, form, Tc, Pc, T)")]

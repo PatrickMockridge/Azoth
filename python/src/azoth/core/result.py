@@ -396,6 +396,26 @@ class AntoineVaporPressureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class NitricSulfuricAcidVaporPressureResult(_HasWarnings):
+    """Result of ``eos.nitric_sulfuric_acid_vapor_pressure``.
+
+    Three pressures from one temperature, because a phase over this system needs all
+    three at one state and three calculations would be three chances to evaluate them at
+    different ones. Each comes from its own correlation, and the nitric-acid one is
+    NeqSim's refit of Pennington's Antoine pair rather than the paper's.
+    """
+
+    #: The pure-component saturation vapour pressure of water.
+    p_water: Q
+    #: The pure-component saturation vapour pressure of nitric acid.
+    p_nitric_acid: Q
+    #: The pure-component saturation vapour pressure of sulfuric acid.
+    p_sulfuric_acid: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class RackettMolarVolumeResult(_HasWarnings):
     """Result of ``eos.rackett_molar_volume``."""
 

@@ -17,6 +17,7 @@
 //!   - specs/calcs/eos/matcop_prumr_alpha.toml
 //!   - specs/calcs/eos/matcop_prumr_new_alpha.toml
 //!   - specs/calcs/eos/mollerup_alpha.toml
+//!   - specs/calcs/eos/nitric_sulfuric_acid_vapor_pressure.toml
 //!   - specs/calcs/eos/parachor_surface_tension.toml
 //!   - specs/calcs/eos/pr78_kappa.toml
 //!   - specs/calcs/eos/pr_alpha_ab.toml
@@ -1685,6 +1686,132 @@ pub static MOLLERUP_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
     },
     tests: MOLLERUP_ALPHA_TESTS,
+};
+
+/// Registry entry for `eos.nitric_sulfuric_acid_vapor_pressure`.
+static NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states, and the nitric-acid form has a pole at 43 K which this also keeps away from",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(190.0),
+            min_inclusive: true,
+            max: Some(298.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the range the correlations are stated for; outside it the model extrapolates",
+        },
+    },
+];
+
+static NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "at_190_k",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 190.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("p_water", 0.06918456720793033),
+            ("p_nitric_acid", 0.4995327570414333),
+            ("p_sulfuric_acid", 7.124061430875013e-12),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "at_298_k",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("p_water", 3132.8241967498875),
+            ("p_nitric_acid", 8609.289936223791),
+            ("p_sulfuric_acid", 0.0018446818391683764),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "above_the_stated_range_at_340_k",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 340.0)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("p_water", 27493.079041788344),
+            ("p_nitric_acid", 56284.88386679628),
+            ("p_sulfuric_acid", 0.12424500900356229),
+        ],
+        expected_vectors: &[],
+    },
+];
+
+/// Registered spec for `eos.nitric_sulfuric_acid_vapor_pressure`.
+///
+/// Public and addressable directly, so a calc can hold `&NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_SPEC: CalcSpec = CalcSpec {
+    id: "eos.nitric_sulfuric_acid_vapor_pressure",
+    checks: NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "at_273_15_k_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 273.15)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("p_water", 610.3592249571752),
+            ("p_nitric_acid", 2052.9169266045096),
+            ("p_sulfuric_acid", 8.305997595294622e-05),
+        ],
+        expected_vectors: &[],
+    },
+    tests: NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_TESTS,
 };
 
 /// Registry entry for `eos.parachor_surface_tension`.
@@ -5237,6 +5364,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &MATCOP_PRUMR_ALPHA_SPEC,
     &MATCOP_PRUMR_NEW_ALPHA_SPEC,
     &MOLLERUP_ALPHA_SPEC,
+    &NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_SPEC,
     &PARACHOR_SURFACE_TENSION_SPEC,
     &PR78_KAPPA_SPEC,
     &PR_ALPHA_AB_SPEC,

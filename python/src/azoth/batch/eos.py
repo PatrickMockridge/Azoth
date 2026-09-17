@@ -36,6 +36,7 @@ __all__ = [
     "MatcopPrumrAlphaBatch",
     "MatcopPrumrNewAlphaBatch",
     "MollerupAlphaBatch",
+    "NitricSulfuricAcidVaporPressureBatch",
     "ParachorSurfaceTensionBatch",
     "Pr78KappaBatch",
     "PrAlphaAbBatch",
@@ -82,6 +83,7 @@ __all__ = [
     "matcop_prumr_alpha",
     "matcop_prumr_new_alpha",
     "mollerup_alpha",
+    "nitric_sulfuric_acid_vapor_pressure",
     "parachor_surface_tension",
     "pr78_kappa",
     "pr_alpha_ab",
@@ -161,6 +163,7 @@ _TWUCOON_ALPHA = "eos.twucoon_alpha"
 _TWUCOON_PARAM_ALPHA = "eos.twucoon_param_alpha"
 _TWUCOON_STATOIL_ALPHA = "eos.twucoon_statoil_alpha"
 _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
+_NITRIC_SULFURIC_ACID_VAPOR_PRESSURE = "eos.nitric_sulfuric_acid_vapor_pressure"
 _UMRPR_ALPHA = "eos.umrpr_alpha"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 
@@ -197,6 +200,52 @@ def pr_kappa(*, omega: Sequence[float]) -> PrKappaBatch:
         _PR_KAPPA,
         {"omega": sequence(omega, "omega")},
         _build,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class NitricSulfuricAcidVaporPressureBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.nitric_sulfuric_acid_vapor_pressure`."""
+
+    #: The pure-component vapour pressure of water per element.
+    p_water: array[float]
+    #: The pure-component vapour pressure of nitric acid per element.
+    p_nitric_acid: array[float]
+    #: The pure-component vapour pressure of sulfuric acid per element.
+    p_sulfuric_acid: array[float]
+
+
+def _build_acid(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> NitricSulfuricAcidVaporPressureBatch:
+    return NitricSulfuricAcidVaporPressureBatch(
+        warnings=warnings,
+        units=units,
+        p_water=columns["p_water"],  # type: ignore[arg-type]
+        p_nitric_acid=columns["p_nitric_acid"],  # type: ignore[arg-type]
+        p_sulfuric_acid=columns["p_sulfuric_acid"],  # type: ignore[arg-type]
+    )
+
+
+def nitric_sulfuric_acid_vapor_pressure(
+    *, T: Sequence[float]
+) -> NitricSulfuricAcidVaporPressureBatch:
+    """The acid-system pure-component vapour pressures, over an array of temperatures.
+
+    Outside the stated 190-298 K an element carries ``OUT_OF_VALID_RANGE`` in its own
+    warning tuple rather than raising, exactly as the scalar call does - the arithmetic
+    is defined there. An element at or below the nitric-acid form's 43 K pole does raise,
+    because there it is a pole rather than a pressure.
+
+    See :func:`azoth.eos.nitric_sulfuric_acid_vapor_pressure` for the calculation itself.
+    """
+    result: NitricSulfuricAcidVaporPressureBatch = run(
+        _NITRIC_SULFURIC_ACID_VAPOR_PRESSURE,
+        {"T": sequence(T, "T")},
+        _build_acid,
     )
     return result
 

@@ -26,12 +26,12 @@ use azoth_eos::results::{
     HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
     MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult,
-    ParahydrogenSolidPhaseResult, PhFlashResult, Pr78KappaResult, PrAlphaAbResult,
-    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
-    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
-    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PhFlashResult, Pr78KappaResult,
+    PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
     RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
     SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
     SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
@@ -2014,6 +2014,59 @@ impl From<&WilkeViscosityResult> for PyWilkeViscosityResult {
             mu: PyQty {
                 magnitude_si: r.mu.value,
                 unit: "Pa*s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.nitric_sulfuric_acid_vapor_pressure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "NitricSulfuricAcidVaporPressureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyNitricSulfuricAcidVaporPressureResult {
+    /// The pure-component vapour pressure of water.
+    #[pyo3(get)]
+    pub p_water: PyQty,
+    /// The pure-component vapour pressure of nitric acid.
+    #[pyo3(get)]
+    pub p_nitric_acid: PyQty,
+    /// The pure-component vapour pressure of sulfuric acid.
+    #[pyo3(get)]
+    pub p_sulfuric_acid: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyNitricSulfuricAcidVaporPressureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "NitricSulfuricAcidVaporPressureResult(p_water={} Pa, p_nitric_acid={} Pa)",
+            self.p_water.magnitude_si, self.p_nitric_acid.magnitude_si
+        )
+    }
+}
+
+impl From<&NitricSulfuricAcidVaporPressureResult> for PyNitricSulfuricAcidVaporPressureResult {
+    fn from(r: &NitricSulfuricAcidVaporPressureResult) -> Self {
+        Self {
+            p_water: PyQty {
+                magnitude_si: r.p_water.value,
+                unit: "Pa".to_string(),
+            },
+            p_nitric_acid: PyQty {
+                magnitude_si: r.p_nitric_acid.value,
+                unit: "Pa".to_string(),
+            },
+            p_sulfuric_acid: PyQty {
+                magnitude_si: r.p_sulfuric_acid.value,
+                unit: "Pa".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -5172,6 +5225,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         WilkeViscosityResult::CALC_ID => WilkeViscosityResult::FIELDS.to_vec(),
         MasonSaxenaConductivityResult::CALC_ID => MasonSaxenaConductivityResult::FIELDS.to_vec(),
         NrtlActivityCoefficientsResult::CALC_ID => NrtlActivityCoefficientsResult::FIELDS.to_vec(),
+        NitricSulfuricAcidVaporPressureResult::CALC_ID => {
+            NitricSulfuricAcidVaporPressureResult::FIELDS.to_vec()
+        }
         UnifacActivityCoefficientsResult::CALC_ID => {
             UnifacActivityCoefficientsResult::FIELDS.to_vec()
         }
@@ -5299,6 +5355,7 @@ pub fn calc_ids() -> Vec<String> {
         HeatOfVaporizationResult::CALC_ID.to_string(),
         LiquidHeatCapacityResult::CALC_ID.to_string(),
         AntoineVaporPressureResult::CALC_ID.to_string(),
+        NitricSulfuricAcidVaporPressureResult::CALC_ID.to_string(),
         RackettMolarVolumeResult::CALC_ID.to_string(),
         CostaldMolarVolumeResult::CALC_ID.to_string(),
         ChungViscosityResult::CALC_ID.to_string(),

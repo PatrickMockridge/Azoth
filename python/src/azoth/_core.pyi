@@ -409,6 +409,13 @@ class MollerupAlphaResult:
     warnings: list[Warning]
 
 @final
+class NitricSulfuricAcidVaporPressureResult:
+    p_water: Qty
+    p_nitric_acid: Qty
+    p_sulfuric_acid: Qty
+    warnings: list[Warning]
+
+@final
 class NrtlActivityCoefficientsResult:
     ln_gamma: list[float]
     gamma: list[float]
@@ -1204,6 +1211,7 @@ def molar_enthalpy_entropy(
     alpha_params: list[list[float]] | None = None,
 ) -> MolarEnthalpyEntropyResult: ...
 def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult: ...
+def nitric_sulfuric_acid_vapor_pressure(T: float) -> NitricSulfuricAcidVaporPressureResult: ...
 def nrtl_activity_coefficients(
     alpha: list[float],
     dij: list[float],

@@ -456,6 +456,28 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "kappa", "dimensionless", kappa);
         }
 
+        "eos.nitric_sulfuric_acid_vapor_pressure" => {
+            let t_values = take(&inputs, "T")?;
+            let mut p_water = Vec::with_capacity(n);
+            let mut p_nitric_acid = Vec::with_capacity(n);
+            let mut p_sulfuric_acid = Vec::with_capacity(n);
+            for value in &t_values {
+                // The batch carries SI magnitudes, so the kelvin conversion the scalar
+                // boundary does is not repeated here - the column already is one.
+                let r = element(
+                    py,
+                    eos::nitric_sulfuric_acid_vapor_pressure(kelvins(*value)),
+                    &mut warnings,
+                )?;
+                p_water.push(r.p_water.value);
+                p_nitric_acid.push(r.p_nitric_acid.value);
+                p_sulfuric_acid.push(r.p_sulfuric_acid.value);
+            }
+            push_values(&mut columns, "p_water", "Pa", p_water);
+            push_values(&mut columns, "p_nitric_acid", "Pa", p_nitric_acid);
+            push_values(&mut columns, "p_sulfuric_acid", "Pa", p_sulfuric_acid);
+        }
+
         "eos.pr_lee_kesler_alpha" => {
             let (omega, tr) = (take(&inputs, "omega")?, take(&inputs, "Tr")?);
             let mut alpha = Vec::with_capacity(n);

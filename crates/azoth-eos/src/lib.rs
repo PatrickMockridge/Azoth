@@ -89,6 +89,7 @@ pub mod mixture;
 pub mod model_gen;
 pub mod molar_enthalpy_entropy;
 pub mod mollerup_alpha;
+pub mod nitric_sulfuric_acid_vapor_pressure;
 pub mod nrtl_activity_coefficients;
 pub mod parachor_surface_tension;
 pub mod parahydrogen_solid;
@@ -194,6 +195,7 @@ pub use mixing_rule::{MixingRule, SoreideWhitsonRole};
 pub use mixture::{Component, Mixture, PhaseState, ReducedParameters, RootSide};
 pub use molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
 pub use mollerup_alpha::mollerup_alpha;
+pub use nitric_sulfuric_acid_vapor_pressure::nitric_sulfuric_acid_vapor_pressure;
 pub use nrtl_activity_coefficients::nrtl_activity_coefficients;
 pub use parachor_surface_tension::parachor_surface_tension;
 pub use parahydrogen_solid_phase::parahydrogen_solid_phase;
@@ -230,22 +232,23 @@ pub use results::{
     HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
     MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult,
-    ParahydrogenSolidPhaseResult, Phase, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
-    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
-    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
-    PuFlashResult, PureSaturationResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, RootStructure, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
-    StabilityVerdict, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, WaterPhaseResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, Phase, Pr78KappaResult,
+    PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult,
+    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
+    RootStructure, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
+    SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict, ThFlashResult,
+    ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,
+    TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
+    UmrprAlphaResult, UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
+    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;

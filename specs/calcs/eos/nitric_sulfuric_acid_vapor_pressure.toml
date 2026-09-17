@@ -1,0 +1,107 @@
+id = "eos.nitric_sulfuric_acid_vapor_pressure"
+name = "Pure-component vapour pressures of water, nitric acid and sulfuric acid"
+equation = "p_water = 100*10**(8.42926609 - 1827.17843/T - 71208.271/T**2); p_nitric = 133.322368421*10**(7.57628 - 1470.385/(T - 43.0)); p_sulfuric = 101325*exp(-10156.0/T + 16.259)"
+latex = '''\begin{aligned}
+p_{\mathrm{H_2O}} &= 100 \times 10^{\,8.42926609 - 1827.17843/T - 71208.271/T^{2}}\\
+p_{\mathrm{HNO_3}} &= 133.322368421 \times 10^{\,7.57628 - 1470.385/(T - 43.0)}\\
+p_{\mathrm{H_2SO_4}} &= 101325 \times e^{\,-10156.0/T + 16.259}
+\end{aligned}'''
+assumptions = [
+    "three correlations, not one form with three coefficient sets: water is a log10 polynomial in `1/T`, nitric acid an Antoine in `log10(P/torr)`, sulfuric acid a `ln(P/atm)` straight line. Each is ported with its own unit factor, `100`, `133.322368421` and `101325`.",
+    "the three come back together because they are always wanted together: a phase over this system needs all three pure-component pressures at one temperature, and three calculations would be three chances to evaluate them at different ones.",
+    "the nitric-acid Antoine pair is an *engineering adjustment*, ported as NeqSim states it: `A`/`B` are refitted from Pennington (1951)'s `7.61628`/`1486.238` to reproduce the 83 C boiling point and raise `P0` at 273.15 K by 6.9 % against Vandoni (1944)'s salting-out data. `C = 43.0` is Pennington's.",
+    "the validity is per species, not per class. Water and sulfuric acid are stated for roughly 190-298 K and nitric acid's Antoine for roughly 190-400 K, so the range below is the conservative envelope NeqSim's own constants state.",
+    "the range is a *warning* rather than an error: the arithmetic is well defined outside it and a caller inspecting the extrapolation is doing something legitimate. The nitric-acid form alone has a pole at `T = 43 K`, which is an error.",
+    "the water correlation reaches 610.4 Pa at 273.15 K against a measured 611 Pa, which is the check that says the unit factor is `mbar` and not the bar the rest of this library works in.",
+]
+references = [
+    "Taleb, D.; Ponche, J. L.; Mirabel, P. (1996). \"Vapor pressures in the ternary system water-nitric acid-sulfuric acid at low temperature.\" Journal of Geophysical Research 101(D20), 25967-25977. DOI 10.1029/96JD02155",
+    "Pennington, W. H. (1951). The nitric acid Antoine coefficients this correlation adjusts.",
+    "Vandoni, R. (1944). The ternary salting-out peak pressures the adjustment is fitted to.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/util/empiric/NitricSulfuricAcidVaporPressure`, ported verbatim.",
+]
+[source]
+standard = "Taleb, D.; Ponche, J. L.; Mirabel, P. (1996)"
+edition = "The three pure-component correlations of section 3, as NeqSim 3.20.0 implements them in `NitricSulfuricAcidVaporPressure`. The nitric-acid coefficients are NeqSim's refit, not the paper's."
+doi = "10.1029/96JD02155"
+[inputs]
+[inputs.T]
+unit = "K"
+description = "Absolute temperature. The three correlations share it because a phase over this system needs all three at one state.\n"
+[outputs]
+[outputs.p_water]
+unit = "Pa"
+description = "The pure-component saturation vapour pressure of water.\n"
+[outputs.p_nitric_acid]
+unit = "Pa"
+description = "The pure-component saturation vapour pressure of nitric acid, from the adjusted Antoine pair.\n"
+[outputs.p_sulfuric_acid]
+unit = "Pa"
+description = "The pure-component saturation vapour pressure of sulfuric acid. Small over the whole range: sulfuric acid is involatile, and this is 7e-12 Pa at 190 K.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states, and the nitric-acid form has a pole at 43 K which this also keeps away from\n"
+[[valid_range]]
+quantity = "T"
+min = 190.0
+max = 298.0
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "the range the correlations are stated for; outside it the model extrapolates\n"
+[implementations]
+python = "azoth.eos.nitric_sulfuric_acid_vapor_pressure"
+rust = "azoth_eos::nitric_sulfuric_acid_vapor_pressure"
+[worked_example]
+source = "derived from the equations above"
+derivation = "At T = 273.15 K:\n\n  water:    8.42926609 - 1827.17843/273.15 - 71208.271/273.15**2 = 8.42926609 - 6.689202 - 0.954455 = 0.785609\n            10**0.785609 * 100 = 6.103592249571752 * 100 = 610.3592249571752 Pa\n\n  nitric:   7.57628 - 1470.385/(273.15 - 43.0) = 7.57628 - 6.389810 = 1.186470\n            10**1.186470 * 133.322368421 = 15.366092 * 133.322368421 = 2052.9169266045096 Pa\n\n  sulfuric: -10156.0/273.15 + 16.259 = -37.180688 + 16.259 = -20.921688\n            exp(-20.921688) * 101325 = 8.197271e-10 * 101325 = 8.305997595294622e-05 Pa\n\nwhich reproduces NeqSim's three functions at the same temperature. The water figure is 610.4 Pa against a measured 611 Pa, which is what fixes the `mbar` factor rather than the bar the rest of this library works in."
+tolerance = 1e-12
+[worked_example.inputs]
+T = 273.15
+[worked_example.expected]
+p_water = 610.3592249571752
+p_nitric_acid = 2052.9169266045096
+p_sulfuric_acid = 8.305997595294622e-05
+[[tests]]
+id = "at_273_15_k_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "at_190_k"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0 `NitricSulfuricAcidVaporPressure.pureVaporPressureWater` / `pureVaporPressureNitricAcid` / `pureVaporPressureSulfuricAcid`, run from validation/neqsim/AcidVaporPressure.java. A static utility, so there is nothing between the correlation and the number. The cold end of the stated range, where sulfuric acid's pressure is 7e-12 Pa - small enough that a missing unit factor would show as orders of magnitude rather than a percentage.\n"
+tolerance = 1e-09
+[tests.inputs]
+T = 190.0
+[tests.expected]
+p_water = 0.06918456720793033
+p_nitric_acid = 0.4995327570414333
+p_sulfuric_acid = 7.124061430875013e-12
+[[tests]]
+id = "at_298_k"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0, as the previous case: validation/neqsim/AcidVaporPressure.java. The warm end of the stated range, and the temperature at which the three are within five orders of magnitude of each other rather than thirteen.\n"
+tolerance = 1e-09
+[tests.inputs]
+T = 298.0
+[tests.expected]
+p_water = 3132.8241967498875
+p_nitric_acid = 8609.289936223791
+p_sulfuric_acid = 0.0018446818391683764
+[[tests]]
+id = "above_the_stated_range_at_340_k"
+type = "reference"
+status = "active"
+source = "NeqSim 3.20.0, as the previous case: validation/neqsim/AcidVaporPressure.java. Outside the stated 190-298 K, which is a range *warning* rather than an error - the arithmetic is well defined here and inspecting the extrapolation is legitimate. Nitric acid's own Antoine is stated to about 400 K, so this is inside its range and outside the other two's.\n"
+tolerance = 1e-09
+[tests.inputs]
+T = 340.0
+[tests.expected]
+p_water = 27493.079041788344
+p_nitric_acid = 56284.88386679628
+p_sulfuric_acid = 0.12424500900356229
