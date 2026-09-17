@@ -8,10 +8,9 @@
   },
   "derivation": "The driver ran `SystemGEWilson` + `createDatabase(true)` + `setMixingRule(\"classic\")` + `TPflash()`, then `getWilsonActivityCoefficient` and printed `gamma [1.213061319425015, 1.648720209074888]` at `x [0.5, 0.5]`.\n\nazoth's `eos.wilson_activity_coefficients` reproduces it exactly.",
   "inputs": {
+    "components": ["n-butane", "nc12"],
     "T": 298.15,
-    "x": [0.5, 0.5],
-    "M": [0.058123, 0.1703],
-    "Tc": [425.12, 658.0]
+    "x": [0.5, 0.5]
   },
   "expected": {
     "ln_gamma": [0.19314718055973779, 0.49999935609153545],

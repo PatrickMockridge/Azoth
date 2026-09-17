@@ -2,7 +2,7 @@ id = "eos.wilson_activity_coefficients"
 name = "Activity coefficients from the paraffin-wax Wilson model"
 kind = "direct"
 assumptions = [
-    "the caller supplies the molar mass and critical temperature - this model takes the numbers, not the names, the way `eos.wilke_viscosity` takes its constants.\n",
+    "the molar mass and critical temperature come from the named components' databank rows, with the keycard's overrides applied; a card-added component without a molar mass is refused rather than defaulted to zero.\n",
     "this is NeqSim's paraffin-wax (Coutinho) Wilson, not the classical fitted-`Aij` Wilson: the interaction energy is a correlation over carbon number and the sublimation enthalpy, so it needs no interaction-parameter table.\n",
     "`Lambda_ij = 1` when `i == j` or `M_i > M_j` - the branch in NeqSim's `getCharEnergyParamter` where the heavier first component collapses the exponent to zero - and `exp(-(lambda_j - lambda_i) / (R T))` otherwise.\n",
     "`T` must be below each component's `Tc`: the vaporization-enthalpy correlation is a power of `1 - T/Tc`, and a supercritical component yields NaN exactly as NeqSim does, which is not refused here.\n",
@@ -17,6 +17,10 @@ standard = "Coutinho et al. (1995)"
 edition = "Fluid Phase Equilibria 103, 23-39"
 doi = "10.1016/0378-3812(94)02603-Y"
 [inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank with the keycard's overrides applied; the correlation reads their molar mass and critical temperature\n"
 [inputs.T]
 unit = "K"
 description = "absolute temperature\n"
@@ -25,16 +29,6 @@ type = "vector"
 unit = "dimensionless"
 length = "one per component"
 description = "mole fractions; non-negative and summing to one.\n"
-[inputs.M]
-type = "vector"
-unit = "kg/mol"
-length = "one per component"
-description = "molar mass of each component\n"
-[inputs.Tc]
-type = "vector"
-unit = "K"
-length = "one per component"
-description = "critical temperature of each component\n"
 [outputs]
 [outputs.ln_gamma]
 type = "vector"

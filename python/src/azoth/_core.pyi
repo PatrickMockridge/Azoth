@@ -1409,10 +1409,16 @@ def wilke_viscosity(
     z: list[float],
 ) -> WilkeViscosityResult: ...
 def wilson_activity_coefficients(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    molar_mass: list[float],
     T: float,
     x: list[float],
-    M: list[float],
-    Tc: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
 ) -> WilsonActivityCoefficientsResult: ...
 def choked_flow_area(m_dot: float, P0: float, rho0: float, k: float) -> ChokedFlowAreaResult: ...
 def control_valve_cv(Cv: float, dP: float, SG: float) -> ControlValveCvResult: ...

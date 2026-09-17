@@ -870,18 +870,32 @@ def uniquac_activity_coefficients(
 
 
 def wilson_activity_coefficients(
-    T: Q,
-    x: Sequence[float],
-    M: Sequence[Q],
-    Tc: Sequence[Q],
+    mixture: Any, T: Q, x: Sequence[float]
 ) -> WilsonActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust."""
+    """The activity coefficients of a mixture, computed in Rust.
+
+    The mixture is flattened into the critical constants and the molar mass the boundary
+    carries, the same prefix `viscosity` sends.
+    """
     spec = _models_gen.model("eos.wilson_activity_coefficients")
+    molar_mass = []
+    for c in mixture.components:
+        if c.molar_mass is None:
+            raise PropertyUnavailableError(
+                "component",
+                "molar mass",
+                "the paraffin-wax Wilson correlation needs a molar mass for the carbon "
+                "number, and a card-added component carries none",
+            )
+        molar_mass.append(c.molar_mass.to_base_units().magnitude)
     result = _core.wilson_activity_coefficients(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        molar_mass,
         input_to_si(spec, "T", T),
         list(x),
-        [input_to_si(spec, "M", value) for value in M],
-        [input_to_si(spec, "Tc", value) for value in Tc],
     )
     return WilsonActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),

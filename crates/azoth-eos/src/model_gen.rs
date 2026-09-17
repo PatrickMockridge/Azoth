@@ -3564,13 +3564,9 @@ static WILSON_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[TestCase {
     skip_reason: None,
     tolerance: 1e-09,
     numbers: &[("T", 298.15)],
-    lists: &[],
+    lists: &[("components", &["n-butane", "nc12"])],
     strings: &[],
-    vectors: &[
-        ("x", &[0.5, 0.5]),
-        ("M", &[0.058123, 0.1703]),
-        ("Tc", &[425.12, 658.0]),
-    ],
+    vectors: &[("x", &[0.5, 0.5])],
     matrices: &[],
     expected: &[],
     expected_vectors: &[

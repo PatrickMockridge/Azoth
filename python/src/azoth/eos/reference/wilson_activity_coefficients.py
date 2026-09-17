@@ -11,11 +11,12 @@ import math
 from collections.abc import Sequence
 
 from azoth import _models_gen
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import WilsonActivityCoefficientsResult
 from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
+from azoth.eos.mixture import Mixture
 
 MODEL_ID = "eos.wilson_activity_coefficients"
 
@@ -68,40 +69,39 @@ def _char_energy(m: list[float], tc: list[float], t: float, i: int, j: int) -> f
 
 
 def wilson_activity_coefficients(
+    mixture: Mixture,
     T: Q,
     x: Sequence[float],
-    M: Sequence[Q],
-    Tc: Sequence[Q],
 ) -> WilsonActivityCoefficientsResult:
     """The activity coefficients of a mixture, from the paraffin-wax Wilson model.
 
-    ``M`` is molar mass in kg/mol and ``Tc`` the critical temperature in K; both feed
-    the ``lambda_i`` correlation, and ``Lambda_ij`` is ``1.0`` for ``i == j`` or the
-    heavier first component, else ``exp(-(lambda_j - lambda_i) / (R T))``. The activity
-    coefficient is ``ln gamma_c = 1 - ln(sum_i x_i Lambda_c_i) - sum_i x_i Lambda_i_c /
+    ``mixture`` carries each component's molar mass (kg/mol) and critical temperature
+    (K), both of which feed the ``lambda_i`` correlation; ``Lambda_ij`` is ``1.0`` for
+    ``i == j`` or the heavier first component, else
+    ``exp(-(lambda_j - lambda_i) / (R T))``. The activity coefficient is
+    ``ln gamma_c = 1 - ln(sum_i x_i Lambda_c_i) - sum_i x_i Lambda_i_c /
     sum_j x_j Lambda_i_j``. ``x`` is checked rather than renormalised; a supercritical
     component yields NaN, as in NeqSim.
 
     Args:
+        mixture: the components and their interaction parameters.
         T: absolute temperature.
         x: mole fractions; non-negative and summing to one.
-        M: molar mass of each component, in kg/mol.
-        Tc: critical temperature of each component.
 
     Returns:
         The natural logarithm and the value of each activity coefficient.
 
     Raises:
-        InvalidInputError: if the vectors disagree in length, or ``x`` is not a
-            composition.
+        PropertyUnavailableError: if a component carries no molar mass.
+        InvalidInputError: if ``x`` is not a composition of ``mixture``.
         OutOfRangeError: if ``T`` is not positive.
 
     Example:
         >>> import azoth
+        >>> from azoth.eos.components import mixture_of
         >>> q = azoth.ureg.Quantity
-        >>> m = [q(0.058123, "kg/mol"), q(0.1703, "kg/mol")]
-        >>> tc = [q(425.12, "K"), q(658.0, "K")]
-        >>> r = wilson_activity_coefficients(q(298.15, "K"), [0.5, 0.5], m, tc)
+        >>> mixture = mixture_of(["n-butane", "nc12"])[0]
+        >>> r = wilson_activity_coefficients(mixture, q(298.15, "K"), [0.5, 0.5])
         >>> round(r.gamma[0], 14)
         1.21306131942502
     """
@@ -114,18 +114,30 @@ def wilson_activity_coefficients(
 
     t = input_to_si(spec, "T", T)
     x = list(x)
-    m = [input_to_si(spec, "M", value) for value in M]
-    tc = [input_to_si(spec, "Tc", value) for value in Tc]
 
     n = len(x)
     if n == 0:
         raise InvalidInputError("x", "a mixture of zero components has no activity coefficient")
-    if len(m) != n or len(tc) != n:
+    if len(mixture) != n:
         raise InvalidInputError(
-            "M",
-            f"the per-component vectors disagree in length: `x` has {n} entries, `M` "
-            f"{len(m)} and `Tc` {len(tc)}",
+            "components",
+            f"the mixture has {len(mixture)} components but `x` has {n} entries",
         )
+    # The correlation is over carbon number and the fusion temperature, both of which
+    # are masses; a component without one is refused rather than given a zero, which
+    # would put a zero on the wrong side of the `M_i > M_j` branch as well as in the
+    # energy.
+    m: list[float] = []
+    for component in mixture.components:
+        if component.molar_mass is None:
+            raise PropertyUnavailableError(
+                "component",
+                "molar mass",
+                "the paraffin-wax Wilson correlation needs a molar mass for the carbon "
+                "number, and a card-added component carries none",
+            )
+        m.append(component.molar_mass.to_base_units().magnitude)
+    tc = [component.Tc.to_base_units().magnitude for component in mixture.components]
     if any(value < 0.0 for value in x):
         bad = next(i for i, value in enumerate(x) if value < 0.0)
         raise InvalidInputError("x", f"x[{bad}] is {x[bad]} but a mole fraction cannot be negative")

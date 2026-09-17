@@ -999,19 +999,41 @@ pub fn uniquac_activity_coefficients(
 }
 
 /// The activity coefficients of a mixture, from the paraffin-wax Wilson model. A
-/// *model* rather than a calculation: its arguments are vectors.
+/// *model* rather than a calculation: it reads the resolved critical constants and
+/// molar mass, the same prefix the cubic models cross with.
+///
+/// `eos`, `alpha` and `alpha_params` are accepted for the boundary's uniformity with the
+/// other mixture models and ignored: the Coutinho correlation is an activity model, not
+/// a cubic, so the mixture's own cubic and alpha are not consulted.
 #[pyfunction]
-#[pyo3(signature = (T, x, M, Tc))]
-#[pyo3(text_signature = "(T, x, M, Tc)")]
-#[allow(non_snake_case)] // `M`, `Tc`, `T` and `x` are the symbols in the chemistry
+#[pyo3(signature = (Tc, Pc, omega, kij, molar_mass, T, x, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, molar_mass, T, x, eos = \"pr\", alpha = \"pr\")")]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `x` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+#[allow(unused_variables)] // `eos`, `alpha` and `alpha_params` are boundary-only, see above.
 pub fn wilson_activity_coefficients(
     py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    molar_mass: Vec<f64>,
     T: f64,
     x: Vec<f64>,
-    M: Vec<f64>,
-    Tc: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
 ) -> PyResult<PyWilsonActivityCoefficientsResult> {
-    azoth_eos::wilson_activity_coefficients(T, &x, &M, &Tc)
+    let n = Tc.len();
+    let components = (0..n)
+        .map(|i| {
+            azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i])
+                .map(|c| c.with_molar_mass(Some(molar_mass[i])))
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| to_pyerr(py, e))?;
+    let mixture = azoth_eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::wilson_activity_coefficients(&mixture, T, &x)
         .map(|r| PyWilsonActivityCoefficientsResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

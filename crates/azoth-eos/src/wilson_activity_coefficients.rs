@@ -6,6 +6,7 @@
 
 use azoth_core::{AzothError, Result, apply_checks};
 
+use crate::mixture::Mixture;
 use crate::model_gen;
 use crate::results::WilsonActivityCoefficientsResult;
 
@@ -55,37 +56,33 @@ fn char_energy(m: &[f64], tc: &[f64], t: f64, i: usize, j: usize) -> f64 {
 
 /// The activity coefficients of a mixture, from the paraffin-wax Wilson model.
 ///
-/// `M` is molar mass in kg/mol and `Tc` the critical temperature in K; both feed the
-/// `lambda_i` correlation, and `Lambda_ij` is `1.0` for `i == j` or the heavier first
-/// component, else `exp(-(lambda_j - lambda_i) / (R T))`. The activity coefficient is
-/// `ln gamma_c = 1 - ln(sum_i x_i Lambda_c_i) - sum_i x_i Lambda_i_c / sum_j x_j
-/// Lambda_i_j`. `x` is checked rather than renormalised; a supercritical component
-/// yields NaN, as in NeqSim.
+/// `mixture` carries each component's molar mass (kg/mol) and critical temperature (K),
+/// both of which feed the `lambda_i` correlation; `Lambda_ij` is `1.0` for `i == j` or
+/// the heavier first component, else `exp(-(lambda_j - lambda_i) / (R T))`. The activity
+/// coefficient is `ln gamma_c = 1 - ln(sum_i x_i Lambda_c_i) - sum_i x_i Lambda_i_c /
+/// sum_j x_j Lambda_i_j`. `x` is checked rather than renormalised; a supercritical
+/// component yields NaN, as in NeqSim.
 ///
 /// # Errors
-/// * [`AzothError::InvalidInput`] if the vectors disagree in length or `x` is not a
-///   composition.
+/// * [`AzothError::PropertyUnavailable`] if a component carries no molar mass.
+/// * [`AzothError::InvalidInput`] if `x` is not a composition of `mixture`.
 /// * [`AzothError::OutOfRange`] if `T` is not positive.
 ///
 /// # Example
 /// ```
+/// use azoth_eos::databank::mixture_of;
 /// use azoth_eos::wilson_activity_coefficients;
 ///
-/// let r = wilson_activity_coefficients(
-///     298.15,
-///     &[0.5, 0.5],
-///     &[0.058123, 0.1703],
-///     &[425.12, 658.0],
-/// )?;
+/// let (mixture, _) = mixture_of(&["n-butane", "nc12"], None)?;
+/// let r = wilson_activity_coefficients(&mixture, 298.15, &[0.5, 0.5])?;
 /// assert!((r.gamma[0] - 1.213061319425015).abs() < 1e-15);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
-#[allow(non_snake_case)] // `M`, `Tc`, `T` and `x` are the symbols in the chemistry
+#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
 pub fn wilson_activity_coefficients(
+    mixture: &Mixture,
     T: f64,
     x: &[f64],
-    M: &[f64],
-    Tc: &[f64],
 ) -> Result<WilsonActivityCoefficientsResult> {
     let spec = &model_gen::WILSON_ACTIVITY_COEFFICIENTS_SPEC;
     let mut warnings = Vec::new();
@@ -106,17 +103,34 @@ pub fn wilson_activity_coefficients(
             "a mixture of zero components has no activity coefficient",
         ));
     }
-    if M.len() != n || Tc.len() != n {
+    if mixture.len() != n {
         return Err(AzothError::invalid_input(
-            "M",
+            "components",
             format!(
-                "the per-component vectors disagree in length: `x` has {n} entries, `M` \
-                 {} and `Tc` {}",
-                M.len(),
-                Tc.len()
+                "the mixture has {} components but `x` has {n} entries",
+                mixture.len()
             ),
         ));
     }
+    // The correlation is over carbon number and the fusion temperature, both of which
+    // are masses; a component without one is refused rather than given a zero, which
+    // would put a zero on the wrong side of the `M_i > M_j` branch as well as in the
+    // energy.
+    let components = mixture.components();
+    let m: Vec<f64> = components
+        .iter()
+        .map(|c| {
+            c.molar_mass.ok_or_else(|| {
+                AzothError::property_unavailable(
+                    "component",
+                    "molar mass",
+                    "the paraffin-wax Wilson correlation needs a molar mass for the \
+                     carbon number, and a card-added component carries none",
+                )
+            })
+        })
+        .collect::<Result<_>>()?;
+    let tc: Vec<f64> = components.iter().map(|c| c.tc.value).collect();
     if let Some(bad) = x.iter().position(|&value| value < 0.0) {
         return Err(AzothError::invalid_input(
             "x",
@@ -143,15 +157,15 @@ pub fn wilson_activity_coefficients(
     for c in 0..n {
         let mut s1 = 0.0;
         for (i, &xi) in x.iter().enumerate() {
-            s1 += xi * char_energy(M, Tc, T, c, i);
+            s1 += xi * char_energy(&m, &tc, T, c, i);
         }
         let mut s2 = 0.0;
         for (i, &xi) in x.iter().enumerate() {
             let mut temp = 0.0;
             for (j, &xj) in x.iter().enumerate() {
-                temp += xj * char_energy(M, Tc, T, i, j);
+                temp += xj * char_energy(&m, &tc, T, i, j);
             }
-            s2 += xi * char_energy(M, Tc, T, i, c) / temp;
+            s2 += xi * char_energy(&m, &tc, T, i, c) / temp;
         }
         let lng = 1.0 - s1.ln() - s2;
         ln_gamma[c] = lng;

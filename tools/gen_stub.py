@@ -39,7 +39,9 @@ MODEL_IDS = frozenset(model["id"] for model in MODELS)
 #: critical constants. A model that resolves names against the databank gets the mass
 #: for free; the stub has to say it does, or the bridge's extra vector would be a
 #: signature mismatch.
-MOLAR_MASS_MODELS = frozenset({"eos.viscosity", "eos.thermal_conductivity"})
+MOLAR_MASS_MODELS = frozenset(
+    {"eos.viscosity", "eos.thermal_conductivity", "eos.wilson_activity_coefficients"}
+)
 
 STUB = ROOT / "python" / "src" / "azoth" / "_core.pyi"
 

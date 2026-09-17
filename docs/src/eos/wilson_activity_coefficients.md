@@ -21,10 +21,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Name | Unit | Description |
 |---|---|---|
+| `components` | - | the substances the mixture is made of, by name, resolved against the component databank with the keycard's overrides applied; the correlation reads their molar mass and critical temperature |
 | `T` | K | absolute temperature |
 | `x` | dimensionless | mole fractions; non-negative and summing to one. |
-| `M` | kg/mol | molar mass of each component |
-| `Tc` | K | critical temperature of each component |
 
 
 ## Outputs
@@ -40,7 +39,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- the caller supplies the molar mass and critical temperature - this model takes the numbers, not the names, the way `eos.wilke_viscosity` takes its constants.
+- the molar mass and critical temperature come from the named components' databank rows, with the keycard's overrides applied; a card-added component without a molar mass is refused rather than defaulted to zero.
 
 - this is NeqSim's paraffin-wax (Coutinho) Wilson, not the classical fitted-`Aij` Wilson: the interaction energy is a correlation over carbon number and the sublimation enthalpy, so it needs no interaction-parameter table.
 
@@ -55,7 +54,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `n_butane_nc12_equimolar_at_298_15_k` | T = 298.15, x = [0.5, 0.5], M = [0.058123, 0.1703], Tc = [425.12, 658.0] | ln_gamma = [0.19314718055973779, 0.49999935609153545], gamma = [1.213061319425015, 1.648720209074888] |
+| `n_butane_nc12_equimolar_at_298_15_k` | components = ['n-butane', 'nc12'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.19314718055973779, 0.49999935609153545], gamma = [1.213061319425015, 1.648720209074888] |
 
 ## References
 
