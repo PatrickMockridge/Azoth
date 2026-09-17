@@ -55,6 +55,8 @@ pub mod databank;
 pub mod dew_pressure;
 pub mod dew_temperature;
 pub mod dual;
+pub mod eos_cg;
+mod eos_cg_data;
 pub mod flash_property;
 pub mod hayduk_minhas_diffusivity;
 pub mod heat_of_vaporization;
