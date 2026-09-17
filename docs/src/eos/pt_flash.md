@@ -72,7 +72,7 @@ not an equation, and both implementations read it from here.
 
 - A component's `Tc`, `Pc`, `omega` and every `kij` come from the databank (`data/components/`, from NeqSim's `COMP.csv` and `INTER.csv`) with the keycard's overrides applied.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes. PRSV would give different K-values from the same inputs and this model does not accept a coefficient.
-- the mixture fugacity coefficient is not a registered calculation: it carries the sum over `x_j a_ij` and the `b_i / b_mix` term and lives in the model layer.
+- the mixture fugacity coefficient is not a registered calculation: it carries the sum over `x_j a_ij` and the `b_i / b_mix` term and lives in the model layer. So does its derivative surface, which is analytic and carries no id either.
 - there is no stability test: successive substitution finds a stationary point of the flash equations, and which single phase a `trivial` feed is cannot be answered by this model.
 - no damping and no acceleration: plain successive substitution, which converges slowly near the critical point and sometimes to the wrong stationary point.
 - the components' `Tc`, `Pc` and `omega` are taken to be mutually consistent and to describe the same substances the `kij` pairs name.

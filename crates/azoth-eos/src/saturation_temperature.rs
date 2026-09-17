@@ -37,27 +37,22 @@ pub struct PhaseBoundaryTemperature {
     pub warnings: Vec<Warning>,
 }
 
-/// `d ln phi_i / dT` for a phase at a composition and root, by central difference.
+/// `d ln phi_i / dT` for a phase at a composition and root.
 ///
 /// The temperature analogue of the K-value substitution's ingredient: the Newton step on
-/// `S` needs `dK_i/dT = K_i (d ln phi_i^liquid/dT - d ln phi_i^vapour/dT)`. Taken from the
-/// fugacity coefficients themselves rather than an analytic derivative, for the same
-/// reason the flash-property solver takes its slopes by central difference.
+/// `S` needs `dK_i/dT = K_i (d ln phi_i^liquid/dT - d ln phi_i^vapour/dT)`. Analytic,
+/// from [`crate::mixture::Mixture::phase_derivatives`], which is the surface the
+/// second-order flashes are written in.
+///
+/// It was a central difference of `phase_state` at `h = 1e-4 T` until the analytic form
+/// existed, and the difference was never the problem: it is six `phase_state`
+/// evaluations per component pair per iteration, and it agrees with this one to about
+/// `1e-9` - which is the difference quotient's own truncation error, not this
+/// derivative's accuracy.
 fn dfugdt(mixture: &Mixture, p: Pressure, x: &[f64], side: RootSide, t: f64) -> Result<Vec<f64>> {
-    let delta = (1.0e-4 * t).max(1.0e-6);
-    let above =
-        mixture.phase_state(&mixture.reduced_parameters(kelvins(t + delta), p)?, x, side)?;
-    let below = mixture.phase_state(
-        &mixture.reduced_parameters(kelvins((t - delta).max(1.0)), p)?,
-        x,
-        side,
-    )?;
-    Ok(above
-        .ln_phi
-        .iter()
-        .zip(&below.ln_phi)
-        .map(|(&a, &b)| (a - b) / (2.0 * delta))
-        .collect())
+    let reduced = mixture.reduced_parameters(kelvins(t), p)?;
+    let state = mixture.phase_state(&reduced, x, side)?;
+    Ok(mixture.phase_derivatives(&reduced, x, state.z)?.d_ln_phi_dt)
 }
 
 /// The temperature at which the incipient phase appears, at a fixed pressure.

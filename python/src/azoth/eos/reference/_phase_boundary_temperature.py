@@ -20,6 +20,7 @@ from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import (
     normalise,
+    phase_derivatives,
     phase_state,
     reduced_parameters,
     wilson_saturation_pressures,
@@ -34,27 +35,29 @@ from azoth.eos.reference._phase_boundary import (
 def _dfugdt(
     mixture: Mixture, pressure: float, x: list[float], *, liquid: bool, temperature: float
 ) -> list[float]:
-    """``d ln phi_i / dT`` for a phase at a composition and root, by central difference.
+    """``d ln phi_i / dT`` for a phase at a composition and root.
 
     The temperature analogue of the K-value substitution's ingredient: the Newton step
-    on ``S`` needs ``dK_i/dT = K_i (d ln phi_i^liquid/dT - d ln phi_i^vapour/dT)``. Taken
-    from the fugacity coefficients themselves rather than an analytic derivative, for the
-    same reason the flash-property solver takes its slopes by central difference.
+    on ``S`` needs ``dK_i/dT = K_i (d ln phi_i^liquid/dT - d ln phi_i^vapour/dT)``.
+    Analytic, from :func:`azoth.eos.reference._mixture_state.phase_derivatives`, which is
+    the surface the second-order flashes are written in.
+
+    It was a central difference of :func:`phase_state` at ``h = 1e-4 T`` until the
+    analytic form existed, and the difference was never the problem: it is six
+    ``phase_state`` evaluations per iteration, and it agrees with this one to about
+    ``1e-9`` - which is the difference quotient's own truncation error, not this
+    derivative's accuracy.
     """
-    delta = max(1.0e-4 * temperature, 1.0e-6)
-    above = phase_state(
-        reduced_parameters(mixture, temperature + delta, pressure),
+    reduced = reduced_parameters(mixture, temperature, pressure)
+    state = phase_state(reduced, mixture.kij, list(x), liquid=liquid)
+    return phase_derivatives(
+        reduced,
         mixture.kij,
         list(x),
-        liquid=liquid,
-    )
-    below = phase_state(
-        reduced_parameters(mixture, max(temperature - delta, 1.0), pressure),
-        mixture.kij,
-        list(x),
-        liquid=liquid,
-    )
-    return [(a - b) / (2.0 * delta) for a, b in zip(above.ln_phi, below.ln_phi, strict=True)]
+        state.z,
+        temperature=temperature,
+        pressure=pressure,
+    ).d_ln_phi_dt
 
 
 def phase_boundary_temperature(

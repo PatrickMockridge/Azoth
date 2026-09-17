@@ -73,6 +73,25 @@ pub struct PhaseState {
     pub cp_dep_r: f64,
 }
 
+/// One phase's `ln phi` together with its first derivatives at a state.
+///
+/// See [`Mixture::phase_derivatives`], which computes it, for what each family is
+/// differentiated at and why the composition derivative is a mole-number one.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PhaseDerivatives {
+    /// `ln phi_i`, the same values [`PhaseState::ln_phi`] carries at this state.
+    pub ln_phi: Vec<f64>,
+    /// `d ln phi_i / d n_j` at constant `T`, `P` and the other mole numbers, row `i`.
+    ///
+    /// At unit total mole number, and carrying the Gibbs-Duhem sum rule
+    /// `sum_i x_i d ln phi_i / d n_j = 0`.
+    pub d_ln_phi_dn: Vec<Vec<f64>>,
+    /// `d ln phi_i / d T` at constant `P` and composition.
+    pub d_ln_phi_dt: Vec<f64>,
+    /// `d ln phi_i / d P` at constant `T` and composition.
+    pub d_ln_phi_dp: Vec<f64>,
+}
+
 /// One component's critical constants.
 ///
 /// A caller-supplied record, and deliberately carrying **no name**: a name would
@@ -459,6 +478,7 @@ impl Mixture {
             psi_t,
             reduced_temperatures,
             t_kelvin: t.value,
+            pressure: p.value,
             kij: self.mixing_rule.effective_kij(t.value),
             warnings,
         })
@@ -648,6 +668,219 @@ impl Mixture {
             s_dep_r,
             psi_bar,
             cp_dep_r,
+        })
+    }
+
+    /// One phase's `ln phi` together with its first derivatives at a state.
+    ///
+    /// The three families a second-order flash is written in, all analytic:
+    ///
+    /// * `d_ln_phi_dn[i][j]` - `d ln phi_i / d n_j` at constant `T`, `P` and the other
+    ///   mole numbers.
+    /// * `d_ln_phi_dt[i]` - `d ln phi_i / d T` at constant `P` and composition.
+    /// * `d_ln_phi_dp[i]` - `d ln phi_i / d P` at constant `T` and composition.
+    ///
+    /// # Mole numbers, not mole fractions
+    ///
+    /// The composition derivative is taken holding the *other mole numbers* fixed, so
+    /// the total moves with `j` and the result is not intensive. The values returned are
+    /// for a total mole number of one, which is what a composition summing to one is,
+    /// and they carry the Gibbs-Duhem sum rule `sum_i x_i d ln phi_i / d n_j = 0` at
+    /// that scale - the property a constant-composition derivative would not have.
+    ///
+    /// # Scope
+    ///
+    /// The classic van der Waals one-fluid rules. The activity-coefficient rules write
+    /// `ln phi` in a different form - the `ader`/`alpha_mix`/`b_der` branch of
+    /// [`Self::phase_state_at`] - and their composition derivative is a second
+    /// derivation over the excess Gibbs energy's own Hessian, which is not this one.
+    /// Asking for it is an error naming that, not a silent return of the wrong matrix.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if `x` is not one entry per component, or if the
+    ///   mixing rule is one of the three this does not differentiate.
+    /// * [`AzothError::OutOfRange`] if the root is not admissible, on the same test
+    ///   [`Self::phase_state_at`] makes.
+    pub fn phase_derivatives(
+        &self,
+        reduced: &ReducedParameters,
+        x: &[f64],
+        z: f64,
+    ) -> Result<PhaseDerivatives> {
+        let n = self.len();
+        if x.len() != n {
+            return Err(AzothError::invalid_input(
+                "x",
+                format!("a composition for {n} components has {} entries", x.len()),
+            ));
+        }
+        match &self.mixing_rule {
+            MixingRule::HuronVidal { .. } | MixingRule::WongSandler { .. } => {
+                return Err(AzothError::invalid_input(
+                    "mixing_rule",
+                    "the activity-coefficient rules write ln phi as `ader`, `alpha_mix` \
+                     and `b_der`, whose composition derivative is the excess Gibbs \
+                     energy's second derivative rather than this classical one. The \
+                     derivative surface covers the cubic family, and this rule is \
+                     outside it",
+                ));
+            }
+            MixingRule::SoreideWhitson { .. } => {
+                return Err(AzothError::invalid_input(
+                    "mixing_rule",
+                    "the Soreide-Whitson rule resolves its interaction matrix against \
+                     the *phase composition*, so its `A_ij` carries a composition \
+                     derivative this classical one does not have. The derivative \
+                     surface covers the rules whose matrix is fixed by the state",
+                ));
+            }
+            _ => {}
+        }
+
+        let kij = self.phase_kij(reduced, x);
+        let (a_mix, b_mix) = self.mixture_parameters(reduced, x);
+        if !z.is_finite() || z <= b_mix {
+            return Err(AzothError::OutOfRange {
+                field: "z".to_string(),
+                value: z,
+                detail: format!(
+                    "the root must exceed the mixture's B = {b_mix}, because `ln(z - B)` \
+                     is otherwise the logarithm of a negative number"
+                ),
+            });
+        }
+
+        let delta1 = self.cubic.delta1();
+        let delta2 = self.cubic.delta2();
+        let delta_diff = self.cubic.delta_diff();
+        let i_term = self.cubic.i_term(z, b_mix);
+        let coefficient = self.cubic.coefficient(a_mix, b_mix);
+        let ln_z_minus_b = (z - b_mix).ln();
+        let fz = self.cubic.df_dz(z, a_mix, b_mix);
+        let fa = self.cubic.df_da(z, b_mix);
+        let fb = self.cubic.df_db(z, a_mix, b_mix);
+
+        // `A_ij` and its two row sums. `abar[i]` is `sum_j x_j A_ij`, the same quantity
+        // `phase_state_at` hoists as `cross`.
+        let mut a_ij = vec![vec![0.0; n]; n];
+        let mut abar = vec![0.0; n];
+        for i in 0..n {
+            for j in 0..n {
+                a_ij[i][j] = (1.0 - kij[i * n + j]) * (reduced.a[i] * reduced.a[j]).sqrt();
+                abar[i] += x[j] * a_ij[i][j];
+            }
+        }
+        let b_ratio: Vec<f64> = (0..n).map(|i| reduced.b[i] / b_mix).collect();
+        let factor: Vec<f64> = (0..n).map(|i| 2.0 * abar[i] / a_mix - b_ratio[i]).collect();
+        let ln_phi: Vec<f64> = (0..n)
+            .map(|i| b_ratio[i] * (z - 1.0) - ln_z_minus_b - coefficient * factor[i] * i_term)
+            .collect();
+
+        let t_dkij = self.mixing_rule.t_d_effective_kij(reduced.t_kelvin);
+
+        // --- composition, at constant temperature and pressure -------------------
+        //
+        // `A_i` and `B_i` are functions of `(T, P)` alone, so only the composition moves.
+        // At unit total mole number `dA/dn_j = 2 (abar_j - A)` and `dB/dn_j = B_j - B`.
+        let d_a_dn: Vec<f64> = (0..n).map(|j| 2.0 * (abar[j] - a_mix)).collect();
+        let d_b_dn: Vec<f64> = (0..n).map(|j| reduced.b[j] - b_mix).collect();
+        let d_z_dn: Vec<f64> = (0..n)
+            .map(|j| -(fa * d_a_dn[j] + fb * d_b_dn[j]) / fz)
+            .collect();
+        let d_coeff_dn: Vec<f64> = (0..n)
+            .map(|j| {
+                d_a_dn[j] / (delta_diff * b_mix) - a_mix * d_b_dn[j] / (delta_diff * b_mix * b_mix)
+            })
+            .collect();
+        let d_i_dn: Vec<f64> = (0..n)
+            .map(|j| {
+                (d_z_dn[j] + delta1 * d_b_dn[j]) / (z + delta1 * b_mix)
+                    - (d_z_dn[j] + delta2 * d_b_dn[j]) / (z + delta2 * b_mix)
+            })
+            .collect();
+
+        let mut d_ln_phi_dn = vec![vec![0.0; n]; n];
+        for i in 0..n {
+            for j in 0..n {
+                // `d(abar_i)/dn_j = A_ij - abar_i`, and the `B_i/B` term's derivative is
+                // `-B_i/B^2 dB/dn_j`, which is `factor_i`'s `-b_ratio_i` differentiated.
+                let d_factor = 2.0 * ((a_ij[i][j] - abar[i]) * a_mix - abar[i] * d_a_dn[j])
+                    / (a_mix * a_mix)
+                    + b_ratio[i] * d_b_dn[j] / b_mix;
+                d_ln_phi_dn[i][j] = b_ratio[i] * d_z_dn[j]
+                    - (d_z_dn[j] - d_b_dn[j]) / (z - b_mix)
+                    // `b_ratio_i` is `B_i/B`, and `B` moves with the composition, so
+                    // the term above is not the whole of it. The `B_i/B` inside
+                    // `factor_i` carries the same derivative with the opposite sign,
+                    // and the two do not cancel.
+                    - b_ratio[i] * (z - 1.0) * d_b_dn[j] / b_mix
+                    - d_coeff_dn[j] * factor[i] * i_term
+                    - coefficient * d_factor * i_term
+                    - coefficient * factor[i] * d_i_dn[j];
+            }
+        }
+
+        // --- temperature, at constant pressure and composition --------------------
+        //
+        // `A_ij` moves with temperature through both the components' alphas and the
+        // interaction parameter, and its logarithmic derivative is `psi_pair - 2` plus
+        // the `kij` term. `B_ij` scales as `1/T`, so `T dB/dT = -B`.
+        let mut t_d_a_ij = vec![vec![0.0; n]; n];
+        let mut t_d_abar = vec![0.0; n];
+        for i in 0..n {
+            for j in 0..n {
+                let psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j]);
+                // `sqrt(A_i A_j)` is the part the alpha functions carry; the interaction
+                // parameter multiplies it, so its own temperature derivative enters
+                // with the opposite sign.
+                let root = (reduced.a[i] * reduced.a[j]).sqrt();
+                t_d_a_ij[i][j] = a_ij[i][j] * (psi_pair - 2.0) - t_dkij[i * n + j] * root;
+                t_d_abar[i] += x[j] * t_d_a_ij[i][j];
+            }
+        }
+        let mut t_d_a = 0.0;
+        for i in 0..n {
+            t_d_a += x[i] * t_d_abar[i];
+        }
+        let t_d_b = -b_mix;
+        let t_d_z = -(fa * t_d_a + fb * t_d_b) / fz;
+        let t_d_coeff = t_d_a / (delta_diff * b_mix) - a_mix * t_d_b / (delta_diff * b_mix * b_mix);
+        let t_d_i = (t_d_z + delta1 * t_d_b) / (z + delta1 * b_mix)
+            - (t_d_z + delta2 * t_d_b) / (z + delta2 * b_mix);
+        let mut d_ln_phi_dt = vec![0.0; n];
+        for i in 0..n {
+            // `b_ratio_i` is `B_i/B`, two quantities that both scale as `1/T`, so it is
+            // temperature-independent and drops out of the sum below.
+            let t_d_factor = 2.0 * (t_d_abar[i] * a_mix - abar[i] * t_d_a) / (a_mix * a_mix);
+            let t_d_ln_phi = b_ratio[i] * t_d_z
+                - (t_d_z - t_d_b) / (z - b_mix)
+                - t_d_coeff * factor[i] * i_term
+                - coefficient * t_d_factor * i_term
+                - coefficient * factor[i] * t_d_i;
+            d_ln_phi_dt[i] = t_d_ln_phi / reduced.t_kelvin;
+        }
+
+        // --- pressure, at constant temperature and composition --------------------
+        //
+        // Every `A_i` and `B_i` is linear in `P`, so `A`, `B` and their row sums scale
+        // as `P` while `coefficient` and `factor_i` - ratios of two such quantities -
+        // do not move at all.
+        let p_d_z = -(fa * a_mix + fb * b_mix) / fz;
+        let p_d_i = (p_d_z + delta1 * b_mix) / (z + delta1 * b_mix)
+            - (p_d_z + delta2 * b_mix) / (z + delta2 * b_mix);
+        let mut d_ln_phi_dp = vec![0.0; n];
+        for i in 0..n {
+            let p_d_ln_phi = b_ratio[i] * p_d_z
+                - (p_d_z - b_mix) / (z - b_mix)
+                - coefficient * factor[i] * p_d_i;
+            d_ln_phi_dp[i] = p_d_ln_phi / reduced.pressure;
+        }
+
+        Ok(PhaseDerivatives {
+            ln_phi,
+            d_ln_phi_dn,
+            d_ln_phi_dt,
+            d_ln_phi_dp,
         })
     }
 
@@ -1162,6 +1395,12 @@ pub struct ReducedParameters {
     ///
     /// The Huron-Vidal mixing rule reads it for its NRTL `tau = Dij / T + DijT`.
     pub t_kelvin: f64,
+    /// The state's absolute pressure, in pascals.
+    ///
+    /// Carried for the same reason as the temperature: a derivative with respect to
+    /// pressure needs the pressure, and a caller holding a `ReducedParameters` should
+    /// not have to hand back a second number that could describe a different state.
+    pub pressure: f64,
     /// The interaction matrix at this state's temperature, flattened row-major.
     ///
     /// The mixing rule's temperature dependence is resolved here, once per

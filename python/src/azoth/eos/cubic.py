@@ -65,6 +65,24 @@ class Cubic:
         c2, c1, _ = self.z_coefficients(a, b)
         return 3.0 * z * z + 2.0 * c2 * z + c1
 
+    def df_da(self, z: float, b: float) -> float:
+        """``dF/dA`` of the z-cubic, at a root ``z``.
+
+        ``A`` appears in ``c1`` with coefficient one and in ``c0`` as ``-A B``, so this
+        is ``z - B`` for every cubic.
+        """
+        return z - b
+
+    def df_db(self, z: float, a: float, b: float) -> float:
+        """``dF/dB`` of the z-cubic, at a root ``z``."""
+        ds = self.delta_sum
+        dp = self.delta_prod
+        # From `c2 = (delta1 + delta2 - 1) B - 1`, `c1` and `c0` in `z_coefficients`.
+        dc2_db = ds - 1.0
+        dc1_db = 2.0 * (dp - ds) * b - ds
+        dc0_db = -3.0 * dp * b * b - 2.0 * dp * b - a
+        return dc2_db * z * z + dc1_db * z + dc0_db
+
     def t_dfdt(self, z: float, a: float, b: float, t_da: float, t_db: float) -> float:
         """``T * dF/dT`` of the z-cubic, with ``t_da = T da/dT`` and ``t_db = T db/dT``."""
         ds = self.delta_sum

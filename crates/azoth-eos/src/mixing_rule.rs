@@ -182,6 +182,63 @@ impl MixingRule {
         }
     }
 
+    /// `T * d kij / dT`, one entry per interaction, at a temperature.
+    ///
+    /// Needed wherever the fugacity's temperature derivative is, because `A_ij` carries
+    /// the interaction parameter and a rule whose `kij` moves with temperature moves it.
+    /// The rules that do not are zero here rather than absent: a caller differentiating
+    /// `A_ij` adds this term unconditionally, and a `match` that omitted it for three of
+    /// the five rules is the shape of mistake this accessor exists to prevent.
+    #[must_use]
+    pub fn t_d_effective_kij(&self, t_kelvin: f64) -> Vec<f64> {
+        match self {
+            MixingRule::ClassicT {
+                kij,
+                kij_t,
+                inverse_temperature,
+            } => kij
+                .iter()
+                .zip(kij_t)
+                .map(|(_k0, kt)| {
+                    if *inverse_temperature {
+                        -kt / t_kelvin
+                    } else {
+                        kt * t_kelvin / 273.15
+                    }
+                })
+                .collect(),
+            MixingRule::ClassicT2 {
+                kij_t,
+                inverse_temperature,
+                ..
+            } => kij_t
+                .iter()
+                .zip(inverse_temperature)
+                .map(|(kt, inverse)| {
+                    if *inverse {
+                        -kt / t_kelvin
+                    } else {
+                        kt * t_kelvin
+                    }
+                })
+                .collect(),
+            _ => vec![0.0; self.interaction_count()],
+        }
+    }
+
+    /// How many interactions the rule's matrix has, diagonal included.
+    #[must_use]
+    pub fn interaction_count(&self) -> usize {
+        match self {
+            MixingRule::Classic { kij }
+            | MixingRule::ClassicT { kij, .. }
+            | MixingRule::ClassicT2 { kij, .. }
+            | MixingRule::SoreideWhitson { kij, .. }
+            | MixingRule::HuronVidal { kij, .. }
+            | MixingRule::WongSandler { kij, .. } => kij.len(),
+        }
+    }
+
     /// The interaction matrix at a phase's composition, flattened row-major.
     ///
     /// The phase-independent rules resolve their matrix once per state in

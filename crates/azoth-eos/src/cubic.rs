@@ -168,6 +168,28 @@ impl Cubic {
         3.0 * z * z + 2.0 * c2 * z + c1
     }
 
+    /// `dF/dA` of the z-cubic, at a root `z`.
+    ///
+    /// `A` appears in `c1` with coefficient one and in `c0` as `-A B`, so this is
+    /// `z - B` for every cubic - which is what makes the implicit `dZ/dA` a single
+    /// division below.
+    #[must_use]
+    pub fn df_da(self, z: f64, b: f64) -> f64 {
+        z - b
+    }
+
+    /// `dF/dB` of the z-cubic, at a root `z`.
+    #[must_use]
+    pub fn df_db(self, z: f64, a: f64, b: f64) -> f64 {
+        let ds = self.delta_sum();
+        let dp = self.delta_prod();
+        // From `c2 = (delta1 + delta2 - 1) B - 1`, `c1` and `c0` in `z_coefficients`.
+        let dc2_db = ds - 1.0;
+        let dc1_db = 2.0 * (dp - ds) * b - ds;
+        let dc0_db = -3.0 * dp * b * b - 2.0 * dp * b - a;
+        dc2_db * z * z + dc1_db * z + dc0_db
+    }
+
     /// `T * dF/dT` of the z-cubic, with `t_da = T * da/dT` and `t_db = T * db/dT`.
     #[must_use]
     pub fn t_dfdt(self, z: f64, a: f64, b: f64, t_da: f64, t_db: f64) -> f64 {

@@ -339,6 +339,7 @@ fn one_component_state(a: f64, b: f64) -> ReducedParameters {
         psi_t: vec![0.0],
         reduced_temperatures: vec![1.0],
         t_kelvin: 300.0,
+        pressure: 1.0e5,
         kij: vec![0.0],
         warnings: Vec::new(),
     }
@@ -742,4 +743,332 @@ fn the_wong_sandler_rule_matches_neqsims_water_ethanol_phase() {
         "ln phi ethanol {}",
         state.ln_phi[1]
     );
+}
+
+/// `ln phi_i` as a function of mole numbers, which is what the surface differentiates.
+///
+/// The analytic derivative is the one of the *intensive* function `ln phi_i(T, P, x)`
+/// with `x = n / sum(n)`, so the difference quotient has to be taken of the same
+/// function. Calling [`Mixture::phase_state`] with a raw perturbed vector would
+/// differentiate a different function - one whose `A` is `sum sum n_i n_j A_ij` rather
+/// than the same over `N**2` - and the two agree only on the sum-to-one surface.
+fn ln_phi_of(
+    mixture: &Mixture,
+    reduced: &ReducedParameters,
+    n: &[f64],
+    side: RootSide,
+) -> Vec<f64> {
+    let total: f64 = n.iter().sum();
+    let x: Vec<f64> = n.iter().map(|value| value / total).collect();
+    mixture
+        .phase_state(reduced, &x, side)
+        .expect("a phase")
+        .ln_phi
+}
+
+/// The composition derivative is the one the fugacity coefficient actually has.
+///
+/// A central difference of `ln phi_i(n)` at the `N = 1` the surface is stated at, with
+/// the second-order truncation error falling as `h**2`; `h = 1e-6` puts the round-off
+/// term below `1e-9` and the tolerance is an order looser than the identity the
+/// Helmholtz layer is checked to.
+#[test]
+fn the_composition_derivative_is_the_fugacity_coefficients_own() {
+    let mixture = methane_butane();
+    let (t, p, n) = (330.0, 2_500_000.0, [0.6, 0.4]);
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("a state");
+    let side = RootSide::Liquid;
+    // The root the difference is taken on, which is the one the surface is asked for.
+    let (a_mix, b_mix) = mixture.mixture_parameters(&reduced, &n);
+    let roots = azoth_eos::pr_z_factor(a_mix, b_mix).expect("a cubic");
+    let z = roots.z_min;
+    let derivatives = mixture
+        .phase_derivatives(&reduced, &n, z)
+        .expect("the derivative surface");
+
+    let h = 1e-6;
+    for j in 0..2 {
+        let mut up = n;
+        let mut down = n;
+        up[j] += h;
+        down[j] -= h;
+        let above = ln_phi_of(&mixture, &reduced, &up, side);
+        let below = ln_phi_of(&mixture, &reduced, &down, side);
+        for i in 0..2 {
+            let difference = (above[i] - below[i]) / (2.0 * h);
+            assert!(
+                (difference - derivatives.d_ln_phi_dn[i][j]).abs() < 1e-8,
+                "d ln phi_{i} / d n_{j}: analytic {}, difference {difference}",
+                derivatives.d_ln_phi_dn[i][j]
+            );
+        }
+    }
+}
+
+/// The temperature and pressure derivatives are the fugacity coefficient's own too.
+///
+/// Both at constant composition, which is what the surface states them at and what a
+/// flash's Newton step is written in.
+#[test]
+fn the_state_derivatives_are_the_fugacity_coefficients_own() {
+    let mixture = methane_butane();
+    let (t, p, n) = (330.0, 2_500_000.0, [0.6, 0.4]);
+    let side = RootSide::Vapour;
+    let at = |temperature: f64, pressure: f64| {
+        let reduced = mixture
+            .reduced_parameters(kelvins(temperature), pascals(pressure))
+            .expect("a state");
+        ln_phi_of(&mixture, &reduced, &n, side)
+    };
+
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("a state");
+    let (a_mix, b_mix) = mixture.mixture_parameters(&reduced, &n);
+    let z = azoth_eos::pr_z_factor(a_mix, b_mix).expect("a cubic").z_max;
+    let derivatives = mixture
+        .phase_derivatives(&reduced, &n, z)
+        .expect("the derivative surface");
+
+    // `h = 1e-3 K` and `1e-3 Pa` keep the round-off term of `1/h` small against the
+    // values themselves, which are of order `1e-2` and `1e-6`.
+    let (h_t, h_p) = (1e-3, 1e-2);
+    let above = at(t + h_t, p);
+    let below = at(t - h_t, p);
+    for i in 0..2 {
+        let difference = (above[i] - below[i]) / (2.0 * h_t);
+        assert!(
+            (difference - derivatives.d_ln_phi_dt[i]).abs() < 1e-7,
+            "d ln phi_{i} / dT: analytic {}, difference {difference}",
+            derivatives.d_ln_phi_dt[i]
+        );
+    }
+    let above = at(t, p + h_p);
+    let below = at(t, p - h_p);
+    for i in 0..2 {
+        let difference = (above[i] - below[i]) / (2.0 * h_p);
+        assert!(
+            (difference - derivatives.d_ln_phi_dp[i]).abs() < 1e-9,
+            "d ln phi_{i} / dP: analytic {}, difference {difference}",
+            derivatives.d_ln_phi_dp[i]
+        );
+    }
+}
+
+/// The composition derivative obeys Gibbs-Duhem, which no difference quotient can show.
+///
+/// At constant temperature and pressure `sum_i n_i d ln phi_i = 0`, so every column of
+/// the matrix sums to zero against the composition. It is a *structural* property of
+/// the whole matrix - it couples all `N**2` entries - so a single wrong term cannot
+/// satisfy it, and it holds at any state rather than at the one a difference is taken
+/// at. It is also the test a matrix built by differencing the raw vector fails.
+#[test]
+fn the_composition_derivative_obeys_gibbs_duhem() {
+    let mixture = methane_butane();
+    for (t, p, n, side) in [
+        (330.0, 2_500_000.0, [0.6, 0.4], RootSide::Liquid),
+        (330.0, 2_500_000.0, [0.6, 0.4], RootSide::Vapour),
+        (300.0, 3_000_000.0, [0.1, 0.9], RootSide::Liquid),
+        (400.0, 1_000_000.0, [0.5, 0.5], RootSide::Vapour),
+    ] {
+        let reduced = mixture
+            .reduced_parameters(kelvins(t), pascals(p))
+            .expect("a state");
+        let z = {
+            let (a_mix, b_mix) = mixture.mixture_parameters(&reduced, &n);
+            let roots = azoth_eos::pr_z_factor(a_mix, b_mix).expect("a cubic");
+            match side {
+                RootSide::Liquid => roots.z_min,
+                RootSide::Vapour => roots.z_max,
+            }
+        };
+        let derivatives = mixture
+            .phase_derivatives(&reduced, &n, z)
+            .expect("the derivative surface");
+        for j in 0..n.len() {
+            let sum: f64 = (0..n.len())
+                .map(|i| n[i] * derivatives.d_ln_phi_dn[i][j])
+                .sum();
+            assert!(
+                sum.abs() < 1e-9,
+                "T={t}, P={p}, z={n:?}: column {j} sums to {sum}, not to zero"
+            );
+        }
+    }
+}
+
+/// The surface refuses the rules it does not differentiate, by name.
+///
+/// A silent return of the classical matrix for an activity-coefficient rule would be a
+/// wrong answer that looks like a right one, which is the failure mode this crate's
+/// error types exist to make impossible.
+#[test]
+fn the_activity_rules_are_refused_rather_than_approximated() {
+    let mixture = databank::mixture_of(&["water", "ethanol"], None)
+        .expect("the pair resolves")
+        .0
+        .with_mixing_rule(MixingRule::HuronVidal {
+            kij: vec![0.0; 4],
+            hv_gij: vec![0.0; 4],
+            hv_gij_t: vec![0.0; 4],
+            hv_alpha: vec![0.0; 4],
+            hv_pairs: vec![false; 4],
+        });
+    let reduced = mixture
+        .reduced_parameters(kelvins(350.0), pascals(1.0e5))
+        .expect("a state");
+    let error = mixture
+        .phase_derivatives(&reduced, &[0.5, 0.5], 0.9)
+        .expect_err("the activity rules are not differentiated");
+    assert!(
+        matches!(error, azoth_core::AzothError::InvalidInput { .. }),
+        "got {error:?}"
+    );
+}
+
+/// The composition-derivative matrix is symmetric, which couples every pair of entries.
+///
+/// `d ln phi_i / d n_j` is `(1/RT) d2(G^R)/dn_i dn_j` at constant `T` and `P`, and a
+/// Gibbs energy's second derivative is symmetric. It is a different statement from
+/// Gibbs-Duhem - that one couples a column to itself, this one couples a column to
+/// another - so a matrix can satisfy either and fail the other, and the two together
+/// pin the whole `N x N` block rather than a sum of it.
+#[test]
+fn the_composition_derivative_is_symmetric() {
+    let mixture = methane_butane();
+    for (t, p, n, side) in [
+        (330.0, 2_500_000.0, [0.6, 0.4], RootSide::Liquid),
+        (330.0, 2_500_000.0, [0.6, 0.4], RootSide::Vapour),
+        (300.0, 3_000_000.0, [0.1, 0.9], RootSide::Vapour),
+    ] {
+        let reduced = mixture
+            .reduced_parameters(kelvins(t), pascals(p))
+            .expect("a state");
+        let (a_mix, b_mix) = mixture.mixture_parameters(&reduced, &n);
+        let roots = azoth_eos::pr_z_factor(a_mix, b_mix).expect("a cubic");
+        let z = match side {
+            RootSide::Liquid => roots.z_min,
+            RootSide::Vapour => roots.z_max,
+        };
+        let d = mixture
+            .phase_derivatives(&reduced, &n, z)
+            .expect("the derivative surface");
+        for i in 0..n.len() {
+            for j in 0..n.len() {
+                let gap = (d.d_ln_phi_dn[i][j] - d.d_ln_phi_dn[j][i]).abs();
+                assert!(
+                    gap < 1e-12,
+                    "T={t}, P={p}, n={n:?}: d ln phi_{i}/dn_{j} and d ln phi_{j}/dn_{i} \
+                     differ by {gap}"
+                );
+            }
+        }
+    }
+}
+
+/// The derivative surface against NeqSim's own, which is a third derivation of it.
+///
+/// `ComponentEos.dFdNdN`, `dFdNdT` and `dFdNdV` are NeqSim's analytic surface, reached
+/// through `SystemThermo.init(3)` - `init(1)` leaves every one of its derivative arrays
+/// at a placeholder, which is what the first run of the probe printed. The values below
+/// are what `validation/neqsim/FugacityDerivativeProbe.java` printed for
+/// methane/n-butane at 330 K and 25 bar, under Peng-Robinson with the classic mixing
+/// rule, at the two compositions and roots NeqSim's own `TPflash` converges to:
+///
+/// ```text
+///   gas, x = 0.69459826444/0.30540173556, Z = 0.86861125971
+///     dfugdt [9.4100184113568750e-05, 0.0039357013111080480]
+///     dfugdp [2.4218250434082655e-05, -0.017263724964853800]
+///     dfugdx [[-0.068448243246064850, 0.15567701629505004],
+///             [ 0.15567701629504996, -0.35406801187585346]]
+///   liquid, x = 0.09509515775/0.90490484225, Z = 0.09315049464
+///     dfugdt [0.00089198433650824160, 0.022295574688458470]
+///     dfugdp [-0.036524606661905790, -0.036247642238949045]
+///     dfugdx [[-0.78944362582463430, 0.082961503382128090],
+///             [ 0.082961503382126390, -0.0087183059287235100]]
+/// ```
+///
+/// Two conventions were measured rather than assumed. NeqSim's `dfugdx` is
+/// `dfugdn * numberOfMolesInPhase`, and it is the constant-*pressure* composition
+/// derivative: its columns satisfy `sum_i x_i dfugdx[i][j] = 0`, which is Gibbs-Duhem at
+/// constant `T` and `P` and is not what a constant-volume frame gives. That is the same
+/// matrix this returns, at unit total mole number. `dfugdp` is per bar where this is per
+/// pascal, a factor of `1e5` and nothing else - the comparison below converts it.
+///
+/// The probe's fluid matters as much: `setMixingRule("classic")` and `setAttractiveTerm(1)`
+/// are what `FlashTp.java` builds, and the integer overload of `setMixingRule` is a
+/// different rule that splits the feed to a different composition. The first run did
+/// that and disagreed with this surface by 1%.
+#[test]
+fn the_derivative_surface_matches_neqsims() {
+    let mixture = methane_butane();
+    let (t, p) = (330.0, 2_500_000.0);
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("a state");
+
+    for (name, x, side, z, wanted_dt, wanted_dp_bar, wanted_dn) in [
+        (
+            "gas",
+            [0.694_598_264_442_796_2, 0.305_401_735_557_203_96],
+            RootSide::Vapour,
+            0.868_611_259_706_769_8,
+            [9.410_018_411_356_875e-05, 3.935_701_311_108_048e-03],
+            [2.421_825_043_408_265_5e-05, -1.726_372_496_485_38e-02],
+            [
+                [-0.068_448_243_246_064_85, 0.155_677_016_295_050_04],
+                [0.155_677_016_295_049_96, -0.354_068_011_875_853_46],
+            ],
+        ),
+        (
+            "liquid",
+            [0.095_095_157_748_050_7, 0.904_904_842_251_949_3],
+            RootSide::Liquid,
+            0.093_150_494_638_982_19,
+            [8.919_843_365_082_416e-04, 2.229_557_468_845_847e-02],
+            [-3.652_460_666_190_579e-02, -3.624_764_223_894_904e-02],
+            [
+                [-0.789_443_625_824_634_3, 0.082_961_503_382_128_09],
+                [0.082_961_503_382_126_39, -0.008_718_305_928_723_51],
+            ],
+        ),
+    ] {
+        // The root is checked too: a derivative at a different root is a derivative at
+        // a different phase, and the probe printed NeqSim's.
+        let state = mixture.phase_state(&reduced, &x, side).expect("a phase");
+        assert!(
+            (state.z - z).abs() < 1e-12,
+            "{name}: the root is {} but NeqSim's is {z}",
+            state.z
+        );
+        let d = mixture
+            .phase_derivatives(&reduced, &x, state.z)
+            .expect("the derivative surface");
+
+        for i in 0..2 {
+            assert!(
+                (d.d_ln_phi_dt[i] - wanted_dt[i]).abs() < 1e-13,
+                "{name}: dfugdt[{i}] is {} but NeqSim's is {}",
+                d.d_ln_phi_dt[i],
+                wanted_dt[i]
+            );
+            // NeqSim reports per bar and this per pascal.
+            assert!(
+                (d.d_ln_phi_dp[i] * 1.0e5 - wanted_dp_bar[i]).abs() < 1e-14,
+                "{name}: dfugdp[{i}] is {} per bar but NeqSim's is {}",
+                d.d_ln_phi_dp[i] * 1.0e5,
+                wanted_dp_bar[i]
+            );
+            for j in 0..2 {
+                assert!(
+                    (d.d_ln_phi_dn[i][j] - wanted_dn[i][j]).abs() < 1e-13,
+                    "{name}: dfugdx[{i}][{j}] is {} but NeqSim's is {}",
+                    d.d_ln_phi_dn[i][j],
+                    wanted_dn[i][j]
+                );
+            }
+        }
+    }
 }

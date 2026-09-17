@@ -143,6 +143,23 @@ class PhaseState(NamedTuple):
     cp_dep_r: float
 
 
+class PhaseDerivatives(NamedTuple):
+    """One phase's ``ln phi`` together with its first derivatives at a state.
+
+    See :func:`phase_derivatives`, which computes it, for what each family is
+    differentiated at and why the composition derivative is a mole-number one.
+    """
+
+    #: ``ln phi_i``, the same values :class:`PhaseState` carries at this state.
+    ln_phi: list[float]
+    #: ``d ln phi_i / d n_j`` at constant ``T``, ``P`` and the other mole numbers.
+    d_ln_phi_dn: list[list[float]]
+    #: ``d ln phi_i / dT`` at constant ``P`` and composition.
+    d_ln_phi_dt: list[float]
+    #: ``d ln phi_i / dP`` at constant ``T`` and composition.
+    d_ln_phi_dp: list[float]
+
+
 def _soave_kappa(alpha: str, omega: float) -> tuple[float, tuple[Warning, ...]]:
     """The Soave ``m`` for one component, from the alpha correlation named."""
     if alpha == "srk":
@@ -438,6 +455,158 @@ def phase_state_at(
         s_dep_r=s_dep_r,
         psi_bar=psi_bar,
         cp_dep_r=cp_dep_r,
+    )
+
+
+def phase_derivatives(
+    reduced: ReducedParameters,
+    kij: tuple[tuple[float, ...], ...],
+    x: list[float],
+    z: float,
+    *,
+    temperature: float,
+    pressure: float,
+) -> PhaseDerivatives:
+    """One phase's ``ln phi`` together with its first derivatives at a state.
+
+    The three families a second-order flash is written in, all analytic:
+
+    * ``d_ln_phi_dn[i][j]`` - ``d ln phi_i / d n_j`` at constant ``T``, ``P`` and the
+      other mole numbers.
+    * ``d_ln_phi_dt[i]`` - ``d ln phi_i / dT`` at constant ``P`` and composition.
+    * ``d_ln_phi_dp[i]`` - ``d ln phi_i / dP`` at constant ``T`` and composition.
+
+    The composition derivative is taken holding the *other mole numbers* fixed, so the
+    total moves with ``j`` and the result is not intensive. The values returned are for
+    a total mole number of one, which is what a composition summing to one is, and they
+    carry the Gibbs-Duhem sum rule ``sum_i x_i d ln phi_i / d n_j = 0`` at that scale -
+    the property a constant-composition derivative would not have.
+
+    ``kij`` is the same matrix :func:`phase_state_at` takes, and it is the *constant*
+    one: the rules whose interaction parameter moves with temperature are on the Rust
+    side alone, so this takes no ``T * dkij/dT`` and none is silently assumed.
+    """
+    a, b = reduced.a, reduced.b
+    c = reduced.cubic
+    n = len(x)
+    a_mix, b_mix = mixture_parameters(a, b, kij, x)
+    if not z > b_mix:
+        raise OutOfRangeError(
+            "z",
+            z,
+            f"the root must exceed the mixture's B = {b_mix}, because `ln(z - B)` is "
+            f"otherwise the logarithm of a negative number",
+        )
+
+    delta1, delta2 = c.delta1, c.delta2
+    delta_diff = c.delta_diff
+    i_term = c.i_term(z, b_mix)
+    coefficient = c.coefficient(a_mix, b_mix)
+    ln_z_minus_b = math.log(z - b_mix)
+    fz = c.df_dz(z, a_mix, b_mix)
+    fa = c.df_da(z, b_mix)
+    fb = c.df_db(z, a_mix, b_mix)
+
+    a_ij = [[(1.0 - kij[i][j]) * math.sqrt(a[i] * a[j]) for j in range(n)] for i in range(n)]
+    abar = [sum(x[j] * a_ij[i][j] for j in range(n)) for i in range(n)]
+    b_ratio = [b[i] / b_mix for i in range(n)]
+    factor = [2.0 * abar[i] / a_mix - b_ratio[i] for i in range(n)]
+    ln_phi = [
+        b_ratio[i] * (z - 1.0) - ln_z_minus_b - coefficient * factor[i] * i_term for i in range(n)
+    ]
+
+    # --- composition, at constant temperature and pressure -------------------
+    #
+    # `A_i` and `B_i` are functions of `(T, P)` alone, so only the composition moves. At
+    # unit total mole number `dA/dn_j = 2 (abar_j - A)` and `dB/dn_j = B_j - B`.
+    d_a_dn = [2.0 * (abar[j] - a_mix) for j in range(n)]
+    d_b_dn = [b[j] - b_mix for j in range(n)]
+    d_z_dn = [-(fa * d_a_dn[j] + fb * d_b_dn[j]) / fz for j in range(n)]
+    d_coeff_dn = [
+        d_a_dn[j] / (delta_diff * b_mix) - a_mix * d_b_dn[j] / (delta_diff * b_mix * b_mix)
+        for j in range(n)
+    ]
+    d_i_dn = [
+        (d_z_dn[j] + delta1 * d_b_dn[j]) / (z + delta1 * b_mix)
+        - (d_z_dn[j] + delta2 * d_b_dn[j]) / (z + delta2 * b_mix)
+        for j in range(n)
+    ]
+
+    d_ln_phi_dn = [[0.0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            # `d(abar_i)/dn_j = A_ij - abar_i`, and the `B_i/B` term's derivative is
+            # `-B_i/B**2 dB/dn_j`, which is `factor_i`'s `-b_ratio_i` differentiated.
+            d_factor = (
+                2.0 * ((a_ij[i][j] - abar[i]) * a_mix - abar[i] * d_a_dn[j]) / (a_mix * a_mix)
+                + b_ratio[i] * d_b_dn[j] / b_mix
+            )
+            d_ln_phi_dn[i][j] = (
+                b_ratio[i] * d_z_dn[j]
+                - (d_z_dn[j] - d_b_dn[j]) / (z - b_mix)
+                # `b_ratio_i` is `B_i/B`, and `B` moves with the composition, so the
+                # term above is not the whole of it. The `B_i/B` inside `factor_i`
+                # carries the same derivative with the opposite sign, and the two do
+                # not cancel.
+                - b_ratio[i] * (z - 1.0) * d_b_dn[j] / b_mix
+                - d_coeff_dn[j] * factor[i] * i_term
+                - coefficient * d_factor * i_term
+                - coefficient * factor[i] * d_i_dn[j]
+            )
+
+    # --- temperature, at constant pressure and composition --------------------
+    #
+    # `A_ij` moves with temperature through the components' alphas, and its logarithmic
+    # derivative is `psi_pair - 2`. `B_ij` scales as `1/T`, so `T dB/dT = -B`.
+    t_d_a_ij = [[0.0] * n for _ in range(n)]
+    t_d_abar = [0.0] * n
+    for i in range(n):
+        for j in range(n):
+            psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j])
+            t_d_a_ij[i][j] = a_ij[i][j] * (psi_pair - 2.0)
+            t_d_abar[i] += x[j] * t_d_a_ij[i][j]
+    t_d_a = sum(x[i] * t_d_abar[i] for i in range(n))
+    t_d_b = -b_mix
+    t_d_z = -(fa * t_d_a + fb * t_d_b) / fz
+    t_d_coeff = t_d_a / (delta_diff * b_mix) - a_mix * t_d_b / (delta_diff * b_mix * b_mix)
+    t_d_i = (t_d_z + delta1 * t_d_b) / (z + delta1 * b_mix) - (t_d_z + delta2 * t_d_b) / (
+        z + delta2 * b_mix
+    )
+    d_ln_phi_dt = [0.0] * n
+    for i in range(n):
+        # `b_ratio_i` is `B_i/B`, two quantities that both scale as `1/T`, so it is
+        # temperature-independent and drops out of the sum below.
+        t_d_factor = 2.0 * (t_d_abar[i] * a_mix - abar[i] * t_d_a) / (a_mix * a_mix)
+        t_d_ln_phi = (
+            b_ratio[i] * t_d_z
+            - (t_d_z - t_d_b) / (z - b_mix)
+            - t_d_coeff * factor[i] * i_term
+            - coefficient * t_d_factor * i_term
+            - coefficient * factor[i] * t_d_i
+        )
+        d_ln_phi_dt[i] = t_d_ln_phi / temperature
+
+    # --- pressure, at constant temperature and composition --------------------
+    #
+    # Every `A_i` and `B_i` is linear in `P`, so `A`, `B` and their row sums scale as
+    # `P` while `coefficient` and `factor_i` - ratios of two such quantities - do not
+    # move at all.
+    p_d_z = -(fa * a_mix + fb * b_mix) / fz
+    p_d_i = (p_d_z + delta1 * b_mix) / (z + delta1 * b_mix) - (p_d_z + delta2 * b_mix) / (
+        z + delta2 * b_mix
+    )
+    d_ln_phi_dp = [0.0] * n
+    for i in range(n):
+        p_d_ln_phi = (
+            b_ratio[i] * p_d_z - (p_d_z - b_mix) / (z - b_mix) - coefficient * factor[i] * p_d_i
+        )
+        d_ln_phi_dp[i] = p_d_ln_phi / pressure
+
+    return PhaseDerivatives(
+        ln_phi=ln_phi,
+        d_ln_phi_dn=d_ln_phi_dn,
+        d_ln_phi_dt=d_ln_phi_dt,
+        d_ln_phi_dp=d_ln_phi_dp,
     )
 
 

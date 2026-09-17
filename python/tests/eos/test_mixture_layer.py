@@ -28,6 +28,7 @@ from azoth.eos.reference._mixture_state import (
     helmholtz_energy,
     helmholtz_hessian,
     mixture_parameters,
+    phase_derivatives,
     phase_state,
     phase_state_at,
     reduced_parameters,
@@ -400,3 +401,104 @@ def test_the_helmholtz_layer_matches_its_recorded_values() -> None:
         (1, 1): 0.574322437423059,
     }.items():
         h.assert_close(matrix[i][j], wanted, 1e-12, f"Q at {i},{j}")
+
+
+def _ln_phi_of(
+    mixture: Mixture, reduced: ReducedParameters, n: list[float], *, liquid: bool
+) -> list[float]:
+    """``ln phi_i`` as a function of mole numbers, which is what the surface differentiates.
+
+    The analytic derivative is the one of the *intensive* function ``ln phi_i(T, P, x)``
+    with ``x = n / sum(n)``, so the difference quotient has to be taken of the same
+    function. Calling :func:`phase_state` with a raw perturbed vector would differentiate
+    a different function - one whose ``A`` is ``sum sum n_i n_j A_ij`` rather than the
+    same over ``N**2`` - and the two agree only on the sum-to-one surface.
+    """
+    total = sum(n)
+    x = [value / total for value in n]
+    return phase_state(reduced, mixture.kij, x, liquid=liquid).ln_phi
+
+
+def test_the_composition_derivative_is_the_fugacity_coefficients_own() -> None:
+    """A central difference of ``ln phi_i(n)`` at the ``N = 1`` the surface is stated at."""
+    mix = methane_butane()
+    t, p, n = 330.0, 2_500_000.0, [0.6, 0.4]
+    reduced = reduced_parameters(mix, t, p)
+    state = phase_state(reduced, mix.kij, n, liquid=True)
+    d = phase_derivatives(reduced, mix.kij, n, state.z, temperature=t, pressure=p)
+
+    step = 1e-6
+    for j in range(2):
+        up, down = list(n), list(n)
+        up[j] += step
+        down[j] -= step
+        above = _ln_phi_of(mix, reduced, up, liquid=True)
+        below = _ln_phi_of(mix, reduced, down, liquid=True)
+        for i in range(2):
+            difference = (above[i] - below[i]) / (2.0 * step)
+            assert abs(d.d_ln_phi_dn[i][j] - difference) < 1e-8, (
+                f"d ln phi_{i} / d n_{j}: analytic {d.d_ln_phi_dn[i][j]}, difference {difference}"
+            )
+
+
+def test_the_state_derivatives_are_the_fugacity_coefficients_own() -> None:
+    """Both at constant composition, which is what the surface states them at."""
+    mix = methane_butane()
+    t, p, n = 330.0, 2_500_000.0, [0.6, 0.4]
+
+    def at(temperature: float, pressure: float) -> list[float]:
+        return _ln_phi_of(mix, reduced_parameters(mix, temperature, pressure), n, liquid=False)
+
+    reduced = reduced_parameters(mix, t, p)
+    roots = pr_z_factor(*mixture_parameters(reduced.a, reduced.b, mix.kij, n))
+    d = phase_derivatives(reduced, mix.kij, n, roots.z_max, temperature=t, pressure=p)
+
+    (step_t, step_p) = (1e-3, 1e-2)
+    above, below = at(t + step_t, p), at(t - step_t, p)
+    for i in range(2):
+        difference = (above[i] - below[i]) / (2.0 * step_t)
+        assert abs(d.d_ln_phi_dt[i] - difference) < 1e-7, (
+            f"d ln phi_{i} / dT: analytic {d.d_ln_phi_dt[i]}, difference {difference}"
+        )
+    above, below = at(t, p + step_p), at(t, p - step_p)
+    for i in range(2):
+        difference = (above[i] - below[i]) / (2.0 * step_p)
+        assert abs(d.d_ln_phi_dp[i] - difference) < 1e-9, (
+            f"d ln phi_{i} / dP: analytic {d.d_ln_phi_dp[i]}, difference {difference}"
+        )
+
+
+@pytest.mark.parametrize(
+    ("t", "p", "n", "liquid"),
+    [
+        (330.0, 2_500_000.0, [0.6, 0.4], True),
+        (330.0, 2_500_000.0, [0.6, 0.4], False),
+        (300.0, 3_000_000.0, [0.1, 0.9], True),
+        (400.0, 1_000_000.0, [0.5, 0.5], False),
+    ],
+    ids=["330-liquid", "330-vapour", "300-liquid", "400-vapour"],
+)
+def test_the_composition_derivative_obeys_gibbs_duhem_and_is_symmetric(
+    t: float, p: float, n: list[float], liquid: bool
+) -> None:
+    """Two structural properties that no difference quotient can show.
+
+    At constant temperature and pressure ``sum_i n_i d ln phi_i = 0``, so every column
+    sums to zero against the composition; and the matrix is ``(1/RT)`` times a Gibbs
+    energy's second derivative, so it is symmetric. A matrix can satisfy either and fail
+    the other, and together they pin the whole block rather than a sum of it.
+    """
+    mix = methane_butane()
+    reduced = reduced_parameters(mix, t, p)
+    state = phase_state(reduced, mix.kij, n, liquid=liquid)
+    d = phase_derivatives(reduced, mix.kij, n, state.z, temperature=t, pressure=p)
+
+    # Absolute, not relative: the targets are zero and a symmetry, so a relative test
+    # against them would be measuring the round-off of a subtraction of near-equals.
+    for j in range(len(n)):
+        total = sum(n[i] * d.d_ln_phi_dn[i][j] for i in range(len(n)))
+        assert abs(total) < 1e-9, f"Gibbs-Duhem column {j} sums to {total}, not to zero"
+    for i in range(len(n)):
+        for j in range(len(n)):
+            gap = abs(d.d_ln_phi_dn[i][j] - d.d_ln_phi_dn[j][i])
+            assert gap < 1e-12, f"symmetry {i},{j} is off by {gap}"
