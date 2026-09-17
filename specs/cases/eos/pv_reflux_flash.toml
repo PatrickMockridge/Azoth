@@ -1,0 +1,40 @@
+model = "eos.pv_reflux_flash"
+[[cases]]
+id = "a_condensers_reflux_ratio_round_trips"
+tolerance = 1e-05
+source = "The state `eos.pt_flash`'s own case converges to - methane/n-butane 0.6/0.4 at 330 K and 25 bar, whose vapour fraction is 0.84220554758038768 - asked back from the vapour ratio `1/beta - 1 = 0.18735860013383610` that a condenser fixing its reflux at that ratio would hold. The answer is the temperature that went in."
+[cases.inputs]
+components = ["methane", "n-butane"]
+P = 2500000.0
+reflux = 0.1873586001338361
+phase = "vapour"
+temperature = 330.0
+z = [0.6, 0.4]
+[cases.expected]
+T = 330.0
+[[cases]]
+id = "a_reboilers_reflux_ratio_round_trips"
+tolerance = 1e-05
+source = "As the first, at the liquid side: the 300 K, 50 bar state whose vapour fraction is 0.53655891375183451, asked back from the liquid ratio `beta/(1 - beta) = 1.15777156940400316`. The two ratios are reciprocals of each other, so a model that ignored `phase` would answer this case with the other one's temperature."
+[cases.inputs]
+components = ["methane", "n-butane"]
+P = 5000000.0
+reflux = 1.1577715694040032
+phase = "liquid"
+temperature = 300.0
+z = [0.6, 0.4]
+[cases.expected]
+T = 300.0
+[[cases]]
+id = "a_ratio_that_is_not_a_states_own"
+tolerance = 1e-05
+source = "A vapour ratio of two at 10 bar, which is not the ratio of any state on the way in: the search has to move the temperature to find it. It settles at 166.402852 K, far from the 250 K the iteration starts from, so the case is a solve rather than a round trip."
+[cases.inputs]
+components = ["methane", "n-butane"]
+P = 1000000.0
+reflux = 2.0
+phase = "vapour"
+temperature = 250.0
+z = [0.6, 0.4]
+[cases.expected]
+T = 166.402852

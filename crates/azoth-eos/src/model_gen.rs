@@ -31,6 +31,7 @@
 //!   - specs/models/eos/pu_flash.toml
 //!   - specs/models/eos/pure_saturation.toml
 //!   - specs/models/eos/pv_flash.toml
+//!   - specs/models/eos/pv_reflux_flash.toml
 //!   - specs/models/eos/pvf_flash.toml
 //!   - specs/models/eos/rachford_rice.toml
 //!   - specs/models/eos/stability_test.toml
@@ -3364,6 +3365,128 @@ pub static PV_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: PV_FLASH_CASES,
 };
 
+static PV_REFLUX_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+];
+
+static PV_REFLUX_FLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "a_condensers_reflux_ratio_round_trips",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("P", 2500000.0),
+            ("reflux", 0.1873586001338361),
+            ("temperature", 330.0),
+        ],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[("phase", "vapour")],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[("T", 330.0)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "a_reboilers_reflux_ratio_round_trips",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[
+            ("P", 5000000.0),
+            ("reflux", 1.1577715694040032),
+            ("temperature", 300.0),
+        ],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[("phase", "liquid")],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[("T", 300.0)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "a_ratio_that_is_not_a_states_own",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-05,
+        numbers: &[("P", 1000000.0), ("reflux", 2.0), ("temperature", 250.0)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[("phase", "vapour")],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[("T", 166.402852)],
+        expected_vectors: &[],
+    },
+];
+
+static PV_REFLUX_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+static PV_REFLUX_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "reflux_flash_secant_temperature",
+    convergence: "absolute",
+    tolerance: 1e-06,
+    max_iterations: 1000,
+    bracket: None,
+    initialisation: Some("from_the_feed_temperature"),
+    initial_temperature: None,
+    inner: Some(&PV_REFLUX_FLASH_INNER),
+    fallback: None,
+};
+
+/// Registry entry for `eos.pv_reflux_flash`.
+pub static PV_REFLUX_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pv_reflux_flash",
+    kind: "procedure",
+    algorithm: Some(&PV_REFLUX_FLASH_ALGORITHM),
+    checks: PV_REFLUX_FLASH_CHECKS,
+    cases: PV_REFLUX_FLASH_CASES,
+};
+
 static PVF_FLASH_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -5181,6 +5304,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PU_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
     &PV_FLASH_SPEC,
+    &PV_REFLUX_FLASH_SPEC,
     &PVF_FLASH_SPEC,
     &RACHFORD_RICE_SPEC,
     &STABILITY_TEST_SPEC,

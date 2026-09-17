@@ -95,6 +95,7 @@
   - [Pressure-internal-energy flash](./eos/pu_flash.md)
   - [Pure-component saturation pressure](./eos/pure_saturation.md)
   - [Pressure-volume flash](./eos/pv_flash.md)
+  - [Pressure and reflux-ratio flash](./eos/pv_reflux_flash.md)
   - [Pressure and vapour-fraction flash](./eos/pvf_flash.md)
   - [Vapour fraction from the Rachford-Rice equation](./eos/rachford_rice.md)
   - [Tangent-plane stability test](./eos/stability_test.md)

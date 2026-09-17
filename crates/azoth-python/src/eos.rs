@@ -32,12 +32,12 @@ use crate::results::{
     PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
     PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
     PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyPvfFlashResult, PyRachfordRiceBinaryResult, PyRachfordRiceResult, PyRackettMolarVolumeResult,
-    PyRkAlphaAbResult, PyRkDepartureResult, PySchwartzentruberAlphaResult,
-    PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult, PySrkAlphaAbResult,
-    PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
-    PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult, PyTsFlashResult,
-    PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
+    PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceBinaryResult, PyRachfordRiceResult,
+    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
+    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
+    PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
+    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
     PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
     PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
     PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
@@ -2130,6 +2130,56 @@ pub fn pu_flash(
     azoth_eos::pu_flash(&mixture, &ideal_gas, pascals(P), joules_per_mole(U), &z)
         .map(|r| PyPuFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// The pressure/reflux-ratio flash of a mixture (P,ratio -> T).
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, P, reflux, phase, temperature, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, P, reflux, phase, temperature, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)]
+#[allow(clippy::too_many_arguments)] // the signature is the flash's inputs
+pub fn pv_reflux_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    P: f64,
+    reflux: f64,
+    phase: &str,
+    temperature: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyPvRefluxFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    let which = match phase {
+        "liquid" => azoth_eos::pv_reflux_flash::RefluxPhase::Liquid,
+        _ => azoth_eos::pv_reflux_flash::RefluxPhase::Vapour,
+    };
+    azoth_eos::pv_reflux_flash::pv_reflux_flash(
+        &mixture,
+        pascals(P),
+        reflux,
+        which,
+        kelvins(temperature),
+        &z,
+    )
+    .map(|r| PyPvRefluxFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// The pressure/vapour-fraction flash of a mixture (P,beta -> T).

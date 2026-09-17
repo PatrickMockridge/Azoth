@@ -617,6 +617,20 @@ class PvFlashResult:
     warnings: list[Warning]
 
 @final
+class PvRefluxFlashResult:
+    T: Qty
+    beta: float | None
+    phase: str
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class PvfFlashResult:
     T: Qty
     beta: float
@@ -1396,6 +1410,20 @@ def pv_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> PvFlashResult: ...
+def pv_reflux_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    P: float,
+    reflux: float,
+    phase: str,
+    temperature: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> PvRefluxFlashResult: ...
 def pvf_flash(
     Tc: list[float],
     Pc: list[float],

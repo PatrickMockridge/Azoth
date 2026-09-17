@@ -153,6 +153,7 @@ Four sections, and the difference between them is the point:
 - [`eos.pu_flash`](./eos/pu_flash.md) — Pressure-internal-energy flash
 - [`eos.pure_saturation`](./eos/pure_saturation.md) — Pure-component saturation pressure
 - [`eos.pv_flash`](./eos/pv_flash.md) — Pressure-volume flash
+- [`eos.pv_reflux_flash`](./eos/pv_reflux_flash.md) — Pressure and reflux-ratio flash
 - [`eos.pvf_flash`](./eos/pvf_flash.md) — Pressure and vapour-fraction flash
 - [`eos.rachford_rice`](./eos/rachford_rice.md) — Vapour fraction from the Rachford-Rice equation
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test

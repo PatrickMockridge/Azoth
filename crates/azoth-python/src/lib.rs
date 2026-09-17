@@ -183,6 +183,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::ts_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::tu_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pu_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::pv_reflux_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pvf_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::vh_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::vu_flash, m)?)?;

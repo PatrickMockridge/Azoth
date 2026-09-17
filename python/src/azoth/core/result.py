@@ -798,6 +798,34 @@ class VuFlashResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PvRefluxFlashResult(_HasWarnings):
+    """Result of ``eos.pv_reflux_flash``."""
+
+    #: The temperature at which the phase ratio is the one asked for.
+    T: Q
+    #: The vapour fraction at the answer, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Secant steps taken.
+    iterations: int
+    #: ``|reflux_ratio(T) - reflux_spec|`` at the answer.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class VhFlashResult(_HasWarnings):
     """Result of ``eos.vh_flash``.
 

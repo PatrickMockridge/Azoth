@@ -93,6 +93,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.pu_flash`](./pu_flash.md) | `pu_flash_inverse_temperature_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.pure_saturation`](./pure_saturation.md) | `saturation_pressure_bisection` | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pv_flash`](./pv_flash.md) | `pv_flash_inverse_temperature_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
+| [`eos.pv_reflux_flash`](./pv_reflux_flash.md) | `reflux_flash_secant_temperature` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.pvf_flash`](./pvf_flash.md) | `pvf_flash_illinois_temperature` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.rachford_rice`](./rachford_rice.md) | `rachford_rice_nielsen_2023` | Nielsen, L. (2023) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |

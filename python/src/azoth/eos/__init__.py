@@ -131,6 +131,7 @@ from azoth.core.result import (
     PureSaturationResult,
     PvfFlashResult,
     PvFlashResult,
+    PvRefluxFlashResult,
     RachfordRiceBinaryResult,
     RachfordRiceResult,
     RackettMolarVolumeResult,
@@ -252,6 +253,7 @@ __all__ = [
     "pu_flash",
     "pure_saturation",
     "pv_flash",
+    "pv_reflux_flash",
     "pvf_flash",
     "rachford_rice",
     "rachford_rice_binary",
@@ -340,6 +342,7 @@ _TU_FLASH = "eos.tu_flash"
 _PU_FLASH = "eos.pu_flash"
 _TV_FLASH = "eos.tv_flash"
 _PV_FLASH = "eos.pv_flash"
+_PV_REFLUX_FLASH = "eos.pv_reflux_flash"
 _PVF_FLASH = "eos.pvf_flash"
 _PT_FLASH = "eos.pt_flash"
 _PT_PHASE_ENVELOPE = "eos.pt_phase_envelope"
@@ -2271,6 +2274,28 @@ def pvf_flash(
     """
     return resolve(_PVF_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, P=P, beta=beta, temperature=temperature, z=z
+    )
+
+
+def pv_reflux_flash(
+    mixture: Mixture, P: Q, reflux: float, phase: str, temperature: Q, z: list[float]
+) -> PvRefluxFlashResult:
+    """The temperature at which a phase ratio at a pressure is ``reflux``.
+
+    ``phase`` is ``"vapour"`` or ``"liquid"`` and names which of the two the ratio is
+    *of*: a condenser asks for the vapour's - the liquid it returns over the vapour it
+    takes - and a reboiler for the liquid's. The two ratios are reciprocals, and a ratio
+    of one is equal phase amounts whichever is named.
+
+    Raises:
+        OutOfRangeError: if ``P`` or ``temperature`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap without the ratio
+            meeting the one asked for.
+
+    See :func:`azoth.eos.reference.pv_reflux_flash`.
+    """
+    return resolve(_PV_REFLUX_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, P=P, reflux=reflux, phase=phase, temperature=temperature, z=z
     )
 
 

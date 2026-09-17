@@ -1,0 +1,109 @@
+id = "eos.pv_reflux_flash"
+name = "Pressure and reflux-ratio flash"
+kind = "procedure"
+assumptions = [
+    "a reflux ratio is a ratio of the two phase amounts, so a specified one is a temperature: at a fixed pressure the split moves monotonically with temperature, and with it the ratio of the phases. The answer is the temperature where the ratio is the one asked for.",
+    "the ratio is `1 / beta_p - 1` on the phase named, which is the other phase's amount over that phase's - the vapour/liquid ratio of a condenser when the vapour is named, and the liquid/vapour ratio of a reboiler when the liquid is.",
+    "the derivative is a secant over the last two iterates, so the first two steps are a fixed probe of a tenth of a kelvin rather than a derivative that does not exist yet. The damping ramps from 0.4 towards 1 with the iteration count and the step is capped at two kelvin.",
+    "a reflux ratio outside what the pressure admits is not refused in advance: the iteration drives the temperature until it stops moving, and a ratio the two-phase region does not contain at this pressure is reported as a failure to converge rather than as a bound.",
+]
+references = [
+    "Michelsen, M. L.; Mollerup, J. M. (2004). \"Thermodynamic Models: Fundamentals and Computational Aspects.\" Tie-Line Publications.",
+]
+[source]
+standard = "Standard thermodynamics, as in Michelsen & Mollerup"
+edition = "NeqSim 3.20.0 `thermodynamicoperations/flashops/PVrefluxflash`: its residual, its secant, its ramped damping, its two-kelvin step cap and its first-iteration probe are this model's loop."
+[algorithm]
+scheme = "reflux_flash_secant_temperature"
+initialisation = "from_the_feed_temperature"
+convergence = "absolute"
+tolerance = 1e-06
+max_iterations = 1000
+[algorithm.inner]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 300
+[algorithm.inner.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure. Held fixed; the temperature is what is solved for."
+[inputs.reflux]
+unit = "dimensionless"
+description = "the reflux ratio asked for: the amount of the *other* phase over the amount of the one `phase` names."
+[inputs.phase]
+type = "enum"
+values = ["vapour", "liquid"]
+description = "which phase's ratio `reflux` is. A condenser asks for the vapour's, a reboiler for the liquid's, and the two are reciprocals of each other."
+[inputs.temperature]
+unit = "K"
+description = "where the iteration starts, in kelvin. Not an initial guess at the answer so much as the state the search begins from - the first two steps are probes around it."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "overall mole fractions"
+[outputs]
+[outputs.T]
+unit = "K"
+description = "the temperature at which the phase ratio is the one asked for - the model's answer."
+[outputs.beta]
+unit = "dimensionless"
+optional = true
+description = "the vapour fraction at the answer, or absent for a single-phase feed"
+[outputs.phase]
+type = "enum"
+values = ["two_phase", "all_liquid", "all_vapour", "trivial"]
+description = "which phase the feed is in at the answer"
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions at the answer"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions at the answer"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`K_i = y_i / x_i` at the answer"
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the liquid root of the cubic at the answer"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root at the answer"
+[outputs.iterations]
+unit = "dimensionless"
+description = "secant steps taken, including the evaluation at the answer"
+[outputs.residual]
+unit = "dimensionless"
+description = "`|reflux_ratio(T) - reflux_spec|` at the answer"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[implementations]
+python = "azoth.eos.pv_reflux_flash"
+rust = "azoth_eos::pv_reflux_flash"

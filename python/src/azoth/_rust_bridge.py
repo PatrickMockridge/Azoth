@@ -99,6 +99,7 @@ from azoth.core.result import (
     PureSaturationResult,
     PvfFlashResult,
     PvFlashResult,
+    PvRefluxFlashResult,
     RachfordRiceBinaryResult,
     RachfordRiceResult,
     RackettMolarVolumeResult,
@@ -1504,6 +1505,43 @@ def pvf_flash(
         [list(c.alpha_params) for c in mixture.components],
     )
     return PvfFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        beta=result.beta,
+        phase=_Phase(result.phase),
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pv_reflux_flash(
+    mixture: Any, P: Q, reflux: float, phase: str, temperature: Q, z: Sequence[float]
+) -> PvRefluxFlashResult:
+    """The pressure/reflux-ratio flash, solved in Rust.
+
+    No ideal-gas model: nothing here needs an enthalpy or an entropy.
+    """
+    spec = _models_gen.model("eos.pv_reflux_flash")
+    result = _core.pv_reflux_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "P", P),
+        float(reflux),
+        str(phase),
+        input_to_si(spec, "temperature", temperature),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PvRefluxFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
         beta=result.beta,
         phase=_Phase(result.phase),
