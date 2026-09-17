@@ -129,6 +129,7 @@ from azoth.core.result import (
     PtPhaseEnvelopeResult,
     PuFlashResult,
     PureSaturationResult,
+    PvfFlashResult,
     PvFlashResult,
     RachfordRiceBinaryResult,
     RachfordRiceResult,
@@ -251,6 +252,7 @@ __all__ = [
     "pu_flash",
     "pure_saturation",
     "pv_flash",
+    "pvf_flash",
     "rachford_rice",
     "rachford_rice_binary",
     "rackett_molar_volume",
@@ -338,6 +340,7 @@ _TU_FLASH = "eos.tu_flash"
 _PU_FLASH = "eos.pu_flash"
 _TV_FLASH = "eos.tv_flash"
 _PV_FLASH = "eos.pv_flash"
+_PVF_FLASH = "eos.pvf_flash"
 _PT_FLASH = "eos.pt_flash"
 _PT_PHASE_ENVELOPE = "eos.pt_phase_envelope"
 _STABILITY_TEST = "eos.stability_test"
@@ -2243,6 +2246,31 @@ def tv_flash(
     """
     return resolve(_TV_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, T=T, V=V, z=z
+    )
+
+
+def pvf_flash(
+    mixture: Mixture, P: Q, beta: float, temperature: Q, z: list[float]
+) -> PvfFlashResult:
+    """The temperature at which a feed's vapour fraction at a pressure is ``beta``.
+
+    At a fixed pressure the vapour fraction rises monotonically through the two-phase
+    region, from zero at the bubble point to one at the dew point, so a specified
+    fraction is a temperature. ``temperature`` centres the bracket - NeqSim searches the
+    feed's own temperature span - and is not an initial guess at the answer.
+
+    A ``beta`` of exactly zero or one is refused: those are the bubble and dew points,
+    and :func:`bubble_temperature` and :func:`dew_temperature` are the models for them.
+
+    Raises:
+        InvalidInputError: if ``beta`` is exactly an endpoint.
+        OutOfRangeError: if ``P`` is not positive, or ``beta`` outside ``(0, 1)``.
+        SolverNotConvergedError: if the search brackets nothing, or reaches its cap.
+
+    See :func:`azoth.eos.reference.pvf_flash`.
+    """
+    return resolve(_PVF_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, P=P, beta=beta, temperature=temperature, z=z
     )
 
 

@@ -617,6 +617,20 @@ class PvFlashResult:
     warnings: list[Warning]
 
 @final
+class PvfFlashResult:
+    T: Qty
+    beta: float
+    phase: str
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class RachfordRiceResult:
     beta: float
     warnings: list[Warning]
@@ -1382,6 +1396,19 @@ def pv_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> PvFlashResult: ...
+def pvf_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    P: float,
+    beta: float,
+    temperature: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> PvfFlashResult: ...
 def rachford_rice(z: list[float], K: list[float]) -> RachfordRiceResult: ...
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
 def rackett_molar_volume(

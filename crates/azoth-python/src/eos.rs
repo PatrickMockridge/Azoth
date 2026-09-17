@@ -32,7 +32,7 @@ use crate::results::{
     PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
     PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
     PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyRachfordRiceBinaryResult, PyRachfordRiceResult, PyRackettMolarVolumeResult,
+    PyPvfFlashResult, PyRachfordRiceBinaryResult, PyRachfordRiceResult, PyRackettMolarVolumeResult,
     PyRkAlphaAbResult, PyRkDepartureResult, PySchwartzentruberAlphaResult,
     PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult, PySrkAlphaAbResult,
     PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
@@ -2129,6 +2129,44 @@ pub fn pu_flash(
     };
     azoth_eos::pu_flash(&mixture, &ideal_gas, pascals(P), joules_per_mole(U), &z)
         .map(|r| PyPuFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The pressure/vapour-fraction flash of a mixture (P,beta -> T).
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, P, beta, temperature, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, P, beta, temperature, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)]
+#[allow(clippy::too_many_arguments)] // the signature is the flash's inputs
+pub fn pvf_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    P: f64,
+    beta: f64,
+    temperature: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyPvfFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::pvf_flash::pvf_flash(&mixture, pascals(P), beta, kelvins(temperature), &z)
+        .map(|r| PyPvfFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

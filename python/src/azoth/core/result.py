@@ -736,6 +736,34 @@ class VuFlashSingleCompResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PvfFlashResult(_HasWarnings):
+    """Result of ``eos.pvf_flash``."""
+
+    #: The temperature at which the feed's vapour fraction is the one asked for.
+    T: Q
+    #: The vapour fraction at the answer, as the iteration measured it.
+    beta: float
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Illinois steps taken.
+    iterations: int
+    #: ``|beta(T) - beta_spec|`` at the answer.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class VuFlashResult(_HasWarnings):
     """Result of ``eos.vu_flash``.
 

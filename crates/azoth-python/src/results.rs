@@ -32,17 +32,18 @@ use azoth_eos::results::{
     PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
     PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
     PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
-    ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
-    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    VhFlashResult, ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    PureSaturationResult, PvFlashResult, PvfFlashResult, RachfordRiceBinaryResult,
+    RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
+    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
+    TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrprAlphaResult,
+    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
+    VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -4817,6 +4818,82 @@ impl From<&VuFlashSingleCompResult> for PyVuFlashSingleCompResult {
     }
 }
 
+/// Result of `eos.pvf_flash`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PvfFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `T` is the symbol the spec and the Python result both use
+pub struct PyPvfFlashResult {
+    /// The temperature at which the feed's vapour fraction is the one asked for.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The vapour fraction at the answer.
+    #[pyo3(get)]
+    pub beta: f64,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// Illinois steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `|beta(T) - beta_spec|` at the answer.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPvfFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PvfFlashResult(T={} K, beta={}, phase={})",
+            self.T.magnitude_si, self.beta, self.phase
+        )
+    }
+}
+
+impl From<&PvfFlashResult> for PyPvfFlashResult {
+    fn from(r: &PvfFlashResult) -> Self {
+        Self {
+            T: PyQty {
+                magnitude_si: r.t.value,
+                unit: "K".to_string(),
+            },
+            beta: r.beta,
+            phase: r.phase.as_str().to_string(),
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.vh_flash`, transported.
 #[pyclass(
     frozen,
@@ -5503,6 +5580,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         TsFlashResult::CALC_ID => TsFlashResult::FIELDS.to_vec(),
         TuFlashResult::CALC_ID => TuFlashResult::FIELDS.to_vec(),
         PuFlashResult::CALC_ID => PuFlashResult::FIELDS.to_vec(),
+        PvfFlashResult::CALC_ID => PvfFlashResult::FIELDS.to_vec(),
         VhFlashResult::CALC_ID => VhFlashResult::FIELDS.to_vec(),
         VuFlashResult::CALC_ID => VuFlashResult::FIELDS.to_vec(),
         VuFlashSingleCompResult::CALC_ID => VuFlashSingleCompResult::FIELDS.to_vec(),

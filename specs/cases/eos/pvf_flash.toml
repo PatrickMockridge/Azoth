@@ -1,0 +1,25 @@
+model = "eos.pvf_flash"
+[[cases]]
+id = "the_state_pt_flash_settles_on"
+tolerance = 1e-07
+source = "The state `eos.pt_flash`'s own case converges to - methane/n-butane 0.6/0.4 at 330 K and 25 bar, whose vapour fraction is 0.8422055475803881 - asked for back from its fraction. The answer is the temperature that went in, so the case is a round trip and does not depend on knowing a new number."
+[cases.inputs]
+components = ["methane", "n-butane"]
+P = 2500000.0
+beta = 0.8422055475803881
+temperature = 330.0
+z = [0.6, 0.4]
+[cases.expected]
+T = 330.0
+[[cases]]
+id = "a_second_state"
+tolerance = 1e-07
+source = "As the first: the 350 K, 50 bar state of `eos.pt_flash`'s `methane_propane_and_butane_at_350_k_and_50_bar` case, whose vapour fraction is 0.993505628186177. A second pressure and a third component, so the case does not rest on one bracket."
+[cases.inputs]
+components = ["methane", "propane", "n-butane"]
+P = 5000000.0
+beta = 0.993505628186177
+temperature = 350.0
+z = [0.5, 0.3, 0.2]
+[cases.expected]
+T = 350.0

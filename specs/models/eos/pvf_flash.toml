@@ -1,0 +1,112 @@
+id = "eos.pvf_flash"
+name = "Pressure and vapour-fraction flash"
+kind = "procedure"
+assumptions = [
+    "a specified pressure and a specified vapour fraction fix the temperature: at a fixed pressure the vapour fraction rises monotonically through the two-phase region, from zero at the bubble point to one at the dew point. The answer is the temperature where it crosses the one asked for.",
+    "the vapour fraction is bracketed by the feed's own temperature, `[0.7 T, 1.5 T]`, and widened in ten-kelvin steps up to twenty times each way before the search starts. A feed whose two-phase region lies outside that span is widened into rather than extrapolated to.",
+    "the root find is Illinois' - regula falsi with the stale end halved - which is a bracketing method and so cannot leave the interval. It needs no derivative of the vapour fraction, which is what makes it robust where a Newton on a flashed quantity is not.",
+    "the endpoints are not this model's. A vapour fraction of exactly zero is a bubble point and of exactly one a dew point, and both are registered calculations with their own procedures; asking for one here is refused by name rather than answered by a second implementation of them.",
+    "the vapour fraction of a single-phase feed is reported as one or zero rather than as an absence: the search is *for* a fraction, and a trial temperature outside the two-phase region has to answer with something for the bracket to move.",
+]
+references = [
+    "Michelsen, M. L.; Mollerup, J. M. (2004). \"Thermodynamic Models: Fundamentals and Computational Aspects.\" Tie-Line Publications.",
+]
+[source]
+standard = "Standard thermodynamics, as in Michelsen & Mollerup"
+edition = "NeqSim 3.20.0 `thermodynamicoperations/flashops/PVFflash`: its bracket, its widening, its Illinois search and its `computeBeta` are this model's loop."
+[algorithm]
+scheme = "pvf_flash_illinois_temperature"
+initialisation = "from_the_feed_temperature"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 200
+[algorithm.bracket]
+scheme = "feed_temperature_span"
+lower = 0.7
+upper = 1.5
+steps = 2
+[algorithm.inner]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 300
+[algorithm.inner.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure. Held fixed; the temperature is what is solved for."
+[inputs.beta]
+unit = "dimensionless"
+description = "the vapour fraction asked for, strictly between zero and one. The endpoints are `eos.bubble_temperature` and `eos.dew_temperature`."
+[inputs.temperature]
+unit = "K"
+description = "where the bracket is centred: the feed's own temperature, whose span upstream searches. Not an initial guess at the answer."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "overall mole fractions"
+[outputs]
+[outputs.T]
+unit = "K"
+description = "the temperature at which the feed's vapour fraction is the one asked for - the model's answer."
+[outputs.beta]
+unit = "dimensionless"
+description = "the vapour fraction at the answer. Reported rather than echoed: it is what the iteration measured there, and the residual is its distance from the specification."
+[outputs.phase]
+type = "enum"
+values = ["two_phase", "all_liquid", "all_vapour", "trivial"]
+description = "which phase the feed is in at the answer"
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions at the answer"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions at the answer"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`K_i = y_i / x_i` at the answer"
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the liquid root of the cubic at the answer"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root at the answer"
+[outputs.iterations]
+unit = "dimensionless"
+description = "Illinois steps taken, including the evaluation at the answer"
+[outputs.residual]
+unit = "dimensionless"
+description = "`|beta(T) - beta_spec|` at the answer"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "beta"
+min = 0
+max = 1
+min_inclusive = false
+max_inclusive = false
+severity = "error"
+rationale = "the endpoints are the bubble and dew points, which are other calculations with their own procedures"
+[implementations]
+python = "azoth.eos.pvf_flash"
+rust = "azoth_eos::pvf_flash"

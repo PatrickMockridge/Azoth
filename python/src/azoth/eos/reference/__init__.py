@@ -30,6 +30,7 @@ from azoth.eos.reference.ps_flash import ps_flash
 from azoth.eos.reference.pt_flash import pt_flash
 from azoth.eos.reference.pt_phase_envelope import pt_phase_envelope
 from azoth.eos.reference.pure_saturation import pure_saturation
+from azoth.eos.reference.pvf_flash import pvf_flash
 from azoth.eos.reference.rachford_rice import rachford_rice
 from azoth.eos.reference.rachford_rice_binary import rachford_rice_binary
 from azoth.eos.reference.stability_test import stability_test
@@ -59,6 +60,7 @@ __all__ = [
     "pt_flash",
     "pt_phase_envelope",
     "pure_saturation",
+    "pvf_flash",
     "rachford_rice",
     "rachford_rice_binary",
     "stability_test",

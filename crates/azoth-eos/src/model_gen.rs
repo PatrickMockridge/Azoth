@@ -31,6 +31,7 @@
 //!   - specs/models/eos/pu_flash.toml
 //!   - specs/models/eos/pure_saturation.toml
 //!   - specs/models/eos/pv_flash.toml
+//!   - specs/models/eos/pvf_flash.toml
 //!   - specs/models/eos/rachford_rice.toml
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/th_flash.toml
@@ -3363,6 +3364,118 @@ pub static PV_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: PV_FLASH_CASES,
 };
 
+static PVF_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "beta",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: Some(1.0),
+            max_inclusive: false,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the endpoints are the bubble and dew points, which are other calculations with their own procedures",
+        },
+    },
+];
+
+static PVF_FLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_state_pt_flash_settles_on",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-07,
+        numbers: &[
+            ("P", 2500000.0),
+            ("beta", 0.8422055475803881),
+            ("temperature", 330.0),
+        ],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[("T", 330.0)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "a_second_state",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-07,
+        numbers: &[
+            ("P", 5000000.0),
+            ("beta", 0.993505628186177),
+            ("temperature", 350.0),
+        ],
+        lists: &[("components", &["methane", "propane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.3, 0.2])],
+        matrices: &[],
+        expected: &[("T", 350.0)],
+        expected_vectors: &[],
+    },
+];
+
+static PVF_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+static PVF_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "pvf_flash_illinois_temperature",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 200,
+    bracket: Some(ModelBracket {
+        scheme: "feed_temperature_span",
+        lower: 0.7,
+        upper: 1.5,
+        steps: 2,
+    }),
+    initialisation: Some("from_the_feed_temperature"),
+    initial_temperature: None,
+    inner: Some(&PVF_FLASH_INNER),
+    fallback: None,
+};
+
+/// Registry entry for `eos.pvf_flash`.
+pub static PVF_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pvf_flash",
+    kind: "procedure",
+    algorithm: Some(&PVF_FLASH_ALGORITHM),
+    checks: PVF_FLASH_CHECKS,
+    cases: PVF_FLASH_CASES,
+};
+
 static RACHFORD_RICE_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -5068,6 +5181,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PU_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
     &PV_FLASH_SPEC,
+    &PVF_FLASH_SPEC,
     &RACHFORD_RICE_SPEC,
     &STABILITY_TEST_SPEC,
     &TH_FLASH_SPEC,

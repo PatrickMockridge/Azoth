@@ -97,6 +97,7 @@ from azoth.core.result import (
     PuFlashResult,
     PumpPowerResult,
     PureSaturationResult,
+    PvfFlashResult,
     PvFlashResult,
     RachfordRiceBinaryResult,
     RachfordRiceResult,
@@ -1471,6 +1472,44 @@ def tv_flash(mixture: Any, ideal_gas: Any, T: Q, V: Q, z: Sequence[float]) -> Tv
         y=tuple(result.y),
         k=tuple(result.k),
         phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pvf_flash(
+    mixture: Any, P: Q, beta: float, temperature: Q, z: Sequence[float]
+) -> PvfFlashResult:
+    """The pressure/vapour-fraction flash, solved in Rust.
+
+    No ideal-gas model: nothing here needs an enthalpy or an entropy, and a signature
+    that demanded one would oblige a caller to supply heat capacities for a calculation
+    that never reads them.
+    """
+    spec = _models_gen.model("eos.pvf_flash")
+    result = _core.pvf_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "P", P),
+        float(beta),
+        input_to_si(spec, "temperature", temperature),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PvfFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        beta=result.beta,
+        phase=_Phase(result.phase),
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
         z_liquid=result.z_liquid,
         z_vapour=result.z_vapour,
         iterations=result.iterations,
