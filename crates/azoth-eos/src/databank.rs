@@ -695,6 +695,45 @@ pub fn nrtl_dij(names: &[&str]) -> Vec<f64> {
     out
 }
 
+/// The resolved NRTL parameters for a mixture, both matrices flattened row-major.
+///
+/// A caller-supplied record the way [`Component`] is, and carrying **no names** for the
+/// same reason: [`nrtl_parameters`] does the lookup, and a model that looked up its own
+/// inputs would answer from a file the caller never mentioned.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NrtlParameters {
+    /// `alpha[i][j]`, `N x N` row-major. Symmetric with a zero diagonal.
+    pub alpha: Vec<f64>,
+    /// `dij[i][j] = g_ij` in kelvin, `N x N` row-major. Directional.
+    pub dij: Vec<f64>,
+}
+
+/// The NRTL `alpha` and `Dij` matrices for a list of names, flattened row-major.
+///
+/// The resolution `eos.nrtl_activity_coefficients` leaves to its caller, the way
+/// [`bwrs_coefficients`] resolves the MBWR-32 set and [`mixture_of`] resolves a cubic's
+/// constants. Both matrices come from the same `INTER.csv` row, so `alpha[i][j]` and
+/// `alpha[j][i]` are the same number while `dij[i][j]` and `dij[j][i]` are not.
+///
+/// A pair the interaction table does not carry is `0.0`, which is an ideal interaction -
+/// what NeqSim's NRTL does with an absent row, and why a pair the table has never seen
+/// returns `gamma = 1`. That is a quiet answer for a real substance, and the spec says
+/// so; a name that is in *neither* table is refused instead, because a typo is a mistake
+/// rather than a mixture the table happens not to cover.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
+///   overlay.
+pub fn nrtl_parameters(names: &[&str], overlay: Option<&Overlay>) -> Result<NrtlParameters> {
+    for name in names {
+        entry(name, overlay)?;
+    }
+    Ok(NrtlParameters {
+        alpha: nrtl_alpha(names),
+        dij: nrtl_dij(names),
+    })
+}
+
 /// The resolved UNIFAC inputs for a mixture, each matrix flattened row-major.
 ///
 /// `groups` is `N x G` (one row per component, one column per group), `group_r` and

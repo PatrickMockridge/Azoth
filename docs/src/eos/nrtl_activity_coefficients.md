@@ -21,10 +21,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Name | Unit | Description |
 |---|---|---|
+| `components` | - | the substances the mixture is made of, by name, resolved against NeqSim's `INTER.csv` (`NRTLALPHA`/`NRTLGIJ`/`NRTLGJI`, compiled to `data/components/kij.csv`) |
 | `T` | K | absolute temperature |
 | `x` | dimensionless | mole fractions; non-negative and summing to one. |
-| `Dij` | K | the NRTL energy matrix: `Dij[i][j] = g_ij` in Kelvin, with `tau_ij = g_ij / T` |
-| `alpha` | dimensionless | the NRTL non-randomness matrix `alpha_ij` |
 
 
 ## Outputs
@@ -40,11 +39,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- the caller resolved `Dij` and `alpha` from the databank by name pair - this model takes the matrices, not the names, the way `eos.wilke_viscosity` takes the constants.
+- `alpha` and `Dij` are resolved from the named components, from the `NRTLALPHA`/`NRTLGIJ`/`NRTLGJI` columns of NeqSim's `INTER.csv`, so `alpha` is symmetric and both diagonals are zero by construction rather than by a check the caller could fail.
 
 - `tau_ij = Dij[i][j] / T` carries no gas constant, so `Dij` is in Kelvin, exactly as NeqSim's `NRTLGIJ`/`NRTLGJI` columns store it.
 
-- `alpha` is symmetric and both matrices have a zero diagonal; a caller must supply them that way, and a violation is refused rather than silently symmetrised.
+- a pair the interaction table does not carry resolves to zero, which is an ideal interaction; a mixture the table has never seen therefore returns `gamma = 1`. A name in no table at all is refused instead.
 
 - `x` is checked (non-negative, sums to one) rather than renormalised.
 
@@ -53,7 +52,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methanol_water_equimolar_at_298_15_k` | T = 298.15, x = [0.5, 0.5], Dij = [[0.0, -48.68], [610.6, 0.0]], alpha = [[0.0, 0.303], [0.303, 0.0]] | ln_gamma = [0.20959527138156164, 0.4228402301695509], gamma = [1.2331788561677834, 1.5262904213232393] |
+| `methanol_water_equimolar_at_298_15_k` | components = ['methanol', 'water'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.20959527138156164, 0.4228402301695509], gamma = [1.2331788561677834, 1.5262904213232393] |
+| `ethanol_water_equimolar_at_298_15_k` | components = ['ethanol', 'water'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [-0.04091499634696748, 0.24111595048976658], gamma = [0.9599107223979105, 1.2726685933000568] |
 
 ## References
 

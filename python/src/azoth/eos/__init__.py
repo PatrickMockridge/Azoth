@@ -158,6 +158,7 @@ from azoth.core.result import (
 from azoth.core.units import Q
 from azoth.eos.components import (
     BwrsCoefficients,
+    NrtlParameters,
     bwrs_coefficients,
     component,
     from_model,
@@ -1098,30 +1099,28 @@ def mason_saxena_conductivity(
 
 
 def nrtl_activity_coefficients(
+    params: NrtlParameters,
     T: Q,
     x: Sequence[float],
-    Dij: Sequence[Sequence[Q]],
-    alpha: Sequence[Sequence[float]],
 ) -> NrtlActivityCoefficientsResult:
     """The activity coefficients of a mixture, from NRTL (Renon-Prausnitz).
 
-    ``Dij[i][j] = g_ij`` in Kelvin, ``tau_ij = g_ij / T`` and
-    ``G_ij = exp(-alpha_ij tau_ij)``. ``alpha`` is symmetric and both matrices have a
-    zero diagonal; ``x`` is checked rather than renormalised.
+    ``params.dij[i][j] = g_ij`` in Kelvin, ``tau_ij = g_ij / T`` and
+    ``G_ij = exp(-alpha_ij tau_ij)``. ``x`` is checked rather than renormalised.
 
-    The two matrices are the caller's: resolve them from name pairs with
+    ``params`` is the caller's: resolve it from the mixture's components with
     :func:`azoth.eos.components.nrtl_parameters`, which is what this model's own spec
     leaves to the caller.
 
     Raises:
-        InvalidInputError: if the matrices are not ``N x N``, ``alpha`` is not
-            symmetric, a diagonal is not zero, or ``x`` is not a composition.
+        InvalidInputError: if the matrices are not ``N x N`` for ``x``, or ``x`` is not
+            a composition.
         OutOfRangeError: if ``T`` is not positive.
 
     See :func:`azoth.eos.reference.nrtl_activity_coefficients`.
     """
     return resolve(_NRTL_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
-        T=T, x=x, Dij=Dij, alpha=alpha
+        params=params, T=T, x=x
     )
 
 

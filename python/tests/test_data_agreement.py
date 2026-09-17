@@ -340,14 +340,15 @@ def test_the_nrtl_matrices_resolve_from_names() -> None:
     """The NRTL columns, resolved into the matrices `eos.nrtl_activity_coefficients` takes.
 
     `alpha` is symmetric with a zero diagonal; `dij` is directional (`g_ij != g_ji`),
-    so reversing the name order swaps the off-diagonal energy.
+    so reversing the name order swaps the off-diagonal energy. Row-major, so index 1 is
+    `(0, 1)` and index 2 is `(1, 0)`.
     """
-    alpha, dij = components.nrtl_parameters(["methanol", "water"])
-    assert alpha == ((0.0, 0.303), (0.303, 0.0))
-    assert dij == ((0.0, -48.68), (610.6, 0.0))
+    params = components.nrtl_parameters(["methanol", "water"])
+    assert params.alpha == (0.0, 0.303, 0.303, 0.0)
+    assert params.dij == (0.0, -48.68, 610.6, 0.0)
 
-    _, reversed_dij = components.nrtl_parameters(["water", "methanol"])
-    assert reversed_dij == ((0.0, 610.6), (-48.68, 0.0))
+    reversed_params = components.nrtl_parameters(["water", "methanol"])
+    assert reversed_params.dij == (0.0, 610.6, -48.68, 0.0)
 
 
 def test_the_unifac_parameters_resolve_from_names() -> None:

@@ -8,10 +8,9 @@
   },
   "derivation": "The driver ran `SystemNRTL` + `createDatabase(true)` + `setMixingRule(\"classic\")` + `TPflash()`, then read `getPhase(1).getActivityCoefficient(k)` and printed `gamma [0.9599107223979105, 1.2726685933000568]` at `x [0.5, 0.5]`.\n\nazoth's `eos.nrtl_activity_coefficients` reproduces it (ln_gamma is the log of NeqSim's gamma, since NeqSim's `getLnGamma()` returns 0 for NRTL).",
   "inputs": {
+    "components": ["ethanol", "water"],
     "T": 298.15,
-    "x": [0.5, 0.5],
-    "Dij": [[0.0, -268.88], [885.99, 0.0]],
-    "alpha": [[0.0, 0.3791], [0.3791, 0.0]]
+    "x": [0.5, 0.5]
   },
   "expected": {
     "ln_gamma": [-0.04091499634696748, 0.24111595048976658],

@@ -141,7 +141,6 @@ ARGUMENT_BUILDERS = {
     "eos.molar_enthalpy_entropy": _enthalpy_kwargs,
     "eos.wilke_viscosity": _vector_model_kwargs,
     "eos.mason_saxena_conductivity": _vector_model_kwargs,
-    "eos.nrtl_activity_coefficients": _vector_model_kwargs,
     "eos.wilson_activity_coefficients": _vector_model_kwargs,
 }
 
@@ -166,7 +165,15 @@ def _call(case: dict[str, Any]) -> Any:
         # needs no unit handling of its own.
         spec = _spec(case["calc"])
         assert spec is not None
-        kwargs = h.kwargs_for(spec, case["inputs"])
+        # A model's arguments are objects, so it resolves through the same
+        # `model_kwargs` its own spec-driven tests use; a calc's are scalars. `model_kwargs`
+        # and `kwargs_for` agree when a model declares no `components`, which is why this
+        # choice only shows up on the models that name a fluid.
+        kwargs = (
+            h.model_kwargs(spec, case["inputs"])
+            if case["calc"] in _models_gen.MODEL_BY_ID
+            else h.kwargs_for(spec, case["inputs"])
+        )
     return getattr(module, function_name)(**kwargs)
 
 

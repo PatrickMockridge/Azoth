@@ -321,6 +321,11 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             # A non-cubic reference EOS resolves the names into per-component coefficient
             # sets, flattened into the 32-coefficient `a` and the critical density.
             params += ["a: list[float]", "rhoc: list[float]"]
+        elif "params" in taken:
+            # An activity model resolves the names into a parameter set of its own
+            # rather than a `Mixture`: critical constants are not what NRTL reads, so
+            # the matrices cross flattened and the kernel rebuilds them by shape.
+            params += ["alpha: list[float]", "dij: list[float]"]
         elif "components" in taken:
             # The EOS-CG mixture maps its own fixed component names, so the names cross
             # the boundary verbatim rather than as a flattened mixture.

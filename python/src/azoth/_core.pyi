@@ -1069,10 +1069,10 @@ def molar_enthalpy_entropy(
 ) -> MolarEnthalpyEntropyResult: ...
 def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult: ...
 def nrtl_activity_coefficients(
+    alpha: list[float],
+    dij: list[float],
     T: float,
     x: list[float],
-    Dij: list[list[float]],
-    alpha: list[list[float]],
 ) -> NrtlActivityCoefficientsResult: ...
 def parachor_surface_tension(
     parachor: float,

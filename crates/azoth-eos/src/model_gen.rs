@@ -1787,27 +1787,44 @@ static NRTL_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
     },
 }];
 
-static NRTL_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[TestCase {
-    id: "methanol_water_equimolar_at_298_15_k",
-    kind: "case",
-    property: None,
-    status: "active",
-    skip_reason: None,
-    tolerance: 1e-09,
-    numbers: &[("T", 298.15)],
-    lists: &[],
-    strings: &[],
-    vectors: &[("x", &[0.5, 0.5])],
-    matrices: &[
-        ("Dij", &[0.0, -48.68, 610.6, 0.0]),
-        ("alpha", &[0.0, 0.303, 0.303, 0.0]),
-    ],
-    expected: &[],
-    expected_vectors: &[
-        ("ln_gamma", &[0.20959527138156164, 0.4228402301695509]),
-        ("gamma", &[1.2331788561677834, 1.5262904213232393]),
-    ],
-}];
+static NRTL_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methanol_water_equimolar_at_298_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15)],
+        lists: &[("components", &["methanol", "water"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[0.20959527138156164, 0.4228402301695509]),
+            ("gamma", &[1.2331788561677834, 1.5262904213232393]),
+        ],
+    },
+    TestCase {
+        id: "ethanol_water_equimolar_at_298_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15)],
+        lists: &[("components", &["ethanol", "water"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[-0.04091499634696748, 0.24111595048976658]),
+            ("gamma", &[0.9599107223979105, 1.2726685933000568]),
+        ],
+    },
+];
 
 /// Registry entry for `eos.nrtl_activity_coefficients`.
 pub static NRTL_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {

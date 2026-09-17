@@ -472,6 +472,11 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             # `Mixture`: `eos.bwrs_phase` is the one, and the MBWR-32 coefficients
             # resolve by name through the same databank, only the last step differs.
             kwargs["coeffs"] = [databank.bwrs_coefficients(name) for name in names]
+        elif "params" in takes:
+            # An activity model takes a resolved parameter set rather than a `Mixture`:
+            # NRTL's `alpha`/`Dij` are not critical constants, so there is nothing in a
+            # `Mixture` to carry them and the names resolve to a matrix instead.
+            kwargs["params"] = databank.nrtl_parameters(list(names))
         elif "components" in takes:
             # The EOS-CG mixture maps its own fixed component names to indices, so the
             # names cross the boundary verbatim rather than resolved to a `Mixture`.

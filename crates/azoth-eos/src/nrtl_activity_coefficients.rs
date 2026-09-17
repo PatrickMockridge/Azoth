@@ -6,42 +6,43 @@
 
 use azoth_core::{AzothError, Result, apply_checks};
 
+use crate::databank::NrtlParameters;
 use crate::model_gen;
 use crate::results::NrtlActivityCoefficientsResult;
 
 /// The activity coefficients of a mixture, from NRTL (Renon-Prausnitz).
 ///
-/// `Dij[i][j] = g_ij` is in Kelvin so that `tau_ij = Dij[i][j] / T` is dimensionless,
-/// `G_ij = exp(-alpha[i][j] * tau_ij)`, and
+/// `params.dij[i][j] = g_ij` is in Kelvin so that `tau_ij = params.dij[i][j] / T` is
+/// dimensionless, `G_ij = exp(-params.alpha[i][j] * tau_ij)`, and
 /// `ln gamma_i = (sum_j tau_ji G_ji x_j) / (sum_j G_ji x_j)
 /// + sum_j (x_j G_ij / C_j) (tau_ij - D_j / C_j)` where `C_j = sum_l G_lj x_l` and
-/// `D_j = sum_l tau_lj G_lj x_l`. `alpha` is symmetric and both matrices have a zero
-/// diagonal; `x` is checked rather than renormalised.
+/// `D_j = sum_l tau_lj G_lj x_l`. `params` is resolved by name through
+/// [`crate::databank::nrtl_parameters`], which is symmetric with a zero diagonal in
+/// `alpha` by construction; `x` is checked rather than renormalised.
 ///
 /// # Errors
-/// * [`AzothError::InvalidInput`] if the matrices are not `N x N` for the `N` of `x`,
-///   `alpha` is not symmetric, a diagonal is not zero, or `x` is not a composition.
+/// * [`AzothError::InvalidInput`] if either matrix is not `N x N` for the `N` of `x`,
+///   or `x` is not a composition.
 /// * [`AzothError::OutOfRange`] if `T` is not positive.
 ///
 /// # Example
 /// ```
+/// use azoth_eos::databank::NrtlParameters;
 /// use azoth_eos::nrtl_activity_coefficients;
 ///
-/// let r = nrtl_activity_coefficients(
-///     350.0,
-///     &[0.5, 0.5],
-///     &[vec![0.0, -48.68], vec![610.6, 0.0]],
-///     &[vec![0.0, 0.303], vec![0.303, 0.0]],
-/// )?;
+/// let params = NrtlParameters {
+///     alpha: vec![0.0, 0.303, 0.303, 0.0],
+///     dij: vec![0.0, -48.68, 610.6, 0.0],
+/// };
+/// let r = nrtl_activity_coefficients(&params, 350.0, &[0.5, 0.5])?;
 /// assert!((r.gamma[0] - 1.2277269290049744).abs() < 1e-15);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
-#[allow(non_snake_case)] // `Dij`, `T` and `x` are the symbols in the chemistry
+#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
 pub fn nrtl_activity_coefficients(
+    params: &NrtlParameters,
     T: f64,
     x: &[f64],
-    Dij: &[Vec<f64>],
-    alpha: &[Vec<f64>],
 ) -> Result<NrtlActivityCoefficientsResult> {
     let spec = &model_gen::NRTL_ACTIVITY_COEFFICIENTS_SPEC;
     let mut warnings = Vec::new();
@@ -62,54 +63,17 @@ pub fn nrtl_activity_coefficients(
             "a mixture of zero components has no activity coefficient",
         ));
     }
-    if Dij.len() != n || alpha.len() != n {
-        return Err(AzothError::invalid_input(
-            "Dij",
-            format!(
-                "the matrices are {} x {} (Dij) and {} x {} (alpha) but `x` has {n} \
-                 entries; a matrix input must be N x N for the same N as `x`",
-                Dij.len(),
-                Dij.first().map_or(0, Vec::len),
-                alpha.len(),
-                alpha.first().map_or(0, Vec::len)
-            ),
-        ));
-    }
-    for i in 0..n {
-        if Dij[i].len() != n || alpha[i].len() != n {
+    for (field, matrix) in [("alpha", &params.alpha), ("dij", &params.dij)] {
+        if matrix.len() != n * n {
             return Err(AzothError::invalid_input(
-                "Dij",
+                "components",
                 format!(
-                    "row {i} of a matrix is {} (Dij) / {} (alpha) entries but must be {n}",
-                    Dij[i].len(),
-                    alpha[i].len()
+                    "the {field} matrix has {} entries but `x` has {n} components, \
+                     which needs {} - an N x N matrix row-major",
+                    matrix.len(),
+                    n * n
                 ),
             ));
-        }
-    }
-    for i in 0..n {
-        for j in 0..n {
-            if i == j {
-                if Dij[i][j] != 0.0 || alpha[i][j] != 0.0 {
-                    return Err(AzothError::invalid_input(
-                        "Dij",
-                        format!(
-                            "the diagonal must be zero, but Dij[{i}][{i}] = {} and \
-                             alpha[{i}][{i}] = {}",
-                            Dij[i][j], alpha[i][j]
-                        ),
-                    ));
-                }
-            } else if alpha[i][j] != alpha[j][i] {
-                return Err(AzothError::invalid_input(
-                    "alpha",
-                    format!(
-                        "`alpha` must be symmetric, but alpha[{i}][{j}] = {} and \
-                         alpha[{j}][{i}] = {}",
-                        alpha[i][j], alpha[j][i]
-                    ),
-                ));
-            }
         }
     }
     if let Some(bad) = x.iter().position(|&value| value < 0.0) {
@@ -137,8 +101,8 @@ pub fn nrtl_activity_coefficients(
     let mut g = vec![vec![0.0; n]; n];
     for i in 0..n {
         for j in 0..n {
-            tau[i][j] = Dij[i][j] / T;
-            g[i][j] = (-alpha[i][j] * tau[i][j]).exp();
+            tau[i][j] = params.dij[i * n + j] / T;
+            g[i][j] = (-params.alpha[i * n + j] * tau[i][j]).exp();
         }
     }
 

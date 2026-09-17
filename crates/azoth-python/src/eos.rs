@@ -923,19 +923,20 @@ pub fn mason_saxena_conductivity(
 }
 
 /// The activity coefficients of a mixture, from NRTL. A *model* rather than a
-/// calculation: its arguments are vectors and matrices.
+/// calculation: its resolved parameters cross the boundary flattened row-major.
 #[pyfunction]
-#[pyo3(signature = (T, x, Dij, alpha))]
-#[pyo3(text_signature = "(T, x, Dij, alpha)")]
-#[allow(non_snake_case)] // `Dij` and `T` are the symbols in the chemistry
+#[pyo3(signature = (alpha, dij, T, x))]
+#[pyo3(text_signature = "(alpha, dij, T, x)")]
+#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
 pub fn nrtl_activity_coefficients(
     py: Python<'_>,
+    alpha: Vec<f64>,
+    dij: Vec<f64>,
     T: f64,
     x: Vec<f64>,
-    Dij: Vec<Vec<f64>>,
-    alpha: Vec<Vec<f64>>,
 ) -> PyResult<PyNrtlActivityCoefficientsResult> {
-    azoth_eos::nrtl_activity_coefficients(T, &x, &Dij, &alpha)
+    let params = azoth_eos::databank::NrtlParameters { alpha, dij };
+    azoth_eos::nrtl_activity_coefficients(&params, T, &x)
         .map(|r| PyNrtlActivityCoefficientsResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

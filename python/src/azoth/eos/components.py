@@ -499,23 +499,46 @@ def kij_for(
     return pairs
 
 
-def nrtl_parameters(
-    names: Sequence[str],
-) -> tuple[tuple[tuple[float, ...], ...], tuple[tuple[float, ...], ...]]:
+@dataclass(frozen=True, slots=True)
+class NrtlParameters:
+    """The NRTL parameters of a mixture, both matrices flattened row-major.
+
+    A caller-supplied record the way :class:`Component` is, and carrying **no names**
+    for the same reason: :func:`nrtl_parameters` does the lookup, and a model that
+    looked up its own inputs would answer from a file the caller never mentioned.
+    """
+
+    #: ``alpha[i][j]``, ``N x N`` row-major. Symmetric with a zero diagonal.
+    alpha: tuple[float, ...]
+    #: ``dij[i][j] = g_ij`` in kelvin, ``N x N`` row-major. Directional.
+    dij: tuple[float, ...]
+
+
+def nrtl_parameters(names: Sequence[str]) -> NrtlParameters:
     """The NRTL `alpha` and `Dij` matrices for a list of components, by name.
 
-    Returns ``(alpha, dij)`` as nested ``N x N`` tuples. ``alpha`` is symmetric with a
-    zero diagonal; ``dij[i][j] = g_ij`` (Kelvin) is directional, so ``dij[i][j]`` and
-    ``dij[j][i]`` differ in general. A pair the databank does not carry is ``0.0``, and
-    the diagonal is zero.
+    Both matrices come from the same ``INTER.csv`` row, so ``alpha[i][j]`` and
+    ``alpha[j][i]`` are the same number while ``dij[i][j]`` and ``dij[j][i]`` are not.
+    ``dij[i][j] = g_ij`` is in Kelvin, and the diagonal of each is zero.
 
     This is the name-to-matrix resolution `eos.nrtl_activity_coefficients` leaves to
-    the caller, the way :func:`kij_for` resolves `kij` for :func:`azoth.eos.mixture`.
+    its caller, the way :func:`bwrs_coefficients` resolves the MBWR-32 set.
+
+    A pair the interaction table does not carry is ``0.0``, which is an ideal
+    interaction - what NeqSim's NRTL does with an absent row, and why a pair the table
+    has never seen returns ``gamma = 1``. A name that is in *neither* table is refused
+    instead, because a typo is a mistake rather than a pair the table happens not to
+    cover.
+
+    Raises:
+        PropertyUnavailableError: if a name is in neither the databank nor the keycard.
     """
+    for name in names:
+        entry(name)
     table = _nrtl()
     n = len(names)
-    alpha = [[0.0] * n for _ in range(n)]
-    dij = [[0.0] * n for _ in range(n)]
+    alpha = [0.0] * (n * n)
+    dij = [0.0] * (n * n)
     for i in range(n):
         for j in range(n):
             if i == j:
@@ -523,9 +546,9 @@ def nrtl_parameters(
             row = table.get((names[i].strip().lower(), names[j].strip().lower()))
             if row is None:
                 continue
-            alpha[i][j] = row[0]
-            dij[i][j] = row[1]
-    return tuple(tuple(r) for r in alpha), tuple(tuple(r) for r in dij)
+            alpha[i * n + j] = row[0]
+            dij[i * n + j] = row[1]
+    return NrtlParameters(alpha=tuple(alpha), dij=tuple(dij))
 
 
 @cache
@@ -859,6 +882,7 @@ from azoth.eos.mixture import mixture  # noqa: E402
 __all__ = [
     "BwrsCoefficients",
     "DatabankEntry",
+    "NrtlParameters",
     "available",
     "bwrs_coefficients",
     "component",
