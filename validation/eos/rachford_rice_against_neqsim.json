@@ -1,0 +1,18 @@
+{
+  "id": "rachford_rice_against_neqsim",
+  "calc": "eos.rachford_rice",
+  "source": {
+    "attribution": "NeqSim 3.20.0 `RachfordRice.calcBetaNielsen2023` - the upstream this library is a port of - run from validation/neqsim/RachfordRiceProbe.java, which calls both of the class's solvers at every state so the two can be compared at the same input",
+    "verification": "verified",
+    "notes": "The probe drives `calcBetaNielsen2023(K, z)` and `calcBetaMichelsen2001(K, z)` directly rather than through a flash, because the class is not reachable from a `TPflash` any other way and its two solvers are the whole of what it carries. NeqSim's default method is Nielsen2023 and nothing in the library calls `setMethod`, so that is the one ported and the one this case validates."
+  },
+  "derivation": "Six states, at each of which the probe printed both solvers and this model printed its answer:\n\n  state                             neqsim Nielsen2023          neqsim Michelsen2001        azoth\n  CH4/nC4 330 K, z 0.6/0.4          0.84220554758038710         0.84220554758038850         0.8422055475803871\n  CH4/nC4 300 K, z 0.6/0.4          0.62182027635853490         0.62182027635857340         0.6218202763585349\n  all liquid, K 0.2/0.3             1.0000000000000000e-12      1.0000000000000000e-12      1e-12\n  all vapour, K 3.0/5.0             0.99999999999900000         0.99999999999900000         0.999999999999\n  wide K, 1e6/1e-6, z 0.3/0.7      0.29999959999960013         0.29999959999960000         0.29999959999960013\n  ion, K 1e-40/7.304/0.3375         0.67540074058236420         0.67540074059457720         0.6754007405823642\n\nFive of the six agree to the last digit azoth computes. The two solvers differ from each other by up to 1.2e-10 on the ion state and 3.8e-13 on the CH4/nC4 300 K state, so the agreement with the default is exact and the agreement with the alternative is within what the alternative's own stopping rule allows.\n\nThe states that are *not* in the table are the ones the model diverges on, and they are the finding rather than a defect. NeqSim answers a root outside `[0, 1]` with the `phaseFractionMinimumLimit` clamp, from both solvers: at z = 0.1/0.9, K = [5.799172708809655, 0.14913889826410245] - the K-values `eos.pt_flash` converges to on its subcooled-liquid case - it returns 1.0000000000000000e-12, and at z = 0.5/0.5, K = [1.5, 0.9] it returns 0.999999999999. The equation's roots there are -0.07000432580531890 and 4.0 exactly. azoth returns the roots, because `eos.pt_flash` reports the negative flash and explains it, and a clamp would make that unreachable. The probe is the measurement behind the assumption of the same name in the spec, and `crates/azoth-eos/tests/rachford_rice.rs` is the test that fails if the clamp is restored.",
+  "inputs": {
+    "z": [0.6, 0.4],
+    "K": [7.304244305324782, 0.33749596785762953]
+  },
+  "expected": {
+    "beta": 0.8422055475803871
+  },
+  "tolerance": 1e-12
+}

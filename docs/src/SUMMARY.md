@@ -95,6 +95,7 @@
   - [Pressure-internal-energy flash](./eos/pu_flash.md)
   - [Pure-component saturation pressure](./eos/pure_saturation.md)
   - [Pressure-volume flash](./eos/pv_flash.md)
+  - [Vapour fraction from the Rachford-Rice equation](./eos/rachford_rice.md)
   - [Tangent-plane stability test](./eos/stability_test.md)
   - [Temperature-enthalpy flash](./eos/th_flash.md)
   - [Liquid thermal conductivity from the Pedersen (PFCT) correlation](./eos/thermal_conductivity.md)

@@ -617,6 +617,11 @@ class PvFlashResult:
     warnings: list[Warning]
 
 @final
+class RachfordRiceResult:
+    beta: float
+    warnings: list[Warning]
+
+@final
 class RachfordRiceBinaryResult:
     beta: float
     warnings: list[Warning]
@@ -1354,6 +1359,7 @@ def pv_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> PvFlashResult: ...
+def rachford_rice(z: list[float], K: list[float]) -> RachfordRiceResult: ...
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult: ...
 def rackett_molar_volume(
     omega: float,

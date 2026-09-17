@@ -32,11 +32,12 @@ use crate::results::{
     PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
     PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
     PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
-    PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
-    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
-    PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
-    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
+    PyRachfordRiceBinaryResult, PyRachfordRiceResult, PyRackettMolarVolumeResult,
+    PyRkAlphaAbResult, PyRkDepartureResult, PySchwartzentruberAlphaResult,
+    PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult, PySrkAlphaAbResult,
+    PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult, PySrkZFactorResult,
+    PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult, PyTsFlashResult,
+    PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
     PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
     PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
     PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
@@ -475,6 +476,22 @@ pub fn rachford_rice_binary(
 ) -> PyResult<PyRachfordRiceBinaryResult> {
     azoth_eos::rachford_rice_binary(z1, K1, K2)
         .map(|r| PyRachfordRiceBinaryResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Rachford-Rice vapour fraction, by NeqSim's own solver.
+///
+/// A *model* rather than a calculation, so the procedure comes from the generated
+/// model table and this function only carries it across the boundary. The root comes
+/// back as the equation gives it: outside `[0, 1]` it is the negative flash, which is
+/// a reading rather than a failure.
+#[pyfunction]
+#[pyo3(signature = (z, K))]
+#[pyo3(text_signature = "(z, K)")]
+#[allow(non_snake_case)] // `K` is the symbol in the published equation
+pub fn rachford_rice(py: Python<'_>, z: Vec<f64>, K: Vec<f64>) -> PyResult<PyRachfordRiceResult> {
+    azoth_eos::rachford_rice::rachford_rice(&z, &K)
+        .map(|r| PyRachfordRiceResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

@@ -99,6 +99,7 @@ from azoth.core.result import (
     PureSaturationResult,
     PvFlashResult,
     RachfordRiceBinaryResult,
+    RachfordRiceResult,
     RackettMolarVolumeResult,
     ReynoldsNumberResult,
     RkAlphaAbResult,
@@ -511,6 +512,12 @@ def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryR
     """The binary Rachford-Rice vapour fraction, computed in Rust."""
     result = _core.rachford_rice_binary(z1, K1, K2)
     return RachfordRiceBinaryResult(beta=result.beta, warnings=_warnings(result.warnings))
+
+
+def rachford_rice(z: Sequence[float], K: Sequence[float]) -> RachfordRiceResult:
+    """The Rachford-Rice vapour fraction, computed in Rust."""
+    result = _core.rachford_rice(list(z), list(K))
+    return RachfordRiceResult(beta=result.beta, warnings=_warnings(result.warnings))
 
 
 def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:

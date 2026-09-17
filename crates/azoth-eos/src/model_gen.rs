@@ -31,6 +31,7 @@
 //!   - specs/models/eos/pu_flash.toml
 //!   - specs/models/eos/pure_saturation.toml
 //!   - specs/models/eos/pv_flash.toml
+//!   - specs/models/eos/rachford_rice.toml
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/th_flash.toml
 //!   - specs/models/eos/thermal_conductivity.toml
@@ -3315,6 +3316,177 @@ pub static PV_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: PV_FLASH_CASES,
 };
 
+static RACHFORD_RICE_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "K",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "the solver takes the reciprocal of `K` and of `1 - K`, so zero and below have no meaning",
+    },
+}];
+
+static RACHFORD_RICE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methane_butane_at_330_k_25_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("z", &[0.6, 0.4]),
+            ("K", &[7.304244305324782, 0.33749596785762953]),
+        ],
+        matrices: &[],
+        expected: &[("beta", 0.8422055475803871)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "methane_butane_at_300_k_30_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("z", &[0.6, 0.4]),
+            ("K", &[5.799172708809654, 0.14913889826410118]),
+        ],
+        matrices: &[],
+        expected: &[("beta", 0.6218202763585349)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "all_liquid_returns_the_lower_clamp",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-15,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5]), ("K", &[0.2, 0.3])],
+        matrices: &[],
+        expected: &[("beta", 1e-12)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "all_vapour_returns_the_upper_clamp",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-15,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5]), ("K", &[3.0, 5.0])],
+        matrices: &[],
+        expected: &[("beta", 0.999999999999)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "a_wide_k_range_keeps_its_precision",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[("z", &[0.3, 0.7]), ("K", &[1000000.0, 1e-06])],
+        matrices: &[],
+        expected: &[("beta", 0.29999959999960013)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "a_negative_flash_is_reported_rather_than_clamped",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("z", &[0.1, 0.9]),
+            ("K", &[5.799172708809655, 0.14913889826410245]),
+        ],
+        matrices: &[],
+        expected: &[("beta", -0.0700043258053189)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "a_superheated_feed_is_reported_rather_than_clamped",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-11,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5]), ("K", &[1.5, 0.9])],
+        matrices: &[],
+        expected: &[("beta", 3.9999999999999916)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "an_ion_is_skipped",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("z", &[0.1, 0.45, 0.45]),
+            ("K", &[1e-40, 7.304244305324782, 0.33749596785762953]),
+        ],
+        matrices: &[],
+        expected: &[("beta", 0.6754007405823642)],
+        expected_vectors: &[],
+    },
+];
+
+static RACHFORD_RICE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "rachford_rice_nielsen_2023",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("vapour_fraction_one_half"),
+    initial_temperature: None,
+    inner: None,
+};
+
+/// Registry entry for `eos.rachford_rice`.
+pub static RACHFORD_RICE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.rachford_rice",
+    kind: "procedure",
+    algorithm: Some(&RACHFORD_RICE_ALGORITHM),
+    checks: RACHFORD_RICE_CHECKS,
+    cases: RACHFORD_RICE_CASES,
+};
+
 static STABILITY_TEST_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -4619,6 +4791,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PU_FLASH_SPEC,
     &PURE_SATURATION_SPEC,
     &PV_FLASH_SPEC,
+    &RACHFORD_RICE_SPEC,
     &STABILITY_TEST_SPEC,
     &TH_FLASH_SPEC,
     &THERMAL_CONDUCTIVITY_SPEC,

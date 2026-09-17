@@ -153,6 +153,7 @@ Four sections, and the difference between them is the point:
 - [`eos.pu_flash`](./eos/pu_flash.md) — Pressure-internal-energy flash
 - [`eos.pure_saturation`](./eos/pure_saturation.md) — Pure-component saturation pressure
 - [`eos.pv_flash`](./eos/pv_flash.md) — Pressure-volume flash
+- [`eos.rachford_rice`](./eos/rachford_rice.md) — Vapour fraction from the Rachford-Rice equation
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
 - [`eos.th_flash`](./eos/th_flash.md) — Temperature-enthalpy flash
 - [`eos.thermal_conductivity`](./eos/thermal_conductivity.md) — Liquid thermal conductivity from the Pedersen (PFCT) correlation

@@ -1382,6 +1382,27 @@ pub struct RachfordRiceBinaryResult {
     pub warnings: Vec<Warning>,
 }
 
+/// Result of `eos.rachford_rice`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RachfordRiceResult {
+    /// The root of the Rachford-Rice equation, returned as the equation gives it:
+    /// outside `[0, 1]` it is the negative flash rather than a phase split, and the
+    /// caller decides what that means. A feed whose K-values do not straddle one has
+    /// no root, and comes back as NeqSim's `1e-12` clamp at the end it lies towards.
+    pub beta: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for RachfordRiceResult {
+    const CALC_ID: &'static str = "eos.rachford_rice";
+    const FIELDS: &'static [&'static str] = &["beta", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 impl CalcResult for RachfordRiceBinaryResult {
     const CALC_ID: &'static str = "eos.rachford_rice_binary";
     const FIELDS: &'static [&'static str] = &["beta", "warnings"];

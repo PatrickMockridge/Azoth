@@ -1,0 +1,73 @@
+model = "eos.rachford_rice"
+[[cases]]
+id = "methane_butane_at_330_k_25_bar"
+tolerance = 1e-12
+source = "NeqSim 3.20.0 `RachfordRice.calcBetaNielsen2023`, run from validation/neqsim/RachfordRiceProbe.java. The K-values are those `eos.pt_flash` converges to on this state, so the case is the solver at the iterate a real flash hands it. NeqSim's own two other solvers give 0.84220554758038850 (`calcBetaMichelsen2001`) and 0.84220554758038710 (this one)."
+[cases.inputs]
+z = [0.6, 0.4]
+K = [7.304244305324782, 0.33749596785762953]
+[cases.expected]
+beta = 0.8422055475803871
+[[cases]]
+id = "methane_butane_at_300_k_30_bar"
+tolerance = 1e-12
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/RachfordRiceProbe.java. A second state, so the case does not rest on one K-vector: the root moves from 0.84 to 0.62 and the bracket with it."
+[cases.inputs]
+z = [0.6, 0.4]
+K = [5.799172708809654, 0.14913889826410118]
+[cases.expected]
+beta = 0.6218202763585349
+[[cases]]
+id = "all_liquid_returns_the_lower_clamp"
+tolerance = 1e-15
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/RachfordRiceProbe.java. Every K below one, so the equation has no root and both of NeqSim's solvers return `phaseFractionMinimumLimit` before iterating - the figure the probe prints is also NeqSim's `ThermodynamicModelSettings` constant."
+[cases.inputs]
+z = [0.5, 0.5]
+K = [0.2, 0.3]
+[cases.expected]
+beta = 1e-12
+[[cases]]
+id = "all_vapour_returns_the_upper_clamp"
+tolerance = 1e-15
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/RachfordRiceProbe.java. Every K above one, so there is no root at the other end and the upper clamp is returned."
+[cases.inputs]
+z = [0.5, 0.5]
+K = [3.0, 5.0]
+[cases.expected]
+beta = 0.999999999999
+[[cases]]
+id = "a_wide_k_range_keeps_its_precision"
+tolerance = 1e-12
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/RachfordRiceProbe.java. K spanning twelve orders of magnitude - the case the Nielsen reformulation exists for. `calcBetaMichelsen2001` returns 0.29999959999960000 here against this 0.29999959999960013; both satisfy the equation inside the tolerance it is solved at, and the difference is round-off in the intermediate quantities rather than in the root."
+[cases.inputs]
+z = [0.3, 0.7]
+K = [1.0e6, 1.0e-6]
+[cases.expected]
+beta = 0.29999959999960013
+[[cases]]
+id = "a_negative_flash_is_reported_rather_than_clamped"
+tolerance = 1e-12
+source = "The methane/n-butane 300 K state of `eos.pt_flash`'s `a_subcooled_liquid_feed` case, whose converged K-values these are. NeqSim 3.20.0 returns 1.0000000000000000e-12 for it from both `calcBetaNielsen2023` and `calcBetaMichelsen2001` (validation/neqsim/RachfordRiceProbe.java), because the root is below zero and both decline to iterate outside `[0, 1]`. azoth returns the root. The expected value is the root itself, computed by bisecting the same equation on the same bracket to 1e-14 and agreeing to 1.8e-11 - the model's own `1e-10` stopping rule."
+[cases.inputs]
+z = [0.1, 0.9]
+K = [5.799172708809655, 0.14913889826410245]
+[cases.expected]
+beta = -0.0700043258053189
+[[cases]]
+id = "a_superheated_feed_is_reported_rather_than_clamped"
+tolerance = 1e-11
+source = "A second root outside the interval, at the other end, and an exactly-known one: `0.5(K1-1)/(1+3b) + 0.5(K2-1)/(1-0.1b) = 0` rearranges to `b = 1.8/0.45 = 4`. NeqSim returns 0.999999999999 from both solvers (validation/neqsim/RachfordRiceProbe.java) for the same reason as the case above."
+[cases.inputs]
+z = [0.5, 0.5]
+K = [1.5, 0.9]
+[cases.expected]
+beta = 3.9999999999999916
+[[cases]]
+id = "an_ion_is_skipped"
+tolerance = 1e-12
+source = "NeqSim 3.20.0, from validation/neqsim/RachfordRiceProbe.java, which reports 0.67540074058236420. The first component's K is below 1e-30, so NeqSim skips it in the sum, in the bracket and in the rescaling alike - a K of 1e-40 also makes every reciprocal in the solver meaningless, so skipping it is what keeps the case computable at all."
+[cases.inputs]
+z = [0.1, 0.45, 0.45]
+K = [1.0e-40, 7.304244305324782, 0.33749596785762953]
+[cases.expected]
+beta = 0.6754007405823642

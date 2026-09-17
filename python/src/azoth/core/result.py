@@ -771,6 +771,19 @@ class Vdw1fMixBinaryResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class RachfordRiceResult(_HasWarnings):
+    """Result of ``eos.rachford_rice``."""
+
+    #: The root of the Rachford-Rice equation, returned as the equation gives it:
+    #: outside ``[0, 1]`` it is the negative flash rather than a phase split, and the
+    #: caller decides what that means. A feed whose K-values do not straddle one has no
+    #: root, and comes back as NeqSim's ``1e-12`` clamp at the end it lies towards.
+    beta: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class RachfordRiceBinaryResult(_HasWarnings):
     """Result of ``eos.rachford_rice_binary``."""
 

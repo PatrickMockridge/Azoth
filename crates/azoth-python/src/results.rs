@@ -32,10 +32,10 @@ use azoth_eos::results::{
     PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
     PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
     PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
-    SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
-    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SchwartzentruberAlphaResult,
+    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
     ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
     TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
     TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
@@ -3109,6 +3109,47 @@ impl From<&RachfordRiceBinaryResult> for PyRachfordRiceBinaryResult {
     }
 }
 
+/// Result of `eos.rachford_rice`, transported.
+///
+/// The model rather than the binary closed form, so `beta` is a root the solver
+/// found: outside `[0, 1]` it is the negative flash, which crosses as a value and
+/// not as an error.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "RachfordRiceResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyRachfordRiceResult {
+    /// The vapour fraction. Dimensionless.
+    #[pyo3(get)]
+    pub beta: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyRachfordRiceResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "RachfordRiceResult(beta={}, {} warning(s))",
+            self.beta,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&RachfordRiceResult> for PyRachfordRiceResult {
+    fn from(r: &RachfordRiceResult) -> Self {
+        Self {
+            beta: r.beta,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.pr_molar_volume`, transported.
 ///
 /// The only transport class in this namespace carrying a `PyQty`, because it is the
@@ -5266,6 +5307,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         TwucoonStatoilAlphaResult::CALC_ID => TwucoonStatoilAlphaResult::FIELDS.to_vec(),
         Vdw1fMixBinaryResult::CALC_ID => Vdw1fMixBinaryResult::FIELDS.to_vec(),
         RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
+        RachfordRiceResult::CALC_ID => RachfordRiceResult::FIELDS.to_vec(),
         PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
         PrMassDensityResult::CALC_ID => PrMassDensityResult::FIELDS.to_vec(),
         PrPenelouxShiftResult::CALC_ID => PrPenelouxShiftResult::FIELDS.to_vec(),
