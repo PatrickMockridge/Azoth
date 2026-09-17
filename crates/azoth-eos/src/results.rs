@@ -1747,6 +1747,37 @@ impl CalcResult for GeUnifacPhaseResult {
     }
 }
 
+/// Result of `eos.ge_wilson_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GeWilsonPhaseResult {
+    /// The activity coefficient of each component.
+    pub gamma: Vec<f64>,
+    /// The natural logarithm of each activity coefficient.
+    pub ln_gamma: Vec<f64>,
+    /// The fugacity coefficient of each component, `gamma_i P0_i / P`. Natural
+    /// logarithm, as every fugacity coefficient in this library is.
+    pub ln_phi: Vec<f64>,
+    /// The pure-component saturation pressure of each component, at the state's
+    /// temperature.
+    ///
+    /// Reported beside the coefficients rather than folded into them, so a port can be
+    /// checked against the correlation and the arithmetic separately: a wrong `P0` and a
+    /// wrong `gamma` produce the same kind of wrong `phi`, and only the parts tell them
+    /// apart.
+    pub p_sat: Vec<Pressure>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for GeWilsonPhaseResult {
+    const CALC_ID: &'static str = "eos.ge_wilson_phase";
+    const FIELDS: &'static [&'static str] = &["gamma", "ln_gamma", "ln_phi", "p_sat", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.nrtl_activity_coefficients`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NrtlActivityCoefficientsResult {

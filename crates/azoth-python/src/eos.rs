@@ -19,28 +19,29 @@ use crate::results::{
     PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
-    PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult,
-    PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
-    PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
-    PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
-    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult,
-    PyParachorSurfaceTensionResult, PyParahydrogenSolidPhaseResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
-    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
-    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
-    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
-    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
-    PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
-    PyRkDepartureResult, PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult,
-    PySoreideWhitsonAlphaResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
-    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
-    PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
-    PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
-    PyTynCalusDiffusivityResult, PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult,
-    PyUnifacPsrkActivityCoefficientsResult, PyUnifacUmrpruActivityCoefficientsResult,
-    PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult,
-    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWaterPhaseResult,
-    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
+    PyGeWilsonPhaseResult, PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult,
+    PyHeatOfVaporizationResult, PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult,
+    PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult,
+    PyMatcopAlphaResult, PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult,
+    PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
+    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
+    PyParahydrogenSolidPhaseResult, PyPhFlashResult, PyPhaseBoundaryResult,
+    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
+    PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult, PyPrDepartureResult,
+    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
+    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
+    PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
+    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
+    PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
+    PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
+    PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
+    PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
+    PyVuFlashResult, PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
+    PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -1129,6 +1130,127 @@ pub fn ge_unifac_phase(
     };
     azoth_eos::ge_unifac_phase::ge_unifac_phase(&params, T, P, &x)
         .map(|r| PyGeUnifacPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The fugacity coefficients of a Wilson activity-coefficient liquid. A *model* rather
+/// than a calculation: the mixture crosses flattened with each component's molar mass,
+/// which is what the Wilson correlation reads, and the vapour-pressure columns with it.
+#[pyfunction]
+#[pyo3(signature = (
+    Tc,
+    Pc,
+    omega,
+    kij,
+    molar_mass,
+    antoine_type,
+    antoine_coefficients,
+    antoine_tc,
+    antoine_pc,
+    T,
+    P,
+    x,
+    eos = "pr",
+    alpha = "pr",
+    alpha_params = None
+))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, molar_mass, antoine_type, antoine_coefficients, \
+                         antoine_tc, antoine_pc, T, P, x)"
+)]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T`, `P` and `x` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
+pub fn ge_wilson_phase(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    molar_mass: Vec<f64>,
+    antoine_type: Vec<String>,
+    antoine_coefficients: Vec<f64>,
+    antoine_tc: Vec<f64>,
+    antoine_pc: Vec<f64>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyGeWilsonPhaseResult> {
+    let mixture = build_mixture_with_mass(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &molar_mass,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    let params = azoth_eos::databank::GeWilsonPhaseParameters {
+        antoine: antoine_records(
+            antoine_type,
+            &antoine_coefficients,
+            &antoine_tc,
+            &antoine_pc,
+        ),
+    };
+    azoth_eos::ge_wilson_phase::ge_wilson_phase(&params, &mixture, T, P, &x)
+        .map(|r| PyGeWilsonPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// A mixture whose components carry their molar mass, for the models that read it.
+///
+/// [`build_mixture`] is for the models that read only the cubic's constants; this is the
+/// same construction with `Component::with_molar_mass` applied, which `eos.viscosity`,
+/// `eos.thermal_conductivity`, `eos.wilson_activity_coefficients` and
+/// `eos.ge_wilson_phase` need.
+#[allow(non_snake_case)] // `Tc` and `Pc` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The transport's own shape, not a design.
+fn build_mixture_with_mass(
+    py: Python<'_>,
+    Tc: &[f64],
+    Pc: &[f64],
+    omega: &[f64],
+    kij: Vec<f64>,
+    molar_mass: &[f64],
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<&[Vec<f64>]>,
+) -> PyResult<azoth_eos::Mixture> {
+    let n = Tc.len();
+    if Pc.len() != n || omega.len() != n || molar_mass.len() != n {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "Tc, Pc, omega and molar_mass must be the same length; got {}, {}, {} and {}",
+            Tc.len(),
+            Pc.len(),
+            omega.len(),
+            molar_mass.len()
+        )));
+    }
+    let components = (0..n)
+        .map(|i| {
+            let mut component =
+                azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i])?
+                    .with_molar_mass(Some(molar_mass[i]));
+            if let Some(params) = alpha_params.and_then(|all| all.get(i)) {
+                component = component.with_alpha_params(params.clone());
+            }
+            Ok(component)
+        })
+        .collect::<azoth_core::Result<Vec<_>>>()
+        .map_err(|e| to_pyerr(py, e))?;
+    let cubic: azoth_eos::Cubic = eos
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    let alpha: azoth_eos::Alpha = alpha
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::Mixture::new(components, kij)
+        .map(|m| m.with_cubic(cubic).with_alpha(alpha))
         .map_err(|e| to_pyerr(py, e))
 }
 

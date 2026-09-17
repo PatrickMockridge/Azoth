@@ -21,27 +21,27 @@ use azoth_eos::results::{
     BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
     DewPressureResult, DewTemperatureResult, EosCgPhaseResult, GeNrtlFlashResult,
-    GeNrtlPhaseResult, GeUnifacPhaseResult, Gerg2008PhaseResult, HaydukMinhasDiffusivityResult,
-    HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
-    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
-    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
-    MolarEnthalpyEntropyResult, MollerupAlphaResult, NrtlActivityCoefficientsResult,
-    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PhFlashResult, Pr78KappaResult,
-    PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
-    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
-    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
-    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
-    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
-    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
-    TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrprAlphaResult,
-    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
-    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
-    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
-    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    GeNrtlPhaseResult, GeUnifacPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
+    HydrogenPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult,
+    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,
+    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
+    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
+    PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
+    RkAlphaAbResult, RkDepartureResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
+    SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
+    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
+    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    ViscosityResult, VuFlashResult, WaterPhaseResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -2247,6 +2247,61 @@ impl From<&GeUnifacPhaseResult> for PyGeUnifacPhaseResult {
     }
 }
 
+/// Result of `eos.ge_wilson_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "GeWilsonPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyGeWilsonPhaseResult {
+    /// The activity coefficient of each component.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// The natural logarithm of each activity coefficient.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// The natural logarithm of each fugacity coefficient.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// The pure-component saturation pressure of each component, as an SI magnitude
+    /// and display unit.
+    #[pyo3(get)]
+    pub p_sat: Vec<PyQty>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyGeWilsonPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GeWilsonPhaseResult(gamma={:?}, ln_phi={:?})",
+            self.gamma, self.ln_phi
+        )
+    }
+}
+
+impl From<&GeWilsonPhaseResult> for PyGeWilsonPhaseResult {
+    fn from(r: &GeWilsonPhaseResult) -> Self {
+        Self {
+            gamma: r.gamma.clone(),
+            ln_gamma: r.ln_gamma.clone(),
+            ln_phi: r.ln_phi.clone(),
+            p_sat: r
+                .p_sat
+                .iter()
+                .map(|p| PyQty {
+                    magnitude_si: p.value,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.umrpr_alpha`, transported.
 #[pyclass(
     frozen,
@@ -5119,6 +5174,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         GeNrtlPhaseResult::CALC_ID => GeNrtlPhaseResult::FIELDS.to_vec(),
         GeNrtlFlashResult::CALC_ID => GeNrtlFlashResult::FIELDS.to_vec(),
         GeUnifacPhaseResult::CALC_ID => GeUnifacPhaseResult::FIELDS.to_vec(),
+        GeWilsonPhaseResult::CALC_ID => GeWilsonPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),

@@ -14,6 +14,7 @@
 //!   - specs/models/eos/ge_nrtl_flash.toml
 //!   - specs/models/eos/ge_nrtl_phase.toml
 //!   - specs/models/eos/ge_unifac_phase.toml
+//!   - specs/models/eos/ge_wilson_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
 //!   - specs/models/eos/hydrogen_phase.toml
@@ -1547,6 +1548,111 @@ pub static GE_UNIFAC_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: GE_UNIFAC_PHASE_CHECKS,
     cases: GE_UNIFAC_PHASE_CASES,
+};
+
+static GE_WILSON_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static GE_WILSON_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "decane_dodecane_equimolar_at_298_15_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 100000.0)],
+        lists: &[("components", &["nc10", "nc12"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.2130608128851392, 1.647215713839362]),
+            ("ln_gamma", &[0.1931467629881167, 0.4990864164135757]),
+            ("ln_phi", &[-5.138436207712642, -7.270360981639469]),
+            ("p_sat", &[483.6408057272213, 42.24466471596181]),
+        ],
+    },
+    TestCase {
+        id: "octane_decane_lean_at_350_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 350.0), ("P", 100000.0)],
+        lists: &[("components", &["n-octane", "nc10"])],
+        strings: &[],
+        vectors: &[("x", &[0.4, 0.6])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.3244982894719637, 1.2690654430682413]),
+            ("ln_gamma", &[0.28103373827725736, 0.23828075798428433]),
+            ("ln_phi", &[-0.7223683220963804, -2.469267539112864]),
+            ("p_sat", &[36663.00196112154, 6670.013533199678]),
+        ],
+    },
+    TestCase {
+        id: "heptane_nonane_at_320_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 320.0), ("P", 100000.0)],
+        lists: &[("components", &["n-heptane", "n-nonane"])],
+        strings: &[],
+        vectors: &[("x", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.11569378278132, 1.6877976784227413]),
+            ("ln_gamma", &[0.10947643811901124, 0.5234245302358307]),
+            ("ln_phi", &[-1.2171489374520243, -2.6890676330028507]),
+            ("p_sat", &[26537.12803675743, 4025.616322494449]),
+        ],
+    },
+];
+
+/// Registry entry for `eos.ge_wilson_phase`.
+pub static GE_WILSON_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.ge_wilson_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: GE_WILSON_PHASE_CHECKS,
+    cases: GE_WILSON_PHASE_CASES,
 };
 
 static GERG2008_PHASE_CHECKS: &[SpecCheck] = &[
@@ -4257,6 +4363,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &GE_NRTL_FLASH_SPEC,
     &GE_NRTL_PHASE_SPEC,
     &GE_UNIFAC_PHASE_SPEC,
+    &GE_WILSON_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
     &HYDROGEN_PHASE_SPEC,

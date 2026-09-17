@@ -1054,6 +1054,34 @@ pub struct GeNrtlPhaseParameters {
     pub antoine: Vec<AntoineRecord>,
 }
 
+/// The resolved parameters of a Wilson activity-coefficient *phase*.
+///
+/// Only the vapour-pressure columns: the Wilson correlation reads the component's molar
+/// mass and critical temperature, which are what a [`Mixture`] carries and
+/// [`databank::mixture_of`] already resolves, so the phase takes that mixture beside this
+/// record rather than a second copy of the same two vectors.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GeWilsonPhaseParameters {
+    /// One vapour-pressure correlation per component, in order.
+    pub antoine: Vec<AntoineRecord>,
+}
+
+/// The Wilson phase parameters for a list of names.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
+///   overlay, or if it carries no Antoine correlation.
+/// * [`AzothError::InvalidInput`] if a component is tagged a Henry's-law solute, which
+///   this phase does not implement.
+pub fn ge_wilson_phase_parameters(
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<GeWilsonPhaseParameters> {
+    Ok(GeWilsonPhaseParameters {
+        antoine: phase_antoine(names, overlay)?,
+    })
+}
+
 /// The resolved parameters of a UNIFAC activity-coefficient *phase*.
 ///
 /// The group tables [`UnifacParameters`] carries, beside what a phase needs and an

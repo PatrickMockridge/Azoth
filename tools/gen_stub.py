@@ -40,7 +40,12 @@ MODEL_IDS = frozenset(model["id"] for model in MODELS)
 #: for free; the stub has to say it does, or the bridge's extra vector would be a
 #: signature mismatch.
 MOLAR_MASS_MODELS = frozenset(
-    {"eos.viscosity", "eos.thermal_conductivity", "eos.wilson_activity_coefficients"}
+    {
+        "eos.viscosity",
+        "eos.thermal_conductivity",
+        "eos.wilson_activity_coefficients",
+        "eos.ge_wilson_phase",
+    }
 )
 
 STUB = ROOT / "python" / "src" / "azoth" / "_core.pyi"

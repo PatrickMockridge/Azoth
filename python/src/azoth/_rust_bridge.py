@@ -52,6 +52,7 @@ from azoth.core.result import (
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
+    GeWilsonPhaseResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
@@ -2052,6 +2053,42 @@ def ge_nrtl_phase(params: Any, T: Q, P: Q, x: Sequence[float]) -> GeNrtlPhaseRes
         list(x),
     )
     return GeNrtlPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        ln_phi=tuple(result.ln_phi),
+        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ge_wilson_phase(
+    params: Any, mixture: Any, T: Q, P: Q, x: Sequence[float]
+) -> GeWilsonPhaseResult:
+    """The fugacity coefficients of a Wilson liquid, computed in Rust.
+
+    Both objects cross: the mixture as three parallel lists - the Wilson correlation
+    reads the molar mass and the critical temperature, and nothing else - then the
+    record's own vapour-pressure fields.
+    """
+    spec = _models_gen.model("eos.ge_wilson_phase")
+    result = _core.ge_wilson_phase(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        [c.molar_mass.to_base_units().magnitude for c in mixture.components],
+        list(params.antoine_type),
+        list(params.antoine_coefficients),
+        list(params.antoine_tc),
+        list(params.antoine_pc),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return GeWilsonPhaseResult(
         gamma=tuple(result.gamma),
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),

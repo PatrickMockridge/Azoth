@@ -88,6 +88,7 @@ from azoth.core.result import (
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
+    GeWilsonPhaseResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
@@ -167,6 +168,7 @@ from azoth.eos.components import (
     BwrsCoefficients,
     GeNrtlPhaseParameters,
     GeUnifacPhaseParameters,
+    GeWilsonPhaseParameters,
     NrtlParameters,
     UnifacParameters,
     UnifacPsrkParameters,
@@ -209,6 +211,7 @@ __all__ = [
     "ge_nrtl_flash",
     "ge_nrtl_phase",
     "ge_unifac_phase",
+    "ge_wilson_phase",
     "gerg2008_phase",
     "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
@@ -295,6 +298,7 @@ _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
+_GE_WILSON_PHASE = "eos.ge_wilson_phase"
 _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
 _VISCOSITY = "eos.viscosity"
@@ -1757,6 +1761,36 @@ def ge_nrtl_phase(
     """
     return resolve(_GE_NRTL_PHASE)(  # type: ignore[no-any-return]
         params=params, T=T, P=P, x=x
+    )
+
+
+def ge_wilson_phase(
+    params: GeWilsonPhaseParameters,
+    mixture: Mixture,
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+) -> GeWilsonPhaseResult:
+    """The fugacity coefficients of a liquid whose non-ideality is Wilson's.
+
+    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``PhaseGEWilson`` liquid: there is no
+    cubic in it, because an activity-coefficient phase's non-ideality is ``gamma`` and its
+    standard state is the pure liquid at the state's temperature.
+
+    ``mixture`` is the caller's - the Wilson correlation reads each component's molar mass
+    and critical temperature, which is what :func:`azoth.eos.components.mixture_of`
+    resolves - and ``params`` carries the vapour-pressure columns, from
+    :func:`azoth.eos.components.ge_wilson_phase_parameters` on the same names.
+
+    Raises:
+        InvalidInputError: if ``params``, ``mixture`` and ``x`` disagree in length, or if
+            ``x`` is not a composition.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.ge_wilson_phase`.
+    """
+    return resolve(_GE_WILSON_PHASE)(  # type: ignore[no-any-return]
+        params=params, mixture=mixture, T=T, P=P, x=x
     )
 
 

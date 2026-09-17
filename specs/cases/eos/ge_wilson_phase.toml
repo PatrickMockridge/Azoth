@@ -1,0 +1,43 @@
+model = "eos.ge_wilson_phase"
+[[cases]]
+id = "decane_dodecane_equimolar_at_298_15_k_1_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0 `getWilsonActivityCoefficient` over `getAntoineVaporPressure`, from validation/neqsim/GeWilsonPhi.java. Not `getFugacityCoefficient`: `PhaseGEWilson` never writes `gamma` back to the component, so the phase reports zero for every one, and the two factors it does compute are composed by the driver. `p_sat` is the bar figure times 1e5, and `nc12`'s is one of NeqSim's shared heavy-component defaults."
+[cases.inputs]
+components = ["nc10", "nc12"]
+T = 298.15
+P = 100000.0
+x = [0.5, 0.5]
+[cases.expected]
+gamma = [1.2130608128851392, 1.647215713839362]
+ln_gamma = [0.1931467629881167, 0.4990864164135757]
+ln_phi = [-5.138436207712642, -7.270360981639469]
+p_sat = [483.64080572722125, 42.24466471596181]
+[[cases]]
+id = "octane_decane_lean_at_350_k_1_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/GeWilsonPhi.java. Both members carry a real vapour-pressure row, unlike the heavy pseudo-components, so this state is not dominated by a shared default."
+[cases.inputs]
+components = ["n-octane", "nc10"]
+T = 350.0
+P = 100000.0
+x = [0.4, 0.6]
+[cases.expected]
+gamma = [1.3244982894719637, 1.2690654430682413]
+ln_gamma = [0.28103373827725736, 0.23828075798428433]
+ln_phi = [-0.7223683220963804, -2.469267539112864]
+p_sat = [36663.00196112154, 6670.013533199678]
+[[cases]]
+id = "heptane_nonane_at_320_k_1_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/GeWilsonPhi.java. The lightest pair here, and the one the Wilson correlation's own parameterisation covers best: it is a paraffin-wax model, and both members are well inside its range."
+[cases.inputs]
+components = ["n-heptane", "n-nonane"]
+T = 320.0
+P = 100000.0
+x = [0.6, 0.4]
+[cases.expected]
+gamma = [1.11569378278132, 1.6877976784227413]
+ln_gamma = [0.10947643811901124, 0.5234245302358307]
+ln_phi = [-1.2171489374520243, -2.6890676330028507]
+p_sat = [26537.12803675743, 4025.616322494449]

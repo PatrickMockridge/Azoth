@@ -1082,6 +1082,46 @@ def _phase_antoine(names: Sequence[str], card: keycard.Keycard | None) -> _Phase
 
 
 @dataclass(frozen=True, slots=True)
+class GeWilsonPhaseParameters:
+    """The parameters of a Wilson activity-coefficient *phase*.
+
+    Only the vapour-pressure columns. The Wilson correlation reads each component's molar
+    mass and critical temperature, which are what :class:`~azoth.eos.mixture.Mixture`
+    carries and :func:`mixture_of` already resolves, so the phase takes that mixture
+    beside this record rather than a second copy of the same two vectors.
+    """
+
+    #: NeqSim's Antoine label for each component, in order.
+    antoine_type: tuple[str, ...]
+    #: The five coefficients ``A``-``E`` of each component, component-major.
+    antoine_coefficients: tuple[float, ...]
+    #: Critical temperature of each component, in K.
+    antoine_tc: tuple[float, ...]
+    #: Critical pressure of each component, in Pa.
+    antoine_pc: tuple[float, ...]
+
+
+def ge_wilson_phase_parameters(
+    names: Sequence[str], *, card: keycard.Keycard | None = None
+) -> GeWilsonPhaseParameters:
+    """The parameters of a Wilson phase for a list of components, by name.
+
+    Raises:
+        PropertyUnavailableError: if a name is in neither the databank nor the keycard, or
+            if the databank carries it without an Antoine correlation.
+        InvalidInputError: if a name is a Henry's-law solute, which this phase does not
+            implement.
+    """
+    antoine = _phase_antoine(names, card)
+    return GeWilsonPhaseParameters(
+        antoine_type=antoine.kinds,
+        antoine_coefficients=antoine.coefficients,
+        antoine_tc=antoine.tcs,
+        antoine_pc=antoine.pcs,
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class GeUnifacPhaseParameters:
     """The parameters of a UNIFAC activity-coefficient *phase*.
 
@@ -1394,6 +1434,7 @@ __all__ = [
     "DatabankEntry",
     "GeNrtlPhaseParameters",
     "GeUnifacPhaseParameters",
+    "GeWilsonPhaseParameters",
     "NrtlParameters",
     "UnifacParameters",
     "UnifacPsrkParameters",
@@ -1408,6 +1449,7 @@ __all__ = [
     "from_names",
     "ge_nrtl_phase_parameters",
     "ge_unifac_phase_parameters",
+    "ge_wilson_phase_parameters",
     "kij_for",
     "nrtl_parameters",
     "unifac_parameters",
