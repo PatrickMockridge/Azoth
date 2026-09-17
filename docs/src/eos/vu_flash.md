@@ -8,7 +8,7 @@
 
 **Standard thermodynamics, as in Michelsen & Mollerup**
 
-The procedure is the ordinary one: a closed vessel at fixed volume and internal energy has a unique pressure and temperature.
+NeqSim 3.20.0 `thermodynamicoperations/flashops/OptimizedVUflash`, ported line for line: its `calcdQdP`, `calcdQdT`, `calcdQdPP`, `calcdQdTT` and its damped clamped step are these lines.
 
 
 ## Algorithm
@@ -75,6 +75,9 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
+- the answer is accepted on a 1e-3 relative volume and energy error, NeqSim's own acceptance and looser than the iteration's - so an iterate the loop never settled at can pass it, and carries a `SOLVER_NOT_CONVERGED` warning saying so.
+- the volume's pressure derivative is a central difference of the property here, where NeqSim reads `system.getdVdPtn()` - the single-phase volume at the feed's composition. The two agree where the feed is one phase.
+- NeqSim's `OptimizedVUflash`, which its `ThermodynamicOperations.VUflash` constructs for every non-pure feed and is the only one of its three VU schemes anything reaches. `VUflashQfunc` and `ImprovedVUflashQfunc` have no construction site in the library at all.
 - the iteration is a decoupled 2x2 Newton in the Q-function form `Q_P = P(V - Vspec)/(R T)` and `Q_T = (Uspec + P Vspec - H)/(T R)`, with diagonal derivatives only and one inner flash per step.
 - a trial state the inner flash cannot settle is backed off, not fatal: the damping is reduced.
 - the flash at each trial state is converged, not exact: the volume and internal energy inverted are those of a converged approximation.

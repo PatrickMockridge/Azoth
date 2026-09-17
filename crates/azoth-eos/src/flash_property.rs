@@ -25,6 +25,7 @@
 
 use azoth_core::spec::ModelAlgorithm;
 use azoth_core::units::{Pressure, ThermodynamicTemperature, kelvins, pascals};
+use azoth_core::warning::WarningCode;
 use azoth_core::{AzothError, Result, Warning};
 
 use crate::mixture::{Mixture, RootSide};
@@ -944,6 +945,9 @@ pub fn solve_pressure_temperature(
 
     let mut iterations = 0;
     let mut last_error = f64::MAX;
+    // Whether the loop left by its own convergence criterion rather than by the cap.
+    // The two are different answers and only one of them is converged.
+    let mut converged = false;
 
     loop {
         iterations += 1;
@@ -1007,6 +1011,7 @@ pub fn solve_pressure_temperature(
         let h_err = ((evaluation.value - h_target) / h_target.abs().max(1.0)).abs();
 
         if total_error < 1.0e-6 && vol_err < 1.0e-6 && h_err < 1.0e-5 {
+            converged = true;
             break;
         }
         if total_error < last_error {
@@ -1033,6 +1038,27 @@ pub fn solve_pressure_temperature(
             residual: vol_err.max(h_err),
             tolerance: 1.0e-3,
         });
+    }
+    if !converged {
+        // NeqSim's `lastRunConverged = false`. The acceptance below is the *specification*'s,
+        // and it is loose enough to pass on an iterate the iteration never settled at:
+        // a liquid's volume barely moves with pressure, so at pure propane 250 K the
+        // 10 bar state comes back as 15.5 bar - 55% out - with a relative volume error
+        // of 5.5e-4, under the 1e-3 the specification is judged by. NeqSim returns that
+        // number too and sets a flag; returning it without a word is the one thing
+        // neither does.
+        warnings.push(Warning::new(
+            WarningCode::SolverNotConverged,
+            format!(
+                "the iteration reached its cap of {cap} without both the volume and the \
+                 energy residual falling below its own convergence criterion, so the \
+                 pressure and temperature are the last iterate rather than a converged \
+                 state. They satisfy the volume and internal energy asked for to \
+                 {:.1e} and {:.1e} relative, which is the acceptance NeqSim 3.20.0 \
+                 applies and is looser than the iteration's.",
+                vol_err, h_err
+            ),
+        ));
     }
 
     Ok(Solution {

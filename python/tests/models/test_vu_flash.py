@@ -45,3 +45,28 @@ def test_the_round_trip_inverts_volume_and_energy() -> None:
     result = vu_flash(fluid, ideal_gas, Q(volume, "m**3/mol"), Q(energy, "J/mol"), z)
     h.assert_close(result.P.to("Pa").magnitude, 1.0e6, 1e-3, "P")
     h.assert_close(result.T.to("K").magnitude, 400.0, 1e-3, "T")
+
+
+def test_an_answer_the_iteration_never_settled_at_says_so() -> None:
+    """The specification's acceptance is looser than the iteration's, and the gap is reported.
+
+    A liquid's volume barely moves with pressure, so the relative volume error is a poor
+    judge of a pressure: pure propane at 250 K, the 10 bar state comes back as 15.5 bar -
+    55% out - with a relative volume error of 5.5e-4, under the 1e-3 the specification is
+    accepted at. NeqSim 3.20.0 returns that number and sets `lastRunConverged = false`;
+    returning it *without* a word is the one thing neither does.
+    """
+    fluid, ideal_gas = components.mixture_of(["propane"])
+    z = [1.0]
+    volume, _ = property_at(fluid, ideal_gas, 250.0, 1.0e6, z, "v")
+    energy, _ = property_at(fluid, ideal_gas, 250.0, 1.0e6, z, "u")
+    result = vu_flash(fluid, ideal_gas, Q(volume, "m**3/mol"), Q(energy, "J/mol"), z)
+
+    assert result.P.to("bar").magnitude > 12.0, (
+        "the pressure is 15.5 bar rather than the 10 asked for; if this ever converges, "
+        "the warning below should stop firing too"
+    )
+    codes = {str(warning.code) for warning in result.warnings}
+    assert any("NOT_CONVERGED" in code for code in codes), (
+        f"an unconverged answer must say so; got {codes}"
+    )
