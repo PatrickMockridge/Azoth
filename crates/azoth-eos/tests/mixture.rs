@@ -720,6 +720,7 @@ fn the_wong_sandler_rule_matches_neqsims_water_ethanol_phase() {
         .with_mixing_rule(MixingRule::WongSandler {
             kij: vec![0.0, k, k, 0.0],
             hv_gij: ws.hv_gij,
+            hv_gij_t: ws.hv_gij_t,
             hv_alpha: ws.hv_alpha,
             hv_pairs: ws.hv_pairs,
         });

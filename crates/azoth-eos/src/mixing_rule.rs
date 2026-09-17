@@ -80,14 +80,18 @@ pub enum MixingRule {
     /// The Wong-Sandler rule, NeqSim's `WongSandlerMixingRule`.
     ///
     /// Like [`MixingRule::HuronVidal`] but with a GE-dependent `b_mix` instead of the
-    /// classic co-volume sum. NeqSim reads the cached, DijT-free activity coefficients
-    /// for this rule, so it resolves separately from [`MixingRule::HuronVidal`] - see
-    /// `Mixture::ws_ader` for what is settled about that and what is not.
+    /// classic co-volume sum, and with the temperature coefficient read from the pairs'
+    /// own `WSGIJT`/`WSGJIT` rather than from the Huron-Vidal ones. NeqSim builds a
+    /// `PhaseGENRTLmodifiedHV` from `NRTLDijT` for this rule, so the two differ in which
+    /// column feeds `DijT` as well as in the mixing; `Mixture::ws_ader` carries the
+    /// measurement that settles which.
     WongSandler {
         /// The interaction matrix the rule's `b_mix` and the NRTL's classic pairs read.
         kij: Vec<f64>,
         /// The fitted NRTL energy `Dij`, in Kelvin.
         hv_gij: Vec<f64>,
+        /// The fitted temperature coefficient `DijT`, in Kelvin per Kelvin.
+        hv_gij_t: Vec<f64>,
         /// The fitted non-randomness `alpha`.
         hv_alpha: Vec<f64>,
         /// One flag per interaction: `true` for the fitted NRTL pair, `false` for the

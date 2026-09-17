@@ -1219,43 +1219,15 @@ unit = "neqsim-internal"
 
 [[upstreams.files.columns]]
 name = "WSGIJT"
-disposition = "vendored"
 as = "wsgijt"
 unit = "neqsim-internal"
-reason = """\
-    not-yet: a consumer for the Wong-Sandler `DijT`, which is a different question from \
-    reading the column. `databank::wong_sandler_parameters` resolves it, so the table is \
-    reachable; `MixingRule::WongSandler` takes no such argument, because nothing has \
-    established which of this column and `HVGIJT` the rule is entitled to. NeqSim's own \
-    `WongSandlerMixingRule` is handed `NRTLDijT` - loaded from here - and passes it into \
-    a `PhaseGENRTLmodifiedHV`, but asked for `CO2`/`water` it reports \
-    `HVDijT[0][1] = -0.842025353`, which is that pair's `HVGIJT` and not this pair's \
-    0.96. Trying all three against a NeqSim flash for `CO2`/`water` at 350 K, 5 bar \
-    gives `ln_phi` [3.809, -1.202] with zeros, [-0.014, -0.050] with this column and \
-    [3.784, -1.477] with `HVGIJT`, against NeqSim's [10.546, -2.617] - none close, so \
-    this rule's own gap on that pair dwarfs the coefficient being chosen. Settle that \
-    first; this choice is not decidable before it."""
-consumer = "roadmap:P3"
+disposition = "used"
 
 [[upstreams.files.columns]]
 name = "WSGJIT"
-disposition = "vendored"
 as = "wsgjit"
 unit = "neqsim-internal"
-reason = """\
-    not-yet: a consumer for the Wong-Sandler `DijT`, which is a different question from \
-    reading the column. `databank::wong_sandler_parameters` resolves it, so the table is \
-    reachable; `MixingRule::WongSandler` takes no such argument, because nothing has \
-    established which of this column and `HVGIJT` the rule is entitled to. NeqSim's own \
-    `WongSandlerMixingRule` is handed `NRTLDijT` - loaded from here - and passes it into \
-    a `PhaseGENRTLmodifiedHV`, but asked for `CO2`/`water` it reports \
-    `HVDijT[0][1] = -0.842025353`, which is that pair's `HVGIJT` and not this pair's \
-    0.96. Trying all three against a NeqSim flash for `CO2`/`water` at 350 K, 5 bar \
-    gives `ln_phi` [3.809, -1.202] with zeros, [-0.014, -0.050] with this column and \
-    [3.784, -1.477] with `HVGIJT`, against NeqSim's [10.546, -2.617] - none close, so \
-    this rule's own gap on that pair dwarfs the coefficient being chosen. Settle that \
-    first; this choice is not decidable before it."""
-consumer = "roadmap:P3"
+disposition = "used"
 
 [[upstreams.files.columns]]
 name = "cpakij_SRK"

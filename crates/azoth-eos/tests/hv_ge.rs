@@ -1,5 +1,18 @@
-//! The Huron-Vidal GE model, checked against NeqSim 3.20.0's CLASSIC_HV.
+//! The Huron-Vidal GE model, checked against NeqSim 3.20.0's GE rules.
+//!
+//! Three checks, in increasing order of what they can catch: the fixed water/ethanol
+//! matrices against CLASSIC_HV, the same numbers resolved from the databank by name, and
+//! `CO2`/`water` against all three of CLASSIC_HV, Huron-Vidal and Wong-Sandler - which is
+//! the one that can tell the two rules' temperature coefficients apart.
+//!
+//! **NeqSim's activity coefficients have to be read after evaluating them.**
+//! `PhaseGE.getActivityCoefficient` returns a cached field that only
+//! `getExcessGibbsEnergy` fills, so a probe that skips that call reads a plausible-looking
+//! number that is not the model's answer - measured, `gamma = 1.000002` for water where
+//! the model says 19.3. `validation/neqsim/GeGamma.java` is the driver that does it
+//! correctly, and these values came from it.
 
+use azoth_core::units::{kelvins, pascals};
 use azoth_eos::hv_ge::{hv_d_ln_gamma_dn, hv_ln_gamma};
 
 /// The water/ethanol NRTL parameters NeqSim's database carries for CLASSIC_HV.
@@ -185,4 +198,79 @@ fn a_pair_the_table_marks_classic_is_not_fitted() {
         "and carries no fitted energy: {:?}",
         params.hv_gij
     );
+}
+
+/// `CO2`/`water`: the pair where the Huron-Vidal and Wong-Sandler rules differ in *which*
+/// column supplies `DijT`, and the pair whose two columns are both non-zero.
+///
+/// `WSGIJT` is 0.96 and `HVGIJT` is -0.842 for it, so unlike `water`/`ethanol` - where
+/// both are zero and the choice is unobservable - this state tells the two apart.
+/// NeqSim's own GE evaluation, read through `validation/neqsim/GeGamma.java`, gives:
+///
+/// | rule | NeqSim | which is |
+/// |---|---|---|
+/// | 3, CLASSIC_HV - no `DijT` at all | `[1.6711808766525502, 1.1266767804843818]` | `hv_gij_t = 0` |
+/// | 4, Huron-Vidal with `HVGIJT` | `[1.3117413880259408, 0.8943368257405854]` | `hv_gij_t = HVGIJT` |
+/// | 5, Wong-Sandler with `WSGIJT` | `[2.9589427251536327, 2.2321445185372717]` | `hv_gij_t = WSGIJT` |
+///
+/// The three are asserted together because the point is not that one number matches - it
+/// is that each number matches the *right* rule, so a `DijT` wired to the wrong column
+/// lands on one of the other two rows and fails rather than looking plausible.
+#[test]
+fn the_two_rules_read_their_own_temperature_coefficient() {
+    let names = ["CO2", "water"];
+    let (base, _) = azoth_eos::databank::mixture_of(&names, None).expect("the pair resolves");
+    let hv = azoth_eos::databank::huron_vidal_parameters(&names, None).expect("the pair resolves");
+    let ws = azoth_eos::databank::wong_sandler_parameters(&names, None).expect("the pair resolves");
+
+    assert_eq!(hv.hv_gij_t, vec![0.0, -0.842_025_353, -0.512_331_604, 0.0]);
+    assert_eq!(ws.hv_gij_t, vec![0.0, 0.96, 3.96, 0.0]);
+
+    let mixture = base.with_cubic(azoth_eos::Cubic::Srk);
+    let reduced = mixture
+        .reduced_parameters(kelvins(350.0), pascals(500_000.0))
+        .expect("a state");
+    let x = [0.5, 0.5];
+    let lambda = std::f64::consts::LN_2;
+    let kij = [0.0, 0.0, 0.0, 0.0];
+
+    let cases: [(&str, &[f64], &[f64]); 3] = [
+        (
+            "CLASSIC_HV, no DijT",
+            &[1.671_180_876_652_550_2, 1.126_676_780_484_381_8],
+            &[0.0, 0.0, 0.0, 0.0],
+        ),
+        (
+            "Huron-Vidal, HVGIJT",
+            &[1.311_741_388_025_940_8, 0.894_336_825_740_585_4],
+            &hv.hv_gij_t,
+        ),
+        (
+            "Wong-Sandler, WSGIJT",
+            &[2.958_942_725_153_632_7, 2.232_144_518_537_271_7],
+            &ws.hv_gij_t,
+        ),
+    ];
+    for (label, expected, dij_t) in cases {
+        let got = hv_ln_gamma(
+            &x,
+            350.0,
+            &reduced.a,
+            &reduced.b,
+            &kij,
+            &hv.hv_gij,
+            dij_t,
+            &hv.hv_alpha,
+            &hv.hv_pairs,
+            lambda,
+        );
+        for i in 0..2 {
+            assert!(
+                (got[i] - expected[i]).abs() < 1e-12,
+                "{label}: ln gamma[{i}] is {} but NeqSim's is {}",
+                got[i],
+                expected[i]
+            );
+        }
+    }
 }

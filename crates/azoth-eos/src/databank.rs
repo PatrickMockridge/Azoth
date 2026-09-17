@@ -864,10 +864,6 @@ pub struct WongSandlerParameters {
     /// The fitted NRTL energy `Dij` in kelvin, `N x N` row-major. Directional.
     pub hv_gij: Vec<f64>,
     /// The fitted temperature coefficient `DijT`, `N x N` row-major. Directional.
-    ///
-    /// **Resolved and not yet consumed.** `MixingRule::WongSandler` has no slot for it,
-    /// because nothing has established which of this column and `HVGIJT` the rule is
-    /// entitled to; see `Mixture::ws_ader` for the measurement that leaves it open.
     pub hv_gij_t: Vec<f64>,
     /// The fitted non-randomness `alpha`, `N x N` row-major. Symmetric.
     pub hv_alpha: Vec<f64>,

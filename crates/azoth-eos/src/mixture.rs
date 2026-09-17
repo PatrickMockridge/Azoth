@@ -707,37 +707,33 @@ impl Mixture {
         self.ge_ader(reduced, x, kij, hv_gij, hv_gij_t, hv_alpha, hv_pairs)
     }
 
-    /// The Wong-Sandler attraction coefficients, from the DijT-free activity
-    /// coefficients this rule reads.
+    /// The Wong-Sandler attraction coefficients.
     ///
-    /// **The `DijT` question here is open, and this records why rather than a guess.**
-    /// NeqSim's `WongSandlerMixingRule` is handed `NRTLDijT` - loaded from
-    /// `WSGIJT`/`WSGJIT` - and passes it into a `PhaseGENRTLmodifiedHV`, which reads as
-    /// though a `WS` pair with a non-zero coefficient should use it. It does not settle
-    /// the question: asked for `CO2`/`water`, whose `WSGIJT` is 0.96, the rule reports
-    /// `HVDijT[0][1] = -0.842025353`, which is that pair's **`HVGIJT`**. So the field
-    /// NeqSim exposes is not the field its name suggests, and the two columns disagree.
+    /// The `DijT` is the rule's own, from `WSGIJT`/`WSGJIT`, and **this was measured
+    /// rather than reasoned**. NeqSim's `WongSandlerMixingRule` is handed `NRTLDijT` -
+    /// loaded from those two columns - and passes it into a `PhaseGENRTLmodifiedHV`,
+    /// while the rule's own `getHVDijTParameter` reports the *Huron-Vidal* `HVGIJT`
+    /// instead, so the two readings of the same rule disagree about which column is in
+    /// force. NeqSim settles it: for `CO2`/`water` at 350 K, 5 bar, whose `WSGIJT` is
+    /// 0.96 and `HVGIJT` is -0.842, its Wong-Sandler GE evaluation gives
+    /// `ln gamma = [2.9589427251536327, 2.2321445185372717]`, which is this function on
+    /// `WSGIJT` to the last digit and is not either of the alternatives.
     ///
-    /// Trying all three - zeros, `WSGIJT` and `HVGIJT` - against a NeqSim
-    /// `SystemSrkEos` + `setMixingRule(5)` flash for `CO2`/`water` at 350 K and 5 bar
-    /// gives `ln_phi` of `[3.809, -1.202]`, `[-0.014, -0.050]` and `[3.784, -1.477]`
-    /// against NeqSim's `[10.546, -2.617]`. **None is close**, so this rule's own gap on
-    /// that pair dwarfs the coefficient being chosen, and no value of it can be
-    /// validated until that gap is closed. Forcing zeros is what the rule did when it
-    /// was checked against `water`/`ethanol` - where both coefficients are zero, so the
-    /// check could not distinguish them either.
+    /// This used to force zeros, on the reading that the rule took a DijT-free form. It
+    /// did so *and passed its test*, because that test is `water`/`ethanol`, where both
+    /// columns are zero and the choice is unobservable.
     fn ws_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
         let MixingRule::WongSandler {
             kij,
             hv_gij,
+            hv_gij_t,
             hv_alpha,
             hv_pairs,
         } = &self.mixing_rule
         else {
             unreachable!("ws_ader is only called for the Wong-Sandler rule");
         };
-        let hv_gij_t = vec![0.0; self.len() * self.len()];
-        self.ge_ader(reduced, x, kij, hv_gij, &hv_gij_t, hv_alpha, hv_pairs)
+        self.ge_ader(reduced, x, kij, hv_gij, hv_gij_t, hv_alpha, hv_pairs)
     }
 
     /// The Wong-Sandler `b_mix` and its composition derivative `BDER`.
