@@ -210,6 +210,68 @@ impl CalcResult for WaterPhaseResult {
     }
 }
 
+/// Result of `eos.argon_solid_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ArgonSolidPhaseResult {
+    /// The compressibility factor `Z = P v/(R T)`.
+    pub z_factor: f64,
+    /// The internal energy.
+    pub u: MolarEnergy,
+    /// The enthalpy.
+    pub h: MolarEnergy,
+    /// The entropy.
+    pub s: MolarHeatCapacity,
+    /// The isochoric heat capacity.
+    pub cv: MolarHeatCapacity,
+    /// The isobaric heat capacity.
+    pub cp: MolarHeatCapacity,
+    /// The Gibbs energy.
+    pub g: MolarEnergy,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ArgonSolidPhaseResult {
+    const CALC_ID: &'static str = "eos.argon_solid_phase";
+    const FIELDS: &'static [&'static str] =
+        &["z_factor", "u", "h", "s", "cv", "cp", "g", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.parahydrogen_solid_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParahydrogenSolidPhaseResult {
+    /// The compressibility factor `Z = P v/(R T)`.
+    pub z_factor: f64,
+    /// The internal energy.
+    pub u: MolarEnergy,
+    /// The enthalpy.
+    pub h: MolarEnergy,
+    /// The entropy.
+    pub s: MolarHeatCapacity,
+    /// The isochoric heat capacity.
+    pub cv: MolarHeatCapacity,
+    /// The isobaric heat capacity.
+    pub cp: MolarHeatCapacity,
+    /// The Gibbs energy.
+    pub g: MolarEnergy,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ParahydrogenSolidPhaseResult {
+    const CALC_ID: &'static str = "eos.parahydrogen_solid_phase";
+    const FIELDS: &'static [&'static str] =
+        &["z_factor", "u", "h", "s", "cv", "cp", "g", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.bwrs_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BwrsPhaseResult {

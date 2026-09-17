@@ -17,28 +17,28 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    AmmoniaPhaseResult, AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult,
-    BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult, Co2PhaseResult,
-    Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult,
-    DewTemperatureResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult,
-    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
-    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult,
-    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,
-    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvFlashResult, RachfordRiceBinaryResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
-    SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
-    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
-    ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
-    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
-    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
+    BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
+    Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
+    DewPressureResult, DewTemperatureResult, HaydukMinhasDiffusivityResult,
+    HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
+    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
+    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
+    MolarEnthalpyEntropyResult, MollerupAlphaResult, NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PhFlashResult, Pr78KappaResult,
+    PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    RachfordRiceBinaryResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
+    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
+    SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
+    TvFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrprAlphaResult,
+    UnifacActivityCoefficientsResult, UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    ViscosityResult, VuFlashResult, WaterPhaseResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -3127,6 +3127,128 @@ impl From<&WaterPhaseResult> for PyWaterPhaseResult {
     }
 }
 
+/// Result of `eos.argon_solid_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ArgonSolidPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyArgonSolidPhaseResult {
+    /// The compressibility factor.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The internal energy.
+    #[pyo3(get)]
+    pub u: PyQty,
+    /// The enthalpy.
+    #[pyo3(get)]
+    pub h: PyQty,
+    /// The entropy.
+    #[pyo3(get)]
+    pub s: PyQty,
+    /// The isochoric heat capacity.
+    #[pyo3(get)]
+    pub cv: PyQty,
+    /// The isobaric heat capacity.
+    #[pyo3(get)]
+    pub cp: PyQty,
+    /// The Gibbs energy.
+    #[pyo3(get)]
+    pub g: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyArgonSolidPhaseResult {
+    fn __repr__(&self) -> String {
+        format!("ArgonSolidPhaseResult(z_factor={})", self.z_factor)
+    }
+}
+
+impl From<&ArgonSolidPhaseResult> for PyArgonSolidPhaseResult {
+    fn from(r: &ArgonSolidPhaseResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            z_factor: r.z_factor,
+            u: qty(r.u.value, "J/mol"),
+            h: qty(r.h.value, "J/mol"),
+            s: qty(r.s.value, "J/(mol*K)"),
+            cv: qty(r.cv.value, "J/(mol*K)"),
+            cp: qty(r.cp.value, "J/(mol*K)"),
+            g: qty(r.g.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.parahydrogen_solid_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ParahydrogenSolidPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyParahydrogenSolidPhaseResult {
+    /// The compressibility factor.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The internal energy.
+    #[pyo3(get)]
+    pub u: PyQty,
+    /// The enthalpy.
+    #[pyo3(get)]
+    pub h: PyQty,
+    /// The entropy.
+    #[pyo3(get)]
+    pub s: PyQty,
+    /// The isochoric heat capacity.
+    #[pyo3(get)]
+    pub cv: PyQty,
+    /// The isobaric heat capacity.
+    #[pyo3(get)]
+    pub cp: PyQty,
+    /// The Gibbs energy.
+    #[pyo3(get)]
+    pub g: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyParahydrogenSolidPhaseResult {
+    fn __repr__(&self) -> String {
+        format!("ParahydrogenSolidPhaseResult(z_factor={})", self.z_factor)
+    }
+}
+
+impl From<&ParahydrogenSolidPhaseResult> for PyParahydrogenSolidPhaseResult {
+    fn from(r: &ParahydrogenSolidPhaseResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            z_factor: r.z_factor,
+            u: qty(r.u.value, "J/mol"),
+            h: qty(r.h.value, "J/mol"),
+            s: qty(r.s.value, "J/(mol*K)"),
+            cv: qty(r.cv.value, "J/(mol*K)"),
+            cp: qty(r.cp.value, "J/(mol*K)"),
+            g: qty(r.g.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.helium_phase`, transported.
 #[pyclass(
     frozen,
@@ -4548,6 +4670,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HeliumPhaseResult::CALC_ID => HeliumPhaseResult::FIELDS.to_vec(),
         HydrogenPhaseResult::CALC_ID => HydrogenPhaseResult::FIELDS.to_vec(),
         WaterPhaseResult::CALC_ID => WaterPhaseResult::FIELDS.to_vec(),
+        ArgonSolidPhaseResult::CALC_ID => ArgonSolidPhaseResult::FIELDS.to_vec(),
+        ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),

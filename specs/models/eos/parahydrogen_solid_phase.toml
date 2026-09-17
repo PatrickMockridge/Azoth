@@ -1,0 +1,70 @@
+id = "eos.parahydrogen_solid_phase"
+name = "Solid para-hydrogen reference phase state"
+kind = "procedure"
+assumptions = [
+    "the phase is solid hcp phase-I para-hydrogen; the equation of state is the Sannerhaugen fundamental Helmholtz formulation of NeqSim's `thermo.util.solid.ParaHydrogenSolidHelmholtzEquation`, a Vinet cold curve with Debye, Einstein and internal-vibration terms.",
+    "the molar volume is solved from the pressure by bracketing and bisection/Newton in logarithmic volume, so the solid root is the one selected.",
+    "every property follows from the second-order Helmholtz derivatives, computed by one forward automatic-differentiation pass rather than per-term derivative transcriptions.",
+    "the gas constant is the thesis equation's own `R = 8.3144621` J/(mol.K).",
+]
+references = [
+    "Sannerhaugen, A. (2026). \"Equation of State for Solid Para-hydrogen.\" (thesis).",
+    "NeqSim 3.20.0, `thermo/util/solid/ParaHydrogenSolidHelmholtzEquation.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Sannerhaugen, A. (2026)"
+edition = "The fundamental Helmholtz equation for solid para-hydrogen, evaluated in temperature and molar volume and differentiated to second order by forward automatic differentiation."
+[algorithm]
+scheme = "bracketed_log_volume_newton"
+initialisation = "zero_pressure_volume"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 100
+[inputs]
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor `Z = P v/(R T)`"
+[outputs.u]
+unit = "J/mol"
+description = "the internal energy"
+[outputs.h]
+unit = "J/mol"
+description = "the enthalpy"
+[outputs.s]
+unit = "J/(mol*K)"
+description = "the entropy"
+[outputs.cv]
+unit = "J/(mol*K)"
+description = "the isochoric heat capacity"
+[outputs.cp]
+unit = "J/(mol*K)"
+description = "the isobaric heat capacity"
+[outputs.g]
+unit = "J/mol"
+description = "the Gibbs energy, `h - T s`"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+max = 200
+max_inclusive = true
+severity = "error"
+rationale = "the published equation is stated for temperatures to 200 K"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+max = 10000000000.0
+max_inclusive = true
+severity = "error"
+rationale = "the published equation is stated for pressures to 10 GPa"
+[implementations]
+python = "azoth.eos.parahydrogen_solid_phase"
+rust = "azoth_eos::parahydrogen_solid_phase"

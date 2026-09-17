@@ -70,6 +70,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
+    ArgonSolidPhaseResult,
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
@@ -97,6 +98,7 @@ from azoth.core.result import (
     MollerupAlphaResult,
     NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult,
+    ParahydrogenSolidPhaseResult,
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
@@ -170,6 +172,7 @@ __all__ = [
     "Mixture",
     "ammonia_phase",
     "antoine_vapor_pressure",
+    "argon_solid_phase",
     "available_components",
     "bubble_pressure",
     "bubble_temperature",
@@ -195,6 +198,7 @@ __all__ = [
     "mixture",
     "molar_enthalpy_entropy",
     "nrtl_activity_coefficients",
+    "parahydrogen_solid_phase",
     "ph_flash",
     "pr78_kappa",
     "pr_alpha_ab",
@@ -261,6 +265,8 @@ _CO2_PHASE = "eos.co2_phase"
 _HELIUM_PHASE = "eos.helium_phase"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _WATER_PHASE = "eos.water_phase"
+_ARGON_SOLID_PHASE = "eos.argon_solid_phase"
+_PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
@@ -1555,6 +1561,36 @@ def water_phase(T: Q, P: Q) -> WaterPhaseResult:
     See :func:`azoth.eos.reference.water_phase`.
     """
     return resolve(_WATER_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
+
+
+def argon_solid_phase(T: Q, P: Q) -> ArgonSolidPhaseResult:
+    """The solid argon phase state at a temperature and pressure.
+
+    Pure solid argon, so there is no composition: the molar volume is solved from the
+    pressure by bracketing and bisection/Newton in logarithmic volume, and the
+    second-order Helmholtz derivatives give the property set.
+
+    Raises:
+        OutOfRangeError: if ``T`` is above 300 K or ``P`` above 16 GPa.
+
+    See :func:`azoth.eos.reference.argon_solid_phase`.
+    """
+    return resolve(_ARGON_SOLID_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
+
+
+def parahydrogen_solid_phase(T: Q, P: Q) -> ParahydrogenSolidPhaseResult:
+    """The solid para-hydrogen phase state at a temperature and pressure.
+
+    Pure solid para-hydrogen, so there is no composition: the molar volume is solved
+    from the pressure by bracketing and bisection/Newton in logarithmic volume, and the
+    second-order Helmholtz derivatives give the property set.
+
+    Raises:
+        OutOfRangeError: if ``T`` is above 200 K or ``P`` above 10 GPa.
+
+    See :func:`azoth.eos.reference.parahydrogen_solid_phase`.
+    """
+    return resolve(_PARAHYDROGEN_SOLID_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
 
 
 def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:

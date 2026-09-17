@@ -1,0 +1,43 @@
+model = "eos.parahydrogen_solid_phase"
+[[cases]]
+id = "near_triple_point"
+tolerance = 1e-08
+[cases.inputs]
+T = 13.8033
+P = 7042.0
+[cases.expected]
+z_factor = 0.001435731731834732
+u = 2.571932404200801
+h = 2.736707048980613
+s = 1.603660266845634
+cv = 4.662105736423913
+cp = 5.293679708064397
+g = -19.39909671236972
+[[cases]]
+id = "moderate"
+tolerance = 1e-08
+[cases.inputs]
+T = 20.0
+P = 100000000.0
+[cases.expected]
+z_factor = 10.95162828337962
+u = 178.1288404282875
+h = 1999.266806337245
+s = 0.8717060968631262
+cv = 2.760332287046142
+cp = 2.802738495196803
+g = 1981.832684399983
+[[cases]]
+id = "high_pressure"
+tolerance = 1e-08
+[cases.inputs]
+T = 80.0
+P = 1000000000.0
+[cases.expected]
+z_factor = 18.22414602498301
+u = 2898.023914771470
+h = 15019.94162913842
+s = 6.933412140452078
+cv = 15.26010893661340
+cp = 15.71316527176994
+g = 14465.26865790226

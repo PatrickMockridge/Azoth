@@ -29,6 +29,7 @@ from azoth.core.errors import PropertyUnavailableError
 from azoth.core.result import (
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
+    ArgonSolidPhaseResult,
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
@@ -66,6 +67,7 @@ from azoth.core.result import (
     NrtlActivityCoefficientsResult,
     OrificeFlowResult,
     ParachorSurfaceTensionResult,
+    ParahydrogenSolidPhaseResult,
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
@@ -1863,6 +1865,38 @@ def water_phase(T: Q, P: Q) -> WaterPhaseResult:
     spec = _models_gen.model("eos.water_phase")
     result = _core.water_phase(input_to_si(spec, "T", T), input_to_si(spec, "P", P))
     return WaterPhaseResult(
+        z_factor=result.z_factor,
+        u=from_si(result.u.magnitude_si, result.u.unit),
+        h=from_si(result.h.magnitude_si, result.h.unit),
+        s=from_si(result.s.magnitude_si, result.s.unit),
+        cv=from_si(result.cv.magnitude_si, result.cv.unit),
+        cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def argon_solid_phase(T: Q, P: Q) -> ArgonSolidPhaseResult:
+    """The solid argon phase state, computed in Rust."""
+    spec = _models_gen.model("eos.argon_solid_phase")
+    result = _core.argon_solid_phase(input_to_si(spec, "T", T), input_to_si(spec, "P", P))
+    return ArgonSolidPhaseResult(
+        z_factor=result.z_factor,
+        u=from_si(result.u.magnitude_si, result.u.unit),
+        h=from_si(result.h.magnitude_si, result.h.unit),
+        s=from_si(result.s.magnitude_si, result.s.unit),
+        cv=from_si(result.cv.magnitude_si, result.cv.unit),
+        cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def parahydrogen_solid_phase(T: Q, P: Q) -> ParahydrogenSolidPhaseResult:
+    """The solid para-hydrogen phase state, computed in Rust."""
+    spec = _models_gen.model("eos.parahydrogen_solid_phase")
+    result = _core.parahydrogen_solid_phase(input_to_si(spec, "T", T), input_to_si(spec, "P", P))
+    return ParahydrogenSolidPhaseResult(
         z_factor=result.z_factor,
         u=from_si(result.u.magnitude_si, result.u.unit),
         h=from_si(result.h.magnitude_si, result.h.unit),

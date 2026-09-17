@@ -140,6 +140,17 @@ class AntoineVaporPressureResult:
     warnings: list[Warning]
 
 @final
+class ArgonSolidPhaseResult:
+    z_factor: float
+    u: Qty
+    h: Qty
+    s: Qty
+    cv: Qty
+    cp: Qty
+    g: Qty
+    warnings: list[Warning]
+
+@final
 class BubblePressureResult:
     pressure: Qty
     incipient: list[float]
@@ -337,6 +348,17 @@ class NrtlActivityCoefficientsResult:
 @final
 class ParachorSurfaceTensionResult:
     sigma: Qty
+    warnings: list[Warning]
+
+@final
+class ParahydrogenSolidPhaseResult:
+    z_factor: float
+    u: Qty
+    h: Qty
+    s: Qty
+    cv: Qty
+    cp: Qty
+    g: Qty
     warnings: list[Warning]
 
 @final
@@ -830,6 +852,7 @@ def antoine_vapor_pressure(
     Pc: float,
     T: float,
 ) -> AntoineVaporPressureResult: ...
+def argon_solid_phase(T: float, P: float) -> ArgonSolidPhaseResult: ...
 def bubble_pressure(
     Tc: list[float],
     Pc: list[float],
@@ -1028,6 +1051,7 @@ def parachor_surface_tension(
     rho_v: float,
     M: float,
 ) -> ParachorSurfaceTensionResult: ...
+def parahydrogen_solid_phase(T: float, P: float) -> ParahydrogenSolidPhaseResult: ...
 def ph_flash(
     Tc: list[float],
     Pc: list[float],
