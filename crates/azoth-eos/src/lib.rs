@@ -100,6 +100,7 @@ pub mod saturation_temperature;
 pub mod schwartzentruber_alpha;
 pub mod siddiqi_lucas_diffusivity;
 pub mod soreide_whitson_alpha;
+pub mod spanwagner;
 pub mod spec_gen;
 pub mod srk_alpha_ab;
 pub mod srk_departure;
