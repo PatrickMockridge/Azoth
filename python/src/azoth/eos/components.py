@@ -710,6 +710,54 @@ def uniquac_parameters(names: Sequence[str]) -> UniquacParameters:
     return UniquacParameters(r=tuple(r), q=tuple(q))
 
 
+@dataclass(frozen=True, slots=True)
+class VanLaarAcidParameters:
+    """The Taleb acid identity of each component of a mixture.
+
+    A caller-supplied record the way :class:`Component` is, and carrying **no names**
+    for the same reason: :func:`van_laar_acid_parameters` does the lookup.
+    """
+
+    #: Per component: ``1`` water, ``2`` nitric acid, ``3`` sulfuric acid, ``0`` for a
+    #: species the model does not cover.
+    acid_index: tuple[int, ...]
+
+
+#: The Taleb (1996) acid index of each spelling, after lower-casing and trimming.
+#: NeqSim's ``ComponentGEVanLaarAcid.acidIndexOf`` accepts the formulae as well as the
+#: names, and so does this, because a caller writing ``HNO3`` means the same substance
+#: as one writing ``nitric acid``.
+_ACID_INDEX: dict[str, int] = {
+    "water": 1,
+    "h2o": 1,
+    "nitric acid": 2,
+    "hno3": 2,
+    "sulfuric acid": 3,
+    "sulphuric acid": 3,
+    "h2so4": 3,
+}
+
+
+def van_laar_acid_parameters(names: Sequence[str]) -> VanLaarAcidParameters:
+    """The Taleb (1996) acid identity of each name, in the components' order.
+
+    ``1`` water, ``2`` nitric acid, ``3`` sulfuric acid, ``0`` for anything else.
+
+    A name the *databank* does not carry is refused. A name it does carry but that is
+    not one of the three acids resolves to ``0``, which is not an error:
+    :func:`azoth.eos.van_laar_acid_activity_coefficients` gives such a component its
+    penalty, which is what NeqSim does with a dissolved carrier gas.
+
+    Raises:
+        PropertyUnavailableError: if a name is in neither the databank nor the keycard.
+    """
+    index: list[int] = []
+    for name in names:
+        entry(name)
+        index.append(_ACID_INDEX.get(name.strip().lower(), 0))
+    return VanLaarAcidParameters(acid_index=tuple(index))
+
+
 def _cubic(name: str) -> Cubic:
     """The cubic named by its short name, ``"pr"``, ``"srk"`` or ``"rk"``."""
     try:
@@ -939,6 +987,7 @@ __all__ = [
     "NrtlParameters",
     "UnifacParameters",
     "UniquacParameters",
+    "VanLaarAcidParameters",
     "available",
     "bwrs_coefficients",
     "component",
@@ -949,5 +998,6 @@ __all__ = [
     "nrtl_parameters",
     "unifac_parameters",
     "uniquac_parameters",
+    "van_laar_acid_parameters",
     "wilke_chang_phi",
 ]

@@ -533,6 +533,7 @@ PARAMETER_RESOLVERS: dict[str, str] = {
     "NrtlParameters": "nrtl_parameters",
     "UnifacParameters": "unifac_parameters",
     "UniquacParameters": "uniquac_parameters",
+    "VanLaarAcidParameters": "van_laar_acid_parameters",
 }
 
 

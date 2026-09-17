@@ -96,6 +96,7 @@
   - [Temperature-volume flash](./eos/tv_flash.md)
   - [Activity coefficients from the UNIFAC group-contribution model](./eos/unifac_activity_coefficients.md)
   - [Activity coefficients from the UNIQUAC model](./eos/uniquac_activity_coefficients.md)
+  - [Activity coefficients from the Van Laar model for the water-nitric-sulfuric acid system](./eos/van_laar_acid_activity_coefficients.md)
   - [Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation](./eos/viscosity.md)
   - [Volume-internal-energy flash](./eos/vu_flash.md)
   - [Water reference phase state](./eos/water_phase.md)

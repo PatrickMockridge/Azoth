@@ -147,6 +147,7 @@ from azoth.core.result import (
     UmrprAlphaResult,
     UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     ViscosityResult,
     VuFlashResult,
@@ -161,6 +162,7 @@ from azoth.eos.components import (
     NrtlParameters,
     UnifacParameters,
     UniquacParameters,
+    VanLaarAcidParameters,
     bwrs_coefficients,
     component,
     from_model,
@@ -240,6 +242,7 @@ __all__ = [
     "tyn_calus_diffusivity",
     "unifac_activity_coefficients",
     "uniquac_activity_coefficients",
+    "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
     "vu_flash",
     "water_phase",
@@ -316,6 +319,7 @@ _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _UMRPR_ALPHA = "eos.umrpr_alpha"
 _UNIFAC_ACTIVITY_COEFFICIENTS = "eos.unifac_activity_coefficients"
 _UNIQUAC_ACTIVITY_COEFFICIENTS = "eos.uniquac_activity_coefficients"
+_VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS = "eos.van_laar_acid_activity_coefficients"
 _WILSON_ACTIVITY_COEFFICIENTS = "eos.wilson_activity_coefficients"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _HAYDUK_MINHAS_DIFFUSIVITY = "eos.hayduk_minhas_diffusivity"
@@ -1152,6 +1156,35 @@ def unifac_activity_coefficients(
     See :func:`azoth.eos.reference.unifac_activity_coefficients`.
     """
     return resolve(_UNIFAC_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
+        params=params, T=T, x=x
+    )
+
+
+def van_laar_acid_activity_coefficients(
+    params: VanLaarAcidParameters,
+    T: Q,
+    x: Sequence[float],
+) -> VanLaarAcidActivityCoefficientsResult:
+    """The activity coefficients of a mixture containing water, nitric acid and
+    sulfuric acid, from the Van Laar model of Taleb, Ponche and Mirabel (1996).
+
+    The three modelled species are evaluated on their own mole-fraction basis: the
+    acids' fractions in ``x`` are renormalised to sum to one, so a dissolved carrier gas
+    does not enter the ternary expression. A component the model does not cover is given
+    an activity coefficient of ``1.0e12``, which is NeqSim's ``NON_MODELED_COMPONENT_PENALTY``
+    and not a physical value.
+
+    ``params`` is the caller's: resolve it from the mixture's components with
+    :func:`azoth.eos.components.van_laar_acid_parameters`.
+
+    Raises:
+        InvalidInputError: if ``params`` and ``x`` disagree in length, or ``x`` is not a
+            composition.
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.van_laar_acid_activity_coefficients`.
+    """
+    return resolve(_VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
         params=params, T=T, x=x
     )
 

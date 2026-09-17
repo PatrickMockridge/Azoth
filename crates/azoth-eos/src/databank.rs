@@ -794,6 +794,56 @@ pub fn uniquac_parameters(names: &[&str]) -> Result<UniquacParameters> {
     Ok(UniquacParameters { r, q })
 }
 
+/// The Taleb acid identity of each component of a mixture.
+///
+/// A caller-supplied record the way [`Component`] is, and carrying **no names** for the
+/// same reason: [`van_laar_acid_parameters`] does the lookup.
+#[derive(Debug, Clone, PartialEq)]
+pub struct VanLaarAcidParameters {
+    /// Per component: `1` water, `2` nitric acid, `3` sulfuric acid, `0` for a species
+    /// the model does not cover.
+    pub acid_index: Vec<u8>,
+}
+
+/// The Taleb (1996) acid identity of each name, in the components' order.
+///
+/// `1` water, `2` nitric acid, `3` sulfuric acid, `0` for anything else. NeqSim's
+/// `ComponentGEVanLaarAcid.acidIndexOf` recognises several spellings of each - the
+/// formulae as well as the names - and so does this, because a caller writing `HNO3`
+/// means the same substance as one writing `nitric acid`. Both are in the component
+/// databank, so both resolve to the same entry.
+///
+/// A name the *databank* does not carry is refused. A name it does carry but that is
+/// not one of the three acids resolves to `0`, which is not an error:
+/// `eos.van_laar_acid_activity_coefficients` gives such a component its penalty, which
+/// is what NeqSim does with a dissolved carrier gas.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
+///   overlay.
+pub fn van_laar_acid_parameters(
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<VanLaarAcidParameters> {
+    let mut acid_index = Vec::with_capacity(names.len());
+    for name in names {
+        entry(name, overlay)?;
+        acid_index.push(acid_index_of(name));
+    }
+    Ok(VanLaarAcidParameters { acid_index })
+}
+
+/// The Taleb acid index of a name: `1` water, `2` nitric acid, `3` sulfuric acid, else
+/// `0`. The spellings NeqSim's `ComponentGEVanLaarAcid.acidIndexOf` accepts.
+fn acid_index_of(name: &str) -> u8 {
+    match name.trim().to_lowercase().as_str() {
+        "water" | "h2o" => 1,
+        "nitric acid" | "hno3" => 2,
+        "sulfuric acid" | "sulphuric acid" | "h2so4" => 3,
+        _ => 0,
+    }
+}
+
 /// The parsed UNIFAC tables: group constants by subgroup, main-group interactions,
 /// and per-component group memberships.
 struct UnifacTables {

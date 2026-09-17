@@ -120,6 +120,7 @@ from azoth.core.result import (
     UmrprAlphaResult,
     UnifacActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     ViscosityResult,
     VuFlashResult,
@@ -837,6 +838,28 @@ def unifac_activity_coefficients(
         list(x),
     )
     return UnifacActivityCoefficientsResult(
+        ln_gamma=tuple(result.ln_gamma),
+        gamma=tuple(result.gamma),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def van_laar_acid_activity_coefficients(
+    params: Any,
+    T: Q,
+    x: Sequence[float],
+) -> VanLaarAcidActivityCoefficientsResult:
+    """The activity coefficients of a mixture, computed in Rust.
+
+    The resolved acid identities cross the boundary as the flattened integers they are.
+    """
+    spec = _models_gen.model("eos.van_laar_acid_activity_coefficients")
+    result = _core.van_laar_acid_activity_coefficients(
+        list(params.acid_index),
+        input_to_si(spec, "T", T),
+        list(x),
+    )
+    return VanLaarAcidActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),
         gamma=tuple(result.gamma),
         warnings=_warnings(result.warnings),

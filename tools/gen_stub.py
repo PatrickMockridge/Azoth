@@ -336,8 +336,16 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             from azoth.eos import components as _components
 
             annotation = inspect.signature(getattr(module, name)).parameters["params"].annotation
-            fields = dataclasses.fields(getattr(_components, annotation))
-            params += [f"{field.name}: list[float]" for field in fields]
+            record = getattr(_components, annotation)
+            hints = get_type_hints(record)
+            for field in dataclasses.fields(record):
+                # The element type comes from the record too, so a field the transport
+                # carries as integers is not described as a list of floats. Everything
+                # else here is a float by convention; the Van Laar acid model's identity
+                # is the one field that is not.
+                element = get_args(hints[field.name])
+                kind = "int" if element and element[0] is int else "float"
+                params.append(f"{field.name}: list[{kind}]")
         elif "components" in taken:
             # The EOS-CG mixture maps its own fixed component names, so the names cross
             # the boundary verbatim rather than as a flattened mixture.

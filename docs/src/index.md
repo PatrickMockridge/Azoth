@@ -154,6 +154,7 @@ Four sections, and the difference between them is the point:
 - [`eos.tv_flash`](./eos/tv_flash.md) — Temperature-volume flash
 - [`eos.unifac_activity_coefficients`](./eos/unifac_activity_coefficients.md) — Activity coefficients from the UNIFAC group-contribution model
 - [`eos.uniquac_activity_coefficients`](./eos/uniquac_activity_coefficients.md) — Activity coefficients from the UNIQUAC model
+- [`eos.van_laar_acid_activity_coefficients`](./eos/van_laar_acid_activity_coefficients.md) — Activity coefficients from the Van Laar model for the water-nitric-sulfuric acid system
 - [`eos.viscosity`](./eos/viscosity.md) — Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation
 - [`eos.vu_flash`](./eos/vu_flash.md) — Volume-internal-energy flash
 - [`eos.water_phase`](./eos/water_phase.md) — Water reference phase state

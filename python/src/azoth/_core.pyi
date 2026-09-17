@@ -742,6 +742,12 @@ class UniquacActivityCoefficientsResult:
     warnings: list[Warning]
 
 @final
+class VanLaarAcidActivityCoefficientsResult:
+    ln_gamma: list[float]
+    gamma: list[float]
+    warnings: list[Warning]
+
+@final
 class Vdw1fMixBinaryResult:
     a_mix: float
     b_mix: float
@@ -1351,6 +1357,11 @@ def uniquac_activity_coefficients(
     x: list[float],
     aij: list[list[float]],
 ) -> UniquacActivityCoefficientsResult: ...
+def van_laar_acid_activity_coefficients(
+    acid_index: list[int],
+    T: float,
+    x: list[float],
+) -> VanLaarAcidActivityCoefficientsResult: ...
 def vdw1f_mix_binary(
     z1: float,
     a1: float,

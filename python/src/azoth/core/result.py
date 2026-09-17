@@ -640,6 +640,18 @@ class UnifacActivityCoefficientsResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class VanLaarAcidActivityCoefficientsResult(_HasWarnings):
+    """Result of ``eos.van_laar_acid_activity_coefficients``."""
+
+    #: The natural logarithm of each activity coefficient.
+    ln_gamma: tuple[float, ...]
+    #: The activity coefficient of each component.
+    gamma: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class UniquacActivityCoefficientsResult(_HasWarnings):
     """Result of ``eos.uniquac_activity_coefficients``."""
 

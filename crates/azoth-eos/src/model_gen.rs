@@ -33,6 +33,7 @@
 //!   - specs/models/eos/tv_flash.toml
 //!   - specs/models/eos/unifac_activity_coefficients.toml
 //!   - specs/models/eos/uniquac_activity_coefficients.toml
+//!   - specs/models/eos/van_laar_acid_activity_coefficients.toml
 //!   - specs/models/eos/viscosity.toml
 //!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/water_phase.toml
@@ -3168,6 +3169,157 @@ pub static UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
     cases: UNIQUAC_ACTIVITY_COEFFICIENTS_CASES,
 };
 
+static VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(190.0),
+            min_inclusive: true,
+            max: Some(298.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the Taleb correlation is fitted from 190 K to 298 K; outside it the model extrapolates.",
+        },
+    },
+];
+
+static VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
+    TestCase {
+        id: "water_nitric_sulfuric_ternary_at_250_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 250.0)],
+        lists: &[("components", &["water", "hno3", "h2so4"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.3, 0.2])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            (
+                "ln_gamma",
+                &[-4.744406075149099, -0.22475453013437338, -7.032862995958898],
+            ),
+            (
+                "gamma",
+                &[
+                    0.008700227753081819,
+                    0.7987122544877442,
+                    0.0008824018478058464,
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "water_nitric_binary_at_220_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 220.0)],
+        lists: &[("components", &["water", "hno3"])],
+        strings: &[],
+        vectors: &[("x", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[-2.220998639658006, -2.814133626811252]),
+            ("gamma", &[0.10850070160055082, 0.05995664107111809]),
+        ],
+    },
+    TestCase {
+        id: "water_sulfuric_binary_at_290_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 290.0)],
+        lists: &[("components", &["water", "h2so4"])],
+        strings: &[],
+        vectors: &[("x", &[0.7, 0.3])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[-2.625566201906584, -7.533366108703209]),
+            ("gamma", &[0.07239875311505023, 0.0005349345747660633]),
+        ],
+    },
+    TestCase {
+        id: "nitric_sulfuric_binary_at_273_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 273.15)],
+        lists: &[("components", &["nitric acid", "sulfuric acid"])],
+        strings: &[],
+        vectors: &[("x", &[0.55, 0.45])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("ln_gamma", &[-0.3810666728665312, -0.22769455391617024]),
+            ("gamma", &[0.6831323417100698, 0.7963674700147698]),
+        ],
+    },
+    TestCase {
+        id: "water_with_a_dissolved_carrier_gas_at_250_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 250.0)],
+        lists: &[("components", &["water", "hno3", "nitrogen"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.3, 0.2])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            (
+                "ln_gamma",
+                &[-1.6703822245219693, -2.5993237294026637, 27.631021115928547],
+            ),
+            (
+                "gamma",
+                &[0.18817512674335166, 0.07432382423947895, 1000000000000.0],
+            ),
+        ],
+    },
+];
+
+/// Registry entry for `eos.van_laar_acid_activity_coefficients`.
+pub static VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
+    id: "eos.van_laar_acid_activity_coefficients",
+    kind: "direct",
+    algorithm: None,
+    checks: VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CHECKS,
+    cases: VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CASES,
+};
+
 static VISCOSITY_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -3617,6 +3769,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &TV_FLASH_SPEC,
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIQUAC_ACTIVITY_COEFFICIENTS_SPEC,
+    &VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_SPEC,
     &VISCOSITY_SPEC,
     &VU_FLASH_SPEC,
     &WATER_PHASE_SPEC,

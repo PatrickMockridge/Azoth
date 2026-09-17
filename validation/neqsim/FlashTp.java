@@ -26,6 +26,7 @@ import neqsim.thermo.system.SystemRKEos;
 import neqsim.thermo.system.SystemPrEosvolcor;
 import neqsim.thermo.system.SystemSrkPenelouxEos;
 import neqsim.thermodynamicoperations.ThermodynamicOperations;
+import neqsim.thermo.util.empiric.NitricSulfuricAcidVaporPressure;
 import neqsim.physicalproperties.methods.gasphysicalproperties.viscosity.ChungViscosityMethod;
 import neqsim.physicalproperties.methods.gasphysicalproperties.conductivity.ChungConductivityMethod;
 import neqsim.physicalproperties.system.PhysicalProperties;
@@ -351,6 +352,35 @@ public class FlashTp {
     }
   }
 
+  /**
+   * The Taleb-Ponche-Mirabel Van Laar activity coefficients, for
+   * `eos.van_laar_acid_activity_coefficients`.
+   *
+   * Called on the static utility rather than through a phase: the three expressions
+   * take the acid-basis mole fractions and the temperature directly, which is the same
+   * arithmetic `ComponentGEVanLaarAcid.computeGamma` performs on a phase's composition.
+   * Reaching them this way also reaches the one part of the model that a flash could
+   * not - the ternary's own basis.
+   */
+  static void vanLaarAcid() {
+    String[][] sets = {{"ternary", "0.5", "0.3", "0.2", "250.0"}};
+    System.out.println("Van Laar acid activity coefficients (H2O/HNO3/H2SO4 basis):");
+    for (String[] set : sets) {
+      double x1 = Double.parseDouble(set[1]);
+      double x2 = Double.parseDouble(set[2]);
+      double x3 = Double.parseDouble(set[3]);
+      double t = Double.parseDouble(set[4]);
+      double water = NitricSulfuricAcidVaporPressure.activityCoefficientWater(x1, x2, x3, t);
+      double nitric = NitricSulfuricAcidVaporPressure.activityCoefficientNitricAcid(x1, x2, x3, t);
+      double sulfuric =
+          NitricSulfuricAcidVaporPressure.activityCoefficientSulfuricAcid(x1, x2, x3, t);
+      System.out.println("  " + set[0] + "  x [" + x1 + ", " + x2 + ", " + x3 + "]  T " + t);
+      System.out.println("    lngamma [" + Math.log(water) + ", " + Math.log(nitric) + ", "
+          + Math.log(sulfuric) + "]");
+      System.out.println("    gamma   [" + water + ", " + nitric + ", " + sulfuric + "]");
+    }
+  }
+
   public static void main(String[] args) {
     volcorr();
     chung();
@@ -362,6 +392,7 @@ public class FlashTp {
     nrtl();
     unifac();
     wilson();
+    vanLaarAcid();
     flash("methane/n-butane, 0.6/0.4, 330 K, 25 bar",
         330.0, 25.0, new String[] {"methane", "n-butane"}, new double[] {0.6, 0.4}, "pr", 1);
     flash("propane, 1.0, 300 K, 9 bar",

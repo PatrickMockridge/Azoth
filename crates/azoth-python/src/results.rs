@@ -37,9 +37,9 @@ use azoth_eos::results::{
     ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TwuKappaResult,
     TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
     TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, Vdw1fMixBinaryResult, ViscosityResult, VuFlashResult,
-    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    ViscosityResult, VuFlashResult, WaterPhaseResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -2122,6 +2122,46 @@ impl PyUnifacActivityCoefficientsResult {
 
 impl From<&UnifacActivityCoefficientsResult> for PyUnifacActivityCoefficientsResult {
     fn from(r: &UnifacActivityCoefficientsResult) -> Self {
+        Self {
+            ln_gamma: r.ln_gamma.clone(),
+            gamma: r.gamma.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.van_laar_acid_activity_coefficients`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "VanLaarAcidActivityCoefficientsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyVanLaarAcidActivityCoefficientsResult {
+    /// The natural logarithm of each activity coefficient.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// The activity coefficient of each component.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyVanLaarAcidActivityCoefficientsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "VanLaarAcidActivityCoefficientsResult(ln_gamma={:?}, gamma={:?})",
+            self.ln_gamma, self.gamma
+        )
+    }
+}
+
+impl From<&VanLaarAcidActivityCoefficientsResult> for PyVanLaarAcidActivityCoefficientsResult {
+    fn from(r: &VanLaarAcidActivityCoefficientsResult) -> Self {
         Self {
             ln_gamma: r.ln_gamma.clone(),
             gamma: r.gamma.clone(),
@@ -4756,6 +4796,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         }
         UniquacActivityCoefficientsResult::CALC_ID => {
             UniquacActivityCoefficientsResult::FIELDS.to_vec()
+        }
+        VanLaarAcidActivityCoefficientsResult::CALC_ID => {
+            VanLaarAcidActivityCoefficientsResult::FIELDS.to_vec()
         }
         WilsonActivityCoefficientsResult::CALC_ID => {
             WilsonActivityCoefficientsResult::FIELDS.to_vec()

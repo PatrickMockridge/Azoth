@@ -37,8 +37,9 @@ use crate::results::{
     PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
     PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
     PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
-    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWaterPhaseResult,
-    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
+    PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
+    PyVuFlashResult, PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
+    PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -938,6 +939,25 @@ pub fn nrtl_activity_coefficients(
     let params = azoth_eos::databank::NrtlParameters { alpha, dij };
     azoth_eos::nrtl_activity_coefficients(&params, T, &x)
         .map(|r| PyNrtlActivityCoefficientsResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The activity coefficients of a mixture containing water, nitric acid and sulfuric
+/// acid, from the Taleb-Ponche-Mirabel Van Laar model. A *model* rather than a
+/// calculation: the resolved acid identities cross flattened.
+#[pyfunction]
+#[pyo3(signature = (acid_index, T, x))]
+#[pyo3(text_signature = "(acid_index, T, x)")]
+#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
+pub fn van_laar_acid_activity_coefficients(
+    py: Python<'_>,
+    acid_index: Vec<u8>,
+    T: f64,
+    x: Vec<f64>,
+) -> PyResult<PyVanLaarAcidActivityCoefficientsResult> {
+    let params = azoth_eos::databank::VanLaarAcidParameters { acid_index };
+    azoth_eos::van_laar_acid_activity_coefficients(&params, T, &x)
+        .map(|r| PyVanLaarAcidActivityCoefficientsResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
