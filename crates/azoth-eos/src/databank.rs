@@ -146,6 +146,13 @@ pub fn embedded_mbwr32() -> &'static str {
     MBWR32_CSV
 }
 
+/// The `REFERENCESTATETYPE` value NeqSim treats as the symmetric (Raoult) reference.
+///
+/// `ComponentGE.fugcoef` compares the component's column against exactly this string and
+/// falls to the Henry's-law branch for anything else - including the literal `0.0` two
+/// of the table's rows carry.
+pub const SOLVENT: &str = "solvent";
+
 /// One substance's constants, in the units the compiled table holds them in.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
@@ -174,6 +181,16 @@ pub struct Entry {
     pub critical_volume: Option<f64>,
     /// Dipole moment, in debye.
     pub dipole: Option<f64>,
+    /// Which reference state the component's activity model is written against, as
+    /// NeqSim's `REFERENCESTATETYPE` column states it.
+    ///
+    /// Read by the activity-coefficient phases, whose fugacity coefficient is *not* one
+    /// expression: `ComponentGE.fugcoef` returns `gamma_i P0_i / P` for a component
+    /// tagged `solvent` and a Henry's-law coefficient for anything else. The values in
+    /// the table are `solvent`, `solute`, and the literal `0.0` - which is neither, and
+    /// is what NeqSim's own reader compares against `"solvent"` too, so a component
+    /// carrying it takes the same branch NeqSim gives it.
+    pub reference_state: String,
 }
 
 impl Entry {
@@ -436,6 +453,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "antoinec",
         "antoined",
         "antoinee",
+        "referencestatetype",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -498,6 +516,11 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                         .trim()
                         .to_string(),
                 )),
+                reference_state: record
+                    .get(index["referencestatetype"])
+                    .unwrap_or("")
+                    .trim()
+                    .to_string(),
             },
         );
     }
@@ -686,6 +709,10 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 critical_volume: None,
                 dipole: None,
                 antoine: None,
+                // Named rather than left blank: a card states a substance a cubic can
+                // describe, and a cubic has no reference state. The activity-coefficient
+                // phases read this, so a blank would have to mean something.
+                reference_state: SOLVENT.to_string(),
             })
         }
         (Some(base), Some(over)) => Ok(Entry {
@@ -699,6 +726,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             critical_volume: base.critical_volume,
             dipole: base.dipole,
             antoine: base.antoine,
+            reference_state: base.reference_state,
             name: base.name,
         }),
     }
@@ -1045,6 +1073,21 @@ pub fn ge_nrtl_phase_parameters(
     let mut antoine = Vec::with_capacity(names.len());
     for name in names {
         let entry = entry(name, overlay)?;
+        // `ComponentGE.fugcoef` branches on this, and only the solvent branch is ported.
+        // A component tagged otherwise has a Henry's-law coefficient in NeqSim, so
+        // computing `gamma_i P0_i / P` for it would be a different number with nothing
+        // to show that it is the wrong one. Refused rather than approximated - the
+        // branch needs the infinite-dilution activity coefficient and the component's
+        // Henry coefficients, neither of which this library reads.
+        if entry.reference_state != SOLVENT {
+            return Err(AzothError::invalid_input(
+                "components",
+                format!(
+                    "`{}` is tagged `referenceStateType = {}` in NeqSim's component                      database, so `ComponentGE.fugcoef` gives it a Henry's-law fugacity                      coefficient rather than `gamma_i P0_i / P`. That branch is not                      ported, and this phase is the Raoult one. The substances the                      databank tags `solvent` - water, the alcohols, the glycols - are                      the ones it describes.",
+                    entry.name, entry.reference_state
+                ),
+            ));
+        }
         let Some((coefficients, antoine_type)) = entry.antoine else {
             return Err(AzothError::property_unavailable(
                 entry.name,

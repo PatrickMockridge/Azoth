@@ -4,7 +4,7 @@ kind = "procedure"
 assumptions = [
     "the vapour is a cubic and the liquid is an activity-coefficient phase. This is NeqSim's `SystemEosGE` pairing: `SystemNRTL` builds `PhaseSrkEos` into slot 0 and `PhaseGENRTL` into slot 1, and the K-value the flash iterates is `phi_i^L / phi_i^V`.",
     "the cubic is part of the model rather than the caller's convenience: a gamma-phi flash is defined by the pair. NeqSim pairs SRK with its activity models, and the cases are stated against it.",
-    "`K_i = gamma_i P0_i / (phi_i^V P)`, i.e. `y_i phi_i^V P = x_i gamma_i P0_i` per component. The liquid's `phi_i^L` is `gamma_i P0_i / P` and comes from `eos.ge_nrtl_phase`; the vapour's is the cubic's. Neither is recomputed here, so the flash cannot disagree with them.",
+    "`K_i = gamma_i P0_i / (phi_i^V P)`, i.e. `y_i phi_i^V P = x_i gamma_i P0_i`. The liquid's `phi_i^L` is `eos.ge_nrtl_phase`'s and the vapour's is the cubic's, neither recomputed here. A component tagged a Henry's-law solute is refused by that phase, and this model inherits the refusal.",
     "`P0_i` has no Poynting correction: the liquid's fugacity is `gamma_i x_i P0_i` and nothing else. At the pressures an activity model is used at the term is small, but it is absent rather than neglected quietly.",
     "no stability test: successive substitution finds a stationary point of the flash equations, and which single phase a `trivial` feed is cannot be answered by this model.",
     "no damping and no acceleration: plain successive substitution. NeqSim's one direct gamma-phi system damps its K-value updates and clamps one component's, both of which are empirical tuning of that system rather than of the method.",

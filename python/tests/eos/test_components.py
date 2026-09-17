@@ -200,3 +200,35 @@ def test_every_shipped_substance_has_heat_capacity_coefficients() -> None:
     """
     missing = [name for name in available_components() if databank.entry(name).cp is None]
     assert not missing, f"no heat-capacity coefficients for {missing}"
+
+
+def test_the_reference_state_column_is_carried_and_never_blank() -> None:
+    """`REFERENCESTATETYPE` decides which branch `ComponentGE.fugcoef` takes.
+
+    It was recorded in the ledger as `empty-upstream` and dropped. It is not empty: over
+    exactly the 173 rows the databank keeps, NeqSim's `COMP.csv` fills it on every one -
+    `solvent` on 122, `solute` on 49, and the literal `0.0` on the two acids. A column
+    that is read to *choose an arithmetic* cannot be absent, and a blank here would have
+    to mean something.
+    """
+    blank = [name for name in available_components() if not databank.entry(name).reference_state]
+    assert not blank, f"no reference state for {blank}"
+
+    assert databank.entry("methanol").reference_state == databank.SOLVENT
+    assert databank.entry("CO2").reference_state == "solute"
+
+
+def test_the_activity_phase_refuses_a_henrys_law_component() -> None:
+    """The Henry branch is a different arithmetic and is not ported.
+
+    `ComponentGE.fugcoef` returns `gamma_i P0_i / P` for a `solvent` component and a
+    Henry's-law coefficient for any other tag. Computing the first for a component the
+    database tags the second way would be a wrong number with no symptom, so the phase's
+    parameter resolver refuses rather than approximates.
+    """
+    assert databank.ge_nrtl_phase_parameters(["methanol", "water"]).antoine_type
+
+    for name in ("CO2", "methane", "n-hexane", "nitric acid"):
+        with pytest.raises(InvalidInputError) as raised:
+            databank.ge_nrtl_phase_parameters([name, "water"])
+        assert name.lower() in str(raised.value)

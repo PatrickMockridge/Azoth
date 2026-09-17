@@ -64,6 +64,13 @@ UNIFAC_INTER_C_CSV = "data/components/UNIFACInterParamC.csv"
 UNIFAC_COMP_UMRPRU_CSV = "data/components/UNIFACcompUMRPRU.csv"
 MBWR32_CSV = "data/components/mbwr32.csv"
 
+#: The `REFERENCESTATETYPE` value NeqSim treats as the symmetric (Raoult) reference.
+#:
+#: `ComponentGE.fugcoef` compares the component's column against exactly this string and
+#: falls to the Henry's-law branch for anything else - including the literal `0.0` two of
+#: the table's rows carry.
+SOLVENT = "solvent"
+
 #: Columns the loader reads, in order. Named rather than positional because this
 #: file's shape is the generator's contract, and a column inserted in the middle
 #: should fail loudly rather than shift every value one field left.
@@ -104,6 +111,7 @@ COLUMNS = (
     "antoinee",
     "dipole_moment_debye",
     "viscosity_correction_factor",
+    "referencestatetype",
     "citation",
 )
 
@@ -153,6 +161,12 @@ class DatabankEntry:
     #: keycard-supplied substance has none, so both are zero.
     dipole_moment_debye: float
     viscosity_correction_factor: float
+    #: NeqSim's `REFERENCESTATETYPE`, which decides the branch
+    #: ``ComponentGE.fugcoef`` takes: :data:`SOLVENT` gives ``gamma_i P0_i / P`` and
+    #: anything else a Henry's-law coefficient. A keycard-supplied substance is named
+    #: ``solvent``, because a card states what a cubic reads and a cubic has no
+    #: reference state.
+    reference_state: str
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
@@ -258,6 +272,7 @@ def _table() -> dict[str, DatabankEntry]:
             antoine_type=row["antoine_type"],
             dipole_moment_debye=float(row["dipole_moment_debye"]),
             viscosity_correction_factor=float(row["viscosity_correction_factor"]),
+            reference_state=row["referencestatetype"].strip(),
             citation=row["citation"],
         )
     return entries
@@ -416,6 +431,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             antoine_type="",
             dipole_moment_debye=0.0,
             viscosity_correction_factor=0.0,
+            reference_state=SOLVENT,
             citation=None,
             source="keycard",
         )
@@ -1039,6 +1055,20 @@ def ge_nrtl_phase_parameters(
     pcs: list[float] = []
     for name in names:
         record = entry(name, card=card)
+        # `ComponentGE.fugcoef` branches on this, and only the solvent branch is ported.
+        # A component tagged otherwise has a Henry's-law coefficient in NeqSim, so
+        # computing `gamma_i P0_i / P` for it would be a different number with nothing to
+        # show that it is the wrong one.
+        if record.reference_state != SOLVENT:
+            raise InvalidInputError(
+                "components",
+                f"`{record.name}` is tagged `referenceStateType = "
+                f"{record.reference_state}` in NeqSim's component database, so "
+                f"`ComponentGE.fugcoef` gives it a Henry's-law fugacity coefficient "
+                f"rather than `gamma_i P0_i / P`. That branch is not ported, and this "
+                f"phase is the Raoult one. The substances the databank tags `solvent` - "
+                f"water, the alcohols, the glycols - are the ones it describes.",
+            )
         if record.antoine == (0.0, 0.0, 0.0, 0.0, 0.0):
             raise PropertyUnavailableError(
                 name,
@@ -1286,6 +1316,7 @@ def bwrs_coefficients(name: str) -> BwrsCoefficients:
 from azoth.eos.mixture import mixture  # noqa: E402
 
 __all__ = [
+    "SOLVENT",
     "BwrsCoefficients",
     "DatabankEntry",
     "GeNrtlPhaseParameters",

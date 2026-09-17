@@ -217,21 +217,13 @@ def _component_columns() -> tuple[tuple[str, str, Callable[[str], object]], ...]
 
 COMPONENT_COLUMNS: tuple[tuple[str, str, Callable[[str], object]], ...] = _component_columns()
 
-#: Which of NeqSim's component types a cubic equation of state can describe.
+#: Which of NeqSim's component types a cubic can describe, and therefore which rows of
+#: `COMP.csv` the compiled table keeps.
 #:
-#: Read from NeqSim's own `COMPTYPE` column rather than guessed, and the reason it
-#: is needed at all was found by looking: 62 of the 258 rows are `ion`, 18 carry no
-#: type at all, and the rest of the excluded set is `ice`, `salt`, `seawater` and
-#: `asphaltene`. **Every one of the ions shares the same critical pressure, acentric
-#: factor and critical volume** - `Pc = 29.089 MPa`, `omega = 0.344`, `Vc = 9.9e-05` -
-#: because a cubic has no notion of an ion and NeqSim fills those columns with a
-#: default. Shipping them would ship 29 rows of plausible-looking wrong numbers,
-#: which is the failure this project is organised against, and the repetition is
-#: what gave it away: an acentric factor of exactly 0.344 for twenty-nine different
-#: substances is not a coincidence.
-KEEP_TYPES = frozenset(
-    {"HC", "inert", "other", "glycol", "acid", "alcohol", "amine", "chlorine", "water"}
-)
+#: Defined in `tools/manifest.py` and imported here, because the `empty-upstream` claims
+#: in the manifest are about exactly these rows: the checker that decides them and the
+#: generator that selects them have to be answering the same question.
+from manifest import KEEP_TYPES  # noqa: E402
 
 
 #: The interaction parameters, keyed by ordered pair. `KIJPR` is Peng-Robinson's,

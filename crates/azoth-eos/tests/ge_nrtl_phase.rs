@@ -132,6 +132,41 @@ fn a_component_without_a_vapour_pressure_correlation_is_refused() {
     );
 }
 
+/// A component NeqSim's database tags as a Henry's-law solute is refused.
+///
+/// `ComponentGE.fugcoef` takes one of two branches on the component's
+/// `REFERENCESTATETYPE`: `gamma_i P0_i / P` for `solvent`, and a Henry's-law coefficient
+/// for anything else. Only the first is ported, so computing the second's expression for
+/// a solute would be a wrong number with nothing to show that it is wrong. 49 of the
+/// databank's 173 substances are tagged this way, and the two acids carry the literal
+/// `0.0`.
+#[test]
+fn a_henrys_law_component_is_refused_rather_than_computed() {
+    for name in ["CO2", "methane", "n-hexane", "nitric acid"] {
+        let err = ge_nrtl_phase_parameters(&[name, "water"], None).unwrap_err();
+        assert!(
+            matches!(err, AzothError::InvalidInput { .. }),
+            "{name}: {err:?}"
+        );
+        assert_eq!(err.field(), Some("components"), "{name}");
+    }
+}
+
+/// The substances the phase does describe are the ones the database calls `solvent`.
+///
+/// Stated as a test rather than left to the case files, because it is what makes those
+/// cases legitimate: a case whose components were not solvent-tagged would be exercising
+/// a branch the model does not implement.
+#[test]
+fn the_solvent_tagged_substances_are_the_ones_that_resolve() {
+    for name in ["water", "methanol", "ethanol", "MEG", "acetone"] {
+        let params = ge_nrtl_phase_parameters(&[name, "water"], None).unwrap_or_else(|e| {
+            panic!("{name} is tagged solvent, so the phase should resolve it: {e}")
+        });
+        assert_eq!(params.antoine.len(), 2, "{name}");
+    }
+}
+
 #[test]
 fn a_composition_that_does_not_sum_to_one_is_refused() {
     let params = ge_nrtl_phase_parameters(&["methanol", "water"], None).unwrap();

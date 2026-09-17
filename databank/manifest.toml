@@ -108,7 +108,7 @@ unit = "m3/mol"
 [[upstreams.files.columns]]
 name = "PVMODEL"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 173 rows kept"
+    reason = "not-ported: the PV models; NeqSim's `ComponentPVTsim` and the Peneloux-type volume translations. The column reads `Classic` on every kept row, which is the ideal volume translation and is what azoth computes when it computes one at all."
 [[upstreams.files.columns]]
 name = "Href"
 disposition = "vendored"
@@ -305,8 +305,9 @@ reason = """\
     `PitzerScaleActivityModel`"""
 [[upstreams.files.columns]]
 name = "REFERENCESTATETYPE"
-disposition = "dropped"
-reason = "empty-upstream: zero over all 173 rows kept"
+disposition = "used"
+as = "referencestatetype"
+unit = "text"
 [[upstreams.files.columns]]
 name = "HenryCoef1"
 disposition = "vendored"
@@ -591,7 +592,7 @@ reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `Phas
 [[upstreams.files.columns]]
 name = "associationscheme"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 173 rows kept"
+    reason = "not-ported: the associating models - CPA, UMR-CPA and their mixing rules; NeqSim's `ComponentCPA` and `ComponentUMRCPA`. 36 of the 173 kept rows name a scheme."
 [[upstreams.files.columns]]
 name = "racketZCPA"
 disposition = "vendored"
@@ -746,7 +747,7 @@ reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateF
 [[upstreams.files.columns]]
 name = "HydrateFormer"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 173 rows kept"
+    reason = "not-ported: the hydrate models; NeqSim's `PhaseHydrate` and `thermodynamicoperations/flashops/HydrateFlash`. Every kept row states `yes` or `no`."
 [[upstreams.files.columns]]
 name = "mSAFT"
 disposition = "vendored"
@@ -1046,7 +1047,7 @@ reason = "not-ported: UMR-CPA; NeqSim's `ComponentUMRCPA` and `SystemUMRPRUEos`"
 [[upstreams.files.columns]]
 name = "UMRCPA_assocScheme"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 173 rows kept"
+    reason = "not-ported: the UMR-CPA model; NeqSim's `ComponentUMRCPA`. 7 of the 173 kept rows name a scheme."
 [[upstreams.files.columns]]
 name = "UMRCPA_associating"
 disposition = "vendored"
@@ -1113,7 +1114,7 @@ reason = "not-ported: temperature-dependent SRK parameters; NeqSim's `thermo/mix
 [[upstreams.files.columns]]
 name = "KIJTType"
 disposition = "dropped"
-reason = "empty-upstream: populated for 1 of the 516 in-scope pairs"
+reason = "empty-upstream: none of the 516 in-scope pairs names a temperature-dependent form. 515 carry `0` and one `-1`, both of which are the sentinel for no temperature dependence; the column's own alphabet is a set of type names and none of them appears."
 [[upstreams.files.columns]]
 name = "KIJPR"
 disposition = "used"

@@ -43,7 +43,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- this is NeqSim's `PhaseGENRTL` liquid: `phi_i = gamma_i P0_i / P`, which is what `ComponentGE.fugcoef` sets. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.
+- this is NeqSim's `PhaseGENRTL` liquid: `phi_i = gamma_i P0_i / P`. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.
+
+- this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 49 of the databank's 173 substances are tagged so, and a phase over one is refused.
 
 - `gamma_i` comes from `eos.nrtl_activity_coefficients` on the same resolved matrices, and `P0_i` from `eos.antoine_vapor_pressure` on the component's own coefficients and form. Neither is recomputed here, so the phase cannot disagree with them.
 

@@ -357,6 +357,95 @@ def _body(path: Path) -> io.StringIO:
     return io.StringIO("".join(lines[start:]))
 
 
+#: Which of NeqSim's `COMPTYPE` values a cubic equation of state can describe.
+#:
+#: Read from NeqSim's own `COMPTYPE` column rather than guessed. 62 of the 258 rows are
+#: `ion`, 18 carry no type at all, and the rest of the excluded set is `ice`, `salt`,
+#: `seawater` and `asphaltene`. **Every one of the ions shares the same critical
+#: pressure, acentric factor and critical volume** - `Pc = 29.089 MPa`, `omega = 0.344`,
+#: `Vc = 9.9e-05` - because a cubic has no notion of an ion and NeqSim fills those
+#: columns with a default. Shipping them would ship plausible-looking wrong numbers,
+#: which is the failure this project is organised against, and the repetition is what
+#: gave it away: an acentric factor of exactly 0.344 for twenty-nine different
+#: substances is not a coincidence.
+#:
+#: Here rather than in `gen_databank`, which used to own it, because the `empty-upstream`
+#: claims are about *the kept rows* and this is the rule that decides which those are.
+#: One definition, imported by the generator.
+KEEP_TYPES = frozenset(
+    {"HC", "inert", "other", "glycol", "acid", "alcohol", "amine", "chlorine", "water"}
+)
+
+
+def _records(path: Path) -> list[dict[str, str]]:
+    """The file as dictionaries, blanks stripped, parsed the way `header` does."""
+    reader = csv.DictReader(_body(path))
+    return [
+        {(k or "").strip(): (v or "").strip() for k, v in record.items()}
+        for record in reader
+        if any((v or "").strip() for v in record.values())
+    ]
+
+
+def kept_component_names(root: Path = ROOT) -> set[str]:
+    """The substances of NeqSim's `COMP.csv` the vendored slice carries, lower case."""
+    rows = _records(root / SOURCES / "neqsim" / "COMP.csv")
+    return {r["NAME"].lower() for r in rows if r.get("COMPTYPE", "") in KEEP_TYPES}
+
+
+def empty_upstream_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
+    """Check every `empty-upstream` claim against the vendored file.
+
+    `empty-upstream` is a *claim about data* - this column carries no values over the
+    rows we keep - and a claim like that is decidable, so it is decided here rather than
+    believed. It is not a stylistic preference: a populated column recorded as empty is
+    a column dropped out of the roadmap `manifest.reasons` counts, and the one that was
+    found this way was `REFERENCESTATETYPE`, which NeqSim's `ComponentGE.fugcoef` reads
+    to choose between the Raoult and Henry reference states.
+
+    The row scope is the row scope the compiled file has: for `COMP.csv`, the substances
+    `KEEP_TYPES` selects; for `INTER.csv`, the pairs with both ends among them.
+    """
+    messages: list[str] = []
+    for entry in manifest.files():
+        if not entry.vendored_source:
+            continue
+        claims = [
+            c for c in entry.columns if c.disposition == "dropped" and c.prefix == "empty-upstream"
+        ]
+        if not claims:
+            continue
+        source = root / entry.vendored_source
+        if not source.is_file():
+            continue
+        rows = _records(source)
+        if entry.id.endswith("COMP.csv") and not entry.id.endswith("COMP_EXT.csv"):
+            names = kept_component_names(root)
+            in_scope = [r for r in rows if r.get("NAME", "").lower() in names]
+        elif entry.id.endswith("INTER.csv"):
+            names = kept_component_names(root)
+            in_scope = [
+                r
+                for r in rows
+                if r.get("COMP1", "").lower() in names and r.get("COMP2", "").lower() in names
+            ]
+        else:  # pragma: no cover - no other vendored file makes this claim
+            in_scope = rows
+        for column in claims:
+            populated = [
+                r for r in in_scope if r.get(column.name, "") not in ("", "0", "0.0", "-1")
+            ]
+            if populated:
+                sample = sorted({r[column.name] for r in populated})[:4]
+                messages.append(
+                    f"{entry.id}.{column.name}: recorded `empty-upstream`, but "
+                    f"{len(populated)} of the {len(in_scope)} in-scope rows carry a "
+                    f"value - {sample}. The column is not empty, so either its "
+                    f"disposition or its reason is wrong."
+                )
+    return messages
+
+
 def reasons(manifest: Manifest) -> dict[str, int]:
     """How many columns carry each reason prefix, in the vocabulary's order.
 
@@ -482,6 +571,8 @@ def vendoring_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
         messages.append(f"{path}: present under {SOURCES} but not declared in the manifest")
     for path in sorted(declared_sources - present):
         messages.append(f"{path}: declared in the manifest but not present under {SOURCES}")
+
+    messages.extend(empty_upstream_problems(manifest, root))
 
     known = spec_ids(root)
     for entry in manifest.files():
