@@ -59,6 +59,8 @@ pub mod eos_cg;
 mod eos_cg_data;
 pub mod eos_cg_phase;
 pub mod flash_property;
+pub mod gerg2008;
+mod gerg2008_data;
 pub mod hayduk_minhas_diffusivity;
 pub mod heat_of_vaporization;
 pub mod helium_phase;
