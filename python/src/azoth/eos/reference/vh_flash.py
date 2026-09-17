@@ -1,9 +1,9 @@
-"""``eos.vu_flash`` - the pressure and temperature a mixture reaches at a given volume and
-internal energy.
+"""``eos.vh_flash`` - the pressure and temperature a mixture reaches at a given volume and
+enthalpy.
 
 Spec: ``specs/models/eos/vu_flash.toml``
 
-A closed vessel at fixed volume and internal energy: both state variables are solved for,
+A closed vessel at fixed volume and enthalpy: both state variables are solved for,
 by the decoupled 2x2 Newton in :mod:`azoth.eos.reference._flash_property`.
 """
 
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from azoth import _models_gen
 from azoth.core.range import apply_checks, checks_for
-from azoth.core.result import VuFlashResult
+from azoth.core.result import VhFlashResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
@@ -19,17 +19,17 @@ from azoth.eos.reference._flash_property import distinct_warnings, solve_pressur
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT
 
-MODEL_ID = "eos.vu_flash"
+MODEL_ID = "eos.vh_flash"
 
 
-def vu_flash(
+def vh_flash(
     mixture: Mixture,
     ideal_gas: IdealGasModel,
     V: Q,
-    U: Q,
+    H: Q,
     z: list[float],
-) -> VuFlashResult:
-    """The pressure and temperature at which a mixture has a given volume and internal energy.
+) -> VhFlashResult:
+    """The pressure and temperature at which a mixture has a given volume and enthalpy.
 
     Raises:
         OutOfRangeError: if ``V`` is not positive.
@@ -40,8 +40,8 @@ def vu_flash(
     warnings: list[Warning] = []
 
     v_si = input_to_si(spec, "V", V)
-    u_si = input_to_si(spec, "U", U)
-    apply_checks(checks.on_input, {"V": v_si, "U": u_si}.get, warnings)
+    h_si = input_to_si(spec, "H", H)
+    apply_checks(checks.on_input, {"V": v_si, "H": h_si}.get, warnings)
 
     start_t = float(spec["algorithm"].get("initial_temperature", 300.0))
     start_p = MOLAR_GAS_CONSTANT * start_t / v_si
@@ -49,7 +49,7 @@ def vu_flash(
         mixture,
         ideal_gas,
         v_si,
-        ("u", u_si),
+        ("h", h_si),
         list(z),
         spec["algorithm"],
         start_p,
@@ -58,7 +58,7 @@ def vu_flash(
     warnings.extend(solved["warnings"])
     flash = solved["state"]["flash"]
 
-    return VuFlashResult(
+    return VhFlashResult(
         P=from_si(solved["P"], "Pa"),
         T=from_si(solved["T"], "K"),
         beta=flash.beta,

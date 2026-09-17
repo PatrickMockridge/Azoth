@@ -1,0 +1,35 @@
+model = "eos.vh_flash"
+[[cases]]
+id = "single_phase_vapour_round_trip"
+tolerance = 1e-03
+[cases.inputs]
+components = ["methane", "n-butane"]
+V = 0.003204528495751204
+H = 7955.463015386
+z = [0.6, 0.4]
+[cases.expected]
+P = 1000000.0
+T = 400.0
+[[cases]]
+id = "two_phase_round_trip"
+tolerance = 1e-03
+source = "The 330 K, 25 bar state `eos.pt_flash`'s own case uses, asked for back from its volume and enthalpy. NeqSim 3.20.0's `VHflashQfunc` reports 23.5 bar and 290 K for this state - validation/neqsim/VhFlashProbe.java - which is why the two schemes are not the same model."
+[cases.inputs]
+components = ["methane", "n-butane"]
+V = 0.0008190137837514
+H = -367.869594652
+z = [0.6, 0.4]
+[cases.expected]
+P = 2500000.0
+T = 330.0
+[[cases]]
+id = "subcooled_liquid_round_trip"
+tolerance = 1e-03
+[cases.inputs]
+components = ["methane", "n-butane"]
+V = 0.0002650925925539
+H = -6905.393577389
+z = [0.6, 0.4]
+[cases.expected]
+P = 5000000.0
+T = 300.0

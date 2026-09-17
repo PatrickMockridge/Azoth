@@ -161,6 +161,7 @@ from azoth.core.result import (
     UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
+    VhFlashResult,
     ViscosityResult,
     VuFlashResult,
     VuFlashSingleCompResult,
@@ -274,6 +275,7 @@ __all__ = [
     "uniquac_activity_coefficients",
     "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
+    "vh_flash",
     "vu_flash",
     "vu_flash_single_comp",
     "water_phase",
@@ -369,6 +371,7 @@ _SOREIDE_WHITSON_ALPHA = "eos.soreide_whitson_alpha"
 _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
+_VH_FLASH = "eos.vh_flash"
 _VU_FLASH = "eos.vu_flash"
 _VU_FLASH_SINGLE_COMP = "eos.vu_flash_single_comp"
 _WILKE_VISCOSITY = "eos.wilke_viscosity"
@@ -1467,6 +1470,27 @@ def pu_flash(
     """
     return resolve(_PU_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, P=P, U=U, z=z
+    )
+
+
+def vh_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, V: Q, H: Q, z: list[float]
+) -> VhFlashResult:
+    """The pressure and temperature a mixture reaches at a volume and enthalpy.
+
+    A closed vessel: both state variables are answers. ``V`` is the one-mole-basis molar
+    volume and ``U`` the molar enthalpy.
+
+    Raises:
+        InvalidInputError: if ``z`` or any ideal-gas vector is the wrong length, or if
+            ``z`` is not a composition.
+        OutOfRangeError: if ``V`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.vu_flash`.
+    """
+    return resolve(_VH_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, V=V, H=H, z=z
     )
 
 

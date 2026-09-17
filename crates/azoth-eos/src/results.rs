@@ -1070,6 +1070,55 @@ impl CalcResult for VuFlashSingleCompResult {
     }
 }
 
+pub struct VhFlashResult {
+    /// The pressure that satisfies the volume and enthalpy.
+    pub pressure: Pressure,
+    /// The temperature that satisfies the volume and enthalpy.
+    pub temperature: ThermodynamicTemperature,
+    /// The vapour fraction at the answer, or `None` for a single-phase feed.
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions at the answer.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions at the answer.
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i` at the answer.
+    pub k: Vec<f64>,
+    /// Which phase the feed is in at the answer.
+    pub phase: Phase,
+    /// The liquid root of the cubic at the answer.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// Newton steps taken.
+    pub iterations: u32,
+    /// The larger of the relative volume and enthalpy residuals at the answer.
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for VhFlashResult {
+    const CALC_ID: &'static str = "eos.vh_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "P",
+        "T",
+        "beta",
+        "x",
+        "y",
+        "k",
+        "phase",
+        "z_liquid",
+        "z_vapour",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.vu_flash`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VuFlashResult {

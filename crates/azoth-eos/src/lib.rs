@@ -153,6 +153,7 @@ pub mod uniquac_activity_coefficients;
 pub mod van_laar_acid_activity_coefficients;
 pub mod vdw1f_mix_binary;
 pub mod vega;
+pub mod vh_flash;
 pub mod viscosity;
 pub mod vu_flash;
 pub mod vu_flash_single_comp;
@@ -252,7 +253,7 @@ pub use results::{
     TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
+    VhFlashResult, ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
     WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;

@@ -912,7 +912,33 @@ pub fn solve_pressure(
     })
 }
 
-/// Invert `(V, U) = (v_spec, u_spec)` for `(P, T)` together, by upstream's
+/// What a `(V, X)` flash holds besides the volume.
+///
+/// `OptimizedVUflash` and `VHflashQfunc` are the same solver with a different energy
+/// target: their `calcdQdP`, `calcdQdPP` and `calcdQdTT` are the same lines, and
+/// `calcdQdT` reads `Hspec` where the VU form reads `Uspec + P Vspec`. That expression
+/// *is* the enthalpy, so the two differ in nothing but whether the caller supplies it
+/// or it is assembled from the volume.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EnergyTarget {
+    /// An internal energy, at the volume the flash is already holding. The enthalpy
+    /// target is `u + P v`, which moves with the pressure the iteration tries.
+    InternalEnergy(f64),
+    /// An enthalpy, supplied whole.
+    Enthalpy(f64),
+}
+
+impl EnergyTarget {
+    /// The enthalpy the state should have, at a trial pressure.
+    fn enthalpy(self, pressure: f64, v_spec: f64) -> f64 {
+        match self {
+            Self::InternalEnergy(u) => u + pressure * v_spec,
+            Self::Enthalpy(h) => h,
+        }
+    }
+}
+
+/// Invert `(V, X) = (v_spec, target)` for `(P, T)` together, by upstream's
 /// `OptimizedVUflash`.
 ///
 /// A decoupled 2x2 Newton in the Q-function form `Q_P = P(V - Vspec)/(R T)` and
@@ -929,7 +955,7 @@ pub fn solve_pressure_temperature(
     mixture: &Mixture,
     ideal_gas: &IdealGasModel,
     v_spec: f64,
-    u_spec: f64,
+    target: EnergyTarget,
     z: &[f64],
     algorithm: &ModelAlgorithm,
     start_pressure: f64,
@@ -966,7 +992,7 @@ pub fn solve_pressure_temperature(
         let pk = pressure;
 
         let q_p = pk * (v - v_spec) / (MOLAR_GAS_CONSTANT * tk);
-        let q_t = (u_spec + pk * v_spec - h) / (tk * MOLAR_GAS_CONSTANT);
+        let q_t = (target.enthalpy(pk, v_spec) - h) / (tk * MOLAR_GAS_CONSTANT);
         let dvdp = slope_pressure(
             mixture,
             ideal_gas,
@@ -1015,7 +1041,7 @@ pub fn solve_pressure_temperature(
         let temp_error = ((ny_t - tk) / ny_t.max(1.0)).abs();
         let total_error = pres_error + temp_error;
         let vol_err = ((evaluation.volume - v_spec) / v_spec).abs();
-        let h_target = u_spec + ny_p * v_spec;
+        let h_target = target.enthalpy(ny_p, v_spec);
         let h_err = ((evaluation.value - h_target) / h_target.abs().max(1.0)).abs();
 
         if total_error < 1.0e-6 && vol_err < 1.0e-6 && h_err < 1.0e-5 {
@@ -1038,7 +1064,7 @@ pub fn solve_pressure_temperature(
     }
 
     let vol_err = ((evaluation.volume - v_spec) / v_spec).abs();
-    let h_target = u_spec + pressure * v_spec;
+    let h_target = target.enthalpy(pressure, v_spec);
     let h_err = ((evaluation.value - h_target) / h_target.abs().max(1.0)).abs();
     if vol_err >= 1.0e-3 || h_err >= 1.0e-3 {
         return Err(AzothError::SolverNotConverged {

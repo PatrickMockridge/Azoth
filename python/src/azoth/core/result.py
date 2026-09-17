@@ -763,7 +763,41 @@ class VuFlashResult(_HasWarnings):
     z_vapour: float
     #: Newton steps taken.
     iterations: int
-    #: The larger of the relative volume and internal-energy residuals at the answer.
+    #: The larger of the relative volume and enthalpy residuals at the answer.
+    residual: float
+    #: Caveats, deduplicated.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class VhFlashResult(_HasWarnings):
+    """Result of ``eos.vh_flash``.
+
+    A closed vessel at fixed volume and enthalpy: both the pressure and the
+    temperature are answers, reported alongside the phase split.
+    """
+
+    #: The pressure that satisfies the volume and enthalpy.
+    P: Q
+    #: The temperature that satisfies the volume and enthalpy.
+    T: Q
+    #: The vapour fraction at the answer, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Newton steps taken.
+    iterations: int
+    #: The larger of the relative volume and enthalpy residuals at the answer.
     residual: float
     #: Caveats, deduplicated.
     warnings: tuple[Warning, ...]

@@ -24,7 +24,7 @@ from typing import Any, Literal
 
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
 from azoth.core.units import Q, from_si
-from azoth.core.warnings import Warning
+from azoth.core.warnings import Warning, WarningCode
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel, molar_enthalpy_entropy
@@ -717,16 +717,26 @@ def solve_pressure_temperature(
     mixture: Mixture,
     ideal_gas: IdealGasModel,
     v_spec: float,
-    u_spec: float,
+    target: tuple[str, float],
     z: list[float],
     algorithm: dict[str, Any],
     start_pressure: float,
     start_temperature: float,
 ) -> dict[str, Any]:
-    """Invert ``(V, U) = (v_spec, u_spec)`` for ``(P, T)`` together, by ``OptimizedVUflash``.
+    """Invert ``(V, X) = (v_spec, target)`` for ``(P, T)``, by ``OptimizedVUflash``.
 
     A decoupled 2x2 Newton in the Q-function form, with one inner flash per step.
+
+    ``target`` is ``("u", u_spec)`` or ``("h", h_spec)``: the two are the same solver
+    with a different energy target, which is upstream's own arrangement -
+    `OptimizedVUflash` and `VHflashQfunc` differ in whether the enthalpy is assembled
+    from the internal energy and the volume or supplied whole.
     """
+    kind, specification = target
+
+    def target_enthalpy(pressure: float) -> float:
+        return specification + pressure * v_spec if kind == "u" else specification
+
     cap = int(algorithm["max_iterations"])
     pressure = max(start_pressure, 1.0)
     temperature = max(start_temperature, 50.0)
@@ -738,6 +748,9 @@ def solve_pressure_temperature(
 
     iterations = 0
     last_error = float("inf")
+    # Whether the loop left by its own convergence criterion rather than by the cap.
+    # The two are different answers and only one of them is converged.
+    converged = False
 
     while True:
         iterations += 1
@@ -747,7 +760,7 @@ def solve_pressure_temperature(
         pk = pressure
 
         q_p = pk * (v - v_spec) / (MOLAR_GAS_CONSTANT * tk)
-        q_t = (u_spec + pk * v_spec - h) / (tk * MOLAR_GAS_CONSTANT)
+        q_t = (target_enthalpy(pk) - h) / (tk * MOLAR_GAS_CONSTANT)
         dvdp = _slope_pressure(mixture, ideal_gas, tk, z, "v", pk, -v / pk)
         dq_pp = (v - v_spec) / (MOLAR_GAS_CONSTANT * tk) + pk * dvdp / (MOLAR_GAS_CONSTANT * tk)
         dq_tt = -cp / (tk * MOLAR_GAS_CONSTANT) - q_t / tk
@@ -776,10 +789,11 @@ def solve_pressure_temperature(
         temp_error = abs((ny_t - tk) / max(ny_t, 1.0))
         total_error = pres_error + temp_error
         vol_err = abs((volume - v_spec) / v_spec)
-        h_target = u_spec + ny_p * v_spec
+        h_target = target_enthalpy(ny_p)
         h_err = abs((value - h_target) / max(abs(h_target), 1.0))
 
         if total_error < 1.0e-6 and vol_err < 1.0e-6 and h_err < 1.0e-5:
+            converged = True
             break
         if total_error < last_error:
             damping = min(damping * 1.1, 0.8)
@@ -793,10 +807,31 @@ def solve_pressure_temperature(
             break
 
     vol_err = abs((volume - v_spec) / v_spec)
-    h_target = u_spec + pressure * v_spec
+    h_target = target_enthalpy(pressure)
     h_err = abs((value - h_target) / max(abs(h_target), 1.0))
     if vol_err >= 1.0e-3 or h_err >= 1.0e-3:
         raise SolverNotConvergedError(iterations, max(vol_err, h_err), 1.0e-3)
+    if not converged:
+        # NeqSim's `lastRunConverged = false`. The acceptance above is the
+        # *specification*'s and is loose enough to pass on an iterate the iteration
+        # never settled at: a liquid's volume barely moves with pressure, so at pure
+        # propane 250 K the 10 bar state comes back as 15.5 bar - 55% out - with a
+        # relative volume error of 5.5e-4, under the 1e-3 it is judged by. NeqSim
+        # returns that number too and sets a flag; returning it without a word is the
+        # one thing neither does.
+        warnings.append(
+            Warning(
+                code=WarningCode.SOLVER_NOT_CONVERGED,
+                message=(
+                    f"the iteration reached its cap of {cap} without both the volume and "
+                    f"the energy residual falling below its own convergence criterion, so "
+                    f"the pressure and temperature are the last iterate rather than a "
+                    f"converged state. They satisfy the volume and internal energy asked "
+                    f"for to {vol_err:.1e} and {h_err:.1e} relative, which is the "
+                    f"acceptance NeqSim 3.20.0 applies and is looser than the iteration's."
+                ),
+            )
+        )
 
     return {
         "T": temperature,
