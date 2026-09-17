@@ -13,6 +13,14 @@
 //! `1/T` - damped by a factor that halves whenever the residual grows, and it is not
 //! fatal when a trial temperature cannot be evaluated.
 //!
+//! `QfuncFlash` is where upstream declares the shape the subclasses share - the
+//! `calcdQdP`/`calcdQdT`/`calcdQdPP`/`calcdQdTT` quartet and a `run()` that calls the
+//! second-order solver. **Its own `run()` is never invoked**: every subclass
+//! (`PSFlash`, `TSFlash`, `TUflash`, `PVflash`, `THflash`, and the reference-EOS
+//! variants) overrides it and none calls `super.run()`, and nothing constructs the base
+//! class. So the "2x2 Newton on the Q_P/Q_T pair" that class looks like it runs is code
+//! no execution reaches, and the scheme that runs is each subclass's own.
+//!
 //! Upstream carries a second scheme behind `type != 0`, `SysNewtonRhapsonPHflash`, which
 //! solves the isofugacity residuals and the energy residual together in `(u, ln T)`. It
 //! is reachable - `ThrottlingValve` and `Compressor` pass `type = 1` - and it is **not**
