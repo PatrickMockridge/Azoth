@@ -83,6 +83,7 @@ from azoth.core.result import (
     DewPressureResult,
     DewTemperatureResult,
     EosCgPhaseResult,
+    Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
@@ -190,6 +191,7 @@ __all__ = [
     "eos_cg_phase",
     "from_model",
     "from_names",
+    "gerg2008_phase",
     "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
     "helium_phase",
@@ -270,6 +272,7 @@ _WATER_PHASE = "eos.water_phase"
 _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
+_GERG2008_PHASE = "eos.gerg2008_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
@@ -1596,9 +1599,7 @@ def parahydrogen_solid_phase(T: Q, P: Q) -> ParahydrogenSolidPhaseResult:
     return resolve(_PARAHYDROGEN_SOLID_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
 
 
-def eos_cg_phase(
-    components: list[str], T: Q, P: Q, z: list[float]
-) -> EosCgPhaseResult:
+def eos_cg_phase(components: list[str], T: Q, P: Q, z: list[float]) -> EosCgPhaseResult:
     """The EOS-CG phase state at a temperature, pressure and composition.
 
     The 28-component combustion-gas Helmholtz model: the density is solved from the
@@ -1612,6 +1613,22 @@ def eos_cg_phase(
     See :func:`azoth.eos.reference.eos_cg_phase`.
     """
     return resolve(_EOS_CG_PHASE)(components=components, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def gerg2008_phase(components: list[str], T: Q, P: Q, z: list[float]) -> Gerg2008PhaseResult:
+    """The GERG-2008 phase state at a temperature, pressure and composition.
+
+    The 21-component wide-range Helmholtz model: the density is solved from the
+    pressure in logarithmic volume, and the Helmholtz derivatives give the property set.
+    ``components`` names the GERG-2008 components and ``z`` their mole fractions.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        InvalidInputError: if a component name is not a GERG-2008 component.
+
+    See :func:`azoth.eos.reference.gerg2008_phase`.
+    """
+    return resolve(_GERG2008_PHASE)(components=components, T=T, P=P, z=z)  # type: ignore[no-any-return]
 
 
 def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:

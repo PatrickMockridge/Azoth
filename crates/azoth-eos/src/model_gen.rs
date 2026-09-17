@@ -11,6 +11,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
 //!   - specs/models/eos/hydrogen_phase.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
@@ -1202,6 +1203,131 @@ pub static EOS_CG_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&EOS_CG_PHASE_ALGORITHM),
     checks: EOS_CG_PHASE_CHECKS,
     cases: EOS_CG_PHASE_CASES,
+};
+
+static GERG2008_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static GERG2008_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "pure_co2_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 1000000.0)],
+        lists: &[("components", &["CO2"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9485173228128433),
+            ("u", -2777.2843581653),
+            ("h", -425.9480198883742),
+            ("s", -20.04361977499714),
+            ("cv", 29.96571215341072),
+            ("cp", 40.53051556741399),
+            ("g", 5550.057216027023),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "pure_methane_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 100000.0)],
+        lists: &[("components", &["methane"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9982739662369379),
+            ("u", -2490.338319719316),
+            ("h", -15.65726127764794),
+            ("s", 0.07128338687926752),
+            ("cv", 27.40984467558066),
+            ("cp", 35.80090197911206),
+            ("g", -36.91040307570142),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "natural_gas_mixture",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 1000000.0)],
+        lists: &[("components", &["methane", "ethane", "CO2", "nitrogen"])],
+        strings: &[],
+        vectors: &[("z", &[0.8, 0.1, 0.05, 0.05])],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9788426477111625),
+            ("u", -2613.767855236111),
+            ("h", -187.2562548015943),
+            ("s", -13.59792620612604),
+            ("cv", 29.03583588858814),
+            ("cp", 38.29495289222858),
+            ("g", 3866.965443554885),
+        ],
+        expected_vectors: &[],
+    },
+];
+
+static GERG2008_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "log_volume_newton",
+    convergence: "absolute",
+    tolerance: 1e-07,
+    max_iterations: 50,
+    bracket: None,
+    initialisation: Some("ideal_gas"),
+    initial_temperature: None,
+    inner: None,
+};
+
+/// Registry entry for `eos.gerg2008_phase`.
+pub static GERG2008_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.gerg2008_phase",
+    kind: "procedure",
+    algorithm: Some(&GERG2008_PHASE_ALGORITHM),
+    checks: GERG2008_PHASE_CHECKS,
+    cases: GERG2008_PHASE_CASES,
 };
 
 static HELIUM_PHASE_CHECKS: &[SpecCheck] = &[
@@ -3477,6 +3603,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
     &EOS_CG_PHASE_SPEC,
+    &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
     &HYDROGEN_PHASE_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,

@@ -1,0 +1,75 @@
+id = "eos.gerg2008_phase"
+name = "GERG-2008 phase state"
+kind = "procedure"
+assumptions = [
+    "the equation of state is the GERG-2008 wide-range Helmholtz model of Kunz and Wagner, as NeqSim's `thermo.util.gerg.GERG2008` carries it: composition-averaged reducing parameters, an ideal and a residual Helmholtz part, and a pairwise departure contribution.",
+    "the density solve is the logarithmic-volume Newton iteration of the reference implementation, from the ideal-gas guess; the returned root is the gas-like one at the given pressure.",
+    "the component names are the GERG-2008 set (`methane`, `nitrogen`, `CO2`, `ethane`, ... `argon`), mapped to the model's fixed 21-component order rather than resolved against the general databank.",
+    "the coefficients are vendored verbatim from NeqSim's `GERG2008.setup()`, not transcribed by hand.",
+]
+references = [
+    "Kunz, O.; Wagner, W. (2012). \"The GERG-2008 wide-range equation of state for natural gases and other mixtures: An expansion of GERG-2004.\" Journal of Chemical & Engineering Data 57(11), 3032-3091.",
+    "NeqSim 3.20.0, `thermo/util/gerg/GERG2008.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Kunz, O.; Wagner, W. (2012)"
+edition = "The 21-component GERG-2008 Helmholtz mixture, evaluated in the reduced variables tau = Tr/T and delta = D/Dr with the reducing parameters composition-averaged over binary interaction parameters and a pairwise departure contribution."
+[algorithm]
+scheme = "log_volume_newton"
+initialisation = "ideal_gas"
+convergence = "absolute"
+tolerance = 1e-7
+max_iterations = 50
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the GERG-2008 component names, mapped to the model's fixed 21-component order"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, one per component, summing to one"
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor `Z = P v/(R T)`"
+[outputs.u]
+unit = "J/mol"
+description = "the internal energy"
+[outputs.h]
+unit = "J/mol"
+description = "the enthalpy"
+[outputs.s]
+unit = "J/(mol*K)"
+description = "the entropy"
+[outputs.cv]
+unit = "J/(mol*K)"
+description = "the isochoric heat capacity"
+[outputs.cp]
+unit = "J/(mol*K)"
+description = "the isobaric heat capacity"
+[outputs.g]
+unit = "J/mol"
+description = "the Gibbs energy, `h - T s`"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.gerg2008_phase"
+rust = "azoth_eos::gerg2008_phase"

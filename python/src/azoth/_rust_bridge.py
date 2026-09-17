@@ -48,6 +48,7 @@ from azoth.core.result import (
     DewTemperatureResult,
     EosCgPhaseResult,
     FlowRegime,
+    Gerg2008PhaseResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
@@ -1916,6 +1917,26 @@ def eos_cg_phase(components: Sequence[str], T: Q, P: Q, z: Sequence[float]) -> E
         list(components), input_to_si(spec, "T", T), input_to_si(spec, "P", P), list(z)
     )
     return EosCgPhaseResult(
+        z_factor=result.z_factor,
+        u=from_si(result.u.magnitude_si, result.u.unit),
+        h=from_si(result.h.magnitude_si, result.h.unit),
+        s=from_si(result.s.magnitude_si, result.s.unit),
+        cv=from_si(result.cv.magnitude_si, result.cv.unit),
+        cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def gerg2008_phase(
+    components: Sequence[str], T: Q, P: Q, z: Sequence[float]
+) -> Gerg2008PhaseResult:
+    """The GERG-2008 phase state, computed in Rust."""
+    spec = _models_gen.model("eos.gerg2008_phase")
+    result = _core.gerg2008_phase(
+        list(components), input_to_si(spec, "T", T), input_to_si(spec, "P", P), list(z)
+    )
+    return Gerg2008PhaseResult(
         z_factor=result.z_factor,
         u=from_si(result.u.magnitude_si, result.u.unit),
         h=from_si(result.h.magnitude_si, result.h.unit),

@@ -260,6 +260,17 @@ class EosCgPhaseResult:
     warnings: list[Warning]
 
 @final
+class Gerg2008PhaseResult:
+    z_factor: float
+    u: Qty
+    h: Qty
+    s: Qty
+    cv: Qty
+    cp: Qty
+    g: Qty
+    warnings: list[Warning]
+
+@final
 class HaydukMinhasDiffusivityResult:
     d: Qty
     warnings: list[Warning]
@@ -956,6 +967,12 @@ def dew_temperature(
     alpha_params: list[list[float]] | None = None,
 ) -> DewTemperatureResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
+def gerg2008_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+) -> Gerg2008PhaseResult: ...
 def hayduk_minhas_diffusivity(
     form: str,
     VA: float,

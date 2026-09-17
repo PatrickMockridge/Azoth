@@ -1844,6 +1844,32 @@ class EosCgPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class Gerg2008PhaseResult(_HasWarnings):
+    """Result of ``eos.gerg2008_phase``.
+
+    The GERG-2008 phase state: the compressibility factor and the Helmholtz property set
+    (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
+    """
+
+    #: The compressibility factor ``Z = P v/(R T)``.
+    z_factor: float
+    #: The internal energy.
+    u: Q
+    #: The enthalpy.
+    h: Q
+    #: The entropy.
+    s: Q
+    #: The isochoric heat capacity.
+    cv: Q
+    #: The isobaric heat capacity.
+    cp: Q
+    #: The Gibbs energy, ``h - T s``.
+    g: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HeliumPhaseResult(_HasWarnings):
     """Result of ``eos.helium_phase``.
 
