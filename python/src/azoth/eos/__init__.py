@@ -151,6 +151,7 @@ from azoth.core.result import (
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
+    TvFractionFlashResult,
     TwucoonAlphaResult,
     TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult,
@@ -272,6 +273,7 @@ __all__ = [
     "ts_flash",
     "tu_flash",
     "tv_flash",
+    "tv_fraction_flash",
     "twu_kappa",
     "tyn_calus_diffusivity",
     "unifac_activity_coefficients",
@@ -343,6 +345,7 @@ _TS_FLASH = "eos.ts_flash"
 _TU_FLASH = "eos.tu_flash"
 _PU_FLASH = "eos.pu_flash"
 _TV_FLASH = "eos.tv_flash"
+_TV_FRACTION_FLASH = "eos.tv_fraction_flash"
 _PV_FLASH = "eos.pv_flash"
 _PV_REFLUX_FLASH = "eos.pv_reflux_flash"
 _PVF_FLASH = "eos.pvf_flash"
@@ -1522,6 +1525,27 @@ def vh_flash(
     """
     return resolve(_VH_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, V=V, H=H, z=z
+    )
+
+
+def tv_fraction_flash(
+    mixture: Mixture, T: Q, fraction: float, P: Q, z: list[float]
+) -> TvFractionFlashResult:
+    """The pressure at which a feed's gas **volume** fraction at a temperature is ``fraction``.
+
+    A volume fraction, not a mole fraction: the gas phase's share of the mixture's
+    volume, which is what ASTM D6377's vapour pressure is defined on. ``P`` is where the
+    iteration starts, not an initial guess at the answer.
+
+    Raises:
+        InvalidInputError: if ``fraction`` is not strictly inside ``(0, 1)``.
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or the feed has no gas phase.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.tv_fraction_flash`.
+    """
+    return resolve(_TV_FRACTION_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, T=T, fraction=fraction, P=P, z=z
     )
 
 

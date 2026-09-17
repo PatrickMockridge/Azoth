@@ -122,6 +122,7 @@ from azoth.core.result import (
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
+    TvFractionFlashResult,
     TwucoonAlphaResult,
     TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult,
@@ -1759,6 +1760,41 @@ def pu_flash(mixture: Any, ideal_gas: Any, P: Q, U: Q, z: Sequence[float]) -> Pu
         y=tuple(result.y),
         k=tuple(result.k),
         phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tv_fraction_flash(
+    mixture: Any, T: Q, fraction: float, P: Q, z: Sequence[float]
+) -> TvFractionFlashResult:
+    """The temperature and vapour-volume-fraction flash, solved in Rust."""
+    spec = _models_gen.model("eos.tv_fraction_flash")
+    result = _core.tv_fraction_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "T", T),
+        float(fraction),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return TvFractionFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        beta=result.beta,
+        volume_fraction=result.volume_fraction,
+        phase=_Phase(result.phase),
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
         z_liquid=result.z_liquid,
         z_vapour=result.z_vapour,
         iterations=result.iterations,

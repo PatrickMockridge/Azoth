@@ -1266,6 +1266,60 @@ impl CalcResult for PvRefluxFlashResult {
     }
 }
 
+/// Result of `eos.tv_fraction_flash`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TvFractionFlashResult {
+    /// The pressure at which the volume fraction is the one asked for.
+    pub pressure: Pressure,
+    /// The temperature the flash was taken at, echoed.
+    pub temperature: ThermodynamicTemperature,
+    /// The vapour fraction at the answer, or `None` for a single-phase feed.
+    pub beta: Option<f64>,
+    /// The gas phase's volume share at the answer.
+    pub volume_fraction: f64,
+    /// Which phase the feed is in at the answer.
+    pub phase: Phase,
+    /// Liquid-phase mole fractions at the answer.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions at the answer.
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i` at the answer.
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the answer.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// Newton steps taken.
+    pub iterations: u32,
+    /// `|volume_fraction(P) - fraction|` at the answer.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TvFractionFlashResult {
+    const CALC_ID: &'static str = "eos.tv_fraction_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "P",
+        "T",
+        "beta",
+        "volume_fraction",
+        "phase",
+        "x",
+        "y",
+        "k",
+        "z_liquid",
+        "z_vapour",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.vu_flash`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VuFlashResult {

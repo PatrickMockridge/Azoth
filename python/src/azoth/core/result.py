@@ -798,6 +798,38 @@ class VsFlashResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TvFractionFlashResult(_HasWarnings):
+    """Result of ``eos.tv_fraction_flash``."""
+
+    #: The pressure at which the volume fraction is the one asked for.
+    P: Q
+    #: The temperature the flash was taken at, echoed.
+    T: Q
+    #: The vapour fraction at the answer, or ``None`` for a single-phase feed.
+    beta: float | None
+    #: The gas phase's volume share at the answer.
+    volume_fraction: float
+    #: Which phase the feed is in at the answer.
+    phase: Phase
+    #: Liquid-phase composition at the answer.
+    x: tuple[float, ...]
+    #: Vapour-phase composition.
+    y: tuple[float, ...]
+    #: K-values at the answer.
+    k: tuple[float, ...]
+    #: Liquid root of the cubic at the answer.
+    z_liquid: float
+    #: Vapour root.
+    z_vapour: float
+    #: Newton steps taken.
+    iterations: int
+    #: ``|volume_fraction(P) - fraction|`` at the answer.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class VuFlashResult(_HasWarnings):
     """Result of ``eos.vu_flash``.
 

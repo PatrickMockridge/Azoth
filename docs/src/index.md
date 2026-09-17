@@ -162,6 +162,7 @@ Four sections, and the difference between them is the point:
 - [`eos.ts_flash`](./eos/ts_flash.md) — Temperature-entropy flash
 - [`eos.tu_flash`](./eos/tu_flash.md) — Temperature-internal-energy flash
 - [`eos.tv_flash`](./eos/tv_flash.md) — Temperature-volume flash
+- [`eos.tv_fraction_flash`](./eos/tv_fraction_flash.md) — Temperature and vapour-volume-fraction flash
 - [`eos.unifac_activity_coefficients`](./eos/unifac_activity_coefficients.md) — Activity coefficients from the UNIFAC group-contribution model
 - [`eos.unifac_psrk_activity_coefficients`](./eos/unifac_psrk_activity_coefficients.md) — Activity coefficients from UNIFAC with PSRK temperature-dependent interaction parameters
 - [`eos.unifac_umrpru_activity_coefficients`](./eos/unifac_umrpru_activity_coefficients.md) — Activity coefficients from UNIFAC with UMR-PRU group-interaction parameters

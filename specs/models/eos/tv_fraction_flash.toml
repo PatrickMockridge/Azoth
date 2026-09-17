@@ -1,0 +1,113 @@
+id = "eos.tv_fraction_flash"
+name = "Temperature and vapour-volume-fraction flash"
+kind = "procedure"
+assumptions = [
+    "a *volume* fraction, not a mole fraction: the gas phase's share of the mixture's volume, `beta v_gas / ((1 - beta) v_liq + beta v_gas)`. It is the quantity ASTM D6377 defines a vapour pressure on, where the 4:1 ratio is volumes and not moles.",
+    "at a fixed temperature the volume fraction moves monotonically with pressure - the gas shrinks as the pressure rises - so a specified fraction is a pressure. The search is a damped Newton on it.",
+    "the phase volumes are the cubic's own, `z R T / P`. NeqSim's default applies the Peneloux translation as well; this does not, because nothing wires a translation onto a databank-built mixture on either side - `eos.pr_peneloux_shift` computes one and no caller sets it.",
+    "the derivative is a central difference of the residual itself rather than the quotient rule NeqSim writes. That rule mixes a corrected residual with uncorrected volume derivatives; differencing the residual the iteration actually drives is self-consistent and costs two more flashes a step.",
+    "the damping starts at 100 - so the first step is one per cent of the Newton step - and falls towards 20 as the error improves. It is what keeps a Newton taken from a pressure far from the answer from crossing the two-phase region in one step.",
+    "the iteration needs at least six steps whatever the residual does, because the first one is taken from a pressure that has only just been flashed and the residual there is not yet the answer's.",
+]
+references = [
+    "ASTM D6377-20. \"Standard Test Method for Determination of Vapor Pressure of Crude Oil: VPCRx (Expansion Method).\" ASTM International.",
+]
+[source]
+standard = "ASTM D6377-20"
+edition = "NeqSim 3.20.0 `thermodynamicoperations/flashops/TVfractionFlash`: its residual, its adaptive damping, its step cap and its pressure walk are this model's loop."
+[algorithm]
+scheme = "volume_fraction_newton_pressure"
+initialisation = "from_the_feed_pressure"
+convergence = "absolute"
+tolerance = 1e-06
+max_iterations = 200
+[algorithm.inner]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 300
+[algorithm.inner.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature. Held fixed; the pressure is what is solved for."
+[inputs.fraction]
+unit = "dimensionless"
+description = "the gas phase's share of the mixture's volume, strictly between zero and one."
+[inputs.P]
+unit = "Pa"
+description = "where the iteration starts, in pascals. Not an initial guess at the answer so much as the state the first flash is taken at."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "overall mole fractions"
+[outputs]
+[outputs.P]
+unit = "Pa"
+description = "the pressure at which the volume fraction is the one asked for - the model's answer."
+[outputs.T]
+unit = "K"
+description = "the temperature the flash was taken at, echoed."
+[outputs.beta]
+unit = "dimensionless"
+optional = true
+description = "the vapour fraction at the answer, or absent for a single-phase feed"
+[outputs.volume_fraction]
+unit = "dimensionless"
+description = "the gas phase's volume share at the answer, as the iteration measured it"
+[outputs.phase]
+type = "enum"
+values = ["two_phase", "all_liquid", "all_vapour", "trivial"]
+description = "which phase the feed is in at the answer"
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions at the answer"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions at the answer"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`K_i = y_i / x_i` at the answer"
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the liquid root of the cubic at the answer"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root at the answer"
+[outputs.iterations]
+unit = "dimensionless"
+description = "Newton steps taken, including the evaluation at the answer"
+[outputs.residual]
+unit = "dimensionless"
+description = "`|volume_fraction(P) - fraction|` at the answer"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.tv_fraction_flash"
+rust = "azoth_eos::tv_fraction_flash"

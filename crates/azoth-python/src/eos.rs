@@ -37,14 +37,14 @@ use crate::results::{
     PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
     PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
     PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
-    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
-    PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
-    PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
-    PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
-    PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyVhFlashResult,
-    PyViscosityResult, PyVsFlashResult, PyVuFlashResult, PyVuFlashSingleCompResult,
-    PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
-    PyWilsonActivityCoefficientsResult,
+    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTvFractionFlashResult, PyTwuKappaResult,
+    PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
+    PyTynCalusDiffusivityResult, PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult,
+    PyUnifacPsrkActivityCoefficientsResult, PyUnifacUmrpruActivityCoefficientsResult,
+    PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult,
+    PyVdw1fMixBinaryResult, PyVhFlashResult, PyViscosityResult, PyVsFlashResult, PyVuFlashResult,
+    PyVuFlashSingleCompResult, PyWaterPhaseResult, PyWilkeChangDiffusivityResult,
+    PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -2218,6 +2218,44 @@ pub fn pvf_flash(
     )?;
     azoth_eos::pvf_flash::pvf_flash(&mixture, pascals(P), beta, kelvins(temperature), &z)
         .map(|r| PyPvfFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The temperature and vapour-volume-fraction flash of a mixture (T,fraction -> P).
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, fraction, P, z,
+    eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, T, fraction, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)]
+#[allow(clippy::too_many_arguments)] // the signature is the flash's inputs
+pub fn tv_fraction_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    T: f64,
+    fraction: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyTvFractionFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::tv_fraction_flash::tv_fraction_flash(&mixture, kelvins(T), fraction, pascals(P), &z)
+        .map(|r| PyTvFractionFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

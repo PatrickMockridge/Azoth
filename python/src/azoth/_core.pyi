@@ -795,6 +795,22 @@ class TvFlashResult:
     warnings: list[Warning]
 
 @final
+class TvFractionFlashResult:
+    P: Qty
+    T: Qty
+    beta: float | None
+    volume_fraction: float
+    phase: str
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    z_liquid: float
+    z_vapour: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class TwuKappaResult:
     kappa: float
     warnings: list[Warning]
@@ -1586,6 +1602,19 @@ def tv_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> TvFlashResult: ...
+def tv_fraction_flash(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    T: float,
+    fraction: float,
+    P: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> TvFractionFlashResult: ...
 def twu_kappa(omega: float) -> TwuKappaResult: ...
 def twucoon_alpha(omega: float, Tr: float) -> TwucoonAlphaResult: ...
 def twucoon_param_alpha(a: float, b: float, c: float, Tr: float) -> TwucoonParamAlphaResult: ...

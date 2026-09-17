@@ -40,6 +40,7 @@
 //!   - specs/models/eos/ts_flash.toml
 //!   - specs/models/eos/tu_flash.toml
 //!   - specs/models/eos/tv_flash.toml
+//!   - specs/models/eos/tv_fraction_flash.toml
 //!   - specs/models/eos/unifac_activity_coefficients.toml
 //!   - specs/models/eos/unifac_psrk_activity_coefficients.toml
 //!   - specs/models/eos/unifac_umrpru_activity_coefficients.toml
@@ -4215,6 +4216,105 @@ pub static TV_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: TV_FLASH_CASES,
 };
 
+static TV_FRACTION_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static TV_FRACTION_FLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "half_the_volume_is_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 330.0), ("fraction", 0.5), ("P", 2500000.0)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[("P", 10750635.8)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "ninety_per_cent_of_the_volume_is_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 330.0), ("fraction", 0.9), ("P", 4982832.4)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[("P", 4982832.4)],
+        expected_vectors: &[],
+    },
+];
+
+static TV_FRACTION_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+static TV_FRACTION_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "volume_fraction_newton_pressure",
+    convergence: "absolute",
+    tolerance: 1e-06,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("from_the_feed_pressure"),
+    initial_temperature: None,
+    inner: Some(&TV_FRACTION_FLASH_INNER),
+    fallback: None,
+};
+
+/// Registry entry for `eos.tv_fraction_flash`.
+pub static TV_FRACTION_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.tv_fraction_flash",
+    kind: "procedure",
+    algorithm: Some(&TV_FRACTION_FLASH_ALGORITHM),
+    checks: TV_FRACTION_FLASH_CHECKS,
+    cases: TV_FRACTION_FLASH_CASES,
+};
+
 static UNIFAC_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -5411,6 +5511,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &TS_FLASH_SPEC,
     &TU_FLASH_SPEC,
     &TV_FLASH_SPEC,
+    &TV_FRACTION_FLASH_SPEC,
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS_SPEC,

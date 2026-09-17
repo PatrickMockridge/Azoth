@@ -1,0 +1,25 @@
+model = "eos.tv_fraction_flash"
+[[cases]]
+id = "half_the_volume_is_gas"
+tolerance = 1e-06
+source = "NeqSim 3.20.0 `TVfractionFlash`, whose residual is `V_gas/V_total` on Peneloux-corrected volumes. Measured here rather than transcribed: the class carries its pressures in bar and this crate carries them in pascals, and the step cap is one of the places that shows."
+[cases.inputs]
+components = ["methane", "n-butane"]
+T = 330.0
+fraction = 0.5
+P = 2500000.0
+z = [0.6, 0.4]
+[cases.expected]
+P = 10750635.8
+[[cases]]
+id = "ninety_per_cent_of_the_volume_is_gas"
+tolerance = 1e-06
+source = "As the first, at a fraction nearer the dew end. The pressure is lower - the gas takes more of the volume as it expands - so the two cases bracket the steep part of the curve the Newton follows."
+[cases.inputs]
+components = ["methane", "n-butane"]
+T = 330.0
+fraction = 0.9
+P = 4982832.4
+z = [0.6, 0.4]
+[cases.expected]
+P = 4982832.4
