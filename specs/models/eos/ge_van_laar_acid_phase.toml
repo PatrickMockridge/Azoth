@@ -1,0 +1,79 @@
+id = "eos.ge_van_laar_acid_phase"
+name = "Fugacity coefficients of the water-nitric-sulfuric acid liquid"
+kind = "direct"
+assumptions = [
+    "this is NeqSim's `PhaseGEVanLaarAcid` liquid: `phi_i = gamma_i P0_i / P`, the identity `ComponentGEVanLaarAcid.fugcoef` enforces as `f_i = gamma_i x_i P0_i`.",
+    "`ComponentGEVanLaarAcid` **overrides** `fugcoef`, and it is the one GE phase whose component does. The override ignores `referenceStateType`: both acids are tagged `solute`, so the inherited method would give them a Henry's-law coefficient rather than the Raoult one the model is written for.",
+    "**This phase therefore does not refuse a Henry's-law solute, and its four siblings do.** There the refusal is right because the inherited method branches on the tag; here the tag is deliberately not read. What is refused is an uncovered component with no Antoine correlation, and so no `P0`.",
+    "`P0_i` is not Antoine's for the three modelled species: it comes from `eos.nitric_sulfuric_acid_vapor_pressure`. Only `acid_index == 0` falls back to the database Antoine, which is why this phase takes the two halves of `crate::ge_phase` separately.",
+    "an uncovered component is given `phi = 1.0e12` whatever its composition: NeqSim returns that before computing anything else. It is a *penalty* rather than physics, and finite rather than infinite so a flash can still iterate while it drives the species out.",
+    "`gamma_i` is `eos.van_laar_acid_activity_coefficients`', evaluated on the acid basis renormalised over water, nitric acid and sulfuric acid alone, with other species dropped. An empty acid basis is pure water.",
+]
+references = [
+    "Taleb, D.; Ponche, J. L.; Mirabel, P. (1996). \"Vapor pressures in the ternary system water-nitric acid-sulfuric acid at low temperature.\" Journal of Geophysical Research 101(D20), 25967-25977. DOI 10.1029/96JD02155",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhaseGEVanLaarAcid` and `ComponentGEVanLaarAcid.fugcoef` are the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `PhaseGEVanLaarAcid`"
+edition = "`ComponentGEVanLaarAcid.fugcoef`, ported verbatim, including its `NON_MODELED_COMPONENT_PENALTY` and its Raoult-reference override."
+doi = "10.1029/96JD02155"
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name. The acid identity of each resolves against NeqSim's spelling list, its vapour-pressure correlation against the databank for a species the model does not cover, and `eos.nitric_sulfuric_acid_vapor_pressure` supplies the three it does."
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the liquid's mole fractions; non-negative and summing to one. The activity coefficient is evaluated on the acid basis renormalised over water and the two acids, so a dissolved carrier gas is dropped from it."
+[outputs]
+[outputs.gamma]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the Van Laar activity coefficient of each component, or the 1.0e12 penalty for a species the model does not cover"
+[outputs.ln_gamma]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the natural logarithm of each activity coefficient"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the natural logarithm of each component's fugacity coefficient, `ln(gamma_i P0_i / P)` where the model covers it and `ln(1.0e12)` where it does not"
+[outputs.p_sat]
+type = "vector"
+unit = "Pa"
+length = "one per component"
+description = "the pure-component saturation pressure: the Taleb correlation for water and the two acids, the databank Antoine otherwise"
+[implementations]
+python = "azoth.eos.ge_van_laar_acid_phase"
+rust = "azoth_eos::ge_van_laar_acid_phase"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "T"
+min = 190.0
+max = 298.0
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "the range the Taleb correlations are stated for; outside it the model extrapolates"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"

@@ -137,6 +137,7 @@ Four sections, and the difference between them is the point:
 - [`eos.ge_nrtl_phase`](./eos/ge_nrtl_phase.md) — Fugacity coefficients of an NRTL activity-coefficient liquid
 - [`eos.ge_unifac_phase`](./eos/ge_unifac_phase.md) — Fugacity coefficients of a UNIFAC activity-coefficient liquid
 - [`eos.ge_uniquac_phase`](./eos/ge_uniquac_phase.md) — Fugacity coefficients of a UNIQUAC activity-coefficient liquid
+- [`eos.ge_van_laar_acid_phase`](./eos/ge_van_laar_acid_phase.md) — Fugacity coefficients of the water-nitric-sulfuric acid liquid
 - [`eos.ge_wilson_phase`](./eos/ge_wilson_phase.md) — Fugacity coefficients of a Wilson activity-coefficient liquid
 - [`eos.gerg2008_phase`](./eos/gerg2008_phase.md) — GERG-2008 phase state
 - [`eos.helium_phase`](./eos/helium_phase.md) — Helium reference phase state

@@ -53,6 +53,7 @@ from azoth.core.result import (
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
     GeUniquacPhaseResult,
+    GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
@@ -2133,6 +2134,32 @@ def ge_uniquac_phase(
         [[input_to_si(spec, "aij", value) for value in row] for row in aij],
     )
     return GeUniquacPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        ln_phi=tuple(result.ln_phi),
+        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ge_van_laar_acid_phase(params: Any, T: Q, P: Q, x: Sequence[float]) -> GeVanLaarAcidPhaseResult:
+    """The acid liquid's fugacity coefficients, computed in Rust.
+
+    The resolved record crosses flattened, one list per field, in the dataclass's own
+    order - the acid identities first, then the vapour-pressure columns beside them.
+    """
+    spec = _models_gen.model("eos.ge_van_laar_acid_phase")
+    result = _core.ge_van_laar_acid_phase(
+        list(params.acid_index),
+        list(params.antoine_type),
+        list(params.antoine_coefficients),
+        list(params.antoine_tc),
+        list(params.antoine_pc),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+    )
+    return GeVanLaarAcidPhaseResult(
         gamma=tuple(result.gamma),
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),

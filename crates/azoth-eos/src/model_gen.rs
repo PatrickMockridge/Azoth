@@ -15,6 +15,7 @@
 //!   - specs/models/eos/ge_nrtl_phase.toml
 //!   - specs/models/eos/ge_unifac_phase.toml
 //!   - specs/models/eos/ge_uniquac_phase.toml
+//!   - specs/models/eos/ge_van_laar_acid_phase.toml
 //!   - specs/models/eos/ge_wilson_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
@@ -1634,6 +1635,158 @@ pub static GE_UNIQUAC_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: GE_UNIQUAC_PHASE_CHECKS,
     cases: GE_UNIQUAC_PHASE_CASES,
+};
+
+static GE_VAN_LAAR_ACID_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(190.0),
+            min_inclusive: true,
+            max: Some(298.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the range the Taleb correlations are stated for; outside it the model extrapolates",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static GE_VAN_LAAR_ACID_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "water_nitric_binary_at_250_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 250.0), ("P", 100000.0)],
+        lists: &[("components", &["water", "nitric acid"])],
+        strings: &[],
+        vectors: &[("x", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[0.1579039211150226, 0.09763493854821755]),
+            ("ln_gamma", &[-1.8457685251281588, -2.326519872693085]),
+            ("ln_phi", &[-8.79676627386883, -7.85761975700227]),
+            ("p_sat", &[95.76791536798726, 396.1629357961019]),
+        ],
+    },
+    TestCase {
+        id: "water_nitric_sulfuric_ternary_at_250_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 250.0), ("P", 100000.0)],
+        lists: &[("components", &["water", "nitric acid", "sulfuric acid"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.3, 0.2])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            (
+                "gamma",
+                &[
+                    0.008700227753081819,
+                    0.7987122544877442,
+                    0.0008824018478058464,
+                ],
+            ),
+            (
+                "ln_gamma",
+                &[-4.744406075149099, -0.22475453013437338, -7.032862995958898],
+            ),
+            (
+                "ln_phi",
+                &[-11.69540382388977, -5.755854414443559, -31.384700009432617],
+            ),
+            (
+                "p_sat",
+                &[95.76791536798726, 396.1629357961019, 2.6554098435359023e-06],
+            ),
+        ],
+    },
+    TestCase {
+        id: "ternary_at_273_15_k_2_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 273.15), ("P", 200000.0)],
+        lists: &[("components", &["water", "nitric acid", "sulfuric acid"])],
+        strings: &[],
+        vectors: &[("x", &[0.7, 0.1, 0.2])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            (
+                "gamma",
+                &[
+                    0.11522424177591703,
+                    0.2051486278402778,
+                    4.1511422687461275e-05,
+                ],
+            ),
+            (
+                "ln_gamma",
+                &[-2.160875120775458, -1.584020548684296, -10.089541923119715],
+            ),
+            (
+                "ln_phi",
+                &[-7.952900089095513, -6.163076242405616, -31.69156217792585],
+            ),
+            (
+                "p_sat",
+                &[610.3592249571752, 2052.9169266045096, 8.305997595294622e-05],
+            ),
+        ],
+    },
+];
+
+/// Registry entry for `eos.ge_van_laar_acid_phase`.
+pub static GE_VAN_LAAR_ACID_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.ge_van_laar_acid_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: GE_VAN_LAAR_ACID_PHASE_CHECKS,
+    cases: GE_VAN_LAAR_ACID_PHASE_CASES,
 };
 
 static GE_WILSON_PHASE_CHECKS: &[SpecCheck] = &[
@@ -4450,6 +4603,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &GE_NRTL_PHASE_SPEC,
     &GE_UNIFAC_PHASE_SPEC,
     &GE_UNIQUAC_PHASE_SPEC,
+    &GE_VAN_LAAR_ACID_PHASE_SPEC,
     &GE_WILSON_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,

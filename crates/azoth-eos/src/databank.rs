@@ -1054,6 +1054,81 @@ pub struct GeNrtlPhaseParameters {
     pub antoine: Vec<AntoineRecord>,
 }
 
+/// The resolved parameters of a Van Laar acid activity-coefficient *phase*.
+///
+/// [`VanLaarAcidParameters`]' acid identity, beside each component's Antoine columns and
+/// the critical constants they need. The columns are carried for *every* component, but
+/// they are read only for the ones with `acid_index == 0`: the three modelled acids take
+/// their `P0` from [`crate::nitric_sulfuric_acid_vapor_pressure`] instead, which is the
+/// whole point of the phase - see its spec.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GeVanLaarAcidPhaseParameters {
+    /// Per component: `1` water, `2` nitric acid, `3` sulfuric acid, `0` for a species
+    /// the model does not cover.
+    pub acid_index: Vec<u8>,
+    /// One vapour-pressure correlation per component, in order. Read only where
+    /// `acid_index` is zero.
+    pub antoine: Vec<AntoineRecord>,
+}
+
+/// The Van Laar acid phase parameters for a list of names.
+///
+/// **This resolver does not refuse a Henry's-law solute, and its four siblings do.** The
+/// refusal there exists because `ComponentGE.fugcoef` branches on `referenceStateType`, so
+/// computing the Raoult expression for a `solute` component would be the wrong branch with
+/// no symptom. `ComponentGEVanLaarAcid` *overrides* `fugcoef` precisely to ignore the tag -
+/// and it has to, because both acids are tagged `solute` and carry an all-zero Antoine row.
+/// Refusing them here would refuse the model's own subject.
+///
+/// What it does refuse is a component the model does not cover (`acid_index == 0`) that
+/// also has no Antoine correlation, because then its `P0` has no source at all.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
+///   overlay, or if an uncovered component carries no Antoine correlation.
+pub fn ge_van_laar_acid_phase_parameters(
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<GeVanLaarAcidPhaseParameters> {
+    let acid = van_laar_acid_parameters(names, overlay)?;
+    let mut antoine = Vec::with_capacity(names.len());
+    for (name, &index) in names.iter().zip(&acid.acid_index) {
+        let record = entry(name, overlay)?;
+        let Some((coefficients, antoine_type)) = record.antoine.clone() else {
+            return Err(AzothError::property_unavailable(
+                record.name,
+                "Antoine vapour-pressure coefficients".to_string(),
+                "a species the acid model does not cover takes its `P0` from Antoine, \
+                 since only water, nitric acid and sulfuric acid have a correlation \
+                 here"
+                    .to_string(),
+            ));
+        };
+        // Only an *uncovered* component needs a real correlation; the three acids take
+        // theirs from the calc. Checked here rather than at evaluation so the refusal
+        // names the component.
+        if index == 0 && coefficients.iter().all(|value| *value == 0.0) {
+            return Err(AzothError::property_unavailable(
+                record.name,
+                "Antoine vapour-pressure coefficients".to_string(),
+                "a species the acid model does not cover takes its `P0` from Antoine, \
+                 and the databank carries none for this one"
+                    .to_string(),
+            ));
+        }
+        antoine.push(AntoineRecord {
+            antoine_type,
+            coefficients,
+            tc: record.tc,
+            pc: record.pc,
+        });
+    }
+    Ok(GeVanLaarAcidPhaseParameters {
+        acid_index: acid.acid_index,
+        antoine,
+    })
+}
+
 /// The resolved parameters of a UNIQUAC activity-coefficient *phase*.
 ///
 /// The volume and surface parameters [`UniquacParameters`] carries, beside what a phase

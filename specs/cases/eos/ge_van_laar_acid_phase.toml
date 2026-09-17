@@ -1,0 +1,43 @@
+model = "eos.ge_van_laar_acid_phase"
+[[cases]]
+id = "water_nitric_binary_at_250_k_1_bar"
+tolerance = 1e-09
+source = "NeqSim 3.20.0 `PhaseGEVanLaarAcid`, run from validation/neqsim/GeVanLaarAcidPhi.java: a bare phase driven directly, reading its own `getGamma` and `getFugacityCoefficient`. Not `SystemVanLaarActivitySRK` - its tuning is entirely vapour-side and flash-iteration, and the liquid it produces is this one. `gamma` is the figure NeqSim reports; `ln_gamma` and `ln_phi` are its logarithms. `p_sat` is the value the phase uses, which for water is the Taleb correlation and not the databank Antoine."
+[cases.inputs]
+components = ["water", "nitric acid"]
+T = 250.0
+P = 100000.0
+x = [0.6, 0.4]
+[cases.expected]
+gamma = [0.1579039211150226, 0.09763493854821755]
+ln_gamma = [-1.8457685251281588, -2.326519872693085]
+ln_phi = [-8.79676627386883, -7.85761975700227]
+p_sat = [95.76791536798726, 396.1629357961019]
+[[cases]]
+id = "water_nitric_sulfuric_ternary_at_250_k_1_bar"
+tolerance = 1e-09
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/GeVanLaarAcidPhi.java. The ternary, which is what the Taleb correlation is for: the two binaries are its limits, and the water-nitric-sulfuric interaction is the term neither of them carries."
+[cases.inputs]
+components = ["water", "nitric acid", "sulfuric acid"]
+T = 250.0
+P = 100000.0
+x = [0.5, 0.3, 0.2]
+[cases.expected]
+gamma = [0.008700227753081819, 0.7987122544877442, 0.0008824018478058464]
+ln_gamma = [-4.744406075149099, -0.22475453013437338, -7.032862995958898]
+ln_phi = [-11.69540382388977, -5.755854414443559, -31.384700009432617]
+p_sat = [95.76791536798726, 396.1629357961019, 2.6554098435359023e-06]
+[[cases]]
+id = "ternary_at_273_15_k_2_bar"
+tolerance = 1e-09
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/GeVanLaarAcidPhi.java. A different composition and pressure, at the ice point: the phase divides by `P`, so a state at 2 bar rather than 1 is what says the divisor is the caller's argument rather than a constant."
+[cases.inputs]
+components = ["water", "nitric acid", "sulfuric acid"]
+T = 273.15
+P = 200000.0
+x = [0.7, 0.1, 0.2]
+[cases.expected]
+gamma = [0.11522424177591703, 0.2051486278402778, 4.1511422687461275e-05]
+ln_gamma = [-2.160875120775458, -1.584020548684296, -10.089541923119715]
+ln_phi = [-7.952900089095513, -6.163076242405616, -31.69156217792585]
+p_sat = [610.3592249571752, 2052.9169266045096, 8.305997595294622e-05]

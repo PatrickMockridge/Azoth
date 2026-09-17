@@ -35,21 +35,18 @@ pub struct GeFugacities {
     pub warnings: Vec<Warning>,
 }
 
-/// `phi_i = gamma_i P0_i / P`, at a state and composition.
+/// The pure-component saturation pressures, one evaluation per record.
 ///
-/// `gamma` is the activity coefficients the phase's own model produced, in component
-/// order, and `antoine` the per-component vapour-pressure records in the same order.
+/// Split out of [`ge_fugacities`] because not every GE phase takes its `P0` from
+/// Antoine. `eos.ge_van_laar_acid_phase` takes it from
+/// `eos.nitric_sulfuric_acid_vapor_pressure` for the three acids it models and from
+/// Antoine only for the species it does not - so it shares the *composition* and not this,
+/// and the composition is the part worth sharing.
 ///
 /// # Errors
 /// * [`azoth_core::AzothError::OutOfRange`] if a correlation is evaluated outside its
 ///   form's range.
-/// * Propagates the correlations' own checks.
-pub fn ge_fugacities(
-    gamma: &[f64],
-    antoine: &[AntoineRecord],
-    t: f64,
-    p: f64,
-) -> Result<GeFugacities> {
+pub fn saturation(antoine: &[AntoineRecord], t: f64) -> Result<(Vec<f64>, Vec<Warning>)> {
     let mut warnings = Vec::new();
     let mut p_sat = Vec::with_capacity(antoine.len());
     for record in antoine {
@@ -73,15 +70,41 @@ pub fn ge_fugacities(
         warnings.extend(saturated.warnings);
         p_sat.push(saturated.p_sat.value);
     }
+    Ok((p_sat, warnings))
+}
 
-    let ln_phi: Vec<f64> = gamma
+/// `ln phi_i = ln gamma_i + ln(P0_i / P)`, the composition itself.
+///
+/// One line, and the reason this module exists: every activity-coefficient phase in this
+/// library is this expression, and the phases differ only in where `gamma` and `P0` come
+/// from.
+#[must_use]
+pub fn combine(gamma: &[f64], p_sat: &[f64], p: f64) -> Vec<f64> {
+    gamma
         .iter()
-        .zip(&p_sat)
+        .zip(p_sat)
         .map(|(&g, &p0)| g.ln() + (p0 / p).ln())
-        .collect();
+        .collect()
+}
 
+/// `phi_i = gamma_i P0_i / P`, at a state and composition.
+///
+/// `gamma` is the activity coefficients the phase's own model produced, in component
+/// order, and `antoine` the per-component vapour-pressure records in the same order.
+///
+/// # Errors
+/// * [`azoth_core::AzothError::OutOfRange`] if a correlation is evaluated outside its
+///   form's range.
+/// * Propagates the correlations' own checks.
+pub fn ge_fugacities(
+    gamma: &[f64],
+    antoine: &[AntoineRecord],
+    t: f64,
+    p: f64,
+) -> Result<GeFugacities> {
+    let (p_sat, warnings) = saturation(antoine, t)?;
     Ok(GeFugacities {
-        ln_phi,
+        ln_phi: combine(gamma, &p_sat, p),
         p_sat,
         warnings,
     })

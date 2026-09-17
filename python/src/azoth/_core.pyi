@@ -299,6 +299,14 @@ class GeUniquacPhaseResult:
     warnings: list[Warning]
 
 @final
+class GeVanLaarAcidPhaseResult:
+    gamma: list[float]
+    ln_gamma: list[float]
+    ln_phi: list[float]
+    p_sat: list[Qty]
+    warnings: list[Warning]
+
+@final
 class GeWilsonPhaseResult:
     gamma: list[float]
     ln_gamma: list[float]
@@ -1093,6 +1101,16 @@ def ge_uniquac_phase(
     x: list[float],
     aij: list[list[float]],
 ) -> GeUniquacPhaseResult: ...
+def ge_van_laar_acid_phase(
+    acid_index: list[int],
+    antoine_type: list[str],
+    antoine_coefficients: list[float],
+    antoine_tc: list[float],
+    antoine_pc: list[float],
+    T: float,
+    P: float,
+    x: list[float],
+) -> GeVanLaarAcidPhaseResult: ...
 def ge_wilson_phase(
     Tc: list[float],
     Pc: list[float],

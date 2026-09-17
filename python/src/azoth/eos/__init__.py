@@ -89,6 +89,7 @@ from azoth.core.result import (
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
     GeUniquacPhaseResult,
+    GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
@@ -171,6 +172,7 @@ from azoth.eos.components import (
     GeNrtlPhaseParameters,
     GeUnifacPhaseParameters,
     GeUniquacPhaseParameters,
+    GeVanLaarAcidPhaseParameters,
     GeWilsonPhaseParameters,
     NrtlParameters,
     UnifacParameters,
@@ -215,6 +217,7 @@ __all__ = [
     "ge_nrtl_phase",
     "ge_unifac_phase",
     "ge_uniquac_phase",
+    "ge_van_laar_acid_phase",
     "ge_wilson_phase",
     "gerg2008_phase",
     "hayduk_minhas_diffusivity",
@@ -304,6 +307,7 @@ _EOS_CG_PHASE = "eos.eos_cg_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
 _GE_UNIQUAC_PHASE = "eos.ge_uniquac_phase"
+_GE_VAN_LAAR_ACID_PHASE = "eos.ge_van_laar_acid_phase"
 _GE_WILSON_PHASE = "eos.ge_wilson_phase"
 _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
@@ -1820,6 +1824,35 @@ def ge_wilson_phase(
     """
     return resolve(_GE_WILSON_PHASE)(  # type: ignore[no-any-return]
         params=params, mixture=mixture, T=T, P=P, x=x
+    )
+
+
+def ge_van_laar_acid_phase(
+    params: GeVanLaarAcidPhaseParameters,
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+) -> GeVanLaarAcidPhaseResult:
+    """The fugacity coefficients of the water-nitric-sulfuric acid liquid.
+
+    ``phi_i = gamma_i P0_i / P``, the identity NeqSim's ``ComponentGEVanLaarAcid.fugcoef``
+    enforces as ``f_i = gamma_i x_i P0_i``. That override is why this phase is unlike its
+    four siblings: it **ignores** ``referenceStateType``, because both acids are tagged
+    ``solute`` and the inherited method would give them a Henry's-law coefficient instead.
+
+    ``P0`` is not Antoine's for the three modelled species either - it comes from
+    :func:`azoth.eos.nitric_sulfuric_acid_vapor_pressure` - and a species the model does
+    not cover is given the ``1.0e12`` penalty NeqSim gives it.
+
+    Raises:
+        InvalidInputError: if ``params`` and ``x`` disagree in length, or ``x`` is not a
+            composition.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.ge_van_laar_acid_phase`.
+    """
+    return resolve(_GE_VAN_LAAR_ACID_PHASE)(  # type: ignore[no-any-return]
+        params=params, T=T, P=P, x=x
     )
 
 

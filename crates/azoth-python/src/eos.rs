@@ -19,9 +19,9 @@ use crate::results::{
     PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
-    PyGeUniquacPhaseResult, PyGeWilsonPhaseResult, PyGerg2008PhaseResult,
-    PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyHeliumPhaseResult,
-    PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
+    PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult, PyGeWilsonPhaseResult,
+    PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult,
+    PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
     PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
     PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
     PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNitricSulfuricAcidVaporPressureResult,
@@ -1316,6 +1316,41 @@ pub fn ge_uniquac_phase(
     };
     azoth_eos::ge_uniquac_phase::ge_uniquac_phase(&params, T, P, &x, &aij)
         .map(|res| PyGeUniquacPhaseResult::from(&res))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The fugacity coefficients of the water-nitric-sulfuric acid liquid. A *model* rather
+/// than a calculation: the resolved record's fields cross flattened, the acid identities
+/// first and the vapour-pressure columns beside them.
+#[pyfunction]
+#[pyo3(signature = (acid_index, antoine_type, antoine_coefficients, antoine_tc, antoine_pc, T, P, x))]
+#[pyo3(
+    text_signature = "(acid_index, antoine_type, antoine_coefficients, antoine_tc, antoine_pc, T, P, x)"
+)]
+#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
+pub fn ge_van_laar_acid_phase(
+    py: Python<'_>,
+    acid_index: Vec<u8>,
+    antoine_type: Vec<String>,
+    antoine_coefficients: Vec<f64>,
+    antoine_tc: Vec<f64>,
+    antoine_pc: Vec<f64>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+) -> PyResult<PyGeVanLaarAcidPhaseResult> {
+    let params = azoth_eos::databank::GeVanLaarAcidPhaseParameters {
+        acid_index,
+        antoine: antoine_records(
+            antoine_type,
+            &antoine_coefficients,
+            &antoine_tc,
+            &antoine_pc,
+        ),
+    };
+    azoth_eos::ge_van_laar_acid_phase::ge_van_laar_acid_phase(&params, T, P, &x)
+        .map(|r| PyGeVanLaarAcidPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

@@ -1082,6 +1082,77 @@ def _phase_antoine(names: Sequence[str], card: keycard.Keycard | None) -> _Phase
 
 
 @dataclass(frozen=True, slots=True)
+class GeVanLaarAcidPhaseParameters:
+    """The parameters of a Van Laar acid activity-coefficient *phase*.
+
+    :class:`VanLaarAcidParameters`' acid identity, beside each component's Antoine columns
+    and the critical constants they need. The columns are carried for *every* component
+    but read only for the ones with ``acid_index == 0``: the three modelled species take
+    their ``P0`` from :func:`azoth.eos.nitric_sulfuric_acid_vapor_pressure` instead, which
+    is the whole point of the phase.
+    """
+
+    #: Per component: ``1`` water, ``2`` nitric acid, ``3`` sulfuric acid, ``0`` for a
+    #: species the model does not cover.
+    acid_index: tuple[int, ...]
+    #: NeqSim's Antoine label for each component, in order. Read only where
+    #: ``acid_index`` is zero.
+    antoine_type: tuple[str, ...]
+    #: The five coefficients ``A``-``E`` of each component, component-major.
+    antoine_coefficients: tuple[float, ...]
+    #: Critical temperature of each component, in K.
+    antoine_tc: tuple[float, ...]
+    #: Critical pressure of each component, in Pa.
+    antoine_pc: tuple[float, ...]
+
+
+def ge_van_laar_acid_phase_parameters(
+    names: Sequence[str], *, card: keycard.Keycard | None = None
+) -> GeVanLaarAcidPhaseParameters:
+    """The parameters of a Van Laar acid phase for a list of components, by name.
+
+    **This resolver does not refuse a Henry's-law solute, and its four siblings do.** The
+    refusal there exists because ``ComponentGE.fugcoef`` branches on ``referenceStateType``,
+    so computing the Raoult expression for a ``solute`` component would be the wrong branch
+    with no symptom. ``ComponentGEVanLaarAcid`` *overrides* ``fugcoef`` to ignore the tag -
+    and it has to, because both acids are tagged ``solute``. What this refuses is a
+    component the model does not cover that also has no Antoine correlation, because then
+    its ``P0`` has no source.
+
+    Raises:
+        PropertyUnavailableError: if a name is in neither the databank nor the keycard, or
+            if an uncovered component carries no Antoine correlation.
+    """
+    acid = van_laar_acid_parameters(names)
+
+    kinds: list[str] = []
+    coefficients: list[float] = []
+    tcs: list[float] = []
+    pcs: list[float] = []
+    for name, index in zip(names, acid.acid_index, strict=True):
+        record = entry(name, card=card)
+        if index == 0 and record.antoine == (0.0, 0.0, 0.0, 0.0, 0.0):
+            raise PropertyUnavailableError(
+                name,
+                "Antoine vapour-pressure coefficients",
+                "a species the acid model does not cover takes its `P0` from Antoine, and "
+                "the databank carries none for this one",
+            )
+        kinds.append(record.antoine_form())
+        coefficients.extend(record.antoine)
+        tcs.append(record.Tc.to_base_units().magnitude)
+        pcs.append(record.Pc.to_base_units().magnitude)
+
+    return GeVanLaarAcidPhaseParameters(
+        acid_index=acid.acid_index,
+        antoine_type=tuple(kinds),
+        antoine_coefficients=tuple(coefficients),
+        antoine_tc=tuple(tcs),
+        antoine_pc=tuple(pcs),
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class GeUniquacPhaseParameters:
     """The parameters of a UNIQUAC activity-coefficient *phase*.
 
@@ -1489,6 +1560,7 @@ __all__ = [
     "GeNrtlPhaseParameters",
     "GeUnifacPhaseParameters",
     "GeUniquacPhaseParameters",
+    "GeVanLaarAcidPhaseParameters",
     "GeWilsonPhaseParameters",
     "NrtlParameters",
     "UnifacParameters",
@@ -1505,6 +1577,7 @@ __all__ = [
     "ge_nrtl_phase_parameters",
     "ge_unifac_phase_parameters",
     "ge_uniquac_phase_parameters",
+    "ge_van_laar_acid_phase_parameters",
     "ge_wilson_phase_parameters",
     "kij_for",
     "nrtl_parameters",
