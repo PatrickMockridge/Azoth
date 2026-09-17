@@ -41,12 +41,7 @@ def pr_delft1998_alpha(omega: float, Tr: float) -> PrDelft1998AlphaResult:
     apply_checks(checks.on_input, values.get, warnings)
 
     if omega > 0.49:
-        m = (
-            0.379642
-            + 1.48503 * omega
-            - 0.164423 * omega * omega
-            + 0.01666 * omega * omega * omega
-        )
+        m = 0.379642 + 1.48503 * omega - 0.164423 * omega * omega + 0.01666 * omega * omega * omega
     else:
         m = 0.37464 + 1.54226 * omega - 0.26992 * omega * omega
     t = 1.0 + m * (1.0 - math.sqrt(Tr))

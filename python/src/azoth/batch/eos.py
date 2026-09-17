@@ -497,7 +497,9 @@ def _build_gassem(
     warnings: tuple[tuple[Warning, ...], ...],
 ) -> PrGassem2001AlphaBatch:
     return PrGassem2001AlphaBatch(
-        warnings=warnings, units=units, alpha=columns["alpha"]  # type: ignore[arg-type]
+        warnings=warnings,
+        units=units,
+        alpha=columns["alpha"],  # type: ignore[arg-type]
     )
 
 
