@@ -58,6 +58,7 @@ pub mod heat_of_vaporization;
 pub mod helium_phase;
 pub mod hv_ge;
 pub mod ideal_gas_cp;
+pub mod leachman;
 pub mod liquid_heat_capacity;
 pub mod mason_saxena_conductivity;
 pub mod matcop5_prumr_alpha;
