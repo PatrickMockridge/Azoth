@@ -13,6 +13,15 @@
 //! `1/T` - damped by a factor that halves whenever the residual grows, and it is not
 //! fatal when a trial temperature cannot be evaluated.
 //!
+//! Two more of upstream's flash classes are **not ported because nothing reaches
+//! them**. `dTPflash` extends `TPflash` and iterates only a named subset of components
+//! toward iso-fugacity - a membrane model - and its sole caller in the whole checkout is
+//! an example test. `TPgradientFlash` solves the composition and pressure profile of a
+//! fluid column under a temperature gradient and gravity, and its only callers are two
+//! tests. Neither is dead in the sense `QfuncFlash` is - both have a public
+//! `ThermodynamicOperations` method - but neither is reached from production code, and
+//! a model with no caller is a promise nothing keeps.
+//!
 //! `QfuncFlash` is where upstream declares the shape the subclasses share - the
 //! `calcdQdP`/`calcdQdT`/`calcdQdPP`/`calcdQdTT` quartet and a `run()` that calls the
 //! second-order solver. **Its own `run()` is never invoked**: every subclass
