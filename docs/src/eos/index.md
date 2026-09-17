@@ -71,6 +71,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.critical_point`](./critical_point.md) | `heidemann_khalil_critical` | Heidemann, R. A.; Khalil, A. M. (1980) |
 | [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.dew_temperature`](./dew_temperature.md) | `dew_temperature_successive_substitution` | Michelsen, M. L. (1982) |
+| [`eos.eos_cg_phase`](./eos_cg_phase.md) | `log_volume_newton` | Gernert, J.; Span, R. (2016) |
 | [`eos.helium_phase`](./helium_phase.md) | `newton_density_solve` | Vega (NIST IR 8474) helium equation of state |
 | [`eos.hydrogen_phase`](./hydrogen_phase.md) | `newton_density_solve` | Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009) |
 | [`eos.mason_saxena_conductivity`](./mason_saxena_conductivity.md) | `direct composition` | Mason, E. A.; Saxena, S. C. (1958); Chung et al. (1988) |

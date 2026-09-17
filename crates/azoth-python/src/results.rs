@@ -20,7 +20,7 @@ use azoth_eos::results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DewPressureResult, DewTemperatureResult, HaydukMinhasDiffusivityResult,
+    DewPressureResult, DewTemperatureResult, EosCgPhaseResult, HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
     MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
@@ -3249,6 +3249,67 @@ impl From<&ParahydrogenSolidPhaseResult> for PyParahydrogenSolidPhaseResult {
     }
 }
 
+/// Result of `eos.eos_cg_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EosCgPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEosCgPhaseResult {
+    /// The compressibility factor.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The internal energy.
+    #[pyo3(get)]
+    pub u: PyQty,
+    /// The enthalpy.
+    #[pyo3(get)]
+    pub h: PyQty,
+    /// The entropy.
+    #[pyo3(get)]
+    pub s: PyQty,
+    /// The isochoric heat capacity.
+    #[pyo3(get)]
+    pub cv: PyQty,
+    /// The isobaric heat capacity.
+    #[pyo3(get)]
+    pub cp: PyQty,
+    /// The Gibbs energy.
+    #[pyo3(get)]
+    pub g: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyEosCgPhaseResult {
+    fn __repr__(&self) -> String {
+        format!("EosCgPhaseResult(z_factor={})", self.z_factor)
+    }
+}
+
+impl From<&EosCgPhaseResult> for PyEosCgPhaseResult {
+    fn from(r: &EosCgPhaseResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            z_factor: r.z_factor,
+            u: qty(r.u.value, "J/mol"),
+            h: qty(r.h.value, "J/mol"),
+            s: qty(r.s.value, "J/(mol*K)"),
+            cv: qty(r.cv.value, "J/(mol*K)"),
+            cp: qty(r.cp.value, "J/(mol*K)"),
+            g: qty(r.g.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.helium_phase`, transported.
 #[pyclass(
     frozen,
@@ -4672,6 +4733,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         WaterPhaseResult::CALC_ID => WaterPhaseResult::FIELDS.to_vec(),
         ArgonSolidPhaseResult::CALC_ID => ArgonSolidPhaseResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
+        EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),

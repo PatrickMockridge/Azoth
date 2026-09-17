@@ -1,0 +1,49 @@
+model = "eos.eos_cg_phase"
+[[cases]]
+id = "pure_co2_gas"
+tolerance = 1e-08
+[cases.inputs]
+components = ["CO2"]
+T = 298.15
+P = 1000000.0
+z = [1.0]
+[cases.expected]
+z_factor = 0.9485172625063628
+u = -2777.281577797542
+h = -425.9480422515164
+s = -20.04359836195858
+cv = 29.96554796248867
+cp = 40.53034244465410
+g = 5550.050809366434
+[[cases]]
+id = "pure_methane_gas"
+tolerance = 1e-08
+[cases.inputs]
+components = ["methane"]
+T = 298.15
+P = 100000.0
+z = [1.0]
+[cases.expected]
+z_factor = 0.9982739642903633
+u = -2490.335522491387
+h = -15.65726129035627
+s = 0.07128326333813230
+cv = 27.40968856927136
+cp = 35.80073649119611
+g = -36.91036625462061
+[[cases]]
+id = "natural_gas_mixture"
+tolerance = 1e-08
+[cases.inputs]
+components = ["methane", "ethane", "CO2", "nitrogen"]
+T = 298.15
+P = 1000000.0
+z = [0.8, 0.1, 0.05, 0.05]
+[cases.expected]
+z_factor = 0.9788426234310892
+u = -2613.765064217002
+h = -187.2562620327814
+s = -13.59791139314746
+cv = 29.03567170090722
+cp = 38.29477941341759
+g = 3866.961019834134

@@ -10,6 +10,7 @@
 //!   - specs/models/eos/critical_point.toml
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
+//!   - specs/models/eos/eos_cg_phase.toml
 //!   - specs/models/eos/helium_phase.toml
 //!   - specs/models/eos/hydrogen_phase.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
@@ -1076,6 +1077,131 @@ pub static DEW_TEMPERATURE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&DEW_TEMPERATURE_ALGORITHM),
     checks: DEW_TEMPERATURE_CHECKS,
     cases: DEW_TEMPERATURE_CASES,
+};
+
+static EOS_CG_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static EOS_CG_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "pure_co2_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 1000000.0)],
+        lists: &[("components", &["CO2"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9485172625063628),
+            ("u", -2777.281577797542),
+            ("h", -425.9480422515164),
+            ("s", -20.04359836195858),
+            ("cv", 29.96554796248867),
+            ("cp", 40.5303424446541),
+            ("g", 5550.050809366434),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "pure_methane_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 100000.0)],
+        lists: &[("components", &["methane"])],
+        strings: &[],
+        vectors: &[("z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9982739642903633),
+            ("u", -2490.335522491387),
+            ("h", -15.65726129035627),
+            ("s", 0.0712832633381323),
+            ("cv", 27.40968856927136),
+            ("cp", 35.80073649119611),
+            ("g", -36.91036625462061),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "natural_gas_mixture",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 1000000.0)],
+        lists: &[("components", &["methane", "ethane", "CO2", "nitrogen"])],
+        strings: &[],
+        vectors: &[("z", &[0.8, 0.1, 0.05, 0.05])],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.9788426234310892),
+            ("u", -2613.765064217002),
+            ("h", -187.2562620327814),
+            ("s", -13.59791139314746),
+            ("cv", 29.03567170090722),
+            ("cp", 38.29477941341759),
+            ("g", 3866.961019834134),
+        ],
+        expected_vectors: &[],
+    },
+];
+
+static EOS_CG_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "log_volume_newton",
+    convergence: "absolute",
+    tolerance: 1e-07,
+    max_iterations: 50,
+    bracket: None,
+    initialisation: Some("ideal_gas"),
+    initial_temperature: None,
+    inner: None,
+};
+
+/// Registry entry for `eos.eos_cg_phase`.
+pub static EOS_CG_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.eos_cg_phase",
+    kind: "procedure",
+    algorithm: Some(&EOS_CG_PHASE_ALGORITHM),
+    checks: EOS_CG_PHASE_CHECKS,
+    cases: EOS_CG_PHASE_CASES,
 };
 
 static HELIUM_PHASE_CHECKS: &[SpecCheck] = &[
@@ -3350,6 +3476,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &CRITICAL_POINT_SPEC,
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
+    &EOS_CG_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
     &HYDROGEN_PHASE_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,

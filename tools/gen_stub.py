@@ -321,6 +321,10 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             # A non-cubic reference EOS resolves the names into per-component coefficient
             # sets, flattened into the 32-coefficient `a` and the critical density.
             params += ["a: list[float]", "rhoc: list[float]"]
+        elif "components" in taken:
+            # The EOS-CG mixture maps its own fixed component names, so the names cross
+            # the boundary verbatim rather than as a flattened mixture.
+            params.append("components: list[str]")
         else:
             params += ["Tc: float", "Pc: float", "omega: float"]
     if "ideal_gas" in taken:

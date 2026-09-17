@@ -131,6 +131,7 @@ Four sections, and the difference between them is the point:
 - [`eos.critical_point`](./eos/critical_point.md) — Mixture critical point
 - [`eos.dew_pressure`](./eos/dew_pressure.md) — Dew-point pressure
 - [`eos.dew_temperature`](./eos/dew_temperature.md) — Dew-point temperature
+- [`eos.eos_cg_phase`](./eos/eos_cg_phase.md) — EOS-CG phase state
 - [`eos.helium_phase`](./eos/helium_phase.md) — Helium reference phase state
 - [`eos.hydrogen_phase`](./eos/hydrogen_phase.md) — Hydrogen reference phase state
 - [`eos.mason_saxena_conductivity`](./eos/mason_saxena_conductivity.md) — Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities

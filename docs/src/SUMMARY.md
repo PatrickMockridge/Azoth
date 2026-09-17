@@ -73,6 +73,7 @@
   - [Mixture critical point](./eos/critical_point.md)
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Dew-point temperature](./eos/dew_temperature.md)
+  - [EOS-CG phase state](./eos/eos_cg_phase.md)
   - [Helium reference phase state](./eos/helium_phase.md)
   - [Hydrogen reference phase state](./eos/hydrogen_phase.md)
   - [Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities](./eos/mason_saxena_conductivity.md)

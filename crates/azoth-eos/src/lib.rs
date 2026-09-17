@@ -57,6 +57,7 @@ pub mod dew_temperature;
 pub mod dual;
 pub mod eos_cg;
 mod eos_cg_data;
+pub mod eos_cg_phase;
 pub mod flash_property;
 pub mod hayduk_minhas_diffusivity;
 pub mod heat_of_vaporization;
@@ -158,6 +159,7 @@ pub use critical_point::critical_point;
 pub use cubic::Cubic;
 pub use dew_pressure::dew_pressure;
 pub use dew_temperature::dew_temperature;
+pub use eos_cg_phase::eos_cg_phase;
 pub use hayduk_minhas_diffusivity::{HaydukMinhasForm, hayduk_minhas_diffusivity};
 pub use heat_of_vaporization::heat_of_vaporization;
 pub use helium_phase::helium_phase;
@@ -204,7 +206,7 @@ pub use results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DewPressureResult, DewTemperatureResult, HaydukMinhasDiffusivityResult,
+    DewPressureResult, DewTemperatureResult, EosCgPhaseResult, HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
     MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,

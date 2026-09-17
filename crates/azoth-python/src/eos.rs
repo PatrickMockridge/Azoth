@@ -18,8 +18,8 @@ use crate::results::{
     PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyArgonSolidPhaseResult, PyBwrsPhaseResult,
     PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
-    PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyHeliumPhaseResult,
-    PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
+    PyEosCgPhaseResult, PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult,
+    PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
     PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
     PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
     PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult,
@@ -2056,6 +2056,22 @@ pub fn parahydrogen_solid_phase(
 ) -> PyResult<PyParahydrogenSolidPhaseResult> {
     azoth_eos::parahydrogen_solid_phase(kelvins(T), pascals(P))
         .map(|r| PyParahydrogenSolidPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The EOS-CG phase state, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn eos_cg_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<PyEosCgPhaseResult> {
+    azoth_eos::eos_cg_phase(&components, kelvins(T), pascals(P), &z)
+        .map(|r| PyEosCgPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
