@@ -935,15 +935,74 @@ pub enum EnergyTarget {
     InternalEnergy(f64),
     /// An enthalpy, supplied whole.
     Enthalpy(f64),
+    /// An entropy, at the volume the flash is holding. NeqSim's `VSflash`, which is its
+    /// `OptimizedVUflash` loop with a Q function in the entropy instead.
+    Entropy(f64),
 }
 
 impl EnergyTarget {
     /// The enthalpy the state should have, at a trial pressure.
+    ///
+    /// Only the coupled solver reads this, and only for the two enthalpy forms; the
+    /// energy residual of a running solve goes through [`Self::q_t`].
+    #[allow(dead_code)]
     fn enthalpy(self, pressure: f64, v_spec: f64) -> f64 {
         match self {
             Self::InternalEnergy(u) => u + pressure * v_spec,
             Self::Enthalpy(h) => h,
+            // An entropy has no enthalpy target: the Q function below is the one that
+            // reads it, and this arm exists so a caller reaching the *volume-energy*
+            // solver with one gets a NaN rather than a plausible number.
+            Self::Entropy(_) => f64::NAN,
         }
+    }
+
+    /// The property a trial state is evaluated for, which is what the target names.
+    fn property(self) -> Property {
+        match self {
+            Self::Entropy(_) => Property::Entropy,
+            Self::InternalEnergy(_) | Self::Enthalpy(_) => Property::Enthalpy,
+        }
+    }
+
+    /// `Q_T`, the energy residual at a trial state.
+    ///
+    /// An enthalpy's is over `R T` and an entropy's over `R` alone, which is upstream's
+    /// own difference between `calcdQdT` in `OptimizedVUflash` and in `VSflash`.
+    fn q_t(self, value: f64, pressure: f64, v_spec: f64, temperature: f64) -> f64 {
+        match self {
+            Self::InternalEnergy(u) => {
+                (u + pressure * v_spec - value) / (MOLAR_GAS_CONSTANT * temperature)
+            }
+            Self::Enthalpy(h) => (h - value) / (MOLAR_GAS_CONSTANT * temperature),
+            Self::Entropy(s) => (s - value) / MOLAR_GAS_CONSTANT,
+        }
+    }
+
+    /// `dQ_T/dT`, which the three targets do not share.
+    ///
+    /// The two enthalpy forms are `-Cp/(R T) - Q_T/T`. An entropy's is `-Cp/(R T)` with
+    /// no `Q_T/T` term - `VSflash.calcdQdTT` - read here from the flashed heat capacity
+    /// rather than from upstream's two-phase sum of `Cp_p/T_p`, which is neither the
+    /// frozen-composition slope nor the equilibrium one. The difference is recorded in
+    /// `eos.vs_flash`'s spec.
+    fn q_t_derivative(self, cp: f64, q_t: f64, temperature: f64) -> f64 {
+        match self {
+            Self::InternalEnergy(_) | Self::Enthalpy(_) => {
+                -cp / (MOLAR_GAS_CONSTANT * temperature) - q_t / temperature
+            }
+            Self::Entropy(_) => -cp / (MOLAR_GAS_CONSTANT * temperature),
+        }
+    }
+
+    /// How far the state's own property is from the one asked for, relative.
+    fn relative_error(self, value: f64, pressure: f64, v_spec: f64) -> f64 {
+        let target = match self {
+            Self::InternalEnergy(u) => u + pressure * v_spec,
+            Self::Enthalpy(h) => h,
+            Self::Entropy(s) => s,
+        };
+        ((value - target) / target.abs().max(1.0)).abs()
     }
 }
 
@@ -982,7 +1041,7 @@ pub fn solve_pressure_temperature(
         kelvins(temperature),
         pascals(pressure),
         z,
-        Property::Enthalpy,
+        target.property(),
     )?;
     let mut warnings = evaluation.flash.warnings.clone();
 
@@ -994,14 +1053,14 @@ pub fn solve_pressure_temperature(
 
     loop {
         iterations += 1;
-        let h = evaluation.value;
+        let value = evaluation.value;
         let v = evaluation.volume;
         let cp = evaluation.cp;
         let tk = temperature;
         let pk = pressure;
 
         let q_p = pk * (v - v_spec) / (MOLAR_GAS_CONSTANT * tk);
-        let q_t = (target.enthalpy(pk, v_spec) - h) / (tk * MOLAR_GAS_CONSTANT);
+        let q_t = target.q_t(value, pk, v_spec, tk);
         let dvdp = slope_pressure(
             mixture,
             ideal_gas,
@@ -1013,7 +1072,7 @@ pub fn solve_pressure_temperature(
         );
         let mut dq_pp =
             (v - v_spec) / (MOLAR_GAS_CONSTANT * tk) + pk * dvdp / (MOLAR_GAS_CONSTANT * tk);
-        let mut dq_tt = -cp / (tk * MOLAR_GAS_CONSTANT) - q_t / tk;
+        let mut dq_tt = target.q_t_derivative(cp, q_t, tk);
         if dq_pp.abs() < 1.0e-12 {
             dq_pp = dq_pp.signum() * 1.0e-12;
         }
@@ -1032,7 +1091,7 @@ pub fn solve_pressure_temperature(
             kelvins(ny_t),
             pascals(ny_p),
             z,
-            Property::Enthalpy,
+            target.property(),
         ) {
             Ok(next) => {
                 pressure = ny_p;
@@ -1050,8 +1109,7 @@ pub fn solve_pressure_temperature(
         let temp_error = ((ny_t - tk) / ny_t.max(1.0)).abs();
         let total_error = pres_error + temp_error;
         let vol_err = ((evaluation.volume - v_spec) / v_spec).abs();
-        let h_target = target.enthalpy(ny_p, v_spec);
-        let h_err = ((evaluation.value - h_target) / h_target.abs().max(1.0)).abs();
+        let h_err = target.relative_error(evaluation.value, ny_p, v_spec);
 
         if total_error < 1.0e-6 && vol_err < 1.0e-6 && h_err < 1.0e-5 {
             converged = true;
@@ -1073,8 +1131,7 @@ pub fn solve_pressure_temperature(
     }
 
     let vol_err = ((evaluation.volume - v_spec) / v_spec).abs();
-    let h_target = target.enthalpy(pressure, v_spec);
-    let h_err = ((evaluation.value - h_target) / h_target.abs().max(1.0)).abs();
+    let h_err = target.relative_error(evaluation.value, pressure, v_spec);
     if vol_err >= 1.0e-3 || h_err >= 1.0e-3 {
         return Err(AzothError::SolverNotConverged {
             iterations,

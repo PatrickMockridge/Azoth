@@ -42,8 +42,9 @@ use azoth_eos::results::{
     TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    VhFlashResult, ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    VhFlashResult, ViscosityResult, VsFlashResult, VuFlashResult, VuFlashSingleCompResult,
+    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -4970,6 +4971,89 @@ impl From<&PvfFlashResult> for PyPvfFlashResult {
     }
 }
 
+/// Result of `eos.vs_flash`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "VsFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(non_snake_case)] // `P` and `T` are the symbols the spec and the Python result both use
+pub struct PyVsFlashResult {
+    /// The pressure that satisfies the volume and internal energy.
+    #[pyo3(get)]
+    pub P: PyQty,
+    /// The temperature that satisfies the volume and internal energy.
+    #[pyo3(get)]
+    pub T: PyQty,
+    /// The vapour fraction, or `None` for a single-phase feed.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// The spec's spelling of the phase.
+    #[pyo3(get)]
+    pub phase: String,
+    /// The liquid root of the cubic.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// Newton steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The larger of the relative volume and entropy residuals.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyVsFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "VsFlashResult(P={} Pa, T={} K, phase={}, beta={:?})",
+            self.P.magnitude_si, self.T.magnitude_si, self.phase, self.beta
+        )
+    }
+}
+
+impl From<&VsFlashResult> for PyVsFlashResult {
+    fn from(r: &VsFlashResult) -> Self {
+        Self {
+            P: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            T: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            beta: r.beta,
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            phase: r.phase.as_str().to_string(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.vh_flash`, transported.
 #[pyclass(
     frozen,
@@ -5659,6 +5743,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PvRefluxFlashResult::CALC_ID => PvRefluxFlashResult::FIELDS.to_vec(),
         PvfFlashResult::CALC_ID => PvfFlashResult::FIELDS.to_vec(),
         VhFlashResult::CALC_ID => VhFlashResult::FIELDS.to_vec(),
+        VsFlashResult::CALC_ID => VsFlashResult::FIELDS.to_vec(),
         VuFlashResult::CALC_ID => VuFlashResult::FIELDS.to_vec(),
         VuFlashSingleCompResult::CALC_ID => VuFlashSingleCompResult::FIELDS.to_vec(),
         StabilityTestResult::CALC_ID => StabilityTestResult::FIELDS.to_vec(),

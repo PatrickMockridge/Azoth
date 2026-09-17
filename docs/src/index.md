@@ -169,6 +169,7 @@ Four sections, and the difference between them is the point:
 - [`eos.van_laar_acid_activity_coefficients`](./eos/van_laar_acid_activity_coefficients.md) — Activity coefficients from the Van Laar model for the water-nitric-sulfuric acid system
 - [`eos.vh_flash`](./eos/vh_flash.md) — Volume-enthalpy flash
 - [`eos.viscosity`](./eos/viscosity.md) — Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation
+- [`eos.vs_flash`](./eos/vs_flash.md) — Volume-entropy flash
 - [`eos.vu_flash`](./eos/vu_flash.md) — Volume-internal-energy flash
 - [`eos.vu_flash_single_comp`](./eos/vu_flash_single_comp.md) — Volume-internal-energy flash of a pure component
 - [`eos.water_phase`](./eos/water_phase.md) — Water reference phase state

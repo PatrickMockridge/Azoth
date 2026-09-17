@@ -1,0 +1,35 @@
+model = "eos.vs_flash"
+[[cases]]
+id = "single_phase_vapour_round_trip"
+tolerance = 1e-03
+[cases.inputs]
+components = ["methane", "n-butane"]
+V = 0.003204528495751204
+S = 10.79669897216693
+z = [0.6, 0.4]
+[cases.expected]
+P = 1000000.0
+T = 400.0
+[[cases]]
+id = "two_phase_round_trip"
+tolerance = 1e-03
+source = "The 330 K, 25 bar state `eos.pt_flash`'s own case converges to, asked back from its volume and entropy - the isentropic state a `VesselDepressurization` flash reaches. NeqSim 3.20.0's `VSflash` is reached from exactly that branch."
+[cases.inputs]
+components = ["methane", "n-butane"]
+V = 0.0008190137837513794
+S = -19.59777901249028
+z = [0.6, 0.4]
+[cases.expected]
+P = 2500000.0
+T = 330.0
+[[cases]]
+id = "subcooled_liquid_round_trip"
+tolerance = 1e-03
+[cases.inputs]
+components = ["methane", "n-butane"]
+V = 0.000265092592553906
+S = -43.80361857070733
+z = [0.6, 0.4]
+[cases.expected]
+P = 5000000.0
+T = 300.0

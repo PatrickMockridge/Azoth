@@ -165,6 +165,7 @@ from azoth.core.result import (
     Vdw1fMixBinaryResult,
     VhFlashResult,
     ViscosityResult,
+    VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
     WaterPhaseResult,
@@ -280,6 +281,7 @@ __all__ = [
     "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
     "vh_flash",
+    "vs_flash",
     "vu_flash",
     "vu_flash_single_comp",
     "water_phase",
@@ -378,6 +380,7 @@ _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _VH_FLASH = "eos.vh_flash"
+_VS_FLASH = "eos.vs_flash"
 _VU_FLASH = "eos.vu_flash"
 _VU_FLASH_SINGLE_COMP = "eos.vu_flash_single_comp"
 _WILKE_VISCOSITY = "eos.wilke_viscosity"
@@ -1476,6 +1479,28 @@ def pu_flash(
     """
     return resolve(_PU_FLASH)(  # type: ignore[no-any-return]
         mixture=mixture, ideal_gas=ideal_gas, P=P, U=U, z=z
+    )
+
+
+def vs_flash(
+    mixture: Mixture, ideal_gas: IdealGasModel, V: Q, S: Q, z: list[float]
+) -> VsFlashResult:
+    """The temperature and pressure at which a mixture has a given volume and entropy.
+
+    An isentropic operation: a compressor, an expander or a vessel blowdown, where the
+    entropy is conserved and neither the temperature nor the pressure is.
+
+    ``S`` is a *difference* from the datum ``ideal_gas`` carries, not an absolute
+    quantity.
+
+    Raises:
+        OutOfRangeError: if ``V`` is not positive.
+        SolverNotConvergedError: if the iteration reaches its cap.
+
+    See :func:`azoth.eos.reference.vs_flash`.
+    """
+    return resolve(_VS_FLASH)(  # type: ignore[no-any-return]
+        mixture=mixture, ideal_gas=ideal_gas, V=V, S=S, z=z
     )
 
 

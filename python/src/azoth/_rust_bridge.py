@@ -136,6 +136,7 @@ from azoth.core.result import (
     Vdw1fMixBinaryResult,
     VhFlashResult,
     ViscosityResult,
+    VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
     WaterPhaseResult,
@@ -1787,6 +1788,42 @@ def vu_flash(mixture: Any, ideal_gas: Any, V: Q, U: Q, z: Sequence[float]) -> Vu
         [list(c.alpha_params) for c in mixture.components],
     )
     return VuFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def vs_flash(mixture: Any, ideal_gas: Any, V: Q, S: Q, z: Sequence[float]) -> VsFlashResult:
+    """The volume-entropy flash of a mixture, solved in Rust."""
+    spec = _models_gen.model("eos.vs_flash")
+    result = _core.vs_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "V", V),
+        input_to_si(spec, "S", S),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return VsFlashResult(
         P=from_si(result.P.magnitude_si, result.P.unit),
         T=from_si(result.T.magnitude_si, result.T.unit),
         beta=result.beta,

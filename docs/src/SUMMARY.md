@@ -111,6 +111,7 @@
   - [Activity coefficients from the Van Laar model for the water-nitric-sulfuric acid system](./eos/van_laar_acid_activity_coefficients.md)
   - [Volume-enthalpy flash](./eos/vh_flash.md)
   - [Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation](./eos/viscosity.md)
+  - [Volume-entropy flash](./eos/vs_flash.md)
   - [Volume-internal-energy flash](./eos/vu_flash.md)
   - [Volume-internal-energy flash of a pure component](./eos/vu_flash_single_comp.md)
   - [Water reference phase state](./eos/water_phase.md)

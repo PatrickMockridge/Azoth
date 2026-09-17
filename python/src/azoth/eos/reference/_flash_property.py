@@ -727,12 +727,29 @@ def solve_pressure_temperature(
 
     A decoupled 2x2 Newton in the Q-function form, with one inner flash per step.
 
-    ``target`` is ``("u", u_spec)`` or ``("h", h_spec)``: the two are the same solver
-    with a different energy target, which is upstream's own arrangement -
-    `OptimizedVUflash` and `VHflashQfunc` differ in whether the enthalpy is assembled
-    from the internal energy and the volume or supplied whole.
+    ``target`` is ``("u", u_spec)``, ``("h", h_spec)`` or ``("s", s_spec)``: the three
+    are the same solver with a different specification, which is upstream's own
+    arrangement - `OptimizedVUflash`, `VHflashQfunc` and `VSflash` differ in which
+    property is asked for and in how the residual is scaled.
     """
     kind, specification = target
+
+    def property_name() -> Property:
+        return "s" if kind == "s" else "h"
+
+    def q_t_of(value: float, pressure: float, temperature: float) -> float:
+        """``Q_T``, the specification residual at a trial state."""
+        if kind == "u":
+            return (specification + pressure * v_spec - value) / (MOLAR_GAS_CONSTANT * temperature)
+        if kind == "h":
+            return (specification - value) / (MOLAR_GAS_CONSTANT * temperature)
+        return (specification - value) / MOLAR_GAS_CONSTANT
+
+    def q_t_derivative_of(cp: float, q_t: float, temperature: float) -> float:
+        """``dQ_T/dT``, which the three targets do not share."""
+        if kind == "s":
+            return -cp / (MOLAR_GAS_CONSTANT * temperature)
+        return -cp / (MOLAR_GAS_CONSTANT * temperature) - q_t / temperature
 
     def target_enthalpy(pressure: float) -> float:
         return specification + pressure * v_spec if kind == "u" else specification
@@ -743,7 +760,9 @@ def solve_pressure_temperature(
     damping = 0.8
     stagnation = 0
 
-    value, cp, volume, flash = _evaluate(mixture, ideal_gas, temperature, pressure, z, "h")
+    value, cp, volume, flash = _evaluate(
+        mixture, ideal_gas, temperature, pressure, z, property_name()
+    )
     warnings: list[Warning] = list(flash.warnings)
 
     iterations = 0
@@ -760,10 +779,10 @@ def solve_pressure_temperature(
         pk = pressure
 
         q_p = pk * (v - v_spec) / (MOLAR_GAS_CONSTANT * tk)
-        q_t = (target_enthalpy(pk) - h) / (tk * MOLAR_GAS_CONSTANT)
+        q_t = q_t_of(h, pk, tk)
         dvdp = _slope_pressure(mixture, ideal_gas, tk, z, "v", pk, -v / pk)
         dq_pp = (v - v_spec) / (MOLAR_GAS_CONSTANT * tk) + pk * dvdp / (MOLAR_GAS_CONSTANT * tk)
-        dq_tt = -cp / (tk * MOLAR_GAS_CONSTANT) - q_t / tk
+        dq_tt = q_t_derivative_of(cp, q_t, tk)
         if abs(dq_pp) < 1.0e-12:
             dq_pp = math.copysign(1.0e-12, dq_pp)
         if abs(dq_tt) < 1.0e-12:
@@ -775,7 +794,7 @@ def solve_pressure_temperature(
         ny_t = min(max(tk + delta_t, 50.0), 5000.0)
 
         try:
-            value, cp, volume, flash = _evaluate(mixture, ideal_gas, ny_t, ny_p, z, "h")
+            value, cp, volume, flash = _evaluate(mixture, ideal_gas, ny_t, ny_p, z, property_name())
         except Exception as error_raised:
             if not _temperature_dependent(error_raised):
                 raise

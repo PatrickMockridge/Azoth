@@ -1,0 +1,100 @@
+id = "eos.vs_flash"
+name = "Volume-entropy flash"
+kind = "procedure"
+assumptions = [
+    "The coupled-target solve of `eos.vu_flash` - a decoupled 2x2 Newton on `(P, T)`, one inner flash per step - with an entropy asked for instead of an energy. NeqSim's `VSflash` is its `OptimizedVUflash` loop with a Q function in the entropy.",
+    "the entropy is a *difference* from the datum the ideal-gas model carries, not an absolute quantity: two calls with different reference values are not comparable, and their difference is a plausible number rather than an error.",
+    "the answer is accepted on a 1e-3 relative volume and entropy error, NeqSim's own acceptance and looser than the iteration's - so an iterate the loop never settled at can pass it, and carries a `SOLVER_NOT_CONVERGED` warning saying so.",
+    "the entropy residual's temperature derivative is the flashed heat capacity over the temperature, as `eos.vh_flash`'s is. NeqSim's `VSflash` sums `Cp_p/T_p` over the phases instead, which is neither the frozen slope nor the equilibrium one.",
+    "no check that the feed is stable: the model asks where the volume and entropy are satisfied, not whether the state found is the equilibrium one.",
+]
+references = [
+    "Michelsen, M. L.; Mollerup, J. M. (2004). \"Thermodynamic Models: Fundamentals and Computational Aspects.\" Tie-Line Publications.",
+]
+[source]
+standard = "Standard thermodynamics, as in Michelsen & Mollerup"
+edition = "NeqSim 3.20.0 `thermodynamicoperations/flashops/VSflash`: its `calcdQdP`, `calcdQdT`, `calcdQdPP` and its damped clamped step are this model's loop, reached from `VesselDepressurization`'s isentropic branch."
+[algorithm]
+scheme = "vs_flash_newton_2x2"
+convergence = "relative"
+tolerance = 1e-08
+max_iterations = 100
+initial_temperature = 300.0
+[algorithm.inner]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 300
+[algorithm.inner.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.V]
+unit = "m**3/mol"
+description = "the one-mole-basis molar volume the state is held at"
+[inputs.S]
+unit = "J/(mol*K)"
+description = "the one-mole-basis molar entropy. A *difference* from the datum the ideal-gas model carries, not an absolute quantity."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "overall mole fractions"
+[outputs]
+[outputs.P]
+unit = "Pa"
+description = "the pressure that satisfies the volume and entropy"
+[outputs.T]
+unit = "K"
+description = "the temperature that satisfies the volume and entropy"
+[outputs.beta]
+unit = "dimensionless"
+optional = true
+description = "the vapour fraction at the answer, or absent for a single-phase feed"
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions at the answer"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions at the answer"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`K_i = y_i / x_i` at the answer"
+[outputs.phase]
+type = "enum"
+values = ["two_phase", "all_liquid", "all_vapour", "trivial"]
+description = "which phase the feed is in at the answer"
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the liquid root of the cubic at the answer"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root at the answer"
+[outputs.iterations]
+unit = "dimensionless"
+description = "Newton steps taken, including the final evaluation"
+[outputs.residual]
+unit = "dimensionless"
+description = "the larger of the relative volume and entropy residuals at the answer"
+[[valid_range]]
+quantity = "V"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a molar volume; zero and below are not states"
+[implementations]
+python = "azoth.eos.vs_flash"
+rust = "azoth_eos::vs_flash"

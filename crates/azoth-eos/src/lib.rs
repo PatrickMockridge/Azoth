@@ -157,6 +157,7 @@ pub mod vdw1f_mix_binary;
 pub mod vega;
 pub mod vh_flash;
 pub mod viscosity;
+pub mod vs_flash;
 pub mod vu_flash;
 pub mod vu_flash_single_comp;
 pub mod water_phase;

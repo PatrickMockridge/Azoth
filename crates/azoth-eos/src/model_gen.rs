@@ -47,6 +47,7 @@
 //!   - specs/models/eos/van_laar_acid_activity_coefficients.toml
 //!   - specs/models/eos/vh_flash.toml
 //!   - specs/models/eos/viscosity.toml
+//!   - specs/models/eos/vs_flash.toml
 //!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/vu_flash_single_comp.toml
 //!   - specs/models/eos/water_phase.toml
@@ -4792,6 +4793,103 @@ pub static VISCOSITY_SPEC: ModelSpec = ModelSpec {
     cases: VISCOSITY_CASES,
 };
 
+static VS_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "V",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "a molar volume; zero and below are not states",
+    },
+}];
+
+static VS_FLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "single_phase_vapour_round_trip",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("V", 0.003204528495751204), ("S", 10.79669897216693)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[("P", 1000000.0), ("T", 400.0)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "two_phase_round_trip",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("V", 0.0008190137837513794), ("S", -19.59777901249028)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[("P", 2500000.0), ("T", 330.0)],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "subcooled_liquid_round_trip",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("V", 0.000265092592553906), ("S", -43.80361857070733)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[("P", 5000000.0), ("T", 300.0)],
+        expected_vectors: &[],
+    },
+];
+
+static VS_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+static VS_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "vs_flash_newton_2x2",
+    convergence: "relative",
+    tolerance: 1e-08,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: Some(300.0),
+    inner: Some(&VS_FLASH_INNER),
+    fallback: None,
+};
+
+/// Registry entry for `eos.vs_flash`.
+pub static VS_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.vs_flash",
+    kind: "procedure",
+    algorithm: Some(&VS_FLASH_ALGORITHM),
+    checks: VS_FLASH_CHECKS,
+    cases: VS_FLASH_CASES,
+};
+
 static VU_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -5320,6 +5418,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_SPEC,
     &VH_FLASH_SPEC,
     &VISCOSITY_SPEC,
+    &VS_FLASH_SPEC,
     &VU_FLASH_SPEC,
     &VU_FLASH_SINGLE_COMP_SPEC,
     &WATER_PHASE_SPEC,
