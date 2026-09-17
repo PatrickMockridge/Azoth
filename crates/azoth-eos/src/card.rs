@@ -103,8 +103,8 @@ pub struct KijRow {
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Coefficient {
-    /// The number, in the unit beside it.
-    pub value: f64,
+    /// The value, in the unit beside it: a number, a vector, or a matrix.
+    pub value: CoefficientValue,
     /// The unit, as a name from `specs/vocabulary/vocabulary.toml`.
     pub unit: String,
     /// Which convention the value is stated in, where the quantity is not a true ratio.
@@ -115,11 +115,81 @@ pub struct Coefficient {
 
 impl Coefficient {
     /// The value as an SI base magnitude, the conversion the Python side's
-    /// `azoth.core.units.to_si` makes, so a coefficient declared in `mm` means the same
-    /// thing in both languages. The unit is checked when the card is read.
+    /// `azoth.core.units.to_si_shaped` makes, so a coefficient declared in `mm` means
+    /// the same thing in both languages. The unit is checked when the card is read.
     #[must_use]
-    pub fn si_value(&self) -> f64 {
-        si_factor(&self.unit).map_or(self.value, |factor| self.value * factor)
+    pub fn si_value(&self) -> CoefficientValue {
+        let factor = si_factor(&self.unit).unwrap_or(1.0);
+        self.value.scaled(factor)
+    }
+}
+
+/// One coefficient's value: a number, a vector, or a matrix.
+///
+/// A declared *input* is a scalar, and so this was until a card had to supply one that
+/// is not. NeqSim carries no UNIQUAC interaction table - `PhaseGEUniquac` is handed the
+/// SRK `kij` as its `aij` - so that matrix can only come from the caller, and the keycard
+/// is where a value its holder is accountable for belongs.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(untagged)]
+pub enum CoefficientValue {
+    /// One number.
+    Scalar(f64),
+    /// A vector, or a matrix where every entry is itself a list.
+    List(Vec<CoefficientValue>),
+}
+
+impl CoefficientValue {
+    /// This value with every number multiplied by `factor`.
+    #[must_use]
+    pub fn scaled(&self, factor: f64) -> Self {
+        match self {
+            Self::Scalar(value) => Self::Scalar(value * factor),
+            Self::List(entries) => {
+                Self::List(entries.iter().map(|entry| entry.scaled(factor)).collect())
+            }
+        }
+    }
+
+    /// The scalar this is, or `None` for a vector or a matrix.
+    ///
+    /// The two readers of a card have to agree about what a coefficient *is*, and
+    /// `python/tests/test_card_agreement.py` compares them; this is what a Rust caller
+    /// that has no use for a matrix reads instead of matching on the enum.
+    #[must_use]
+    pub fn scalar(&self) -> Option<f64> {
+        match self {
+            Self::Scalar(value) => Some(*value),
+            Self::List(_) => None,
+        }
+    }
+}
+
+/// Whether a coefficient's value is a number, a non-empty vector, or a non-empty
+/// rectangular matrix.
+///
+/// Serde enforces the *shape* - a number, or a list of numbers, or a list of those - and
+/// cannot enforce the rest: `[[1, 2], [3]]` deserialises happily and is not a matrix, and
+/// `[]` deserialises happily and is not a value. Both are refused here rather than read
+/// as whatever the calculation happens to do with them. The Python reader,
+/// `azoth.keycard._coefficient_value`, refuses exactly these, and
+/// `python/tests/test_card_agreement.py` is what holds the two together.
+fn well_formed(value: &CoefficientValue) -> bool {
+    match value {
+        CoefficientValue::Scalar(_) => true,
+        CoefficientValue::List(entries) => match entries.first() {
+            None => false,
+            Some(CoefficientValue::List(first)) => {
+                !first.is_empty()
+                    && entries.iter().all(well_formed)
+                    && entries.iter().all(
+                        |entry| matches!(entry, CoefficientValue::List(row) if row.len() == first.len()),
+                    )
+            }
+            Some(CoefficientValue::Scalar(_)) => {
+                entries.iter().all(|entry| matches!(entry, CoefficientValue::Scalar(_)))
+            }
+        },
     }
 }
 
@@ -385,6 +455,16 @@ fn check_coefficients(
     for (calc_id, arguments) in coefficients {
         for (name, body) in arguments {
             let field = format!("coefficients.{calc_id}.{name}");
+            if !well_formed(&body.value) {
+                return Err(AzothError::invalid_input(
+                    field,
+                    "carries a value that is not rectangular. A value is a number, a \
+                     non-empty vector or a non-empty rectangular matrix of numbers, so \
+                     a ragged list of lists is refused rather than read row by row \
+                     against a matrix the calculation expects."
+                        .to_string(),
+                ));
+            }
             if dimension(&body.unit).is_none() {
                 return Err(AzothError::invalid_input(
                     field,

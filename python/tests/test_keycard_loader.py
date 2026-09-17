@@ -31,7 +31,12 @@ from typing import Any
 import pytest
 
 from azoth import eos, hydraulics, keycard
-from azoth.core.errors import InvalidInputError, KeycardError, PropertyUnavailableError
+from azoth.core.errors import (
+    InvalidInputError,
+    KeycardError,
+    PropertyUnavailableError,
+    UnitMismatchError,
+)
 from azoth.core.units import ureg
 from azoth.eos.mixture import Component
 
@@ -632,3 +637,95 @@ def test_a_card_component_with_a_polynomial_has_an_enthalpy() -> None:
     _, gas = eos.components.mixture_of(["unobtainium"], card=card)
     assert gas.cp_a == (20.0,)
     assert gas.cp_b == (0.1,)
+
+
+def test_a_keycard_supplies_a_matrix_no_upstream_table_carries() -> None:
+    """A whole matrix, not just a scalar, and the card is why it can be given at all.
+
+    `eos.uniquac_activity_coefficients`'s `aij` has no databank column to resolve it
+    from: NeqSim's `ComponentGEUniquac` reads the generic `intparam`, which for a GE
+    phase is the SRK `kij` rather than a UNIQUAC parameter. So the caller supplies it -
+    or their card does, which is where a value the holder is accountable for belongs.
+
+    The two calls are asserted equal rather than against a number, because what is being
+    checked is that the card produces *the same argument* a caller's own would: a card
+    supplying nothing but the values would be a second representation of the input.
+    """
+    card = a_card(
+        coefficients={
+            "eos.uniquac_activity_coefficients": {
+                "aij": {"value": [[0.0, -71.0], [209.0, 0.0]], "unit": "K"}
+            }
+        }
+    )
+    params = eos.components.uniquac_parameters(["methanol", "water"])
+    aij = [[q(0.0, "K"), q(-71.0, "K")], [q(209.0, "K"), q(0.0, "K")]]
+
+    from_card = eos.uniquac_activity_coefficients(params, q(298.15, "K"), [0.5, 0.5], card=card)
+    explicit = eos.uniquac_activity_coefficients(params, q(298.15, "K"), [0.5, 0.5], aij)
+    # Compared field by field: a result is `eq=False`, so `==` is identity and two
+    # equal answers from two paths would compare unequal.
+    assert from_card.gamma == explicit.gamma
+    assert from_card.ln_gamma == explicit.ln_gamma
+    assert from_card.gamma[0] != 1.0, "the matrix reached the arithmetic"
+
+
+def test_an_explicit_matrix_wins_and_the_keycard_is_not_consulted() -> None:
+    """The same precedence a scalar coefficient has, for a matrix."""
+    card = a_card(
+        coefficients={
+            "eos.uniquac_activity_coefficients": {
+                "aij": {"value": [[0.0, -999.0], [999.0, 0.0]], "unit": "K"}
+            }
+        }
+    )
+    params = eos.components.uniquac_parameters(["methanol", "water"])
+    aij = [[q(0.0, "K"), q(-71.0, "K")], [q(209.0, "K"), q(0.0, "K")]]
+
+    explicit = eos.uniquac_activity_coefficients(params, q(298.15, "K"), [0.5, 0.5], aij)
+    without = eos.uniquac_activity_coefficients(params, q(298.15, "K"), [0.5, 0.5], aij, card=card)
+    assert explicit.gamma == without.gamma
+
+
+def test_a_matrix_coefficient_in_the_wrong_unit_is_refused() -> None:
+    """The dimension check reaches a matrix, entry by entry.
+
+    `to_si_shaped` converts each entry against the spec's declared unit, so a `aij`
+    declared in pascals where the spec says kelvin is caught by the same check that
+    catches a scalar in the wrong unit - rather than being read as a plausible number.
+    """
+    card = a_card(
+        coefficients={
+            "eos.uniquac_activity_coefficients": {
+                "aij": {"value": [[0.0, -71.0], [209.0, 0.0]], "unit": "Pa"}
+            }
+        }
+    )
+    params = eos.components.uniquac_parameters(["methanol", "water"])
+    with pytest.raises(UnitMismatchError):
+        eos.uniquac_activity_coefficients(params, q(298.15, "K"), [0.5, 0.5], card=card)
+
+
+def test_a_card_value_is_restated_in_the_spec_s_own_unit() -> None:
+    """The conversion `coefficient_value` makes before handing a value back.
+
+    Asserted **directly rather than through a card**, and the reason is worth stating:
+    the one input a card supplies a matrix for is `eos.uniquac_activity_coefficients`'s
+    `aij`, declared in `K`, and `K` is the only temperature unit the vocabulary carries -
+    so a card's value is already in the spec's unit and the restatement is the identity.
+    A sabotage that removed it would pass every test that goes through a card.
+
+    The contract is still the contract: a card hands back **the argument a caller would
+    have passed**, and a caller passes the spec's unit. The first input this matters for
+    will be a dimension with more than one scale in it, and this is where that is
+    already checked.
+    """
+    from azoth.keycard import _in_spec_unit
+
+    scalar = _in_spec_unit(q(500.0, "mm"), "m")
+    assert scalar.units == ureg.m
+    assert scalar.magnitude == pytest.approx(0.5)
+
+    nested = _in_spec_unit([[q(1.0, "mm")], [q(2.0, "mm")]], "m")
+    assert nested[1][0].to("m").magnitude == pytest.approx(0.002)
+    assert isinstance(nested, list) and isinstance(nested[0], list), "the shape is kept"

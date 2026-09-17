@@ -81,6 +81,13 @@ ureg: Final[pint.UnitRegistry] = pint.UnitRegistry()
 #: Quantity alias. Always annotate `Q`, never a bare `Quantity`.
 type Q = pint.Quantity[float]
 
+#: An SI base magnitude as a calc works in one: a number, a vector or a matrix.
+#:
+#: Recursive because a coefficient may be any of the three and the shape is the point -
+#: a matrix flattened to a vector of the same numbers would compare equal to it. Every
+#: *declared input* is still a plain `float`; this is the one path that is not.
+type SiValue = float | list[SiValue]
+
 #: Canonical unit strings, keyed by the strings the spec schema allows, mapped to
 #: the unit's name in `pint`'s registry. **Generated** from
 #: `specs/vocabulary/vocabulary.toml` by `tools/gen_vocabulary.py`, which is why
@@ -185,6 +192,42 @@ def to_si(value: Any, spec_unit: str, field: str, *, interval: bool = False) -> 
         raise UnitMismatchError(field, spec_unit, str(value.units)) from exc
     base: Q = converted.to_base_units()
     return float(base.magnitude)
+
+
+def to_si_shaped(value: Any, spec_unit: str, field: str, *, interval: bool = False) -> SiValue:
+    """`to_si` over a value that may be a number, a vector or a matrix.
+
+    A vector or a matrix is a **nested list of quantities, one per entry** - which is
+    the convention every declared vector and matrix input already follows, and the one
+    the reference kernels read: `eos.uniquac_activity_coefficients` converts its `aij`
+    entry by entry. Building one quantity around the whole matrix instead would need
+    NumPy, and a keycard coefficient is not worth a dependency.
+
+    Every entry is checked against the same spec unit, so a row in the wrong unit is
+    caught by the check that catches a scalar in the wrong one.
+
+    Raises:
+        UnitMismatchError: exactly as :func:`to_si`, naming the field, before anything
+            is converted.
+    """
+    if isinstance(value, (list, tuple)):
+        return [to_si_shaped(entry, spec_unit, field, interval=interval) for entry in value]
+    return to_si(value, spec_unit, field, interval=interval)
+
+
+def input_to_si_shaped(spec: Mapping[str, Any], field: str, value: Any) -> SiValue:
+    """`input_to_si`, over a value that may be a number, a vector or a matrix.
+
+    The same spec lookup and the same checks. See :func:`to_si_shaped` for why one
+    value needs this and every other does not.
+    """
+    declaration = spec["inputs"][field]
+    return to_si_shaped(
+        value,
+        declaration["unit"],
+        field,
+        interval=bool(declaration.get("interval", False)),
+    )
 
 
 def input_to_si(spec: Mapping[str, Any], field: str, value: Any) -> float:

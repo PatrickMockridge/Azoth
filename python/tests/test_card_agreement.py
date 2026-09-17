@@ -16,6 +16,7 @@ from typing import Any
 import pytest
 
 from azoth import _core, keycard
+from azoth.core._units_gen import CANONICAL_UNITS
 from azoth.core.errors import InvalidInputError, KeycardError
 from azoth.eos import components
 
@@ -134,3 +135,145 @@ def test_the_two_readers_agree_about_a_self_pair() -> None:
         python_card(text)
     with pytest.raises(InvalidInputError, match="does not interact with itself"):
         rust_card(text)
+
+
+A_MATRIX_CARD = """\
+schema_version = 2
+keyholder.name = "Example Engineering Ltd"
+
+# Deliberately not square: a square matrix cannot tell a transposition from the truth,
+# so a comparison over one would pass whichever way round the two readers built it.
+[coefficients."eos.uniquac_activity_coefficients".aij]
+value = [[0.0, -71.0, 5.5], [209.0, 0.0, 7.5]]
+unit = "K"
+citation = "a representative UNIQUAC matrix; NeqSim carries no such table"
+
+[coefficients."hydraulics.orifice_flow".Cd]
+value = 0.61
+unit = "dimensionless"
+
+[coefficients."hydraulics.choked_flow_area".d]
+value = 50.0
+unit = "mm"
+"""
+
+
+def _python_coefficients(card: keycard.Keycard) -> dict[tuple[str, str], tuple[str, list[Any]]]:
+    """Each coefficient as `(unit, rows)`, a scalar and a vector both being rows.
+
+    The shape is the point: a matrix flattened to a list of numbers would compare equal
+    to a vector of the same numbers, which is the one mistake this comparison is here
+    to catch.
+    """
+    out: dict[tuple[str, str], tuple[str, list[Any]]] = {}
+    for calc_id, arguments in card.coefficients.items():
+        for name, value in arguments.items():
+            # A vector and a matrix are lists of quantities, one per entry - the
+            # convention every declared vector and matrix input follows. `rows` is the
+            # shape the Rust side reports: a matrix's own rows, a vector as one row, a
+            # number as a one-entry row.
+            nested = _magnitudes(value)
+            if not isinstance(nested, list):
+                rows: list[Any] = [nested]
+            elif nested and not isinstance(nested[0], list):
+                rows = [nested]
+            else:
+                rows = nested
+            out[(calc_id, name)] = (_spelling(value), rows)
+    return out
+
+
+def _spelling(value: Any) -> str:
+    """The unit as the *format* spells it, which is what the Rust reader reports.
+
+    `pint` names the unit `kelvin` and the vocabulary names it `K`; both readers were
+    handed `K` and validated it against that vocabulary, so the comparison is of the
+    spelling the format uses rather than of either library's own name for it.
+    """
+    name = str(_leaves(value)[0].units)
+    for spelled, canonical in CANONICAL_UNITS.items():
+        if canonical == name:
+            return spelled
+    raise AssertionError(f"{name} is not a spelling this vocabulary carries")
+
+
+def _magnitudes(value: Any) -> Any:
+    """A coefficient's SI base magnitudes, in the shape it was declared in.
+
+    Base units rather than as written, because that is the number a calculation uses -
+    the same choice `overlay_kij_rows` makes when it compares the *effective*
+    interaction parameter rather than the stated one. A `50 mm` coefficient is `0.05`,
+    and a comparison over the written numbers would call two readers that disagree
+    about the conversion equal.
+    """
+    if isinstance(value, list):
+        return [_magnitudes(entry) for entry in value]
+    return float(value.to_base_units().magnitude)
+
+
+def _leaves(value: Any) -> list[Any]:
+    """Every quantity in a coefficient, in order, so its unit can be read once."""
+    if isinstance(value, list):
+        return [leaf for entry in value for leaf in _leaves(entry)]
+    return [value]
+
+
+def test_the_two_readers_resolve_the_same_coefficients() -> None:
+    """The card format's third section, compared value by value and shape by shape.
+
+    `components` and `kij` had a comparison; `coefficients` had none, so a value one
+    reader accepted and the other refused - or one read as a matrix and the other as a
+    vector - was checked by nothing. The card the format's *own* schema admits is now
+    read by both and the two answers compared.
+    """
+    card = python_card(A_MATRIX_CARD)
+    mine = _python_coefficients(card)
+    theirs = {
+        (calc_id, name): (unit, _rows(rows, cols, values))
+        for calc_id, name, unit, rows, cols, values in _core.card_coefficients(A_MATRIX_CARD)
+    }
+
+    assert set(mine) == set(theirs), "the readers name different coefficients"
+    assert mine, "the card states no coefficients, so nothing was compared"
+    for key in sorted(mine):
+        unit, rows = mine[key]
+        assert unit == theirs[key][0], f"{key}: unit {unit} vs {theirs[key][0]}"
+        assert rows == theirs[key][1], f"{key}: {rows} vs {theirs[key][1]}"
+
+
+def _rows(rows: int, cols: int, values: list[float]) -> list[Any]:
+    """The Rust side's `(rows, cols, values)` as the nested list Python builds."""
+    if rows == 1 and cols == 1:
+        return [values[0]]
+    if rows == 1:
+        return [list(values)]
+    return [list(values[i * cols : (i + 1) * cols]) for i in range(rows)]
+
+
+def test_both_readers_refuse_a_ragged_coefficient() -> None:
+    """A shape neither reader will read, refused by both rather than by one.
+
+    Serde accepts `[[1, 2], [3]]` - it is a list of lists of numbers - and `pint` will
+    build a quantity from it, so a shape check that lived on one side only would let the
+    other through with a matrix the calculation cannot index.
+    """
+    ragged = (
+        'schema_version = 2\n[coefficients."eos.uniquac_activity_coefficients".aij]\n'
+        'value = [[0.0, -71.0], [209.0]]\nunit = "K"\n'
+    )
+    with pytest.raises(KeycardError, match="rectangular"):
+        python_card(ragged)
+    with pytest.raises(InvalidInputError, match="rectangular"):
+        _core.card_coefficients(ragged)
+
+
+def test_both_readers_refuse_an_empty_coefficient() -> None:
+    """A value with no numbers is not a default, on either side."""
+    empty = (
+        'schema_version = 2\n[coefficients."eos.uniquac_activity_coefficients".aij]\n'
+        'value = []\nunit = "K"\n'
+    )
+    with pytest.raises(KeycardError, match="empty"):
+        python_card(empty)
+    with pytest.raises(InvalidInputError, match="rectangular"):
+        _core.card_coefficients(empty)

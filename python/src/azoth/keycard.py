@@ -358,11 +358,73 @@ def _coefficients(raw: Any, where: str, section: str) -> dict[str, dict[str, Q]]
                     f"a wrong unit is a factor with no symptom.",
                 )
             try:
-                resolved[name] = ureg.Quantity(float(body["value"]), unit)
-            except (KeyError, TypeError, ValueError, pint.errors.PintError) as exc:
+                resolved[name] = _coefficient_value(body["value"], unit, where, field_name)
+            except KeyError as exc:
+                raise KeycardError(where, f"`{field_name}` cannot be read: {exc}") from exc
+            except (TypeError, ValueError, pint.errors.PintError) as exc:
                 raise KeycardError(where, f"`{field_name}` cannot be read: {exc}") from exc
         out[str(calc_id)] = resolved
     return out
+
+
+def _coefficient_value(raw: Any, unit: str, where: str, field_name: str) -> Any:
+    """One coefficient: a number, a vector or a matrix, all in the unit beside it.
+
+    A vector or a matrix comes back as a **list of quantities, one per entry**, which
+    is the convention every declared vector and matrix input already follows -
+    `eos.uniquac_activity_coefficients` converts its `aij` entry by entry, and
+    `azoth.core.units.to_si_shaped` reads that shape. Wrapping the whole matrix in one
+    quantity would need NumPy, and a coefficient is not worth a dependency.
+
+    **A matrix is not a convenience.** NeqSim carries no UNIQUAC interaction table -
+    `PhaseGEUniquac` is handed the SRK `kij` as its `aij` - so a caller who wants
+    UNIQUAC has to supply that matrix or nobody can. The keycard is where a value the
+    holder is accountable for belongs, and until this it could carry only scalars.
+
+    The unit is one unit for the whole value: a matrix whose rows carried different
+    units is a table, not a coefficient.
+    """
+    if isinstance(raw, bool) or not isinstance(raw, (int, float, list)):
+        raise KeycardError(
+            where,
+            f"`{field_name}` is {type(raw).__name__} {raw!r}. A value is a number, a "
+            f"non-empty vector or a non-empty rectangular matrix of numbers.",
+        )
+    if not isinstance(raw, list):
+        return ureg.Quantity(raw, unit)
+    if not raw:
+        raise KeycardError(
+            where,
+            f"`{field_name}` is an empty list. A value is a number, a non-empty "
+            f"vector or a non-empty rectangular matrix of numbers.",
+        )
+    if all(isinstance(entry, (int, float)) and not isinstance(entry, bool) for entry in raw):
+        return [ureg.Quantity(entry, unit) for entry in raw]
+
+    width: int | None = None
+    rows: list[list[Any]] = []
+    for i, row in enumerate(raw):
+        if not isinstance(row, list) or not row:
+            raise KeycardError(
+                where,
+                f"`{field_name}` row {i} is {row!r}. A value is a number, a non-empty "
+                f"vector or a non-empty rectangular matrix of numbers.",
+            )
+        if width is None:
+            width = len(row)
+        elif len(row) != width:
+            raise KeycardError(
+                where,
+                f"`{field_name}` row {i} has {len(row)} entries while row 0 has "
+                f"{width}; a matrix is rectangular.",
+            )
+        if any(isinstance(entry, bool) or not isinstance(entry, (int, float)) for entry in row):
+            raise KeycardError(
+                where,
+                f"`{field_name}` row {i} is {row!r}, which is not a row of numbers.",
+            )
+        rows.append([ureg.Quantity(entry, unit) for entry in row])
+    return rows
 
 
 def _conventions(raw: Any) -> dict[str, dict[str, str]]:
@@ -450,18 +512,28 @@ def _models(raw: Any, where: str) -> dict[str, Model]:
 def coefficient_value(calc_id: str, name: str, given: Any, *, card: Keycard | None = None) -> Any:
     """A coefficient for a calculation: what the caller passed, else the card's.
 
-    An explicit argument always wins and the card is not consulted. The value is
-    converted against the *spec's* declared unit for that input, so a coefficient
-    declared in bar and read as pascal is caught here.
+    **The card hands back the argument exactly as a caller would have passed it**, so
+    nothing downstream can tell the two apart. For an input the spec declares
+    dimensioned that is a quantity in the spec's own unit - `eos.uniquac_activity_coefficients`
+    takes its `aij` as nested quantities, and a card supplying SI magnitudes there would
+    be a second representation of the same input. For one it declares `dimensionless`
+    it is a bare number, which is what a dimensionless input is everywhere in this
+    library.
+
+    An explicit argument always wins and the card is not consulted.
+
+    The dimension is checked on the way: a coefficient declared in bar where the spec
+    says pascal is caught here, because the conversion is what catches it. See
+    :func:`azoth.core.units.to_si_shaped` for what a vector or matrix is made of.
 
     Raises:
-        InvalidInputError: if the caller passed nothing and no card supplies it.
-            A missing coefficient is an error rather than a default: a plausible
-            value nobody chose is a wrong answer with no symptom.
+        InvalidInputError: if the caller passed nothing and no card supplies it, or if
+            the card's value carries the wrong dimensions. A missing coefficient is an
+            error rather than a default: a plausible value nobody chose is a wrong answer
+            with no symptom.
     """
-    from azoth._registry_gen import spec  # local: the registry is generated, not core
     from azoth.core.errors import InvalidInputError
-    from azoth.core.units import input_to_si
+    from azoth.core.units import to_si_shaped
 
     if given is not None:
         return given
@@ -474,7 +546,59 @@ def coefficient_value(calc_id: str, name: str, given: Any, *, card: Keycard | No
             f"`{calc_id}` needs a value and none was passed; {holder} supplies one. "
             f"Either pass it, or add a `coefficients.{calc_id}.{name}` entry.",
         )
-    return input_to_si(spec(calc_id), name, supplied)
+
+    declaration = _declaration(calc_id, name)
+    unit = declaration["unit"]
+    interval = bool(declaration.get("interval", False))
+    # The conversion *is* the dimension check, so this is not a wasted call: it is what
+    # refuses a `Tc` in pascals. Its result is used only where the spec is dimensionless,
+    # because there the SI base magnitude is the number a caller passes.
+    si = to_si_shaped(supplied, unit, name, interval=interval)
+    if unit == "dimensionless":
+        return si
+    return _in_spec_unit(supplied, unit)
+
+
+def _declaration(calc_id: str, name: str) -> Mapping[str, Any]:
+    """One input's declaration, from whichever registry holds the id.
+
+    **A coefficient may belong to a model, and this used to look only among the
+    calculations.** `azoth._registry_gen` holds the calcs and `azoth._models_gen` the
+    models; `eos.uniquac_activity_coefficients` is the latter, and asking the calc
+    registry alone refused its id as unknown. Nothing noticed because the only caller
+    was `hydraulics.orifice_flow`, which is a calc - the bug was waiting for the first
+    model to want a card-supplied argument, which is exactly what the matrix work added.
+
+    Raises:
+        InvalidInputError: if the id is in neither registry, since there is then no
+            declared unit to check a card's value against.
+    """
+    from azoth import _models_gen
+    from azoth._registry_gen import BY_ID
+    from azoth.core.errors import InvalidInputError
+
+    document = BY_ID.get(calc_id) or _models_gen.MODEL_BY_ID.get(calc_id)
+    if document is None:
+        raise InvalidInputError(
+            "coefficients",
+            f"`{calc_id}` is in neither registry, so there is no spec declaring what "
+            f"its `{name}` is and no unit to check a card's value against",
+        )
+    declaration: Mapping[str, Any] = document["inputs"][name]
+    return declaration
+
+
+def _in_spec_unit(value: Any, unit: str) -> Any:
+    """A card's quantity, or nested quantities, restated in the spec's own unit.
+
+    Recursive for the same reason `to_si_shaped` is: a vector and a matrix are lists of
+    quantities, one per entry.
+    """
+    from azoth.core.units import unit_for
+
+    if isinstance(value, list):
+        return [_in_spec_unit(entry, unit) for entry in value]
+    return value.to(unit_for(unit))
 
 
 __all__ = [

@@ -66,6 +66,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from azoth import keycard
 from azoth._dispatch import resolve
 from azoth.core.result import (
     AmmoniaPhaseResult,
@@ -1259,7 +1260,9 @@ def uniquac_activity_coefficients(
     params: UniquacParameters,
     T: Q,
     x: Sequence[float],
-    aij: Sequence[Sequence[Q]],
+    aij: Sequence[Sequence[Q]] | None = None,
+    *,
+    card: keycard.Keycard | None = None,
 ) -> UniquacActivityCoefficientsResult:
     """The activity coefficients of a mixture, from UNIQUAC (Abrams-Prausnitz).
 
@@ -1269,18 +1272,26 @@ def uniquac_activity_coefficients(
     a zero diagonal; ``x`` is checked rather than renormalised.
 
     ``params`` is the caller's: resolve the van der Waals ``r``/``q`` from the mixture's
-    components with :func:`azoth.eos.components.uniquac_parameters`. ``aij`` stays the
-    caller's too, because no upstream table carries a UNIQUAC interaction matrix.
+    components with :func:`azoth.eos.components.uniquac_parameters`. ``aij`` has no
+    upstream table to resolve it from - NeqSim's `ComponentGEUniquac` reads the generic
+    `intparam`, which for a GE phase is the SRK `kij` and not a UNIQUAC parameter - so it
+    is either the caller's argument or, when omitted, a **keycard** entry at
+    ``coefficients."eos.uniquac_activity_coefficients".aij``. An explicit argument always
+    wins and the card is not consulted; see :func:`azoth.keycard.coefficient_value`.
 
     Raises:
         InvalidInputError: if the vectors disagree in length, ``aij`` is not ``N x N``
-            with a zero diagonal, or ``x`` is not a composition.
+            with a zero diagonal, ``x`` is not a composition, or ``aij`` is omitted and
+            no keycard supplies it.
         OutOfRangeError: if ``T`` is not positive.
 
     See :func:`azoth.eos.reference.uniquac_activity_coefficients`.
     """
     return resolve(_UNIQUAC_ACTIVITY_COEFFICIENTS)(  # type: ignore[no-any-return]
-        params=params, T=T, x=x, aij=aij
+        params=params,
+        T=T,
+        x=x,
+        aij=keycard.coefficient_value(_UNIQUAC_ACTIVITY_COEFFICIENTS, "aij", aij, card=card),
     )
 
 

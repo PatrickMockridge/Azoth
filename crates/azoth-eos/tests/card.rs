@@ -7,7 +7,9 @@
 
 use std::path::PathBuf;
 
-use azoth_eos::card::{COMPONENT_PARAMETERS, Card, MODEL_KINDS, SCHEMA_VERSION};
+use azoth_eos::card::{
+    CoefficientValue, {COMPONENT_PARAMETERS, Card, MODEL_KINDS, SCHEMA_VERSION},
+};
 use azoth_eos::databank;
 
 /// The template, at the path the README tells a user to copy it from.
@@ -60,9 +62,9 @@ fn the_shipped_template_loads() {
     let cd = card
         .coefficient("hydraulics.orifice_flow", "Cd")
         .expect("the template supplies a discharge coefficient");
-    assert_eq!(cd.value, 0.61);
+    assert_eq!(cd.value, CoefficientValue::Scalar(0.61));
     assert_eq!(cd.unit, "dimensionless");
-    assert_eq!(cd.si_value(), 0.61);
+    assert_eq!(cd.si_value().scalar(), Some(0.61));
     assert_eq!(cd.convention.as_deref(), Some("iso_5167_corner"));
     assert!(
         card.coefficient("hydraulics.orifice_flow", "nope")
@@ -110,11 +112,15 @@ fn a_coefficient_is_carried_as_written_and_converted_beside_it() {
         .coefficient("hydraulics.choked_flow_area", "d")
         .expect("the card states it");
 
-    assert_eq!(d.value, 50.0, "what the card wrote is disclosure");
+    assert_eq!(
+        d.value,
+        CoefficientValue::Scalar(50.0),
+        "what the card wrote is disclosure"
+    );
     assert_eq!(d.unit, "mm");
     assert_eq!(
-        d.si_value(),
-        0.05,
+        d.si_value().scalar(),
+        Some(0.05),
         "what a calculation takes is an SI magnitude"
     );
 }
@@ -237,4 +243,92 @@ fn a_document_that_is_not_toml_is_refused_as_such() {
     let error = Card::from_toml("schema_version: 2\n").expect_err("that is not TOML");
 
     assert!(error.to_string().contains("does not parse"), "{error}");
+}
+
+/// A coefficient may be a matrix, and reading it keeps its shape and its unit.
+///
+/// `eos.uniquac_activity_coefficients`'s `aij` is the one that needs this: NeqSim carries
+/// no UNIQUAC interaction table, so a card is the only place the parameter can come from
+/// that is not the caller's own argument.
+#[test]
+fn a_matrix_coefficient_keeps_its_shape_and_its_unit() {
+    let card = Card::from_toml(&a_card(
+        "[coefficients.\"eos.uniquac_activity_coefficients\".aij]\n\
+         value = [[0.0, -71.0], [209.0, 0.0]]\nunit = \"K\"\n",
+    ))
+    .expect("a valid card");
+    let aij = card
+        .coefficient("eos.uniquac_activity_coefficients", "aij")
+        .expect("the card states it");
+
+    assert_eq!(aij.unit, "K");
+    assert_eq!(aij.si_value().scalar(), None, "a matrix is not a scalar");
+    assert_eq!(
+        aij.si_value(),
+        CoefficientValue::List(vec![
+            CoefficientValue::List(vec![
+                CoefficientValue::Scalar(0.0),
+                CoefficientValue::Scalar(-71.0),
+            ]),
+            CoefficientValue::List(vec![
+                CoefficientValue::Scalar(209.0),
+                CoefficientValue::Scalar(0.0),
+            ]),
+        ])
+    );
+}
+
+/// A matrix in millimetres converts every entry, and a vector is a value too.
+#[test]
+fn a_vector_is_a_value_and_a_unit_scales_every_entry() {
+    let card = Card::from_toml(&a_card(
+        "[coefficients.\"eos.uniquac_activity_coefficients\".aij]\n\
+         value = [[0.0, 2.0], [3.0, 0.0]]\nunit = \"mm\"\n",
+    ))
+    .expect("a valid card");
+    let aij = card
+        .coefficient("eos.uniquac_activity_coefficients", "aij")
+        .expect("the card states it");
+    assert_eq!(
+        aij.si_value(),
+        CoefficientValue::List(vec![
+            CoefficientValue::List(vec![
+                CoefficientValue::Scalar(0.0),
+                CoefficientValue::Scalar(0.002),
+            ]),
+            CoefficientValue::List(vec![
+                CoefficientValue::Scalar(0.003),
+                CoefficientValue::Scalar(0.0),
+            ]),
+        ])
+    );
+}
+
+/// A ragged list of lists is not a matrix, and is refused rather than read row by row
+/// against a matrix the calculation expects.
+#[test]
+fn a_ragged_coefficient_is_refused() {
+    let err = Card::from_toml(&a_card(
+        "[coefficients.\"eos.uniquac_activity_coefficients\".aij]\n\
+         value = [[0.0, -71.0], [209.0]]\nunit = \"K\"\n",
+    ))
+    .expect_err("a ragged matrix is refused");
+    let message = format!("{err}");
+    assert!(
+        message.contains("rectangular"),
+        "the error should say what is wrong with the shape: {message}"
+    );
+}
+
+/// An empty value is refused: a coefficient with no numbers is not a default.
+#[test]
+fn an_empty_coefficient_is_refused() {
+    let err = Card::from_toml(&a_card(
+        "[coefficients.\"eos.uniquac_activity_coefficients\".aij]\nvalue = []\nunit = \"K\"\n",
+    ))
+    .expect_err("an empty value is refused");
+    assert!(
+        format!("{err}").contains("rectangular"),
+        "an empty value is not a matrix: {err}"
+    );
 }

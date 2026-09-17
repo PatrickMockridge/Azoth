@@ -8,6 +8,7 @@
 
 use pyo3::prelude::*;
 
+use azoth_eos::card::CoefficientValue;
 use azoth_eos::databank::{ComponentOverride, Overlay};
 
 use crate::data::{PyComponentRow, row_of};
@@ -122,6 +123,83 @@ pub fn overlay_kij_rows(overlay: &PyOverlay) -> Vec<(String, String, f64)> {
             (first, second, value)
         })
         .collect()
+}
+
+/// One coefficient as it crosses: `(calc_id, name, unit, rows, cols, values)`.
+///
+/// A tuple rather than a class because nothing on this side reads it - the Python side
+/// unpacks it into a comparison - and `values` is row-major beside the shape it belongs
+/// to rather than nested, because the boundary carries numbers.
+type CoefficientRow = (String, String, String, usize, usize, Vec<f64>);
+
+/// Every coefficient a card states, in a shape a comparison can read.
+///
+/// **This exists because nothing compared the two readers on coefficients.** The card
+/// format's own test compares `components` and `kij`; a coefficient was parsed by both
+/// and checked by neither, which is how a value one reader accepts and the other
+/// refuses stays invisible. It was a scalar until a card had to carry a matrix, so the
+/// gap was harmless until it was not.
+///
+/// The value keeps its shape: `rows` and `cols` are `1` and `1` for a number, `1` and
+/// `n` for a vector, and the matrix's own size otherwise, with `values` flattened
+/// row-major beside them. Flattened because the boundary carries numbers; shaped because
+/// a matrix read as a vector is the defect this is here to catch.
+///
+/// The value is the **SI** one, `Coefficient::si_value`'s, not the number as written -
+/// the same choice `overlay_kij_rows` makes, and for the same reason: what two readers
+/// have to agree about is the number a calculation would use.
+///
+/// # Errors
+/// * `InvalidInputError` if the text is not a card this build reads.
+#[pyfunction]
+pub fn card_coefficients(py: Python<'_>, text: &str) -> PyResult<Vec<CoefficientRow>> {
+    let card = azoth_eos::card::Card::from_toml(text)
+        .map_err(|error| crate::errors::to_pyerr(py, error))?;
+    let mut out = Vec::new();
+    for (calc_id, arguments) in &card.coefficients {
+        for (name, body) in arguments {
+            let (rows, cols, values) = flatten(&body.si_value());
+            out.push((
+                calc_id.clone(),
+                name.clone(),
+                body.unit.clone(),
+                rows,
+                cols,
+                values,
+            ));
+        }
+    }
+    Ok(out)
+}
+
+/// A coefficient value as `(rows, cols, values row-major)`, which is how it crosses.
+fn flatten(value: &CoefficientValue) -> (usize, usize, Vec<f64>) {
+    match value {
+        CoefficientValue::Scalar(number) => (1, 1, vec![*number]),
+        CoefficientValue::List(entries) => match entries.first() {
+            Some(CoefficientValue::List(row)) => {
+                let cols = row.len();
+                let values = entries
+                    .iter()
+                    .flat_map(|entry| match entry {
+                        CoefficientValue::List(row) => {
+                            row.iter().filter_map(CoefficientValue::scalar).collect()
+                        }
+                        CoefficientValue::Scalar(_) => Vec::new(),
+                    })
+                    .collect();
+                (entries.len(), cols, values)
+            }
+            _ => (
+                1,
+                entries.len(),
+                entries
+                    .iter()
+                    .filter_map(CoefficientValue::scalar)
+                    .collect(),
+            ),
+        },
+    }
 }
 
 /// A card read by **Rust**, as the overlay it resolves to. The second reader of one
