@@ -91,6 +91,7 @@ pub mod mixture;
 pub mod model_gen;
 pub mod molar_enthalpy_entropy;
 pub mod mollerup_alpha;
+pub mod multiphase;
 pub mod nitric_sulfuric_acid_vapor_pressure;
 pub mod nrtl_activity_coefficients;
 pub mod parachor_surface_tension;

@@ -1330,7 +1330,7 @@ impl Mixture {
 /// Shared by the two models that use it: `eos.pt_flash` seeds its iteration with it,
 /// and `eos.stability_test` seeds *both* of its trials with it - the vapour-like one
 /// from `z_i K_i` and the liquid-like one from `z_i / K_i`.
-pub(crate) fn wilson_k(mixture: &Mixture, t: ThermodynamicTemperature, p: Pressure) -> Vec<f64> {
+pub fn wilson_k(mixture: &Mixture, t: ThermodynamicTemperature, p: Pressure) -> Vec<f64> {
     mixture
         .components()
         .iter()
