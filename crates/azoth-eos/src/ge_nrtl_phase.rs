@@ -11,10 +11,9 @@
 //! [`crate::antoine_vapor_pressure`] - and this is their composition rather than a third
 //! piece of physics.
 
-use azoth_core::units::{kelvins, pascals};
+use azoth_core::units::pascals;
 use azoth_core::{AzothError, Result, apply_checks};
 
-use crate::antoine_vapor_pressure::{antoine_vapor_pressure, form_from_type};
 use crate::databank::GeNrtlPhaseParameters;
 use crate::model_gen;
 use crate::results::GeNrtlPhaseResult;
@@ -107,42 +106,17 @@ pub fn ge_nrtl_phase(
     };
     let gamma = crate::nrtl_activity_coefficients::nrtl_activity_coefficients(&nrtl, T, x)?.gamma;
 
-    // The pure-component saturation pressures, one Antoine evaluation each.
-    let mut p_sat = Vec::with_capacity(n);
-    for record in &params.antoine {
-        // No error for an unmapped label: `form_from_type` falls through to Wagner, which
-        // is NeqSim's own dispatch and the reason `eos.antoine_vapor_pressure` carries the
-        // same fall-through. The phase reproduces what the correlation does rather than
-        // refusing a label the upstream evaluates.
-        let form = form_from_type(&record.antoine_type);
-        let [a, b, c, d, e] = record.coefficients;
-        let saturated = antoine_vapor_pressure(
-            a,
-            b,
-            c,
-            d,
-            e,
-            form,
-            kelvins(record.tc),
-            pascals(record.pc),
-            kelvins(T),
-        )?;
-        warnings.extend(saturated.warnings);
-        p_sat.push(saturated.p_sat.value);
-    }
+    // The saturation pressures and the composition, in the one place every GE phase
+    // shares them.
+    let saturated = crate::ge_phase::ge_fugacities(&gamma, &params.antoine, T, P)?;
+    warnings.extend(saturated.warnings);
 
-    let ln_phi: Vec<f64> = gamma
-        .iter()
-        .zip(&p_sat)
-        .map(|(&g, &p0)| g.ln() + (p0 / P).ln())
-        .collect();
     let ln_gamma: Vec<f64> = gamma.iter().map(|g| g.ln()).collect();
-
     Ok(GeNrtlPhaseResult {
         gamma,
         ln_gamma,
-        ln_phi,
-        p_sat: p_sat.into_iter().map(pascals).collect(),
+        ln_phi: saturated.ln_phi,
+        p_sat: saturated.p_sat.into_iter().map(pascals).collect(),
         warnings,
     })
 }

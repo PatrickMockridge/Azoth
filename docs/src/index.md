@@ -134,6 +134,7 @@ Four sections, and the difference between them is the point:
 - [`eos.eos_cg_phase`](./eos/eos_cg_phase.md) — EOS-CG phase state
 - [`eos.ge_nrtl_flash`](./eos/ge_nrtl_flash.md) — Gamma-phi flash with an NRTL liquid
 - [`eos.ge_nrtl_phase`](./eos/ge_nrtl_phase.md) — Fugacity coefficients of an NRTL activity-coefficient liquid
+- [`eos.ge_unifac_phase`](./eos/ge_unifac_phase.md) — Fugacity coefficients of a UNIFAC activity-coefficient liquid
 - [`eos.gerg2008_phase`](./eos/gerg2008_phase.md) — GERG-2008 phase state
 - [`eos.helium_phase`](./eos/helium_phase.md) — Helium reference phase state
 - [`eos.hydrogen_phase`](./eos/hydrogen_phase.md) — Hydrogen reference phase state

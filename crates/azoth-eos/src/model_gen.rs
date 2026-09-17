@@ -13,6 +13,7 @@
 //!   - specs/models/eos/eos_cg_phase.toml
 //!   - specs/models/eos/ge_nrtl_flash.toml
 //!   - specs/models/eos/ge_nrtl_phase.toml
+//!   - specs/models/eos/ge_unifac_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
 //!   - specs/models/eos/hydrogen_phase.toml
@@ -1441,6 +1442,111 @@ pub static GE_NRTL_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: GE_NRTL_PHASE_CHECKS,
     cases: GE_NRTL_PHASE_CASES,
+};
+
+static GE_UNIFAC_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static GE_UNIFAC_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methanol_water_equimolar_at_298_15_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15), ("P", 100000.0)],
+        lists: &[("components", &["methanol", "water"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.1156815062468024, 1.200639969105366]),
+            ("ln_gamma", &[0.10946543456028393, 0.18285472222380836]),
+            ("ln_phi", &[-1.6659829334051697, -3.265826523143544]),
+            ("p_sat", &[16940.74755834478, 3178.7528699883305]),
+        ],
+    },
+    TestCase {
+        id: "methanol_benzene_lean_at_330_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 330.0), ("P", 100000.0)],
+        lists: &[("components", &["methanol", "benzene"])],
+        strings: &[],
+        vectors: &[("x", &[0.3, 0.7])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[2.438666100525438, 1.2823370264201932]),
+            ("ln_gamma", &[0.89145120970853, 0.24868421507205765]),
+            ("ln_phi", &[0.5943403414559508, -0.3985351322447149]),
+            ("p_sat", &[74296.1636937194, 52349.94248595396]),
+        ],
+    },
+    TestCase {
+        id: "water_toluene_at_340_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 340.0), ("P", 100000.0)],
+        lists: &[("components", &["water", "toluene"])],
+        strings: &[],
+        vectors: &[("x", &[0.7, 0.3])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[2.33400089129135, 11.554897951262657]),
+            ("ln_gamma", &[0.8475839157371919, 2.4471094121220194]),
+            ("ln_phi", &[-0.45549541840173835, 1.1230427732916306]),
+            ("p_sat", &[27169.38673684547, 26605.116506459886]),
+        ],
+    },
+];
+
+/// Registry entry for `eos.ge_unifac_phase`.
+pub static GE_UNIFAC_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.ge_unifac_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: GE_UNIFAC_PHASE_CHECKS,
+    cases: GE_UNIFAC_PHASE_CASES,
 };
 
 static GERG2008_PHASE_CHECKS: &[SpecCheck] = &[
@@ -4150,6 +4256,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &EOS_CG_PHASE_SPEC,
     &GE_NRTL_FLASH_SPEC,
     &GE_NRTL_PHASE_SPEC,
+    &GE_UNIFAC_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
     &HYDROGEN_PHASE_SPEC,

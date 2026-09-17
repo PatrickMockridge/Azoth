@@ -1054,36 +1054,71 @@ pub struct GeNrtlPhaseParameters {
     pub antoine: Vec<AntoineRecord>,
 }
 
-/// The NRTL phase parameters for a list of names.
+/// The resolved parameters of a UNIFAC activity-coefficient *phase*.
 ///
-/// The activity-coefficient matrices resolve through [`nrtl_parameters`], so the phase
-/// and `eos.nrtl_activity_coefficients` cannot disagree about them; this adds the
+/// The group tables [`UnifacParameters`] carries, beside what a phase needs and an
+/// activity coefficient does not: each component's pure-liquid vapour pressure, because
+/// the phase's fugacity coefficient is `gamma_i P0_i / P`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GeUnifacPhaseParameters {
+    /// Per-component group counts, `N x G` row-major.
+    pub groups: Vec<f64>,
+    /// The volume `R` of each group, length `G`.
+    pub group_r: Vec<f64>,
+    /// The surface area `Q` of each group, length `G`.
+    pub group_q: Vec<f64>,
+    /// The main-group interaction matrix, `G x G` row-major, in Kelvin.
+    pub aij: Vec<f64>,
+    /// One vapour-pressure correlation per component, in order.
+    pub antoine: Vec<AntoineRecord>,
+}
+
+/// The UNIFAC phase parameters for a list of names.
+///
+/// The group tables resolve through [`unifac_parameters`], so the phase and
+/// `eos.unifac_activity_coefficients` cannot disagree about them; this adds the
 /// per-component vapour pressure beside them.
 ///
 /// # Errors
 /// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
-///   overlay, or if the databank carries it without an Antoine correlation - which is
-///   what an overlay-added substance is, since a card states the parameters a cubic
-///   reads.
-pub fn ge_nrtl_phase_parameters(
+///   overlay, if it has no UNIFAC group assignment, or if it carries no Antoine
+///   correlation.
+/// * [`AzothError::InvalidInput`] if a component is tagged a Henry's-law solute, which
+///   this phase does not implement.
+pub fn ge_unifac_phase_parameters(
     names: &[&str],
     overlay: Option<&Overlay>,
-) -> Result<GeNrtlPhaseParameters> {
-    let nrtl = nrtl_parameters(names, overlay)?;
+) -> Result<GeUnifacPhaseParameters> {
+    let unifac = unifac_parameters(names)?;
+    Ok(GeUnifacPhaseParameters {
+        groups: unifac.groups,
+        group_r: unifac.group_r,
+        group_q: unifac.group_q,
+        aij: unifac.aij,
+        antoine: phase_antoine(names, overlay)?,
+    })
+}
+
+/// The per-component vapour-pressure records a phase reads, or a refusal.
+///
+/// Shared by every activity-coefficient phase, because the two things it checks are the
+/// same for all of them: a component tagged anything but `solvent` takes a Henry's-law
+/// coefficient in `ComponentGE.fugcoef`, which this library does not implement, and a
+/// component with no correlation has no `P0` to compose.
+fn phase_antoine(names: &[&str], overlay: Option<&Overlay>) -> Result<Vec<AntoineRecord>> {
     let mut antoine = Vec::with_capacity(names.len());
     for name in names {
         let entry = entry(name, overlay)?;
-        // `ComponentGE.fugcoef` branches on this, and only the solvent branch is ported.
-        // A component tagged otherwise has a Henry's-law coefficient in NeqSim, so
-        // computing `gamma_i P0_i / P` for it would be a different number with nothing
-        // to show that it is the wrong one. Refused rather than approximated - the
-        // branch needs the infinite-dilution activity coefficient and the component's
-        // Henry coefficients, neither of which this library reads.
         if entry.reference_state != SOLVENT {
             return Err(AzothError::invalid_input(
                 "components",
                 format!(
-                    "`{}` is tagged `referenceStateType = {}` in NeqSim's component                      database, so `ComponentGE.fugcoef` gives it a Henry's-law fugacity                      coefficient rather than `gamma_i P0_i / P`. That branch is not                      ported, and this phase is the Raoult one. The substances the                      databank tags `solvent` - water, the alcohols, the glycols - are                      the ones it describes.",
+                    "`{}` is tagged `referenceStateType = {}` in NeqSim's component \
+                     database, so `ComponentGE.fugcoef` gives it a Henry's-law fugacity \
+                     coefficient rather than `gamma_i P0_i / P`. That branch is not \
+                     ported, and this phase is the Raoult one. The substances the \
+                     databank tags `solvent` - water, the alcohols, the glycols - are \
+                     the ones it describes.",
                     entry.name, entry.reference_state
                 ),
             ));
@@ -1105,10 +1140,29 @@ pub fn ge_nrtl_phase_parameters(
             pc: entry.pc,
         });
     }
+    Ok(antoine)
+}
+
+/// The NRTL phase parameters for a list of names.
+///
+/// The activity-coefficient matrices resolve through [`nrtl_parameters`], so the phase
+/// and `eos.nrtl_activity_coefficients` cannot disagree about them; this adds the
+/// per-component vapour pressure beside them.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither the databank nor the
+///   overlay, or if the databank carries it without an Antoine correlation - which is
+///   what an overlay-added substance is, since a card states the parameters a cubic
+///   reads.
+pub fn ge_nrtl_phase_parameters(
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<GeNrtlPhaseParameters> {
+    let nrtl = nrtl_parameters(names, overlay)?;
     Ok(GeNrtlPhaseParameters {
         alpha: nrtl.alpha,
         dij: nrtl.dij,
-        antoine,
+        antoine: phase_antoine(names, overlay)?,
     })
 }
 

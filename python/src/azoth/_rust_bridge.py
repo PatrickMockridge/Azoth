@@ -51,6 +51,7 @@ from azoth.core.result import (
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
+    GeUnifacPhaseResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
@@ -2051,6 +2052,35 @@ def ge_nrtl_phase(params: Any, T: Q, P: Q, x: Sequence[float]) -> GeNrtlPhaseRes
         list(x),
     )
     return GeNrtlPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        ln_phi=tuple(result.ln_phi),
+        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ge_unifac_phase(params: Any, T: Q, P: Q, x: Sequence[float]) -> GeUnifacPhaseResult:
+    """The fugacity coefficients of a UNIFAC liquid, computed in Rust.
+
+    The resolved record crosses flattened, one list per field, in the dataclass's own
+    order.
+    """
+    spec = _models_gen.model("eos.ge_unifac_phase")
+    result = _core.ge_unifac_phase(
+        list(params.groups),
+        list(params.group_r),
+        list(params.group_q),
+        list(params.aij),
+        list(params.antoine_type),
+        list(params.antoine_coefficients),
+        list(params.antoine_tc),
+        list(params.antoine_pc),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+    )
+    return GeUnifacPhaseResult(
         gamma=tuple(result.gamma),
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),

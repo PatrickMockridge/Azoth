@@ -74,6 +74,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.eos_cg_phase`](./eos_cg_phase.md) | `log_volume_newton` | Gernert, J.; Span, R. (2016) |
 | [`eos.ge_nrtl_flash`](./ge_nrtl_flash.md) | `successive_substitution_flash` | NeqSim 3.20.0 `SystemEosGE` |
 | [`eos.ge_nrtl_phase`](./ge_nrtl_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseGENRTL` |
+| [`eos.ge_unifac_phase`](./ge_unifac_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseGEUnifac` |
 | [`eos.gerg2008_phase`](./gerg2008_phase.md) | `log_volume_newton` | Kunz, O.; Wagner, W. (2012) |
 | [`eos.helium_phase`](./helium_phase.md) | `newton_density_solve` | Vega (NIST IR 8474) helium equation of state |
 | [`eos.hydrogen_phase`](./hydrogen_phase.md) | `newton_density_solve` | Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009) |

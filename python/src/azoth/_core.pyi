@@ -283,6 +283,14 @@ class GeNrtlPhaseResult:
     warnings: list[Warning]
 
 @final
+class GeUnifacPhaseResult:
+    gamma: list[float]
+    ln_gamma: list[float]
+    ln_phi: list[float]
+    p_sat: list[Qty]
+    warnings: list[Warning]
+
+@final
 class Gerg2008PhaseResult:
     z_factor: float
     u: Qty
@@ -1037,6 +1045,19 @@ def ge_nrtl_phase(
     P: float,
     x: list[float],
 ) -> GeNrtlPhaseResult: ...
+def ge_unifac_phase(
+    groups: list[float],
+    group_r: list[float],
+    group_q: list[float],
+    aij: list[float],
+    antoine_type: list[str],
+    antoine_coefficients: list[float],
+    antoine_tc: list[float],
+    antoine_pc: list[float],
+    T: float,
+    P: float,
+    x: list[float],
+) -> GeUnifacPhaseResult: ...
 def gerg2008_phase(
     components: list[str],
     T: float,

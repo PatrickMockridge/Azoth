@@ -87,6 +87,7 @@ from azoth.core.result import (
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
+    GeUnifacPhaseResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
@@ -165,6 +166,7 @@ from azoth.core.units import Q
 from azoth.eos.components import (
     BwrsCoefficients,
     GeNrtlPhaseParameters,
+    GeUnifacPhaseParameters,
     NrtlParameters,
     UnifacParameters,
     UnifacPsrkParameters,
@@ -206,6 +208,7 @@ __all__ = [
     "from_names",
     "ge_nrtl_flash",
     "ge_nrtl_phase",
+    "ge_unifac_phase",
     "gerg2008_phase",
     "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
@@ -291,6 +294,7 @@ _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
+_GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
 _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
 _VISCOSITY = "eos.viscosity"
@@ -1752,6 +1756,34 @@ def ge_nrtl_phase(
     See :func:`azoth.eos.reference.ge_nrtl_phase`.
     """
     return resolve(_GE_NRTL_PHASE)(  # type: ignore[no-any-return]
+        params=params, T=T, P=P, x=x
+    )
+
+
+def ge_unifac_phase(
+    params: GeUnifacPhaseParameters,
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+) -> GeUnifacPhaseResult:
+    """The fugacity coefficients of a liquid whose non-ideality is UNIFAC's.
+
+    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``PhaseGEUnifac`` liquid: there is no
+    cubic in it, because an activity-coefficient phase's non-ideality is ``gamma`` and its
+    standard state is the pure liquid at the state's temperature.
+
+    ``params`` is the caller's: resolve it from the mixture's components with
+    :func:`azoth.eos.components.ge_unifac_phase_parameters`, which carries the group
+    tables *and* each component's vapour-pressure correlation.
+
+    Raises:
+        InvalidInputError: if ``params`` and ``x`` disagree in length, or ``x`` is not a
+            composition.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.ge_unifac_phase`.
+    """
+    return resolve(_GE_UNIFAC_PHASE)(  # type: ignore[no-any-return]
         params=params, T=T, P=P, x=x
     )
 

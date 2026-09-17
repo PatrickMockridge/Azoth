@@ -45,6 +45,7 @@ import io
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import cache
+from typing import NamedTuple
 
 from azoth import keycard
 from azoth._data import find
@@ -1032,33 +1033,29 @@ def unifac_umrpru_parameters(names: Sequence[str], parameters: str) -> UnifacUmr
     )
 
 
-def ge_nrtl_phase_parameters(
-    names: Sequence[str], *, card: keycard.Keycard | None = None
-) -> GeNrtlPhaseParameters:
-    """The parameters of an NRTL phase for a list of components, by name.
+class _PhaseAntoine(NamedTuple):
+    """The per-component vapour-pressure columns every GE phase carries, in parallel."""
 
-    The NRTL matrices come from :func:`nrtl_parameters`, so the phase and
-    ``eos.nrtl_activity_coefficients`` cannot disagree about them; this adds each
-    component's Antoine vapour-pressure correlation beside them.
+    kinds: tuple[str, ...]
+    coefficients: tuple[float, ...]
+    tcs: tuple[float, ...]
+    pcs: tuple[float, ...]
 
-    Raises:
-        PropertyUnavailableError: if a name is in neither the databank nor the keycard,
-            or if the databank carries it without an Antoine correlation - which is what
-            a keycard-added substance is, since a card states the parameters a cubic
-            reads and not these.
+
+def _phase_antoine(names: Sequence[str], card: keycard.Keycard | None) -> _PhaseAntoine:
+    """The vapour-pressure records a phase reads, or a refusal.
+
+    Shared by every activity-coefficient phase, because the two things it checks are the
+    same for all of them: a component tagged anything but ``SOLVENT`` takes a Henry's-law
+    coefficient in ``ComponentGE.fugcoef``, which this library does not implement, and a
+    component with no correlation has no ``P0`` to compose.
     """
-    nrtl = nrtl_parameters(names)
-
     kinds: list[str] = []
     coefficients: list[float] = []
     tcs: list[float] = []
     pcs: list[float] = []
     for name in names:
         record = entry(name, card=card)
-        # `ComponentGE.fugcoef` branches on this, and only the solvent branch is ported.
-        # A component tagged otherwise has a Henry's-law coefficient in NeqSim, so
-        # computing `gamma_i P0_i / P` for it would be a different number with nothing to
-        # show that it is the wrong one.
         if record.reference_state != SOLVENT:
             raise InvalidInputError(
                 "components",
@@ -1081,14 +1078,90 @@ def ge_nrtl_phase_parameters(
         coefficients.extend(record.antoine)
         tcs.append(record.Tc.to_base_units().magnitude)
         pcs.append(record.Pc.to_base_units().magnitude)
+    return _PhaseAntoine(tuple(kinds), tuple(coefficients), tuple(tcs), tuple(pcs))
+
+
+@dataclass(frozen=True, slots=True)
+class GeUnifacPhaseParameters:
+    """The parameters of a UNIFAC activity-coefficient *phase*.
+
+    The group tables :class:`UnifacParameters` carries, beside what a phase needs and an
+    activity coefficient does not: each component's pure-liquid vapour pressure, because
+    the phase's fugacity coefficient is ``gamma_i P0_i / P``.
+    """
+
+    #: Per-component group counts, ``N x G`` row-major.
+    groups: tuple[float, ...]
+    #: The volume ``R`` of each group, length ``G``.
+    group_r: tuple[float, ...]
+    #: The surface area ``Q`` of each group, length ``G``.
+    group_q: tuple[float, ...]
+    #: The main-group interaction matrix, ``G x G`` row-major, in kelvin.
+    aij: tuple[float, ...]
+    #: NeqSim's Antoine label for each component, in order.
+    antoine_type: tuple[str, ...]
+    #: The five coefficients ``A``-``E`` of each component, component-major.
+    antoine_coefficients: tuple[float, ...]
+    #: Critical temperature of each component, in K.
+    antoine_tc: tuple[float, ...]
+    #: Critical pressure of each component, in Pa.
+    antoine_pc: tuple[float, ...]
+
+
+def ge_unifac_phase_parameters(
+    names: Sequence[str], *, card: keycard.Keycard | None = None
+) -> GeUnifacPhaseParameters:
+    """The parameters of a UNIFAC phase for a list of components, by name.
+
+    The group tables come from :func:`unifac_parameters`, so the phase and
+    ``eos.unifac_activity_coefficients`` cannot disagree about them; this adds each
+    component's Antoine vapour-pressure correlation beside them.
+
+    Raises:
+        PropertyUnavailableError: if a name has no UNIFAC group assignment, or if the
+            databank carries it without an Antoine correlation.
+        InvalidInputError: if a name is a Henry's-law solute, which this phase does not
+            implement.
+    """
+    unifac = unifac_parameters(names)
+    antoine = _phase_antoine(names, card)
+    return GeUnifacPhaseParameters(
+        groups=unifac.groups,
+        group_r=unifac.group_r,
+        group_q=unifac.group_q,
+        aij=unifac.aij,
+        antoine_type=antoine.kinds,
+        antoine_coefficients=antoine.coefficients,
+        antoine_tc=antoine.tcs,
+        antoine_pc=antoine.pcs,
+    )
+
+
+def ge_nrtl_phase_parameters(
+    names: Sequence[str], *, card: keycard.Keycard | None = None
+) -> GeNrtlPhaseParameters:
+    """The parameters of an NRTL phase for a list of components, by name.
+
+    The NRTL matrices come from :func:`nrtl_parameters`, so the phase and
+    ``eos.nrtl_activity_coefficients`` cannot disagree about them; this adds each
+    component's Antoine vapour-pressure correlation beside them.
+
+    Raises:
+        PropertyUnavailableError: if a name is in neither the databank nor the keycard,
+            or if the databank carries it without an Antoine correlation - which is what
+            a keycard-added substance is, since a card states the parameters a cubic
+            reads and not these.
+    """
+    nrtl = nrtl_parameters(names)
+    antoine = _phase_antoine(names, card)
 
     return GeNrtlPhaseParameters(
         alpha=nrtl.alpha,
         dij=nrtl.dij,
-        antoine_type=tuple(kinds),
-        antoine_coefficients=tuple(coefficients),
-        antoine_tc=tuple(tcs),
-        antoine_pc=tuple(pcs),
+        antoine_type=antoine.kinds,
+        antoine_coefficients=antoine.coefficients,
+        antoine_tc=antoine.tcs,
+        antoine_pc=antoine.pcs,
     )
 
 
@@ -1320,6 +1393,7 @@ __all__ = [
     "BwrsCoefficients",
     "DatabankEntry",
     "GeNrtlPhaseParameters",
+    "GeUnifacPhaseParameters",
     "NrtlParameters",
     "UnifacParameters",
     "UnifacPsrkParameters",
@@ -1333,6 +1407,7 @@ __all__ = [
     "from_model",
     "from_names",
     "ge_nrtl_phase_parameters",
+    "ge_unifac_phase_parameters",
     "kij_for",
     "nrtl_parameters",
     "unifac_parameters",

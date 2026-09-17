@@ -18,9 +18,9 @@ use crate::results::{
     PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyArgonSolidPhaseResult, PyBwrsPhaseResult,
     PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
-    PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGerg2008PhaseResult,
-    PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyHeliumPhaseResult,
-    PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
+    PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
+    PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult,
+    PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
     PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
     PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
     PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult,
@@ -1075,6 +1075,60 @@ pub fn ge_nrtl_flash(
     };
     azoth_eos::ge_nrtl_flash::ge_nrtl_flash(&params, &mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyGeNrtlFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The fugacity coefficients of a UNIFAC activity-coefficient liquid. A *model* rather
+/// than a calculation: the resolved group tables and the per-component vapour-pressure
+/// columns cross flattened, one list per field of `GeUnifacPhaseParameters`.
+#[pyfunction]
+#[pyo3(signature = (
+    groups,
+    group_r,
+    group_q,
+    aij,
+    antoine_type,
+    antoine_coefficients,
+    antoine_tc,
+    antoine_pc,
+    T,
+    P,
+    x
+))]
+#[pyo3(
+    text_signature = "(groups, group_r, group_q, aij, antoine_type, antoine_coefficients, \
+                         antoine_tc, antoine_pc, T, P, x)"
+)]
+#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
+pub fn ge_unifac_phase(
+    py: Python<'_>,
+    groups: Vec<f64>,
+    group_r: Vec<f64>,
+    group_q: Vec<f64>,
+    aij: Vec<f64>,
+    antoine_type: Vec<String>,
+    antoine_coefficients: Vec<f64>,
+    antoine_tc: Vec<f64>,
+    antoine_pc: Vec<f64>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+) -> PyResult<PyGeUnifacPhaseResult> {
+    let params = azoth_eos::databank::GeUnifacPhaseParameters {
+        groups,
+        group_r,
+        group_q,
+        aij,
+        antoine: antoine_records(
+            antoine_type,
+            &antoine_coefficients,
+            &antoine_tc,
+            &antoine_pc,
+        ),
+    };
+    azoth_eos::ge_unifac_phase::ge_unifac_phase(&params, T, P, &x)
+        .map(|r| PyGeUnifacPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

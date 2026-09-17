@@ -1,0 +1,43 @@
+model = "eos.ge_unifac_phase"
+[[cases]]
+id = "methanol_water_equimolar_at_298_15_k_1_bar"
+tolerance = 1e-09
+source = "NeqSim 3.20.0 `PhaseGEUnifac` via `ComponentGE.fugcoef`, run from validation/neqsim/GeUnifacPhi.java: the liquid phase's own `getFugacityCoefficient`, `getActivityCoefficient` and `getAntoineVaporPressure` at the same state. `p_sat` is the bar figure the driver prints times 1e5. The driver synchronises each component's UNIFAC group array before every read, which `ComponentGEUnifac`'s constructor leaves empty; see its header."
+[cases.inputs]
+components = ["methanol", "water"]
+T = 298.15
+P = 100000.0
+x = [0.5, 0.5]
+[cases.expected]
+gamma = [1.1156815062468024, 1.200639969105366]
+ln_gamma = [0.10946543456028393, 0.18285472222380836]
+ln_phi = [-1.6659829334051697, -3.265826523143544]
+p_sat = [16940.74755834478, 3178.7528699883306]
+[[cases]]
+id = "methanol_benzene_lean_at_330_k_1_bar"
+tolerance = 1e-09
+source = "NeqSim 3.20.0 `PhaseGEUnifac`, as the first case: validation/neqsim/GeUnifacPhi.java. Methanol in benzene is the case the combinatorial term carries: the two substances share no subgroup, so the residual term is large and the activity coefficient is 2.44 against 1.28."
+[cases.inputs]
+components = ["methanol", "benzene"]
+T = 330.0
+P = 100000.0
+x = [0.3, 0.7]
+[cases.expected]
+gamma = [2.438666100525438, 1.2823370264201932]
+ln_gamma = [0.89145120970853, 0.24868421507205765]
+ln_phi = [0.5943403414559508, -0.3985351322447149]
+p_sat = [74296.1636937194, 52349.94248595396]
+[[cases]]
+id = "water_toluene_at_340_k_1_bar"
+tolerance = 1e-09
+source = "NeqSim 3.20.0 `PhaseGEUnifac`, as the first case: validation/neqsim/GeUnifacPhi.java. A strongly non-ideal pair, where toluene's activity coefficient at 0.3 is 11.55 - above the 1/0.3 at which a liquid would split, so the phase is only a statement about a stated composition and not an equilibrium."
+[cases.inputs]
+components = ["water", "toluene"]
+T = 340.0
+P = 100000.0
+x = [0.7, 0.3]
+[cases.expected]
+gamma = [2.33400089129135, 11.554897951262657]
+ln_gamma = [0.8475839157371919, 2.4471094121220194]
+ln_phi = [-0.45549541840173835, 1.1230427732916306]
+p_sat = [27169.38673684547, 26605.116506459886]

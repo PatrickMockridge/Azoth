@@ -21,7 +21,7 @@ use azoth_eos::results::{
     BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
     DewPressureResult, DewTemperatureResult, EosCgPhaseResult, GeNrtlFlashResult,
-    GeNrtlPhaseResult, Gerg2008PhaseResult, HaydukMinhasDiffusivityResult,
+    GeNrtlPhaseResult, GeUnifacPhaseResult, Gerg2008PhaseResult, HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
     MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
@@ -2186,6 +2186,62 @@ impl From<&GeNrtlFlashResult> for PyGeNrtlFlashResult {
             phase: r.phase.as_str().to_string(),
             iterations: r.iterations,
             residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.ge_nrtl_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "GeUnifacPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyGeUnifacPhaseResult {
+    /// The activity coefficient of each component.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// The natural logarithm of each activity coefficient.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// The natural logarithm of each fugacity coefficient.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// The pure-component saturation pressure of each component, as an SI magnitude
+    /// and display unit.
+    #[pyo3(get)]
+    pub p_sat: Vec<PyQty>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyGeUnifacPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GeUnifacPhaseResult(gamma={:?}, ln_phi={:?})",
+            self.gamma, self.ln_phi
+        )
+    }
+}
+
+impl From<&GeUnifacPhaseResult> for PyGeUnifacPhaseResult {
+    fn from(r: &GeUnifacPhaseResult) -> Self {
+        Self {
+            gamma: r.gamma.clone(),
+            ln_gamma: r.ln_gamma.clone(),
+            ln_phi: r.ln_phi.clone(),
+            p_sat: r
+                .p_sat
+                .iter()
+                .map(|p| PyQty {
+                    magnitude_si: p.value,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }
@@ -5062,6 +5118,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),
         GeNrtlPhaseResult::CALC_ID => GeNrtlPhaseResult::FIELDS.to_vec(),
         GeNrtlFlashResult::CALC_ID => GeNrtlFlashResult::FIELDS.to_vec(),
+        GeUnifacPhaseResult::CALC_ID => GeUnifacPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
