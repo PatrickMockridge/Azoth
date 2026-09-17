@@ -17,8 +17,8 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
-    AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult, BwrsPhaseResult,
-    ChungConductivityResult, ChungViscosityResult, Co2WaterDiffusivityResult,
+    AmmoniaPhaseResult, AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult,
+    BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult, Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, DewTemperatureResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
@@ -2943,6 +2943,67 @@ impl From<&BwrsPhaseResult> for PyBwrsPhaseResult {
     }
 }
 
+/// Result of `eos.ammonia_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "AmmoniaPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyAmmoniaPhaseResult {
+    /// The compressibility factor.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The internal energy.
+    #[pyo3(get)]
+    pub u: PyQty,
+    /// The enthalpy.
+    #[pyo3(get)]
+    pub h: PyQty,
+    /// The entropy.
+    #[pyo3(get)]
+    pub s: PyQty,
+    /// The isochoric heat capacity.
+    #[pyo3(get)]
+    pub cv: PyQty,
+    /// The isobaric heat capacity.
+    #[pyo3(get)]
+    pub cp: PyQty,
+    /// The Gibbs energy.
+    #[pyo3(get)]
+    pub g: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyAmmoniaPhaseResult {
+    fn __repr__(&self) -> String {
+        format!("AmmoniaPhaseResult(z_factor={})", self.z_factor)
+    }
+}
+
+impl From<&AmmoniaPhaseResult> for PyAmmoniaPhaseResult {
+    fn from(r: &AmmoniaPhaseResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            z_factor: r.z_factor,
+            u: qty(r.u.value, "J/mol"),
+            h: qty(r.h.value, "J/mol"),
+            s: qty(r.s.value, "J/(mol*K)"),
+            cv: qty(r.cv.value, "J/(mol*K)"),
+            cp: qty(r.cp.value, "J/(mol*K)"),
+            g: qty(r.g.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.bubble_pressure` or `eos.dew_pressure`, transported.
 ///
 /// One transport type for two models, because the Rust results have the same shape
@@ -4237,6 +4298,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         BubbleTemperatureResult::CALC_ID => BubbleTemperatureResult::FIELDS.to_vec(),
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
         BwrsPhaseResult::CALC_ID => BwrsPhaseResult::FIELDS.to_vec(),
+        AmmoniaPhaseResult::CALC_ID => AmmoniaPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),

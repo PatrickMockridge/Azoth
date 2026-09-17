@@ -34,6 +34,7 @@ pub fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
 
 pub mod alpha_term;
 pub mod ammonia;
+pub mod ammonia_phase;
 pub mod antoine_vapor_pressure;
 pub mod bubble_pressure;
 pub mod bubble_temperature;
@@ -127,6 +128,7 @@ pub mod wilke_viscosity;
 pub mod wilson_activity_coefficients;
 
 pub use alpha_term::Alpha;
+pub use ammonia_phase::ammonia_phase;
 pub use antoine_vapor_pressure::{AntoineForm, antoine_vapor_pressure, form_from_type};
 pub use bubble_pressure::bubble_pressure;
 pub use bubble_temperature::bubble_temperature;
@@ -179,8 +181,8 @@ pub use pv_flash::pv_flash;
 pub use rachford_rice_binary::rachford_rice_binary;
 pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
-    AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult, BwrsPhaseResult,
-    ChungConductivityResult, ChungViscosityResult, Co2WaterDiffusivityResult,
+    AmmoniaPhaseResult, AntoineVaporPressureResult, BubblePressureResult, BubbleTemperatureResult,
+    BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult, Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult, CriticalPointResult, DewPressureResult, DewTemperatureResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, IdealGasCpResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,

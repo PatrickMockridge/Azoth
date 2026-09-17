@@ -64,6 +64,7 @@
   - [UMR-PR alpha function](./eos/umrpr_alpha.md)
   - [van der Waals one-fluid mixing, for a binary](./eos/vdw1f_mix_binary.md)
   - [Liquid binary diffusivity from the Wilke-Chang correlation](./eos/wilke_chang_diffusivity.md)
+  - [Ammonia reference phase state](./eos/ammonia_phase.md)
   - [Bubble-point pressure](./eos/bubble_pressure.md)
   - [Bubble-point temperature](./eos/bubble_temperature.md)
   - [BWRS (MBWR-32) phase state](./eos/bwrs_phase.md)

@@ -124,6 +124,17 @@ class Stream:
 # cannot disagree about a field.
 
 @final
+class AmmoniaPhaseResult:
+    z_factor: float
+    u: Qty
+    h: Qty
+    s: Qty
+    cv: Qty
+    cp: Qty
+    g: Qty
+    warnings: list[Warning]
+
+@final
 class AntoineVaporPressureResult:
     p_sat: Qty
     warnings: list[Warning]
@@ -763,6 +774,7 @@ class ConductionPlaneWallResult:
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
 
+def ammonia_phase(T: float, P: float) -> AmmoniaPhaseResult: ...
 def antoine_vapor_pressure(
     A: float,
     B: float,

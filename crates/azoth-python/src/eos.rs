@@ -15,19 +15,19 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyAntoineVaporPressureResult, PyBwrsPhaseResult, PyChungConductivityResult,
-    PyChungViscosityResult, PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult,
-    PyCriticalPointResult, PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult,
-    PyIdealGasCpResult, PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult,
-    PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult, PyMatcopPrAlphaResult,
-    PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult,
-    PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
-    PyPhFlashResult, PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult,
-    PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
-    PyPrDelft1998AlphaResult, PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult,
-    PyPrLeeKeslerAlphaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
-    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyBwrsPhaseResult,
+    PyChungConductivityResult, PyChungViscosityResult, PyCo2WaterDiffusivityResult,
+    PyCostaldMolarVolumeResult, PyCriticalPointResult, PyHaydukMinhasDiffusivityResult,
+    PyHeatOfVaporizationResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
+    PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
+    PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
+    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult,
+    PyParachorSurfaceTensionResult, PyPhFlashResult, PyPhaseBoundaryResult,
+    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
+    PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult, PyPrDepartureResult,
+    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
+    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
     PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
     PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
@@ -1975,6 +1975,16 @@ pub fn bwrs_phase(
     }
     azoth_eos::bwrs_phase(&coeffs, kelvins(T), pascals(P), &z)
         .map(|r| PyBwrsPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The ammonia reference phase state, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (T, P))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn ammonia_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyAmmoniaPhaseResult> {
+    azoth_eos::ammonia_phase(kelvins(T), pascals(P))
+        .map(|r| PyAmmoniaPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

@@ -27,6 +27,7 @@ from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.errors import PropertyUnavailableError
 from azoth.core.result import (
+    AmmoniaPhaseResult,
     AntoineVaporPressureResult,
     BubblePressureResult,
     BubbleTemperatureResult,
@@ -1801,6 +1802,22 @@ def bwrs_phase(coeffs: Any, T: Q, P: Q, z: Sequence[float]) -> BwrsPhaseResult:
         h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
         s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
         cp_res=from_si(result.cp_res.magnitude_si, result.cp_res.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ammonia_phase(T: Q, P: Q) -> AmmoniaPhaseResult:
+    """The ammonia reference phase state, computed in Rust."""
+    spec = _models_gen.model("eos.ammonia_phase")
+    result = _core.ammonia_phase(input_to_si(spec, "T", T), input_to_si(spec, "P", P))
+    return AmmoniaPhaseResult(
+        z_factor=result.z_factor,
+        u=from_si(result.u.magnitude_si, result.u.unit),
+        h=from_si(result.h.magnitude_si, result.h.unit),
+        s=from_si(result.s.magnitude_si, result.s.unit),
+        cv=from_si(result.cv.magnitude_si, result.cv.unit),
+        cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        g=from_si(result.g.magnitude_si, result.g.unit),
         warnings=_warnings(result.warnings),
     )
 

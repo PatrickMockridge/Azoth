@@ -68,6 +68,7 @@ from collections.abc import Sequence
 
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    AmmoniaPhaseResult,
     AntoineVaporPressureResult,
     BubblePressureResult,
     BubbleTemperatureResult,
@@ -163,6 +164,7 @@ __all__ = [
     "Component",
     "IdealGasModel",
     "Mixture",
+    "ammonia_phase",
     "antoine_vapor_pressure",
     "available_components",
     "bubble_pressure",
@@ -246,6 +248,7 @@ _MOLLERUP_ALPHA = "eos.mollerup_alpha"
 _IDEAL_GAS_CP = "eos.ideal_gas_cp"
 _MOLAR_ENTHALPY_ENTROPY = "eos.molar_enthalpy_entropy"
 _BWRS_PHASE = "eos.bwrs_phase"
+_AMMONIA_PHASE = "eos.ammonia_phase"
 _VISCOSITY = "eos.viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
@@ -1462,6 +1465,21 @@ def bwrs_phase(coeffs: Sequence[BwrsCoefficients], T: Q, P: Q, z: list[float]) -
     return resolve(_BWRS_PHASE)(  # type: ignore[no-any-return]
         coeffs=coeffs, T=T, P=P, z=z
     )
+
+
+def ammonia_phase(T: Q, P: Q) -> AmmoniaPhaseResult:
+    """The ammonia reference phase state at a temperature and pressure.
+
+    Pure ammonia, so there is no composition: the density is solved from the pressure by
+    Newton from the ideal-gas guess (the gas-like root), and the Helmholtz derivatives
+    give the compressibility factor and the property set.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.ammonia_phase`.
+    """
+    return resolve(_AMMONIA_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
 
 
 def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:

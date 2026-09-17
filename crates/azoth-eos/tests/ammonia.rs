@@ -161,6 +161,24 @@ fn properties_reproduce_neqsim() {
     }
 }
 
+/// The model assembles the density solve and the property set into the phase state the
+/// spec's worked examples name.
+#[test]
+fn ammonia_phase_model_matches_the_worked_example() {
+    let r = azoth_eos::ammonia_phase(
+        azoth_core::units::kelvins(298.15),
+        azoth_core::units::pascals(1_000_000.0),
+    )
+    .unwrap();
+    assert_close(r.z_factor, 0.883_405_608_281_971_7);
+    assert_close(r.u.value, 25556.39720576612);
+    assert_close(r.h.value, 27746.32174840689);
+    assert_close(r.s.value, 98.84217173986131);
+    assert_close(r.cv.value, 36.51297326299638);
+    assert_close(r.cp.value, 53.55010850788054);
+    assert_close(r.g.value, -1723.47175583275703);
+}
+
 /// The property set satisfies the Gibbs identity `g = h - T s` and the isobaric relation.
 #[test]
 fn properties_satisfy_the_thermodynamic_identities() {

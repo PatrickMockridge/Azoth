@@ -1,0 +1,66 @@
+id = "eos.ammonia_phase"
+name = "Ammonia reference phase state"
+kind = "procedure"
+assumptions = [
+    "the fluid is pure ammonia; the equation of state is the multiparameter Helmholtz formulation of NeqSim's `thermo.util.referenceequations.Ammonia2023`, with a Planck-Einstein ideal-gas part and polynomial, exponential, Gaussian and Gao-B residual terms.",
+    "the density solve is Newton's method from the ideal-gas guess, so it finds the gas-like root; the dense (liquid) root is not selected.",
+    "every property follows from the Helmholtz derivatives, so the property set is a rearrangement of one derivative evaluation.",
+    "the Gibbs energy is the physical `g = h - T s`. NeqSim's Ammonia2023 subtracts an extra internal energy, so its `getGibbsEnergy` does not match it.",
+]
+references = [
+    "Gao, K.; Wu, J.; Bell, I. H.; Lemmon, E. W. (2020). \"Thermodynamic Properties of Ammonia.\" Journal of Physical and Chemical Reference Data.",
+    "NeqSim 3.20.0, `thermo/util/referenceequations/Ammonia2023.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Gao, K.; Wu, J.; Bell, I. H.; Lemmon, E. W. (2020)"
+edition = "The multiparameter Helmholtz equation for ammonia, evaluated in the reduced variables tau = Tc/T and delta = rho/rho_c and differentiated for the full property set."
+[algorithm]
+scheme = "newton_density_solve"
+initialisation = "ideal_gas"
+convergence = "absolute"
+tolerance = 1e-8
+max_iterations = 100
+[inputs]
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor `Z = P/(rho R T) = 1 + delta d(alpha^r)/d(delta)`"
+[outputs.u]
+unit = "J/mol"
+description = "the internal energy"
+[outputs.h]
+unit = "J/mol"
+description = "the enthalpy"
+[outputs.s]
+unit = "J/(mol*K)"
+description = "the entropy"
+[outputs.cv]
+unit = "J/(mol*K)"
+description = "the isochoric heat capacity"
+[outputs.cp]
+unit = "J/(mol*K)"
+description = "the isobaric heat capacity"
+[outputs.g]
+unit = "J/mol"
+description = "the Gibbs energy, `h - T s`"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.ammonia_phase"
+rust = "azoth_eos::ammonia_phase"

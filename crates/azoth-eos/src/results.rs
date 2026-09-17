@@ -55,6 +55,37 @@ impl CalcResult for PrAlphaAbResult {
     }
 }
 
+/// Result of `eos.ammonia_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AmmoniaPhaseResult {
+    /// The compressibility factor `Z = P/(rho R T)`.
+    pub z_factor: f64,
+    /// The internal energy.
+    pub u: MolarEnergy,
+    /// The enthalpy.
+    pub h: MolarEnergy,
+    /// The entropy.
+    pub s: MolarHeatCapacity,
+    /// The isochoric heat capacity.
+    pub cv: MolarHeatCapacity,
+    /// The isobaric heat capacity.
+    pub cp: MolarHeatCapacity,
+    /// The Gibbs energy.
+    pub g: MolarEnergy,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for AmmoniaPhaseResult {
+    const CALC_ID: &'static str = "eos.ammonia_phase";
+    const FIELDS: &'static [&'static str] =
+        &["z_factor", "u", "h", "s", "cv", "cp", "g", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.bwrs_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BwrsPhaseResult {
