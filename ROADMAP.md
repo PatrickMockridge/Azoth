@@ -68,7 +68,7 @@ process model needs.
 - **Activity-coefficient / GE models.** `ComponentGeNRTL`, `ComponentGENRTLmodifiedHV`,
   `ComponentGENRTLmodifiedWS`, `ComponentGEUniquac`, `ComponentGEUniquacmodifiedHV`,
   `ComponentGEWilson`, `ComponentGEUnifac`, `ComponentGEUnifacPSRK`,
-  `ComponentGEUnifacUMRPRU`, `ComponentGeVanLaarAcid`, with `PhaseGENRTL`,
+  `ComponentGEUnifacUMRPRU`, `ComponentGEVanLaarAcid`, with `PhaseGENRTL`,
   `PhaseGEUniquac`, `PhaseGEWilson`, `PhaseGEUnifac`, `SystemNRTL`, `SystemUNIFAC`,
   `SystemUNIFACpsrk`, `SystemGEWilson`.
 - **Component correlations** read from `thermo/component/` (normal boiling point,
@@ -104,7 +104,7 @@ solubility, electrolytes, salts and scale, and freezing.
   `thermo/util/steam/Iapws_if97`.
 - **Water content and dehydration.** `WATcalc`, `WaterDewPointTemperatureFlash`,
   `WaterDewPointTemperatureMultiphaseFlash`, `WaterDewPointEquilibriumLine`.
-- **Acid gas.** `ComponentSoreideWhitson`, `ComponentGeVanLaarAcid`,
+- **Acid gas.** `ComponentSoreideWhitson`, `ComponentGEVanLaarAcid`,
   `CO2BrinePhaseEquilibrium`, `SaturateWithWater`.
 - **Electrolytes.** `ComponentGePitzer`, `ComponentKentEisenberg`,
   `ComponentDesmukhMather`, `ComponentGeDuanSun`, `ComponentModifiedFurstElectrolyteEos`

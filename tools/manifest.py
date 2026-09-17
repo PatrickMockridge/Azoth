@@ -393,6 +393,82 @@ def kept_component_names(root: Path = ROOT) -> set[str]:
     return {r["NAME"].lower() for r in rows if r.get("COMPTYPE", "") in KEEP_TYPES}
 
 
+#: The pages that define the port's tranches: the specification's table and the two
+#: roadmap pages. Read rather than listed, so a tranche renamed in a page is a tranche
+#: this stops accepting - the same "decide the claim" move `empty_upstream_problems`
+#: makes for the other prefix.
+ROADMAP_PAGES = (
+    "ROADMAP.md",
+    "docs/src/agentic/roadmap.md",
+    "docs/src/architecture/specification.md",
+)
+
+#: How a tranche is spelled in those pages: `P7`, or `Tier 2`.
+TRANCHES = (
+    re.compile(r"\bP(\d{1,2})\b"),
+    re.compile(r"\bTier (\d)\b"),
+)
+
+
+def roadmap_tranches(root: Path = ROOT) -> set[str]:
+    """Every tranche name the roadmap pages carry, as `P7` and `Tier 2` are spelled."""
+    found: set[str] = set()
+    for page in ROADMAP_PAGES:
+        path = root / page
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        found.update(f"P{m.group(1)}" for m in TRANCHES[0].finditer(text))
+        found.update(f"Tier {m.group(1)}" for m in TRANCHES[1].finditer(text))
+    return found
+
+
+def consumer_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
+    """Check every `consumer` a column names, whatever its reason prefix.
+
+    A `consumer` says *what would read this column*, and it is the field that makes an
+    unwritten column a plan rather than an omission. Two forms are allowed - a registered
+    spec id, or `roadmap:<tranche>` - and both are decidable, so both are decided here.
+
+    The `roadmap:` form used to be skipped entirely: `SPEC_ID` cannot match a string
+    containing `:`, so the check `continue`d and eleven columns pointed at
+    `roadmap:2b`, a tranche neither roadmap page defines and nothing compared them
+    against. The prose beside them was free to be stale as a result - it claimed
+    `eos.viscosity` was "planned and unimplemented" while `specs/models/eos/viscosity.toml`
+    was registered - which is what made this worth closing rather than widening the skip.
+
+    The check is on *every* prefix rather than on `not-yet` alone, because the field means
+    the same thing wherever it appears and a rule that only fires on one prefix is a rule
+    that stops firing the moment the prefix changes.
+    """
+    messages: list[str] = []
+    known = spec_ids(root)
+    tranches = roadmap_tranches(root)
+    for entry in manifest.files():
+        for column in entry.columns:
+            consumer = column.consumer
+            if not consumer:
+                continue
+            where = f"{entry.id}.{column.name}"
+            if consumer.startswith("roadmap:"):
+                tranche = consumer.removeprefix("roadmap:")
+                if tranche not in tranches:
+                    messages.append(
+                        f"{where}: consumer {consumer!r} names tranche {tranche!r}, which "
+                        f"none of {', '.join(ROADMAP_PAGES)} defines. A pointer nobody can "
+                        f"resolve is a pointer nothing checks."
+                    )
+                continue
+            if not SPEC_ID.match(consumer):
+                messages.append(
+                    f"{where}: consumer {consumer!r} is neither a registered id nor "
+                    f"`roadmap:<tranche>`"
+                )
+            elif consumer not in known:
+                messages.append(f"{where}: consumer {consumer!r} is not a registered id")
+    return messages
+
+
 def empty_upstream_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
     """Check every `empty-upstream` claim against the vendored file.
 
@@ -574,17 +650,7 @@ def vendoring_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
 
     messages.extend(empty_upstream_problems(manifest, root))
 
-    known = spec_ids(root)
-    for entry in manifest.files():
-        for column in entry.columns:
-            if column.prefix != "not-yet" or not column.consumer:
-                continue
-            if not SPEC_ID.match(column.consumer) or column.consumer in known:
-                continue
-            messages.append(
-                f"{entry.id}.{column.name}: `not-yet` names consumer {column.consumer!r}, "
-                f"which is not a registered id"
-            )
+    messages.extend(consumer_problems(manifest, root))
 
     return messages
 

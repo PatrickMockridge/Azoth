@@ -16,8 +16,13 @@ the physics behind them:
   process skill can be `azoth`-basis until tranche P7.
 - **Electrolytes and acid gas** — safety, produced-water scale and dehydration skills
   wait on P8.
-- **Activity-coefficient models (NRTL, UNIFAC, UNIQUAC, Wilson, Van Laar)** — process
-  separation and pvt skills wait on P5.
+- **Activity-coefficient models (NRTL, UNIFAC, UNIQUAC, Wilson, Van Laar)** — P5 is
+  closed: all five activity models are ported, and all five have a phase
+  (`eos.ge_nrtl_phase`, `eos.ge_unifac_phase`, `eos.ge_uniquac_phase`,
+  `eos.ge_wilson_phase`, `eos.ge_van_laar_acid_phase`) with the NRTL one also carrying a
+  gamma-phi flash. Two of the five phases have no differential oracle, and the reason is
+  a defect rather than an absence: NeqSim's `PhaseGEWilson` never publishes `gamma` and
+  `PhaseGEUniquac`'s `getGamma` is stubbed, so neither can be compared against.
 - **Unit operations and the flowsheet** — the 30 process skills wait on P11 and P12,
   which the specification places after the physics tiers.
 - **Reference equations of state (GERG, IAPWS-95, Span-Wagner, …)** — pvt benchmark

@@ -52,7 +52,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - every logarithm in the model is base-10, and `T` is in Kelvin throughout; the source is valid from about 190 K to 298 K, and a temperature outside that is reported as a warning rather than refused.
 
-- only the activity coefficient is ported. NeqSim pairs it with `pureVaporPressure*` and a `fugcoef` override that forces the Raoult reference, which is a phase-level operation and belongs to the gamma-phi phase that does not exist yet.
+- `eos.ge_van_laar_acid_phase` is the phase this belongs to: it composes this with `eos.nitric_sulfuric_acid_vapor_pressure` and ports `ComponentGEVanLaarAcid.fugcoef`, the override that forces the Raoult reference.
 
 - `x` is checked (non-negative, sums to one) rather than renormalised.
 
