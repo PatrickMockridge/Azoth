@@ -1054,6 +1054,48 @@ pub struct GeNrtlPhaseParameters {
     pub antoine: Vec<AntoineRecord>,
 }
 
+/// The resolved parameters of a UNIQUAC activity-coefficient *phase*.
+///
+/// The volume and surface parameters [`UniquacParameters`] carries, beside what a phase
+/// needs and an activity coefficient does not: each component's pure-liquid vapour
+/// pressure, because the phase's fugacity coefficient is `gamma_i P0_i / P`.
+///
+/// `aij` is *not* here. It is the caller's - no upstream table carries a UNIQUAC
+/// interaction matrix - and it arrives as its own argument, the way it does for
+/// [`crate::uniquac_activity_coefficients`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct GeUniquacPhaseParameters {
+    /// The van der Waals volume parameter `r_i` of each component.
+    pub r: Vec<f64>,
+    /// The van der Waals surface-area parameter `q_i` of each component.
+    pub q: Vec<f64>,
+    /// One vapour-pressure correlation per component, in order.
+    pub antoine: Vec<AntoineRecord>,
+}
+
+/// The UNIQUAC phase parameters for a list of names.
+///
+/// The `r` and `q` resolve through [`uniquac_parameters`], so the phase and
+/// `eos.uniquac_activity_coefficients` cannot disagree about them; this adds the
+/// per-component vapour pressure beside them.
+///
+/// # Errors
+/// * [`AzothError::PropertyUnavailable`] if a name has no UNIFAC group assignment or no
+///   Antoine correlation.
+/// * [`AzothError::InvalidInput`] if a component is tagged a Henry's-law solute, which
+///   this phase does not implement.
+pub fn ge_uniquac_phase_parameters(
+    names: &[&str],
+    overlay: Option<&Overlay>,
+) -> Result<GeUniquacPhaseParameters> {
+    let uniquac = uniquac_parameters(names)?;
+    Ok(GeUniquacPhaseParameters {
+        r: uniquac.r,
+        q: uniquac.q,
+        antoine: phase_antoine(names, overlay)?,
+    })
+}
+
 /// The resolved parameters of a Wilson activity-coefficient *phase*.
 ///
 /// Only the vapour-pressure columns: the Wilson correlation reads the component's molar

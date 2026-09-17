@@ -14,6 +14,7 @@
 //!   - specs/models/eos/ge_nrtl_flash.toml
 //!   - specs/models/eos/ge_nrtl_phase.toml
 //!   - specs/models/eos/ge_unifac_phase.toml
+//!   - specs/models/eos/ge_uniquac_phase.toml
 //!   - specs/models/eos/ge_wilson_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
@@ -1548,6 +1549,91 @@ pub static GE_UNIFAC_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: GE_UNIFAC_PHASE_CHECKS,
     cases: GE_UNIFAC_PHASE_CASES,
+};
+
+static GE_UNIQUAC_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static GE_UNIQUAC_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methanol_water_equimolar_at_298_15_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15), ("P", 100000.0)],
+        lists: &[("components", &["methanol", "water"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[("aij", &[0.0, -71.0, 209.0, 0.0])],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.2185441848728196, 1.3418146163712932]),
+            ("ln_gamma", &[0.19765685511860173, 0.2940228891945601]),
+            ("ln_phi", &[-1.577791512846852, -3.154658356172792]),
+            ("p_sat", &[16940.747558344778, 3178.7528699883305]),
+        ],
+    },
+    TestCase {
+        id: "water_decane_at_350_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 350.0), ("P", 100000.0)],
+        lists: &[("components", &["water", "nc10"])],
+        strings: &[],
+        vectors: &[("x", &[0.5, 0.5])],
+        matrices: &[("aij", &[0.0, 350.0, -120.0, 0.0])],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.475804133293648, 0.9602384411448265]),
+            ("ln_gamma", &[0.38920301635215765, -0.0405736491679875]),
+            ("ln_phi", &[-0.4877713168336418, -2.748121946265136]),
+            ("p_sat", &[41603.98070870418, 6670.013533199679]),
+        ],
+    },
+];
+
+/// Registry entry for `eos.ge_uniquac_phase`.
+pub static GE_UNIQUAC_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.ge_uniquac_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: GE_UNIQUAC_PHASE_CHECKS,
+    cases: GE_UNIQUAC_PHASE_CASES,
 };
 
 static GE_WILSON_PHASE_CHECKS: &[SpecCheck] = &[
@@ -4363,6 +4449,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &GE_NRTL_FLASH_SPEC,
     &GE_NRTL_PHASE_SPEC,
     &GE_UNIFAC_PHASE_SPEC,
+    &GE_UNIQUAC_PHASE_SPEC,
     &GE_WILSON_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,

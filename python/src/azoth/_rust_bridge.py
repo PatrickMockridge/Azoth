@@ -52,6 +52,7 @@ from azoth.core.result import (
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
+    GeUniquacPhaseResult,
     GeWilsonPhaseResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
@@ -2089,6 +2090,36 @@ def ge_wilson_phase(
         [list(c.alpha_params) for c in mixture.components],
     )
     return GeWilsonPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        ln_phi=tuple(result.ln_phi),
+        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ge_uniquac_phase(
+    params: Any, T: Q, P: Q, x: Sequence[float], aij: Sequence[Sequence[Q]]
+) -> GeUniquacPhaseResult:
+    """The fugacity coefficients of a UNIQUAC liquid, computed in Rust.
+
+    Both the resolved record and `aij` cross flattened: the record's fields in the
+    dataclass's own order, then the interaction matrix row by row, row-major.
+    """
+    spec = _models_gen.model("eos.ge_uniquac_phase")
+    result = _core.ge_uniquac_phase(
+        list(params.r),
+        list(params.q),
+        list(params.antoine_type),
+        list(params.antoine_coefficients),
+        list(params.antoine_tc),
+        list(params.antoine_pc),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+        [[input_to_si(spec, "aij", value) for value in row] for row in aij],
+    )
+    return GeUniquacPhaseResult(
         gamma=tuple(result.gamma),
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),

@@ -1,0 +1,31 @@
+model = "eos.ge_uniquac_phase"
+[[cases]]
+id = "methanol_water_equimolar_at_298_15_k_1_bar"
+tolerance = 1e-09
+source = "This library's own output, recorded. There is no differential oracle - NeqSim's `ComponentGEUniquac.getGamma` returns 0.0 and its formula is commented out - so what this checks is that the phase composes `eos.uniquac_activity_coefficients` with `eos.antoine_vapor_pressure` and nothing else. Its `gamma` is that model's own case's `gamma` to the last bit, which is the composition stated as an equality rather than a tolerance."
+[cases.inputs]
+components = ["methanol", "water"]
+T = 298.15
+P = 100000.0
+x = [0.5, 0.5]
+aij = [[0.0, -71.0], [209.0, 0.0]]
+[cases.expected]
+gamma = [1.2185441848728196, 1.3418146163712932]
+ln_gamma = [0.19765685511860173, 0.2940228891945601]
+ln_phi = [-1.577791512846852, -3.154658356172792]
+p_sat = [16940.747558344778, 3178.7528699883305]
+[[cases]]
+id = "water_decane_at_350_k_1_bar"
+tolerance = 1e-09
+source = "This library's own output, recorded, as the first case. The second state, and the one that makes `aij` do more than one job: the matrix is directional and both entries are non-zero, so a `tau_ij` built from the transposed matrix would give different numbers. `r` and `q` here are the two-subgroup and ten-subgroup sums, which is the other end of the range the first case covers."
+[cases.inputs]
+components = ["water", "nc10"]
+T = 350.0
+P = 100000.0
+x = [0.5, 0.5]
+aij = [[0.0, 350.0], [-120.0, 0.0]]
+[cases.expected]
+gamma = [1.475804133293648, 0.9602384411448265]
+ln_gamma = [0.38920301635215765, -0.0405736491679875]
+ln_phi = [-0.4877713168336418, -2.748121946265136]
+p_sat = [41603.98070870418, 6670.013533199679]

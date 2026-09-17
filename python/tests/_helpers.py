@@ -556,6 +556,7 @@ def parameters_of(model: Mapping[str, Any]) -> set[str]:
 PARAMETER_RESOLVERS: dict[str, tuple[str, tuple[str, ...]]] = {
     "GeNrtlPhaseParameters": ("ge_nrtl_phase_parameters", ()),
     "GeUnifacPhaseParameters": ("ge_unifac_phase_parameters", ()),
+    "GeUniquacPhaseParameters": ("ge_uniquac_phase_parameters", ()),
     "GeWilsonPhaseParameters": ("ge_wilson_phase_parameters", ()),
     "NrtlParameters": ("nrtl_parameters", ()),
     "UnifacParameters": ("unifac_parameters", ()),

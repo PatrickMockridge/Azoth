@@ -232,3 +232,33 @@ def test_the_activity_phase_refuses_a_henrys_law_component() -> None:
         with pytest.raises(InvalidInputError) as raised:
             databank.ge_nrtl_phase_parameters([name, "water"])
         assert name.lower() in str(raised.value)
+
+
+def test_uniquac_r_and_q_are_the_group_sums_neqsim_computes() -> None:
+    """The one half of UNIQUAC that has a differential oracle.
+
+    `eos.uniquac_activity_coefficients` resolves `r` and `q` from the UNIFAC group
+    sums, and NeqSim's `ComponentGEUnifac.getR`/`getQ` compute the same sums from the
+    same table. Measured through `validation/neqsim/GeUniquacPhi.java`, they agree to
+    the last bit rather than to a tolerance, which is what reading one table through
+    one arithmetic should give.
+
+    The composition has no oracle - `ComponentGEUniquac.getGamma` returns 0.0 and its
+    formula is commented out - so this is the only part of the model NeqSim can
+    confirm. `rUNIQUAQ`/`qUNIQUAQ`, the different pair NeqSim's own constructor reads,
+    are 0.0 for 109 of the table's 112 rows and are not the source here.
+    """
+    names = ["methanol", "water", "nc10", "benzene", "n-hexane"]
+    measured = {
+        "methanol": (1.4311, 1.432),
+        "water": (0.92, 1.4),
+        "nc10": (7.1974, 6.016),
+        "benzene": (3.1878, 2.4000000000000004),
+        "n-hexane": (4.4998000000000005, 3.856),
+    }
+    params = databank.uniquac_parameters(names)
+
+    for i, name in enumerate(names):
+        want_r, want_q = measured[name]
+        assert params.r[i] == want_r, f"{name}: r is {params.r[i]!r}, NeqSim says {want_r!r}"
+        assert params.q[i] == want_q, f"{name}: q is {params.q[i]!r}, NeqSim says {want_q!r}"

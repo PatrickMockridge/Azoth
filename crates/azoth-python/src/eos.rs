@@ -19,29 +19,29 @@ use crate::results::{
     PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
-    PyGeWilsonPhaseResult, PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult,
-    PyHeatOfVaporizationResult, PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult,
-    PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult,
-    PyMatcopAlphaResult, PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult,
-    PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
-    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
-    PyParahydrogenSolidPhaseResult, PyPhFlashResult, PyPhaseBoundaryResult,
-    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
-    PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult, PyPrDepartureResult,
-    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
-    PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
-    PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
-    PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
-    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult,
-    PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult,
-    PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
-    PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
-    PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyViscosityResult,
-    PyVuFlashResult, PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
-    PyWilsonActivityCoefficientsResult,
+    PyGeUniquacPhaseResult, PyGeWilsonPhaseResult, PyGerg2008PhaseResult,
+    PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult, PyHeliumPhaseResult,
+    PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
+    PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
+    PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
+    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNrtlActivityCoefficientsResult,
+    PyParachorSurfaceTensionResult, PyParahydrogenSolidPhaseResult, PyPhFlashResult,
+    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
+    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
+    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
+    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
+    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
+    PyPvFlashResult, PyRachfordRiceBinaryResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult,
+    PyRkDepartureResult, PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult,
+    PySoreideWhitsonAlphaResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
+    PySrkPenelouxShiftResult, PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult,
+    PyThermalConductivityResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
+    PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
+    PyTynCalusDiffusivityResult, PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult,
+    PyUnifacPsrkActivityCoefficientsResult, PyUnifacUmrpruActivityCoefficientsResult,
+    PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult,
+    PyVdw1fMixBinaryResult, PyViscosityResult, PyVuFlashResult, PyWaterPhaseResult,
+    PyWilkeChangDiffusivityResult, PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -1251,6 +1251,56 @@ fn build_mixture_with_mass(
         .map_err(pyo3::exceptions::PyValueError::new_err)?;
     azoth_eos::Mixture::new(components, kij)
         .map(|m| m.with_cubic(cubic).with_alpha(alpha))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The fugacity coefficients of a UNIQUAC activity-coefficient liquid. A *model* rather
+/// than a calculation: the resolved record's fields cross flattened, and `aij` with them,
+/// because no upstream table carries a UNIQUAC interaction matrix.
+#[pyfunction]
+#[pyo3(signature = (
+    r,
+    q,
+    antoine_type,
+    antoine_coefficients,
+    antoine_tc,
+    antoine_pc,
+    T,
+    P,
+    x,
+    aij
+))]
+#[pyo3(
+    text_signature = "(r, q, antoine_type, antoine_coefficients, antoine_tc, antoine_pc, \
+                         T, P, x, aij)"
+)]
+#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the resolved record's own fields.
+pub fn ge_uniquac_phase(
+    py: Python<'_>,
+    r: Vec<f64>,
+    q: Vec<f64>,
+    antoine_type: Vec<String>,
+    antoine_coefficients: Vec<f64>,
+    antoine_tc: Vec<f64>,
+    antoine_pc: Vec<f64>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+    aij: Vec<Vec<f64>>,
+) -> PyResult<PyGeUniquacPhaseResult> {
+    let params = azoth_eos::databank::GeUniquacPhaseParameters {
+        r,
+        q,
+        antoine: antoine_records(
+            antoine_type,
+            &antoine_coefficients,
+            &antoine_tc,
+            &antoine_pc,
+        ),
+    };
+    azoth_eos::ge_uniquac_phase::ge_uniquac_phase(&params, T, P, &x, &aij)
+        .map(|res| PyGeUniquacPhaseResult::from(&res))
         .map_err(|e| to_pyerr(py, e))
 }
 

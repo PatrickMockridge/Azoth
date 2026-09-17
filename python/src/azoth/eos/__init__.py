@@ -88,6 +88,7 @@ from azoth.core.result import (
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
+    GeUniquacPhaseResult,
     GeWilsonPhaseResult,
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
@@ -168,6 +169,7 @@ from azoth.eos.components import (
     BwrsCoefficients,
     GeNrtlPhaseParameters,
     GeUnifacPhaseParameters,
+    GeUniquacPhaseParameters,
     GeWilsonPhaseParameters,
     NrtlParameters,
     UnifacParameters,
@@ -211,6 +213,7 @@ __all__ = [
     "ge_nrtl_flash",
     "ge_nrtl_phase",
     "ge_unifac_phase",
+    "ge_uniquac_phase",
     "ge_wilson_phase",
     "gerg2008_phase",
     "hayduk_minhas_diffusivity",
@@ -298,6 +301,7 @@ _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
+_GE_UNIQUAC_PHASE = "eos.ge_uniquac_phase"
 _GE_WILSON_PHASE = "eos.ge_wilson_phase"
 _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
@@ -1791,6 +1795,43 @@ def ge_wilson_phase(
     """
     return resolve(_GE_WILSON_PHASE)(  # type: ignore[no-any-return]
         params=params, mixture=mixture, T=T, P=P, x=x
+    )
+
+
+def ge_uniquac_phase(
+    params: GeUniquacPhaseParameters,
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+    aij: Sequence[Sequence[Q]] | None = None,
+    *,
+    card: keycard.Keycard | None = None,
+) -> GeUniquacPhaseResult:
+    """The fugacity coefficients of a liquid whose non-ideality is UNIQUAC's.
+
+    ``phi_i = gamma_i P0_i / P``, which is NeqSim's ``PhaseGEUniquac`` liquid: there is no
+    cubic in it, because an activity-coefficient phase's non-ideality is ``gamma`` and its
+    standard state is the pure liquid at the state's temperature.
+
+    ``params`` is the caller's, from
+    :func:`azoth.eos.components.ge_uniquac_phase_parameters`. ``aij`` is the interaction
+    matrix - no upstream table carries a UNIQUAC one - and it is either the caller's
+    argument or, when omitted, a keycard entry at
+    ``coefficients."eos.ge_uniquac_phase".aij``.
+
+    Raises:
+        InvalidInputError: if ``params`` and ``x`` disagree in length, if ``x`` is not a
+            composition, or if ``aij`` is not an ``N x N`` matrix.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.ge_uniquac_phase`.
+    """
+    return resolve(_GE_UNIQUAC_PHASE)(  # type: ignore[no-any-return]
+        params=params,
+        T=T,
+        P=P,
+        x=x,
+        aij=keycard.coefficient_value(_GE_UNIQUAC_PHASE, "aij", aij, card=card),
     )
 
 
