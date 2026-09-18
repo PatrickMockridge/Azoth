@@ -470,7 +470,10 @@ pub struct PrMolarVolumeResult {
 pub struct PureSaturationResult {
     /// The saturation pressure.
     pub p_sat: Pressure,
-    /// The common value of `ln phi_L` and `ln phi_V` at the converged pressure.
+    /// `ln phi` of the **liquid** root at the converged pressure.
+    ///
+    /// Not an average of the two roots: they are equal there only to the bisection's own
+    /// residual, which is the equation being solved rather than a property of the answer.
     pub ln_phi: f64,
     /// Bisection steps taken.
     pub iterations: u32,

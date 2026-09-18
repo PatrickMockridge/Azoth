@@ -74,6 +74,7 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
+- **the tolerance above is a floor**: the solver accepts a residual under `max(1e-08, |V_spec| * 1e-9)`. The relative term is upstream's `|V - Vspec|/Vspec < 1e-9`, and it is not slack - an absolute `1e-08` on a volume of `1e-3 m**3/mol` is `1e-05` relative.
 - the iteration is quasi-Newton in temperature from `initial_temperature`, with a central-difference `dV/dT` slope; every step is clamped to ten kelvin.
 - a trial temperature the inner flash cannot settle is backed off, not fatal: the gap is halved back towards the last temperature that worked.
 - the flash at each trial temperature is converged, not exact: the volume inverted is that of a converged approximation.
