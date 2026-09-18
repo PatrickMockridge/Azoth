@@ -19,6 +19,7 @@ from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import (
     normalise,
+    phase_derivatives,
     phase_state,
     reduced_parameters,
     wilson_saturation_pressures,
@@ -33,6 +34,45 @@ from azoth.eos.reference._mixture_state import (
 #: state ends at. The measurements behind the constant, and why it is ``1e-2`` here
 #: and ``1e-8`` in the flash, are in ``specs/models/eos/bubble_pressure.toml``.
 TRIVIAL_TOLERANCE = 1.0e-02
+
+#: The largest change in the incipient composition at which the answer is a settled state.
+#:
+#: The pressure and the composition are two halves of one answer and both have to converge.
+#: ``S = 1`` fixes the pressure; the K-values fix the composition, and the composition is one
+#: update behind whatever ``S`` last read. A Newton on ``P`` converges in half the steps the
+#: fixed-point update took, and so leaves the composition half as settled.
+COMPOSITION_TOL = 1.0e-12
+
+#: The largest change in ``ln P`` one Newton step may make, ``ln(10)`` - a decade.
+#:
+#: The fixed-point update could not run away and a Newton can: ``P * S`` moves the pressure by
+#: the residual itself, bounded by the state it was measured at, where a Newton divides by a
+#: derivative that goes to zero where the locus turns. Measured before this cap: a methane-rich
+#: vapour with no dew point at any pressure drove ``B = b P/RT`` to ``2.9e31`` and tripped a
+#: debug assertion in ``pr_z_factor``, where the fixed-point update walked the pressure up until
+#: the trivial-solution guard refused it.
+MAX_LN_STEP = 2.302585092994046
+
+
+def _dfugdp(
+    mixture: Mixture, temperature: float, x: list[float], *, liquid: bool, pressure: float
+) -> list[float]:
+    """``d ln phi_i / dP`` for a phase at a composition and root.
+
+    The pressure analogue of ``_phase_boundary_temperature``'s ``_dfugdt``: the Newton step on
+    ``S`` needs ``dK_i/dP = K_i (d ln phi_i^liquid/dP - d ln phi_i^vapour/dP)``. Analytic, from
+    ``phase_derivatives`` - the surface P6 item 2 ported.
+
+    The temperature side has used the analytic form since that surface existed and this side
+    never did: it moved the pressure by ``P * S``, the fixed-point update NeqSim's ``...Der``
+    classes replace with exactly this derivative.
+    """
+    reduced = reduced_parameters(mixture, temperature, pressure)
+    state = phase_state(reduced, mixture.kij, x, liquid=liquid)
+    return phase_derivatives(
+        reduced, mixture.kij, x, state.z, temperature=temperature, pressure=pressure
+    ).d_ln_phi_dp
+
 
 #: Which phase appears at the boundary being sought.
 VAPOUR = "vapour"
@@ -103,6 +143,7 @@ def phase_boundary_pressure(
     warnings: list[Warning] = []
     iterations = 0
     residual = math.nan
+    previous_other = list(other)
 
     for step in range(1, algorithm["max_iterations"] + 1):
         iterations = step
@@ -137,6 +178,7 @@ def phase_boundary_pressure(
             )
 
         # The amount of incipient phase the held phase would produce.
+        previous_other = list(other)
         if incipient == VAPOUR:
             s = sum(held[i] * k[i] for i in range(n))
             other = [held[i] * k[i] / s for i in range(n)]
@@ -144,8 +186,16 @@ def phase_boundary_pressure(
             s = sum(held[i] / k[i] for i in range(n))
             other = [held[i] / k[i] / s for i in range(n)]
         residual = abs(s - 1.0)
+        # The composition's own convergence: the largest move of any mole fraction.
+        #
+        # The rust kernel carries the reasoning. `S = 1` fixes the pressure; the K-values fix
+        # the composition, and the composition is one update behind whatever `S` last read. A
+        # Newton on `P` converges in half the steps the fixed-point update took, and so leaves
+        # the composition half as settled - measured, the same pressure to `1e-12` with the
+        # vapour fraction differing by `2.3e-8`.
+        settled = max(abs(a - b) for a, b in zip(other, previous_other, strict=True))
 
-        if residual <= algorithm["tolerance"]:
+        if residual <= algorithm["tolerance"] and settled <= COMPOSITION_TOL:
             if incipient == VAPOUR:
                 z_held, z_incipient = liquid_state.z, vapour_state.z
             else:
@@ -161,11 +211,33 @@ def phase_boundary_pressure(
                 "warnings": warnings,
             }
 
-        # Too much incipient phase means move away from it: for a bubble point `S` is
-        # how much vapour the liquid would give off, so `S > 1` is too much and `P * S`
-        # raises the pressure; for a dew point `S` is how much liquid the vapour would
-        # condense, so `S < 1` is too little and `P / S` raises it.
-        pressure = pressure * s if incipient == VAPOUR else pressure / s
+        # **The Newton step on `ln P`**, replacing the fixed-point `P * S`. `S` is `sum x_i K_i`
+        # for a bubble point and `sum y_i / K_i` for a dew point, so
+        #
+        #     d S / d ln P = P * sum_i (held_i K_i^{+-1}) * (d ln phi_i^L/dP - d ln phi_i^V/dP)
+        #
+        # with the sign of the `K` power carrying the dew point's reciprocal. The fixed-point
+        # update is a contraction only near the answer; a Newton more than squares the error.
+        if incipient == VAPOUR:
+            liquid, vapour = held, other
+        else:
+            liquid, vapour = other, held
+        d_liquid = _dfugdp(mixture, temperature, list(liquid), liquid=True, pressure=pressure)
+        d_vapour = _dfugdp(mixture, temperature, list(vapour), liquid=False, pressure=pressure)
+        dsdp = 0.0
+        for i in range(n):
+            if incipient == VAPOUR:
+                dsdp += held[i] * k[i] * (d_liquid[i] - d_vapour[i])
+            else:
+                dsdp -= held[i] / k[i] * (d_liquid[i] - d_vapour[i])
+        dsdx = dsdp * pressure
+        if math.isfinite(dsdx) and dsdx != 0.0:
+            ln_step = max(-MAX_LN_STEP, min(MAX_LN_STEP, -(s - 1.0) / dsdx))
+            pressure = math.exp(math.log(pressure) + ln_step)
+        else:
+            # The fixed-point update as the fallback, for a slope the derivative surface cannot
+            # supply.
+            pressure = pressure * s if incipient == VAPOUR else pressure / s
         if not math.isfinite(pressure) or pressure <= 0.0:
             raise SolverNotConvergedError(iterations, residual, algorithm["tolerance"])
 

@@ -18,7 +18,7 @@ standard = "Michelsen, M. L. (1982)"
 edition = "The isothermal flash problem. Part II. Phase-split calculation. Fluid Phase Equilibria 9(1), 21-40."
 doi = "10.1016/0378-3812(82)85002-4"
 [algorithm]
-scheme = "bubble_pressure_successive_substitution"
+scheme = "bubble_pressure_newton"
 initialisation = "wilson_raoult"
 convergence = "absolute"
 tolerance = 1e-12

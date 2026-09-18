@@ -65,12 +65,12 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 |---|---|---|
 | [`eos.ammonia_phase`](./ammonia_phase.md) | `newton_density_solve` | Gao, K.; Wu, J.; Bell, I. H.; Lemmon, E. W. (2020) |
 | [`eos.argon_solid_phase`](./argon_solid_phase.md) | `bracketed_log_volume_newton` | Maltby, V.; Hammer, M.; Wilhelmsen, O. (2024) |
-| [`eos.bubble_pressure`](./bubble_pressure.md) | `bubble_pressure_successive_substitution` | Michelsen, M. L. (1982) |
+| [`eos.bubble_pressure`](./bubble_pressure.md) | `bubble_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.bubble_temperature`](./bubble_temperature.md) | `bubble_temperature_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.bwrs_phase`](./bwrs_phase.md) | `newton_density_solve` | Younglove, B. A.; Ely, J. F. (1987) |
 | [`eos.co2_phase`](./co2_phase.md) | `newton_density_solve` | Span, R.; Wagner, W. (1996) |
 | [`eos.critical_point`](./critical_point.md) | `heidemann_khalil_critical` | Heidemann, R. A.; Khalil, A. M. (1980) |
-| [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_successive_substitution` | Michelsen, M. L. (1982) |
+| [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.dew_temperature`](./dew_temperature.md) | `dew_temperature_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.eos_cg_phase`](./eos_cg_phase.md) | `log_volume_newton` | Gernert, J.; Span, R. (2016) |
 | [`eos.ge_nrtl_flash`](./ge_nrtl_flash.md) | `successive_substitution_flash` | NeqSim 3.20.0 `SystemEosGE` |

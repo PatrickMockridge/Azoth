@@ -25,6 +25,31 @@ use crate::model_gen;
 /// the flash, are in `specs/models/eos/bubble_pressure.toml`.
 pub const TRIVIAL_TOLERANCE: f64 = 1.0e-02;
 
+/// The largest change in the incipient composition at which the answer is a settled state.
+///
+/// **The pressure and the composition are two halves of one answer and both have to converge.**
+/// `S = 1` fixes the pressure; the K-values fix the composition, and the composition is one
+/// update behind whatever `S` last read. A Newton on `P` converges in half the steps the
+/// fixed-point update took, which is the point of it - but it therefore leaves the composition
+/// half as settled, and measured, that showed as the same pressure to `1e-12` with the vapour
+/// fraction differing by `2.3e-8`. Requiring both is what makes the answer independent of how
+/// the pressure got there.
+const COMPOSITION_TOL: f64 = 1.0e-12;
+
+/// The largest change in `ln P` one Newton step may make, `ln(10)` - a decade.
+///
+/// **The fixed-point update could not run away and a Newton can.** `P * S` moves the pressure by
+/// the residual itself, which is bounded by the state it was measured at; a Newton divides by a
+/// derivative that goes to zero where the locus turns, so it can take the pressure to a value
+/// the equation of state cannot evaluate at all. Measured before this cap: a methane-rich
+/// vapour with no dew point at any pressure drove `B = b P/RT` to `2.9e31` and tripped a debug
+/// assertion in `pr_z_factor`, where the fixed-point update walked the pressure up until the
+/// trivial-solution guard refused it - which is the answer that test asks for.
+///
+/// The cap keeps the Newton's direction and bounds its reach: with `max_iterations` at 200 it
+/// can still cross 200 decades, and every case converges in fewer than twenty steps.
+const MAX_LN_STEP: f64 = std::f64::consts::LN_10;
+
 /// Wilson's constant, shared with [`crate::pt_flash`]'s initialisation.
 ///
 /// The estimate here is used for a saturation-pressure guess rather than a
@@ -85,6 +110,27 @@ pub(crate) fn wilson_psat(mixture: &Mixture, t: ThermodynamicTemperature) -> Vec
             c.pc.value * (WILSON_CONSTANT * (1.0 + c.omega) * (1.0 - c.tc.value / t.value)).exp()
         })
         .collect()
+}
+
+/// `d ln phi_i / dP` for a phase at a composition and root.
+///
+/// The pressure analogue of [`crate::saturation_temperature`]'s `dfugdt`: the Newton step on
+/// `S` needs `dK_i/dP = K_i (d ln phi_i^liquid/dP - d ln phi_i^vapour/dP)`. Analytic, from
+/// [`crate::mixture::Mixture::phase_derivatives`] - the surface item 2 ported.
+///
+/// **The temperature side has used the analytic form since that surface existed and this side
+/// never did**: `phase_boundary_pressure` moved the pressure by `P * S`, which is the
+/// fixed-point update NeqSim's `...Der` classes replace with exactly this derivative.
+fn dfugdp(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    x: &[f64],
+    side: RootSide,
+    p: f64,
+) -> Result<Vec<f64>> {
+    let reduced = mixture.reduced_parameters(t, pascals_from(p))?;
+    let state = mixture.phase_state(&reduced, x, side)?;
+    Ok(mixture.phase_derivatives(&reduced, x, state.z)?.d_ln_phi_dp)
 }
 
 /// The pressure at which the incipient phase appears, at a fixed temperature.
@@ -166,6 +212,7 @@ pub fn phase_boundary_pressure(
 
     let mut iterations = 0;
     let mut residual = f64::NAN;
+    let mut previous_other: Vec<f64> = other.clone();
 
     for step in 1..=algorithm.max_iterations {
         iterations = step;
@@ -215,6 +262,7 @@ pub fn phase_boundary_pressure(
             Incipient::Vapour => (0..n).map(|i| held[i] * k[i]).sum(),
             Incipient::Liquid => (0..n).map(|i| held[i] / k[i]).sum(),
         };
+        previous_other.clone_from(&other);
         for i in 0..n {
             other[i] = match incipient {
                 Incipient::Vapour => held[i] * k[i],
@@ -223,7 +271,15 @@ pub fn phase_boundary_pressure(
         }
         residual = (s - 1.0).abs();
 
-        if residual <= algorithm.tolerance {
+        // The composition's own convergence, measured as the largest move of any mole fraction
+        // in the last update.
+        let settled = other
+            .iter()
+            .zip(&previous_other)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0, f64::max);
+
+        if residual <= algorithm.tolerance && settled <= COMPOSITION_TOL {
             return Ok(PhaseBoundary {
                 pressure,
                 incipient: other,
@@ -246,9 +302,41 @@ pub fn phase_boundary_pressure(
         // how much vapour the liquid would give off, so `S > 1` is too much and `P * S`
         // raises the pressure; for a dew point `S` is how much liquid the vapour would
         // condense, so `S < 1` is too little and `P / S` raises it.
-        pressure = match incipient {
-            Incipient::Vapour => pressure * s,
-            Incipient::Liquid => pressure / s,
+        // **The Newton step on `ln P`**, replacing the fixed-point `P * S`. `S` is `sum x_i K_i`
+        // for a bubble point and `sum y_i / K_i` for a dew point, so
+        //
+        // ```text
+        // d S / d ln P = P * sum_i (held_i K_i^{+-1}) * (d ln phi_i^L/dP - d ln phi_i^V/dP)
+        // ```
+        //
+        // with the sign of the `K` power carrying the dew point's reciprocal. The fixed-point
+        // update is a contraction only near the answer, so it halves the error each step however
+        // close it starts; a Newton more than squares it.
+        let (liquid, vapour) = match incipient {
+            Incipient::Vapour => (held, other.as_slice()),
+            Incipient::Liquid => (other.as_slice(), held),
+        };
+        let d_liquid = dfugdp(mixture, t, liquid, RootSide::Liquid, pressure)?;
+        let d_vapour = dfugdp(mixture, t, vapour, RootSide::Vapour, pressure)?;
+        let mut dsdp = 0.0;
+        for i in 0..n {
+            match incipient {
+                Incipient::Vapour => dsdp += held[i] * k[i] * (d_liquid[i] - d_vapour[i]),
+                Incipient::Liquid => dsdp -= held[i] / k[i] * (d_liquid[i] - d_vapour[i]),
+            }
+        }
+        let dsdx = dsdp * pressure;
+        pressure = if dsdx.is_finite() && dsdx != 0.0 {
+            let step = (-(s - 1.0) / dsdx).clamp(-MAX_LN_STEP, MAX_LN_STEP);
+            (pressure.ln() + step).exp()
+        } else {
+            // The fixed-point update as the fallback, for a slope the derivative surface cannot
+            // supply: `S > 1` is too much vapour at a bubble point and `P * S` raises the
+            // pressure, `S < 1` is too little liquid at a dew point and `P / S` raises it.
+            match incipient {
+                Incipient::Vapour => pressure * s,
+                Incipient::Liquid => pressure / s,
+            }
         };
         if !pressure.is_finite() || pressure <= 0.0 {
             return Err(AzothError::SolverNotConverged {

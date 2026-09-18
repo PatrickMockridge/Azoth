@@ -20,7 +20,7 @@ not an equation, and both implementations read it from here.
 
 | Setting | Value |
 |---|---|
-| Scheme | `bubble_pressure_successive_substitution` |
+| Scheme | `bubble_pressure_newton` |
 | Convergence | `absolute` |
 | Tolerance | `1e-12` |
 | Max iterations | `200` |
@@ -66,8 +66,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_and_butane_at_300_k` | components = ['methane', 'n-butane'], T = 300.0, x = [0.2, 0.8] | pressure = 3950960.4937437344, incipient = [0.8903950538193843, 0.10960494618061567], k = [4.4519752690926016, 0.13700618272563664], z_liquid = 0.14280100289849598, z_vapour = 0.8636877061147825, min_t_over_tc = 0.7056831012420023, iterations = 21 |
-| `methane_propane_and_butane_at_320_k` | components = ['methane', 'propane', 'n-butane'], T = 320.0, x = [0.2, 0.3, 0.5] | pressure = 4664798.1363369655, incipient = [0.7241977955003319, 0.15815749852814676, 0.11764470597152142], k = [3.6209889774997, 0.5271916617602039, 0.23528941194291553], z_liquid = 0.16569665300345512, z_vapour = 0.7928358750848826, min_t_over_tc = 0.7527286413248024, iterations = 30 |
+| `methane_and_butane_at_300_k` | components = ['methane', 'n-butane'], T = 300.0, x = [0.2, 0.8] | pressure = 3950960.4937437344, incipient = [0.8903950538193843, 0.10960494618061567], k = [4.4519752690926016, 0.13700618272563664], z_liquid = 0.14280100289849598, z_vapour = 0.8636877061147825, min_t_over_tc = 0.7056831012420023, iterations = 16 |
+| `methane_propane_and_butane_at_320_k` | components = ['methane', 'propane', 'n-butane'], T = 320.0, x = [0.2, 0.3, 0.5] | pressure = 4664798.1363369655, incipient = [0.7241977955003319, 0.15815749852814676, 0.11764470597152142], k = [3.6209889774997, 0.5271916617602039, 0.23528941194291553], z_liquid = 0.16569665300345512, z_vapour = 0.7928358750848826, min_t_over_tc = 0.7527286413248024, iterations = 22 |
 
 ## References
 

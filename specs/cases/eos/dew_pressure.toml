@@ -13,7 +13,7 @@ k = [10.87481130481427, 0.2158811907400535]
 z_liquid = 0.059290858273984295
 z_vapour = 0.9218236006325037
 min_t_over_tc = 0.7056831012420023
-iterations = 25
+iterations = 10
 [[cases]]
 id = "methane_propane_and_butane_at_300_k"
 tolerance = 1e-09
@@ -28,4 +28,4 @@ k = [15.359377034393615, 0.9684336086735432, 0.304104804780905]
 z_liquid = 0.038300378343920416
 z_vapour = 0.9031435583011436
 min_t_over_tc = 0.7056831012420023
-iterations = 20
+iterations = 9

@@ -367,7 +367,7 @@ static BUBBLE_PRESSURE_CASES: &[TestCase] = &[
             ("z_liquid", 0.14280100289849598),
             ("z_vapour", 0.8636877061147825),
             ("min_t_over_tc", 0.7056831012420023),
-            ("iterations", 21.0),
+            ("iterations", 16.0),
         ],
         expected_vectors: &[
             ("incipient", &[0.8903950538193843, 0.10960494618061567]),
@@ -391,7 +391,7 @@ static BUBBLE_PRESSURE_CASES: &[TestCase] = &[
             ("z_liquid", 0.16569665300345512),
             ("z_vapour", 0.7928358750848826),
             ("min_t_over_tc", 0.7527286413248024),
-            ("iterations", 30.0),
+            ("iterations", 22.0),
         ],
         expected_vectors: &[
             (
@@ -407,7 +407,7 @@ static BUBBLE_PRESSURE_CASES: &[TestCase] = &[
 ];
 
 static BUBBLE_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
-    scheme: "bubble_pressure_successive_substitution",
+    scheme: "bubble_pressure_newton",
     convergence: "absolute",
     tolerance: 1e-12,
     max_iterations: 200,
@@ -936,7 +936,7 @@ static DEW_PRESSURE_CASES: &[TestCase] = &[
             ("z_liquid", 0.059290858273984295),
             ("z_vapour", 0.9218236006325037),
             ("min_t_over_tc", 0.7056831012420023),
-            ("iterations", 25.0),
+            ("iterations", 10.0),
         ],
         expected_vectors: &[
             ("incipient", &[0.07356449482911534, 0.9264355051708847]),
@@ -960,7 +960,7 @@ static DEW_PRESSURE_CASES: &[TestCase] = &[
             ("z_liquid", 0.038300378343920416),
             ("z_vapour", 0.9031435583011436),
             ("min_t_over_tc", 0.7056831012420023),
-            ("iterations", 20.0),
+            ("iterations", 9.0),
         ],
         expected_vectors: &[
             (
@@ -976,7 +976,7 @@ static DEW_PRESSURE_CASES: &[TestCase] = &[
 ];
 
 static DEW_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
-    scheme: "dew_pressure_successive_substitution",
+    scheme: "dew_pressure_newton",
     convergence: "absolute",
     tolerance: 1e-12,
     max_iterations: 200,
