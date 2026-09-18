@@ -171,7 +171,21 @@ public final class CpaSweep {
     {"xsite[1][0]", "ComponentSrkCPA.getXsite()[0]", "SiteState.fractions[4]", "methanol site 0"},
     {"xsite[1][1]", "ComponentSrkCPA.getXsite()[1]", "SiteState.fractions[5]", "methanol site 1"},
     // --- the Helmholtz energy --------------------------------------------------------
-    {"FCPA", "PhaseSrkCPA.FCPA()", "SiteState.helmholtz_rt", "A_assoc / (R T)"},
+    {"FCPA", "PhaseSrkCPA.FCPA()", "SiteState.helmholtz_rt",
+        "A_assoc / (R T), from the cached field"},
+    // **`FCPA()` is a cached field, and the sum its own commented-out body gives is not what
+    // fills it.** `PhaseSrkCPA` computes `FCPA = m^T (u - 0.5 ksi .* udot)` with
+    // `u_i = ln x_i - x_i + 1` and `udot_i = S_i`, which equals
+    // `sum_i n_i sum_A (ln x_A - x_A/2 + 1/2)` **only where the solve has converged**, since
+    // that needs `x_i (1 + S_i) = 1`. `FCPA_sum` is the commented-out body from
+    // `getXsite()`, so the two keys say which expression the cached field holds.
+    {"FCPA_sum", "the commented-out body of PhaseSrkCPA.FCPA(), from getXsite()",
+        "SiteState.helmholtz_rt", "what azoth ports"},
+    // `hCPA = sum_i n_i sum_A (1 - X_A)`, the unbonded site count. `FCPA` depends on it through
+    // the `-x/2 + 1/2` terms, and it is carried on the solve rather than derived from a
+    // fugacity derivative, so it is the one quantity `FCPA` turns on that comparing
+    // `dFCPAdN` does not pin.
+    {"hcpa", "PhaseCPAInterface.getHcpatot()", "SiteState.unbonded_sites", ""},
     {"dFCPAdV", "PhaseSrkCPA.dFCPAdV()", "SiteState.d_helmholtz_dv", "d(A_assoc/(R T)) / dV"},
     {"dFCPAdT", "PhaseSrkCPA.dFCPAdT()", "SiteDerivatives.d_helmholtz_dt", "d(A_assoc/(R T)) / dT"},
     {"dFCPAdN[0]", "ComponentSrkCPA.dFCPAdN(phase, n, T, P)", "SiteState.ln_phi[0]", "water"},
@@ -261,12 +275,49 @@ public final class CpaSweep {
     {"flash_v[0]", "PhaseInterface.getMolarVolume()", "-", "m^3/mol"},
     {"flash_x[0][0]", "ComponentInterface.getx()", "-", "water"},
     {"flash_x[0][1]", "ComponentInterface.getx()", "-", "methanol"},
+    // The flashed phases' *association* values, which is the only route to NeqSim's liquid
+    // branch: `init(1)` leaves whichever single phase the volume solve landed on - the
+    // vapour, at low pressure - so the liquid root's `FCPA`, `dFCPAdN` and `gcpa` were not
+    // reachable before. A `TPflash` that splits puts a real liquid composition in phase 1.
+    {"flash_gcpa[0]", "PhaseCPAInterface.getGcpa() on the flashed phase", "Rdf.g", ""},
+    {"flash_FCPA[0]", "PhaseSrkCPA.FCPA() on the flashed phase", "SiteState.helmholtz_rt", ""},
+    {"flash_FCPA_sum[0]", "the commented-out body, from getXsite() on the flashed phase", "-",
+        "= flash_FCPA[0] iff the cached field is current"},
+    {"flash_hcpa[0]", "PhaseCPAInterface.getHcpatot() on the flashed phase", "-", ""},
+    {"flash_hcpa_direct[0]", "PhaseCPAInterface.calc_hCPA() run on the flashed phase", "-",
+        "= flash_hcpa[0] iff the cached field is current"},
+    {"flash_hcpa_from_xsite[0]", "calc_hCPA's own body, re-run here from getXsite()", "-",
+        "= flash_hcpa_direct[0] is an identity, not a claim"},
+    {"flash_xsite[1][0]", "ComponentSrkCPA.getXsite() on the flashed liquid", "SiteState.fractions", ""},
+    {"flash_dFCPAdN[0][0]", "ComponentSrkCPA.dFCPAdN on the flashed phase",
+        "SiteState.ln_phi[0]", "the liquid's, when the flash splits"},
+    {"flash_dFCPAdN[0][1]", "ComponentSrkCPA.dFCPAdN on the flashed phase",
+        "SiteState.ln_phi[1]", ""},
+    {"flash_gcpa[1]", "PhaseCPAInterface.getGcpa() on phase 1", "Rdf.g", ""},
+    {"flash_FCPA[1]", "PhaseSrkCPA.FCPA() on phase 1", "SiteState.helmholtz_rt", ""},
+    {"flash_dFCPAdN[1][0]", "ComponentSrkCPA.dFCPAdN on phase 1", "SiteState.ln_phi[0]", ""},
+    {"flash_dFCPAdN[1][1]", "ComponentSrkCPA.dFCPAdN on phase 1", "SiteState.ln_phi[1]", ""},
     {"flash_beta[1]", "PhaseInterface.getBeta()", "-", "phase 1, absent when single phase"},
     {"flash_Z[1]", "PhaseInterface.getZ()", "-", ""},
     {"flash_v[1]", "PhaseInterface.getMolarVolume()", "-", "m^3/mol"},
     {"flash_x[1][0]", "ComponentInterface.getx()", "-", "water"},
     {"flash_x[1][1]", "ComponentInterface.getx()", "-", "methanol"},
   };
+
+  /** `sum_i n_i sum_A (ln x_A - x_A/2 + 1/2)` from `getXsite()` - the commented-out body. */
+  private static double fcpa_sum(PhaseInterface phase, int n) {
+    double total = 0.0;
+    for (int i = 0; i < n; i++) {
+      ComponentSrkCPA c = (ComponentSrkCPA) phase.getComponent(i);
+      double perSite = 0.0;
+      for (int j = 0; j < c.getNumberOfAssociationSites(); j++) {
+        double x = c.getXsite()[j];
+        perSite += Math.log(x) - x / 2.0 + 0.5;
+      }
+      total += c.getNumberOfMolesInPhase() * perSite;
+    }
+    return total;
+  }
 
   private static void header() {
     System.out.println("# azoth CpaSweep - NeqSim 3.20.0's CPA internals over a grid of states.");
@@ -361,6 +412,8 @@ public final class CpaSweep {
     // The raw building blocks, then the three phase functions `ComponentEos.dFdN`
     // contracts with `Bi` and `Ai`.
     put(row, "F_res_over_R", ((PhaseEos) phase).getF());
+    put(row, "FCPA_sum", fcpa_sum(phase, n));
+    put(row, "hcpa", ((PhaseCPAInterface) phase).getHcpatot());
     put(row, "FV", phase.FV());
     put(row, "V_total", phase.getTotalVolume());
     put(row, "g_helmholtz", ((PhaseEos) phase).getg());
@@ -401,6 +454,34 @@ public final class CpaSweep {
       put(row, "flash_beta[" + i + "]", flashed.getBeta());
       put(row, "flash_Z[" + i + "]", flashed.getZ());
       put(row, "flash_v[" + i + "]", flashed.getMolarVolume());
+      put(row, "flash_gcpa[" + i + "]", ((PhaseCPAInterface) flashed).getGcpa());
+      put(row, "flash_FCPA[" + i + "]", ((PhaseSrkCPA) flashed).FCPA());
+      put(row, "flash_FCPA_sum[" + i + "]", fcpa_sum(flashed, n));
+      put(row, "flash_hcpa[" + i + "]", ((PhaseCPAInterface) flashed).getHcpatot());
+      put(row, "flash_hcpa_direct[" + i + "]", ((PhaseCPAInterface) flashed).calc_hCPA());
+      double fromXsite = 0.0;
+      for (int j = 0; j < n; j++) {
+        ComponentSrkCPA c = (ComponentSrkCPA) flashed.getComponent(j);
+        double perSite = 0.0;
+        for (int k = 0; k < c.getNumberOfAssociationSites(); k++) {
+          perSite += 1.0 - c.getXsite()[k];
+        }
+        fromXsite += c.getNumberOfMolesInPhase() * perSite;
+      }
+      put(row, "flash_hcpa_from_xsite[" + i + "]", fromXsite);
+      int flashSite = 0;
+      for (int j = 0; j < n; j++) {
+        ComponentSrkCPA c = (ComponentSrkCPA) flashed.getComponent(j);
+        for (int k = 0; k < c.getNumberOfAssociationSites(); k++) {
+          put(row, "flash_xsite[" + i + "][" + flashSite + "]", c.getXsite()[k]);
+          flashSite++;
+        }
+      }
+      for (int j = 0; j < n; j++) {
+        put(row, "flash_dFCPAdN[" + i + "][" + j + "]",
+            ((ComponentSrkCPA) flashed.getComponent(j))
+                .dFCPAdN(flashed, n, temperature, pressure));
+      }
       for (int j = 0; j < n; j++) {
         put(row, "flash_x[" + i + "][" + j + "]", flashed.getComponent(j).getx());
       }
