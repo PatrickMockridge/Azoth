@@ -234,9 +234,11 @@ def test_the_stub_matches_the_rust_transport_types() -> None:
     checked a field, so a stub describing attributes no object has type-checked clean and
     failed at the first attribute access.
 
-    One-directional on purpose: the Rust struct may carry fields the stub omits only if
-    they are not `#[pyo3(get)]`, which this parses for. A field the stub *declares* and
-    the Rust does not have is the failure that shipped.
+    **Both directions.** A field the stub declares and the Rust does not have was the
+    failure that shipped; a field the Rust carries with `#[pyo3(get)]` and the stub omits
+    is the same defect one file over - a caller reaching for it type-checks clean and
+    fails at the first attribute access. The parser reads only the `#[pyo3(get)]` fields,
+    so a private Rust field is still allowed to be absent from the stub.
     """
     rust = _rust_pyclasses()
     assert rust, "the Rust source parser found no pyclasses, so it is broken not empty"
@@ -257,6 +259,13 @@ def test_the_stub_matches_the_rust_transport_types() -> None:
             f"have. The stub is describing attributes no object carries - run "
             f"`python tools/gen_stub.py` if the field was removed, or add it to the Rust "
             f"struct with `#[pyo3(get)]`."
+        )
+        undescribed = sorted(set(rust[node.name]) - declared)
+        assert not undescribed, (
+            f"_core.pyi does not declare {node.name}.{undescribed}, which the Rust struct "
+            f"carries with `#[pyo3(get)]`. A caller reaching for one type-checks clean and "
+            f"fails at the first attribute access - add it to `gen_stub.py`'s declaration "
+            f"of {node.name} and run `python tools/gen_stub.py`."
         )
         checked += 1
 

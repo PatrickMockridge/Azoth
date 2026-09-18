@@ -34,6 +34,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "molar_mass",
     "molar_volume",
     "molar_energy",
+    "attraction_parameter",
     "molar_heat_capacity",
     "molar_heat_capacity_coefficient_2",
     "molar_heat_capacity_coefficient_3",
@@ -63,6 +64,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("molar_mass", [0, 1, 0, 0, 0, -1, 0]),
     ("molar_volume", [3, 0, 0, 0, 0, -1, 0]),
     ("molar_energy", [2, 1, -2, 0, 0, -1, 0]),
+    ("attraction_parameter", [5, 1, -2, 0, 0, -2, 0]),
     ("molar_heat_capacity", [2, 1, -2, 0, -1, -1, 0]),
     (
         "molar_heat_capacity_coefficient_2",
@@ -119,6 +121,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "kg/mol",
     "m**3/mol",
     "J/mol",
+    "Pa*m**6/mol**2",
     "J/(mol*K)",
     "J/(mol*K**2)",
     "J/(mol*K**3)",
@@ -149,6 +152,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("kg/mol", [0, 1, 0, 0, 0, -1, 0]),
     ("m**3/mol", [3, 0, 0, 0, 0, -1, 0]),
     ("J/mol", [2, 1, -2, 0, 0, -1, 0]),
+    ("Pa*m**6/mol**2", [5, 1, -2, 0, 0, -2, 0]),
     ("J/(mol*K)", [2, 1, -2, 0, -1, -1, 0]),
     ("J/(mol*K**2)", [2, 1, -2, 0, -2, -1, 0]),
     ("J/(mol*K**3)", [2, 1, -2, 0, -3, -1, 0]),
@@ -202,6 +206,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("kg/mol", |v| crate::units::kilograms_per_mole(v).value),
     ("m**3/mol", |v| crate::units::cubic_meters_per_mole(v).value),
     ("J/mol", |v| crate::units::joules_per_mole(v).value),
+    ("Pa*m**6/mol**2", |v| v),
     ("J/(mol*K)", |v| {
         crate::units::joules_per_mole_kelvin(v).value
     }),

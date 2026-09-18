@@ -2,13 +2,14 @@
 
 A keycard is read by `python/src/azoth/keycard.py` and by `azoth_eos::card`. The
 comparison is over the overlay, the part both readers resolve rather than carry:
-`components` and `kij`, name by name and pair by pair. The card is the shipped
-template, for the reason `test_data_agreement.py` reads the real tables: a comparison
-over a fixture written for the occasion agrees with itself.
+`components`, `associations` and `kij`, name by name and pair by pair. The card is the
+shipped template, for the reason `test_data_agreement.py` reads the real tables: a
+comparison over a fixture written for the occasion agrees with itself.
 """
 
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -62,7 +63,7 @@ def test_the_two_readers_resolve_the_same_components() -> None:
     overlay = rust_card(text)
 
     compared = 0
-    for name in sorted(card.components):
+    for name in sorted(card.names()):
         mine = components.entry(name, card=card)
         theirs = _core.overlay_entry_row(name, overlay)
         assert theirs.name == name
@@ -75,6 +76,92 @@ def test_the_two_readers_resolve_the_same_components() -> None:
     assert compared == len(_core.overlay_component_rows(overlay)), (
         "the two readers disagree about how many substances the card names"
     )
+
+
+def test_the_two_readers_resolve_the_same_association() -> None:
+    """A card's association, resolved through the databank on both sides.
+
+    The association is the parameter set a card could state last, and the two readers
+    hold it in different scales: the card states SI and the shipped table carries
+    NeqSim's internal one. So this compares the *resolved* record on both sides rather
+    than the numbers either reader was handed - a crossing applied twice, or not at all,
+    is a factor of ten thousand million and would otherwise be found by a flash.
+    """
+    text = TRANSPORTED_ASSOCIATION_CARD
+    card = python_card(text)
+    overlay = rust_card(text)
+
+    stated = card.association_for("water")
+    assert stated is not None, "the card states water's association"
+    assert stated.scheme == "2B"
+    assert stated.parameters["a_srk"].magnitude == pytest.approx(0.12277)
+
+    mine = components.entry("water", card=card).association
+    theirs = _core.overlay_entry_row("water", overlay)
+
+    assert mine is not None
+    assert theirs.association_scheme == mine.scheme
+    assert theirs.association_sites == mine.sites
+    assert theirs.association_energy == pytest.approx(mine.energy)
+    assert theirs.association_a_srk == pytest.approx(mine.a_srk)
+    assert theirs.association_b_srk == pytest.approx(mine.b_srk)
+    assert theirs.association_m_srk == pytest.approx(mine.m_srk)
+    assert theirs.association_a_pr == pytest.approx(mine.a_pr)
+    assert theirs.association_b_pr == pytest.approx(mine.b_pr)
+    assert theirs.association_m_pr == pytest.approx(mine.m_pr)
+    # The table's own scale, so the card's SI value of 0.12277 arrives as 12277.
+    assert theirs.association_a_srk == pytest.approx(12277.0)
+    # Water ships `4C` with a count of four; the card states `2B`, so the count is the new
+    # scheme's. Both readers, because a count kept from the other scheme is the silent
+    # resolution the record's `sites` field exists to prevent.
+    assert theirs.association_sites == 2 == mine.sites
+
+
+#: A card stating an association, with the shipped water's numbers so both sides have a
+#: table row to merge against. The scheme is *changed* from the shipped `4C` to `2B`, so a
+#: reader that ignored the scheme and kept the table's would be visible.
+TRANSPORTED_ASSOCIATION_CARD = (
+    "schema_version = 2\n"
+    '[associations.water]\nscheme = "2B"\n'
+    '[associations.water.energy]\nvalue = 16655.0\nunit = "J/mol"\n'
+    '[associations.water.a_srk]\nvalue = 0.12277\nunit = "Pa*m**6/mol**2"\n'
+    '[associations.water.b_srk]\nvalue = 1.4515e-5\nunit = "m**3/mol"\n'
+)
+
+
+def test_the_two_readers_refuse_the_same_association_parameter() -> None:
+    """A parameter name and a scheme name neither reader knows, refused by both.
+
+    Held to the same rule for the reason the unit test below is: a card one reader takes
+    and the other refuses works until the language changes.
+    """
+    for body, match in (
+        ('[associations.water]\nscheme = "3B"\n', "3B"),
+        (
+            '[associations.water]\nscheme = "4C"\n'
+            '[associations.water.epsilon]\nvalue = 1.0\nunit = "J/mol"\n',
+            "epsilon",
+        ),
+    ):
+        text = f"schema_version = 2\n{body}"
+
+        with pytest.raises(KeycardError, match=match):
+            python_card(text)
+        with pytest.raises(InvalidInputError, match=match):
+            rust_card(text)
+
+
+def test_the_two_readers_refuse_the_same_association_unit() -> None:
+    """An attraction stated as a ratio: the dimension check, on both sides."""
+    text = (
+        'schema_version = 2\n[associations.water]\nscheme = "4C"\n'
+        '[associations.water.a_srk]\nvalue = 0.12277\nunit = "dimensionless"\n'
+    )
+
+    with pytest.raises(KeycardError, match="cannot be read as"):
+        python_card(text)
+    with pytest.raises(InvalidInputError, match=re.escape("Pa*m**6/mol**2")):
+        rust_card(text)
 
 
 def test_the_two_readers_resolve_the_same_pairs() -> None:

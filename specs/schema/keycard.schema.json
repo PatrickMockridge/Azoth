@@ -102,6 +102,13 @@
         "required": ["component_a", "component_b", "value"]
       }
     },
+    "associations": {
+      "x-azoth-stage": "runtime",
+      "description": "Association parameters, keyed by substance name, overriding `data/components/components.csv`. A section of its own rather than a key under `components` because a card may state a scheme for a substance whose critical constants it does not touch, and because the scheme is a name from a closed vocabulary where every other component parameter is a number in a unit. The parameter names and their canonical units are declared in `association.schema.json`.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "association.schema.json" }
+    },
     "coefficients": {
       "x-azoth-stage": "runtime",
       "description": "The constants a calculation takes as arguments, keyed by calculation id and then by input name. These are a *default*: a caller who passes the argument explicitly wins and the keycard is not consulted. A value is a number, a vector or a matrix, matching how the spec declares that input - which is what lets a card supply a parameter no upstream table carries, such as a UNIQUAC interaction matrix.",

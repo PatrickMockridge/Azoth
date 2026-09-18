@@ -144,6 +144,12 @@ SITE_SCHEMES: dict[str, int] = {"1A": 1, "2A": 2, "2B": 2, "4C": 4}
 #: *cross*-associates with an oppositely-charged partner.
 SELF_BONDLESS_SCHEMES = frozenset({"1A", "2A"})
 
+#: The factor from NeqSim's internal scale for a fitted attraction and covolume to SI,
+#: `Component.java:526-531`. **The one crossing between a keycard and the table**: a card
+#: states the published SI value, the compiled table carries the internal scale, and
+#: :func:`_card_association` is where the two meet.
+NEQSIM_INTERNAL_TO_SI = 1.0e-5
+
 
 @dataclass(frozen=True, slots=True)
 class AssociationParameters:
@@ -408,6 +414,56 @@ def _association(row: Mapping[str, str]) -> AssociationParameters | None:
     )
 
 
+def _card_association(
+    base: AssociationParameters | None, stated: keycard.Association
+) -> AssociationParameters:
+    """A card's association, over the table's, parameter by parameter.
+
+    The rule a card follows for the cubic's parameters, applied to the association's: a
+    parameter the card names is the card's, and one it does not is the table's. A
+    substance the table gives no scheme therefore gets the card's set and zeros beside it,
+    which is NeqSim's own ``|aCPA| > 1e-6`` guard reached from the other side - a cubic
+    whose attraction no fitted value replaces.
+
+    **The site count is the table's where the scheme is, and the scheme's where the scheme
+    is not.** A record carries a count *beside* its scheme because the two disagree
+    upstream - the table's ``1A`` rows carry a count of zero - and a card that restated the
+    scheme would otherwise resolve that disagreement silently, which is what the field
+    exists to keep visible. A card naming a *different* scheme is stating a different
+    molecule and has no count to inherit.
+    """
+    stated_values = stated.parameters
+
+    def number(name: str, table: float) -> float:
+        quantity = stated_values.get(name)
+        return table if quantity is None else float(quantity.magnitude)
+
+    def fitted(name: str, table: float) -> float:
+        quantity = stated_values.get(name)
+        return table if quantity is None else float(quantity.magnitude) / NEQSIM_INTERNAL_TO_SI
+
+    if base is not None and base.scheme == stated.scheme:
+        sites = base.sites
+    else:
+        sites = SITE_SCHEMES[stated.scheme]
+
+    return AssociationParameters(
+        scheme=stated.scheme,
+        sites=sites,
+        energy=number("energy", 0.0 if base is None else base.energy),
+        volume_srk=number("volume_srk", 0.0 if base is None else base.volume_srk),
+        a_srk=fitted("a_srk", 0.0 if base is None else base.a_srk),
+        b_srk=fitted("b_srk", 0.0 if base is None else base.b_srk),
+        m_srk=number("m_srk", 0.0 if base is None else base.m_srk),
+        volume_pr=number("volume_pr", 0.0 if base is None else base.volume_pr),
+        a_pr=fitted("a_pr", 0.0 if base is None else base.a_pr),
+        b_pr=fitted("b_pr", 0.0 if base is None else base.b_pr),
+        m_pr=number("m_pr", 0.0 if base is None else base.m_pr),
+        racket_z=0.0 if base is None else base.racket_z,
+        volume_correction=0.0 if base is None else base.volume_correction,
+    )
+
+
 def form_from_type(label: str, e: float) -> str:
     """Map NeqSim's raw ``AntoineVapPresLiqType`` label onto the clean form name.
 
@@ -539,8 +595,9 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
     key = name.strip().lower()
     base = _table().get(key)
     override = card.component(key) if card is not None else None
+    stated = card.association_for(key) if card is not None else None
 
-    if override is None:
+    if override is None and stated is None:
         if base is None:
             raise PropertyUnavailableError(
                 name,
@@ -552,6 +609,15 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
         return base
 
     if base is None:
+        if override is None:
+            raise PropertyUnavailableError(
+                name,
+                "critical constants",
+                f"the keycard states an association for it but no "
+                f"{sorted(keycard.CUBIC_PARAMETERS)}, and a substance the databank does not "
+                f"have needs every parameter a cubic reads. An association is added to a "
+                f"fluid, not to a name.",
+            )
         missing = sorted(keycard.CUBIC_PARAMETERS - set(override))
         if missing:
             raise PropertyUnavailableError(
@@ -581,19 +647,26 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             dipole_moment_debye=0.0,
             viscosity_correction_factor=0.0,
             reference_state=SOLVENT,
-            # A card states the parameters a cubic reads; it carries no site scheme, so a
-            # card-added substance has none.
-            association=None,
+            # A card-added substance has no table row to inherit an association from, so
+            # the card's is the whole of it - or none, if it states none.
+            association=None if stated is None else _card_association(None, stated),
             citation=None,
             source="keycard",
         )
 
     return replace(
         base,
-        Tc=override.get("Tc", base.Tc),
-        Pc=override.get("Pc", base.Pc),
-        omega=_as_float(override["omega"], key) if "omega" in override else base.omega,
-        cp=_cp(override) or base.cp,
+        Tc=base.Tc if override is None else override.get("Tc", base.Tc),
+        Pc=base.Pc if override is None else override.get("Pc", base.Pc),
+        omega=(
+            base.omega
+            if override is None or "omega" not in override
+            else _as_float(override["omega"], key)
+        ),
+        cp=base.cp if override is None else (_cp(override) or base.cp),
+        association=(
+            base.association if stated is None else _card_association(base.association, stated)
+        ),
         source="keycard",
     )
 

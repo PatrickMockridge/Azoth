@@ -224,10 +224,11 @@ impl Entry {
 /// that replaced the shipped one whole would make a user correcting one value restate
 /// the others, and lose them silently if they did not.
 ///
-/// **Three fields, and that is a closed list.** It widens when the component model
-/// does, and `specs/schema/component.schema.json` is where that is declared. Until
-/// then this is the second place after `keycard.COMPONENT_PARAMETERS` that says which
-/// parameters a *cubic* reads, and the two are held together by a test.
+/// **A closed list.** It widens when the component model does, and
+/// `specs/schema/component.schema.json` declares the cubic's parameters while
+/// `specs/schema/association.schema.json` declares the association's. This is the second
+/// place after `keycard.COMPONENT_PARAMETERS` that says which parameters a *cubic* reads,
+/// and the two are held together by a test.
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct ComponentOverride {
     /// Critical temperature, in K.
@@ -238,6 +239,8 @@ pub struct ComponentOverride {
     pub omega: Option<f64>,
     /// The five ideal-gas heat-capacity coefficients, all or none.
     pub cp: Option<[f64; 5]>,
+    /// The association this card states, or `None` to keep the table's.
+    pub association: Option<AssociationOverride>,
 }
 
 impl ComponentOverride {
@@ -246,6 +249,84 @@ impl ComponentOverride {
     #[must_use]
     pub fn is_complete(&self) -> bool {
         self.tc.is_some() && self.pc.is_some() && self.omega.is_some()
+    }
+}
+
+/// One substance's association, as an overlay states it.
+///
+/// The card's values are in **SI** - the unit `specs/schema/association.schema.json`
+/// declares for each, which is the unit a fitted CPA parameter set is published in - and
+/// [`AssociationRecord`] holds the two fitted cubic constants in the source table's
+/// internal scale. [`Self::applied_to`] is the one crossing between the two, so the factor
+/// appears once rather than at every read.
+///
+/// Every parameter but the scheme is optional, for the reason [`ComponentOverride`] is: a
+/// card regressing only `epsilon` and `kappa_AB` keeps the table's fitted set, and one
+/// regressing the whole set states it. A card that states no fitted attraction leaves the
+/// cubic's own in place, which is NeqSim's `|aCPA| > 1e-6` guard reached from the other
+/// side rather than a different rule.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AssociationOverride {
+    /// The site scheme, which a card must state: it is the one parameter that says
+    /// whether the substance associates at all.
+    pub scheme: SiteScheme,
+    /// The association energy `eps`, in J/mol.
+    pub energy: Option<f64>,
+    /// `kappa_AB` for the SRK family.
+    pub volume_srk: Option<f64>,
+    /// The fitted attraction for SRK-CPA, in `Pa m**6/mol**2`.
+    pub a_srk: Option<f64>,
+    /// The fitted covolume for SRK-CPA, in `m**3/mol`.
+    pub b_srk: Option<f64>,
+    /// The SRK alpha correlation's `m`.
+    pub m_srk: Option<f64>,
+    /// `kappa_AB` for the PR family.
+    pub volume_pr: Option<f64>,
+    /// The fitted attraction for PR-CPA, in `Pa m**6/mol**2`.
+    pub a_pr: Option<f64>,
+    /// The fitted covolume for PR-CPA, in `m**3/mol`.
+    pub b_pr: Option<f64>,
+    /// The PR alpha correlation's `m`.
+    pub m_pr: Option<f64>,
+}
+
+impl AssociationOverride {
+    /// The record this override states, taking every parameter it does not name from
+    /// `base` - which is the table's, or `None` for a substance that has none.
+    ///
+    /// **The site count is the table's where the scheme is, and the scheme's where the
+    /// scheme is not.** A record carries a count *beside* its scheme because the two
+    /// disagree upstream - the table's `1A` rows carry a count of zero - and a card that
+    /// restated the scheme would otherwise resolve that disagreement silently, which is
+    /// what the field exists to keep visible. A card naming a *different* scheme is
+    /// stating a different molecule and has no count to inherit, so the new scheme's is
+    /// the only one there is.
+    #[must_use]
+    pub fn applied_to(&self, base: Option<&AssociationRecord>) -> AssociationRecord {
+        let kept = |pick: fn(&AssociationRecord) -> f64| base.map_or(0.0, pick);
+        let internal = |si: Option<f64>, pick: fn(&AssociationRecord) -> f64| match si {
+            Some(value) => value / crate::association::NEQSIM_INTERNAL_TO_SI,
+            None => kept(pick),
+        };
+        let sites = match base {
+            Some(record) if record.scheme == self.scheme => record.sites,
+            _ => self.scheme.site_count() as u32,
+        };
+        AssociationRecord {
+            scheme: self.scheme,
+            sites,
+            energy: self.energy.unwrap_or_else(|| kept(|r| r.energy)),
+            volume_srk: self.volume_srk.unwrap_or_else(|| kept(|r| r.volume_srk)),
+            a_srk: internal(self.a_srk, |r| r.a_srk),
+            b_srk: internal(self.b_srk, |r| r.b_srk),
+            m_srk: self.m_srk.unwrap_or_else(|| kept(|r| r.m_srk)),
+            volume_pr: self.volume_pr.unwrap_or_else(|| kept(|r| r.volume_pr)),
+            a_pr: internal(self.a_pr, |r| r.a_pr),
+            b_pr: internal(self.b_pr, |r| r.b_pr),
+            m_pr: self.m_pr.unwrap_or_else(|| kept(|r| r.m_pr)),
+            racket_z: kept(|r| r.racket_z),
+            volume_correction: kept(|r| r.volume_correction),
+        }
     }
 }
 
@@ -279,6 +360,28 @@ impl Overlay {
         self.components
             .insert(name.trim().to_lowercase(), parameters);
         self
+    }
+
+    /// Override one substance's association, or state one for a substance the table gives
+    /// none by name.
+    ///
+    /// A read-modify-write, so a card stating a substance's critical constants and its
+    /// association in two sections resolves to one override rather than the second
+    /// replacing the first.
+    pub fn set_association(&mut self, name: &str, association: AssociationOverride) -> &mut Self {
+        let key = name.trim().to_lowercase();
+        let mut parameters = self.components.get(&key).copied().unwrap_or_default();
+        parameters.association = Some(association);
+        self.components.insert(key, parameters);
+        self
+    }
+
+    /// This overlay's statement about a substance's association, if it makes one.
+    #[must_use]
+    pub fn association(&self, name: &str) -> Option<&AssociationOverride> {
+        self.components
+            .get(&name.trim().to_lowercase())
+            .and_then(|parameters| parameters.association.as_ref())
     }
 
     /// Override one pair's interaction parameter.
@@ -834,13 +937,13 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // has an enthalpy path; without it, it is a cubic only.
                 cp: over.cp,
                 // A card states the parameters a cubic reads; it carries no molar mass,
-                // critical volume, dipole, Antoine coefficients or site scheme, so a
-                // card-added substance has none.
+                // critical volume, dipole or Antoine coefficients, so a card-added
+                // substance has none.
                 molar_mass: None,
                 critical_volume: None,
                 dipole: None,
                 antoine: None,
-                association: None,
+                association: over.association.as_ref().map(|a| a.applied_to(None)),
                 // Named rather than left blank: a card states a substance a cubic can
                 // describe, and a cubic has no reference state. The activity-coefficient
                 // phases read this, so a blank would have to mean something.
@@ -859,9 +962,13 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             dipole: base.dipole,
             antoine: base.antoine,
             reference_state: base.reference_state,
-            // The card's closed parameter list has no association field, so this one can
-            // only come from the table.
-            association: base.association,
+            // The card's scheme wins over the table's, and every parameter the card does
+            // not name is the table's: `applied_to` is the one place the two are merged.
+            association: over
+                .association
+                .as_ref()
+                .map(|a| a.applied_to(base.association.as_ref()))
+                .or(base.association),
             name: base.name,
         }),
     }

@@ -108,6 +108,22 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
             ("cp_c", "float | None"),
             ("cp_d", "float | None"),
             ("cp_e", "float | None"),
+            # The association, zero for a component the table gives no scheme. A field the
+            # Rust struct carries with `#[pyo3(get)]` has to be declared here:
+            # `test_the_stub_matches_the_rust_transport_types` compares both directions.
+            ("association_scheme", "str"),
+            ("association_sites", "int"),
+            ("association_energy", "float"),
+            ("association_volume_srk", "float"),
+            ("association_a_srk", "float"),
+            ("association_b_srk", "float"),
+            ("association_m_srk", "float"),
+            ("association_volume_pr", "float"),
+            ("association_a_pr", "float"),
+            ("association_b_pr", "float"),
+            ("association_m_pr", "float"),
+            ("association_racket_z", "float"),
+            ("association_volume_correction", "float"),
         ),
     ),
     (

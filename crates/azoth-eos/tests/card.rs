@@ -7,8 +7,13 @@
 
 use std::path::PathBuf;
 
+use azoth_eos::association::SiteScheme;
 use azoth_eos::card::{
-    CoefficientValue, {COMPONENT_PARAMETERS, Card, MODEL_KINDS, SCHEMA_VERSION},
+    CoefficientValue,
+    {
+        ASSOCIATION_PARAMETERS, ASSOCIATION_SCHEMES, COMPONENT_PARAMETERS, Card, MODEL_KINDS,
+        SCHEMA_VERSION,
+    },
 };
 use azoth_eos::databank;
 
@@ -330,5 +335,230 @@ fn an_empty_coefficient_is_refused() {
     assert!(
         format!("{err}").contains("rectangular"),
         "an empty value is not a matrix: {err}"
+    );
+}
+
+/// One substance's association, stated in SI, as the overlay and the databank resolve it.
+///
+/// The card's numbers are the published CPA set for water - `a0 = 0.12277`,
+/// `b = 1.4515e-5`, `eps = 16655`, `kappa_AB = 0.0692` - and the databank's are NeqSim's
+/// internal scale, which is the same numbers a hundred thousand times larger. Reading the
+/// databank's back is what says the crossing happens once and in the right direction.
+#[test]
+fn an_association_stated_in_si_reaches_the_databank_in_its_own_scale() {
+    let card = Card::from_toml(&a_card(
+        "[associations.water]\nscheme = \"4C\"\n\
+         [associations.water.energy]\nvalue = 16655.0\nunit = \"J/mol\"\n\
+         [associations.water.volume_srk]\nvalue = 0.0692\nunit = \"dimensionless\"\n\
+         [associations.water.a_srk]\nvalue = 0.12277\nunit = \"Pa*m**6/mol**2\"\n\
+         [associations.water.b_srk]\nvalue = 1.4515e-5\nunit = \"m**3/mol\"\n",
+    ))
+    .expect("a valid card");
+
+    let stated = card
+        .association_for("water")
+        .expect("the card states water's association");
+    assert_eq!(stated.scheme, SiteScheme::FourC);
+    assert_eq!(stated.energy, Some(16655.0), "J/mol is the canonical unit");
+    assert_eq!(stated.a_srk, Some(0.12277));
+
+    let shipped = databank::entry("water", None).expect("water ships");
+    let carded = databank::entry("water", Some(card.overlay())).expect("water");
+    let base = shipped
+        .association
+        .as_ref()
+        .expect("water ships associating");
+    let merged = carded.association.as_ref().expect("the card's association");
+
+    assert_eq!(merged.scheme, SiteScheme::FourC);
+    assert_eq!(merged.energy, 16655.0, "J/mol is the table's unit too");
+    assert_eq!(
+        merged.volume_srk, 0.0692,
+        "kappa_AB is a ratio and crosses no scale"
+    );
+    assert_eq!(merged.a_srk, base.a_srk, "0.12277 SI is the table's 12277");
+    assert_eq!(merged.b_srk, base.b_srk, "and 1.4515e-5 is its 1.4515");
+    assert_eq!(
+        merged.m_srk, base.m_srk,
+        "a parameter the card does not name is the table's"
+    );
+    assert_eq!(
+        merged.a_pr, base.a_pr,
+        "and the other family's set is untouched"
+    );
+    assert_eq!(
+        merged.sites, base.sites,
+        "water's scheme and its stated count agree"
+    );
+}
+
+/// A parameter the card names is the card's, and one it does not is the table's - the rule
+/// a card follows for the cubic's parameters too, applied to the association's.
+#[test]
+fn an_association_is_overridden_parameter_by_parameter() {
+    let card = Card::from_toml(&a_card(
+        "[associations.methanol]\nscheme = \"2B\"\n\
+         [associations.methanol.energy]\nvalue = 20000.0\nunit = \"J/mol\"\n",
+    ))
+    .expect("a valid card");
+
+    let shipped = databank::entry("methanol", None).expect("methanol ships");
+    let base = shipped
+        .association
+        .as_ref()
+        .expect("methanol ships associating");
+    let carded = databank::entry("methanol", Some(card.overlay())).expect("methanol");
+    let record = carded.association.as_ref().expect("the card states one");
+
+    assert_eq!(record.scheme, SiteScheme::TwoB, "the card's");
+    assert_eq!(record.energy, 20000.0, "the card's, against 24591 shipped");
+    assert_eq!(record.a_srk, base.a_srk, "the table's");
+    assert_eq!(
+        record.volume_pr, base.volume_pr,
+        "and the other family's too"
+    );
+}
+
+/// A new substance can carry an association, which is the point of the section being
+/// separate from `components`: a holder's own fluid has no shipped association to inherit.
+#[test]
+fn a_card_added_substance_can_carry_an_association() {
+    let card = Card::from_toml(&a_card(
+        "[components.lab_solvent.Tc]\nvalue = 500.0\nunit = \"K\"\n\
+         [components.lab_solvent.Pc]\nvalue = 4.0e6\nunit = \"Pa\"\n\
+         [components.lab_solvent.omega]\nvalue = 0.5\nunit = \"dimensionless\"\n\
+         [associations.lab_solvent]\nscheme = \"2B\"\n\
+         [associations.lab_solvent.energy]\nvalue = 20000.0\nunit = \"J/mol\"\n",
+    ))
+    .expect("a valid card");
+
+    let added = databank::entry("lab_solvent", Some(card.overlay())).expect("the card adds it");
+    let record = added.association.as_ref().expect("the card states one");
+    assert_eq!(record.scheme, SiteScheme::TwoB);
+    assert_eq!(record.energy, 20000.0);
+    assert_eq!(
+        record.volume_srk, 0.0,
+        "no table row to inherit a kappa_AB from, so the card's is the whole of it"
+    );
+}
+
+/// A scheme this build does not implement, and a parameter nothing reads. Both are
+/// refused rather than stored.
+#[test]
+fn an_association_this_build_cannot_use_is_refused() {
+    let unknown_scheme = Card::from_toml(&a_card("[associations.water]\nscheme = \"3B\"\n"))
+        .expect_err("`3B` is not a scheme");
+    let message = format!("{unknown_scheme}");
+    assert!(message.contains("associations.water.scheme"), "{message}");
+    for scheme in ASSOCIATION_SCHEMES {
+        assert!(
+            message.contains(scheme),
+            "the message names {scheme}: {message}"
+        );
+    }
+
+    let unknown_parameter = Card::from_toml(&a_card(
+        "[associations.water]\nscheme = \"4C\"\n\
+         [associations.water.epsilon]\nvalue = 1.0\nunit = \"J/mol\"\n",
+    ))
+    .expect_err("`epsilon` is not the parameter's name");
+    let message = format!("{unknown_parameter}");
+    assert!(
+        message.contains("associations.water.epsilon"),
+        "the refusal names the key that is wrong: {message}"
+    );
+    for (parameter, _) in ASSOCIATION_PARAMETERS {
+        assert!(
+            message.contains(parameter),
+            "the message names {parameter}: {message}"
+        );
+    }
+}
+
+/// A unit of the wrong dimension, refused for the same reason a component's is.
+#[test]
+fn an_association_parameter_in_the_wrong_unit_is_refused() {
+    let error = Card::from_toml(&a_card(
+        "[associations.water]\nscheme = \"4C\"\n\
+         [associations.water.a_srk]\nvalue = 0.12277\nunit = \"dimensionless\"\n",
+    ))
+    .expect_err("an attraction is not a ratio");
+
+    assert!(
+        format!("{error}").contains("Pa*m**6/mol**2"),
+        "the refusal names the unit it wanted: {error}"
+    );
+}
+
+/// The shipped baseline card resolves to the table it was generated from.
+///
+/// **Nothing read this file before the association's fitted values went into it**, and a
+/// generated artefact nothing reads is where a factor of a hundred thousand lives without
+/// a symptom: the components' parameters are copied through unchanged, but `acpa_*` and
+/// `bcpa_*` cross from NeqSim's internal scale to SI in `tools/gen_keycard.py` and back in
+/// [`AssociationOverride::applied_to`]. Only a round trip through both says the two
+/// crossings agree - and neither the generator's own output nor the reader's own input can
+/// say it alone.
+#[test]
+fn the_baseline_card_resolves_to_the_table_it_was_generated_from() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../databank/keycard.toml");
+    let card = Card::from_path(&path).expect("the baseline card is one this build reads");
+
+    let mut names = card.overlay().component_names();
+    names.sort_unstable();
+    assert_eq!(names.len(), 286, "the table's own count");
+
+    let mut compared = 0;
+    for name in names {
+        let shipped = databank::entry(name, None).expect("the card names shipped substances");
+        let carded = databank::entry(name, Some(card.overlay())).expect(name);
+
+        // Every parameter the card copies through is the table's exactly: the unit it is
+        // declared in is the unit it is stored in, so the conversion is an identity and a
+        // difference would be a defect rather than a rounding.
+        assert_eq!(carded.tc, shipped.tc, "{name}: Tc");
+        assert_eq!(carded.pc, shipped.pc, "{name}: Pc");
+        assert_eq!(carded.omega, shipped.omega, "{name}: omega");
+        assert_eq!(carded.cp, shipped.cp, "{name}: Cp");
+        assert_eq!(carded.antoine, shipped.antoine, "{name}: Antoine");
+        assert_eq!(carded.reference_state, shipped.reference_state, "{name}");
+
+        let (Some(record), Some(base)) = (&carded.association, &shipped.association) else {
+            assert_eq!(
+                carded.association, shipped.association,
+                "{name}: a shipped association survives the card"
+            );
+            continue;
+        };
+        compared += 1;
+        assert_eq!(record.scheme, base.scheme, "{name}");
+        assert_eq!(record.sites, base.sites, "{name}");
+        assert_eq!(record.energy, base.energy, "{name}");
+        assert_eq!(record.volume_srk, base.volume_srk, "{name}");
+        assert_eq!(record.m_srk, base.m_srk, "{name}");
+        assert_eq!(record.volume_pr, base.volume_pr, "{name}");
+        assert_eq!(record.m_pr, base.m_pr, "{name}");
+        assert_eq!(record.racket_z, base.racket_z, "{name}");
+        assert_eq!(record.volume_correction, base.volume_correction, "{name}");
+
+        // The four that cross a scale, and the only tolerance in this test. A decimal
+        // shift here is a factor of a hundred thousand rather than a rounding, so the
+        // tolerance is there to admit the last bit of a double and nothing else.
+        for (crossed, table) in [
+            (record.a_srk, base.a_srk),
+            (record.b_srk, base.b_srk),
+            (record.a_pr, base.a_pr),
+            (record.b_pr, base.b_pr),
+        ] {
+            assert!(
+                (crossed - table).abs() <= 1e-9 * table.abs().max(1.0),
+                "{name}: {crossed} is not {table}"
+            );
+        }
+    }
+
+    assert_eq!(
+        compared, 147,
+        "the associating substances the table carries"
     );
 }

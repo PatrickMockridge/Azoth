@@ -61,6 +61,9 @@ exponents = [3, 0, 0, 0, 0, -1, 0]
 id = "molar_energy"
 exponents = [2, 1, -2, 0, 0, -1, 0]
 [[dimensions]]
+id = "attraction_parameter"
+exponents = [5, 1, -2, 0, 0, -2, 0]
+[[dimensions]]
 id = "molar_heat_capacity"
 exponents = [2, 1, -2, 0, -1, -1, 0]
 [[dimensions]]
@@ -197,6 +200,10 @@ dimension = "molar_energy"
 pint = "joule/mole"
 uom = "molar_energy::joule_per_mole"
 rust_ctor = "joules_per_mole"
+[[units]]
+id = "Pa*m**6/mol**2"
+dimension = "attraction_parameter"
+pint = "pascal*meter**6/mole**2"
 [[units]]
 id = "J/(mol*K)"
 dimension = "molar_heat_capacity"

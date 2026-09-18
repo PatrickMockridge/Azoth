@@ -38,6 +38,32 @@ citation = "EXAMPLE - not the accepted value."
 # value = 0.717
 # unit = "dimensionless"
 
+# Overrides or extends the association `data/components/components.csv` records, by
+# name. A section of its own rather than a key under `components`, because a card may
+# state a scheme for a substance whose critical constants it does not touch.
+#
+# `scheme` is required and is one of `1A`, `2A`, `2B`, `4C` - the names the source table
+# uses, and not interchangeable with the site count. Every parameter beside it is
+# optional and is the table's where you do not state it: `energy` in J/mol, `volume_*`
+# is kappa_AB, and the fitted `a`, `b` and `m` are per cubic family, so a regression
+# against SRK says `_srk`. The fitted `a` and `b` are in SI - `Pa*m**6/mol**2` and
+# `m**3/mol` - which is the unit they are published in, and *not* the source table's.
+#
+# [associations.water]
+# scheme = "4C"
+# [associations.water.energy]
+# value = 16655.0
+# unit = "J/mol"
+# [associations.water.volume_srk]
+# value = 0.0692
+# unit = "dimensionless"
+# [associations.water.a_srk]
+# value = 0.12277
+# unit = "Pa*m**6/mol**2"
+# [associations.water.b_srk]
+# value = 1.4515e-5
+# unit = "m**3/mol"
+
 # Overrides or extends `data/components/kij.csv`. A pair is unordered.
 [[kij]]
 component_a = "methane"

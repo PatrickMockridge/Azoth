@@ -56,7 +56,7 @@ KNOWN_SECTIONS = (
 #: JSON Schema checks their shape and `azoth.keycard` checks whether this build can
 #: actually use them. Listed rather than skipped silently, so that a section this
 #: checker does not know about is still an error.
-OTHER_SECTIONS = ("keyholder", "components", "kij", "coefficients", "models")
+OTHER_SECTIONS = ("keyholder", "components", "associations", "kij", "coefficients", "models")
 
 
 def check_document(report: Report, document: dict[str, Any], where: str) -> None:

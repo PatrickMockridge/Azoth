@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/association.schema.json",
+  "title": "Association parameters",
+  "description": "The association parameters a keycard may state for one component, and the canonical unit each is converted to. This is the single declaration the two implementations and the keycard generator hold themselves to, so a parameter one carries and another does not is a test failure rather than a drift. The fitted attraction and covolume are stated in SI, as every other parameter a card carries is, and not in the source table's internal scale.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scheme"],
+  "properties": {
+    "scheme": {
+      "type": "string",
+      "enum": ["1A", "2A", "2B", "4C"],
+      "description": "The site scheme, which fixes the site count. A closed vocabulary because the schemes are not interchangeable: `2A` and `2B` both carry two sites and bond differently, and NeqSim's `CPAMixingRuleHandler.setAssociationScheme` switches on the name rather than the count."
+    },
+    "energy": {
+      "$ref": "component.schema.json#/$defs/parameter",
+      "x-azoth-unit": "J/mol",
+      "x-azoth-column": "associationenergy",
+      "description": "The association energy epsilon, which is what the site-fraction solve's Boltzmann factor is taken of."
+    },
+    "volume_srk": {
+      "$ref": "component.schema.json#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-column": "associationboundingvolume_srk",
+      "description": "The association volume kappa_AB of the SRK family: the fraction of the covolume over which a site may bond."
+    },
+    "a_srk": {
+      "$ref": "component.schema.json#/$defs/parameter",
+      "x-azoth-unit": "Pa*m**6/mol**2",
+      "x-azoth-column": "acpa_srk",
+      "description": "The fitted attraction of the SRK family."
+    },
+    "b_srk": {
+      "$ref": "component.schema.json#/$defs/parameter",
+      "x-azoth-unit": "m**3/mol",
+      "x-azoth-column": "bcpa_srk",
+      "description": "The fitted covolume of the SRK family, which replaces the `0.08664 R Tc/Pc` the cubic derives."
+    },
+    "m_srk": {
+      "$ref": "component.schema.json#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-column": "mcpa_srk",
+      "description": "The SRK alpha correlation's coefficient, which replaces the acentric-factor form."
+    },
+    "volume_pr": {
+      "$ref": "component.schema.json#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-column": "associationboundingvolume_pr",
+      "description": "The association volume kappa_AB of the PR family."
+    },
+    "a_pr": {
+      "$ref": "component.schema.json#/$defs/parameter",
+      "x-azoth-unit": "Pa*m**6/mol**2",
+      "x-azoth-column": "acpa_pr",
+      "description": "The fitted attraction of the PR family."
+    },
+    "b_pr": {
+      "$ref": "component.schema.json#/$defs/parameter",
+      "x-azoth-unit": "m**3/mol",
+      "x-azoth-column": "bcpa_pr",
+      "description": "The fitted covolume of the PR family."
+    },
+    "m_pr": {
+      "$ref": "component.schema.json#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-column": "mcpa_pr",
+      "description": "The PR alpha correlation's coefficient."
+    }
+  }
+}

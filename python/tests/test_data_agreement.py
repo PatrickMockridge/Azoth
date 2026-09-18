@@ -85,7 +85,14 @@ COMPONENT_FIELDS = (
     "association_sites",
     "association_energy",
     "association_volume_srk",
+    "association_a_srk",
     "association_b_srk",
+    "association_m_srk",
+    "association_volume_pr",
+    "association_a_pr",
+    "association_b_pr",
+    "association_m_pr",
+    "association_racket_z",
     "association_volume_correction",
 )
 
@@ -413,9 +420,9 @@ def _overlay(card: Any) -> Any:
 def python_row(record: Any) -> dict[str, Any]:
     """One entry in the transported row shape, keyed exactly by `COMPONENT_FIELDS`.
 
-    A card cannot state an association parameter yet, so those fields come from the
-    shipped table either way - which is the point of comparing them: a carded
-    substance must keep the association it shipped with rather than lose it.
+    A card can state a subset of an association, so the fields are read off the resolved
+    record rather than off the card: what is compared is the fluid a calculation would
+    use, which is the same thing the cubic's parameters are compared as.
     """
     cp = record.cp
     association = record.association
@@ -433,7 +440,14 @@ def python_row(record: Any) -> dict[str, Any]:
         "association_sites": 0 if association is None else association.sites,
         "association_energy": 0.0 if association is None else association.energy,
         "association_volume_srk": 0.0 if association is None else association.volume_srk,
+        "association_a_srk": 0.0 if association is None else association.a_srk,
         "association_b_srk": 0.0 if association is None else association.b_srk,
+        "association_m_srk": 0.0 if association is None else association.m_srk,
+        "association_volume_pr": 0.0 if association is None else association.volume_pr,
+        "association_a_pr": 0.0 if association is None else association.a_pr,
+        "association_b_pr": 0.0 if association is None else association.b_pr,
+        "association_m_pr": 0.0 if association is None else association.m_pr,
+        "association_racket_z": 0.0 if association is None else association.racket_z,
         "association_volume_correction": (
             0.0 if association is None else association.volume_correction
         ),
@@ -442,7 +456,7 @@ def python_row(record: Any) -> dict[str, Any]:
 
 def python_carded_rows(card: Any) -> list[dict[str, Any]]:
     """Every name the card states, as the Python reference resolves it, by name."""
-    return [python_row(components.entry(name, card=card)) for name in sorted(card.components)]
+    return [python_row(components.entry(name, card=card)) for name in sorted(card.names())]
 
 
 def rust_carded_rows(card: Any) -> list[dict[str, Any]]:
@@ -461,7 +475,7 @@ def assert_carded_rows_agree(card: Any) -> None:
     rust = rust_carded_rows(card)
     python = python_carded_rows(card)
     assert rust == python, (
-        f"the two merge rules disagree about {sorted(card.components)}\n"
+        f"the two merge rules disagree about {sorted(card.names())}\n"
         f"  rust:   {rust}\n  python: {python}"
     )
 

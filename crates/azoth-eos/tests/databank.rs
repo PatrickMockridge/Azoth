@@ -377,6 +377,7 @@ fn a_card_component_with_a_polynomial_has_an_enthalpy() {
             pc: Some(2.0e6),
             omega: Some(0.3),
             cp: Some([20.0, 0.1, 0.0, 0.0, 0.0]),
+            association: None,
         },
     );
     let (_, ideal_gas) = databank::mixture_of(&["unobtainium"], Some(&overlay))
@@ -761,4 +762,43 @@ fn an_associating_mixture_refuses_the_derivative_surface() {
     // And the state itself is fine - it is the derivative surface, and only that, which
     // is outstanding.
     assert!(state.ln_phi.iter().all(|value| value.is_finite()));
+}
+
+/// The shipped keycard is the databank, at the level a model reads it.
+///
+/// `databank/keycard.toml` is generated from the same table the library ships, so
+/// resolving an associating mixture *through* it must give the same fluid as resolving it
+/// with no card at all. That is the property the generator exists for, and the association
+/// is what makes it non-trivial: the card states the fitted attraction and covolume in SI
+/// and the table carries them in NeqSim's internal scale, so this fails by a factor of a
+/// hundred thousand if either crossing is missing.
+#[test]
+fn the_shipped_card_is_the_databank() {
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_eos::{Cubic, RootSide};
+
+    let path =
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../databank/keycard.toml");
+    let card = azoth_eos::card::Card::from_path(&path).expect("the shipped card reads");
+
+    let names = ["water", "methanol"];
+    let (shipped, _) = databank::associating_mixture_of(&names, Cubic::Srk, None).expect("SRK-CPA");
+    let (carded, _) = databank::associating_mixture_of(&names, Cubic::Srk, Some(card.overlay()))
+        .expect("SRK-CPA through the card");
+
+    let root = |mixture: &azoth_eos::Mixture| {
+        let reduced = mixture
+            .reduced_parameters(kelvins(300.0), pascals(1.0e7))
+            .expect("reduced parameters");
+        mixture
+            .phase_state(&reduced, &[0.6, 0.4], RootSide::Liquid)
+            .expect("a liquid root")
+            .z
+    };
+    assert!(
+        (root(&carded) / root(&shipped) - 1.0).abs() < 1.0e-12,
+        "the card's fluid: {} against the table's {}",
+        root(&carded),
+        root(&shipped)
+    );
 }

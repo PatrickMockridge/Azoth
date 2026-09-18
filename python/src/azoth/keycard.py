@@ -1,8 +1,8 @@
 """The keycard: the file a user supplies to extend or override what azoth ships.
 
-Sections: ``keyholder``, ``components``, ``kij``, ``fluids``, ``fittings``,
-``coefficients`` and ``models``. A name the databank already has replaces its
-critical constants; a name it does not have adds one.
+Sections: ``keyholder``, ``components``, ``associations``, ``kij``, ``fluids``,
+``fittings``, ``coefficients`` and ``models``. A name the databank already has replaces
+its critical constants; a name it does not have adds one.
 
     >>> import azoth
     >>> card = azoth.keycard.load("keycard.toml")
@@ -56,6 +56,33 @@ COMPONENT_PARAMETERS: Mapping[str, str] = {
 #: caller who only flashes.
 CUBIC_PARAMETERS: frozenset[str] = frozenset({"Tc", "Pc", "omega"})
 
+#: The association parameters this build reads, and the unit each is converted to,
+#: declared in `specs/schema/association.schema.json`.
+#:
+#: **The fitted values are stated in SI, not in the source table's internal scale.** A
+#: holder's regression is in ``Pa*m**6/mol**2`` and ``m**3/mol`` - water's attraction is
+#: ``0.12277``, which is the published CPA value - while
+#: ``data/components/components.csv`` carries ``12277.0``, which is NeqSim's own scale and
+#: belongs to the table that wrote it. ``azoth.eos.components`` is the one crossing.
+ASSOCIATION_PARAMETERS: Mapping[str, str] = {
+    "energy": "J/mol",
+    "volume_srk": "dimensionless",
+    "a_srk": "Pa*m**6/mol**2",
+    "b_srk": "m**3/mol",
+    "m_srk": "dimensionless",
+    "volume_pr": "dimensionless",
+    "a_pr": "Pa*m**6/mol**2",
+    "b_pr": "m**3/mol",
+    "m_pr": "dimensionless",
+}
+
+#: The association site schemes this build implements, and the schema's enum.
+#:
+#: The names are the databank's, and they are not interchangeable with the site *count*:
+#: ``2A`` and ``2B`` both carry two sites and bond differently, and ``1A`` and ``2A`` carry
+#: no bonding pair at all - so a card states the name and the kernel reads the name.
+ASSOCIATION_SCHEMES: tuple[str, ...] = ("1A", "2A", "2B", "4C")
+
 #: The units a keycard may declare, compiled from `specs/vocabulary/vocabulary.toml`
 #: into `azoth.core._units_gen`. The schema's enum is generated from the same table;
 #: a unit outside it fails at load rather than at first use.
@@ -88,12 +115,29 @@ class Model:
 
 
 @dataclass(frozen=True, slots=True)
+class Association:
+    """One substance's association, as a card states it.
+
+    ``parameters`` is keyed by the names in :data:`ASSOCIATION_PARAMETERS` and holds each
+    value in that parameter's canonical unit. ``scheme`` is separate because it is a name
+    from a closed vocabulary where every parameter beside it is a number in a unit.
+    """
+
+    scheme: str
+    parameters: Mapping[str, Q]
+
+    def __repr__(self) -> str:
+        return f"Association({self.scheme!r}, {sorted(self.parameters)})"
+
+
+@dataclass(frozen=True, slots=True)
 class Keycard:
     """A loaded keycard. Immutable, and the whole of what a file said."""
 
     keyholder: str | None
     licence: str | None
     components: Mapping[str, Mapping[str, Q]] = field(default_factory=dict)
+    associations: Mapping[str, Association] = field(default_factory=dict)
     kij: Mapping[tuple[str, str], float] = field(default_factory=dict)
     coefficients: Mapping[str, Mapping[str, Q]] = field(default_factory=dict)
     conventions: Mapping[str, Mapping[str, str]] = field(default_factory=dict)
@@ -105,6 +149,19 @@ class Keycard:
     def component(self, name: str) -> Mapping[str, Q] | None:
         """The parameters this keycard gives a substance, or ``None``."""
         return self.components.get(name.strip().lower())
+
+    def association_for(self, name: str) -> Association | None:
+        """The association this card states for a substance, or ``None``."""
+        return self.associations.get(name.strip().lower())
+
+    def names(self) -> set[str]:
+        """Every substance this card states anything about.
+
+        The union of the two sections that name components, because a card may state a
+        scheme for a substance whose critical constants it does not touch - and a caller
+        comparing the two readers has to ask about the same set on both sides.
+        """
+        return set(self.components) | set(self.associations)
 
     def model(self, name: str) -> Model | None:
         """A model definition by name, or ``None``."""
@@ -183,6 +240,7 @@ def use(document: Any, *, path: Path | None = None) -> Keycard:
         "schema_version",
         "keyholder",
         "components",
+        "associations",
         "kij",
         "fluids",
         "fittings",
@@ -202,6 +260,7 @@ def use(document: Any, *, path: Path | None = None) -> Keycard:
         keyholder=_keyholder(document, where),
         licence=_licence(document),
         components=_components(document.get("components"), where),
+        associations=_associations(document.get("associations"), where),
         kij=_kij(document.get("kij"), where),
         coefficients=_coefficients(document.get("coefficients"), where, "coefficients"),
         conventions=_conventions(document.get("coefficients")),
@@ -300,6 +359,63 @@ def _components(raw: Any, where: str) -> dict[str, dict[str, Q]]:
                 f"`{field_name}` needs all five of `cp_a` through `cp_e`, or none of them",
             )
         out[str(name).strip().lower()] = resolved
+    return out
+
+
+def _associations(raw: Any, where: str) -> dict[str, Association]:
+    """The association each substance the card states one for, by lower-cased name.
+
+    A section of its own rather than a key under ``components``, because a card may state a
+    scheme for a substance whose critical constants it does not touch - and because the
+    scheme is a name from a closed vocabulary where every other component parameter is a
+    number in a unit, so the two cannot sit in one map without one of them being written as
+    the other.
+    """
+    if raw is None:
+        return {}
+    if not isinstance(raw, Mapping):
+        raise KeycardError(where, "`associations` must be a mapping of names to parameters")
+
+    out: dict[str, Association] = {}
+    for name, body in raw.items():
+        field_name = f"associations.{name}"
+        if not isinstance(body, Mapping) or not body:
+            raise KeycardError(where, f"`{field_name}` must carry a scheme")
+        scheme = body.get("scheme")
+        if scheme not in ASSOCIATION_SCHEMES:
+            raise KeycardError(
+                where,
+                f"`{field_name}.scheme` is {scheme!r}, which this build does not "
+                f"implement. Accepted: {list(ASSOCIATION_SCHEMES)}. Refused rather than "
+                f"accepted-and-ignored: the schemes are not interchangeable with each "
+                f"other or with a site count - `2A` and `2B` both carry two sites and "
+                f"bond differently - so a scheme evaluated as another is a different "
+                f"fluid with no symptom.",
+            )
+        resolved: dict[str, Q] = {}
+        for parameter, value in body.items():
+            if parameter == "scheme":
+                continue
+            parameter_field = f"{field_name}.{parameter}"
+            if parameter not in ASSOCIATION_PARAMETERS:
+                raise KeycardError(
+                    where,
+                    f"`{parameter_field}` is not a parameter this build reads. Accepted: "
+                    f"{sorted(ASSOCIATION_PARAMETERS)}. Refused rather than stored: a "
+                    f"value nothing reads is data that looks in use and is not.",
+                )
+            if not isinstance(value, Mapping):
+                raise KeycardError(
+                    where, f"`{parameter_field}` must be a mapping with value and unit"
+                )
+            resolved[parameter] = _quantity(
+                value.get("value"),
+                value.get("unit"),
+                ASSOCIATION_PARAMETERS[parameter],
+                where,
+                parameter_field,
+            )
+        out[str(name).strip().lower()] = Association(scheme=str(scheme), parameters=resolved)
     return out
 
 
@@ -602,12 +718,15 @@ def _in_spec_unit(value: Any, unit: str) -> Any:
 
 
 __all__ = [
+    "ASSOCIATION_PARAMETERS",
+    "ASSOCIATION_SCHEMES",
     "COMPONENT_PARAMETERS",
     "MODEL_ALPHAS",
     "MODEL_KINDS",
     "MODEL_MIXING_RULES",
     "MODEL_SHAPES",
     "SCHEMA_VERSION",
+    "Association",
     "Keycard",
     "Model",
     "coefficient_value",

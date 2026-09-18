@@ -252,6 +252,56 @@ def test_an_unknown_unit_is_refused() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Association
+# ---------------------------------------------------------------------------
+
+
+def test_a_card_states_an_association_in_si_and_the_record_carries_the_tables_scale() -> None:
+    """The association a model reads, and the one crossing between the two scales.
+
+    A card states the published SI value - water's attraction is `0.12277` - while the
+    shipped table carries NeqSim's internal scale, which is the same number a hundred
+    thousand times larger. A missing crossing is a factor of 1e5 with no symptom, so the
+    resolved record is what is asserted here rather than the card's own fragment.
+    """
+    card = a_card(
+        associations={
+            "water": {
+                "scheme": "4C",
+                "energy": {"value": 16655.0, "unit": "J/mol"},
+                "a_srk": {"value": 0.12277, "unit": "Pa*m**6/mol**2"},
+                "b_srk": {"value": 1.4515e-5, "unit": "m**3/mol"},
+            }
+        }
+    )
+    resolved = eos.components.entry("water", card=card).association
+    shipped = eos.components.entry("water").association
+
+    assert resolved is not None and shipped is not None
+    assert resolved.a_srk == pytest.approx(shipped.a_srk)
+    assert resolved.b_srk == pytest.approx(shipped.b_srk)
+    assert resolved.a_srk == pytest.approx(12277.0), "the table's scale, not the card's"
+    assert resolved.energy == pytest.approx(16655.0), "J/mol crosses no scale"
+    assert resolved.m_srk == pytest.approx(shipped.m_srk), "a parameter the card omits"
+
+
+def test_a_scheme_this_build_lacks_is_refused() -> None:
+    """A scheme is a name, and the names are not interchangeable with a site count."""
+    with pytest.raises(KeycardError, match="does not implement"):
+        keycard.use(minimal(associations={"water": {"scheme": "3B"}}))
+
+
+def test_the_site_count_follows_a_scheme_the_card_changes() -> None:
+    """Water ships `4C`; a card stating `2B` is stating a different molecule."""
+    card = a_card(associations={"water": {"scheme": "2B"}})
+    resolved = eos.components.entry("water", card=card).association
+
+    assert resolved is not None
+    assert resolved.sites == 2
+    assert resolved.scheme == "2B"
+
+
+# ---------------------------------------------------------------------------
 # Interaction parameters
 # ---------------------------------------------------------------------------
 

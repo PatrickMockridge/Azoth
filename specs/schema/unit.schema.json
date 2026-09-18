@@ -25,6 +25,7 @@
     "kg/mol",
     "m**3/mol",
     "J/mol",
+    "Pa*m**6/mol**2",
     "J/(mol*K)",
     "J/(mol*K**2)",
     "J/(mol*K**3)",

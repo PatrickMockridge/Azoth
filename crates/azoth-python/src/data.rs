@@ -162,9 +162,30 @@ pub struct PyComponentRow {
     /// `kappa_AB` for the SRK family.
     #[pyo3(get)]
     pub association_volume_srk: f64,
+    /// The fitted SRK-CPA attraction, in NeqSim's internal scale.
+    #[pyo3(get)]
+    pub association_a_srk: f64,
     /// The fitted SRK-CPA covolume, in NeqSim's internal scale.
     #[pyo3(get)]
     pub association_b_srk: f64,
+    /// The SRK alpha correlation's `m`.
+    #[pyo3(get)]
+    pub association_m_srk: f64,
+    /// `kappa_AB` for the PR family.
+    #[pyo3(get)]
+    pub association_volume_pr: f64,
+    /// The fitted PR-CPA attraction, in NeqSim's internal scale.
+    #[pyo3(get)]
+    pub association_a_pr: f64,
+    /// The fitted PR-CPA covolume, in NeqSim's internal scale.
+    #[pyo3(get)]
+    pub association_b_pr: f64,
+    /// The PR alpha correlation's `m`.
+    #[pyo3(get)]
+    pub association_m_pr: f64,
+    /// `racketZCPA`, the Rackett compressibility NeqSim's CPA volume correction reads.
+    #[pyo3(get)]
+    pub association_racket_z: f64,
     /// `volcorrCPA_T`, the CPA volume-translation coefficient.
     #[pyo3(get)]
     pub association_volume_correction: f64,
@@ -295,7 +316,14 @@ pub(crate) fn row_of(entry: &databank::Entry) -> PyComponentRow {
         association_sites: entry.association.as_ref().map_or(0, |a| a.sites),
         association_energy: entry.association.as_ref().map_or(0.0, |a| a.energy),
         association_volume_srk: entry.association.as_ref().map_or(0.0, |a| a.volume_srk),
+        association_a_srk: entry.association.as_ref().map_or(0.0, |a| a.a_srk),
         association_b_srk: entry.association.as_ref().map_or(0.0, |a| a.b_srk),
+        association_m_srk: entry.association.as_ref().map_or(0.0, |a| a.m_srk),
+        association_volume_pr: entry.association.as_ref().map_or(0.0, |a| a.volume_pr),
+        association_a_pr: entry.association.as_ref().map_or(0.0, |a| a.a_pr),
+        association_b_pr: entry.association.as_ref().map_or(0.0, |a| a.b_pr),
+        association_m_pr: entry.association.as_ref().map_or(0.0, |a| a.m_pr),
+        association_racket_z: entry.association.as_ref().map_or(0.0, |a| a.racket_z),
         association_volume_correction: entry
             .association
             .as_ref()

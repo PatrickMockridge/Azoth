@@ -4,10 +4,10 @@
 //! contract, and `python/src/azoth/keycard.py` the other implementation of it.
 //!
 //! Every section is marked `runtime` or `compiled` in the schema, and that annotation is
-//! what this reader is organised around. `components` and `kij` become an [`Overlay`],
-//! which is what the databank resolves a name against. `coefficients`, `models`,
-//! `keyholder`, `fittings` and `fluids` are carried as the data they are; nothing in this
-//! crate interprets them.
+//! what this reader is organised around. `components`, `kij` and `associations` become an
+//! [`Overlay`], which is what the databank resolves a name against. `coefficients`,
+//! `models`, `keyholder`, `fittings` and `fluids` are carried as the data they are;
+//! nothing in this crate interprets them.
 //!
 //! An unknown section, parameter or unit is refused rather than skipped: a value nothing
 //! reads is data that looks in use and is not.
@@ -19,7 +19,8 @@ use azoth_core::unit_vocab_gen::{dimension, si_factor};
 use azoth_core::{AzothError, Result};
 use serde::Deserialize;
 
-use crate::databank::{ComponentOverride, Overlay};
+use crate::association::SiteScheme;
+use crate::databank::{AssociationOverride, ComponentOverride, Overlay};
 
 /// The keycard format version this reader understands. A card declaring anything else
 /// is refused rather than guessed at.
@@ -41,6 +42,35 @@ pub const COMPONENT_PARAMETERS: &[(&str, &str)] = &[
     ("cp_d", "J/(mol*K**4)"),
     ("cp_e", "J/(mol*K**5)"),
 ];
+
+/// The association parameters a card may state, and the canonical unit each is converted
+/// to, declared in `specs/schema/association.schema.json`.
+///
+/// **The fitted values are stated in SI, not in the source table's internal scale.** A
+/// holder's regression is in `Pa m**6/mol**2` and `m**3/mol` - water's attraction is
+/// `0.12277`, which is the published CPA value - while `data/components/components.csv`
+/// carries `12277.0`, which is NeqSim's own scale and belongs to the table that wrote it.
+/// [`AssociationOverride::applied_to`] is the one crossing.
+///
+/// The scheme is not here because it is not a number in a unit; see [`ASSOCIATION_SCHEMES`].
+pub const ASSOCIATION_PARAMETERS: &[(&str, &str)] = &[
+    ("energy", "J/mol"),
+    ("volume_srk", "dimensionless"),
+    ("a_srk", "Pa*m**6/mol**2"),
+    ("b_srk", "m**3/mol"),
+    ("m_srk", "dimensionless"),
+    ("volume_pr", "dimensionless"),
+    ("a_pr", "Pa*m**6/mol**2"),
+    ("b_pr", "m**3/mol"),
+    ("m_pr", "dimensionless"),
+];
+
+/// The association site schemes this build implements, and the schema's enum.
+///
+/// The names are the databank's. They are not interchangeable with the site *count*:
+/// `2A` and `2B` both carry two sites and bond differently, and `1A` and `2A` carry no
+/// bonding pair at all - so a card states the name and the kernel reads the name.
+pub const ASSOCIATION_SCHEMES: &[&str] = &["1A", "2A", "2B", "4C"];
 
 /// The model vocabularies this build implements, each the only member it admits, and the
 /// same lists as the schema's enums. A shape is listed only when the code runs it.
@@ -97,6 +127,28 @@ pub struct KijRow {
     pub temperature_k: Option<f64>,
     /// Where the value came from, if the holder said.
     pub citation: Option<String>,
+}
+
+/// One substance's association, as the card states it: a scheme, and the parameters beside
+/// it.
+///
+/// The scheme is a bare string and the parameters are numbers in a unit, which is why the
+/// two are not one map: every other entry in a card's component sections is a number, and a
+/// scheme that had to be written as one would be a code nobody could read.
+///
+/// **No `deny_unknown_fields`, and that is serde's rule rather than a preference.** A
+/// flattened map and `deny_unknown_fields` on the same struct compile and then leave the
+/// map empty, so every parameter is refused as unknown before [`resolve_associations`] sees
+/// it - a card that states nothing rather than the card it is. The name check there is what
+/// refuses an unknown parameter, and it is the stronger check anyway: it holds the card to
+/// [`ASSOCIATION_PARAMETERS`] rather than to a field list.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct AssociationBody {
+    /// The site scheme, one of [`ASSOCIATION_SCHEMES`].
+    pub scheme: String,
+    /// The parameters the card states, by name from [`ASSOCIATION_PARAMETERS`].
+    #[serde(flatten)]
+    pub parameters: BTreeMap<String, Parameter>,
 }
 
 /// One coefficient a card supplies for a calculation's argument.
@@ -222,6 +274,7 @@ struct Document {
     schema_version: i64,
     keyholder: Option<Keyholder>,
     components: Option<BTreeMap<String, BTreeMap<String, Parameter>>>,
+    associations: Option<BTreeMap<String, AssociationBody>>,
     kij: Option<Vec<KijRow>>,
     coefficients: Option<BTreeMap<String, BTreeMap<String, Coefficient>>>,
     models: Option<BTreeMap<String, Model>>,
@@ -243,6 +296,8 @@ pub struct Card {
     pub keyholder: Option<Keyholder>,
     /// The interaction parameters as written, each pair once, in file order.
     pub kij: Vec<KijRow>,
+    /// The association each substance this card states one for, by lower-cased name.
+    pub associations: BTreeMap<String, AssociationOverride>,
     /// The coefficients this card supplies, by calculation id and then input name.
     pub coefficients: BTreeMap<String, BTreeMap<String, Coefficient>>,
     /// The model definitions, by name.
@@ -283,6 +338,7 @@ impl Card {
 
         let mut overlay = Overlay::new();
         resolve_components(&mut overlay, document.components.as_ref())?;
+        let associations = resolve_associations(&mut overlay, document.associations.as_ref())?;
         resolve_kij(&mut overlay, document.kij.as_ref())?;
         check_coefficients(document.coefficients.as_ref())?;
         check_models(document.models.as_ref())?;
@@ -290,6 +346,7 @@ impl Card {
         Ok(Self {
             keyholder: document.keyholder,
             kij: document.kij.unwrap_or_default(),
+            associations,
             coefficients: document.coefficients.unwrap_or_default(),
             models: document.models.unwrap_or_default(),
             fittings: document.fittings.unwrap_or_default(),
@@ -323,6 +380,13 @@ impl Card {
     #[must_use]
     pub fn component(&self, name: &str) -> Option<&ComponentOverride> {
         self.overlay.component(name)
+    }
+
+    /// This card's statement about one substance's association, or `None` if it makes
+    /// none.
+    #[must_use]
+    pub fn association_for(&self, name: &str) -> Option<&AssociationOverride> {
+        self.associations.get(&name.trim().to_lowercase())
     }
 
     /// The interaction parameter this card states for a pair, in either order.
@@ -422,6 +486,94 @@ fn resolve_components(
         overlay.set_component(name, override_);
     }
     Ok(())
+}
+
+/// Add every association the document states to the overlay, and return them by name.
+///
+/// The return value is what a caller reads a card's association from without going through
+/// the databank; the overlay is what the databank reads it through, and both are built here
+/// so the two cannot disagree about a document.
+fn resolve_associations(
+    overlay: &mut Overlay,
+    associations: Option<&BTreeMap<String, AssociationBody>>,
+) -> Result<BTreeMap<String, AssociationOverride>> {
+    let mut resolved = BTreeMap::new();
+    let Some(associations) = associations else {
+        return Ok(resolved);
+    };
+
+    for (name, body) in associations {
+        let field = format!("associations.{name}");
+        let Some(scheme) = SiteScheme::from_databank_name(&body.scheme) else {
+            return Err(AzothError::invalid_input(
+                format!("{field}.scheme"),
+                format!(
+                    "is {:?}, which this build does not implement. Accepted: {:?}. \
+                     Refused rather than accepted-and-ignored: the schemes are not \
+                     interchangeable with each other or with a site count - `2A` and `2B` \
+                     both carry two sites and bond differently - so a scheme evaluated as \
+                     another is a different fluid with no symptom.",
+                    body.scheme, ASSOCIATION_SCHEMES
+                ),
+            ));
+        };
+
+        let mut override_ = AssociationOverride {
+            scheme,
+            energy: None,
+            volume_srk: None,
+            a_srk: None,
+            b_srk: None,
+            m_srk: None,
+            volume_pr: None,
+            a_pr: None,
+            b_pr: None,
+            m_pr: None,
+        };
+        for (parameter, stated) in &body.parameters {
+            let parameter_field = format!("{field}.{parameter}");
+            let Some((_, canonical)) = ASSOCIATION_PARAMETERS
+                .iter()
+                .find(|(accepted, _)| accepted == parameter)
+            else {
+                return Err(AzothError::invalid_input(
+                    parameter_field,
+                    format!(
+                        "is not a parameter this build reads. Accepted: {:?}. Refused \
+                         rather than stored: a value nothing reads is data that looks in \
+                         use and is not.",
+                        ASSOCIATION_PARAMETERS
+                            .iter()
+                            .map(|(name, _)| *name)
+                            .collect::<Vec<_>>()
+                    ),
+                ));
+            };
+            let value = converted(stated.value, &stated.unit, canonical, &parameter_field)?;
+            match parameter.as_str() {
+                "energy" => override_.energy = Some(value),
+                "volume_srk" => override_.volume_srk = Some(value),
+                "a_srk" => override_.a_srk = Some(value),
+                "b_srk" => override_.b_srk = Some(value),
+                "m_srk" => override_.m_srk = Some(value),
+                "volume_pr" => override_.volume_pr = Some(value),
+                "a_pr" => override_.a_pr = Some(value),
+                "b_pr" => override_.b_pr = Some(value),
+                "m_pr" => override_.m_pr = Some(value),
+                // Unreachable: the lookup above admits these nine and no others.
+                other => {
+                    return Err(AzothError::invalid_input(
+                        parameter_field,
+                        format!("`{other}` has no reader in this build"),
+                    ));
+                }
+            }
+        }
+
+        overlay.set_association(name, override_);
+        resolved.insert(name.trim().to_lowercase(), override_);
+    }
+    Ok(resolved)
 }
 
 /// Add every interaction pair the document states to the overlay, which refuses a pair
@@ -556,7 +708,7 @@ fn converted(value: f64, unit: &str, canonical: &str, field: &str) -> Result<f64
         return Err(AzothError::invalid_input(
             field,
             format!(
-                "is declared in {unit:?}, which is not a {canonical}. A `Tc` meant in \
+                "is declared in {unit:?}, which is not a {canonical}. A value meant in \
                  another dimension is a factor with no symptom, so the dimension is \
                  checked rather than the number."
             ),
@@ -574,7 +726,7 @@ fn converted(value: f64, unit: &str, canonical: &str, field: &str) -> Result<f64
 
 #[cfg(test)]
 mod tests {
-    use super::COMPONENT_PARAMETERS;
+    use super::{ASSOCIATION_PARAMETERS, ASSOCIATION_SCHEMES, COMPONENT_PARAMETERS};
 
     /// The parameter set `specs/schema/component.schema.json` declares, name and unit.
     ///
@@ -592,8 +744,32 @@ mod tests {
         ("cp_e", "J/(mol*K**5)"),
     ];
 
+    /// The association parameter set `specs/schema/association.schema.json` declares, name
+    /// and unit, and the schemes its `scheme` enum lists. Written here for the reason
+    /// `DECLARED` is.
+    const ASSOCIATION_DECLARED: &[(&str, &str)] = &[
+        ("energy", "J/mol"),
+        ("volume_srk", "dimensionless"),
+        ("a_srk", "Pa*m**6/mol**2"),
+        ("b_srk", "m**3/mol"),
+        ("m_srk", "dimensionless"),
+        ("volume_pr", "dimensionless"),
+        ("a_pr", "Pa*m**6/mol**2"),
+        ("b_pr", "m**3/mol"),
+        ("m_pr", "dimensionless"),
+    ];
+
+    /// See [`ASSOCIATION_DECLARED`].
+    const SCHEMES_DECLARED: &[&str] = &["1A", "2A", "2B", "4C"];
+
     #[test]
     fn component_parameters_match_the_declaration() {
         assert_eq!(COMPONENT_PARAMETERS, DECLARED);
+    }
+
+    #[test]
+    fn association_parameters_match_the_declaration() {
+        assert_eq!(ASSOCIATION_PARAMETERS, ASSOCIATION_DECLARED);
+        assert_eq!(ASSOCIATION_SCHEMES, SCHEMES_DECLARED);
     }
 }

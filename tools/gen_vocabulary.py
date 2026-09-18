@@ -91,6 +91,10 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (0, 1, 0, 0, 0, -1, 0): "MolarMass",
     (3, 0, 0, 0, 0, -1, 0): "MolarVolume",
     (2, 1, -2, 0, 0, -1, 0): "MolarEnergy",
+    # The equation of state's attraction parameter: uom carries a pressure and a
+    # molar volume but no quantity for their product with a length to the sixth,
+    # so this is the third dimension azoth names itself.
+    (5, 1, -2, 0, 0, -2, 0): None,
     (2, 1, -2, 0, -1, -1, 0): "MolarHeatCapacity",
     # The Cp polynomial coefficients: uom carries no quantity for a fractional
     # power of the temperature unit either, so these are the second group azoth
@@ -145,6 +149,7 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "kg/mol": "Dimension.Mass / Dimension.AmountOfSubstance",
     "m**3/mol": "Dimension.Volume / Dimension.AmountOfSubstance",
     "J/mol": "Dimension.Energy / Dimension.AmountOfSubstance",
+    "Pa*m**6/mol**2": "Dimension.Pressure * Dimension.Length ^ 6 / Dimension.AmountOfSubstance ^ 2",
     "J/(mol*K)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature)",
     "J/(mol*K**2)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 2)",
     "J/(mol*K**3)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 3)",
