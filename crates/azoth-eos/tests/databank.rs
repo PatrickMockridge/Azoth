@@ -1032,6 +1032,36 @@ fn the_cubic_ln_phi_is_the_textbook_expression_and_neqsims_is_not() {
             "component {i}: azoth's cubic ln phi is {azoth_cubic} but the textbook \
              expression from azoth's own a, b, z and kij is {independent}"
         );
+        // A candidate explanation, kept because it is **ruled out** by the numbers it
+        // prints rather than by an argument. NeqSim's `getF()` equals azoth's `A_res/RT`
+        // less `ln Z`, so its `dFdN` looked as though it carried `d ln Z/dn_i` where
+        // azoth's closed form does not. It does not: the difference is 0.0328 against a
+        // `d ln Z/dn_0` of 0.0123, and for methanol the signs disagree outright.
+        //
+        // That makes five explanations this number has now killed - a different alpha, a
+        // unit scale, an unnormalised `abar`, a wrong `Z`, and this one - every one of
+        // them confident. The mechanism is in `Fn`/`FB`/`FD`, and settling it needs
+        // NeqSim's `F` finite-differenced at a *fixed volume*, which is a capability this
+        // probe does not yet have. Recording the failures is what stops the sixth.
+        let h = 1.0e-7;
+        let mut up = x;
+        up[i] += h;
+        let mut down = x;
+        down[i] -= h;
+        let up = up.map(|value| value / (1.0 + h));
+        let down = down.map(|value| value / (1.0 - h));
+        let z_at = |composition: &[f64]| {
+            mixture
+                .phase_state(&reduced, composition, RootSide::Vapour)
+                .expect("a root")
+                .z
+        };
+        let d_ln_z = (z_at(&up).ln() - z_at(&down).ln()) / (2.0 * h);
+        println!(
+            "i={i}: azoth cubic {azoth_cubic} neqsim cubic {neqsim} difference {} vs dlnZ/dn_i {d_ln_z}",
+            neqsim - azoth_cubic
+        );
+
         assert!(
             (neqsim / azoth_cubic - 1.0).abs() > 1.0,
             "component {i}: NeqSim's cubic part {neqsim} is meant to differ from azoth's \
