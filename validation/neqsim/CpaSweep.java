@@ -281,6 +281,14 @@ public final class CpaSweep {
     // reachable before. A `TPflash` that splits puts a real liquid composition in phase 1.
     {"flash_gcpa[0]", "PhaseCPAInterface.getGcpa() on the flashed phase", "Rdf.g", ""},
     {"flash_FCPA[0]", "PhaseSrkCPA.FCPA() on the flashed phase", "SiteState.helmholtz_rt", ""},
+    // The two facts that decide whether a flash can be compared at all: `lnPhi` is what azoth
+    // produces, and it is `dFdN - ln Z` here - so a disagreement in it is either `dFdN` (the
+    // finding measured by `CpaFdMismatch`) or the root.
+    {"flash_lnPhi[1][0]", "log(ComponentSrkCPA.getFugacityCoefficient()) on the flashed liquid",
+        "PhaseState.ln_phi[0]", "the comparison this key exists for"},
+    {"flash_lnPhi[1][1]", "the same, component 1", "PhaseState.ln_phi[1]", ""},
+    {"flash_lnPhi[0][0]", "the same, on the flashed gas", "PhaseState.ln_phi[0]", ""},
+    {"flash_lnPhi[0][1]", "the same, component 1", "PhaseState.ln_phi[1]", ""},
     {"flash_FCPA_sum[0]", "the commented-out body, from getXsite() on the flashed phase", "-",
         "= flash_FCPA[0] iff the cached field is current"},
     {"flash_hcpa[0]", "PhaseCPAInterface.getHcpatot() on the flashed phase", "-", ""},
@@ -456,6 +464,10 @@ public final class CpaSweep {
       put(row, "flash_v[" + i + "]", flashed.getMolarVolume());
       put(row, "flash_gcpa[" + i + "]", ((PhaseCPAInterface) flashed).getGcpa());
       put(row, "flash_FCPA[" + i + "]", ((PhaseSrkCPA) flashed).FCPA());
+      for (int j = 0; j < n; j++) {
+        put(row, "flash_lnPhi[" + i + "][" + j + "]",
+            Math.log(flashed.getComponent(j).getFugacityCoefficient()));
+      }
       put(row, "flash_FCPA_sum[" + i + "]", fcpa_sum(flashed, n));
       put(row, "flash_hcpa[" + i + "]", ((PhaseCPAInterface) flashed).getHcpatot());
       put(row, "flash_hcpa_direct[" + i + "]", ((PhaseCPAInterface) flashed).calc_hCPA());
