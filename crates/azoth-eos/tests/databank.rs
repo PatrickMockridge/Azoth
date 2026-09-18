@@ -608,9 +608,16 @@ fn an_associating_mixture_resolves_neqsims_parameters() {
 /// about a percent. So the cubic agrees with NeqSim's *parameters* and NeqSim's reported
 /// root is not the cubic's root of them.
 ///
-/// That is where the investigation stands: the disagreement is inside NeqSim's volume
-/// solve, not in the parameters this library reads, and the next step is to read
-/// `PhaseSrkCPA.molarVolume` rather than to guess again.
+/// The cause, found by reading `PhaseSrkCPA.molarVolume` after two wrong guesses. That
+/// method solves `h = BonV - (B/n) dFdV() - P B/(n R T) = 0` for `BonV = B/V`, and
+/// `PhaseSrkCPA.dFdV()` is `super.dFdV() + dFCPAdV()` - **the cubic plus the association**.
+///
+/// So NeqSim's volume root is where the *total* pressure equals the specified one, not
+/// where the cubic's does. An associating mixture's root is not a root of the cubic, and
+/// this library takes it from `pr_z_factor`/`srk_z_factor`. The association's pressure is
+/// `-(R T) d(A_assoc/(R T))/dV`, which the kernel already carries as
+/// `SiteDerivatives`/`SiteState::d_helmholtz_dv`, so the missing piece is a root-finder
+/// over `Z` for an associating mixture rather than a formula.
 #[test]
 fn the_cpa_root_is_not_neqsims_yet() {
     use azoth_core::units::{kelvins, pascals};
