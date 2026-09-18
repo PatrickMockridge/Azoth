@@ -18,10 +18,15 @@
 //! and which are implicit because the site fractions solve a nonlinear system rather than
 //! being a formula.
 //!
-//! Not yet: the wiring into [`crate::mixture::Mixture`], and a NeqSim probe to confirm the
-//! numbers against the class this is ported from. The tests here compare every derivative
-//! against a finite difference of the solve's own output, which is a check against *this*
-//! implementation's behaviour and not against NeqSim's answer.
+//! The tests come in two kinds and both are needed. One kind differentiates the solve's own
+//! output, which checks the kernel against itself. The other compares against NeqSim's
+//! numbers, printed by `validation/neqsim/CpaProbe.java`, which is the only check that the
+//! kernel is NeqSim's and not merely self-consistent - and it is the one that settled
+//! `hCPA`. Neither catches what the other does: the scaling error in the fixed point was
+//! invisible to the second kind until the first existed to fail, and the `hCPA` error was
+//! invisible to the first kind entirely.
+//!
+//! Not yet: the wiring into [`crate::mixture::Mixture`].
 //!
 //! # Variables
 //!
@@ -398,8 +403,17 @@ pub struct SiteState {
     pub converged: bool,
     /// Whether the Newton refinement ran and left every fraction positive.
     pub refined: bool,
+    /// `hCPA`, the unbonded site count weighted by moles: `sum_i n_i sum_{A in i}(1 - X_A)`.
+    ///
+    /// NeqSim's `PhaseCPAInterface.calc_hCPA`, and the factor multiplying the distribution
+    /// function's derivative in every association term. It is *not* one, which is what
+    /// comparing against `validation/neqsim/CpaProbe.java` settled: the port first carried
+    /// the class field's initialiser and was 4% out on `dFCPAdN`.
+    pub unbonded_sites: f64,
     /// `A_assoc / (R T)`, the association Helmholtz energy over `R T`.
     pub helmholtz_rt: f64,
+    /// `d (A_assoc/RT) / dV` at constant composition and temperature.
+    pub d_helmholtz_dv: f64,
     /// The association contribution to `ln phi_i`, one entry per component, at constant
     /// `T` and `V`.
     ///
@@ -481,7 +495,9 @@ impl Association {
                 iterations: 0,
                 converged: true,
                 refined: false,
+                unbonded_sites: 0.0,
                 helmholtz_rt: 0.0,
+                d_helmholtz_dv: 0.0,
                 ln_phi: vec![0.0; n],
             });
         }
@@ -535,19 +551,35 @@ impl Association {
                 ni * per_site
             })
             .sum();
+        // `hCPA = sum_i n_i sum_{A in i} (1 - X_A)`: the number of unbonded sites, weighted
+        // by the moles that carry them. NeqSim's `calc_hCPA`, assigned in
+        // `PhaseSrkCPA.calcPressure` - not its initialiser, which is a `1.0` the class
+        // overwrites before any association term is read.
+        let unbonded_sites: f64 = moles
+            .iter()
+            .enumerate()
+            .map(|(i, ni)| {
+                let per_site: f64 = self.sites_of(i).map(|a| 1.0 - x[a]).sum();
+                ni * per_site
+            })
+            .sum();
         let ln_phi = (0..n)
             .map(|i| {
                 let site_term: f64 = self.sites_of(i).map(|a| x[a].ln()).sum();
-                site_term - 0.5 * rdf.d_ln_g_dn[i]
+                site_term - 0.5 * unbonded_sites * rdf.d_ln_g_dn[i]
             })
             .collect();
+        // NeqSim's `dFCPAdV = (hCPA/(2V)) (1 - V d ln g/dV)`.
+        let d_helmholtz_dv = unbonded_sites * (1.0 - v * rdf.d_ln_g_dv) / (2.0 * v);
 
         Ok(SiteState {
             fractions: x,
             iterations,
             converged,
             refined,
+            unbonded_sites,
             helmholtz_rt,
+            d_helmholtz_dv,
             ln_phi,
         })
     }
@@ -781,24 +813,46 @@ impl Association {
         let d_fractions_dt = rhs[n].clone();
         let d_fractions_dv = rhs[n + 1].clone();
 
-        // `ln phi_i^assoc = sum_{A in i} ln X_A - (1/2) d ln g/dn_i`, so each derivative is
-        // the site sum plus the distribution function's own second derivative.
+        // `ln phi_i^assoc = sum_{A in i} ln X_A - (h/2) d ln g/dn_i`, with
+        // `h = sum_k n_k sum_{B in k}(1 - X_B)`. `h` moves with every parameter too, so
+        // each derivative is the site sum plus a product rule over `h` and the
+        // distribution function's second derivative.
+        let h = state.unbonded_sites;
+        let d_h_dn: Vec<f64> = (0..n)
+            .map(|a| {
+                let explicit: f64 = self.sites_of(a).map(|site| 1.0 - x[site]).sum();
+                let through_x: f64 = (0..sites)
+                    .map(|site| moles[self.component_of_site(site)] * rhs[a][site])
+                    .sum();
+                explicit - through_x
+            })
+            .collect();
+        let d_h_dt: f64 = -(0..sites)
+            .map(|site| moles[self.component_of_site(site)] * rhs[n][site])
+            .sum::<f64>();
+        let d_h_dv: f64 = -(0..sites)
+            .map(|site| moles[self.component_of_site(site)] * rhs[n + 1][site])
+            .sum::<f64>();
+
         let mut d_ln_phi_dn = vec![vec![0.0; n]; n];
         let mut d_ln_phi_dt = vec![0.0; n];
         let mut d_ln_phi_dv = vec![0.0; n];
         for i in 0..n {
             for a in 0..n {
                 let site_sum: f64 = self.sites_of(i).map(|site| rhs[a][site] / x[site]).sum();
-                d_ln_phi_dn[i][a] =
-                    site_sum - 0.5 * rdf.d2_ln_g_dn_dn(covolumes[i], covolumes[a], v);
+                d_ln_phi_dn[i][a] = site_sum
+                    - 0.5
+                        * (d_h_dn[a] * rdf.d_ln_g_dn[i]
+                            + h * rdf.d2_ln_g_dn_dn(covolumes[i], covolumes[a], v));
             }
             let site_sum_t: f64 = self.sites_of(i).map(|site| rhs[n][site] / x[site]).sum();
-            d_ln_phi_dt[i] = site_sum_t;
+            d_ln_phi_dt[i] = site_sum_t - 0.5 * d_h_dt * rdf.d_ln_g_dn[i];
             let site_sum_v: f64 = self
                 .sites_of(i)
                 .map(|site| rhs[n + 1][site] / x[site])
                 .sum();
-            d_ln_phi_dv[i] = site_sum_v - 0.5 * rdf.d2_ln_g_dn_dv(covolumes[i], sum_b, v);
+            d_ln_phi_dv[i] = site_sum_v
+                - 0.5 * (d_h_dv * rdf.d_ln_g_dn[i] + h * rdf.d2_ln_g_dn_dv(covolumes[i], sum_b, v));
         }
 
         Ok(SiteDerivatives {
@@ -1121,14 +1175,10 @@ mod tests {
     }
 
     /// The finding, measured through the solve rather than through the bond table: a `2A`
-    /// component carries a fitted energy and no bond, so every site fraction is one and
-    /// the association energy is *exactly* zero.
-    ///
-    /// Its fugacity term is not, and that is NeqSim's own behaviour rather than this
-    /// port's: `dFCPAdN` carries `-(hcpatot/2) calc_lngi(i)` beside the site sum, and that
-    /// piece is the derivative of the distribution function's prefactor. With no bonds it
-    /// has nothing to cancel against and stays. Whether it should is a question for the
-    /// oracle - it is the kind of term a full fugacity assembly can absorb.
+    /// component carries a fitted energy and no bond, so every site fraction is one, the
+    /// association energy is exactly zero, and - once `h` is the unbonded site count
+    /// rather than the class field's initialiser - so is the fugacity term, because there
+    /// are no unbonded sites to weight the distribution function's derivative with.
     #[test]
     fn a_two_a_component_associates_not_at_all() {
         let h2s_like = Association::new(
@@ -1144,14 +1194,9 @@ mod tests {
         let state = h2s_like.solve(&[covolume], &moles, v, t).expect("solves");
         assert!(state.fractions.iter().all(|&x| x == 1.0));
         assert_eq!(state.helmholtz_rt, 0.0);
-        // The term that remains is exactly the RDF prefactor's derivative and nothing
-        // else - no part of it comes from a bond.
-        let rdf = Rdf::new(&[covolume], &moles, v);
-        assert!((state.ln_phi[0] + 0.5 * rdf.d_ln_g_dn[0]).abs() < 1.0e-300);
-        assert!(
-            state.ln_phi[0] != 0.0,
-            "the prefactor derivative is not zero"
-        );
+        assert_eq!(state.unbonded_sites, 0.0);
+        assert_eq!(state.ln_phi[0], 0.0);
+        assert_eq!(state.d_helmholtz_dv, 0.0);
     }
 
     /// A mixture with no sites at all is a no-op rather than an error, because that is
@@ -1317,6 +1362,107 @@ mod tests {
                 d.d_ln_phi_dv[i]
             );
         }
+    }
+
+    /// The kernel against NeqSim's own numbers.
+    ///
+    /// `validation/neqsim/CpaProbe.java` drives `SystemSrkCPA` for water/methanol 0.6/0.4 at
+    /// 300 K and 100 bar and prints every quantity below. The covolumes it prints are the
+    /// databank's `bcpa_srk` column verbatim - water 1.4515, methanol 3.0978 - and the
+    /// total volume is NeqSim's internal scaled one. That scaling is legitimate here
+    /// because the kernel is invariant under a common rescaling of `V` and `b`: `DeltaNog`
+    /// carries one factor of `b` and `S_i` divides by one factor of `V`.
+    ///
+    /// This is the check the module's other tests cannot make. They differentiate the
+    /// kernel's own solve, so they prove it is self-consistent; this one proves it is
+    /// *NeqSim's*. It is what caught `hCPA` being the unbonded site count rather than the
+    /// initialiser of the class field.
+    #[test]
+    fn the_kernel_reproduces_neqsims_cpa_probe() {
+        let water = AssociationComponent {
+            scheme: SiteScheme::FourC,
+            energy: 16655.0,
+            volume: 0.0692,
+        };
+        let methanol = AssociationComponent {
+            scheme: SiteScheme::TwoB,
+            energy: 24591.0,
+            volume: 0.0161,
+        };
+        let a = Association::new(vec![water, methanol], Vec::new()).expect("valid parameters");
+        let covolumes = [1.4515, 3.0978];
+        let moles = [0.6, 0.4];
+        let v = 2.620_326_748_288_29;
+        let t = 300.0;
+
+        let rdf = Rdf::new(&covolumes, &moles, v);
+        // 1e-10 rather than 1e-15, and the gap is arithmetic order rather than formula:
+        // NeqSim forms the packing fraction as `(B/n)/(4 (V/n))` where this forms `B/(4V)`,
+        // and writes the distribution function as `(2 - eta)/(2 (1 - eta)^3)` where this
+        // writes the identical `(1 - eta/2)/(1 - eta)^3`. Both reorderings are worth a few
+        // units in the twelfth digit and nothing more, which is what the measured 1.2e-12
+        // on `g` is.
+        let close = |got: f64, want: f64, what: &str| {
+            assert!(
+                (got / want - 1.0).abs() < 1.0e-10,
+                "{what}: azoth {got} vs NeqSim {want}"
+            );
+        };
+        close(rdf.g, 1.765_205_648_571_49, "g at contact");
+        close(rdf.d_ln_g_dn[0], 0.443_178_855_724_964, "d ln g/dn_water");
+        close(
+            rdf.d_ln_g_dn[1],
+            0.945_834_970_213_430,
+            "d ln g/dn_methanol",
+        );
+        close(rdf.d_ln_g_dv, -0.245_862_964_206_216, "d ln g/dV");
+
+        let state = a.solve(&covolumes, &moles, v, t).expect("solves");
+        for (site, want) in [
+            (0, 0.101_330_316_299_160),
+            (1, 0.101_330_316_299_160),
+            (2, 0.101_330_316_299_160),
+            (3, 0.101_330_316_299_160),
+            (4, 0.031_557_041_194_167_5),
+            (5, 0.031_557_041_194_167_5),
+        ] {
+            close(state.fractions[site], want, &format!("xsite[{site}]"));
+        }
+        close(state.helmholtz_rt, -6.793_473_163_493_31, "FCPA");
+        close(state.unbonded_sites, 2.931_561_607_926_681_7, "hCPA");
+        close(state.d_helmholtz_dv, 0.919_769_772_389_381, "dFCPAdV");
+        close(state.ln_phi[0], -9.807_081_619_647_33, "dFCPAdN[water]");
+        close(state.ln_phi[1], -8.298_303_821_393_14, "dFCPAdN[methanol]");
+
+        // The association energy's volume derivative matches too.
+        close(state.d_helmholtz_dv, 0.919_769_772_389_381, "dFCPAdV");
+
+        // The composition derivative does *not* match, and that is the finding.
+        //
+        // NeqSim's `dFCPAdNdN(i,j)` carries `-0.5 h calc_lngij(j)`, and `calc_lngij` is not
+        // the derivative of `calc_lngi`. Measured at this state:
+        // `calc_lngij(i,j) = d^2 ln g/dn_i dn_j + (b_i + b_j) f`, where `f` is the
+        // distribution function's numerator over its denominator - at `(0,0)` the extra term
+        // is 0.443178856, exactly `calc_lngi(0)`, and at `(1,1)` it is 0.945834970, exactly
+        // `calc_lngi(1)`. So NeqSim's second derivative is not the derivative of its own
+        // first: at this state it returns -0.920056554 where the exact derivative of
+        // `dFCPAdN` - which matches NeqSim's to 1e-14 - is -4.097114380.
+        //
+        // azoth keeps the exact derivative, because a second-order flash solves with it and
+        // an inexact Jacobian only slows convergence. This is recorded rather than forced to
+        // agree; the finite-difference tests above are what establish the exactness.
+        let d = a
+            .derivatives(&covolumes, &moles, v, t, &state)
+            .expect("differentiable");
+        assert!(
+            (d.d_ln_phi_dn[0][0] / -4.097_114_380_096_661 - 1.0).abs() < 1.0e-9,
+            "azoth's dFCPAdNdN[0][0] is the exact derivative: {}",
+            d.d_ln_phi_dn[0][0]
+        );
+        assert!(
+            (d.d_ln_phi_dn[0][0] / -0.920_056_554_036_658 - 1.0).abs() > 1.0,
+            "and it is not NeqSim's, whose that gap is the finding recorded above"
+        );
     }
 
     #[test]
