@@ -1527,6 +1527,56 @@ impl CalcResult for TpMultiflashResult {
     }
 }
 
+/// Result of `eos.capillary_dew_point`.
+///
+/// [`DewTemperatureResult`] with one field more, which is the whole of the difference: the
+/// Young-Laplace pressure across the curved interface, reported because it is the one quantity
+/// this model has that the flat one does not, and because `2 sigma cos(theta)/r` is arithmetic
+/// a reader should be able to check without re-deriving the K-value shift.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CapillaryDewPointResult {
+    /// The dew-point temperature.
+    pub temperature: ThermodynamicTemperature,
+    /// The composition of the liquid that first appears.
+    pub incipient: Vec<f64>,
+    /// K-values at the converged temperature, **with the Kelvin shift applied**.
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the converged state.
+    pub z_liquid: f64,
+    /// The vapour root.
+    pub z_vapour: f64,
+    /// The Young-Laplace pressure across the interface, `2 sigma cos(theta) / r`.
+    pub capillary_pressure: Pressure,
+    /// The smallest `T / Tc_i` over the components at the answer.
+    pub min_t_over_tc: f64,
+    /// Temperature updates taken.
+    pub iterations: u32,
+    /// `|sum_i y_i / K_i - 1|` at the last completed step.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CapillaryDewPointResult {
+    const CALC_ID: &'static str = "eos.capillary_dew_point";
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "incipient",
+        "k",
+        "z_liquid",
+        "z_vapour",
+        "capillary_pressure",
+        "min_t_over_tc",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.bubble_pressure`.
 ///
 /// Deliberately sharing a shape with [`DewPressureResult`] rather than one type

@@ -68,6 +68,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.bubble_pressure`](./bubble_pressure.md) | `bubble_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.bubble_temperature`](./bubble_temperature.md) | `bubble_temperature_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.bwrs_phase`](./bwrs_phase.md) | `newton_density_solve` | Younglove, B. A.; Ely, J. F. (1987) |
+| [`eos.capillary_dew_point`](./capillary_dew_point.md) | `capillary_dew_point_newton` | NeqSim 3.20.0 `CapillaryDewPointFlash` |
 | [`eos.co2_phase`](./co2_phase.md) | `newton_density_solve` | Span, R.; Wagner, W. (1996) |
 | [`eos.critical_point`](./critical_point.md) | `heidemann_khalil_critical` | Heidemann, R. A.; Khalil, A. M. (1980) |
 | [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_newton` | Michelsen, M. L. (1982) |

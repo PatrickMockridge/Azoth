@@ -76,6 +76,7 @@ from azoth.core.result import (
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
+    CapillaryDewPointResult,
     ChungConductivityResult,
     ChungViscosityResult,
     Co2PhaseResult,
@@ -175,7 +176,7 @@ from azoth.core.result import (
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 )
-from azoth.core.units import Q
+from azoth.core.units import Q, from_si
 from azoth.eos.components import (
     BwrsCoefficients,
     GeNrtlPhaseParameters,
@@ -211,6 +212,7 @@ __all__ = [
     "bubble_temperature",
     "bwrs_coefficients",
     "bwrs_phase",
+    "capillary_dew_point",
     "chung_conductivity",
     "chung_viscosity",
     "co2_phase",
@@ -340,6 +342,7 @@ _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
 _CRITICAL_POINT = "eos.critical_point"
 _DEW_PRESSURE = "eos.dew_pressure"
 _DEW_TEMPERATURE = "eos.dew_temperature"
+_CAPILLARY_DEW_POINT = "eos.capillary_dew_point"
 _PH_FLASH = "eos.ph_flash"
 _PS_FLASH = "eos.ps_flash"
 _TH_FLASH = "eos.th_flash"
@@ -1698,6 +1701,53 @@ def dew_temperature(mixture: Mixture, P: Q, y: list[float]) -> DewTemperatureRes
     See :func:`azoth.eos.reference.dew_temperature`.
     """
     return resolve(_DEW_TEMPERATURE)(mixture=mixture, P=P, y=y)  # type: ignore[no-any-return]
+
+
+def capillary_dew_point(
+    mixture: Mixture,
+    P: Q,
+    y: list[float],
+    pore_radius: Q,
+    contact_angle: Q | None = None,
+    surface_tension: Q | None = None,
+) -> CapillaryDewPointResult:
+    """The dew point of a vapour held in a pore: the same boundary, on a curved interface.
+
+    Young-Laplace puts the liquid inside a pore at a pressure above the vapour outside it by
+    ``2 sigma cos(theta) / r``, and the Kelvin equation shifts every K-value by
+    ``exp(-Vm_L dP_cap / (R T))``. The incipient liquid is stabilised, so the dew point moves
+    **up** - which is the direction that matters for condensation in tight rock::
+
+        r = azoth.eos.capillary_dew_point(fluid, P=q(20, "bar"), y=[0.5, 0.5],
+        ...                               pore_radius=q(1e-8, "m"))
+        r.temperature, r.capillary_pressure
+
+    **All three curvature inputs are quantities**, like every declared input in this library: a
+    bare number where a unit is expected is the mistake the units layer exists to make
+    impossible. ``pore_radius`` is a length - the radii that matter are nanometres
+    (``q(10, "nm")``) - and ``contact_angle`` is an angle, zero being a perfectly wetting
+    liquid and ``q(90, "deg")`` non-wetting.
+
+    ``surface_tension`` is the caller's, not the mixture's. It defaults to ``q(0.005, "N/m")``,
+    which is NeqSim's own fallback, and ``eos.parachor_surface_tension`` computes one from the
+    two phases. Reading a correlation inside a model whose other inputs are all stated would
+    hide which was used, so it is stated here.
+
+    Raises:
+        InvalidInputError: if ``y`` is not a composition, or the contact angle is not finite.
+        OutOfRangeError: if ``P`` is not positive, ``pore_radius`` is not positive,
+            ``surface_tension`` is negative, or the mixture has no dew point at this pressure.
+
+    See :func:`azoth.eos.reference.capillary_dew_point`.
+    """
+    return resolve(_CAPILLARY_DEW_POINT)(  # type: ignore[no-any-return]
+        mixture=mixture,
+        P=P,
+        y=y,
+        pore_radius=pore_radius,
+        contact_angle=(from_si(0.0, "rad") if contact_angle is None else contact_angle),
+        surface_tension=(from_si(0.005, "N/m") if surface_tension is None else surface_tension),
+    )
 
 
 def ideal_gas_cp(

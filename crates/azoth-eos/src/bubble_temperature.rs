@@ -52,7 +52,7 @@ pub fn bubble_temperature(
         &mut warnings,
     )?;
 
-    let boundary = phase_boundary_temperature(mixture, p, x, Incipient::Vapour)?;
+    let boundary = phase_boundary_temperature(mixture, p, x, Incipient::Vapour, None)?;
     warnings.extend(boundary.warnings);
 
     let min_t_over_tc = mixture

@@ -18,25 +18,25 @@ use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
-    BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
-    Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DewPressureResult, DewTemperatureResult, EosCgPhaseResult, GeNrtlFlashResult,
-    GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult,
-    GeWilsonPhaseResult, Gerg2008PhaseResult, HaydukMinhasDiffusivityResult,
-    HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
-    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
-    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
-    MolarEnthalpyEntropyResult, MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult,
-    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult,
-    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,
-    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvFlashResult, PvRefluxFlashResult, PvfFlashResult,
-    RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult,
-    RkDepartureResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
-    SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
-    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    BubbleTemperatureResult, BwrsPhaseResult, CapillaryDewPointResult, ChungConductivityResult,
+    ChungViscosityResult, Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult,
+    CriticalPointResult, DewPressureResult, DewTemperatureResult, EosCgPhaseResult,
+    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
+    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
+    HydrogenPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PhFlashResult, Pr78KappaResult,
+    PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SchwartzentruberAlphaResult,
+    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
     ThermalConductivityResult, TpMultiflashResult, TsFlashResult, TuFlashResult, TvFlashResult,
     TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrprAlphaResult,
@@ -4245,6 +4245,84 @@ impl From<&DewTemperatureResult> for PyPhaseBoundaryTemperatureResult {
     }
 }
 
+/// Result of `eos.capillary_dew_point`, transported.
+///
+/// Its own type rather than a reuse of `PyPhaseBoundaryTemperatureResult`, because it carries
+/// one field that one does not - the Young-Laplace pressure - and a shared struct with an
+/// `Option` in it would make every caller of the flat model handle a curvature it cannot have.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CapillaryDewPointResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCapillaryDewPointResult {
+    /// The dew-point temperature.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// The composition of the liquid that first appears.
+    #[pyo3(get)]
+    pub incipient: Vec<f64>,
+    /// K-values at the converged temperature, with the Kelvin shift applied.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// The liquid root of the cubic at the converged state.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The vapour root.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// The Young-Laplace pressure across the interface.
+    #[pyo3(get)]
+    pub capillary_pressure: PyQty,
+    /// The smallest `T / Tc_i` over the components.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// Temperature updates taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The final residual.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCapillaryDewPointResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CapillaryDewPointResult(T={} K, dP_cap={} Pa, {} iteration(s))",
+            self.temperature.magnitude_si, self.capillary_pressure.magnitude_si, self.iterations
+        )
+    }
+}
+
+impl From<&CapillaryDewPointResult> for PyCapillaryDewPointResult {
+    fn from(r: &CapillaryDewPointResult) -> Self {
+        Self {
+            temperature: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            incipient: r.incipient.clone(),
+            k: r.k.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            capillary_pressure: PyQty {
+                magnitude_si: r.capillary_pressure.value,
+                unit: "Pa".to_string(),
+            },
+            min_t_over_tc: r.min_t_over_tc,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PtFlashResult> for PyPtFlashResult {
     fn from(r: &PtFlashResult) -> Self {
         Self {
@@ -5932,6 +6010,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         GeVanLaarAcidPhaseResult::CALC_ID => GeVanLaarAcidPhaseResult::FIELDS.to_vec(),
         GeWilsonPhaseResult::CALC_ID => GeWilsonPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
+        CapillaryDewPointResult::CALC_ID => CapillaryDewPointResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),

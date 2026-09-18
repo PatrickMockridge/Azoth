@@ -196,6 +196,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::bubble_temperature, m)?)?;
     m.add_function(wrap_pyfunction!(eos::critical_point, m)?)?;
     m.add_function(wrap_pyfunction!(eos::dew_pressure, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::capillary_dew_point, m)?)?;
     m.add_function(wrap_pyfunction!(eos::dew_temperature, m)?)?;
     m.add_function(wrap_pyfunction!(eos::ideal_gas_cp, m)?)?;
     m.add_function(wrap_pyfunction!(eos::molar_enthalpy_entropy, m)?)?;

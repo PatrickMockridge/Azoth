@@ -33,6 +33,7 @@ from azoth.core.result import (
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
+    CapillaryDewPointResult,
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
@@ -2106,6 +2107,57 @@ def dew_pressure(mixture: Any, T: Q, y: Sequence[float]) -> DewPressureResult:
         [list(c.alpha_params) for c in mixture.components],
     )
     return _boundary_result(raw, DewPressureResult, liquid_first=False)  # type: ignore[no-any-return]
+
+
+def capillary_dew_point(
+    mixture: Any,
+    P: Q,
+    y: Sequence[float],
+    pore_radius: Q,
+    contact_angle: Q,
+    surface_tension: Q,
+) -> CapillaryDewPointResult:
+    """The dew point of a vapour held in a pore, computed in Rust.
+
+    The same unpacking as `dew_temperature` plus the three curvature arguments. The surface
+    tension is the caller's, not the mixture's: it is a fitted quantity with its own provenance,
+    and reading one inside a model whose other inputs are all stated would hide which was used.
+    """
+    spec = _models_gen.model("eos.capillary_dew_point")
+    result = _core.capillary_dew_point(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "P", P),
+        list(y),
+        input_to_si(spec, "pore_radius", pore_radius),
+        # The angle is dimensionless and a bare number by this library's convention for
+        # dimensionless scalars; a caller who wrote it as a quantity is taken at its magnitude.
+        (
+            contact_angle.to_base_units().magnitude
+            if hasattr(contact_angle, "to_base_units")
+            else float(contact_angle)
+        ),
+        input_to_si(spec, "surface_tension", surface_tension),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return CapillaryDewPointResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        incipient=tuple(result.incipient),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        capillary_pressure=from_si(
+            result.capillary_pressure.magnitude_si, result.capillary_pressure.unit
+        ),
+        min_t_over_tc=result.min_t_over_tc,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
 
 
 def dew_temperature(mixture: Any, P: Q, y: Sequence[float]) -> DewTemperatureResult:

@@ -184,6 +184,19 @@ class BwrsPhaseResult:
     warnings: list[Warning]
 
 @final
+class CapillaryDewPointResult:
+    temperature: Qty
+    incipient: list[float]
+    k: list[float]
+    z_liquid: float
+    z_vapour: float
+    capillary_pressure: Qty
+    min_t_over_tc: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class ChungConductivityResult:
     k: Qty
     warnings: list[Warning]
@@ -1085,6 +1098,20 @@ def bwrs_phase(
     P: float,
     z: list[float],
 ) -> BwrsPhaseResult: ...
+def capillary_dew_point(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    P: float,
+    y: list[float],
+    pore_radius: float,
+    contact_angle: float,
+    surface_tension: float,
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> CapillaryDewPointResult: ...
 def chung_conductivity(
     Cv0: float,
     M: float,

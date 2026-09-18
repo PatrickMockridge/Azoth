@@ -66,6 +66,7 @@ def phase_boundary_temperature(
     held: list[float],
     incipient: str,
     algorithm: dict[str, Any],
+    capillary_pressure: float = 0.0,
 ) -> dict[str, Any]:
     """The temperature at which the incipient phase appears, at a fixed pressure.
 
@@ -128,6 +129,19 @@ def phase_boundary_temperature(
             math.exp(lp - lv)
             for lp, lv in zip(liquid_state.ln_phi, vapour_state.ln_phi, strict=True)
         ]
+
+        # The Kelvin shift, when the boundary is drawn inside a pore rather than on a flat
+        # surface: ``K_cap = K exp(-Vm_L dP_cap / (R T))``, and the liquid's molar volume at the
+        # cubic's own root is ``z R T / P``, so the whole exponent is
+        #
+        #     Vm_L dP_cap / (R T) = z_liquid dP_cap / P
+        #
+        # which needs neither a gas constant nor a molar-volume lookup. NeqSim writes it the long
+        # way, from ``getMolarVolume("m3/mol")`` with a ``1e-4`` fallback and a ``vmL > 0.01``
+        # guard; taken from the root it cannot fail either way.
+        if capillary_pressure:
+            kelvin = math.exp(-capillary_pressure * liquid_state.z / pressure)
+            k = [value * kelvin for value in k]
 
         # Checked before the update, and on the K-values rather than on the residual:
         # `S - 1` cancels, so it is small here long before the K-values are near 1.

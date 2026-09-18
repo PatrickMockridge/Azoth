@@ -17,6 +17,29 @@ use crate::mixture::{Mixture, RootSide, normalise};
 use crate::model_gen;
 use crate::phase_boundary::{Incipient, TRIVIAL_TOLERANCE, check_composition, wilson_psat};
 
+/// The curvature a boundary is drawn in, when it is drawn in a pore.
+///
+/// Young-Laplace: the pressure inside a curved interface exceeds the pressure outside it by
+/// `2 sigma cos(theta) / r`, and the incipient phase is the one on the inside. The shift it
+/// puts on the K-values is the Kelvin equation, applied in the loop above.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Curvature {
+    /// Pore radius, in metres.
+    pub pore_radius: f64,
+    /// Contact angle, in radians. Zero is a perfectly wetting liquid.
+    pub contact_angle: f64,
+    /// Surface tension, in newtons per metre.
+    pub surface_tension: f64,
+}
+
+impl Curvature {
+    /// The Young-Laplace pressure across the interface, in pascals.
+    #[must_use]
+    pub fn capillary_pressure(&self) -> f64 {
+        2.0 * self.surface_tension * self.contact_angle.cos() / self.pore_radius
+    }
+}
+
 /// The outcome of finding a saturation temperature.
 pub struct PhaseBoundaryTemperature {
     /// The boundary temperature.
@@ -66,6 +89,7 @@ pub fn phase_boundary_temperature(
     p: Pressure,
     held: &[f64],
     incipient: Incipient,
+    curvature: Option<Curvature>,
 ) -> Result<PhaseBoundaryTemperature> {
     let n = mixture.len();
     if n < 2 {
@@ -117,12 +141,29 @@ pub fn phase_boundary_temperature(
         let liquid_state = mixture.phase_state(&reduced, liquid, RootSide::Liquid)?;
         let vapour_state = mixture.phase_state(&reduced, vapour, RootSide::Vapour)?;
 
-        let k: Vec<f64> = liquid_state
+        let mut k: Vec<f64> = liquid_state
             .ln_phi
             .iter()
             .zip(&vapour_state.ln_phi)
             .map(|(&l, &v)| (l - v).exp())
             .collect();
+
+        // The Kelvin shift, when the boundary is drawn inside a pore rather than on a flat
+        // surface: `K_cap = K exp(-Vm_L dP_cap / (R T))`, and the liquid's molar volume at the
+        // cubic's own root is `z R T / P`, so the whole exponent is
+        //
+        //     Vm_L dP_cap / (R T) = z_liquid dP_cap / P
+        //
+        // which needs neither a gas constant nor a molar-volume lookup. NeqSim writes it the
+        // long way, from `getMolarVolume("m3/mol")` with a `1e-4` fallback and a `vmL > 0.01`
+        // guard; taken from the root it cannot fail either way.
+        if let Some(curvature) = curvature {
+            let shift = curvature.capillary_pressure() * liquid_state.z / p.value;
+            let kelvin = (-shift).exp();
+            for value in k.iter_mut() {
+                *value *= kelvin;
+            }
+        }
 
         if k.iter().all(|value| value.ln().abs() < TRIVIAL_TOLERANCE) {
             return Err(AzothError::OutOfRange {

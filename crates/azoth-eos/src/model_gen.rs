@@ -6,6 +6,7 @@
 //!   - specs/models/eos/bubble_pressure.toml
 //!   - specs/models/eos/bubble_temperature.toml
 //!   - specs/models/eos/bwrs_phase.toml
+//!   - specs/models/eos/capillary_dew_point.toml
 //!   - specs/models/eos/co2_phase.toml
 //!   - specs/models/eos/critical_point.toml
 //!   - specs/models/eos/dew_pressure.toml
@@ -633,6 +634,185 @@ pub static BWRS_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&BWRS_PHASE_ALGORITHM),
     checks: BWRS_PHASE_CHECKS,
     cases: BWRS_PHASE_CASES,
+};
+
+static CAPILLARY_DEW_POINT_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pore_radius",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "The radius divides the Young-Laplace pressure, so a zero one is an infinite shift rather than a wide pore; a wide pore is a large radius.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "surface_tension",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "A negative surface tension would put the liquid below the vapour and move the dew point down, which is not a state a pore produces. Zero is allowed and is the flat interface.",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "min_t_over_tc",
+            min: None,
+            min_inclusive: true,
+            max: Some(0.9),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "Above `T / Tc = 0.9` for every component the cubic's roots are close to coalescing and the two phases stop being distinguishable, so a dew point near the critical point is the one to distrust.",
+        },
+    },
+];
+
+static CAPILLARY_DEW_POINT_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methane_butane_at_20_bar_in_a_10_nm_pore",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[
+            ("P", 2000000.0),
+            ("pore_radius", 1e-08),
+            ("contact_angle", 0.0),
+            ("surface_tension", 0.004789210568),
+        ],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("y", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("temperature", 347.5308462571),
+            ("capillary_pressure", 957842.1135999999),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "methane_butane_at_20_bar_in_a_100_nm_pore",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[
+            ("P", 2000000.0),
+            ("pore_radius", 1e-07),
+            ("contact_angle", 0.0),
+            ("surface_tension", 0.004997523456),
+        ],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("y", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("temperature", 345.3877495176),
+            ("capillary_pressure", 99950.46912000001),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "methane_butane_at_20_bar_non_wetting_at_60_degrees",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[
+            ("P", 2000000.0),
+            ("pore_radius", 1e-07),
+            ("contact_angle", 1.0471975511965976),
+            ("surface_tension", 0.005009379844),
+        ],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("y", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("temperature", 345.2648952977),
+            ("capillary_pressure", 50093.798440000006),
+        ],
+        expected_vectors: &[],
+    },
+    TestCase {
+        id: "methane_butane_at_20_bar_in_a_micron_pore",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[
+            ("P", 2000000.0),
+            ("pore_radius", 1e-06),
+            ("contact_angle", 0.0),
+            ("surface_tension", 0.005018886547),
+        ],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("y", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("temperature", 345.1663199089),
+            ("capillary_pressure", 10037.773094),
+        ],
+        expected_vectors: &[],
+    },
+];
+
+static CAPILLARY_DEW_POINT_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "capillary_dew_point_newton",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("wilson_raoult"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.capillary_dew_point`.
+pub static CAPILLARY_DEW_POINT_SPEC: ModelSpec = ModelSpec {
+    id: "eos.capillary_dew_point",
+    kind: "procedure",
+    algorithm: Some(&CAPILLARY_DEW_POINT_ALGORITHM),
+    checks: CAPILLARY_DEW_POINT_CHECKS,
+    cases: CAPILLARY_DEW_POINT_CASES,
 };
 
 static CO2_PHASE_CHECKS: &[SpecCheck] = &[
@@ -5717,6 +5897,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &BUBBLE_PRESSURE_SPEC,
     &BUBBLE_TEMPERATURE_SPEC,
     &BWRS_PHASE_SPEC,
+    &CAPILLARY_DEW_POINT_SPEC,
     &CO2_PHASE_SPEC,
     &CRITICAL_POINT_SPEC,
     &DEW_PRESSURE_SPEC,

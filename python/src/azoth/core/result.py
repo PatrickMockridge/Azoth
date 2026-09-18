@@ -1783,6 +1783,37 @@ class TpMultiflashResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class CapillaryDewPointResult(_HasWarnings):
+    """Result of ``eos.capillary_dew_point``.
+
+    ``DewTemperatureResult`` with one field more, which is the whole of the difference: the
+    Young-Laplace pressure across the curved interface, reported because it is the one quantity
+    this model has that the flat one does not.
+    """
+
+    #: The dew-point temperature.
+    temperature: Q
+    #: The composition of the liquid that first appears.
+    incipient: tuple[float, ...]
+    #: K-values at the converged temperature, **with the Kelvin shift applied**.
+    k: tuple[float, ...]
+    #: The liquid root of the cubic at the converged state.
+    z_liquid: float
+    #: The vapour root.
+    z_vapour: float
+    #: The Young-Laplace pressure across the interface, ``2 sigma cos(theta) / r``.
+    capillary_pressure: Q
+    #: The smallest ``T / Tc_i`` over the components at the answer.
+    min_t_over_tc: float
+    #: Temperature updates taken.
+    iterations: int
+    #: ``|sum_i y_i / K_i - 1|`` at the last completed step.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class BubblePressureResult(_HasWarnings):
     """Result of ``eos.bubble_pressure``.
 

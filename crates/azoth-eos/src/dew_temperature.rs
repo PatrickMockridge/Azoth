@@ -48,7 +48,7 @@ pub fn dew_temperature(mixture: &Mixture, p: Pressure, y: &[f64]) -> Result<DewT
         &mut warnings,
     )?;
 
-    let boundary = phase_boundary_temperature(mixture, p, y, Incipient::Liquid)?;
+    let boundary = phase_boundary_temperature(mixture, p, y, Incipient::Liquid, None)?;
     warnings.extend(boundary.warnings);
 
     let min_t_over_tc = mixture

@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 use crate::errors::to_pyerr;
 use crate::results::{
     PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyArgonSolidPhaseResult, PyBwrsPhaseResult,
-    PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
+    PyCapillaryDewPointResult, PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
     PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult, PyGeWilsonPhaseResult,
@@ -2702,6 +2702,56 @@ pub fn bubble_temperature(
     azoth_eos::bubble_temperature(&mixture, pascals(P), &held)
         .map(|r| PyPhaseBoundaryTemperatureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// The dew point of a vapour held in a pore, with the Kelvin shift that curvature puts on it.
+///
+/// The same boundary as `dew_temperature` on a curved interface: Young-Laplace puts the liquid
+/// at `2 sigma cos(theta) / r` above the vapour, and the K-values shift by the Kelvin equation.
+/// `pore_radius` is in metres, `contact_angle` in radians and `surface_tension` in N/m - the
+/// tension is an argument here and an interphase property upstream, which is in the spec.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, P, held, pore_radius, contact_angle, surface_tension, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, P, held, pore_radius, contact_angle, surface_tension, eos = \"pr\", alpha = \"pr\")"
+)]
+#[allow(non_snake_case)] // `Tc`, `Pc` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn capillary_dew_point(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    P: f64,
+    held: Vec<f64>,
+    pore_radius: f64,
+    contact_angle: f64,
+    surface_tension: f64,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyCapillaryDewPointResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::capillary_dew_point(
+        &mixture,
+        pascals(P),
+        &held,
+        pore_radius,
+        contact_angle,
+        surface_tension,
+    )
+    .map(|r| PyCapillaryDewPointResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// The temperature at which a vapour of composition `held` first gives off liquid.
