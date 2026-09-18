@@ -11,10 +11,14 @@ The schema these run against is `specs/unit_ops/` and `specs/flowsheets/`, and
 
 from __future__ import annotations
 
+import importlib
 import pathlib
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
-from azoth import _core
+if TYPE_CHECKING:
+    from azoth import _core
+
 from azoth.core.units import Q, from_si, to_si
 
 __all__ = [
@@ -28,6 +32,15 @@ __all__ = [
     "throttling_valve",
     "validate",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Load the compiled extension on first use, so `import azoth` needs no build."""
+    if name == "_core":
+        module = importlib.import_module("azoth._core")
+        globals()[name] = module
+        return module
+    raise AttributeError(name)
 
 
 class Stream:
