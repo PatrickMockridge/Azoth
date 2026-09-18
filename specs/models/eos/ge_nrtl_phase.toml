@@ -3,7 +3,7 @@ name = "Fugacity coefficients of an NRTL activity-coefficient liquid"
 kind = "direct"
 assumptions = [
     "this is NeqSim's `PhaseGENRTL` liquid: `phi_i = gamma_i P0_i / P`. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.\n",
-    "this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 49 of the databank's 173 substances are tagged so, and a phase over one is refused.\n",
+    "this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 51 of the databank's 286 substances are tagged so, and a phase over one is refused.\n",
     "`gamma_i` comes from `eos.nrtl_activity_coefficients` on the same resolved matrices, and `P0_i` from `eos.antoine_vapor_pressure` on the component's own coefficients and form. Neither is recomputed here, so the phase cannot disagree with them.\n",
     "an Antoine label that names no form falls through to Wagner, which is NeqSim's own dispatch and the same fall-through `eos.antoine_vapor_pressure` documents. It is reproduced rather than refused.\n",
     "`P0_i` is reported beside `ln_phi` so a reader can check the correlation and the arithmetic separately; a wrong `P0` and a wrong `gamma` produce the same kind of wrong answer.\n",

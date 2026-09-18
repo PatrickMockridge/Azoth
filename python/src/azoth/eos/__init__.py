@@ -40,7 +40,7 @@ the whole chain.
 
 # Where the components come from
 
-:mod:`azoth.eos.components` ships a databank: 173 substances read from
+:mod:`azoth.eos.components` ships a databank: 286 substances read from
 ``data/components/components.csv``, generated from NeqSim (Apache-2.0) by
 ``tools/gen_databank.py`` and attributed in ``NOTICE``. Every pure-component
 constant is still an argument - the acentric factor here, and the critical

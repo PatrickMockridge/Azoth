@@ -3,7 +3,7 @@ name = "Fugacity coefficients of a UNIFAC activity-coefficient liquid"
 kind = "direct"
 assumptions = [
     "this is NeqSim's `PhaseGEUnifac` liquid: `phi_i = gamma_i P0_i / P`, which is what `ComponentGE.fugcoef` sets and what no GE phase overrides. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.",
-    "this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 49 of the databank's 173 substances are tagged so, and a phase over one is refused.",
+    "this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 51 of the databank's 286 substances are tagged so, and a phase over one is refused.",
     "`gamma_i` comes from `eos.unifac_activity_coefficients` on the same group tables, and `P0_i` from `eos.antoine_vapor_pressure` on the component's own coefficients and form. Neither is recomputed here, so the phase cannot disagree with them.",
     "the combinatorial and residual terms are classic UNIFAC's, with `qUNIQUAQ` and `rUNIQUAQ` read from the group sums and not from `UNIFACcomp.csv`'s own columns, which are zero for 109 of the 112 rows. The activity model's spec carries that measurement.",
     "an Antoine label that names no form falls through to Wagner, which is NeqSim's own dispatch and the same fall-through `eos.antoine_vapor_pressure` documents. It is reproduced rather than refused.",

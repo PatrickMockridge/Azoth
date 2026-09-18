@@ -21,7 +21,7 @@ names into the values a calculation takes.
 ## How a calculation runs
 
 `component(name)` looks a substance up and returns what a cubic reads. `from_names`
-builds a `Mixture` and pulls the published `kij` for each pair. The databank is 173
+builds a `Mixture` and pulls the published `kij` for each pair. The databank is 286
 substances read from `data/components/components.csv`, generated from NeqSim and
 attributed in `NOTICE`. A name the databank does not have is refused, not approximated.
 

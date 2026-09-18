@@ -15,12 +15,13 @@ calculation taking them as caller arguments.
 
 # What is in it, and what is not
 
-173 substances: NeqSim's `COMP.csv` filtered to the types a cubic equation of state
+286 substances: NeqSim's `COMP.csv` filtered to the types a cubic equation of state
 can describe. The ions are excluded because a cubic has no notion of one and NeqSim
-fills their critical properties with a shared default - 29 rows carrying the same
-`Pc`, `omega` and `Vc` is not a coincidence, and shipping them would ship
-plausible-looking wrong numbers. `COMP_EXT.csv` is not vendored at all: 86 MB of
-heavy fluids this library cannot characterise.
+fills their critical properties with a shared default - the 62 ion rows carry only 26
+distinct critical sets between them, the commonest shared by 27, which is not a
+coincidence, and shipping them would ship plausible-looking wrong numbers.
+`COMP_EXT.csv` is not vendored at all: 86 MB of heavy fluids this library cannot
+characterise.
 
 # Looking up is a call the caller makes
 
@@ -35,7 +36,7 @@ is not to refuse names, it is to make the lookup an explicit step.
 
 Every row cites the same source. It is deliberately not a per-value citation: the
 provenance here is institutional - a project, a version, a file - and a per-row URL
-for 173 rows would be a citation-shaped thing that is not a citation.
+for 286 rows would be a citation-shaped thing that is not a citation.
 """
 
 from __future__ import annotations

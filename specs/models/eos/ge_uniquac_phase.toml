@@ -3,7 +3,7 @@ name = "Fugacity coefficients of a UNIQUAC activity-coefficient liquid"
 kind = "direct"
 assumptions = [
     "this is NeqSim's `PhaseGEUniquac` liquid: `phi_i = gamma_i P0_i / P`, which is what `ComponentGE.fugcoef` sets and what no GE phase overrides. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.",
-    "this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 49 of the databank's 173 substances are tagged so, and a phase over one is refused.",
+    "this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 51 of the databank's 286 substances are tagged so, and a phase over one is refused.",
     "`gamma_i` is `eos.uniquac_activity_coefficients`', and `P0_i` is `eos.antoine_vapor_pressure`'s on the component's own coefficients. Neither is recomputed here.",
     "`aij` is the caller's, as it is for the activity model: no upstream table carries a UNIQUAC interaction matrix, so it arrives as an argument or from a keycard entry at `coefficients.\"eos.ge_uniquac_phase\".aij`. It is in Kelvin and directional, with a zero diagonal.",
     "`r` and `q` are the UNIFAC group sums, not NeqSim's `rUNIQUAQ`/`qUNIQUAQ` columns - which are 0.0 for 109 of `UNIFACcomp.csv`'s 112 rows and which `ComponentGEUniquac`'s own constructor reads - one of the incomplete implementations `c5ec5fb` cites for withdrawing the phase.",
