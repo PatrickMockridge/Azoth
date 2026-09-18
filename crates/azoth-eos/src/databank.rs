@@ -352,6 +352,15 @@ impl Overlay {
 struct Interaction {
     /// The cubic binary interaction parameter, symmetric.
     kij: f64,
+    /// NeqSim's `cpakij_SRK`, the interaction parameter its **CPA** mixing rule reads for
+    /// the Soave family.
+    ///
+    /// A *different column* from [`Self::kij`], not a refinement of it: water/methanol is
+    /// `-0.153` here against `KIJPR`'s `-0.0789`, and reading the wrong one changes the
+    /// mixture's attraction by 3.4% and its root by 0.077%.
+    cpa_kij_srk: f64,
+    /// NeqSim's `cpakij_PR`, the CPA rule's parameter for the Peng-Robinson family.
+    cpa_kij_pr: f64,
     /// The NRTL non-randomness parameter, symmetric.
     alpha: f64,
     /// The NRTL energy parameter for the ordered pair `(first, second)`: the `g_ij` in
@@ -628,6 +637,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         "wsgijt",
         "wsgjit",
         "kijwsunifac",
+        "cpakij_srk",
+        "cpakij_pr",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -671,6 +682,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         let ws_dij_t = number(&record, index["wsgijt"], "wsgijt", row)?;
         let ws_dji_t = number(&record, index["wsgjit"], "wsgjit", row)?;
         let kij_ws = number(&record, index["kijwsunifac"], "kijwsunifac", row)?;
+        let cpa_kij_srk = number(&record, index["cpakij_srk"], "cpakij_srk", row)?;
+        let cpa_kij_pr = number(&record, index["cpakij_pr"], "cpakij_pr", row)?;
 
         // `kij`, `alpha`, `hv_alpha` and the two selectors are symmetric, stored both
         // ways round so a caller need not know which name came first. `gij`, `hv_dij`,
@@ -680,6 +693,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
             (a.clone(), b.clone()),
             Interaction {
                 kij: value,
+                cpa_kij_srk,
+                cpa_kij_pr,
                 alpha,
                 gij,
                 hv,
@@ -695,6 +710,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
             (b, a),
             Interaction {
                 kij: value,
+                cpa_kij_srk,
+                cpa_kij_pr,
                 alpha,
                 gij: gji,
                 hv,
@@ -926,6 +943,34 @@ pub fn all_kij() -> Vec<(String, String, f64)> {
         .map(|((a, b), interaction)| (a.clone(), b.clone(), interaction.kij))
         .collect();
     out.sort_by(|left, right| (&left.0, &left.1).cmp(&(&right.0, &right.1)));
+    out
+}
+
+/// The CPA interaction matrix for a list of names, flattened row-major.
+///
+/// **`cpakij_SRK` / `cpakij_PR`, not `KIJPR`.** NeqSim's `CPAMixingRuleHandler` reads the
+/// `cpa` columns and `SystemSrkCPA` runs `setMixingRule(10)`, so an associating mixture's
+/// attraction is mixed with these and a classical mixture's with `KIJPR`. On
+/// water/methanol the two differ by a factor of two - `-0.153` against `-0.0789` - which
+/// is a 3.4% difference in the mixture's `A` and 0.077% in its root.
+///
+/// An absent pair is zero, the ideal-mixture default NeqSim substitutes.
+#[must_use]
+pub fn cpa_kij(names: &[&str], cubic: crate::association::AssociationCubic) -> Vec<f64> {
+    let n = names.len();
+    let mut out = vec![0.0; n * n];
+    for i in 0..n {
+        for j in 0..n {
+            let key = (
+                names[i].trim().to_lowercase(),
+                names[j].trim().to_lowercase(),
+            );
+            out[i * n + j] = tables().1.get(&key).map_or(0.0, |interaction| match cubic {
+                crate::association::AssociationCubic::Srk => interaction.cpa_kij_srk,
+                crate::association::AssociationCubic::Pr => interaction.cpa_kij_pr,
+            });
+        }
+    }
     out
 }
 

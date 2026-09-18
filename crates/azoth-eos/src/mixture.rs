@@ -598,43 +598,10 @@ impl Mixture {
         // the volume where the *total* pressure equals the specified one. See
         // [`Self::associating_root`].
         let z = match self.association() {
-            Some(association) => {
-                let root = self.associating_root(reduced, x, &association, side)?;
-                // The CPA volume translation, applied to the root rather than solved for:
-                // NeqSim's `molarVolume` runs its iteration on the equation of state's
-                // volume and adds `sum_i x_i c_i` at the end.
-                root + self.association_volume_shift(reduced, x)
-            }
+            Some(association) => self.associating_root(reduced, x, &association, side)?,
             None => seed,
         };
         self.phase_state_at(reduced, x, z)
-    }
-
-    /// `sum_i x_i c_i P/(R T)`, the CPA volume translation in reduced form.
-    ///
-    /// `ComponentSrk.getVolumeCorrection` is
-    /// `0.40768 (0.29441 - Z_RA) R Tc/Pc`, with `Z_RA` NeqSim's Rackett compressibility -
-    /// `racketZCPA` for a CPA component, and `0.29056 - 0.08775 omega` where the table
-    /// has none. **A `racketZCPA` of zero turns the translation off entirely** rather
-    /// than falling back: `ComponentSrkCPA.getVolumeCorrection` returns zero for it, which
-    /// is why methanol carries none and water does.
-    fn association_volume_shift(&self, reduced: &ReducedParameters, x: &[f64]) -> f64 {
-        let mut shift = 0.0;
-        for (component, &fraction) in self.components.iter().zip(x) {
-            let Some(record) = component.association.as_ref() else {
-                // A component with no scheme has no `racketZCPA`, and NeqSim's CPA
-                // override returns zero for that rather than falling back to the
-                // acentric-factor form - so it contributes no translation either.
-                continue;
-            };
-            if record.racket_z.abs() < 1.0e-10 {
-                continue;
-            }
-            let c =
-                0.40768 * (0.29441 - record.racket_z) * R * component.tc.value / component.pc.value;
-            shift += fraction * c;
-        }
-        shift * reduced.pressure / (R * reduced.t_kelvin)
     }
 
     /// The root of an associating mixture's equation of state.
