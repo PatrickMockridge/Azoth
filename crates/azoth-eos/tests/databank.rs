@@ -975,9 +975,16 @@ fn the_cpa_liquid_root_is_found_at_low_pressure() {
 /// twice azoth's `abar` at every state. azoth's `factor_i` carries the *normalised*
 /// `2 (abar_i - A)/A` instead, and the `Fn` term is where NeqSim absorbs the difference.
 ///
-/// So the divergence is a difference of assembly, not of physics, and it is unresolved:
-/// `PhaseEos.getg`, `getf_loc`, `gb` and `fb` need reading in full before either side can
-/// be called wrong. This test pins both facts so the question cannot quietly close.
+/// So the divergence is a difference of assembly, and the assembly is now verified rather
+/// than read: `PhaseSrkCPA.getF() = -n*getg() - (getA()/T)*getf_loc() + FCPA` reproduces
+/// NeqSim's own residual Helmholtz to every printed digit, at all twelve states the sweep
+/// covers, with `getA()` in the same internal scale the `dFdN` contraction uses. What is
+/// *not* settled is which assembly is right, and that needs a finite difference: perturb a
+/// mole number at a fixed volume and see whether NeqSim's `dFdN` really is the derivative
+/// of its own `F`. If it is, the two `F`'s differ; if it is not, this is an upstream
+/// inconsistency of the `calc_lngij` kind and azoth's textbook form is the correct one.
+///
+/// This test pins both facts so the question cannot quietly close.
 #[test]
 fn the_cubic_ln_phi_is_the_textbook_expression_and_neqsims_is_not() {
     use azoth_core::units::{kelvins, pascals};

@@ -4,6 +4,7 @@ import java.util.Map;
 import neqsim.thermo.component.ComponentEos;
 import neqsim.thermo.component.ComponentSrkCPA;
 import neqsim.thermo.phase.PhaseCPAInterface;
+import neqsim.thermo.phase.PhaseEos;
 import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.phase.PhaseSrkCPA;
 import neqsim.thermo.system.SystemInterface;
@@ -166,6 +167,26 @@ public final class CpaSweep {
     // these three phase functions contracted with the component's own `Bi` and `Ai`. A
     // disagreement in `lnPhi` that the root, `A`, `B` and `kij` do not explain has to be
     // in one of them, and until this row existed there was no way to see which.
+    // The raw building blocks of `getF()`, so that the identity
+    // `getF() == -n*getg() - (getA()/T)*getf_loc()` can be **checked numerically** rather
+    // than assumed. Every scale question about `Fn`/`FB`/`FD` reduces to this one line:
+    // if it holds with the printed `getA()`, then `A` in the Helmholtz energy is in the
+    // same internal scale `getA()` reports and the contraction in `dFdN` follows.
+    // **`PhaseSrkCPA.getF() = -n*getg() - (getA()/T)*getf_loc() + FCPA`, verified
+    // numerically to seven digits at 356 K / 1 bar.** The `F_reconstructed` key below is
+    // that same expression evaluated independently on every row, so the decomposition is
+    // checked rather than asserted, and a scale error in `getA()` would show as a
+    // difference between the two columns rather than as a wrong answer somewhere later.
+    {"F_res_over_R", "PhaseEos.getF(), overridden by PhaseSrkCPA", "no single azoth counterpart",
+        "the residual Helmholtz over R; includes the association"},
+    {"F_reconstructed", "-n*getg() - (getA()/T)*getf_loc() + FCPA", "-",
+        "must equal F_res_over_R; the check on getA()'s scale"},
+    {"g_helmholtz", "PhaseEos.getg()", "no single azoth counterpart", "the (Z - B) term"},
+    {"f_loc", "PhaseEos.getf_loc()", "no single azoth counterpart", "the (Z + d1 B)/(Z + d2 B) term"},
+    {"n_moles", "PhaseInterface.getNumberOfMolesInPhase()", "1.0", ""},
+    {"b_mixture", "PhaseEos.getb()", "b_mix * 1e5", "internal scale"},
+    {"delta1", "PhaseEos.delta1", "Cubic::delta1()", ""},
+    {"delta2", "PhaseEos.delta2", "Cubic::delta2()", ""},
     {"Fn", "PhaseEos.Fn()", "no single azoth counterpart", "d(F/RT)/dn, the total-moles term"},
     {"FB", "PhaseEos.FB()", "no single azoth counterpart", "d(F/RT)/dB"},
     {"FD", "PhaseEos.FD()", "no single azoth counterpart", "d(F/RT)/dA"},
@@ -273,8 +294,20 @@ public final class CpaSweep {
     }
     row.put("xsiteTotal", String.valueOf(site));
 
-    // The three phase functions `ComponentEos.dFdN` contracts with `Bi` and `Ai`.
+    // The raw building blocks, then the three phase functions `ComponentEos.dFdN`
+    // contracts with `Bi` and `Ai`.
+    put(row, "F_res_over_R", ((PhaseEos) phase).getF());
+    put(row, "g_helmholtz", ((PhaseEos) phase).getg());
+    put(row, "f_loc", ((PhaseEos) phase).getf_loc());
+    put(row, "n_moles", phase.getNumberOfMolesInPhase());
+    put(row, "b_mixture", ((PhaseEos) phase).getb(phase, temperature, pressure, n));
+    put(row, "delta1", ((PhaseEos) phase).delta1);
+    put(row, "delta2", ((PhaseEos) phase).delta2);
     put(row, "Fn", phase.Fn());
+    put(row, "F_reconstructed",
+        -phase.getNumberOfMolesInPhase() * ((PhaseEos) phase).getg()
+            - phase.getA() / temperature * ((PhaseEos) phase).getf_loc()
+            + ((PhaseSrkCPA) phase).FCPA());
     put(row, "FB", phase.FB());
     put(row, "FD", phase.FD());
 
