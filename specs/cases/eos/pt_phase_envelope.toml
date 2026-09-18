@@ -1,16 +1,17 @@
 model = "eos.pt_phase_envelope"
 [[cases]]
 id = "methane_butane_from_1_bar"
-tolerance = 1e-06
+tolerance = 1e-04
+source = "This library's own output, recorded, except for the comparison below. The **critical point is refined** by `calcCrit`'s Newton on `sum (ln K)^2 = 0`, and NeqSim's `calcPTphaseEnvelope()` on this pair gives `374.3214 K / 98.9683 bar`, `bubP` max `109.8346 bar` and cricondentherm `384.1096 K` (validation/neqsim/PhaseEnvelope.java). The cricondenbar and cricondentherm agree to `0.08 bar` and `0.09 K`; the critical point is `1.60 K` and `0.02 bar` out, against `6.86 K` and `4.54 bar` before the refinement. `residual` is the two branches' disagreement about the critical temperature, `9.40 K` before the refinement and `0.31 K` after - it is zero when both branches refine to the same point, which is the statement that they meet. **The tolerance is `1e-4` and not `1e-6` because of the critical point**: it is the solution of a *singular* system, so the refinement stops at its best iterate rather than converging, and the two kernels return points `2.3e-5` relative apart in pressure and `7.8e-6` in temperature - measured, `375.9176903970 K / 9894671.32 Pa` in Rust and `375.9206244854 K / 9894448.17 Pa` in Python. The old critical point was `1.8e-2` relative out, so this still catches a regression to it by a factor of a hundred and eighty. Every other field agrees to about `1e-12`, so nothing but the critical point is tested any less tightly than `1e-4` would test it; the branch extents are not declared here because a continuation trace's *point sequence* is not reproducible across implementations even when its physics is, so what this case pins is the quantities the trace computes rather than the path it took to them."
 [cases.inputs]
 components = ["methane", "n-butane"]
 z = [0.5, 0.5]
 P = 100000.0
 [cases.expected]
-critical_temperature = 367.45728926351524
-critical_pressure = 10350775.913640998
+critical_temperature = 375.91769039700779
+critical_pressure = 9894671.3153655585
 cricondenbar_temperature = 338.16618376710414
 cricondenbar_pressure = 10991706.162864981
 cricondentherm_temperature = 384.01823820905895
-cricondentherm_pressure = 7700041.689284624
+cricondentherm_pressure = 7700041.6892846236
 iterations = 64

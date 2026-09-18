@@ -36,6 +36,26 @@ D_PMAX = 10.0e5
 MAX_PRESSURE = 1000.0e5
 NEWTON_TOL = 1.0e-5
 NEWTON_MAX = 50
+
+#: The most Newton steps the critical refinement takes, upstream's ten.
+#: Upstream's ten, and it is a guard rather than a cap: measured, fifty steps let the Newton
+#: wander to ``355.78 K`` with a branch gap of ``21.0 K``.
+CRIT_MAX = 10
+#: Its convergence tolerance, upstream's. Unreachable on this system in double precision, so
+#: the refinement stops at its best iterate instead of converging; kept at upstream's value
+#: because lowering it changed nothing - measured, `1e-7` returned the same points.
+CRIT_TOL = 1.0e-10
+#: The largest single correction it accepts, upstream's ``|dx_j| > 0.5`` abort.
+CRIT_STEP = 0.5
+#: How far a candidate critical point may sit from where the refinement started, relative.
+#: Upstream compares against its polynomial's extrapolation and keeps a candidate only within
+#: ``0.10`` in temperature and ``0.20`` in pressure of it; the start is used here because the
+#: refinement begins where the trace crossed the K-window and the two are within a few per cent
+#: of each other there. Without the guard a diverging Newton's wild iterate wins the
+#: best-tracking on ``sum (ln K)^2`` alone, which it otherwise does - measured, a step that
+#: jumped 373 K to 437 K had the smallest sum of any iterate.
+CRIT_T_BAND = 0.10
+CRIT_P_BAND = 0.20
 PRESSURE_SPEC_POINTS = 5
 HISTORY_LEN = 4
 
@@ -78,8 +98,18 @@ def _compositions(z: list[float], k: list[float], beta: float) -> tuple[list[flo
 
 
 def _residual(
-    mixture: Mixture, u: list[float], beta: float, z: list[float], speceq: int, specval: float
+    mixture: Mixture,
+    u: list[float],
+    beta: float,
+    z: list[float],
+    last: tuple[int, float] | None,
 ) -> list[float]:
+    """The `N+2` residuals.
+
+    ``last`` is ``(index, value)`` for an ordinary continuation point, pinning ``u[index]``, or
+    ``None`` for the criticality condition ``sum_i (ln K_i)^2``, whose Jacobian row the central
+    difference below produces without being told.
+    """
     n = len(z)
     k = [math.exp(lnk) for lnk in u[:n]]
     t = math.exp(u[n])
@@ -92,21 +122,28 @@ def _residual(
     for i in range(n):
         f[i] = u[i] - liquid.ln_phi[i] + vapour.ln_phi[i]
     f[n] = sum(y) - sum(x)
-    f[n + 1] = u[speceq] - specval
+    if last is None:
+        f[n + 1] = sum(value * value for value in u[:n])
+    else:
+        f[n + 1] = u[last[0]] - last[1]
     return f
 
 
 def _jacobian(
-    mixture: Mixture, u: list[float], beta: float, z: list[float], speceq: int, specval: float
+    mixture: Mixture,
+    u: list[float],
+    beta: float,
+    z: list[float],
+    last: tuple[int, float] | None,
 ) -> list[list[float]]:
     m = len(u)
-    f0 = _residual(mixture, u, beta, z, speceq, specval)
+    f0 = _residual(mixture, u, beta, z, last)
     jac = [[0.0] * m for _ in range(m)]
     for j in range(m):
         delta = max(1.0e-6 * abs(u[j]), 1.0e-8)
         up = u.copy()
         up[j] += delta
-        fp = _residual(mixture, up, beta, z, speceq, specval)
+        fp = _residual(mixture, up, beta, z, last)
         for i in range(m):
             jac[i][j] = (fp[i] - f0[i]) / delta
     return jac
@@ -132,15 +169,19 @@ def _clamp_state(u: list[float], n: int) -> None:
 
 
 def _newton(
-    mixture: Mixture, u: list[float], beta: float, z: list[float], speceq: int, specval: float
+    mixture: Mixture,
+    u: list[float],
+    beta: float,
+    z: list[float],
+    last: tuple[int, float] | None,
 ) -> tuple[list[float], int]:
     u = u.copy()
     for iters in range(1, NEWTON_MAX + 1):
-        f = _residual(mixture, u, beta, z, speceq, specval)
+        f = _residual(mixture, u, beta, z, last)
         norm = _norm2(f)
         if norm < NEWTON_TOL:
             return u, iters
-        jac = _jacobian(mixture, u, beta, z, speceq, specval)
+        jac = _jacobian(mixture, u, beta, z, last)
         b = f.copy()
         dx = _solve_linear(jac, b)
         if dx is None or any(not math.isfinite(d) for d in dx):
@@ -151,21 +192,95 @@ def _newton(
             for i, ui in enumerate(u):
                 nxt[i] = ui - step * dx[i]
             _clamp_state(nxt, len(z))
-            fnext = _residual(mixture, nxt, beta, z, speceq, specval)
+            fnext = _residual(mixture, nxt, beta, z, last)
             if _norm2(fnext) < norm:
                 break
             step *= 0.5
         u = nxt
     raise SolverNotConvergedError(
-        NEWTON_MAX, _norm2(_residual(mixture, u, beta, z, speceq, specval)), NEWTON_TOL
+        NEWTON_MAX, _norm2(_residual(mixture, u, beta, z, last)), NEWTON_TOL
     )
+
+
+def _calc_crit(
+    mixture: Mixture, u0: list[float], beta: float, z: list[float]
+) -> tuple[float, float] | None:
+    """The critical point, refined from a state the trace has brought close to it.
+
+    **This is what replaces a test with a computation.** The trace stops its branches where the
+    lightest component's K-value falls below ``1.05`` and the heaviest's rises above ``0.95``,
+    which is a place a heuristic happened to fire: it put this library's critical point 6.86 K
+    and 4.54 bar from NeqSim's. The refinement Newtons ``sum_i (ln K_i)^2 = 0`` alongside the
+    isofugacity rows and the material balance, which is the definition rather than a proxy.
+
+    Returns ``None`` when it does not converge, which the caller reports as the unrefined point:
+    the trace's own answer is still a boundary. The **best** iterate is kept as well as the last,
+    upstream's rule - the Newton can step past the smallest sum and come back with a larger one.
+
+    The rust kernel carries the reasoning; this is the same arithmetic.
+    """
+    n = len(z)
+    u = list(u0)
+    start = (math.exp(u0[n]), math.exp(u0[n + 1]))
+    best: tuple[float, float, float] | None = None
+
+    for _ in range(CRIT_MAX):
+        f = _residual(mixture, u, beta, z, None)
+        sum_ln_k2 = sum(value * value for value in u[:n])
+        t, p = math.exp(u[n]), math.exp(u[n + 1])
+        inside = (
+            abs(t - start[0]) <= CRIT_T_BAND * start[0]
+            and abs(p - start[1]) <= CRIT_P_BAND * start[1]
+        )
+        if inside and math.isfinite(sum_ln_k2) and (best is None or sum_ln_k2 < best[0]):
+            best = (sum_ln_k2, t, p)
+        if _norm2(f) < CRIT_TOL:
+            return (t, p)
+
+        jac = _jacobian(mixture, u, beta, z, None)
+        # Levenberg-Marquardt, ``flash_newton.py``'s and at the same magnitude. The system is
+        # singular at the critical point, so the Newton is ill-conditioned exactly where it is
+        # aimed; without this the iteration stops at a knife-edge iterate and two
+        # implementations of the same arithmetic return points 0.035 K apart.
+        trace = sum(abs(jac[i][i]) for i in range(n + 2))
+        lam = 1.0e-8 * trace / (n + 2)
+        for i in range(n + 2):
+            jac[i][i] += lam
+        b = list(f)
+        dx = _solve_linear(jac, b)
+        if dx is None or any(not math.isfinite(d) or abs(d) > CRIT_STEP for d in dx):
+            break
+        if _norm2(dx) < CRIT_TOL:
+            return (t, p)
+
+        # The step-halving line search the continuation Newton uses, and it is not optional
+        # here: upstream restarts from a polynomial extrapolated to the K = 1 point, which is
+        # already inside the critical basin, and this starts from the K-window crossing.
+        # Measured without it: 376.696 -> 375.501 -> 403.180, the last outside the band.
+        norm = _norm2(f)
+        step = 1.0
+        accepted = False
+        for _ in range(24):
+            nxt = list(u)
+            for i, d in enumerate(dx):
+                nxt[i] = u[i] - step * d
+            _clamp_state(nxt, n)
+            if _norm2(_residual(mixture, nxt, beta, z, None)) < norm:
+                u = nxt
+                accepted = True
+                break
+            step *= 0.5
+        if not accepted:
+            break
+
+    return None if best is None else (best[1], best[2])
 
 
 def _sensitivity(
     mixture: Mixture, u: list[float], beta: float, z: list[float], speceq: int
 ) -> list[float]:
     n = len(z)
-    jac = _jacobian(mixture, u, beta, z, speceq, u[speceq])
+    jac = _jacobian(mixture, u, beta, z, (speceq, u[speceq]))
     e = [0.0] * (n + 2)
     e[n + 1] = 1.0
     dxds = _solve_linear(jac, e)
@@ -248,7 +363,9 @@ def _wilson_temperature(mixture: Mixture, pressure: float, z: list[float], beta:
 
 def _trace_branch(
     mixture: Mixture, pressure: float, z: list[float], beta: float
-) -> tuple[list[float], list[float], tuple[float, float], tuple[float, float]]:
+) -> tuple[
+    list[float], list[float], tuple[float, float], tuple[float, float], tuple[float, float] | None
+]:
     spec = _models_gen.model(MODEL_ID)
     max_iterations = spec["algorithm"]["max_iterations"]
     n = len(z)
@@ -264,12 +381,13 @@ def _trace_branch(
     p_vec: list[float] = []
     cricondenbar = (start_t, pressure)
     cricondentherm = (start_t, pressure)
+    critical: tuple[float, float] | None = None
     history: list[list[float]] = []
     dxds: list[float] = [0.0] * (n + 2)
     ds = 0.1
     last_iters = 2
 
-    u, _ = _newton(mixture, u, beta, z, speceq, specval)
+    u, _ = _newton(mixture, u, beta, z, (speceq, specval))
 
     for _ in range(max_iterations):
         t = math.exp(u[n])
@@ -282,6 +400,7 @@ def _trace_branch(
             cricondenbar = (t, pv)
 
         if k[lc] < 1.05 and k[hc] > 0.95:
+            critical = _calc_crit(mixture, u, beta, z)
             break
 
         t_vec.append(t)
@@ -336,7 +455,7 @@ def _trace_branch(
         solved = False
         for _ in range(8):
             try:
-                u, iters = _newton(mixture, u, beta, z, speceq, specval)
+                u, iters = _newton(mixture, u, beta, z, (speceq, specval))
                 last_iters = iters
                 solved = True
                 break
@@ -349,7 +468,7 @@ def _trace_branch(
         if not solved:
             break
 
-    return t_vec, p_vec, cricondenbar, cricondentherm
+    return t_vec, p_vec, cricondenbar, cricondentherm, critical
 
 
 def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelopeResult:
@@ -385,10 +504,20 @@ def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelope
     cricondenbar = bubble[2] if bubble[2][1] >= dew[2][1] else dew[2]
     cricondentherm = bubble[3] if bubble[3][0] >= dew[3][0] else dew[3]
 
-    critical = (bubble[0][-1], bubble[1][-1]) if bubble[0] else (math.nan, math.nan)
-    # The two branches stop at the K-value crossing but not exactly at the same point;
-    # the residual reports the temperature gap between their endpoints.
-    residual = abs(bubble[0][-1] - dew[0][-1]) if bubble[0] and dew[0] else math.nan
+    # The critical point is the refined one when either branch reached it, and either will do:
+    # they are the same point and each branch computed it alone, so a disagreement is a finding
+    # rather than a choice. Falling back to the branch endpoint keeps a trace that never got
+    # near criticality reporting where it stopped rather than a NaN.
+    critical = bubble[4] or dew[4] or ((bubble[0][-1], bubble[1][-1]) if bubble[0] else None)
+    if critical is None:
+        critical = (math.nan, math.nan)
+    # The residual is the two branches' disagreement about the critical temperature: zero when
+    # both refined to the same point, which is the statement that they meet. A branch that did
+    # not refine reports the gap between where the branches stopped - the older, weaker claim.
+    if bubble[4] is not None and dew[4] is not None:
+        residual = abs(bubble[4][0] - dew[4][0])
+    else:
+        residual = abs(bubble[0][-1] - dew[0][-1]) if bubble[0] and dew[0] else math.nan
 
     return PtPhaseEnvelopeResult(
         dew_temperature=tuple(dew[0]),

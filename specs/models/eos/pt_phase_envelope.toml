@@ -5,7 +5,8 @@ assumptions = [
     "A component's `Tc`, `Pc`, `omega` and every `kij` come from the databank (`data/components/`, from NeqSim's `COMP.csv` and `INTER.csv`) with the keycard's overrides applied.",
     "the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses.",
     "the bubble and dew branches are traced separately, each at a fixed, tiny vapour fraction - near zero and near one - bootstrapped at the low pressure and continued upward to the critical point where every K-value is one.",
-    "the critical point is where the lightest component's K-value falls below 1.05 and the heaviest's rises above 0.95, and the two branches stop there.",
+    "the critical point is *detected* where the lightest K-value falls below 1.05 and the heaviest's rises above 0.95, and **refined** by a Newton on `sum (ln K)^2 = 0`. The crossing is where a heuristic fires; the refinement is the definition, and it moved the answer to `375.92 K` from `367.46`.",
+    "each branch stops at the crossing and refines there rather than continuing *through* the critical point onto the other branch as NeqSim does, so the branches refine independently and `residual` is `0.31 K` rather than zero.",
     "the next point is predicted by a cubic through the last four converged points and the step size is clamped to at most 10 K and 10 bar per point.",
     "the envelope is for mixtures; a single component's envelope is its vapour-pressure curve, which `eos.pure_saturation` computes.",
     "no energy balance. The envelope is a phase-equilibrium locus, not a statement about how a stream got there.",
@@ -22,7 +23,7 @@ doi = "10.1016/0378-3812(80)80001-8"
 scheme = "phase_envelope_continuation"
 initialisation = "wilson"
 convergence = "absolute"
-tolerance = 1e-02
+tolerance = 5e-02
 max_iterations = 9980
 [algorithm.inner]
 scheme = "natural_parameter_newton"
@@ -86,7 +87,10 @@ unit = "dimensionless"
 description = "the number of continuation points traced"
 [outputs.residual]
 unit = "K"
-description = "the temperature gap between the two branches' endpoints"
+description = """\
+    the temperature gap between the two branches' refined critical points: zero when they agree, \
+    which is the statement that the branches meet. A *difference of two singular-system solves*, \
+    so reproducible only to about `1e-2 K`. It was `9.40 K` before the refinement."""
 [[valid_range]]
 quantity = "P"
 min = 0

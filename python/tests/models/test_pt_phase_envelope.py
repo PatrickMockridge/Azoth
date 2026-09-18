@@ -104,10 +104,16 @@ def test_the_two_backends_agree_on_every_spec_case() -> None:
         with use_backend("rust"):
             rs = call(case)
         assert py.iterations == rs.iterations, f"{case['id']}: iteration count"
+        # The case's *own* tolerance, not a number chosen here. For this model it is looser
+        # than the others' because the critical point is the solution of a singular system:
+        # the refinement stops at its best iterate rather than converging, so two
+        # implementations of the same arithmetic return points about `7.8e-6` relative apart.
+        # The case file carries the measurement. A second, tighter number here would be a
+        # second source of truth for one declaration.
         h.assert_close(
             py.critical_temperature.to("K").magnitude,
             rs.critical_temperature.to("K").magnitude,
-            1e-6,
+            case["tolerance"],
             f"{case['id']} (critical_temperature)",
         )
         for name in ("bubble_temperature", "bubble_pressure", "dew_temperature", "dew_pressure"):

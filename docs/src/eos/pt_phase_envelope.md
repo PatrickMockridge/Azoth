@@ -22,7 +22,7 @@ not an equation, and both implementations read it from here.
 |---|---|
 | Scheme | `phase_envelope_continuation` |
 | Convergence | `absolute` |
-| Tolerance | `0.01` |
+| Tolerance | `0.05` |
 | Max iterations | `9980` |
 | Initialisation | `wilson` |
 
@@ -59,7 +59,7 @@ not an equation, and both implementations read it from here.
 | `critical_temperature` | K | the critical temperature, where the dew and bubble branches meet and every K-value is one |
 | `critical_pressure` | Pa | the critical pressure |
 | `iterations` | dimensionless | the number of continuation points traced |
-| `residual` | K | the temperature gap between the two branches' endpoints |
+| `residual` | K | the temperature gap between the two branches' refined critical points: zero when they agree, which is the statement that the branches meet. A *difference of two singular-system solves*, so reproducible only to about `1e-2 K`. It was `9.40 K` before the refinement. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -71,7 +71,8 @@ not an equation, and both implementations read it from here.
 - A component's `Tc`, `Pc`, `omega` and every `kij` come from the databank (`data/components/`, from NeqSim's `COMP.csv` and `INTER.csv`) with the keycard's overrides applied.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses.
 - the bubble and dew branches are traced separately, each at a fixed, tiny vapour fraction - near zero and near one - bootstrapped at the low pressure and continued upward to the critical point where every K-value is one.
-- the critical point is where the lightest component's K-value falls below 1.05 and the heaviest's rises above 0.95, and the two branches stop there.
+- the critical point is *detected* where the lightest K-value falls below 1.05 and the heaviest's rises above 0.95, and **refined** by a Newton on `sum (ln K)^2 = 0`. The crossing is where a heuristic fires; the refinement is the definition, and it moved the answer to `375.92 K` from `367.46`.
+- each branch stops at the crossing and refines there rather than continuing *through* the critical point onto the other branch as NeqSim does, so the branches refine independently and `residual` is `0.31 K` rather than zero.
 - the next point is predicted by a cubic through the last four converged points and the step size is clamped to at most 10 K and 10 bar per point.
 - the envelope is for mixtures; a single component's envelope is its vapour-pressure curve, which `eos.pure_saturation` computes.
 - no energy balance. The envelope is a phase-equilibrium locus, not a statement about how a stream got there.
@@ -80,7 +81,7 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_butane_from_1_bar` | components = ['methane', 'n-butane'], z = [0.5, 0.5], P = 100000.0 | critical_temperature = 367.45728926351524, critical_pressure = 10350775.913640998, cricondenbar_temperature = 338.16618376710414, cricondenbar_pressure = 10991706.162864981, cricondentherm_temperature = 384.01823820905895, cricondentherm_pressure = 7700041.689284624, iterations = 64 |
+| `methane_butane_from_1_bar` | components = ['methane', 'n-butane'], z = [0.5, 0.5], P = 100000.0 | critical_temperature = 375.9176903970078, critical_pressure = 9894671.315365558, cricondenbar_temperature = 338.16618376710414, cricondenbar_pressure = 10991706.162864981, cricondentherm_temperature = 384.01823820905895, cricondentherm_pressure = 7700041.689284624, iterations = 64 |
 
 ## References
 
