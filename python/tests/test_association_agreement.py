@@ -160,6 +160,13 @@ def test_the_elliott_rule_is_the_geometric_mean_of_the_pure_strengths() -> None:
 # the kernel directly and does not have to go through a cubic.
 
 
+from azoth.eos.reference._mixture_state import (  # noqa: E402
+    phase_derivatives,
+    phase_state,
+    reduced_parameters,
+)
+
+
 def _water_methanol_mixture() -> Mixture:
     """Water/methanol as `SystemSrkCPA` resolves it: SRK, the CPA column, association on."""
     return components.from_names(["water", "methanol"], eos="srk", associating=True)
@@ -362,3 +369,66 @@ def test_the_fugacity_composition_derivative_matches_its_definition() -> None:
             assert derivatives.d_ln_phi_dn[i][j] == pytest.approx(numerical, rel=1.0e-5), (
                 f"d ln phi_{i}/dn_{j}"
             )
+
+
+def test_the_associating_derivative_surface_matches_the_phase_state() -> None:
+    """`phase_derivatives` for an associating mixture, against finite differences of the state.
+
+    The same oracle the Rust twin uses, and the one that matters: `phase_state` re-solves the
+    associating root at every perturbed state, so it sees a term missing from the root's
+    sensitivities - which is where the difference lives and where a check that shared the
+    derivation could not look.
+
+    The composition family is the one that caught a real defect here: an edit that added the
+    association's contribution to `d_ln_phi_dn` silently failed to apply, and the surface
+    then returned the *cubic's* derivative - agreeing with a cubic-only finite difference
+    exactly, which is why nothing but a comparison against the full state could see it.
+    """
+    from azoth.eos import components as databank
+
+    mixture = databank.from_names(["water", "methanol"], eos="srk", associating=True)
+    t, p = (356.0, 1.0e5)
+    x = [0.6, 0.4]
+    reduced = reduced_parameters(mixture, t, p)
+    state = phase_state(reduced, mixture.kij, x, liquid=False)
+    surface = phase_derivatives(reduced, mixture.kij, x, state.z, temperature=t, pressure=p)
+
+    for i in range(2):
+        assert surface.ln_phi[i] == pytest.approx(state.ln_phi[i], rel=1.0e-12)
+
+    def ln_phi_at(temperature: float, pressure: float, composition: list[float]) -> list[float]:
+        return phase_state(
+            reduced_parameters(mixture, temperature, pressure),
+            mixture.kij,
+            composition,
+            liquid=False,
+        ).ln_phi
+
+    # Composition, at constant T and P, with the total held at one - the normalised partial.
+    h = 1.0e-7
+    for j in range(2):
+        up, down = list(x), list(x)
+        up[j] += h
+        down[j] -= h
+        up = [v / (1.0 + h) for v in up]
+        down = [v / (1.0 - h) for v in down]
+        up_ln_phi, down_ln_phi = ln_phi_at(t, p, up), ln_phi_at(t, p, down)
+        for i in range(2):
+            numerical = (up_ln_phi[i] - down_ln_phi[i]) / (2.0 * h)
+            assert surface.d_ln_phi_dn[i][j] == pytest.approx(numerical, rel=1.0e-5), (
+                f"d ln phi_{i}/dn_{j}"
+            )
+
+    step = 1.0e-3
+    up, down = ln_phi_at(t + step, p, x), ln_phi_at(t - step, p, x)
+    for i in range(2):
+        assert surface.d_ln_phi_dt[i] == pytest.approx(
+            (up[i] - down[i]) / (2.0 * step), rel=1.0e-6
+        ), f"d ln phi_{i}/dT"
+
+    step = 100.0
+    up, down = ln_phi_at(t, p + step, x), ln_phi_at(t, p - step, x)
+    for i in range(2):
+        assert surface.d_ln_phi_dp[i] == pytest.approx(
+            (up[i] - down[i]) / (2.0 * step), rel=1.0e-6
+        ), f"d ln phi_{i}/dP"

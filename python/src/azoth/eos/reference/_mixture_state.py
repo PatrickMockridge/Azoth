@@ -22,6 +22,7 @@ than bit-identically.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from azoth.core.errors import OutOfRangeError
@@ -48,6 +49,7 @@ from azoth.eos.reference._association import (
     Association,
     AssociationComponent,
     R,
+    SiteDerivatives,
     SiteScheme,
     family_of,
 )
@@ -738,6 +740,135 @@ def phase_state_at(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class _AssociationDerivatives:
+    """An associating mixture's association terms at one state.
+
+    Carried together because :func:`phase_derivatives` needs all of them at once and none is
+    meaningful alone: the root sensitivities say how ``Z`` responds to the state, ``alpha``
+    converts one to a molar volume, and the kernel's derivatives are what the association
+    adds at constant volume.
+    """
+
+    #: ``R T/P``.
+    alpha: float
+    #: ``dZ/dn_j``, at constant ``T`` and ``P``.
+    d_z_n: tuple[float, ...]
+    #: ``T dZ/dT``, at constant ``P`` and composition.
+    t_d_z: float
+    #: ``P dZ/dP``, at constant ``T`` and composition.
+    p_d_z: float
+    #: The kernel's derivatives at the converged state.
+    kernel: SiteDerivatives
+    #: The association's ``ln phi_i``, which adds to the cubic's.
+    ln_phi: tuple[float, ...]
+
+
+def _association_derivatives(
+    reduced: ReducedParameters,
+    x: list[float],
+    a_mix: float,
+    b_mix: float,
+    abar: list[float],
+    t_d_a: float,
+    t_d_b: float,
+    z: float,
+) -> _AssociationDerivatives | None:
+    """An associating mixture's root sensitivities to ``n_j``, ``T`` and ``P``.
+
+    **The root is the associating residual's, not the cubic's**, so its sensitivity is taken
+    from that residual: the cubic's own ``dZ/dn_j`` is ``-0.8`` where the associating one is
+    ``-1.7`` at the state the Rust tests measure, and the difference is the association's
+    pressure responding to the composition.
+
+    The residual is ``Q(Z) - (Z/P) P_a(x, V(Z))`` where ``Q`` is the cubic's z-cubic and
+    ``P_a = -R T d(A_assoc/(R T))/dV`` - the polynomial form ``associating_root`` solves, so
+    that ``dQ/dZ`` is the cubic's own ``df_dz`` and the two sensitivities are consistent.
+    ``Q`` vanishes at the same ``Z`` as the monic cubic's residual because it *is* that
+    residual times ``q(Z) = (Z + delta1 B)(Z + delta2 B)``.
+    """
+    association = reduced.association
+    if association is None:
+        return None
+    n = len(x)
+    cubic = reduced.cubic
+    t = reduced.t_kelvin
+    p = reduced.pressure
+    alpha = R * t / p
+    covolumes = [b_i * alpha for b_i in reduced.b]
+    v = z * alpha
+    state = association.solve(covolumes, x, v, t)
+    kernel = association.derivatives(covolumes, x, v, t, state)
+
+    b = b_mix
+    ds, dp = cubic.delta_sum, cubic.delta_prod
+    q = z * z + ds * b * z + dp * b * b
+    s_factor = (z - b) * q
+    s_prime = q + (z - b) * (2.0 * z + ds * b)
+    d_s_db = -q + (z - b) * (ds * z + 2.0 * dp * b)
+
+    p_assoc = -R * t * state.d_helmholtz_dv
+    a_vv = kernel.d2_helmholtz_dv2
+    a_vt = kernel.d2_helmholtz_dv_dt
+    fa = cubic.df_da(z, b)
+    fb = cubic.df_db(z, a_mix, b)
+    fz = cubic.df_dz(z, a_mix, b)
+
+    # `P_a` depends on `V`, and `V = Z R T/P` moves with every one of the three state
+    # variables - which is why each sensitivity below carries an `A_vv` term beside the
+    # explicit one.
+    g_z = fz - (s_prime / p) * p_assoc + s_factor * alpha * alpha * a_vv
+
+    d_a_dn = [2.0 * (abar[j] - a_mix) for j in range(n)]
+    d_b_dn = [reduced.b[j] - b_mix for j in range(n)]
+    # `dA/dn_j` and `dB/dn_j` are the *normalised* partials - the ones that hold the total
+    # mole number at one, and the ones NeqSim reports - so the association's composition
+    # derivative has to be taken the same way. The kernel's is raw, so the chain rule from
+    # `x = n/(sum n)` subtracts the composition-weighted sum of all of them, exactly as
+    # `2 abar_j` becomes `2 (abar_j - A)`.
+    weighted_a_vn = sum(x[i] * kernel.d2_helmholtz_dv_dn[i] for i in range(n))
+    d_z_n = tuple(
+        -(
+            (fa * d_a_dn[j] + fb * d_b_dn[j])
+            - d_s_db * d_b_dn[j] * p_assoc / p
+            + s_factor * alpha * (kernel.d2_helmholtz_dv_dn[j] - weighted_a_vn)
+        )
+        / g_z
+        for j in range(n)
+    )
+
+    # `T dB/dT = -B`, so `T dS/dT = -B dS/dB`, and
+    # `T dP_a/dT = P_a - R T alpha Z A_vv - R T^2 A_vt` at fixed `Z`.
+    t_d_p_assoc = p_assoc - R * t * alpha * z * a_vv - R * t * t * a_vt
+    # `T d(monic)/dT` is the chain rule over `A` and `B`, which is what `t_d_a`/`t_d_b`
+    # already carry.
+    t_d_z = (
+        -((fa * t_d_a + fb * t_d_b) + (b * d_s_db / p) * p_assoc - (s_factor / p) * t_d_p_assoc)
+        / g_z
+    )
+
+    # `P dB/dP = B`, and `P dP_a/dP = Z alpha^2 A_vv` at fixed `Z`.
+    p_d_z = (
+        -(
+            fa * a_mix
+            + fb * b
+            - d_s_db * b * p_assoc / p
+            + s_factor * p_assoc / p
+            - s_factor * z * alpha * alpha * a_vv
+        )
+        / g_z
+    )
+
+    return _AssociationDerivatives(
+        alpha=alpha,
+        d_z_n=d_z_n,
+        t_d_z=t_d_z,
+        p_d_z=p_d_z,
+        kernel=kernel,
+        ln_phi=state.ln_phi,
+    )
+
+
 def phase_derivatives(
     reduced: ReducedParameters,
     kij: tuple[tuple[float, ...], ...],
@@ -801,7 +932,40 @@ def phase_derivatives(
     # unit total mole number `dA/dn_j = 2 (abar_j - A)` and `dB/dn_j = B_j - B`.
     d_a_dn = [2.0 * (abar[j] - a_mix) for j in range(n)]
     d_b_dn = [b[j] - b_mix for j in range(n)]
-    d_z_dn = [-(fa * d_a_dn[j] + fb * d_b_dn[j]) / fz for j in range(n)]
+
+    # `A_ij` moves with temperature through the components' alphas, and its logarithmic
+    # derivative is `psi_pair - 2`. `B_ij` scales as `1/T`, so `T dB/dT = -B`. Computed
+    # here rather than below because the association's root sensitivities need both.
+    t_d_a_ij = [[0.0] * n for _ in range(n)]
+    t_d_abar = [0.0] * n
+    for i in range(n):
+        for j in range(n):
+            psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j])
+            t_d_a_ij[i][j] = a_ij[i][j] * (psi_pair - 2.0)
+            t_d_abar[i] += x[j] * t_d_a_ij[i][j]
+    t_d_a = sum(x[i] * t_d_abar[i] for i in range(n))
+    t_d_b = -b_mix
+
+    # --- the root's sensitivities --------------------------------------------
+    #
+    # **An associating mixture's root is not the cubic's, so its sensitivity is not either.**
+    # The association carries a pressure that responds to the composition and to the
+    # temperature, and the whole of the difference between this surface and the cubic's is
+    # here.
+    sensitivities = _association_derivatives(reduced, x, a_mix, b_mix, abar, t_d_a, t_d_b, z)
+    if sensitivities is None:
+        d_z_dn = [-(fa * d_a_dn[j] + fb * d_b_dn[j]) / fz for j in range(n)]
+        t_d_z = -(fa * t_d_a + fb * t_d_b) / fz
+        p_d_z = -(fa * a_mix + fb * b_mix) / fz
+    else:
+        d_z_dn = list(sensitivities.d_z_n)
+        t_d_z = sensitivities.t_d_z
+        p_d_z = sensitivities.p_d_z
+        # The association's `ln phi`, which `PhaseState::ln_phi` carries too: the surface is
+        # the same values, so a caller comparing the two must find them equal.
+        for i in range(n):
+            ln_phi[i] += sensitivities.ln_phi[i]
+
     d_coeff_dn = [
         d_a_dn[j] / (delta_diff * b_mix) - a_mix * d_b_dn[j] / (delta_diff * b_mix * b_mix)
         for j in range(n)
@@ -834,20 +998,18 @@ def phase_derivatives(
                 - coefficient * factor[i] * d_i_dn[j]
             )
 
+    # The same normalisation as the root's: the kernel's composition derivative holds the
+    # other mole numbers, not the total, so the chain rule from `x = n/(sum n)` subtracts
+    # the composition-weighted sum of the row.
+    if sensitivities is not None:
+        for i in range(n):
+            kernel_row = sensitivities.kernel.d_ln_phi_dn[i]
+            weighted = sum(x[k] * kernel_row[k] for k in range(n))
+            volume = sensitivities.alpha * sensitivities.kernel.d_ln_phi_dv[i]
+            for j in range(n):
+                d_ln_phi_dn[i][j] += kernel_row[j] - weighted + volume * sensitivities.d_z_n[j]
+
     # --- temperature, at constant pressure and composition --------------------
-    #
-    # `A_ij` moves with temperature through the components' alphas, and its logarithmic
-    # derivative is `psi_pair - 2`. `B_ij` scales as `1/T`, so `T dB/dT = -B`.
-    t_d_a_ij = [[0.0] * n for _ in range(n)]
-    t_d_abar = [0.0] * n
-    for i in range(n):
-        for j in range(n):
-            psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j])
-            t_d_a_ij[i][j] = a_ij[i][j] * (psi_pair - 2.0)
-            t_d_abar[i] += x[j] * t_d_a_ij[i][j]
-    t_d_a = sum(x[i] * t_d_abar[i] for i in range(n))
-    t_d_b = -b_mix
-    t_d_z = -(fa * t_d_a + fb * t_d_b) / fz
     t_d_coeff = t_d_a / (delta_diff * b_mix) - a_mix * t_d_b / (delta_diff * b_mix * b_mix)
     t_d_i = (t_d_z + delta1 * t_d_b) / (z + delta1 * b_mix) - (t_d_z + delta2 * t_d_b) / (
         z + delta2 * b_mix
@@ -866,12 +1028,20 @@ def phase_derivatives(
         )
         d_ln_phi_dt[i] = t_d_ln_phi / temperature
 
+    # And the association's, whose volume moves with the temperature as
+    # `dV/dT = (R/P)(Z + T dZ/dT)`.
+    if sensitivities is not None:
+        volume = sensitivities.alpha / reduced.t_kelvin * (z + sensitivities.t_d_z)
+        for i in range(n):
+            d_ln_phi_dt[i] += (
+                sensitivities.kernel.d_ln_phi_dt[i] + volume * sensitivities.kernel.d_ln_phi_dv[i]
+            )
+
     # --- pressure, at constant temperature and composition --------------------
     #
     # Every `A_i` and `B_i` is linear in `P`, so `A`, `B` and their row sums scale as
     # `P` while `coefficient` and `factor_i` - ratios of two such quantities - do not
     # move at all.
-    p_d_z = -(fa * a_mix + fb * b_mix) / fz
     p_d_i = (p_d_z + delta1 * b_mix) / (z + delta1 * b_mix) - (p_d_z + delta2 * b_mix) / (
         z + delta2 * b_mix
     )
@@ -881,6 +1051,13 @@ def phase_derivatives(
             b_ratio[i] * p_d_z - (p_d_z - b_mix) / (z - b_mix) - coefficient * factor[i] * p_d_i
         )
         d_ln_phi_dp[i] = p_d_ln_phi / pressure
+
+    # The association carries no explicit pressure, so its whole contribution is the
+    # volume's: `dV/dP = (R T/P)(dZ/dP - Z/P)`.
+    if sensitivities is not None:
+        volume = sensitivities.alpha * (sensitivities.p_d_z - z) / reduced.pressure
+        for i in range(n):
+            d_ln_phi_dp[i] += volume * sensitivities.kernel.d_ln_phi_dv[i]
 
     return PhaseDerivatives(
         ln_phi=ln_phi,
