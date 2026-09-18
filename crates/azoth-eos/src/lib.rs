@@ -38,6 +38,7 @@ pub mod ammonia_phase;
 pub mod antoine_vapor_pressure;
 pub mod argon_solid;
 pub mod argon_solid_phase;
+pub mod association;
 pub mod bubble_pressure;
 pub mod bubble_temperature;
 pub mod bwrs;
