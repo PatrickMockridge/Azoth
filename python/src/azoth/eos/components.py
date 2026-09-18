@@ -660,13 +660,13 @@ def kij_for(
     for i, a in enumerate(names):
         for j in range(i + 1, len(names)):
             from_keycard = card.kij_for(a, names[j]) if card is not None else None
-            value = (
-                from_keycard
-                if from_keycard is not None
-                else _kij().get((a.strip().lower(), names[j].strip().lower()))
-            )
-            if value is not None and value != 0.0:
-                pairs[(i, j)] = value
+            if from_keycard is not None:
+                # A card's zero is a value, not an absence - see the docstring.
+                pairs[(i, j)] = from_keycard
+                continue
+            stored = _kij().get((a.strip().lower(), names[j].strip().lower()))
+            if stored is not None and stored != 0.0:
+                pairs[(i, j)] = stored
     return pairs
 
 

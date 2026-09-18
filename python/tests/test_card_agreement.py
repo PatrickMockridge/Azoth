@@ -277,3 +277,29 @@ def test_both_readers_refuse_an_empty_coefficient() -> None:
         python_card(empty)
     with pytest.raises(InvalidInputError, match="rectangular"):
         _core.card_coefficients(empty)
+
+
+def test_a_card_stating_a_zero_pair_keeps_it_on_both_sides() -> None:
+    """A card's `value = 0.0` means "reset this pair to ideal mixing", not "no value".
+
+    The databank's own zero *is* an absence - it is the ideal-mixture default - so the
+    two are distinguished by where the value came from, not by the number. Read as a
+    number the distinction is lost, and a caller overriding a fitted pair back to ideal
+    mixing would be silently given the fitted one back.
+    """
+    text = (
+        'schema_version = 2\n[[kij]]\ncomponent_a = "methane"\n'
+        'component_b = "n-butane"\nvalue = 0.0\n'
+    )
+    card = python_card(text)
+    mine = components.kij_for(("methane", "n-butane"), card=card)
+    assert mine == {(0, 1): 0.0}, "the card's zero must survive the Python reader"
+
+    theirs = _core.overlay_kij_rows(rust_card(text))
+    assert [(a, b, value) for a, b, value in theirs] == [("methane", "n-butane", 0.0)], (
+        "and the Rust reader's, so the two agree"
+    )
+
+    # The pair is genuinely one the table fits, so a zero is a change rather than a
+    # restatement of what is already there.
+    assert components.kij_for(("methane", "n-butane")) != {(0, 1): 0.0}
