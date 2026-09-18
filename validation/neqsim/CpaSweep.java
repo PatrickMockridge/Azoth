@@ -42,6 +42,30 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * make "which component" the first question rather than the association.
  *
  * <p>
+ * <b>What the finite-difference keys found.</b> At 356 K and 1 bara, water/methanol
+ * 0.6/0.4: {@code F_scale_two} is exactly {@code 2 * F_res_over_R}, so {@code getF()} is
+ * extensive and {@code dF = sum_i dFdN_i dn_i + FV dV} applies to it. The two isolated
+ * differences then give {@code dFdN_fd = [-0.0419683, -0.0743505]} against NeqSim's own
+ * {@code dFdN = [-0.0901941, -0.1211108]} - factors that differ per component, so not a
+ * scale slip. The weighted sum {@code sum_i n_i dFdN_fd_i = -0.0549213} agrees to four
+ * digits with the scale derivative {@code F - FV*V = -0.0549212}, which is derived without
+ * any of those differences, so the finite differences and {@code FV()} are consistent with
+ * each other and with extensivity.
+ *
+ * <p>
+ * So <b>{@code ComponentEos.dFdN} is not the derivative of {@code ComponentEos.getF}</b>,
+ * while {@code ComponentSrkCPA.dFCPAdN} is - the association's own derivative is a true
+ * one. {@code getF()}'s form is verified, not read: {@code F_reconstructed} reproduces it
+ * to every printed digit on every row.
+ *
+ * <p>
+ * <b>What that does not yet settle</b> is whether the same is true for a plain cubic, and
+ * it matters: if it is, NeqSim's ordinary cubic {@code ln phi} is not {@code integral dFdN}
+ * either, and its cubic flashes still agree with azoth's - so the error would have to
+ * cancel in {@code ln phi_L - ln phi_V}. That is a {@code SystemPrEos} sweep, and it is the
+ * next measurement rather than a conclusion.
+ *
+ * <p>
  * {@code CpaProbe} remains the single-state kernel probe the Rust tests cite; this is the
  * grid driver, and it reproduces every {@code CpaProbe} reading as a one-case run.
  *
@@ -179,8 +203,40 @@ public final class CpaSweep {
     // difference between the two columns rather than as a wrong answer somewhere later.
     {"F_res_over_R", "PhaseEos.getF(), overridden by PhaseSrkCPA", "no single azoth counterpart",
         "the residual Helmholtz over R; includes the association"},
+    {"FV", "PhaseEos.FV()", "no single azoth counterpart", "dF/dV at constant n and T"},
+    {"V_total", "PhaseInterface.getTotalVolume()", "z R T / P", "NeqSim's internal volume scale"},
     {"F_reconstructed", "-n*getg() - (getA()/T)*getf_loc() + FCPA", "-",
         "must equal F_res_over_R; the check on getA()'s scale"},
+    // **The one key that settles whether NeqSim's `dFdN` is the derivative of its own `F`.**
+    //
+    // `F` is a function of `(T, V, n)`, so along *any* path
+    // `dF = sum_i (dF/dn_i)|_{T,V} dn_i + (dF/dV)|_{T,n} dV`. Perturbing ONE mole number at
+    // constant `T` and `P` therefore isolates `(dF/dn_i)|_{T,V}`:
+    //
+    //     dFdN_fd[i] = (F(n + d e_i) - F(n)) / d  -  FV() * (V(n + d e_i) - V(n)) / d
+    //
+    // with `V` the *total* volume, because `F` is extensive. No prescribed-volume state is
+    // needed, which is what makes this measurable from a driver that only knows how to run
+    // `init(1)` at a temperature and a pressure.
+    //
+    // `dFdN[i]` is NeqSim's own `ComponentEos.dFdN`. If the two agree, its assembly
+    // `Fn + FB*getBi() + FD*getAi()` is a true derivative and the residual Helmholtz
+    // *functions* differ between it and azoth; if they disagree, `dFdN` is not the
+    // derivative of its own `F` and the finding is upstream, of the `calc_lngij` kind.
+    {"dFdN_fd[0]", "the identity above, at a perturbation of 1e-7 in n_water", "no counterpart",
+        "= dFdN[0] iff NeqSim's dFdN is the derivative of its own F"},
+    {"dFdN_fd[1]", "the same, perturbing n_methanol", "no counterpart", "see above"},
+    // The finite difference's raw ingredients, so the arithmetic can be checked rather than
+    // trusted. `F_scale_two` is also the extensivity test: doubling every mole number at
+    // the same T and P doubles an extensive `F` and leaves a molar one alone.
+    {"F_nwater_up", "getF() at n_water + 1e-7", "-", ""},
+    {"F_nwater_down", "getF() at n_water - 1e-7", "-", ""},
+    {"V_nwater_up", "getTotalVolume() at n_water + 1e-7", "-", "internal scale"},
+    {"V_nwater_down", "getTotalVolume() at n_water - 1e-7", "-", "internal scale"},
+    {"F_methanol_up", "getF() at n_methanol + 1e-7", "-", ""},
+    {"F_methanol_down", "getF() at n_methanol - 1e-7", "-", ""},
+    {"F_scale_two", "getF() with every mole number doubled", "no counterpart",
+        "= 2 * F_res_over_R iff F is extensive"},
     {"g_helmholtz", "PhaseEos.getg()", "no single azoth counterpart", "the (Z - B) term"},
     {"f_loc", "PhaseEos.getf_loc()", "no single azoth counterpart", "the (Z + d1 B)/(Z + d2 B) term"},
     {"n_moles", "PhaseInterface.getNumberOfMolesInPhase()", "1.0", ""},
@@ -232,16 +288,24 @@ public final class CpaSweep {
     row.put(key, String.format("%.15g", value));
   }
 
-  /** One state, filled in build order. A failure anywhere records itself and stops. */
-  private static Map<String, String> one(double temperature, double pressure, double nWater) {
+  /**
+   * One state, filled in build order, at an explicit pair of mole numbers.
+   *
+   * Split from {@link #one} because the finite-difference keys need to perturb one mole
+   * number while holding the other, which a `(T, P, x_water)` signature cannot express.
+   * A failure anywhere records itself and stops.
+   */
+  private static Map<String, String> oneRaw(
+      double temperature, double pressure, double nWater, double nMethanol) {
     Map<String, String> row = new LinkedHashMap<>();
     put(row, "T_K", temperature);
     put(row, "P_bara", pressure);
     put(row, "n_water", nWater);
+    put(row, "n_methanol", nMethanol);
 
     SystemInterface system = new SystemSrkCPA(temperature, pressure);
     system.addComponent("water", nWater);
-    system.addComponent("methanol", 1.0 - nWater);
+    system.addComponent("methanol", nMethanol);
     system.setMixingRule(10);
     system.init(0);
     system.init(1);
@@ -297,6 +361,8 @@ public final class CpaSweep {
     // The raw building blocks, then the three phase functions `ComponentEos.dFdN`
     // contracts with `Bi` and `Ai`.
     put(row, "F_res_over_R", ((PhaseEos) phase).getF());
+    put(row, "FV", phase.FV());
+    put(row, "V_total", phase.getTotalVolume());
     put(row, "g_helmholtz", ((PhaseEos) phase).getg());
     put(row, "f_loc", ((PhaseEos) phase).getf_loc());
     put(row, "n_moles", phase.getNumberOfMolesInPhase());
@@ -339,6 +405,51 @@ public final class CpaSweep {
         put(row, "flash_x[" + i + "][" + j + "]", flashed.getComponent(j).getx());
       }
     }
+    return row;
+  }
+
+  /**
+   * The state, plus the two finite-difference keys that say whether NeqSim's `dFdN` is the
+   * derivative of its own `F`.
+   *
+   * `F` is a function of `(T, V, n)`, so along any path `dF = sum_i dFdN_i dn_i + FV dV`.
+   * Perturbing one mole number at constant `T` and `P` therefore isolates `dFdN_i` once
+   * the volume's share is subtracted - and no prescribed-volume state is needed, which is
+   * what makes this measurable from `init(1)` alone.
+   */
+  private static Map<String, String> one(double temperature, double pressure, double nWater) {
+    Map<String, String> row = oneRaw(temperature, pressure, nWater, 1.0 - nWater);
+    double nMethanol = 1.0 - nWater;
+    double d = 1.0e-7;
+    double[] base = {
+      Double.parseDouble(row.get("F_res_over_R")),
+      0.0,
+    };
+    base[1] = Double.parseDouble(row.get("FV"));
+    // Component 0: `n_water` moves, methanol held.
+    double fUp = Double.parseDouble(oneRaw(temperature, pressure, nWater + d, nMethanol).get("F_res_over_R"));
+    double fDown = Double.parseDouble(oneRaw(temperature, pressure, nWater - d, nMethanol).get("F_res_over_R"));
+    double vUp = Double.parseDouble(oneRaw(temperature, pressure, nWater + d, nMethanol).get("V_total"));
+    double vDown = Double.parseDouble(oneRaw(temperature, pressure, nWater - d, nMethanol).get("V_total"));
+    put(row, "dFdN_fd[0]", (fUp - fDown) / (2.0 * d) - base[1] * (vUp - vDown) / (2.0 * d));
+    // Component 1: methanol moves, water held.
+    fUp = Double.parseDouble(oneRaw(temperature, pressure, nWater, nMethanol + d).get("F_res_over_R"));
+    fDown = Double.parseDouble(oneRaw(temperature, pressure, nWater, nMethanol - d).get("F_res_over_R"));
+    vUp = Double.parseDouble(oneRaw(temperature, pressure, nWater, nMethanol + d).get("V_total"));
+    vDown = Double.parseDouble(oneRaw(temperature, pressure, nWater, nMethanol - d).get("V_total"));
+    put(row, "dFdN_fd[1]", (fUp - fDown) / (2.0 * d) - base[1] * (vUp - vDown) / (2.0 * d));
+
+    // The ingredients, so the arithmetic above can be checked by hand, and the extensivity
+    // test: doubling every mole number at the same T and P doubles an extensive `F` and
+    // leaves a molar one alone. Which of the two `getF()` is decides whether the identity
+    // the finite difference rests on even applies to it.
+    put(row, "F_nwater_up", Double.parseDouble(oneRaw(temperature, pressure, nWater + d, nMethanol).get("F_res_over_R")));
+    put(row, "F_nwater_down", Double.parseDouble(oneRaw(temperature, pressure, nWater - d, nMethanol).get("F_res_over_R")));
+    put(row, "V_nwater_up", Double.parseDouble(oneRaw(temperature, pressure, nWater + d, nMethanol).get("V_total")));
+    put(row, "V_nwater_down", Double.parseDouble(oneRaw(temperature, pressure, nWater - d, nMethanol).get("V_total")));
+    put(row, "F_methanol_up", Double.parseDouble(oneRaw(temperature, pressure, nWater, nMethanol + d).get("F_res_over_R")));
+    put(row, "F_methanol_down", Double.parseDouble(oneRaw(temperature, pressure, nWater, nMethanol - d).get("F_res_over_R")));
+    put(row, "F_scale_two", Double.parseDouble(oneRaw(temperature, pressure, 2.0 * nWater, 2.0 * nMethanol).get("F_res_over_R")));
     return row;
   }
 
