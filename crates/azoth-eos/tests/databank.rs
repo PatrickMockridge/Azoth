@@ -583,43 +583,47 @@ fn an_associating_mixture_resolves_neqsims_parameters() {
     }
 }
 
-/// **The CPA root is not NeqSim's, and the cause is not yet identified.**
+/// The CPA root, against NeqSim's, and the two mechanisms that get it there.
 ///
-/// This test records a gap rather than a property, and deliberately does not name a
-/// cause it has not established.
+/// This test began as the record of a 47% divergence. It is now a bound: the root agrees
+/// to better than a tenth of a percent, and both of the things that close the gap are
+/// named and measured rather than assumed.
 ///
-/// What is measured. `CpaProbe` reports `Z = 0.105050962879418` for this fluid at 300 K
-/// and 100 bar, and this library solves `0.1543689586897346` - molar volumes of
-/// `2.6203e-5` against `3.8510e-5 m3/mol`.
+/// `CpaProbe` reports `Z = 0.105050962879418` for water/methanol 0.6/0.4 at 300 K and
+/// 100 bar. Three numbers, in the order they were found:
 ///
-/// What is ruled out. The gap is **not** the volume correction, which was the first
-/// guess and is wrong. NeqSim's `SystemSrkCPA` does call `useVolumeCorrection(true)`, and
-/// `ComponentSrk.getVolumeCorrection` is `0.40768 (0.29441 - Z_RA) R Tc/Pc` - for water
-/// `-2.5148594e-5` in NeqSim's internal units, a shift of `0.0006` in `Z` once weighted
-/// by the mixture. Two orders of magnitude short.
+/// | | Z | vs NeqSim |
+/// |---|---|---|
+/// | the cubic's root | `0.1543689586897346` | 47% |
+/// | with the association's pressure | `0.1055749107607865` | 0.50% |
+/// | with the CPA volume translation | `0.1049699745940` | 0.077% |
 ///
-/// The volume correction *is* real and is not applied here, and `volcorrCPA_T` and
-/// `racketZCPA` are carried by the loader for when it is. It is simply not the cause.
+/// **The association's pressure is the bulk of it.** `PhaseSrkCPA.molarVolume` solves
+/// `BonV - (B/n) dFdV() - P B/(n R T) = 0`, and `PhaseSrkCPA.dFdV()` is
+/// `super.dFdV() + dFCPAdV()` - the cubic *plus* the association - so NeqSim's root is
+/// where the *total* pressure equals the specified one. An associating mixture's root is
+/// not a root of the cubic: NeqSim's own `A = 0.4968008214` and `B = 0.0845923635` give a
+/// cubic root of `0.15229232`, and the association moves it 31%.
 ///
-/// What the numbers say instead. The probe prints the phase's own dimensional `A` and
-/// `B`: `30909.5819051180` and `2.11002000000000`, which reduce to `A = 0.4968008214`
-/// and `B = 0.0845923635`. Solving `Z^3 - Z^2 + (A - B - B^2) Z - A B` at those values
-/// gives a liquid root of `0.15229232` - and this library's `0.15437` is that root, to
-/// about a percent. So the cubic agrees with NeqSim's *parameters* and NeqSim's reported
-/// root is not the cubic's root of them.
+/// **The volume translation is the rest.** `ComponentSrk.getVolumeCorrection` is
+/// `0.40768 (0.29441 - Z_RA) R Tc/Pc`, with `racketZCPA` for the Rackett compressibility;
+/// water's is `0.296941807` and gives `-2.5148594e-5` in NeqSim's internal units, while
+/// **methanol's is zero, which turns the translation off entirely** rather than falling
+/// back to the acentric-factor form.
 ///
-/// The cause, found by reading `PhaseSrkCPA.molarVolume` after two wrong guesses. That
-/// method solves `h = BonV - (B/n) dFdV() - P B/(n R T) = 0` for `BonV = B/V`, and
-/// `PhaseSrkCPA.dFdV()` is `super.dFdV() + dFCPAdV()` - **the cubic plus the association**.
+/// **What is left is 0.077% of `Z`, and the candidate is the mixture's attraction.**
+/// Measured at this state: the reduced `B` agrees with NeqSim to `1e-9` (`0.0845923635`),
+/// but the reduced `A` is `0.4797370` here against the probe's `0.4968008214` - 3.4%
+/// apart, and in the direction that moves the root by about what is left. Both reduce the
+/// same per-component values, so the difference is in how they are **mixed**: this
+/// library uses the classical `sum_i sum_j x_i x_j sqrt(A_i A_j)(1 - kij)`, and NeqSim's
+/// `SystemSrkCPA` runs `setMixingRule(10)` - a CPA rule, not the classical one.
 ///
-/// So NeqSim's volume root is where the *total* pressure equals the specified one, not
-/// where the cubic's does. An associating mixture's root is not a root of the cubic, and
-/// this library takes it from `pr_z_factor`/`srk_z_factor`. The association's pressure is
-/// `-(R T) d(A_assoc/(R T))/dV`, which the kernel already carries as
-/// `SiteDerivatives`/`SiteState::d_helmholtz_dv`, so the missing piece is a root-finder
-/// over `Z` for an associating mixture rather than a formula.
+/// That is the next question, and it is a read of `CPAMixingRuleHandler` rather than a
+/// guess. Two causes have already been guessed from the size of a gap and both were
+/// wrong.
 #[test]
-fn the_cpa_root_is_not_neqsims_yet() {
+fn the_cpa_root_matches_neqsim() {
     use azoth_core::units::{kelvins, pascals};
     use azoth_eos::{Cubic, RootSide};
 
@@ -636,8 +640,7 @@ fn the_cpa_root_is_not_neqsims_yet() {
         .expect("a liquid root");
 
     // The fluid is the same one before the root is compared at all: the probe reports a
-    // dimensional `B` of `2.11002000000000`, which reduces to `0.0845923635`, and that is
-    // `sum_i x_i b_i P/(R T)` over this library's fitted covolumes.
+    // dimensional `B` of `2.11002000000000`, which reduces to `0.0845923635`.
     let b_mix: f64 = reduced.b[0] * 0.6 + reduced.b[1] * 0.4;
     assert!(
         (b_mix / 0.084_592_363_5 - 1.0).abs() < 1.0e-9,
@@ -645,9 +648,9 @@ fn the_cpa_root_is_not_neqsims_yet() {
     );
 
     assert!(
-        (state.z / 0.105_050_962_879_418 - 1.0).abs() > 0.4,
-        "NeqSim reports 0.105050962879418 and this library solves {}; if they have \
-         converged, the cause has been found and this test is the record that it was",
+        (state.z / 0.105_050_962_879_418 - 1.0).abs() < 1.0e-3,
+        "the liquid root: azoth {} vs NeqSim 0.105050962879418 - a gap above a tenth of \
+         a percent means one of the two mechanisms above has regressed",
         state.z
     );
 }

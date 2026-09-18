@@ -588,11 +588,188 @@ impl Mixture {
                 (roots.z_min, roots.z_max)
             }
         };
-        let z = match side {
+        let seed = match side {
             RootSide::Liquid => z_min,
             RootSide::Vapour => z_max,
         };
+        let _ = seed;
+        // An associating mixture's root is **not** a root of the cubic: the association
+        // contributes to the pressure, and NeqSim's `PhaseSrkCPA.molarVolume` solves for
+        // the volume where the *total* pressure equals the specified one. See
+        // [`Self::associating_root`].
+        let z = match self.association() {
+            Some(association) => {
+                let root = self.associating_root(reduced, x, &association, side)?;
+                // The CPA volume translation, applied to the root rather than solved for:
+                // NeqSim's `molarVolume` runs its iteration on the equation of state's
+                // volume and adds `sum_i x_i c_i` at the end.
+                root + self.association_volume_shift(reduced, x)
+            }
+            None => seed,
+        };
         self.phase_state_at(reduced, x, z)
+    }
+
+    /// `sum_i x_i c_i P/(R T)`, the CPA volume translation in reduced form.
+    ///
+    /// `ComponentSrk.getVolumeCorrection` is
+    /// `0.40768 (0.29441 - Z_RA) R Tc/Pc`, with `Z_RA` NeqSim's Rackett compressibility -
+    /// `racketZCPA` for a CPA component, and `0.29056 - 0.08775 omega` where the table
+    /// has none. **A `racketZCPA` of zero turns the translation off entirely** rather
+    /// than falling back: `ComponentSrkCPA.getVolumeCorrection` returns zero for it, which
+    /// is why methanol carries none and water does.
+    fn association_volume_shift(&self, reduced: &ReducedParameters, x: &[f64]) -> f64 {
+        let mut shift = 0.0;
+        for (component, &fraction) in self.components.iter().zip(x) {
+            let Some(record) = component.association.as_ref() else {
+                // A component with no scheme has no `racketZCPA`, and NeqSim's CPA
+                // override returns zero for that rather than falling back to the
+                // acentric-factor form - so it contributes no translation either.
+                continue;
+            };
+            if record.racket_z.abs() < 1.0e-10 {
+                continue;
+            }
+            let c =
+                0.40768 * (0.29441 - record.racket_z) * R * component.tc.value / component.pc.value;
+            shift += fraction * c;
+        }
+        shift * reduced.pressure / (R * reduced.t_kelvin)
+    }
+
+    /// The root of an associating mixture's equation of state.
+    ///
+    /// **The association carries a pressure, so the root is not the cubic's.**
+    /// `PhaseSrkCPA.molarVolume` solves `BonV - (B/n) dFdV() - P B/(n R T) = 0`, and
+    /// `PhaseSrkCPA.dFdV()` is `super.dFdV() + dFCPAdV()` - the cubic *plus* the
+    /// association. Measured on water/methanol at 300 K and 100 bar that is the whole of
+    /// the difference between this library's `Z = 0.15437` and NeqSim's `0.10505`, and it
+    /// is not a small correction to the cubic root: NeqSim's own `A` and `B` give a cubic
+    /// root of `0.15229`, so the association moves the root by 31%.
+    ///
+    /// The residual, with `A` and `B` the reduced parameters at the specified pressure and
+    /// `P_a = -R T d(A_assoc/(R T))/dV` evaluated at `V = Z R T/P`:
+    ///
+    /// ```text
+    /// f(Z) = Z - Z/(Z - B) + A Z/((Z + d1 B)(Z + d2 B)) - P_a Z/P
+    /// ```
+    ///
+    /// The first three terms are the cubic's own residual, so a non-associating component
+    /// of the sum reduces to `f_cubic` exactly.
+    ///
+    /// **Newton from the cubic root, with a bisection fallback.** NeqSim Newton-solves
+    /// with the second and third volume derivatives and a damping rule; a numerical
+    /// derivative and a bracket is this library's house style where the analytic form
+    /// would be another derivation, and the seed being the cubic root means the fallback
+    /// is only reached when the association has moved the root out of the basin.
+    ///
+    /// # Errors
+    /// * Propagates the association solve's errors.
+    /// * [`AzothError::OutOfRange`] if no root is found above `B`.
+    fn associating_root(
+        &self,
+        reduced: &ReducedParameters,
+        x: &[f64],
+        association: &Association,
+        side: RootSide,
+    ) -> Result<f64> {
+        let (a_mix, b_mix) = self.mixture_parameters(reduced, x);
+        // The cubic's own root for this side is the seed, and its ordering is what picks
+        // the branch: the association moves a root, it does not choose between them.
+        let seed = match self.cubic {
+            Cubic::Pr | Cubic::Tst => match side {
+                RootSide::Liquid => pr_z_factor(a_mix, b_mix)?.z_min,
+                RootSide::Vapour => pr_z_factor(a_mix, b_mix)?.z_max,
+            },
+            Cubic::Srk | Cubic::Rk => match side {
+                RootSide::Liquid => srk_z_factor(a_mix, b_mix)?.z_min,
+                RootSide::Vapour => srk_z_factor(a_mix, b_mix)?.z_max,
+            },
+        };
+        let (r, t, p) = (R, reduced.t_kelvin, reduced.pressure);
+        let delta1 = self.cubic.delta1();
+        let delta2 = self.cubic.delta2();
+        // The covolumes in m3/mol, recovered from their reduced form. The kernel is
+        // invariant under a common rescaling of covolume and volume, and `V = Z R T/P`
+        // below is SI, so these must be too.
+        let covolumes: Vec<f64> = reduced.b.iter().map(|b| b * r * t / p).collect();
+
+        // One association solve per evaluation: `d(A/(RT))/dV` is on the state the solve
+        // already returns, so this needs no derivative call of its own.
+        let residual = |z: f64| -> Result<f64> {
+            let v = z * r * t / p;
+            let state = association.solve(&covolumes, x, v, t)?;
+            let p_assoc = -r * t * state.d_helmholtz_dv;
+            let cubic =
+                z - z / (z - b_mix) + a_mix * z / ((z + delta1 * b_mix) * (z + delta2 * b_mix));
+            Ok(cubic - p_assoc * z / p)
+        };
+
+        // Newton, with the step capped to a tenth of the distance to the covolume so it
+        // cannot cross the `Z > B` boundary where the cubic term is singular.
+        let mut z = seed.max(b_mix * 1.000_001);
+        for _ in 0..60 {
+            let value = residual(z)?;
+            if value.abs() < 1.0e-12 {
+                return Ok(z);
+            }
+            let step = 1.0e-7 * z.abs().max(1.0e-6);
+            let slope = (residual(z + step)? - value) / step;
+            if !slope.is_finite() || slope == 0.0 {
+                break;
+            }
+            let mut delta = -value / slope;
+            let ceiling = 0.1 * (z - b_mix);
+            if delta.abs() > ceiling {
+                delta = ceiling * delta.signum();
+            }
+            let next = z + delta;
+            if !next.is_finite() || next <= b_mix {
+                break;
+            }
+            z = next;
+        }
+
+        // The fallback: scan for a sign change and bisect. NeqSim reaches
+        // `molarVolumeChangePhase` on the same failure, so arriving here is upstream's
+        // behaviour and not a port artifact.
+        let ceiling = match side {
+            RootSide::Liquid => seed.max(1.0),
+            RootSide::Vapour => (seed * 8.0).max(1.0),
+        };
+        let floor = b_mix * 1.000_001;
+        let steps = 400;
+        let mut previous = floor;
+        let mut previous_value = residual(previous)?;
+        for step in 1..=steps {
+            let z_try = floor + (ceiling - floor) * (step as f64) / (steps as f64);
+            let value = residual(z_try)?;
+            if previous_value == 0.0 {
+                return Ok(previous);
+            }
+            if previous_value.signum() != value.signum() {
+                let (mut lo, mut hi) = (previous, z_try);
+                for _ in 0..200 {
+                    let mid = 0.5 * (lo + hi);
+                    if residual(lo)?.signum() == residual(mid)?.signum() {
+                        lo = mid;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                return Ok(0.5 * (lo + hi));
+            }
+            previous = z_try;
+            previous_value = value;
+        }
+        Err(AzothError::OutOfRange {
+            field: "z".to_string(),
+            value: seed,
+            detail: format!(
+                "no volume root for this associating mixture above B = {b_mix}: the \
+                 residual has no sign change between the covolume and {ceiling}"
+            ),
+        })
     }
 
     /// The state of one phase, at a root the caller has already chosen.
