@@ -50,6 +50,7 @@ result announces the placeholder status.
 
 from __future__ import annotations
 
+import importlib
 from typing import Any
 
 from azoth import core
@@ -73,8 +74,10 @@ __version__ = "0.1.0"
 
 # Imported last: `azoth.hydraulics` pulls in the dispatch layer, which imports
 # this package's submodules. Keeping it at the bottom means everything it needs
-# is already bound.
-from azoth import batch, eos, hydraulics, keycard, process, properties, thermal
+# is already bound. `process` is not in this list: it is the one namespace with
+# no pure-Python reference, so importing it needs the compiled extension, and
+# `import azoth` must not. It is imported lazily by `__getattr__` below.
+from azoth import batch, eos, hydraulics, keycard, properties, thermal
 
 __all__ = [
     "AzothError",
@@ -108,6 +111,16 @@ __all__ = [
     "ureg",
     "use_backend",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Import `azoth.process` on first use: it needs the compiled extension, and
+    `import azoth` must not (the docs generator imports azoth from source)."""
+    if name == "process":
+        module = importlib.import_module("azoth.process")
+        globals()[name] = module
+        return module
+    raise AttributeError(name)
 
 
 def backends() -> frozenset[Backend]:
