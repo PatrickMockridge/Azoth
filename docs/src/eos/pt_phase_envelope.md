@@ -52,7 +52,7 @@ not an equation, and both implementations read it from here.
 | `dew_pressure` | Pa | the dew-point pressures along the envelope, in trace order |
 | `bubble_temperature` | K | the bubble-point temperatures along the envelope, in trace order |
 | `bubble_pressure` | Pa | the bubble-point pressures along the envelope, in trace order |
-| `cricondenbar_temperature` | K | the temperature at the cricondenbar, the highest pressure on the envelope |
+| `cricondenbar_temperature` | K | the temperature at the cricondenbar, the highest pressure on the envelope. **The least well-determined output here**: it is a *maximum*, so `dP/dT = 0` there and many temperatures carry almost the same pressure. NeqSim gives `344.99 K`, this `338.17 K`, the pressures `0.08 bar` apart. |
 | `cricondenbar_pressure` | Pa | the cricondenbar, the highest pressure on the envelope |
 | `cricondentherm_temperature` | K | the cricondentherm, the highest temperature on the envelope |
 | `cricondentherm_pressure` | Pa | the pressure at the cricondentherm |

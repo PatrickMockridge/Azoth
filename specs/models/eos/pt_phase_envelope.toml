@@ -66,7 +66,11 @@ length = "one entry per traced bubble point"
 description = "the bubble-point pressures along the envelope, in trace order"
 [outputs.cricondenbar_temperature]
 unit = "K"
-description = "the temperature at the cricondenbar, the highest pressure on the envelope"
+description = """\
+    the temperature at the cricondenbar, the highest pressure on the envelope. **The least \
+    well-determined output here**: it is a *maximum*, so `dP/dT = 0` there and many temperatures \
+    carry almost the same pressure. NeqSim gives `344.99 K`, this `338.17 K`, the pressures `0.08 \
+    bar` apart."""
 [outputs.cricondenbar_pressure]
 unit = "Pa"
 description = "the cricondenbar, the highest pressure on the envelope"
