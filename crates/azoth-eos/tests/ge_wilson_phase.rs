@@ -67,7 +67,7 @@ fn every_case_in_the_spec() {
 /// satisfies, because `ComponentGE.fugcoef` is one method and none of them overrides it.
 #[test]
 fn the_fugacity_coefficient_is_gamma_times_p0_over_p() {
-    let names = ["nc10", "nc12"];
+    let names = ["nc10", "n-octane"];
     let params = ge_wilson_phase_parameters(&names, None).unwrap();
     let (mixture, _) = mixture_of(&names, None).unwrap();
     let (t, p) = (298.15, 100_000.0);
@@ -85,7 +85,7 @@ fn the_fugacity_coefficient_is_gamma_times_p0_over_p() {
 /// The activity coefficients are `eos.wilson_activity_coefficients`', not a second copy.
 #[test]
 fn the_activity_coefficients_are_the_wilson_models() {
-    let names = ["nc10", "nc12"];
+    let names = ["nc10", "n-octane"];
     let params = ge_wilson_phase_parameters(&names, None).unwrap();
     let (mixture, _) = mixture_of(&names, None).unwrap();
     let r = ge_wilson_phase(&params, &mixture, 298.15, 100_000.0, &[0.5, 0.5]).unwrap();
@@ -148,7 +148,7 @@ fn three_ge_phases_share_the_vapour_pressure_and_not_the_activity() {
 #[test]
 fn a_henrys_law_component_is_refused_rather_than_computed() {
     for name in ["n-butane", "CO2", "methane", "n-hexane"] {
-        let err = ge_wilson_phase_parameters(&[name, "nc12"], None).unwrap_err();
+        let err = ge_wilson_phase_parameters(&[name, "n-octane"], None).unwrap_err();
         assert!(
             matches!(err, AzothError::InvalidInput { .. }),
             "{name}: {err:?}"
@@ -158,7 +158,7 @@ fn a_henrys_law_component_is_refused_rather_than_computed() {
 
 #[test]
 fn a_composition_that_does_not_sum_to_one_is_refused() {
-    let names = ["nc10", "nc12"];
+    let names = ["nc10", "n-octane"];
     let params = ge_wilson_phase_parameters(&names, None).unwrap();
     let (mixture, _) = mixture_of(&names, None).unwrap();
     let err = ge_wilson_phase(&params, &mixture, 298.15, 100_000.0, &[0.6, 0.6]).unwrap_err();

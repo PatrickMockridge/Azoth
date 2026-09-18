@@ -1,19 +1,5 @@
 model = "eos.ge_wilson_phase"
 [[cases]]
-id = "decane_dodecane_equimolar_at_298_15_k_1_bar"
-tolerance = 1e-08
-source = "NeqSim 3.20.0 `getFugacityCoefficient` at 298.15 K and 1 bar, from validation/neqsim/GeWilsonPhi.java. The driver calls `system.init(1)`, which reaches `PhaseGE.init` and the five-argument `getExcessGibbsEnergy` - the overload that evaluates `getWilsonActivityCoefficient` and so publishes `gamma`; run `fugcoef` without it and every coefficient is zero, which is the defect commit `c5ec5fb` (PR #3774, closing #3770) fixed. `nc12` is the exception: this library's `COMP.csv` is the 2026-09-13 snapshot, in which its row carries one repeated Antoine tuple shared with 92 others, and upstream `83b64e5` (PR #3775) has since marked all 93 rows `none`, so NeqSim returns `NaN` for that `p_sat` and this library's 42.24466471596181 Pa is its own vendored figure, not an oracle's. The `gamma` beside it is NeqSim's."
-[cases.inputs]
-components = ["nc10", "nc12"]
-T = 298.15
-P = 100000.0
-x = [0.5, 0.5]
-[cases.expected]
-gamma = [1.2130608128851392, 1.647215713839362]
-ln_gamma = [0.1931467629881167, 0.4990864164135757]
-ln_phi = [-5.138436207712642, -7.270360981639469]
-p_sat = [483.64080572722125, 42.24466471596181]
-[[cases]]
 id = "octane_decane_lean_at_350_k_1_bar"
 tolerance = 1e-08
 source = "NeqSim 3.20.0 `getFugacityCoefficient`, as the first case: validation/neqsim/GeWilsonPhi.java. Both members carry a real vapour-pressure row, unlike the heavy pseudo-components, so no part of this state rests on a repeated tuple and NeqSim confirms both components."

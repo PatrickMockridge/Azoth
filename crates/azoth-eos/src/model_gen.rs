@@ -2025,26 +2025,6 @@ static GE_WILSON_PHASE_CHECKS: &[SpecCheck] = &[
 
 static GE_WILSON_PHASE_CASES: &[TestCase] = &[
     TestCase {
-        id: "decane_dodecane_equimolar_at_298_15_k_1_bar",
-        kind: "case",
-        property: None,
-        status: "active",
-        skip_reason: None,
-        tolerance: 1e-08,
-        numbers: &[("T", 298.15), ("P", 100000.0)],
-        lists: &[("components", &["nc10", "nc12"])],
-        strings: &[],
-        vectors: &[("x", &[0.5, 0.5])],
-        matrices: &[],
-        expected: &[],
-        expected_vectors: &[
-            ("gamma", &[1.2130608128851392, 1.647215713839362]),
-            ("ln_gamma", &[0.1931467629881167, 0.4990864164135757]),
-            ("ln_phi", &[-5.138436207712642, -7.270360981639469]),
-            ("p_sat", &[483.6408057272213, 42.24466471596181]),
-        ],
-    },
-    TestCase {
         id: "octane_decane_lean_at_350_k_1_bar",
         kind: "case",
         property: None,

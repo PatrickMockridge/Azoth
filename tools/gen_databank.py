@@ -90,7 +90,7 @@ VENDORED_FILES = (
 #: one revision of the file it came from.
 NEQSIM_VERSION = "3.20.0"
 NEQSIM_COMMIT = "dedba8735d030c6411e09b6fd7e69f6c4a136114"
-CITATION = f"NeqSim v{NEQSIM_VERSION} COMP.csv (Equinor/NTNU), Apache-2.0, retrieved 2026-09-13"
+CITATION = f"NeqSim v{NEQSIM_VERSION} COMP.csv (Equinor/NTNU), Apache-2.0, retrieved 2026-09-18"
 
 #: Output column -> (NeqSim column, conversion). The conversions are the ones
 #: documented above, each with the reason it is that and not another.

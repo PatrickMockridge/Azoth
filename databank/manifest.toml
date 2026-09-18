@@ -4,7 +4,7 @@ id = "neqsim"
 project = "NeqSim"
 url = "https://github.com/equinor/neqsim"
 version = "3.20.0"
-commit = "dedba8735d030c6411e09b6fd7e69f6c4a136114"
+commit = "805cf0f910819a19fdc45702fc44c4a3675d93d8"
 licence = "Apache-2.0"
 retrieved = 2026-09-13
 notice = "NOTICE"
@@ -13,8 +13,8 @@ id = "neqsim/COMP.csv"
 upstream_path = "src/main/resources/data/COMP.csv"
 vendored_source = "databank/sources/neqsim/COMP.csv"
 compiled_to = "data/components/components.csv"
-source_rows = 257
-compiled_rows = 173
+source_rows = 389
+compiled_rows = 286
 generated = ["citation"]
 [[upstreams.files.rows]]
 selector = "COMPTYPE == 'ion'"
@@ -170,6 +170,10 @@ name = "ANTOINEE"
 disposition = "used"
 as = "antoinee"
 unit = "neqsim-internal"
+[[upstreams.files.columns]]
+name = "InChIKey"
+disposition = "dropped"
+reason = "not-a-value: a structural hash of the substance, an identifier rather than a parameter. Upstream added the column in the refresh this pin moves to; nothing here reads an identifier, and a row is already keyed by `name`."
 [[upstreams.files.columns]]
 name = "DIPOLEMOMENT"
 disposition = "used"

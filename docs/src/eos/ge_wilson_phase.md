@@ -44,10 +44,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 ## Assumptions
 
 - this is NeqSim's `PhaseGEWilson` liquid: `phi_i = gamma_i P0_i / P`, which is what `ComponentGE.fugcoef` sets and what no GE phase overrides. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.
-- this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 49 of the databank's 173 substances are tagged so, and a phase over one is refused.
+- this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 51 of the databank's 286 substances are tagged so, and a phase over one is refused.
 - `gamma_i` is `eos.wilson_activity_coefficients`', from the paraffin-wax Wilson correlation on each component's molar mass and critical temperature, and `P0_i` is `eos.antoine_vapor_pressure`'s. Neither is recomputed here.
 - NeqSim supplies this coefficient and the oracle reads its own: commit `c5ec5fb` (PR #3774, closing upstream #3770) stores `gamma` in `getWilsonActivityCoefficient` and delegates `getGamma` to it, so `ComponentGE.fugcoef` reads a published value where it used to read zero.
-- `nc12` is not oracle-confirmed. Its `COMP.csv` row is one repeated Antoine tuple this library vendored on 2026-09-13 and shares with 92 others; upstream `83b64e5` (PR #3775) has since marked all 93 `none` - unavailable data - so NeqSim returns `NaN` where this computes 42.24466471596181 Pa.
+- **a component whose Antoine data upstream has retracted is refused**, not evaluated: `nc12` and the acids are among the 93 rows that carried one repeated filler tuple and that `83b64e5` (PR #3775) has since marked `none`. A phase over one raises `PropertyUnavailable`.
 - `P0_i` is reported beside `ln_phi` so a reader can check the correlation and the arithmetic separately; a wrong `P0` and a wrong `gamma` produce the same kind of wrong answer.
 - this is a *liquid* phase. A vapour over it is a cubic, and combining the two is a gamma-phi flash, which is a separate model.
 - `x` is checked (non-negative, sums to one) rather than renormalised.
@@ -56,7 +56,6 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `decane_dodecane_equimolar_at_298_15_k_1_bar` | components = ['nc10', 'nc12'], T = 298.15, P = 100000.0, x = [0.5, 0.5] | gamma = [1.2130608128851392, 1.647215713839362], ln_gamma = [0.1931467629881167, 0.4990864164135757], ln_phi = [-5.138436207712642, -7.270360981639469], p_sat = [483.6408057272213, 42.24466471596181] |
 | `octane_decane_lean_at_350_k_1_bar` | components = ['n-octane', 'nc10'], T = 350.0, P = 100000.0, x = [0.4, 0.6] | gamma = [1.3244982894719637, 1.2690654430682413], ln_gamma = [0.28103373827725736, 0.23828075798428433], ln_phi = [-0.7223683220963804, -2.469267539112864], p_sat = [36663.00196112154, 6670.013533199678] |
 | `heptane_nonane_at_320_k_1_bar` | components = ['n-heptane', 'n-nonane'], T = 320.0, P = 100000.0, x = [0.6, 0.4] | gamma = [1.11569378278132, 1.6877976784227413], ln_gamma = [0.10947643811901124, 0.5234245302358307], ln_phi = [-1.2171489374520243, -2.6890676330028507], p_sat = [26537.12803675743, 4025.616322494449] |
 

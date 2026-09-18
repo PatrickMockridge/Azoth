@@ -93,7 +93,11 @@ def test_an_unknown_name_is_refused_rather_than_substituted() -> None:
     with pytest.raises(PropertyUnavailableError) as excinfo:
         component("unobtainium")
     assert "unobtainium" in str(excinfo.value)
-    assert "173" in str(excinfo.value), "the message should say how many there are"
+    # The count is read rather than written: it is the databank's size, and a data refresh
+    # moves it without moving this test's subject.
+    from azoth.eos.components import available
+
+    assert str(len(available())) in str(excinfo.value), "the message should say how many there are"
 
 
 def test_a_name_is_matched_case_insensitively() -> None:
