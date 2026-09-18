@@ -59,6 +59,21 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * to every printed digit on every row.
  *
  * <p>
+ * <b>What the flash keys found.</b> At 356 K and 1 bara the flash splits, and the liquid's
+ * mixture parameters are not the feed's. <b>NeqSim's {@code getA}, {@code getB} and
+ * {@code getAi} are extensive over the phase's moles</b>: at that liquid, {@code beta} =
+ * 0.7916164, {@code getB()} is {@code beta} times {@code sum_i x_i b_i} to every printed
+ * digit, {@code getA()} is {@code beta^2} times the double sum {@code sum_i sum_j x_i x_j
+ * (1 - k_ij) sqrt(a_i a_j)}, and {@code getAi_i} is {@code 2 beta} times the row sum
+ * {@code sum_j x_j (1 - k_ij) sqrt(a_i a_j)} - with {@code k_ij = -0.153}, the
+ * {@code cpakij_SRK} column, which is what {@code getA()} and the {@code aT} keys alone
+ * return, to a relative {@code 5e-15}. The factor of
+ * two that was recorded as unexplained is this and nothing else: {@code getAi} is
+ * {@code dA/dn_i} of a degree-two {@code A}, so it carries a 2 that {@code getBi = dB/dn_i}
+ * does not. At the feed, one mole total, every one of these equals the intensive azoth
+ * value - which is why nothing before the flash could tell the two conventions apart.
+ *
+ * <p>
  * <b>What that does not yet settle</b> is whether the same is true for a plain cubic, and
  * it matters: if it is, NeqSim's ordinary cubic {@code ln phi} is not {@code integral dFdN}
  * either, and its cubic flashes still agree with azoth's - so the error would have to
@@ -119,12 +134,14 @@ public final class CpaSweep {
     // `aT(temperature)`. For a CPA component with a fitted set this is `aCPA * alpha(T)`
     // with the Soave alpha carrying the *fitted* `mCPA` (ComponentSrkCPA:142,
     // `getAttractiveTerm().setm(mCPA)`), which is the whole of the substitution.
-    {"aT[0]", "ComponentEos.aT / 1e5", "reduced.a[0] * R^2 T^2 / P", "water; SI Pa*m^6/mol^2"},
-    {"aT[1]", "ComponentEos.aT / 1e5", "reduced.a[1] * R^2 T^2 / P", "methanol"},
-    {"sqrtAT[0]", "ComponentEos.sqrtAT / sqrt(1e5)", "sqrt(reduced.a[0] * R^2 T^2 / P)", "water"},
-    {"sqrtAT[1]", "ComponentEos.sqrtAT / sqrt(1e5)", "sqrt(reduced.a[1] * R^2 T^2 / P)", "methanol"},
-    {"b[0]", "ComponentEos.getBi() / 1e5", "reduced.b[0] * R T / P", "water; m^3/mol"},
-    {"b[1]", "ComponentEos.getBi() / 1e5", "reduced.b[1] * R T / P", "methanol"},
+    // Every value below is dimensional SI: the internal scale is undone by the division in
+    // the method column, so the counterpart names azoth's quantity and nothing more.
+    {"aT[0]", "ComponentEos.aT / 1e5", "reduced.a[0]", "water; SI Pa*m^6/mol^2"},
+    {"aT[1]", "ComponentEos.aT / 1e5", "reduced.a[1]", "methanol"},
+    {"sqrtAT[0]", "ComponentEos.sqrtAT / sqrt(1e5)", "sqrt(reduced.a[0])", "water"},
+    {"sqrtAT[1]", "ComponentEos.sqrtAT / sqrt(1e5)", "sqrt(reduced.a[1])", "methanol"},
+    {"b[0]", "ComponentEos.getBi() / 1e5", "reduced.b[0]", "water; m^3/mol"},
+    {"b[1]", "ComponentEos.getBi() / 1e5", "reduced.b[1]", "methanol"},
     {"calca[0]", "ComponentSrkCPA.calca() / 1e5", "the fitted aCPA, SI", "water; internal * 1e5"},
     {"calca[1]", "ComponentSrkCPA.calca() / 1e5", "the fitted aCPA, SI", "methanol"},
     {"calcb[0]", "ComponentSrkCPA.calcb() / 1e5", "the fitted bCPA, SI", "water"},
@@ -136,17 +153,24 @@ public final class CpaSweep {
     {"volume[0]", "ComponentSrkCPA.getAssociationVolume()", "AssociationComponent.volume", "kappa_AB"},
     {"volume[1]", "ComponentSrkCPA.getAssociationVolume()", "AssociationComponent.volume", "kappa_AB"},
     // --- the mixture -----------------------------------------------------------------
-    // `getA()` and `getB()` are the *mixture's* reduced-scale parameters in NeqSim's
-    // internal scale, so dividing by 1e5 gives the dimensional `a_mix`.
-    // **`getAi()` is NOT a pure component's `a`**: `EosMixingRuleHandler.calcAi` returns
-    // `sum_j n_j (1 - k_ij) sqrt(a_i a_j)`, the interaction row sum. It is printed here so
-    // that it is on the record as what it is.
-    {"A_mix", "PhaseSrkEos.getA() / 1e5", "a_mix * R^2 T^2 / P", "SI Pa*m^6/mol^2"},
-    {"B_mix", "PhaseSrkEos.getB() / 1e5", "b_mix * R T / P", "m^3/mol"},
-    {"Ai[0]", "PhaseSrkEos.getAi() / 1e5", "abar[0] * R^2 T^2 / P",
-        "ROW SUM, not a pure a; measured 2x azoth's abar at every state, unexplained"},
-    {"Ai[1]", "PhaseSrkEos.getAi() / 1e5", "abar[1] * R^2 T^2 / P",
-        "ROW SUM, not a pure a; measured 2x azoth's abar at every state, unexplained"},
+    // **`getA()` and `getB()` are EXTENSIVE over the phase's moles**, `getAi()` and
+    // `getBi()` their composition derivatives. `ClassicSRK.calcB` is `sum_i n_i b_i` (when
+    // `bmixType == 0`) and `ClassicSRK.calcA` is `sum_i sum_j n_i n_j (1 - k_ij) sqrt(a_i
+    // a_j)`; `ClassicSRK.calcAi` returns `2 sum_j n_j sqrt(a_i a_j)(1 - k_ij)` and `calcBi`
+    // returns `b_i`, so `Ai_i` is `dA/dn_i` and `Bi_i` is `dB/dn_i`. `A` being degree two
+    // and `B` degree one is the whole of why `Ai` carries a `2` and a `beta` that `Bi`
+    // does not - the asymmetry that read for a session as an unexplained factor of two.
+    //
+    // azoth carries the intensive (per-mole) parameters. At the feed, one mole total, the
+    // two coincide to every digit, which is why nothing before the flash exposed the
+    // convention; at a phase carrying `beta` of the feed's moles they are `beta^2 * a_mix`,
+    // `beta * b_mix` and `2 * beta * abar_i`.
+    {"A_mix", "PhaseSrkEos.getA() / 1e5", "beta^2 * a_mix", "SI Pa*m^6/mol^2; beta = 1 here"},
+    {"B_mix", "PhaseSrkEos.getB() / 1e5", "beta * b_mix", "m^3/mol; beta = 1 here"},
+    {"Ai[0]", "PhaseSrkEos.getAi() / 1e5", "2 * beta * abar[0]",
+        "the ROW SUM, not a pure a; dA/dn_0; beta = 1 here"},
+    {"Ai[1]", "PhaseSrkEos.getAi() / 1e5", "2 * beta * abar[1]",
+        "the ROW SUM, not a pure a; dA/dn_1; beta = 1 here"},
     // --- the root --------------------------------------------------------------------
     {"Z", "PhaseInterface.getZ()", "PhaseState.z", ""},
     // **`getMolarVolume()` is NOT m^3/mol.** It is 1e5 x the SI value, the same internal
@@ -286,6 +310,20 @@ public final class CpaSweep {
     // finding measured by `CpaFdMismatch`) or the root.
     {"flash_lnPhi[1][0]", "log(ComponentSrkCPA.getFugacityCoefficient()) on the flashed liquid",
         "PhaseState.ln_phi[0]", "the comparison this key exists for"},
+    // The per-component and per-mixture inputs the cubic `ln phi` is built from, at a flashed
+    // phase. Every one of them has only ever been checked at the *feed*, and the cubic part
+    // is the whole of what still differs there. This is the pair of rows that exposed the
+    // extensivity above: `aT` and `b` are per component and carry no `beta`, while `A`, `B`
+    // and `Ai` are built from the phase's mole numbers and carry `beta^2`, `beta`, `beta`.
+    {"flash_aT[1][0]", "ComponentEos.aT / 1e5 on the flashed liquid", "reduced.a[0]",
+        "water; SI Pa*m^6/mol^2; the fitted aCPA times alpha, no beta"},
+    {"flash_b[1][0]", "ComponentEos.getBi() / 1e5 on the flashed liquid", "reduced.b[0]",
+        "water; m^3/mol; the fitted bCPA, no beta"},
+    {"flash_Ai[1][0]", "PhaseSrkEos.getAi() / 1e5 on the flashed liquid", "2 * beta * abar[0]",
+        "the ROW SUM, not a pure a; dA/dn_0"},
+    {"flash_A_mix[1]", "PhaseSrkEos.getA() / 1e5 on the flashed liquid", "beta^2 * a_mix",
+        "beta = this phase's moles over the feed's"},
+    {"flash_B_mix[1]", "PhaseSrkEos.getB() / 1e5 on the flashed liquid", "beta * b_mix", ""},
     {"flash_lnPhi[1][1]", "the same, component 1", "PhaseState.ln_phi[1]", ""},
     {"flash_lnPhi[0][0]", "the same, on the flashed gas", "PhaseState.ln_phi[0]", ""},
     {"flash_lnPhi[0][1]", "the same, component 1", "PhaseState.ln_phi[1]", ""},
@@ -467,6 +505,14 @@ public final class CpaSweep {
       for (int j = 0; j < n; j++) {
         put(row, "flash_lnPhi[" + i + "][" + j + "]",
             Math.log(flashed.getComponent(j).getFugacityCoefficient()));
+      }
+      put(row, "flash_A_mix[" + i + "]", flashed.getA() / 1e5);
+      put(row, "flash_B_mix[" + i + "]", flashed.getB() / 1e5);
+      for (int j = 0; j < n; j++) {
+        ComponentEos ce = (ComponentEos) flashed.getComponent(j);
+        put(row, "flash_aT[" + i + "][" + j + "]", ce.aT / 1e5);
+        put(row, "flash_b[" + i + "][" + j + "]", ce.getBi() / 1e5);
+        put(row, "flash_Ai[" + i + "][" + j + "]", ce.getAi() / 1e5);
       }
       put(row, "flash_FCPA_sum[" + i + "]", fcpa_sum(flashed, n));
       put(row, "flash_hcpa[" + i + "]", ((PhaseCPAInterface) flashed).getHcpatot());
