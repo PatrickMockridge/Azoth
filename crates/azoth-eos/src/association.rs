@@ -895,6 +895,15 @@ pub struct SiteDerivatives {
     pub d2_helmholtz_dv2: f64,
     /// `d^2 X_A / dV^2`, one per site.
     pub d2_fractions_dv2: Vec<f64>,
+    /// `d^2 X_A / dV dn_a`, indexed `[site][component]`.
+    ///
+    /// The mixed companion of `d2_fractions_dv2`, and not derivable from it: the flash's
+    /// constant-`T,P` conversion needs `dV/dn_a`, and the associating volume residual's
+    /// response to composition runs through this rather than through the pure second
+    /// derivative. See [`Self::d2_helmholtz_dv_dn`].
+    pub d2_fractions_dv_dn: Vec<Vec<f64>>,
+    /// `d^2 (A_assoc/(R T)) / dV dn_a`, one per component.
+    pub d2_helmholtz_dv_dn: Vec<f64>,
 }
 
 impl Association {
@@ -957,6 +966,8 @@ impl Association {
                 d_helmholtz_dt: 0.0,
                 d2_helmholtz_dv2: 0.0,
                 d2_fractions_dv2: Vec::new(),
+                d2_fractions_dv_dn: vec![vec![0.0; n]; sites],
+                d2_helmholtz_dv_dn: vec![0.0; n],
             });
         }
 
@@ -1133,6 +1144,100 @@ impl Association {
             })
             .sum();
 
+        // --- the mixed second derivative, `d^2 / dV dn_b` ---------------------------
+        //
+        // The same identity with `p = V` and `q = n_b`, and the cross terms do not
+        // collapse the way the `V,V` case's do, because `F_{XV}` and `F_{X n_b}` are
+        // different matrices:
+        //
+        //   J X^{(V n_b)} = -(F_{V n_b} + F_{XV} X^{(n_b)} + F_{X n_b} X^{(V)}
+        //                     + H_{ABC} X^{(V)}_B X^{(n_b)}_C)
+        //
+        // **`F_{X n_b}` carries one term the `V` version has no analogue for.** `F_{X_c}`
+        // holds `X_a m_c Delta_ac / V`, and `m_c` *is* `n_b` when `c` is one of b's sites -
+        // so perturbing a mole number moves that factor inside the product as well as
+        // beside it.
+        let mut rhs_mixed = vec![vec![0.0; sites]; n];
+        for b in 0..n {
+            let x_n = &rhs[b];
+            for a in 0..sites {
+                let drho = rdf.d_ln_g_dv - 1.0 / v;
+                let explicit: f64 = (0..sites)
+                    .filter(|&k| self.component_of_site(k) == b)
+                    .map(|k| delta[a * sites + k] * x[k])
+                    .sum();
+                let d_s_dn = explicit / v + rdf.d_ln_g_dn[b] * s[a];
+                // `F_V = X_a drho S_a`, so this is the product rule over `drho` and `S_a`.
+                let f_vn =
+                    x[a] * (rdf.d2_ln_g_dn_dv(covolumes[b], sum_b, v) * s[a] + drho * d_s_dn);
+
+                let mut total = 0.0;
+                for c in 0..sites {
+                    let m_c = moles[self.component_of_site(c)];
+                    let f_xv = drho
+                        * (x[a] * m_c * delta[a * sites + c] / v + if a == c { s[a] } else { 0.0 });
+                    total += f_xv * x_n[c];
+                }
+                for c in 0..sites {
+                    let m_c = moles[self.component_of_site(c)];
+                    let owns = if self.component_of_site(c) == b {
+                        delta[a * sites + c]
+                    } else {
+                        0.0
+                    };
+                    let f_xn = if a == c { d_s_dn } else { 0.0 }
+                        + x[a] * (owns + m_c * delta[a * sites + c] * rdf.d_ln_g_dn[b]) / v;
+                    total += f_xn * x_v[c];
+                }
+                for p in 0..sites {
+                    for c in 0..sites {
+                        let m_p = moles[self.component_of_site(p)];
+                        let m_c = moles[self.component_of_site(c)];
+                        let h_abc = (if a == p {
+                            m_c * delta[a * sites + c]
+                        } else {
+                            0.0
+                        } + if a == c {
+                            m_p * delta[a * sites + p]
+                        } else {
+                            0.0
+                        }) / v;
+                        total += h_abc * x_v[p] * x_n[c];
+                    }
+                }
+                rhs_mixed[b][a] = -(f_vn + total);
+            }
+        }
+        if !solve_many(&jacobian, &mut rhs_mixed, sites) {
+            return Err(AzothError::invalid_input(
+                "site fractions",
+                "the site-fraction Jacobian is singular, so the association's mixed second \
+                 derivatives are not defined at this state",
+            ));
+        }
+
+        // `A/(RT) = sum_A m_A (ln X_A - X_A/2 + 1/2)`, so the mixed derivative is the
+        // product rule over the mole number *and* the fraction: a site of component b
+        // contributes its own `m` term, every site contributes the two `X`-derivative
+        // terms.
+        let d2_helmholtz_dv_dn: Vec<f64> = (0..n)
+            .map(|b| {
+                let x_n = &rhs[b];
+                (0..sites)
+                    .map(|a| {
+                        let weight = 1.0 / x[a] - 0.5;
+                        let own = if self.component_of_site(a) == b {
+                            weight * x_v[a]
+                        } else {
+                            0.0
+                        };
+                        own + moles[self.component_of_site(a)]
+                            * (-x_n[a] * x_v[a] / (x[a] * x[a]) + weight * rhs_mixed[b][a])
+                    })
+                    .sum()
+            })
+            .collect();
+
         let mut d_ln_phi_dn = vec![vec![0.0; n]; n];
         let mut d_ln_phi_dt = vec![0.0; n];
         let mut d_ln_phi_dv = vec![0.0; n];
@@ -1164,6 +1269,10 @@ impl Association {
             d_helmholtz_dt,
             d2_helmholtz_dv2,
             d2_fractions_dv2: rhs2[n].clone(),
+            d2_fractions_dv_dn: (0..sites)
+                .map(|a| (0..n).map(|b| rhs_mixed[b][a]).collect())
+                .collect(),
+            d2_helmholtz_dv_dn,
         })
     }
 }
@@ -1803,6 +1912,73 @@ mod tests {
             "d2(A/(RT))/dV2: analytic {} vs numerical {numerical}",
             d.d2_helmholtz_dv2
         );
+    }
+
+    /// The mixed derivative, against finite differences of the first derivatives.
+    ///
+    /// **The oracle is deliberately not the derivation.** The routes that disagreed here
+    /// before both went through the same identity, so assembling the right-hand side from a
+    /// numerically differenced `F_V` and `J` reproduced the analytic answer exactly and
+    /// only the finite difference disagreed. `d_fractions_dv` and `d_helmholtz_dv` are each
+    /// established against the *solve* elsewhere in this file, which is what makes
+    /// differencing them an independent voice.
+    ///
+    /// Both directions are taken: `d/dn_j` of the volume derivatives, and `d/dV` of the
+    /// composition derivative, which reach the same mixed partial by different routes.
+    #[test]
+    fn the_mixed_derivative_matches_finite_differences_of_the_first() {
+        let (a, b, n, v, t) = water_and_methanol();
+        let state = a.solve(&b, &n, v, t).expect("solves");
+        let d = a.derivatives(&b, &n, v, t, &state).expect("differentiable");
+
+        // `h` is a central difference's: the truncation falls as `h^2` until round-off
+        // takes over as `1/h`, and `1e-7` is where the two balance. Measured, the worst
+        // relative agreement there is `1e-9`.
+        let step = 1.0e-7;
+        for j in 0..n.len() {
+            let shifted = |sign: f64| {
+                let mut moles = n;
+                moles[j] += sign * step;
+                let s = a.solve(&b, &moles, v, t).expect("solves");
+                let dd = a.derivatives(&b, &moles, v, t, &s).expect("differentiable");
+                (dd.d_fractions_dv, s.d_helmholtz_dv)
+            };
+            let (up, up_phi) = shifted(1.0);
+            let (down, down_phi) = shifted(-1.0);
+
+            for site in 0..a.site_count() {
+                let numerical = (up[site] - down[site]) / (2.0 * step);
+                assert!(
+                    (d.d2_fractions_dv_dn[site][j] / numerical - 1.0).abs() < 1.0e-6,
+                    "d2X_{site}/dV dn_{j}: analytic {} vs numerical {numerical}",
+                    d.d2_fractions_dv_dn[site][j]
+                );
+            }
+
+            let numerical = (up_phi - down_phi) / (2.0 * step);
+            assert!(
+                (d.d2_helmholtz_dv_dn[j] / numerical - 1.0).abs() < 1.0e-6,
+                "d2(A/(RT))/dV dn_{j}: analytic {} vs numerical {numerical}",
+                d.d2_helmholtz_dv_dn[j]
+            );
+        }
+
+        // The other order: `d/dV` of `dX/dn_j`, which is the same mixed partial.
+        let fractions_n = |vol: f64| -> Vec<Vec<f64>> {
+            let s = a.solve(&b, &n, vol, t).expect("solves");
+            a.derivatives(&b, &n, vol, t, &s)
+                .expect("differentiable")
+                .d_fractions_dn
+        };
+        let (up, down) = (fractions_n(v + step), fractions_n(v - step));
+        let mut worst = 0.0f64;
+        for site in 0..a.site_count() {
+            for j in 0..n.len() {
+                let numerical = (up[site][j] - down[site][j]) / (2.0 * step);
+                worst = worst.max((d.d2_fractions_dv_dn[site][j] / numerical - 1.0).abs());
+            }
+        }
+        assert!(worst < 1.0e-6, "d/dV of dX/dn_j disagrees by {worst:e}");
     }
 
     #[test]
