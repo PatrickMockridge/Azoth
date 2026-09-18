@@ -6,9 +6,9 @@
 
 ## Source
 
-**Michelsen, M. L. (1980)**
+**Michelsen, M. L. (1980), with `eos.critical_point` for the critical point**
 
-Calculation of phase envelopes and critical points for multicomponent mixtures. Fluid Phase Equilibria 4(1-2), 1-10.
+The trace is Michelsen's natural-parameter continuation; the critical point is Heidemann & Khalil's construction, on the feed composition.
 
 DOI: [10.1016/0378-3812(80)80001-8](https://doi.org/10.1016/0378-3812(80)80001-8)
 
@@ -56,10 +56,10 @@ not an equation, and both implementations read it from here.
 | `cricondenbar_pressure` | Pa | the cricondenbar, the highest pressure on the envelope |
 | `cricondentherm_temperature` | K | the cricondentherm, the highest temperature on the envelope |
 | `cricondentherm_pressure` | Pa | the pressure at the cricondentherm |
-| `critical_temperature` | K | the critical temperature, where the dew and bubble branches meet and every K-value is one |
-| `critical_pressure` | Pa | the critical pressure |
+| `critical_temperature` | K | the critical temperature, from `eos.critical_point` on the feed. On the validated case it is `0.21 K` from NeqSim's `374.3214 K`. |
+| `critical_pressure` | Pa | the critical pressure, from the same construction |
 | `iterations` | dimensionless | the number of continuation points traced |
-| `residual` | K | the temperature gap between the two branches' refined critical points: zero when they agree, which is the statement that the branches meet. A *difference of two singular-system solves*, so reproducible only to about `1e-2 K`. It was `9.40 K` before the refinement. |
+| `residual` | K | the gap between where the two branches stopped. They approach the critical point from opposite sides, so it is the width of the bracket they put around it - the trace's own statement that it reached the critical point. `NaN` when a branch ran into the pressure ceiling instead. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -70,9 +70,10 @@ not an equation, and both implementations read it from here.
 
 - A component's `Tc`, `Pc`, `omega` and every `kij` come from the databank (`data/components/`, from NeqSim's `COMP.csv` and `INTER.csv`) with the keycard's overrides applied.
 - the equation of state is Peng-Robinson with the coefficient `eos.pr_kappa` computes, and the mixture fugacity coefficient is the one `eos.pt_flash` uses.
-- the bubble and dew branches are traced separately, each at a fixed, tiny vapour fraction - near zero and near one - bootstrapped at the low pressure and continued upward to the critical point where every K-value is one.
-- the critical point is *detected* where the lightest K-value falls below 1.05 and the heaviest's rises above 0.95, and **refined** by a Newton on `sum (ln K)^2 = 0`. The crossing is where a heuristic fires; the refinement is the definition, and it moved the answer to `375.92 K` from `367.46`.
-- each branch stops at the crossing and refines there rather than continuing *through* the critical point onto the other branch as NeqSim does, so the branches refine independently and `residual` is `0.31 K` rather than zero.
+- the bubble and dew branches are traced separately, each at a fixed, tiny vapour fraction - near zero and near one - bootstrapped at the low pressure and continued upward until every K-value has nearly collapsed to one.
+- **the critical point is computed, not refined out of the trace.** It is `eos.critical_point`'s Heidemann-Khalil construction on the feed: at an isopleth's critical point the two phases carry the feed's composition. Newtoning `sum (ln K)^2 = 0` from the trace does not work.
+- a branch stops where the lightest K-value falls below 1.05 and the heaviest's rises above 0.95. That window is a heuristic and a coarse step can jump it, so a branch may stop a kelvin or two past the critical point.
+- each branch stops at the critical region rather than continuing *through* the critical point onto the other branch as NeqSim does, so the two traces are independent and `residual` reports the bracket they put around the critical point.
 - the next point is predicted by a cubic through the last four converged points and the step size is clamped to at most 10 K and 10 bar per point.
 - the envelope is for mixtures; a single component's envelope is its vapour-pressure curve, which `eos.pure_saturation` computes.
 - no energy balance. The envelope is a phase-equilibrium locus, not a statement about how a stream got there.
@@ -81,9 +82,9 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_butane_from_1_bar` | components = ['methane', 'n-butane'], z = [0.5, 0.5], P = 100000.0 | critical_temperature = 375.9176903970078, critical_pressure = 9894671.315365558, cricondenbar_temperature = 338.16618376710414, cricondenbar_pressure = 10991706.162864981, cricondentherm_temperature = 384.01823820905895, cricondentherm_pressure = 7700041.689284624, iterations = 64 |
+| `methane_butane_from_1_bar` | components = ['methane', 'n-butane'], z = [0.5, 0.5], P = 100000.0 | critical_temperature = 374.10816823385227, critical_pressure = 9847254.291361708, cricondenbar_temperature = 338.1730734329673, cricondenbar_pressure = 10991724.974149518, cricondentherm_temperature = 384.01825099724374, cricondentherm_pressure = 7700036.838731829, iterations = 62 |
 
 ## References
 
 - Michelsen, M. L. (1980). "Calculation of phase envelopes and critical points for multicomponent mixtures." Fluid Phase Equilibria 4(1-2), 1-10. DOI 10.1016/0378-3812(80)80001-8.
-- Cismondi, M.; Michelsen, M. L. (2007). "Global phase equilibrium calculations: Critical lines, critical end points and liquid-liquid-vapour equilibrium in binary mixtures." The Journal of Supercritical Fluids 39(3), 287-295. DOI 10.1016/j.supflu.2006.03.011.
+- Heidemann, R. A.; Khalil, A. M. (1980). "The calculation of critical points." AIChE Journal 26(5), 769-779. DOI 10.1002/aic.690260510.

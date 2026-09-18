@@ -6,15 +6,29 @@
 //! boundary. It is traced as two independent natural-parameter continuations - the
 //! bubble branch at a tiny vapour fraction and the dew branch at one minus it - each
 //! bootstrapped at a low pressure where its K-values are far from one, then continued
-//! upward to the critical point where every K-value collapses to one. The `N+2`
+//! upward until the two phases have nearly collapsed onto one another. The `N+2`
 //! unknowns `(ln K_i, ln T, ln P)` satisfy `N` isofugacity equations, one material
 //! balance, and one specification equation that pins the most sensitive variable so the
 //! trace can turn the corner at the cricondenbar and cricondentherm.
 //!
 //! The next point is predicted by a cubic through the last four converged points and
-//! then polished by a damped Newton step. The Jacobian is taken by central difference,
-//! the same choice the flash-property solver makes rather than porting NeqSim's analytic
-//! fugacity-derivative surface.
+//! then polished by a damped Newton step. **The Jacobian is analytic**, from
+//! [`Mixture::phase_derivatives`] - the surface P6 item 2 ported, and the reason that item
+//! exists. It was a central difference until this pass, which cost `N+3` state evaluations per
+//! Newton step, each of them two cubic solves; NeqSim's own `setJac` is analytic too, so the
+//! difference was a divergence as well as an expense.
+//!
+//! **The critical point is computed, not refined out of the trace.** At the critical point of
+//! the isopleth the two phases have the feed's composition, which is exactly the problem
+//! [`crate::critical_point`] solves by the Heidemann-Khalil construction; the other candidate,
+//! Newtoning `sum_i (ln K_i)^2 = 0` beside the isofugacity rows from a state the trace has
+//! brought close, does not work here and was measured not to: with every `K_i = 1` the two
+//! phases have the same composition, so the isofugacity rows are `ln phi^V_i - ln phi^L_i`,
+//! which is zero wherever the cubic has one root, and the system is therefore satisfied on a
+//! two-parameter *family* rather than at a point. Measured on methane/n-butane 50/50 at three
+//! separate states, all three residuals were exactly zero and the Newton never moved. Where it
+//! does move it is not converging: across five compositions it returned `42.74 K` on one branch
+//! against Heidemann-Khalil's `275.62 K`.
 //!
 //! **`RobustPhaseEnvelope` is named and not ported.** NeqSim carries a second envelope
 //! driver under that name, 517 lines in `phaseenvelopeops/`, and **nothing constructs
@@ -26,18 +40,20 @@
 use azoth_core::units::{Pressure, kelvins, pascals};
 use azoth_core::{AzothError, Result, apply_checks};
 
-use crate::mixture::{Mixture, RootSide};
+use crate::mixture::{Mixture, RootSide, normalise};
 use crate::model_gen;
 use crate::phase_boundary::{self, WILSON_CONSTANT};
 use crate::results::PtPhaseEnvelopeResult;
 
 /// The vapour fraction on the bubble branch: `x_i ~= z_i`, so the feed is liquid.
 ///
-/// Small but not below the central-difference step, so the numerical Jacobian can
-/// resolve how the compositions depend on the K-values.
-const BUBBLE_BETA: f64 = 1.0e-6;
+/// Upstream's own value - `ThermodynamicOperations.calcPTphaseEnvelope` passes `phasefraction =
+/// 1e-10` - and it was `1e-6` here until this pass. Measured, the difference is nil: the two
+/// give the same envelope to every reported digit, because the trace's state is fixed by the
+/// isofugacity equations rather than by how far from the boundary it is placed.
+const BUBBLE_BETA: f64 = 1.0e-10;
 /// The vapour fraction on the dew branch: `y_i ~= z_i`, so the feed is vapour.
-const DEW_BETA: f64 = 1.0 - 1.0e-6;
+const DEW_BETA: f64 = 1.0 - 1.0e-10;
 /// Maximum temperature step per continuation point, in kelvin.
 const D_TMAX: f64 = 10.0;
 /// Maximum pressure step per continuation point, in pascal (10 bar).
@@ -88,7 +104,19 @@ fn solve_linear(a: &mut [Vec<f64>], b: &mut [f64]) -> Option<Vec<f64>> {
     Some(x)
 }
 
+/// A copy of a vector scaled to sum to one.
+fn normalised(values: &[f64]) -> Vec<f64> {
+    let mut out = values.to_vec();
+    normalise(&mut out);
+    out
+}
+
 /// The two phase compositions at a vapour fraction, from `K_i = y_i / x_i`.
+///
+/// **The vectors returned are mole *numbers*, not compositions**, and their sums are one only
+/// when the material balance already holds - which is what the residual's last-but-one row
+/// tests. That is deliberate: the row *is* their difference, the Rachford-Rice residual, and it
+/// is identically zero if they are normalised. Callers that want a composition normalise.
 fn compositions(z: &[f64], k: &[f64], beta: f64) -> (Vec<f64>, Vec<f64>) {
     let n = z.len();
     let mut x = vec![0.0; n];
@@ -101,28 +129,72 @@ fn compositions(z: &[f64], k: &[f64], beta: f64) -> (Vec<f64>, Vec<f64>) {
     (x, y)
 }
 
-/// What the system's last row pins: an ordinary continuation point, or the critical point.
+/// What the system's last row pins: a state variable held at a value.
 ///
-/// The critical row is `sum_i (ln K_i)^2 = 0`, which is zero exactly when every K-value is one.
-/// Its Jacobian row is `2 ln K_i` and zero in the two state columns, which the central
-/// difference below produces without being told.
+/// The continuation's specification equation. There was a second variant here, the criticality
+/// row `sum_i (ln K_i)^2 = 0`, until the critical point stopped being refined out of the trace;
+/// see the module note for why that refinement is not a computation.
 #[derive(Debug, Clone, Copy)]
 enum LastRow {
     /// A state variable pinned to a value: row `u[index] - value`.
     Pinned { index: usize, value: f64 },
-    /// `sum_i (ln K_i)^2`, the criticality condition.
-    Critical,
 }
 
-/// The `N+2` residuals: `[isofugacity; material balance; last row]`.
+/// The residuals, and on request their analytic Jacobian.
 ///
-/// `u` is `[ln K_i; ln T; ln P]`.
-fn residual(mixture: &Mixture, u: &[f64], beta: f64, z: &[f64], last: LastRow) -> Result<Vec<f64>> {
+/// `u` is `[ln K_i; ln T; ln P]`; `last` is the system's final row.
+struct Point {
+    /// The `N+2` residuals.
+    f: Vec<f64>,
+    /// The `N+2` by `N+2` Jacobian, when it was asked for.
+    jac: Option<Vec<Vec<f64>>>,
+}
+
+/// The residuals at a state, and their analytic Jacobian.
+///
+/// **The Jacobian is analytic**, from [`Mixture::phase_derivatives`] - the surface P6 item 2
+/// ported. NeqSim's `setJac` assembles the same rows from `getdfugdx`, `getdfugdt` and
+/// `getdfugdp`, and there is no finite difference anywhere in `SysNewtonRhapsonPhaseEnvelope`.
+/// This replaces a central difference that cost `N+3` state evaluations per Newton step, each
+/// of them two cubic solves, with one.
+///
+/// With `D_i = 1 - beta + beta K_i`, `x_i = z_i/D_i` and `y_i = K_i x_i`, and the compositions
+/// **normalised** because that is the space `d ln phi_i/dn_j` is a derivative on:
+///
+/// ```text
+/// d x_i / d ln K_m = x_i (beta K_m / D_m) (x_m - delta_im)
+/// d y_i / d ln K_m = y_i [ (1 - beta K_i/D_i) delta_im - y_m (1 - beta K_m/D_m) ]
+/// ```
+///
+/// Both sum to zero over `i`, which is the normalisation surviving the derivative: a row of the
+/// Jacobian cannot move mass off the simplex. **Upstream's `setJac` omits this term**, contracting
+/// `dfugdx` with the derivative of the *raw* vector. Ours has to be the exact one, because the
+/// central difference it replaced differentiates the residual as written and the two must agree.
+///
+/// The material-balance row is the exception and uses the **raw** derivatives, because that row
+/// differentiates the raw sums - using the simplex form there makes it identically zero and the
+/// Rachford-Rice content of the system disappears.
+fn point(
+    mixture: &Mixture,
+    u: &[f64],
+    beta: f64,
+    z: &[f64],
+    last: LastRow,
+    want_jacobian: bool,
+) -> Result<Point> {
     let n = z.len();
     let k: Vec<f64> = u[..n].iter().map(|&lnk| lnk.exp()).collect();
     let t = u[n].exp();
     let p = u[n + 1].exp();
-    let (x, y) = compositions(z, &k, beta);
+    let (x_raw, y_raw) = compositions(z, &k, beta);
+    // **The states are evaluated at normalised compositions.** `K_i = y_i/x_i` fixes the
+    // *ratio*, so `z_i/(1 - beta + beta K_i)` is a mole-number vector whose sum is one only
+    // when the material balance happens to hold; at any other iterate it is not a composition
+    // at all, and `phase_state` builds `a_mix` and `b_mix` from the vector it is given - which
+    // the cubic is not invariant under. The raw sums are kept below because the material
+    // balance row *is* their difference.
+    let x = normalised(&x_raw);
+    let y = normalised(&y_raw);
     let reduced = mixture.reduced_parameters(kelvins(t), pascals(p))?;
     let liquid = mixture.phase_state(&reduced, &x, RootSide::Liquid)?;
     let vapour = mixture.phase_state(&reduced, &y, RootSide::Vapour)?;
@@ -132,35 +204,61 @@ fn residual(mixture: &Mixture, u: &[f64], beta: f64, z: &[f64], last: LastRow) -
         // ln K_i = ln phi_i^L - ln phi_i^V.
         f[i] = u[i] - liquid.ln_phi[i] + vapour.ln_phi[i];
     }
-    f[n] = y.iter().sum::<f64>() - x.iter().sum::<f64>();
-    f[n + 1] = match last {
-        LastRow::Pinned { index, value } => u[index] - value,
-        LastRow::Critical => u[..n].iter().map(|value| value * value).sum(),
-    };
-    Ok(f)
-}
+    f[n] = y_raw.iter().sum::<f64>() - x_raw.iter().sum::<f64>();
+    let LastRow::Pinned { index, value } = last;
+    f[n + 1] = u[index] - value;
 
-/// The `N+2` by `N+2` Jacobian, by central difference over the state variables.
-fn jacobian(
-    mixture: &Mixture,
-    u: &[f64],
-    beta: f64,
-    z: &[f64],
-    last: LastRow,
-) -> Result<Vec<Vec<f64>>> {
-    let m = u.len();
-    let f0 = residual(mixture, u, beta, z, last)?;
+    if !want_jacobian {
+        return Ok(Point { f, jac: None });
+    }
+
+    let factor = |i: usize| beta * k[i] / (1.0 - beta + beta * k[i]);
+    let m = n + 2;
     let mut jac = vec![vec![0.0; m]; m];
-    for j in 0..m {
-        let delta = (1.0e-6 * u[j].abs()).max(1.0e-8);
-        let mut up = u.to_vec();
-        up[j] += delta;
-        let fp = residual(mixture, &up, beta, z, last)?;
-        for (i, row) in jac.iter_mut().enumerate() {
-            row[j] = (fp[i] - f0[i]) / delta;
+    let mut dx = vec![vec![0.0; n]; n];
+    let mut dy = vec![vec![0.0; n]; n];
+    for i in 0..n {
+        for mm in 0..n {
+            let diagonal = if i == mm { 1.0 } else { 0.0 };
+            dx[i][mm] = x[i] * factor(mm) * (x[mm] - diagonal);
+            dy[i][mm] = y[i] * ((1.0 - factor(i)) * diagonal - y[mm] * (1.0 - factor(mm)));
         }
     }
-    Ok(jac)
+
+    let liquid_derivatives = mixture.phase_derivatives(&reduced, &x, liquid.z)?;
+    let vapour_derivatives = mixture.phase_derivatives(&reduced, &y, vapour.z)?;
+
+    for (i, row) in jac.iter_mut().enumerate().take(n) {
+        for (j, value) in row.iter_mut().enumerate().take(n) {
+            let diagonal = if i == j { 1.0 } else { 0.0 };
+            let d_vapour: f64 = (0..n)
+                .map(|mm| vapour_derivatives.d_ln_phi_dn[i][mm] * dy[mm][j])
+                .sum();
+            let d_liquid: f64 = (0..n)
+                .map(|mm| liquid_derivatives.d_ln_phi_dn[i][mm] * dx[mm][j])
+                .sum();
+            *value = diagonal + d_vapour - d_liquid;
+        }
+        // The chain rule for the `ln T` and `ln P` unknowns: a derivative in `T` is `T` times a
+        // derivative in `ln T`.
+        row[n] = t * (vapour_derivatives.d_ln_phi_dt[i] - liquid_derivatives.d_ln_phi_dt[i]);
+        row[n + 1] = p * (vapour_derivatives.d_ln_phi_dp[i] - liquid_derivatives.d_ln_phi_dp[i]);
+    }
+    // The material-balance row, in the raw derivatives: `X_i = z_i/D_i` and `Y_i = K_i X_i`, both
+    // functions of `K_i` alone.
+    for j in 0..n {
+        jac[n][j] = y_raw[j] * (1.0 - factor(j)) + x_raw[j] * factor(j);
+    }
+    // The specification row: the pinned variable, and nothing else.
+    let LastRow::Pinned { index, .. } = last;
+    jac[n + 1][index] = 1.0;
+
+    Ok(Point { f, jac: Some(jac) })
+}
+
+/// The residuals alone, for the callers that do not need the Jacobian.
+fn residual(mixture: &Mixture, u: &[f64], beta: f64, z: &[f64], last: LastRow) -> Result<Vec<f64>> {
+    Ok(point(mixture, u, beta, z, last, false)?.f)
 }
 
 fn norm2(v: &[f64]) -> f64 {
@@ -202,12 +300,12 @@ fn newton(
     let mut iters = 0;
     for _ in 0..NEWTON_MAX {
         iters += 1;
-        let f = residual(mixture, &u, beta, z, last)?;
+        let Point { f, jac } = point(mixture, &u, beta, z, last, true)?;
         let norm = norm2(&f);
         if norm < NEWTON_TOL {
             return Ok((u, iters));
         }
-        let mut jac = jacobian(mixture, &u, beta, z, last)?;
+        let mut jac = jac.expect("the Jacobian was asked for");
         let mut b = f.clone();
         let dx = solve_linear(&mut jac, &mut b).ok_or(AzothError::SolverNotConverged {
             iterations: iters,
@@ -253,7 +351,7 @@ fn sensitivity(
     speceq: usize,
 ) -> Result<Vec<f64>> {
     let n = z.len();
-    let mut jac = jacobian(
+    let mut jac = point(
         mixture,
         u,
         beta,
@@ -262,7 +360,10 @@ fn sensitivity(
             index: speceq,
             value: u[speceq],
         },
-    )?;
+        true,
+    )?
+    .jac
+    .expect("the Jacobian was asked for");
     let mut e = vec![0.0; n + 2];
     e[n + 1] = 1.0;
     solve_linear(&mut jac, &mut e).ok_or(AzothError::SolverNotConverged {
@@ -272,9 +373,19 @@ fn sensitivity(
     })
 }
 
-/// The index of the variable the continuation pins: `ln T` or `ln P`, whichever is
-/// more sensitive. The K-values are excluded because they are not monotonic along the
-/// envelope, and pinning one makes the trace oscillate.
+/// The index of the variable the continuation pins: whichever of the `N+2` is most sensitive.
+///
+/// **The K-values are candidates**, and excluding them was wrong. They were excluded as "not
+/// monotonic along the envelope, and pinning one makes the trace oscillate" - which is true of
+/// the trace on its own, and is why this cannot land without the acceptance-and-retry in
+/// `trace_branch`. Measured, widening the choice alone sends the dew branch to its 9,980-point
+/// cap and pulls the cricondentherm from 384.0182 K to 376.4847 K.
+///
+/// Upstream's `findSpecEq` maximises `|dxds|` over all `N+2` and takes the winner outright. It
+/// also computes a second sensitivity - the relative change in `exp(u_i)` since the last point -
+/// and uses that one only when the two agree, so the maximum of `|dxds|` is the decider. That
+/// second measure is not computed here: on the validated case the two agreed at every point, and
+/// a quantity that never decides is a quantity nothing can check.
 fn find_spec(dxds: &[f64], n: usize) -> usize {
     if dxds[n].abs() >= dxds[n + 1].abs() {
         n
@@ -306,120 +417,26 @@ fn cubic_predict(history: &[Vec<f64>], speceq: usize, sny: f64) -> Vec<f64> {
     result
 }
 
-/// The most Newton steps the critical refinement takes, upstream's ten.
-/// Upstream's ten, and it is a guard rather than a cap: measured, fifty steps let the Newton
-/// wander to `355.78 K` with a branch gap of `21.0 K`.
-const CRIT_MAX: u32 = 10;
-/// Its convergence tolerance, upstream's.
+/// **The critical point of the envelope, computed rather than refined out of the trace.**
 ///
-/// Unreachable on this system in double precision, and that is a fact about the system rather
-/// than about the constant: the refinement stops at its best iterate instead of converging, so
-/// the tolerance is what it is aimed at rather than what it attains. Kept at upstream's value
-/// because lowering it changed nothing - measured, `1e-7` returned the same points.
-const CRIT_TOL: f64 = 1.0e-10;
-/// The largest single correction it accepts, upstream's `|dx_j| > 0.5` abort.
-const CRIT_STEP: f64 = 0.5;
-/// How far a candidate critical point may sit from where the refinement started, relative.
+/// The critical point of the isopleth at `z` is the state where the two phases become one, and
+/// there both have the feed's composition - which is exactly the mixture critical point that
+/// [`crate::critical_point`] solves. The alternative, which this replaced, was to Newton
+/// `sum_i (ln K_i)^2 = 0` beside the isofugacity rows from wherever the trace came closest, and
+/// it does not compute anything: at every `K_i = 1` the two phases have the same composition, so
+/// the isofugacity rows reduce to `ln phi^V_i - ln phi^L_i`, which vanishes wherever the cubic
+/// has a single root. The system is satisfied on a two-parameter *family* near criticality, not
+/// at a point; measured at three separate states, all three residuals were exactly zero and the
+/// Newton returned its seed. Where the seed is off that family the iteration does move, and then
+/// it is unreliable: measured across five compositions of methane/n-butane it returned `42.74 K`
+/// on one branch, against `275.62 K` from the construction below.
 ///
-/// Upstream compares each candidate against its polynomial's extrapolation and keeps it only
-/// when the deviations are under `0.10` in temperature and `0.20` in pressure. The guard is
-/// what stops a diverging Newton's wild iterate from winning the best-tracking on
-/// `sum (ln K)^2` alone, which it otherwise does: measured, a step that jumped 373 K to 437 K
-/// had the smallest sum of any iterate. The starting state is used here instead of the
-/// polynomial, because the refinement starts where the trace crossed the K-window and the two
-/// are within a few per cent of each other there.
-const CRIT_T_BAND: f64 = 0.10;
-const CRIT_P_BAND: f64 = 0.20;
-
-/// The critical point, refined from a state the trace has brought close to it.
-///
-/// **This is what replaces a test with a computation.** The trace stops its branches where the
-/// lightest component's K-value falls below `1.05` and the heaviest's rises above `0.95`, which
-/// is a place a heuristic happened to fire: it put azoth's critical point 6.86 K and 4.54 bar
-/// from NeqSim's. Upstream refines the same crossing with a Newton on `sum_i (ln K_i)^2 = 0`
-/// alongside the `N` isofugacity rows and the material balance, which is the definition of the
-/// critical point rather than a proxy for it. Measured on methane/n-butane 50/50, the refinement
-/// moves the answer from `367.4573 K / 103.5078 bar` to `375.5008 K / 97.1374 bar` against
-/// NeqSim's `374.3214 / 98.9683`, and closes the two branches' gap from 9.40 K to 2.64 K.
-///
-/// Returns `None` if it does not converge, which the caller reports as the unrefined point rather
-/// than as an error: the trace's own answer is still a boundary. The **best** iterate is kept as
-/// well as the last, upstream's rule and for its reason - the Newton can step past the point
-/// where `sum (ln K)^2` is smallest and come back with a larger one.
-fn calc_crit(mixture: &Mixture, u0: &[f64], beta: f64, z: &[f64]) -> Result<Option<(f64, f64)>> {
-    let n = z.len();
-    let mut u = u0.to_vec();
-    let start = (u0[n].exp(), u0[n + 1].exp());
-    let mut best: Option<(f64, f64, f64)> = None;
-
-    for _ in 0..CRIT_MAX {
-        let f = residual(mixture, &u, beta, z, LastRow::Critical)?;
-        let sum_ln_k2: f64 = u[..n].iter().map(|value| value * value).sum();
-        let (t, p) = (u[n].exp(), u[n + 1].exp());
-        let inside = (t - start.0).abs() <= CRIT_T_BAND * start.0
-            && (p - start.1).abs() <= CRIT_P_BAND * start.1;
-        if inside
-            && sum_ln_k2.is_finite()
-            && best.is_none_or(|(smallest, _, _)| sum_ln_k2 < smallest)
-        {
-            best = Some((sum_ln_k2, t, p));
-        }
-        if norm2(&f) < CRIT_TOL {
-            return Ok(Some((t, p)));
-        }
-
-        let mut jac = jacobian(mixture, &u, beta, z, LastRow::Critical)?;
-        // **Levenberg-Marquardt, and the reason the refinement is deterministic.** The system
-        // is *singular* at the critical point - that is what makes it critical - so the Newton
-        // is ill-conditioned exactly where it is aimed, and it stops at an iterate chosen by a
-        // knife-edge comparison. Two implementations of the same arithmetic then return points
-        // 0.035 K apart, which is not a defect in either: measured, methane/n-butane gave
-        // `375.9999` in one kernel and `376.0348` in the other before this. The regulariser is
-        // `flash_newton.rs`'s, at the same magnitude, so the solve stays away from the
-        // singularity and the iteration converges rather than stopping beside it.
-        let trace: f64 = (0..n + 2).map(|i| jac[i][i].abs()).sum();
-        let lambda = 1.0e-8 * trace / ((n + 2) as f64);
-        for (i, row) in jac.iter_mut().enumerate() {
-            row[i] += lambda;
-        }
-        let mut b = f.clone();
-        let Some(dx) = solve_linear(&mut jac, &mut b) else {
-            break;
-        };
-        if dx.iter().any(|d| !d.is_finite() || d.abs() > CRIT_STEP) {
-            break;
-        }
-        if norm2(&dx) < CRIT_TOL {
-            return Ok(Some((t, p)));
-        }
-        // **The step-halving line search the continuation Newton uses, and it is not optional
-        // here.** Upstream takes the full step because it restarts the refinement from a
-        // polynomial extrapolated to the `K = 1` point, which is already inside the critical
-        // basin; this starts from wherever the trace crossed the `K`-window. Measured without
-        // the search: `376.696 -> 375.501 -> 403.180`, the last outside the deviation band.
-        let norm = norm2(&f);
-        let mut step = 1.0;
-        let mut accepted = false;
-        for _ in 0..24 {
-            let mut next = u.clone();
-            for (i, &d) in dx.iter().enumerate() {
-                next[i] = u[i] - step * d;
-            }
-            clamp_state(&mut next, n);
-            let fnext = residual(mixture, &next, beta, z, LastRow::Critical)?;
-            if norm2(&fnext) < norm {
-                u = next;
-                accepted = true;
-                break;
-            }
-            step *= 0.5;
-        }
-        if !accepted {
-            break;
-        }
-    }
-
-    Ok(best.map(|(_, t, p)| (t, p)))
+/// Returns `None` if the construction does not converge, which the caller reports as the point
+/// where the trace stopped rather than as an error.
+fn critical(mixture: &Mixture, z: &[f64]) -> Option<(f64, f64)> {
+    crate::critical_point::critical_point(mixture, z)
+        .ok()
+        .map(|point| (point.tc.value, point.pc.value))
 }
 
 /// The indices of the lightest and heaviest component by critical temperature.
@@ -488,11 +505,12 @@ struct BranchTrace {
     cricondenbar: (f64, f64),
     /// The cricondentherm, `(T, P)`.
     cricondentherm: (f64, f64),
-    /// The critical point this branch refined to, when the refinement converged.
+    /// Where this branch stopped, when it ran into the critical region rather than into the
+    /// pressure ceiling or a failure to converge.
     ///
-    /// The two branches refine independently and should land on the same point, which is the
-    /// evidence that they meet and what `residual` reports.
-    critical: Option<(f64, f64)>,
+    /// The two branches approach the critical point from opposite sides, so the two stopping
+    /// points bracket it and their gap is what `residual` reports.
+    stopped: Option<(f64, f64)>,
 }
 
 /// One branch of the envelope, traced upward from a low pressure to the critical point.
@@ -521,7 +539,7 @@ fn trace_branch(mixture: &Mixture, p: Pressure, z: &[f64], beta: f64) -> Result<
     let mut p_vec: Vec<f64> = Vec::new();
     let mut cricondenbar = (start_t, p.value);
     let mut cricondentherm = (start_t, p.value);
-    let mut critical: Option<(f64, f64)> = None;
+    let mut stopped: Option<(f64, f64)> = None;
     let mut history: Vec<Vec<f64>> = Vec::new();
     let mut dxds: Vec<f64> = vec![0.0; n + 2];
     let mut ds = 0.1;
@@ -551,10 +569,12 @@ fn trace_branch(mixture: &Mixture, p: Pressure, z: &[f64], beta: f64) -> Result<
             cricondenbar = (t, pv);
         }
 
-        // The critical point: every K-value approaches one. The crossing is what *detects* it
-        // and the refinement above is what computes it.
+        // The branch has run into the critical region: every K-value is approaching one. The
+        // state is recorded as where this branch *stopped* - it is a converged point of the
+        // continuation and the last thing this branch has to say about the critical point. What
+        // the critical point *is* comes from `critical`, and not from here.
         if k[lc] < 1.05 && k[hc] > 0.95 {
-            critical = calc_crit(mixture, &u, beta, z)?;
+            stopped = Some((t, pv));
             break;
         }
 
@@ -658,12 +678,12 @@ fn trace_branch(mixture: &Mixture, p: Pressure, z: &[f64], beta: f64) -> Result<
         p: p_vec,
         cricondenbar,
         cricondentherm,
-        critical,
+        stopped,
     })
 }
 
 /// The PT phase envelope of a mixture of composition `z`, traced upward from a low
-/// pressure to the critical point on both the bubble and dew branches.
+/// pressure towards the critical point on both the bubble and dew branches.
 ///
 /// # Errors
 /// * [`AzothError::InvalidInput`] if the mixture has one component, or `z` is not a
@@ -708,34 +728,34 @@ pub fn pt_phase_envelope(
         dew.cricondentherm
     };
 
-    // The critical point is where the two branches meet: take the last point of the
-    // bubble branch, which stops at the K-value crossing.
-    // The critical point is the refined one when either branch reached it, and either will do:
-    // they are the same point and each branch computed it alone, so a disagreement is a finding
-    // rather than a choice. Falling back to the branch endpoint keeps a trace that never got
-    // near criticality reporting where it stopped rather than a `NaN`.
-    let critical = bubble
-        .critical
-        .or(dew.critical)
-        .or_else(|| {
-            bubble
-                .t
-                .last()
-                .zip(bubble.p.last())
-                .map(|(&t, &pr)| (t, pr))
-        })
-        .unwrap_or((f64::NAN, f64::NAN));
-    // The residual is the two branches' disagreement about the critical temperature: zero when
-    // both refined to the same point, which is the statement that they meet. A branch that did
-    // not refine reports the gap between where the branches stopped - the older, weaker claim.
-    let residual = match (bubble.critical, dew.critical) {
-        (Some((t_b, _)), Some((t_d, _))) => (t_b - t_d).abs(),
-        _ => bubble
+    // **The critical point is computed, not read off the trace**, and it is one point: the two
+    // phases become one there, so a branch cannot have its own. It is computed only when a branch
+    // actually ran into the critical region; a trace that never got near it reports where it
+    // stopped rather than a critical point it never found.
+    let critical = if bubble.stopped.is_some() || dew.stopped.is_some() {
+        critical(mixture, z)
+    } else {
+        None
+    }
+    .or(bubble.stopped)
+    .or(dew.stopped)
+    .or_else(|| {
+        bubble
             .t
             .last()
-            .zip(dew.t.last())
-            .map(|(&t_b, &t_d)| (t_b - t_d).abs())
-            .unwrap_or(f64::NAN),
+            .zip(bubble.p.last())
+            .map(|(&t, &pr)| (t, pr))
+    })
+    .unwrap_or((f64::NAN, f64::NAN));
+
+    // The residual is how far apart the two branches stopped. They approach the critical point
+    // from opposite sides, so the gap is the width of the bracket they put around it: the trace's
+    // own statement about whether it reached the critical point, and one the computed critical
+    // point above cannot make for it. A branch that ran into the pressure ceiling instead of the
+    // critical region has not met the other, and there is no gap to report.
+    let residual = match (bubble.stopped, dew.stopped) {
+        (Some((t_b, _)), Some((t_d, _))) => (t_b - t_d).abs(),
+        _ => f64::NAN,
     };
 
     let iterations = (bubble.t.len() + dew.t.len()) as u32;

@@ -5,8 +5,14 @@ Spec: ``specs/models/eos/pt_phase_envelope.toml``
 The envelope is traced as two independent natural-parameter continuations - the
 bubble branch at a tiny vapour fraction and the dew branch at one minus it - each
 bootstrapped at a low pressure where its K-values are far from one, then continued
-upward to the critical point. The ``N+2`` unknowns ``(ln K_i, ln T, ln P)`` satisfy
-``N`` isofugacity equations, one material balance, and one specification equation.
+upward until the two phases have nearly collapsed onto one another. The ``N+2``
+unknowns ``(ln K_i, ln T, ln P)`` satisfy ``N`` isofugacity equations, one material
+balance, and one specification equation.
+
+The critical point is *computed* rather than refined out of the trace: at the critical
+point of the isopleth the two phases have the feed's composition, which is the problem
+``azoth.eos.critical_point`` solves by the Heidemann-Khalil construction. The rust kernel
+carries the measurement that rules the alternative out; this is the same arithmetic.
 """
 
 from __future__ import annotations
@@ -22,40 +28,24 @@ from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import (
     WILSON_CONSTANT,
+    phase_derivatives,
     phase_state,
     reduced_parameters,
     wilson_saturation_pressures,
 )
+from azoth.eos.reference.critical_point import critical_point
 
 MODEL_ID = "eos.pt_phase_envelope"
 
-BUBBLE_BETA = 1.0e-6
-DEW_BETA = 1.0 - 1.0e-6
+BUBBLE_BETA = 1.0e-10
+DEW_BETA = 1.0 - 1.0e-10
 D_TMAX = 10.0
 D_PMAX = 10.0e5
 MAX_PRESSURE = 1000.0e5
 NEWTON_TOL = 1.0e-5
 NEWTON_MAX = 50
 
-#: The most Newton steps the critical refinement takes, upstream's ten.
-#: Upstream's ten, and it is a guard rather than a cap: measured, fifty steps let the Newton
-#: wander to ``355.78 K`` with a branch gap of ``21.0 K``.
-CRIT_MAX = 10
-#: Its convergence tolerance, upstream's. Unreachable on this system in double precision, so
-#: the refinement stops at its best iterate instead of converging; kept at upstream's value
-#: because lowering it changed nothing - measured, `1e-7` returned the same points.
-CRIT_TOL = 1.0e-10
-#: The largest single correction it accepts, upstream's ``|dx_j| > 0.5`` abort.
-CRIT_STEP = 0.5
-#: How far a candidate critical point may sit from where the refinement started, relative.
-#: Upstream compares against its polynomial's extrapolation and keeps a candidate only within
-#: ``0.10`` in temperature and ``0.20`` in pressure of it; the start is used here because the
-#: refinement begins where the trace crossed the K-window and the two are within a few per cent
-#: of each other there. Without the guard a diverging Newton's wild iterate wins the
-#: best-tracking on ``sum (ln K)^2`` alone, which it otherwise does - measured, a step that
-#: jumped 373 K to 437 K had the smallest sum of any iterate.
-CRIT_T_BAND = 0.10
-CRIT_P_BAND = 0.20
+#: The number of continuation points that pin pressure as the specification.
 PRESSURE_SPEC_POINTS = 5
 HISTORY_LEN = 4
 
@@ -97,36 +87,96 @@ def _compositions(z: list[float], k: list[float], beta: float) -> tuple[list[flo
     return x, y
 
 
-def _residual(
+def _point(
     mixture: Mixture,
     u: list[float],
     beta: float,
     z: list[float],
-    last: tuple[int, float] | None,
-) -> list[float]:
-    """The `N+2` residuals.
+    last: tuple[int, float],
+    *,
+    want_jacobian: bool,
+) -> tuple[list[float], list[list[float]] | None]:
+    """The residuals, and on request their analytic Jacobian.
 
-    ``last`` is ``(index, value)`` for an ordinary continuation point, pinning ``u[index]``, or
-    ``None`` for the criticality condition ``sum_i (ln K_i)^2``, whose Jacobian row the central
-    difference below produces without being told.
+    ``last`` is ``(index, value)``: the continuation's specification equation, pinning
+    ``u[index]`` to that value.
+
+    The rust kernel carries the derivation; this is the same arithmetic. Two things it says
+    that this repeats because they are what makes the two agree:
+
+    **The states are evaluated at normalised compositions.** ``K_i = y_i/x_i`` fixes the *ratio*,
+    so ``z_i/(1 - beta + beta K_i)`` sums to one only when the material balance already holds,
+    and ``phase_state`` builds ``a_mix``/``b_mix`` from the vector it is given - which the cubic
+    is not invariant under. The raw sums are kept for the material-balance row, which *is* their
+    difference: the Rachford-Rice residual, identically zero if normalised.
+
+    **The composition derivatives are on the simplex**, because ``phase_derivatives``'
+    ``d_ln_phi_dn`` is: its contract is mole numbers at unit total, and its Gibbs-Duhem sum holds
+    only at a normalised composition. The material-balance row is the exception and uses the raw
+    derivatives, because that row differentiates the raw sums.
     """
     n = len(z)
     k = [math.exp(lnk) for lnk in u[:n]]
     t = math.exp(u[n])
     p = math.exp(u[n + 1])
-    x, y = _compositions(z, k, beta)
+    x_raw, y_raw = _compositions(z, k, beta)
+    x = _normalised(x_raw)
+    y = _normalised(y_raw)
     reduced = reduced_parameters(mixture, t, p)
-    liquid = phase_state(reduced, mixture.kij, list(x), liquid=True)
-    vapour = phase_state(reduced, mixture.kij, list(y), liquid=False)
+    liquid = phase_state(reduced, mixture.kij, x, liquid=True)
+    vapour = phase_state(reduced, mixture.kij, y, liquid=False)
     f = [0.0] * (n + 2)
     for i in range(n):
         f[i] = u[i] - liquid.ln_phi[i] + vapour.ln_phi[i]
-    f[n] = sum(y) - sum(x)
-    if last is None:
-        f[n + 1] = sum(value * value for value in u[:n])
-    else:
-        f[n + 1] = u[last[0]] - last[1]
-    return f
+    f[n] = sum(y_raw) - sum(x_raw)
+    f[n + 1] = u[last[0]] - last[1]
+
+    if not want_jacobian:
+        return f, None
+
+    factor = [beta * k[i] / (1.0 - beta + beta * k[i]) for i in range(n)]
+    dx = [
+        [x[i] * factor[m] * (x[m] - (1.0 if i == m else 0.0)) for m in range(n)] for i in range(n)
+    ]
+    dy = [
+        [
+            y[i] * ((1.0 - factor[i]) * (1.0 if i == m else 0.0) - y[m] * (1.0 - factor[m]))
+            for m in range(n)
+        ]
+        for i in range(n)
+    ]
+
+    liquid_derivatives = phase_derivatives(
+        reduced, mixture.kij, x, liquid.z, temperature=t, pressure=p
+    )
+    vapour_derivatives = phase_derivatives(
+        reduced, mixture.kij, y, vapour.z, temperature=t, pressure=p
+    )
+
+    m_dim = n + 2
+    jac = [[0.0] * m_dim for _ in range(m_dim)]
+    for i in range(n):
+        for j in range(n):
+            d_vapour = sum(vapour_derivatives.d_ln_phi_dn[i][mm] * dy[mm][j] for mm in range(n))
+            d_liquid = sum(liquid_derivatives.d_ln_phi_dn[i][mm] * dx[mm][j] for mm in range(n))
+            jac[i][j] = (1.0 if i == j else 0.0) + d_vapour - d_liquid
+        jac[i][n] = t * (vapour_derivatives.d_ln_phi_dt[i] - liquid_derivatives.d_ln_phi_dt[i])
+        jac[i][n + 1] = p * (vapour_derivatives.d_ln_phi_dp[i] - liquid_derivatives.d_ln_phi_dp[i])
+    for j in range(n):
+        jac[n][j] = y_raw[j] * (1.0 - factor[j]) + x_raw[j] * factor[j]
+    jac[n + 1][last[0]] = 1.0
+    return f, jac
+
+
+def _residual(
+    mixture: Mixture,
+    u: list[float],
+    beta: float,
+    z: list[float],
+    last: tuple[int, float],
+) -> list[float]:
+    """The residuals alone, for the callers that do not need the Jacobian."""
+    return _point(mixture, u, beta, z, last, want_jacobian=False)[0]
 
 
 def _jacobian(
@@ -134,19 +184,19 @@ def _jacobian(
     u: list[float],
     beta: float,
     z: list[float],
-    last: tuple[int, float] | None,
+    last: tuple[int, float],
 ) -> list[list[float]]:
-    m = len(u)
-    f0 = _residual(mixture, u, beta, z, last)
-    jac = [[0.0] * m for _ in range(m)]
-    for j in range(m):
-        delta = max(1.0e-6 * abs(u[j]), 1.0e-8)
-        up = u.copy()
-        up[j] += delta
-        fp = _residual(mixture, up, beta, z, last)
-        for i in range(m):
-            jac[i][j] = (fp[i] - f0[i]) / delta
+    """The analytic Jacobian alone. The rust kernel carries its derivation."""
+    jac = _point(mixture, u, beta, z, last, want_jacobian=True)[1]
+    assert jac is not None  # asked for above
     return jac
+
+
+def _normalised(values: list[float]) -> list[float]:
+    """A copy of a vector scaled to sum to one."""
+    out = list(values)
+    total = sum(out)
+    return [value / total for value in out] if total > 0.0 else out
 
 
 def _norm2(v: list[float]) -> float:
@@ -173,15 +223,15 @@ def _newton(
     u: list[float],
     beta: float,
     z: list[float],
-    last: tuple[int, float] | None,
+    last: tuple[int, float],
 ) -> tuple[list[float], int]:
     u = u.copy()
     for iters in range(1, NEWTON_MAX + 1):
         f = _residual(mixture, u, beta, z, last)
+        jac = _jacobian(mixture, u, beta, z, last)
         norm = _norm2(f)
         if norm < NEWTON_TOL:
             return u, iters
-        jac = _jacobian(mixture, u, beta, z, last)
         b = f.copy()
         dx = _solve_linear(jac, b)
         if dx is None or any(not math.isfinite(d) for d in dx):
@@ -202,78 +252,29 @@ def _newton(
     )
 
 
-def _calc_crit(
-    mixture: Mixture, u0: list[float], beta: float, z: list[float]
-) -> tuple[float, float] | None:
-    """The critical point, refined from a state the trace has brought close to it.
+def _critical(mixture: Mixture, z: list[float]) -> tuple[float, float] | None:
+    """The envelope's critical point, computed rather than refined out of the trace.
 
-    **This is what replaces a test with a computation.** The trace stops its branches where the
-    lightest component's K-value falls below ``1.05`` and the heaviest's rises above ``0.95``,
-    which is a place a heuristic happened to fire: it put this library's critical point 6.86 K
-    and 4.54 bar from NeqSim's. The refinement Newtons ``sum_i (ln K_i)^2 = 0`` alongside the
-    isofugacity rows and the material balance, which is the definition rather than a proxy.
+    The critical point of the isopleth at ``z`` is the state where the two phases become one,
+    and there both have the feed's composition - which is exactly the mixture critical point
+    ``azoth.eos.critical_point`` solves. The alternative, which this replaced, was to Newton
+    ``sum_i (ln K_i)^2 = 0`` beside the isofugacity rows from wherever the trace came closest,
+    and it does not compute anything: at every ``K_i = 1`` the two phases have the same
+    composition, so the isofugacity rows reduce to ``ln phi^V_i - ln phi^L_i``, which vanishes
+    wherever the cubic has a single root. The system is satisfied on a two-parameter *family*
+    near criticality, not at a point; measured at three separate states, all three residuals
+    were exactly zero and the Newton returned its seed. Where the seed is off that family the
+    iteration does move, and then it is unreliable: measured across five compositions of
+    methane/n-butane it returned ``42.74 K`` on one branch against Heidemann-Khalil's
+    ``275.62 K``.
 
-    Returns ``None`` when it does not converge, which the caller reports as the unrefined point:
-    the trace's own answer is still a boundary. The **best** iterate is kept as well as the last,
-    upstream's rule - the Newton can step past the smallest sum and come back with a larger one.
-
-    The rust kernel carries the reasoning; this is the same arithmetic.
+    The rust kernel carries the measurement; this is the same arithmetic.
     """
-    n = len(z)
-    u = list(u0)
-    start = (math.exp(u0[n]), math.exp(u0[n + 1]))
-    best: tuple[float, float, float] | None = None
-
-    for _ in range(CRIT_MAX):
-        f = _residual(mixture, u, beta, z, None)
-        sum_ln_k2 = sum(value * value for value in u[:n])
-        t, p = math.exp(u[n]), math.exp(u[n + 1])
-        inside = (
-            abs(t - start[0]) <= CRIT_T_BAND * start[0]
-            and abs(p - start[1]) <= CRIT_P_BAND * start[1]
-        )
-        if inside and math.isfinite(sum_ln_k2) and (best is None or sum_ln_k2 < best[0]):
-            best = (sum_ln_k2, t, p)
-        if _norm2(f) < CRIT_TOL:
-            return (t, p)
-
-        jac = _jacobian(mixture, u, beta, z, None)
-        # Levenberg-Marquardt, ``flash_newton.py``'s and at the same magnitude. The system is
-        # singular at the critical point, so the Newton is ill-conditioned exactly where it is
-        # aimed; without this the iteration stops at a knife-edge iterate and two
-        # implementations of the same arithmetic return points 0.035 K apart.
-        trace = sum(abs(jac[i][i]) for i in range(n + 2))
-        lam = 1.0e-8 * trace / (n + 2)
-        for i in range(n + 2):
-            jac[i][i] += lam
-        b = list(f)
-        dx = _solve_linear(jac, b)
-        if dx is None or any(not math.isfinite(d) or abs(d) > CRIT_STEP for d in dx):
-            break
-        if _norm2(dx) < CRIT_TOL:
-            return (t, p)
-
-        # The step-halving line search the continuation Newton uses, and it is not optional
-        # here: upstream restarts from a polynomial extrapolated to the K = 1 point, which is
-        # already inside the critical basin, and this starts from the K-window crossing.
-        # Measured without it: 376.696 -> 375.501 -> 403.180, the last outside the band.
-        norm = _norm2(f)
-        step = 1.0
-        accepted = False
-        for _ in range(24):
-            nxt = list(u)
-            for i, d in enumerate(dx):
-                nxt[i] = u[i] - step * d
-            _clamp_state(nxt, n)
-            if _norm2(_residual(mixture, nxt, beta, z, None)) < norm:
-                u = nxt
-                accepted = True
-                break
-            step *= 0.5
-        if not accepted:
-            break
-
-    return None if best is None else (best[1], best[2])
+    try:
+        point = critical_point(mixture, z)
+    except Exception:
+        return None
+    return (point.tc.to_base_units().magnitude, point.pc.to_base_units().magnitude)
 
 
 def _sensitivity(
@@ -381,7 +382,7 @@ def _trace_branch(
     p_vec: list[float] = []
     cricondenbar = (start_t, pressure)
     cricondentherm = (start_t, pressure)
-    critical: tuple[float, float] | None = None
+    stopped: tuple[float, float] | None = None
     history: list[list[float]] = []
     dxds: list[float] = [0.0] * (n + 2)
     ds = 0.1
@@ -400,7 +401,7 @@ def _trace_branch(
             cricondenbar = (t, pv)
 
         if k[lc] < 1.05 and k[hc] > 0.95:
-            critical = _calc_crit(mixture, u, beta, z)
+            stopped = (t, pv)
             break
 
         t_vec.append(t)
@@ -468,11 +469,15 @@ def _trace_branch(
         if not solved:
             break
 
-    return t_vec, p_vec, cricondenbar, cricondentherm, critical
+    return t_vec, p_vec, cricondenbar, cricondentherm, stopped
 
 
 def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelopeResult:
     """The PT phase envelope of a mixture of composition ``z``, traced from ``P``.
+
+    ``cricondenbar`` and ``cricondentherm`` are the trace's, and the critical point is
+    ``azoth.eos.critical_point``'s; ``residual`` is the gap between where the two branches
+    stopped, which is the trace's own statement about having reached the critical point.
 
     Raises:
         InvalidInputError: if the mixture has one component, or if ``z`` is not a
@@ -504,20 +509,21 @@ def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelope
     cricondenbar = bubble[2] if bubble[2][1] >= dew[2][1] else dew[2]
     cricondentherm = bubble[3] if bubble[3][0] >= dew[3][0] else dew[3]
 
-    # The critical point is the refined one when either branch reached it, and either will do:
-    # they are the same point and each branch computed it alone, so a disagreement is a finding
-    # rather than a choice. Falling back to the branch endpoint keeps a trace that never got
-    # near criticality reporting where it stopped rather than a NaN.
-    critical = bubble[4] or dew[4] or ((bubble[0][-1], bubble[1][-1]) if bubble[0] else None)
+    # **The critical point is computed, not read off the trace**, and it is one point: the two
+    # phases become one there, so a branch cannot have its own. It is computed only when a branch
+    # actually ran into the critical region; a trace that never got near it reports where it
+    # stopped rather than a critical point it never found.
+    critical = _critical(mixture, list(z)) if (bubble[4] or dew[4]) else None
+    critical = critical or bubble[4] or dew[4]
     if critical is None:
-        critical = (math.nan, math.nan)
-    # The residual is the two branches' disagreement about the critical temperature: zero when
-    # both refined to the same point, which is the statement that they meet. A branch that did
-    # not refine reports the gap between where the branches stopped - the older, weaker claim.
-    if bubble[4] is not None and dew[4] is not None:
-        residual = abs(bubble[4][0] - dew[4][0])
-    else:
-        residual = abs(bubble[0][-1] - dew[0][-1]) if bubble[0] and dew[0] else math.nan
+        critical = (bubble[0][-1], bubble[1][-1]) if bubble[0] else (math.nan, math.nan)
+
+    # The residual is how far apart the two branches stopped. They approach the critical point
+    # from opposite sides, so the gap is the width of the bracket they put around it: the trace's
+    # own statement about whether it reached the critical point, and one the computed critical
+    # point above cannot make for it. A branch that ran into the pressure ceiling instead of the
+    # critical region has not met the other, and there is no gap to report.
+    residual = abs(bubble[4][0] - dew[4][0]) if (bubble[4] and dew[4]) else math.nan
 
     return PtPhaseEnvelopeResult(
         dew_temperature=tuple(dew[0]),

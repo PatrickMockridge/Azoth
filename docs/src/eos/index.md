@@ -90,7 +90,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.ph_flash`](./ph_flash.md) | `ph_flash_inverse_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.pt_flash`](./pt_flash.md) | `successive_substitution_flash` | Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982) |
-| [`eos.pt_phase_envelope`](./pt_phase_envelope.md) | `phase_envelope_continuation` | Michelsen, M. L. (1980) |
+| [`eos.pt_phase_envelope`](./pt_phase_envelope.md) | `phase_envelope_continuation` | Michelsen, M. L. (1980), with `eos.critical_point` for the critical point |
 | [`eos.pu_flash`](./pu_flash.md) | `pu_flash_inverse_temperature_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.pure_saturation`](./pure_saturation.md) | `saturation_pressure_bisection` | Peng, D. Y.; Robinson, D. B. (1976) |
 | [`eos.pv_flash`](./pv_flash.md) | `pv_flash_inverse_temperature_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
