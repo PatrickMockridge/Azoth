@@ -904,6 +904,10 @@ pub struct SiteDerivatives {
     pub d2_fractions_dv_dn: Vec<Vec<f64>>,
     /// `d^2 (A_assoc/(R T)) / dV dn_a`, one per component.
     pub d2_helmholtz_dv_dn: Vec<f64>,
+    /// `d^2 X_A / dV dT`, one per site.
+    pub d2_fractions_dv_dt: Vec<f64>,
+    /// `d^2 (A_assoc/(R T)) / dV dT`.
+    pub d2_helmholtz_dv_dt: f64,
 }
 
 impl Association {
@@ -968,6 +972,8 @@ impl Association {
                 d2_fractions_dv2: Vec::new(),
                 d2_fractions_dv_dn: vec![vec![0.0; n]; sites],
                 d2_helmholtz_dv_dn: vec![0.0; n],
+                d2_fractions_dv_dt: vec![0.0; sites],
+                d2_helmholtz_dv_dt: 0.0,
             });
         }
 
@@ -1216,6 +1222,81 @@ impl Association {
             ));
         }
 
+        // --- the mixed second derivative, `d^2 / dV dT` -----------------------------
+        //
+        // The same identity again, now with `q = T`. `T` enters the residual through
+        // `Delta` alone - the distribution function carries no temperature, so `g` is
+        // constant in it - which is what makes this the simplest of the three. `Delta'`
+        // does carry `g`, though, because `Delta` does, so `F_{VT}` is not `-F_T/V`.
+        let mut delta_t = vec![0.0; sites * sites];
+        for a in 0..sites {
+            for c in 0..sites {
+                let (ca, cc) = (self.component_of_site(a), self.component_of_site(c));
+                delta_t[a * sites + c] = delta[a * sites + c]
+                    * delta_nog_d_ln_dt(
+                        &self.components[ca],
+                        &self.components[cc],
+                        self.cross_rule(ca, cc),
+                        t,
+                    );
+            }
+        }
+        let mut rhs_mixed_t = vec![vec![0.0; sites]];
+        for a in 0..sites {
+            let drho = rdf.d_ln_g_dv - 1.0 / v;
+            // `S_aT = d S_a/dT` at constant `X`, which is the code above's `total/v`.
+            let s_t: f64 = (0..sites)
+                .map(|k| moles[self.component_of_site(k)] * delta_t[a * sites + k] * x[k])
+                .sum::<f64>()
+                / v;
+            let f_vt = x[a] * s_t * drho;
+
+            let mut total = 0.0;
+            for c in 0..sites {
+                let m_c = moles[self.component_of_site(c)];
+                let f_xv = drho
+                    * (x[a] * m_c * delta[a * sites + c] / v + if a == c { s[a] } else { 0.0 });
+                total += f_xv * rhs[n][c];
+            }
+            for c in 0..sites {
+                let m_c = moles[self.component_of_site(c)];
+                let f_xt = if a == c { s_t } else { 0.0 } + x[a] * m_c * delta_t[a * sites + c] / v;
+                total += f_xt * rhs[n + 1][c];
+            }
+            for p in 0..sites {
+                for c in 0..sites {
+                    let m_p = moles[self.component_of_site(p)];
+                    let m_c = moles[self.component_of_site(c)];
+                    let h_abc = (if a == p {
+                        m_c * delta[a * sites + c]
+                    } else {
+                        0.0
+                    } + if a == c {
+                        m_p * delta[a * sites + p]
+                    } else {
+                        0.0
+                    }) / v;
+                    total += h_abc * rhs[n + 1][p] * rhs[n][c];
+                }
+            }
+            rhs_mixed_t[0][a] = -(f_vt + total);
+        }
+        if !solve_many(&jacobian, &mut rhs_mixed_t, sites) {
+            return Err(AzothError::invalid_input(
+                "site fractions",
+                "the site-fraction Jacobian is singular, so the association's mixed \
+                 volume-temperature derivative is not defined at this state",
+            ));
+        }
+        let x_t = &rhs[n];
+        let d2_helmholtz_dv_dt: f64 = (0..sites)
+            .map(|a| {
+                let m = moles[self.component_of_site(a)];
+                let weight = 1.0 / x[a] - 0.5;
+                m * (-x_t[a] * x_v[a] / (x[a] * x[a]) + weight * rhs_mixed_t[0][a])
+            })
+            .sum();
+
         // `A/(RT) = sum_A m_A (ln X_A - X_A/2 + 1/2)`, so the mixed derivative is the
         // product rule over the mole number *and* the fraction: a site of component b
         // contributes its own `m` term, every site contributes the two `X`-derivative
@@ -1273,6 +1354,8 @@ impl Association {
                 .map(|a| (0..n).map(|b| rhs_mixed[b][a]).collect())
                 .collect(),
             d2_helmholtz_dv_dn,
+            d2_fractions_dv_dt: rhs_mixed_t[0].clone(),
+            d2_helmholtz_dv_dt,
         })
     }
 }
@@ -1979,6 +2062,68 @@ mod tests {
             }
         }
         assert!(worst < 1.0e-6, "d/dV of dX/dn_j disagrees by {worst:e}");
+    }
+
+    /// The mixed volume-temperature derivative, against the same two oracles.
+    #[test]
+    fn the_mixed_volume_temperature_derivative_matches_finite_differences() {
+        let (a, b, n, v, t) = water_and_methanol();
+        let state = a.solve(&b, &n, v, t).expect("solves");
+        let d = a.derivatives(&b, &n, v, t, &state).expect("differentiable");
+
+        // Relative steps, because `V` is `6e-5 m3` and `T` is `350 K`: an absolute step
+        // that suits one is meaningless for the other.
+        let step_t = 1.0e-6 * t;
+        let step_v = 1.0e-6 * v;
+
+        let at_t = |temperature: f64| {
+            let s = a.solve(&b, &n, v, temperature).expect("solves");
+            let dd = a
+                .derivatives(&b, &n, v, temperature, &s)
+                .expect("differentiable");
+            (dd.d_fractions_dv, s.d_helmholtz_dv)
+        };
+        let (up, up_phi) = at_t(t + step_t);
+        let (down, down_phi) = at_t(t - step_t);
+        for site in 0..a.site_count() {
+            let numerical = (up[site] - down[site]) / (2.0 * step_t);
+            assert!(
+                (d.d2_fractions_dv_dt[site] / numerical - 1.0).abs() < 1.0e-6,
+                "d2X_{site}/dV dT: analytic {} vs numerical {numerical}",
+                d.d2_fractions_dv_dt[site]
+            );
+        }
+        let numerical = (up_phi - down_phi) / (2.0 * step_t);
+        assert!(
+            (d.d2_helmholtz_dv_dt / numerical - 1.0).abs() < 1.0e-6,
+            "d2(A/(RT))/dV dT: analytic {} vs numerical {numerical}",
+            d.d2_helmholtz_dv_dt
+        );
+
+        // The other order: `d/dV` of `dX/dT` and of the energy's temperature derivative,
+        // which reach the same mixed partial by a different route.
+        let at_v = |volume: f64| {
+            let s = a.solve(&b, &n, volume, t).expect("solves");
+            let dd = a
+                .derivatives(&b, &n, volume, t, &s)
+                .expect("differentiable");
+            (dd.d_fractions_dt, dd.d_helmholtz_dt)
+        };
+        let (up, down) = (at_v(v + step_v), at_v(v - step_v));
+        for site in 0..a.site_count() {
+            let numerical = (up.0[site] - down.0[site]) / (2.0 * step_v);
+            assert!(
+                (d.d2_fractions_dv_dt[site] / numerical - 1.0).abs() < 1.0e-6,
+                "d/dV of dX_{site}/dT: analytic {} vs numerical {numerical}",
+                d.d2_fractions_dv_dt[site]
+            );
+        }
+        let numerical = (up.1 - down.1) / (2.0 * step_v);
+        assert!(
+            (d.d2_helmholtz_dv_dt / numerical - 1.0).abs() < 1.0e-6,
+            "d/dV of d(A/(RT))/dT: analytic {} vs numerical {numerical}",
+            d.d2_helmholtz_dv_dt
+        );
     }
 
     #[test]
