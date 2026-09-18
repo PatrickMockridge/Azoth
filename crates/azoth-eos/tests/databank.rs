@@ -723,54 +723,103 @@ fn the_cpa_root_matches_neqsim() {
     );
 }
 
-/// The association's derivative surface is **not derived**, and this pins the refusal.
+/// The association's derivative surface, against finite differences of the phase state.
 ///
 /// `phase_derivatives` is what the second-order flash, both saturation operators and the
-/// envelope solve on, so an associating mixture cannot take those paths. The gap is named
-/// rather than papered over because the alternative - returning the cubic's derivatives -
-/// is a *wrong* answer rather than a missing one.
+/// envelope solve on, and for an associating mixture every one of its three families
+/// crosses a surface the cubic's does not: the root comes from `associating_root`, so the
+/// volume responds to `n_j`, `T` and `P` through the association's pressure as well as the
+/// cubic's.
 ///
-/// **What is missing.** The kernel's derivatives are at constant `T` and `V`; a flash
-/// needs constant `T` and `P`, and the conversion is the chain rule through the volume:
-/// `d ln phi_i/dn_j = Phi_{n_i n_j} + Phi_{n_i V} V_{n_j}`. The kernel supplies
-/// `Phi_{n_i n_j}` and `Phi_{n_i V}`, but `V_{n_j}` is `(R T/P)(Z + dZ/dn_j)` and **`dZ/dn_j`
-/// is not the cubic's** - an associating mixture's root comes from `associating_root`, so
-/// its volume responds to the composition through the association's pressure too.
-///
-/// Differentiating that residual needs `d2(A/(RT))/dV dn_j`. Its pure `dV^2` companion
-/// **is** computed, and checked against a finite difference of `d(A/(RT))/dV`; the mixed
-/// derivative is not, and the site-fraction system's second differentiation does not yet
-/// reproduce it.
-///
-/// Sabotage: when the surface lands, the entry above stops being a gap and this test
-/// fails, which is the point of it.
+/// **The oracle is the phase state, not the derivation.** `phase_state` re-solves the
+/// associating root at each perturbed state, so this is the one check that sees a term
+/// missing from the root's sensitivities - which is where the difference lives. A check
+/// that shared the derivation could not: the same identity assembled twice agrees with
+/// itself, which is what cost this tranche a session on the pure `dV^2` companion.
 #[test]
-fn an_associating_mixture_refuses_the_derivative_surface() {
+fn an_associating_mixtures_derivative_surface_matches_the_phase_state() {
     use azoth_core::units::{kelvins, pascals};
     use azoth_eos::{Cubic, RootSide};
 
     let names = ["water", "methanol"];
     let (mixture, _) = databank::associating_mixture_of(&names, Cubic::Srk, None)
         .expect("water and methanol bond");
+    let (t, p) = (320.0, 2.0e6);
+    let x = [0.6, 0.4];
     let reduced = mixture
-        .reduced_parameters(kelvins(320.0), pascals(2.0e6))
+        .reduced_parameters(kelvins(t), pascals(p))
         .expect("reduced parameters");
     let state = mixture
-        .phase_state(&reduced, &[0.6, 0.4], RootSide::Liquid)
+        .phase_state(&reduced, &x, RootSide::Liquid)
         .expect("a liquid root");
+    let d = mixture
+        .phase_derivatives(&reduced, &x, state.z)
+        .expect("the derivative surface");
 
-    let refusal = mixture
-        .phase_derivatives(&reduced, &[0.6, 0.4], state.z)
-        .expect_err("the derivative surface is not derived for an associating mixture");
-    let message = refusal.to_string();
-    assert!(
-        message.contains("derivative surface"),
-        "the refusal should name what is missing: {message}"
-    );
+    // The surface's own `ln phi` is the state's, which is the guard that makes the three
+    // comparisons below comparisons of derivatives rather than of different quantities.
+    for i in 0..2 {
+        assert!(
+            (d.ln_phi[i] - state.ln_phi[i]).abs() < 1e-12,
+            "ln phi_{i}: surface {} vs state {}",
+            d.ln_phi[i],
+            state.ln_phi[i]
+        );
+    }
 
-    // And the state itself is fine - it is the derivative surface, and only that, which
-    // is outstanding.
-    assert!(state.ln_phi.iter().all(|value| value.is_finite()));
+    let ln_phi_at = |temperature: f64, pressure: f64, composition: &[f64]| -> Vec<f64> {
+        let reduced = mixture
+            .reduced_parameters(kelvins(temperature), pascals(pressure))
+            .expect("reduced parameters");
+        mixture
+            .phase_state(&reduced, composition, RootSide::Liquid)
+            .expect("a liquid root")
+            .ln_phi
+    };
+
+    // Composition, at constant T and P. The perturbation is on a mole number at unit
+    // total, so the mole fractions move with it: `x_i = n_i/(sum n)` is what makes this
+    // the normalised partial NeqSim reports, and the one `d_ln_phi_dn` is written in.
+    let h = 1.0e-7;
+    for j in 0..2 {
+        let mut up = x;
+        up[j] += h;
+        let mut down = x;
+        down[j] -= h;
+        let up = up.map(|value| value / (1.0 + h));
+        let down = down.map(|value| value / (1.0 - h));
+        let (up, down) = (ln_phi_at(t, p, &up), ln_phi_at(t, p, &down));
+        for i in 0..2 {
+            let numerical = (up[i] - down[i]) / (2.0 * h);
+            assert!(
+                (d.d_ln_phi_dn[i][j] / numerical - 1.0).abs() < 1e-5,
+                "d ln phi_{i}/dn_{j}: analytic {} vs numerical {numerical}",
+                d.d_ln_phi_dn[i][j]
+            );
+        }
+    }
+
+    // Temperature at constant P and composition, and pressure at constant T.
+    let step = 1.0e-3;
+    let (up, down) = (ln_phi_at(t + step, p, &x), ln_phi_at(t - step, p, &x));
+    for i in 0..2 {
+        let numerical = (up[i] - down[i]) / (2.0 * step);
+        assert!(
+            (d.d_ln_phi_dt[i] / numerical - 1.0).abs() < 1e-5,
+            "d ln phi_{i}/dT: analytic {} vs numerical {numerical}",
+            d.d_ln_phi_dt[i]
+        );
+    }
+    let step = 100.0;
+    let (up, down) = (ln_phi_at(t, p + step, &x), ln_phi_at(t, p - step, &x));
+    for i in 0..2 {
+        let numerical = (up[i] - down[i]) / (2.0 * step);
+        assert!(
+            (d.d_ln_phi_dp[i] / numerical - 1.0).abs() < 1e-5,
+            "d ln phi_{i}/dP: analytic {} vs numerical {numerical}",
+            d.d_ln_phi_dp[i]
+        );
+    }
 }
 
 /// The shipped keycard is the databank, at the level a model reads it.

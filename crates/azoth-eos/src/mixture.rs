@@ -16,7 +16,8 @@ use crate::alpha_term::{
     Schwartzentruber, Soave, TwuCoon, matcop_kappa, umr_kappa,
 };
 use crate::association::{
-    Association, AssociationCubic, AssociationRecord, NON_ASSOCIATING, R, SiteScheme,
+    Association, AssociationCubic, AssociationRecord, NON_ASSOCIATING, R, SiteDerivatives,
+    SiteScheme,
 };
 use crate::cubic::Cubic;
 use crate::mixing_rule::MixingRule;
@@ -93,6 +94,27 @@ pub struct PhaseDerivatives {
     pub d_ln_phi_dt: Vec<f64>,
     /// `d ln phi_i / d P` at constant `T` and composition.
     pub d_ln_phi_dp: Vec<f64>,
+}
+
+/// An associating mixture's association terms at one state.
+///
+/// Carried together because [`Mixture::phase_derivatives`] needs all of them at once and
+/// none is meaningful alone: the root sensitivities say how `Z` responds to the state,
+/// `alpha` converts one to a molar volume, and the kernel's derivatives are what the
+/// association adds at constant volume.
+struct AssociationDerivatives {
+    /// `R T/P`.
+    alpha: f64,
+    /// `dZ/dn_j`, at constant `T` and `P`.
+    d_z_n: Vec<f64>,
+    /// `T dZ/dT`, at constant `P` and composition.
+    t_d_z: f64,
+    /// `P dZ/dP`, at constant `T` and composition.
+    p_d_z: f64,
+    /// The kernel's derivatives at the converged state.
+    kernel: SiteDerivatives,
+    /// The association's `ln phi_i`, which adds to the cubic's.
+    ln_phi: Vec<f64>,
 }
 
 /// One component's critical constants.
@@ -917,6 +939,115 @@ impl Mixture {
         })
     }
 
+    /// An associating mixture's root sensitivities to `n_j`, `T` and `P`.
+    ///
+    /// **The root is the associating residual's, not the cubic's**, so its sensitivity is
+    /// taken from that residual: the cubic's own `dZ/dn_j` is `-0.8` where the associating
+    /// one is `-1.7` at the state `tests/mixture.rs` measures, and the difference is the
+    /// association's pressure responding to the composition.
+    ///
+    /// The residual is `Q(Z) - (Z/P) P_a(x, V(Z))` where `Q` is the cubic's z-cubic and
+    /// `P_a = -R T d(A_assoc/(R T))/dV` - the polynomial form `associating_root` solves, so
+    /// that `dQ/dZ` is the cubic's own `df_dz` and the two sensitivities are consistent.
+    /// `Q` vanishes at the same `Z` as the monic cubic's residual because it *is* that
+    /// residual times `q(Z) = (Z + delta1 B)(Z + delta2 B)`; multiplying through by `q` is
+    /// what lets one derivative serve both.
+    ///
+    /// # Errors
+    /// * Propagates the association solve's errors.
+    // Eight arguments, and each is a sensitivity the caller has already computed at this
+    // state. Recomputing them here would be a second derivation of `A`'s and `B`'s
+    // temperature derivatives, which is the defect the module is organised to avoid.
+    #[allow(clippy::too_many_arguments)]
+    fn association_derivatives(
+        &self,
+        reduced: &ReducedParameters,
+        x: &[f64],
+        association: &Association,
+        z: f64,
+        a_mix: f64,
+        b_mix: f64,
+        abar: &[f64],
+        t_d_a: f64,
+        t_d_b: f64,
+    ) -> Result<AssociationDerivatives> {
+        let n = self.len();
+        let (r, t, p) = (R, reduced.t_kelvin, reduced.pressure);
+        // `R T/P`, which carries a `Z` sensitivity to a molar volume and back.
+        let alpha = r * t / p;
+        let covolumes: Vec<f64> = reduced.b.iter().map(|b| b * alpha).collect();
+        let v = z * alpha;
+        let state = association.solve(&covolumes, x, v, t)?;
+        let kernel = association.derivatives(&covolumes, x, v, t, &state)?;
+
+        // `Q(Z) := (Z - B) q(Z) f_cubic(Z)` is the monic z-cubic whose derivative the
+        // cubic's own `df_dz` already is, and `(Z - B) q(Z) Z P_a/P` is the association's
+        // term written the same way. So the residual this differentiates is
+        //
+        //   R(Z) = monic(Z) - S(Z) P_a(V(Z))/P,   S(Z) = (Z - B) q(Z)
+        //
+        // **`Z q(Z)`, not `S`.** Multiplying the cubic's residual through by `q` alone
+        // leaves a residual whose roots are not the equation of state's, and the two
+        // differ by `-B q P_a/P` - a difference that vanishes only when the association
+        // does. The first version of this used `Z q` and disagreed with the root's own
+        // finite difference in both sign and magnitude.
+        let b = b_mix;
+        let (ds, dp) = (self.cubic.delta_sum(), self.cubic.delta_prod());
+        let q = z * z + ds * b * z + dp * b * b;
+        let s_factor = (z - b) * q;
+        let s_prime = q + (z - b) * (2.0 * z + ds * b);
+        let d_s_db = -q + (z - b) * (ds * z + 2.0 * dp * b);
+
+        let p_assoc = -r * t * state.d_helmholtz_dv;
+        let a_vv = kernel.d2_helmholtz_dv2;
+        let a_vt = kernel.d2_helmholtz_dv_dt;
+        let fa = self.cubic.df_da(z, b);
+        let fb = self.cubic.df_db(z, a_mix, b);
+        let fz = self.cubic.df_dz(z, a_mix, b);
+
+        // `P_a` depends on `V`, and `V = Z R T/P` moves with every one of the three state
+        // variables - which is why each sensitivity below carries an `A_vv` term beside
+        // the explicit one.
+        let g_z = fz - (s_prime / p) * p_assoc + s_factor * alpha * alpha * a_vv;
+
+        let d_a_dn: Vec<f64> = (0..n).map(|j| 2.0 * (abar[j] - a_mix)).collect();
+        let d_b_dn: Vec<f64> = (0..n).map(|j| reduced.b[j] - b_mix).collect();
+        // `dA/dn_j` and `dB/dn_j` are the *normalised* partials - the ones that hold the
+        // total mole number at one, and the ones NeqSim reports - so the association's
+        // composition derivative has to be taken the same way. The kernel's is raw, so
+        // the chain rule from `x = n/(sum n)` subtracts the composition-weighted sum of
+        // all of them, exactly as `2 abar_j` becomes `2 (abar_j - A)`.
+        let weighted_a_vn: f64 = (0..n).map(|i| x[i] * kernel.d2_helmholtz_dv_dn[i]).sum();
+        let d_z_n: Vec<f64> = (0..n)
+            .map(|j| {
+                -((fa * d_a_dn[j] + fb * d_b_dn[j]) - d_s_db * d_b_dn[j] * p_assoc / p
+                    + s_factor * alpha * (kernel.d2_helmholtz_dv_dn[j] - weighted_a_vn))
+                    / g_z
+            })
+            .collect();
+
+        // `T dB/dT = -B`, so `T dS/dT = -B dS/dB`, and
+        // `T dP_a/dT = P_a - R T alpha Z A_vv - R T^2 A_vt` at fixed `Z`.
+        let t_d_p_assoc = p_assoc - r * t * alpha * z * a_vv - r * t * t * a_vt;
+        let t_d_z = -(self.cubic.t_dfdt(z, a_mix, b, t_d_a, t_d_b) + (b * d_s_db / p) * p_assoc
+            - (s_factor / p) * t_d_p_assoc)
+            / g_z;
+
+        // `P dB/dP = B`, and `P dP_a/dP = Z alpha^2 A_vv` at fixed `Z`.
+        let p_d_z = -(fa * a_mix + fb * b - d_s_db * b * p_assoc / p + s_factor * p_assoc / p
+            - s_factor * z * alpha * alpha * a_vv)
+            / g_z;
+
+        Ok(AssociationDerivatives {
+            alpha,
+            d_z_n,
+            t_d_z,
+            p_d_z,
+            ln_phi: state.ln_phi.clone(),
+            kernel,
+        })
+    }
+
     /// One phase's `ln phi` together with its first derivatives at a state.
     ///
     /// The three families a second-order flash is written in, all analytic:
@@ -969,18 +1100,6 @@ impl Mixture {
                      energy's second derivative rather than this classical one. The \
                      derivative surface covers the cubic family, and this rule is \
                      outside it",
-                ));
-            }
-            _ if self.associating => {
-                return Err(AzothError::invalid_input(
-                    "association",
-                    "an associating mixture's derivative surface is not derived: the \
-                     constant-T,P conversion needs `dZ/dn_j` from the associating root, \
-                     which needs the association's mixed second derivative \
-                     `d2(A/(RT))/dV dn_j`. Its pure `dV^2` companion is computed and \
-                     checked against a finite difference; the mixed one is not. \
-                     Returning the cubic's derivative instead would be a wrong answer \
-                     rather than a missing one, so this refuses",
                 ));
             }
             MixingRule::SoreideWhitson { .. } => {
@@ -1036,15 +1155,72 @@ impl Mixture {
 
         let t_dkij = self.mixing_rule.t_d_effective_kij(reduced.t_kelvin);
 
-        // --- composition, at constant temperature and pressure -------------------
+        // --- the state's sensitivities -------------------------------------------
         //
-        // `A_i` and `B_i` are functions of `(T, P)` alone, so only the composition moves.
-        // At unit total mole number `dA/dn_j = 2 (abar_j - A)` and `dB/dn_j = B_j - B`.
+        // `A_i` and `B_i` are functions of `(T, P)` alone, so composition moves `A` and
+        // `B` alone: at unit total mole number `dA/dn_j = 2 (abar_j - A)` and
+        // `dB/dn_j = B_j - B`. `A_ij` moves with temperature through both the components'
+        // alphas and the interaction parameter, and `B_ij` scales as `1/T`, so
+        // `T dB/dT = -B`.
         let d_a_dn: Vec<f64> = (0..n).map(|j| 2.0 * (abar[j] - a_mix)).collect();
         let d_b_dn: Vec<f64> = (0..n).map(|j| reduced.b[j] - b_mix).collect();
-        let d_z_dn: Vec<f64> = (0..n)
-            .map(|j| -(fa * d_a_dn[j] + fb * d_b_dn[j]) / fz)
-            .collect();
+
+        let mut t_d_a_ij = vec![vec![0.0; n]; n];
+        let mut t_d_abar = vec![0.0; n];
+        for i in 0..n {
+            for j in 0..n {
+                let psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j]);
+                // `sqrt(A_i A_j)` is the part the alpha functions carry; the interaction
+                // parameter multiplies it, so its own temperature derivative enters
+                // with the opposite sign.
+                let root = (reduced.a[i] * reduced.a[j]).sqrt();
+                t_d_a_ij[i][j] = a_ij[i][j] * (psi_pair - 2.0) - t_dkij[i * n + j] * root;
+                t_d_abar[i] += x[j] * t_d_a_ij[i][j];
+            }
+        }
+        let mut t_d_a = 0.0;
+        for i in 0..n {
+            t_d_a += x[i] * t_d_abar[i];
+        }
+        let t_d_b = -b_mix;
+
+        // --- the root's sensitivities --------------------------------------------
+        //
+        // **An associating mixture's root is not the cubic's, so its sensitivity is not
+        // either.** The association carries a pressure that responds to the composition
+        // and to the temperature, and the whole of the difference between this surface
+        // and the cubic's is here.
+        let association = self.association();
+        let sensitivities = match &association {
+            Some(association) => Some(self.association_derivatives(
+                reduced,
+                x,
+                association,
+                z,
+                a_mix,
+                b_mix,
+                &abar,
+                t_d_a,
+                t_d_b,
+            )?),
+            None => None,
+        };
+        let (d_z_dn, t_d_z, p_d_z) = match &sensitivities {
+            Some(association) => (
+                association.d_z_n.clone(),
+                association.t_d_z,
+                association.p_d_z,
+            ),
+            None => (
+                (0..n)
+                    .map(|j| -(fa * d_a_dn[j] + fb * d_b_dn[j]) / fz)
+                    .collect::<Vec<f64>>(),
+                -(fa * t_d_a + fb * t_d_b) / fz,
+                -(fa * a_mix + fb * b_mix) / fz,
+            ),
+        };
+
+        // --- composition, at constant temperature and pressure -------------------
         let d_coeff_dn: Vec<f64> = (0..n)
             .map(|j| {
                 d_a_dn[j] / (delta_diff * b_mix) - a_mix * d_b_dn[j] / (delta_diff * b_mix * b_mix)
@@ -1056,6 +1232,15 @@ impl Mixture {
                     - (d_z_dn[j] + delta2 * d_b_dn[j]) / (z + delta2 * b_mix)
             })
             .collect();
+
+        // The association's `ln phi`, which `PhaseState::ln_phi` carries too: the surface
+        // is the same values, so a caller comparing the two must find them equal.
+        let mut ln_phi = ln_phi;
+        if let Some(association) = &sensitivities {
+            for (value, addition) in ln_phi.iter_mut().zip(&association.ln_phi) {
+                *value += addition;
+            }
+        }
 
         let mut d_ln_phi_dn = vec![vec![0.0; n]; n];
         for i in 0..n {
@@ -1077,31 +1262,23 @@ impl Mixture {
                     - coefficient * factor[i] * d_i_dn[j];
             }
         }
-
-        // --- temperature, at constant pressure and composition --------------------
-        //
-        // `A_ij` moves with temperature through both the components' alphas and the
-        // interaction parameter, and its logarithmic derivative is `psi_pair - 2` plus
-        // the `kij` term. `B_ij` scales as `1/T`, so `T dB/dT = -B`.
-        let mut t_d_a_ij = vec![vec![0.0; n]; n];
-        let mut t_d_abar = vec![0.0; n];
-        for i in 0..n {
-            for j in 0..n {
-                let psi_pair = 0.5 * (reduced.psi[i] + reduced.psi[j]);
-                // `sqrt(A_i A_j)` is the part the alpha functions carry; the interaction
-                // parameter multiplies it, so its own temperature derivative enters
-                // with the opposite sign.
-                let root = (reduced.a[i] * reduced.a[j]).sqrt();
-                t_d_a_ij[i][j] = a_ij[i][j] * (psi_pair - 2.0) - t_dkij[i * n + j] * root;
-                t_d_abar[i] += x[j] * t_d_a_ij[i][j];
+        // The association's own contribution: the kernel's `d ln phi_i/dn_j` at constant
+        // volume, plus what the volume does - `dV/dn_j = (R T/P) dZ/dn_j`.
+        // The same normalisation as the root's: the kernel's composition derivative holds
+        // the other mole numbers, not the total, so the chain rule from `x = n/(sum n)`
+        // subtracts the composition-weighted sum of the row.
+        if let Some(association) = &sensitivities {
+            for (i, row) in d_ln_phi_dn.iter_mut().enumerate() {
+                let kernel_row = &association.kernel.d_ln_phi_dn[i];
+                let weighted: f64 = (0..n).map(|k| x[k] * kernel_row[k]).sum();
+                let volume = association.alpha * association.kernel.d_ln_phi_dv[i];
+                for (j, value) in row.iter_mut().enumerate() {
+                    *value += kernel_row[j] - weighted + volume * association.d_z_n[j];
+                }
             }
         }
-        let mut t_d_a = 0.0;
-        for i in 0..n {
-            t_d_a += x[i] * t_d_abar[i];
-        }
-        let t_d_b = -b_mix;
-        let t_d_z = -(fa * t_d_a + fb * t_d_b) / fz;
+
+        // --- temperature, at constant pressure and composition --------------------
         let t_d_coeff = t_d_a / (delta_diff * b_mix) - a_mix * t_d_b / (delta_diff * b_mix * b_mix);
         let t_d_i = (t_d_z + delta1 * t_d_b) / (z + delta1 * b_mix)
             - (t_d_z + delta2 * t_d_b) / (z + delta2 * b_mix);
@@ -1117,13 +1294,21 @@ impl Mixture {
                 - coefficient * factor[i] * t_d_i;
             d_ln_phi_dt[i] = t_d_ln_phi / reduced.t_kelvin;
         }
+        // And the association's, whose volume moves with the temperature as
+        // `dV/dT = (R/P)(Z + T dZ/dT)`.
+        if let Some(association) = &sensitivities {
+            let volume = association.alpha / reduced.t_kelvin * (z + association.t_d_z);
+            for (i, value) in d_ln_phi_dt.iter_mut().enumerate() {
+                *value +=
+                    association.kernel.d_ln_phi_dt[i] + volume * association.kernel.d_ln_phi_dv[i];
+            }
+        }
 
         // --- pressure, at constant temperature and composition --------------------
         //
         // Every `A_i` and `B_i` is linear in `P`, so `A`, `B` and their row sums scale
         // as `P` while `coefficient` and `factor_i` - ratios of two such quantities -
         // do not move at all.
-        let p_d_z = -(fa * a_mix + fb * b_mix) / fz;
         let p_d_i = (p_d_z + delta1 * b_mix) / (z + delta1 * b_mix)
             - (p_d_z + delta2 * b_mix) / (z + delta2 * b_mix);
         let mut d_ln_phi_dp = vec![0.0; n];
@@ -1132,6 +1317,14 @@ impl Mixture {
                 - (p_d_z - b_mix) / (z - b_mix)
                 - coefficient * factor[i] * p_d_i;
             d_ln_phi_dp[i] = p_d_ln_phi / reduced.pressure;
+        }
+        // The association carries no explicit pressure, so its whole contribution is the
+        // volume's: `dV/dP = (R T/P)(dZ/dP - Z/P)`.
+        if let Some(association) = &sensitivities {
+            let volume = association.alpha * (association.p_d_z - z) / reduced.pressure;
+            for (i, value) in d_ln_phi_dp.iter_mut().enumerate() {
+                *value += volume * association.kernel.d_ln_phi_dv[i];
+            }
         }
 
         Ok(PhaseDerivatives {
