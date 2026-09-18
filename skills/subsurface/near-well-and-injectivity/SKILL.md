@@ -3,7 +3,7 @@
 Derive what the rock will give and take, and hand it to NeqSim: productivity and injectivity indices, their evolution as saturation fronts develop, and the SCAL basis behind them. Standardises on OPM Flow as the reservoir simulator, pyscal for relative permeability and resdata for output, and covers converting a NeqSim compositional fluid into a black-oil (PVTO/PVDG) or gas-condensate (VAPOIL/PVTG/PVDO) PVT table that OPM Flow will actually accept. USE WHEN: a productivity or injectivity index is about to be assumed, injectors must be checked against a voidage requirement, productivity decay through the bubble point matters, a gas condensate needs retrograde dropout and condensate banking represented, a reservoir model must be sized backwards from a mandated production profile, a NeqSim fluid must become a PVTO/PVDG/PVTG/PVTW deck section, or an Eclipse-format reservoir model must be built and run.
 
 This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P6.
+produces no azoth number. Azoth backs the fluid side of it at tranche P4, whose reference equations of state and characterisation are what a PVT deck section is built from; the reservoir simulation itself is not a port target, because NeqSim has none.
 
 ## When to Use
 
