@@ -976,10 +976,12 @@ impl Mixture {
                     "association",
                     "an associating mixture's derivative surface is not derived yet: the \
                      constant-T,P conversion needs `dZ/dn_j` from the associating root, \
-                     and that needs two more kernel derivatives - the second volume \
-                     derivative of the association's Helmholtz energy and its composition \
-                     cross derivative. Returning the cubic's would be a wrong answer \
-                     rather than a missing one, so this refuses",
+                     and differentiating that residual needs the second volume derivative \
+                     of the association's Helmholtz energy. The kernel computes one - by \
+                     differentiating the site-fraction system a second time - and it is \
+                     not yet right: `d2X/dV2` comes out 1.8 to 2.0 times a finite \
+                     difference of `dX/dV`. Returning the cubic's derivative instead \
+                     would be a wrong answer rather than a missing one, so this refuses",
                 ));
             }
             MixingRule::SoreideWhitson { .. } => {
