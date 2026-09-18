@@ -2,7 +2,7 @@ model = "eos.ge_wilson_phase"
 [[cases]]
 id = "decane_dodecane_equimolar_at_298_15_k_1_bar"
 tolerance = 1e-08
-source = "NeqSim 3.20.0 `getWilsonActivityCoefficient` over `getAntoineVaporPressure`, from validation/neqsim/GeWilsonPhi.java. Not `getFugacityCoefficient`: `PhaseGEWilson` never writes `gamma` back to the component, so the phase reports zero for every one, and the two factors it does compute are composed by the driver. `p_sat` is the bar figure times 1e5, and `nc12`'s is one of NeqSim's shared heavy-component defaults."
+source = "NeqSim 3.20.0 `getFugacityCoefficient` at 298.15 K and 1 bar, from validation/neqsim/GeWilsonPhi.java. The driver calls `system.init(1)`, which reaches `PhaseGE.init` and the five-argument `getExcessGibbsEnergy` - the overload that evaluates `getWilsonActivityCoefficient` and so publishes `gamma`; run `fugcoef` without it and every coefficient is zero, which is the defect commit `c5ec5fb` (PR #3774, closing #3770) fixed. `nc12` is the exception: this library's `COMP.csv` is the 2026-09-13 snapshot, in which its row carries one repeated Antoine tuple shared with 92 others, and upstream `83b64e5` (PR #3775) has since marked all 93 rows `none`, so NeqSim returns `NaN` for that `p_sat` and this library's 42.24466471596181 Pa is its own vendored figure, not an oracle's. The `gamma` beside it is NeqSim's."
 [cases.inputs]
 components = ["nc10", "nc12"]
 T = 298.15
@@ -16,7 +16,7 @@ p_sat = [483.64080572722125, 42.24466471596181]
 [[cases]]
 id = "octane_decane_lean_at_350_k_1_bar"
 tolerance = 1e-08
-source = "NeqSim 3.20.0, as the first case: validation/neqsim/GeWilsonPhi.java. Both members carry a real vapour-pressure row, unlike the heavy pseudo-components, so this state is not dominated by a shared default."
+source = "NeqSim 3.20.0 `getFugacityCoefficient`, as the first case: validation/neqsim/GeWilsonPhi.java. Both members carry a real vapour-pressure row, unlike the heavy pseudo-components, so no part of this state rests on a repeated tuple and NeqSim confirms both components."
 [cases.inputs]
 components = ["n-octane", "nc10"]
 T = 350.0
@@ -30,7 +30,7 @@ p_sat = [36663.00196112154, 6670.013533199678]
 [[cases]]
 id = "heptane_nonane_at_320_k_1_bar"
 tolerance = 1e-08
-source = "NeqSim 3.20.0, as the first case: validation/neqsim/GeWilsonPhi.java. The lightest pair here, and the one the Wilson correlation's own parameterisation covers best: it is a paraffin-wax model, and both members are well inside its range."
+source = "NeqSim 3.20.0 `getFugacityCoefficient`, as the first case: validation/neqsim/GeWilsonPhi.java. The lightest pair here, and the one the Wilson correlation's own parameterisation covers best: it is a paraffin-wax model, and both members are well inside its range."
 [cases.inputs]
 components = ["n-heptane", "n-nonane"]
 T = 320.0

@@ -1,27 +1,32 @@
-// What a `PhaseGEWilson` liquid *should* report, for `eos.ge_wilson_phase`.
+// NeqSim's own fugacity coefficients for `eos.ge_wilson_phase`, after #3774.
 //
 //     javac -proc:none -cp neqsim-3.20.0.jar GeWilsonPhi.java
 //     java -cp .:neqsim-3.20.0.jar GeWilsonPhi
 //
-// **Why the driver composes the coefficient rather than reading it.**
-// `PhaseGEWilson.getExcessGibbsEnergy` sums `x_i ln(gamma_i)` and never writes `gamma`
-// back to the component, so `ComponentGE.getGamma()` returns its initial zero and
-// `ComponentGE.fugcoef` sets `phi_i = 0 * P0_i / P = 0`. Measured: every component of
-// every state below reports `gamma = 0.0` and `phi = 0.0`. `ComponentGEWilson`'s
-// eight-argument `getGamma` override - the one every other GE component implements - is
-// stubbed to `return 0.0` as well.
+// **This driver used to compose the coefficient. It no longer has to.**
+// `PhaseGEWilson.getExcessGibbsEnergy` summed `x_i ln(gamma_i)` and never wrote `gamma` back
+// to the component, so `ComponentGE.getGamma()` returned its initial zero and
+// `ComponentGE.fugcoef` set `phi_i = 0 * P0_i / P = 0`; `ComponentGEWilson`'s eight-argument
+// `getGamma` override was stubbed to `return 0.0` as well. With nothing published, the
+// driver multiplied `getWilsonActivityCoefficient` by `getAntoineVaporPressure` and divided
+// by `P`, which is what `fugcoef` would have set had the field been written.
 //
-// So `SystemGEWilson` has no fugacity coefficient to compare against, and the two factors
-// it *does* compute are both public: `getWilsonActivityCoefficient` and
-// `getAntoineVaporPressure`. This prints those, and their product over `P`, which is what
-// `ComponentGE.fugcoef` would set if the field were written. The activity coefficient is
-// the same number `validation/eos/n_butane_nc12_wilson_against_neqsim.json` validates
-// `eos.wilson_activity_coefficients` against, read through the same direct method and for
-// the same reason.
+// NeqSim commit `c5ec5fb` (PR #3774, closing #3770) stores `lngamma` and `gamma` in
+// `getWilsonActivityCoefficient` and delegates the eight-argument `getGamma` to it. The
+// sequence below is the library's own, not the driver's: `system.init(1)` reaches
+// `PhaseGE.init(totalNumberOfMoles, numberOfComponents, initType, pt, beta)`, which calls the
+// five-argument `getExcessGibbsEnergy` - the only overload that evaluates
+// `getWilsonActivityCoefficient` and therefore the only one that publishes anything. Then
+// `fugcoef` reads the field it published. Run `fugcoef` without the phase having initialised
+// and the zero is back, which is exactly the defect #3774 fixed and the reason this driver
+// exists.
 //
-// What is NeqSim's here is both factors and the phase's group of components. What is the
-// driver's is the one multiplication, and it is stated rather than hidden because it is
-// the line upstream leaves out.
+// The pair choices are the same as before and for the same reason: solvent-tagged members
+// only, because `ComponentGE.fugcoef` takes a Henry's-law branch for a solute, and members
+// with a real vapour-pressure row. `nC12`'s row used to carry coefficients shared with
+// `nc14`, `nc16`, `nc20` and `nc6-benzene` - filler - and commit `83b64e5` (PR #3775) has
+// since replaced them with `none`, so that state's second component now reports `NaN` and is
+// not an oracle for anything.
 
 import neqsim.thermo.system.SystemGEWilson;
 import neqsim.thermo.component.ComponentGEWilson;
@@ -37,6 +42,8 @@ public class GeWilsonPhi {
     system.createDatabase(true);
     system.setMixingRule("classic");
     system.init(0);
+    // The library's sequence: this is what publishes `gamma` on every component.
+    system.init(1);
 
     PhaseInterface ge = null;
     for (int p = 0; p < system.getNumberOfPhases(); p++) {
@@ -49,32 +56,20 @@ public class GeWilsonPhi {
       return;
     }
 
-    System.out.println(first + "/" + second + "  T=" + temperatureK + " P=" + pressureBar
-        + "  x=" + xFirst);
+    System.out.printf("%s/%s  T=%.4f P=%.4f  x=%.4f%n", first, second, temperatureK, pressureBar,
+        xFirst);
     for (int i = 0; i < ge.getNumberOfComponents(); i++) {
       ComponentGEWilson component = (ComponentGEWilson) ge.getComponent(i);
-      double gamma = component.getWilsonActivityCoefficient(ge);
-      double p0 = component.getAntoineVaporPressure(temperatureK);
       component.fugcoef(ge);
-      System.out.println("  " + component.getName()
-          + "  x=" + component.getx()
-          + "  gamma=" + gamma
-          + "  P0_bar=" + p0
-          + "  gamma*P0/P=" + (gamma * p0 / pressureBar)
-          + "  [the phase reports phi=" + component.getFugacityCoefficient() + "]");
+      double phi = component.getFugacityCoefficient();
+      System.out.printf("  %-10s x=%.17g gamma=%.17g ln_gamma=%.17g P0_bar=%.17g phi=%.17g ln_phi=%.17g%n",
+          component.getName(), component.getx(), component.getGamma(),
+          component.getLnGamma(), component.getAntoineVaporPressure(temperatureK), phi,
+          Math.log(phi));
     }
   }
 
   public static void main(String[] args) {
-    // Solvent-tagged pairs only: for a component NeqSim tags a Henry's-law solute the
-    // phase's own `fugcoef` takes the other branch, so a Raoult comparison would not be
-    // a comparison. `n-butane` is one of those, which is why the pair the Wilson
-    // *activity* model is validated on (`validation/eos/n_butane_nc12_...`) is not the
-    // pair this phase can be stated against.
-    // And with both members carrying a real vapour-pressure row. `nc12` and every heavier
-    // pseudo-component share one default row in NeqSim's `COMP.csv` - `(-7.76451, 1.45838,
-    // -2.7758, -1.23303, 0.0)`, identical for `nc12`, `nc14`, `nc16`, `nc20` and even
-    // `nc6-benzene` - so a case stated over one of those is stated over filler.
     one("nc10", "nc12", 298.15, 1.0, 0.5);
     one("n-octane", "nc10", 350.0, 1.0, 0.4);
     one("n-heptane", "n-nonane", 320.0, 1.0, 0.6);

@@ -2,7 +2,7 @@ model = "eos.uniquac_activity_coefficients"
 [[cases]]
 id = "methanol_water_equimolar_at_298_15_k"
 tolerance = 1e-09
-source = "Standard UNIQUAC (Abrams-Prausnitz 1975) for methanol/water 0.5/0.5 at 298.15 K. `r`/`q` are the UNIFAC group sums, resolved from the databank; `aij` is a representative UNIQUAC pair, because no upstream table carries one. There is no differential oracle: NeqSim's `ComponentGEUniquac.getGamma` returns 0.0 and its formula is commented out."
+source = "Standard UNIQUAC (Abrams-Prausnitz 1975) for methanol/water 0.5/0.5 at 298.15 K. `r`/`q` are the UNIFAC group sums, resolved from the databank; `aij` is a representative UNIQUAC pair, because no upstream table carries one. There is no differential oracle: upstream `c5ec5fb` (PR #3774) makes `ComponentGEUniquac.getGamma` throw and refuses both standalone constructors."
 [cases.inputs]
 components = ["methanol", "water"]
 T = 298.15

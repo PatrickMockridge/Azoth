@@ -2,7 +2,7 @@ model = "eos.ge_uniquac_phase"
 [[cases]]
 id = "methanol_water_equimolar_at_298_15_k_1_bar"
 tolerance = 1e-09
-source = "This library's own output, recorded. There is no differential oracle - NeqSim's `ComponentGEUniquac.getGamma` returns 0.0 and its formula is commented out - so what this checks is that the phase composes `eos.uniquac_activity_coefficients` with `eos.antoine_vapor_pressure` and nothing else. Its `gamma` is that model's own case's `gamma` to the last bit, which is the composition stated as an equality rather than a tolerance."
+source = "This library's own output, recorded. There is no differential oracle - upstream `c5ec5fb` (PR #3774, closing #3770) makes `ComponentGEUniquac.getGamma` throw and refuses both standalone constructors, so NeqSim has withdrawn the phase - and what this checks is that the phase composes `eos.uniquac_activity_coefficients` with `eos.antoine_vapor_pressure` and nothing else. Its `gamma` is that model's own case's `gamma` to the last bit, which is the composition stated as an equality rather than a tolerance."
 [cases.inputs]
 components = ["methanol", "water"]
 T = 298.15

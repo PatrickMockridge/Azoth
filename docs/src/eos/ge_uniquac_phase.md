@@ -8,7 +8,7 @@
 
 **NeqSim 3.20.0 `PhaseGEUniquac`**
 
-`ComponentGE.fugcoef`, ported verbatim; the activity coefficient is `eos.uniquac_activity_coefficients`'. NeqSim's own UNIQUAC `gamma` does not exist, so the phase's composition is checked by construction rather than against an oracle.
+`ComponentGE.fugcoef`, ported verbatim; the activity coefficient is `eos.uniquac_activity_coefficients`'. Upstream commit `c5ec5fb` (PR #3774) rejects standalone UNIQUAC outright, so there is no upstream `gamma` and the phase's composition is checked by construction rather than against an oracle.
 
 DOI: [10.1002/aic.690210115](https://doi.org/10.1002/aic.690210115)
 
@@ -48,8 +48,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 49 of the databank's 173 substances are tagged so, and a phase over one is refused.
 - `gamma_i` is `eos.uniquac_activity_coefficients`', and `P0_i` is `eos.antoine_vapor_pressure`'s on the component's own coefficients. Neither is recomputed here.
 - `aij` is the caller's, as it is for the activity model: no upstream table carries a UNIQUAC interaction matrix, so it arrives as an argument or from a keycard entry at `coefficients."eos.ge_uniquac_phase".aij`. It is in Kelvin and directional, with a zero diagonal.
-- `r` and `q` are the UNIFAC group sums, not NeqSim's `rUNIQUAQ`/`qUNIQUAQ` columns - which are 0.0 for 109 of `UNIFACcomp.csv`'s 112 rows and which `ComponentGEUniquac`'s own constructor reads, so NeqSim's UNIQUAC divides by zero as well as returning zero.
-- there is no differential oracle for the composition: `ComponentGEUniquac.getGamma` returns 0.0 and a bare `PhaseGEUniquac` reports `-Infinity` for its excess Gibbs energy. The `r`/`q` half *is* checked, against `ComponentGEUnifac.getR`/`getQ`.
+- `r` and `q` are the UNIFAC group sums, not NeqSim's `rUNIQUAQ`/`qUNIQUAQ` columns - which are 0.0 for 109 of `UNIFACcomp.csv`'s 112 rows and which `ComponentGEUniquac`'s own constructor reads - one of the incomplete implementations `c5ec5fb` cites for withdrawing the phase.
+- there is no differential oracle: upstream `c5ec5fb` (PR #3774, closing #3770) makes `ComponentGEUniquac.getGamma` and both standalone constructors throw, so NeqSim has withdrawn the phase this library runs. The `r`/`q` half *is* checked, against `ComponentGEUnifac.getR`/`getQ`.
 - the cases' `aij` is a representative UNIQUAC pair, the same one the activity model's case uses, and their expected values are this library's own output recorded so a change cannot pass unnoticed.
 - `P0_i` is reported beside `ln_phi` so a reader can check the correlation and the arithmetic separately; a wrong `P0` and a wrong `gamma` produce the same kind of wrong answer.
 - this is a *liquid* phase. A vapour over it is a cubic, and combining the two is a gamma-phi flash, which is a separate model.
