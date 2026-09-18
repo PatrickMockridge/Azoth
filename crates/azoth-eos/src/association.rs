@@ -9,15 +9,19 @@
 //! equations of state", and the code it describes is still duplicated across
 //! `PhaseSrkCPA`, `PhaseUMRCPA` and `PhaseSAFTVRMie`. This is that kernel, once.
 //!
-//! # What is here, and what is not yet
+//! # What is here
 //!
-//! Here: the site schemes and their bond rule, the Carnahan-Starling distribution
-//! function, the association strength `Delta`, the site-fraction solve, and the Helmholtz
-//! energy with its fugacity term. Not yet: the *implicit* derivatives of the site
-//! fractions with respect to `n`, `T` and `V`, which are what
-//! [`crate::mixture::Mixture::phase_derivatives`] needs. The solve's Jacobian is already
-//! formed here, since the Newton step requires it, so the implicit step is one linear
-//! solve against a matrix this module already builds.
+//! The site schemes and their bond rule, the Carnahan-Starling distribution function, the
+//! association strength `Delta`, the site-fraction solve, the Helmholtz energy with its
+//! fugacity term, and the *implicit* derivatives of the site fractions with respect to
+//! `n`, `T` and `V` - which are what [`crate::mixture::Mixture::phase_derivatives`] needs,
+//! and which are implicit because the site fractions solve a nonlinear system rather than
+//! being a formula.
+//!
+//! Not yet: the wiring into [`crate::mixture::Mixture`], and a NeqSim probe to confirm the
+//! numbers against the class this is ported from. The tests here compare every derivative
+//! against a finite difference of the solve's own output, which is a check against *this*
+//! implementation's behaviour and not against NeqSim's answer.
 //!
 //! # Variables
 //!
@@ -285,6 +289,11 @@ pub struct Rdf {
     /// `d ln g / d T` at constant composition and volume, which is zero: `eta` carries no
     /// temperature. Present so a caller does not have to remember that.
     pub d_ln_g_dt: f64,
+    /// The packing fraction `eta = B/(4V)`.
+    pub eta: f64,
+    /// `d^2 ln g / d eta^2`, which a second derivative with respect to a *pair* of mole
+    /// numbers needs: `d^2 ln g / dn_i dn_j = b_i b_j (d^2 ln g/d eta^2)/(16 V^2)`.
+    pub d2_ln_g_d_eta2: f64,
 }
 
 impl Rdf {
@@ -316,7 +325,32 @@ impl Rdf {
             d_ln_g_dv,
             d2_ln_g_dv2,
             d_ln_g_dt: 0.0,
+            eta,
+            d2_ln_g_d_eta2,
         }
+    }
+
+    /// `d ln g / d eta`, recomputed from the stored packing fraction.
+    fn d_ln_g_d_eta(&self) -> f64 {
+        3.0 / (1.0 - self.eta) - 1.0 / (2.0 - self.eta)
+    }
+
+    /// `d^2 ln g / dn_i dn_j`, from the packing fraction's second derivative.
+    ///
+    /// `eta` is linear in every mole number with coefficient `b_i/(4V)`, so the chain rule
+    /// contributes `b_i b_j/(16 V^2)` and nothing else.
+    #[must_use]
+    pub fn d2_ln_g_dn_dn(&self, b_i: f64, b_j: f64, v: f64) -> f64 {
+        b_i * b_j * self.d2_ln_g_d_eta2 / (16.0 * v * v)
+    }
+
+    /// `d^2 ln g / dn_i dV`, which the association fugacity's volume derivative needs.
+    ///
+    /// `d ln g/dn_i` is `b_i (d ln g/d eta)/(4V)`, and `eta` moves with `V` as `-B/(4V^2)`.
+    #[must_use]
+    pub fn d2_ln_g_dn_dv(&self, b_i: f64, sum_b: f64, v: f64) -> f64 {
+        -b_i * (sum_b * self.d2_ln_g_d_eta2 / (16.0 * v * v * v)
+            + self.d_ln_g_d_eta() / (4.0 * v * v))
     }
 }
 
@@ -454,14 +488,18 @@ impl Association {
 
         let rdf = Rdf::new(covolumes, moles, v);
         let delta = self.delta_matrix(covolumes, t, &rdf);
-        // `Klk_ij = n_i n_j Delta_ij / V`, NeqSim's `KlkMatrix`. The moles are indexed by
-        // the component owning the site, not by the site.
+        // `K_ij = n_j Delta_ij / V`, so that `sum_j K_ij X_j` is `S_i` and the fixed point
+        // `X_i = 1/(1 + S_i)` is NeqSim's `solveX2`.
+        //
+        // NeqSim's *Newton* path builds `Klk_ij = n_i n_j Delta_ij / V` instead, but pairs
+        // it with the `n_i`-scaled residual `n_i (1/X_i - 1) - sum_j Klk_ij X_j`, which
+        // vanishes at the same point. Taking that matrix without its scaling gives each
+        // site fraction a spurious factor of its component's mole number, which is what a
+        // finite difference against the substitution catches and nothing else does.
         let mut klk = vec![0.0; sites * sites];
         for i in 0..sites {
-            let ni = moles[self.component_of_site(i)];
             for j in 0..sites {
-                klk[i * sites + j] =
-                    ni * moles[self.component_of_site(j)] * delta[i * sites + j] / v;
+                klk[i * sites + j] = moles[self.component_of_site(j)] * delta[i * sites + j] / v;
             }
         }
 
@@ -543,9 +581,13 @@ impl Association {
             if residual.iter().all(|r| r.abs() < NEWTON_TOLERANCE) {
                 return physical;
             }
-            let Some(step) = solve_dense(&mut jacobian, &residual, sites) else {
+            // One right-hand side, so a fresh factorization each step - the Jacobian moves
+            // with `X` and reusing it would solve the previous step's system.
+            let mut step = vec![residual.clone()];
+            if !solve_many(&jacobian, &mut step, sites) {
                 return false;
-            };
+            }
+            let step = &step[0];
             for i in 0..sites {
                 let next = x[i] - step[i];
                 if next <= 0.0 {
@@ -560,49 +602,269 @@ impl Association {
     }
 }
 
-/// Solve `A x = b` for a small dense system by Gaussian elimination with partial pivoting.
+/// The logarithmic temperature derivative of a component's Boltzmann factor,
+/// `(exp(e/(RT)) - 1)`.
+///
+/// Zero at zero energy rather than a division by zero: a component with no association
+/// energy has a strength of zero, and the derivative of `log 0` is not the question being
+/// asked. NeqSim guards the same ratio with a `1e-50` threshold.
+fn boltzmann_d_ln_dt(energy: f64, t: f64) -> f64 {
+    let ratio = energy / (R * t);
+    let boltzmann = ratio.exp() - 1.0;
+    if boltzmann.abs() < 1.0e-50 {
+        return 0.0;
+    }
+    -ratio * ratio.exp() / (t * boltzmann)
+}
+
+/// The logarithmic temperature derivative of `DeltaNog` for a pair.
+fn delta_nog_d_ln_dt(
+    a: &AssociationComponent,
+    c: &AssociationComponent,
+    rule: CrossRule,
+    t: f64,
+) -> f64 {
+    match rule {
+        // `sqrt(K_a K_c)`, so the log-derivative is the mean of the two components'.
+        CrossRule::Elliott => {
+            0.5 * (boltzmann_d_ln_dt(a.energy, t) + boltzmann_d_ln_dt(c.energy, t))
+        }
+        CrossRule::Cr1 { energy, .. } => boltzmann_d_ln_dt(energy, t),
+    }
+}
+
+/// The site fractions' implicit derivatives, and the association fugacity derivatives.
+///
+/// Every one of these is an *implicit* derivative: the site fractions solve a nonlinear
+/// system, so their derivatives are one linear solve against that system's Jacobian, which
+/// [`Association::solve`] has already formed for its Newton step. Their being implicit is
+/// the whole reason this is a kernel rather than a formula.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SiteDerivatives {
+    /// `d X_A / d n_a`, indexed `[site][component]`, at constant `T` and `V`.
+    pub d_fractions_dn: Vec<Vec<f64>>,
+    /// `d X_A / d T` at constant composition and volume.
+    pub d_fractions_dt: Vec<f64>,
+    /// `d X_A / d V` at constant composition and temperature.
+    pub d_fractions_dv: Vec<f64>,
+    /// `d (ln phi_i^assoc) / d n_a`, at constant `T` and `V`. Indexed `[i][a]`.
+    pub d_ln_phi_dn: Vec<Vec<f64>>,
+    /// `d (ln phi_i^assoc) / d T` at constant composition and volume.
+    pub d_ln_phi_dt: Vec<f64>,
+    /// `d (ln phi_i^assoc) / d V` at constant composition and temperature.
+    pub d_ln_phi_dv: Vec<f64>,
+}
+
+impl Association {
+    /// The implicit derivatives of the site fractions and of the association fugacity.
+    ///
+    /// `state` must be the converged [`SiteState`] at this `(covolumes, moles, v, t)`; the
+    /// residual is
+    ///
+    /// ```text
+    /// F_i = X_i (1 + S_i) - 1,   S_i = (1/V) sum_k m_k Delta_ik X_k
+    /// ```
+    ///
+    /// whose Jacobian is `dF_i/dX_k = delta_ik (1 + S_i) + X_i m_k Delta_ik / V`. Each
+    /// parameter's derivative is `-J^{-1} dF/d(parameter)` with `X` held, and the three
+    /// right-hand sides differ only in which part of `S_i` moves:
+    ///
+    /// * `n_a` moves the mole number in the sum and `g` through `B`;
+    /// * `T` moves `DeltaNog` alone, since `g` carries no temperature;
+    /// * `V` moves the explicit `1/V` and `g` through `eta`.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if the vectors are not one entry per component, or if
+    ///   `state` is not for this mixture.
+    /// * [`AzothError::OutOfRange`] if `v` or `t` is not positive.
+    pub fn derivatives(
+        &self,
+        covolumes: &[f64],
+        moles: &[f64],
+        v: f64,
+        t: f64,
+        state: &SiteState,
+    ) -> Result<SiteDerivatives> {
+        let n = self.len();
+        for (field, given) in [("covolumes", covolumes.len()), ("moles", moles.len())] {
+            if given != n {
+                return Err(AzothError::invalid_input(
+                    field,
+                    format!("a mixture of {n} components takes {given} entries"),
+                ));
+            }
+        }
+        let sites = self.site_count();
+        if state.fractions.len() != sites {
+            return Err(AzothError::invalid_input(
+                "state",
+                format!(
+                    "the site state carries {} fractions for a mixture of {sites} sites",
+                    state.fractions.len()
+                ),
+            ));
+        }
+        if sites == 0 {
+            return Ok(SiteDerivatives {
+                d_fractions_dn: Vec::new(),
+                d_fractions_dt: Vec::new(),
+                d_fractions_dv: Vec::new(),
+                d_ln_phi_dn: vec![vec![0.0; n]; n],
+                d_ln_phi_dt: vec![0.0; n],
+                d_ln_phi_dv: vec![0.0; n],
+            });
+        }
+
+        let rdf = Rdf::new(covolumes, moles, v);
+        let delta = self.delta_matrix(covolumes, t, &rdf);
+        let x = &state.fractions;
+        let sum_b: f64 = covolumes.iter().zip(moles).map(|(b, m)| b * m).sum();
+
+        // `S_i`, and the Jacobian `dF_i/dX_k`.
+        let mut s = vec![0.0; sites];
+        let mut jacobian = vec![0.0; sites * sites];
+        for i in 0..sites {
+            for k in 0..sites {
+                let m_k = moles[self.component_of_site(k)];
+                s[i] += m_k * delta[i * sites + k] * x[k];
+            }
+            s[i] /= v;
+            for k in 0..sites {
+                let m_k = moles[self.component_of_site(k)];
+                let diagonal = if i == k { 1.0 } else { 0.0 };
+                jacobian[i * sites + k] =
+                    diagonal * (1.0 + s[i]) + x[i] * m_k * delta[i * sites + k] / v;
+            }
+        }
+
+        // The three right-hand sides, negated because each is `J X' = -dF/d(parameter)`.
+        let mut rhs = vec![vec![0.0; sites]; n + 2];
+        for (a, row) in rhs.iter_mut().enumerate().take(n) {
+            for i in 0..sites {
+                let explicit: f64 = (0..sites)
+                    .filter(|&k| self.component_of_site(k) == a)
+                    .map(|k| delta[i * sites + k] * x[k])
+                    .sum();
+                row[i] = -x[i] * (explicit / v + rdf.d_ln_g_dn[a] * s[i]);
+            }
+        }
+        for i in 0..sites {
+            let ci = self.component_of_site(i);
+            let mut total = 0.0;
+            for k in 0..sites {
+                let ck = self.component_of_site(k);
+                total += moles[ck]
+                    * delta[i * sites + k]
+                    * delta_nog_d_ln_dt(
+                        &self.components[ci],
+                        &self.components[ck],
+                        self.cross_rule(ci, ck),
+                        t,
+                    )
+                    * x[k];
+            }
+            rhs[n][i] = -x[i] * total / v;
+            rhs[n + 1][i] = -x[i] * s[i] * (rdf.d_ln_g_dv - 1.0 / v);
+        }
+        if !solve_many(&jacobian, &mut rhs, sites) {
+            return Err(AzothError::invalid_input(
+                "site fractions",
+                "the site-fraction Jacobian is singular at this state, so the association \
+                 derivatives are not defined here",
+            ));
+        }
+
+        // `dX/dn_a` is column `a` of the solved right-hand sides.
+        let d_fractions_dn = (0..sites)
+            .map(|i| (0..n).map(|a| rhs[a][i]).collect())
+            .collect();
+        let d_fractions_dt = rhs[n].clone();
+        let d_fractions_dv = rhs[n + 1].clone();
+
+        // `ln phi_i^assoc = sum_{A in i} ln X_A - (1/2) d ln g/dn_i`, so each derivative is
+        // the site sum plus the distribution function's own second derivative.
+        let mut d_ln_phi_dn = vec![vec![0.0; n]; n];
+        let mut d_ln_phi_dt = vec![0.0; n];
+        let mut d_ln_phi_dv = vec![0.0; n];
+        for i in 0..n {
+            for a in 0..n {
+                let site_sum: f64 = self.sites_of(i).map(|site| rhs[a][site] / x[site]).sum();
+                d_ln_phi_dn[i][a] =
+                    site_sum - 0.5 * rdf.d2_ln_g_dn_dn(covolumes[i], covolumes[a], v);
+            }
+            let site_sum_t: f64 = self.sites_of(i).map(|site| rhs[n][site] / x[site]).sum();
+            d_ln_phi_dt[i] = site_sum_t;
+            let site_sum_v: f64 = self
+                .sites_of(i)
+                .map(|site| rhs[n + 1][site] / x[site])
+                .sum();
+            d_ln_phi_dv[i] = site_sum_v - 0.5 * rdf.d2_ln_g_dn_dv(covolumes[i], sum_b, v);
+        }
+
+        Ok(SiteDerivatives {
+            d_fractions_dn,
+            d_fractions_dt,
+            d_fractions_dv,
+            d_ln_phi_dn,
+            d_ln_phi_dt,
+            d_ln_phi_dv,
+        })
+    }
+}
+
+/// Solve `A x = b` for several right-hand sides at once, in place.
 ///
 /// The association kernel's Jacobian is the only dense solve in this crate, and it is
 /// `sites x sites` - a handful - which is why it is written here rather than taken as a
-/// dependency. NeqSim uses EJML for the same solve. Returns `None` on a singular matrix,
-/// which the caller reports as an unrefined solve rather than a wrong one.
-fn solve_dense(a: &mut [f64], b: &[f64], n: usize) -> Option<Vec<f64>> {
-    let mut x = b.to_vec();
+/// dependency. NeqSim uses EJML for the same solve. The factorization is shared across the
+/// right-hand sides because the implicit derivatives are one solve each against the *same*
+/// matrix, which is also why `A` is not consumed: elimination runs on a copy.
+///
+/// Returns `false` on a singular matrix, leaving `rhs` untouched, so a caller reports an
+/// undefined derivative rather than a wrong one.
+fn solve_many(a: &[f64], rhs: &mut [Vec<f64>], n: usize) -> bool {
+    let mut lu = a.to_vec();
     for col in 0..n {
         let mut pivot = col;
         for row in col + 1..n {
-            if a[row * n + col].abs() > a[pivot * n + col].abs() {
+            if lu[row * n + col].abs() > lu[pivot * n + col].abs() {
                 pivot = row;
             }
         }
-        if a[pivot * n + col] == 0.0 {
-            return None;
+        if lu[pivot * n + col] == 0.0 {
+            return false;
         }
         if pivot != col {
             for k in 0..n {
-                a.swap(col * n + k, pivot * n + k);
+                lu.swap(col * n + k, pivot * n + k);
             }
-            x.swap(col, pivot);
+            for x in rhs.iter_mut() {
+                x.swap(col, pivot);
+            }
         }
         for row in col + 1..n {
-            let factor = a[row * n + col] / a[col * n + col];
+            let factor = lu[row * n + col] / lu[col * n + col];
             if factor == 0.0 {
                 continue;
             }
             for k in col..n {
-                a[row * n + k] -= factor * a[col * n + k];
+                lu[row * n + k] -= factor * lu[col * n + k];
             }
-            x[row] -= factor * x[col];
+            for x in rhs.iter_mut() {
+                x[row] -= factor * x[col];
+            }
         }
     }
-    for row in (0..n).rev() {
-        let mut sum = x[row];
-        for k in row + 1..n {
-            sum -= a[row * n + k] * x[k];
+    for x in rhs.iter_mut() {
+        for row in (0..n).rev() {
+            let mut sum = x[row];
+            for k in row + 1..n {
+                sum -= lu[row * n + k] * x[k];
+            }
+            x[row] = sum / lu[row * n + row];
         }
-        x[row] = sum / a[row * n + row];
     }
-    Some(x)
+    true
 }
 
 #[cfg(test)]
@@ -912,6 +1174,149 @@ mod tests {
         assert_eq!(none.site_count(), 2);
         let empty = Association::new(Vec::new(), Vec::new());
         assert!(empty.expect("an empty mixture is valid").is_empty());
+    }
+
+    /// A water/methanol mixture, which is the smallest case with a cross-association
+    /// between two different schemes and therefore exercises the Elliott combination.
+    fn water_and_methanol() -> (Association, [f64; 2], [f64; 2], f64, f64) {
+        let a = Association::new(
+            vec![
+                AssociationComponent {
+                    scheme: SiteScheme::FourC,
+                    energy: 16655.0,
+                    volume: 0.0692,
+                },
+                AssociationComponent {
+                    scheme: SiteScheme::TwoB,
+                    energy: 24591.0,
+                    volume: 0.0161,
+                },
+            ],
+            Vec::new(),
+        )
+        .expect("valid parameters");
+        (a, [2.6e-5, 3.1e-5], [0.6, 0.4], 6.0e-5, 350.0)
+    }
+
+    /// Every composition derivative, against a finite difference of the solve itself.
+    ///
+    /// This is the check the module exists to pass: the site fractions are the solution of
+    /// a nonlinear system, so their derivatives are implicit, and nothing but a numerical
+    /// derivative of the solve can confirm the linear algebra that produces them.
+    #[test]
+    fn the_site_fraction_composition_derivatives_match_the_solve() {
+        let (a, b, n, v, t) = water_and_methanol();
+        let state = a.solve(&b, &n, v, t).expect("solves");
+        let d = a.derivatives(&b, &n, v, t, &state).expect("differentiable");
+        let step = 1.0e-9;
+        for comp in 0..2 {
+            let mut np = n;
+            np[comp] += step;
+            let shifted = a.solve(&b, &np, v, t).expect("solves");
+            for site in 0..a.site_count() {
+                let numerical = (shifted.fractions[site] - state.fractions[site]) / step;
+                let analytic = d.d_fractions_dn[site][comp];
+                assert!(
+                    (analytic / numerical - 1.0).abs() < 1.0e-5,
+                    "site {site} w.r.t. n_{comp}: analytic {analytic} vs numerical {numerical}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_site_fraction_temperature_derivative_matches_the_solve() {
+        let (a, b, n, v, t) = water_and_methanol();
+        let state = a.solve(&b, &n, v, t).expect("solves");
+        let d = a.derivatives(&b, &n, v, t, &state).expect("differentiable");
+        let step = 1.0e-4;
+        let hot = a.solve(&b, &n, v, t + step).expect("solves");
+        let cold = a.solve(&b, &n, v, t - step).expect("solves");
+        for site in 0..a.site_count() {
+            let numerical = (hot.fractions[site] - cold.fractions[site]) / (2.0 * step);
+            let analytic = d.d_fractions_dt[site];
+            assert!(
+                (analytic / numerical - 1.0).abs() < 1.0e-5,
+                "site {site} w.r.t. T: analytic {analytic} vs numerical {numerical}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_site_fraction_volume_derivative_matches_the_solve() {
+        let (a, b, n, v, t) = water_and_methanol();
+        let state = a.solve(&b, &n, v, t).expect("solves");
+        let d = a.derivatives(&b, &n, v, t, &state).expect("differentiable");
+        let step = 1.0e-12;
+        let big = a.solve(&b, &n, v + step, t).expect("solves");
+        let small = a.solve(&b, &n, v - step, t).expect("solves");
+        for site in 0..a.site_count() {
+            let numerical = (big.fractions[site] - small.fractions[site]) / (2.0 * step);
+            let analytic = d.d_fractions_dv[site];
+            assert!(
+                (analytic / numerical - 1.0).abs() < 1.0e-4,
+                "site {site} w.r.t. V: analytic {analytic} vs numerical {numerical}"
+            );
+        }
+    }
+
+    /// The fugacity derivatives, against a finite difference of `ln phi`'s own definition
+    /// recomputed at the shifted state - not against a stored value.
+    #[test]
+    fn the_fugacity_composition_derivatives_match_the_definition() {
+        let (a, b, n, v, t) = water_and_methanol();
+        let state = a.solve(&b, &n, v, t).expect("solves");
+        let d = a.derivatives(&b, &n, v, t, &state).expect("differentiable");
+        let step = 1.0e-9;
+        for comp in 0..2 {
+            let mut np = n;
+            np[comp] += step;
+            let shifted = a.solve(&b, &np, v, t).expect("solves");
+            for i in 0..2 {
+                let numerical = (shifted.ln_phi[i] - state.ln_phi[i]) / step;
+                let analytic = d.d_ln_phi_dn[i][comp];
+                assert!(
+                    (analytic / numerical - 1.0).abs() < 1.0e-4,
+                    "ln phi_{i} w.r.t. n_{comp}: analytic {analytic} vs numerical {numerical}"
+                );
+            }
+        }
+    }
+
+    /// The two remaining fugacity derivatives, against the same finite difference.
+    ///
+    /// `ln phi`'s definition is recomputed at the shifted state rather than read from a
+    /// stored value, so this compares the analytic derivative with the model, not with a
+    /// second copy of the answer.
+    #[test]
+    fn the_fugacity_temperature_and_volume_derivatives_match_the_definition() {
+        let (a, b, n, v, t) = water_and_methanol();
+        let state = a.solve(&b, &n, v, t).expect("solves");
+        let d = a.derivatives(&b, &n, v, t, &state).expect("differentiable");
+
+        let dt = 1.0e-4;
+        let hot = a.solve(&b, &n, v, t + dt).expect("solves");
+        let cold = a.solve(&b, &n, v, t - dt).expect("solves");
+        for i in 0..2 {
+            let numerical = (hot.ln_phi[i] - cold.ln_phi[i]) / (2.0 * dt);
+            assert!(
+                (d.d_ln_phi_dt[i] / numerical - 1.0).abs() < 1.0e-5,
+                "ln phi_{i} w.r.t. T: analytic {} vs numerical {numerical}",
+                d.d_ln_phi_dt[i]
+            );
+        }
+
+        let dv = 1.0e-12;
+        let big = a.solve(&b, &n, v + dv, t).expect("solves");
+        let small = a.solve(&b, &n, v - dv, t).expect("solves");
+        for i in 0..2 {
+            let numerical = (big.ln_phi[i] - small.ln_phi[i]) / (2.0 * dv);
+            assert!(
+                (d.d_ln_phi_dv[i] / numerical - 1.0).abs() < 1.0e-4,
+                "ln phi_{i} w.r.t. V: analytic {} vs numerical {numerical}",
+                d.d_ln_phi_dv[i]
+            );
+        }
     }
 
     #[test]
