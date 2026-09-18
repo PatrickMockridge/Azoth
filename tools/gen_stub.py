@@ -224,7 +224,7 @@ EXCEPTIONS: tuple[tuple[str, str], ...] = (
 #: because the bridge rebuilds it. A `tuple[X, ...]` is a `list[X]` on the Rust side, so
 #: the stub says `list` - the shape a caller gets, not the shape the dataclass stores.
 SCALARS = {"float": "float", "int": "int", "bool": "bool", "str": "str", "Q": "Qty"}
-ENUMS = {"Phase", "RootStructure", "StabilityVerdict", "FlowRegime"}
+ENUMS = {"Phase", "RootStructure", "StabilityVerdict", "TpMultiflashSeed", "FlowRegime"}
 
 
 def stub_type(annotation: Any) -> str:

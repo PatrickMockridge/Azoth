@@ -1,0 +1,99 @@
+model = "eos.tp_multiflash"
+[[cases]]
+id = "co2_methane_decane_three_phase_at_200_k_10_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0 `SystemPrEos` + `setMultiPhaseCheck(true)` + `ThermodynamicOperations.TPflash()`, from validation/neqsim/TpMultiFlashCases.java. The state that makes this model more than `eos.pt_flash`: with the multiphase flag off, NeqSim reports **two** phases (gas at beta 0.35221969743032410 and oil at 0.64778030256967590); with it on, three. The third is the CO2-rich liquid - `x_CO2` 0.95928328824206750 at Z of 0.020686392069227680 - which is the liquid-liquid-vapour split a cubic reaches in the CO2-rich cold corner. Betas, compositions and Z are NeqSim's; the phase order is the solver's own and is not promised, so the test matches each phase by composition rather than by index."
+[cases.inputs]
+components = ["CO2", "methane", "nc10"]
+T = 200.0
+P = 1000000.0
+z = [0.4, 0.3, 0.3]
+[cases.expected]
+phase_count = 3
+seeded = "stability_seeded"
+beta = [0.31913160557766135, 0.4986239551745936, 0.18224443924774514]
+z_factor = [0.9060977631578389, 0.08159861613379736, 0.02068639206922768]
+[[cases]]
+id = "co2_methane_decane_three_phase_at_180_k_2_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/TpMultiFlashCases.java. The coldest of the three-phase states, and the one where the third phase is most distinct - `x_CO2` 0.99260624971180690 at Z of 0.0043391939401609410, against a gas at Z 0.97346579912990460. Two states this far apart in Z in one answer is why `z_factor` is reported: a phase count alone would not show that the dense phase is CO2 and not a second hydrocarbon liquid."
+[cases.inputs]
+components = ["CO2", "methane", "nc10"]
+T = 180.0
+P = 200000.0
+z = [0.4, 0.3, 0.3]
+[cases.expected]
+phase_count = 3
+seeded = "stability_seeded"
+beta = [0.45978707915172495, 0.39004930226638107, 0.15016361858189392]
+z_factor = [0.9734657991299046, 0.021530403096495943, 0.004339193940160941]
+[[cases]]
+id = "n2_co2_octane_three_phase_at_180_k_10_bar_diverges"
+tolerance = 1e-08
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/TpMultiFlashCases.java. **This case diverges, and the expected values below are NeqSim's, not this library's.** NeqSim reports three phases here; this library reports **two** - the two-phase flash's own - because its stability trial alone does not reach the CO2-rich phase. The trial converges to `x = [0.9696, 0.0304, 6.5e-9]`, a nitrogen-rich vapour, and the solve then drives that onto the gas. Upstream reaches the CO2-rich phase through a second seeding mechanism this model does not port: `stabilityAnalysis`'s pure-component fallback, which starts one trial per component (scanning from the last downwards) and adds a phase when that trial's tangent-plane distance is below `-1e-8`. The CO2 trial is the one that finds it. Recorded rather than matched, and it is the only case here that diverges."
+[cases.inputs]
+components = ["nitrogen", "CO2", "n-octane"]
+T = 180.0
+P = 1000000.0
+z = [0.1, 0.4, 0.5]
+[cases.expected]
+phase_count = 3
+seeded = "stability_seeded"
+beta = [0.08437940065407534, 0.7563697015044588, 0.1592508978414658]
+z_factor = [0.9495405616635599, 0.07716944734261964, 0.02175230239149613]
+[[cases]]
+id = "n2_co2_octane_two_phase_at_190_k_1_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/TpMultiFlashCases.java. The same mixture at a state where the flag does nothing - NeqSim reports two phases with it on exactly as with it off, identical to all seventeen digits. So the three-phase divergence above is a gap in *which* states split three ways, not a model that never finds a third phase."
+[cases.inputs]
+components = ["nitrogen", "CO2", "n-octane"]
+T = 190.0
+P = 100000.0
+z = [0.1, 0.4, 0.5]
+[cases.expected]
+phase_count = 2
+seeded = "two_phase_flash"
+beta = [0.39215551375730107, 0.6078444862426989]
+z_factor = [0.9856288252087966, 0.00860682835745079]
+[[cases]]
+id = "methane_butane_dense_liquid_at_370_k_40_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/TpMultiFlashCases.java. NeqSim reports **one** phase here without the flag - its two-phase flash converges to `x = y = z` - and two with it, the second a dense liquid at beta 0.0098562380076969070 and `x_methane` 0.12301811150419444. **This library reaches the same numbers without the seeding**, because `eos.pt_flash` does not converge to the trivial solution here: it returns beta 0.9901437619487483 with `x_methane` 0.12301811150418199, which is NeqSim's multiflash answer. So the numbers agree and `seeded` is `two_phase_flash` rather than `stability_seeded`: `seeded` is this library's own report of which of its paths produced the answer, not a quantity NeqSim has, and the two implementations reach one state by different routes."
+[cases.inputs]
+components = ["methane", "n-butane"]
+T = 370.0
+P = 4000000.0
+z = [0.5, 0.5]
+[cases.expected]
+phase_count = 2
+seeded = "two_phase_flash"
+beta = [0.9901437619923031, 0.009856238007696907]
+z_factor = [0.7452177737328194, 0.1588137538319941]
+[[cases]]
+id = "methane_butane_two_phase_at_360_k_40_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/TpMultiFlashCases.java. The same mixture and pressure ten kelvin colder, where NeqSim's own two-phase flash already finds the split and the flag changes nothing - the same betas and compositions to all seventeen digits with it on and off. This is the 3,300-odd states of the sweep where the seeding has nothing to add, and it is the case that would fail if the seeding fired spuriously."
+[cases.inputs]
+components = ["methane", "n-butane"]
+T = 360.0
+P = 4000000.0
+z = [0.5, 0.5]
+[cases.expected]
+phase_count = 2
+seeded = "two_phase_flash"
+beta = [0.8139457129518551, 0.18605428704814486]
+z_factor = [0.7784548921212494, 0.15404179516968172]
+[[cases]]
+id = "methane_butane_two_phase_at_250_k_50_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0, as the first case: validation/neqsim/TpMultiFlashCases.java. A second state where the flag changes nothing, colder and denser: gas at Z 0.78717753770761640 over oil at 0.17863519346713860, both under `SystemPrEos` with and without `setMultiPhaseCheck`. This is also the state that caught a real defect in the merge: before the duplicate test dropped its side comparison, the seeded phase landed on the gas composition, differed from it only in being labelled a liquid root, and was reported as a third phase."
+[cases.inputs]
+components = ["methane", "n-butane"]
+T = 250.0
+P = 5000000.0
+z = [0.5, 0.5]
+[cases.expected]
+phase_count = 2
+seeded = "two_phase_flash"
+beta = [0.21848944858961394, 0.7815105514103861]
+z_factor = [0.7871775377076164, 0.1786351934671386]

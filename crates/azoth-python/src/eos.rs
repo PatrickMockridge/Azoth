@@ -37,14 +37,15 @@ use crate::results::{
     PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
     PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
     PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
-    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTvFractionFlashResult, PyTwuKappaResult,
-    PyTwucoonAlphaResult, PyTwucoonParamAlphaResult, PyTwucoonStatoilAlphaResult,
-    PyTynCalusDiffusivityResult, PyUmrprAlphaResult, PyUnifacActivityCoefficientsResult,
-    PyUnifacPsrkActivityCoefficientsResult, PyUnifacUmrpruActivityCoefficientsResult,
-    PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult,
-    PyVdw1fMixBinaryResult, PyVhFlashResult, PyViscosityResult, PyVsFlashResult, PyVuFlashResult,
-    PyVuFlashSingleCompResult, PyWaterPhaseResult, PyWilkeChangDiffusivityResult,
-    PyWilkeViscosityResult, PyWilsonActivityCoefficientsResult,
+    PyTpMultiflashResult, PyTsFlashResult, PyTuFlashResult, PyTvFlashResult,
+    PyTvFractionFlashResult, PyTwuKappaResult, PyTwucoonAlphaResult, PyTwucoonParamAlphaResult,
+    PyTwucoonStatoilAlphaResult, PyTynCalusDiffusivityResult, PyUmrprAlphaResult,
+    PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
+    PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
+    PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyVhFlashResult,
+    PyViscosityResult, PyVsFlashResult, PyVuFlashResult, PyVuFlashSingleCompResult,
+    PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
+    PyWilsonActivityCoefficientsResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -2519,6 +2520,46 @@ pub fn stability_test(
     )?;
     azoth_eos::stability_test(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyStabilityTestResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// How many phases a feed splits into at a temperature and pressure, and how much of each.
+///
+/// The two-phase flash with the stability seeding: a tangent-plane trial whose stationary
+/// point is at a composition that is not already a phase is a phase the flash has not found,
+/// and it is added before the fractions are solved. The same seven arguments as
+/// `stability_test`, and `min_t_over_tc` is the smaller of the two models' - whichever of
+/// them is nearer a critical point is the one the answer is least trustworthy at.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(text_signature = "(Tc, Pc, omega, kij, T, P, z, eos = \"pr\", alpha = \"pr\")")]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn tp_multiflash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyTpMultiflashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::tp_multiflash(&mixture, kelvins(T), pascals(P), &z)
+        .map(|r| PyTpMultiflashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

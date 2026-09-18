@@ -61,7 +61,11 @@ fn ln(value: f64) -> f64 {
 /// The comparison is `A^R / RT - ln Z + Z` and **not** `A^R / RT + Z`; the spec's notes
 /// carry the reduction and the measurement behind it. A single admissible root is the
 /// common case and is taken directly.
-fn feed_state(mixture: &Mixture, reduced: &ReducedParameters, z: &[f64]) -> Result<PhaseState> {
+pub(crate) fn lower_gibbs_compressibility(
+    mixture: &Mixture,
+    reduced: &ReducedParameters,
+    z: &[f64],
+) -> Result<f64> {
     let (a_mix, b_mix) = mixture.mixture_parameters(reduced, z);
     let (z_min, z_max) = match mixture.cubic() {
         Cubic::Pr | Cubic::Tst => {
@@ -91,13 +95,42 @@ fn feed_state(mixture: &Mixture, reduced: &ReducedParameters, z: &[f64]) -> Resu
     // `candidates` is never empty - `z_min` is always pushed - so this is a proof
     // obligation rather than a case, and it is returned rather than unwrapped because
     // this crate does not panic on a path a caller can reach.
-    let compressibility = best.ok_or_else(|| AzothError::InvalidInput {
+    best.ok_or_else(|| AzothError::InvalidInput {
         field: "z".to_string(),
         reason: "the cubic returned no admissible root for the feed, so there is no \
                  reference state for the tangent plane to be measured from"
             .to_string(),
-    })?;
-    mixture.phase_state_at(reduced, z, compressibility)
+    })
+}
+
+/// The same state, and which side of the cubic it sits on.
+///
+/// The side is what [`crate::multiphase`] needs and what the compressibility alone does not
+/// give directly: two liquid phases share the lower root, so the root's *value* identifies the
+/// side only by comparison.
+pub(crate) fn feed_state(
+    mixture: &Mixture,
+    reduced: &ReducedParameters,
+    z: &[f64],
+) -> Result<(PhaseState, RootSide)> {
+    let compressibility = lower_gibbs_compressibility(mixture, reduced, z)?;
+    let (a_mix, b_mix) = mixture.mixture_parameters(reduced, z);
+    let (z_min, z_max) = match mixture.cubic() {
+        Cubic::Pr | Cubic::Tst => {
+            let roots = pr_z_factor(a_mix, b_mix)?;
+            (roots.z_min, roots.z_max)
+        }
+        Cubic::Srk | Cubic::Rk => {
+            let roots = srk_z_factor(a_mix, b_mix)?;
+            (roots.z_min, roots.z_max)
+        }
+    };
+    let side = if (compressibility - z_max).abs() < (compressibility - z_min).abs() {
+        RootSide::Vapour
+    } else {
+        RootSide::Liquid
+    };
+    Ok((mixture.phase_state_at(reduced, z, compressibility)?, side))
 }
 
 /// What one trial found: its composition, its distance, and the steps it took.
@@ -276,7 +309,7 @@ pub fn stability_test(
     let algorithm = algorithm_of(spec)?;
 
     // The reference potentials, from the feed on its lower-Gibbs root.
-    let feed = feed_state(mixture, &reduced, z)?;
+    let (feed, _) = feed_state(mixture, &reduced, z)?;
     let d: Vec<f64> = z
         .iter()
         .zip(&feed.ln_phi)

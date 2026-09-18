@@ -45,7 +45,14 @@ __all__ = [
 #: answer. They are the one kind of field whose cross-language agreement is bounded by the
 #: model's declared ``algorithm.tolerance`` and not by the case's answer tolerance. The name
 #: is the one this spec system uses for that quantity throughout ``specs/models/``.
-_DIAGNOSTIC_FIELDS: frozenset[str] = frozenset({"residual"})
+#:
+#: ``tm`` is here for the same reason and is the clearer case of it: a tangent-plane distance
+#: at a *trivial* stationary point - a trial that converged to the feed - is zero in exact
+#: arithmetic and lands within an ulp of it, at ``~1e-16``, with whatever sign the last
+#: floating-point operation left. Measured, `eos.tp_multiflash`'s CO2/methane/nc10 case has
+#: one implementation at ``6.66e-16`` and the other at ``-1.78e-15``: a relative comparison
+#: calls that a factor-of-three divergence, and the quantity it is measuring is not there.
+_DIAGNOSTIC_FIELDS: frozenset[str] = frozenset({"residual", "tm"})
 
 
 def spec(calc_id: str) -> dict[str, Any]:
@@ -315,8 +322,19 @@ def _assert_diagnostic(a: Any, b: Any, bound: float, context: str) -> None:
     the attainable relative accuracy ``1e-16 / residual`` diverges as the residual
     falls. No relative tolerance can be met here, at any value.
 
+    A diagnostic can also be a *vector* - a tangent-plane distance per trial - and
+    then the bound applies to each entry, because each entry is one solver's evidence
+    about one trial and the two trials are independent iterations.
+
     Both sides failing to converge is agreement, so NaN equals NaN.
     """
+    if isinstance(a, (tuple, list)) and isinstance(b, (tuple, list)):
+        assert len(a) == len(b), (
+            f"{context}: {len(a)} diagnostic(s) against {len(b)} ({a!r} against {b!r})"
+        )
+        for index, (ca, cb) in enumerate(zip(a, b, strict=True)):
+            _assert_diagnostic(ca, cb, bound, f"{context}[{index}]")
+        return
     a_nan = a != a
     b_nan = b != b
     if a_nan or b_nan:

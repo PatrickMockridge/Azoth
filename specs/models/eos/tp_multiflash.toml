@@ -1,0 +1,133 @@
+id = "eos.tp_multiflash"
+name = "Multiphase flash at fixed temperature and pressure"
+kind = "procedure"
+assumptions = [
+    "the tangent-plane trial is `eos.stability_test`'s: two starts from Wilson K-values, measured from the feed. Upstream then runs a **pure-component fallback**, one trial per component, which is not ported - so a phase only such a start finds is missed, and the N2/CO2/n-octane case records it.",
+    "**up to three phases, and never four.** Upstream's `setMultiPhaseCheck(true)` raises the system's phase ceiling to three before the flash runs, so three is the model's own bound rather than a convergence result. A feed needing a fourth phase is reported three-phase.",
+    "the added phase's starting fraction is the feed's mole fraction of the trial's largest component, which is upstream's rule and a share of the feed rather than a guess at the answer. The fraction solve is what moves it.",
+    "`phase_count` is decided by the seeding and the merge, not by the solve. A Newton on the fractions cannot create a phase: one that should not exist converges to a fraction at the floor, and one that should is unreachable from a set that does not contain it.",
+    "the merge drops a phase below `1.1e-12` of the feed and folds a pair within `1e-6` of each other into one, **whatever roots were labelled**: a seeded phase can land on a composition sitting on one root only, where the labels differ but the phases do not. Upstream compares densities.",
+    "the phases are reported in the solve's own order and **no order is promised**; upstream sorts by density and this does not. `z_factor` identifies a phase physically.",
+    "the aqueous seeds are not ported: `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed` add a hydrocarbon phase to a water-bearing feed, gated on a water component alone, and they are the whole of the water/n-hexane divergence. A water-bearing feed gets the phases the trial finds.",
+    "the ionic rules, the CPA rules and the hydrate coupling are not ported either - they are P8, P7 and P9, and each is gated on a component family or a system type this crate does not carry.",
+    "the cubic, the alpha function and the mixing rule are `eos.pt_flash`'s; this is not a property of the mixture alone.",
+    "`z` is checked (non-negative, sums to one) rather than renormalised.",
+]
+references = [
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part I. Stability.\" Fluid Phase Equilibria 9(1), 1-19. The tangent-plane criterion the seeding rests on.\n",
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part II. Phase-split calculation.\" Fluid Phase Equilibria 9(1), 21-40. The `E`/`Q` fraction formulation the solve uses.\n",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TPmultiflash`, reached through `TPflash.runInternal()` under `system.doMultiPhaseCheck()`; `solveBeta` and `calcQ` are the solve's port source, `stabilityAnalysis` the seeding's.\n",
+    "`validation/neqsim/TpMultiFlashSweep.java`, `TpMultiFlashCases.java` - the grid that established what this model does that `eos.pt_flash` does not: 3,312 states over sixteen mixtures.\n",
+]
+[source]
+standard = "NeqSim 3.20.0 `TPmultiflash`"
+edition = "`solveBeta`/`calcQ` for the fraction solve, `stabilityAnalysis` for the seeding, both ported; the merge rules are ported from `run()`'s removal loop except the density branch, which the assumptions name."
+[algorithm]
+scheme = "multiphase_fraction_newton"
+initialisation = "wilson_stability_trial"
+convergence = "absolute"
+tolerance = 1e-12
+max_iterations = 50
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = """\
+    overall mole fractions. Checked rather than renormalised, as everywhere else in this \
+    namespace.\n\
+    """
+[outputs]
+[outputs.phase_count]
+unit = "dimensionless"
+description = "How many phases the feed splits into: one, two or three."
+[outputs.beta]
+type = "vector"
+unit = "dimensionless"
+length = "one per phase"
+description = "The mole fraction of the feed in each phase, summing to one."
+[outputs.x]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per phase, one column per component"
+description = """\
+    The composition of each phase. Every row sums to one; rows are in the solve's order and \
+    no order is promised.\n\
+    """
+[outputs.z_factor]
+type = "vector"
+unit = "dimensionless"
+length = "one per phase"
+description = """\
+    The root of the cubic each phase sits on, as `Z = PV/RT`. This is what tells two liquid \
+    phases apart: they share the lower branch and differ in composition, so a type alone \
+    would call them one phase.\n\
+    """
+[outputs.ln_phi]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per phase, one column per component"
+description = """\
+    `ln phi_i` in each phase. A row is empty where the cubic cannot evaluate that phase's \
+    composition, which the merge can leave behind; `z_factor` is `NaN` there for the same \
+    reason.\n\
+    """
+[outputs.seeded]
+type = "enum"
+values = ["two_phase_flash", "stability_seeded"]
+description = """\
+    Whether the tangent-plane trial added a phase: `two_phase_flash` means the answer is \
+    `eos.pt_flash`'s own split, `stability_seeded` that a trial was below the plane at a \
+    composition that was not already a phase.\n\
+    """
+[outputs.tm]
+type = "vector"
+unit = "dimensionless"
+length = "one per trial"
+description = "The tangent-plane distance at each trial's stationary point, in the order `eos.stability_test` reports them; negative means the trial lies below the tangent plane through the feed."
+[outputs.iterations]
+unit = "dimensionless"
+description = "Fraction-solve steps taken."
+[outputs.residual]
+unit = "dimensionless"
+description = "The Euclidean norm of the last fraction correction, in mole fractions of the feed."
+[outputs.min_t_over_tc]
+unit = "dimensionless"
+description = "The smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "phase_count"
+max = 3
+max_inclusive = true
+severity = "warning"
+rationale = "At three phases the model is at the ceiling upstream raises the system to, not at a converged answer: a feed that needs a fourth phase is reported three-phase."
+[[valid_range]]
+quantity = "min_t_over_tc"
+max = 0.9
+max_inclusive = true
+severity = "warning"
+rationale = "Above `T / Tc = 0.9` for every component the cubic's roots are close to coalescing and the two phases stop being distinguishable, so a phase count near the critical point is the one to distrust."
+[implementations]
+python = "azoth.eos.tp_multiflash"
+rust = "azoth_eos::tp_multiflash"

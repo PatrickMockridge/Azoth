@@ -119,6 +119,7 @@ from azoth.core.result import (
     SwameeJainResult,
     ThermalConductivityResult,
     ThFlashResult,
+    TpMultiflashResult,
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
@@ -147,6 +148,7 @@ from azoth.core.result import (
 )
 from azoth.core.result import Phase as _Phase
 from azoth.core.result import StabilityVerdict as _StabilityVerdict
+from azoth.core.result import TpMultiflashSeed as _TpMultiflashSeed
 from azoth.core.units import Q, from_si, input_to_si, to_si
 from azoth.core.warnings import Warning, WarningCode
 
@@ -1589,6 +1591,41 @@ def pv_flash(mixture: Any, ideal_gas: Any, P: Q, V: Q, z: Sequence[float]) -> Pv
         z_vapour=result.z_vapour,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tp_multiflash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> TpMultiflashResult:
+    """How many phases a feed splits into, computed in Rust.
+
+    The two-phase flash plus the stability seeding and a fraction solve on the whole phase
+    set. `seeded` crosses as the spec's spelling and is rebuilt here as the enum, so
+    `result.seeded is TpMultiflashSeed.STABILITY_SEEDED` holds whichever backend answered.
+    """
+    spec = _models_gen.model("eos.tp_multiflash")
+    result = _core.tp_multiflash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return TpMultiflashResult(
+        phase_count=result.phase_count,
+        beta=tuple(result.beta),
+        x=tuple(tuple(row) for row in result.x),
+        z_factor=tuple(result.z_factor),
+        ln_phi=tuple(tuple(row) for row in result.ln_phi),
+        seeded=_TpMultiflashSeed(result.seeded),
+        tm=tuple(result.tm),
+        iterations=result.iterations,
+        residual=result.residual,
+        min_t_over_tc=result.min_t_over_tc,
         warnings=_warnings(result.warnings),
     )
 

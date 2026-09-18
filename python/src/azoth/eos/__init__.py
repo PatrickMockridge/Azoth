@@ -148,6 +148,7 @@ from azoth.core.result import (
     StabilityTestResult,
     ThermalConductivityResult,
     ThFlashResult,
+    TpMultiflashResult,
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
@@ -270,6 +271,7 @@ __all__ = [
     "srk_z_factor",
     "stability_test",
     "th_flash",
+    "tp_multiflash",
     "ts_flash",
     "tu_flash",
     "tv_flash",
@@ -352,6 +354,7 @@ _PVF_FLASH = "eos.pvf_flash"
 _PT_FLASH = "eos.pt_flash"
 _PT_PHASE_ENVELOPE = "eos.pt_phase_envelope"
 _STABILITY_TEST = "eos.stability_test"
+_TP_MULTIFLASH = "eos.tp_multiflash"
 _PURE_SATURATION = "eos.pure_saturation"
 _PR_ALPHA_AB = "eos.pr_alpha_ab"
 _PR_DANESH_ALPHA = "eos.pr_danesh_alpha"
@@ -2412,6 +2415,44 @@ def stability_test(mixture: Mixture, T: Q, P: Q, z: list[float]) -> StabilityTes
     See :func:`azoth.eos.reference.stability_test`.
     """
     return resolve(_STABILITY_TEST)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashResult:
+    """How many phases a feed splits into at a temperature and pressure, and how much of each.
+
+    The three-phase question. :func:`pt_flash` answers for two and reports a single phase when
+    the iteration converges to ``x = y = z``; this runs the tangent-plane trial on top of it,
+    and a trial whose stationary point is at a composition that is not already a phase is a
+    phase the flash has not found::
+
+        r = azoth.eos.tp_multiflash(fluid, T=q(200, "K"), P=q(10, "bar"), z=[0.4, 0.3, 0.3])
+        r.phase_count, r.beta, r.z_factor
+
+    **Up to three phases, and never four.** Upstream raises the system's phase ceiling to
+    three before the flash runs, so three is the model's own bound rather than a convergence
+    result - a feed needing a fourth phase is reported three-phase.
+
+    ``z_factor`` is what tells two liquid phases apart: they share the lower branch of the
+    cubic and differ in composition, so a type alone would call them one phase. ``seeded``
+    says whether the trial added a phase that survived, which is the difference between this
+    answer being :func:`pt_flash`'s and being one this model found.
+
+    The phases come back in the solve's own order and **no order is promised**, so match them
+    by ``z_factor`` and composition rather than by index.
+
+    ``z`` is **checked rather than renormalised**, as everywhere in this namespace.
+
+    Raises:
+        InvalidInputError: if ``z`` is the wrong length, has a negative entry, or does not sum
+            to one, or if the mixture's ``kij`` is malformed.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        SolverNotConvergedError: if the fraction solve's Hessian is singular, which means two
+            phases have met. Reaching the iteration cap is **not** an error - the fractions and
+            the residual come back with a warning instead.
+
+    See :func:`azoth.eos.reference.tp_multiflash`.
+    """
+    return resolve(_TP_MULTIFLASH)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
 
 
 def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:

@@ -99,6 +99,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |
 | [`eos.th_flash`](./th_flash.md) | `th_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.thermal_conductivity`](./thermal_conductivity.md) | `direct composition` | NeqSim 3.20.0 `PFCTConductivityMethodMod86` |
+| [`eos.tp_multiflash`](./tp_multiflash.md) | `multiphase_fraction_newton` | NeqSim 3.20.0 `TPmultiflash` |
 | [`eos.ts_flash`](./ts_flash.md) | `ts_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.tu_flash`](./tu_flash.md) | `tu_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.tv_flash`](./tv_flash.md) | `tv_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |

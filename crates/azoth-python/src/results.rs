@@ -37,14 +37,14 @@ use azoth_eos::results::{
     RkDepartureResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
-    ThermalConductivityResult, TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult,
-    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    VhFlashResult, ViscosityResult, VsFlashResult, VuFlashResult, VuFlashSingleCompResult,
-    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    ThermalConductivityResult, TpMultiflashResult, TsFlashResult, TuFlashResult, TvFlashResult,
+    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrprAlphaResult,
+    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
+    VsFlashResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -5371,6 +5371,82 @@ impl From<&StabilityTestResult> for PyStabilityTestResult {
     }
 }
 
+/// Result of `eos.tp_multiflash`, transported.
+///
+/// `x` and `ln_phi` cross as rows of tuples, like every other per-phase matrix here, and
+/// `seeded` crosses as the spec's spelling and is rebuilt as the enum - so a caller compares
+/// `TpMultiflashSeed.STABILITY_SEEDED` whichever backend answered.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TpMultiflashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTpMultiflashResult {
+    /// How many phases the feed splits into.
+    #[pyo3(get)]
+    pub phase_count: u32,
+    /// The mole fraction of the feed in each phase.
+    #[pyo3(get)]
+    pub beta: Vec<f64>,
+    /// The composition of each phase, one row per phase.
+    #[pyo3(get)]
+    pub x: Vec<Vec<f64>>,
+    /// The root of the cubic each phase sits on.
+    #[pyo3(get)]
+    pub z_factor: Vec<f64>,
+    /// `ln phi_i` in each phase, one row per phase.
+    #[pyo3(get)]
+    pub ln_phi: Vec<Vec<f64>>,
+    /// The spec's spelling of which path produced the answer.
+    #[pyo3(get)]
+    pub seeded: String,
+    /// The tangent-plane distance at each trial's stationary point.
+    #[pyo3(get)]
+    pub tm: Vec<f64>,
+    /// Fraction-solve steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The larger of the last step's norm and the gradient norm.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// The smallest `T / Tc_i` over the components.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTpMultiflashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TpMultiflashResult({} phase(s), {}, beta={:?})",
+            self.phase_count, self.seeded, self.beta
+        )
+    }
+}
+
+impl From<&TpMultiflashResult> for PyTpMultiflashResult {
+    fn from(r: &TpMultiflashResult) -> Self {
+        Self {
+            phase_count: r.phase_count,
+            beta: r.beta.clone(),
+            x: r.x.clone(),
+            z_factor: r.z_factor.clone(),
+            ln_phi: r.ln_phi.clone(),
+            seeded: r.seeded.as_str().to_string(),
+            tm: r.tm.clone(),
+            iterations: r.iterations,
+            residual: r.residual,
+            min_t_over_tc: r.min_t_over_tc,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&PrMassDensityResult> for PyPrMassDensityResult {
     fn from(r: &PrMassDensityResult) -> Self {
         Self {
@@ -5835,6 +5911,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         VuFlashResult::CALC_ID => VuFlashResult::FIELDS.to_vec(),
         VuFlashSingleCompResult::CALC_ID => VuFlashSingleCompResult::FIELDS.to_vec(),
         StabilityTestResult::CALC_ID => StabilityTestResult::FIELDS.to_vec(),
+        TpMultiflashResult::CALC_ID => TpMultiflashResult::FIELDS.to_vec(),
         BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
         BubbleTemperatureResult::CALC_ID => BubbleTemperatureResult::FIELDS.to_vec(),
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),

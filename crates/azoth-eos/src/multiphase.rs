@@ -64,6 +64,23 @@ const FRACTION_FLOOR: f64 = 1.0e-12;
 /// iteration passes through on its way to merging them.
 const REGULARISER: f64 = 1.0e-3;
 
+/// The gradient norm the iteration must also reach, upstream's second convergence test.
+///
+/// `solveBeta` stops when **both** the step is short and the gradient is small - `err > 1e-12
+/// || gradResidual > 1e-10` keeps it going - because a Newton step on a Hessian the regulariser
+/// has just flattened can be short while the state is nowhere near stationary. A step-only
+/// test would call that converged. The step half is the spec's `tolerance`; this half has no
+/// field in the spec's `algorithm` block, so it is named here.
+const GRADIENT_TOLERANCE: f64 = 1.0e-10;
+
+/// The fewest steps the iteration takes, upstream's `|| iter < 3`.
+///
+/// `solveBeta` increments before its test, so its third test is the first that can exit, and
+/// two bodies always run. The first step is where a phase the seeding added at a guessed
+/// fraction is most likely to be pinned at the floor; running a second turns "pinned while
+/// passing through" into "pinned at the answer".
+const MINIMUM_STEPS: u32 = 2;
+
 /// The fractions and compositions a multiphase solve converged on.
 ///
 /// Not a registered result type: the solve is the model layer's arithmetic, in the same
@@ -77,8 +94,10 @@ pub struct MultiphaseSplit {
     pub compositions: Vec<Vec<f64>>,
     /// Newton steps taken.
     pub iterations: u32,
-    /// `|dx|` of the last step.
+    /// The larger of the last step's norm and the gradient norm it was judged beside.
     pub residual: f64,
+    /// Whether the residual met the tolerance, or the iteration left by its cap.
+    pub converged: bool,
 }
 
 /// One phase of a multiphase split.
@@ -124,8 +143,15 @@ fn coefficients(
 /// # Errors
 /// * [`AzothError::InvalidInput`] if there are fewer than two phases, or a composition is
 ///   the wrong length.
-/// * [`AzothError::SolverNotConverged`] if the Hessian cannot be solved at an iterate, or
-///   the iteration reaches its cap.
+/// * [`AzothError::SolverNotConverged`] if the Hessian cannot be solved at an iterate - which
+///   means two phases have met, and the caller's answer is to drop one, not to take a step
+///   the regulariser invented.
+///
+/// **Reaching the cap is not an error.** Upstream's `solveBeta` returns whatever residual it
+/// left with and the flash reports it. Raising would turn a fraction vector right to six
+/// figures into a failure - and the positions this seed lands on are not the two-phase
+/// flash's, so a cap exit is a state to report rather than to refuse. The split carries the
+/// residual and `converged`, so a caller warns instead of losing the answer.
 pub fn solve_phase_fractions(
     mixture: &Mixture,
     reduced: &ReducedParameters,
@@ -158,6 +184,7 @@ pub fn solve_phase_fractions(
 
     let mut iterations = 0;
     let mut residual = f64::NAN;
+    let mut gradient_norm = f64::INFINITY;
     for step in 1..=algorithm.max_iterations {
         iterations = step;
         let phi = coefficients(mixture, reduced, phases)?;
@@ -196,6 +223,11 @@ pub fn solve_phase_fractions(
             }
         }
 
+        gradient_norm = gradient
+            .iter()
+            .map(|value| value * value)
+            .sum::<f64>()
+            .sqrt();
         let correction = solve(&hessian, &gradient, algorithm)?;
         residual = correction
             .iter()
@@ -233,18 +265,15 @@ pub fn solve_phase_fractions(
             }
         }
 
-        if residual <= algorithm.tolerance {
+        if step >= MINIMUM_STEPS
+            && residual <= algorithm.tolerance
+            && gradient_norm <= GRADIENT_TOLERANCE
+        {
             break;
         }
     }
 
-    if residual > algorithm.tolerance {
-        return Err(AzothError::SolverNotConverged {
-            iterations,
-            residual,
-            tolerance: algorithm.tolerance,
-        });
-    }
+    let converged = residual <= algorithm.tolerance && gradient_norm <= GRADIENT_TOLERANCE;
 
     Ok(MultiphaseSplit {
         fractions: phases.iter().map(|phase| phase.fraction).collect(),
@@ -253,7 +282,8 @@ pub fn solve_phase_fractions(
             .map(|phase| phase.composition.clone())
             .collect(),
         iterations,
-        residual,
+        residual: residual.max(gradient_norm),
+        converged,
     })
 }
 

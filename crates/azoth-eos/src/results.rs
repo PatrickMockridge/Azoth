@@ -1440,6 +1440,93 @@ impl CalcResult for StabilityTestResult {
     }
 }
 
+/// Which of the two things decided the phase count.
+///
+/// A boolean would say a phase was added; this says whether the answer *is* the two-phase
+/// flash's or is something the tangent-plane trial found, which is the distinction between
+/// "this model is [`crate::pt_flash`]" and "this model found a third phase".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TpMultiflashSeed {
+    /// The two-phase flash's own split survived: no trial was below the tangent plane at a
+    /// composition that was not already a phase.
+    TwoPhaseFlash,
+    /// A trial was below the plane at a new composition, and its phase was added.
+    StabilitySeeded,
+}
+
+impl TpMultiflashSeed {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::TwoPhaseFlash => "two_phase_flash",
+            Self::StabilitySeeded => "stability_seeded",
+        }
+    }
+}
+
+/// Result of `eos.tp_multiflash`.
+///
+/// The phases are reported in the order the solve kept them, and **no order is promised**:
+/// upstream orders its phases by density at the end of the flash, and this does not, so a
+/// caller matching phase *k* across two implementations is matching nothing. `z_factor` is
+/// what identifies a phase physically - two phases on the same side of the cubic differ in
+/// composition and in the root they sit on, and the root is the compressibility.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TpMultiflashResult {
+    /// How many phases the feed splits into: 1, 2 or 3.
+    pub phase_count: u32,
+    /// The mole fraction of the feed in each phase, summing to one.
+    pub beta: Vec<f64>,
+    /// The composition of each phase, one vector per phase, each summing to one.
+    pub x: Vec<Vec<f64>>,
+    /// The root of the cubic each phase sits on, as the compressibility `Z = PV/RT`.
+    ///
+    /// This is what tells two liquid phases apart: they share the lower root's *branch* and
+    /// differ in composition, and a `CO2`-rich liquid at `Z` of 0.02 beside a hydrocarbon
+    /// liquid at 0.13 is two phases where a type alone would say one.
+    pub z_factor: Vec<f64>,
+    /// `ln phi_i` in each phase, one vector per phase.
+    ///
+    /// Empty for a phase whose composition the cubic cannot evaluate, which the merge can
+    /// leave behind; `z_factor` carries `NaN` there for the same reason.
+    pub ln_phi: Vec<Vec<f64>>,
+    /// Whether the tangent-plane trial added a phase.
+    pub seeded: TpMultiflashSeed,
+    /// The tangent-plane distance at each trial's stationary point, in the order
+    /// [`crate::stability_test`] reports them.
+    pub tm: Vec<f64>,
+    /// Fraction-solve steps taken.
+    pub iterations: u32,
+    /// The norm of the last fraction correction.
+    pub residual: f64,
+    /// The smallest `T / Tc_i` over the components.
+    pub min_t_over_tc: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TpMultiflashResult {
+    const CALC_ID: &'static str = "eos.tp_multiflash";
+    const FIELDS: &'static [&'static str] = &[
+        "phase_count",
+        "beta",
+        "x",
+        "z_factor",
+        "ln_phi",
+        "seeded",
+        "tm",
+        "iterations",
+        "residual",
+        "min_t_over_tc",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.bubble_pressure`.
 ///
 /// Deliberately sharing a shape with [`DewPressureResult`] rather than one type

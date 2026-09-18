@@ -37,6 +37,7 @@
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/th_flash.toml
 //!   - specs/models/eos/thermal_conductivity.toml
+//!   - specs/models/eos/tp_multiflash.toml
 //!   - specs/models/eos/ts_flash.toml
 //!   - specs/models/eos/tu_flash.toml
 //!   - specs/models/eos/tv_flash.toml
@@ -4004,6 +4005,245 @@ pub static THERMAL_CONDUCTIVITY_SPEC: ModelSpec = ModelSpec {
     cases: THERMAL_CONDUCTIVITY_CASES,
 };
 
+static TP_MULTIFLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "phase_count",
+            min: None,
+            min_inclusive: true,
+            max: Some(3.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "At three phases the model is at the ceiling upstream raises the system to, not at a converged answer: a feed that needs a fourth phase is reported three-phase.",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "min_t_over_tc",
+            min: None,
+            min_inclusive: true,
+            max: Some(0.9),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "Above `T / Tc = 0.9` for every component the cubic's roots are close to coalescing and the two phases stop being distinguishable, so a phase count near the critical point is the one to distrust.",
+        },
+    },
+];
+
+static TP_MULTIFLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "co2_methane_decane_three_phase_at_200_k_10_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 200.0), ("P", 1000000.0)],
+        lists: &[("components", &["CO2", "methane", "nc10"])],
+        strings: &[],
+        vectors: &[("z", &[0.4, 0.3, 0.3])],
+        matrices: &[],
+        expected: &[("phase_count", 3.0)],
+        expected_vectors: &[
+            (
+                "beta",
+                &[0.31913160557766135, 0.4986239551745936, 0.18224443924774514],
+            ),
+            (
+                "z_factor",
+                &[0.9060977631578389, 0.08159861613379736, 0.02068639206922768],
+            ),
+        ],
+    },
+    TestCase {
+        id: "co2_methane_decane_three_phase_at_180_k_2_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 180.0), ("P", 200000.0)],
+        lists: &[("components", &["CO2", "methane", "nc10"])],
+        strings: &[],
+        vectors: &[("z", &[0.4, 0.3, 0.3])],
+        matrices: &[],
+        expected: &[("phase_count", 3.0)],
+        expected_vectors: &[
+            (
+                "beta",
+                &[
+                    0.45978707915172495,
+                    0.39004930226638107,
+                    0.15016361858189392,
+                ],
+            ),
+            (
+                "z_factor",
+                &[
+                    0.9734657991299046,
+                    0.021530403096495943,
+                    0.004339193940160941,
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "n2_co2_octane_three_phase_at_180_k_10_bar_diverges",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 180.0), ("P", 1000000.0)],
+        lists: &[("components", &["nitrogen", "CO2", "n-octane"])],
+        strings: &[],
+        vectors: &[("z", &[0.1, 0.4, 0.5])],
+        matrices: &[],
+        expected: &[("phase_count", 3.0)],
+        expected_vectors: &[
+            (
+                "beta",
+                &[0.08437940065407534, 0.7563697015044588, 0.1592508978414658],
+            ),
+            (
+                "z_factor",
+                &[0.9495405616635599, 0.07716944734261964, 0.02175230239149613],
+            ),
+        ],
+    },
+    TestCase {
+        id: "n2_co2_octane_two_phase_at_190_k_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 190.0), ("P", 100000.0)],
+        lists: &[("components", &["nitrogen", "CO2", "n-octane"])],
+        strings: &[],
+        vectors: &[("z", &[0.1, 0.4, 0.5])],
+        matrices: &[],
+        expected: &[("phase_count", 2.0)],
+        expected_vectors: &[
+            ("beta", &[0.39215551375730107, 0.6078444862426989]),
+            ("z_factor", &[0.9856288252087966, 0.00860682835745079]),
+        ],
+    },
+    TestCase {
+        id: "methane_butane_dense_liquid_at_370_k_40_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 370.0), ("P", 4000000.0)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[("phase_count", 2.0)],
+        expected_vectors: &[
+            ("beta", &[0.9901437619923031, 0.009856238007696907]),
+            ("z_factor", &[0.7452177737328194, 0.1588137538319941]),
+        ],
+    },
+    TestCase {
+        id: "methane_butane_two_phase_at_360_k_40_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 360.0), ("P", 4000000.0)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[("phase_count", 2.0)],
+        expected_vectors: &[
+            ("beta", &[0.8139457129518551, 0.18605428704814486]),
+            ("z_factor", &[0.7784548921212494, 0.15404179516968172]),
+        ],
+    },
+    TestCase {
+        id: "methane_butane_two_phase_at_250_k_50_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 250.0), ("P", 5000000.0)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[("phase_count", 2.0)],
+        expected_vectors: &[
+            ("beta", &[0.21848944858961394, 0.7815105514103861]),
+            ("z_factor", &[0.7871775377076164, 0.1786351934671386]),
+        ],
+    },
+];
+
+static TP_MULTIFLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "multiphase_fraction_newton",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 50,
+    bracket: None,
+    initialisation: Some("wilson_stability_trial"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.tp_multiflash`.
+pub static TP_MULTIFLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.tp_multiflash",
+    kind: "procedure",
+    algorithm: Some(&TP_MULTIFLASH_ALGORITHM),
+    checks: TP_MULTIFLASH_CHECKS,
+    cases: TP_MULTIFLASH_CASES,
+};
+
 static TS_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -5508,6 +5748,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &STABILITY_TEST_SPEC,
     &TH_FLASH_SPEC,
     &THERMAL_CONDUCTIVITY_SPEC,
+    &TP_MULTIFLASH_SPEC,
     &TS_FLASH_SPEC,
     &TU_FLASH_SPEC,
     &TV_FLASH_SPEC,

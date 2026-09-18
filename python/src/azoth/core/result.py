@@ -1735,6 +1735,53 @@ class StabilityTestResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+class TpMultiflashSeed(StrEnum):
+    """Which of the two things decided the phase count.
+
+    A boolean would say a phase was added; this says whether the answer *is* the two-phase
+    flash's or is something the tangent-plane trial found, which is the distinction between
+    "this model is `eos.pt_flash`" and "this model found a third phase".
+    """
+
+    TWO_PHASE_FLASH = "two_phase_flash"
+    STABILITY_SEEDED = "stability_seeded"
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TpMultiflashResult(_HasWarnings):
+    """Result of ``eos.tp_multiflash``.
+
+    The phases are reported in the order the solve kept them, and **no order is promised**:
+    upstream sorts its phases by density and this does not, so a caller matching phase *k*
+    across two implementations is matching nothing. `z_factor` is what identifies a phase
+    physically - two phases on the same side of the cubic differ in composition and in the
+    root they sit on, and the root is the compressibility.
+    """
+
+    #: How many phases the feed splits into: 1, 2 or 3.
+    phase_count: int
+    #: The mole fraction of the feed in each phase, summing to one.
+    beta: tuple[float, ...]
+    #: The composition of each phase, one tuple per phase, each summing to one.
+    x: tuple[tuple[float, ...], ...]
+    #: The root of the cubic each phase sits on, as the compressibility ``Z = PV/RT``.
+    z_factor: tuple[float, ...]
+    #: ``ln phi_i`` in each phase, one tuple per phase.
+    ln_phi: tuple[tuple[float, ...], ...]
+    #: Whether the tangent-plane trial added a phase that survived the merge.
+    seeded: TpMultiflashSeed
+    #: The tangent-plane distance at each trial's stationary point.
+    tm: tuple[float, ...]
+    #: Fraction-solve steps taken.
+    iterations: int
+    #: The larger of the last step's norm and the gradient norm it was judged beside.
+    residual: float
+    #: The smallest ``T / Tc_i`` over the components.
+    min_t_over_tc: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 @dataclass(frozen=True, slots=True, eq=False)
 class BubblePressureResult(_HasWarnings):
     """Result of ``eos.bubble_pressure``.

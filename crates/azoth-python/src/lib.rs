@@ -191,6 +191,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::vu_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::vu_flash_single_comp, m)?)?;
     m.add_function(wrap_pyfunction!(eos::stability_test, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::tp_multiflash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::bubble_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::bubble_temperature, m)?)?;
     m.add_function(wrap_pyfunction!(eos::critical_point, m)?)?;
