@@ -29,7 +29,9 @@ from azoth.eos.reference._association import (
     AssociationComponent,
     R,
     Rdf,
+    SiteDerivatives,
     SiteScheme,
+    SiteState,
     delta_nog,
 )
 
@@ -243,3 +245,120 @@ def test_the_association_is_added_to_the_fugacity_and_to_the_enthalpy_together()
     plain_reduced = reduced_parameters(classical, 300.0, 1.0e7)
     plain = phase_state(plain_reduced, classical.kij, [0.6, 0.4], liquid=True)
     assert state.ln_phi[0] != pytest.approx(plain.ln_phi[0])
+
+
+# ---------------------------------------------------------------------------
+# The implicit derivative surface
+# ---------------------------------------------------------------------------
+#
+# Every one of these is a derivative of a *solution*, so each is checked against a finite
+# difference of the solve rather than against the derivation. That distinction is the
+# whole reason this tranche's kernel is trustworthy and its earlier algebra was not: a
+# consistently partial derivation satisfies a consistently partial identity, so the only
+# check that finds a missing term is one that never sees the identity at all.
+
+#: A volume and temperature at which the liquid branch is well conditioned.
+_STATE = (2.620_326_748_288_29e-5, 300.0)
+
+
+def _state_and_derivatives() -> tuple[Association, SiteState, SiteDerivatives]:
+    """Water/methanol at the probe's state, solved, with its derivative surface."""
+    association = _water_methanol()
+    v, t = _STATE
+    state = association.solve(COVOLUMES, MOLES, v, t)
+    return association, state, association.derivatives(COVOLUMES, MOLES, v, t, state)
+
+
+def test_the_site_fraction_volume_derivative_matches_the_solve() -> None:
+    """`dX/dV`, against a central difference of the site fractions the solve returns."""
+    association, _, derivatives = _state_and_derivatives()
+    v, t = _STATE
+    h = 1.0e-12
+
+    for site in range(association.site_count):
+        up = association.solve(COVOLUMES, MOLES, v + h, t).fractions[site]
+        down = association.solve(COVOLUMES, MOLES, v - h, t).fractions[site]
+        assert derivatives.d_fractions_dv[site] == pytest.approx(
+            (up - down) / (2.0 * h), rel=1.0e-5
+        ), f"dX_{site}/dV"
+
+
+def test_the_second_volume_derivative_matches_a_finite_difference() -> None:
+    """`d^2(A/RT)/dV^2`, against a difference of the *first* derivative.
+
+    `d_helmholtz_dv` is carried on the solve, so differencing it is an independent voice
+    where differencing the energy twice is not.
+    """
+    association, _, derivatives = _state_and_derivatives()
+    v, t = _STATE
+    h = 1.0e-9
+    up = association.solve(COVOLUMES, MOLES, v + h, t).d_helmholtz_dv
+    down = association.solve(COVOLUMES, MOLES, v - h, t).d_helmholtz_dv
+
+    assert derivatives.d2_helmholtz_dv2 == pytest.approx((up - down) / (2.0 * h), rel=1.0e-6)
+
+
+def test_the_mixed_composition_derivative_matches_a_finite_difference() -> None:
+    """`d^2(A/RT)/dV dn_j`, the derivative that cost the most to get right.
+
+    Its missing term was that `F_{X_c}` holds `X_a m_c Delta_ac / V`, and `m_c` *is* `n_b`
+    when `c` is one of b's sites - so perturbing a mole number moves that factor inside the
+    product as well as beside it. Three analytic routes disagreed on this number before a
+    finite difference of the solve settled it.
+    """
+    association, _, derivatives = _state_and_derivatives()
+    v, t = _STATE
+    step = 1.0e-9
+
+    for j in range(2):
+
+        def energy(sign: float, j: int = j) -> float:
+            moles = list(MOLES)
+            moles[j] += sign * step
+            return association.solve(COVOLUMES, moles, v, t).d_helmholtz_dv
+
+        numerical = (energy(1.0) - energy(-1.0)) / (2.0 * step)
+        assert derivatives.d2_helmholtz_dv_dn[j] == pytest.approx(numerical, rel=1.0e-5)
+
+
+def test_the_mixed_temperature_derivative_matches_a_finite_difference() -> None:
+    """`d^2(A/RT)/dV dT`, checked at two step sizes so convergence is visible.
+
+    `T` enters through `Delta` alone, but `Delta'` carries the distribution function, so
+    `F_{VT}` is not `-F_T/V` - the term a first reading of this derivative misses.
+    """
+    association, _, derivatives = _state_and_derivatives()
+    v, t = _STATE
+
+    for step in (1.0e-4, 1.0e-3):
+        up = association.solve(COVOLUMES, MOLES, v, t + step).d_helmholtz_dv
+        down = association.solve(COVOLUMES, MOLES, v, t - step).d_helmholtz_dv
+        assert derivatives.d2_helmholtz_dv_dt == pytest.approx(
+            (up - down) / (2.0 * step), rel=1.0e-6
+        ), f"at step {step}"
+
+
+def test_the_fugacity_composition_derivative_matches_its_definition() -> None:
+    """`d ln phi_i/dn_j`, against the derivative of the fugacity term it comes from.
+
+    The identity is `d(ln phi_i)/dn_j = sum_{A in i} X_A^(n_j)/X_A - (1/2) d(h calc_lngi_i)/dn_j`,
+    and it is checked here against the site fractions the solve returns rather than against
+    the assembled derivative, which is the only way a missing product-rule term shows.
+    """
+    association, _, derivatives = _state_and_derivatives()
+    v, t = _STATE
+    step = 1.0e-9
+
+    for j in range(2):
+
+        def fugacity(sign: float, j: int = j) -> tuple[float, ...]:
+            moles = list(MOLES)
+            moles[j] += sign * step
+            return association.solve(COVOLUMES, moles, v, t).ln_phi
+
+        up, down = fugacity(1.0), fugacity(-1.0)
+        for i in range(2):
+            numerical = (up[i] - down[i]) / (2.0 * step)
+            assert derivatives.d_ln_phi_dn[i][j] == pytest.approx(numerical, rel=1.0e-5), (
+                f"d ln phi_{i}/dn_{j}"
+            )

@@ -235,6 +235,24 @@ class Rdf:
         """``d ln g / d eta``, recomputed from the stored packing fraction."""
         return 3.0 / (1.0 - self.eta) - 1.0 / (2.0 - self.eta)
 
+    def d2_ln_g_dn_dn(self, b_i: float, b_j: float, v: float) -> float:
+        """``d^2 ln g / dn_i dn_j``, from the packing fraction's second derivative.
+
+        ``eta`` is linear in every mole number with coefficient ``b_i/(4V)``, so the chain
+        rule contributes ``b_i b_j/(16 V^2)`` and nothing else.
+        """
+        return b_i * b_j * self.d2_ln_g_d_eta2 / (16.0 * v * v)
+
+    def d2_ln_g_dn_dv(self, b_i: float, sum_b: float, v: float) -> float:
+        """``d^2 ln g / dn_i dV``, which the association fugacity's volume derivative needs.
+
+        ``d ln g/dn_i`` is ``b_i (d ln g/d eta)/(4V)``, and ``eta`` moves with ``V`` as
+        ``-B/(4V^2)``.
+        """
+        return -b_i * (
+            sum_b * self.d2_ln_g_d_eta2 / (16.0 * v * v * v) + self.d_ln_g_d_eta / (4.0 * v * v)
+        )
+
 
 def delta_nog(
     a: AssociationComponent,
@@ -592,6 +610,380 @@ class Association:
             )
         return sum(
             moles[self.component_of_site(a)] * (1.0 / x[a] - 0.5) * rhs[a] for a in range(sites)
+        )
+
+    def derivatives(
+        self,
+        covolumes: Sequence[float],
+        moles: Sequence[float],
+        v: float,
+        t: float,
+        state: SiteState,
+    ) -> SiteDerivatives:
+        """The implicit derivatives of the site fractions and of the association fugacity.
+
+        ``state`` must be the converged :class:`SiteState` at this ``(covolumes, moles, v, t)``;
+        the residual is ``F_i = X_i (1 + S_i) - 1`` with ``S_i = (1/V) sum_k m_k Delta_ik X_k``,
+        whose Jacobian is ``dF_i/dX_k = delta_ik (1 + S_i) + X_i m_k Delta_ik / V``. Each
+        parameter's derivative is ``-J^{-1} dF/d(parameter)`` with ``X`` held, and the three
+        right-hand sides differ only in which part of ``S_i`` moves:
+
+        * ``n_a`` moves the mole number in the sum and ``g`` through ``B``;
+        * ``T`` moves ``DeltaNog`` alone, since ``g`` carries no temperature;
+        * ``V`` moves the explicit ``1/V`` and ``g`` through ``eta``.
+
+        Raises:
+            InvalidInputError: if the vectors are not one entry per component, if ``state`` is
+                not for this mixture, or if the Jacobian is singular.
+        """
+        n = len(self.components)
+        for field_name, given in (("covolumes", len(covolumes)), ("moles", len(moles))):
+            if given != n:
+                raise InvalidInputError(
+                    field_name, f"a mixture of {n} components takes {given} entries"
+                )
+        sites = self.site_count
+        if len(state.fractions) != sites:
+            raise InvalidInputError(
+                "state",
+                f"the site state carries {len(state.fractions)} fractions for a mixture of "
+                f"{sites} sites",
+            )
+        if sites == 0:
+            return SiteDerivatives(
+                d_fractions_dn=(),
+                d_fractions_dt=(),
+                d_fractions_dv=(),
+                d_ln_phi_dn=((0.0,) * n,) * n,
+                d_ln_phi_dt=(0.0,) * n,
+                d_ln_phi_dv=(0.0,) * n,
+                d_helmholtz_dt=0.0,
+                d2_helmholtz_dv2=0.0,
+                d2_fractions_dv2=(),
+                d2_fractions_dv_dn=((0.0,) * n,) * sites,
+                d2_helmholtz_dv_dn=(0.0,) * n,
+                d2_fractions_dv_dt=(0.0,) * sites,
+                d2_helmholtz_dv_dt=0.0,
+            )
+
+        rdf = Rdf(covolumes, moles, v)
+        delta = self.delta_matrix(covolumes, t, rdf)
+        x = state.fractions
+        sum_b = sum(b_i * m for b_i, m in zip(covolumes, moles, strict=True))
+        owner = [self.component_of_site(k) for k in range(sites)]
+
+        # `S_i`, and the Jacobian `dF_i/dX_k`.
+        s = [0.0] * sites
+        jacobian = [0.0] * (sites * sites)
+        for i in range(sites):
+            s[i] = sum(moles[owner[k]] * delta[i * sites + k] * x[k] for k in range(sites)) / v
+            for k in range(sites):
+                jacobian[i * sites + k] = (1.0 if i == k else 0.0) * (1.0 + s[i]) + x[i] * moles[
+                    owner[k]
+                ] * delta[i * sites + k] / v
+
+        # The three right-hand sides, negated because each is `J X' = -dF/d(parameter)`.
+        rhs = [[0.0] * sites for _ in range(n + 2)]
+        for a in range(n):
+            for i in range(sites):
+                explicit = sum(delta[i * sites + k] * x[k] for k in range(sites) if owner[k] == a)
+                rhs[a][i] = -x[i] * (explicit / v + rdf.d_ln_g_dn[a] * s[i])
+        for i in range(sites):
+            ci = owner[i]
+            total = sum(
+                moles[owner[k]]
+                * delta[i * sites + k]
+                * _delta_nog_d_ln_dt(
+                    self.components[ci],
+                    self.components[owner[k]],
+                    self.cross_rule(ci, owner[k]),
+                    t,
+                )
+                * x[k]
+                for k in range(sites)
+            )
+            rhs[n][i] = -x[i] * total / v
+            rhs[n + 1][i] = -x[i] * s[i] * (rdf.d_ln_g_dv - 1.0 / v)
+        _solve_many_checked(jacobian, rhs, sites)
+
+        d_fractions_dn = tuple(tuple(rhs[a][i] for a in range(n)) for i in range(sites))
+        d_fractions_dt = tuple(rhs[n])
+        d_fractions_dv = tuple(rhs[n + 1])
+        x_v = rhs[n + 1]
+
+        # `ln phi_i^assoc = sum_{A in i} ln X_A - (h/2) d ln g/dn_i`, with
+        # `h = sum_k n_k sum_{B in k}(1 - X_B)`. `h` moves with every parameter too, so each
+        # derivative is the site sum plus a product rule over `h` and the distribution
+        # function's second derivative.
+        h = state.unbonded_sites
+        d_h_dn = [
+            sum(1.0 - x[site] for site in self.sites_of(a))
+            - sum(moles[owner[site]] * rhs[a][site] for site in range(sites))
+            for a in range(n)
+        ]
+        d_h_dt = -sum(moles[owner[site]] * rhs[n][site] for site in range(sites))
+        d_h_dv = -sum(moles[owner[site]] * x_v[site] for site in range(sites))
+        # `d(A/(RT))/dT = sum_i n_i sum_{A in i} (1/X_A - 1/2) X_A^(T)`, the enthalpy
+        # departure's term and not a fugacity one.
+        d_helmholtz_dt = sum(
+            moles[owner[site]] * (1.0 / x[site] - 0.5) * rhs[n][site] for site in range(sites)
+        )
+
+        # --- second order -------------------------------------------------------------
+        #
+        # The site fractions are implicit twice over. Differentiating `F_A(X(V), V) = 0`
+        # twice gives
+        #
+        #   J X^{(VV)} = -(F_{VV} + J_V X^{(V)}) - H_{AVC} X^{(V)}_C
+        #                 - H_{ABC} X^{(V)}_B X^{(V)}_C
+        #
+        # and the two `H` terms are the ones a *partial* `J_V` drops. `J_V` in the first
+        # bracket is `dJ/dV` with `X` **held**, and the total derivative is
+        # `dJ/dV = J_V + H_{ABC} X^{(V)}_C`, so the Hessian enters twice. `H_{ABC}` is
+        # `(1/V)(d_AB m_C Delta_AC + d_AC m_B Delta_AB)`, because `S_A` is linear in `X`.
+        #
+        # Dropping them is not a small error - a factor of 1.8 to 2.0 - and it is invisible
+        # to any check that compares the identity against itself.
+        drho = rdf.d_ln_g_dv - 1.0 / v
+        jacobian_v = [0.0] * (sites * sites)
+        for a in range(sites):
+            for b in range(sites):
+                jacobian_v[a * sites + b] = (1.0 if a == b else 0.0) * s[a] * drho + x[a] * moles[
+                    owner[b]
+                ] * delta[a * sites + b] * drho / v
+        rhs2 = [[0.0] * sites for _ in range(n + 1)]
+        for a in range(sites):
+            f_vv = x[a] * (s[a] * drho * drho + s[a] * (rdf.d2_ln_g_dv2 + 1.0 / (v * v)))
+            total = sum(jacobian_v[a * sites + b] * x_v[b] for b in range(sites))
+            # `H_{AVC} X^{(V)}_C`, with `dF_{A,V}/dX_C = drho (X_A m_C Delta_AC / V + d_AC S_A)`.
+            for c in range(sites):
+                total += (
+                    drho
+                    * (
+                        x[a] * moles[owner[c]] * delta[a * sites + c] / v
+                        + (s[a] if a == c else 0.0)
+                    )
+                    * x_v[c]
+                )
+            # `H_{ABC} X^{(V)}_B X^{(V)}_C`.
+            for b in range(sites):
+                for c in range(sites):
+                    total += (
+                        (
+                            (moles[owner[c]] * delta[a * sites + c] if a == b else 0.0)
+                            + (moles[owner[b]] * delta[a * sites + b] if a == c else 0.0)
+                        )
+                        / v
+                        * x_v[b]
+                        * x_v[c]
+                    )
+            rhs2[n][a] = -(f_vv + total)
+        _solve_many_checked(jacobian, rhs2, sites)
+        d2_helmholtz_dv2 = sum(
+            moles[owner[a]] * (-x_v[a] * x_v[a] / (x[a] * x[a]) + (1.0 / x[a] - 0.5) * rhs2[n][a])
+            for a in range(sites)
+        )
+
+        # --- the mixed second derivative, `d^2 / dV dn_b` ------------------------------
+        #
+        # The same identity with `p = V` and `q = n_b`, and the cross terms do not collapse
+        # the way the `V,V` case's do, because `F_{XV}` and `F_{X n_b}` are different
+        # matrices:
+        #
+        #   J X^{(V n_b)} = -(F_{V n_b} + F_{XV} X^{(n_b)} + F_{X n_b} X^{(V)}
+        #                     + H_{ABC} X^{(V)}_B X^{(n_b)}_C)
+        #
+        # **`F_{X n_b}` carries one term the `V` version has no analogue for.** `F_{X_c}`
+        # holds `X_a m_c Delta_ac / V`, and `m_c` *is* `n_b` when `c` is one of b's sites -
+        # so perturbing a mole number moves that factor inside the product as well as
+        # beside it.
+        rhs_mixed = [[0.0] * sites for _ in range(n)]
+        for b in range(n):
+            x_n = rhs[b]
+            for a in range(sites):
+                explicit = sum(delta[a * sites + k] * x[k] for k in range(sites) if owner[k] == b)
+                d_s_dn = explicit / v + rdf.d_ln_g_dn[b] * s[a]
+                # `F_V = X_a drho S_a`, so this is the product rule over `drho` and `S_a`.
+                f_vn = x[a] * (rdf.d2_ln_g_dn_dv(covolumes[b], sum_b, v) * s[a] + drho * d_s_dn)
+                total = 0.0
+                for c in range(sites):
+                    total += (
+                        drho
+                        * (
+                            x[a] * moles[owner[c]] * delta[a * sites + c] / v
+                            + (s[a] if a == c else 0.0)
+                        )
+                        * x_n[c]
+                    )
+                for c in range(sites):
+                    owns = delta[a * sites + c] if owner[c] == b else 0.0
+                    total += (
+                        (d_s_dn if a == c else 0.0)
+                        + x[a]
+                        * (owns + moles[owner[c]] * delta[a * sites + c] * rdf.d_ln_g_dn[b])
+                        / v
+                    ) * x_v[c]
+                for p in range(sites):
+                    for c in range(sites):
+                        total += (
+                            (
+                                (moles[owner[c]] * delta[a * sites + c] if a == p else 0.0)
+                                + (moles[owner[p]] * delta[a * sites + p] if a == c else 0.0)
+                            )
+                            / v
+                            * x_v[p]
+                            * x_n[c]
+                        )
+                rhs_mixed[b][a] = -(f_vn + total)
+        _solve_many_checked(jacobian, rhs_mixed, sites)
+        d2_fractions_dv_dn = tuple(tuple(rhs_mixed[b][a] for b in range(n)) for a in range(sites))
+        d2_helmholtz_dv_dn = tuple(
+            sum(
+                ((1.0 / x[a] - 0.5) * x_v[a] if owner[a] == b else 0.0)
+                + moles[owner[a]]
+                * (-rhs[b][a] * x_v[a] / (x[a] * x[a]) + (1.0 / x[a] - 0.5) * rhs_mixed[b][a])
+                for a in range(sites)
+            )
+            for b in range(n)
+        )
+
+        # --- the mixed second derivative, `d^2 / dV dT` --------------------------------
+        #
+        # The same identity again, with `q = T`. `T` enters the residual through `Delta`
+        # alone - the distribution function carries no temperature - but `Delta'` does carry
+        # `g`, because `Delta` does, so `F_{VT}` is not `-F_T/V`.
+        delta_t = [0.0] * (sites * sites)
+        for a in range(sites):
+            for c in range(sites):
+                ca, cc = owner[a], owner[c]
+                delta_t[a * sites + c] = delta[a * sites + c] * _delta_nog_d_ln_dt(
+                    self.components[ca], self.components[cc], self.cross_rule(ca, cc), t
+                )
+        rhs_mixed_t = [[0.0] * sites]
+        for a in range(sites):
+            s_t = sum(moles[owner[k]] * delta_t[a * sites + k] * x[k] for k in range(sites)) / v
+            total = x[a] * s_t * drho
+            for c in range(sites):
+                total += (
+                    drho
+                    * (
+                        x[a] * moles[owner[c]] * delta[a * sites + c] / v
+                        + (s[a] if a == c else 0.0)
+                    )
+                    * rhs[n][c]
+                )
+            for c in range(sites):
+                total += (
+                    (s_t if a == c else 0.0) + x[a] * moles[owner[c]] * delta_t[a * sites + c] / v
+                ) * x_v[c]
+            for p in range(sites):
+                for c in range(sites):
+                    total += (
+                        (
+                            (moles[owner[c]] * delta[a * sites + c] if a == p else 0.0)
+                            + (moles[owner[p]] * delta[a * sites + p] if a == c else 0.0)
+                        )
+                        / v
+                        * x_v[p]
+                        * rhs[n][c]
+                    )
+            rhs_mixed_t[0][a] = -total
+        _solve_many_checked(jacobian, rhs_mixed_t, sites)
+        x_t = rhs[n]
+        d2_helmholtz_dv_dt = sum(
+            moles[owner[a]]
+            * (-x_t[a] * x_v[a] / (x[a] * x[a]) + (1.0 / x[a] - 0.5) * rhs_mixed_t[0][a])
+            for a in range(sites)
+        )
+
+        d_ln_phi_dn = tuple(
+            tuple(
+                sum(rhs[a][site] / x[site] for site in self.sites_of(i))
+                - 0.5
+                * (
+                    d_h_dn[a] * rdf.d_ln_g_dn[i]
+                    + h * rdf.d2_ln_g_dn_dn(covolumes[i], covolumes[a], v)
+                )
+                for a in range(n)
+            )
+            for i in range(n)
+        )
+        d_ln_phi_dt = tuple(
+            sum(rhs[n][site] / x[site] for site in self.sites_of(i))
+            - 0.5 * d_h_dt * rdf.d_ln_g_dn[i]
+            for i in range(n)
+        )
+        d_ln_phi_dv = tuple(
+            sum(x_v[site] / x[site] for site in self.sites_of(i))
+            - 0.5 * (d_h_dv * rdf.d_ln_g_dn[i] + h * rdf.d2_ln_g_dn_dv(covolumes[i], sum_b, v))
+            for i in range(n)
+        )
+
+        return SiteDerivatives(
+            d_fractions_dn=d_fractions_dn,
+            d_fractions_dt=d_fractions_dt,
+            d_fractions_dv=d_fractions_dv,
+            d_ln_phi_dn=d_ln_phi_dn,
+            d_ln_phi_dt=d_ln_phi_dt,
+            d_ln_phi_dv=d_ln_phi_dv,
+            d_helmholtz_dt=d_helmholtz_dt,
+            d2_helmholtz_dv2=d2_helmholtz_dv2,
+            d2_fractions_dv2=tuple(rhs2[n]),
+            d2_fractions_dv_dn=d2_fractions_dv_dn,
+            d2_helmholtz_dv_dn=d2_helmholtz_dv_dn,
+            d2_fractions_dv_dt=tuple(rhs_mixed_t[0]),
+            d2_helmholtz_dv_dt=d2_helmholtz_dv_dt,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class SiteDerivatives:
+    """The site fractions' implicit derivatives, and the association fugacity's.
+
+    Every one is an *implicit* derivative: the site fractions solve a nonlinear system, so
+    their derivatives are one linear solve against that system's Jacobian, which
+    :meth:`Association.solve` has already formed for its Newton step. Their being implicit
+    is the whole reason this is a kernel rather than a formula.
+    """
+
+    #: ``d X_A / d n_a``, indexed ``[site][component]``, at constant ``T`` and ``V``.
+    d_fractions_dn: tuple[tuple[float, ...], ...]
+    #: ``d X_A / d T`` at constant composition and volume.
+    d_fractions_dt: tuple[float, ...]
+    #: ``d X_A / d V`` at constant composition and temperature.
+    d_fractions_dv: tuple[float, ...]
+    #: ``d (ln phi_i^assoc) / d n_a`` at constant ``T`` and ``V``, indexed ``[i][a]``.
+    d_ln_phi_dn: tuple[tuple[float, ...], ...]
+    #: ``d (ln phi_i^assoc) / d T`` at constant composition and volume.
+    d_ln_phi_dt: tuple[float, ...]
+    #: ``d (ln phi_i^assoc) / d V`` at constant composition and volume.
+    d_ln_phi_dv: tuple[float, ...]
+    #: ``d (A_assoc/(R T)) / d T`` at constant composition and volume.
+    #:
+    #: Not a fugacity derivative and not derivable from the others: the enthalpy departure
+    #: needs ``A - T dA/dT``, and the fugacity coefficient is ``dA/dn`` alone.
+    d_helmholtz_dt: float
+    #: ``d^2 (A_assoc/(R T)) / dV^2`` at constant composition and temperature.
+    d2_helmholtz_dv2: float
+    #: ``d^2 X_A / dV^2``, one per site.
+    d2_fractions_dv2: tuple[float, ...]
+    #: ``d^2 X_A / dV dn_a``, indexed ``[site][component]``.
+    d2_fractions_dv_dn: tuple[tuple[float, ...], ...]
+    #: ``d^2 (A_assoc/(R T)) / dV dn_a``, one per component.
+    d2_helmholtz_dv_dn: tuple[float, ...]
+    #: ``d^2 X_A / dV dT``, one per site.
+    d2_fractions_dv_dt: tuple[float, ...]
+    #: ``d^2 (A_assoc/(R T)) / dV dT``.
+    d2_helmholtz_dv_dt: float
+
+
+def _solve_many_checked(jacobian: list[float], rhs: list[list[float]], sites: int) -> None:
+    """`_solve_many` or a refusal, for a caller that has no answer to give without it."""
+    if not _solve_many(jacobian, rhs, sites):
+        raise InvalidInputError(
+            "site fractions",
+            "the site-fraction Jacobian is singular at this state, so the association's "
+            "derivatives are not defined here",
         )
 
 
