@@ -585,8 +585,10 @@ unit = "count"
 reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "associationscheme"
-disposition = "dropped"
-    reason = "not-ported: the associating models - CPA, UMR-CPA and their mixing rules; NeqSim's `ComponentCPA` and `ComponentUMRCPA`. 36 of the 173 kept rows name a scheme."
+disposition = "vendored"
+as = "associationscheme"
+unit = "text"
+reason = "not-ported: the associating models - CPA, UMR-CPA and their mixing rules; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`. The site count cannot stand in for this: upstream carries `1A` at zero sites, and `2A` and `2B` at two sites each, while `setAssociationScheme` switches on the name."
 [[upstreams.files.columns]]
 name = "racketZCPA"
 disposition = "vendored"
