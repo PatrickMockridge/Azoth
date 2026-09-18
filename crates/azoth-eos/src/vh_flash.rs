@@ -4,7 +4,7 @@
 //! Spec: `specs/models/eos/vh_flash.toml`
 //!
 //! A vessel at fixed volume and enthalpy: both state variables are solved for, by the same
-//! decoupled 2x2 Newton [`crate::vh_flash`] uses, with the energy target supplied whole -
+//! decoupled 2x2 Newton [`crate::vu_flash`] uses, with the energy target supplied whole -
 //! NeqSim's `VHflashQfunc`, which is its `OptimizedVUflash` with `Hspec` in place of
 //! `Uspec + P Vspec`.
 

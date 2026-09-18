@@ -1033,7 +1033,6 @@ pub fn solve_pressure_temperature(
     let mut pressure = start_pressure.max(1.0);
     let mut temperature = start_temperature.max(50.0);
     let mut damping = 0.8;
-    let mut stagnation = 0;
 
     let mut evaluation = evaluate(
         mixture,
@@ -1115,14 +1114,15 @@ pub fn solve_pressure_temperature(
             converged = true;
             break;
         }
+        // The damping alone. **`stagnation` is a residual *threshold* everywhere else in this
+        // file** - `STAGNANT_RESIDUAL.min(tolerance)`, used by the single-variable solvers' own
+        // convergence tests - so a counter of the same name here is worse than a dead local: it
+        // reads as though this loop tests it. It never did, and this loop does not need one.
         if total_error < last_error {
             damping = (damping * 1.1).min(0.8);
-            stagnation = 0;
         } else {
             damping = (damping * 0.7).max(0.05);
-            stagnation += 1;
         }
-        let _ = stagnation;
         last_error = total_error;
 
         if iterations >= cap {

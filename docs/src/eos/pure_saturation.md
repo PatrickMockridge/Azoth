@@ -41,7 +41,7 @@ not an equation, and both implementations read it from here.
 | Name | Unit | Description |
 |---|---|---|
 | `p_sat` | Pa | the saturation pressure |
-| `ln_phi` | dimensionless | The common value of `ln phi_L` and `ln phi_V` at the converged pressure. |
+| `ln_phi` | dimensionless | `ln phi` of the **liquid** root at the converged pressure. The two roots are equal there to the bisection's own residual, which is the equation being solved rather than a property of the answer, so what is reported is the liquid's value and not an average of the two. |
 | `iterations` | dimensionless | Bisection steps taken. |
 | `residual` | dimensionless | The *dimensionless* half-width of the final bracket, `(hi - lo) / (2 * mid)` - the relative uncertainty in the reduced pressure, not `ln phi_L - ln phi_V`. |
 

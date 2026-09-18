@@ -627,7 +627,11 @@ pub struct PhFlashResult {
     pub z_vapour: f64,
     /// Bisection steps taken.
     pub iterations: u32,
-    /// `|H(T) - H_target| / max(|H_target|, 1)` at the answer.
+    /// `|H(T) - H_target| / |H_target|` at the answer.
+    ///
+    /// Absolute, and relative to the target rather than to `max(|H_target|, 1)`: a target of
+    /// exactly zero is refused before the solve rather than divided away, so there is no small
+    /// denominator for a floor to protect.
     pub residual: f64,
     /// Caveats, deduplicated - the search evaluates the flash thousands of times.
     pub warnings: Vec<Warning>,

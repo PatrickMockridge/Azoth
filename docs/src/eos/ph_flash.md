@@ -65,7 +65,7 @@ not an equation, and both implementations read it from here.
 | `z_liquid` | dimensionless | the liquid root of the cubic at the answer |
 | `z_vapour` | dimensionless | the vapour root |
 | `iterations` | dimensionless | Newton iterations taken |
-| `residual` | dimensionless | `(H(T) - H_target) / |H_target|` at the answer, signed |
+| `residual` | dimensionless | `|H(T) - H_target| / |H_target|` at the answer. **Absolute**, not signed: the solver brackets the root rather than iterating towards it from one side, so the sign of the last residual says which side the bracket closed on and nothing about the answer. |
 
 | Bound | On violation | Why |
 |---|---|---|

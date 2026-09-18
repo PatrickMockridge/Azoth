@@ -43,7 +43,7 @@ unit = "Pa"
 description = "the saturation pressure"
 [outputs.ln_phi]
 unit = "dimensionless"
-description = "The common value of `ln phi_L` and `ln phi_V` at the converged pressure."
+description = "`ln phi` of the **liquid** root at the converged pressure. The two roots are equal there to the bisection's own residual, which is the equation being solved rather than a property of the answer, so what is reported is the liquid's value and not an average of the two."
 [outputs.iterations]
 unit = "dimensionless"
 description = "Bisection steps taken."

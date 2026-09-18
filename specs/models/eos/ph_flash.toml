@@ -90,7 +90,7 @@ unit = "dimensionless"
 description = "Newton iterations taken"
 [outputs.residual]
 unit = "dimensionless"
-description = "`(H(T) - H_target) / |H_target|` at the answer, signed"
+description = "`|H(T) - H_target| / |H_target|` at the answer. **Absolute**, not signed: the solver brackets the root rather than iterating towards it from one side, so the sign of the last residual says which side the bracket closed on and nothing about the answer."
 [[valid_range]]
 quantity = "P"
 min = 0.0

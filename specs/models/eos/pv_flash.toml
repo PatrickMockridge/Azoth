@@ -9,6 +9,7 @@ assumptions = [
     "a trial temperature the inner flash cannot settle is backed off, not fatal: the gap is halved back towards the last temperature that worked.",
     "the flash at each trial temperature is converged, not exact: the volume inverted is that of a converged approximation.",
     "no check that the feed is stable: the model asks where the volume is satisfied, not whether the state found is the equilibrium one.",
+    "the volume solver stops on `max(tolerance, |V_target| * 1e-9)`, so its stop is **not purely absolute** as `convergence` alone would say. The relative half is upstream's `PVflash` test `|V - V_spec|/V_spec < 1e-9`, kept because a molar volume spans orders of magnitude.",
 ]
 [source]
 standard = "Standard thermodynamics, as in Michelsen & Mollerup"
