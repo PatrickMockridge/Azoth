@@ -18,6 +18,13 @@
 //! doing its own scheme until it stops making progress and this from then on. See
 //! `eos.pt_flash`'s `algorithm.fallback`.
 //!
+//! **`SysNewtonRhapsonTPflashNew` is named and not ported.** NeqSim carries a second
+//! TP-flash Newton under that name, 177 lines, and **nothing in the library
+//! constructs it** - a repo-wide grep for `new SysNewtonRhapsonTPflashNew(` returns
+//! zero sites, against the twenty-odd of the sibling this module is. It is a
+//! development copy left in `flashops/`, and the class the flashes actually reach is
+//! the one ported here.
+//!
 //! Every derivative here is analytic, from
 //! [`crate::mixture::Mixture::phase_derivatives`]. Nothing is differenced.
 

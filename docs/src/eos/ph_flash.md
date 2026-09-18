@@ -78,6 +78,7 @@ not an equation, and both implementations read it from here.
 - the starting temperature is declared in the spec, where upstream reads one off its thermodynamic system.
 - the flash at each trial temperature is converged, not exact: the enthalpy inverted is that of a converged approximation.
 - no check that the feed is stable: the model asks where the energy balance is satisfied, not whether the state found is the equilibrium one.
+- **a pure component's two-phase state is not found.** The temperature there is the saturation temperature, which this solver drives by the enthalpy alone. Measured on propane at 5 bar it converges at `H <= -20` and `H >= +10 kJ/mol` and fails between. `PHflashSingleComp` is not ported.
 - **the enthalpy is a difference from a supplied datum.** It is not an absolute quantity and is not comparable with a value computed from a different reference state.
 - NeqSim carries a second H-flash scheme, `SysNewtonRhapsonPHflash`, which its `ThrottlingValve` and `Compressor` select. It is not ported: its Jacobian sets `dH/dT = Cp`, which this library measures to be wrong across a phase boundary, and it converges no faster where this scheme is fast.
 

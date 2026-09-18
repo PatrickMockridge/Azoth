@@ -15,6 +15,13 @@
 //! then polished by a damped Newton step. The Jacobian is taken by central difference,
 //! the same choice the flash-property solver makes rather than porting NeqSim's analytic
 //! fugacity-derivative surface.
+//!
+//! **`RobustPhaseEnvelope` is named and not ported.** NeqSim carries a second envelope
+//! driver under that name, 517 lines in `phaseenvelopeops/`, and **nothing constructs
+//! it** - a repo-wide grep for `new RobustPhaseEnvelope(` returns zero sites. The
+//! package's reachable drivers are the ones already dispositioned: this trace's source
+//! `PTPhaseEnvelopeMichelsen` for the envelope itself, and `SysNewtonRhapsonPhaseEnvelope`
+//! for its points.
 
 use azoth_core::units::{Pressure, kelvins, pascals};
 use azoth_core::{AzothError, Result, apply_checks};
