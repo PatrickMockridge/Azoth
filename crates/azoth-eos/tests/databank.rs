@@ -664,32 +664,21 @@ fn the_cpa_root_matches_neqsim() {
 /// The association's derivative surface is **not derived**, and this pins the refusal.
 ///
 /// `phase_derivatives` is what the second-order flash, both saturation operators and the
-/// envelope solve on, so an associating mixture cannot take those paths yet. The gap is
-/// named rather than papered over because the alternative - returning the cubic's
-/// derivatives - is a *wrong* answer rather than a missing one.
+/// envelope solve on, so an associating mixture cannot take those paths. The gap is named
+/// rather than papered over because the alternative - returning the cubic's derivatives -
+/// is a *wrong* answer rather than a missing one.
 ///
 /// **What is missing.** The kernel's derivatives are at constant `T` and `V`; a flash
 /// needs constant `T` and `P`, and the conversion is the chain rule through the volume:
 /// `d ln phi_i/dn_j = Phi_{n_i n_j} + Phi_{n_i V} V_{n_j}`. The kernel supplies
 /// `Phi_{n_i n_j}` and `Phi_{n_i V}`, but `V_{n_j}` is `(R T/P)(Z + dZ/dn_j)` and **`dZ/dn_j`
-/// is not the cubic's**: an associating mixture's root comes from `associating_root`, so
+/// is not the cubic's** - an associating mixture's root comes from `associating_root`, so
 /// its volume responds to the composition through the association's pressure too.
-/// Differentiating that residual needs `Phi_VV`, the second volume derivative of the
-/// association's Helmholtz energy.
 ///
-/// **A first attempt at it is written down and was removed rather than shipped.** It
-/// differentiates the site-fraction system a second time -
-/// `J X^{(p,q)} = -(F_{pq} + J_q X^{(p)})` - and the pieces were checked twice: `F_{A,V}`,
-/// `F_{A,VV}` and `J_{A,V}` all reduce to forms that agree with differentiating the
-/// residual directly. The result is still wrong, and by a measured amount rather than a
-/// factor: `d2X/dV2` comes out `-4.654841e7` against a finite difference's `-2.538674e7` on
-/// the first site and `-2.562855e7` against `-1.268917e7` on the fourth - ratios of 1.834
-/// and 2.020, so an *added* term is missing rather than a scale being off. The finite
-/// difference is converged: it is identical at steps from `1e-12` to `1e-9`.
-///
-/// So the next attempt should start by isolating which of `F_{pq}` and `J_q` carries the
-/// missing term - `dX/dV` itself is already verified against the solve, which narrows it to
-/// those two - rather than by re-deriving the algebra, which has now been checked twice.
+/// Differentiating that residual needs `d2(A/(RT))/dV dn_j`. Its pure `dV^2` companion
+/// **is** computed, and checked against a finite difference of `d(A/(RT))/dV`; the mixed
+/// derivative is not, and the site-fraction system's second differentiation does not yet
+/// reproduce it.
 ///
 /// Sabotage: when the surface lands, the entry above stops being a gap and this test
 /// fails, which is the point of it.

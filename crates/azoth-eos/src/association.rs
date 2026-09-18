@@ -891,6 +891,10 @@ pub struct SiteDerivatives {
     /// Not a fugacity derivative and not derivable from the others: the enthalpy
     /// departure needs `A - T dA/dT`, and the fugacity coefficient is `dA/dn` alone.
     pub d_helmholtz_dt: f64,
+    /// `d^2 (A_assoc/(R T)) / dV^2` at constant composition and temperature.
+    pub d2_helmholtz_dv2: f64,
+    /// `d^2 X_A / dV^2`, one per site.
+    pub d2_fractions_dv2: Vec<f64>,
 }
 
 impl Association {
@@ -951,6 +955,8 @@ impl Association {
                 d_ln_phi_dt: vec![0.0; n],
                 d_ln_phi_dv: vec![0.0; n],
                 d_helmholtz_dt: 0.0,
+                d2_helmholtz_dv2: 0.0,
+                d2_fractions_dv2: Vec::new(),
             });
         }
 
@@ -1049,6 +1055,84 @@ impl Association {
             })
             .sum();
 
+        // --- second order -----------------------------------------------------------
+        //
+        // The site fractions are implicit twice over. Differentiating
+        // `F_A(X(V), V) = 0` twice gives
+        //
+        //   J X^{(VV)} = -(F_{VV} + J_V X^{(V)}) - H_{AVC} X^{(V)}_C
+        //                 - H_{ABC} X^{(V)}_B X^{(V)}_C
+        //
+        // and the two `H` terms are the ones a *partial* `J_V` drops. `J_V` in the first
+        // bracket is `dJ/dV` with `X` **held**, and the total derivative is
+        // `dJ/dV = J_V + H_{ABC} X^{(V)}_C`, so the Hessian enters twice: once contracted
+        // with `F`'s mixed `V,X` partial and once bilinear in `X^{(V)}`. `H_{ABC}` is
+        // `(1/V)(d_AB m_C Delta_AC + d_AC m_B Delta_AB)`, because `S_A` is linear in `X`.
+        //
+        // Dropping them is not a small error - it is a factor of 1.8 to 2.0 - and it is
+        // invisible to any check that compares the identity against itself, because a
+        // consistently partial derivation satisfies a consistently partial identity.
+        let mut jacobian_v = vec![0.0; sites * sites];
+        for a in 0..sites {
+            for b in 0..sites {
+                let drho = rdf.d_ln_g_dv - 1.0 / v;
+                let diagonal = if a == b { 1.0 } else { 0.0 };
+                jacobian_v[a * sites + b] = diagonal * s[a] * drho
+                    + x[a] * moles[self.component_of_site(b)] * delta[a * sites + b] * drho / v;
+            }
+        }
+        let x_v = &rhs[n + 1];
+        let mut rhs2 = vec![vec![0.0; sites]; n + 1];
+        for a in 0..sites {
+            let drho = rdf.d_ln_g_dv - 1.0 / v;
+            let f_vv = x[a] * (s[a] * drho * drho + s[a] * (rdf.d2_ln_g_dv2 + 1.0 / (v * v)));
+            // `J_V X^{(V)}`, plus the two Hessian contractions.
+            let mut total = 0.0;
+            for b in 0..sites {
+                total += jacobian_v[a * sites + b] * x_v[b];
+            }
+            // `H_{AVC} X^{(V)}_C`, with `dF_{A,V}/dX_C = drho (X_A m_C Delta_AC / V + d_AC S_A)`.
+            for c in 0..sites {
+                let h_avc = drho
+                    * (x[a] * moles[self.component_of_site(c)] * delta[a * sites + c] / v
+                        + if a == c { s[a] } else { 0.0 });
+                total += h_avc * x_v[c];
+            }
+            // `H_{ABC} X^{(V)}_B X^{(V)}_C`.
+            for b in 0..sites {
+                for c in 0..sites {
+                    let m_b = moles[self.component_of_site(b)];
+                    let m_c = moles[self.component_of_site(c)];
+                    let h_abc = (if a == b {
+                        m_c * delta[a * sites + c]
+                    } else {
+                        0.0
+                    } + if a == c {
+                        m_b * delta[a * sites + b]
+                    } else {
+                        0.0
+                    }) / v;
+                    total += h_abc * x_v[b] * x_v[c];
+                }
+            }
+            rhs2[n][a] = -(f_vv + total);
+        }
+        if !solve_many(&jacobian, &mut rhs2, sites) {
+            return Err(AzothError::invalid_input(
+                "site fractions",
+                "the site-fraction Jacobian is singular, so the association's second \
+                 derivatives are not defined at this state",
+            ));
+        }
+
+        let d2_helmholtz_dv2: f64 = (0..sites)
+            .map(|a| {
+                let m = moles[self.component_of_site(a)];
+                let weight = 1.0 / x[a] - 0.5;
+                m * (-x_v[a] * x_v[a] / (x[a] * x[a]) + weight * rhs2[n][a])
+            })
+            .sum();
+
         let mut d_ln_phi_dn = vec![vec![0.0; n]; n];
         let mut d_ln_phi_dt = vec![0.0; n];
         let mut d_ln_phi_dv = vec![0.0; n];
@@ -1078,6 +1162,8 @@ impl Association {
             d_ln_phi_dt,
             d_ln_phi_dv,
             d_helmholtz_dt,
+            d2_helmholtz_dv2,
+            d2_fractions_dv2: rhs2[n].clone(),
         })
     }
 }
@@ -1678,6 +1764,44 @@ mod tests {
         assert!(
             (d.d_ln_phi_dn[0][0] / -0.920_056_554_036_658 - 1.0).abs() > 1.0,
             "and it is not NeqSim's, whose that gap is the finding recorded above"
+        );
+    }
+
+    /// The second derivatives, against finite differences of the first.
+    ///
+    /// `d2X/dV2` first, because it is the piece a partial `J_V` gets wrong and the energy
+    /// derivatives cannot localise: the test below would still pass with the Hessian terms
+    /// dropped if only the energy were checked.
+    #[test]
+    fn the_second_derivatives_match_finite_differences_of_the_first() {
+        let (a, b, n, v, t) = water_and_methanol();
+        let state = a.solve(&b, &n, v, t).expect("solves");
+        let d = a.derivatives(&b, &n, v, t, &state).expect("differentiable");
+
+        let x_v = |vol: f64| -> Vec<f64> {
+            let s = a.solve(&b, &n, vol, t).expect("solves");
+            a.derivatives(&b, &n, vol, t, &s)
+                .expect("differentiable")
+                .d_fractions_dv
+        };
+        let phi_v = |vol: f64| -> f64 { a.solve(&b, &n, vol, t).expect("solves").d_helmholtz_dv };
+
+        let h = 1.0e-10;
+        let (up, down) = (x_v(v + h), x_v(v - h));
+        for site in 0..a.site_count() {
+            let numerical = (up[site] - down[site]) / (2.0 * h);
+            assert!(
+                (d.d2_fractions_dv2[site] / numerical - 1.0).abs() < 1.0e-4,
+                "d2X_{site}/dV2: analytic {} vs numerical {numerical}",
+                d.d2_fractions_dv2[site]
+            );
+        }
+
+        let numerical = (phi_v(v + h) - phi_v(v - h)) / (2.0 * h);
+        assert!(
+            (d.d2_helmholtz_dv2 / numerical - 1.0).abs() < 1.0e-4,
+            "d2(A/(RT))/dV2: analytic {} vs numerical {numerical}",
+            d.d2_helmholtz_dv2
         );
     }
 

@@ -974,14 +974,13 @@ impl Mixture {
             _ if self.associating => {
                 return Err(AzothError::invalid_input(
                     "association",
-                    "an associating mixture's derivative surface is not derived yet: the \
+                    "an associating mixture's derivative surface is not derived: the \
                      constant-T,P conversion needs `dZ/dn_j` from the associating root, \
-                     and differentiating that residual needs the second volume derivative \
-                     of the association's Helmholtz energy. The kernel computes one - by \
-                     differentiating the site-fraction system a second time - and it is \
-                     not yet right: `d2X/dV2` comes out 1.8 to 2.0 times a finite \
-                     difference of `dX/dV`. Returning the cubic's derivative instead \
-                     would be a wrong answer rather than a missing one, so this refuses",
+                     which needs the association's mixed second derivative \
+                     `d2(A/(RT))/dV dn_j`. Its pure `dV^2` companion is computed and \
+                     checked against a finite difference; the mixed one is not. \
+                     Returning the cubic's derivative instead would be a wrong answer \
+                     rather than a missing one, so this refuses",
                 ));
             }
             MixingRule::SoreideWhitson { .. } => {
