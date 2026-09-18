@@ -22,7 +22,7 @@ than bit-identically.
 from __future__ import annotations
 
 import math
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from azoth.core.errors import OutOfRangeError
 from azoth.core.result import Phase
@@ -43,6 +43,14 @@ from azoth.eos.alpha_term import (
 )
 from azoth.eos.cubic import PR, Cubic
 from azoth.eos.mixture import Mixture
+from azoth.eos.reference._association import (
+    NON_ASSOCIATING,
+    Association,
+    AssociationComponent,
+    R,
+    SiteScheme,
+    family_of,
+)
 from azoth.eos.reference.pr78_kappa import pr78_kappa
 from azoth.eos.reference.pr_alpha_ab import pr_alpha_ab
 from azoth.eos.reference.pr_kappa import pr_kappa
@@ -52,6 +60,10 @@ from azoth.eos.reference.srk_alpha_ab import srk_alpha_ab
 from azoth.eos.reference.srk_kappa import srk_kappa
 from azoth.eos.reference.srk_z_factor import srk_z_factor
 from azoth.eos.reference.twu_kappa import twu_kappa
+
+if TYPE_CHECKING:
+    from azoth.eos.components import AssociationParameters
+    from azoth.eos.mixture import Component
 
 #: Wilson's constant. Some sources print 5.37 and the paper is dated 1968 in some
 #: and 1969 in others; the discrepancy is recorded in the model specs' references
@@ -120,6 +132,23 @@ class ReducedParameters(NamedTuple):
     #: the right delta pair without a second dispatch. Defaults to Peng-Robinson, which
     #: is what a caller who built a `ReducedParameters` by hand gets.
     cubic: Cubic = PR
+    #: The absolute temperature this was reduced at. Carried because the association
+    #: contribution is evaluated at a *volume*, and the volume is `z R T / P` - so a
+    #: function handed only the reduced parameters cannot reach it. Rust's
+    #: `ReducedParameters` carries both for the same reason.
+    #:
+    #: Defaulted to zero so a fixture that states none - a test working in reduced
+    #: variables has no absolute state to give - need not invent one. It is not a silent
+    #: default: a mixture that *associates* reaches `Association.solve` with a non-positive
+    #: volume or temperature and is refused there, so an unstated state is a missing answer
+    #: rather than a plausible wrong one.
+    t_kelvin: float = 0.0
+    #: The absolute pressure, in Pa. See `t_kelvin`.
+    pressure: float = 0.0
+    #: The kernel parameters of the association this mixture runs, or `None` when it runs
+    #: none. Built here rather than looked up per call because it is a property of the
+    #: *mixture* and of neither the temperature nor the pressure.
+    association: Association | None = None
 
 
 class PhaseState(NamedTuple):
@@ -196,6 +225,27 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
     for component in mixture.components:
         reduced_temperature = temperature / component.Tc.to_base_units().magnitude
         reduced_pressure = pressure / component.Pc.to_base_units().magnitude
+        # An associating component carries its own attraction and covolume, and NeqSim's
+        # `ComponentSrkCPA` substitutes them for the cubic's: `if (|aCPA| > 1e-6) { a =
+        # aCPA; b = bCPA; }`. Not a refinement of the critical-constant values - water's
+        # fitted covolume is 1.4515e-5 m3/mol against `0.08664 R Tc/Pc`'s 2.11e-5 - and its
+        # alpha coefficient is fitted too, so the whole `a_i(T)` differs.
+        #
+        # **This comes before the alpha dispatch, not inside it**, because the substitution
+        # replaces what that dispatch computes: an associating component reads the fitted
+        # Soave `m` whatever correlation the mixture named.
+        fitted = _fitted_set(mixture, component)
+        if fitted is not None:
+            family, record = fitted
+            term = Soave(kappa=record.alpha_m(family))
+            r_t = R * temperature
+            a.append(
+                record.attraction(family) * term.alpha(reduced_temperature) * pressure / (r_t * r_t)
+            )
+            b.append(record.covolume(family) * pressure / r_t)
+            psi.append(term.psi(reduced_temperature))
+            psi_t.append(term.psi_t(reduced_temperature))
+            continue
         # The kappa correlation and the reduced parameters belong to the cubic this
         # mixture is: SRK and PR share the Soave alpha form but differ in both the
         # coefficient and the Omega constants; RK is kappa-free.
@@ -321,7 +371,73 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
         b.append(b_reduced)
         psi.append(psi_value)
         psi_t.append(psi_t_value)
-    return ReducedParameters(a=a, b=b, psi=psi, psi_t=psi_t, cubic=mixture.cubic, warnings=warnings)
+    return ReducedParameters(
+        a=a,
+        b=b,
+        psi=psi,
+        psi_t=psi_t,
+        t_kelvin=temperature,
+        pressure=pressure,
+        association=_association_of(mixture),
+        cubic=mixture.cubic,
+        warnings=warnings,
+    )
+
+
+def _fitted_set(mixture: Mixture, component: Component) -> tuple[str, AssociationParameters] | None:
+    """The fitted cubic set one component reads, or ``None`` when it reads none.
+
+    Three conditions, and each is a separate refusal rather than one test: the *mixture*
+    must be running association (the same substances are a classical fluid under another
+    phase model), the *component* must carry a record, and the record must carry a usable
+    set at this family - NeqSim's ``|aCPA| > 1e-6`` guard, without which CO2's all-zero
+    ``2A`` row gives a covolume of zero and a ``NaN`` reduced pressure.
+    """
+    if not mixture.associating:
+        return None
+    record = component.association
+    if record is None:
+        return None
+    family = family_of(mixture.cubic.name)
+    if not record.has_fitted_set(family):
+        return None
+    return family, record
+
+
+def _association_of(mixture: Mixture) -> Association | None:
+    """The association kernel this mixture runs, or ``None`` when it runs none.
+
+    Built from the components rather than stored on them, because the fitted family is the
+    *cubic's* and `Cubic` can change after the mixture is built. An associating mixture
+    whose every component lacks a usable set at this family is a classical one, which is
+    what NeqSim's `|aCPA| > 1e-6` guard amounts to.
+    """
+    if not mixture.associating:
+        return None
+    records = [component.association for component in mixture.components]
+    if not any(
+        record is not None and record.has_fitted_set(family_of(mixture.cubic.name))
+        for record in records
+    ):
+        return None
+    family = family_of(mixture.cubic.name)
+    components: list[AssociationComponent] = []
+    for record in records:
+        if record is None or not record.has_fitted_set(family):
+            components.append(NON_ASSOCIATING)
+            continue
+        scheme = SiteScheme.from_databank_name(record.scheme)
+        if scheme is None:
+            components.append(NON_ASSOCIATING)
+            continue
+        components.append(
+            AssociationComponent(
+                scheme,
+                record.energy,
+                record.volume_srk if family == "srk" else record.volume_pr,
+            )
+        )
+    return Association(components)
 
 
 def mixture_parameters(
@@ -357,7 +473,147 @@ def phase_state(
         if reduced.cubic.name in ("srk", "rk")
         else pr_z_factor(a_mix, b_mix)
     )
-    return phase_state_at(reduced, kij, x, roots.z_min if liquid else roots.z_max)
+    seed = roots.z_min if liquid else roots.z_max
+    if reduced.association is None:
+        return phase_state_at(reduced, kij, x, seed)
+    return phase_state_at(
+        reduced,
+        kij,
+        x,
+        _associating_root(reduced, x, seed, a_mix, b_mix, liquid=liquid),
+    )
+
+
+def _associating_root(
+    reduced: ReducedParameters,
+    x: list[float],
+    seed: float,
+    a_mix: float,
+    b_mix: float,
+    *,
+    liquid: bool,
+) -> float:
+    """The root of an associating mixture's equation of state.
+
+    **The association carries a pressure, so the root is not the cubic's.**
+    ``PhaseSrkCPA.molarVolume`` solves ``BonV - (B/n) dFdV() - P B/(n R T) = 0``, and
+    ``PhaseSrkCPA.dFdV()`` is ``super.dFdV() + dFCPAdV()`` - the cubic *plus* the
+    association. On water/methanol at 300 K and 100 bar that moves the root from 0.15437 to
+    0.10505, and NeqSim's own ``A`` and ``B`` give a cubic root of 0.15229, so it is not a
+    small correction.
+
+    The residual, with ``P_a = -R T d(A_assoc/(R T))/dV`` evaluated at ``V = Z R T/P``::
+
+        f(Z) = Z - Z/(Z - B) + A Z/((Z + d1 B)(Z + d2 B)) - P_a Z/P
+
+    The first three terms are the cubic's own residual, so a non-associating component of
+    the sum reduces to the cubic exactly.
+    """
+    cubic = reduced.cubic
+    r_t = R * reduced.t_kelvin
+    pressure = reduced.pressure
+    covolumes = [b * r_t / pressure for b in reduced.b]
+    association = reduced.association
+    assert association is not None  # the caller checked
+
+    def residual(z: float) -> float:
+        v = z * r_t / pressure
+        state = association.solve(covolumes, x, v, reduced.t_kelvin)
+        p_assoc = -r_t * state.d_helmholtz_dv
+        return (
+            z
+            - z / (z - b_mix)
+            + a_mix * z / ((z + cubic.delta1 * b_mix) * (z + cubic.delta2 * b_mix))
+        ) - p_assoc * z / pressure
+
+    def bisect(lo: float, hi: float) -> float:
+        """The zero of `residual` in `[lo, hi]`, by bisection.
+
+        The count is fixed rather than converged on a residual: near the covolume the
+        residual is a difference of two large terms, and a bisection stopping at an
+        absolute tolerance there would stop early.
+        """
+        sign = _sign(residual(lo))
+        for _ in range(200):
+            mid = 0.5 * (lo + hi)
+            if _sign(residual(mid)) == sign:
+                lo = mid
+            else:
+                hi = mid
+        return 0.5 * (lo + hi)
+
+    floor = b_mix * 1.000_001
+
+    # `liquid` wants the **lowest** zero above `B`, and the seed cannot find it. At low
+    # pressure the substituted cubic's attraction is small enough that it has one real
+    # root, so `z_min` and `z_max` are the same number - the vapour root - and Newton from
+    # it converges there and stops. **The association's pressure is what creates the
+    # liquid root**, so it has to be *found* rather than seeded: the residual is `-inf` at
+    # `B+`, and the zero is a fraction of a per cent above it, where a linear scan steps
+    # straight over it and a cubic root never points.
+    #
+    # The walk is geometric because the root's *ratio* to `B` is what is bounded, not its
+    # distance.
+    if liquid:
+        previous = floor
+        previous_value = residual(previous)
+        steps = 64
+        for step in range(1, steps + 1):
+            z_try = floor * (seed / floor) ** (step / steps)
+            value = residual(z_try)
+            if _sign(previous_value) != _sign(value):
+                return bisect(previous, z_try)
+            previous, previous_value = z_try, value
+
+    # Newton, with the step capped to a tenth of the distance to the covolume so it cannot
+    # cross the `Z > B` boundary where the cubic term is singular.
+    z = max(seed, floor)
+    for _ in range(60):
+        value = residual(z)
+        if abs(value) < 1.0e-12:
+            return z
+        # Named `offset` rather than `step`, which the sign-change scans above and below
+        # already use for their loop counters.
+        offset = 1.0e-7 * max(abs(z), 1.0e-6)
+        slope = (residual(z + offset) - value) / offset
+        if not math.isfinite(slope) or slope == 0.0:
+            break
+        delta = -value / slope
+        ceiling = 0.1 * (z - b_mix)
+        if abs(delta) > ceiling:
+            delta = math.copysign(ceiling, delta)
+        following = z + delta
+        if not math.isfinite(following) or following <= b_mix:
+            break
+        z = following
+
+    # The fallback: scan for a sign change and bisect. NeqSim reaches
+    # `molarVolumeChangePhase` on the same failure, so arriving here is upstream's
+    # behaviour rather than a port artifact.
+    ceiling = max(seed, 1.0) if liquid else max(seed * 8.0, 1.0)
+    steps = 400
+    previous = floor
+    previous_value = residual(previous)
+    for step in range(1, steps + 1):
+        z_try = floor + (ceiling - floor) * step / steps
+        value = residual(z_try)
+        if previous_value == 0.0:
+            return previous
+        if _sign(previous_value) != _sign(value):
+            return bisect(previous, z_try)
+        previous, previous_value = z_try, value
+
+    raise OutOfRangeError(
+        "z",
+        seed,
+        f"no volume root for this associating mixture above B = {b_mix}: the residual has "
+        f"no sign change between the covolume and {ceiling}",
+    )
+
+
+def _sign(value: float) -> int:
+    """`-1`, `0` or `1`, the comparison the sign-change scan is written in."""
+    return (value > 0.0) - (value < 0.0)
 
 
 def phase_state_at(
@@ -401,6 +657,30 @@ def phase_state_at(
         factor = 2.0 * cross[i] / a_mix - b_ratio
         ln_phi.append(b_ratio * (z - 1.0) - ln_z_minus_b - coefficient * factor * i_term)
 
+    # The Wertheim association, when the mixture runs it. Its `ln phi` adds to the cubic's
+    # and its Helmholtz energy to the departure enthalpy.
+    #
+    # **The two must move together.** `s_dep_r` below is the Gibbs identity
+    # `h_dep_rt - sum_i x_i ln phi_i`, not a second formula - so adding the association to
+    # `ln phi` alone would fold it silently into the entropy. The enthalpy's association
+    # term is `A/(RT) - T d(A/RT)/dT`, which is why the kernel carries that derivative.
+    #
+    # `cp_dep_r` deliberately gets **no** association term, matching the Rust kernel: the
+    # association's second temperature derivative is not derived, so an associating
+    # mixture's `h` and `cp` are not consistent and a model that reads `cp` must refuse
+    # rather than report the cubic's.
+    assoc_dep_rt = 0.0
+    if reduced.association is not None:
+        r_t = R * reduced.t_kelvin
+        covolumes = [b_i * r_t / reduced.pressure for b_i in b]
+        v = z * r_t / reduced.pressure
+        kernel = reduced.association.solve(covolumes, x, v, reduced.t_kelvin)
+        for i, addition in enumerate(kernel.ln_phi):
+            ln_phi[i] += addition
+        assoc_dep_rt = kernel.helmholtz_rt - reduced.t_kelvin * (
+            reduced.association.temperature_derivative(covolumes, x, v, reduced.t_kelvin, kernel)
+        )
+
     # The mixture's departure functions. `psi_bar` is the composition-weighted average
     # of the components' `psi`, and the two lines below are then `pr_departure`'s
     # expressions with `psi_bar` in place of `psi` - which is what makes them reduce to
@@ -422,7 +702,7 @@ def phase_state_at(
             )
     psi_bar = weighted_psi / weight_total
     t_dpsi_bar = weighted_psi_t / weight_total - psi_bar * (psi_bar - 2.0)
-    h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term
+    h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term + assoc_dep_rt
     s_dep_r = h_dep_rt - sum(xi * lp for xi, lp in zip(x, ln_phi, strict=True))
 
     # The heat-capacity departure. ``a_mix`` moves with temperature exactly as ``A``

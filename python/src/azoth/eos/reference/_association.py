@@ -168,6 +168,29 @@ class CrossRule:
 #: The Elliott rule, NeqSim's default for every pair its table has no row for.
 ELLIOTT = CrossRule("elliott")
 
+#: Which fitted set a cubic reads, **by geometry and not by name**.
+#:
+#: `rk` shares Soave's `delta` pair and `pr` Peng-Robinson's, so each reads the family it is
+#: shaped like - the same rule `azoth_eos::association::AssociationCubic::of` applies. The
+#: two families are separate fits rather than one converted, so this is a selection: water's
+#: `kappa_AB` is 0.0692 for SRK against 0.046473789 for PR, and reading the wrong one is a
+#: different fluid with no symptom.
+_FAMILY_OF_CUBIC: dict[str, str] = {"pr": "pr", "srk": "srk", "rk": "srk"}
+
+
+def family_of(cubic_name: str) -> str:
+    """The associating family a cubic's short name belongs to.
+
+    Raises:
+        InvalidInputError: if the name is no cubic this build has.
+    """
+    try:
+        return _FAMILY_OF_CUBIC[cubic_name]
+    except KeyError:
+        raise InvalidInputError(
+            "eos", f"unknown cubic {cubic_name!r}; expected 'pr', 'srk' or 'rk'"
+        ) from None
+
 
 class Rdf:
     """Carnahan-Starling ``g = (1 - eta/2)/(1 - eta)**3`` with ``eta = B/(4V)``.

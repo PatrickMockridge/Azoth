@@ -54,6 +54,7 @@ from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 from azoth.core.units import Q, ureg
 from azoth.eos.cubic import CUBICS, Cubic
 from azoth.eos.mixture import Component, Mixture
+from azoth.eos.reference._association import family_of
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
 COMPONENTS_CSV = "data/components/components.csv"
@@ -202,6 +203,42 @@ class AssociationParameters:
     def self_bonds(self) -> bool:
         """Whether this component's own sites bond with each other."""
         return self.scheme not in SELF_BONDLESS_SCHEMES
+
+    def has_fitted_set(self, family: str) -> bool:
+        """Whether this record carries a usable fitted set at one cubic family.
+
+        **NeqSim's own guard, and load-bearing.** ``ComponentSrkCPA`` substitutes the fitted
+        values only ``if (Math.abs(aCPA) > 1e-6)``, in its internal units - and the table has
+        rows where that matters in both directions: CO2 names the ``2A`` scheme with every
+        fitted value zero, and H2S and benzene carry an SRK set and a PR set that is entirely
+        zero. Substituting unconditionally gives those a covolume of zero, which makes the
+        reduced pressure ``NaN`` rather than a different answer.
+        """
+        return abs(self.a_srk if family == "srk" else self.a_pr) > 1.0e-6
+
+    def attraction(self, family: str) -> float:
+        """The fitted attraction ``a0`` at one family, in SI - ``Pa*m**6/mol**2``."""
+        internal = self.a_srk if family == "srk" else self.a_pr
+        return internal * NEQSIM_INTERNAL_TO_SI
+
+    def covolume(self, family: str) -> float:
+        """The fitted covolume at one family, in SI - ``m**3/mol``.
+
+        **Not the cubic's own.** NeqSim's ``ComponentSrkCPA`` substitutes this for the ``b``
+        a cubic derives from ``Tc`` and ``Pc``, and the difference is large: water's is
+        ``1.4515e-5`` against ``0.08664 R Tc/Pc``'s ``2.11e-5``.
+        """
+        internal = self.b_srk if family == "srk" else self.b_pr
+        return internal * NEQSIM_INTERNAL_TO_SI
+
+    def alpha_m(self, family: str) -> float:
+        """The fitted Soave alpha coefficient ``m`` at one family.
+
+        NeqSim's ``ComponentSrkCPA`` calls ``getAttractiveTerm().setm(mCPA)``, so the alpha
+        function is Soave's form with a *fitted* coefficient rather than the one
+        ``0.480 + 1.574 omega - 0.176 omega**2`` would give.
+        """
+        return self.m_srk if family == "srk" else self.m_pr
 
 
 @dataclass(frozen=True, slots=True)
@@ -1619,30 +1656,6 @@ def ge_nrtl_phase_parameters(
     )
 
 
-#: The associating cubic family each cubic's *geometry* belongs to.
-#:
-#: By geometry and not by name, mirroring `azoth_eos::association::AssociationCubic::of`:
-#: `rk` shares Soave's `delta` pair and `pr` Peng-Robinson's, so each reads the fitted set
-#: shaped like it. The association parameters are per family and neither is derived from the
-#: other - water's `kappa_AB` is 0.0692 for SRK against 0.046473789 for PR - so reading the
-#: wrong family is a different fluid.
-_CPA_FAMILY: dict[str, str] = {"pr": "pr", "srk": "srk", "rk": "srk"}
-
-
-def _cpa_family(eos: str) -> str:
-    """The associating family a cubic's short name belongs to.
-
-    Raises:
-        InvalidInputError: if ``eos`` names no cubic this build has.
-    """
-    try:
-        return _CPA_FAMILY[_cubic(eos).name]
-    except KeyError:
-        raise InvalidInputError(
-            "eos", f"unknown cubic {eos!r}; expected 'pr', 'srk' or 'rk'"
-        ) from None
-
-
 def _interaction_pairs(
     resolved: list[str],
     eos: str,
@@ -1657,7 +1670,7 @@ def _interaction_pairs(
     wrong.
     """
     if associating:
-        return cpa_kij_for(tuple(resolved), _cpa_family(eos), card=card)
+        return cpa_kij_for(tuple(resolved), family_of(eos), card=card)
     return kij_for(tuple(resolved), card=card)
 
 
