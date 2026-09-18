@@ -694,6 +694,51 @@ impl Mixture {
             Ok(cubic - p_assoc * z / p)
         };
 
+        /// The zero of `f` in `[lo, hi]`, by bisection. The count is fixed rather than
+        /// converged on a residual: near the covolume `f` is a difference of two large
+        /// terms, and a bisection that stopped at an absolute tolerance there would stop
+        /// early.
+        fn bisect(f: &impl Fn(f64) -> Result<f64>, lo: f64, hi: f64) -> Result<f64> {
+            let (mut lo, mut hi) = (lo, hi);
+            let sign = f(lo)?.signum();
+            for _ in 0..200 {
+                let mid = 0.5 * (lo + hi);
+                if f(mid)?.signum() == sign {
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+            Ok(0.5 * (lo + hi))
+        }
+
+        // `RootSide::Liquid` wants the **lowest** zero above `B`, and the seed cannot
+        // find it. At low pressure the substituted cubic's `a` is small enough that it
+        // has one real root, so `z_min` and `z_max` are the same number - the vapour root
+        // - and Newton from it converges there and stops. **The association's pressure is
+        // what creates the liquid root**, so it has to be *found* rather than seeded: the
+        // residual is `-inf` at `B+`, and the zero is a fraction of a per cent above `B`,
+        // which a linear scan steps straight over and a cubic root never points at.
+        //
+        // The walk is geometric because the root's *ratio* to `B` is what is bounded, not
+        // its distance. Newton still serves the vapour side, and both sides reach the
+        // fallback for the case neither handles.
+        if matches!(side, RootSide::Liquid) {
+            let floor = b_mix * 1.000_001;
+            let steps = 64;
+            let mut previous = floor;
+            let mut previous_value = residual(previous)?;
+            for step in 1..=steps {
+                let z_try = floor * (seed / floor).powf((step as f64) / (steps as f64));
+                let value = residual(z_try)?;
+                if previous_value.signum() != value.signum() {
+                    return bisect(&residual, previous, z_try);
+                }
+                previous = z_try;
+                previous_value = value;
+            }
+        }
+
         // Newton, with the step capped to a tenth of the distance to the covolume so it
         // cannot cross the `Z > B` boundary where the cubic term is singular.
         let mut z = seed.max(b_mix * 1.000_001);
@@ -737,16 +782,7 @@ impl Mixture {
                 return Ok(previous);
             }
             if previous_value.signum() != value.signum() {
-                let (mut lo, mut hi) = (previous, z_try);
-                for _ in 0..200 {
-                    let mid = 0.5 * (lo + hi);
-                    if residual(lo)?.signum() == residual(mid)?.signum() {
-                        lo = mid;
-                    } else {
-                        hi = mid;
-                    }
-                }
-                return Ok(0.5 * (lo + hi));
+                return bisect(&residual, previous, z_try);
             }
             previous = z_try;
             previous_value = value;

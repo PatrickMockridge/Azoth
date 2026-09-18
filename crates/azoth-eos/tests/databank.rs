@@ -745,7 +745,7 @@ fn an_associating_mixtures_derivative_surface_matches_the_phase_state() {
     let (mixture, _) = databank::associating_mixture_of(&names, Cubic::Srk, None)
         .expect("water and methanol bond");
     let (t, p) = (320.0, 2.0e6);
-    let x = [0.6, 0.4];
+    let x = [0.674_266_566_871_552, 0.325_733_433_128_448];
     let reduced = mixture
         .reduced_parameters(kelvins(t), pascals(p))
         .expect("reduced parameters");
@@ -858,5 +858,99 @@ fn the_shipped_card_is_the_databank() {
         "the card's fluid: {} against the table's {}",
         root(&carded),
         root(&shipped)
+    );
+}
+
+/// The associating root at low pressure, against NeqSim's own flash.
+///
+/// **This is the regime the root finder used to get wrong.** At 1 bar the substituted
+/// cubic's attraction is small enough that it has one real root, so `z_min` and `z_max`
+/// are the same number - the vapour root - and Newton from it converges there and stops.
+/// The liquid root exists only because the association's pressure creates it, so it has
+/// to be found rather than seeded, and before the geometric walk it was not: every
+/// low-pressure CPA flash saw the same root twice and reported a single phase.
+///
+/// The oracle is NeqSim's `TPflash`, which splits this feed. Its gas phase is at
+/// `Z = 0.949619265923351` and its aqueous phase at `0.000876327166634292`, and the two
+/// tests below take one each.
+#[test]
+fn the_cpa_vapour_root_matches_neqsim_at_low_pressure() {
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_eos::{Cubic, RootSide};
+
+    let (mixture, _) = databank::associating_mixture_of(&["water", "methanol"], Cubic::Srk, None)
+        .expect("water and methanol bond");
+    let (t, p) = (356.0, 1.0e5);
+    let x = [0.6, 0.4];
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("reduced parameters");
+    let state = mixture
+        .phase_state(&reduced, &x, RootSide::Vapour)
+        .expect("a vapour root");
+    assert!(
+        (state.z / 0.949_619_265_923_351 - 1.0).abs() < 1.0e-9,
+        "the vapour root: azoth {} vs NeqSim 0.949619265923351",
+        state.z
+    );
+
+    // The kernel at that state too, which `CpaProbe` prints: `FCPA` is
+    // `A_assoc/(R T)` and `dFCPAdN[i]` is the association's `ln phi_i`.
+    let association = mixture.association().expect("an associating mixture");
+    let covolumes: Vec<f64> = reduced.b.iter().map(|b| b * 8.3144621 * t / p).collect();
+    let kernel = association
+        .solve(&covolumes, &x, state.z * 8.3144621 * t / p, t)
+        .expect("a solvable state");
+    assert!(
+        (kernel.helmholtz_rt / -0.049_437_345_696_229_4 - 1.0).abs() < 1.0e-9,
+        "FCPA: {} vs NeqSim -0.0494373456962294",
+        kernel.helmholtz_rt
+    );
+    for (i, want) in [(0, -0.085_911_899_466_216_2), (1, -0.113_824_565_989_815)] {
+        assert!(
+            (kernel.ln_phi[i] / want - 1.0).abs() < 1.0e-9,
+            "dFCPAdN[{i}]: {} vs NeqSim {want}",
+            kernel.ln_phi[i]
+        );
+    }
+}
+
+/// The liquid root at the same state, at NeqSim's own aqueous composition.
+///
+/// `CpaProbe` prints the flashed aqueous phase's `Z` and mole fractions, so this compares
+/// the root azoth finds against the root NeqSim's flash settled on rather than against a
+/// hand-derived value.
+#[test]
+fn the_cpa_liquid_root_is_found_at_low_pressure() {
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_eos::{Cubic, RootSide};
+
+    let (mixture, _) = databank::associating_mixture_of(&["water", "methanol"], Cubic::Srk, None)
+        .expect("water and methanol bond");
+    let (t, p) = (356.0, 1.0e5);
+    let x = [0.674_266_566_871_552, 0.325_733_433_128_448];
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("reduced parameters");
+    let liquid = mixture
+        .phase_state(&reduced, &x, RootSide::Liquid)
+        .expect("a liquid root");
+    let vapour = mixture
+        .phase_state(&reduced, &x, RootSide::Vapour)
+        .expect("a vapour root");
+
+    assert!(
+        (liquid.z / 0.000_876_327_166_634_292 - 1.0).abs() < 1.0e-3,
+        "the liquid root: azoth {} vs NeqSim 0.000876327166634292",
+        liquid.z
+    );
+    // And it is the *lower* root, which is what makes this a test of the branch rather
+    // than of a number: a finder that returned the vapour root twice would pass the
+    // comparison above only by coincidence, and cannot pass this one.
+    assert!(
+        liquid.z < vapour.z / 100.0,
+        "the two sides found the same root: {} against {}",
+        liquid.z,
+        vapour.z
     );
 }

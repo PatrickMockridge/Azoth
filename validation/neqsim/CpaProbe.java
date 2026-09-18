@@ -4,6 +4,7 @@ import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.phase.PhaseSrkCPA;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemSrkCPA;
+import neqsim.thermodynamicoperations.ThermodynamicOperations;
 
 /**
  * Prints the association kernel's internals at one state, so azoth's port of it can be
@@ -15,7 +16,7 @@ import neqsim.thermo.system.SystemSrkCPA;
  * the second.
  *
  * <p>
- * Usage: {@code java -cp .:neqsim-3.20.0.jar CpaProbe}
+ * Usage: {@code java -cp .:neqsim-3.20.0.jar CpaProbe [T_K] [P_bara] [n_water]}
  */
 public final class CpaProbe {
 
@@ -26,9 +27,9 @@ public final class CpaProbe {
   }
 
   public static void main(String[] args) {
-    double temperature = 300.0;
-    double pressure = 100.0; // bara
-    double nWater = args.length > 0 ? Double.parseDouble(args[0]) : 0.6;
+    double temperature = args.length > 0 ? Double.parseDouble(args[0]) : 300.0;
+    double pressure = args.length > 1 ? Double.parseDouble(args[1]) : 100.0; // bara
+    double nWater = args.length > 2 ? Double.parseDouble(args[2]) : 0.6;
 
     SystemInterface system = new SystemSrkCPA(temperature, pressure);
     system.addComponent("water", nWater);
@@ -69,6 +70,7 @@ public final class CpaProbe {
       System.out.printf("%-34s %s%n", "associationScheme", c.getAssociationScheme());
       print("associationEnergy", c.getAssociationEnergy());
       print("associationVolume", c.getAssociationVolume());
+      print("fugacityCoefficient", c.getFugacityCoefficient());
       print("calc_lngi", c.calc_lngi(phase));
       print("calca", c.calca());
       print("calcb", c.calcb());
@@ -96,5 +98,28 @@ public final class CpaProbe {
       }
       System.out.printf("%-33s %s%n", "dFCPAdNdN[" + i + "]", row.toString().trim());
     }
+    // The flash, so the phase count and the split can be compared as well as the kernel.
+    // A state that is single-phase at one temperature and two at another is the case an
+    // oracle is needed for: azoth has no way to know which it should be.
+    ThermodynamicOperations operations = new ThermodynamicOperations(system);
+    operations.TPflash();
+    System.out.printf("flashPhases %d%n", system.getNumberOfPhases());
+    for (int i = 0; i < system.getNumberOfPhases(); i++) {
+      PhaseInterface flashed = system.getPhase(i);
+      StringBuilder composition = new StringBuilder();
+      for (int j = 0; j < system.getNumberOfComponents(); j++) {
+        composition.append(String.format("%.15g ", flashed.getComponent(j).getx()));
+      }
+      System.out.printf(
+          "flashPhase %d %s beta=%.15g Z=%.15g molarVolume=%.15g x=%s%n",
+          i,
+          flashed.getType(),
+          flashed.getBeta(),
+          flashed.getZ(),
+          flashed.getMolarVolume(),
+          composition);
+    }
+
+
   }
 }
