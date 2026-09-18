@@ -971,6 +971,17 @@ impl Mixture {
                      outside it",
                 ));
             }
+            _ if self.associating => {
+                return Err(AzothError::invalid_input(
+                    "association",
+                    "an associating mixture's derivative surface is not derived yet: the \
+                     constant-T,P conversion needs `dZ/dn_j` from the associating root, \
+                     and that needs two more kernel derivatives - the second volume \
+                     derivative of the association's Helmholtz energy and its composition \
+                     cross derivative. Returning the cubic's would be a wrong answer \
+                     rather than a missing one, so this refuses",
+                ));
+            }
             MixingRule::SoreideWhitson { .. } => {
                 return Err(AzothError::invalid_input(
                     "mixing_rule",

@@ -660,3 +660,58 @@ fn the_cpa_root_matches_neqsim() {
         state.z
     );
 }
+
+/// The association's derivative surface is **not derived**, and this pins the refusal.
+///
+/// `phase_derivatives` is what the second-order flash, both saturation operators and the
+/// envelope solve on, so an associating mixture cannot take those paths yet. The gap is
+/// named rather than papered over because the alternative - returning the cubic's
+/// derivatives - is a *wrong* answer rather than a missing one.
+///
+/// **What is missing.** The kernel's derivatives are at constant `T` and `V`; a flash
+/// needs constant `T` and `P`, and the conversion is the chain rule through the volume:
+/// `d ln phi_i/dn_j = Phi_{n_i n_j} + Phi_{n_i V} V_{n_j}`. The kernel supplies
+/// `Phi_{n_i n_j}` and `Phi_{n_i V}`, but `V_{n_j}` is `(R T/P)(Z + dZ/dn_j)` and **`dZ/dn_j`
+/// is not the cubic's**: an associating mixture's root comes from `associating_root`, so
+/// its volume responds to the composition through the association's pressure too.
+/// Differentiating that residual needs two derivatives the kernel does not have - the
+/// second volume derivative of the association's Helmholtz energy, `Phi_VV`, and its
+/// composition cross derivative `Phi_{V n_j}`.
+///
+/// Sabotage: when the surface lands, the entry above stops being a gap and this test
+/// fails, which is the point of it.
+#[test]
+fn an_associating_mixture_refuses_the_derivative_surface() {
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_eos::association::AssociationCubic;
+    use azoth_eos::{Cubic, MixingRule, RootSide};
+
+    let names = ["water", "methanol"];
+    let (mixture, _) = databank::mixture_of(&names, None).expect("a mixture");
+    let mixture = mixture
+        .with_mixing_rule(MixingRule::Classic {
+            kij: databank::cpa_kij(&names, AssociationCubic::Srk),
+        })
+        .with_cubic(Cubic::Srk)
+        .with_association()
+        .expect("water and methanol bond");
+    let reduced = mixture
+        .reduced_parameters(kelvins(320.0), pascals(2.0e6))
+        .expect("reduced parameters");
+    let state = mixture
+        .phase_state(&reduced, &[0.6, 0.4], RootSide::Liquid)
+        .expect("a liquid root");
+
+    let refusal = mixture
+        .phase_derivatives(&reduced, &[0.6, 0.4], state.z)
+        .expect_err("the derivative surface is not derived for an associating mixture");
+    let message = refusal.to_string();
+    assert!(
+        message.contains("derivative surface"),
+        "the refusal should name what is missing: {message}"
+    );
+
+    // And the state itself is fine - it is the derivative surface, and only that, which
+    // is outstanding.
+    assert!(state.ln_phi.iter().all(|value| value.is_finite()));
+}
