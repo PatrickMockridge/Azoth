@@ -285,6 +285,12 @@ class DatabankEntry:
             omega=self.omega,
             molar_mass=self.molar_mass,
             alpha_params=params,
+            # Carried whether or not the mixture runs it: an associating equation of state
+            # reads it and a cubic ignores it, and whether a *phase model* associates is
+            # the model's decision rather than the substance's - `SystemNRTL` builds a
+            # classical phase over the same methanol and water that `SystemSrkCPA` builds
+            # an associating one over.
+            association=self.association,
         )
 
     def antoine_form(self) -> str:
@@ -1613,6 +1619,48 @@ def ge_nrtl_phase_parameters(
     )
 
 
+#: The associating cubic family each cubic's *geometry* belongs to.
+#:
+#: By geometry and not by name, mirroring `azoth_eos::association::AssociationCubic::of`:
+#: `rk` shares Soave's `delta` pair and `pr` Peng-Robinson's, so each reads the fitted set
+#: shaped like it. The association parameters are per family and neither is derived from the
+#: other - water's `kappa_AB` is 0.0692 for SRK against 0.046473789 for PR - so reading the
+#: wrong family is a different fluid.
+_CPA_FAMILY: dict[str, str] = {"pr": "pr", "srk": "srk", "rk": "srk"}
+
+
+def _cpa_family(eos: str) -> str:
+    """The associating family a cubic's short name belongs to.
+
+    Raises:
+        InvalidInputError: if ``eos`` names no cubic this build has.
+    """
+    try:
+        return _CPA_FAMILY[_cubic(eos).name]
+    except KeyError:
+        raise InvalidInputError(
+            "eos", f"unknown cubic {eos!r}; expected 'pr', 'srk' or 'rk'"
+        ) from None
+
+
+def _interaction_pairs(
+    resolved: list[str],
+    eos: str,
+    *,
+    associating: bool,
+    card: keycard.Keycard | None,
+) -> dict[tuple[int, int], float]:
+    """:func:`kij_for` or :func:`cpa_kij_for`, whichever the model reads.
+
+    One function rather than a ternary at each of the two callers, because the choice is
+    the *same* choice in both and a second copy of it is a second place to get the family
+    wrong.
+    """
+    if associating:
+        return cpa_kij_for(tuple(resolved), _cpa_family(eos), card=card)
+    return kij_for(tuple(resolved), card=card)
+
+
 def _cubic(name: str) -> Cubic:
     """The cubic named by its short name, ``"pr"``, ``"srk"`` or ``"rk"``."""
     try:
@@ -1664,6 +1712,7 @@ def from_names(
     card: keycard.Keycard | None = None,
     eos: str = "pr",
     alpha: str | None = None,
+    associating: bool = False,
 ) -> Mixture:
     """A :class:`~azoth.eos.mixture.Mixture` from a list of databank names.
 
@@ -1675,6 +1724,12 @@ def from_names(
     only to flash. :func:`mixture_of` returns the polynomial beside it, and is what a
     calculation takes - a mixture without one cannot produce an enthalpy.
 
+    ``associating`` selects the *associating* interaction column and turns the Wertheim
+    contribution on, which is the whole of what makes one of these a CPA fluid: the
+    attraction is mixed with `cpakij_SRK`/`cpakij_PR` rather than `KIJPR`, and the fitted
+    `a` and `b` replace the cubic's. It defaults to off because the same substances are an
+    associating fluid under one phase model and a classical one under another.
+
     Raises:
         PropertyUnavailableError: if any name is not in the databank.
         InvalidInputError: if the list is empty, or a pair is malformed.
@@ -1684,7 +1739,11 @@ def from_names(
     resolved = [name.strip().lower() for name in names]
     components = tuple(entry(name, card=card).component(alpha=alpha_name) for name in resolved)
     return mixture(
-        components, kij=kij_for(tuple(resolved), card=card), cubic=cubic, alpha=alpha_name
+        components,
+        kij=_interaction_pairs(resolved, eos, associating=associating, card=card),
+        cubic=cubic,
+        alpha=alpha_name,
+        associating=associating,
     )
 
 
@@ -1694,6 +1753,7 @@ def mixture_of(
     card: keycard.Keycard | None = None,
     eos: str = "pr",
     alpha: str | None = None,
+    associating: bool = False,
 ) -> tuple[Mixture, IdealGasModel]:
     """A mixture and its ideal-gas model, from a list of databank names.
 
@@ -1736,9 +1796,10 @@ def mixture_of(
     return (
         mixture(
             tuple(e.component(alpha=_alpha_name(eos, alpha)) for e in entries),
-            kij=kij_for(tuple(resolved), card=card),
+            kij=_interaction_pairs(resolved, eos, associating=associating, card=card),
             cubic=_cubic(eos),
             alpha=_alpha_name(eos, alpha),
+            associating=associating,
         ),
         IdealGasModel(
             cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]

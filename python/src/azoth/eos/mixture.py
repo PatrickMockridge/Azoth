@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
     from azoth.core.units import Q
+    from azoth.eos.components import AssociationParameters
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +46,9 @@ class Component:
             in the order the correlation reads them. Empty for a component built
             without a fitted set, which is every caller-supplied component and every
             correlation that needs none.
+        association: this substance's association parameters, or ``None`` for one
+            that carries no site scheme. Carried whether or not the mixture runs
+            them - see :attr:`Mixture.associating`, which is the *model's* decision.
     """
 
     Tc: Q
@@ -52,6 +56,7 @@ class Component:
     omega: float
     molar_mass: Q | None = None
     alpha_params: tuple[float, ...] = ()
+    association: AssociationParameters | None = None
 
     def __post_init__(self) -> None:
         for name in ("Tc", "Pc"):
@@ -77,12 +82,19 @@ class Mixture:
         components: one :class:`Component` per component, in the order every other
             argument to :func:`azoth.eos.pt_flash` is indexed by.
         kij: the interaction parameters. Zero diagonal, and symmetric; see below.
+        associating: whether a phase model runs the Wertheim association
+            contribution over these components. **False by default, and opt-in for
+            the reason the components carry their parameters unconditionally**: the
+            same methanol and water are an associating fluid under `SystemSrkCPA`
+            and a classical one under `SystemNRTL`, so whether a mixture associates
+            is the model's decision and not a property of the substances.
     """
 
     components: tuple[Component, ...]
     kij: tuple[tuple[float, ...], ...] = field(default=())
     cubic: Cubic = field(default=PR)
     alpha: str = field(default="pr")
+    associating: bool = field(default=False)
 
     def __post_init__(self) -> None:
         if not self.components:
@@ -129,6 +141,7 @@ def mixture(
     kij: Mapping[tuple[int, int], float] | None = None,
     cubic: Cubic = PR,
     alpha: str = "pr",
+    associating: bool = False,
 ) -> Mixture:
     """A :class:`Mixture` from a component list and sparse interaction pairs.
 
@@ -143,6 +156,8 @@ def mixture(
             be given in either order. Omitted pairs are zero.
         cubic: the cubic the mixture is evaluated under, from
             :mod:`azoth.eos.cubic`. Defaults to Peng-Robinson.
+        associating: whether a phase model runs the Wertheim association
+            contribution. See :attr:`Mixture.associating`.
 
     Returns:
         The mixture, with a full symmetric matrix built from the pairs.
@@ -172,4 +187,5 @@ def mixture(
         kij=tuple(tuple(row) for row in matrix),
         cubic=cubic,
         alpha=alpha,
+        associating=associating,
     )
