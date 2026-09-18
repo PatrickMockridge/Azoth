@@ -78,6 +78,14 @@ COMPONENT_FIELDS = (
     "cp_c",
     "cp_d",
     "cp_e",
+    # The association parameters. Read on both sides since P7, and the two loaders are
+    # separate code: nothing else compares them, and a divergence here would be a model
+    # reading a different fluid on one side without either side failing.
+    "association_scheme",
+    "association_sites",
+    "association_energy",
+    "association_volume_srk",
+    "association_b_srk",
 )
 
 KIJ_FIELDS = ("component_a", "component_b", "kij_pr")
@@ -140,19 +148,7 @@ def python_component_rows() -> list[dict[str, Any]]:
         record = components.entry(name)
         if record.cp is None:  # pragma: no cover - only a keycard-added substance
             continue
-        out.append(
-            {
-                "name": record.name.lower(),
-                "tc_k": record.Tc.to("K").magnitude,
-                "pc_pa": record.Pc.to("Pa").magnitude,
-                "acentric_factor": record.omega,
-                "cp_a": record.cp[0],
-                "cp_b": record.cp[1],
-                "cp_c": record.cp[2],
-                "cp_d": record.cp[3],
-                "cp_e": record.cp[4],
-            }
-        )
+        out.append(python_row(record))
     return sorted(out, key=lambda row: row["name"])
 
 
@@ -413,26 +409,36 @@ def _overlay(card: Any) -> Any:
     return bridge.overlay_from(card)
 
 
+def python_row(record: Any) -> dict[str, Any]:
+    """One entry in the transported row shape, keyed exactly by `COMPONENT_FIELDS`.
+
+    A card cannot state an association parameter yet, so those fields come from the
+    shipped table either way - which is the point of comparing them: a carded
+    substance must keep the association it shipped with rather than lose it.
+    """
+    cp = record.cp
+    association = record.association
+    return {
+        "name": record.name.lower(),
+        "tc_k": record.Tc.to("K").magnitude,
+        "pc_pa": record.Pc.to("Pa").magnitude,
+        "acentric_factor": record.omega,
+        "cp_a": None if cp is None else cp[0],
+        "cp_b": None if cp is None else cp[1],
+        "cp_c": None if cp is None else cp[2],
+        "cp_d": None if cp is None else cp[3],
+        "cp_e": None if cp is None else cp[4],
+        "association_scheme": "" if association is None else association.scheme,
+        "association_sites": 0 if association is None else association.sites,
+        "association_energy": 0.0 if association is None else association.energy,
+        "association_volume_srk": 0.0 if association is None else association.volume_srk,
+        "association_b_srk": 0.0 if association is None else association.b_srk,
+    }
+
+
 def python_carded_rows(card: Any) -> list[dict[str, Any]]:
     """Every name the card states, as the Python reference resolves it, by name."""
-    rows = []
-    for name in sorted(card.components):
-        record = components.entry(name, card=card)
-        cp = record.cp
-        rows.append(
-            {
-                "name": record.name.lower(),
-                "tc_k": record.Tc.to("K").magnitude,
-                "pc_pa": record.Pc.to("Pa").magnitude,
-                "acentric_factor": record.omega,
-                "cp_a": None if cp is None else cp[0],
-                "cp_b": None if cp is None else cp[1],
-                "cp_c": None if cp is None else cp[2],
-                "cp_d": None if cp is None else cp[3],
-                "cp_e": None if cp is None else cp[4],
-            }
-        )
-    return rows
+    return [python_row(components.entry(name, card=card)) for name in sorted(card.components)]
 
 
 def rust_carded_rows(card: Any) -> list[dict[str, Any]]:

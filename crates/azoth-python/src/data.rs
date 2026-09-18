@@ -15,6 +15,7 @@
 //! introspection in the same sense `warning_codes` and `result_fields` are: it exists
 //! so a test can assert a cross-language claim instead of asserting it in prose.
 
+use azoth_eos::association::SiteScheme;
 use azoth_eos::databank;
 use azoth_hydraulics::{fittings, fluids};
 use pyo3::prelude::*;
@@ -144,6 +145,26 @@ pub struct PyComponentRow {
     pub cp_d: Option<f64>,
     #[pyo3(get)]
     pub cp_e: Option<f64>,
+    /// The association site scheme's name - `"1A"`, `"2A"`, `"2B"` or `"4C"` - or the
+    /// empty string for a component the table gives no scheme.
+    ///
+    /// A string rather than a number because the scheme *name* is what NeqSim switches
+    /// on: the site count cannot reconstruct it, since the table carries `1A` at zero
+    /// sites and both `2A` and `2B` at two.
+    #[pyo3(get)]
+    pub association_scheme: String,
+    /// The site count the table states, zero for a component with no scheme.
+    #[pyo3(get)]
+    pub association_sites: u32,
+    /// The association energy `eps`, in J/mol.
+    #[pyo3(get)]
+    pub association_energy: f64,
+    /// `kappa_AB` for the SRK family.
+    #[pyo3(get)]
+    pub association_volume_srk: f64,
+    /// The fitted SRK-CPA covolume, in NeqSim's internal scale.
+    #[pyo3(get)]
+    pub association_b_srk: f64,
 }
 
 /// One row of the interaction table, transported.
@@ -263,6 +284,28 @@ pub(crate) fn row_of(entry: &databank::Entry) -> PyComponentRow {
         cp_c: entry.cp.map(|cp| cp[2]),
         cp_d: entry.cp.map(|cp| cp[3]),
         cp_e: entry.cp.map(|cp| cp[4]),
+        association_scheme: entry
+            .association
+            .as_ref()
+            .map(|a| scheme_name(a.scheme).to_string())
+            .unwrap_or_default(),
+        association_sites: entry.association.as_ref().map_or(0, |a| a.sites),
+        association_energy: entry.association.as_ref().map_or(0.0, |a| a.energy),
+        association_volume_srk: entry.association.as_ref().map_or(0.0, |a| a.volume_srk),
+        association_b_srk: entry.association.as_ref().map_or(0.0, |a| a.b_srk),
+    }
+}
+
+/// The databank name of a site scheme, the inverse of `SiteScheme::from_databank_name`.
+///
+/// The two are written out in both directions rather than one deriving from the other,
+/// because a round trip through a wrong name would agree with itself.
+fn scheme_name(scheme: SiteScheme) -> &'static str {
+    match scheme {
+        SiteScheme::OneA => "1A",
+        SiteScheme::TwoA => "2A",
+        SiteScheme::TwoB => "2B",
+        SiteScheme::FourC => "4C",
     }
 }
 

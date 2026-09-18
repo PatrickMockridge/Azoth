@@ -99,7 +99,75 @@ impl SiteScheme {
     pub fn associates_across(self, a: usize, other: SiteScheme, b: usize) -> bool {
         self.charges()[a] * other.charges()[b] < 0
     }
+
+    /// The scheme a databank name denotes.
+    ///
+    /// `None` for `"0"`, which is the table's marker for a component with no scheme at all,
+    /// and for any name this library does not carry. A site *count* cannot stand in for
+    /// this: the table carries `1A` at zero sites and both `2A` and `2B` at two, and
+    /// NeqSim's `setAssociationScheme` switches on the name.
+    #[must_use]
+    pub fn from_databank_name(name: &str) -> Option<Self> {
+        match name.trim() {
+            "1A" => Some(Self::OneA),
+            "2A" => Some(Self::TwoA),
+            "2B" => Some(Self::TwoB),
+            "4C" => Some(Self::FourC),
+            _ => None,
+        }
+    }
+
+    /// Whether this scheme's sites bond with each other at all.
+    ///
+    /// False for [`SiteScheme::OneA`] and [`SiteScheme::TwoA`], whose charge vectors carry
+    /// one sign, so NeqSim's product test is positive for every pair and the interaction
+    /// matrix is all zeros. Such a component never self-associates - though it still
+    /// *cross*-associates with an oppositely-charged partner, which is why this is a
+    /// property of the scheme and not a verdict on the component.
+    #[must_use]
+    pub fn self_bonds(self) -> bool {
+        let n = self.site_count();
+        (0..n).any(|a| (0..n).any(|b| self.associates_within(a, b)))
+    }
 }
+
+/// The association parameters a databank row carries, for one component.
+///
+/// The two fitted cubic sets are in **NeqSim's internal scale** — `a` in
+/// `Pa m**6/mol**2 x 1e5` and `b` in `m**3/mol x 1e5`, from `Component.java:526-531` —
+/// because the compiled table carries what the source table carries. The conversion belongs
+/// with the model that reads them, and the manifest marks them `neqsim-internal` rather than
+/// the `dimensionless` it used to claim. Water is the check: `b_srk` is 1.4515 internal,
+/// i.e. `1.4515e-5 m**3/mol`, against the cubic's own `2.11e-5`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AssociationRecord {
+    /// The site scheme, which the site count cannot reconstruct.
+    pub scheme: SiteScheme,
+    /// The site count the table states. Carried beside the scheme because the two disagree
+    /// upstream - `1A` appears at zero sites - and a silent resolution would hide that.
+    pub sites: u32,
+    /// The association energy `eps`, in J/mol.
+    pub energy: f64,
+    /// `kappa_AB` for the SRK family.
+    pub volume_srk: f64,
+    /// The fitted attraction for SRK-CPA, in NeqSim's internal scale.
+    pub a_srk: f64,
+    /// The fitted covolume for SRK-CPA, in NeqSim's internal scale.
+    pub b_srk: f64,
+    /// The SRK alpha correlation's `m`.
+    pub m_srk: f64,
+    /// `kappa_AB` for the PR family.
+    pub volume_pr: f64,
+    /// The fitted attraction for PR-CPA, in NeqSim's internal scale.
+    pub a_pr: f64,
+    /// The fitted covolume for PR-CPA, in NeqSim's internal scale.
+    pub b_pr: f64,
+    /// The PR alpha correlation's `m`.
+    pub m_pr: f64,
+}
+
+/// The factor from NeqSim's internal `a` and `b` to SI, `Component.java:526-531`.
+pub const NEQSIM_INTERNAL_TO_SI: f64 = 1.0e-5;
 
 /// One component's association parameters.
 ///

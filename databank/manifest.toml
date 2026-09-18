@@ -611,19 +611,19 @@ reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `Phas
 name = "associationenergy"
 disposition = "vendored"
 as = "associationenergy"
-unit = "K"
+unit = "J/mol"
 reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "aCPA_SRK"
 disposition = "vendored"
 as = "acpa_srk"
-unit = "dimensionless"
+unit = "neqsim-internal"
 reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "bCPA_SRK"
 disposition = "vendored"
 as = "bcpa_srk"
-unit = "dimensionless"
+unit = "neqsim-internal"
 reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "mCPA_SRK"
@@ -635,13 +635,13 @@ reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `Phas
 name = "aCPA_PR"
 disposition = "vendored"
 as = "acpa_pr"
-unit = "dimensionless"
+unit = "neqsim-internal"
 reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "bCPA_PR"
 disposition = "vendored"
 as = "bcpa_pr"
-unit = "dimensionless"
+unit = "neqsim-internal"
 reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "mCPA_PR"

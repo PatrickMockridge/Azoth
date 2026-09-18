@@ -419,3 +419,86 @@ fn an_empty_overlay_is_the_shipped_data() {
     assert!(!empty.is_empty(), "an overlay holding a pair is not empty");
     assert!(databank::Overlay::default().is_empty());
 }
+
+/// The association parameters, read from the table rather than restated from it.
+///
+/// Water's are CPA's published set: `eps/R` of 2003.1 K against the literature's
+/// 2003.4, and `kappa_AB` of 0.0692 exactly, which is how the energy's unit - J/mol,
+/// not kelvin - is fixed.
+#[test]
+fn an_associating_component_carries_its_scheme_and_parameters() {
+    let water = databank::entry("water", None).expect("water is in the databank");
+    let a = water.association.expect("water names a scheme");
+    assert_eq!(a.scheme, azoth_eos::association::SiteScheme::FourC);
+    assert_eq!(a.sites, 4);
+    assert!((a.energy - 16655.0).abs() < 1e-9, "eps: {}", a.energy);
+    assert!(
+        (a.volume_srk - 0.0692).abs() < 1e-12,
+        "beta: {}",
+        a.volume_srk
+    );
+
+    // The fitted covolume is NeqSim's internal scale, and it is *not* the cubic's own
+    // `0.08664 R Tc/Pc` - which is 2.11 in the same scale. A CPA mixture's equation of
+    // state is not determined by `Tc` and `Pc`, so a loader that quietly used the cubic's
+    // value would be wrong by 45% on water.
+    assert!(
+        (a.b_srk - 1.4515).abs() < 1e-9,
+        "the fitted covolume: {}",
+        a.b_srk
+    );
+    assert!(
+        (a.b_srk / 2.1127 - 1.0).abs() > 0.3,
+        "and it must not be the cubic's own"
+    );
+}
+
+#[test]
+fn a_component_the_table_gives_no_scheme_has_none() {
+    for name in ["methane", "ethane", "n-butane", "nitrogen"] {
+        let entry = databank::entry(name, None).expect("in the databank");
+        assert!(
+            entry.association.is_none(),
+            "{name} carries `0` in the scheme column, which is the table's marker for \
+             a component with no scheme"
+        );
+    }
+}
+
+/// The four schemes the table names, each mapped to the one the kernel knows.
+#[test]
+fn every_scheme_the_table_names_is_carried() {
+    let cases = [
+        ("water", azoth_eos::association::SiteScheme::FourC),
+        ("methanol", azoth_eos::association::SiteScheme::TwoB),
+        ("co2", azoth_eos::association::SiteScheme::TwoA),
+        ("benzene", azoth_eos::association::SiteScheme::OneA),
+    ];
+    for (name, scheme) in cases {
+        let entry = databank::entry(name, None).expect("in the databank");
+        assert_eq!(
+            entry.association.map(|a| a.scheme),
+            Some(scheme),
+            "{name}'s scheme"
+        );
+    }
+}
+
+/// Two rows carry a blank `associationboundingvolume_pr`, and both are components whose
+/// every sibling association cell is already zero.
+///
+/// This pins the loader's blank-means-zero rule to the data it was written for. If
+/// upstream fills those cells - or blanks a different one - this fails, rather than the
+/// rule silently becoming wrong.
+#[test]
+fn the_only_blank_association_cells_are_pr_volumes_on_zero_rows() {
+    for name in ["h2so4", "hno3"] {
+        let entry = databank::entry(name, None).expect("in the databank");
+        let a = entry.association.expect("names a scheme");
+        assert_eq!(a.volume_pr, 0.0);
+        assert_eq!(a.energy, 0.0);
+        assert_eq!(a.a_pr, 0.0);
+        assert_eq!(a.b_pr, 0.0);
+        assert!(!a.scheme.self_bonds(), "{name} is a 1A component");
+    }
+}

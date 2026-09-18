@@ -113,8 +113,78 @@ COLUMNS = (
     "dipole_moment_debye",
     "viscosity_correction_factor",
     "referencestatetype",
+    "associationscheme",
+    "associationsites",
+    "associationenergy",
+    "associationboundingvolume_srk",
+    "associationboundingvolume_pr",
+    "acpa_srk",
+    "bcpa_srk",
+    "mcpa_srk",
+    "acpa_pr",
+    "bcpa_pr",
+    "mcpa_pr",
     "citation",
 )
+
+
+#: The site schemes the databank names, each mapped to the number of sites the scheme
+#: has. Upstream also writes ``0``, its marker for a component with no scheme at all.
+#:
+#: A site *count* cannot stand in for this mapping: the table carries ``1A`` on a
+#: component with zero sites and both ``2A`` and ``2B`` on components with two, and
+#: NeqSim's ``setAssociationScheme`` switches on the name.
+SITE_SCHEMES: dict[str, int] = {"1A": 1, "2A": 2, "2B": 2, "4C": 4}
+
+#: The schemes that cannot self-associate, because every site carries the same charge
+#: sign and NeqSim's bond test is a product sign. A component with one of these still
+#: *cross*-associates with an oppositely-charged partner.
+SELF_BONDLESS_SCHEMES = frozenset({"1A", "2A"})
+
+
+@dataclass(frozen=True, slots=True)
+class AssociationParameters:
+    """One component's association parameters, as the databank records them.
+
+    The two fitted cubic sets are in NeqSim's internal scale - ``a`` in
+    ``Pa*m**6/mol**2 * 1e5`` and ``b`` in ``m**3/mol * 1e5`` - because the table carries
+    what the source table carries. The conversion belongs with the model that reads
+    them. Water is the check: :attr:`b_srk` is 1.4515, i.e. ``1.4515e-5 m**3/mol``,
+    against the cubic's own ``2.11e-5``.
+
+    **Those fitted values are why a CPA mixture is not determined by ``Tc`` and
+    ``Pc``.** A component that associates carries its own attraction and covolume, and
+    a model that quietly used the cubic's would be wrong by tens of percent.
+    """
+
+    #: The scheme's name, one of :data:`SITE_SCHEMES`.
+    scheme: str
+    #: The site count the table states. Carried beside the scheme because the two
+    #: disagree upstream, and a silent resolution would hide that.
+    sites: int
+    #: The association energy ``eps``, in J/mol.
+    energy: float
+    #: ``kappa_AB`` for the SRK family.
+    volume_srk: float
+    #: The fitted attraction for SRK-CPA, in NeqSim's internal scale.
+    a_srk: float
+    #: The fitted covolume for SRK-CPA, in NeqSim's internal scale.
+    b_srk: float
+    #: The SRK alpha correlation's ``m``.
+    m_srk: float
+    #: ``kappa_AB`` for the PR family.
+    volume_pr: float
+    #: The fitted attraction for PR-CPA, in NeqSim's internal scale.
+    a_pr: float
+    #: The fitted covolume for PR-CPA, in NeqSim's internal scale.
+    b_pr: float
+    #: The PR alpha correlation's ``m``.
+    m_pr: float
+
+    @property
+    def self_bonds(self) -> bool:
+        """Whether this component's own sites bond with each other."""
+        return self.scheme not in SELF_BONDLESS_SCHEMES
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,6 +238,10 @@ class DatabankEntry:
     #: ``solvent``, because a card states what a cubic reads and a cubic has no
     #: reference state.
     reference_state: str
+    #: The association parameters, or ``None`` for a component the table gives no
+    #: scheme - which is 144 of the 286 compiled rows, and is the table's own marker
+    #: rather than a missing value.
+    association: AssociationParameters | None
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
@@ -279,6 +353,7 @@ def _table() -> dict[str, DatabankEntry]:
             dipole_moment_debye=float(row["dipole_moment_debye"]),
             viscosity_correction_factor=float(row["viscosity_correction_factor"]),
             reference_state=row["referencestatetype"].strip(),
+            association=_association(row),
             citation=row["citation"],
         )
     return entries
@@ -286,6 +361,38 @@ def _table() -> dict[str, DatabankEntry]:
 
 def _three(row: Mapping[str, str], a: str, b: str, c: str) -> tuple[float, float, float]:
     return (float(row[a]), float(row[b]), float(row[c]))
+
+
+def _association(row: Mapping[str, str]) -> AssociationParameters | None:
+    """One row's association parameters, or ``None`` where it carries no scheme.
+
+    **An empty cell means zero here.** The upstream table uses a blank and a ``0``
+    interchangeably for "no parameter": the only two blanks in the compiled table are
+    ``associationboundingvolume_pr`` on ``h2so4`` and ``hno3``, whose every sibling
+    association cell is already ``0.0``. So a blank infers nothing the row does not
+    already state. A *malformed* value still raises rather than becoming zero.
+    """
+    scheme = row["associationscheme"].strip()
+    if scheme not in SITE_SCHEMES:
+        return None
+
+    def value(column: str) -> float:
+        raw = row[column].strip()
+        return 0.0 if not raw else float(raw)
+
+    return AssociationParameters(
+        scheme=scheme,
+        sites=int(value("associationsites")),
+        energy=value("associationenergy"),
+        volume_srk=value("associationboundingvolume_srk"),
+        a_srk=value("acpa_srk"),
+        b_srk=value("bcpa_srk"),
+        m_srk=value("mcpa_srk"),
+        volume_pr=value("associationboundingvolume_pr"),
+        a_pr=value("acpa_pr"),
+        b_pr=value("bcpa_pr"),
+        m_pr=value("mcpa_pr"),
+    )
 
 
 def form_from_type(label: str, e: float) -> str:
@@ -461,6 +568,9 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             dipole_moment_debye=0.0,
             viscosity_correction_factor=0.0,
             reference_state=SOLVENT,
+            # A card states the parameters a cubic reads; it carries no site scheme, so a
+            # card-added substance has none.
+            association=None,
             citation=None,
             source="keycard",
         )
@@ -1582,7 +1692,10 @@ def bwrs_coefficients(name: str) -> BwrsCoefficients:
 from azoth.eos.mixture import mixture  # noqa: E402
 
 __all__ = [
+    "SELF_BONDLESS_SCHEMES",
+    "SITE_SCHEMES",
     "SOLVENT",
+    "AssociationParameters",
     "BwrsCoefficients",
     "DatabankEntry",
     "GeNrtlPhaseParameters",

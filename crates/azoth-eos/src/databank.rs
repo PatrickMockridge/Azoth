@@ -18,6 +18,7 @@ use std::sync::OnceLock;
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, Result};
 
+use crate::association::{AssociationRecord, SiteScheme};
 use crate::bwrs::BwrsCoefficients;
 use crate::mixture::{Component, Mixture};
 use crate::molar_enthalpy_entropy::IdealGasModel;
@@ -191,6 +192,11 @@ pub struct Entry {
     /// is what NeqSim's own reader compares against `"solvent"` too, so a component
     /// carrying it takes the same branch NeqSim gives it.
     pub reference_state: String,
+    /// The association parameters, or `None` for a component the table gives no scheme.
+    ///
+    /// 144 of the 286 compiled rows carry `0` in the scheme column and are non-associating;
+    /// the rest name `1A`, `2A`, `2B` or `4C`.
+    pub association: Option<AssociationRecord>,
 }
 
 impl Entry {
@@ -428,6 +434,56 @@ fn csv_failure(error: csv::Error) -> AzothError {
     }
 }
 
+/// One association column's value, where an empty cell means zero.
+///
+/// The upstream table uses a blank and a `0` interchangeably for "no parameter": the only
+/// two blanks in the compiled table are `associationboundingvolume_pr` on `h2so4` and
+/// `hno3`, whose every sibling association cell is already `0.0`. So a blank here infers
+/// nothing the row does not already state, and a *malformed* value still refuses - the
+/// distinction is between an absent parameter and a broken one, which `number` keeps.
+fn association_number(
+    record: &csv::StringRecord,
+    index: usize,
+    name: &str,
+    row: usize,
+) -> Result<f64> {
+    if record.get(index).unwrap_or("").trim().is_empty() {
+        return Ok(0.0);
+    }
+    number(record, index, name, row)
+}
+
+/// One row's association parameters, or `None` where it carries no scheme.
+///
+/// The scheme column is text and `associationsites` a count. A row naming `"0"` - the
+/// table's marker for a component with no scheme - is non-associating, and so is a name
+/// this library does not carry; the two are distinguished because only the first is the
+/// table's intent, but both mean the same thing to a model.
+fn parse_association(
+    record: &csv::StringRecord,
+    index: &HashMap<&str, usize>,
+    row: usize,
+) -> Result<Option<AssociationRecord>> {
+    let raw = record.get(index["associationscheme"]).unwrap_or("").trim();
+    let Some(scheme) = SiteScheme::from_databank_name(raw) else {
+        return Ok(None);
+    };
+    let fitted = |name: &str| -> Result<f64> { association_number(record, index[name], name, row) };
+    Ok(Some(AssociationRecord {
+        scheme,
+        sites: fitted("associationsites")? as u32,
+        energy: fitted("associationenergy")?,
+        volume_srk: fitted("associationboundingvolume_srk")?,
+        a_srk: fitted("acpa_srk")?,
+        b_srk: fitted("bcpa_srk")?,
+        m_srk: fitted("mcpa_srk")?,
+        volume_pr: fitted("associationboundingvolume_pr")?,
+        a_pr: fitted("acpa_pr")?,
+        b_pr: fitted("bcpa_pr")?,
+        m_pr: fitted("mcpa_pr")?,
+    }))
+}
+
 fn parse_components() -> Result<HashMap<String, Entry>> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
@@ -454,6 +510,17 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "antoined",
         "antoinee",
         "referencestatetype",
+        "associationscheme",
+        "associationsites",
+        "associationenergy",
+        "associationboundingvolume_srk",
+        "associationboundingvolume_pr",
+        "acpa_srk",
+        "bcpa_srk",
+        "mcpa_srk",
+        "acpa_pr",
+        "bcpa_pr",
+        "mcpa_pr",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -521,6 +588,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     .unwrap_or("")
                     .trim()
                     .to_string(),
+                association: parse_association(&record, &index, row)?,
             },
         );
     }
@@ -703,12 +771,13 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // has an enthalpy path; without it, it is a cubic only.
                 cp: over.cp,
                 // A card states the parameters a cubic reads; it carries no molar mass,
-                // critical volume, dipole or Antoine coefficients, so a card-added
-                // substance has none.
+                // critical volume, dipole, Antoine coefficients or site scheme, so a
+                // card-added substance has none.
                 molar_mass: None,
                 critical_volume: None,
                 dipole: None,
                 antoine: None,
+                association: None,
                 // Named rather than left blank: a card states a substance a cubic can
                 // describe, and a cubic has no reference state. The activity-coefficient
                 // phases read this, so a blank would have to mean something.
@@ -727,6 +796,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             dipole: base.dipole,
             antoine: base.antoine,
             reference_state: base.reference_state,
+            // The card's closed parameter list has no association field, so this one can
+            // only come from the table.
+            association: base.association,
             name: base.name,
         }),
     }
