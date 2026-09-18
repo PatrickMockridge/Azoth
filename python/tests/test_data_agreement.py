@@ -86,6 +86,7 @@ COMPONENT_FIELDS = (
     "association_energy",
     "association_volume_srk",
     "association_b_srk",
+    "association_volume_correction",
 )
 
 KIJ_FIELDS = ("component_a", "component_b", "kij_pr")
@@ -433,6 +434,9 @@ def python_row(record: Any) -> dict[str, Any]:
         "association_energy": 0.0 if association is None else association.energy,
         "association_volume_srk": 0.0 if association is None else association.volume_srk,
         "association_b_srk": 0.0 if association is None else association.b_srk,
+        "association_volume_correction": (
+            0.0 if association is None else association.volume_correction
+        ),
     }
 
 

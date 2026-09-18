@@ -539,3 +539,96 @@ fn a_mixture_of_non_associating_components_has_none() {
         "neither methane nor n-butane names a scheme"
     );
 }
+
+/// The databank resolves the association parameters NeqSim's own kernel reads.
+///
+/// The check is at NeqSim's state rather than this library's: `CpaProbe` prints the site
+/// fractions and `dFCPAdN` for water/methanol 0.6/0.4 at 300 K and 100 bar, with a total
+/// volume of `2.62032674828829e-5 m3/mol`. Feeding those through the mixture's own
+/// resolved parameters is what proves the *selection* is right - the SRK family and not
+/// the PR one, SI and not NeqSim's internal scale, and the fitted covolumes rather than
+/// the cubic's.
+#[test]
+fn an_associating_mixture_resolves_neqsims_parameters() {
+    use azoth_eos::Cubic;
+    // `SystemSrkCPA`, so the cubic is Soave's - and the family matters: the association
+    // parameters are per cubic, and water's `kappa_AB` is 0.0692 for SRK against
+    // 0.046473789 for PR. `Cubic::default()` is PR, so a mixture that did not say which
+    // it is would read the other family's fluid.
+    let (mixture, _) = databank::mixture_of(&["water", "methanol"], None).expect("a mixture");
+    let mixture = mixture
+        .with_cubic(Cubic::Srk)
+        .with_association()
+        .expect("water and methanol bond");
+    let association = mixture.association().expect("an associating mixture");
+
+    // `bcpa_srk` in SI, which is the column times 1e-5.
+    let covolumes = [1.4515e-5, 3.0978e-5];
+    let state = association
+        .solve(&covolumes, &[0.6, 0.4], 2.620_326_748_288_29e-5, 300.0)
+        .expect("a solvable state");
+    for (site, want) in [(0, 0.101_330_316_299_160), (4, 0.031_557_041_194_167_5)] {
+        assert!(
+            (state.fractions[site] / want - 1.0).abs() < 1.0e-10,
+            "xsite[{site}]: {} vs NeqSim {want}",
+            state.fractions[site]
+        );
+    }
+    for (i, want) in [(0, -9.807_081_619_647_33), (1, -8.298_303_821_393_14)] {
+        assert!(
+            (state.ln_phi[i] / want - 1.0).abs() < 1.0e-10,
+            "dFCPAdN[{i}]: {} vs NeqSim {want}",
+            state.ln_phi[i]
+        );
+    }
+}
+
+/// **The CPA root is not NeqSim's yet, and the reason is the volume correction.**
+///
+/// This test records a gap rather than a property. NeqSim's `SystemSrkCPA` calls
+/// `useVolumeCorrection(true)` in its constructor, so its root carries a translation azoth
+/// does not apply. `CpaProbe` reports `Z = 0.1050516` for this fluid at this state and
+/// azoth solves `0.1543690` - a molar volume `3.8510e-5 m3/mol` against NeqSim's
+/// `2.6203e-5`, a difference of `1.2307e-5` on the mixture or `2.0512e-5` per mole of
+/// water.
+///
+/// Water is the only one of the two that carries a correction: its `volcorrCPA_T` is
+/// `0.000718744` and methanol's is zero. That column is one of P7's, listed in the plan as
+/// still unread - `cpaon` and `useVolumeCorrection` were never traced. Until it is read
+/// and applied, an associating mixture's association term is right and its root is not,
+/// so the term is not yet usable end to end.
+///
+/// The assertions below are the gap, written so that landing the correction fails this
+/// test rather than passing it silently.
+#[test]
+fn the_cpa_root_is_not_neqsims_until_the_volume_correction_lands() {
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_eos::{Cubic, RootSide};
+
+    let (mixture, _) = databank::mixture_of(&["water", "methanol"], None).expect("a mixture");
+    let mixture = mixture
+        .with_cubic(Cubic::Srk)
+        .with_association()
+        .expect("water and methanol bond");
+    let reduced = mixture
+        .reduced_parameters(kelvins(300.0), pascals(1.0e7))
+        .expect("reduced parameters");
+    let state = mixture
+        .phase_state(&reduced, &[0.6, 0.4], RootSide::Liquid)
+        .expect("a liquid root");
+
+    assert!(
+        (state.z / 0.105_051_6 - 1.0).abs() > 0.4,
+        "NeqSim's root is 0.1050516 and this library's is {}; if they have converged, \
+         the volume correction has landed and this test is the record that it did",
+        state.z
+    );
+    let entry = databank::entry("water", None).expect("water");
+    assert!(
+        entry
+            .association
+            .as_ref()
+            .is_some_and(|a| a.volume_correction.abs() > 0.0),
+        "water carries `volcorrCPA_T`, which is the column that would close the gap"
+    );
+}

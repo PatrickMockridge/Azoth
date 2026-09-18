@@ -487,6 +487,8 @@ fn parse_association(
         a_pr: fitted("acpa_pr")?,
         b_pr: fitted("bcpa_pr")?,
         m_pr: fitted("mcpa_pr")?,
+        racket_z: fitted("racketzcpa")?,
+        volume_correction: fitted("volcorrcpa_t")?,
     }))
 }
 
@@ -527,6 +529,8 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "acpa_pr",
         "bcpa_pr",
         "mcpa_pr",
+        "racketzcpa",
+        "volcorrcpa_t",
     ] {
         index.insert(name, column(&header, name)?);
     }

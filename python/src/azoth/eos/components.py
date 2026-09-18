@@ -125,6 +125,8 @@ COLUMNS = (
     "acpa_pr",
     "bcpa_pr",
     "mcpa_pr",
+    "racketzcpa",
+    "volcorrcpa_t",
     "citation",
 )
 
@@ -181,6 +183,15 @@ class AssociationParameters:
     b_pr: float
     #: The PR alpha correlation's ``m``.
     m_pr: float
+    #: ``racketZCPA``, the Rackett compressibility NeqSim's CPA volume correction reads.
+    racket_z: float
+    #: ``volcorrCPA_T``, the CPA volume-translation coefficient.
+    #:
+    #: **Load-bearing, and the reason a CPA root is not yet reproduced.** NeqSim's
+    #: ``SystemSrkCPA`` calls ``useVolumeCorrection(true)`` in its constructor, so its
+    #: root carries a translation this library does not apply - water's is 0.000718744
+    #: and methanol's is zero.
+    volume_correction: float
 
     @property
     def self_bonds(self) -> bool:
@@ -393,6 +404,8 @@ def _association(row: Mapping[str, str]) -> AssociationParameters | None:
         a_pr=value("acpa_pr"),
         b_pr=value("bcpa_pr"),
         m_pr=value("mcpa_pr"),
+        racket_z=value("racketzcpa"),
+        volume_correction=value("volcorrcpa_t"),
     )
 
 

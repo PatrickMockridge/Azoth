@@ -15,7 +15,9 @@ use crate::alpha_term::{
     Alpha, AlphaTerm, Danesh, Delft1998, Gassem2001, MatCop, MatCopFallback, Mollerup, RkAlpha,
     Schwartzentruber, Soave, TwuCoon, matcop_kappa, umr_kappa,
 };
-use crate::association::AssociationRecord;
+use crate::association::{
+    Association, AssociationCubic, AssociationRecord, NON_ASSOCIATING, R, SiteScheme,
+};
 use crate::cubic::Cubic;
 use crate::mixing_rule::MixingRule;
 use crate::{
@@ -217,6 +219,7 @@ pub struct Mixture {
     mixing_rule: MixingRule,
     cubic: Cubic,
     alpha: Alpha,
+    associating: bool,
 }
 
 impl Mixture {
@@ -232,6 +235,9 @@ impl Mixture {
     /// # Errors
     /// * [`AzothError::InvalidInput`] if `components` is empty, if `kij` is not
     ///   `N*N` long, or if the matrix is not symmetric with a zero diagonal.
+    /// * [`AzothError::InvalidInput`] if the mixture's association is provably inert -
+    ///   a component declaring a fitted association parameter and a site scheme whose
+    ///   sites cannot bond with anything present. See [`Self::check_association`].
     /// * Propagates [`Component::new`]'s range errors.
     pub fn new(components: Vec<Component>, kij: Vec<f64>) -> Result<Self> {
         let n = components.len();
@@ -242,12 +248,37 @@ impl Mixture {
             ));
         }
         check_kij(n, &kij)?;
-        Ok(Self {
+        let mixture = Self {
             components,
             mixing_rule: MixingRule::Classic { kij },
             cubic: Cubic::default(),
             alpha: Alpha::default(),
-        })
+            associating: false,
+        };
+        // Refused here rather than at the first phase evaluation: a mixture whose
+        // association cannot be computed is a mistake in what was asked for, and the
+        // caller is the one who can fix it.
+        mixture.check_association()?;
+        Ok(mixture)
+    }
+
+    /// This mixture, running the Wertheim association contribution.
+    ///
+    /// **Whether a mixture associates is the phase model's decision, not the
+    /// components'.** A component carries its fitted CPA parameters whenever the table
+    /// has them - the databank resolves them by name - but a cubic that is not CPA must
+    /// not use them: NeqSim's `SystemSrkCPA` builds `ComponentSrkCPA` and substitutes the
+    /// fitted `a` and `b`, while `SystemNRTL`'s `PhaseSrkEos` builds `ComponentSrkEos`
+    /// over the *same* substances and uses the cubic's own. So this is opt-in, and a
+    /// mixture that does not call it ignores the field.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if the mixture's association is provably inert -
+    ///   see [`Self::check_association`].
+    pub fn with_association(mut self) -> Result<Self> {
+        self.associating = true;
+        self.check_association()?;
+        Ok(self)
     }
 
     /// The components, in order.
@@ -485,6 +516,28 @@ impl Mixture {
                     non_soave(&Soave { kappa: kappa.kappa })
                 }
             };
+            // An associating component carries its own attraction and covolume, and
+            // NeqSim's `ComponentSrkCPA` substitutes them for the cubic's:
+            // `if (|aCPA| > 1e-6) { a = aCPA; b = bCPA; }`. This is not a refinement of
+            // the critical-constant values - water's fitted covolume is 1.4515e-5
+            // m3/mol against `0.08664 R Tc/Pc`'s 2.11e-5 - and its alpha coefficient is
+            // fitted too, so the whole `a_i(T)` differs.
+            if self.associating
+                && let Some(record) = &component.association
+                && let Some(family) = AssociationCubic::of(self.cubic)
+                && record.has_fitted_set(family)
+            {
+                let term = Soave {
+                    kappa: record.alpha_m(family),
+                };
+                let alpha = term.alpha(reduced_temperature);
+                let r_t = R * t.value;
+                a.push(record.attraction(family) * alpha * p.value / (r_t * r_t));
+                b.push(record.covolume(family) * p.value / r_t);
+                psi.push(term.psi(reduced_temperature));
+                psi_t.push(term.psi_t(reduced_temperature));
+                continue;
+            }
             a.push(a_reduced);
             b.push(b_reduced);
             psi.push(psi_value);
@@ -597,7 +650,7 @@ impl Mixture {
         let coefficient = self.cubic.coefficient(a_mix, b_mix);
         let ln_z_minus_b = (z - b_mix).ln();
 
-        let ln_phi: Vec<f64> = match &self.mixing_rule {
+        let mut ln_phi: Vec<f64> = match &self.mixing_rule {
             MixingRule::HuronVidal { .. } | MixingRule::WongSandler { .. } => {
                 // The GE rules carry the activity coefficient and a volume-derivative
                 // term that the classic `factor * i_term` form cannot express.
@@ -626,6 +679,36 @@ impl Mixture {
                 .collect(),
         };
 
+        // The Wertheim association, when the phase model runs it. Its `ln phi` adds to
+        // the cubic's, and its Helmholtz energy to the departure enthalpy.
+        //
+        // **The two must move together.** `s_dep_r` below is the Gibbs identity
+        // `h_dep_rt - sum_i x_i ln phi_i`, not a second formula - so adding the
+        // association to `ln phi` alone would fold it silently into the entropy. The
+        // enthalpy's association term is `A/(RT) - T d(A/RT)/dT`, which is why the
+        // kernel carries that derivative at all.
+        let mut assoc_dep_rt = 0.0;
+        if let Some(association) = self.association() {
+            let r_t = R * reduced.t_kelvin;
+            // `reduced.b[i]` is `b_i P/(R T)`, so this is the covolume in m3/mol. The
+            // kernel is invariant under a common rescaling of covolume and volume, but
+            // its `Delta` carries the covolume and its `S_i` divides by the volume, so
+            // the two must be in the same units - which SI gives.
+            let covolumes: Vec<f64> = reduced
+                .b
+                .iter()
+                .map(|b| b * r_t / reduced.pressure)
+                .collect();
+            let v = z * r_t / reduced.pressure;
+            let state = association.solve(&covolumes, x, v, reduced.t_kelvin)?;
+            for (value, addition) in ln_phi.iter_mut().zip(&state.ln_phi) {
+                *value += addition;
+            }
+            let derivatives =
+                association.derivatives(&covolumes, x, v, reduced.t_kelvin, &state)?;
+            assoc_dep_rt = state.helmholtz_rt - reduced.t_kelvin * derivatives.d_helmholtz_dt;
+        }
+
         // The mixture's departure functions. `psi_bar` is the composition-weighted
         // average of the components' `psi`, and the two lines below are then
         // `pr_departure`'s expressions with `psi_bar` in place of `psi` - which is
@@ -649,7 +732,7 @@ impl Mixture {
         }
         let psi_bar = weighted_psi / weight_total;
         let t_dpsi_bar = weighted_psi_t / weight_total - psi_bar * (psi_bar - 2.0);
-        let h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term;
+        let h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term + assoc_dep_rt;
         let s_dep_r = h_dep_rt
             - ln_phi
                 .iter()
@@ -901,6 +984,111 @@ impl Mixture {
             d_ln_phi_dt,
             d_ln_phi_dp,
         })
+    }
+
+    /// The mixture's association parameters at this cubic, or `None` when no component
+    /// carries a site scheme.
+    ///
+    /// Built from the components rather than stored, because the fitted families differ
+    /// by cubic and [`Self::with_cubic`] can change the cubic after construction.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if the mixture's association is **provably
+    ///   inert** - see [`Self::check_association`], which is what raises it.
+    pub fn association(&self) -> Option<Association> {
+        if !self.associating {
+            return None;
+        }
+        let cubic = AssociationCubic::of(self.cubic)?;
+        if !self.components.iter().any(|c| c.association.is_some()) {
+            return None;
+        }
+        Association::new(
+            self.components
+                .iter()
+                .map(|c| {
+                    c.association
+                        .as_ref()
+                        .map_or(NON_ASSOCIATING, |r| r.at(cubic))
+                })
+                .collect(),
+            // No cross-rule overrides: `INTER.csv`'s `cpaBetaCross`/`cpaEpsCross` are
+            // not read yet, and NeqSim's default for every pair is the Elliott rule.
+            Vec::new(),
+        )
+        .ok()
+    }
+
+    /// Refuse a mixture whose association parameters reach no calculation.
+    ///
+    /// **This is a deliberate divergence from NeqSim, which computes it silently.**
+    /// NeqSim's bond test is `charge[i] * charge[j] < 0`, and the `1A` and `2A` schemes
+    /// carry charges of one sign - so their interaction matrix is all zeros and their
+    /// sites never bond with each other. Eighteen of the databank's components carry one
+    /// of those schemes, four of them with a fitted `eps` of 5000 J/mol that no
+    /// calculation reads.
+    ///
+    /// The refusal fires only where the inertness is **total**: a component that declares
+    /// sites and a non-zero parameter, in a mixture where no pair of sites bonds at all.
+    /// A `2A` component in water still associates - CO2's `[-1,-1]` bonds with water's
+    /// positive sites - and that is real physics NeqSim computes and this library keeps.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] naming the component whose parameters are inert.
+    fn check_association(&self) -> Result<()> {
+        if !self.associating {
+            return Ok(());
+        }
+        let Some(cubic) = AssociationCubic::of(self.cubic) else {
+            return Ok(());
+        };
+        let records: Vec<_> = self
+            .components
+            .iter()
+            .map(|c| c.association.as_ref().map(|r| r.at(cubic)))
+            .collect();
+        if !records.iter().any(Option::is_some) {
+            return Ok(());
+        }
+        let association = records
+            .iter()
+            .map(|r| r.unwrap_or(NON_ASSOCIATING))
+            .collect();
+        let association = Association::new(association, Vec::new())?;
+        // A component whose own scheme has no bonding pair *and* which declares a
+        // non-zero association **energy**. The energy is the test and not the volume,
+        // because `exp(eps/RT) - 1` is zero at zero energy whatever the volume is - so a
+        // component with `eps = 0` associates with nothing by its own data, which is a
+        // statement the table already makes and not a defect to report. Every component
+        // in the affected set - H2S, SF6, R12 and R134a - carries eps of 5000 J/mol.
+        let inert = |i: usize| {
+            let Some(record) = self.components[i].association.as_ref() else {
+                return false;
+            };
+            !record.at(cubic).scheme.self_bonds() && record.energy > 0.0
+        };
+        if !association.has_bonds() {
+            if let Some(i) = (0..self.len()).find(|&i| inert(i)) {
+                let scheme = self.components[i]
+                    .association
+                    .as_ref()
+                    .map(|r| r.at(cubic).scheme);
+                return Err(AzothError::invalid_input(
+                    "components",
+                    format!(
+                        "component {i} declares the {:?} scheme and a fitted association \
+                         parameter, and no pair of sites in this mixture bonds - NeqSim's \
+                         bond test is `charge[i] * charge[j] < 0`, and that scheme's \
+                         charges all share a sign, so its interaction matrix is all \
+                         zeros. The parameter would reach no calculation, so this is \
+                         refused rather than computed as zero. Add a component whose \
+                         sites have the opposite sign, or remove the association",
+                        scheme.unwrap_or(SiteScheme::OneA)
+                    ),
+                ));
+            }
+        }
+        Ok(())
     }
 
     /// The phase-dependent interaction matrix for a composition.

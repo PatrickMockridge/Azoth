@@ -165,6 +165,9 @@ pub struct PyComponentRow {
     /// The fitted SRK-CPA covolume, in NeqSim's internal scale.
     #[pyo3(get)]
     pub association_b_srk: f64,
+    /// `volcorrCPA_T`, the CPA volume-translation coefficient.
+    #[pyo3(get)]
+    pub association_volume_correction: f64,
 }
 
 /// One row of the interaction table, transported.
@@ -293,6 +296,10 @@ pub(crate) fn row_of(entry: &databank::Entry) -> PyComponentRow {
         association_energy: entry.association.as_ref().map_or(0.0, |a| a.energy),
         association_volume_srk: entry.association.as_ref().map_or(0.0, |a| a.volume_srk),
         association_b_srk: entry.association.as_ref().map_or(0.0, |a| a.b_srk),
+        association_volume_correction: entry
+            .association
+            .as_ref()
+            .map_or(0.0, |a| a.volume_correction),
     }
 }
 
@@ -300,8 +307,13 @@ pub(crate) fn row_of(entry: &databank::Entry) -> PyComponentRow {
 ///
 /// The two are written out in both directions rather than one deriving from the other,
 /// because a round trip through a wrong name would agree with itself.
+///
+/// [`SiteScheme::NonAssociating`] maps to the empty string, which is also what a row with
+/// no scheme reports - and it is unreachable here besides: the loader answers `None` to
+/// the table's `0`, so a row never carries it.
 fn scheme_name(scheme: SiteScheme) -> &'static str {
     match scheme {
+        SiteScheme::NonAssociating => "",
         SiteScheme::OneA => "1A",
         SiteScheme::TwoA => "2A",
         SiteScheme::TwoB => "2B",

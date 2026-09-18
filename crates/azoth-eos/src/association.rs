@@ -52,6 +52,13 @@ pub const R: f64 = 8.3144621;
 /// `getInteractionMatrix`: two sites associate exactly when their charges differ in sign.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SiteScheme {
+    /// No sites: a component the table gives no scheme, and the stand-in a mixture
+    /// carries for every non-associating member so the site offsets line up.
+    ///
+    /// Not a value `COMP.csv` holds - its marker for the same thing is `0`, which
+    /// [`SiteScheme::from_databank_name`] answers `None` to. This is the kernel's own
+    /// spelling of it, because a mixture needs one entry per component.
+    NonAssociating,
     /// One site. Its charge product is positive, so it does not self-associate.
     OneA,
     /// Two sites of the same sign. No pair associates.
@@ -66,6 +73,7 @@ impl SiteScheme {
     /// The charges NeqSim gives the sites, `CPAMixingRuleHandler:32-35`.
     fn charges(self) -> &'static [i32] {
         match self {
+            SiteScheme::NonAssociating => &[],
             SiteScheme::OneA => &[-1],
             SiteScheme::TwoA => &[-1, -1],
             SiteScheme::TwoB => &[1, -1],
@@ -164,10 +172,132 @@ pub struct AssociationRecord {
     pub b_pr: f64,
     /// The PR alpha correlation's `m`.
     pub m_pr: f64,
+    /// `racketZCPA`, the Rackett compressibility NeqSim's CPA volume correction reads.
+    pub racket_z: f64,
+    /// `volcorrCPA_T`, the CPA volume-translation coefficient.
+    ///
+    /// **Load-bearing, and the reason a CPA root is not yet reproduced.** NeqSim's
+    /// `SystemSrkCPA` calls `useVolumeCorrection(true)` in its constructor, so its root
+    /// carries a translation this library does not apply: water's is `0.000718744` and
+    /// methanol's is zero, and the gap it leaves on water/methanol at 300 K and 100 bar
+    /// is a molar volume of `3.8510e-5 m3/mol` against NeqSim's `2.6203e-5`.
+    pub volume_correction: f64,
 }
 
 /// The factor from NeqSim's internal `a` and `b` to SI, `Component.java:526-531`.
 pub const NEQSIM_INTERNAL_TO_SI: f64 = 1.0e-5;
+
+/// Which cubic family's fitted parameter set to read.
+///
+/// A record carries both because the two differ and neither is derived from the other.
+/// Water's `kappa_AB` is 0.0692 for SRK against 0.046473789 for PR, and its fitted
+/// covolume is 1.4515 against 1.456360879 - so choosing is a selection, not a
+/// conversion, and reading the wrong family is a different fluid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AssociationCubic {
+    /// The SRK family - `aCPA_SRK`, `bCPA_SRK`, `mCPA_SRK`, `associationboundingvolume_SRK`.
+    Srk,
+    /// The PR family - the `_PR` columns.
+    Pr,
+}
+
+/// A component that carries no association, for a mixture's shape.
+///
+/// A mixture's [`Association`] needs one entry per component so the site offsets line
+/// up, and a non-associating member contributes none.
+pub const NON_ASSOCIATING: AssociationComponent = AssociationComponent {
+    scheme: SiteScheme::NonAssociating,
+    energy: 0.0,
+    volume: 0.0,
+};
+
+impl AssociationCubic {
+    /// The family a cubic's geometry belongs to.
+    ///
+    /// By geometry and not by name: `Cubic::Tst` shares Peng-Robinson's `omega` and
+    /// `delta`, and `Cubic::Rk` shares Soave's, so each reads the family it is shaped
+    /// like. Only `Srk` and `Pr` are families NeqSim builds a CPA model on - the other
+    /// two would be this library's own combination, which is why the caller's cubic is
+    /// mapped rather than restricted.
+    #[must_use]
+    pub fn of(cubic: crate::cubic::Cubic) -> Option<Self> {
+        match cubic {
+            crate::cubic::Cubic::Srk | crate::cubic::Cubic::Rk => Some(Self::Srk),
+            crate::cubic::Cubic::Pr | crate::cubic::Cubic::Tst => Some(Self::Pr),
+        }
+    }
+}
+
+impl AssociationRecord {
+    /// Whether this record carries a usable fitted set at one cubic family.
+    ///
+    /// **NeqSim's own guard, and load-bearing.** `ComponentSrkCPA` substitutes the
+    /// fitted values only `if (Math.abs(aCPA) > 1e-6)`, in its internal units - and the
+    /// table has rows where that matters in both directions: CO2 names the `2A` scheme
+    /// with every fitted value zero, and H2S and benzene carry an SRK set and a PR set
+    /// that is entirely zero. Substituting unconditionally gives those a covolume of
+    /// zero, which makes the reduced pressure `NaN` rather than a different answer.
+    #[must_use]
+    pub fn has_fitted_set(&self, cubic: AssociationCubic) -> bool {
+        let internal = match cubic {
+            AssociationCubic::Srk => self.a_srk,
+            AssociationCubic::Pr => self.a_pr,
+        };
+        internal.abs() > 1.0e-6
+    }
+    /// The kernel's per-component record at one cubic family.
+    ///
+    /// This is the bridge from the databank's shape to the kernel's, and the only place
+    /// the cubic-specific selection happens.
+    #[must_use]
+    pub fn at(&self, cubic: AssociationCubic) -> AssociationComponent {
+        AssociationComponent {
+            scheme: self.scheme,
+            energy: self.energy,
+            volume: match cubic {
+                AssociationCubic::Srk => self.volume_srk,
+                AssociationCubic::Pr => self.volume_pr,
+            },
+        }
+    }
+
+    /// The fitted attraction `a0` at one family, in SI - `Pa m**6/mol**2`.
+    #[must_use]
+    pub fn attraction(&self, cubic: AssociationCubic) -> f64 {
+        let internal = match cubic {
+            AssociationCubic::Srk => self.a_srk,
+            AssociationCubic::Pr => self.a_pr,
+        };
+        internal * NEQSIM_INTERNAL_TO_SI
+    }
+
+    /// The fitted covolume at one family, in SI - `m**3/mol`.
+    ///
+    /// **Not the cubic's own.** NeqSim's `ComponentSrkCPA` substitutes this for the
+    /// `b` a cubic derives from `Tc` and `Pc`, and the difference is large: water's is
+    /// `1.4515e-5` against `0.08664 R Tc/Pc`'s `2.11e-5`.
+    #[must_use]
+    pub fn covolume(&self, cubic: AssociationCubic) -> f64 {
+        let internal = match cubic {
+            AssociationCubic::Srk => self.b_srk,
+            AssociationCubic::Pr => self.b_pr,
+        };
+        internal * NEQSIM_INTERNAL_TO_SI
+    }
+
+    /// The fitted Soave alpha coefficient `m` at one family.
+    ///
+    /// NeqSim's `ComponentSrkCPA` calls `getAttractiveTerm().setm(mCPA)`, so the alpha
+    /// function is Soave's form with a *fitted* coefficient rather than the one
+    /// `0.480 + 1.574 omega - 0.176 omega**2` would give.
+    #[must_use]
+    pub fn alpha_m(&self, cubic: AssociationCubic) -> f64 {
+        match cubic {
+            AssociationCubic::Srk => self.m_srk,
+            AssociationCubic::Pr => self.m_pr,
+        }
+    }
+}
 
 /// One component's association parameters.
 ///
@@ -753,6 +883,11 @@ pub struct SiteDerivatives {
     pub d_ln_phi_dt: Vec<f64>,
     /// `d (ln phi_i^assoc) / d V` at constant composition and temperature.
     pub d_ln_phi_dv: Vec<f64>,
+    /// `d (A_assoc/(R T)) / d T` at constant composition and volume.
+    ///
+    /// Not a fugacity derivative and not derivable from the others: the enthalpy
+    /// departure needs `A - T dA/dT`, and the fugacity coefficient is `dA/dn` alone.
+    pub d_helmholtz_dt: f64,
 }
 
 impl Association {
@@ -812,6 +947,7 @@ impl Association {
                 d_ln_phi_dn: vec![vec![0.0; n]; n],
                 d_ln_phi_dt: vec![0.0; n],
                 d_ln_phi_dv: vec![0.0; n],
+                d_helmholtz_dt: 0.0,
             });
         }
 
@@ -901,6 +1037,14 @@ impl Association {
         let d_h_dv: f64 = -(0..sites)
             .map(|site| moles[self.component_of_site(site)] * rhs[n + 1][site])
             .sum::<f64>();
+        // `d(A/(RT))/dT = sum_i n_i sum_{A in i} (1/X_A - 1/2) X_A^(T)`, which is the
+        // enthalpy departure's term and not a fugacity one.
+        let d_helmholtz_dt: f64 = (0..sites)
+            .map(|site| {
+                let m = moles[self.component_of_site(site)];
+                m * (1.0 / x[site] - 0.5) * rhs[n][site]
+            })
+            .sum();
 
         let mut d_ln_phi_dn = vec![vec![0.0; n]; n];
         let mut d_ln_phi_dt = vec![0.0; n];
@@ -930,6 +1074,7 @@ impl Association {
             d_ln_phi_dn,
             d_ln_phi_dt,
             d_ln_phi_dv,
+            d_helmholtz_dt,
         })
     }
 }
