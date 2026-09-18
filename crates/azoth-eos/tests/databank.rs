@@ -975,16 +975,24 @@ fn the_cpa_liquid_root_is_found_at_low_pressure() {
 /// twice azoth's `abar` at every state. azoth's `factor_i` carries the *normalised*
 /// `2 (abar_i - A)/A` instead, and the `Fn` term is where NeqSim absorbs the difference.
 ///
-/// So the divergence is a difference of assembly, and the assembly is now verified rather
-/// than read: `PhaseSrkCPA.getF() = -n*getg() - (getA()/T)*getf_loc() + FCPA` reproduces
-/// NeqSim's own residual Helmholtz to every printed digit, at all twelve states the sweep
-/// covers, with `getA()` in the same internal scale the `dFdN` contraction uses. What is
-/// *not* settled is which assembly is right, and that needs a finite difference: perturb a
-/// mole number at a fixed volume and see whether NeqSim's `dFdN` really is the derivative
-/// of its own `F`. If it is, the two `F`'s differ; if it is not, this is an upstream
-/// inconsistency of the `calc_lngij` kind and azoth's textbook form is the correct one.
+/// So the divergence is a difference of assembly, and the assembly has now been measured
+/// rather than read. `PhaseSrkCPA.getF() = -n*getg() - (getA()/T)*getf_loc() + FCPA`
+/// reproduces NeqSim's own residual Helmholtz to every printed digit, at every state the
+/// sweep covers, and `F_scale_two = 2 * F` shows `getF()` is extensive - so the identity
+/// `dF = sum_i dFdN_i dn_i + FV dV` applies to it, and `validation/neqsim/CubicFdProbe.java`
+/// uses that to ask whether `ComponentEos.dFdN` is its own `F`'s derivative.
 ///
-/// This test pins both facts so the question cannot quietly close.
+/// **For a plain Peng-Robinson mixture it is**, to ten digits. **For `SystemSrkCPA` it is
+/// not**: the sweep's `dFdN_fd` is `[-0.0419683, -0.0743505]` against NeqSim's own
+/// `[-0.0901941, -0.1211108]`, and the weighted sum of the finite differences matches the
+/// independently derived scale derivative `F - FV*V` where NeqSim's own does not. Its
+/// `dFCPAdN` *is* a true derivative, which is why the divergence is confined to the cubic
+/// part.
+///
+/// **So azoth evaluates the textbook expression and NeqSim's `ComponentSrkCPA` disagrees
+/// with its own Helmholtz energy** - an upstream inconsistency of the `calc_lngij` kind,
+/// recorded rather than adopted. This test pins both facts, and its second assertion fails
+/// the moment the two agree, so the finding cannot quietly close.
 #[test]
 fn the_cubic_ln_phi_is_the_textbook_expression_and_neqsims_is_not() {
     use azoth_core::units::{kelvins, pascals};
