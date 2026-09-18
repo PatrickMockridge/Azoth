@@ -522,9 +522,9 @@ impl Mixture {
             // the critical-constant values - water's fitted covolume is 1.4515e-5
             // m3/mol against `0.08664 R Tc/Pc`'s 2.11e-5 - and its alpha coefficient is
             // fitted too, so the whole `a_i(T)` differs.
+            let family = AssociationCubic::of(self.cubic);
             if self.associating
                 && let Some(record) = &component.association
-                && let Some(family) = AssociationCubic::of(self.cubic)
                 && record.has_fitted_set(family)
             {
                 let term = Soave {
@@ -1155,7 +1155,7 @@ impl Mixture {
         if !self.associating {
             return None;
         }
-        let cubic = AssociationCubic::of(self.cubic)?;
+        let cubic = AssociationCubic::of(self.cubic);
         if !self.components.iter().any(|c| c.association.is_some()) {
             return None;
         }
@@ -1195,9 +1195,7 @@ impl Mixture {
         if !self.associating {
             return Ok(());
         }
-        let Some(cubic) = AssociationCubic::of(self.cubic) else {
-            return Ok(());
-        };
+        let cubic = AssociationCubic::of(self.cubic);
         let records: Vec<_> = self
             .components
             .iter()

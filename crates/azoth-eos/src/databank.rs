@@ -18,8 +18,10 @@ use std::sync::OnceLock;
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, Result};
 
-use crate::association::{AssociationRecord, SiteScheme};
+use crate::association::{AssociationCubic, AssociationRecord, SiteScheme};
 use crate::bwrs::BwrsCoefficients;
+use crate::cubic::Cubic;
+use crate::mixing_rule::MixingRule;
 use crate::mixture::{Component, Mixture};
 use crate::molar_enthalpy_entropy::IdealGasModel;
 
@@ -256,6 +258,13 @@ pub struct Overlay {
     components: HashMap<String, ComponentOverride>,
     /// Overrides by lower-cased pair, stored both ways round.
     kij: HashMap<(String, String), f64>,
+    /// Overrides of the *associating* interaction column, by the same key.
+    ///
+    /// A separate map because it is a separate column: NeqSim's CPA rule reads
+    /// `cpakij_SRK`/`cpakij_PR` and a classical mixture reads `KIJPR`, and on
+    /// water/methanol they differ by a factor of two. A card stating one is not stating
+    /// the other, so neither may stand in for the other.
+    cpa_kij: HashMap<(String, String), f64>,
 }
 
 impl Overlay {
@@ -293,6 +302,33 @@ impl Overlay {
         self.kij.insert((a.clone(), b.clone()), value);
         self.kij.insert((b, a), value);
         Ok(self)
+    }
+
+    /// Override one pair's *associating* interaction parameter.
+    ///
+    /// # Errors
+    /// * [`AzothError::InvalidInput`] if both names are the same substance, for the reason
+    ///   [`Self::set_kij`] refuses one.
+    pub fn set_cpa_kij(&mut self, first: &str, second: &str, value: f64) -> Result<&mut Self> {
+        let a = first.trim().to_lowercase();
+        let b = second.trim().to_lowercase();
+        if a == b {
+            return Err(AzothError::invalid_input(
+                "cpa_kij",
+                format!("`{a}` does not interact with itself"),
+            ));
+        }
+        self.cpa_kij.insert((a.clone(), b.clone()), value);
+        self.cpa_kij.insert((b, a), value);
+        Ok(self)
+    }
+
+    /// This overlay's statement about a pair's associating interaction, if it makes one.
+    #[must_use]
+    pub fn cpa_kij_value(&self, first: &str, second: &str) -> Option<f64> {
+        self.cpa_kij
+            .get(&(first.trim().to_lowercase(), second.trim().to_lowercase()))
+            .copied()
     }
 
     /// This overlay's statement about a substance, or `None` if it makes none.
@@ -339,7 +375,7 @@ impl Overlay {
     /// Whether this overlay changes nothing.
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.components.is_empty() && self.kij.is_empty()
+        self.components.is_empty() && self.kij.is_empty() && self.cpa_kij.is_empty()
     }
 }
 
@@ -956,11 +992,19 @@ pub fn all_kij() -> Vec<(String, String, f64)> {
 ///
 /// An absent pair is zero, the ideal-mixture default NeqSim substitutes.
 #[must_use]
-pub fn cpa_kij(names: &[&str], cubic: crate::association::AssociationCubic) -> Vec<f64> {
+pub fn cpa_kij(
+    names: &[&str],
+    cubic: crate::association::AssociationCubic,
+    overlay: Option<&Overlay>,
+) -> Vec<f64> {
     let n = names.len();
     let mut out = vec![0.0; n * n];
     for i in 0..n {
         for j in 0..n {
+            if let Some(value) = overlay.and_then(|o| o.cpa_kij_value(names[i], names[j])) {
+                out[i * n + j] = value;
+                continue;
+            }
             let key = (
                 names[i].trim().to_lowercase(),
                 names[j].trim().to_lowercase(),
@@ -972,6 +1016,39 @@ pub fn cpa_kij(names: &[&str], cubic: crate::association::AssociationCubic) -> V
         }
     }
     out
+}
+
+/// The mixture an associating model runs on, from names.
+///
+/// **One call, because the four steps it replaces were four chances to be wrong.**
+/// `SystemSrkCPA` mixes with `cpakij_SRK` and substitutes the fitted `a` and `b` in place
+/// of the cubic's; a classical mixture reads `KIJPR` and the cubic's own. The two are not
+/// interchangeable and neither is a refinement of the other, so this resolves the whole
+/// mixture rather than leaving a caller to assemble [`mixture_of`], [`cpa_kij`],
+/// `with_cubic` and `with_association` in the right order with the right arguments.
+///
+/// The cubic is stated once and read three ways from here - the root finder, the
+/// interaction column and the fitted association set - which is the point: water's
+/// `kappa_AB` is 0.0692 for SRK against 0.046473789 for PR, so a mixture that took its
+/// cubic from one call and its association from another is a different fluid.
+///
+/// # Errors
+/// * As [`mixture_of`], plus the association's own refusals: a mixture whose association
+///   is provably inert, or a component whose fitted set is negative.
+pub fn associating_mixture_of(
+    names: &[&str],
+    cubic: Cubic,
+    overlay: Option<&Overlay>,
+) -> Result<(Mixture, IdealGasModel)> {
+    let family = AssociationCubic::of(cubic);
+    let (mixture, ideal_gas) = mixture_of(names, overlay)?;
+    let mixture = mixture
+        .with_mixing_rule(MixingRule::Classic {
+            kij: cpa_kij(names, family, overlay),
+        })
+        .with_cubic(cubic)
+        .with_association()?;
+    Ok((mixture, ideal_gas))
 }
 
 /// The NRTL non-randomness matrix for a list of names, flattened row-major.

@@ -220,13 +220,13 @@ impl AssociationCubic {
     /// By geometry and not by name: `Cubic::Tst` shares Peng-Robinson's `omega` and
     /// `delta`, and `Cubic::Rk` shares Soave's, so each reads the family it is shaped
     /// like. Only `Srk` and `Pr` are families NeqSim builds a CPA model on - the other
-    /// two would be this library's own combination, which is why the caller's cubic is
-    /// mapped rather than restricted.
+    /// two would be this library's own combination - which is why every cubic maps and
+    /// none is refused.
     #[must_use]
-    pub fn of(cubic: crate::cubic::Cubic) -> Option<Self> {
+    pub fn of(cubic: crate::cubic::Cubic) -> Self {
         match cubic {
-            crate::cubic::Cubic::Srk | crate::cubic::Cubic::Rk => Some(Self::Srk),
-            crate::cubic::Cubic::Pr | crate::cubic::Cubic::Tst => Some(Self::Pr),
+            crate::cubic::Cubic::Srk | crate::cubic::Cubic::Rk => Self::Srk,
+            crate::cubic::Cubic::Pr | crate::cubic::Cubic::Tst => Self::Pr,
         }
     }
 }

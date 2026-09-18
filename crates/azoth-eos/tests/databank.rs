@@ -583,6 +583,68 @@ fn an_associating_mixture_resolves_neqsims_parameters() {
     }
 }
 
+/// The associating interaction column is its own column, and a card may state it.
+///
+/// Water/methanol is `-0.153` in `cpakij_SRK` against `KIJPR`'s `-0.0789` - a factor of
+/// two - so an override of one is not an override of the other, and a mixture that read
+/// the wrong one would be a different fluid.
+#[test]
+fn the_associating_interaction_column_is_its_own() {
+    use azoth_eos::association::AssociationCubic;
+
+    let names = ["water", "methanol"];
+    let table = databank::cpa_kij(&names, AssociationCubic::Srk, None);
+    assert!(
+        (table[1] - -0.153).abs() < 1.0e-12,
+        "the CPA column: {}",
+        table[1]
+    );
+
+    let mut overlay = databank::Overlay::new();
+    overlay
+        .set_cpa_kij("water", "methanol", -0.08)
+        .expect("a pair");
+    let carded = databank::cpa_kij(&names, AssociationCubic::Srk, Some(&overlay));
+    assert!((carded[1] - -0.08).abs() < 1.0e-12, "the card's value wins");
+
+    // And the classical column is untouched by a CPA override, in both directions.
+    let (classical, _) = databank::mixture_of(&names, Some(&overlay)).expect("a mixture");
+    assert!(
+        (classical.kij(0, 1) - -0.0789).abs() < 1.0e-9,
+        "the classical pair: {}",
+        classical.kij(0, 1)
+    );
+}
+
+/// The one call resolves what the four-step recipe did, and the cubic it is given is the
+/// one all three of its uses read.
+#[test]
+fn an_associating_mixture_is_one_call() {
+    use azoth_eos::{Cubic, RootSide};
+
+    let names = ["water", "methanol"];
+    let (srk, _) = databank::associating_mixture_of(&names, Cubic::Srk, None).expect("SRK-CPA");
+    let (pr, _) = databank::associating_mixture_of(&names, Cubic::Pr, None).expect("PR-CPA");
+
+    // The family is read from the cubic, so the two differ - water's `kappa_AB` is
+    // 0.0692 for SRK against 0.046473789 for PR, which is a different fluid.
+    let state = |mixture: &azoth_eos::Mixture| {
+        let reduced = mixture
+            .reduced_parameters(
+                azoth_core::units::kelvins(300.0),
+                azoth_core::units::pascals(1.0e7),
+            )
+            .expect("reduced parameters");
+        mixture
+            .phase_state(&reduced, &[0.6, 0.4], RootSide::Liquid)
+            .expect("a liquid root")
+    };
+    assert!(
+        (state(&srk).z / state(&pr).z - 1.0).abs() > 1.0e-4,
+        "the cubic selects the association family, so the two roots differ"
+    );
+}
+
 /// The CPA root, against NeqSim's, and the three pieces that get it there.
 ///
 /// This test began as the record of a 47% divergence. It is now an equality: the liquid
@@ -626,17 +688,7 @@ fn the_cpa_root_matches_neqsim() {
     use azoth_eos::{Cubic, RootSide};
 
     let names = ["water", "methanol"];
-    let (mixture, _) = databank::mixture_of(&names, None).expect("a mixture");
-    // `SystemSrkCPA` runs `setMixingRule(10)`, whose interaction matrix is `cpakij_SRK` -
-    // a different column from the `KIJPR` a classical mixture reads. Water/methanol is
-    // `-0.153` there against `-0.0789`, and reading the wrong one is the last 0.077% of
-    // the root.
-    let mixture = mixture
-        .with_mixing_rule(azoth_eos::MixingRule::Classic {
-            kij: databank::cpa_kij(&names, azoth_eos::association::AssociationCubic::Srk),
-        })
-        .with_cubic(Cubic::Srk)
-        .with_association()
+    let (mixture, _) = databank::associating_mixture_of(&names, Cubic::Srk, None)
         .expect("water and methanol bond");
     let reduced = mixture
         .reduced_parameters(kelvins(300.0), pascals(1.0e7))
@@ -685,17 +737,10 @@ fn the_cpa_root_matches_neqsim() {
 #[test]
 fn an_associating_mixture_refuses_the_derivative_surface() {
     use azoth_core::units::{kelvins, pascals};
-    use azoth_eos::association::AssociationCubic;
-    use azoth_eos::{Cubic, MixingRule, RootSide};
+    use azoth_eos::{Cubic, RootSide};
 
     let names = ["water", "methanol"];
-    let (mixture, _) = databank::mixture_of(&names, None).expect("a mixture");
-    let mixture = mixture
-        .with_mixing_rule(MixingRule::Classic {
-            kij: databank::cpa_kij(&names, AssociationCubic::Srk),
-        })
-        .with_cubic(Cubic::Srk)
-        .with_association()
+    let (mixture, _) = databank::associating_mixture_of(&names, Cubic::Srk, None)
         .expect("water and methanol bond");
     let reduced = mixture
         .reduced_parameters(kelvins(320.0), pascals(2.0e6))
