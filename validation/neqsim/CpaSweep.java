@@ -42,21 +42,23 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * make "which component" the first question rather than the association.
  *
  * <p>
- * <b>What the finite-difference keys found.</b> At 356 K and 1 bara, water/methanol
- * 0.6/0.4: {@code F_scale_two} is exactly {@code 2 * F_res_over_R}, so {@code getF()} is
- * extensive and {@code dF = sum_i dFdN_i dn_i + FV dV} applies to it. The two isolated
- * differences then give {@code dFdN_fd = [-0.0419683, -0.0743505]} against NeqSim's own
- * {@code dFdN = [-0.0901941, -0.1211108]} - factors that differ per component, so not a
- * scale slip. The weighted sum {@code sum_i n_i dFdN_fd_i = -0.0549213} agrees to four
- * digits with the scale derivative {@code F - FV*V = -0.0549212}, which is derived without
- * any of those differences, so the finite differences and {@code FV()} are consistent with
- * each other and with extensivity.
+ * <b>What the finite-difference keys found, and what they first said.</b> At 356 K and
+ * 1 bara, water/methanol 0.6/0.4: {@code F_scale_two} is exactly
+ * {@code 2 * F_res_over_R}, so {@code getF()} is extensive and
+ * {@code dF = sum_i dFdN_i dn_i + dFdV dV} applies to it; {@code dFdN_fd} then reproduces
+ * NeqSim's own {@code dFdN = [-0.0901941, -0.1211108]} to ten digits. It did not, at first.
+ * The chain rule's volume term was written {@code FV() * dV}, and for a {@code PhaseSrkCPA}
+ * that is the wrong method: {@code PhaseSrkCPA.dFdV} is {@code super.dFdV() + cpaon *
+ * dFCPAdV()} while {@code PhaseEos.FV()} is the cubic part alone, and the association's
+ * {@code dFCPAdV} is seventeen times the cubic's {@code FV()} at this state. The omitted
+ * term is the whole of the difference that was read as a NeqSim defect - and it was read as
+ * one for a whole session, because a probe that is wrong about which quantity to subtract
+ * reports the other side as wrong.
  *
  * <p>
- * So <b>{@code ComponentEos.dFdN} is not the derivative of {@code ComponentEos.getF}</b>,
- * while {@code ComponentSrkCPA.dFCPAdN} is - the association's own derivative is a true
- * one. {@code getF()}'s form is verified, not read: {@code F_reconstructed} reproduces it
- * to every printed digit on every row.
+ * Both keys are now printed side by side, and the {@code euler_*} keys are the same check
+ * without a finite difference in it: {@code F} is extensive in {@code (V, n)}, so
+ * {@code V * dFdV() + sum_i n_i dF/dn_i|_V = F}, and NeqSim's {@code dFdN} satisfies it.
  *
  * <p>
  * <b>What the flash keys found.</b> At 356 K and 1 bara the flash splits, and the liquid's
@@ -67,18 +69,11 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * (1 - k_ij) sqrt(a_i a_j)}, and {@code getAi_i} is {@code 2 beta} times the row sum
  * {@code sum_j x_j (1 - k_ij) sqrt(a_i a_j)} - with {@code k_ij = -0.153}, the
  * {@code cpakij_SRK} column, which is what {@code getA()} and the {@code aT} keys alone
- * return, to a relative {@code 5e-15}. The factor of
- * two that was recorded as unexplained is this and nothing else: {@code getAi} is
- * {@code dA/dn_i} of a degree-two {@code A}, so it carries a 2 that {@code getBi = dB/dn_i}
- * does not. At the feed, one mole total, every one of these equals the intensive azoth
- * value - which is why nothing before the flash could tell the two conventions apart.
- *
- * <p>
- * <b>What that does not yet settle</b> is whether the same is true for a plain cubic, and
- * it matters: if it is, NeqSim's ordinary cubic {@code ln phi} is not {@code integral dFdN}
- * either, and its cubic flashes still agree with azoth's - so the error would have to
- * cancel in {@code ln phi_L - ln phi_V}. That is a {@code SystemPrEos} sweep, and it is the
- * next measurement rather than a conclusion.
+ * return, to a relative {@code 5e-15}. The factor of two that was recorded as unexplained
+ * is this and nothing else: {@code getAi} is {@code dA/dn_i} of a degree-two {@code A}, so
+ * it carries a 2 that {@code getBi = dB/dn_i} does not. At the feed, one mole total, every
+ * one of these equals the intensive azoth value - which is why nothing before the flash
+ * could tell the two conventions apart.
  *
  * <p>
  * {@code CpaProbe} remains the single-state kernel probe the Rust tests cite; this is the
@@ -241,26 +236,32 @@ public final class CpaSweep {
     // difference between the two columns rather than as a wrong answer somewhere later.
     {"F_res_over_R", "PhaseEos.getF(), overridden by PhaseSrkCPA", "no single azoth counterpart",
         "the residual Helmholtz over R; includes the association"},
-    {"FV", "PhaseEos.FV()", "no single azoth counterpart", "dF/dV at constant n and T"},
+    {"FV", "PhaseEos.FV()", "no single azoth counterpart",
+        "dF/dV of the CUBIC part only; see dFdV"},
+    {"dFdV", "PhaseInterface.dFdV()", "no single azoth counterpart",
+        "the phase's own dF/dV; = FV() + dFCPAdV() for a CPA phase"},
     {"V_total", "PhaseInterface.getTotalVolume()", "z R T / P", "NeqSim's internal volume scale"},
     {"F_reconstructed", "-n*getg() - (getA()/T)*getf_loc() + FCPA", "-",
         "must equal F_res_over_R; the check on getA()'s scale"},
-    // **The one key that settles whether NeqSim's `dFdN` is the derivative of its own `F`.**
+    // **The key that settles whether NeqSim's `dFdN` is the derivative of its own `F`.**
     //
     // `F` is a function of `(T, V, n)`, so along *any* path
     // `dF = sum_i (dF/dn_i)|_{T,V} dn_i + (dF/dV)|_{T,n} dV`. Perturbing ONE mole number at
     // constant `T` and `P` therefore isolates `(dF/dn_i)|_{T,V}`:
     //
-    //     dFdN_fd[i] = (F(n + d e_i) - F(n)) / d  -  FV() * (V(n + d e_i) - V(n)) / d
+    //     dFdN_fd[i] = (F(n + d e_i) - F(n)) / d  -  dFdV() * (V(n + d e_i) - V(n)) / d
     //
     // with `V` the *total* volume, because `F` is extensive. No prescribed-volume state is
     // needed, which is what makes this measurable from a driver that only knows how to run
     // `init(1)` at a temperature and a pressure.
     //
-    // `dFdN[i]` is NeqSim's own `ComponentEos.dFdN`. If the two agree, its assembly
-    // `Fn + FB*getBi() + FD*getAi()` is a true derivative and the residual Helmholtz
-    // *functions* differ between it and azoth; if they disagree, `dFdN` is not the
-    // derivative of its own `F` and the finding is upstream, of the `calc_lngij` kind.
+    // **It is `dFdV()` here and not `FV()`, and the first draft of this driver used `FV()`.**
+    // `PhaseSrkCPA.dFdV` overrides `PhaseEos.dFdV` - which is `return FV();` - as
+    // `super.dFdV() + cpaon * dFCPAdV()`. At 356 K and 1 bara the association's `dFCPAdV`
+    // is `1.694e-5` against a cubic `FV()` of `9.75e-7`: seventeen times larger. Subtracting
+    // `FV()` where the chain rule needs `dFdV()` leaves the association's share of `dV` in
+    // the residual, and it reported `dFdN` as 38-54% away from the derivative of `F` when the
+    // two agree to ten digits. Both keys are printed so the ambiguity is a reading.
     {"dFdN_fd[0]", "the identity above, at a perturbation of 1e-7 in n_water", "no counterpart",
         "= dFdN[0] iff NeqSim's dFdN is the derivative of its own F"},
     {"dFdN_fd[1]", "the same, perturbing n_methanol", "no counterpart", "see above"},
@@ -284,6 +285,31 @@ public final class CpaSweep {
     {"Fn", "PhaseEos.Fn()", "no single azoth counterpart", "d(F/RT)/dn, the total-moles term"},
     {"FB", "PhaseEos.FB()", "no single azoth counterpart", "d(F/RT)/dB"},
     {"FD", "PhaseEos.FD()", "no single azoth counterpart", "d(F/RT)/dA"},
+    // `dFdN`'s own three terms, each printed as the *product* `dFdN` forms, and their sum.
+    // The chain rule is `dFdN_i = Fn + FB*Bi + FD*Ai` with `Bi = dB/dn_i` and `Ai = dA/dn_i`,
+    // so if the form is right `dFdN_sum[i]` equals `dFdN[i]` and the difference from
+    // `dFdN_fd[i]` is not in the assembly. A term that is orders out names its own factor.
+    {"dFdN_term_n[0]", "PhaseEos.Fn()", "-", "water; the total-moles term, no Bi"},
+    {"dFdN_term_B[0]", "PhaseEos.FB() * ComponentEos.getBi()", "-", "water"},
+    {"dFdN_term_A[0]", "PhaseEos.FD() * ComponentEos.getAi()", "-", "water"},
+    {"dFdN_sum[0]", "the three above, summed", "dFdN[0]", "= dFdN[0] iff the form is right"},
+    {"dFdN_term_n[1]", "PhaseEos.Fn()", "-", "methanol; the same for every component"},
+    {"dFdN_term_B[1]", "PhaseEos.FB() * ComponentEos.getBi()", "-", "methanol"},
+    {"dFdN_term_A[1]", "PhaseEos.FD() * ComponentEos.getAi()", "-", "methanol"},
+    {"dFdN_sum[1]", "the three above, summed", "dFdN[1]", "= dFdN[1] iff the form is right"},
+    // **Euler's theorem, the check that needs no finite difference.** `F` is extensive in
+    // `(V, n)`, so `V*dFdV() + sum_i n_i dF/dn_i|_V = F`. Every term is a NeqSim reading, so
+    // the sides either agree or `dFdN` is not `dF/dn_i` - and unlike the finite-difference
+    // pair above, this has no second system, no step size and no volume solver tolerance in
+    // it. Run once whole and once with the association's own term removed, so a failure
+    // would name the cubic rather than the model.
+    {"euler_dFdN", "sum_i n_i * ComponentEos.dFdN_i", "euler_scale",
+        "= euler_scale iff dFdN is dF/dn_i"},
+    {"euler_dFdN_cubic", "the same, with dFCPAdN_i subtracted", "euler_scale_cubic",
+        "the cubic's alone"},
+    {"euler_scale", "PhaseEos.getF() - getTotalVolume() * PhaseInterface.dFdV()", "-", ""},
+    {"euler_scale_cubic", "the same, from `getF() - FCPA` and `FV()`", "-",
+        "PhaseSrkCPA overrides getF and dFdV, not FV"},
     {"dFdN[0]", "ComponentEos.dFdN(phase, n, T, P)", "cubic ln_phi[0] + ln Z", "water"},
     {"dFdN[1]", "ComponentEos.dFdN(phase, n, T, P)", "cubic ln_phi[1] + ln Z", "methanol"},
     {"lnPhi[0]", "log(ComponentSrkCPA.getFugacityCoefficient())", "PhaseState.ln_phi[0]", "water"},
@@ -461,6 +487,7 @@ public final class CpaSweep {
     put(row, "FCPA_sum", fcpa_sum(phase, n));
     put(row, "hcpa", ((PhaseCPAInterface) phase).getHcpatot());
     put(row, "FV", phase.FV());
+    put(row, "dFdV", phase.dFdV());
     put(row, "V_total", phase.getTotalVolume());
     put(row, "g_helmholtz", ((PhaseEos) phase).getg());
     put(row, "f_loc", ((PhaseEos) phase).getf_loc());
@@ -475,6 +502,40 @@ public final class CpaSweep {
             + ((PhaseSrkCPA) phase).FCPA());
     put(row, "FB", phase.FB());
     put(row, "FD", phase.FD());
+
+    // `ComponentEos.dFdN` is `Fn() + FB()*getBi() + FD()*getAi()` (ComponentEos:265), and the
+    // three products are printed separately. `Fn`, `FB` and `FD` on their own have been on
+    // the record for a while and they settled nothing, because a scale error in a *product*
+    // is invisible when only the factors are printed - the same shape as the `getAi`
+    // misreading. Which factor is in which scale is a question these four rows answer by
+    // arithmetic instead of argument.
+    for (int i = 0; i < n; i++) {
+      ComponentEos eos = (ComponentEos) phase.getComponent(i);
+      put(row, "dFdN_term_n[" + i + "]", phase.Fn());
+      put(row, "dFdN_term_B[" + i + "]", phase.FB() * eos.getBi());
+      put(row, "dFdN_term_A[" + i + "]", phase.FD() * eos.getAi());
+      put(row, "dFdN_sum[" + i + "]",
+          phase.Fn() + phase.FB() * eos.getBi() + phase.FD() * eos.getAi());
+    }
+
+    // Euler's theorem, which needs no finite difference, no second system and no solver
+    // tolerance: `F` is extensive in `(V, n)`, so `V*FV + sum_i n_i dF/dn_i|_V = F`. Every
+    // term is a NeqSim reading, so the two sides either agree or `dFdN` is not `dF/dn_i`.
+    double euler = 0.0;
+    double eulerCubic = 0.0;
+    for (int i = 0; i < n; i++) {
+      ComponentSrkCPA cpa = (ComponentSrkCPA) phase.getComponent(i);
+      double ni = cpa.getNumberOfMolesInPhase();
+      double dFdN = cpa.dFdN(phase, n, temperature, pressure);
+      euler += ni * dFdN;
+      eulerCubic += ni * (dFdN - cpa.dFCPAdN(phase, n, temperature, pressure));
+    }
+    put(row, "euler_dFdN", euler);
+    put(row, "euler_dFdN_cubic", eulerCubic);
+    put(row, "euler_scale", ((PhaseEos) phase).getF() - phase.getTotalVolume() * phase.dFdV());
+    put(row, "euler_scale_cubic",
+        ((PhaseEos) phase).getF() - ((PhaseSrkCPA) phase).FCPA()
+            - phase.getTotalVolume() * phase.FV());
 
     put(row, "FCPA", ((PhaseSrkCPA) phase).FCPA());
     put(row, "dFCPAdV", ((PhaseSrkCPA) phase).dFCPAdV());
@@ -551,7 +612,7 @@ public final class CpaSweep {
    * The state, plus the two finite-difference keys that say whether NeqSim's `dFdN` is the
    * derivative of its own `F`.
    *
-   * `F` is a function of `(T, V, n)`, so along any path `dF = sum_i dFdN_i dn_i + FV dV`.
+   * `F` is a function of `(T, V, n)`, so along any path `dF = sum_i dFdN_i dn_i + dFdV dV`.
    * Perturbing one mole number at constant `T` and `P` therefore isolates `dFdN_i` once
    * the volume's share is subtracted - and no prescribed-volume state is needed, which is
    * what makes this measurable from `init(1)` alone.
@@ -564,7 +625,7 @@ public final class CpaSweep {
       Double.parseDouble(row.get("F_res_over_R")),
       0.0,
     };
-    base[1] = Double.parseDouble(row.get("FV"));
+    base[1] = Double.parseDouble(row.get("dFdV"));
     // Component 0: `n_water` moves, methanol held.
     double fUp = Double.parseDouble(oneRaw(temperature, pressure, nWater + d, nMethanol).get("F_res_over_R"));
     double fDown = Double.parseDouble(oneRaw(temperature, pressure, nWater - d, nMethanol).get("F_res_over_R"));

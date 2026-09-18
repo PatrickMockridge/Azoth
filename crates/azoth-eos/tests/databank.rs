@@ -955,46 +955,39 @@ fn the_cpa_liquid_root_is_found_at_low_pressure() {
     );
 }
 
-/// azoth's cubic `ln phi` is the textbook expression, and NeqSim's is not.
+/// **azoth's cubic `ln phi` is the textbook closed form, evaluated at a volume where it is
+/// not the derivative of anything - and that is this side's defect, not NeqSim's.**
 ///
-/// **A three-way comparison, because a two-way one cannot say which side is wrong.** The
-/// sweep (`validation/neqsim/CpaSweep.java`) says NeqSim's `lnPhi[0]` and its `dFCPAdN[0]`
-/// differ from azoth's by `0.0328` in their cubic part, while the root, `A_mix`, `B_mix`,
-/// `kij`, the fitted `a`/`b` and the entire association agree to ten digits. So either
-/// azoth's expression is wrong, or NeqSim's is not the expression it appears to be.
+/// The closed form - `(b_i/b)(Z-1) - ln(Z-B) - (A/(B(d1-d2)))(2*abar_i/a - b_i/b)*ln(...)` -
+/// is the composition derivative of the Soave-Redlich-Kwong Helmholtz energy **only at the
+/// volume that solves the SRK equation of state**. At any other volume it is some other
+/// number. For a pure component at 350 K and 50 bar: at the cubic's own root it is
+/// `-10.4890220129` against a finite difference of that Helmholtz energy of `-10.48902202`,
+/// and at `Z = 0.5` it is `-1.94579104285` against `-3.47184011449`.
 ///
-/// The expression below is standard Soave-Redlich-Kwong, written out here from azoth's own
-/// intermediates rather than called from azoth. It agrees with `Mixture::phase_state` to
-/// fifteen digits, which settles the first possibility: azoth evaluates the textbook
-/// formula, correctly.
+/// An associating fluid's volume is not the cubic's root - the association carries a
+/// pressure - so the closed form evaluated at the CPA root is not `d(F_cubic)/dn_i` there.
+/// The first assertion below pins this model's cubic part to the closed form; NeqSim's
+/// `ComponentEos.dFdN` is the true derivative at that volume, and the second assertion
+/// measures the gap between them.
 ///
-/// **And NeqSim does not evaluate it.** `ComponentEos.fugcoef` is `dFdN_i - ln Z` and
-/// `ComponentEos.dFdN` is `phase.Fn() + phase.FB() * getBi() + phase.FD() * getAi()` -
-/// the chain rule in the *unnormalised* `dA/dn_i` and `dB/dn_i`, which is why
-/// `EosMixingRuleHandler.calcAi` returns a row sum and why NeqSim's `Ai` measures as
-/// twice azoth's `abar` at every state. azoth's `factor_i` carries the *normalised*
-/// `2 (abar_i - A)/A` instead, and the `Fn` term is where NeqSim absorbs the difference.
+/// **NeqSim is right here, and this was recorded the other way round first.**
+/// `validation/neqsim/CpaFdProbe.java` isolates `(dF/dn_i)|_{T,V}` by perturbing a mole
+/// number at constant `T` and `P` and subtracting the volume's share, and `CpaSweep`'s
+/// `euler_*` keys are the same statement without any finite difference in it: `F` is
+/// extensive in `(V, n)`, so `V * dFdV() + sum_i n_i dF/dn_i|_V = F`, and NeqSim's `dFdN`
+/// satisfies that to `3e-11`. The chain rule needs `dFdV()`, which for a `PhaseSrkCPA` is
+/// `FV() + dFCPAdV()`; the first version of that probe subtracted a bare `FV()`, seventeen
+/// times smaller at 356 K and 1 bara, and reported NeqSim as 38-54% out. Both volume
+/// derivatives are now printed side by side, and on a plain Peng-Robinson mixture the two
+/// are the same method - which is why a control that passes cannot find this.
 ///
-/// So the divergence is a difference of assembly, and the assembly has now been measured
-/// rather than read. `PhaseSrkCPA.getF() = -n*getg() - (getA()/T)*getf_loc() + FCPA`
-/// reproduces NeqSim's own residual Helmholtz to every printed digit, at every state the
-/// sweep covers, and `F_scale_two = 2 * F` shows `getF()` is extensive - so the identity
-/// `dF = sum_i dFdN_i dn_i + FV dV` applies to it, and `validation/neqsim/CubicFdProbe.java`
-/// uses that to ask whether `ComponentEos.dFdN` is its own `F`'s derivative.
-///
-/// **For a plain Peng-Robinson mixture it is**, to ten digits. **For `SystemSrkCPA` it is
-/// not**: the sweep's `dFdN_fd` is `[-0.0419683, -0.0743505]` against NeqSim's own
-/// `[-0.0901941, -0.1211108]`, and the weighted sum of the finite differences matches the
-/// independently derived scale derivative `F - FV*V` where NeqSim's own does not. Its
-/// `dFCPAdN` *is* a true derivative, which is why the divergence is confined to the cubic
-/// part.
-///
-/// **So azoth evaluates the textbook expression and NeqSim's `ComponentSrkCPA` disagrees
-/// with its own Helmholtz energy** - an upstream inconsistency of the `calc_lngij` kind,
-/// recorded rather than adopted. This test pins both facts, and its second assertion fails
-/// the moment the two agree, so the finding cannot quietly close.
+/// So this test records a defect on this side. NeqSim's cubic part and this model's differ
+/// by `0.0328` and `0.0699` at 356 K and 1 bara, while the root, `A_mix`, `B_mix`, `kij`,
+/// the fitted `a`/`b` and the entire association agree to ten digits - which leaves the
+/// volume the closed form is evaluated at, and nothing else.
 #[test]
-fn the_cubic_ln_phi_is_the_textbook_expression_and_neqsims_is_not() {
+fn the_cubic_ln_phi_is_the_closed_form_at_the_association_shifted_root() {
     use azoth_core::units::{kelvins, pascals};
     use azoth_eos::{Cubic, RootSide};
 
@@ -1020,7 +1013,7 @@ fn the_cubic_ln_phi_is_the_textbook_expression_and_neqsims_is_not() {
     let coefficient = state.a_mix / ((d1 - d2) * b_red);
 
     // NeqSim's `lnPhi[i]` and `dFCPAdN[i]` at this state, from `CpaSweep 356 1 0.6`. Their
-    // difference is NeqSim's cubic part.
+    // difference is NeqSim's cubic part, which `CpaFdProbe` measures to be `dF/dn_i` there.
     let neqsim_cubic = [
         -0.038_499_945_545_132_2 - -0.085_911_899_466_216_2,
         -0.069_416_678_113_187_5 - -0.113_824_565_989_815,
@@ -1037,20 +1030,14 @@ fn the_cubic_ln_phi_is_the_textbook_expression_and_neqsims_is_not() {
         let azoth_cubic = state.ln_phi[i] - kernel.ln_phi[i];
         assert!(
             (azoth_cubic / independent - 1.0).abs() < 1.0e-12,
-            "component {i}: azoth's cubic ln phi is {azoth_cubic} but the textbook \
-             expression from azoth's own a, b, z and kij is {independent}"
+            "component {i}: this model's cubic ln phi is {azoth_cubic} but the closed \
+             form from its own a, b, z and kij is {independent} - if these have parted, \
+             the implementation stopped being the closed form and the finding below \
+             has to be re-measured"
         );
-        // A candidate explanation, kept because it is **ruled out** by the numbers it
-        // prints rather than by an argument. NeqSim's `getF()` equals azoth's `A_res/RT`
-        // less `ln Z`, so its `dFdN` looked as though it carried `d ln Z/dn_i` where
-        // azoth's closed form does not. It does not: the difference is 0.0328 against a
-        // `d ln Z/dn_0` of 0.0123, and for methanol the signs disagree outright.
-        //
-        // That makes five explanations this number has now killed - a different alpha, a
-        // unit scale, an unnormalised `abar`, a wrong `Z`, and this one - every one of
-        // them confident. The mechanism is in `Fn`/`FB`/`FD`, and settling it needs
-        // NeqSim's `F` finite-differenced at a *fixed volume*, which is a capability this
-        // probe does not yet have. Recording the failures is what stops the sixth.
+        // The gap between the closed form and the derivative, both at this model's own
+        // volume. `neqsim` is the derivative; `azoth_cubic` is not, because the volume is
+        // the association's root rather than the cubic's.
         let h = 1.0e-7;
         let mut up = x;
         up[i] += h;
@@ -1072,9 +1059,10 @@ fn the_cubic_ln_phi_is_the_textbook_expression_and_neqsims_is_not() {
 
         assert!(
             (neqsim / azoth_cubic - 1.0).abs() > 1.0,
-            "component {i}: NeqSim's cubic part {neqsim} is meant to differ from azoth's \
-             {azoth_cubic} - if it no longer does, the finding above is closed and this \
-             test should become the equality it is not",
+            "component {i}: the derivative at this volume is {neqsim} and this model's \
+             cubic part is {azoth_cubic}; if they have met, the cubic contribution has \
+             been moved to the association-shifted volume and this test should become \
+             the equality it is not",
         );
     }
 }
