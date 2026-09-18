@@ -26,7 +26,9 @@
 //! invisible to the second kind until the first existed to fail, and the `hCPA` error was
 //! invisible to the first kind entirely.
 //!
-//! Not yet: the wiring into [`crate::mixture::Mixture`].
+//! [`crate::mixture::Mixture`] consumes it: `with_association` turns the contribution on,
+//! `reduced_parameters` substitutes the fitted `a` and `b`, and `phase_state_at` adds the
+//! fugacity and enthalpy terms.
 //!
 //! # Variables
 //!
@@ -176,11 +178,12 @@ pub struct AssociationRecord {
     pub racket_z: f64,
     /// `volcorrCPA_T`, the CPA volume-translation coefficient.
     ///
-    /// **Load-bearing, and the reason a CPA root is not yet reproduced.** NeqSim's
-    /// `SystemSrkCPA` calls `useVolumeCorrection(true)` in its constructor, so its root
-    /// carries a translation this library does not apply: water's is `0.000718744` and
-    /// methanol's is zero, and the gap it leaves on water/methanol at 300 K and 100 bar
-    /// is a molar volume of `3.8510e-5 m3/mol` against NeqSim's `2.6203e-5`.
+    /// NeqSim's `SystemSrkCPA` calls `useVolumeCorrection(true)`, and
+    /// `ComponentSrk.getVolumeCorrection` is `0.40768 (0.29441 - Z_RA) R Tc/Pc`, so a
+    /// component's root carries a translation this library does not yet apply. It is
+    /// **not** the cause of the root gap recorded in `tests/databank.rs` - for water the
+    /// shift is `-2.5148594e-5` internal, two orders of magnitude short - but it is real
+    /// and it is carried here for when it is applied.
     pub volume_correction: f64,
 }
 

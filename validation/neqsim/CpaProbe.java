@@ -53,6 +53,13 @@ public final class CpaProbe {
     print("gcpav_dlng_dV", ((PhaseCPAInterface) phase).getGcpav());
     print("totalAssociationSites", ((PhaseCPAInterface) phase).getTotalNumberOfAccociationSites());
 
+    // The reduced parameters the cubic actually solved with. The composition is (1, 0)
+    // for a pure component, so this is a direct read rather than a mixture average.
+    print("phase_getA", phase.getA());
+    print("phase_getB", phase.getB());
+    print("phase_getZ", phase.getZ());
+    print("molarVolume", phase.getMolarVolume());
+
     for (int i = 0; i < system.getNumberOfComponents(); i++) {
       ComponentSrkCPA c = (ComponentSrkCPA) phase.getComponent(i);
       System.out.printf("-- component %d %s%n", i, c.getComponentName());
@@ -63,6 +70,11 @@ public final class CpaProbe {
       print("associationEnergy", c.getAssociationEnergy());
       print("associationVolume", c.getAssociationVolume());
       print("calc_lngi", c.calc_lngi(phase));
+      print("calca", c.calca());
+      print("calcb", c.calcb());
+      print("getVolumeCorrection", c.getVolumeCorrection());
+      print("getBi", c.getBi());
+      print("getAi", c.getAi());
       for (int j = 0; j < c.getNumberOfAssociationSites(); j++) {
         print("xsite[" + j + "]", c.getXsite()[j]);
       }

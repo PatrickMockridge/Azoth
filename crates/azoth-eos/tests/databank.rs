@@ -583,25 +583,36 @@ fn an_associating_mixture_resolves_neqsims_parameters() {
     }
 }
 
-/// **The CPA root is not NeqSim's yet, and the reason is the volume correction.**
+/// **The CPA root is not NeqSim's, and the cause is not yet identified.**
 ///
-/// This test records a gap rather than a property. NeqSim's `SystemSrkCPA` calls
-/// `useVolumeCorrection(true)` in its constructor, so its root carries a translation azoth
-/// does not apply. `CpaProbe` reports `Z = 0.1050516` for this fluid at this state and
-/// azoth solves `0.1543690` - a molar volume `3.8510e-5 m3/mol` against NeqSim's
-/// `2.6203e-5`, a difference of `1.2307e-5` on the mixture or `2.0512e-5` per mole of
-/// water.
+/// This test records a gap rather than a property, and deliberately does not name a
+/// cause it has not established.
 ///
-/// Water is the only one of the two that carries a correction: its `volcorrCPA_T` is
-/// `0.000718744` and methanol's is zero. That column is one of P7's, listed in the plan as
-/// still unread - `cpaon` and `useVolumeCorrection` were never traced. Until it is read
-/// and applied, an associating mixture's association term is right and its root is not,
-/// so the term is not yet usable end to end.
+/// What is measured. `CpaProbe` reports `Z = 0.105050962879418` for this fluid at 300 K
+/// and 100 bar, and this library solves `0.1543689586897346` - molar volumes of
+/// `2.6203e-5` against `3.8510e-5 m3/mol`.
 ///
-/// The assertions below are the gap, written so that landing the correction fails this
-/// test rather than passing it silently.
+/// What is ruled out. The gap is **not** the volume correction, which was the first
+/// guess and is wrong. NeqSim's `SystemSrkCPA` does call `useVolumeCorrection(true)`, and
+/// `ComponentSrk.getVolumeCorrection` is `0.40768 (0.29441 - Z_RA) R Tc/Pc` - for water
+/// `-2.5148594e-5` in NeqSim's internal units, a shift of `0.0006` in `Z` once weighted
+/// by the mixture. Two orders of magnitude short.
+///
+/// The volume correction *is* real and is not applied here, and `volcorrCPA_T` and
+/// `racketZCPA` are carried by the loader for when it is. It is simply not the cause.
+///
+/// What the numbers say instead. The probe prints the phase's own dimensional `A` and
+/// `B`: `30909.5819051180` and `2.11002000000000`, which reduce to `A = 0.4968008214`
+/// and `B = 0.0845923635`. Solving `Z^3 - Z^2 + (A - B - B^2) Z - A B` at those values
+/// gives a liquid root of `0.15229232` - and this library's `0.15437` is that root, to
+/// about a percent. So the cubic agrees with NeqSim's *parameters* and NeqSim's reported
+/// root is not the cubic's root of them.
+///
+/// That is where the investigation stands: the disagreement is inside NeqSim's volume
+/// solve, not in the parameters this library reads, and the next step is to read
+/// `PhaseSrkCPA.molarVolume` rather than to guess again.
 #[test]
-fn the_cpa_root_is_not_neqsims_until_the_volume_correction_lands() {
+fn the_cpa_root_is_not_neqsims_yet() {
     use azoth_core::units::{kelvins, pascals};
     use azoth_eos::{Cubic, RootSide};
 
@@ -617,18 +628,19 @@ fn the_cpa_root_is_not_neqsims_until_the_volume_correction_lands() {
         .phase_state(&reduced, &[0.6, 0.4], RootSide::Liquid)
         .expect("a liquid root");
 
+    // The fluid is the same one before the root is compared at all: the probe reports a
+    // dimensional `B` of `2.11002000000000`, which reduces to `0.0845923635`, and that is
+    // `sum_i x_i b_i P/(R T)` over this library's fitted covolumes.
+    let b_mix: f64 = reduced.b[0] * 0.6 + reduced.b[1] * 0.4;
     assert!(
-        (state.z / 0.105_051_6 - 1.0).abs() > 0.4,
-        "NeqSim's root is 0.1050516 and this library's is {}; if they have converged, \
-         the volume correction has landed and this test is the record that it did",
-        state.z
+        (b_mix / 0.084_592_363_5 - 1.0).abs() < 1.0e-9,
+        "the reduced B: azoth {b_mix} vs NeqSim 0.0845923635"
     );
-    let entry = databank::entry("water", None).expect("water");
+
     assert!(
-        entry
-            .association
-            .as_ref()
-            .is_some_and(|a| a.volume_correction.abs() > 0.0),
-        "water carries `volcorrCPA_T`, which is the column that would close the gap"
+        (state.z / 0.105_050_962_879_418 - 1.0).abs() > 0.4,
+        "NeqSim reports 0.105050962879418 and this library solves {}; if they have \
+         converged, the cause has been found and this test is the record that it was",
+        state.z
     );
 }

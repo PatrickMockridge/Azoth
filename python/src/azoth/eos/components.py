@@ -187,10 +187,9 @@ class AssociationParameters:
     racket_z: float
     #: ``volcorrCPA_T``, the CPA volume-translation coefficient.
     #:
-    #: **Load-bearing, and the reason a CPA root is not yet reproduced.** NeqSim's
-    #: ``SystemSrkCPA`` calls ``useVolumeCorrection(true)`` in its constructor, so its
-    #: root carries a translation this library does not apply - water's is 0.000718744
-    #: and methanol's is zero.
+    #: NeqSim's ``SystemSrkCPA`` calls ``useVolumeCorrection(true)``, so its root carries
+    #: a translation this library does not yet apply. It is **not** the cause of the CPA
+    #: root gap - for water the shift is 2.5e-05 internal, two orders of magnitude short.
     volume_correction: float
 
     @property
