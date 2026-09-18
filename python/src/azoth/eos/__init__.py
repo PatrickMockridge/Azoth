@@ -142,6 +142,7 @@ from azoth.core.result import (
     SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult,
     SrkAlphaAbResult,
+    SrkCpaPhaseResult,
     SrkDepartureResult,
     SrkKappaResult,
     SrkPenelouxShiftResult,
@@ -267,6 +268,7 @@ __all__ = [
     "rk_departure",
     "siddiqi_lucas_diffusivity",
     "srk_alpha_ab",
+    "srk_cpa_phase",
     "srk_departure",
     "srk_kappa",
     "srk_peneloux_shift",
@@ -323,6 +325,7 @@ _WATER_PHASE = "eos.water_phase"
 _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
+_SRK_CPA_PHASE = "eos.srk_cpa_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
 _GE_UNIQUAC_PHASE = "eos.ge_uniquac_phase"
@@ -2519,3 +2522,32 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
     See :func:`azoth.eos.reference.pure_saturation`.
     """
     return resolve(_PURE_SATURATION)(Tc=Tc, Pc=Pc, omega=omega, T=T)  # type: ignore[no-any-return]
+
+
+def srk_cpa_phase(
+    components: list[str], T: Q, P: Q, z: list[float], compressed_phase: str
+) -> SrkCpaPhaseResult:
+    """One Soave-Redlich-Kwong CPA phase's state at a temperature, pressure and
+    composition.
+
+    The cubic's attraction and covolume replaced by each component's fitted
+    ``aCPA``/``bCPA``, mixed with the ``cpakij_SRK`` column, and the Wertheim association
+    contribution added to the residual Helmholtz energy.
+
+    **The association carries a pressure, so the root is not the cubic's**: at 300 K and
+    100 bar this fluid's associating root is 0.10505 where its substituted cubic's is
+    0.15229. That is also why ``compressed_phase`` names a root rather than taking a
+    compressibility factor - a caller could not supply one without solving this model
+    first.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or no volume root exists above
+            the mixture's covolume.
+        InvalidInputError: if ``z`` is not a composition, a component name is not in the
+            databank, or ``compressed_phase`` is neither ``"liquid"`` nor ``"vapour"``.
+
+    See :func:`azoth.eos.reference.srk_cpa_phase`.
+    """
+    return resolve(_SRK_CPA_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
+    )

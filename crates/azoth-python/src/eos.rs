@@ -3169,3 +3169,26 @@ pub fn model_schemes(model_id: &str) -> Vec<String> {
         None => Vec::new(),
     }
 }
+
+/// The SRK-CPA phase state, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side looks them up in the Rust
+/// databank. That is the `eos.eos_cg_phase` precedent, and for this model it is what makes
+/// the two-kernel comparison cover the *resolution* as well as the arithmetic: an
+/// associating mixture mixes with `cpakij_SRK` and a classical one with `KIJPR`, and on
+/// water/methanol those differ by a factor of two.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn srk_cpa_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::results::PySrkCpaPhaseResult> {
+    azoth_eos::srk_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
+        .map(|r| crate::results::PySrkCpaPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}

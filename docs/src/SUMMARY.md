@@ -99,6 +99,7 @@
   - [Pressure and reflux-ratio flash](./eos/pv_reflux_flash.md)
   - [Pressure and vapour-fraction flash](./eos/pvf_flash.md)
   - [Vapour fraction from the Rachford-Rice equation](./eos/rachford_rice.md)
+  - [Soave-Redlich-Kwong CPA phase state](./eos/srk_cpa_phase.md)
   - [Tangent-plane stability test](./eos/stability_test.md)
   - [Temperature-enthalpy flash](./eos/th_flash.md)
   - [Liquid thermal conductivity from the Pedersen (PFCT) correlation](./eos/thermal_conductivity.md)

@@ -1,0 +1,17 @@
+model = "eos.srk_cpa_phase"
+[[cases]]
+id = "water_methanol_liquid_against_neqsim"
+tolerance = 1e-09
+source = """NeqSim 3.20.0, `SystemSrkCPA` with `setMixingRule(10)` - the upstream this library is a port of, run from `validation/neqsim/CpaSweep.java`. `java -cp .:neqsim-3.20.0.jar CpaSweep 300 100 0.6` prints one row for that state, and `z_factor` is its `PhaseInterface.getZ()` on the single-phase state `system.init(1)` leaves - which at this temperature and pressure is the liquid root. **That root agrees to 5.5e-13**, so the whole volume solve is right: the fitted substitution, the `cpakij_SRK` column, the association's pressure and the site-fraction solve.
+
+**`ln_phi` is deliberately not asserted, and this is the open finding rather than an omission.** NeqSim prints `lnPhi = [-8.02010646183615, -6.14028423012298]` there and this model gives `[-9.678032114120995, -9.67863909421079]`. The association part agrees to ten digits - NeqSim's `dFCPAdN` is `[-9.80708161964733, -8.29830382139314]` - so the divergence is entirely in the **cubic** part of `ln phi`: `[+1.787, +2.158]` against `[+0.129, -1.381]`, which is the same disagreement that makes `eos.pt_flash` report a single phase where NeqSim splits a water/methanol feed at 356 K. `crates/azoth-eos/tests/databank.rs` localises it and `python/tests/test_association_agreement.py` is where the two azoth kernels are held together meanwhile.
+
+**`h_res` and `s_res` are not asserted either**: NeqSim reports absolute enthalpies against its own datum rather than residual ones, so the sweep has no reading to record. The model's enthalpy path is checked against the kernel instead - `python/tests/test_association_agreement.py` pins `d(A/RT)/dT` to a finite difference of the solve."""
+[cases.inputs]
+components = ["water", "methanol"]
+T = 300.0
+P = 10000000.0
+z = [0.6, 0.4]
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.105050962879418

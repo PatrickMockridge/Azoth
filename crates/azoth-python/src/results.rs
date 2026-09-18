@@ -35,16 +35,17 @@ use azoth_eos::results::{
     PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
     PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
     RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
-    ThermalConductivityResult, TpMultiflashResult, TsFlashResult, TuFlashResult, TvFlashResult,
-    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrprAlphaResult,
-    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
-    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
-    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
-    VsFlashResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkCpaPhaseResult,
+    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
+    TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult, TwuKappaResult,
+    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
+    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    VhFlashResult, ViscosityResult, VsFlashResult, VuFlashResult, VuFlashSingleCompResult,
+    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -5994,6 +5995,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         BubbleTemperatureResult::CALC_ID => BubbleTemperatureResult::FIELDS.to_vec(),
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
         BwrsPhaseResult::CALC_ID => BwrsPhaseResult::FIELDS.to_vec(),
+        SrkCpaPhaseResult::CALC_ID => SrkCpaPhaseResult::FIELDS.to_vec(),
         AmmoniaPhaseResult::CALC_ID => AmmoniaPhaseResult::FIELDS.to_vec(),
         Co2PhaseResult::CALC_ID => Co2PhaseResult::FIELDS.to_vec(),
         HeliumPhaseResult::CALC_ID => HeliumPhaseResult::FIELDS.to_vec(),
@@ -6268,5 +6270,57 @@ mod transport_tests {
             assert_eq!(number(result, "iterations"), 9.0);
             assert_eq!(number(result, "residual"), 1.5e-11);
         });
+    }
+}
+
+/// Result of `eos.srk_cpa_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SrkCpaPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySrkCpaPhaseResult {
+    /// The compressibility factor at the chosen root.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// The residual enthalpy.
+    #[pyo3(get)]
+    pub h_res: PyQty,
+    /// The residual entropy.
+    #[pyo3(get)]
+    pub s_res: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySrkCpaPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SrkCpaPhaseResult(z_factor={}, ln_phi={:?})",
+            self.z_factor, self.ln_phi
+        )
+    }
+}
+
+impl From<&azoth_eos::results::SrkCpaPhaseResult> for PySrkCpaPhaseResult {
+    fn from(r: &azoth_eos::results::SrkCpaPhaseResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            z_factor: r.z_factor,
+            ln_phi: r.ln_phi.clone(),
+            h_res: qty(r.h_res.value, "J/mol"),
+            s_res: qty(r.s_res.value, "J/(mol*K)"),
+            warnings: transport(&r.warnings),
+        }
     }
 }

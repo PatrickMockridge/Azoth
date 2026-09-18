@@ -112,6 +112,7 @@ from azoth.core.result import (
     SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult,
     SrkAlphaAbResult,
+    SrkCpaPhaseResult,
     SrkDepartureResult,
     SrkKappaResult,
     SrkPenelouxShiftResult,
@@ -2657,3 +2658,29 @@ def resolve(calc_id: str) -> Callable[..., Any]:
 
     resolved: Callable[..., Any] = globals()[calc_id.rpartition(".")[2]]
     return resolved
+
+
+def srk_cpa_phase(
+    components: Sequence[str], T: Q, P: Q, z: Sequence[float], compressed_phase: str
+) -> SrkCpaPhaseResult:
+    """The SRK-CPA phase state, computed in Rust.
+
+    The component names cross **unresolved**, and the Rust side looks them up in its own
+    databank. That is the `eos.eos_cg_phase` precedent, and for this model it is what makes
+    the cross-implementation comparison cover the *resolution* as well as the arithmetic.
+    """
+    spec = _models_gen.model("eos.srk_cpa_phase")
+    result = _core.srk_cpa_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        compressed_phase,
+    )
+    return SrkCpaPhaseResult(
+        z_factor=result.z_factor,
+        ln_phi=tuple(result.ln_phi),
+        h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
+        s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
+        warnings=_warnings(result.warnings),
+    )

@@ -35,6 +35,7 @@
 //!   - specs/models/eos/pv_reflux_flash.toml
 //!   - specs/models/eos/pvf_flash.toml
 //!   - specs/models/eos/rachford_rice.toml
+//!   - specs/models/eos/srk_cpa_phase.toml
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/th_flash.toml
 //!   - specs/models/eos/thermal_conductivity.toml
@@ -3934,6 +3935,64 @@ pub static RACHFORD_RICE_SPEC: ModelSpec = ModelSpec {
     cases: RACHFORD_RICE_CASES,
 };
 
+static SRK_CPA_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static SRK_CPA_PHASE_CASES: &[TestCase] = &[TestCase {
+    id: "water_methanol_liquid_against_neqsim",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-09,
+    numbers: &[("T", 300.0), ("P", 10000000.0)],
+    lists: &[("components", &["water", "methanol"])],
+    strings: &[("compressed_phase", "liquid")],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[("z_factor", 0.105050962879418)],
+    expected_vectors: &[],
+}];
+
+/// Registry entry for `eos.srk_cpa_phase`.
+pub static SRK_CPA_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.srk_cpa_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: SRK_CPA_PHASE_CHECKS,
+    cases: SRK_CPA_PHASE_CASES,
+};
+
 static STABILITY_TEST_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -5906,6 +5965,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PV_REFLUX_FLASH_SPEC,
     &PVF_FLASH_SPEC,
     &RACHFORD_RICE_SPEC,
+    &SRK_CPA_PHASE_SPEC,
     &STABILITY_TEST_SPEC,
     &TH_FLASH_SPEC,
     &THERMAL_CONDUCTIVITY_SPEC,

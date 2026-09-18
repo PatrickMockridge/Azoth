@@ -2024,6 +2024,33 @@ class BwrsPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SrkCpaPhaseResult(_HasWarnings):
+    """Result of ``eos.srk_cpa_phase``.
+
+    The Soave-Redlich-Kwong CPA phase state: the compressibility factor, the fugacity
+    coefficients and the residual departures, at a root the *association* chose rather
+    than the cubic - at 300 K and 100 bar this fluid's associating root is 0.10505 where
+    its substituted cubic's is 0.15229.
+
+    **There is no ``cp_res``.** The association's second temperature derivative is not
+    derived, so an associating mixture's enthalpy and heat capacity are not consistent;
+    reporting a departure heat capacity from the cubic alone would be a wrong answer
+    rather than a missing one.
+    """
+
+    #: The compressibility factor at the chosen root.
+    z_factor: float
+    #: The fugacity coefficients, as logarithms, one per component.
+    ln_phi: tuple[float, ...]
+    #: The residual enthalpy, including the association's ``A/(RT) - T d(A/RT)/dT``.
+    h_res: Q
+    #: The residual entropy.
+    s_res: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class AmmoniaPhaseResult(_HasWarnings):
     """Result of ``eos.ammonia_phase``.
 

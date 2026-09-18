@@ -723,6 +723,14 @@ class SrkAlphaAbResult:
     warnings: list[Warning]
 
 @final
+class SrkCpaPhaseResult:
+    z_factor: float
+    ln_phi: list[float]
+    h_res: Qty
+    s_res: Qty
+    warnings: list[Warning]
+
+@final
 class SrkDepartureResult:
     ln_phi: float
     h_dep_rt: float
@@ -1548,6 +1556,13 @@ def siddiqi_lucas_diffusivity(
 ) -> SiddiqiLucasDiffusivityResult: ...
 def soreide_whitson_alpha(salinity: float, Tr: float) -> SoreideWhitsonAlphaResult: ...
 def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult: ...
+def srk_cpa_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+    compressed_phase: str,
+) -> SrkCpaPhaseResult: ...
 def srk_departure(
     a_reduced: float,
     b_reduced: float,

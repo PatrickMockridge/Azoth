@@ -201,6 +201,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::ideal_gas_cp, m)?)?;
     m.add_function(wrap_pyfunction!(eos::molar_enthalpy_entropy, m)?)?;
     m.add_function(wrap_pyfunction!(eos::bwrs_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::srk_cpa_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::ammonia_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::co2_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::helium_phase, m)?)?;

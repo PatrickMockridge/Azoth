@@ -3079,3 +3079,27 @@ impl CalcResult for UmrprAlphaResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.srk_cpa_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SrkCpaPhaseResult {
+    /// The compressibility factor at the chosen root.
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    pub ln_phi: Vec<f64>,
+    /// The residual enthalpy, real minus ideal gas at the same state.
+    pub h_res: MolarEnergy,
+    /// The residual entropy, real minus ideal gas at the same state.
+    pub s_res: MolarHeatCapacity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SrkCpaPhaseResult {
+    const CALC_ID: &'static str = "eos.srk_cpa_phase";
+    const FIELDS: &'static [&'static str] = &["z_factor", "ln_phi", "h_res", "s_res", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
