@@ -65,12 +65,18 @@ citation = "EXAMPLE - not the accepted value."
 # unit = "m**3/mol"
 
 # Overrides or extends `data/components/kij.csv`. A pair is unordered.
+#
+# `value` is the classical parameter a cubic's rule reads. The two `cpa_value_*` are the
+# associating columns, one per cubic family, and are optional: they are separate fits of
+# the same pair rather than one converted, so a card may state either, both, or neither.
 [[kij]]
 component_a = "methane"
 component_b = "n-butane"
 value = 0.0135
 citation = "EXAMPLE ROW - DUMMY VALUE, not from any standard. Replace with your own."
 # temperature_k, where the source gives one.
+# cpa_value_srk = -0.153
+# cpa_value_pr = -0.153
 
 # A constant a calculation takes as an argument, keyed by calculation id and then by
 # input name. An explicit argument always wins over the card. The inner key is quoted

@@ -196,7 +196,7 @@ pub const NEQSIM_INTERNAL_TO_SI: f64 = 1.0e-5;
 /// Water's `kappa_AB` is 0.0692 for SRK against 0.046473789 for PR, and its fitted
 /// covolume is 1.4515 against 1.456360879 - so choosing is a selection, not a
 /// conversion, and reading the wrong family is a different fluid.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AssociationCubic {
     /// The SRK family - `aCPA_SRK`, `bCPA_SRK`, `mCPA_SRK`, `associationboundingvolume_SRK`.
     Srk,

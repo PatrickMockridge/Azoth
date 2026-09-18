@@ -82,7 +82,7 @@
     },
     "kij": {
       "x-azoth-stage": "runtime",
-      "description": "Binary interaction parameters, overriding or extending `data/components/kij.csv`. An array of rows rather than a map, because the key is a *pair*. These are the values a cubic's mixing rule reads.",
+      "description": "Binary interaction parameters, overriding or extending `data/components/kij.csv`. An array of rows rather than a map, because the key is a *pair*. A row states one to three parameters, because an associating mixture mixes with a different column of the same table: `value` is `KIJPR`, which a cubic's classical rule reads, and the two `cpa_value_*` are `cpakij_SRK`/`cpakij_PR`, which an associating one reads. They are separate columns with separate fits - water/methanol is -0.153 against -0.0789 - so stating one is not stating the other.",
       "type": "array",
       "minItems": 1,
       "items": {
@@ -91,7 +91,18 @@
           "citation": { "$ref": "calc.schema.json#/$defs/citation" },
           "component_a": { "type": "string", "minLength": 1 },
           "component_b": { "type": "string", "minLength": 1 },
-          "value": { "type": "number" },
+          "value": {
+            "type": "number",
+            "description": "The classical interaction parameter, dimensionless. Required even where the row is about an associating mixture: an absent value would leave the shipped one in force, so a card stating only a `cpa_value_*` would look like it overrode a column it did not."
+          },
+          "cpa_value_srk": {
+            "type": "number",
+            "description": "The associating interaction parameter of the SRK family, dimensionless. Optional: a pair the card does not name keeps the shipped value."
+          },
+          "cpa_value_pr": {
+            "type": "number",
+            "description": "The same for the PR family, which is a different fit rather than a conversion."
+          },
           "temperature_k": {
             "type": "number",
             "exclusiveMinimum": 0,

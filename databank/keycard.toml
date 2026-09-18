@@ -14898,16 +14898,22 @@ unit = "dimensionless"
 component_a = "1-propanol"
 component_b = "c-hexane"
 value = 0.0
+cpa_value_srk = 0.029
+cpa_value_pr = 0.029
 
 [[kij]]
 component_a = "1-propanol"
 component_b = "n-hexane"
 value = 0.0
+cpa_value_srk = 0.017
+cpa_value_pr = 0.017
 
 [[kij]]
 component_a = "1-propanol"
 component_b = "water"
 value = 0.0
+cpa_value_srk = -0.16
+cpa_value_pr = -0.16
 
 [[kij]]
 component_a = "2-m-c5"
@@ -15168,11 +15174,15 @@ value = 0.5
 component_a = "acetic acid"
 component_b = "mdea"
 value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "ammonia"
 component_b = "water"
 value = -0.0789
+cpa_value_srk = -0.153
+cpa_value_pr = -0.153
 
 [[kij]]
 component_a = "argon"
@@ -15183,6 +15193,8 @@ value = 0.0
 component_a = "argon"
 component_b = "methane"
 value = 0.0252
+cpa_value_srk = 0.0252
+cpa_value_pr = 0.0252
 
 [[kij]]
 component_a = "argon"
@@ -15213,6 +15225,8 @@ value = 0.0
 component_a = "benzene"
 component_b = "ethanol"
 value = 0.5
+cpa_value_srk = 0.022
+cpa_value_pr = 0.022
 
 [[kij]]
 component_a = "benzene"
@@ -15228,16 +15242,19 @@ value = 0.0
 component_a = "benzene"
 component_b = "meg"
 value = 0.2
+cpa_value_srk = 0.049
 
 [[kij]]
 component_a = "benzene"
 component_b = "methane"
 value = 0.0
+cpa_value_srk = 0.0209
 
 [[kij]]
 component_a = "benzene"
 component_b = "methanol"
 value = 0.5
+cpa_value_srk = 0.006
 
 [[kij]]
 component_a = "benzene"
@@ -15278,11 +15295,13 @@ value = 0.02
 component_a = "benzene"
 component_b = "teg"
 value = 0.2
+cpa_value_srk = 0.032
 
 [[kij]]
 component_a = "benzene"
 component_b = "water"
 value = 0.5
+cpa_value_srk = 0.0355
 
 [[kij]]
 component_a = "c-c4"
@@ -15458,6 +15477,8 @@ value = 0.5
 component_a = "c-c8"
 component_b = "co2"
 value = 0.1
+cpa_value_srk = 0.1
+cpa_value_pr = 0.1
 
 [[kij]]
 component_a = "c-c8"
@@ -15473,6 +15494,8 @@ value = 0.31
 component_a = "c-c8"
 component_b = "h2s"
 value = 0.04
+cpa_value_srk = 0.04
+cpa_value_pr = 0.04
 
 [[kij]]
 component_a = "c-c8"
@@ -15513,11 +15536,15 @@ value = 0.0
 component_a = "c-c8"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "c-c8"
 component_b = "nitrogen"
 value = 0.08
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "c-c8"
@@ -15553,6 +15580,8 @@ value = 0.0
 component_a = "c-hexane"
 component_b = "ethanol"
 value = 0.5
+cpa_value_srk = 0.033
+cpa_value_pr = 0.033
 
 [[kij]]
 component_a = "c-hexane"
@@ -15718,16 +15747,21 @@ value = 0.0
 component_a = "co2"
 component_b = "ethane"
 value = 0.12980001
+cpa_value_srk = 0.12
+cpa_value_pr = 0.12
 
 [[kij]]
 component_a = "co2"
 component_b = "mdea"
 value = 0.1
+cpa_value_srk = 0.3
 
 [[kij]]
 component_a = "co2"
 component_b = "methane"
 value = 0.0973
+cpa_value_srk = 0.0973
+cpa_value_pr = 0.0956
 
 [[kij]]
 component_a = "co2"
@@ -15738,6 +15772,8 @@ value = 0.0
 component_a = "co2"
 component_b = "nitric acid"
 value = 0.3012
+cpa_value_srk = 0.4012
+cpa_value_pr = 0.4012
 
 [[kij]]
 component_a = "co2"
@@ -15758,51 +15794,67 @@ value = 0.0
 component_a = "co2"
 component_b = "sulfuric acid"
 value = 0.3012
+cpa_value_srk = 0.3012
+cpa_value_pr = 0.3012
 
 [[kij]]
 component_a = "co2"
 component_b = "water"
 value = 0.184
+cpa_value_srk = -0.27686
 
 [[kij]]
 component_a = "cos"
 component_b = "meg"
 value = 0.0
+cpa_value_srk = 0.1
 
 [[kij]]
 component_a = "cos"
 component_b = "methane"
 value = 0.0
+cpa_value_srk = 0.01
 
 [[kij]]
 component_a = "cos"
 component_b = "teg"
 value = 0.0
+cpa_value_srk = 0.08
 
 [[kij]]
 component_a = "dea"
 component_b = "co2"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "ethane"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "ethanol"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "h2s"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "mdea"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
@@ -15813,61 +15865,83 @@ value = 1.0
 component_a = "dea"
 component_b = "methane"
 value = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "methanol"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "n-butane"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "n-heptane"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "n-pentane"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "nitrogen"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "propane"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "teg"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
 component_b = "water"
 value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "deg"
 component_b = "benzene"
 value = 0.2
+cpa_value_srk = 0.028
+cpa_value_pr = 0.028
 
 [[kij]]
 component_a = "deg"
 component_b = "co2"
 value = 0.2
+cpa_value_srk = -0.2674
 
 [[kij]]
 component_a = "deg"
@@ -15903,6 +15977,8 @@ value = 0.2
 component_a = "deg"
 component_b = "methanol"
 value = 0.0882
+cpa_value_srk = 0.0882
+cpa_value_pr = 0.0882
 
 [[kij]]
 component_a = "deg"
@@ -15913,6 +15989,8 @@ value = 0.2
 component_a = "deg"
 component_b = "n-heptane"
 value = 0.2
+cpa_value_srk = 0.065
+cpa_value_pr = 0.065
 
 [[kij]]
 component_a = "deg"
@@ -15948,26 +16026,35 @@ value = 0.0
 component_a = "deg"
 component_b = "toluene"
 value = 0.2
+cpa_value_srk = 0.046
+cpa_value_pr = 0.046
 
 [[kij]]
 component_a = "deg"
 component_b = "water"
 value = -0.1259
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
 
 [[kij]]
 component_a = "ethane"
 component_b = "1-propanol"
 value = 0.19
+cpa_value_srk = -0.3
 
 [[kij]]
 component_a = "ethane"
 component_b = "methane"
 value = 0.00295295
+cpa_value_srk = 0.00295295
+cpa_value_pr = 0.00295295
 
 [[kij]]
 component_a = "ethane"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.06
+cpa_value_pr = 0.06
 
 [[kij]]
 component_a = "ethane"
@@ -15978,11 +16065,14 @@ value = 0.0
 component_a = "ethanol"
 component_b = "co2"
 value = 0.5
+cpa_value_srk = 0.1131
 
 [[kij]]
 component_a = "ethanol"
 component_b = "ethane"
 value = 0.19
+cpa_value_srk = -0.055
+cpa_value_pr = -0.055
 
 [[kij]]
 component_a = "ethanol"
@@ -16003,21 +16093,27 @@ value = 0.0504
 component_a = "ethanol"
 component_b = "n-butane"
 value = 0.25
+cpa_value_srk = 0.005
 
 [[kij]]
 component_a = "ethanol"
 component_b = "n-heptane"
 value = 0.26
+cpa_value_srk = 0.008
+cpa_value_pr = 0.008
 
 [[kij]]
 component_a = "ethanol"
 component_b = "n-pentane"
 value = 0.26
+cpa_value_srk = -0.008
 
 [[kij]]
 component_a = "ethanol"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.5
+cpa_value_pr = 0.5
 
 [[kij]]
 component_a = "ethanol"
@@ -16033,6 +16129,7 @@ value = 0.5
 component_a = "ethanol"
 component_b = "propane"
 value = 0.22
+cpa_value_srk = 0.038
 
 [[kij]]
 component_a = "ethanol"
@@ -16043,26 +16140,36 @@ value = 0.2876
 component_a = "ethanol"
 component_b = "water"
 value = 0.0
+cpa_value_srk = -0.11
+cpa_value_pr = -0.11
 
 [[kij]]
 component_a = "ethanolpvtsim"
 component_b = "nbutanepvtsim"
 value = 0.26
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
 
 [[kij]]
 component_a = "ethanolpvtsim"
 component_b = "propanepvtsim"
 value = 0.0256
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
 
 [[kij]]
 component_a = "h2s"
 component_b = "co2"
 value = 0.12
+cpa_value_srk = 0.12
+cpa_value_pr = 0.12
 
 [[kij]]
 component_a = "h2s"
 component_b = "ethane"
 value = 0.07
+cpa_value_srk = 0.07
+cpa_value_pr = 0.07
 
 [[kij]]
 component_a = "h2s"
@@ -16078,6 +16185,8 @@ value = 0.2
 component_a = "h2s"
 component_b = "methane"
 value = 0.08
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "h2s"
@@ -16108,11 +16217,14 @@ value = 0.0
 component_a = "h2s"
 component_b = "propane"
 value = 0.07
+cpa_value_srk = 0.07
+cpa_value_pr = 0.07
 
 [[kij]]
 component_a = "h2s"
 component_b = "water"
 value = 0.03
+cpa_value_srk = 0.1913
 
 [[kij]]
 component_a = "helium"
@@ -16153,6 +16265,7 @@ value = 0.0
 component_a = "helium"
 component_b = "methanol"
 value = 0.5
+cpa_value_pr = 0.5
 
 [[kij]]
 component_a = "helium"
@@ -16203,11 +16316,15 @@ value = 0.5
 component_a = "hydrogen"
 component_b = "co2"
 value = 0.0362
+cpa_value_srk = 0.0362
+cpa_value_pr = 0.0362
 
 [[kij]]
 component_a = "hydrogen"
 component_b = "ethane"
 value = 0.0367
+cpa_value_srk = 0.0367
+cpa_value_pr = 0.0367
 
 [[kij]]
 component_a = "hydrogen"
@@ -16218,6 +16335,8 @@ value = 0.5
 component_a = "hydrogen"
 component_b = "h2s"
 value = 0.0831
+cpa_value_srk = 0.0831
+cpa_value_pr = 0.0831
 
 [[kij]]
 component_a = "hydrogen"
@@ -16233,6 +16352,8 @@ value = 0.2
 component_a = "hydrogen"
 component_b = "methane"
 value = 0.01
+cpa_value_srk = 0.01
+cpa_value_pr = 0.01
 
 [[kij]]
 component_a = "hydrogen"
@@ -16243,6 +16364,8 @@ value = 0.5
 component_a = "hydrogen"
 component_b = "n-butane"
 value = 0.1446
+cpa_value_srk = 0.1446
+cpa_value_pr = 0.1446
 
 [[kij]]
 component_a = "hydrogen"
@@ -16258,21 +16381,29 @@ value = 0.2166
 component_a = "hydrogen"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.0071
+cpa_value_pr = 0.0071
 
 [[kij]]
 component_a = "hydrogen"
 component_b = "nitrogen"
 value = 0.0071
+cpa_value_srk = 0.0071
+cpa_value_pr = 0.0071
 
 [[kij]]
 component_a = "hydrogen"
 component_b = "oxygen"
 value = 0.0079
+cpa_value_srk = 0.0079
+cpa_value_pr = 0.0079
 
 [[kij]]
 component_a = "hydrogen"
 component_b = "propane"
 value = 0.0799
+cpa_value_srk = 0.0799
+cpa_value_pr = 0.0799
 
 [[kij]]
 component_a = "hydrogen"
@@ -16288,6 +16419,8 @@ value = 0.5322
 component_a = "i-butane"
 component_b = "co2"
 value = 0.12980001
+cpa_value_srk = 0.12
+cpa_value_pr = 0.12
 
 [[kij]]
 component_a = "i-butane"
@@ -16298,11 +16431,14 @@ value = 0.00511365
 component_a = "i-butane"
 component_b = "ethanol"
 value = 0.25
+cpa_value_srk = 0.018
 
 [[kij]]
 component_a = "i-butane"
 component_b = "h2s"
 value = 0.06
+cpa_value_srk = 0.06
+cpa_value_pr = 0.06
 
 [[kij]]
 component_a = "i-butane"
@@ -16343,11 +16479,15 @@ value = 0.00081462
 component_a = "i-butane"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "i-butane"
 component_b = "nitrogen"
 value = 0.094999
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "i-butane"
@@ -16373,6 +16513,8 @@ value = 0.52
 component_a = "i-pentane"
 component_b = "co2"
 value = 0.125
+cpa_value_srk = 0.12
+cpa_value_pr = 0.12
 
 [[kij]]
 component_a = "i-pentane"
@@ -16388,6 +16530,8 @@ value = 0.26
 component_a = "i-pentane"
 component_b = "h2s"
 value = 0.06
+cpa_value_srk = 0.06
+cpa_value_pr = 0.06
 
 [[kij]]
 component_a = "i-pentane"
@@ -16413,6 +16557,7 @@ value = 0.26
 component_a = "i-pentane"
 component_b = "n-butane"
 value = 0.00092632
+cpa_value_srk = 0.00092632
 
 [[kij]]
 component_a = "i-pentane"
@@ -16428,11 +16573,15 @@ value = 0.00039999
 component_a = "i-pentane"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "i-pentane"
 component_b = "nitrogen"
 value = 0.094999
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "i-pentane"
@@ -16458,11 +16607,15 @@ value = 0.5
 component_a = "i-propanol"
 component_b = "water"
 value = 0.0
+cpa_value_srk = -0.08
+cpa_value_pr = -0.08
 
 [[kij]]
 component_a = "m-cy-c6"
 component_b = "meg"
 value = 0.0
+cpa_value_srk = 0.061
+cpa_value_pr = 0.061
 
 [[kij]]
 component_a = "mdea"
@@ -16513,16 +16666,20 @@ value = 0.0
 component_a = "mdea"
 component_b = "water"
 value = 0.0
+cpa_value_srk = -0.25
 
 [[kij]]
 component_a = "meg"
 component_b = "co2"
 value = 0.2
+cpa_value_srk = -0.028353
 
 [[kij]]
 component_a = "meg"
 component_b = "ethane"
 value = 0.2
+cpa_value_srk = 0.1153
+cpa_value_pr = 0.1153
 
 [[kij]]
 component_a = "meg"
@@ -16533,6 +16690,8 @@ value = 0.0
 component_a = "meg"
 component_b = "methane"
 value = 0.2
+cpa_value_srk = 0.134
+cpa_value_pr = 0.134
 
 [[kij]]
 component_a = "meg"
@@ -16543,6 +16702,8 @@ value = 0.074
 component_a = "meg"
 component_b = "n-heptane"
 value = 0.08
+cpa_value_srk = 0.047
+cpa_value_pr = 0.047
 
 [[kij]]
 component_a = "meg"
@@ -16563,6 +16724,8 @@ value = 0.2
 component_a = "meg"
 component_b = "propane"
 value = 0.2
+cpa_value_srk = 0.1132
+cpa_value_pr = 0.1132
 
 [[kij]]
 component_a = "mercury"
@@ -16638,11 +16801,13 @@ value = 0.0
 component_a = "mercury"
 component_b = "n-heptane"
 value = -0.0117
+cpa_value_srk = -0.1
 
 [[kij]]
 component_a = "mercury"
 component_b = "n-hexane"
 value = 0.0099
+cpa_value_srk = -0.075
 
 [[kij]]
 component_a = "mercury"
@@ -16653,6 +16818,7 @@ value = -0.0293
 component_a = "mercury"
 component_b = "n-pentane"
 value = 0.0256
+cpa_value_srk = 0.02
 
 [[kij]]
 component_a = "mercury"
@@ -16693,6 +16859,7 @@ value = -0.084172
 component_a = "methane"
 component_b = "1-propanol"
 value = 0.19
+cpa_value_srk = -0.04
 
 [[kij]]
 component_a = "methane"
@@ -16703,21 +16870,28 @@ value = 0.0
 component_a = "methane"
 component_b = "methanol"
 value = 0.13
+cpa_value_srk = 0.0134
+cpa_value_pr = 0.0134
 
 [[kij]]
 component_a = "methane"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.02
+cpa_value_pr = 0.02
 
 [[kij]]
 component_a = "methanol"
 component_b = "co2"
 value = 0.023
+cpa_value_srk = 0.068
 
 [[kij]]
 component_a = "methanol"
 component_b = "ethane"
 value = 0.19
+cpa_value_srk = 0.014
+cpa_value_pr = 0.014
 
 [[kij]]
 component_a = "methanol"
@@ -16728,16 +16902,21 @@ value = 0.0
 component_a = "methanol"
 component_b = "n-butane"
 value = 0.25
+cpa_value_srk = 0.05
 
 [[kij]]
 component_a = "methanol"
 component_b = "n-heptane"
 value = 0.26
+cpa_value_srk = -0.002
+cpa_value_pr = -0.002
 
 [[kij]]
 component_a = "methanol"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.5
+cpa_value_pr = 0.5
 
 [[kij]]
 component_a = "methanol"
@@ -16748,31 +16927,42 @@ value = 0.5
 component_a = "methanol"
 component_b = "propane"
 value = 0.22
+cpa_value_srk = 0.026
 
 [[kij]]
 component_a = "methanol"
 component_b = "water"
 value = -0.0789
+cpa_value_srk = -0.153
+cpa_value_pr = -0.153
 
 [[kij]]
 component_a = "methanolpvtsim"
 component_b = "nbutanepvtsim"
 value = 0.18
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
 
 [[kij]]
 component_a = "methanolpvtsim"
 component_b = "propanepvtsim"
 value = 0.14
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
 
 [[kij]]
 component_a = "methanolpvtsim"
 component_b = "water"
 value = -0.0789
+cpa_value_srk = -0.09
+cpa_value_pr = -0.09
 
 [[kij]]
 component_a = "n-butane"
 component_b = "co2"
 value = 0.12980001
+cpa_value_srk = 0.12
+cpa_value_pr = 0.12
 
 [[kij]]
 component_a = "n-butane"
@@ -16783,6 +16973,8 @@ value = 0.00464288
 component_a = "n-butane"
 component_b = "h2s"
 value = 0.06
+cpa_value_srk = 0.06
+cpa_value_pr = 0.06
 
 [[kij]]
 component_a = "n-butane"
@@ -16798,11 +16990,15 @@ value = 0.01289789
 component_a = "n-butane"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "n-butane"
 component_b = "nitrogen"
 value = 0.1007
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "n-butane"
@@ -16818,6 +17014,8 @@ value = 0.00132268
 component_a = "n-heptane"
 component_b = "co2"
 value = 0.1
+cpa_value_srk = 0.1
+cpa_value_pr = 0.1
 
 [[kij]]
 component_a = "n-heptane"
@@ -16848,11 +17046,15 @@ value = 0.0
 component_a = "n-heptane"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "n-heptane"
 component_b = "nitrogen"
 value = 0.142199993
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "n-heptane"
@@ -16868,11 +17070,14 @@ value = 0.0
 component_a = "n-heptane"
 component_b = "water"
 value = 0.5
+cpa_value_srk = 0.0095
 
 [[kij]]
 component_a = "n-hexane"
 component_b = "co2"
 value = 0.12
+cpa_value_srk = 0.12
+cpa_value_pr = 0.12
 
 [[kij]]
 component_a = "n-hexane"
@@ -16883,11 +17088,15 @@ value = 0.0
 component_a = "n-hexane"
 component_b = "ethanol"
 value = 0.28
+cpa_value_srk = 0.01
+cpa_value_pr = 0.01
 
 [[kij]]
 component_a = "n-hexane"
 component_b = "h2s"
 value = 0.05
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "n-hexane"
@@ -16898,6 +17107,7 @@ value = 0.0
 component_a = "n-hexane"
 component_b = "meg"
 value = 0.2
+cpa_value_srk = 0.059
 
 [[kij]]
 component_a = "n-hexane"
@@ -16908,6 +17118,7 @@ value = 0.023474067
 component_a = "n-hexane"
 component_b = "methanol"
 value = 0.28
+cpa_value_srk = 0.001
 
 [[kij]]
 component_a = "n-hexane"
@@ -16928,11 +17139,15 @@ value = 0.0
 component_a = "n-hexane"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "n-hexane"
 component_b = "nitrogen"
 value = 0.08
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "n-hexane"
@@ -16948,11 +17163,13 @@ value = 0.0
 component_a = "n-hexane"
 component_b = "teg"
 value = 0.2
+cpa_value_srk = 0.07
 
 [[kij]]
 component_a = "n-hexane"
 component_b = "water"
 value = 0.5
+cpa_value_srk = 0.0355
 
 [[kij]]
 component_a = "n-nonane"
@@ -16963,6 +17180,8 @@ value = 0.100000001
 component_a = "n-nonane"
 component_b = "h2s"
 value = 0.0542
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "n-nonane"
@@ -16978,11 +17197,13 @@ value = 0.079999998
 component_a = "n-nonane"
 component_b = "teg"
 value = 0.0
+cpa_value_srk = 0.1
 
 [[kij]]
 component_a = "n-nonane"
 component_b = "water"
 value = 0.5
+cpa_value_srk = -0.0425
 
 [[kij]]
 component_a = "n-octane"
@@ -17003,16 +17224,20 @@ value = 0.079999998
 component_a = "n-octane"
 component_b = "teg"
 value = 0.0
+cpa_value_srk = 0.109
 
 [[kij]]
 component_a = "n-octane"
 component_b = "water"
 value = 0.5
+cpa_value_srk = -0.0165
 
 [[kij]]
 component_a = "n-pentane"
 component_b = "co2"
 value = 0.125
+cpa_value_srk = 0.12
+cpa_value_pr = 0.12
 
 [[kij]]
 component_a = "n-pentane"
@@ -17023,6 +17248,8 @@ value = 0.00811359
 component_a = "n-pentane"
 component_b = "h2s"
 value = 0.06
+cpa_value_srk = 0.06
+cpa_value_pr = 0.06
 
 [[kij]]
 component_a = "n-pentane"
@@ -17043,21 +17270,27 @@ value = 0.01847102
 component_a = "n-pentane"
 component_b = "methanol"
 value = 0.26
+cpa_value_srk = 0.051
 
 [[kij]]
 component_a = "n-pentane"
 component_b = "n-butane"
 value = 0.00097665
+cpa_value_srk = 0.00097665
 
 [[kij]]
 component_a = "n-pentane"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "n-pentane"
 component_b = "nitrogen"
 value = 0.1
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "n-pentane"
@@ -17073,6 +17306,7 @@ value = 0.00316586
 component_a = "n-pentane"
 component_b = "water"
 value = 0.5
+cpa_value_srk = 0.0615
 
 [[kij]]
 component_a = "nc10"
@@ -17088,11 +17322,14 @@ value = 0.041099999
 component_a = "nc10"
 component_b = "nitrogen"
 value = 0.1293
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "nc10"
 component_b = "teg"
 value = 0.0
+cpa_value_srk = 0.091
 
 [[kij]]
 component_a = "nc11"
@@ -17108,11 +17345,15 @@ value = 0.0
 component_a = "nitrogen"
 component_b = "ethane"
 value = 0.0388
+cpa_value_srk = 0.031899
+cpa_value_pr = 0.031899
 
 [[kij]]
 component_a = "nitrogen"
 component_b = "methane"
 value = 0.0319
+cpa_value_srk = 0.02
+cpa_value_pr = 0.02
 
 [[kij]]
 component_a = "nitrogen"
@@ -17128,16 +17369,21 @@ value = 0.0
 component_a = "nitrogen"
 component_b = "oxygen"
 value = -0.0078
+cpa_value_srk = -0.0078
+cpa_value_pr = -0.0078
 
 [[kij]]
 component_a = "nitrogen"
 component_b = "propane"
 value = 0.079998
+cpa_value_srk = 0.0886
+cpa_value_pr = 0.0886
 
 [[kij]]
 component_a = "nitrogen"
 component_b = "water"
 value = 0.48
+cpa_value_srk = -1.389072518
 
 [[kij]]
 component_a = "oxygen"
@@ -17153,16 +17399,21 @@ value = 0.0
 component_a = "oxygen"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = -0.0078
+cpa_value_pr = -0.0078
 
 [[kij]]
 component_a = "oxygen"
 component_b = "water"
 value = 0.5
+cpa_value_srk = -1.088749036
 
 [[kij]]
 component_a = "piperazine"
 component_b = "methane"
 value = 0.0
+cpa_value_srk = 0.646504377
+cpa_value_pr = 0.646504377
 
 [[kij]]
 component_a = "piperazine"
@@ -17173,11 +17424,15 @@ value = 0.0
 component_a = "propane"
 component_b = "co2"
 value = 0.13500001
+cpa_value_srk = 0.12
+cpa_value_pr = 0.12
 
 [[kij]]
 component_a = "propane"
 component_b = "ethane"
 value = 0.00185286
+cpa_value_srk = 0.00185286
+cpa_value_pr = 0.00185286
 
 [[kij]]
 component_a = "propane"
@@ -17188,11 +17443,15 @@ value = 0.0
 component_a = "propane"
 component_b = "methane"
 value = 0.00747722
+cpa_value_srk = 0.00747722
+cpa_value_pr = 0.00747722
 
 [[kij]]
 component_a = "propane"
 component_b = "neon"
 value = 0.0
+cpa_value_srk = 0.08
+cpa_value_pr = 0.08
 
 [[kij]]
 component_a = "propane"
@@ -17203,76 +17462,105 @@ value = 0.0
 component_a = "s8"
 component_b = "benzene"
 value = 0.05
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "ethane"
 value = 0.05
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "i-butane"
 value = -0.08
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "i-pentane"
 value = -0.08
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "methane"
 value = 0.1
+cpa_value_srk = 0.1
+cpa_value_pr = 0.1
 
 [[kij]]
 component_a = "s8"
 component_b = "n-butane"
 value = -0.08
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "n-heptane"
 value = -0.08
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "n-hexane"
 value = -0.08
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "n-octane"
 value = -0.08
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "n-pentane"
 value = -0.08
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "propane"
 value = 0.05
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "toluene"
 value = 0.05
+cpa_value_srk = 0.05
+cpa_value_pr = 0.05
 
 [[kij]]
 component_a = "s8"
 component_b = "water"
 value = 0.2
+cpa_value_srk = 0.2
+cpa_value_pr = 0.2
 
 [[kij]]
 component_a = "teg"
 component_b = "co2"
 value = 0.2
+cpa_value_srk = 0.0157
 
 [[kij]]
 component_a = "teg"
 component_b = "ethane"
 value = 0.2
+cpa_value_srk = 0.11
+cpa_value_pr = 0.11
 
 [[kij]]
 component_a = "teg"
@@ -17283,11 +17571,13 @@ value = 0.2
 component_a = "teg"
 component_b = "meg"
 value = 0.0059
+cpa_value_srk = -0.025
 
 [[kij]]
 component_a = "teg"
 component_b = "methane"
 value = 0.2
+cpa_value_srk = 0.13
 
 [[kij]]
 component_a = "teg"
@@ -17298,11 +17588,14 @@ value = 0.1817
 component_a = "teg"
 component_b = "n-butane"
 value = 0.2
+cpa_value_srk = 0.1
 
 [[kij]]
 component_a = "teg"
 component_b = "n-heptane"
 value = 0.2
+cpa_value_srk = 0.11
+cpa_value_pr = 0.094
 
 [[kij]]
 component_a = "teg"
@@ -17328,11 +17621,15 @@ value = 0.2
 component_a = "teg"
 component_b = "propane"
 value = 0.2
+cpa_value_srk = 0.13
+cpa_value_pr = 0.13
 
 [[kij]]
 component_a = "teg"
 component_b = "water"
 value = -0.2035
+cpa_value_srk = -0.27
+cpa_value_pr = -0.27
 
 [[kij]]
 component_a = "toluene"
@@ -17348,6 +17645,8 @@ value = 0.0
 component_a = "toluene"
 component_b = "ethanol"
 value = 0.5
+cpa_value_srk = 0.02
+cpa_value_pr = 0.02
 
 [[kij]]
 component_a = "toluene"
@@ -17363,6 +17662,7 @@ value = 0.0
 component_a = "toluene"
 component_b = "meg"
 value = 0.2
+cpa_value_srk = 0.051
 
 [[kij]]
 component_a = "toluene"
@@ -17413,11 +17713,13 @@ value = 0.0
 component_a = "toluene"
 component_b = "teg"
 value = 0.2
+cpa_value_srk = 0.038
 
 [[kij]]
 component_a = "toluene"
 component_b = "water"
 value = 0.5
+cpa_value_srk = 0.0095
 
 [[kij]]
 component_a = "water"
@@ -17433,28 +17735,39 @@ value = 0.635
 component_a = "water"
 component_b = "meg"
 value = -0.0385
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
 
 [[kij]]
 component_a = "water"
 component_b = "megpvtsim18"
 value = -0.0385
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
 
 [[kij]]
 component_a = "water"
 component_b = "megpvtsim19"
 value = -0.0385
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
 
 [[kij]]
 component_a = "water"
 component_b = "methane"
 value = 0.651
+cpa_value_srk = -0.827413423
+cpa_value_pr = 0.161199631
 
 [[kij]]
 component_a = "water"
 component_b = "n-butane"
 value = 0.52
+cpa_value_srk = 0.0875
 
 [[kij]]
 component_a = "water"
 component_b = "propane"
 value = 0.53
+cpa_value_srk = 0.11
+cpa_value_pr = 0.1135

@@ -339,13 +339,14 @@ pub struct Overlay {
     components: HashMap<String, ComponentOverride>,
     /// Overrides by lower-cased pair, stored both ways round.
     kij: HashMap<(String, String), f64>,
-    /// Overrides of the *associating* interaction column, by the same key.
+    /// Overrides of the *associating* interaction columns, keyed by pair and family.
     ///
     /// A separate map because it is a separate column: NeqSim's CPA rule reads
     /// `cpakij_SRK`/`cpakij_PR` and a classical mixture reads `KIJPR`, and on
     /// water/methanol they differ by a factor of two. A card stating one is not stating
-    /// the other, so neither may stand in for the other.
-    cpa_kij: HashMap<(String, String), f64>,
+    /// the other, so neither may stand in for the other - and the family is part of the
+    /// key because the two `cpakij` columns are two fits rather than one converted.
+    cpa_kij: HashMap<(String, String, AssociationCubic), f64>,
 }
 
 impl Overlay {
@@ -407,12 +408,18 @@ impl Overlay {
         Ok(self)
     }
 
-    /// Override one pair's *associating* interaction parameter.
+    /// Override one pair's *associating* interaction parameter, at one cubic family.
     ///
     /// # Errors
     /// * [`AzothError::InvalidInput`] if both names are the same substance, for the reason
     ///   [`Self::set_kij`] refuses one.
-    pub fn set_cpa_kij(&mut self, first: &str, second: &str, value: f64) -> Result<&mut Self> {
+    pub fn set_cpa_kij(
+        &mut self,
+        first: &str,
+        second: &str,
+        cubic: AssociationCubic,
+        value: f64,
+    ) -> Result<&mut Self> {
         let a = first.trim().to_lowercase();
         let b = second.trim().to_lowercase();
         if a == b {
@@ -421,16 +428,21 @@ impl Overlay {
                 format!("`{a}` does not interact with itself"),
             ));
         }
-        self.cpa_kij.insert((a.clone(), b.clone()), value);
-        self.cpa_kij.insert((b, a), value);
+        self.cpa_kij.insert((a.clone(), b.clone(), cubic), value);
+        self.cpa_kij.insert((b, a, cubic), value);
         Ok(self)
     }
 
-    /// This overlay's statement about a pair's associating interaction, if it makes one.
+    /// This overlay's statement about a pair's associating interaction at one family, if
+    /// it makes one.
     #[must_use]
-    pub fn cpa_kij_value(&self, first: &str, second: &str) -> Option<f64> {
+    pub fn cpa_kij_value(&self, first: &str, second: &str, cubic: AssociationCubic) -> Option<f64> {
         self.cpa_kij
-            .get(&(first.trim().to_lowercase(), second.trim().to_lowercase()))
+            .get(&(
+                first.trim().to_lowercase(),
+                second.trim().to_lowercase(),
+                cubic,
+            ))
             .copied()
     }
 
@@ -1108,7 +1120,7 @@ pub fn cpa_kij(
     let mut out = vec![0.0; n * n];
     for i in 0..n {
         for j in 0..n {
-            if let Some(value) = overlay.and_then(|o| o.cpa_kij_value(names[i], names[j])) {
+            if let Some(value) = overlay.and_then(|o| o.cpa_kij_value(names[i], names[j], cubic)) {
                 out[i * n + j] = value;
                 continue;
             }

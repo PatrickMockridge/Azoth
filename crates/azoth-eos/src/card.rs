@@ -19,7 +19,7 @@ use azoth_core::unit_vocab_gen::{dimension, si_factor};
 use azoth_core::{AzothError, Result};
 use serde::Deserialize;
 
-use crate::association::SiteScheme;
+use crate::association::{AssociationCubic, SiteScheme};
 use crate::databank::{AssociationOverride, ComponentOverride, Overlay};
 
 /// The keycard format version this reader understands. A card declaring anything else
@@ -110,6 +110,12 @@ pub struct Parameter {
 }
 
 /// One binary interaction parameter.
+///
+/// A row states up to three, one per column of the interaction table. The classical
+/// `value` is required and the associating pair is not, which is the direction the
+/// refusal has to point: an absent `cpa_value_*` leaves the shipped column in force, and
+/// an absent `value` would leave a card looking like it had overridden a column it had
+/// not.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct KijRow {
@@ -117,8 +123,12 @@ pub struct KijRow {
     pub component_a: String,
     /// The other. The two are unordered: `a`/`b` and `b`/`a` name one pair.
     pub component_b: String,
-    /// The parameter, dimensionless.
+    /// The classical parameter, `KIJPR`, dimensionless.
     pub value: f64,
+    /// The associating parameter of the SRK family, `cpakij_SRK`, dimensionless.
+    pub cpa_value_srk: Option<f64>,
+    /// The same for the PR family, which is a separate fit rather than a conversion.
+    pub cpa_value_pr: Option<f64>,
     /// The temperature it was fitted at, where the source says.
     ///
     /// Carried and not read, which is how the format states it: nothing here
@@ -592,6 +602,14 @@ fn resolve_kij(overlay: &mut Overlay, kij: Option<&Vec<KijRow>>) -> Result<()> {
             ));
         }
         overlay.set_kij(&row.component_a, &row.component_b, row.value)?;
+        for (value, cubic) in [
+            (row.cpa_value_srk, AssociationCubic::Srk),
+            (row.cpa_value_pr, AssociationCubic::Pr),
+        ] {
+            if let Some(value) = value {
+                overlay.set_cpa_kij(&row.component_a, &row.component_b, cubic, value)?;
+            }
+        }
     }
     Ok(())
 }

@@ -516,6 +516,24 @@ def _kij() -> dict[tuple[str, str], float]:
 
 
 @cache
+def _cpa_kij() -> dict[tuple[str, str], tuple[float, float]]:
+    """The associating interaction columns, keyed by the ordered pair.
+
+    `(srk, pr)`, which are two fits rather than one converted. A separate reader from
+    :func:`_kij` because it is a separate column of the same file: NeqSim's
+    `CPAMixingRuleHandler` reads these and a classical rule reads `KIJPR`, and on
+    water/methanol they differ by a factor of two.
+    """
+    pairs: dict[tuple[str, str], tuple[float, float]] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        a, b = row["component_a"], row["component_b"]
+        columns = (float(row["cpakij_srk"]), float(row["cpakij_pr"]))
+        pairs[(a, b)] = columns
+        pairs[(b, a)] = columns
+    return pairs
+
+
+@cache
 def _nrtl() -> dict[tuple[str, str], tuple[float, float]]:
     """NRTL `(alpha, gij)`, keyed by ordered pair and stored both ways round.
 
@@ -740,6 +758,47 @@ def kij_for(
             stored = _kij().get((a.strip().lower(), names[j].strip().lower()))
             if stored is not None and stored != 0.0:
                 pairs[(i, j)] = stored
+    return pairs
+
+
+#: The associating interaction columns, and the cubic families each belongs to. The two
+#: are separate fits, and a family is chosen by the cubic the mixture runs - Soave's shape
+#: reads `cpakij_srk` and Peng-Robinson's `cpakij_pr`.
+CPA_FAMILIES: tuple[str, ...] = ("srk", "pr")
+
+
+def cpa_kij_for(
+    names: tuple[str, ...], family: str, *, card: keycard.Keycard | None = None
+) -> dict[tuple[int, int], float]:
+    """The *associating* interaction pairs for a list of components, by index.
+
+    The sibling of :func:`kij_for` for the column an associating model reads, with the
+    same rules: an unlisted pair is zero, and a keycard's value wins over the databank's
+    including when it is exactly zero.
+
+    ``family`` is one of :data:`CPA_FAMILIES` and is required rather than defaulted,
+    because the two columns are separate fits and a default would be a silent choice
+    between two different fluids.
+
+    Raises:
+        InvalidInputError: if `family` is not one of :data:`CPA_FAMILIES`.
+    """
+    if family not in CPA_FAMILIES:
+        raise InvalidInputError(
+            "family",
+            f"{family!r} is not an associating cubic family; expected one of {list(CPA_FAMILIES)}",
+        )
+    column = CPA_FAMILIES.index(family)
+    pairs: dict[tuple[int, int], float] = {}
+    for i, a in enumerate(names):
+        for j in range(i + 1, len(names)):
+            from_keycard = card.cpa_kij_for(a, names[j], family) if card is not None else None
+            if from_keycard is not None:
+                pairs[(i, j)] = from_keycard
+                continue
+            stored = _cpa_kij().get((a.strip().lower(), names[j].strip().lower()))
+            if stored is not None and stored[column] != 0.0:
+                pairs[(i, j)] = stored[column]
     return pairs
 
 

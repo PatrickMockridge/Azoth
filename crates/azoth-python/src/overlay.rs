@@ -125,6 +125,49 @@ pub fn overlay_kij_rows(overlay: &PyOverlay) -> Vec<(String, String, f64)> {
         .collect()
 }
 
+/// Every *associating* interaction pair a card states, resolved, each pair once.
+///
+/// The sibling of [`overlay_kij_rows`] for the other column, and resolved for the same
+/// reason: what is compared is the value an associating mixing rule would read rather
+/// than what the card wrote, so a card's override - including a zero - is visible.
+///
+/// # Errors
+/// * `InvalidInputError` if `family` is not `"srk"` or `"pr"`.
+#[pyfunction]
+pub fn overlay_cpa_kij_rows(
+    py: Python<'_>,
+    overlay: &PyOverlay,
+    family: &str,
+) -> PyResult<Vec<(String, String, f64)>> {
+    let cubic = match family {
+        "srk" => azoth_eos::association::AssociationCubic::Srk,
+        "pr" => azoth_eos::association::AssociationCubic::Pr,
+        other => {
+            return Err(crate::errors::to_pyerr(
+                py,
+                azoth_core::AzothError::invalid_input(
+                    "family",
+                    format!(
+                        "{other:?} is not an associating cubic family; expected \"srk\" or \"pr\""
+                    ),
+                ),
+            ));
+        }
+    };
+    Ok(overlay
+        .as_overlay()
+        .kij_pairs()
+        .into_iter()
+        .map(|(first, second)| {
+            // A pair resolved through the pair-wise entry point, which is what a
+            // `Mixture`'s own reduced parameters call; the two names are the whole list.
+            let names = [first.as_str(), second.as_str()];
+            let value = azoth_eos::databank::cpa_kij(&names, cubic, Some(overlay.as_overlay()))[1];
+            (first, second, value)
+        })
+        .collect())
+}
+
 /// One coefficient as it crosses: `(calc_id, name, unit, rows, cols, values)`.
 ///
 /// A tuple rather than a class because nothing on this side reads it - the Python side

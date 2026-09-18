@@ -202,6 +202,10 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     ("overlay_entry_row(name: str, overlay: Overlay)", "ComponentRow"),
     ("overlay_component_rows(overlay: Overlay)", "list[ComponentRow]"),
     ("overlay_kij_rows(overlay: Overlay)", "list[tuple[str, str, float]]"),
+    (
+        "overlay_cpa_kij_rows(overlay: Overlay, family: str)",
+        "list[tuple[str, str, float]]",
+    ),
     ("warning_codes()", "list[str]"),
     ("unit_names()", "list[str]"),
     ("solver_kinds()", "list[str]"),

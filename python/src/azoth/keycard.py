@@ -139,6 +139,7 @@ class Keycard:
     components: Mapping[str, Mapping[str, Q]] = field(default_factory=dict)
     associations: Mapping[str, Association] = field(default_factory=dict)
     kij: Mapping[tuple[str, str], float] = field(default_factory=dict)
+    cpa_kij: Mapping[tuple[str, str, str], float] = field(default_factory=dict)
     coefficients: Mapping[str, Mapping[str, Q]] = field(default_factory=dict)
     conventions: Mapping[str, Mapping[str, str]] = field(default_factory=dict)
     models: Mapping[str, Model] = field(default_factory=dict)
@@ -175,6 +176,17 @@ class Keycard:
         """An interaction parameter for a pair, in either order, or ``None``."""
         first, second = sorted((a.strip().lower(), b.strip().lower()))
         return self.kij.get((first, second))
+
+    def cpa_kij_for(self, a: str, b: str, family: str) -> float | None:
+        """The *associating* interaction parameter for a pair at one cubic family.
+
+        ``family`` is ``"srk"`` or ``"pr"``, and it is part of the key because the two
+        are separate fits rather than one converted: water/methanol is ``-0.153`` in
+        both here, but the column is the source's own and nothing derives one from the
+        other.
+        """
+        first, second = sorted((a.strip().lower(), b.strip().lower()))
+        return self.cpa_kij.get((first, second, family))
 
     def __repr__(self) -> str:
         holder = self.keyholder or "unnamed"
@@ -256,12 +268,14 @@ def use(document: Any, *, path: Path | None = None) -> Keycard:
             f"is data that looks in use and is not.",
         )
 
+    kij, cpa_kij = _kij(document.get("kij"), where)
     return Keycard(
         keyholder=_keyholder(document, where),
         licence=_licence(document),
         components=_components(document.get("components"), where),
         associations=_associations(document.get("associations"), where),
-        kij=_kij(document.get("kij"), where),
+        kij=kij,
+        cpa_kij=cpa_kij,
         coefficients=_coefficients(document.get("coefficients"), where, "coefficients"),
         conventions=_conventions(document.get("coefficients")),
         models=_models(document.get("models"), where),
@@ -419,13 +433,24 @@ def _associations(raw: Any, where: str) -> dict[str, Association]:
     return out
 
 
-def _kij(raw: Any, where: str) -> dict[tuple[str, str], float]:
+def _kij(
+    raw: Any, where: str
+) -> tuple[dict[tuple[str, str], float], dict[tuple[str, str, str], float]]:
+    """The interaction rows, as the classical parameter and the associating pair.
+
+    One walk producing two maps, because it is one document with two columns: `value` is
+    ``KIJPR`` and the two ``cpa_value_*`` are ``cpakij_SRK``/``cpakij_PR``. They are
+    separate columns with separate fits - water/methanol is ``-0.153`` against
+    ``-0.0789`` - so neither may stand in for the other, and the family is part of the
+    second map's key rather than a pair carrying one value.
+    """
+    classical: dict[tuple[str, str], float] = {}
+    associating: dict[tuple[str, str, str], float] = {}
     if raw is None:
-        return {}
+        return classical, associating
     if not isinstance(raw, list):
         raise KeycardError(where, "`kij` must be a list of rows")
 
-    out: dict[tuple[str, str], float] = {}
     for index, row in enumerate(raw):
         field_name = f"kij[{index}]"
         if not isinstance(row, Mapping):
@@ -444,8 +469,15 @@ def _kij(raw: Any, where: str) -> dict[tuple[str, str], float]:
                 f"with itself, and a self-pair would silently rescale its attraction.",
             )
         first, second = sorted((a.strip().lower(), b.strip().lower()))
-        out[(first, second)] = float(value)
-    return out
+        classical[(first, second)] = float(value)
+        for key, family in (("cpa_value_srk", "srk"), ("cpa_value_pr", "pr")):
+            stated = row.get(key)
+            if stated is None:
+                continue
+            if not isinstance(stated, int | float) or isinstance(stated, bool):
+                raise KeycardError(where, f"`{field_name}` needs a numeric `{key}`")
+            associating[(first, second, family)] = float(stated)
+    return classical, associating
 
 
 def _coefficients(raw: Any, where: str, section: str) -> dict[str, dict[str, Q]]:

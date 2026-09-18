@@ -562,3 +562,89 @@ fn the_baseline_card_resolves_to_the_table_it_was_generated_from() {
         "the associating substances the table carries"
     );
 }
+
+/// A `kij` row's associating columns reach the column an associating mixture reads.
+///
+/// The row states three parameters of one pair, and the two columns are separate fits:
+/// water/methanol is `-0.153` in `cpakij_SRK`, so a card overriding only the SRK one must
+/// leave the PR one at the table's value rather than carrying the override across.
+#[test]
+fn a_kij_row_states_the_associating_columns_beside_the_classical_one() {
+    use azoth_eos::association::AssociationCubic;
+
+    let card = Card::from_toml(&a_card(
+        "[[kij]]\ncomponent_a = \"water\"\ncomponent_b = \"methanol\"\nvalue = -0.0789\n\
+         cpa_value_srk = -0.08\ncpa_value_pr = -0.31\n",
+    ))
+    .expect("a valid card");
+    let overlay = card.overlay();
+    let names = ["water", "methanol"];
+
+    assert_eq!(
+        databank::cpa_kij(&names, AssociationCubic::Srk, Some(overlay))[1],
+        -0.08
+    );
+    assert_eq!(
+        databank::cpa_kij(&names, AssociationCubic::Pr, Some(overlay))[1],
+        -0.31
+    );
+    // And the classical column is the card's too, not either of the other two.
+    let (classical, _) = databank::mixture_of(&names, Some(overlay)).expect("a mixture");
+    assert!((classical.kij(0, 1) - -0.0789).abs() < 1.0e-12);
+}
+
+/// A `kij` row still needs its classical value, and a card that omits one is refused
+/// rather than read as stating the associating column alone.
+#[test]
+fn a_kij_row_without_the_classical_value_is_refused() {
+    let error = Card::from_toml(&a_card(
+        "[[kij]]\ncomponent_a = \"water\"\ncomponent_b = \"methanol\"\ncpa_value_srk = -0.08\n",
+    ))
+    .expect_err("`value` is required");
+
+    assert!(format!("{error}").contains("value"), "{error}");
+}
+
+/// The shipped baseline card's interaction rows are the table's, in all three columns.
+///
+/// The companion of the components test, for the half of the card that is keyed by a pair
+/// rather than a name. A row the generator emits with a `cpa_value_*` is asserting a value
+/// for a column, so a crossing that was applied in the wrong direction - or a row written
+/// against the wrong column - would show here and nowhere else.
+#[test]
+fn the_baseline_cards_pairs_are_the_tables() {
+    use azoth_eos::association::AssociationCubic;
+
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../databank/keycard.toml");
+    let card = Card::from_path(&path).expect("the baseline card is one this build reads");
+
+    let mut pairs = card.overlay().kij_pairs();
+    pairs.sort();
+    assert!(pairs.len() > 400, "the shipped pairs are the table's");
+
+    let mut associating = 0;
+    for (first, second) in pairs {
+        let names = [first.as_str(), second.as_str()];
+        assert_eq!(
+            databank::kij(&first, &second, Some(card.overlay())),
+            databank::kij(&first, &second, None),
+            "{first}/{second}: the classical column"
+        );
+        for family in [AssociationCubic::Srk, AssociationCubic::Pr] {
+            let carded = databank::cpa_kij(&names, family, Some(card.overlay()))[1];
+            let table = databank::cpa_kij(&names, family, None)[1];
+            assert_eq!(carded, table, "{first}/{second}: the {family:?} column");
+            if table != 0.0 {
+                associating += 1;
+            }
+        }
+    }
+
+    // Counted over the shipped pairs at both families, of which the generator writes only
+    // the non-zero ones. A generator that dropped the column entirely would leave this at
+    // zero and the loop above comparing nothing but zeros.
+    assert_eq!(
+        associating, 313,
+        "the non-zero associating cells the table has"
+    );
+}

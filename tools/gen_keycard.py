@@ -144,11 +144,20 @@ def render() -> str:
     kij = [r for r in kij if r["component_a"] != r["component_b"]]
     kij.sort(key=lambda r: (r["component_a"], r["component_b"]))
     for row in kij:
+        # The associating columns only where the table has one: a stated zero would be a
+        # card overriding a pair back to ideal mixing, which is a claim, and the table's
+        # own zero is already the default.
+        associating = "".join(
+            f"{card} = {row[column]}\n"
+            for card, column in (("cpa_value_srk", "cpakij_srk"), ("cpa_value_pr", "cpakij_pr"))
+            if float(row[column]) != 0.0
+        )
         parts.append(
             f"\n[[kij]]\n"
             f"component_a = {json.dumps(row['component_a'])}\n"
             f"component_b = {json.dumps(row['component_b'])}\n"
             f"value = {row['kij_pr']}\n"
+            f"{associating}"
         )
 
     return "".join(parts)

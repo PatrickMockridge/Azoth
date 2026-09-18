@@ -603,10 +603,19 @@ fn the_associating_interaction_column_is_its_own() {
 
     let mut overlay = databank::Overlay::new();
     overlay
-        .set_cpa_kij("water", "methanol", -0.08)
+        .set_cpa_kij("water", "methanol", AssociationCubic::Srk, -0.08)
         .expect("a pair");
     let carded = databank::cpa_kij(&names, AssociationCubic::Srk, Some(&overlay));
     assert!((carded[1] - -0.08).abs() < 1.0e-12, "the card's value wins");
+    // The family is part of the key, so an SRK override is not a PR one.
+    let pr_table = databank::cpa_kij(&names, AssociationCubic::Pr, None);
+    let pr_carded = databank::cpa_kij(&names, AssociationCubic::Pr, Some(&overlay));
+    assert!(
+        (pr_carded[1] - pr_table[1]).abs() < 1.0e-12,
+        "the PR column is its own: {} against the table's {}",
+        pr_carded[1],
+        pr_table[1]
+    );
 
     // And the classical column is untouched by a CPA override, in both directions.
     let (classical, _) = databank::mixture_of(&names, Some(&overlay)).expect("a mixture");

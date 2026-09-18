@@ -164,6 +164,62 @@ def test_the_two_readers_refuse_the_same_association_unit() -> None:
         rust_card(text)
 
 
+#: One pair, three columns. `water/methanol` ships `-0.0789` classical against `-0.153`
+#: associating, so a reader that read one column for the other is visible; and the two
+#: associating columns are overridden to different values, so a reader that keyed them by
+#: pair alone is visible too.
+TRANSPORTED_KIJ_CARD = (
+    "schema_version = 2\n"
+    "[[kij]]\n"
+    'component_a = "water"\ncomponent_b = "methanol"\nvalue = -0.0789\n'
+    "cpa_value_srk = -0.08\ncpa_value_pr = -0.31\n"
+)
+
+
+def test_the_two_readers_resolve_the_same_associating_pairs() -> None:
+    """The associating interaction columns, resolved on both sides.
+
+    A separate comparison from the classical one because they are separate columns of the
+    same table, and because the family is what selects between them: the two are fits
+    rather than one converted, so a card may state one and not the other.
+    """
+    card = python_card(TRANSPORTED_KIJ_CARD)
+    overlay = rust_card(TRANSPORTED_KIJ_CARD)
+
+    # In the order the Rust pairs come in - the lower-sorting name first - so the pair the
+    # comparison names is the pair `cpa_kij_for` indexes by.
+    names = ("methanol", "water")
+    for family in components.CPA_FAMILIES:
+        theirs = _core.overlay_cpa_kij_rows(overlay, family)
+        assert theirs, f"the card states no pair, so nothing was compared for {family}"
+
+        mine = components.cpa_kij_for(names, family, card=card)
+        for first, second, value in theirs:
+            index = (names.index(first), names.index(second))
+            assert index in mine, f"{family} {first}/{second} resolved to nothing"
+            assert value == pytest.approx(mine[index]), f"{family} {first}/{second}"
+
+    assert card.cpa_kij_for("methanol", "water", "srk") == pytest.approx(-0.08)
+    assert card.cpa_kij_for("methanol", "water", "pr") == pytest.approx(-0.31)
+
+
+def test_a_card_states_a_cpa_pair_without_the_classical_one_only_by_stating_both() -> None:
+    """`value` is required, and both readers say so.
+
+    An absent classical value would leave the shipped one in force, so a row carrying only
+    a `cpa_value_*` would look like it had overridden a column it had not.
+    """
+    text = (
+        'schema_version = 2\n[[kij]]\ncomponent_a = "water"\n'
+        'component_b = "methanol"\ncpa_value_srk = -0.08\n'
+    )
+
+    with pytest.raises(KeycardError, match="value"):
+        python_card(text)
+    with pytest.raises(InvalidInputError, match="value"):
+        rust_card(text)
+
+
 def test_the_two_readers_resolve_the_same_pairs() -> None:
     """Every interaction pair, compared as the value a mixing rule would read."""
     text = TEMPLATE.read_text(encoding="utf-8")
