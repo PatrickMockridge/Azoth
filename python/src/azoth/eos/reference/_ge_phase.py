@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import Any, NamedTuple
 
+from azoth.core.errors import InvalidInputError
 from azoth.core.warnings import Warning
 from azoth.eos.reference.antoine_vapor_pressure import antoine_vapor_pressure
 
@@ -44,6 +45,21 @@ def saturation(antoine: Any, t_k: float) -> tuple[list[float], list[Warning]]:
     warnings: list[Warning] = []
     p_sat: list[float] = []
     for i in range(len(antoine.antoine_type)):
+        # **A `none` row is refused rather than evaluated.** It is upstream's marker for an
+        # *unavailable* correlation - `83b64e5`, PR #3775 - and an activity-coefficient
+        # phase's standard state **is** `P0`, so a component without one cannot be in this
+        # phase. Sent to Wagner the row's five zeros give `exp(0) * Pc = Pc`: a plausible
+        # number four orders of magnitude wrong, which is the failure this library exists to
+        # make impossible. The rust kernel refuses at the same place.
+        if antoine.antoine_type[i] == "none":
+            raise InvalidInputError(
+                "components",
+                "the component at index "
+                f"{i} has no vapour-pressure correlation: its `AntoineVapPresLiqType` is "
+                "`none`, upstream's marker for unavailable data. An activity-coefficient "
+                "phase's standard state is the pure liquid's saturation pressure, so a "
+                "component without one cannot be in this phase",
+            )
         start = i * 5
         [a, b, c, d, e] = antoine.antoine_coefficients[start : start + 5]
         saturated = antoine_vapor_pressure(

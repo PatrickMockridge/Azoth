@@ -87,18 +87,18 @@ fn a_non_zero_exponent_selects_the_dippr_form() {
     use azoth_eos::form_from_type;
 
     // The fix: the same label, two different forms, decided by `E`.
-    assert_eq!(form_from_type("log", 2.0), Dippr101);
-    assert_eq!(form_from_type("log", 0.0), Exp);
-    assert_eq!(form_from_type("exp", 2.0), Dippr101);
+    assert_eq!(form_from_type("log", 2.0), Some(Dippr101));
+    assert_eq!(form_from_type("log", 0.0), Some(Exp));
+    assert_eq!(form_from_type("exp", 2.0), Some(Dippr101));
 
     // `pow10` and `pow10KPa` keep precedence: their coefficients are log10-based and
     // would not survive the exponential form, so a non-zero `E` does not outrank them.
-    assert_eq!(form_from_type("pow10", 2.0), Pow10);
-    assert_eq!(form_from_type("pow10KPa", 2.0), Pow10Kpa);
+    assert_eq!(form_from_type("pow10", 2.0), Some(Pow10));
+    assert_eq!(form_from_type("pow10KPa", 2.0), Some(Pow10Kpa));
 
     // `loglog`/`log10` still fall through to Wagner, which NeqSim has not changed.
-    assert_eq!(form_from_type("loglog", 0.0), Wagner);
-    assert_eq!(form_from_type("log10", 0.0), Wagner);
+    assert_eq!(form_from_type("loglog", 0.0), Some(Wagner));
+    assert_eq!(form_from_type("log10", 0.0), Some(Wagner));
 }
 
 /// The DIPPR form is `exp(A + B/T + C ln T + D T**E)` in pascals.

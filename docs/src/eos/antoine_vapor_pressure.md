@@ -65,6 +65,8 @@ These are **not** checked at runtime. They are what the caller has to
 satisfy for the result to mean what it says.
 
 
+- `none` is a **marker, not a form**, and is not in `form`'s vocabulary: upstream added it in `83b64e5` (PR #3775) for a row whose correlation is *unavailable*, coefficients zero. Wagner on those zeros returns `exp(0)*Pc`, so `nc12` reports `1.82e6 Pa` where its value is `42 Pa`. `_ge_phase` refuses.
+
 - the five coefficients are the raw `ANTOINEA`-`ANTOINEE` NeqSim ships, in its internal unit, and the `1e5` factors recover pascals from NeqSim's bar output. NOT CHECKED - the coefficients come from the caller.
 
 - `form` selects one of five correlations; the raw `AntoineVapPresLiqType` labels map as `pow10` -> `pow10`, `pow10KPa` -> `pow10kpa`, `exp`/`log` -> `exp`, `loglog`/`log10` -> `wagner` (NeqSim's dispatch has no branch for those two), and any other label with a non-zero `E` -> `dippr101`.
@@ -75,7 +77,7 @@ satisfy for the result to mean what it says.
 
 - `Tc` and `Pc` are used only by the Wagner form; the other three ignore them.
 
-- the coefficients are a heterogeneous upstream mix, dominated by a single filler default `(-7.76451, 1.45838, -2.7758, -1.23303)` on the `log` rows, which yields a near-constant pressure rather than a physical one - an upstream data-quality matter this calc reproduces, not repairs.
+- the coefficients are a heterogeneous upstream mix, and 93 of this databank's rows carry one repeated filler tuple on a `log` label, which yields a near-constant pressure rather than a physical one. Upstream has since marked those rows `none`.
 
 
 

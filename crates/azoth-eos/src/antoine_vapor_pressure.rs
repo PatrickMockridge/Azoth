@@ -81,17 +81,29 @@ impl std::str::FromStr for AntoineForm {
 /// `exp` and `log` are otherwise one formula under two names, and `loglog`/`log10`
 /// have no branch in NeqSim's dispatch, so they fall through to Wagner - a defect this
 /// reproduces rather than silently repairs.
+///
+/// **`none` is not a form, and it is `None` here rather than a fall-through.** It is the
+/// marker upstream added in `83b64e5` (PR #3775) for a row whose correlation is
+/// *unavailable*: 313 of its 389 rows now carry it, with all five coefficients zero. Sent
+/// to Wagner those coefficients give `exp(0) * Pc = Pc`, so an unavailable correlation
+/// would come back as the component's **critical pressure** - measured, `1.82e6 Pa` for
+/// `nc12`, whose vapour pressure there is about `42 Pa`. A plausible number wrong by four
+/// orders of magnitude is the failure this library exists to make impossible, so the
+/// marker is returned as an absence and the caller refuses.
 #[must_use]
-pub fn form_from_type(label: &str, e: f64) -> AntoineForm {
-    if e.abs() > 1e-12 && label != "pow10" && label != "pow10KPa" {
-        return AntoineForm::Dippr101;
+pub fn form_from_type(label: &str, e: f64) -> Option<AntoineForm> {
+    if label == "none" {
+        return None;
     }
-    match label {
+    if e.abs() > 1e-12 && label != "pow10" && label != "pow10KPa" {
+        return Some(AntoineForm::Dippr101);
+    }
+    Some(match label {
         "pow10" => AntoineForm::Pow10,
         "pow10KPa" => AntoineForm::Pow10Kpa,
         "exp" | "log" => AntoineForm::Exp,
         _ => AntoineForm::Wagner,
-    }
+    })
 }
 
 /// The pure-component vapour pressure at a temperature, from NeqSim's correlation.

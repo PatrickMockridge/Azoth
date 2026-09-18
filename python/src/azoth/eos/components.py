@@ -198,7 +198,12 @@ class DatabankEntry:
 
     def antoine_form(self) -> str:
         """The cleaned Antoine form this entry's coefficients belong to, one of
-        ``"dippr101"``, ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or ``"wagner"``."""
+        ``"dippr101"``, ``"pow10"``, ``"pow10kpa"``, ``"exp"`` or ``"wagner"``.
+
+        **The empty string means the row has no correlation at all** - its label is
+        ``none``, upstream's marker for unavailable data - and a caller must refuse rather
+        than evaluate. See :func:`form_from_type`.
+        """
         return form_from_type(self.antoine_type, self.antoine[4])
 
     def __repr__(self) -> str:
@@ -300,7 +305,17 @@ def form_from_type(label: str, e: float) -> str:
     ``exp`` and ``log`` are otherwise one formula under two names, and
     ``loglog``/``log10`` have no branch in NeqSim's dispatch, so they fall through to
     Wagner - a defect this reproduces rather than silently repairs.
+
+    **``none`` is not a form, and it is empty here rather than a fall-through.** It is
+    the marker upstream added in ``83b64e5`` (PR #3775) for a row whose correlation is
+    *unavailable*: 313 of its 389 rows now carry it, with all five coefficients zero.
+    Sent to Wagner those give ``exp(0) * Pc = Pc``, so an unavailable correlation would
+    come back as the component's **critical pressure** - measured, ``1.82e6 Pa`` for
+    ``nc12``, whose vapour pressure there is about ``42 Pa``. A caller that gets ``""``
+    back must refuse, as :func:`azoth.eos.reference._ge_phase.saturation` does.
     """
+    if label == "none":
+        return ""
     if abs(e) > 1e-12 and label not in ("pow10", "pow10KPa"):
         return "dippr101"
     if label == "pow10":

@@ -14,6 +14,8 @@ does on the same numbers.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
 
 from azoth.core.errors import InvalidInputError, PropertyUnavailableError
@@ -301,3 +303,39 @@ def test_the_databank_resolves_a_dippr_row_to_the_dippr_form() -> None:
     # And a row with no exponent is unaffected.
     assert databank.entry("methanol").antoine[4] == 0.0
     assert databank.entry("methanol").antoine_form() == "pow10"
+
+
+def test_an_unavailable_correlation_is_a_marker_and_not_a_form() -> None:
+    """`none` is upstream's marker, and the number it must not become.
+
+    NeqSim `83b64e5` (PR #3775) marks a row whose correlation is *unavailable* `none`, with
+    all five coefficients zero - 313 of its 389 rows. Sent to Wagner those zeros give
+    `exp(0) * Pc`, so an unavailable correlation comes back as the component's **critical
+    pressure**: measured, 1.82e6 Pa for `nc12`, whose vapour pressure there is about 42 Pa.
+    Four orders of magnitude, and entirely plausible, which is the failure this library
+    exists to make impossible.
+
+    **The test is synthetic because the defect is not yet reachable.** The vendored
+    `COMP.csv` is the 2026-09-13 snapshot, in which no row carries the marker, so this
+    constructs the row the refresh will bring and checks the refusal is in place first.
+    """
+    from azoth.core.errors import InvalidInputError
+    from azoth.eos.components import form_from_type
+    from azoth.eos.reference._ge_phase import saturation
+
+    # The label is a marker, not a form.
+    assert form_from_type("none", 0.0) == ""
+
+    # And the fall-through it must not break: NeqSim's own unmapped labels still resolve.
+    assert form_from_type("loglog", 0.0) == "wagner"
+    assert form_from_type("log", 0.0) == "exp"
+
+    class _Record:
+        antoine_type: ClassVar[list[str]] = ["none"]
+        antoine_coefficients: ClassVar[list[float]] = [0.0, 0.0, 0.0, 0.0, 0.0]
+        antoine_tc: ClassVar[list[float]] = [658.0]
+        antoine_pc: ClassVar[list[float]] = [1.82e6]
+
+    with pytest.raises(InvalidInputError) as excinfo:
+        saturation(_Record(), 298.15)
+    assert "no vapour-pressure correlation" in str(excinfo.value)
