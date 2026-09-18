@@ -160,6 +160,17 @@ public final class CpaSweep {
     {"dFCPAdNdN[1][0]", "ComponentSrkCPA.dFCPAdNdN(0, phase, n, T, P)", "NOT d_ln_phi_dn[1][0]", ""},
     {"dFCPAdNdN[1][1]", "ComponentSrkCPA.dFCPAdNdN(1, phase, n, T, P)", "NOT d_ln_phi_dn[1][1]", ""},
     // --- the fugacity ----------------------------------------------------------------
+    // **How NeqSim assembles the cubic `ln phi` at all**, which is not the textbook
+    // expression azoth writes: `ComponentEos.fugcoef` is `dFdN_i - ln Z` and
+    // `ComponentEos.dFdN` is `Fn() + FB()*getBi() + FD()*getAi()`, so the cubic part is
+    // these three phase functions contracted with the component's own `Bi` and `Ai`. A
+    // disagreement in `lnPhi` that the root, `A`, `B` and `kij` do not explain has to be
+    // in one of them, and until this row existed there was no way to see which.
+    {"Fn", "PhaseEos.Fn()", "no single azoth counterpart", "d(F/RT)/dn, the total-moles term"},
+    {"FB", "PhaseEos.FB()", "no single azoth counterpart", "d(F/RT)/dB"},
+    {"FD", "PhaseEos.FD()", "no single azoth counterpart", "d(F/RT)/dA"},
+    {"dFdN[0]", "ComponentEos.dFdN(phase, n, T, P)", "cubic ln_phi[0] + ln Z", "water"},
+    {"dFdN[1]", "ComponentEos.dFdN(phase, n, T, P)", "cubic ln_phi[1] + ln Z", "methanol"},
     {"lnPhi[0]", "log(ComponentSrkCPA.getFugacityCoefficient())", "PhaseState.ln_phi[0]", "water"},
     {"lnPhi[1]", "log(ComponentSrkCPA.getFugacityCoefficient())", "PhaseState.ln_phi[1]", "methanol"},
     // `calc_lngi` is d ln g / dn_i and is the derivative the fugacity term is weighted by.
@@ -262,6 +273,11 @@ public final class CpaSweep {
     }
     row.put("xsiteTotal", String.valueOf(site));
 
+    // The three phase functions `ComponentEos.dFdN` contracts with `Bi` and `Ai`.
+    put(row, "Fn", phase.Fn());
+    put(row, "FB", phase.FB());
+    put(row, "FD", phase.FD());
+
     put(row, "FCPA", ((PhaseSrkCPA) phase).FCPA());
     put(row, "dFCPAdV", ((PhaseSrkCPA) phase).dFCPAdV());
     put(row, "dFCPAdT", ((PhaseSrkCPA) phase).dFCPAdT());
@@ -269,6 +285,7 @@ public final class CpaSweep {
       ComponentSrkCPA cpa = (ComponentSrkCPA) phase.getComponent(i);
       put(row, "dFCPAdN[" + i + "]", cpa.dFCPAdN(phase, n, temperature, pressure));
       put(row, "lnPhi[" + i + "]", Math.log(cpa.getFugacityCoefficient()));
+      put(row, "dFdN[" + i + "]", cpa.dFdN(phase, n, temperature, pressure));
       for (int j = 0; j < n; j++) {
         put(row, "dFCPAdNdN[" + i + "][" + j + "]",
             cpa.dFCPAdNdN(j, phase, n, temperature, pressure));

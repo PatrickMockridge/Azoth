@@ -954,3 +954,82 @@ fn the_cpa_liquid_root_is_found_at_low_pressure() {
         vapour.z
     );
 }
+
+/// azoth's cubic `ln phi` is the textbook expression, and NeqSim's is not.
+///
+/// **A three-way comparison, because a two-way one cannot say which side is wrong.** The
+/// sweep (`validation/neqsim/CpaSweep.java`) says NeqSim's `lnPhi[0]` and its `dFCPAdN[0]`
+/// differ from azoth's by `0.0328` in their cubic part, while the root, `A_mix`, `B_mix`,
+/// `kij`, the fitted `a`/`b` and the entire association agree to ten digits. So either
+/// azoth's expression is wrong, or NeqSim's is not the expression it appears to be.
+///
+/// The expression below is standard Soave-Redlich-Kwong, written out here from azoth's own
+/// intermediates rather than called from azoth. It agrees with `Mixture::phase_state` to
+/// fifteen digits, which settles the first possibility: azoth evaluates the textbook
+/// formula, correctly.
+///
+/// **And NeqSim does not evaluate it.** `ComponentEos.fugcoef` is `dFdN_i - ln Z` and
+/// `ComponentEos.dFdN` is `phase.Fn() + phase.FB() * getBi() + phase.FD() * getAi()` -
+/// the chain rule in the *unnormalised* `dA/dn_i` and `dB/dn_i`, which is why
+/// `EosMixingRuleHandler.calcAi` returns a row sum and why NeqSim's `Ai` measures as
+/// twice azoth's `abar` at every state. azoth's `factor_i` carries the *normalised*
+/// `2 (abar_i - A)/A` instead, and the `Fn` term is where NeqSim absorbs the difference.
+///
+/// So the divergence is a difference of assembly, not of physics, and it is unresolved:
+/// `PhaseEos.getg`, `getf_loc`, `gb` and `fb` need reading in full before either side can
+/// be called wrong. This test pins both facts so the question cannot quietly close.
+#[test]
+fn the_cubic_ln_phi_is_the_textbook_expression_and_neqsims_is_not() {
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_eos::{Cubic, RootSide};
+
+    let (mixture, _) = databank::associating_mixture_of(&["water", "methanol"], Cubic::Srk, None)
+        .expect("water and methanol bond");
+    let (t, p) = (356.0, 1.0e5);
+    let x = [0.6, 0.4];
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("reduced parameters");
+    let state = mixture
+        .phase_state(&reduced, &x, RootSide::Vapour)
+        .expect("a vapour root");
+    let association = mixture.association().expect("an associating mixture");
+    let covolumes: Vec<f64> = reduced.b.iter().map(|b| b * 8.3144621 * t / p).collect();
+    let kernel = association
+        .solve(&covolumes, &x, state.z * 8.3144621 * t / p, t)
+        .expect("a solvable state");
+
+    let (z, b_red) = (state.z, state.b_mix);
+    let (d1, d2) = (Cubic::Srk.delta1(), Cubic::Srk.delta2());
+    let i_term = ((z + d1 * b_red) / (z + d2 * b_red)).ln();
+    let coefficient = state.a_mix / ((d1 - d2) * b_red);
+
+    // NeqSim's `lnPhi[i]` and `dFCPAdN[i]` at this state, from `CpaSweep 356 1 0.6`. Their
+    // difference is NeqSim's cubic part.
+    let neqsim_cubic = [
+        -0.038_499_945_545_132_2 - -0.085_911_899_466_216_2,
+        -0.069_416_678_113_187_5 - -0.113_824_565_989_815,
+    ];
+
+    for (i, &neqsim) in neqsim_cubic.iter().enumerate() {
+        let abar: f64 = (0..2)
+            .map(|j| x[j] * (1.0 - mixture.kij(i, j)) * (reduced.a[i] * reduced.a[j]).sqrt())
+            .sum();
+        let b_ratio = reduced.b[i] / b_red;
+        let factor = 2.0 * abar / state.a_mix - b_ratio;
+        let independent = b_ratio * (z - 1.0) - (z - b_red).ln() - coefficient * factor * i_term;
+
+        let azoth_cubic = state.ln_phi[i] - kernel.ln_phi[i];
+        assert!(
+            (azoth_cubic / independent - 1.0).abs() < 1.0e-12,
+            "component {i}: azoth's cubic ln phi is {azoth_cubic} but the textbook \
+             expression from azoth's own a, b, z and kij is {independent}"
+        );
+        assert!(
+            (neqsim / azoth_cubic - 1.0).abs() > 1.0,
+            "component {i}: NeqSim's cubic part {neqsim} is meant to differ from azoth's \
+             {azoth_cubic} - if it no longer does, the finding above is closed and this \
+             test should become the equality it is not",
+        );
+    }
+}
