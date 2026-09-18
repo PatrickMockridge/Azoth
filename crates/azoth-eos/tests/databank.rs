@@ -502,3 +502,40 @@ fn the_only_blank_association_cells_are_pr_volumes_on_zero_rows() {
         assert!(!a.scheme.self_bonds(), "{name} is a 1A component");
     }
 }
+
+/// The association parameters reach the thing a model is handed, not just the table.
+///
+/// The path is table -> `Entry` -> `Component` -> `Mixture`, and a break anywhere in it
+/// leaves a CPA model silently running on critical constants - which for water is 45%
+/// wrong on the covolume and is not a difference any test downstream would attribute to
+/// the loader.
+#[test]
+fn a_mixture_carries_its_components_association_parameters() {
+    use azoth_eos::association::SiteScheme;
+
+    let (mixture, _) = databank::mixture_of(&["water", "methane"], None).expect("a mixture");
+    let water = mixture.components()[0]
+        .association
+        .as_ref()
+        .expect("water names a scheme");
+    assert_eq!(water.scheme, SiteScheme::FourC);
+    assert!((water.energy - 16655.0).abs() < 1e-9);
+    assert!((water.b_srk - 1.4515).abs() < 1e-9);
+
+    // And a component the table gives no scheme to stays without one, rather than
+    // inheriting a neighbour's.
+    assert!(
+        mixture.components()[1].association.is_none(),
+        "methane is not associating"
+    );
+}
+
+/// A mixture with no associating component says so, rather than failing.
+#[test]
+fn a_mixture_of_non_associating_components_has_none() {
+    let (mixture, _) = databank::mixture_of(&["methane", "n-butane"], None).expect("a mixture");
+    assert!(
+        mixture.components().iter().all(|c| c.association.is_none()),
+        "neither methane nor n-butane names a scheme"
+    );
+}

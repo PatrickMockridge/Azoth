@@ -201,10 +201,16 @@ pub struct Entry {
 
 impl Entry {
     /// The cubic's record for this substance.
+    ///
+    /// Carries the association parameters when the table gives it a scheme, because a
+    /// substance's description is not only its critical constants - see
+    /// [`AssociationRecord`], which is why an associating equation of state cannot be
+    /// built from `Tc` and `Pc` alone.
     pub fn component(&self) -> Result<Component> {
         Ok(
             Component::new(kelvins(self.tc), pascals(self.pc), self.omega)?
-                .with_molar_mass(self.molar_mass),
+                .with_molar_mass(self.molar_mass)
+                .with_association(self.association.clone()),
         )
     }
 }

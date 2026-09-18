@@ -15,6 +15,7 @@ use crate::alpha_term::{
     Alpha, AlphaTerm, Danesh, Delft1998, Gassem2001, MatCop, MatCopFallback, Mollerup, RkAlpha,
     Schwartzentruber, Soave, TwuCoon, matcop_kappa, umr_kappa,
 };
+use crate::association::AssociationRecord;
 use crate::cubic::Cubic;
 use crate::mixing_rule::MixingRule;
 use crate::{
@@ -118,6 +119,13 @@ pub struct Component {
     /// [`crate::pr_peneloux_shift`] or [`crate::srk_peneloux_shift`] is one source; a
     /// fitted constant is another.
     pub volume_shift: f64,
+    /// The association parameters, or `None` for a component with no site scheme.
+    ///
+    /// **A component that carries this is not described by its critical constants
+    /// alone.** Its attraction and covolume are fitted - water's `b` is 1.4515e-5
+    /// m³/mol against `0.08664 R Tc/Pc`'s 2.11e-5 - so an associating equation of state
+    /// reads this in place of what the cubic would derive.
+    pub association: Option<AssociationRecord>,
 }
 
 impl Component {
@@ -151,7 +159,18 @@ impl Component {
             molar_mass: None,
             alpha_params: Vec::new(),
             volume_shift: 0.0,
+            association: None,
         })
+    }
+
+    /// This component, with its association parameters attached.
+    ///
+    /// Only an associating equation of state reads them; a cubic ignores the field, as
+    /// it ignores the alpha parameters of a correlation it is not using.
+    #[must_use]
+    pub fn with_association(mut self, association: Option<AssociationRecord>) -> Self {
+        self.association = association;
+        self
     }
 
     /// This component, with its molar mass attached.
