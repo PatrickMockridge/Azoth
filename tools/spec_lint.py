@@ -542,12 +542,29 @@ def check_identity_model(report: Report, rel: Path, spec: dict[str, Any]) -> Non
             )
 
 
+#: The keys a case may state that the model does not take.
+#:
+#: A case names its fluid by component names and the runner resolves them; `associating`
+#: is part of that resolution rather than of the model's signature, so it may appear in a
+#: case's inputs and must not be handed to the function. Named here rather than matched by
+#: a rule, because each one is a decision about the boundary.
+BOUNDARY_KEYS = frozenset({"associating", "eos"})
+
+
 def check_model_cases(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     """Every case's inputs and expected outputs name declared quantities.
 
     A case naming an input the model does not take, or asserting an output it does
     not produce, is a test nothing can run - and the failure would otherwise be a
     KeyError in the generated table rather than a lint error here.
+
+    **Except for a boundary key**, which is a property of the *runner* rather than
+    of the model. A case states its fluid as component names, and the runner resolves
+    them through the databank; whether that fluid runs the Wertheim association is
+    part of how the runner builds it, because the model takes the mixture whole and
+    would have nothing to say about a second, possibly contradictory, argument beside
+    it. The set is closed and named here rather than matched by pattern, so a new one
+    is a decision.
     """
     inputs = set(spec["inputs"])
     outputs = set(spec["outputs"])
@@ -559,7 +576,7 @@ def check_model_cases(report: Report, rel: Path, spec: dict[str, Any]) -> None:
             report.error(str(rel), f"duplicate case id '{case_id}'")
         seen.add(case_id)
 
-        unknown_inputs = sorted(set(case["inputs"]) - inputs)
+        unknown_inputs = sorted(set(case["inputs"]) - inputs - BOUNDARY_KEYS)
         if unknown_inputs:
             report.error(
                 str(rel),
@@ -574,10 +591,14 @@ def check_model_cases(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                 f"not declare as outputs. Declared: {sorted(outputs)}",
             )
 
-        if len(case["inputs"]) != len(inputs):
+        # The *declared* inputs the case provides: a boundary key is not an input, and
+        # `eos` is a boundary key for one model and a declared input for another
+        # (`ge_nrtl_flash` declares it, because its vapour is half of what it is).
+        supplied = set(case["inputs"]) & inputs
+        if len(supplied) != len(inputs):
             report.warn(
                 str(rel),
-                f"case '{case_id}' supplies {len(case['inputs'])} of {len(inputs)} "
+                f"case '{case_id}' supplies {len(supplied)} of {len(inputs)} "
                 f"inputs; a case that leaves one out is not reproducing the model's "
                 f"whole signature.",
             )

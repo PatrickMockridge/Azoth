@@ -3150,6 +3150,33 @@ static PT_FLASH_CASES: &[TestCase] = &[
             ),
         ],
     },
+    TestCase {
+        id: "water_methanol_cpa_at_356_k_and_1_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("associating", 1.0), ("T", 356.0), ("P", 100000.0)],
+        lists: &[("components", &["water", "methanol"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.6, 0.4])],
+        matrices: &[],
+        expected: &[
+            ("beta", 0.208383589004737),
+            ("z_liquid", 0.000876327166634292),
+            ("z_vapour", 0.941152554938007),
+            ("min_t_over_tc", 0.5499768268190948),
+            ("iterations", 12.0),
+        ],
+        expected_vectors: &[
+            ("x", &[0.674266566871552, 0.325733433128448]),
+            ("y", &[0.317873017714004, 0.682126982285996]),
+            ("k", &[0.4714352354611679, 2.094126401893144]),
+            ("ln_phi_liquid", &[-0.789379766771299, 0.668790784130641]),
+            ("ln_phi_vapour", &[-0.0374062219152301, -0.070345690341699]),
+        ],
+    },
 ];
 
 static PT_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {

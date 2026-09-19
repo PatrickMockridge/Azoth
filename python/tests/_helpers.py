@@ -423,6 +423,9 @@ def kwargs_for(calc: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, 
 #: they still matched. `components` is a list of names, and `mixture_of` resolves it
 #: against the databank - the same call, reading the same file, in both languages.
 _MODEL_COMPONENTS_INPUT = "components"
+#: The key a case uses to say its fluid runs the Wertheim association. A boundary key:
+#: the runner builds the fluid with it, and the model is handed the mixture whole.
+_ASSOCIATING_KEY = "associating"
 
 
 def range_checks_that_may_skip(spec_: Mapping[str, Any]) -> set[str]:
@@ -492,7 +495,19 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             # flash does, because its vapour is half of what it is. The declaration is
             # what builds the mixture, so a case states its own vapour rather than
             # inheriting whatever `mixture_of` defaults to.
-            fluid, ideal_gas = databank.mixture_of(list(names), eos=inputs.get("eos", "pr"))
+            #
+            # **`associating` is the same kind of statement**, and without it no case in
+            # this registry could exercise an associating model at all: the runner would
+            # build every fluid as a classical one, and a model whose whole behaviour
+            # changes with the Wertheim term would be tested against the wrong fluid while
+            # answering a plausible one. It is the model's decision - the same methanol
+            # and water are a classical mixture under an SRK model and an associating one
+            # under a CPA model - so a case that wants it says so.
+            fluid, ideal_gas = databank.mixture_of(
+                list(names),
+                eos=inputs.get("eos", "pr"),
+                associating=bool(inputs.get(_ASSOCIATING_KEY, False)),
+            )
             kwargs["mixture"] = fluid
             if "ideal_gas" in takes:
                 kwargs["ideal_gas"] = ideal_gas
@@ -531,7 +546,7 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
         # extra inputs were consumed there too, so either would be a second, wrong answer
         # or a keyword the function does not have. `tools/gen_stub.py` asks the same
         # question of the same signature, which is what keeps the boundary and this in step.
-        if name == _MODEL_COMPONENTS_INPUT or name not in takes:
+        if name in (_MODEL_COMPONENTS_INPUT, _ASSOCIATING_KEY) or name not in takes:
             continue
         kwargs[name] = _declared(declared[name], value)
     return kwargs

@@ -56,3 +56,30 @@ z_liquid = 0.11033733769989125
 z_vapour = 0.8875314607526533
 min_t_over_tc = 0.7056831012420023
 iterations = 12
+
+[[cases]]
+id = "water_methanol_cpa_at_356_k_and_1_bar"
+tolerance = 1e-09
+source = """NeqSim 3.20.0, `SystemSrkCPA` with `setMixingRule(10)`, run from `validation/neqsim/CpaSweep.java`: `java -cp .:neqsim-3.20.0.jar CpaSweep 356 1.0 0.6`. `beta`, `x`, `y` and the two `z_` fields are its `flash_beta[0]`, `flash_x[1]`, `flash_x[0]`, `flash_Z[1]` and `flash_Z[0]` - NeqSim orders the vapour first, this model the liquid - and `k` and `ln_phi_*` are its own `flash_lnPhi`, differenced to a `K` in the sweep.
+
+**This is the case that catches an associating fluid losing its association at the Python-to-Rust boundary.** Sent without it, the Rust backend ran a classical SRK flash on a fluid carrying the `cpakij_SRK` column and reported `all_liquid`, `beta = -0.016794177236415513` with the same K-values as a non-associating mixture built from the same components. Nothing in the registry could see it, because until `associating` became a key a case could state a fluid's components and not how the runner builds them.
+
+`min_t_over_tc` and `iterations` are this model's own; the sweep has no reading in either."""
+[cases.inputs]
+components = ["water", "methanol"]
+eos = "srk"
+associating = true
+T = 356.0
+P = 100000.0
+z = [0.6, 0.4]
+[cases.expected]
+beta = 0.208383589004737
+x = [0.674266566871552, 0.325733433128448]
+y = [0.317873017714004, 0.682126982285996]
+k = [0.4714352354611679, 2.094126401893144]
+ln_phi_liquid = [-0.789379766771299, 0.668790784130641]
+ln_phi_vapour = [-0.0374062219152301, -0.0703456903416990]
+z_liquid = 0.000876327166634292
+z_vapour = 0.941152554938007
+min_t_over_tc = 0.5499768268190948
+iterations = 12
