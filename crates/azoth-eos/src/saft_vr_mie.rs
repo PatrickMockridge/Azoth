@@ -587,3 +587,165 @@ pub fn dispersion_pair_sum(
     }
     Ok(sum)
 }
+
+/// Every layer SAFT-VR-Mie's Helmholtz energy is built from, at one state.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MieState {
+    /// Each component's effective segment diameter at this temperature, in metres.
+    pub d: Vec<f64>,
+    /// `sum_i x_i m_i`, the mixture's segment number.
+    pub m_bar: f64,
+    /// `sum_i x_i (m_i - 1)`, the chain term's weight.
+    pub m_minus_1: f64,
+    /// `sum_i x_i m_i d_i^3`, in m^3/mol.
+    pub md3: f64,
+    /// The packing fraction.
+    pub eta: f64,
+    /// The hard-sphere compressibility at the mixture's packing fraction.
+    pub a_hs: f64,
+    /// The chain term's contact value - the Carnahan-Starling one for a fluid with no
+    /// chain, the Mie-weighted one otherwise.
+    pub g_hs: f64,
+    /// The first dispersion term, per mole.
+    pub a1: f64,
+    /// The second.
+    pub a2: f64,
+    /// The third.
+    pub a3: f64,
+}
+
+impl MieState {
+    /// `A^R/(RT)` per mole: `m_bar a_hs - m_minus_1 ln g_hs + m_bar (a_1 + a_2 + a_3)`.
+    #[must_use]
+    pub fn f(&self) -> f64 {
+        self.f_hc() + self.f_disp()
+    }
+
+    /// The hard-sphere and chain part.
+    #[must_use]
+    pub fn f_hc(&self) -> f64 {
+        self.m_bar * self.a_hs - self.m_minus_1 * self.g_hs.ln()
+    }
+
+    /// The three dispersion terms together, which is what NeqSim's `F_DISP_SAFT` is.
+    ///
+    /// **Scaled by the segment number.** NeqSim's `F_DISP_SAFT` is
+    /// `n m_bar (a_1 + a_2 + a_3)`, and the `m_bar` is easy to lose because a one-segment
+    /// fluid has `m_bar = 1` and agrees either way: methane's `F_disp` is the plain sum to
+    /// every printed digit, and methane/n-butane's is 1.34056 times it. The same trap as
+    /// the chain RDF's, one layer down.
+    #[must_use]
+    pub fn f_disp(&self) -> f64 {
+        self.m_bar * (self.a1 + self.a2 + self.a3)
+    }
+}
+
+/// Every layer at a temperature, a molar volume and a composition.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if the lengths disagree, the composition is not one, or a
+///   component has no set.
+/// * [`AzothError::OutOfRange`] if `t`, `v` or a parameter is not positive, or the packing
+///   fraction reaches one.
+pub fn state(components: &[MieComponent], x: &[f64], t: f64, v: f64) -> Result<MieState> {
+    let n = components.len();
+    if x.len() != n {
+        return Err(AzothError::invalid_input(
+            "x",
+            format!(
+                "{n} components need {n} mole fractions, but got {}",
+                x.len()
+            ),
+        ));
+    }
+    if !v.is_finite() || v <= 0.0 {
+        return Err(AzothError::OutOfRange {
+            field: "v".to_string(),
+            value: v,
+            detail: "the packing fraction is a volume fraction".to_string(),
+        });
+    }
+    for (i, component) in components.iter().enumerate() {
+        if !component.has_parameters() {
+            return Err(AzothError::invalid_input(
+                "components",
+                format!(
+                    "component {i} carries no SAFT-VR-Mie set (m = {}, sigma = {}, \
+                     epsilon/k = {}). The table spells an absent set as zeros rather than a \
+                     blank, so this is a fluid with no segments",
+                    component.m, component.sigma, component.epsik
+                ),
+            ));
+        }
+    }
+    let total: f64 = x.iter().sum();
+    if (total - 1.0).abs() > 1.0e-9 {
+        return Err(AzothError::invalid_input(
+            "x",
+            format!("the mole fractions sum to {total}, not to one"),
+        ));
+    }
+
+    let d = components
+        .iter()
+        .map(|c| c.d(t))
+        .collect::<Result<Vec<_>>>()?;
+    let m_bar: f64 = x.iter().zip(components).map(|(xi, c)| xi * c.m).sum();
+    let m_minus_1: f64 = x
+        .iter()
+        .zip(components)
+        .map(|(xi, c)| xi * (c.m - 1.0))
+        .sum();
+    let md3: f64 = x
+        .iter()
+        .zip(components)
+        .zip(&d)
+        .map(|((xi, c), di)| xi * c.m * di.powi(3))
+        .sum();
+
+    // `eta = (pi/6) N_A (N/V) sum_i x_i m_i d_i^3`, which per mole is `(pi/6) N_A md3 / v`.
+    let eta = std::f64::consts::PI / 6.0 * super::pcsaft::AVOGADRO * md3 / v;
+    if eta >= 1.0 {
+        return Err(AzothError::OutOfRange {
+            field: "v".to_string(),
+            value: v,
+            detail: format!(
+                "the packing fraction at this volume is {eta}, and the hard-sphere terms \
+                 diverge at one"
+            ),
+        });
+    }
+
+    // One component evaluates the dispersion directly and a mixture sums over pairs - and
+    // the direct branch is not the pair sum at `n = 1`, it is a *different expression*
+    // whose cross parameters happen to be the pure ones. Taking NeqSim's branch keeps the
+    // two agreeing by construction rather than by algebra.
+    let (a1, a2, a3) = if n == 1 {
+        let c = components[0];
+        let x0 = if d[0] > 0.0 { c.sigma / d[0] } else { 1.0 };
+        let beta = c.epsik / t;
+        let c_mie = mie_prefactor(c.lambda_r, c.lambda_a);
+        let zeta = eta * x0 * x0 * x0;
+        (
+            a1_mie(eta, c.lambda_r, c.lambda_a, beta, c_mie, x0),
+            a2_mie(eta, zeta, c.lambda_r, c.lambda_a, beta, c_mie, x0),
+            a3_mie(zeta, c.lambda_r, c.lambda_a, beta),
+        )
+    } else {
+        dispersion_pair_sum(components, x, t, eta)?
+    };
+
+    let g_hs = chain_contact_value(components, x, t, eta, &d);
+    Ok(MieState {
+        d,
+        m_bar,
+        m_minus_1,
+        md3,
+        eta,
+        a_hs: a_hs(eta),
+        g_hs,
+        a1,
+        a2,
+        a3,
+    })
+}

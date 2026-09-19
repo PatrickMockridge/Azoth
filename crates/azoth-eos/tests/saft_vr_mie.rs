@@ -8,7 +8,7 @@
 use azoth_eos::saft_vr_mie::{
     MieComponent, a_s1_bare, a1_mie, a2_mie, a3_mie, b_bare, barker_henderson, chain_contact_value,
     chain_g1, chain_g2, contact_value_0, dispersion_pair_sum, eta_effective, g_hs, k_hs, mie_alpha,
-    mie_prefactor,
+    mie_prefactor, state,
 };
 
 fn methane() -> MieComponent {
@@ -378,4 +378,44 @@ fn the_mixtures_dispersion_is_a_pair_sum() {
         ),
         "the one-component pair sum is the direct value",
     );
+}
+
+/// **The whole Helmholtz energy at both states**, which is the layer everything above was
+/// built for. The probe prints `F_hc`, `F_disp` and `F`; the assembly is
+/// `m_bar a_hs - m_minus_1 ln g_hs + a_1 + a_2 + a_3`.
+#[test]
+fn the_helmholtz_energy_is_neqsims() {
+    let (eta, v_methane) = (0.031_588_908_686_015_9, 4.609_634_632_033_79e-4);
+    // The volume NeqSim converged to, so the state is the one the probe describes.
+    let pure = state(&[methane()], &[1.0], 300.0, v_methane).expect("a state");
+    via_eta(pure.eta, eta, "eta");
+    via_eta(pure.f_hc(), 0.131_541_289_151_816, "F_hc");
+    via_eta(pure.f_disp(), -0.211_906_612_576_890, "F_disp");
+    via_eta(pure.f(), -0.080_365_323_425_074_2, "F");
+
+    let binary = state(
+        &[methane(), n_butane()],
+        &[0.6, 0.4],
+        350.0,
+        8.260_537_757_932_58e-4,
+    )
+    .expect("a state");
+    via_eta(binary.eta, 0.028_086_304_906_480_8, "eta");
+    via_eta(binary.g_hs, 1.028_095_271_747_73, "g_hs");
+    via_eta(binary.f_hc(), 0.146_641_004_513_517, "F_hc");
+    via_eta(binary.f_disp(), -0.298_374_800_324_796, "F_disp");
+    // **And the segment number is what makes that different from the plain sum**: the
+    // three terms add to -0.222574745379874, which is the pure-fluid assembly's answer and
+    // a 25% error for this mixture.
+    via_eta(
+        binary.a1 + binary.a2 + binary.a3,
+        -0.222_574_745_379_874,
+        "a1 + a2 + a3",
+    );
+    via_eta(
+        binary.f_disp() / (binary.a1 + binary.a2 + binary.a3),
+        binary.m_bar,
+        "m_bar",
+    );
+    via_eta(binary.f(), -0.151_733_795_811_279, "F");
 }
