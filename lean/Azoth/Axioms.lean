@@ -24,6 +24,7 @@ import Azoth.Vocabulary
 import Azoth.Rho
 import Azoth.Barb
 import Azoth.Capability
+import Azoth.Implicit
 import Azoth.Normalisation
 
 #print axioms Azoth.Dim.ofExponentsOn_nil
@@ -68,3 +69,8 @@ import Azoth.Normalisation
 #print axioms Azoth.Normalisation.fderiv_extensive_single
 #print axioms Azoth.Normalisation.clm_apply_eq_sum_single
 #print axioms Azoth.Normalisation.sumCLM_apply
+
+-- The sensitivity of a solution, `docs/src/calculus/implicit.md`'s first claim. The second
+-- is stated on the page and not proved here; a page that said otherwise would be the
+-- failure this gate exists to catch.
+#print axioms Azoth.Implicit.hasFDerivAt_of_solution
