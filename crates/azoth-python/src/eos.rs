@@ -1327,6 +1327,11 @@ impl PyAssociationSpec {
             m_pr: row[9],
             racket_z: row[10],
             volume_correction: row[11],
+            // The boundary carries the cubic families' fitted sets only: a caller
+            // building an association by hand is stating a CPA fluid, and the
+            // `UMRCPA_*` set is read from the databank by the model that pairs it with
+            // the UMR mixing rule.
+            umr_cpa: None,
         }))
     }
 }

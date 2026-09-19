@@ -12,13 +12,14 @@
 //! cubic needs. An overlay is a value a caller passes and not a store; [`crate::card`]
 //! reads a file and produces one.
 
+use crate::Alpha;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, Result};
 
-use crate::association::{AssociationCubic, AssociationRecord, SiteScheme};
+use crate::association::{AssociationCubic, AssociationRecord, SiteScheme, UmrCpaRecord};
 use crate::bwrs::BwrsCoefficients;
 use crate::cubic::Cubic;
 use crate::mixing_rule::MixingRule;
@@ -213,6 +214,13 @@ pub struct Entry {
     pub sigma_saft: f64,
     /// PC-SAFT's segment energy over Boltzmann's constant, `epsilon/k`, in K.
     pub epsik_saft: f64,
+    /// `UMRCPA_MC1..5`, the five-parameter Mathias-Copeman coefficients.
+    ///
+    /// **Every component may carry these, associating or not.** NeqSim reads them in
+    /// `Component.createComponent` (line 404) before any attractive term is chosen, and
+    /// `ComponentUMRCPA.setAttractiveTerm` installs term 22 for a component whose set
+    /// has them - a hydrocarbon as readily as a glycol. 23 of the 286 rows carry one.
+    pub umrcpa_mc: [f64; 5],
     /// SAFT-VR-Mie's repulsive exponent `lambda_r`, dimensionless.
     ///
     /// **This one is not the absence marker.** The table carries the standard `12` on
@@ -358,6 +366,7 @@ impl AssociationOverride {
             m_pr: self.m_pr.unwrap_or_else(|| kept(|r| r.m_pr)),
             racket_z: kept(|r| r.racket_z),
             volume_correction: kept(|r| r.volume_correction),
+            umr_cpa: base.and_then(|r| r.umr_cpa.clone()),
         }
     }
 }
@@ -697,6 +706,7 @@ fn parse_association(
         return Ok(None);
     };
     let fitted = |name: &str| -> Result<f64> { association_number(record, index[name], name, row) };
+    let umr_cpa = parse_umr_cpa(record, index, row)?;
     Ok(Some(AssociationRecord {
         scheme,
         sites: fitted("associationsites")? as u32,
@@ -711,6 +721,33 @@ fn parse_association(
         m_pr: fitted("mcpa_pr")?,
         racket_z: fitted("racketzcpa")?,
         volume_correction: fitted("volcorrcpa_t")?,
+        umr_cpa,
+    }))
+}
+
+/// One row's `UMRCPA_*` set, or `None` where the row does not carry one.
+///
+/// NeqSim's guard is two-part (`Component.java:534`): `UMRCPA_associating` is one **and**
+/// `|UMRCPA_a0| > 1e-20`. Seven of the 286 rows pass it - water, methanol, ethanol and
+/// the four glycols - and a row that fails it keeps the PR family's fitted values, which
+/// is what `ComponentUMRCPA` reads first for being a `ComponentPR`.
+fn parse_umr_cpa(
+    record: &csv::StringRecord,
+    index: &HashMap<&str, usize>,
+    row: usize,
+) -> Result<Option<UmrCpaRecord>> {
+    let number = |name: &str| -> Result<f64> { association_number(record, index[name], name, row) };
+    let associating = number("umrcpa_associating")?;
+    let a0 = number("umrcpa_a0")?;
+    if associating != 1.0 || a0.abs() <= 1.0e-20 {
+        return Ok(None);
+    }
+    Ok(Some(UmrCpaRecord {
+        a0,
+        b: number("umrcpa_b")?,
+        energy: number("umrcpa_assocenergy")?,
+        volume: number("umrcpa_assocvolume")?,
+        racket_z: number("umrcpa_racketz")?,
     }))
 }
 
@@ -761,6 +798,17 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "mcpa_pr",
         "racketzcpa",
         "volcorrcpa_t",
+        "umrcpa_mc1",
+        "umrcpa_mc2",
+        "umrcpa_mc3",
+        "umrcpa_mc4",
+        "umrcpa_mc5",
+        "umrcpa_a0",
+        "umrcpa_b",
+        "umrcpa_assocenergy",
+        "umrcpa_assocvolume",
+        "umrcpa_associating",
+        "umrcpa_racketz",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -832,6 +880,14 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                 m_saft: number(&record, index["msaft"], "msaft", row)?,
                 sigma_saft: number(&record, index["sigma_saft_m"], "sigma_saft_m", row)?,
                 epsik_saft: number(&record, index["epsiksaft"], "epsiksaft", row)?,
+                umrcpa_mc: {
+                    let mut mc = [0.0; 5];
+                    for (k, slot) in mc.iter_mut().enumerate() {
+                        let column = format!("umrcpa_mc{}", k + 1);
+                        *slot = number(&record, index[column.as_str()], &column, row)?;
+                    }
+                    mc
+                },
                 lambda_r_mie: number(&record, index["lambdarsaftvrmie"], "lambdarsaftvrmie", row)?,
                 lambda_a_mie: number(&record, index["lambdaasaftvrmie"], "lambdaasaftvrmie", row)?,
                 m_mie: number(&record, index["msaftvrmie"], "msaftvrmie", row)?,
@@ -1053,6 +1109,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 m_saft: 0.0,
                 sigma_saft: 0.0,
                 epsik_saft: 0.0,
+                umrcpa_mc: [0.0; 5],
                 lambda_r_mie: 0.0,
                 lambda_a_mie: 0.0,
                 m_mie: 0.0,
@@ -1081,6 +1138,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             m_saft: base.m_saft,
             sigma_saft: base.sigma_saft,
             epsik_saft: base.epsik_saft,
+            umrcpa_mc: base.umrcpa_mc,
             lambda_r_mie: base.lambda_r_mie,
             lambda_a_mie: base.lambda_a_mie,
             m_mie: base.m_mie,
@@ -1338,6 +1396,65 @@ pub fn associating_mixture_of(
             kij: cpa_kij(names, family, overlay),
         })
         .with_cubic(cubic)
+        .with_association()?;
+    Ok((mixture, ideal_gas))
+}
+
+/// The UMR-CPA fluid: Peng-Robinson, the UMR mixing rule and the association.
+///
+/// NeqSim's `SystemUMRCPAEoS`, and the only mixture in this library whose attraction is
+/// mixed by a universal rule rather than an interaction matrix. Four choices are made
+/// here and nowhere else:
+///
+/// * the cubic is Peng-Robinson, which `PhaseUMRCPA extends PhasePrEos` states;
+/// * the mixing rule is [`MixingRule::Umr`] with the `_umrmc` UNIFAC tables, which is
+///   what `SystemUMRCPAEoS`'s construction and `SystemThermo`'s `"UMR-CPA"` selector
+///   both name;
+/// * the interaction matrix is **zero**. NeqSim's UMR rule reads no `kij` column for
+///   its `alpha_mix`, and the probe's own reading - `A = n B R T alpha_mix` with
+///   `B = sum_i x_i b_i` - is reproduced with every pair at zero;
+/// * the alpha is the five-parameter Mathias-Copeman term (`UMRCPA_MC1..5`), which is
+///   `ComponentUMRCPA.setAttractiveTerm`'s term 22 and the only alpha under which the
+///   substituted `a` and `b` are the ones NeqSim solves with.
+///
+/// # Errors
+/// * As [`associating_mixture_of`], plus
+///   [`AzothError::PropertyUnavailable`] if a name has no `UNIFACcompUMRPRU` group
+///   decomposition, which the rule cannot mix without.
+pub fn umr_cpa_mixture_of(names: &[&str]) -> Result<(Mixture, IdealGasModel)> {
+    let (base, ideal_gas) = mixture_of(names, Cubic::Pr, None)?;
+    let n = names.len();
+    // **Every component needs its `UMRCPA_MC` set, and one without is refused.** NeqSim's
+    // `ComponentUMRCPA.setAttractiveTerm` falls back to term 19 seeded with `MCPR1..3`
+    // for a non-associating component with none, and to term 1 with `mCPA` for an
+    // associating one - and it chooses **per component**, which this library's
+    // mixture-level alpha cannot express: a mixture of a component that carries the set
+    // and one that does not would need two attractive terms at once. So the model reads
+    // the set it can express and refuses what it cannot, rather than giving a component
+    // a different attractive term than NeqSim gives it.
+    let mut components = base.components().to_vec();
+    for (i, name) in names.iter().enumerate() {
+        let mc = entry(name, None)?.umrcpa_mc;
+        if mc.iter().all(|c| c.abs() <= 1.0e-20) {
+            return Err(AzothError::property_unavailable(
+                name.trim().to_lowercase(),
+                "UMRCPA_MC1..5".to_string(),
+                "carries no UMR-CPA Mathias-Copeman set; the UMR-CPA model's attractive \
+                 term is that set, and NeqSim's per-component fallback to term 19 or term \
+                 1 is not expressible as one mixture-level alpha"
+                    .to_string(),
+            ));
+        }
+        components[i] = components[i].clone().with_alpha_params(mc.to_vec());
+    }
+    let unifac = unifac_umrpru_parameters(names, UmrpruSet::Umrmc)?;
+    let mixture = Mixture::new(components, vec![0.0; n * n])?
+        .with_cubic(Cubic::Pr)
+        .with_alpha(Alpha::MatCop5PrUmr)
+        .with_mixing_rule(MixingRule::Umr {
+            kij: vec![0.0; n * n],
+            unifac,
+        })
         .with_association()?;
     Ok((mixture, ideal_gas))
 }

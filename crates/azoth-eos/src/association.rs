@@ -185,6 +185,67 @@ pub struct AssociationRecord {
     /// shift is `-2.5148594e-5` internal, two orders of magnitude short - but it is real
     /// and it is carried here for when it is applied.
     pub volume_correction: f64,
+    /// The `UMRCPA_*` set, which replaces the families' fitted values when it is present.
+    ///
+    /// **A third set, not a cubic family.** `Component.java:534-539` overrides
+    /// `aCPA`/`bCPA`/`associationVolume`/`associationEnergy` from these columns whenever
+    /// `UMRCPA_associating` is one, so `ComponentUMRCPA` - which reads the `_PR` columns
+    /// first, being a `ComponentPR` - ends on these for a water or a glycol and on the
+    /// PR family's for anything else. Water is the check: this set's `a0` is 1.0307
+    /// where the PR family's `aCPA_PR` is 1.456360879's partner, and its bounding volume
+    /// is 0.125 against the PR family's `kappa_AB`.
+    pub umr_cpa: Option<UmrCpaRecord>,
+}
+
+/// The `UMRCPA_*` fitted set, in the scale the table states it in.
+///
+/// NeqSim's own conversions, from `Component.java:526-539`: `UMRCPA_a0` is in
+/// `bar L**2/mol**2` and becomes internal `a` by `x 1e4`, `UMRCPA_b` in `L/mol` by
+/// `x 1e2`, and `UMRCPA_assocEnergy` in `bar L/mol` - which is 100 J/mol, so the
+/// `x 1e2` there is a unit conversion and not a scale. `UMRCPA_assocVolume` is the
+/// dimensionless `kappa_AB` and is used as it stands.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UmrCpaRecord {
+    /// `UMRCPA_a0`, in `bar L**2/mol**2`.
+    pub a0: f64,
+    /// `UMRCPA_b`, in `L/mol`.
+    pub b: f64,
+    /// `UMRCPA_assocEnergy`, in `bar L/mol`.
+    pub energy: f64,
+    /// `UMRCPA_assocVolume`, the dimensionless `kappa_AB`.
+    pub volume: f64,
+    /// `UMRCPA_racketZ`, the Rackett compressibility of the volume correction.
+    pub racket_z: f64,
+}
+
+impl UmrCpaRecord {
+    /// The fitted attraction in SI, `Pa m**6/mol**2`.
+    #[must_use]
+    pub fn attraction(&self) -> f64 {
+        self.a0 * 1.0e4 * NEQSIM_INTERNAL_TO_SI
+    }
+
+    /// The fitted covolume in SI, `m**3/mol`.
+    #[must_use]
+    pub fn covolume(&self) -> f64 {
+        self.b * 1.0e2 * NEQSIM_INTERNAL_TO_SI
+    }
+
+    /// The association energy in J/mol.
+    #[must_use]
+    pub fn energy_j_per_mol(&self) -> f64 {
+        self.energy * 1.0e2
+    }
+
+    /// The kernel's per-component record, for the site scheme the table gives.
+    #[must_use]
+    pub fn at(&self, scheme: SiteScheme) -> AssociationComponent {
+        AssociationComponent {
+            scheme,
+            energy: self.energy_j_per_mol(),
+            volume: self.volume,
+        }
+    }
 }
 
 /// The factor from NeqSim's internal `a` and `b` to SI, `Component.java:526-531`.

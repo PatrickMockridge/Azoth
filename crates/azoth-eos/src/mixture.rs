@@ -412,7 +412,7 @@ impl Mixture {
             // the cubic. SRK and PR share the Soave alpha form and differ in both; RK
             // is kappa-free.
             let cubic = self.cubic;
-            let non_soave = |term: &dyn AlphaTerm| -> (f64, f64, f64, f64) {
+            let non_soave = |term: &dyn AlphaTerm| -> (f64, f64, f64, f64, f64) {
                 let alpha = term.alpha(reduced_temperature);
                 let a_reduced = cubic.omega_a() * alpha * reduced_pressure
                     / (reduced_temperature * reduced_temperature);
@@ -422,9 +422,16 @@ impl Mixture {
                     b_reduced,
                     term.psi(reduced_temperature),
                     term.psi_t(reduced_temperature),
+                    alpha,
                 )
             };
-            let (a_reduced, b_reduced, psi_value, psi_t_value) = match self.cubic {
+            // The alpha itself comes back with the reduced pair because a fitted
+            // association set *replaces* `a` and `b` and then has to be scaled by the
+            // model's alpha - `ComponentUMRCPA.setAttractiveTerm` installs the
+            // Mathias-Copeman term over the substituted set, where `ComponentSrkCPA`
+            // installs a Soave coefficient. Recomputing it in that branch would be a
+            // second expression of the same match.
+            let (a_reduced, b_reduced, psi_value, psi_t_value, alpha_value) = match self.cubic {
                 Cubic::Pr | Cubic::Srk => match self.alpha {
                     Alpha::TwuCoon => non_soave(&TwuCoon {
                         omega: component.omega,
@@ -518,6 +525,7 @@ impl Mixture {
                             b_reduced,
                             term.psi(reduced_temperature),
                             term.psi_t(reduced_temperature),
+                            term.alpha(reduced_temperature),
                         )
                     }
                 },
@@ -530,6 +538,7 @@ impl Mixture {
                         ab.b_reduced,
                         term.psi(reduced_temperature),
                         term.psi_t(reduced_temperature),
+                        term.alpha(reduced_temperature),
                     )
                 }
                 Cubic::Tst => {
@@ -545,6 +554,23 @@ impl Mixture {
             // m3/mol against `0.08664 R Tc/Pc`'s 2.11e-5 - and its alpha coefficient is
             // fitted too, so the whole `a_i(T)` differs.
             let family = AssociationCubic::of(self.cubic);
+            // **UMR-CPA substitutes a third set, and scales it with the model's own
+            // alpha.** `ComponentUMRCPA.setAttractiveTerm` installs the five-parameter
+            // Mathias-Copeman term (22) over the substituted `a` and `b`, where
+            // `ComponentSrkCPA` calls `setm(mCPA)` and gets a Soave coefficient - so
+            // which alpha scales the fitted set is the model's choice, and the model
+            // states it by asking for `Alpha::MatCop5PrUmr`.
+            if self.associating
+                && let Some(record) = &component.association
+                && let (Alpha::MatCop5PrUmr, Some(umr)) = (self.alpha, &record.umr_cpa)
+            {
+                let r_t = R * t.value;
+                a.push(umr.attraction() * alpha_value * p.value / (r_t * r_t));
+                b.push(umr.covolume() * p.value / r_t);
+                psi.push(psi_value);
+                psi_t.push(psi_t_value);
+                continue;
+            }
             if self.associating
                 && let Some(record) = &component.association
                 && record.has_fitted_set(family)
@@ -1404,13 +1430,23 @@ impl Mixture {
         if !self.components.iter().any(|c| c.association.is_some()) {
             return None;
         }
+        // **The UMR-CPA set replaces the family's for a component that carries one**, the
+        // same substitution `reduced_parameters` makes for `a` and `b`, and gated the same
+        // way: the model states that it is UMR-CPA by asking for `Alpha::MatCop5PrUmr`.
+        // Water is the check - this set's `kappa_AB` is 0.125 and its `eps` 14177 J/mol
+        // against the PR family's, so reading the wrong one moves its `ln phi` in the
+        // third decimal while leaving the methane beside it almost untouched.
+        let umr_cpa = self.alpha == Alpha::MatCop5PrUmr;
         Association::new(
             self.components
                 .iter()
                 .map(|c| {
-                    c.association
-                        .as_ref()
-                        .map_or(NON_ASSOCIATING, |r| r.at(cubic))
+                    c.association.as_ref().map_or(NON_ASSOCIATING, |r| {
+                        match (umr_cpa, &r.umr_cpa) {
+                            (true, Some(umr)) => umr.at(r.scheme),
+                            _ => r.at(cubic),
+                        }
+                    })
                 })
                 .collect(),
             // No cross-rule overrides: `INTER.csv`'s `cpaBetaCross`/`cpaEpsCross` are

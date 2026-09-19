@@ -1265,3 +1265,80 @@ fn the_interaction_column_follows_the_cubic() {
         state.z
     );
 }
+
+/// The UMR-CPA fluid, against NeqSim 3.20.0's `SystemUMRCPAEoS`.
+///
+/// Methane/water 0.98/0.02 at 298.15 K and 70 bara, from
+/// `validation/neqsim/UmrCpaProbe.java` - the state NeqSim's own
+/// `TPflashUMRCPADehydrationLifecycleTest` pins its water-in-gas envelope at.
+///
+/// **This is the one mixture in the library whose attraction is not mixed by a `kij`
+/// matrix**, so none of the checks the classical rules get apply to it. What it is
+/// checked on instead is the probe's own intermediates and its state, and every one of
+/// them is load-bearing: `alpha_mix` is the rule, the per-component `aT` and `b` are the
+/// `UMRCPA_*` substitution and the term-22 alpha, and `Z` and `ln phi` are the whole thing
+/// through the association.
+///
+/// `ln phi` is also where the fitted association set shows: this model's water takes
+/// `kappa_AB` 0.125 and `eps` 14177 J/mol from the `UMRCPA_*` columns rather than the PR
+/// family's, and reading the wrong one moves `ln phi_1` into the third decimal while
+/// leaving the methane beside it almost untouched.
+#[test]
+fn the_umr_cpa_fluid_reproduces_neqsims_state() {
+    let (mixture, _) = databank::umr_cpa_mixture_of(&["methane", "water"]).expect("resolves");
+    let reduced = mixture
+        .reduced_parameters(kelvins(298.15), pascals(70.0e5))
+        .expect("reduces");
+    let x = [0.98, 0.02];
+
+    let (a_mix, b_mix) = mixture.mixture_parameters(&reduced, &x);
+    let alpha_mix = a_mix / b_mix;
+    assert!(
+        (alpha_mix - 3.111_802_368_805_46).abs() < 1e-12,
+        "alpha_mix = {alpha_mix}, NeqSim's 3.11180236880546"
+    );
+
+    // `aT/(b R T)` per component, which is what the rule averages: the probe's
+    // `qPure_aT_over_bRT`, and the `UMRCPA_a0`/`_b` substitution behind it.
+    let rt = 8.314_462_1 * 298.15;
+    for (i, expected) in [3.071_869_686_431_51_f64, 6.766_461_302_779_70]
+        .iter()
+        .enumerate()
+    {
+        let qpure = reduced.a[i] / reduced.b[i];
+        assert!(
+            (qpure - expected).abs() < 1e-10,
+            "qPure[{i}] = {qpure}, NeqSim's {expected}"
+        );
+        // And the covolume the substitution gave, in SI.
+        let b_si = reduced.b[i] * rt / 70.0e5;
+        let want = if i == 0 {
+            2.680_406_698_524_99e-5
+        } else {
+            1.47e-5
+        };
+        assert!(
+            (b_si - want).abs() < 1e-17,
+            "b[{i}] = {b_si}, NeqSim's {want}"
+        );
+    }
+
+    let state = mixture
+        .phase_state(&reduced, &x, RootSide::Vapour)
+        .expect("solves");
+    assert!(
+        (state.z - 0.860_124_667_999_392).abs() < 1e-11,
+        "z = {}, NeqSim's 0.860124667999392",
+        state.z
+    );
+    for (i, expected) in [-0.143_929_410_664_324_f64, -0.522_958_472_994_785]
+        .iter()
+        .enumerate()
+    {
+        assert!(
+            (state.ln_phi[i] - expected).abs() < 1e-10,
+            "ln_phi[{i}] = {}, NeqSim's {expected}",
+            state.ln_phi[i]
+        );
+    }
+}
