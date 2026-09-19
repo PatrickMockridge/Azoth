@@ -83,6 +83,12 @@ VENDORED_FILES = (
         "UNIFACInterParamC_UMRMC.csv",
     ),
     ("neqsim/MBWR32param.csv", "MBWR32param.csv", "mbwr32.csv"),
+    # The electrolyte pair parameters. Same shape as the rest of this list - no unit
+    # conversion and no row filtering - and compiled rather than read from
+    # `databank/sources/` for the same reason: `sources/` is the vendored upstream copy,
+    # kept for reproducibility and not shipped, and a wheel carries `data/`.
+    ("neqsim/PitzerParameters.csv", "PitzerParameters.csv", "PitzerParameters.csv"),
+    ("neqsim/COMPSALT.csv", "COMPSALT.csv", "COMPSALT.csv"),
 )
 
 

@@ -60,6 +60,16 @@ const UNIFAC_C_UMRMC_CSV: &str =
 /// The compiled MBWR-32 coefficient table, generated from NeqSim's `MBWR32param.csv`.
 const MBWR32_CSV: &str = include_str!("../../../data/components/mbwr32.csv");
 
+/// The compiled Pitzer pair parameters, generated from NeqSim's `PitzerParameters.csv`.
+///
+/// The electrolyte models' second table: `COMP.csv` says what an ion *is*, and this says
+/// how a pair of them interacts. `PhasePitzer` is its reader upstream, and the tranche's
+/// other activity models read their own tables beside it.
+const PITZER_PARAMETERS_CSV: &str = include_str!("../../../data/components/PitzerParameters.csv");
+
+/// The compiled salt table, generated from NeqSim's `COMPSALT.csv`.
+const COMPSALT_CSV: &str = include_str!("../../../data/components/COMPSALT.csv");
+
 /// Repo-relative path of the component table, which is how Python addresses the same
 /// file. A constant rather than a string restated at the call site for the reason the
 /// whole databank exists: two copies of a path can disagree.
@@ -1327,6 +1337,231 @@ pub fn bwrs_coefficients(name: &str) -> Option<BwrsCoefficients> {
         .get_or_init(parse)
         .get(&name.trim().to_lowercase())
         .copied()
+}
+
+/// One ion pair's Pitzer parameters, as `PitzerParameters.csv` states them.
+///
+/// The three binary coefficients are **temperature-dependent**, and the form is NeqSim's
+/// own (`PhasePitzer`, the comment above its `beta0T1` field):
+///
+/// ```text
+/// beta0(T) = beta0_25 + t1 (1/T - 1/Tr) + t2 ln(T/Tr),   Tr = 298.15 K
+/// ```
+///
+/// and likewise for `beta1` and `Cphi`. The `*_25` names are the values at `Tr` and the
+/// `*_t` pairs are `(t1, t2)`, so a caller evaluates the correlation rather than reading
+/// a number that is only right at one temperature.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PitzerRecord {
+    /// The first ion, lower case, exactly as the file spells it: `na+`, `cl-`, `so4--`.
+    pub ion1: String,
+    /// The second ion. Which of the two is the cation is the caller's to know, and
+    /// [`pitzer_pair`] answers either order.
+    pub ion2: String,
+    /// `beta0` at 298.15 K, dimensionless.
+    pub beta0_25: f64,
+    /// `beta1` at 298.15 K, dimensionless.
+    pub beta1_25: f64,
+    /// `Cphi` at 298.15 K, dimensionless.
+    pub cphi_25: f64,
+    /// `(t1, t2)` of `beta0(T)`; see the type's own comment for the form.
+    pub beta0_t: [f64; 2],
+    /// `(t1, t2)` of `beta1(T)`.
+    pub beta1_t: [f64; 2],
+    /// `(t1, t2)` of `Cphi(T)`.
+    pub cphi_t: [f64; 2],
+    /// `beta2`, the term a 2:2 pair carries and a 1:1 pair does not.
+    ///
+    /// **Nonzero on exactly four rows**: `ca++`, `mg++`, `sr++` and `fe++` against
+    /// `so4--`, all negative, and zero on the other 26. So this column is not a
+    /// parameter most pairs have - a caller evaluating it must know which pairs do.
+    pub beta2_25: f64,
+    /// `theta`, the same-sign ion mixing parameter (Harvie and Weare, 1984).
+    ///
+    /// **Zero on every row of the shipped table.** There are no same-sign pairs in it at
+    /// all - all 30 are cation with anion - so Pitzer's same-sign term has no parameters
+    /// here, and the zero is the absence rather than a fitted ideal solution. A model
+    /// that needs it must refuse rather than evaluating a zero.
+    pub theta: f64,
+    /// `psi`, the ternary parameter of a cation-cation-anion or anion-anion-cation
+    /// triplet, stated against the pair whose interaction it modifies.
+    ///
+    /// **Zero on every row too**, for the reason [`Self::theta`] gives: a ternary
+    /// parameter needs a same-sign pair to hang off, and the table carries none.
+    pub psi_common_ion: f64,
+    /// The pair's fitted validity range, in K. **A caller outside it is extrapolating**,
+    /// and the table states the range rather than leaving it to be discovered.
+    pub t_min: f64,
+    /// The upper end of the same range, in K.
+    pub t_max: f64,
+    /// The literature reference the file cites for this pair.
+    pub reference: String,
+}
+
+/// Every row of the Pitzer pair table, in file order.
+#[must_use]
+pub fn pitzer_parameters() -> &'static [PitzerRecord] {
+    fn parse() -> Vec<PitzerRecord> {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(PITZER_PARAMETERS_CSV.as_bytes());
+        let index = column_index(PITZER_PARAMETERS_CSV);
+        let mut out = Vec::new();
+        for record in reader.records().flatten() {
+            let field = |name: &str| -> String { field_of(&index, &record, name).to_owned() };
+            let number = |name: &str| -> f64 {
+                field_of(&index, &record, name)
+                    .trim()
+                    .parse()
+                    .unwrap_or_default()
+            };
+            let ion1 = field("ion1").to_lowercase();
+            if ion1.is_empty() {
+                continue;
+            }
+            out.push(PitzerRecord {
+                ion1,
+                ion2: field("ion2").to_lowercase(),
+                beta0_25: number("beta0_25"),
+                beta1_25: number("beta1_25"),
+                cphi_25: number("cphi_25"),
+                beta0_t: [number("beta0_t1"), number("beta0_t2")],
+                beta1_t: [number("beta1_t1"), number("beta1_t2")],
+                cphi_t: [number("cphi_t1"), number("cphi_t2")],
+                beta2_25: number("beta2_25"),
+                theta: number("theta"),
+                psi_common_ion: number("psi_common_ion"),
+                t_min: number("tmin"),
+                t_max: number("tmax"),
+                reference: field("reference"),
+            });
+        }
+        out
+    }
+    static TABLE: OnceLock<Vec<PitzerRecord>> = OnceLock::new();
+    TABLE.get_or_init(parse)
+}
+
+/// The record for an ion pair, either order round.
+///
+/// Both orders because the table stores a pair once and the physical interaction is
+/// symmetric: a caller holding `("cl-", "na+")` should not have to know the file wrote
+/// sodium first. `None` for a pair the table does not carry, which a model must refuse
+/// rather than evaluate at zero - see [`pitzer_parameters`].
+#[must_use]
+pub fn pitzer_pair(first: &str, second: &str) -> Option<&'static PitzerRecord> {
+    let (a, b) = (first.trim().to_lowercase(), second.trim().to_lowercase());
+    pitzer_parameters()
+        .iter()
+        .find(|r| (r.ion1 == a && r.ion2 == b) || (r.ion1 == b && r.ion2 == a))
+}
+
+/// One salt's record, as `COMPSALT.csv` states it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SaltRecord {
+    /// The salt's name as the file spells it: `NaCl`, `CaCO3`.
+    pub name: String,
+    /// The cation, lower case, matching a [`crate::databank::entry`] name.
+    pub cation: String,
+    /// The anion, likewise.
+    pub anion: String,
+    /// How many cations one formula unit dissociates into.
+    pub cation_stoichiometry: f64,
+    /// How many anions.
+    pub anion_stoichiometry: f64,
+    /// The five solubility-product coefficients. **Their form is not established here**
+    /// - the manifest records the column as `neqsim-internal` - so they are carried as
+    ///   the file states them and a model that needs the correlation must read NeqSim's
+    ///   `ChemicalReactionOperations` rather than assume a polynomial.
+    pub ksp: [f64; 5],
+    /// `Vdelta`, the molar volume change on dissolution. Unit unestablished, as above.
+    pub volume_delta: f64,
+    /// `waterstoc`, how many waters of hydration the dissolution carries. Zero on every
+    /// row of the shipped table, which is the file's marker for a salt with none.
+    pub water_stoichiometry: f64,
+}
+
+/// Every row of the salt table, in file order.
+#[must_use]
+pub fn salts() -> &'static [SaltRecord] {
+    fn parse() -> Vec<SaltRecord> {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(COMPSALT_CSV.as_bytes());
+        let index = column_index(COMPSALT_CSV);
+        let mut out = Vec::new();
+        for record in reader.records().flatten() {
+            let field = |name: &str| -> String { field_of(&index, &record, name).to_owned() };
+            let number = |name: &str| -> f64 {
+                field_of(&index, &record, name)
+                    .trim()
+                    .parse()
+                    .unwrap_or_default()
+            };
+            let name = field("saltname");
+            if name.is_empty() {
+                continue;
+            }
+            out.push(SaltRecord {
+                name,
+                cation: field("ion1").to_lowercase(),
+                anion: field("ion2").to_lowercase(),
+                cation_stoichiometry: number("stoc1"),
+                anion_stoichiometry: number("stoc2"),
+                ksp: [
+                    number("kspwater"),
+                    number("kspwater2"),
+                    number("kspwater3"),
+                    number("kspwater4"),
+                    number("kspwater5"),
+                ],
+                volume_delta: number("vdelta"),
+                water_stoichiometry: number("waterstoc"),
+            });
+        }
+        out
+    }
+    static TABLE: OnceLock<Vec<SaltRecord>> = OnceLock::new();
+    TABLE.get_or_init(parse)
+}
+
+/// The record for a salt by name, matched without regard to case or surrounding space.
+#[must_use]
+pub fn salt(name: &str) -> Option<&'static SaltRecord> {
+    let key = name.trim().to_lowercase();
+    salts().iter().find(|s| s.name.to_lowercase() == key)
+}
+
+/// A compiled column's position, by the name this project writes it under.
+///
+/// Read off the file's own first line rather than listed, so a column the manifest renames
+/// resolves by the new name and one it stops carrying resolves to nothing.
+fn column_index(text: &str) -> HashMap<&str, usize> {
+    text.lines()
+        .next()
+        .unwrap_or("")
+        .split(',')
+        .enumerate()
+        .map(|(position, name)| (name.trim(), position))
+        .collect()
+}
+
+/// A column's value by the compiled header name it was written under.
+///
+/// **By name rather than by position**, because both tables' headers are the manifest's
+/// `as` names and a column inserted in the middle should resolve to the wrong *name*
+/// rather than shift every value one field left. A name a table does not carry is the
+/// empty string, which the numeric readers turn into a zero - the table's own marker for
+/// a parameter it does not state, and never a fabricated value.
+fn field_of<'a>(
+    index: &HashMap<&str, usize>,
+    record: &'a csv::StringRecord,
+    name: &str,
+) -> &'a str {
+    index
+        .get(name)
+        .and_then(|position| record.get(*position))
+        .unwrap_or("")
 }
 
 /// Every substance name available, sorted: the table plus whatever an overlay adds.

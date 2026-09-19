@@ -403,3 +403,76 @@ def test_a_cubic_over_an_ion_is_refused() -> None:
     with pytest.raises(InvalidInputError):
         from_names(["caco3"])
     assert from_names(["water", "methanol"]).components is not None
+
+
+def test_the_pitzer_pair_table_is_read() -> None:
+    """`COMP.csv` says what an ion is; this table says how a pair of them interacts.
+
+    Neither electrolyte table was read by anything until the tranche - they were vendored
+    whole and unparsed - so these are the checks that the reader finds the values rather
+    than merely not crashing.
+    """
+    sodium_chloride = databank.pitzer_pair("Na+", "Cl-")
+    assert sodium_chloride is not None
+    assert (sodium_chloride.ion1, sodium_chloride.ion2) == ("na+", "cl-")
+    assert sodium_chloride.beta0_25 == pytest.approx(0.0765, abs=1e-12)
+    assert sodium_chloride.beta1_25 == pytest.approx(0.2664, abs=1e-12)
+    assert sodium_chloride.cphi_25 == pytest.approx(0.00127, abs=1e-12)
+
+    # The temperature coefficients are a pair each. The form they belong to is
+    # `beta0(T) = beta0_25 + t1 (1/T - 1/Tr) + t2 ln(T/Tr)`, so a reader that took the
+    # first number for a constant would be right at exactly one temperature.
+    assert sodium_chloride.beta0_t == (460.4, 1.556)
+    assert sodium_chloride.beta1_t == (-11.5, 0.087)
+    assert sodium_chloride.cphi_t == (-0.88, -0.0043)
+    assert (sodium_chloride.t_min, sodium_chloride.t_max) == (273.15, 573.15)
+    assert sodium_chloride.reference == "Pitzer1984"
+
+    # Either order round, because the table stores a pair once and the interaction is
+    # symmetric.
+    assert databank.pitzer_pair("cl-", "na+") == sodium_chloride
+
+    # **A pair the table does not carry is `None`, not a zero.** `li+` has no rows at all,
+    # and a model that evaluated unstated parameters as zero would return an
+    # ideal-solution answer wearing a Pitzer model's name.
+    assert databank.pitzer_pair("Li+", "Cl-") is None
+    assert databank.pitzer_pair("Na+", "I-") is None
+    assert len(databank.pitzer_parameters()) == 30
+
+    # `beta2` is nonzero on exactly the four divalent-cation sulphates, all negative.
+    with_beta2 = [(r.ion1, r.ion2) for r in databank.pitzer_parameters() if r.beta2_25 != 0.0]
+    assert with_beta2 == [
+        ("ca++", "so4--"),
+        ("mg++", "so4--"),
+        ("sr++", "so4--"),
+        ("fe++", "so4--"),
+    ]
+
+    # **`theta` and `psi` are empty, and the zero is an absence.** Every one of the 30
+    # rows is a cation against an anion, so there is no same-sign pair for `theta` to
+    # describe and no triplet for `psi` to modify. Reading the zero as a fitted ideal
+    # solution would be inventing physics the table does not carry.
+    assert all(r.theta == 0.0 for r in databank.pitzer_parameters())
+    assert all(r.psi_common_ion == 0.0 for r in databank.pitzer_parameters())
+    assert all(r.ion1.endswith("+") != r.ion2.endswith("+") for r in databank.pitzer_parameters())
+
+
+def test_the_salt_table_is_read() -> None:
+    table_salt = databank.salt("NaCl")
+    assert table_salt is not None
+    assert (table_salt.cation, table_salt.anion) == ("na+", "cl-")
+    assert table_salt.cation_stoichiometry == 1.0
+    assert table_salt.anion_stoichiometry == 1.0
+    assert table_salt.water_stoichiometry == 0.0
+
+    # A salt with two ions on one side, which is what the stoichiometry columns are for.
+    calcium = databank.salt("CaCl2")
+    assert calcium is not None
+    assert (calcium.cation_stoichiometry, calcium.anion_stoichiometry) == (1.0, 2.0)
+
+    # **The two forms of calcium sulphate are two rows**, and the table's own spelling is
+    # what tells them apart - a lookup that normalised the suffix would merge them.
+    assert databank.salt("CaSO4_A") != databank.salt("CaSO4_G")
+    assert databank.salt("KBr") is None
+    assert databank.salt("hydromagnesite (3MgCO3-Mg(OH)2-3H2O)") is not None
+    assert len(databank.salts()) == 22

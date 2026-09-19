@@ -66,6 +66,8 @@ UNIFAC_INTER_B_CSV = "data/components/UNIFACInterParamB.csv"
 UNIFAC_INTER_C_CSV = "data/components/UNIFACInterParamC.csv"
 UNIFAC_COMP_UMRPRU_CSV = "data/components/UNIFACcompUMRPRU.csv"
 MBWR32_CSV = "data/components/mbwr32.csv"
+PITZER_PARAMETERS_CSV = "data/components/PitzerParameters.csv"
+COMPSALT_CSV = "data/components/COMPSALT.csv"
 
 #: The `REFERENCESTATETYPE` value NeqSim treats as the symmetric (Raoult) reference.
 #:
@@ -833,6 +835,159 @@ def _nrtl() -> dict[tuple[str, str], tuple[float, float]]:
         pairs[(a, b)] = (alpha, _absent_is_zero(row["nrtlgij"]))
         pairs[(b, a)] = (alpha, _absent_is_zero(row["nrtlgji"]))
     return pairs
+
+
+def _column(row: Mapping[str, str], name: str) -> float:
+    """One column of a row, where a blank is the table's own absence marker."""
+    return _absent_is_zero(row[name])
+
+
+@dataclass(frozen=True, slots=True)
+class PitzerRecord:
+    """One ion pair's Pitzer parameters, as `PitzerParameters.csv` states them.
+
+    The three binary coefficients are **temperature-dependent**, and the form is NeqSim's
+    own (``PhasePitzer``, the comment above its ``beta0T1`` field):
+
+    .. code-block:: text
+
+        beta0(T) = beta0_25 + t1 (1/T - 1/Tr) + t2 ln(T/Tr),   Tr = 298.15 K
+
+    and likewise for ``beta1`` and ``Cphi``. The ``*_25`` names are the values at ``Tr``
+    and the ``*_t`` pairs are ``(t1, t2)``, so a caller evaluates the correlation rather
+    than reading a number that is only right at one temperature.
+    """
+
+    ion1: str
+    ion2: str
+    beta0_25: float
+    beta1_25: float
+    cphi_25: float
+    beta0_t: tuple[float, float]
+    beta1_t: tuple[float, float]
+    cphi_t: tuple[float, float]
+    #: ``beta2``, nonzero on exactly four rows - ``ca++``, ``mg++``, ``sr++`` and
+    #: ``fe++`` against ``so4--``, all negative. So it is a parameter most pairs do not
+    #: have rather than a column a model can read unconditionally.
+    beta2_25: float
+    #: ``theta``, the same-sign ion mixing parameter (Harvie and Weare, 1984). **Zero on
+    #: every row of the shipped table**: all 30 rows are a cation against an anion, so
+    #: the same-sign term has no parameters here and the zero is an absence rather than a
+    #: fitted ideal solution.
+    theta: float
+    #: ``psi``, the ternary parameter, stated against the pair whose interaction it
+    #: modifies. **Zero on every row too**, for :attr:`theta`'s reason: a ternary
+    #: parameter needs a same-sign pair to hang off and the table carries none.
+    psi_common_ion: float
+    #: The pair's fitted validity range, in K. **A caller outside it is extrapolating**.
+    t_min: float
+    t_max: float
+    reference: str
+
+
+@dataclass(frozen=True, slots=True)
+class SaltRecord:
+    """One salt's record, as `COMPSALT.csv` states it."""
+
+    name: str
+    cation: str
+    anion: str
+    cation_stoichiometry: float
+    anion_stoichiometry: float
+    #: The five solubility-product coefficients. **Their form is not established here** -
+    #: the manifest records the columns as ``neqsim-internal`` - so they are carried as
+    #: the file states them and a model that needs the correlation must read NeqSim's
+    #: ``ChemicalReactionOperations`` rather than assume a polynomial.
+    ksp: tuple[float, float, float, float, float]
+    #: ``Vdelta``, the molar volume change on dissolution. Unit unestablished, as above.
+    volume_delta: float
+    #: ``waterstoc``, how many waters of hydration the dissolution carries. Zero on every
+    #: row of the shipped table.
+    water_stoichiometry: float
+
+
+@cache
+def pitzer_parameters() -> tuple[PitzerRecord, ...]:
+    """Every row of the Pitzer pair table, in file order."""
+    out = []
+    for row in _rows(find(PITZER_PARAMETERS_CSV).read_text(encoding="utf-8")):
+        ion1 = row["ion1"].strip().lower()
+        if not ion1:
+            continue
+
+        out.append(
+            PitzerRecord(
+                ion1=ion1,
+                ion2=row["ion2"].strip().lower(),
+                beta0_25=_column(row, "beta0_25"),
+                beta1_25=_column(row, "beta1_25"),
+                cphi_25=_column(row, "cphi_25"),
+                beta0_t=(_column(row, "beta0_t1"), _column(row, "beta0_t2")),
+                beta1_t=(_column(row, "beta1_t1"), _column(row, "beta1_t2")),
+                cphi_t=(_column(row, "cphi_t1"), _column(row, "cphi_t2")),
+                beta2_25=_column(row, "beta2_25"),
+                theta=_column(row, "theta"),
+                psi_common_ion=_column(row, "psi_common_ion"),
+                t_min=_column(row, "tmin"),
+                t_max=_column(row, "tmax"),
+                reference=row["reference"].strip(),
+            )
+        )
+    return tuple(out)
+
+
+def pitzer_pair(first: str, second: str) -> PitzerRecord | None:
+    """The record for an ion pair, either order round, or ``None``.
+
+    Both orders because the table stores a pair once and the interaction is symmetric. A
+    pair the table does not carry is ``None`` rather than a zero: a model that evaluated
+    unstated parameters as zero would return an ideal-solution answer wearing a Pitzer
+    model's name.
+    """
+    a, b = first.strip().lower(), second.strip().lower()
+    for record in pitzer_parameters():
+        if (record.ion1, record.ion2) in ((a, b), (b, a)):
+            return record
+    return None
+
+
+@cache
+def salts() -> tuple[SaltRecord, ...]:
+    """Every row of the salt table, in file order."""
+    out = []
+    for row in _rows(find(COMPSALT_CSV).read_text(encoding="utf-8")):
+        name = row["saltname"].strip()
+        if not name:
+            continue
+
+        out.append(
+            SaltRecord(
+                name=name,
+                cation=row["ion1"].strip().lower(),
+                anion=row["ion2"].strip().lower(),
+                cation_stoichiometry=_column(row, "stoc1"),
+                anion_stoichiometry=_column(row, "stoc2"),
+                ksp=(
+                    _column(row, "kspwater"),
+                    _column(row, "kspwater2"),
+                    _column(row, "kspwater3"),
+                    _column(row, "kspwater4"),
+                    _column(row, "kspwater5"),
+                ),
+                volume_delta=_column(row, "vdelta"),
+                water_stoichiometry=_column(row, "waterstoc"),
+            )
+        )
+    return tuple(out)
+
+
+def salt(name: str) -> SaltRecord | None:
+    """The record for a salt by name, matched without regard to case or surrounding space."""
+    key = name.strip().lower()
+    for record in salts():
+        if record.name.lower() == key:
+            return record
+    return None
 
 
 def available(*, card: keycard.Keycard | None = None) -> tuple[str, ...]:
@@ -2266,6 +2421,8 @@ __all__ = [
     "GeVanLaarAcidPhaseParameters",
     "GeWilsonPhaseParameters",
     "NrtlParameters",
+    "PitzerRecord",
+    "SaltRecord",
     "UnifacParameters",
     "UnifacPsrkParameters",
     "UnifacUmrpruParameters",
@@ -2284,6 +2441,10 @@ __all__ = [
     "ge_wilson_phase_parameters",
     "kij_for",
     "nrtl_parameters",
+    "pitzer_pair",
+    "pitzer_parameters",
+    "salt",
+    "salts",
     "unifac_parameters",
     "unifac_psrk_parameters",
     "unifac_umrpru_parameters",

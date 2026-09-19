@@ -1309,6 +1309,119 @@ fn a_cubic_over_an_ion_is_refused() {
     assert!(databank::mixture_of(&["water", "methanol"], Cubic::Pr, None).is_ok());
 }
 
+/// The two electrolyte tables the ion rows are only half of.
+///
+/// `COMP.csv` says what an ion *is*; `PitzerParameters.csv` says how a pair of them
+/// interacts, and `COMPSALT.csv` says what a salt is made of. Neither was read by
+/// anything until the electrolyte tranche - they were vendored whole and unparsed.
+#[test]
+fn the_pitzer_pair_table_is_read() {
+    let sodium_chloride = databank::pitzer_pair("Na+", "Cl-").expect("the commonest pair");
+    assert_eq!(sodium_chloride.ion1, "na+");
+    assert_eq!(sodium_chloride.ion2, "cl-");
+    assert!(
+        (sodium_chloride.beta0_25 - 0.0765).abs() < 1e-12,
+        "beta0: {}",
+        sodium_chloride.beta0_25
+    );
+    assert!((sodium_chloride.beta1_25 - 0.2664).abs() < 1e-12);
+    assert!((sodium_chloride.cphi_25 - 0.00127).abs() < 1e-12);
+    // The temperature coefficients are a pair each, and the form they belong to is
+    // `beta0(T) = beta0_25 + t1 (1/T - 1/Tr) + t2 ln(T/Tr)` - so a reader that took the
+    // first number for a constant would be right at exactly one temperature.
+    assert_eq!(sodium_chloride.beta0_t, [460.4, 1.556]);
+    assert_eq!(sodium_chloride.beta1_t, [-11.5, 0.087]);
+    assert_eq!(sodium_chloride.cphi_t, [-0.88, -0.0043]);
+    assert_eq!(sodium_chloride.t_min, 273.15);
+    assert_eq!(sodium_chloride.t_max, 573.15);
+    assert_eq!(sodium_chloride.reference, "Pitzer1984");
+
+    // Either order round, because the table stores a pair once and the interaction is
+    // symmetric. A caller holding the anion first should not have to know the file's.
+    assert_eq!(databank::pitzer_pair("cl-", "na+"), Some(sodium_chloride));
+
+    // **A pair the table does not carry is `None`, not a zero.** `li+` has no rows at
+    // all, and a model that evaluated its unstated parameters as zero would return an
+    // ideal-solution answer wearing a Pitzer model's name.
+    assert!(databank::pitzer_pair("Li+", "Cl-").is_none());
+    assert!(databank::pitzer_pair("Na+", "I-").is_none());
+
+    // Twenty-nine charged pairs and one same-sign row - `na+`/`oh-` is the ordinary kind,
+    // and the table is small enough that a generator dropping half of it is visible.
+    assert_eq!(databank::pitzer_parameters().len(), 30);
+    // **`beta2` is nonzero on exactly the four 2:2 pairs**, all of them a divalent cation
+    // with sulphate, and on nothing else - so this is a parameter most pairs do not have
+    // rather than a column a model can read unconditionally.
+    let with_beta2: Vec<_> = databank::pitzer_parameters()
+        .iter()
+        .filter(|r| r.beta2_25 != 0.0)
+        .map(|r| (r.ion1.as_str(), r.ion2.as_str()))
+        .collect();
+    assert_eq!(
+        with_beta2,
+        vec![
+            ("ca++", "so4--"),
+            ("mg++", "so4--"),
+            ("sr++", "so4--"),
+            ("fe++", "so4--"),
+        ],
+        "the pairs carrying a `beta2`: the four divalent-cation sulphates, and `ba++` is \\
+         not among them - its sulphate row carries a zero"
+    );
+    assert!(
+        databank::pitzer_parameters()
+            .iter()
+            .all(|r| r.beta2_25 <= 0.0)
+    );
+
+    // **The same-sign and ternary parameters are empty, and the zero is an absence.**
+    // Every one of the 30 rows is a cation against an anion, so there is no pair for
+    // `theta` to describe and no triplet for `psi` to modify. A model reading the zero as
+    // a fitted ideal solution would be inventing physics the table does not carry.
+    assert!(databank::pitzer_parameters().iter().all(|r| r.theta == 0.0));
+    assert!(
+        databank::pitzer_parameters()
+            .iter()
+            .all(|r| r.psi_common_ion == 0.0)
+    );
+    assert!(
+        databank::pitzer_parameters()
+            .iter()
+            .all(|r| r.ion1.ends_with('+') != r.ion2.ends_with('+')),
+        "every row pairs a cation with an anion"
+    );
+}
+
+#[test]
+fn the_salt_table_is_read() {
+    let table_salt = databank::salt("NaCl").expect("NaCl is in the salt table");
+    assert_eq!(table_salt.cation, "na+");
+    assert_eq!(table_salt.anion, "cl-");
+    assert_eq!(table_salt.cation_stoichiometry, 1.0);
+    assert_eq!(table_salt.anion_stoichiometry, 1.0);
+    assert_eq!(table_salt.water_stoichiometry, 0.0);
+
+    // A salt with two ions on one side, which is what the stoichiometry columns are for.
+    let calcium = databank::salt("CaCl2").expect("CaCl2");
+    assert_eq!(calcium.cation_stoichiometry, 1.0);
+    assert_eq!(calcium.anion_stoichiometry, 2.0);
+
+    // **The two forms of calcium sulphate are two rows**, and the table's own spelling
+    // is what tells them apart - a lookup that normalised the suffix would merge them.
+    assert!(databank::salt("CaSO4_A").is_some());
+    assert!(databank::salt("CaSO4_G").is_some());
+    assert_ne!(
+        databank::salt("CaSO4_A"),
+        databank::salt("CaSO4_G"),
+        "the two forms carry different solubility products"
+    );
+
+    // A salt the table does not carry, and one whose name carries punctuation.
+    assert!(databank::salt("KBr").is_none());
+    assert!(databank::salt("hydromagnesite (3MgCO3-Mg(OH)2-3H2O)").is_some());
+    assert_eq!(databank::salts().len(), 22);
+}
+
 /// **The cubic's interaction column is the cubic's, and the table says so 194 times.**
 ///
 /// NeqSim selects on the phase class: `phase.getClass().getName().equals(
