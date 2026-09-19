@@ -356,6 +356,16 @@ pub fn chain_contact_value(
     eta: f64,
     diameters: &[f64],
 ) -> f64 {
+    // **Two guards, and the second is why a dense trial composition does not return a
+    // NaN.** `calcGMieBlended` returns the Carnahan-Starling value outright when the packing
+    // fraction is outside `(1e-10, 0.7)` or is not a number - and the quartic it would
+    // otherwise evaluate carries `ln(1 - eta)`, which past one is not a number in Rust or
+    // Java either. A flash's trial compositions walk through exactly that region on the way
+    // to a liquid root, so the guard is not a nicety: without it the nested solve fails
+    // where NeqSim's succeeds.
+    if !eta.is_finite() || !(1.0e-10..=0.7).contains(&eta) {
+        return g_hs(eta);
+    }
     let weight: f64 = x
         .iter()
         .zip(components)

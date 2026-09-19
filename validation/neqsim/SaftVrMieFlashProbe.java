@@ -96,6 +96,26 @@ public final class SaftVrMieFlashProbe {
       System.out.printf("TPflashSAFT, %-18s phases=%d beta=%.15g%n",
           initialise ? "init(0) first" : "no init(0) first", other.getNumberOfPhases(),
           other.getBeta());
+      // The converged compositions and K-values: what a port is checked against when
+      // the class is given a system that was initialised.
+      for (int i = 0; i < other.getNumberOfPhases(); i++) {
+        PhaseInterface phase = other.getPhase(i);
+        System.out.printf("   %s type=%s x = [", initialise ? "init(0)" : "no-init",
+            phase.getType());
+        for (int c = 0; c < names.length; c++) {
+          System.out.printf("%.15g%s", phase.getComponent(c).getx(),
+              c + 1 < names.length ? ", " : "");
+        }
+        System.out.println("]");
+      }
+      if (other.getNumberOfPhases() == 2) {
+        System.out.printf("   K = [");
+        for (int c = 0; c < names.length; c++) {
+          System.out.printf("%.15g%s", other.getPhase(0).getComponent(c).getK(),
+              c + 1 < names.length ? ", " : "");
+        }
+        System.out.println("]");
+      }
     }
   }
 

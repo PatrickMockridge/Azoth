@@ -361,6 +361,57 @@ impl CalcResult for BwrsPhaseResult {
     }
 }
 
+/// Result of `eos.tp_flash_saft`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SaftFlashResult {
+    /// The vapour fraction, or `None` when the flash reports a single phase.
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions - the feed itself when there is one phase.
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions - the feed itself when there is one phase.
+    pub y: Vec<f64>,
+    /// `K_i = phi_liquid_i / phi_vapour_i`, the iterate the loop converges on.
+    pub k: Vec<f64>,
+    /// `ln phi_i` in the liquid phase.
+    pub ln_phi_liquid: Vec<f64>,
+    /// `ln phi_i` in the vapour phase.
+    pub ln_phi_vapour: Vec<f64>,
+    /// The compressibility factor of the liquid solve.
+    pub z_liquid: f64,
+    /// The compressibility factor of the vapour solve.
+    pub z_vapour: f64,
+    /// What the converged state is.
+    pub phase: Phase,
+    /// Successive-substitution steps taken.
+    pub iterations: u32,
+    /// The largest relative change in a K-value at the last step.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SaftFlashResult {
+    const CALC_ID: &'static str = "eos.tp_flash_saft";
+    const FIELDS: &'static [&'static str] = &[
+        "beta",
+        "x",
+        "y",
+        "k",
+        "ln_phi_liquid",
+        "ln_phi_vapour",
+        "z_liquid",
+        "z_vapour",
+        "phase",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.saft_vr_mie_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SaftVrMiePhaseResult {

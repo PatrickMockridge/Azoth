@@ -152,6 +152,7 @@ pub mod srk_z_factor;
 pub mod stability_test;
 pub mod th_flash;
 pub mod thermal_conductivity;
+pub mod tp_flash_saft;
 pub mod tp_multiflash;
 pub mod ts_flash;
 pub mod tu_flash;

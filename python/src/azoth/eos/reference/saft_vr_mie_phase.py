@@ -342,6 +342,12 @@ def chain_contact_value(
     zero for a one-segment molecule, so there is no weight to take a mean over and NeqSim
     skips its block outright.
     """
+    # The same two guards as the Rust kernel: outside ``(1e-10, 0.7)`` the contact value is
+    # the Carnahan-Starling one, because the quartic the mean would need carries
+    # ``log(1 - eta)``, which past one is not a number. A flash's trial compositions walk
+    # through that region on the way to a liquid root.
+    if not math.isfinite(eta) or eta < 1.0e-10 or eta > 0.7:
+        return (1.0 - eta / 2.0) / (1.0 - eta) ** 3
     weight = sum(xi * (c.m - 1.0) for xi, c in zip(x, components, strict=True))
     if weight <= 1.0e-10:
         return (1.0 - eta / 2.0) / (1.0 - eta) ** 3
