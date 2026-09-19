@@ -1,0 +1,22 @@
+{
+  "id": "water_methanol_srk_cpa_against_neqsim",
+  "calc": "eos.srk_cpa_phase",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemSrkCPA with setMixingRule(10), run from validation/neqsim/CpaSweep.java",
+    "verification": "verified",
+    "notes": "The single-phase liquid state the probe's `init(1)` leaves, at the state the SRK-CPA kernel was first verified at. `lnPhi` is `ComponentInterface.getFugacityCoefficient()` on the same phase."
+  },
+  "derivation": "The whole association model in one comparison: the fitted `aCPA`/`bCPA` substitution, the `cpakij_srk` interaction column, the association's pressure, the site-fraction solve and the fugacity coefficient built on it.\n\nThe probe was run as `java -cp .:neqsim-3.20.0.jar CpaSweep 300 100 0.6`, reading `cpa_sweep.tsv`; this is its state 0, whose own header line is:\n\n    case 0\tT_K=300.000000000000\tP_bara=100.000000000000\tn_water=0.600000000000000\tn_methanol=0.400000000000000\taT[0]=0.181242798068713\tsqrtAT[0]=0.425726200824794\tb[0]=1.45150000000000e-05\tAi[0]=0.4928172 ...\n\nThe case compares against the values that header's block prints, which are in the capture verbatim.",
+  "inputs": {
+    "components": ["water", "methanol"],
+    "T": 300.0,
+    "P": 10000000.0,
+    "z": [0.6, 0.4],
+    "compressed_phase": "liquid"
+  },
+  "expected": {
+    "z_factor": 0.105050962879418,
+    "ln_phi": [-8.02010646183615, -6.14028423012298]
+  },
+  "tolerance": 1e-10
+}

@@ -1,0 +1,24 @@
+{
+  "id": "methane_water_umr_cpa_against_neqsim",
+  "calc": "eos.umr_cpa_phase",
+  "source": {
+    "attribution": "NeqSim 3.20.0, SystemUMRCPAEoS - which builds PhaseUMRCPA - run from validation/neqsim/UmrCpaProbe.java",
+    "verification": "verified",
+    "notes": "**The state the lifecycle test measures its water-in-gas envelope at**, 298.15 K and 70 bar, and the last of the probe's nine. `HresTP` and `SresTP` are NeqSim's own and are recorded: UMR-CPA is a Peng-Robinson with an excess-Gibbs mixing rule, not a Helmholtz model, so the two defects the PC-SAFT and SAFT-VR-Mie departures carry do not reach it."
+  },
+  "derivation": "This is the case the UMR-CPA port was built against, and it is what caught the two shared-code defects: the association's departure carrying a spurious `A/(RT)`, and an excess-Gibbs rule's departure not being the classical `psi_bar` form.\n\nThe probe was run as `java -cp .:neqsim-3.20.0.jar UmrCpaProbe`, reading `umr_cpa_probe.tsv`; this is its state 4, whose own header line is:\n\n    # methane/water at T=298.150 K, P=70.0000 bara\n\nThe case compares against the values that header's block prints, which are in the capture verbatim.",
+  "inputs": {
+    "components": ["methane", "water"],
+    "T": 298.15,
+    "P": 7000000.0,
+    "z": [0.98, 0.02],
+    "compressed_phase": "vapour"
+  },
+  "expected": {
+    "z_factor": 0.860124667999392,
+    "h_res": -1361.12998393193,
+    "s_res": -3.30552825032943,
+    "ln_phi": [-0.143929410664324, -0.522958472994785]
+  },
+  "tolerance": 1e-09
+}

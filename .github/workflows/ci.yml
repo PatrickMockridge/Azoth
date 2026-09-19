@@ -50,6 +50,11 @@ jobs:
       - run: python tools/gen_databank.py --check
       # The baseline keycard against the compiled component data it derives from.
       - run: python tools/gen_keycard.py --check
+      # The recorded NeqSim cases against the probe captures they are derived from.
+      # Needs no JDK and no NeqSim jar - the captures are committed and the jar is
+      # gitignored - which is what lets this gate run here rather than only on a
+      # machine that has both.
+      - run: python tools/gen_neqsim_cases.py --check
       # The unit vocabulary table against the four artefacts compiled from it - the
       # schema's unit enum, the Rust conversion table, the Python map and the keycard
       # loader's list. One table, one generator, and this is what says the generated
