@@ -213,6 +213,24 @@ pub struct Entry {
     pub sigma_saft: f64,
     /// PC-SAFT's segment energy over Boltzmann's constant, `epsilon/k`, in K.
     pub epsik_saft: f64,
+    /// SAFT-VR-Mie's repulsive exponent `lambda_r`, dimensionless.
+    ///
+    /// **This one is not the absence marker.** The table carries the standard `12` on
+    /// every one of its 286 rows, whether or not the row has a set, so a caller cannot
+    /// read a set's presence off it - `m_mie` is that flag.
+    pub lambda_r_mie: f64,
+    /// SAFT-VR-Mie's attractive exponent `lambda_a`, dimensionless, `6` on every row.
+    pub lambda_a_mie: f64,
+    /// SAFT-VR-Mie's segment number `m`, dimensionless.
+    ///
+    /// **Zero means the table carries no SAFT-VR-Mie set**, which is how 274 of the 286
+    /// rows spell absence - 12 carry one, the light alkanes with `co2`, nitrogen and
+    /// water. `sigma_mie` and `epsik_mie` are zero on exactly those rows.
+    pub m_mie: f64,
+    /// SAFT-VR-Mie's segment diameter `sigma`, in metres.
+    pub sigma_mie: f64,
+    /// SAFT-VR-Mie's segment energy over Boltzmann's constant, `epsilon/k`, in K.
+    pub epsik_mie: f64,
 }
 
 impl Entry {
@@ -713,6 +731,11 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "msaft",
         "sigma_saft_m",
         "epsiksaft",
+        "lambdarsaftvrmie",
+        "lambdaasaftvrmie",
+        "msaftvrmie",
+        "sigma_saft_vr_mie_m",
+        "epsiksaftvrmie",
         "acpa_srk",
         "bcpa_srk",
         "mcpa_srk",
@@ -792,6 +815,16 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                 m_saft: number(&record, index["msaft"], "msaft", row)?,
                 sigma_saft: number(&record, index["sigma_saft_m"], "sigma_saft_m", row)?,
                 epsik_saft: number(&record, index["epsiksaft"], "epsiksaft", row)?,
+                lambda_r_mie: number(&record, index["lambdarsaftvrmie"], "lambdarsaftvrmie", row)?,
+                lambda_a_mie: number(&record, index["lambdaasaftvrmie"], "lambdaasaftvrmie", row)?,
+                m_mie: number(&record, index["msaftvrmie"], "msaftvrmie", row)?,
+                sigma_mie: number(
+                    &record,
+                    index["sigma_saft_vr_mie_m"],
+                    "sigma_saft_vr_mie_m",
+                    row,
+                )?,
+                epsik_mie: number(&record, index["epsiksaftvrmie"], "epsiksaftvrmie", row)?,
             },
         );
     }
@@ -999,6 +1032,11 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 m_saft: 0.0,
                 sigma_saft: 0.0,
                 epsik_saft: 0.0,
+                lambda_r_mie: 0.0,
+                lambda_a_mie: 0.0,
+                m_mie: 0.0,
+                sigma_mie: 0.0,
+                epsik_mie: 0.0,
                 // Named rather than left blank: a card states a substance a cubic can
                 // describe, and a cubic has no reference state. The activity-coefficient
                 // phases read this, so a blank would have to mean something.
@@ -1022,6 +1060,11 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             m_saft: base.m_saft,
             sigma_saft: base.sigma_saft,
             epsik_saft: base.epsik_saft,
+            lambda_r_mie: base.lambda_r_mie,
+            lambda_a_mie: base.lambda_a_mie,
+            m_mie: base.m_mie,
+            sigma_mie: base.sigma_mie,
+            epsik_mie: base.epsik_mie,
             reference_state: base.reference_state,
             // The card's scheme wins over the table's, and every parameter the card does
             // not name is the table's: `applied_to` is the one place the two are merged.

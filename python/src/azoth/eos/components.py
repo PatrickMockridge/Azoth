@@ -310,6 +310,22 @@ class DatabankEntry:
     sigma_saft: float
     #: PC-SAFT's segment energy over Boltzmann's constant, ``epsilon/k``, in K.
     epsik_saft: float
+    #: SAFT-VR-Mie's repulsive exponent ``lambda_r``, dimensionless. **Not the absence
+    #: marker**: the table carries the standard ``12`` on every one of its 286 rows,
+    #: whether or not the row has a set - :attr:`m_mie` is the flag.
+    lambda_r_mie: float
+    #: SAFT-VR-Mie's attractive exponent ``lambda_a``, dimensionless, ``6`` on every row.
+    lambda_a_mie: float
+    #: SAFT-VR-Mie's segment number ``m``, dimensionless. **Zero means the table carries
+    #: no SAFT-VR-Mie set**, which is how 274 of the 286 rows spell absence - 12 carry
+    #: one, the light alkanes with ``co2``, nitrogen and water. ``sigma_mie`` and
+    #: ``epsik_mie`` are zero on exactly those rows, so a model refuses rather than
+    #: solving for a fluid with no segments.
+    m_mie: float
+    #: SAFT-VR-Mie's segment diameter ``sigma``, in metres.
+    sigma_mie: float
+    #: SAFT-VR-Mie's segment energy over Boltzmann's constant, ``epsilon/k``, in K.
+    epsik_mie: float
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
@@ -431,6 +447,11 @@ def _table() -> dict[str, DatabankEntry]:
             m_saft=float(row["msaft"]),
             sigma_saft=float(row["sigma_saft_m"]),
             epsik_saft=float(row["epsiksaft"]),
+            lambda_r_mie=float(row["lambdarsaftvrmie"]),
+            lambda_a_mie=float(row["lambdaasaftvrmie"]),
+            m_mie=float(row["msaftvrmie"]),
+            sigma_mie=float(row["sigma_saft_vr_mie_m"]),
+            epsik_mie=float(row["epsiksaftvrmie"]),
             citation=row["citation"],
         )
     return entries
@@ -779,6 +800,11 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             m_saft=0.0,
             sigma_saft=0.0,
             epsik_saft=0.0,
+            lambda_r_mie=0.0,
+            lambda_a_mie=0.0,
+            m_mie=0.0,
+            sigma_mie=0.0,
+            epsik_mie=0.0,
             citation=None,
             source="keycard",
         )

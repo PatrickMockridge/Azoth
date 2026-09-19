@@ -1074,6 +1074,59 @@ fn the_cubic_ln_phi_is_the_derivative_at_the_association_shifted_root() {
 /// `COMP.csv` carries and what `Component.java:547-549` reads, with the ångström division
 /// already done by the generator.
 #[test]
+fn the_saft_vr_mie_columns_are_read_and_zero_means_absent() {
+    // Methane's published set: `lambda_r = 12.65`, `lambda_a = 6`, `m = 1`, `sigma =
+    // 3.7412` angstrom, `epsilon/k = 153.36`.
+    let methane = databank::entry("methane", None).expect("methane");
+    assert!(
+        (methane.lambda_r_mie - 12.65).abs() < 1e-9,
+        "lambda_r: {}",
+        methane.lambda_r_mie
+    );
+    assert!(
+        (methane.lambda_a_mie - 6.0).abs() < 1e-9,
+        "lambda_a: {}",
+        methane.lambda_a_mie
+    );
+    assert!((methane.m_mie - 1.0).abs() < 1e-12, "m: {}", methane.m_mie);
+    assert!(
+        (methane.sigma_mie - 3.7412e-10).abs() < 1e-14,
+        "sigma: {} - the table is SI, so this is metres and not angstrom",
+        methane.sigma_mie
+    );
+    assert!(
+        (methane.epsik_mie - 153.36).abs() < 1e-9,
+        "epsilon/k: {}",
+        methane.epsik_mie
+    );
+
+    // A substance with no SAFT-VR-Mie set is absent as a zero in all five, which is the
+    // shape a model has to refuse rather than compute with. **Twelve of the table's 286
+    // rows carry one** - the light alkanes, `co2`, nitrogen and water - and the count is
+    // asserted rather than left to a sample, so a generator that stopped emitting the
+    // columns fails here rather than at a model. Counting it off the CSV with a
+    // comma-splitting tool gives 58, because the file quotes fields that contain commas.
+    let carried = databank::names(None)
+        .into_iter()
+        .filter(|name| databank::entry(name, None).is_ok_and(|e| e.m_mie > 0.0))
+        .count();
+    assert_eq!(carried, 12, "rows carrying a SAFT-VR-Mie set");
+
+    // **`m` is the absence marker and `lambda_r` is not.** The table carries the standard
+    // `12`/`6` on every row, so methanol - which has no set - reports a repulsive exponent
+    // of 12 beside a segment number of zero. A model that keyed absence on `lambda_r`
+    // would solve for a fluid with no segments on 274 of the 286 rows.
+    let absent = databank::entry("methanol", None).expect("methanol");
+    assert_eq!(absent.m_mie, 0.0, "methanol has no SAFT-VR-Mie set");
+    assert_eq!(
+        absent.lambda_r_mie, 12.0,
+        "but its lambda_r is the table's default"
+    );
+    assert_eq!(absent.sigma_mie, 0.0, "and its sigma is absent, like its m");
+}
+
+/// already done by the generator.
+#[test]
 fn the_pcsaft_columns_are_read_and_zero_means_absent() {
     let water = databank::entry("water", None).expect("water");
     assert!((water.m_saft - 1.0656).abs() < 1e-9, "m: {}", water.m_saft);
