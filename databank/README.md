@@ -47,16 +47,18 @@ them (35 files, 1,496 columns) is listed with what was done with it and a reason
 check_manifest: OK (35 vendored file(s), 1497 column(s), 1463 carried of which 982 read, 0 not-vendored entr(ies))
   481  carried, nothing reads it yet
   1108  carried with no unit NeqSim states (neqsim-internal)
-    3  not-ported
+  477  not-ported
     9  not-a-value
    16  empty-upstream
     6  superseded-by
+    7  unreachable-upstream
 ```
 
-**The porting backlog is "carried, nothing reads it yet" — 481 columns — and it is the
-number that matters.** NeqSim is the target, not a reference: each carried column is a
+**The porting backlog is "carried, nothing reads it yet" — 481 columns — and it is
+the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — `PhaseHydrate`,
+`not-ported` reason names the class that would close it — **477 of the 481**, with a
+handful `unreachable-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
 `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the
 rest. The check refuses a `not-ported` reason with no NeqSim name in it, so the list
 cannot drift back into being somewhere to put a column.
@@ -67,6 +69,13 @@ as a decision made an incomplete port look like a boundary.
 
 `not-yet` is the smaller and nearer list: the model exists here and the data does not
 reach it. Those entries name a registered id that would read the column once it does.
+
+`unreachable-upstream` is the one that is not work at all. The class named would read
+the column, and **nothing in NeqSim constructs it** — measured with a pattern that admits
+a fully qualified `new pkg.Class(`, because the bare `new X(` grep is not a liveness test
+(`ThermodynamicOperations.java:190` writes one that way). `SystemPrMathiasCopeman` is the
+example: the only class that mentions the Mathias-Copeman alpha, never constructed, and
+`mcpr1` appears in no source file at all.
 
 A reason is a quoted flow mapping, so `grep 'reason: not-ported'` matches nothing.
 Read the tally the check prints; there is no grep for it.

@@ -68,6 +68,11 @@ REASON_PREFIXES = (
     "empty-upstream",
     "licence",
     "superseded-by",
+    # Carried data whose upstream model **cannot be run at all**: the class that would
+    # read it is never constructed anywhere in the checkout. Distinct from `not-ported`,
+    # which is work azoth has not done: this is work NeqSim has not done either, so
+    # counting it as backlog overstates the port.
+    "unreachable-upstream",
 )
 
 #: What may be done with a column.
@@ -528,13 +533,16 @@ def reasons(manifest: Manifest) -> dict[str, int]:
     Reported by the check rather than left to `grep`, because a column's reason is a
     quoted flow mapping - `reason: "not-yet: ..."` - so `grep 'reason: not-yet'`
     matches nothing. The count is the point of the vocabulary: it is how many columns
-    are absent because a model does not exist yet, which is a roadmap.
+    are held back because a model does not exist yet, which is a roadmap.
+
+    **Carried columns are counted, and that is the fix to an inversion.** This skipped
+    them, so the one number a reader wanted - how many vendored columns are waiting on a
+    model - was the one it did not print, while the printed `not-ported` counted only
+    *dropped* columns, which are not waiting on anything.
     """
     counts = dict.fromkeys(REASON_PREFIXES, 0)
     for entry in manifest.files():
         for column in entry.columns:
-            if column.disposition in CARRIED:
-                continue
             if column.prefix in counts:
                 counts[column.prefix] += 1
     return {prefix: count for prefix, count in counts.items() if count}
