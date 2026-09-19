@@ -510,3 +510,80 @@ pub fn a3_mie(zeta_st: f64, lambda_r: f64, lambda_a: f64, eps_over_kt: f64) -> f
         * zeta_st
         * (pade_f(4, alpha) * zeta_st + pade_f(5, alpha) * zeta_st * zeta_st).exp()
 }
+
+/// The three dispersion terms of a mixture, by pair summation.
+///
+/// Lafitte 2013 Eqs. 37-40 with the cross parameters of its Eq. 36, and **the cross
+/// parameters are not averages of the pure ones**: `sigma_ij` is arithmetic, `epsilon_ij`
+/// carries a `sigma^3` correction that keeps the well's volume, and the two exponents are
+/// `3 + sqrt((lambda_i - 3)(lambda_j - 3))`. The diameter is then the Barker-Henderson
+/// integral of the *cross* potential rather than the mean of the two pure diameters - so
+/// the pair's `x0` is a genuinely new number, not an interpolation.
+///
+/// The weights are segment fractions, `xi_i m_i / m_bar`, because the dispersion is a sum
+/// over segments rather than over molecules.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if the lengths disagree.
+pub fn dispersion_pair_sum(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    eta: f64,
+) -> Result<(f64, f64, f64)> {
+    let n = components.len();
+    if x.len() != n {
+        return Err(AzothError::invalid_input(
+            "x",
+            format!(
+                "{n} components need {n} mole fractions, but got {}",
+                x.len()
+            ),
+        ));
+    }
+    let m_bar: f64 = x.iter().zip(components).map(|(xi, c)| xi * c.m).sum();
+    if m_bar <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "components",
+            "the mixture's segment number is zero, so no segment fraction is defined".to_string(),
+        ));
+    }
+    let segment: Vec<f64> = x
+        .iter()
+        .zip(components)
+        .map(|(xi, c)| xi * c.m / m_bar)
+        .collect();
+
+    let mut sum = (0.0, 0.0, 0.0);
+    for (i, ci) in components.iter().enumerate() {
+        for (j, cj) in components.iter().enumerate() {
+            let weight = segment[i] * segment[j];
+            if weight < 1.0e-30 {
+                continue;
+            }
+            let sigma_ij = 0.5 * (ci.sigma + cj.sigma);
+            let sigma3 = ci.sigma.powi(3) * cj.sigma.powi(3);
+            let eps_ij = (ci.epsik * cj.epsik).sqrt() * sigma3.sqrt() / sigma_ij.powi(3);
+            let lambda_r = 3.0 + ((ci.lambda_r - 3.0) * (cj.lambda_r - 3.0)).sqrt();
+            let lambda_a = 3.0 + ((ci.lambda_a - 3.0) * (cj.lambda_a - 3.0)).sqrt();
+
+            let cross = MieComponent {
+                m: 1.0,
+                lambda_r,
+                lambda_a,
+                sigma: sigma_ij,
+                epsik: eps_ij,
+            };
+            let d_ij = cross.d(t)?;
+            let c_mie = mie_prefactor(lambda_r, lambda_a);
+            let x0 = if d_ij > 0.0 { sigma_ij / d_ij } else { 1.0 };
+            let beta = eps_ij / t;
+            let zeta = eta * x0 * x0 * x0;
+
+            sum.0 += weight * a1_mie(eta, lambda_r, lambda_a, beta, c_mie, x0);
+            sum.1 += weight * a2_mie(eta, zeta, lambda_r, lambda_a, beta, c_mie, x0);
+            sum.2 += weight * a3_mie(zeta, lambda_r, lambda_a, beta);
+        }
+    }
+    Ok(sum)
+}

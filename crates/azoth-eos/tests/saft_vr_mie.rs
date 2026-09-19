@@ -7,7 +7,8 @@
 
 use azoth_eos::saft_vr_mie::{
     MieComponent, a_s1_bare, a1_mie, a2_mie, a3_mie, b_bare, barker_henderson, chain_contact_value,
-    chain_g1, chain_g2, contact_value_0, eta_effective, g_hs, k_hs, mie_alpha, mie_prefactor,
+    chain_g1, chain_g2, contact_value_0, dispersion_pair_sum, eta_effective, g_hs, k_hs, mie_alpha,
+    mie_prefactor,
 };
 
 fn methane() -> MieComponent {
@@ -340,5 +341,41 @@ fn the_dispersion_terms_are_neqsims() {
     assert!(
         beta > 0.0 && beta < 1.0,
         "Lafitte's alpha is a softness: {beta}"
+    );
+}
+
+/// The mixture's dispersion is a **pair sum with its own cross parameters**, and this is
+/// the check that says so: methane/n-butane at 350 K gives `-0.197247388294105`,
+/// `-0.0230307443986750` and `-0.00229661243223986`.
+#[test]
+fn the_mixtures_dispersion_is_a_pair_sum() {
+    let (a1, a2, a3) = dispersion_pair_sum(
+        &[methane(), n_butane()],
+        &[0.6, 0.4],
+        350.0,
+        0.028_086_304_906_480_8,
+    )
+    .expect("a pair sum");
+    via_eta(a1, -0.197_247_388_294_105, "A1");
+    via_eta(a2, -0.023_030_744_398_675_0, "A2");
+    via_eta(a3, -0.002_296_612_432_239_86, "A3");
+
+    // A pure fluid's pair sum is its direct value: the weight is one and the cross
+    // parameters are the pure ones.
+    let methane = methane();
+    let eta = 0.031_588_908_686_015_9;
+    let x0 = 1.042_832_070_301_19;
+    let (s1, _, _) = dispersion_pair_sum(&[methane], &[1.0], 300.0, eta).expect("a pair sum");
+    via_eta(
+        s1,
+        a1_mie(
+            eta,
+            methane.lambda_r,
+            methane.lambda_a,
+            methane.epsik / 300.0,
+            mie_prefactor(methane.lambda_r, methane.lambda_a),
+            x0,
+        ),
+        "the one-component pair sum is the direct value",
     );
 }
