@@ -290,6 +290,25 @@ def assert_results_equal(
                 assert ca.fitting_id == cb.fitting_id, f"{context}.{field}[{index}] id"
                 assert_close(ca.n_ld, cb.n_ld, tolerance, f"{context}.{field}[{index}].n_ld")
                 assert_close(ca.k, cb.k, tolerance, f"{context}.{field}[{index}].k")
+        elif isinstance(a, (tuple, list)) and a and isinstance(a[0], pint.Quantity):
+            # A *vector* output whose entries carry units - a list of saturation
+            # pressures, a surface tension per component. Compared entry by entry in base
+            # SI, for the reason the scalar branch above converts: the two sides may state
+            # the same pressure in different units.
+            assert len(a) == len(b), (
+                f"{context}.{field}: {len(a)} entries against {len(b)}"
+            )
+            for index, (qa, qb) in enumerate(zip(a, b, strict=True)):
+                assert isinstance(qb, pint.Quantity), (
+                    f"{context}.{field}[{index}]: one side is a bare number and the other "
+                    f"a quantity"
+                )
+                assert_close(
+                    float(qa.to_base_units().magnitude),
+                    float(qb.to_base_units().magnitude),
+                    tolerance,
+                    f"{context}.{field}[{index}]",
+                )
         elif isinstance(a, (tuple, list)) and _is_numeric_nested(a):
             # A vector or matrix output - a composition, a set of K-values, the stationary
             # compositions of a stability trial - compared entry by entry within the
@@ -639,3 +658,22 @@ def parameter_set(model: Mapping[str, Any], names: Sequence[str], inputs: Mappin
             f"parameter set this knows how to resolve; known: {sorted(PARAMETER_RESOLVERS)}"
         ) from None
     return resolve(list(names), **{extra: inputs[extra] for extra in extras})
+
+
+def convergence_tolerance(spec_: dict[str, Any]) -> float | None:
+    """The tolerance at which the spec says its solver converged, if it declares one.
+
+    This is the bound a solver diagnostic is compared on. It is the spec's own number,
+    so it moves with the model rather than being chosen to make a test pass.
+
+    A *model* declares it under ``algorithm``; a *calculation* that solves an implicit
+    equation declares it under ``solver``. Both name the same thing - the precision at
+    which the iteration stopped - so a calc's residual is compared on its own bound
+    too, rather than relatively (a residual near zero has no meaningful relative
+    error, which ``_helpers._assert_diagnostic`` documents).
+    """
+    for block in ("algorithm", "solver"):
+        value = spec_.get(block)
+        if isinstance(value, dict) and value.get("tolerance") is not None:
+            return float(value["tolerance"])
+    return None

@@ -30,19 +30,41 @@ REFERENCE_TEMPERATURE = 298.15
 
 
 def _ln_gamma_group(
-    k: int, theta: list[float], group_q: Sequence[float], aij: Sequence[float], t: float
-) -> float:
-    """The residual ``ln Gamma_k`` for one group at a surface-fraction distribution.
+    k: int,
+    theta: list[float],
+    group_q: Sequence[float],
+    aij: Sequence[float],
+    daij_dt: Sequence[float],
+    t: float,
+) -> tuple[float, float]:
+    """The residual ``ln Gamma_k`` for one group, and ``T d ln Gamma_k / dT``.
 
-    ``aij`` is ``G x G`` row-major, so ``aij[m][n]`` is ``aij[m * g + n]``.
+    ``aij`` is ``G x G`` row-major, so ``aij[m][n]`` is ``aij[m * g + n]``. ``daij_dt`` is
+    the interaction's own temperature derivative, the same shape; an empty sequence means
+    the matrix does not move and the derivative is zero.
+
+    **Every ``T`` here enters through ``exp(-a_mn/T)``**, so with ``E_mn`` for that
+    exponential ``T dE_mn/dT = E_mn (a_mn/T - da_mn/dT)`` - and the two sums are
+    differentiated by the chain and quotient rules.
     """
     g = len(group_q)
+    moves = len(daij_dt) == len(aij)
+
+    def t_de(m: int, n: int) -> float:
+        e = math.exp(-aij[m * g + n] / t)
+        return e * (aij[m * g + n] / t - (daij_dt[m * g + n] if moves else 0.0))
+
     s1 = sum(theta[m] * math.exp(-aij[m * g + k] / t) for m in range(g))
+    t_ds1 = sum(theta[m] * t_de(m, k) for m in range(g))
     s3 = 0.0
+    t_ds3 = 0.0
     for m in range(g):
         s2 = sum(theta[n] * math.exp(-aij[n * g + m] / t) for n in range(g))
-        s3 += theta[m] * math.exp(-aij[k * g + m] / t) / s2
-    return group_q[k] * (1.0 - math.log(s1) - s3)
+        t_ds2 = sum(theta[n] * t_de(n, m) for n in range(g))
+        e_km = math.exp(-aij[k * g + m] / t)
+        s3 += theta[m] * e_km / s2
+        t_ds3 += theta[m] * (t_de(k, m) * s2 - e_km * t_ds2) / (s2 * s2)
+    return group_q[k] * (1.0 - math.log(s1) - s3), group_q[k] * (-t_ds1 / s1 - t_ds3)
 
 
 def unifac_umrpru_activity_coefficients(
@@ -134,16 +156,42 @@ def unifac_umrpru_activity_coefficients(
             "it is refused instead",
         )
 
+    ln_gamma, _ = _ln_gamma(params, t, x)
+    gamma = [math.exp(value) for value in ln_gamma]
+
+    return UnifacUmrpruActivityCoefficientsResult(
+        ln_gamma=tuple(ln_gamma),
+        gamma=tuple(gamma),
+        warnings=tuple(warnings),
+    )
+
+
+def _ln_gamma(
+    params: UnifacUmrpruParameters, t: float, x: Sequence[float]
+) -> tuple[list[float], list[float]]:
+    """The UMR-PRU activity coefficients and ``T d ln gamma_i/dT``.
+
+    Shared with the UMR mixing rule, whose ``alpha_mix`` is a weighted sum of these and
+    whose enthalpy departure is a weighted sum of ``T`` times their derivative: the formula
+    is one statement, so a change to it moves all three.
+
+    **Only the residual moves with the temperature** - the combinatorial term is built from
+    ``r_i`` and ``q_i``, which do not.
+    """
+    n = len(x)
+    groups, group_r, group_q = params.groups, params.group_r, params.group_q
+    g = len(group_r)
     dt = t - REFERENCE_TEMPERATURE
     aij = [
         a + b * dt + c * dt * dt for a, b, c in zip(params.aij, params.bij, params.cij, strict=True)
     ]
+    daij_dt = [b + 2.0 * c * dt for b, c in zip(params.bij, params.cij, strict=True)]
 
     ri = [sum(groups[i * g + k] * group_r[k] for k in range(g)) for i in range(n)]
     qi = [sum(groups[i * g + k] * group_q[k] for k in range(g)) for i in range(n)]
 
     ln_gamma: list[float] = []
-    gamma: list[float] = []
+    t_d_ln_gamma: list[float] = []
     for i in range(n):
         t1 = sum(x[j] * ri[j] for j in range(n))
         t2 = sum(x[j] * qi[j] for j in range(n))
@@ -158,21 +206,15 @@ def unifac_umrpru_activity_coefficients(
             group_q[l] * sum(x[j] * groups[j * g + l] for j in range(n)) / denom for l in range(g)
         ]
         qcomp = [group_q[l] * groups[i * g + l] / qi[i] for l in range(g)]
-        lng_r = sum(
-            groups[i * g + k]
-            * (
-                _ln_gamma_group(k, qmix, group_q, aij, t)
-                - _ln_gamma_group(k, qcomp, group_q, aij, t)
-            )
-            for k in range(g)
-        )
+        lng_r = 0.0
+        t_d_lng_r = 0.0
+        for k in range(g):
+            mix, t_d_mix = _ln_gamma_group(k, qmix, group_q, aij, daij_dt, t)
+            comp, t_d_comp = _ln_gamma_group(k, qcomp, group_q, aij, daij_dt, t)
+            lng_r += groups[i * g + k] * (mix - comp)
+            t_d_lng_r += groups[i * g + k] * (t_d_mix - t_d_comp)
 
-        lng = lng_c + lng_r
-        ln_gamma.append(lng)
-        gamma.append(math.exp(lng))
+        ln_gamma.append(lng_c + lng_r)
+        t_d_ln_gamma.append(t_d_lng_r)
 
-    return UnifacUmrpruActivityCoefficientsResult(
-        ln_gamma=tuple(ln_gamma),
-        gamma=tuple(gamma),
-        warnings=tuple(warnings),
-    )
+    return ln_gamma, t_d_ln_gamma

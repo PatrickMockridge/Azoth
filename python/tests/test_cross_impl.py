@@ -76,22 +76,8 @@ MODEL_CASES = _model_cases()
 
 
 def _convergence_tolerance(spec_: dict[str, Any]) -> float | None:
-    """The tolerance at which the spec says its solver converged, if it declares one.
-
-    This is the bound a solver diagnostic is compared on. It is the spec's own number,
-    so it moves with the model rather than being chosen to make a test pass.
-
-    A *model* declares it under ``algorithm``; a *calculation* that solves an implicit
-    equation declares it under ``solver``. Both name the same thing - the precision at
-    which the iteration stopped - so a calc's residual is compared on its own bound
-    too, rather than relatively (a residual near zero has no meaningful relative
-    error, which ``_helpers._assert_diagnostic`` documents).
-    """
-    for block in ("algorithm", "solver"):
-        value = spec_.get(block)
-        if isinstance(value, dict) and value.get("tolerance") is not None:
-            return float(value["tolerance"])
-    return None
+    """See :func:`_helpers.convergence_tolerance`; kept for this module's own callers."""
+    return h.convergence_tolerance(spec_)
 
 
 @pytest.mark.parametrize(

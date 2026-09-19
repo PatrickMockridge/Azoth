@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import csv
 import io
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import cache
 from typing import NamedTuple
@@ -106,6 +106,12 @@ COLUMNS = (
     "umrcpa_mc3",
     "umrcpa_mc4",
     "umrcpa_mc5",
+    "umrcpa_a0",
+    "umrcpa_b",
+    "umrcpa_assocenergy",
+    "umrcpa_assocvolume",
+    "umrcpa_associating",
+    "umrcpa_racketz",
     "antoine_type",
     "antoinea",
     "antoineb",
@@ -156,6 +162,44 @@ NEQSIM_INTERNAL_TO_SI = 1.0e-5
 
 
 @dataclass(frozen=True, slots=True)
+class UmrCpaParameters:
+    """The ``UMRCPA_*`` fitted set, in the scale the table states it in.
+
+    NeqSim's own conversions, from ``Component.java:526-539``: ``UMRCPA_a0`` is in
+    ``bar L**2/mol**2`` and becomes internal ``a`` by ``x 1e4``, ``UMRCPA_b`` in ``L/mol``
+    by ``x 1e2``, and ``UMRCPA_assocEnergy`` in ``bar L/mol`` - which is 100 J/mol, so the
+    ``x 1e2`` there is a unit conversion and not a scale. ``UMRCPA_assocVolume`` is the
+    dimensionless ``kappa_AB`` and is used as it stands.
+    """
+
+    #: ``UMRCPA_a0``, in ``bar L**2/mol**2``.
+    a0: float
+    #: ``UMRCPA_b``, in ``L/mol``.
+    b: float
+    #: ``UMRCPA_assocEnergy``, in ``bar L/mol``.
+    energy: float
+    #: ``UMRCPA_assocVolume``, the dimensionless ``kappa_AB``.
+    volume: float
+    #: ``UMRCPA_racketZ``, the Rackett compressibility of the volume correction.
+    racket_z: float
+
+    @property
+    def attraction(self) -> float:
+        """The fitted attraction in SI, ``Pa*m**6/mol**2``."""
+        return self.a0 * 1.0e4 * NEQSIM_INTERNAL_TO_SI
+
+    @property
+    def covolume(self) -> float:
+        """The fitted covolume in SI, ``m**3/mol``."""
+        return self.b * 1.0e2 * NEQSIM_INTERNAL_TO_SI
+
+    @property
+    def energy_j_per_mol(self) -> float:
+        """The association energy in J/mol."""
+        return self.energy * 1.0e2
+
+
+@dataclass(frozen=True, slots=True)
 class AssociationParameters:
     """One component's association parameters, as the databank records them.
 
@@ -201,6 +245,13 @@ class AssociationParameters:
     #: a translation this library does not yet apply. It is **not** the cause of the CPA
     #: root gap - for water the shift is 2.5e-05 internal, two orders of magnitude short.
     volume_correction: float
+    #: The ``UMRCPA_*`` set, which replaces the families' fitted values where it is present.
+    #:
+    #: A **third** fitted set beside the SRK and PR families, not a cubic family of its
+    #: own: NeqSim's ``Component.java:534-539`` overrides ``aCPA``/``bCPA``/
+    #: ``associationVolume``/``associationEnergy`` from these columns for a
+    #: ``ComponentUMRCPA`` whose row carries them.
+    umr_cpa: UmrCpaParameters | None = None
 
     @property
     def self_bonds(self) -> bool:
@@ -492,6 +543,28 @@ def _association(row: Mapping[str, str]) -> AssociationParameters | None:
         m_pr=value("mcpa_pr"),
         racket_z=value("racketzcpa"),
         volume_correction=value("volcorrcpa_t"),
+        umr_cpa=_parse_umr_cpa(value),
+    )
+
+
+def _parse_umr_cpa(
+    value: Callable[[str], float],
+) -> UmrCpaParameters | None:
+    """One row's ``UMRCPA_*`` set, or ``None`` where the row does not carry one.
+
+    NeqSim's guard is two-part, ``Component.java:534``: ``UMRCPA_associating`` is one
+    **and** ``|UMRCPA_a0| > 1e-20``. Seven of the 286 rows pass it - water, methanol,
+    ethanol and the four glycols - and a row that fails it keeps the PR family's fitted
+    values, which is what ``ComponentUMRCPA`` reads first for being a ``ComponentPR``.
+    """
+    if abs(value("umrcpa_associating") - 1.0) > 0.0 or abs(value("umrcpa_a0")) <= 1.0e-20:
+        return None
+    return UmrCpaParameters(
+        a0=value("umrcpa_a0"),
+        b=value("umrcpa_b"),
+        energy=value("umrcpa_assocenergy"),
+        volume=value("umrcpa_assocvolume"),
+        racket_z=value("umrcpa_racketz"),
     )
 
 
@@ -542,6 +615,10 @@ def _card_association(
         m_pr=number("m_pr", 0.0 if base is None else base.m_pr),
         racket_z=0.0 if base is None else base.racket_z,
         volume_correction=0.0 if base is None else base.volume_correction,
+        # A card states the parameters a *cubic* reads and carries no `UMRCPA_*` set, so
+        # the table's survives a card untouched - the whole point of naming one parameter
+        # rather than restating a record.
+        umr_cpa=None if base is None else base.umr_cpa,
     )
 
 

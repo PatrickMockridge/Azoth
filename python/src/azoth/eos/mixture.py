@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
     from azoth.core.units import Q
-    from azoth.eos.components import AssociationParameters
+    from azoth.eos.components import AssociationParameters, UnifacUmrpruParameters
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,6 +95,18 @@ class Mixture:
     cubic: Cubic = field(default=PR)
     alpha: str = field(default="pr")
     associating: bool = field(default=False)
+    #: How the components' attraction and covolume combine. ``"classic"`` is the van der
+    #: Waals one-fluid rule, which reads :attr:`kij`; ``"umr"`` is the universal mixing
+    #: rule, which reads the components' UNIFAC group decomposition instead and does not
+    #: read :attr:`kij` at all - so a mixture naming it carries a matrix that nothing
+    #: looks at.
+    mixing_rule: str = field(default="classic")
+    #: The UNIFAC-UMR-PRU tables the ``"umr"`` rule reads, or ``None`` for every mixture
+    #: that uses an interaction matrix. Carried on the mixture rather than looked up per
+    #: state for the reason Rust's ``MixingRule::Umr`` carries them: the tables are a
+    #: property of the fluid, and resolving them inside the solve would put a databank
+    #: read on a flash's inner loop.
+    umr: UnifacUmrpruParameters | None = field(default=None)
 
     def __post_init__(self) -> None:
         if not self.components:

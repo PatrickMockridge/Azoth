@@ -9,7 +9,7 @@ use azoth_core::{AzothError, Result, apply_checks};
 use crate::databank::UnifacUmrpruParameters;
 use crate::model_gen;
 use crate::results::UnifacUmrpruActivityCoefficientsResult;
-use crate::unifac_activity_coefficients::{Combinatorial, unifac_ln_gamma};
+use crate::unifac_activity_coefficients::{Combinatorial, UnifacBasis, unifac_ln_gamma};
 
 /// The temperature the UMR-PRU interaction is fitted about: the group parameters are
 /// `a + b (T - 298.15) + c (T - 298.15)^2`, not `a + b T + c T^2`.
@@ -32,6 +32,58 @@ pub fn umrpru_aij(params: &UnifacUmrpruParameters, t: f64) -> Vec<f64> {
         .zip(&params.cij)
         .map(|((&a, &b), &c)| a + b * dt + c * dt * dt)
         .collect()
+}
+
+/// `d a_mn(T)/dT`, the interaction's own temperature derivative.
+///
+/// `b_mn + 2 c_mn (T - 298.15)`, the derivative of [`umrpru_aij`]'s expression. The
+/// departure functions need it: an excess-Gibbs mixture's enthalpy carries
+/// `T d(alpha_mix)/dT`, and `alpha_mix` moves with the temperature through this matrix as
+/// well as through the alpha functions.
+#[must_use]
+pub fn umrpru_daij_dt(params: &UnifacUmrpruParameters, t: f64) -> Vec<f64> {
+    let dt = t - REFERENCE_TEMPERATURE;
+    params
+        .bij
+        .iter()
+        .zip(&params.cij)
+        .map(|(&b, &c)| b + 2.0 * c * dt)
+        .collect()
+}
+
+/// The UMR-PRU activity coefficients and `T d ln gamma_i/dT`.
+///
+/// The same kernel as [`unifac_umrpru_activity_coefficients`], which returns the first of
+/// the two and discards the second. **The derivative is here because the UMR mixing rule
+/// needs it**: its `alpha_mix` carries `ln gamma_i`, so an enthalpy departure - which is
+/// `T d(alpha_mix)/dT` - carries this. Only the residual moves: the combinatorial term is
+/// built from `r_i` and `q_i`, which are the temperature's business nowhere.
+///
+/// Infallible: the kernel this calls checks nothing, because a
+/// [`UnifacUmrpruParameters`] is already validated by
+/// [`crate::databank::unifac_umrpru_parameters`] and `x` is the caller's composition,
+/// which [`unifac_umrpru_activity_coefficients`] is the function that refuses.
+#[must_use]
+pub fn umrpru_ln_gamma_and_dt(
+    params: &UnifacUmrpruParameters,
+    t: f64,
+    x: &[f64],
+) -> (Vec<f64>, Vec<f64>) {
+    let aij = umrpru_aij(params, t);
+    let daij_dt = umrpru_daij_dt(params, t);
+    let (ln_gamma, _, t_d_ln_gamma) = unifac_ln_gamma(
+        &UnifacBasis {
+            groups: &params.groups,
+            group_r: &params.group_r,
+            group_q: &params.group_q,
+            aij: &aij,
+            daij_dt: &daij_dt,
+        },
+        t,
+        x,
+        Combinatorial::FloryHuggins,
+    );
+    (ln_gamma, t_d_ln_gamma)
 }
 
 /// The activity coefficients of a mixture, from UNIFAC with UMR-PRU's parameters.
@@ -155,11 +207,14 @@ pub fn unifac_umrpru_activity_coefficients(
 
     let aij = umrpru_aij(params, T);
 
-    let (ln_gamma, gamma) = unifac_ln_gamma(
-        &params.groups,
-        &params.group_r,
-        &params.group_q,
-        &aij,
+    let (ln_gamma, gamma, _) = unifac_ln_gamma(
+        &UnifacBasis {
+            groups: &params.groups,
+            group_r: &params.group_r,
+            group_q: &params.group_q,
+            aij: &aij,
+            daij_dt: &[],
+        },
         T,
         x,
         Combinatorial::FloryHuggins,

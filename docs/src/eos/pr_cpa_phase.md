@@ -56,7 +56,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `water_methanol_pr_liquid` | components = ['water', 'methanol'], eos = pr, associating = True, T = 300.0, P = 10000000.0, z = [0.6, 0.4], compressed_phase = liquid | z_factor = 0.1075970257848238, ln_phi = [-7.317420134313837, -7.878653311740308], h_res = -60393.96327709108, s_res = -138.60625775391765 |
+| `water_methanol_pr_liquid` | components = ['water', 'methanol'], eos = pr, associating = True, T = 300.0, P = 10000000.0, z = [0.6, 0.4], compressed_phase = liquid | z_factor = 0.1075970257848238, ln_phi = [-7.317420134313837, -7.878653311740308], h_res = -43490.57273629496, s_res = -82.26162261793057 |
 
 ## References
 

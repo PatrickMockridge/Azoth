@@ -105,6 +105,28 @@ def wilson_k(mixture: Mixture, temperature: float, pressure: float) -> list[floa
     ]
 
 
+class UnifacTables(NamedTuple):
+    """The UNIFAC-UMR-PRU tables the UMR mixing rule reads.
+
+    The three interaction matrices are carried **unevaluated**, as the table states them:
+    the rule needs both ``a_mn(T)`` and its temperature derivative, and evaluating the
+    first here would lose the ``b`` and ``c`` the second is built from.
+    """
+
+    #: Per-component group counts, ``N x G`` row-major.
+    groups: tuple[float, ...]
+    #: The volume ``R`` of each group, length ``G``.
+    group_r: tuple[float, ...]
+    #: The surface area ``Q`` of each group, length ``G``.
+    group_q: tuple[float, ...]
+    #: The constant term of the interaction, ``G x G`` row-major, in kelvin.
+    aij: tuple[float, ...]
+    #: The linear term, ``G x G`` row-major, in kelvin per kelvin.
+    bij: tuple[float, ...]
+    #: The quadratic term, ``G x G`` row-major, in kelvin per kelvin squared.
+    cij: tuple[float, ...]
+
+
 class ReducedParameters(NamedTuple):
     """The per-component quantities at one state.
 
@@ -151,6 +173,10 @@ class ReducedParameters(NamedTuple):
     #: none. Built here rather than looked up per call because it is a property of the
     #: *mixture* and of neither the temperature nor the pressure.
     association: Association | None = None
+    #: The UNIFAC tables the UMR mixing rule reads, or `None` for every mixture that uses
+    #: an interaction matrix. Present is what makes :func:`mixture_parameters` mix by the
+    #: universal rule instead.
+    umr: UnifacTables | None = None
 
 
 class PhaseState(NamedTuple):
@@ -236,11 +262,38 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
         # **This comes before the alpha dispatch, not inside it**, because the substitution
         # replaces what that dispatch computes: an associating component reads the fitted
         # Soave `m` whatever correlation the mixture named.
+        # **UMR-CPA substitutes a third set, and scales it with the model's own alpha.**
+        # `ComponentUMRCPA.setAttractiveTerm` installs the five-parameter Mathias-Copeman
+        # term over the substituted `a` and `b`, where `ComponentSrkCPA` calls `setm(mCPA)`
+        # and gets a Soave coefficient - so which alpha scales the fitted set is the
+        # model's choice, and the model states it by asking for `alpha="matcop_5prumr"`.
+        umr_cpa_set = (
+            component.association.umr_cpa
+            if component.association is not None and mixture.alpha == "matcop_5prumr"
+            else None
+        )
         fitted = _fitted_set(mixture, component)
-        if fitted is not None:
-            family, record = fitted
-            term = Soave(kappa=record.alpha_m(family))
+        if fitted is not None or umr_cpa_set is not None:
             r_t = R * temperature
+            if umr_cpa_set is not None:
+                # The model's alpha is `matcop_5prumr` here and the component carries its
+                # `UMRCPA_MC1..5` - the same term and fallback the dispatch below builds,
+                # reached before it because the substitution replaces what it computes.
+                umr_cpa_kappa = pr_kappa(component.omega)
+                warnings.extend(umr_cpa_kappa.warnings)
+                umr_term = MatCop(
+                    kappa=umr_cpa_kappa.kappa,
+                    params=component.alpha_params,
+                    fallback=MatCopFallback.ALL_UNSET,
+                )
+                alpha_value = umr_term.alpha(reduced_temperature)
+                a.append(umr_cpa_set.attraction * alpha_value * pressure / (r_t * r_t))
+                b.append(umr_cpa_set.covolume * pressure / r_t)
+                psi.append(umr_term.psi(reduced_temperature))
+                psi_t.append(umr_term.psi_t(reduced_temperature))
+                continue
+            family, record = fitted  # type: ignore[misc]
+            term = Soave(kappa=record.alpha_m(family))
             a.append(
                 record.attraction(family) * term.alpha(reduced_temperature) * pressure / (r_t * r_t)
             )
@@ -381,8 +434,29 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
         t_kelvin=temperature,
         pressure=pressure,
         association=_association_of(mixture),
+        umr=_unifac_tables(mixture),
         cubic=mixture.cubic,
         warnings=warnings,
+    )
+
+
+def _unifac_tables(mixture: Mixture) -> UnifacTables | None:
+    """The UMR rule's UNIFAC tables, or ``None`` for every other rule.
+
+    A property of the fluid and not of the state, so this is a move rather than a
+    computation: the interaction is evaluated at a temperature inside :func:`umr_ader`,
+    once per state, where the state's temperature is.
+    """
+    tables = mixture.umr
+    if tables is None:
+        return None
+    return UnifacTables(
+        groups=tables.groups,
+        group_r=tables.group_r,
+        group_q=tables.group_q,
+        aij=tables.aij,
+        bij=tables.bij,
+        cij=tables.cij,
     )
 
 
@@ -423,13 +497,29 @@ def _association_of(mixture: Mixture) -> Association | None:
     ):
         return None
     family = family_of(mixture.cubic.name)
+    # **The UMR-CPA set replaces the family's for a component that carries one**, the same
+    # substitution `reduced_parameters` makes for `a` and `b`, and gated the same way: the
+    # model states that it is UMR-CPA by asking for `alpha="matcop_5prumr"`. Water is the
+    # check - this set's `kappa_AB` is 0.125 and its `eps` 14177 J/mol against the PR
+    # family's, so reading the wrong one moves its `ln phi` in the third decimal while
+    # leaving the methane beside it almost untouched.
+    umr_cpa = mixture.alpha == "matcop_5prumr"
     components: list[AssociationComponent] = []
     for record in records:
-        if record is None or not record.has_fitted_set(family):
+        if record is None:
             components.append(NON_ASSOCIATING)
             continue
         scheme = SiteScheme.from_databank_name(record.scheme)
-        if scheme is None:
+        if umr_cpa and record.umr_cpa is not None and scheme is not None:
+            components.append(
+                AssociationComponent(
+                    scheme,
+                    record.umr_cpa.energy_j_per_mol,
+                    record.umr_cpa.volume,
+                )
+            )
+            continue
+        if not record.has_fitted_set(family) or scheme is None:
             components.append(NON_ASSOCIATING)
             continue
         components.append(
@@ -442,12 +532,80 @@ def _association_of(mixture: Mixture) -> Association | None:
     return Association(components)
 
 
+#: NeqSim's ``hwfc`` for the ``UNIFAC_UMRPRU`` GE model, ``EosMixingRuleHandler.init``.
+#: A property of the pairing rather than of the cubic: the Huron-Vidal rule beside it takes
+#: the cubic's own constant, and nothing about a single component distinguishes the two.
+UMR_HWFC = -1.0 / 0.53
+
+
+def _umr_alpha_mix(reduced: ReducedParameters, x: list[float]) -> float | None:
+    """``sum_i x_i ader_i``, or ``None`` for every mixture that mixes classically."""
+    if reduced.umr is None:
+        return None
+    return umr_ader(reduced, x)[1]
+
+
+def umr_ader(
+    reduced: ReducedParameters, x: list[float]
+) -> tuple[list[float], float, list[float], float]:
+    """The UMR rule's ``(ader, alpha_mix, b_der, T d alpha_mix/dT)`` at a composition.
+
+    ``ader[i] = a_i^T/(b_i R T) + hwfc ln gamma_i``, and ``alpha_mix = sum_i x_i ader_i``.
+    The mixture's ``A`` is ``B * alpha_mix``, which is why this returns the rule's own
+    quantity rather than a single number. ``b_der`` is the linear co-volume sum, the
+    ordinary one.
+
+    **The temperature derivative comes back with it because the departure needs it and the
+    two must be one expression.** ``T d alpha_mix/dT = sum_i x_i [qPure_i (psi_i - 1) +
+    hwfc T d ln gamma_i/dT]`` - the first term from ``a_i^T/(b_i R T)`` carrying ``1/T``,
+    the second from the residual only, since the Flory-Huggins combinatorial is built from
+    ``r`` and ``q`` and does not move.
+    """
+    basis = reduced.umr
+    if basis is None:
+        raise InvalidInputError("mixing_rule", "the UMR rule needs a UNIFAC basis")
+    # Imported here rather than at module scope: `components` reaches this module through
+    # `reference._association`, so a top-level import of the activity-coefficient kernel
+    # would close a cycle.
+    from azoth.eos.components import UnifacUmrpruParameters
+    from azoth.eos.reference.unifac_umrpru_activity_coefficients import _ln_gamma
+
+    tables = UnifacUmrpruParameters(
+        groups=basis.groups,
+        group_r=basis.group_r,
+        group_q=basis.group_q,
+        aij=basis.aij,
+        bij=basis.bij,
+        cij=basis.cij,
+    )
+    ln_gamma, t_d_ln_gamma = _ln_gamma(tables, reduced.t_kelvin, x)
+    qpure = [reduced.a[i] / reduced.b[i] for i in range(len(x))]
+    ader = [qpure[i] + UMR_HWFC * ln_gamma[i] for i in range(len(x))]
+    alpha_mix = sum(x[i] * ader[i] for i in range(len(x)))
+    t_d_alpha = sum(
+        x[i] * (qpure[i] * (reduced.psi[i] - 1.0) + UMR_HWFC * t_d_ln_gamma[i])
+        for i in range(len(x))
+    )
+    return ader, alpha_mix, list(reduced.b), t_d_alpha
+
+
 def mixture_parameters(
-    a: list[float], b: list[float], kij: tuple[tuple[float, ...], ...], x: list[float]
+    a: list[float],
+    b: list[float],
+    kij: tuple[tuple[float, ...], ...],
+    x: list[float],
+    alpha_mix: float | None = None,
 ) -> tuple[float, float]:
-    """The van der Waals one-fluid mixture parameters for a composition."""
+    """The mixture parameters for a composition.
+
+    ``alpha_mix`` is the UMR rule's own mixing: ``A = B * alpha_mix`` with ``B`` the linear
+    co-volume sum, and ``kij`` unread. Passing it is what distinguishes the two, because a
+    universal rule has no interaction matrix to average.
+    """
     n = len(x)
     b_mix = sum(x[i] * b[i] for i in range(n))
+    if alpha_mix is not None:
+        return b_mix * alpha_mix, b_mix
     a_mix = 0.0
     for i in range(n):
         for j in range(n):
@@ -469,7 +627,7 @@ def phase_state(
     ``eos.pr_z_factor`` fixes. A caller who already has a root should use
     :func:`phase_state_at` instead, which does not re-derive it.
     """
-    a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, kij, x)
+    a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, kij, x, _umr_alpha_mix(reduced, x))
     roots = (
         srk_z_factor(a_mix, b_mix)
         if reduced.cubic.name in ("srk", "rk")
@@ -634,7 +792,8 @@ def phase_state_at(
     a, b = reduced.a, reduced.b
     c = reduced.cubic
     n = len(x)
-    a_mix, b_mix = mixture_parameters(a, b, kij, x)
+    alpha_mix = _umr_alpha_mix(reduced, x)
+    a_mix, b_mix = mixture_parameters(a, b, kij, x, alpha_mix)
     if not z > b_mix:
         raise OutOfRangeError(
             "z",
@@ -655,12 +814,27 @@ def phase_state_at(
     z_minus_one = c.eos_z_minus_one(z, a_mix, b_mix)
 
     ln_phi = []
-    for i in range(n):
-        b_ratio = b[i] / b_mix
-        # The cross-sum factor, which is 1 for a pure component and makes this
-        # identical to `eos.pr_departure` at N = 1.
-        factor = 2.0 * cross[i] / a_mix - b_ratio
-        ln_phi.append(b_ratio * z_minus_one - ln_z_minus_b - coefficient * factor * i_term)
+    if alpha_mix is not None:
+        # **An excess-Gibbs rule writes `ln phi` in a different form.** The classical
+        # `factor * i_term` above is the van der Waals one-fluid rule's; a universal rule
+        # carries the activity coefficient per component and a volume-derivative term, and
+        # the two expressions do not reduce to one another off the pure component - which
+        # is the only state at which this library's tests could tell them apart.
+        ader, _, b_der, _ = umr_ader(reduced, x)
+        delta1, delta2 = c.delta1, c.delta2
+        for i in range(n):
+            bd = b_der[i]
+            fv = alpha_mix * bd * z / ((z + delta1 * b_mix) * (z + delta2 * b_mix))
+            ln_phi.append(
+                -ln_z_minus_b + bd / (z - b_mix) - (ader[i] / c.delta_diff) * i_term - fv
+            )
+    else:
+        for i in range(n):
+            b_ratio = b[i] / b_mix
+            # The cross-sum factor, which is 1 for a pure component and makes this
+            # identical to `eos.pr_departure` at N = 1.
+            factor = 2.0 * cross[i] / a_mix - b_ratio
+            ln_phi.append(b_ratio * z_minus_one - ln_z_minus_b - coefficient * factor * i_term)
 
     # The Wertheim association, when the mixture runs it. Its `ln phi` adds to the cubic's
     # and its Helmholtz energy to the departure enthalpy.
@@ -682,7 +856,12 @@ def phase_state_at(
         kernel = reduced.association.solve(covolumes, x, v, reduced.t_kelvin)
         for i, addition in enumerate(kernel.ln_phi):
             ln_phi[i] += addition
-        assoc_dep_rt = kernel.helmholtz_rt - reduced.t_kelvin * (
+        # **`-T d(A/RT)/dT`, with no `A/(RT)` beside it.** NeqSim's own departure is
+        # `Hres = A_res + T SresTV + P V - n R T` with `SresTV = -(dA_res/dT)_V`, so the
+        # association contributes `A - T dA/dT` only if the two appearances of `A` cancel -
+        # and they do, leaving `-T d(A/RT)/dT`. Carrying the `A/(RT)` as well overshot
+        # NeqSim by `FCPA * R T`, which on methane/water at 70 bar is 7.1 J/mol.
+        assoc_dep_rt = -reduced.t_kelvin * (
             reduced.association.temperature_derivative(covolumes, x, v, reduced.t_kelvin, kernel)
         )
 
@@ -707,7 +886,19 @@ def phase_state_at(
             )
     psi_bar = weighted_psi / weight_total
     t_dpsi_bar = weighted_psi_t / weight_total - psi_bar * (psi_bar - 2.0)
-    h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term + assoc_dep_rt
+    # **A universal rule's departure is not the weighted one.** `h_dep_rt`'s cubic term is
+    # `(T dA/dT + A)/(delta_diff B) * I`, and for the classical rule that is
+    # `A (psi_bar - 1)/(delta_diff B)` because `A` carries `(R T)^-2` through every weight.
+    # For the UMR rule `A = B alpha_mix` with **both** factors moving, so `T dA/dT + A`
+    # collapses to `B * T d alpha_mix/dT` and the term is `T d alpha_mix/dT / delta_diff * I`
+    # - no `psi_bar` in it at all. A pure fluid hides the difference: there `alpha_mix` is
+    # one component's `qPure`, and the two expressions agree exactly.
+    if alpha_mix is not None:
+        _, _, _, t_d_alpha = umr_ader(reduced, x)
+        excess = t_d_alpha / c.delta_diff
+    else:
+        excess = coefficient * (psi_bar - 1.0)
+    h_dep_rt = (z - 1.0) + excess * i_term + assoc_dep_rt
     s_dep_r = h_dep_rt - sum(xi * lp for xi, lp in zip(x, ln_phi, strict=True))
 
     # The heat-capacity departure. ``a_mix`` moves with temperature exactly as ``A``
@@ -903,6 +1094,19 @@ def phase_derivatives(
     a, b = reduced.a, reduced.b
     c = reduced.cubic
     n = len(x)
+    if reduced.umr is not None:
+        # The activity-coefficient rules write `ln phi` as `ader`, `alpha_mix` and
+        # `b_der`, whose composition derivative is the excess Gibbs energy's second
+        # derivative rather than this classical one. Asking for it is an error naming
+        # that, not a silent return of the wrong matrix - the same refusal the Rust
+        # `Mixture::phase_derivatives` makes.
+        raise InvalidInputError(
+            "mixing_rule",
+            "the UMR rule writes ln phi as `ader`, `alpha_mix` and `b_der`, whose "
+            "composition derivative is the excess Gibbs energy's second derivative "
+            "rather than this classical one. The derivative surface covers the cubic "
+            "family, and this rule is outside it",
+        )
     a_mix, b_mix = mixture_parameters(a, b, kij, x)
     if not z > b_mix:
         raise OutOfRangeError(

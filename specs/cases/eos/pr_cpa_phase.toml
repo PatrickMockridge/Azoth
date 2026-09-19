@@ -6,7 +6,9 @@ source = """**This model's own values, because NeqSim 3.20.0 has no PR-CPA answe
 
 So the divergence is recorded with the tranche's other two rather than compared against, and the numbers here are recorded from the model. **What is not given up**: both kernels compute them and `test_cross_impl` runs this case through each, so the PR family's fitted columns and its `cpakij_PR` interaction column - read by no shipped model before this one - are compared in two languages.
 
-The state mirrors `eos.srk_cpa_phase`'s case so the two families can be read side by side: the same fluid, temperature, pressure and composition, differing only in which fitted set and which interaction column they read."""
+The state mirrors `eos.srk_cpa_phase`'s case so the two families can be read side by side: the same fluid, temperature, pressure and composition, differing only in which fitted set and which interaction column they read.
+
+**The departures moved by 28% when the association's departure term was corrected**, and that this case did not notice is the point: nothing ran it. The term carried a spurious `A/(RT)` beside `-T d(A/RT)/dT`; `eos.umr_cpa_phase`'s oracle found it, and `test_model_cases.py` is the floor that now runs every case's recorded values."""
 [cases.inputs]
 components = ["water", "methanol"]
 eos = "pr"
@@ -18,5 +20,5 @@ compressed_phase = "liquid"
 [cases.expected]
 z_factor = 0.1075970257848238
 ln_phi = [-7.317420134313837, -7.878653311740308]
-h_res = -60393.96327709108
-s_res = -138.60625775391765
+h_res = -43490.57273629496
+s_res = -82.26162261793057

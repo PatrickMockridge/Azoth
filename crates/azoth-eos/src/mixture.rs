@@ -20,7 +20,7 @@ use crate::association::{
     SiteScheme,
 };
 use crate::cubic::Cubic;
-use crate::mixing_rule::MixingRule;
+use crate::mixing_rule::{MixingRule, UMR_HWFC};
 use crate::{
     pr_alpha_ab, pr_kappa, pr_z_factor, pr78_kappa, rk_alpha_ab, srk_alpha_ab, srk_kappa,
     srk_z_factor, twu_kappa,
@@ -227,6 +227,25 @@ impl Component {
         self.volume_shift = volume_shift;
         self
     }
+}
+
+/// The UMR rule's state at a composition: the fugacity's three quantities and the
+/// departure's one.
+///
+/// `t_d_alpha_mix` is `T d alpha_mix/dT`, which the enthalpy's excess-Gibbs branch is
+/// built from. It travels with `ader` because both are derived from the same
+/// `ln gamma` and its temperature derivative, and computing them apart would evaluate
+/// the activity coefficients twice.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UmrState {
+    /// The per-component attraction coefficients `qPure_i + hwfc ln gamma_i`.
+    pub ader: Vec<f64>,
+    /// `sum_i x_i ader_i`, which `A` is `B` times.
+    pub alpha_mix: f64,
+    /// The co-volume vector the fugacity's volume-derivative term carries.
+    pub b_der: Vec<f64>,
+    /// `T d alpha_mix/dT` at this composition.
+    pub t_d_alpha_mix: f64,
 }
 
 /// A set of components and the binary interaction parameters between them.
@@ -940,13 +959,27 @@ impl Mixture {
             }
             let derivatives =
                 association.derivatives(&covolumes, x, v, reduced.t_kelvin, &state)?;
-            assoc_dep_rt = state.helmholtz_rt - reduced.t_kelvin * derivatives.d_helmholtz_dt;
+            assoc_dep_rt = -reduced.t_kelvin * derivatives.d_helmholtz_dt;
         }
 
         // The mixture's departure functions. `psi_bar` is the composition-weighted
         // average of the components' `psi`, and the two lines below are then
         // `pr_departure`'s expressions with `psi_bar` in place of `psi` - which is
         // what makes them reduce to it exactly at one component.
+        //
+        // **A universal rule's departure is not the weighted one.** `h_dep_rt`'s cubic term
+        // is `(T dA/dT + A)/(delta_diff B) * I`, and for the classical rule that is
+        // `A (psi_bar - 1)/(delta_diff B)` because `A` carries `(R T)^-2` through every
+        // weight. For the UMR rule `A = B alpha_mix` with **both** factors moving, so
+        // `T dA/dT + A` collapses to `B * T d alpha_mix/dT` and the term is
+        // `T d alpha_mix/dT / delta_diff * I` - no `psi_bar` in it at all. A pure fluid
+        // hides the difference: there `alpha_mix` is one component's `qPure`, and the two
+        // expressions agree exactly, which is why this was invisible until a mixture was
+        // compared against NeqSim.
+        let umr_state = match &self.mixing_rule {
+            MixingRule::Umr { .. } => Some(self.umr_ader(reduced, x)),
+            _ => None,
+        };
         let mut weight_total = 0.0;
         let mut weighted_psi = 0.0;
         let mut weighted_psi_t = 0.0;
@@ -966,7 +999,11 @@ impl Mixture {
         }
         let psi_bar = weighted_psi / weight_total;
         let t_dpsi_bar = weighted_psi_t / weight_total - psi_bar * (psi_bar - 2.0);
-        let h_dep_rt = (z - 1.0) + coefficient * (psi_bar - 1.0) * i_term + assoc_dep_rt;
+        let excess = match &umr_state {
+            Some(state) => state.t_d_alpha_mix / self.cubic.delta_diff(),
+            None => coefficient * (psi_bar - 1.0),
+        };
+        let h_dep_rt = (z - 1.0) + excess * i_term + assoc_dep_rt;
         let s_dep_r = h_dep_rt
             - ln_phi
                 .iter()
@@ -1577,31 +1614,43 @@ impl Mixture {
             .collect()
     }
 
-    /// The UMR attraction coefficients `A_i/B_i + hwfc ln gamma_i`.
+    /// The UMR attraction coefficients `A_i/B_i + hwfc ln gamma_i`, and `T d alpha_mix/dT`.
     ///
     /// `EosMixingRuleHandler.init`'s `qPure[i] + hwfc * ln(gamma_i)`, with
     /// `qPure[i] = a_i^T/(b_i R T)` and `hwfc = -1/0.53`. The reduced attraction `A_i`
     /// that [`ReducedParameters::a`] carries is `a_i^T P/(R T)^2` and the co-volume
     /// `B_i` is `b_i P/(R T)`, so their ratio **is** `a_i^T/(b_i R T)` and the division
     /// cancels the state; that is why this needs no pressure.
-    fn umr_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
+    ///
+    /// **The temperature derivative comes back with it because the departure needs it and
+    /// the two must be one expression.** `T d alpha_mix/dT = sum_i x_i [qPure_i (psi_i - 1)
+    /// + hwfc T d ln gamma_i/dT]` - the first term from `a_i^T/(b_i R T)` carrying `1/T`,
+    /// the second from the residual only, since the Flory-Huggins combinatorial is built
+    /// from `r` and `q` and does not move.
+    fn umr_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> UmrState {
         let MixingRule::Umr { unifac, .. } = &self.mixing_rule else {
             unreachable!("umr_ader is only called for the UMR rule");
         };
-        let aij = crate::unifac_umrpru_activity_coefficients::umrpru_aij(unifac, reduced.t_kelvin);
-        let (ln_gamma, _) = crate::unifac_activity_coefficients::unifac_ln_gamma(
-            &unifac.groups,
-            &unifac.group_r,
-            &unifac.group_q,
-            &aij,
-            reduced.t_kelvin,
-            x,
-            crate::unifac_activity_coefficients::Combinatorial::FloryHuggins,
-        );
+        let (ln_gamma, t_d_ln_gamma) =
+            crate::unifac_umrpru_activity_coefficients::umrpru_ln_gamma_and_dt(
+                unifac,
+                reduced.t_kelvin,
+                x,
+            );
         let qpure: Vec<f64> = (0..self.len())
             .map(|i| reduced.a[i] / reduced.b[i])
             .collect();
-        crate::mixing_rule::umr_ader(&qpure, &ln_gamma)
+        let ader = crate::mixing_rule::umr_ader(&qpure, &ln_gamma);
+        let alpha_mix: f64 = (0..self.len()).map(|i| x[i] * ader[i]).sum();
+        let t_d_alpha_mix: f64 = (0..self.len())
+            .map(|i| x[i] * (qpure[i] * (reduced.psi[i] - 1.0) + UMR_HWFC * t_d_ln_gamma[i]))
+            .sum();
+        UmrState {
+            ader,
+            alpha_mix,
+            b_der: reduced.b.clone(),
+            t_d_alpha_mix,
+        }
     }
 
     /// The Huron-Vidal attraction coefficients.
@@ -1691,9 +1740,8 @@ impl Mixture {
                 (ader, alpha_mix, bder)
             }
             MixingRule::Umr { .. } => {
-                let ader = self.umr_ader(reduced, x);
-                let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
-                (ader, alpha_mix, reduced.b.clone())
+                let state = self.umr_ader(reduced, x);
+                (state.ader, state.alpha_mix, state.b_der)
             }
             _ => unreachable!("ge_state is only called for GE rules"),
         }
@@ -1726,10 +1774,9 @@ impl Mixture {
                 (b_mix * alpha_mix, b_mix)
             }
             MixingRule::Umr { .. } => {
-                let ader = self.umr_ader(reduced, x);
-                let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
-                let b_mix = (0..n).map(|i| x[i] * reduced.b[i]).sum();
-                (b_mix * alpha_mix, b_mix)
+                let state = self.umr_ader(reduced, x);
+                let b_mix: f64 = (0..n).map(|i| x[i] * reduced.b[i]).sum();
+                (b_mix * state.alpha_mix, b_mix)
             }
             _ => {
                 let kij = self.phase_kij(reduced, x);
