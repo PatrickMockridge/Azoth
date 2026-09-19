@@ -361,9 +361,9 @@ impl CalcResult for BwrsPhaseResult {
     }
 }
 
-/// Result of `eos.pcsaft_phase`.
+/// Result of `eos.pcsaft_rahmat_phase`.
 #[derive(Debug, Clone, PartialEq)]
-pub struct PcsaftPhaseResult {
+pub struct PcsaftRahmatPhaseResult {
     /// The compressibility factor at the chosen root.
     pub z_factor: f64,
     /// The fugacity coefficients, as logarithms, one per component.
@@ -374,8 +374,8 @@ pub struct PcsaftPhaseResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for PcsaftPhaseResult {
-    const CALC_ID: &'static str = "eos.pcsaft_phase";
+impl CalcResult for PcsaftRahmatPhaseResult {
+    const CALC_ID: &'static str = "eos.pcsaft_rahmat_phase";
     const FIELDS: &'static [&'static str] = &["z_factor", "ln_phi", "v", "warnings"];
 
     fn warnings(&self) -> &[Warning] {

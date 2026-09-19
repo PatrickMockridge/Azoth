@@ -25,7 +25,7 @@
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
 //!   - specs/models/eos/parahydrogen_solid_phase.toml
-//!   - specs/models/eos/pcsaft_phase.toml
+//!   - specs/models/eos/pcsaft_rahmat_phase.toml
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/pr_cpa_phase.toml
 //!   - specs/models/eos/ps_flash.toml
@@ -2898,7 +2898,7 @@ pub static PARAHYDROGEN_SOLID_PHASE_SPEC: ModelSpec = ModelSpec {
     cases: PARAHYDROGEN_SOLID_PHASE_CASES,
 };
 
-static PCSAFT_PHASE_CHECKS: &[SpecCheck] = &[
+static PCSAFT_RAHMAT_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
         check: RangeCheck {
@@ -2931,7 +2931,7 @@ static PCSAFT_PHASE_CHECKS: &[SpecCheck] = &[
     },
 ];
 
-static PCSAFT_PHASE_CASES: &[TestCase] = &[TestCase {
+static PCSAFT_RAHMAT_PHASE_CASES: &[TestCase] = &[TestCase {
     id: "methane_butane_vapour_against_neqsim",
     kind: "case",
     property: None,
@@ -2945,19 +2945,19 @@ static PCSAFT_PHASE_CASES: &[TestCase] = &[TestCase {
     vectors: &[("z", &[0.6, 0.4])],
     matrices: &[],
     expected: &[
-        ("v", 0.0008141097344383686),
-        ("z_factor", 0.8392705810810248),
+        ("v", 0.0008141097344315069),
+        ("z_factor", 0.8392705810739511),
     ],
-    expected_vectors: &[("ln_phi", &[0.022979895153786956, -0.4210924858670044])],
+    expected_vectors: &[("ln_phi", &[0.02297989515406737, -0.4210924858702312])],
 }];
 
-/// Registry entry for `eos.pcsaft_phase`.
-pub static PCSAFT_PHASE_SPEC: ModelSpec = ModelSpec {
-    id: "eos.pcsaft_phase",
+/// Registry entry for `eos.pcsaft_rahmat_phase`.
+pub static PCSAFT_RAHMAT_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pcsaft_rahmat_phase",
     kind: "direct",
     algorithm: None,
-    checks: PCSAFT_PHASE_CHECKS,
-    cases: PCSAFT_PHASE_CASES,
+    checks: PCSAFT_RAHMAT_PHASE_CHECKS,
+    cases: PCSAFT_RAHMAT_PHASE_CASES,
 };
 
 static PH_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -6247,7 +6247,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &NRTL_ACTIVITY_COEFFICIENTS_SPEC,
     &PARAHYDROGEN_SOLID_PHASE_SPEC,
-    &PCSAFT_PHASE_SPEC,
+    &PCSAFT_RAHMAT_PHASE_SPEC,
     &PH_FLASH_SPEC,
     &PR_CPA_PHASE_SPEC,
     &PS_FLASH_SPEC,

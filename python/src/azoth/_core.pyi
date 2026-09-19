@@ -481,7 +481,7 @@ class ParahydrogenSolidPhaseResult:
     warnings: list[Warning]
 
 @final
-class PcsaftPhaseResult:
+class PcsaftRahmatPhaseResult:
     z_factor: float
     ln_phi: list[float]
     v: Qty
@@ -1425,13 +1425,13 @@ def parachor_surface_tension(
     M: float,
 ) -> ParachorSurfaceTensionResult: ...
 def parahydrogen_solid_phase(T: float, P: float) -> ParahydrogenSolidPhaseResult: ...
-def pcsaft_phase(
+def pcsaft_rahmat_phase(
     components: list[str],
     T: float,
     P: float,
     z: list[float],
     compressed_phase: str,
-) -> PcsaftPhaseResult: ...
+) -> PcsaftRahmatPhaseResult: ...
 def ph_flash(
     Tc: list[float],
     Pc: list[float],

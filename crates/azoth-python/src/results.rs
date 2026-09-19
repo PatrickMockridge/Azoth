@@ -28,8 +28,8 @@ use azoth_eos::results::{
     Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
     MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
-    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftPhaseResult, PhFlashResult,
-    Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult, PrDaneshAlphaResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
+    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult, PrDaneshAlphaResult,
     PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
     PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
     PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
@@ -5996,7 +5996,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
         BwrsPhaseResult::CALC_ID => BwrsPhaseResult::FIELDS.to_vec(),
         SrkCpaPhaseResult::CALC_ID => SrkCpaPhaseResult::FIELDS.to_vec(),
-        PcsaftPhaseResult::CALC_ID => PcsaftPhaseResult::FIELDS.to_vec(),
+        PcsaftRahmatPhaseResult::CALC_ID => PcsaftRahmatPhaseResult::FIELDS.to_vec(),
         PrCpaPhaseResult::CALC_ID => PrCpaPhaseResult::FIELDS.to_vec(),
         AmmoniaPhaseResult::CALC_ID => AmmoniaPhaseResult::FIELDS.to_vec(),
         Co2PhaseResult::CALC_ID => Co2PhaseResult::FIELDS.to_vec(),
@@ -6327,15 +6327,15 @@ impl From<&azoth_eos::results::SrkCpaPhaseResult> for PySrkCpaPhaseResult {
     }
 }
 
-/// Result of `eos.pcsaft_phase`, transported.
+/// Result of `eos.pcsaft_rahmat_phase`, transported.
 #[pyclass(
     frozen,
     skip_from_py_object,
     module = "azoth._core",
-    name = "PcsaftPhaseResult"
+    name = "PcsaftRahmatPhaseResult"
 )]
 #[derive(Debug, Clone, PartialEq)]
-pub struct PyPcsaftPhaseResult {
+pub struct PyPcsaftRahmatPhaseResult {
     /// The compressibility factor at the chosen root.
     #[pyo3(get)]
     pub z_factor: f64,
@@ -6351,17 +6351,17 @@ pub struct PyPcsaftPhaseResult {
 }
 
 #[pymethods]
-impl PyPcsaftPhaseResult {
+impl PyPcsaftRahmatPhaseResult {
     fn __repr__(&self) -> String {
         format!(
-            "PcsaftPhaseResult(z_factor={}, ln_phi={:?})",
+            "PcsaftRahmatPhaseResult(z_factor={}, ln_phi={:?})",
             self.z_factor, self.ln_phi
         )
     }
 }
 
-impl From<&azoth_eos::results::PcsaftPhaseResult> for PyPcsaftPhaseResult {
-    fn from(r: &azoth_eos::results::PcsaftPhaseResult) -> Self {
+impl From<&azoth_eos::results::PcsaftRahmatPhaseResult> for PyPcsaftRahmatPhaseResult {
+    fn from(r: &azoth_eos::results::PcsaftRahmatPhaseResult) -> Self {
         Self {
             z_factor: r.z_factor,
             ln_phi: r.ln_phi.clone(),

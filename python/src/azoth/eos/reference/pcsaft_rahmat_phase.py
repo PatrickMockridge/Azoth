@@ -1,10 +1,10 @@
-"""``eos.pcsaft_phase`` - the PC-SAFT phase state, the pure-Python reference.
+"""``eos.pcsaft_rahmat_phase`` - the PC-SAFT phase state, the pure-Python reference.
 
-The second, independent expression of the physics the Rust ``azoth_eos::pcsaft_phase``
+The second, independent expression of the physics the Rust ``azoth_eos::pcsaft_rahmat_phase``
 computes: Gross and Sadowski's perturbed-chain statistical associating fluid theory
 without its association term, at a temperature, a pressure and a composition.
 
-Spec: ``specs/models/eos/pcsaft_phase.toml``, which carries why the two constants are
+Spec: ``specs/models/eos/pcsaft_rahmat_phase.toml``, which carries why the two constants are
 NeqSim's rounded literals rather than CODATA's, why a component with no parameter set is
 refused, and why the branch is a caller's statement.
 
@@ -24,12 +24,12 @@ from typing import NamedTuple
 
 from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
-from azoth.core.result import PcsaftPhaseResult
+from azoth.core.result import PcsaftRahmatPhaseResult
 from azoth.core.units import Q, input_to_si, ureg
 from azoth.core.warnings import Warning
 from azoth.eos.components import entry, pcsaft_kij_for
 
-MODEL_ID = "eos.pcsaft_phase"
+MODEL_ID = "eos.pcsaft_rahmat_phase"
 
 #: Avogadro's constant, **NeqSim's value**, in 1/mol. ``6.023e23`` is the pre-2019
 #: definition, a relative ``1.4e-4`` from CODATA's; the packing fraction and both
@@ -496,13 +496,13 @@ def _molar_volume(
     return v, p * v / rt, 0
 
 
-def pcsaft_phase(
+def pcsaft_rahmat_phase(
     components: list[str],
     T: Q,
     P: Q,
     z: list[float],
     compressed_phase: str,
-) -> PcsaftPhaseResult:
+) -> PcsaftRahmatPhaseResult:
     """One PC-SAFT phase's state at a temperature, pressure and composition.
 
     Args:
@@ -561,7 +561,7 @@ def pcsaft_phase(
 
     v, z_factor, _ = _molar_volume(resolved, kij, z, t_si, p_si, side)
     state = _State(resolved, kij, z, t_si, v)
-    return PcsaftPhaseResult(
+    return PcsaftRahmatPhaseResult(
         z_factor=z_factor,
         ln_phi=tuple(state.ln_fugacity_coefficients()),
         v=ureg.Quantity(v, "m**3/mol"),
@@ -569,4 +569,4 @@ def pcsaft_phase(
     )
 
 
-__all__ = ["pcsaft_phase"]
+__all__ = ["pcsaft_rahmat_phase"]

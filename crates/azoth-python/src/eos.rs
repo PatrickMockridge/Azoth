@@ -3354,16 +3354,16 @@ pub fn model_schemes(model_id: &str) -> Vec<String> {
 #[pyfunction]
 #[pyo3(signature = (components, T, P, z, compressed_phase))]
 #[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn pcsaft_phase(
+pub fn pcsaft_rahmat_phase(
     py: Python<'_>,
     components: Vec<String>,
     T: f64,
     P: f64,
     z: Vec<f64>,
     compressed_phase: &str,
-) -> PyResult<crate::results::PyPcsaftPhaseResult> {
-    azoth_eos::pcsaft_phase::pcsaft_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
-        .map(|r| crate::results::PyPcsaftPhaseResult::from(&r))
+) -> PyResult<crate::results::PyPcsaftRahmatPhaseResult> {
+    azoth_eos::pcsaft_rahmat_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
+        .map(|r| crate::results::PyPcsaftRahmatPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

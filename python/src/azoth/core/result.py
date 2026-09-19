@@ -2024,8 +2024,8 @@ class BwrsPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
-class PcsaftPhaseResult(_HasWarnings):
-    """Result of ``eos.pcsaft_phase``.
+class PcsaftRahmatPhaseResult(_HasWarnings):
+    """Result of ``eos.pcsaft_rahmat_phase``.
 
     The PC-SAFT phase state: the compressibility factor, the molar volume the solve
     converged to, and the fugacity coefficients. **No departure function is reported**,

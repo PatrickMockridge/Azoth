@@ -101,6 +101,7 @@ pub mod parahydrogen_solid;
 pub mod parahydrogen_solid_phase;
 pub mod pcsaft;
 pub mod pcsaft_phase;
+pub mod pcsaft_rahmat_phase;
 pub mod ph_flash;
 pub mod phase_boundary;
 pub mod pr78_kappa;
@@ -221,6 +222,7 @@ pub use nitric_sulfuric_acid_vapor_pressure::nitric_sulfuric_acid_vapor_pressure
 pub use nrtl_activity_coefficients::nrtl_activity_coefficients;
 pub use parachor_surface_tension::parachor_surface_tension;
 pub use parahydrogen_solid_phase::parahydrogen_solid_phase;
+pub use pcsaft_rahmat_phase::pcsaft_rahmat_phase;
 pub use ph_flash::ph_flash;
 pub use phase_boundary::{Incipient, PhaseBoundary, phase_boundary_pressure};
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};

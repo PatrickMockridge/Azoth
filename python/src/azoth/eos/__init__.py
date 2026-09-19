@@ -111,7 +111,7 @@ from azoth.core.result import (
     NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
-    PcsaftPhaseResult,
+    PcsaftRahmatPhaseResult,
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
@@ -246,7 +246,7 @@ __all__ = [
     "nitric_sulfuric_acid_vapor_pressure",
     "nrtl_activity_coefficients",
     "parahydrogen_solid_phase",
-    "pcsaft_phase",
+    "pcsaft_rahmat_phase",
     "ph_flash",
     "pr78_kappa",
     "pr_alpha_ab",
@@ -330,7 +330,7 @@ _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
 _SRK_CPA_PHASE = "eos.srk_cpa_phase"
-_PCSAFT_PHASE = "eos.pcsaft_phase"
+_PCSAFT_RAHMAT_PHASE = "eos.pcsaft_rahmat_phase"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
@@ -2530,9 +2530,9 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
     return resolve(_PURE_SATURATION)(Tc=Tc, Pc=Pc, omega=omega, T=T)  # type: ignore[no-any-return]
 
 
-def pcsaft_phase(
+def pcsaft_rahmat_phase(
     components: list[str], T: Q, P: Q, z: list[float], compressed_phase: str
-) -> PcsaftPhaseResult:
+) -> PcsaftRahmatPhaseResult:
     """One PC-SAFT phase's state at a temperature, pressure and composition.
 
     Gross and Sadowski's perturbed-chain statistical associating fluid theory without its
@@ -2552,9 +2552,9 @@ def pcsaft_phase(
         OutOfRangeError: if ``T`` or ``P`` is not positive, or the wanted branch has no root
             at this state.
 
-    See :func:`azoth.eos.reference.pcsaft_phase`.
+    See :func:`azoth.eos.reference.pcsaft_rahmat_phase`.
     """
-    return resolve(_PCSAFT_PHASE)(  # type: ignore[no-any-return]
+    return resolve(_PCSAFT_RAHMAT_PHASE)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
     )
 
