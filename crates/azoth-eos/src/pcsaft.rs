@@ -327,3 +327,72 @@ fn series(order: &[[f64; 7]; 3], m_bar: f64, eta: f64) -> f64 {
     }
     out
 }
+
+/// `dI/deta` for one of the two series, `sum_i i a_i(m_bar) eta^(i-1)`.
+fn series_d_eta(order: &[[f64; 7]; 3], m_bar: f64, eta: f64) -> f64 {
+    let one = (m_bar - 1.0) / m_bar;
+    let two = one * (m_bar - 2.0) / m_bar;
+    let mut out = 0.0;
+    for (i, (a0, (a1, a2))) in order[0]
+        .iter()
+        .zip(order[1].iter().zip(order[2].iter()))
+        .enumerate()
+        .skip(1)
+    {
+        let a_i = a0 + one * a1 + two * a2;
+        out += (i as f64) * a_i * eta.powi(i as i32 - 1);
+    }
+    out
+}
+
+/// The state's pressure at a trial molar volume, over `R T`.
+///
+/// `P/(RT) = 1/v - F_V`, with `F_V = -eta F_eta / v` because the packing fraction is the
+/// only place the volume enters - `eta` is proportional to `1/v` and every other quantity
+/// is a function of the temperature and the composition alone.
+///
+/// # Errors
+/// As [`state`].
+pub fn pressure_over_rt(
+    components: &[PcsaftComponent],
+    kij: &[f64],
+    x: &[f64],
+    t: f64,
+    v: f64,
+) -> Result<f64> {
+    let s = state(components, kij, x, t, v)?;
+    let eta = s.eta;
+    let d = 1.0 - eta;
+
+    // Each of the three has the shape `(num)/(1 - eta)^k`, so its derivative is
+    // `((num)' (1 - eta) + k num)/(1 - eta)^(k+1)` and the denominator never has to be
+    // squared into a separate variable.
+    let a_hs_d_eta = ((4.0 - 6.0 * eta) * d + 2.0 * (4.0 * eta - 3.0 * eta * eta)) / d.powi(3);
+    let g_hs_d_eta = (2.5 - eta) / d.powi(4);
+
+    // `C1 = 1/(1 + m_bar A + (1-m_bar) B)`, so `C1' = -C1^2 (m_bar A' + (1-m_bar) B')`.
+    let a_d_eta = ((8.0 - 4.0 * eta) * d + 4.0 * (8.0 * eta - 2.0 * eta * eta)) / d.powi(5);
+    let b_num = 20.0 * eta - 27.0 * eta * eta + 12.0 * eta.powi(3) - 2.0 * eta.powi(4);
+    let b_den = ((1.0 - eta) * (2.0 - eta)).powi(2);
+    let b_num_d_eta = 20.0 - 54.0 * eta + 36.0 * eta * eta - 8.0 * eta.powi(3);
+    let b_den_d_eta = 2.0 * (1.0 - eta) * (2.0 - eta) * (2.0 * eta - 3.0);
+    let b_d_eta = (b_num_d_eta * b_den - b_num * b_den_d_eta) / (b_den * b_den);
+    let c1_d_eta = -s.c1 * s.c1 * (s.m_bar * a_d_eta + (1.0 - s.m_bar) * b_d_eta);
+
+    let i1_d_eta = series_d_eta(&A_CONST, s.m_bar, eta);
+    let i2_d_eta = series_d_eta(&B_CONST, s.m_bar, eta);
+
+    // Every term below is proportional to `rho`, which is proportional to `eta`: so
+    // `d(rho X)/deta = (rho/eta) d(eta X)/deta`, and the `rho` never has to be written.
+    let rho_over_eta = AVOGADRO / v / eta;
+    let f_eta = s.m_bar * a_hs_d_eta
+        - s.m_minus_1 * g_hs_d_eta / s.g_hs
+        - 2.0 * std::f64::consts::PI * rho_over_eta * s.s1 * (s.i1 + eta * i1_d_eta)
+        - std::f64::consts::PI
+            * s.m_bar
+            * rho_over_eta
+            * s.s2
+            * (s.i2 * s.c1 + eta * i2_d_eta * s.c1 + eta * s.i2 * c1_d_eta);
+
+    Ok(1.0 / v + eta * f_eta / v)
+}

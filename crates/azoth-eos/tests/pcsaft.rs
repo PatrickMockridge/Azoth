@@ -6,7 +6,7 @@
 //! cancelling, and this tranche has already spent a session on a quantity read at the
 //! wrong scale.
 
-use azoth_eos::pcsaft::{PcsaftComponent, state};
+use azoth_eos::pcsaft::{PcsaftComponent, pressure_over_rt, state};
 
 /// Methane at 300 K and 50 bara, and methane/n-butane at 350 K and 30 bara - both from
 /// the probe, whose molar volumes are its `volumeSAFT`.
@@ -126,5 +126,60 @@ fn a_component_without_a_set_is_refused() {
     assert!(
         message.contains("no PC-SAFT set"),
         "the failure should say what is missing: {message}"
+    );
+}
+
+/// The pressure the kernel predicts at NeqSim's own converged volume.
+///
+/// `P/(RT) = 1/v - F_V` and `F_V = -eta F_eta / v`, so `P v/(RT)` must be the state's
+/// compressibility - and the probe reports both `v` and `Z` on the same phase. That makes
+/// this the check on `F_eta`: it ties the derivative to the *state* the oracle converged
+/// to, so a sign, a term or a power wrong in the chain shows up as a pressure that is not
+/// the one the volume came from.
+///
+/// It also cannot be satisfied by a wrong `F` at a wrong `v`: the volume and the
+/// compressibility are both NeqSim's.
+#[test]
+fn the_pressure_at_neqsims_volume_is_neqsims_compressibility() {
+    let pure = pressure_over_rt(&[methane()], &[0.0], &[1.0], 300.0, 4.55032070500990e-4)
+        .expect("a pressure");
+    via_eta(pure * 4.55032070500990e-4, 0.912129702491155, "methane Z");
+
+    let binary = pressure_over_rt(
+        &[methane(), n_butane()],
+        &[0.0, 0.022, 0.022, 0.0],
+        &[0.6, 0.4],
+        350.0,
+        8.14109734626316e-4,
+    )
+    .expect("a pressure");
+    via_eta(binary * 8.14109734626316e-4, 0.839270581279057, "binary Z");
+}
+
+/// `F_eta` is what it says, by finite difference of the energy in the packing fraction.
+///
+/// Self-contained rather than oracle-pinned: the energy is a function of `eta` and the
+/// volume enters only through it, so a central difference in `v` divided by `-v/eta`
+/// gives the derivative the pressure is built from.
+#[test]
+fn the_eta_derivative_is_the_energy_s_own() {
+    let components = [methane(), n_butane()];
+    let kij = [0.0, 0.022, 0.022, 0.0];
+    let x = [0.6, 0.4];
+    let (t, v) = (350.0, 8.14109734626316e-4);
+    let h = 1.0e-8 * v;
+
+    let up = state(&components, &kij, &x, t, v + h).expect("a state");
+    let down = state(&components, &kij, &x, t, v - h).expect("a state");
+    let base = state(&components, &kij, &x, t, v).expect("a state");
+    // `dF/dv = -eta F_eta / v`, so `F_eta = -v/eta dF/dv`.
+    let f_eta = -v / base.eta * (up.f() - down.f()) / (2.0 * h);
+
+    let pressure = pressure_over_rt(&components, &kij, &x, t, v).expect("a pressure");
+    let wanted = (pressure * v - 1.0) / base.eta;
+    assert!(
+        (f_eta / wanted - 1.0).abs() < 1.0e-6,
+        "the finite difference gives F_eta = {f_eta} and the pressure's chain rule needs \
+         {wanted}"
     );
 }
