@@ -431,3 +431,44 @@ def test_spec_lookup_rejects_unknown_ids() -> None:
     """A wrong calc id must fail loudly rather than returning something."""
     with pytest.raises(KeyError, match="unknown calc"):
         spec("hydraulics.no_such_calc")
+
+
+_README_COUNT_CLAIM = re.compile(r"(?P<calcs>\d+) calculations and (?P<models>\d+) models")
+_README_UNIT_CLAIM = re.compile(r"(?P<units>\d+)-unit vocabulary")
+
+
+def test_the_readme_states_the_real_counts() -> None:
+    """The front page's numbers, checked against the registry the same way `spec.md`'s are.
+
+    The specification page has had this since its count went stale once; the README did
+    not, and it had drifted much further - **43 calculations and 25 models** against 61
+    and 57, and a "25-unit vocabulary" against 27. A reader arriving at the front page has
+    no way to tell, and the counts say something real: how much of NeqSim is ported.
+
+    Read from the text rather than from a constant, and the two claims separately, for the
+    reason the sibling test gives: a figure nothing checks is the figure that goes stale.
+    """
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+
+    counts = _README_COUNT_CLAIM.search(readme)
+    assert counts, (
+        "README.md no longer states its catalogue size in the form this test reads. "
+        "Either the sentence changed and this regex did not, or the count was removed."
+    )
+    assert int(counts.group("calcs")) == len(CALCS), (
+        f"README.md says {counts.group('calcs')} calculations; the registry has {len(CALCS)}"
+    )
+    assert int(counts.group("models")) == len(_models_gen.MODELS), (
+        f"README.md says {counts.group('models')} models; the registry has "
+        f"{len(_models_gen.MODELS)}"
+    )
+
+    units = _README_UNIT_CLAIM.search(readme)
+    assert units, "README.md no longer states its vocabulary size in the form this test reads"
+    from azoth.core._units_gen import UNIT_VOCABULARY
+
+    assert int(units.group("units")) == len(UNIT_VOCABULARY), (
+        f"README.md says {units.group('units')} units; `specs/vocabulary/vocabulary.toml` "
+        f"compiles {len(UNIT_VOCABULARY)}. The claim is about *azoth's* vocabulary rather "
+        f"than about `pint`, which ships many more units than this library names."
+    )

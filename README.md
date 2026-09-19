@@ -18,12 +18,16 @@ engine**, with an agentic layer on top. The algorithms are ported from
 - **Provenance is split three ways.** A validation case is `verified`, `unverified` or
   `source_needed`; a shipped value carries a `verify_status`; a spec refuses to carry a
   status field at all.
-- **NeqSim is a differential oracle, not a source of truth.** Its numbers are committed
-  beside the Java driver that prints them, so a divergence is a finding, never a failure.
+- **NeqSim is what azoth is a port of, so a disagreement with it is the interesting
+  failure.** Its numbers are committed beside the Java driver that prints them rather than
+  copied on trust, and a divergence is a finding to *explain* - starting from the
+  assumption that azoth is the one that is wrong. "A divergence is a finding, never a
+  failure" reads the other way round, and that reading cost a session: a probe that
+  subtracted the wrong quantity reported a NeqSim defect that was azoth's own.
 - **An agentic layer.** Ninety skills under `skills/` teach an agent to call the library,
   and a four-role HAZOP team chains them.
 - **A formal layer in Lean.** The dimension group is proved (`lean/Azoth/Dim.lean`); the
-  25-unit vocabulary compiles into theorems (`lean/Azoth/Vocabulary.lean`).
+  27-unit vocabulary compiles into theorems (`lean/Azoth/Vocabulary.lean`).
 
 ## Install
 
@@ -49,7 +53,7 @@ Units cross the API as `pint` quantities; a bare number where a length is expect
 
 ## The book
 
-The full catalog — 43 calculations and 25 models, each with its equation, source, valid
+The full catalog — 61 calculations and 57 models, each with its equation, source, valid
 range and a worked example — is in [the book](docs/src/index.md), generated from the same
 spec files as the code.
 
