@@ -526,6 +526,19 @@ struct Interaction {
     cpa_kij_srk: f64,
     /// NeqSim's `cpakij_PR`, the CPA rule's parameter for the Peng-Robinson family.
     cpa_kij_pr: f64,
+    /// NeqSim's `KIJPCSAFT`, the interaction parameter its PC-SAFT phase reads.
+    ///
+    /// A third *different* fit, not a refinement of the other two: methane/n-butane is
+    /// `0.022` here against the `0.01289789` its SRK and PR columns share, and 42 of the
+    /// 516 in-scope pairs carry one at all.
+    ///
+    /// **NeqSim only reads it when it is driven the one way it can be driven.** Its own
+    /// default mixing rule leaves the matrix null and a *mixture* throws a
+    /// NullPointerException rather than using a zero - a pure fluid never asks for a pair
+    /// and runs either way - so `setMixingRule("classic")` is what a caller must do, and
+    /// the branch that serves it reads this column. There is no usable configuration in
+    /// which NeqSim's PC-SAFT ignores it.
+    pcsaft_kij: f64,
     /// The NRTL non-randomness parameter, symmetric.
     alpha: f64,
     /// The NRTL energy parameter for the ordered pair `(first, second)`: the `g_ij` in
@@ -810,6 +823,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         "kijwsunifac",
         "cpakij_srk",
         "cpakij_pr",
+        "kijpcsaft",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -855,6 +869,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         let kij_ws = number(&record, index["kijwsunifac"], "kijwsunifac", row)?;
         let cpa_kij_srk = number(&record, index["cpakij_srk"], "cpakij_srk", row)?;
         let cpa_kij_pr = number(&record, index["cpakij_pr"], "cpakij_pr", row)?;
+        let pcsaft_kij = number(&record, index["kijpcsaft"], "kijpcsaft", row)?;
 
         // `kij`, `alpha`, `hv_alpha` and the two selectors are symmetric, stored both
         // ways round so a caller need not know which name came first. `gij`, `hv_dij`,
@@ -866,6 +881,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 kij: value,
                 cpa_kij_srk,
                 cpa_kij_pr,
+                pcsaft_kij,
                 alpha,
                 gij,
                 hv,
@@ -883,6 +899,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 kij: value,
                 cpa_kij_srk,
                 cpa_kij_pr,
+                pcsaft_kij,
                 alpha,
                 gij: gji,
                 hv,
@@ -1164,6 +1181,42 @@ pub fn cpa_kij(
                 crate::association::AssociationCubic::Srk => interaction.cpa_kij_srk,
                 crate::association::AssociationCubic::Pr => interaction.cpa_kij_pr,
             });
+        }
+    }
+    out
+}
+
+/// The PC-SAFT interaction matrix for a list of names, flattened row-major.
+///
+/// **`KIJPCSAFT`, a third fit.** Methane/n-butane is `0.022` here against the
+/// `0.01289789` its SRK and PR columns share, and only 42 of the 516 in-scope pairs carry
+/// one at all - so this is a sparse column of its own rather than a placeholder.
+///
+/// **NeqSim reads it whenever its PC-SAFT runs at all.** Its default mixing rule leaves
+/// the matrix null and a mixture throws a NullPointerException before reaching a `k_ij`,
+/// so the only configuration a caller can use is the classic one - whose branch is keyed
+/// on the PC-SAFT phase class and reads this column.
+///
+/// An absent pair is zero, the ideal-mixture default NeqSim substitutes.
+///
+/// **A card cannot state one yet.** The keycard's pair record carries the cubic's `kij` and
+/// the two CPA columns, and a third would be a schema change with no model needing it until
+/// this one is read through a card - so the column is the table's alone for now rather than
+/// a map nothing populates.
+#[must_use]
+pub fn pcsaft_kij(names: &[&str]) -> Vec<f64> {
+    let n = names.len();
+    let mut out = vec![0.0; n * n];
+    for i in 0..n {
+        for j in 0..n {
+            let key = (
+                names[i].trim().to_lowercase(),
+                names[j].trim().to_lowercase(),
+            );
+            out[i * n + j] = tables()
+                .1
+                .get(&key)
+                .map_or(0.0, |interaction| interaction.pcsaft_kij);
         }
     }
     out

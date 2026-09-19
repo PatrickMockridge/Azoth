@@ -1108,3 +1108,33 @@ fn the_pcsaft_columns_are_read_and_zero_means_absent() {
         "rows with no PC-SAFT set; the vendored table has 47"
     );
 }
+
+/// The PC-SAFT interaction column is a third fit, and a sparse one.
+///
+/// Methane/n-butane is `0.022` here against the `0.01289789` its SRK and PR columns share,
+/// which is the check that it is read from `KIJPCSAFT` rather than from a column that
+/// happened to be nearby - the two are close enough that a slip would look plausible.
+///
+/// **NeqSim reads it in the only configuration it can run.** Its default mixing rule leaves
+/// the interaction matrix null, and a mixture throws a NullPointerException before reaching
+/// a `k_ij`; the classic rule is what a caller must set, and its branch is keyed on the
+/// PC-SAFT phase class and reads this column. So there is no usable NeqSim PC-SAFT that
+/// ignores it.
+#[test]
+fn the_pcsaft_interaction_column_is_read() {
+    let pair = databank::pcsaft_kij(&["methane", "n-butane"]);
+    assert!(
+        (pair[1] - 0.022).abs() < 1e-12,
+        "methane/n-butane: {} - the table's `KIJPCSAFT`, not its `kijsrk`",
+        pair[1]
+    );
+    assert!(
+        (pair[1] - databank::kij("methane", "n-butane", None)).abs() > 1e-6,
+        "the two columns must differ here, or this proves nothing"
+    );
+    // Symmetric, and zero for a pair the table does not carry - NeqSim's ideal-mixture
+    // default rather than a failure.
+    assert_eq!(pair[1], pair[2]);
+    let absent = databank::pcsaft_kij(&["water", "methanol"]);
+    assert_eq!(absent[1], 0.0);
+}

@@ -594,6 +594,51 @@ def _cpa_kij() -> dict[tuple[str, str], tuple[float, float]]:
 
 
 @cache
+@cache
+def pcsaft_kij_for(names: tuple[str, ...]) -> dict[tuple[int, int], float]:
+    """The *PC-SAFT* interaction pairs for a list of components, by index.
+
+    The sibling of :func:`kij_for` and :func:`cpa_kij_for` for the third column, with the
+    same rules: an unlisted pair is zero, which is the ideal-mixture default NeqSim
+    substitutes.
+
+    **`KIJPCSAFT` is a fit of its own.** Methane/n-butane is ``0.022`` here against the
+    ``0.01289789`` its SRK and PR columns share, and 42 of the 516 in-scope pairs carry one
+    at all - so this is a sparse column rather than a convention for one of the others.
+
+    **NeqSim reads it in the only configuration that runs.** Its default mixing rule leaves
+    the matrix null and a *mixture* throws a NullPointerException before reaching a ``k_ij``
+    - a pure fluid never asks for a pair - so a caller must set the classic rule, and the
+    branch that serves it reads this column. There is no usable NeqSim PC-SAFT that ignores
+    it, which is why no card states one yet: a keycard's pair record carries the cubic's
+    ``kij`` and the two CPA columns.
+    """
+    stored = _pcsaft_kij()
+    pairs: dict[tuple[int, int], float] = {}
+    for i, a in enumerate(names):
+        for j in range(i + 1, len(names)):
+            value = stored.get((a.strip().lower(), names[j].strip().lower()))
+            if value is not None and value != 0.0:
+                pairs[(i, j)] = value
+    return pairs
+
+
+@cache
+def _pcsaft_kij() -> dict[tuple[str, str], float]:
+    """`KIJPCSAFT`, keyed by the ordered pair and stored both ways round.
+
+    Separate from :func:`_kij` and :func:`_cpa_kij` because it is a third column of the
+    same file rather than a third convention for one of them.
+    """
+    pairs: dict[tuple[str, str], float] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        a, b = row["component_a"], row["component_b"]
+        value = float(row["kijpcsaft"])
+        pairs[(a, b)] = value
+        pairs[(b, a)] = value
+    return pairs
+
+
 def _nrtl() -> dict[tuple[str, str], tuple[float, float]]:
     """NRTL `(alpha, gij)`, keyed by ordered pair and stored both ways round.
 
