@@ -278,15 +278,11 @@ pub fn state(
     }
 
     // `C1`, the hard-sphere-chain compressibility the second dispersion term is scaled by.
-    let c1 = 1.0
-        / (1.0
-            + m_bar * (8.0 * eta - 2.0 * eta * eta) / (1.0 - eta).powi(4)
-            + (1.0 - m_bar)
-                * (20.0 * eta - 27.0 * eta * eta + 12.0 * eta.powi(3) - 2.0 * eta.powi(4))
-                / ((1.0 - eta) * (2.0 - eta)).powi(2));
+    let terms = c1_terms(eta);
+    let c1 = 1.0 / (1.0 + m_bar * terms.a + (1.0 - m_bar) * terms.b);
 
-    let i1 = series(&A_CONST, m_bar, eta);
-    let i2 = series(&B_CONST, m_bar, eta);
+    let i1 = series(&A_CONST, m_bar, eta).value;
+    let i2 = series(&B_CONST, m_bar, eta).value;
 
     let rho = AVOGADRO / v;
     let f_hc = m_bar * a_hs - m_minus_1 * g_hs.ln();
@@ -312,52 +308,89 @@ pub fn state(
     })
 }
 
-/// `sum_{i=0..6} a_i(m_bar) eta^i`, Gross-Sadowski's `I1` or `I2`.
-fn series(order: &[[f64; 7]; 3], m_bar: f64, eta: f64) -> f64 {
-    let one = (m_bar - 1.0) / m_bar;
-    let two = one * (m_bar - 2.0) / m_bar;
-    let mut out = 0.0;
-    for (i, (a0, (a1, a2))) in order[0]
-        .iter()
-        .zip(order[1].iter().zip(order[2].iter()))
-        .enumerate()
-    {
-        let a_i = a0 + one * a1 + two * a2;
-        out += a_i * eta.powi(i as i32);
-    }
-    out
+/// `C1`'s denominator term by term: `W = 1 + m_bar A + (1 - m_bar) B`.
+struct C1Terms {
+    a: f64,
+    a_d_eta: f64,
+    a_d2_eta: f64,
+    b: f64,
+    b_d_eta: f64,
+    b_d2_eta: f64,
 }
 
-/// `dI/deta` for one of the two series, `sum_i i a_i(m_bar) eta^(i-1)`.
-fn series_d_eta(order: &[[f64; 7]; 3], m_bar: f64, eta: f64) -> f64 {
-    let one = (m_bar - 1.0) / m_bar;
-    let two = one * (m_bar - 2.0) / m_bar;
-    let mut out = 0.0;
-    for (i, (a0, (a1, a2))) in order[0]
-        .iter()
-        .zip(order[1].iter().zip(order[2].iter()))
-        .enumerate()
-        .skip(1)
-    {
-        let a_i = a0 + one * a1 + two * a2;
-        out += (i as f64) * a_i * eta.powi(i as i32 - 1);
+/// `A`, `B` and their first two derivatives in `eta`.
+///
+/// Written once because two callers need them - the volume derivative and the composition
+/// derivative - and `C1`'s dependence on `m_bar` reaches both. Each has the shape
+/// `(num)/(1 - eta)^k` or `num/P^2`; the derivatives are the same quotient rule twice.
+fn c1_terms(eta: f64) -> C1Terms {
+    let one = 1.0 - eta;
+
+    // `A = (8 eta - 2 eta^2)/(1 - eta)^4`, so `u = 8 + 20 eta - 4 eta^2`.
+    let u_a = 8.0 + 20.0 * eta - 4.0 * eta * eta;
+    let a_d_eta = u_a / one.powi(5);
+    let a_d2_eta = ((20.0 - 8.0 * eta) * one + 5.0 * u_a) / one.powi(6);
+
+    // `B = num/P^2` with `P = (1 - eta)(2 - eta)`, so `B' = f/P^3` and `B'' =
+    // (f' P - 3 f P')/P^4`, where `f = num' P - 2 num P'`.
+    let p = (1.0 - eta) * (2.0 - eta);
+    let p_d_eta = 2.0 * eta - 3.0;
+    let num = 20.0 * eta - 27.0 * eta * eta + 12.0 * eta.powi(3) - 2.0 * eta.powi(4);
+    let num_d_eta = 20.0 - 54.0 * eta + 36.0 * eta * eta - 8.0 * eta.powi(3);
+    let num_d2_eta = -54.0 + 72.0 * eta - 24.0 * eta * eta;
+    let f = num_d_eta * p - 2.0 * num * p_d_eta;
+    let f_d_eta = num_d2_eta * p - num_d_eta * p_d_eta - 4.0 * num;
+
+    C1Terms {
+        a: (8.0 * eta - 2.0 * eta * eta) / one.powi(4),
+        a_d_eta,
+        a_d2_eta,
+        b: num / p.powi(2),
+        b_d_eta: f / p.powi(3),
+        b_d2_eta: (f_d_eta * p - 3.0 * f * p_d_eta) / p.powi(4),
     }
-    out
 }
 
-/// `dI²/deta²` for one of the two series, `sum_i i (i-1) a_i(m_bar) eta^(i-2)`.
-fn series_d2_eta(order: &[[f64; 7]; 3], m_bar: f64, eta: f64) -> f64 {
+/// One of the two series and every derivative of it a caller needs, at one state.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Series {
+    /// `sum_i a_i(m_bar) eta^i`, Gross-Sadowski's `I1` or `I2`.
+    value: f64,
+    /// `dI/deta`.
+    d_eta: f64,
+    /// `d^2I/deta^2`.
+    d2_eta: f64,
+    /// `dI/d m_bar`, which carries `a_i`'s own `m_bar` dependence.
+    d_m_bar: f64,
+}
+
+/// `sum_{i=0..6} a_i(m_bar) eta^i` and its derivatives. `a_i` is linear in
+/// `(m_bar-1)/m_bar` and `(m_bar-1)(m_bar-2)/m_bar^2`, both of which carry `m_bar`.
+///
+/// The four sums are one loop because they are four weights on the same `a_i`: writing
+/// them apart is how a coefficient gets differentiated one way in one and another way in
+/// the next, which is what `PhasePCSAFT.dF_HC_SAFTdVdV` did to a `dn/dV`.
+fn series(order: &[[f64; 7]; 3], m_bar: f64, eta: f64) -> Series {
     let one = (m_bar - 1.0) / m_bar;
     let two = one * (m_bar - 2.0) / m_bar;
-    let mut out = 0.0;
+    let mut out = Series {
+        value: 0.0,
+        d_eta: 0.0,
+        d2_eta: 0.0,
+        d_m_bar: 0.0,
+    };
     for (i, (a0, (a1, a2))) in order[0]
         .iter()
         .zip(order[1].iter().zip(order[2].iter()))
         .enumerate()
-        .skip(2)
     {
         let a_i = a0 + one * a1 + two * a2;
-        out += (i as f64) * (i as f64 - 1.0) * a_i * eta.powi(i as i32 - 2);
+        let power = eta.powi(i as i32);
+        out.value += a_i * power;
+        out.d_eta += (i as f64) * a_i * eta.powi(i as i32 - 1);
+        out.d2_eta += (i as f64) * (i as f64 - 1.0) * a_i * eta.powi(i as i32 - 2);
+        // `d/d m_bar` of the two ratios, against the coefficients they carry.
+        out.d_m_bar += (a1 / (m_bar * m_bar) + a2 * (3.0 * m_bar - 4.0) / m_bar.powi(3)) * power;
     }
     out
 }
@@ -387,34 +420,16 @@ fn eta_derivatives(s: &PcsaftState, v: f64) -> (f64, f64) {
 
     // `C1 = 1/W` with `W = 1 + m_bar A + (1 - m_bar) B`, so `C1' = -C1^2 W'` and
     // `C1'' = 2 C1^3 W'^2 - C1^2 W''`.
-    //
-    // `A = (8 eta - 2 eta^2)/(1 - eta)^4` is the same shape, with `u = 8 + 20 eta -
-    // 4 eta^2`.
-    let u_a = 8.0 + 20.0 * eta - 4.0 * eta * eta;
-    let a_d_eta = u_a / one.powi(5);
-    let a_d2_eta = ((20.0 - 8.0 * eta) * one + 5.0 * u_a) / one.powi(6);
-
-    // `B = num/P^2` with `P = (1 - eta)(2 - eta)`, so `B' = f/P^3` and `B'' =
-    // (f' P - 3 f P')/P^4`, where `f = num' P - 2 num P'`.
-    let p = (1.0 - eta) * (2.0 - eta);
-    let p_d_eta = 2.0 * eta - 3.0;
-    let b_num = 20.0 * eta - 27.0 * eta * eta + 12.0 * eta.powi(3) - 2.0 * eta.powi(4);
-    let b_num_d_eta = 20.0 - 54.0 * eta + 36.0 * eta * eta - 8.0 * eta.powi(3);
-    let b_num_d2_eta = -54.0 + 72.0 * eta - 24.0 * eta * eta;
-    let f = b_num_d_eta * p - 2.0 * b_num * p_d_eta;
-    let f_d_eta = b_num_d2_eta * p - b_num_d_eta * p_d_eta - 4.0 * b_num;
-    let b_d_eta = f / p.powi(3);
-    let b_d2_eta = (f_d_eta * p - 3.0 * f * p_d_eta) / p.powi(4);
-
-    let w_d_eta = s.m_bar * a_d_eta + (1.0 - s.m_bar) * b_d_eta;
-    let w_d2_eta = s.m_bar * a_d2_eta + (1.0 - s.m_bar) * b_d2_eta;
+    let t = c1_terms(eta);
+    let w_d_eta = s.m_bar * t.a_d_eta + (1.0 - s.m_bar) * t.b_d_eta;
+    let w_d2_eta = s.m_bar * t.a_d2_eta + (1.0 - s.m_bar) * t.b_d2_eta;
     let c1_d_eta = -s.c1 * s.c1 * w_d_eta;
     let c1_d2_eta = 2.0 * s.c1.powi(3) * w_d_eta * w_d_eta - s.c1 * s.c1 * w_d2_eta;
 
-    let i1_d_eta = series_d_eta(&A_CONST, s.m_bar, eta);
-    let i1_d2_eta = series_d2_eta(&A_CONST, s.m_bar, eta);
-    let i2_d_eta = series_d_eta(&B_CONST, s.m_bar, eta);
-    let i2_d2_eta = series_d2_eta(&B_CONST, s.m_bar, eta);
+    let a_series = series(&A_CONST, s.m_bar, eta);
+    let b_series = series(&B_CONST, s.m_bar, eta);
+    let (i1_d_eta, i1_d2_eta) = (a_series.d_eta, a_series.d2_eta);
+    let (i2_d_eta, i2_d2_eta) = (b_series.d_eta, b_series.d2_eta);
 
     // The two dispersion brackets are `(I1 + eta I1')` and `(D + eta D')` with
     // `D = I2 C1`, and a bracket `(X + eta X')` differentiates to `(2 X' + eta X'')`.
@@ -475,4 +490,103 @@ pub fn d_pressure_over_rt_dv(
     let (f_eta, f_d2_eta) = eta_derivatives(&s, v);
     let eta = s.eta;
     Ok(-(1.0 + 2.0 * eta * f_eta + eta * eta * f_d2_eta) / (v * v))
+}
+
+/// `ln phi_i = d(nF)/dn_i - ln Z` for every component, at a state.
+///
+/// The derivative is of the extensive `A^R/(RT)` at fixed temperature and **volume**, so
+/// it is the composition and the volume together that move: with `n` the mole numbers,
+/// `k` one component and `sum n = 1`,
+///
+/// ```text
+/// d(nF)/dn_k = f + rho f_rho + n_k^eta f_eta
+///                  + f_m_bar (m_k - m_bar) + f_m1 ((m_k - 1) - m1)
+///                  + f_S1 (S1_k - 2 S1) + f_S2 (S2_k - 2 S2)
+/// ```
+///
+/// where `f_rho` and the `f_eta` beside it are partials at held packing fraction and held
+/// density respectively, and `n_k^eta = (pi/6) N_A m_k d_k^3/v` is the packing fraction's
+/// own derivative. **That last one is not `eta/v`**: `rho` and `eta` both scale with `1/v`,
+/// which is why the volume derivative can use a single path, but at fixed volume the
+/// composition moves `eta` through `sum n_i m_i d_i^3` and `rho` through `sum n_i` alone.
+/// `S1` and `S2` are quadratic in the mole fractions, so their derivatives are row sums.
+///
+/// # Errors
+/// * [`AzothError::OutOfRange`] if the state's compressibility is not positive, where the
+///   logarithm is not defined.
+/// * As [`state`].
+pub fn ln_fugacity_coefficients(
+    components: &[PcsaftComponent],
+    kij: &[f64],
+    x: &[f64],
+    t: f64,
+    v: f64,
+) -> Result<Vec<f64>> {
+    let n = components.len();
+    let s = state(components, kij, x, t, v)?;
+    let eta = s.eta;
+    let one = 1.0 - eta;
+    let pi = std::f64::consts::PI;
+    let rho = AVOGADRO / v;
+
+    let terms = c1_terms(eta);
+    let a_series = series(&A_CONST, s.m_bar, eta);
+    let b_series = series(&B_CONST, s.m_bar, eta);
+    let w_d_eta = s.m_bar * terms.a_d_eta + (1.0 - s.m_bar) * terms.b_d_eta;
+    let c1_d_eta = -s.c1 * s.c1 * w_d_eta;
+    // `C1`'s `m_bar` derivative is its denominator's, and `dA/dm_bar - dB/dm_bar` is
+    // `A - B` because only the coefficients carry the segment number.
+    let c1_d_m_bar = -s.c1 * s.c1 * (terms.a - terms.b);
+
+    // The partials of `f` in each thing the composition moves. Every one of them is a sum
+    // over the layers the state already holds.
+    let f_rho = -2.0 * pi * s.s1 * s.i1 - pi * s.m_bar * s.s2 * s.i2 * s.c1;
+    let f_eta = s.m_bar * (4.0 - 2.0 * eta) / one.powi(3)
+        - s.m_minus_1 * (2.5 - eta) / one.powi(4) / s.g_hs
+        - 2.0 * pi * rho * s.s1 * a_series.d_eta
+        - pi * s.m_bar * rho * s.s2 * (b_series.d_eta * s.c1 + s.i2 * c1_d_eta);
+    let f_m_bar = s.a_hs
+        - 2.0 * pi * rho * s.s1 * a_series.d_m_bar
+        - pi * rho * s.s2 * (s.i2 * s.c1 + s.m_bar * (b_series.d_m_bar * s.c1 + s.i2 * c1_d_m_bar));
+    let f_m_minus_1 = -s.g_hs.ln();
+    let f_s1 = -2.0 * pi * rho * s.i1;
+    let f_s2 = -pi * s.m_bar * rho * s.i2 * s.c1;
+
+    let z = pressure_over_rt(components, kij, x, t, v)? * v;
+    if !z.is_finite() || z <= 0.0 {
+        return Err(AzothError::OutOfRange {
+            field: "Z".to_string(),
+            value: z,
+            detail: "the fugacity coefficients are `d(nF)/dn_i - ln Z`, and a \
+                     compressibility at or below zero is not a state"
+                .to_string(),
+        });
+    }
+
+    let mut out = Vec::with_capacity(n);
+    for k in 0..n {
+        let component = &components[k];
+        let eta_k = pi / 6.0 * AVOGADRO * component.m * s.d[k].powi(3) / v;
+
+        let mut s1_k = -2.0 * s.s1;
+        let mut s2_k = -2.0 * s.s2;
+        for j in 0..n {
+            let sigma_ij = 0.5 * (component.sigma + components[j].sigma);
+            let e_ij = (component.epsik / t * (components[j].epsik / t)).sqrt();
+            let weight = x[j] * component.m * components[j].m * sigma_ij.powi(3);
+            let one_minus_k = 1.0 - kij[k * n + j];
+            s1_k += 2.0 * weight * e_ij * one_minus_k;
+            s2_k += 2.0 * weight * e_ij * e_ij * one_minus_k * one_minus_k;
+        }
+
+        let d = s.f()
+            + rho * f_rho
+            + eta_k * f_eta
+            + f_m_bar * (component.m - s.m_bar)
+            + f_m_minus_1 * ((component.m - 1.0) - s.m_minus_1)
+            + f_s1 * s1_k
+            + f_s2 * s2_k;
+        out.push(d - z.ln());
+    }
+    Ok(out)
 }

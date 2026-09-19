@@ -6,7 +6,9 @@
 //! cancelling, and this tranche has already spent a session on a quantity read at the
 //! wrong scale.
 
-use azoth_eos::pcsaft::{PcsaftComponent, d_pressure_over_rt_dv, pressure_over_rt, state};
+use azoth_eos::pcsaft::{
+    PcsaftComponent, d_pressure_over_rt_dv, ln_fugacity_coefficients, pressure_over_rt, state,
+};
 
 /// Methane at 300 K and 50 bara, and methane/n-butane at 350 K and 30 bara - both from
 /// the probe, whose molar volumes are its `volumeSAFT`.
@@ -23,6 +25,14 @@ fn n_butane() -> PcsaftComponent {
         m: 2.3316,
         sigma: 3.7086e-10,
         epsik: 222.86,
+    }
+}
+
+fn propane() -> PcsaftComponent {
+    PcsaftComponent {
+        m: 2.002,
+        sigma: 3.6184e-10,
+        epsik: 208.11,
     }
 }
 
@@ -44,6 +54,19 @@ fn exact(actual: f64, expected: f64, context: &str) {
     let relative = (actual / expected - 1.0).abs();
     assert!(
         relative < 1.0e-12,
+        "{context}: {actual} against the probe's {expected}, a relative {relative:e}"
+    );
+}
+
+/// **`1e-7` here against the layers' `1e-8`, and the limit is still the oracle's.** A
+/// fugacity coefficient is read at a *converged volume*, and NeqSim's volume is good to
+/// `1.3e-9`; `d ln phi/dv` in a dense liquid amplifies that. Measured, the three vapour
+/// states agree to `1e-9` and the two liquid ones to `2.6e-8` - the bar is set by the
+/// worst state, and it is the volume underneath it rather than this derivative.
+fn via_volume(actual: f64, expected: f64, context: &str) {
+    let relative = (actual / expected - 1.0).abs();
+    assert!(
+        relative < 1.0e-7,
         "{context}: {actual} against the probe's {expected}, a relative {relative:e}"
     );
 }
@@ -234,4 +257,86 @@ fn the_second_derivative_is_the_pressure_s_own() {
         (d / numeric - 1.0).abs() < 1.0e-6,
         "the finite difference gives {numeric} and the closed form gives {d}"
     );
+}
+
+/// `ln phi_i = d(nF)/dn_i - ln Z`, against NeqSim's own fugacity coefficients.
+///
+/// The probe prints `lnPhi[i]` per component per state, so the composition derivative's
+/// whole chain - the packing fraction's, `m_bar`'s, `m_minus_1`'s and both dispersion
+/// sums' - is checked against a number rather than against a derivation.
+#[test]
+fn the_fugacity_coefficients_are_neqsims() {
+    let pure = ln_fugacity_coefficients(&[methane()], &[0.0], &[1.0], 300.0, 4.55032070500990e-4)
+        .expect("coefficients");
+    via_volume(pure[0], -0.0901325286938552, "methane ln phi");
+
+    let binary = ln_fugacity_coefficients(
+        &[methane(), n_butane()],
+        &[0.0, 0.022, 0.022, 0.0],
+        &[0.6, 0.4],
+        350.0,
+        8.14109734626316e-4,
+    )
+    .expect("coefficients");
+    via_volume(binary[0], 0.0229798951078788, "binary ln phi methane");
+    via_volume(binary[1], -0.421092485341446, "binary ln phi n-butane");
+
+    // The two liquid states and the single-root one, because the coefficient is a
+    // derivative in the composition and a state that agrees on the pressure can still
+    // disagree here.
+    let cold = ln_fugacity_coefficients(&[methane()], &[0.0], &[1.0], 150.0, 4.34500702054451e-5)
+        .expect("coefficients");
+    via_volume(cold[0], -1.59206925842347, "cold methane ln phi");
+
+    let dense = ln_fugacity_coefficients(&[propane()], &[0.0], &[1.0], 300.0, 8.57488611218831e-5)
+        .expect("coefficients");
+    via_volume(dense[0], -2.14553591424452, "propane ln phi");
+
+    let warm = ln_fugacity_coefficients(&[methane()], &[0.0], &[1.0], 400.0, 6.49279638776721e-4)
+        .expect("coefficients");
+    via_volume(warm[0], -0.0259206072103093, "warm methane ln phi");
+}
+
+/// The composition derivative, against a finite difference of `n F` in the mole numbers at
+/// fixed temperature and volume - the definition `ln phi_i` is, which the oracle checks
+/// only at its own states.
+///
+/// `n` is one mole in the crate's convention, so raising `n_k` by `h` scales the volume
+/// and every mole fraction with it: `v' = v/(1+h)`, `x'_k = (x_k + h)/(1+h)` and the rest
+/// by `1/(1+h)`. A central difference of `n' f'` is then `d(nF)/dn_k`.
+#[test]
+fn the_composition_derivative_is_a_finite_difference_of_the_extensive_energy() {
+    let components = [methane(), n_butane()];
+    let kij = [0.0, 0.022, 0.022, 0.0];
+    let x = [0.6, 0.4];
+    let (t, v) = (350.0, 8.14109734626316e-4);
+    let h = 1.0e-6;
+
+    let analytic = ln_fugacity_coefficients(&components, &kij, &x, t, v).expect("coefficients");
+    let z = pressure_over_rt(&components, &kij, &x, t, v).expect("a pressure") * v;
+
+    for (k, analytic_k) in analytic.iter().enumerate() {
+        let mut perturbed = [0.0; 2];
+        for (i, value) in perturbed.iter_mut().enumerate() {
+            *value = (x[i] + if i == k { h } else { 0.0 }) / (1.0 + h);
+        }
+        let up = (1.0 + h)
+            * state(&components, &kij, &perturbed, t, v / (1.0 + h))
+                .expect("a state")
+                .f();
+        for (i, value) in perturbed.iter_mut().enumerate() {
+            *value = (x[i] - if i == k { h } else { 0.0 }) / (1.0 - h);
+        }
+        let down = (1.0 - h)
+            * state(&components, &kij, &perturbed, t, v / (1.0 - h))
+                .expect("a state")
+                .f();
+        let numeric = (up - down) / (2.0 * h);
+
+        assert!(
+            ((analytic_k + z.ln()) / numeric - 1.0).abs() < 1.0e-6,
+            "component {k}: the closed form gives {} and the finite difference {numeric}",
+            analytic_k + z.ln()
+        );
+    }
 }
