@@ -1421,14 +1421,24 @@ impl Mixture {
     /// **This is a deliberate divergence from NeqSim, which computes it silently.**
     /// NeqSim's bond test is `charge[i] * charge[j] < 0`, and the `1A` and `2A` schemes
     /// carry charges of one sign - so their interaction matrix is all zeros and their
-    /// sites never bond with each other. Eighteen of the databank's components carry one
-    /// of those schemes, four of them with a fitted `eps` of 5000 J/mol that no
-    /// calculation reads.
+    /// sites never bond with each other. Fifty-five of the databank's rows carry one of
+    /// those schemes, ten of them with a fitted `eps` that no calculation reads:
+    /// `validation/neqsim/CpaSchemeProbe.java` measures H2S alone (2A, 5000 J/mol) and
+    /// asphaltene alone (1A, 3500 J/mol) at `hcpa = 0` exactly, where water alone (4C)
+    /// gives 3.6949.
+    ///
+    /// **A second defect sits under the first, in the table rather than in the code.**
+    /// Seven of those rows name a `1A` scheme and a site count of **zero** - acetic,
+    /// formic, hydrochloric, sulfuric and nitric acid among them, each carrying a fitted
+    /// 40323 or 41917 J/mol - so they have no sites at all before the bond test is
+    /// reached, and the scheme and the count contradict each other in the source data.
+    /// The probe's acetic-acid state is that one: `phase sites = 0`.
     ///
     /// The refusal fires only where the inertness is **total**: a component that declares
     /// sites and a non-zero parameter, in a mixture where no pair of sites bonds at all.
-    /// A `2A` component in water still associates - CO2's `[-1,-1]` bonds with water's
-    /// positive sites - and that is real physics NeqSim computes and this library keeps.
+    /// A `2A` component in water still associates - the same probe measures 1.8961 for
+    /// H2S with water, where H2S's two same-sign sites bond with water's opposite ones -
+    /// and that is real physics NeqSim computes and this library keeps.
     ///
     /// # Errors
     /// * [`AzothError::InvalidInput`] naming the component whose parameters are inert.
