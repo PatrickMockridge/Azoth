@@ -40,24 +40,24 @@ NeqSim is Apache-2.0; the attribution is in [`NOTICE`](../NOTICE).
 ## `manifest.toml` is the record of what was taken
 
 Every resource file NeqSim ships is declared once, and every column of every one of
-them (35 files, 1,496 columns) is listed with what was done with it and a reason.
+them (35 files, 1,497 columns) is listed with what was done with it and a reason.
 `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (35 vendored file(s), 1497 column(s), 1463 carried of which 998 read, 0 not-vendored entr(ies))
-  465  carried, nothing reads it yet
+check_manifest: OK (35 vendored file(s), 1497 column(s), 1464 carried of which 1006 read, 0 not-vendored entr(ies))
+  458  carried, nothing reads it yet
   1108  carried with no unit NeqSim states (neqsim-internal)
-  461  not-ported
+  456  not-ported
     9  not-a-value
-   16  empty-upstream
+   13  empty-upstream
     6  superseded-by
     7  unreachable-upstream
 ```
 
-**The porting backlog is "carried, nothing reads it yet" — 465 columns — and it is
+**The porting backlog is "carried, nothing reads it yet" — 458 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — **461 of the 465**, with a
+`not-ported` reason names the class that would close it — **456 of the 458**, with a
 handful `unreachable-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
 `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the
 rest. The check refuses a `not-ported` reason with no NeqSim name in it, so the list

@@ -362,23 +362,43 @@ def _body(path: Path) -> io.StringIO:
     return io.StringIO("".join(lines[start:]))
 
 
-#: Which of NeqSim's `COMPTYPE` values a cubic equation of state can describe.
+#: Which of NeqSim's `COMPTYPE` values the compiled table keeps.
 #:
-#: Read from NeqSim's own `COMPTYPE` column rather than guessed. 62 of the 258 rows are
-#: `ion`, 18 carry no type at all, and the rest of the excluded set is `ice`, `salt`,
-#: `seawater` and `asphaltene`. **Every one of the ions shares the same critical
-#: pressure, acentric factor and critical volume** - `Pc = 29.089 MPa`, `omega = 0.344`,
-#: `Vc = 9.9e-05` - because a cubic has no notion of an ion and NeqSim fills those
-#: columns with a default. Shipping them would ship plausible-looking wrong numbers,
-#: which is the failure this project is organised against, and the repetition is what
-#: gave it away: an acentric factor of exactly 0.344 for twenty-nine different
-#: substances is not a coincidence.
+#: Read from NeqSim's own `COMPTYPE` column rather than guessed. Of `COMP.csv`'s 389
+#: rows, 62 are `ion`, 19 `GEN`, 18 carry no type, and 4 are `ice`, `salt`, `seawater`
+#: and `asphaltene`; the nine types below are the other 286.
+#:
+#: **The ion rows are kept for what an electrolyte model reads, not for their critical
+#: constants.** Those columns are filler: `Pc = 290.89 bar` on 27 of the 62 rows,
+#: `omega = 0.344` on 29, `Vc = 99.0 cm3/mol` on 38 - one shared default per column,
+#: over different row sets, because a cubic has no notion of an ion. The remainder
+#: inherit a neutral parent's numbers (`MDEA+` carries MDEA's `Tc`, `Pc` and `omega`
+#: unchanged) or carry values with no stated source. 13 distinct `TC`, 26 `PC` and 25
+#: `ACSFACT` values across 62 rows is what the mixture looks like.
+#:
+#: What `PhasePitzer`, `PhaseDesmukhMather` and the Furst variants actually read is
+#: `IONICCHARGE`, `DeshMatIonicDiameter`, `MOLARMASS` and `DIELECTRICPARAMETER1..5`, so
+#: the rows are carried and `mixture_of` refuses a cubic over one rather than computing
+#: with the filler. That refusal is what makes keeping them safe; without it, vendoring
+#: these rows would be shipping plausible-looking wrong numbers, which is the failure
+#: this project is organised against.
 #:
 #: Here rather than in `gen_databank`, which used to own it, because the `empty-upstream`
 #: claims are about *the kept rows* and this is the rule that decides which those are.
 #: One definition, imported by the generator.
 KEEP_TYPES = frozenset(
-    {"HC", "inert", "other", "glycol", "acid", "alcohol", "amine", "chlorine", "water"}
+    {
+        "HC",
+        "inert",
+        "other",
+        "glycol",
+        "acid",
+        "alcohol",
+        "amine",
+        "chlorine",
+        "water",
+        "ion",
+    }
 )
 
 

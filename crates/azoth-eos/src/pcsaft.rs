@@ -55,7 +55,7 @@ pub struct PcsaftComponent {
 impl PcsaftComponent {
     /// Whether the table gave this component a PC-SAFT set.
     ///
-    /// **Zero means absent**, which is how the compiled table spells it - 47 of the 286
+    /// **Zero means absent**, which is how the compiled table spells it - 106 of the 348
     /// rows carry zeros in all three columns and none is blank - so a model refuses a
     /// component without a set rather than solving for a fluid with no segments.
     #[must_use]

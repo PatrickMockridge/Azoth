@@ -105,6 +105,38 @@ unit = "J/(mol*K**4)"
 value = 5.254448e-11
 unit = "J/(mol*K**5)"
 
+[components.-oocpzcoo-.Tc]
+value = 637.99
+unit = "K"
+
+[components.-oocpzcoo-.Pc]
+value = 5530000.0
+unit = "Pa"
+
+[components.-oocpzcoo-.omega]
+value = 0.414
+unit = "dimensionless"
+
+[components.-oocpzcoo-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.-oocpzcoo-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.-oocpzcoo-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.-oocpzcoo-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.-oocpzcoo-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components."1,1,4-trimethylcyclohexane".Tc]
 value = 609.63
 unit = "K"
@@ -4137,6 +4169,38 @@ unit = "J/(mol*K**4)"
 value = 5.254448e-11
 unit = "J/(mol*K**5)"
 
+[components.ac-.Tc]
+value = 592.7
+unit = "K"
+
+[components.ac-.Pc]
+value = 5786000.0
+unit = "Pa"
+
+[components.ac-.omega]
+value = 0.462
+unit = "dimensionless"
+
+[components.ac-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.ac-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.ac-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.ac-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.ac-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components."acetic acid".Tc]
 value = 591.95
 unit = "K"
@@ -4265,6 +4329,38 @@ unit = "J/(mol*K**4)"
 value = 0.0
 unit = "J/(mol*K**5)"
 
+[components."ba++".Tc]
+value = 717.3
+unit = "K"
+
+[components."ba++".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."ba++".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."ba++".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."ba++".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."ba++".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."ba++".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."ba++".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.benzene.Tc]
 value = 562.16
 unit = "K"
@@ -4327,6 +4423,38 @@ unit = "J/(mol*K**4)"
 
 [components.biphenyl.cp_e]
 value = 5.254448e-11
+unit = "J/(mol*K**5)"
+
+[components.br-.Tc]
+value = 717.3
+unit = "K"
+
+[components.br-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.br-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.br-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.br-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.br-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.br-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.br-.cp_e]
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.butylbenzene.Tc]
@@ -4551,6 +4679,198 @@ unit = "J/(mol*K**4)"
 
 [components.c-propane.cp_e]
 value = 5.3425764e-10
+unit = "J/(mol*K**5)"
+
+[components.c2h4-.Tc]
+value = 591.95
+unit = "K"
+
+[components.c2h4-.Pc]
+value = 5041800.0
+unit = "Pa"
+
+[components.c2h4-.omega]
+value = 0.0866
+unit = "dimensionless"
+
+[components.c2h4-.cp_a]
+value = 35.0953348158
+unit = "J/(mol*K)"
+
+[components.c2h4-.cp_b]
+value = -0.0730175859636
+unit = "J/(mol*K**2)"
+
+[components.c2h4-.cp_c]
+value = 0.00048182294541
+unit = "J/(mol*K**3)"
+
+[components.c2h4-.cp_d]
+value = -5.59479999942e-07
+unit = "J/(mol*K**4)"
+
+[components.c2h4-.cp_e]
+value = 2.08776085578e-10
+unit = "J/(mol*K**5)"
+
+[components.c2h4o-.Tc]
+value = 591.95
+unit = "K"
+
+[components.c2h4o-.Pc]
+value = 7304700.0
+unit = "Pa"
+
+[components.c2h4o-.omega]
+value = 0.21
+unit = "dimensionless"
+
+[components.c2h4o-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.c2h4o-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.c2h4o-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.c2h4o-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.c2h4o-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."ca++".Tc]
+value = 717.3
+unit = "K"
+
+[components."ca++".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."ca++".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."ca++".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."ca++".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."ca++".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."ca++".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."ca++".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.cacl2.Tc]
+value = 648.3
+unit = "K"
+
+[components.cacl2.Pc]
+value = 22089000.0
+unit = "Pa"
+
+[components.cacl2.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.cacl2.cp_a]
+value = -1550.0
+unit = "J/(mol*K)"
+
+[components.cacl2.cp_b]
+value = 7.22
+unit = "J/(mol*K**2)"
+
+[components.cacl2.cp_c]
+value = -0.001958
+unit = "J/(mol*K**3)"
+
+[components.cacl2.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.cacl2.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.caco3.Tc]
+value = 673.15
+unit = "K"
+
+[components.caco3.Pc]
+value = 22000000.0
+unit = "Pa"
+
+[components.caco3.omega]
+value = 0.3
+unit = "dimensionless"
+
+[components.caco3.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.caco3.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.caco3.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.caco3.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.caco3.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.ch2o-.Tc]
+value = 591.95
+unit = "K"
+
+[components.ch2o-.Pc]
+value = 6586125.0
+unit = "Pa"
+
+[components.ch2o-.omega]
+value = 0.2484
+unit = "dimensionless"
+
+[components.ch2o-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.ch2o-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.ch2o-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.ch2o-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.ch2o-.cp_e]
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.chlorine.Tc]
@@ -4937,6 +5257,70 @@ unit = "J/(mol*K**4)"
 value = 1.04429615088e-10
 unit = "J/(mol*K**5)"
 
+[components.cl-.Tc]
+value = 717.3
+unit = "K"
+
+[components.cl-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.cl-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.cl-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.cl-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.cl-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.cl-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.cl-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.clo4-.Tc]
+value = 717.3
+unit = "K"
+
+[components.clo4-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.clo4-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.clo4-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.clo4-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.clo4-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.clo4-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.clo4-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.co.Tc]
 value = 132.94900512699996
 unit = "K"
@@ -5001,6 +5385,38 @@ unit = "J/(mol*K**4)"
 value = -9.577100164048893e-12
 unit = "J/(mol*K**5)"
 
+[components.co3--.Tc]
+value = 717.3
+unit = "K"
+
+[components.co3--.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.co3--.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.co3--.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.co3--.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.co3--.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.co3--.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.co3--.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.cos.Tc]
 value = 378.79999999999995
 unit = "K"
@@ -5030,6 +5446,70 @@ value = 0.0
 unit = "J/(mol*K**4)"
 
 [components.cos.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."cs+".Tc]
+value = 717.3
+unit = "K"
+
+[components."cs+".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."cs+".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."cs+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."cs+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."cs+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."cs+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."cs+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.cs2-.Tc]
+value = 591.95
+unit = "K"
+
+[components.cs2-.Pc]
+value = 7903350.0
+unit = "Pa"
+
+[components.cs2-.omega]
+value = 0.115
+unit = "dimensionless"
+
+[components.cs2-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.cs2-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.cs2-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.cs2-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.cs2-.cp_e]
 value = 0.0
 unit = "J/(mol*K**5)"
 
@@ -5190,6 +5670,70 @@ value = 0.0
 unit = "J/(mol*K**4)"
 
 [components.dea.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."dea+".Tc]
+value = 677.0
+unit = "K"
+
+[components."dea+".Pc]
+value = 3876000.0
+unit = "Pa"
+
+[components."dea+".omega]
+value = 1.242
+unit = "dimensionless"
+
+[components."dea+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."dea+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."dea+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."dea+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."dea+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.deacoo-.Tc]
+value = 638.0
+unit = "K"
+
+[components.deacoo-.Pc]
+value = 6870000.0
+unit = "Pa"
+
+[components.deacoo-.omega]
+value = 0.8
+unit = "dimensionless"
+
+[components.deacoo-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.deacoo-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.deacoo-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.deacoo-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.deacoo-.cp_e]
 value = 0.0
 unit = "J/(mol*K**5)"
 
@@ -5481,6 +6025,70 @@ unit = "J/(mol*K**4)"
 value = 2.08776085578e-10
 unit = "J/(mol*K**5)"
 
+[components.f-.Tc]
+value = 717.3
+unit = "K"
+
+[components.f-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.f-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.f-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.f-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.f-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.f-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.f-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."fe++".Tc]
+value = 717.3
+unit = "K"
+
+[components."fe++".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."fe++".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."fe++".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."fe++".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."fe++".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."fe++".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."fe++".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components."formic acid".Tc]
 value = 588.0
 unit = "K"
@@ -5542,6 +6150,70 @@ value = 7.2e-08
 unit = "J/(mol*K**4)"
 
 [components.glycerol.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."h+".Tc]
+value = 717.3
+unit = "K"
+
+[components."h+".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."h+".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."h+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."h+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."h+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."h+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."h+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."h+pzcoo-".Tc]
+value = 1002.8299999999999
+unit = "K"
+
+[components."h+pzcoo-".Pc]
+value = 11060000.0
+unit = "Pa"
+
+[components."h+pzcoo-".omega]
+value = 0.414
+unit = "dimensionless"
+
+[components."h+pzcoo-".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."h+pzcoo-".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."h+pzcoo-".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."h+pzcoo-".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."h+pzcoo-".cp_e]
 value = 0.0
 unit = "J/(mol*K**5)"
 
@@ -5641,6 +6313,102 @@ unit = "J/(mol*K**4)"
 value = 0.0
 unit = "J/(mol*K**5)"
 
+[components."h3o+".Tc]
+value = 717.3
+unit = "K"
+
+[components."h3o+".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."h3o+".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."h3o+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."h3o+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."h3o+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."h3o+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."h3o+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.hcn-.Tc]
+value = 591.95
+unit = "K"
+
+[components.hcn-.Pc]
+value = 5400000.0
+unit = "Pa"
+
+[components.hcn-.omega]
+value = 0.407
+unit = "dimensionless"
+
+[components.hcn-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.hcn-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.hcn-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.hcn-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.hcn-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.hco3-.Tc]
+value = 717.3
+unit = "K"
+
+[components.hco3-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.hco3-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.hco3-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.hco3-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.hco3-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.hco3-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.hco3-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.helium.Tc]
 value = 5.190000057999953
 unit = "K"
@@ -5673,6 +6441,70 @@ unit = "J/(mol*K**4)"
 value = 0.0
 unit = "J/(mol*K**5)"
 
+[components."hg++".Tc]
+value = 717.3
+unit = "K"
+
+[components."hg++".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."hg++".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."hg++".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."hg++".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."hg++".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."hg++".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."hg++".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.hno2-.Tc]
+value = 591.95
+unit = "K"
+
+[components.hno2-.Pc]
+value = 7640960.4
+unit = "Pa"
+
+[components.hno2-.omega]
+value = 2.835271
+unit = "dimensionless"
+
+[components.hno2-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.hno2-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.hno2-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.hno2-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.hno2-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.hno3.Tc]
 value = 920.15
 unit = "K"
@@ -5702,6 +6534,38 @@ value = 0.0
 unit = "J/(mol*K**4)"
 
 [components.hno3.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.hs-.Tc]
+value = 373.2
+unit = "K"
+
+[components.hs-.Pc]
+value = 8937000.0
+unit = "Pa"
+
+[components.hs-.omega]
+value = 0.1
+unit = "dimensionless"
+
+[components.hs-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.hs-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.hs-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.hs-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.hs-.cp_e]
 value = 0.0
 unit = "J/(mol*K**5)"
 
@@ -5767,6 +6631,38 @@ unit = "J/(mol*K**4)"
 
 [components.hydrogen.cp_e]
 value = -1.770882e-11
+unit = "J/(mol*K**5)"
+
+[components.i-.Tc]
+value = 717.3
+unit = "K"
+
+[components.i-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.i-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.i-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.i-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.i-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.i-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.i-.cp_e]
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.i-butane.Tc]
@@ -6025,6 +6921,70 @@ unit = "J/(mol*K**4)"
 value = 5.254448e-11
 unit = "J/(mol*K**5)"
 
+[components."k+".Tc]
+value = 717.3
+unit = "K"
+
+[components."k+".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."k+".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."k+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."k+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."k+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."k+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."k+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."li+".Tc]
+value = 717.3
+unit = "K"
+
+[components."li+".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."li+".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."li+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."li+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."li+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."li+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."li+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.m-cy-c5.Tc]
 value = 532.79
 unit = "K"
@@ -6153,6 +7113,38 @@ unit = "J/(mol*K**4)"
 value = 0.0
 unit = "J/(mol*K**5)"
 
+[components."mdea+".Tc]
+value = 677.0
+unit = "K"
+
+[components."mdea+".Pc]
+value = 3876000.0
+unit = "Pa"
+
+[components."mdea+".omega]
+value = 1.242
+unit = "dimensionless"
+
+[components."mdea+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."mdea+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."mdea+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."mdea+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."mdea+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.mea.Tc]
 value = 638.0
 unit = "K"
@@ -6182,6 +7174,70 @@ value = 0.0
 unit = "J/(mol*K**4)"
 
 [components.mea.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."mea+".Tc]
+value = 638.0
+unit = "K"
+
+[components."mea+".Pc]
+value = 6870000.0
+unit = "Pa"
+
+[components."mea+".omega]
+value = 0.7966
+unit = "dimensionless"
+
+[components."mea+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."mea+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."mea+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."mea+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."mea+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.meacoo-.Tc]
+value = 638.0
+unit = "K"
+
+[components.meacoo-.Pc]
+value = 6870000.0
+unit = "Pa"
+
+[components.meacoo-.omega]
+value = 0.8
+unit = "dimensionless"
+
+[components.meacoo-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.meacoo-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.meacoo-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.meacoo-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.meacoo-.cp_e]
 value = 0.0
 unit = "J/(mol*K**5)"
 
@@ -6441,6 +7497,38 @@ unit = "J/(mol*K**4)"
 value = 0.0
 unit = "J/(mol*K**5)"
 
+[components."mg++".Tc]
+value = 717.3
+unit = "K"
+
+[components."mg++".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."mg++".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."mg++".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."mg++".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."mg++".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."mg++".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."mg++".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.n-bcychexane.Tc]
 value = 667.039001464
 unit = "K"
@@ -6665,6 +7753,102 @@ unit = "J/(mol*K**4)"
 value = 4.7830442e-10
 unit = "J/(mol*K**5)"
 
+[components.n2h4-.Tc]
+value = 591.95
+unit = "K"
+
+[components.n2h4-.Pc]
+value = 14692124.999999998
+unit = "Pa"
+
+[components.n2h4-.omega]
+value = 0.328
+unit = "dimensionless"
+
+[components.n2h4-.cp_a]
+value = 30.1565456946
+unit = "J/(mol*K)"
+
+[components.n2h4-.cp_b]
+value = 0.0186160754922
+unit = "J/(mol*K**2)"
+
+[components.n2h4-.cp_c]
+value = 0.000239123863848
+unit = "J/(mol*K**3)"
+
+[components.n2h4-.cp_d]
+value = -3.3756706788e-07
+unit = "J/(mol*K**4)"
+
+[components.n2h4-.cp_e]
+value = 1.4051437062e-10
+unit = "J/(mol*K**5)"
+
+[components.n2o-.Tc]
+value = 855.15
+unit = "K"
+
+[components.n2o-.Pc]
+value = 7245000.0
+unit = "Pa"
+
+[components.n2o-.omega]
+value = 0.162
+unit = "dimensionless"
+
+[components.n2o-.cp_a]
+value = 26.315265267
+unit = "J/(mol*K)"
+
+[components.n2o-.cp_b]
+value = 0.0282774777797999
+unit = "J/(mol*K**2)"
+
+[components.n2o-.cp_c]
+value = 8.2230007422e-05
+unit = "J/(mol*K**3)"
+
+[components.n2o-.cp_d]
+value = -1.5631184424e-07
+unit = "J/(mol*K**4)"
+
+[components.n2o-.cp_e]
+value = 7.399869221999999e-11
+unit = "J/(mol*K**5)"
+
+[components.n2o3-.Tc]
+value = 591.95
+unit = "K"
+
+[components.n2o3-.Pc]
+value = 6990000.000000001
+unit = "Pa"
+
+[components.n2o3-.omega]
+value = 0.4312
+unit = "dimensionless"
+
+[components.n2o3-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.n2o3-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.n2o3-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.n2o3-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.n2o3-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.n2o4.Tc]
 value = 430.15
 unit = "K"
@@ -6695,6 +7879,134 @@ unit = "J/(mol*K**4)"
 
 [components.n2o4.cp_e]
 value = 9.1e-11
+unit = "J/(mol*K**5)"
+
+[components.n2o4-.Tc]
+value = 431.0
+unit = "K"
+
+[components.n2o4-.Pc]
+value = 10000000.0
+unit = "Pa"
+
+[components.n2o4-.omega]
+value = 0.9
+unit = "dimensionless"
+
+[components.n2o4-.cp_a]
+value = 37.28
+unit = "J/(mol*K)"
+
+[components.n2o4-.cp_b]
+value = -0.002
+unit = "J/(mol*K**2)"
+
+[components.n2o4-.cp_c]
+value = 0.000302
+unit = "J/(mol*K**3)"
+
+[components.n2o4-.cp_d]
+value = -2.8e-07
+unit = "J/(mol*K**4)"
+
+[components.n2o4-.cp_e]
+value = 9.1e-11
+unit = "J/(mol*K**5)"
+
+[components.n2o5-.Tc]
+value = 591.95
+unit = "K"
+
+[components.n2o5-.Pc]
+value = 6433000.0
+unit = "Pa"
+
+[components.n2o5-.omega]
+value = 0.266
+unit = "dimensionless"
+
+[components.n2o5-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.n2o5-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.n2o5-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.n2o5-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.n2o5-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."na+".Tc]
+value = 717.3
+unit = "K"
+
+[components."na+".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."na+".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."na+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."na+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."na+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."na+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."na+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.nacl.Tc]
+value = 648.3
+unit = "K"
+
+[components.nacl.Pc]
+value = 22089000.0
+unit = "Pa"
+
+[components.nacl.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.nacl.cp_a]
+value = -2290.0
+unit = "J/(mol*K)"
+
+[components.nacl.cp_b]
+value = 12.78
+unit = "J/(mol*K**2)"
+
+[components.nacl.cp_c]
+value = -0.02144
+unit = "J/(mol*K**3)"
+
+[components.nacl.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nacl.cp_e]
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.nano2.Tc]
@@ -7881,6 +9193,70 @@ unit = "J/(mol*K**4)"
 value = 0.0
 unit = "J/(mol*K**5)"
 
+[components.nh2oh-.Tc]
+value = 591.95
+unit = "K"
+
+[components.nh2oh-.Pc]
+value = 13700000.0
+unit = "Pa"
+
+[components.nh2oh-.omega]
+value = 0.694
+unit = "dimensionless"
+
+[components.nh2oh-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.nh2oh-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.nh2oh-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.nh2oh-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nh2oh-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.nh2so3-.Tc]
+value = 717.3
+unit = "K"
+
+[components.nh2so3-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.nh2so3-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.nh2so3-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.nh2so3-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.nh2so3-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.nh2so3-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nh2so3-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.nh2so3h.Tc]
 value = 717.3
 unit = "K"
@@ -7910,6 +9286,134 @@ value = 0.0
 unit = "J/(mol*K**4)"
 
 [components.nh2so3h.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."nh4+".Tc]
+value = 717.3
+unit = "K"
+
+[components."nh4+".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."nh4+".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."nh4+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."nh4+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."nh4+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."nh4+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."nh4+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.nh4hso4-.Tc]
+value = 591.95
+unit = "K"
+
+[components.nh4hso4-.Pc]
+value = 8650424.6
+unit = "Pa"
+
+[components.nh4hso4-.omega]
+value = 0.91587415
+unit = "dimensionless"
+
+[components.nh4hso4-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.nh4hso4-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.nh4hso4-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.nh4hso4-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nh4hso4-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.nh4no3-.Tc]
+value = 591.95
+unit = "K"
+
+[components.nh4no3-.Pc]
+value = 9750597.299999999
+unit = "Pa"
+
+[components.nh4no3-.omega]
+value = 0.87963113
+unit = "dimensionless"
+
+[components.nh4no3-.cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components.nh4no3-.cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components.nh4no3-.cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components.nh4no3-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.nh4no3-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".Tc]
+value = 591.95
+unit = "K"
+
+[components."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".Pc]
+value = 13700000.0
+unit = "Pa"
+
+[components."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".omega]
+value = 0.694
+unit = "dimensionless"
+
+[components."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".cp_a]
+value = 37.978352
+unit = "J/(mol*K)"
+
+[components."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".cp_b]
+value = -0.07461815
+unit = "J/(mol*K**2)"
+
+[components."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".cp_c]
+value = 0.0003018813
+unit = "J/(mol*K**3)"
+
+[components."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".cp_e]
 value = 0.0
 unit = "J/(mol*K**5)"
 
@@ -7977,6 +9481,38 @@ unit = "J/(mol*K**4)"
 value = -4.086538461538615e-12
 unit = "J/(mol*K**5)"
 
+[components.no-.Tc]
+value = 631.15
+unit = "K"
+
+[components.no-.Pc]
+value = 6484800.0
+unit = "Pa"
+
+[components.no-.omega]
+value = 0.588
+unit = "dimensionless"
+
+[components.no-.cp_a]
+value = 37.6977607332
+unit = "J/(mol*K)"
+
+[components.no-.cp_b]
+value = -0.0635557307111999
+unit = "J/(mol*K**2)"
+
+[components.no-.cp_c]
+value = 0.000171776739468
+unit = "J/(mol*K**3)"
+
+[components.no-.cp_d]
+value = -1.79259753288e-07
+unit = "J/(mol*K**4)"
+
+[components.no-.cp_e]
+value = 6.701454598800001e-11
+unit = "J/(mol*K**5)"
+
 [components.no2.Tc]
 value = 431.15
 unit = "K"
@@ -8007,6 +9543,102 @@ unit = "J/(mol*K**4)"
 
 [components.no2.cp_e]
 value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.no2-.Tc]
+value = 717.3
+unit = "K"
+
+[components.no2-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.no2-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.no2-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.no2-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.no2-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.no2-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.no2-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.no3-.Tc]
+value = 717.3
+unit = "K"
+
+[components.no3-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.no3-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.no3-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.no3-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.no3-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.no3-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.no3-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".Tc]
+value = 591.95
+unit = "K"
+
+[components."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".Pc]
+value = 14692124.999999998
+unit = "Pa"
+
+[components."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".omega]
+value = 0.328
+unit = "dimensionless"
+
+[components."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".cp_a]
+value = 30.1565456946
+unit = "J/(mol*K)"
+
+[components."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".cp_b]
+value = 0.0186160754922
+unit = "J/(mol*K**2)"
+
+[components."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".cp_c]
+value = 0.000239123863848
+unit = "J/(mol*K**3)"
+
+[components."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".cp_d]
+value = -3.3756706788e-07
+unit = "J/(mol*K**4)"
+
+[components."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".cp_e]
+value = 1.4051437062e-10
 unit = "J/(mol*K**5)"
 
 [components.o-e-toluene.Tc]
@@ -8071,6 +9703,38 @@ unit = "J/(mol*K**4)"
 
 [components.o-xylene.cp_e]
 value = 2.7752132e-10
+unit = "J/(mol*K**5)"
+
+[components.oh-.Tc]
+value = 717.3
+unit = "K"
+
+[components.oh-.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.oh-.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.oh-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.oh-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.oh-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.oh-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.oh-.cp_e]
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components.ortho-hydrogen.Tc]
@@ -8201,6 +9865,38 @@ unit = "J/(mol*K**4)"
 value = -1.770882e-11
 unit = "J/(mol*K**5)"
 
+[components."pb++".Tc]
+value = 717.3
+unit = "K"
+
+[components."pb++".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."pb++".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."pb++".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."pb++".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."pb++".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."pb++".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."pb++".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.pent-cc6.Tc]
 value = 674.0
 unit = "K"
@@ -8326,6 +10022,70 @@ value = 0.0
 unit = "J/(mol*K**4)"
 
 [components.piperazine.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."piperazine+".Tc]
+value = 637.99
+unit = "K"
+
+[components."piperazine+".Pc]
+value = 5530000.0
+unit = "Pa"
+
+[components."piperazine+".omega]
+value = 0.414
+unit = "dimensionless"
+
+[components."piperazine+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."piperazine+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."piperazine+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."piperazine+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."piperazine+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."piperazine++".Tc]
+value = 638.0
+unit = "K"
+
+[components."piperazine++".Pc]
+value = 6870000.0
+unit = "Pa"
+
+[components."piperazine++".omega]
+value = 0.8
+unit = "dimensionless"
+
+[components."piperazine++".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."piperazine++".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."piperazine++".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."piperazine++".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."piperazine++".cp_e]
 value = 0.0
 unit = "J/(mol*K**5)"
 
@@ -8457,6 +10217,38 @@ unit = "J/(mol*K**4)"
 value = 5.8730096e-10
 unit = "J/(mol*K**5)"
 
+[components.pzcoo-.Tc]
+value = 637.99
+unit = "K"
+
+[components.pzcoo-.Pc]
+value = 5530000.0
+unit = "Pa"
+
+[components.pzcoo-.omega]
+value = 0.414
+unit = "dimensionless"
+
+[components.pzcoo-.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.pzcoo-.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.pzcoo-.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.pzcoo-.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.pzcoo-.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
 [components.r12.Tc]
 value = 385.0
 unit = "K"
@@ -8518,6 +10310,102 @@ value = 0.0
 unit = "J/(mol*K**4)"
 
 [components.r134a.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."rb+".Tc]
+value = 717.3
+unit = "K"
+
+[components."rb+".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."rb+".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."rb+".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."rb+".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."rb+".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."rb+".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."rb+".cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components.s-.Tc]
+value = 591.95
+unit = "K"
+
+[components.s-.Pc]
+value = 11753700.0
+unit = "Pa"
+
+[components.s-.omega]
+value = 0.2463
+unit = "dimensionless"
+
+[components.s-.cp_a]
+value = 23.3054308194
+unit = "J/(mol*K)"
+
+[components.s-.cp_b]
+value = -0.0002993205528
+unit = "J/(mol*K**2)"
+
+[components.s-.cp_c]
+value = 1.1889677514e-05
+unit = "J/(mol*K**3)"
+
+[components.s-.cp_d]
+value = -3.616790013e-08
+unit = "J/(mol*K**4)"
+
+[components.s-.cp_e]
+value = 2.2282752264e-11
+unit = "J/(mol*K**5)"
+
+[components.s--.Tc]
+value = 373.2
+unit = "K"
+
+[components.s--.Pc]
+value = 8937000.0
+unit = "Pa"
+
+[components.s--.omega]
+value = 0.1
+unit = "dimensionless"
+
+[components.s--.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.s--.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.s--.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.s--.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.s--.cp_e]
 value = 0.0
 unit = "J/(mol*K**5)"
 
@@ -8615,6 +10503,102 @@ unit = "J/(mol*K**4)"
 
 [components.so2.cp_e]
 value = 1.15820425014e-10
+unit = "J/(mol*K**5)"
+
+[components.so3-.Tc]
+value = 591.95
+unit = "K"
+
+[components.so3-.Pc]
+value = 8207325.0
+unit = "Pa"
+
+[components.so3-.omega]
+value = 0.4121
+unit = "dimensionless"
+
+[components.so3-.cp_a]
+value = 28.4853392748
+unit = "J/(mol*K)"
+
+[components.so3-.cp_b]
+value = 0.0538693850442
+unit = "J/(mol*K**2)"
+
+[components.so3-.cp_c]
+value = 0.000140597515218
+unit = "J/(mol*K**3)"
+
+[components.so3-.cp_d]
+value = -2.79033270888e-07
+unit = "J/(mol*K**4)"
+
+[components.so3-.cp_e]
+value = 1.3219991082000002e-10
+unit = "J/(mol*K**5)"
+
+[components.so4--.Tc]
+value = 717.3
+unit = "K"
+
+[components.so4--.Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components.so4--.omega]
+value = 0.344
+unit = "dimensionless"
+
+[components.so4--.cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components.so4--.cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components.so4--.cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components.so4--.cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components.so4--.cp_e]
+value = 0.0
+unit = "J/(mol*K**5)"
+
+[components."sr++".Tc]
+value = 717.3
+unit = "K"
+
+[components."sr++".Pc]
+value = 29089000.0
+unit = "Pa"
+
+[components."sr++".omega]
+value = 0.344
+unit = "dimensionless"
+
+[components."sr++".cp_a]
+value = 0.0
+unit = "J/(mol*K)"
+
+[components."sr++".cp_b]
+value = 0.0
+unit = "J/(mol*K**2)"
+
+[components."sr++".cp_c]
+value = 0.0
+unit = "J/(mol*K**3)"
+
+[components."sr++".cp_d]
+value = 0.0
+unit = "J/(mol*K**4)"
+
+[components."sr++".cp_e]
+value = 0.0
 unit = "J/(mol*K**5)"
 
 [components."sulfur(s8)".Tc]
@@ -12866,6 +14850,162 @@ unit = "m**3/mol"
 value = 0.664155324
 unit = "dimensionless"
 
+[associations.c2h4-]
+scheme = "1A"
+
+[associations.c2h4-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.c2h4-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.c2h4-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.c2h4-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.c2h4-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.c2h4-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.c2h4-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.c2h4-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.c2h4-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.c2h4o-]
+scheme = "1A"
+
+[associations.c2h4o-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.c2h4o-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.c2h4o-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.c2h4o-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.c2h4o-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.c2h4o-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.c2h4o-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.c2h4o-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.c2h4o-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.cacl2]
+scheme = "4C"
+
+[associations.cacl2.energy]
+value = 166550.0
+unit = "J/mol"
+
+[associations.cacl2.volume_srk]
+value = 0.0692
+unit = "dimensionless"
+
+[associations.cacl2.a_srk]
+value = 0.12277
+unit = "Pa*m**6/mol**2"
+
+[associations.cacl2.b_srk]
+value = 1.4515e-05
+unit = "m**3/mol"
+
+[associations.cacl2.m_srk]
+value = 0.67359
+unit = "dimensionless"
+
+[associations.cacl2.volume_pr]
+value = 0.046473789
+unit = "dimensionless"
+
+[associations.cacl2.a_pr]
+value = 0.13855596960000002
+unit = "Pa*m**6/mol**2"
+
+[associations.cacl2.b_pr]
+value = 1.456360879e-05
+unit = "m**3/mol"
+
+[associations.cacl2.m_pr]
+value = 0.664155324
+unit = "dimensionless"
+
+[associations.ch2o-]
+scheme = "1A"
+
+[associations.ch2o-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.ch2o-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.ch2o-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.ch2o-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.ch2o-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.ch2o-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.ch2o-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.ch2o-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.ch2o-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
 [associations.cis-2-heptene]
 scheme = "4C"
 
@@ -13175,6 +15315,45 @@ value = 0.0
 unit = "m**3/mol"
 
 [associations.co2.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.cs2-]
+scheme = "1A"
+
+[associations.cs2-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.cs2-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.cs2-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.cs2-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.cs2-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.cs2-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.cs2-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.cs2-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.cs2-.m_pr]
 value = 0.0
 unit = "dimensionless"
 
@@ -13565,6 +15744,84 @@ value = 0.0
 unit = "m**3/mol"
 
 [associations.h2so4.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.hcn-]
+scheme = "1A"
+
+[associations.hcn-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.hcn-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.hcn-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.hcn-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.hcn-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.hcn-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.hcn-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.hcn-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.hcn-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.hno2-]
+scheme = "1A"
+
+[associations.hno2-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.hno2-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.hno2-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.hno2-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.hno2-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.hno2-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.hno2-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.hno2-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.hno2-.m_pr]
 value = 0.0
 unit = "dimensionless"
 
@@ -14153,6 +16410,357 @@ unit = "m**3/mol"
 value = 0.9037
 unit = "dimensionless"
 
+[associations.n2h4-]
+scheme = "1A"
+
+[associations.n2h4-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.n2h4-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2h4-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.n2h4-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.n2h4-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.n2h4-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2h4-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.n2h4-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.n2h4-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2o-]
+scheme = "1A"
+
+[associations.n2o-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.n2o-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2o-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.n2o-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.n2o-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.n2o-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2o-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.n2o-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.n2o-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2o3-]
+scheme = "1A"
+
+[associations.n2o3-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.n2o3-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2o3-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.n2o3-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.n2o3-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.n2o3-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2o3-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.n2o3-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.n2o3-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2o5-]
+scheme = "1A"
+
+[associations.n2o5-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.n2o5-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2o5-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.n2o5-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.n2o5-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.n2o5-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.n2o5-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.n2o5-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.n2o5-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.nacl]
+scheme = "4C"
+
+[associations.nacl.energy]
+value = 166550.0
+unit = "J/mol"
+
+[associations.nacl.volume_srk]
+value = 0.0692
+unit = "dimensionless"
+
+[associations.nacl.a_srk]
+value = 0.12277
+unit = "Pa*m**6/mol**2"
+
+[associations.nacl.b_srk]
+value = 1.4515e-05
+unit = "m**3/mol"
+
+[associations.nacl.m_srk]
+value = 0.67359
+unit = "dimensionless"
+
+[associations.nacl.volume_pr]
+value = 0.046473789
+unit = "dimensionless"
+
+[associations.nacl.a_pr]
+value = 0.13855596960000002
+unit = "Pa*m**6/mol**2"
+
+[associations.nacl.b_pr]
+value = 1.456360879e-05
+unit = "m**3/mol"
+
+[associations.nacl.m_pr]
+value = 0.664155324
+unit = "dimensionless"
+
+[associations.nh2oh-]
+scheme = "1A"
+
+[associations.nh2oh-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.nh2oh-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.nh2oh-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.nh2oh-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.nh2oh-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.nh2oh-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.nh2oh-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.nh2oh-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.nh2oh-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.nh4hso4-]
+scheme = "1A"
+
+[associations.nh4hso4-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.nh4hso4-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.nh4hso4-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.nh4hso4-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.nh4hso4-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.nh4hso4-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.nh4hso4-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.nh4hso4-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.nh4hso4-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.nh4no3-]
+scheme = "1A"
+
+[associations.nh4no3-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.nh4no3-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.nh4no3-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.nh4no3-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.nh4no3-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.nh4no3-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.nh4no3-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.nh4no3-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.nh4no3-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-"]
+scheme = "1A"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".energy]
+value = 0.0
+unit = "J/mol"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations."nh\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161oh-".m_pr]
+value = 0.0
+unit = "dimensionless"
+
 [associations."nitric acid"]
 scheme = "1A"
 
@@ -14189,6 +16797,84 @@ value = 0.0
 unit = "m**3/mol"
 
 [associations."nitric acid".m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.no-]
+scheme = "1A"
+
+[associations.no-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.no-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.no-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.no-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.no-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.no-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.no-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.no-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.no-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-"]
+scheme = "1A"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".energy]
+value = 0.0
+unit = "J/mol"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations."n\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u0161h\u00e3\u00a2\u00e2\u20ac\u0161\u00e2\u20ac\u017e-".m_pr]
 value = 0.0
 unit = "dimensionless"
 
@@ -14426,6 +17112,45 @@ unit = "m**3/mol"
 value = 0.0
 unit = "dimensionless"
 
+[associations.s-]
+scheme = "1A"
+
+[associations.s-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.s-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.s-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.s-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.s-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.s-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.s-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.s-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.s-.m_pr]
+value = 0.0
+unit = "dimensionless"
+
 [associations.sf6]
 scheme = "2A"
 
@@ -14462,6 +17187,45 @@ value = 0.0
 unit = "m**3/mol"
 
 [associations.sf6.m_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.so3-]
+scheme = "1A"
+
+[associations.so3-.energy]
+value = 0.0
+unit = "J/mol"
+
+[associations.so3-.volume_srk]
+value = 0.0
+unit = "dimensionless"
+
+[associations.so3-.a_srk]
+value = 0.9119601624744
+unit = "Pa*m**6/mol**2"
+
+[associations.so3-.b_srk]
+value = 4.68e-05
+unit = "m**3/mol"
+
+[associations.so3-.m_srk]
+value = 0.4644
+unit = "dimensionless"
+
+[associations.so3-.volume_pr]
+value = 0.0
+unit = "dimensionless"
+
+[associations.so3-.a_pr]
+value = 0.0
+unit = "Pa*m**6/mol**2"
+
+[associations.so3-.b_pr]
+value = 0.0
+unit = "m**3/mol"
+
+[associations.so3-.m_pr]
 value = 0.0
 unit = "dimensionless"
 
@@ -14942,6 +17706,13 @@ value = 0.0
 
 [[kij]]
 component_a = "2-m-c5"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "2-m-c5"
 component_b = "meg"
 value = 0.2
 
@@ -15027,6 +17798,13 @@ value = 0.0
 
 [[kij]]
 component_a = "223-tm-c4"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "223-tm-c4"
 component_b = "meg"
 value = 0.2
 
@@ -15112,6 +17890,13 @@ value = 0.0
 
 [[kij]]
 component_a = "3-m-c5"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "3-m-c5"
 component_b = "meg"
 value = 0.2
 
@@ -15169,6 +17954,49 @@ value = 0.2
 component_a = "3-m-c5"
 component_b = "water"
 value = 0.5
+
+[[kij]]
+component_a = "ac-"
+component_b = "co3--"
+value = 0.0
+
+[[kij]]
+component_a = "ac-"
+component_b = "mdea+"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ac-"
+component_b = "oh-"
+value = 0.0
+
+[[kij]]
+component_a = "ac-"
+component_b = "water"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "acetic acid"
+component_b = "ac-"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "acetic acid"
+component_b = "co3--"
+value = 0.0
+
+[[kij]]
+component_a = "acetic acid"
+component_b = "hco3-"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "acetic acid"
@@ -15176,6 +18004,18 @@ component_b = "mdea"
 value = 0.0
 cpa_value_srk = 1.0
 cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "acetic acid"
+component_b = "mdea+"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "acetic acid"
+component_b = "oh-"
+value = 0.0
 
 [[kij]]
 component_a = "ammonia"
@@ -15212,6 +18052,86 @@ component_b = "water"
 value = 0.5
 
 [[kij]]
+component_a = "ba++"
+component_b = "co2"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "ethane"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "ethanol"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "h2s"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "mdea"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "mdea+"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "meg"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "methane"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "methanol"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "n-butane"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "neon"
+value = 0.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "nitrogen"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "oxygen"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "propane"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "teg"
+value = 1.0
+
+[[kij]]
+component_a = "ba++"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "benzene"
 component_b = "co2"
 value = 0.081
@@ -15237,6 +18157,13 @@ value = 0.0
 component_a = "benzene"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "benzene"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "benzene"
@@ -15304,6 +18231,106 @@ value = 0.5
 cpa_value_srk = 0.0355
 
 [[kij]]
+component_a = "br-"
+component_b = "co2"
+value = 0.0
+
+[[kij]]
+component_a = "br-"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "br-"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "br-"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "br-"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "br-"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "br-"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "br-"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "br-"
+component_b = "methanol"
+value = 0.0
+
+[[kij]]
+component_a = "br-"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "br-"
+component_b = "n-heptane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "br-"
+component_b = "n-pentane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "br-"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "br-"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "br-"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "br-"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "br-"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "c-c4"
 component_b = "co2"
 value = 0.0
@@ -15327,6 +18354,13 @@ value = 0.0
 component_a = "c-c4"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "c-c4"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "c-c4"
@@ -15412,6 +18446,13 @@ value = 0.0
 component_a = "c-c7"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "c-c7"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "c-c7"
@@ -15501,6 +18542,13 @@ cpa_value_pr = 0.04
 component_a = "c-c8"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "c-c8"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "c-c8"
@@ -15595,6 +18643,13 @@ value = 0.0
 
 [[kij]]
 component_a = "c-hexane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "c-hexane"
 component_b = "meg"
 value = 0.2
 
@@ -15680,6 +18735,13 @@ value = 0.0
 
 [[kij]]
 component_a = "c-propane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "c-propane"
 component_b = "meg"
 value = 0.2
 
@@ -15739,6 +18801,308 @@ component_b = "water"
 value = 0.5
 
 [[kij]]
+component_a = "ca++"
+component_b = "co2"
+value = 0.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "methanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "n-heptane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "n-pentane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ca++"
+component_b = "water"
+value = 0.0
+
+[[kij]]
+component_a = "cacl2"
+component_b = "co2"
+value = 2.23
+
+[[kij]]
+component_a = "cacl2"
+component_b = "ethane"
+value = 1.18
+
+[[kij]]
+component_a = "cacl2"
+component_b = "ethanol"
+value = 0.2045
+
+[[kij]]
+component_a = "cacl2"
+component_b = "h2s"
+value = 0.5
+cpa_value_srk = 0.5
+cpa_value_pr = 0.5
+
+[[kij]]
+component_a = "cacl2"
+component_b = "mdea"
+value = 0.0
+
+[[kij]]
+component_a = "cacl2"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "cacl2"
+component_b = "methane"
+value = 2.07
+
+[[kij]]
+component_a = "cacl2"
+component_b = "methanol"
+value = 0.2045
+cpa_value_srk = 0.2045
+cpa_value_pr = 0.2045
+
+[[kij]]
+component_a = "cacl2"
+component_b = "n-butane"
+value = 1.18
+
+[[kij]]
+component_a = "cacl2"
+component_b = "n-heptane"
+value = 1.18
+
+[[kij]]
+component_a = "cacl2"
+component_b = "n-pentane"
+value = 1.18
+
+[[kij]]
+component_a = "cacl2"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 2.29
+cpa_value_pr = 2.29
+
+[[kij]]
+component_a = "cacl2"
+component_b = "nitrogen"
+value = 2.29
+
+[[kij]]
+component_a = "cacl2"
+component_b = "oxygen"
+value = 0.5
+cpa_value_srk = 0.5
+cpa_value_pr = 0.5
+
+[[kij]]
+component_a = "cacl2"
+component_b = "propane"
+value = 1.18
+
+[[kij]]
+component_a = "cacl2"
+component_b = "teg"
+value = 0.13
+
+[[kij]]
+component_a = "cl-"
+component_b = "co2"
+value = 0.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "methanol"
+value = 0.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "n-heptane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "n-pentane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "teg"
+value = 0.0
+
+[[kij]]
+component_a = "cl-"
+component_b = "water"
+value = 0.0
+
+[[kij]]
+component_a = "co2"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "co2"
+component_b = "ac-"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
 component_a = "co2"
 component_b = "acetic acid"
 value = 0.0
@@ -15749,6 +19113,11 @@ component_b = "ethane"
 value = 0.12980001
 cpa_value_srk = 0.12
 cpa_value_pr = 0.12
+
+[[kij]]
+component_a = "co2"
+component_b = "h+pzcoo-"
+value = 0.0
 
 [[kij]]
 component_a = "co2"
@@ -15792,6 +19161,16 @@ value = 0.0
 
 [[kij]]
 component_a = "co2"
+component_b = "piperazine+"
+value = 0.0
+
+[[kij]]
+component_a = "co2"
+component_b = "pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "co2"
 component_b = "sulfuric acid"
 value = 0.3012
 cpa_value_srk = 0.3012
@@ -15802,6 +19181,113 @@ component_a = "co2"
 component_b = "water"
 value = 0.184
 cpa_value_srk = -0.27686
+
+[[kij]]
+component_a = "co3--"
+component_b = "co2"
+value = 0.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "meg"
+value = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "methanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "n-heptane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "n-pentane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "piperazine+"
+value = 0.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "co3--"
+component_b = "water"
+value = 0.0
 
 [[kij]]
 component_a = "cos"
@@ -15858,6 +19344,13 @@ cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "dea"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea"
 component_b = "meg"
 value = 1.0
 
@@ -15931,6 +19424,246 @@ cpa_value_srk = 1.0
 cpa_value_pr = 1.0
 
 [[kij]]
+component_a = "dea+"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "ethane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "h2s"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "meg"
+value = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "methanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "n-butane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "n-heptane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "n-pentane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "nitrogen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "oxygen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "propane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "dea+"
+component_b = "water"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "ethane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "h2s"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "meg"
+value = 1.0
+cpa_value_srk = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "methanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "n-butane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "n-heptane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "n-pentane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "neon"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "nitrogen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "propane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "deacoo-"
+component_b = "water"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
 component_a = "deg"
 component_b = "benzene"
 value = 0.2
@@ -15962,6 +19695,13 @@ value = 0.2
 component_a = "deg"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "deg"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "deg"
@@ -16044,6 +19784,13 @@ cpa_value_srk = -0.3
 
 [[kij]]
 component_a = "ethane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "ethane"
 component_b = "methane"
 value = 0.00295295
 cpa_value_srk = 0.00295295
@@ -16073,6 +19820,13 @@ component_b = "ethane"
 value = 0.19
 cpa_value_srk = -0.055
 cpa_value_pr = -0.055
+
+[[kij]]
+component_a = "ethanol"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "ethanol"
@@ -16158,6 +19912,11 @@ cpa_value_srk = -0.115
 cpa_value_pr = -0.115
 
 [[kij]]
+component_a = "h+pzcoo-"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
 component_a = "h2s"
 component_b = "co2"
 value = 0.12
@@ -16175,6 +19934,13 @@ cpa_value_pr = 0.07
 component_a = "h2s"
 component_b = "ethanol"
 value = 0.5
+
+[[kij]]
+component_a = "h2s"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "h2s"
@@ -16227,6 +19993,229 @@ value = 0.03
 cpa_value_srk = 0.1913
 
 [[kij]]
+component_a = "h3o+"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "ethanol"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "mdea"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "methane"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "methanol"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "n-heptane"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "n-pentane"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "neon"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "oxygen"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "teg"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "h3o+"
+component_b = "water"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "ac-"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "co3--"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "ethanol"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "h+pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "mdea"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "methane"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "methanol"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "n-heptane"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "n-pentane"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "neon"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "piperazine+"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "teg"
+value = 0.0
+
+[[kij]]
+component_a = "hco3-"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "helium"
 component_b = "co2"
 value = 0.0
@@ -16250,6 +20239,13 @@ value = 0.0
 component_a = "helium"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "helium"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "helium"
@@ -16313,6 +20309,115 @@ component_b = "water"
 value = 0.5
 
 [[kij]]
+component_a = "hs-"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "ethane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "h2s"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "meg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "methanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "n-butane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "nitrogen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "oxygen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "propane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "hs-"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "hydrogen"
 component_b = "co2"
 value = 0.0362
@@ -16342,6 +20447,13 @@ cpa_value_pr = 0.0831
 component_a = "hydrogen"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "hydrogen"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "hydrogen"
@@ -16416,6 +20528,115 @@ component_b = "water"
 value = 0.5322
 
 [[kij]]
+component_a = "i-"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "ethane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "h2s"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "meg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "methanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "n-butane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "nitrogen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "oxygen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "propane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "i-butane"
 component_b = "co2"
 value = 0.12980001
@@ -16444,6 +20665,13 @@ cpa_value_pr = 0.06
 component_a = "i-butane"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "i-butane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "i-butane"
@@ -16540,6 +20768,13 @@ value = 0.0
 
 [[kij]]
 component_a = "i-pentane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "i-pentane"
 component_b = "meg"
 value = 0.2
 
@@ -16611,11 +20846,226 @@ cpa_value_srk = -0.08
 cpa_value_pr = -0.08
 
 [[kij]]
+component_a = "k+"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "ethane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "h2s"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "k+"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "methanol"
+value = 0.0
+
+[[kij]]
+component_a = "k+"
+component_b = "n-butane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "nitrogen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "oxygen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "propane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "k+"
+component_b = "teg"
+value = 0.0
+
+[[kij]]
+component_a = "k+"
+component_b = "water"
+value = 0.0
+
+[[kij]]
+component_a = "li+"
+component_b = "co2"
+value = 0.0
+
+[[kij]]
+component_a = "li+"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "li+"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "li+"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "li+"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "li+"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "li+"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "li+"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "li+"
+component_b = "methanol"
+value = 0.0
+
+[[kij]]
+component_a = "li+"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "li+"
+component_b = "n-heptane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "li+"
+component_b = "n-pentane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "li+"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "li+"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "li+"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "li+"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "li+"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "m-cy-c6"
 component_b = "meg"
 value = 0.0
 cpa_value_srk = 0.061
 cpa_value_pr = 0.061
+
+[[kij]]
+component_a = "mdea"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "mdea"
+component_b = "ac-"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "mdea"
@@ -16625,6 +21075,11 @@ value = 0.0
 [[kij]]
 component_a = "mdea"
 component_b = "ethanol"
+value = 0.0
+
+[[kij]]
+component_a = "mdea"
+component_b = "h+pzcoo-"
 value = 0.0
 
 [[kij]]
@@ -16659,6 +21114,16 @@ value = 0.0
 
 [[kij]]
 component_a = "mdea"
+component_b = "piperazine+"
+value = 0.0
+
+[[kij]]
+component_a = "mdea"
+component_b = "pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "mdea"
 component_b = "teg"
 value = 0.0
 
@@ -16667,6 +21132,50 @@ component_a = "mdea"
 component_b = "water"
 value = 0.0
 cpa_value_srk = -0.25
+
+[[kij]]
+component_a = "mdea+"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "mdea+"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "mdea+"
+component_b = "h+pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "mdea+"
+component_b = "methane"
+value = 0.0
+
+[[kij]]
+component_a = "mdea+"
+component_b = "neon"
+value = 0.0
+
+[[kij]]
+component_a = "mdea+"
+component_b = "piperazine+"
+value = 0.0
+
+[[kij]]
+component_a = "mdea+"
+component_b = "pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "meg"
+component_b = "cacl2"
+value = -0.0385
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
 
 [[kij]]
 component_a = "meg"
@@ -16688,6 +21197,13 @@ value = 0.0
 
 [[kij]]
 component_a = "meg"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "meg"
 component_b = "methane"
 value = 0.2
 cpa_value_srk = 0.134
@@ -16704,6 +21220,11 @@ component_b = "n-heptane"
 value = 0.08
 cpa_value_srk = 0.047
 cpa_value_pr = 0.047
+
+[[kij]]
+component_a = "meg"
+component_b = "nacl"
+value = -0.0385
 
 [[kij]]
 component_a = "meg"
@@ -16868,6 +21389,11 @@ value = 0.0
 
 [[kij]]
 component_a = "methane"
+component_b = "h+pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "methane"
 component_b = "methanol"
 value = 0.13
 cpa_value_srk = 0.0134
@@ -16879,6 +21405,11 @@ component_b = "neon"
 value = 0.0
 cpa_value_srk = 0.02
 cpa_value_pr = 0.02
+
+[[kij]]
+component_a = "methane"
+component_b = "piperazine+"
+value = 0.0
 
 [[kij]]
 component_a = "methanol"
@@ -16897,6 +21428,13 @@ cpa_value_pr = 0.014
 component_a = "methanol"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "methanol"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "methanol"
@@ -16958,6 +21496,86 @@ cpa_value_srk = -0.09
 cpa_value_pr = -0.09
 
 [[kij]]
+component_a = "mg++"
+component_b = "co2"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "ethane"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "ethanol"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "h2s"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "mdea"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "mdea+"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "methane"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "methanol"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "n-butane"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "neon"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "nitrogen"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "oxygen"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "propane"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "teg"
+value = 1.0
+
+[[kij]]
+component_a = "mg++"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "n-butane"
 component_b = "co2"
 value = 0.12980001
@@ -16975,6 +21593,13 @@ component_b = "h2s"
 value = 0.06
 cpa_value_srk = 0.06
 cpa_value_pr = 0.06
+
+[[kij]]
+component_a = "n-butane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "n-butane"
@@ -17026,6 +21651,13 @@ value = 0.0
 component_a = "n-heptane"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "n-heptane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "n-heptane"
@@ -17102,6 +21734,13 @@ cpa_value_pr = 0.05
 component_a = "n-hexane"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "n-hexane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "n-hexane"
@@ -17258,6 +21897,13 @@ value = 0.0
 
 [[kij]]
 component_a = "n-pentane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "n-pentane"
 component_b = "meg"
 value = 0.2
 
@@ -17309,6 +21955,188 @@ value = 0.5
 cpa_value_srk = 0.0615
 
 [[kij]]
+component_a = "na+"
+component_b = "co2"
+value = 0.0
+
+[[kij]]
+component_a = "na+"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "na+"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "na+"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "na+"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "na+"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "na+"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "na+"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "na+"
+component_b = "methanol"
+value = 0.0
+
+[[kij]]
+component_a = "na+"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "na+"
+component_b = "n-heptane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "na+"
+component_b = "n-pentane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "na+"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "na+"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "na+"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "na+"
+component_b = "teg"
+value = 0.0
+
+[[kij]]
+component_a = "na+"
+component_b = "water"
+value = 0.0
+
+[[kij]]
+component_a = "nacl"
+component_b = "co2"
+value = 2.1
+
+[[kij]]
+component_a = "nacl"
+component_b = "ethane"
+value = 0.78
+
+[[kij]]
+component_a = "nacl"
+component_b = "ethanol"
+value = 0.1221
+
+[[kij]]
+component_a = "nacl"
+component_b = "h2s"
+value = 0.8
+
+[[kij]]
+component_a = "nacl"
+component_b = "mdea"
+value = 0.0
+
+[[kij]]
+component_a = "nacl"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nacl"
+component_b = "methane"
+value = 2.02
+
+[[kij]]
+component_a = "nacl"
+component_b = "methanol"
+value = 0.1221
+cpa_value_srk = 0.1221
+cpa_value_pr = 0.1221
+
+[[kij]]
+component_a = "nacl"
+component_b = "n-butane"
+value = 0.7
+
+[[kij]]
+component_a = "nacl"
+component_b = "n-heptane"
+value = 0.7
+
+[[kij]]
+component_a = "nacl"
+component_b = "n-pentane"
+value = 0.7
+
+[[kij]]
+component_a = "nacl"
+component_b = "neon"
+value = 0.0
+
+[[kij]]
+component_a = "nacl"
+component_b = "nitrogen"
+value = 3.2
+
+[[kij]]
+component_a = "nacl"
+component_b = "oxygen"
+value = 0.8
+
+[[kij]]
+component_a = "nacl"
+component_b = "propane"
+value = 0.72
+
+[[kij]]
+component_a = "nacl"
+component_b = "teg"
+value = 0.365
+
+[[kij]]
 component_a = "nc10"
 component_b = "co2"
 value = 0.130400002
@@ -17342,11 +22170,120 @@ component_b = "nc16"
 value = 0.0
 
 [[kij]]
+component_a = "nh4+"
+component_b = "co2"
+value = 0.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "meg"
+value = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "methanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "n-heptane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "n-pentane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "nh4+"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "nitrogen"
 component_b = "ethane"
 value = 0.0388
 cpa_value_srk = 0.031899
 cpa_value_pr = 0.031899
+
+[[kij]]
+component_a = "nitrogen"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "nitrogen"
@@ -17386,9 +22323,142 @@ value = 0.48
 cpa_value_srk = -1.389072518
 
 [[kij]]
+component_a = "oh-"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "co3--"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "ethane"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "ethanol"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "h+pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "h2s"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "hco3-"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "mdea"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "meg"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "methane"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "methanol"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "n-butane"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "n-heptane"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "n-pentane"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "neon"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "nitrogen"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "piperazine"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "piperazine+"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "propane"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "teg"
+value = 0.0
+
+[[kij]]
+component_a = "oh-"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "oxygen"
 component_b = "mdea"
 value = 0.0
+
+[[kij]]
+component_a = "oxygen"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "oxygen"
@@ -17410,6 +22480,26 @@ cpa_value_srk = -1.088749036
 
 [[kij]]
 component_a = "piperazine"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "piperazine"
+component_b = "h+pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "piperazine"
+component_b = "hco3-"
+value = 0.0
+
+[[kij]]
+component_a = "piperazine"
+component_b = "mdea+"
+value = 0.0
+
+[[kij]]
+component_a = "piperazine"
 component_b = "methane"
 value = 0.0
 cpa_value_srk = 0.646504377
@@ -17417,7 +22507,32 @@ cpa_value_pr = 0.646504377
 
 [[kij]]
 component_a = "piperazine"
+component_b = "piperazine+"
+value = 0.0
+
+[[kij]]
+component_a = "piperazine"
+component_b = "pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "piperazine"
 component_b = "water"
+value = 0.0
+
+[[kij]]
+component_a = "piperazine+"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "piperazine+"
+component_b = "h+pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "piperazine+"
+component_b = "pzcoo-"
 value = 0.0
 
 [[kij]]
@@ -17441,6 +22556,13 @@ value = 0.0
 
 [[kij]]
 component_a = "propane"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "propane"
 component_b = "methane"
 value = 0.00747722
 cpa_value_srk = 0.00747722
@@ -17456,6 +22578,125 @@ cpa_value_pr = 0.08
 [[kij]]
 component_a = "propane"
 component_b = "oxygen"
+value = 0.0
+
+[[kij]]
+component_a = "pzcoo-"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "pzcoo-"
+component_b = "h+pzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "s--"
+component_b = "co2"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "ethane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "ethanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "h2s"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "mdea"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "meg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "methane"
+value = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "methanol"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "n-butane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "neon"
+value = 0.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "nitrogen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "oxygen"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "propane"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "teg"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "s--"
+component_b = "water"
 value = 0.0
 
 [[kij]]
@@ -17550,6 +22791,86 @@ cpa_value_srk = 0.2
 cpa_value_pr = 0.2
 
 [[kij]]
+component_a = "sr++"
+component_b = "co2"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "ethane"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "ethanol"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "h2s"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "mdea"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "mdea+"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "meg"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "methane"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "methanol"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "n-butane"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "neon"
+value = 0.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "nitrogen"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "oxygen"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "propane"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "teg"
+value = 1.0
+
+[[kij]]
+component_a = "sr++"
+component_b = "water"
+value = 0.0
+
+[[kij]]
 component_a = "teg"
 component_b = "co2"
 value = 0.2
@@ -17566,6 +22887,13 @@ cpa_value_pr = 0.11
 component_a = "teg"
 component_b = "h2s"
 value = 0.2
+
+[[kij]]
+component_a = "teg"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
 
 [[kij]]
 component_a = "teg"
@@ -17660,6 +22988,13 @@ value = 0.0
 
 [[kij]]
 component_a = "toluene"
+component_b = "mdea+"
+value = 1.0
+cpa_value_srk = 1.0
+cpa_value_pr = 1.0
+
+[[kij]]
+component_a = "toluene"
 component_b = "meg"
 value = 0.2
 cpa_value_srk = 0.051
@@ -17723,13 +23058,30 @@ cpa_value_srk = 0.0095
 
 [[kij]]
 component_a = "water"
+component_b = "-oocpzcoo-"
+value = 0.0
+
+[[kij]]
+component_a = "water"
 component_b = "acetic acid"
 value = 0.0
 
 [[kij]]
 component_a = "water"
+component_b = "cacl2"
+value = -0.0385
+cpa_value_srk = -0.115
+cpa_value_pr = -0.115
+
+[[kij]]
+component_a = "water"
 component_b = "ethane"
 value = 0.635
+
+[[kij]]
+component_a = "water"
+component_b = "h+pzcoo-"
+value = 0.0
 
 [[kij]]
 component_a = "water"
@@ -17767,7 +23119,22 @@ cpa_value_srk = 0.0875
 
 [[kij]]
 component_a = "water"
+component_b = "nacl"
+value = -0.0385
+
+[[kij]]
+component_a = "water"
+component_b = "piperazine+"
+value = 0.0
+
+[[kij]]
+component_a = "water"
 component_b = "propane"
 value = 0.53
 cpa_value_srk = 0.11
 cpa_value_pr = 0.1135
+
+[[kij]]
+component_a = "water"
+component_b = "pzcoo-"
+value = 0.0

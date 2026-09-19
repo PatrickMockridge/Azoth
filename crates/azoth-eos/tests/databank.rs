@@ -1078,7 +1078,7 @@ fn the_cubic_ln_phi_is_the_derivative_at_the_association_shifted_root() {
 
 /// The PC-SAFT columns are read, and zero is how the table spells absence.
 ///
-/// The three are vendored and unparsed until a model reads them, and 47 of the 286 rows
+/// The three are vendored and unparsed until a model reads them, and 106 of the 348 rows
 /// carry `0` in all three rather than a blank - so "the table has no PC-SAFT set for this
 /// substance" is a *value*, and a model that computed with `m = 0` would be solving for a
 /// fluid with no segments rather than refusing one it has no parameters for.
@@ -1115,7 +1115,7 @@ fn the_saft_vr_mie_columns_are_read_and_zero_means_absent() {
     );
 
     // A substance with no SAFT-VR-Mie set is absent as a zero in all five, which is the
-    // shape a model has to refuse rather than compute with. **Twelve of the table's 286
+    // shape a model has to refuse rather than compute with. **Twelve of the table's 348
     // rows carry one** - the light alkanes, `co2`, nitrogen and water - and the count is
     // asserted rather than left to a sample, so a generator that stopped emitting the
     // columns fails here rather than at a model. Counting it off the CSV with a
@@ -1126,16 +1126,30 @@ fn the_saft_vr_mie_columns_are_read_and_zero_means_absent() {
         .count();
     assert_eq!(carried, 12, "rows carrying a SAFT-VR-Mie set");
 
-    // **`m` is the absence marker and `lambda_r` is not.** The table carries the standard
-    // `12`/`6` on every row, so methanol - which has no set - reports a repulsive exponent
-    // of 12 beside a segment number of zero. A model that keyed absence on `lambda_r`
-    // would solve for a fluid with no segments on 274 of the 286 rows.
+    // **`m` and `lambda_r` are the same marker written twice.** The table carries the
+    // standard `12` on the 336 rows without a set and a fitted exponent on the 12 with
+    // one, so methanol - which has no set - reports a repulsive exponent of 12 beside a
+    // segment number of zero, and every row that has a set reports something else. The
+    // assertion below is what holds the two together: a table that gave the fitted rows
+    // `12` as well would make `lambda_r` useless, which is what this test would catch.
     let absent = databank::entry("methanol", None).expect("methanol");
     assert_eq!(absent.m_mie, 0.0, "methanol has no SAFT-VR-Mie set");
     assert_eq!(
         absent.lambda_r_mie, 12.0,
         "but its lambda_r is the table's default"
     );
+    let fitting: Vec<_> = databank::names(None)
+        .into_iter()
+        .filter(|name| databank::entry(name, None).is_ok_and(|e| e.m_mie > 0.0))
+        .collect();
+    assert_eq!(fitting.len(), 12);
+    for name in &fitting {
+        let entry = databank::entry(name, None).expect("a name from the table");
+        assert!(
+            (entry.lambda_r_mie - 12.0).abs() > 1e-9,
+            "{name} carries a set, so its lambda_r is fitted rather than the default"
+        );
+    }
     assert_eq!(absent.sigma_mie, 0.0, "and its sigma is absent, like its m");
 }
 
@@ -1171,8 +1185,8 @@ fn the_pcsaft_columns_are_read_and_zero_means_absent() {
         })
         .count();
     assert_eq!(
-        absent, 47,
-        "rows with no PC-SAFT set; the vendored table has 47"
+        absent, 106,
+        "rows with no PC-SAFT set; the vendored table has 106"
     );
 }
 
@@ -1206,7 +1220,96 @@ fn the_pcsaft_interaction_column_is_read() {
     assert_eq!(absent[1], 0.0);
 }
 
-/// **The cubic's interaction column is the cubic's, and the table says so 76 times.**
+/// The ion rows are vendored for the columns an electrolyte model reads.
+///
+/// `COMP.csv` files 62 rows under `COMPTYPE = 'ion'`, and this table kept none of them
+/// until the electrolyte tranche: a cubic has no notion of an ion and the file fills those
+/// rows' critical columns with a default. What an activity model reads is the *charge*,
+/// the Deshmukh-Mather *diameter*, the molar mass and the dielectric coefficients, so the
+/// rows are carried and the cubic refuses them by class rather than reading the filler.
+#[test]
+fn an_ion_is_vendored_for_its_charge_and_not_its_critical_constants() {
+    let sodium = databank::entry("na+", None).expect("na+ is in the databank");
+    assert_eq!(sodium.class, databank::ION);
+    assert_eq!(sodium.ionic_charge, 1.0);
+    assert_eq!(
+        sodium.deshmukh_mather_diameter, 1.0,
+        "the table carries it in angstrom, and 1.0 is the value it repeats over 39 rows"
+    );
+    assert_eq!(sodium.molar_mass, Some(0.02299));
+
+    // **The critical columns are the filler, and the values are worth pinning.** All four
+    // are one default set on 27 of the 62 rows - an acentric factor of exactly 0.344 for
+    // twenty-nine different substances is not a coincidence - so a cubic over these numbers
+    // would be a plausible-looking wrong answer rather than a failure.
+    assert!(
+        (sodium.tc - 717.3).abs() < 1e-9,
+        "Tc: {} - the file states 444.15 and the generator's 273.15 makes 717.3 K",
+        sodium.tc
+    );
+    assert!((sodium.pc - 29_089_000.0).abs() < 1.0, "Pc: {}", sodium.pc);
+    assert!(
+        (sodium.omega - 0.344).abs() < 1e-12,
+        "omega: {}",
+        sodium.omega
+    );
+    assert!(
+        (sodium.critical_volume.expect("carried") - 99.0e-6).abs() < 1e-12,
+        "Vc: {:?}",
+        sodium.critical_volume
+    );
+
+    // Three more of the class, chosen for the ones that are not the default: `cl-` is the
+    // commonest anion, `h+` the smallest cation, and `caco3` a row whose charge is *zero*
+    // while its class is still `ion`.
+    let chloride = databank::entry("cl-", None).expect("cl-");
+    assert_eq!(chloride.ionic_charge, -1.0);
+    assert_eq!(chloride.deshmukh_mather_diameter, 1.0);
+    assert_eq!(databank::entry("h+", None).expect("h+").ionic_charge, 1.0);
+    let carbonate = databank::entry("caco3", None).expect("caco3");
+    assert_eq!(carbonate.class, databank::ION);
+    assert_eq!(
+        carbonate.ionic_charge, 0.0,
+        "a neutral salt filed with the ions, so the charge is not the marker - the class is"
+    );
+    assert_eq!(
+        chloride.dielectric, [0.0; 5],
+        "no dielectric set on this row"
+    );
+    assert_eq!(
+        databank::entry("nacl", None).expect("nacl").dielectric[1],
+        29_814.5,
+        "and a row that carries one is read rather than defaulted"
+    );
+}
+
+/// **A cubic over an ion is refused, and the refusal names it.**
+///
+/// The failure this guards against is not a crash: `Tc = 444.15`, `Pc = 29.089 MPa` and
+/// `omega = 0.344` are perfectly usable numbers, and a cubic built from them returns a
+/// density and a fugacity that look like answers. The refusal is the only thing standing
+/// between the filler and a result, so it is asserted rather than left to the reader.
+#[test]
+fn a_cubic_over_an_ion_is_refused() {
+    let err = databank::mixture_of(&["water", "na+"], Cubic::Pr, None)
+        .expect_err("a cubic has no notion of an ion, so this must refuse");
+    let text = err.to_string();
+    assert!(text.contains("na+"), "{text}");
+    assert!(
+        text.contains("plausible-looking wrong numbers"),
+        "the refusal should say what goes wrong without it: {text}"
+    );
+
+    // And it is the *class* that decides, not the charge: `caco3` carries a zero charge
+    // and is refused with the rest of them.
+    assert!(databank::mixture_of(&["caco3"], Cubic::Srk, None).is_err());
+
+    // A neutral mixture is unaffected, which is what stops this being a rule that refuses
+    // everything.
+    assert!(databank::mixture_of(&["water", "methanol"], Cubic::Pr, None).is_ok());
+}
+
+/// **The cubic's interaction column is the cubic's, and the table says so 194 times.**
 ///
 /// NeqSim selects on the phase class: `phase.getClass().getName().equals(
 /// "neqsim.thermo.phase.PhasePrEos")` reads `KIJPR` and every other phase - SRK, RK, and
@@ -1223,8 +1326,8 @@ fn the_interaction_column_follows_the_cubic() {
     let differing: Vec<_> = pairs.iter().filter(|(_, _, pr, srk)| pr != srk).collect();
     assert_eq!(
         differing.len(),
-        76,
-        "the number of pairs whose `KIJSRK` and `KIJPR` differ, measured over the 516 \
+        194,
+        "the number of pairs whose `KIJSRK` and `KIJPR` differ, measured over the 957 \
          in-scope pairs"
     );
 

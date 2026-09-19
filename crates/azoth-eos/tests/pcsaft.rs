@@ -135,7 +135,7 @@ fn a_binary_reproduces_every_layer() {
 
 /// A component the table has no PC-SAFT set for is refused, not solved for.
 ///
-/// The compiled table spells absence as zeros in all three columns - 47 of the 286 rows -
+/// The compiled table spells absence as zeros in all three columns - 106 of the 348 rows -
 /// so a model that took them would answer for a fluid with no segments.
 #[test]
 fn a_component_without_a_set_is_refused() {

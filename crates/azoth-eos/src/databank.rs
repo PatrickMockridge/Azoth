@@ -157,6 +157,16 @@ pub fn embedded_mbwr32() -> &'static str {
 /// of the table's rows carry.
 pub const SOLVENT: &str = "solvent";
 
+/// The `COMPTYPE` value whose rows carry no critical constants of their own.
+///
+/// `COMP.csv` files 62 rows under it, and for 27 of them the four critical columns hold
+/// one default set - `Tc = 444.15` as the file states it, which the generator's 273.15
+/// makes `717.3 K`, then `Pc = 290.89 bar`, `omega = 0.344` and `Vc = 99 cm3/mol`. The
+/// remaining 35 inherit a neutral parent's numbers (`MDEA+` carries MDEA's) or carry
+/// values with no stated source. `Entry::class` is where the tag reaches this side, and
+/// [`mixture_of`] refuses rather than reading the filler.
+pub const ION: &str = "ion";
+
 /// One substance's constants, in the units the compiled table holds them in.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
@@ -195,14 +205,20 @@ pub struct Entry {
     /// is what NeqSim's own reader compares against `"solvent"` too, so a component
     /// carrying it takes the same branch NeqSim gives it.
     pub reference_state: String,
+    /// The substance class, exactly as NeqSim's `COMPTYPE` column states it.
+    ///
+    /// Read for one thing, and it is a refusal rather than a term: [`mixture_of`] builds
+    /// no cubic over an [`ION`], because the table's critical columns for those rows are
+    /// a default rather than a measurement. Never computed with.
+    pub class: String,
     /// The association parameters, or `None` for a component the table gives no scheme.
     ///
-    /// 144 of the 286 compiled rows carry `0` in the scheme column and are non-associating;
+    /// 181 of the 348 compiled rows carry `0` in the scheme column and are non-associating;
     /// the rest name `1A`, `2A`, `2B` or `4C`.
     pub association: Option<AssociationRecord>,
     /// PC-SAFT's segment number `m`, dimensionless.
     ///
-    /// **Zero means the table carries no PC-SAFT set**, which is how 47 of the 286 rows
+    /// **Zero means the table carries no PC-SAFT set**, which is how 106 of the 348 rows
     /// spell absence - the column is never blank. A model must refuse a zero rather than
     /// compute with it, the rule `ComponentSrkCPA`'s `|aCPA| > 1e-6` guard already follows.
     pub m_saft: f64,
@@ -219,19 +235,22 @@ pub struct Entry {
     /// **Every component may carry these, associating or not.** NeqSim reads them in
     /// `Component.createComponent` (line 404) before any attractive term is chosen, and
     /// `ComponentUMRCPA.setAttractiveTerm` installs term 22 for a component whose set
-    /// has them - a hydrocarbon as readily as a glycol. 23 of the 286 rows carry one.
+    /// has them - a hydrocarbon as readily as a glycol. 23 of the 348 rows carry one.
     pub umrcpa_mc: [f64; 5],
     /// SAFT-VR-Mie's repulsive exponent `lambda_r`, dimensionless.
     ///
-    /// **This one is not the absence marker.** The table carries the standard `12` on
-    /// every one of its 286 rows, whether or not the row has a set, so a caller cannot
-    /// read a set's presence off it - `m_mie` is that flag.
+    /// **This one is an absence marker too, on exactly the rows `m_mie` is.** The table
+    /// carries the standard `12` on 336 of its 348 rows and a fitted exponent on the 12
+    /// that have a set, so `lambda_r_mie == 12.0` and `m_mie == 0.0` hold on the same 336
+    /// rows. Two markers for one fact, which is why `m_mie` is the one read.
     pub lambda_r_mie: f64,
-    /// SAFT-VR-Mie's attractive exponent `lambda_a`, dimensionless, `6` on every row.
+    /// SAFT-VR-Mie's attractive exponent `lambda_a`, dimensionless, `6` on 347 rows.
+    ///
+    /// Not a marker: the fitted rows carry `6` as well, apart from `co2` at `5.055`.
     pub lambda_a_mie: f64,
     /// SAFT-VR-Mie's segment number `m`, dimensionless.
     ///
-    /// **Zero means the table carries no SAFT-VR-Mie set**, which is how 274 of the 286
+    /// **Zero means the table carries no SAFT-VR-Mie set**, which is how 336 of the 348
     /// rows spell absence - 12 carry one, the light alkanes with `co2`, nitrogen and
     /// water. `sigma_mie` and `epsik_mie` are zero on exactly those rows.
     pub m_mie: f64,
@@ -239,6 +258,24 @@ pub struct Entry {
     pub sigma_mie: f64,
     /// SAFT-VR-Mie's segment energy over Boltzmann's constant, `epsilon/k`, in K.
     pub epsik_mie: f64,
+    /// The ionic charge, in units of the elementary charge; zero for a neutral.
+    ///
+    /// **Zero does not mean "not an ion".** Four rows the table classes [`ION`] carry
+    /// it: `h+pzcoo-` is a zwitterion and `caco3`, `nacl` and `cacl2` are neutral salts
+    /// filed with the ions. Class is the marker; this is the value.
+    pub ionic_charge: f64,
+    /// The Deshmukh-Mather ion diameter, in ångström.
+    ///
+    /// **The table's absence marker is `0.0`, not a blank**, which is what 18 of the 62
+    /// [`ION`] rows carry. A model that needs one must refuse a zero: a zero diameter is
+    /// the infinite-dilution limit of the term it belongs to, so a plausible number would
+    /// come out of it.
+    pub deshmukh_mather_diameter: f64,
+    /// `DIELECTRICPARAMETER1..5`, the dielectric mixing rule's coefficients.
+    ///
+    /// Carried exactly as NeqSim stores them. The unit is not established - the manifest
+    /// records `neqsim-internal` - so no conversion is applied and none is guessed.
+    pub dielectric: [f64; 5],
 }
 
 impl Entry {
@@ -555,8 +592,8 @@ struct Interaction {
     /// selects on the phase class - `phase.getClass().getName().equals(
     /// "neqsim.thermo.phase.PhasePrEos")` - and every other phase reads `KIJSRK`. The two
     /// are different fits rather than one converted into the other: water/methane is
-    /// `0.651` here against `0.45`, benzene/methane is `0.0` against `0.0209`, and 76 of
-    /// the 516 in-scope pairs differ at all.
+    /// `0.651` here against `0.45`, benzene/methane is `0.0` against `0.0209`, and 194
+    /// of the 957 in-scope pairs differ at all.
     kij_pr: f64,
     /// NeqSim's `KIJSRK`, the column its Soave-Redlich-Kwong phase and every other cubic
     /// reads. See [`Self::kij_pr`] for why the two are not interchangeable.
@@ -574,7 +611,7 @@ struct Interaction {
     ///
     /// A third *different* fit, not a refinement of the other two: methane/n-butane is
     /// `0.022` here against the `0.01289789` its SRK and PR columns share, and 42 of the
-    /// 516 in-scope pairs carry one at all.
+    /// 957 in-scope pairs carry one at all.
     ///
     /// **NeqSim only reads it when it is driven the one way it can be driven.** Its own
     /// default mixing rule leaves the matrix null and a *mixture* throws a
@@ -671,14 +708,17 @@ fn csv_failure(error: csv::Error) -> AzothError {
     }
 }
 
-/// One association column's value, where an empty cell means zero.
+/// One parameter's value, where an empty cell means zero.
 ///
-/// The upstream table uses a blank and a `0` interchangeably for "no parameter": the only
-/// two blanks in the compiled table are `associationboundingvolume_pr` on `h2so4` and
-/// `hno3`, whose every sibling association cell is already `0.0`. So a blank here infers
-/// nothing the row does not already state, and a *malformed* value still refuses - the
-/// distinction is between an absent parameter and a broken one, which `number` keeps.
-fn association_number(
+/// **Both upstream tables use a blank and a `0` interchangeably for "no parameter", so a
+/// blank infers nothing the row does not already state.** Four cells in the compiled
+/// tables are blank: `associationboundingvolume_pr` on `h2so4`, `hno3` and `c2h4-`, whose
+/// every sibling association cell is already `0.0`; and `nrtlgij` on the `k+`/`h2s` pair,
+/// which carries `KIJPR = 1` with no NRTL energy beside it.
+///
+/// A *malformed* value still refuses - the distinction is between an absent parameter and
+/// a broken one, which [`number`] keeps.
+fn optional_number(
     record: &csv::StringRecord,
     index: usize,
     name: &str,
@@ -705,7 +745,7 @@ fn parse_association(
     let Some(scheme) = SiteScheme::from_databank_name(raw) else {
         return Ok(None);
     };
-    let fitted = |name: &str| -> Result<f64> { association_number(record, index[name], name, row) };
+    let fitted = |name: &str| -> Result<f64> { optional_number(record, index[name], name, row) };
     let umr_cpa = parse_umr_cpa(record, index, row)?;
     Ok(Some(AssociationRecord {
         scheme,
@@ -728,7 +768,7 @@ fn parse_association(
 /// One row's `UMRCPA_*` set, or `None` where the row does not carry one.
 ///
 /// NeqSim's guard is two-part (`Component.java:534`): `UMRCPA_associating` is one **and**
-/// `|UMRCPA_a0| > 1e-20`. Seven of the 286 rows pass it - water, methanol, ethanol and
+/// `|UMRCPA_a0| > 1e-20`. Seven of the 348 rows pass it - water, methanol, ethanol and
 /// the four glycols - and a row that fails it keeps the PR family's fitted values, which
 /// is what `ComponentUMRCPA` reads first for being a `ComponentPR`.
 fn parse_umr_cpa(
@@ -736,7 +776,7 @@ fn parse_umr_cpa(
     index: &HashMap<&str, usize>,
     row: usize,
 ) -> Result<Option<UmrCpaRecord>> {
-    let number = |name: &str| -> Result<f64> { association_number(record, index[name], name, row) };
+    let number = |name: &str| -> Result<f64> { optional_number(record, index[name], name, row) };
     let associating = number("umrcpa_associating")?;
     let a0 = number("umrcpa_a0")?;
     if associating != 1.0 || a0.abs() <= 1.0e-20 {
@@ -777,6 +817,14 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "antoined",
         "antoinee",
         "referencestatetype",
+        "comptype",
+        "ioniccharge",
+        "deshmationicdiameter",
+        "dielectricparameter1",
+        "dielectricparameter2",
+        "dielectricparameter3",
+        "dielectricparameter4",
+        "dielectricparameter5",
         "associationscheme",
         "associationsites",
         "associationenergy",
@@ -876,6 +924,11 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     .unwrap_or("")
                     .trim()
                     .to_string(),
+                class: record
+                    .get(index["comptype"])
+                    .unwrap_or("")
+                    .trim()
+                    .to_lowercase(),
                 association: parse_association(&record, &index, row)?,
                 m_saft: number(&record, index["msaft"], "msaft", row)?,
                 sigma_saft: number(&record, index["sigma_saft_m"], "sigma_saft_m", row)?,
@@ -898,6 +951,21 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     row,
                 )?,
                 epsik_mie: number(&record, index["epsiksaftvrmie"], "epsiksaftvrmie", row)?,
+                ionic_charge: number(&record, index["ioniccharge"], "ioniccharge", row)?,
+                deshmukh_mather_diameter: number(
+                    &record,
+                    index["deshmationicdiameter"],
+                    "deshmationicdiameter",
+                    row,
+                )?,
+                dielectric: {
+                    let mut dielectric = [0.0; 5];
+                    for (k, slot) in dielectric.iter_mut().enumerate() {
+                        let column = format!("dielectricparameter{}", k + 1);
+                        *slot = number(&record, index[column.as_str()], &column, row)?;
+                    }
+                    dielectric
+                },
             },
         );
     }
@@ -960,24 +1028,27 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
             reason: format!("row {}: `kij_pr` is {raw:?}", offset + 2),
         })?;
         let row = offset + 2;
-        let alpha = number(&record, index["nrtlalpha"], "nrtlalpha", row)?;
-        let gij = number(&record, index["nrtlgij"], "nrtlgij", row)?;
-        let gji = number(&record, index["nrtlgji"], "nrtlgji", row)?;
+        // `optional_number` rather than `number`: a pair may carry a `KIJPR` and no NRTL
+        // energy beside it, which is the one blank cell left in this table. See its own
+        // comment for the four.
+        let alpha = optional_number(&record, index["nrtlalpha"], "nrtlalpha", row)?;
+        let gij = optional_number(&record, index["nrtlgij"], "nrtlgij", row)?;
+        let gji = optional_number(&record, index["nrtlgji"], "nrtlgji", row)?;
 
         let hv = selector(&record, index["hvtype"], "hvtype", row)? == "HV";
         let ws = selector(&record, index["wstype"], "wstype", row)? == "WS";
-        let hv_alpha = number(&record, index["hvalpha"], "hvalpha", row)?;
-        let hv_dij = number(&record, index["hvgij"], "hvgij", row)?;
-        let hv_dji = number(&record, index["hvgji"], "hvgji", row)?;
-        let hv_dij_t = number(&record, index["hvgijt"], "hvgijt", row)?;
-        let hv_dji_t = number(&record, index["hvgjit"], "hvgjit", row)?;
-        let ws_dij_t = number(&record, index["wsgijt"], "wsgijt", row)?;
-        let ws_dji_t = number(&record, index["wsgjit"], "wsgjit", row)?;
-        let kij_ws = number(&record, index["kijwsunifac"], "kijwsunifac", row)?;
-        let kij_srk = number(&record, index["kijsrk"], "kijsrk", row)?;
-        let cpa_kij_srk = number(&record, index["cpakij_srk"], "cpakij_srk", row)?;
-        let cpa_kij_pr = number(&record, index["cpakij_pr"], "cpakij_pr", row)?;
-        let pcsaft_kij = number(&record, index["kijpcsaft"], "kijpcsaft", row)?;
+        let hv_alpha = optional_number(&record, index["hvalpha"], "hvalpha", row)?;
+        let hv_dij = optional_number(&record, index["hvgij"], "hvgij", row)?;
+        let hv_dji = optional_number(&record, index["hvgji"], "hvgji", row)?;
+        let hv_dij_t = optional_number(&record, index["hvgijt"], "hvgijt", row)?;
+        let hv_dji_t = optional_number(&record, index["hvgjit"], "hvgjit", row)?;
+        let ws_dij_t = optional_number(&record, index["wsgijt"], "wsgijt", row)?;
+        let ws_dji_t = optional_number(&record, index["wsgjit"], "wsgjit", row)?;
+        let kij_ws = optional_number(&record, index["kijwsunifac"], "kijwsunifac", row)?;
+        let kij_srk = optional_number(&record, index["kijsrk"], "kijsrk", row)?;
+        let cpa_kij_srk = optional_number(&record, index["cpakij_srk"], "cpakij_srk", row)?;
+        let cpa_kij_pr = optional_number(&record, index["cpakij_pr"], "cpakij_pr", row)?;
+        let pcsaft_kij = optional_number(&record, index["kijpcsaft"], "kijpcsaft", row)?;
 
         // `kij`, `alpha`, `hv_alpha` and the two selectors are symmetric, stored both
         // ways round so a caller need not know which name came first. `gij`, `hv_dij`,
@@ -1119,6 +1190,15 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // describe, and a cubic has no reference state. The activity-coefficient
                 // phases read this, so a blank would have to mean something.
                 reference_state: SOLVENT.to_string(),
+                // `other` rather than blank, for the same reason, and it is the class that
+                // permits a cubic: a card states the parameters a cubic reads, so the
+                // substance it adds is one, and `mixture_of`'s [`ION`] refusal lets it
+                // through. Everything below is the electrolyte data a card does not
+                // state, and the zeros are its absence rather than a value.
+                class: "other".to_string(),
+                ionic_charge: 0.0,
+                deshmukh_mather_diameter: 0.0,
+                dielectric: [0.0; 5],
             })
         }
         (Some(base), Some(over)) => Ok(Entry {
@@ -1145,6 +1225,12 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             sigma_mie: base.sigma_mie,
             epsik_mie: base.epsik_mie,
             reference_state: base.reference_state,
+            // The table's, for the reason the PC-SAFT set below is: `ComponentOverride` is
+            // a closed list, so a card correcting `Tc` does not turn an ion into a cubic.
+            class: base.class,
+            ionic_charge: base.ionic_charge,
+            deshmukh_mather_diameter: base.deshmukh_mather_diameter,
+            dielectric: base.dielectric,
             // The card's scheme wins over the table's, and every parameter the card does
             // not name is the table's: `applied_to` is the one place the two are merged.
             association: over
@@ -2546,6 +2632,28 @@ pub fn mixture_of(
         .iter()
         .map(|name| entry(name, overlay))
         .collect::<Result<_>>()?;
+
+    let ions: Vec<&str> = entries
+        .iter()
+        .filter(|e| e.class == ION)
+        .map(|e| e.name.as_str())
+        .collect();
+    if !ions.is_empty() {
+        return Err(AzothError::invalid_input(
+            "components",
+            format!(
+                "{} {} filed under `{}` in NeqSim's component database, whose critical \
+                 columns hold a default rather than a measurement - `Tc`, `Pc` and `omega` \
+                 are one shared set on 27 of its 62 rows and a neutral parent's numbers on \
+                 most of the rest. A cubic built from them would return plausible-looking \
+                 wrong numbers. An ion belongs to the electrolyte models, which read its \
+                 charge and diameter instead.",
+                ions.join(", "),
+                if ions.len() == 1 { "is" } else { "are" },
+                ION,
+            ),
+        ));
+    }
 
     let missing: Vec<&str> = entries
         .iter()

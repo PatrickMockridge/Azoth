@@ -74,6 +74,16 @@ MBWR32_CSV = "data/components/mbwr32.csv"
 #: the table's rows carry.
 SOLVENT = "solvent"
 
+#: The `COMPTYPE` value whose rows carry no critical constants of their own.
+#:
+#: `COMP.csv` files 62 rows under it, and for 27 of them the four critical columns hold one
+#: default set - `Tc = 444.15` as the file states it, which the generator's 273.15 makes
+#: `717.3 K`, then `Pc = 290.89 bar`, `omega = 0.344` and `Vc = 99 cm3/mol`. The remaining
+#: 35 inherit a neutral parent's numbers (`MDEA+` carries MDEA's) or carry values with no
+#: stated source. `DatabankEntry.component_type` is where the tag reaches this side, and
+#: :func:`_refuse_ions` refuses rather than reading the filler.
+ION = "ion"
+
 #: Columns the loader reads, in order. Named rather than positional because this
 #: file's shape is the generator's contract, and a column inserted in the middle
 #: should fail loudly rather than shift every value one field left.
@@ -346,12 +356,17 @@ class DatabankEntry:
     #: ``solvent``, because a card states what a cubic reads and a cubic has no
     #: reference state.
     reference_state: str
+    #: The substance class, exactly as NeqSim's ``COMPTYPE`` column states it. Read for
+    #: one thing, and it is a refusal rather than a term: no cubic is built over an
+    #: ``"ion"``, whose critical columns hold a default rather than a measurement.
+    #: Never computed with.
+    component_type: str
     #: The association parameters, or ``None`` for a component the table gives no
-    #: scheme - which is 144 of the 286 compiled rows, and is the table's own marker
+    #: scheme - which is 181 of the 348 compiled rows, and is the table's own marker
     #: rather than a missing value.
     association: AssociationParameters | None
     #: PC-SAFT's segment number ``m``, dimensionless. **Zero means the table carries no
-    #: PC-SAFT set**, which is how 47 of the 286 rows spell absence - the column is never
+    #: PC-SAFT set**, which is how 106 of the 348 rows spell absence - the column is never
     #: blank - so a model must refuse a zero rather than solve for a fluid with no
     #: segments. The rule ``ComponentSrkCPA``'s ``|aCPA| > 1e-6`` guard already follows.
     m_saft: float
@@ -361,14 +376,16 @@ class DatabankEntry:
     sigma_saft: float
     #: PC-SAFT's segment energy over Boltzmann's constant, ``epsilon/k``, in K.
     epsik_saft: float
-    #: SAFT-VR-Mie's repulsive exponent ``lambda_r``, dimensionless. **Not the absence
-    #: marker**: the table carries the standard ``12`` on every one of its 286 rows,
-    #: whether or not the row has a set - :attr:`m_mie` is the flag.
+    #: SAFT-VR-Mie's repulsive exponent ``lambda_r``, dimensionless. **It is an absence
+    #: marker too, on exactly the rows :attr:`m_mie` is**: the table carries the standard
+    #: ``12`` on 336 of its 348 rows and a fitted exponent on the 12 with a set, so
+    #: ``lambda_r_mie == 12.0`` and ``m_mie == 0.0`` hold on the same rows.
     lambda_r_mie: float
-    #: SAFT-VR-Mie's attractive exponent ``lambda_a``, dimensionless, ``6`` on every row.
+    #: SAFT-VR-Mie's attractive exponent ``lambda_a``, dimensionless, ``6`` on 347 rows.
+    #: Not a marker: the fitted rows carry ``6`` as well, apart from ``co2`` at ``5.055``.
     lambda_a_mie: float
     #: SAFT-VR-Mie's segment number ``m``, dimensionless. **Zero means the table carries
-    #: no SAFT-VR-Mie set**, which is how 274 of the 286 rows spell absence - 12 carry
+    #: no SAFT-VR-Mie set**, which is how 336 of the 348 rows spell absence - 12 carry
     #: one, the light alkanes with ``co2``, nitrogen and water. ``sigma_mie`` and
     #: ``epsik_mie`` are zero on exactly those rows, so a model refuses rather than
     #: solving for a fluid with no segments.
@@ -377,6 +394,20 @@ class DatabankEntry:
     sigma_mie: float
     #: SAFT-VR-Mie's segment energy over Boltzmann's constant, ``epsilon/k``, in K.
     epsik_mie: float
+    #: The ionic charge, in units of the elementary charge; zero for a neutral. **Zero
+    #: does not mean "not an ion"**: four rows typed ``"ion"`` carry it - ``h+pzcoo-`` is
+    #: a zwitterion and ``caco3``, ``nacl`` and ``cacl2`` are neutral salts filed with
+    #: the ions. :attr:`component_type` is the marker; this is the value.
+    ionic_charge: float
+    #: The Deshmukh-Mather ion diameter, in ångström. **The table's absence marker is
+    #: ``0.0``, not a blank**, which is what 18 of the 62 ``"ion"`` rows carry. A model
+    #: that needs one must refuse a zero: a zero diameter is the infinite-dilution limit
+    #: of the term it belongs to, so a plausible number would come out of it.
+    deshmukh_mather_diameter: float
+    #: ``DIELECTRICPARAMETER1..5``, the dielectric mixing rule's coefficients. Carried
+    #: exactly as NeqSim stores them. The unit is not established - the manifest records
+    #: ``neqsim-internal`` - so no conversion is applied and none is guessed.
+    dielectric: tuple[float, float, float, float, float]
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
@@ -430,6 +461,41 @@ def _rows(text: str) -> list[dict[str, str]]:
         line for line in text.splitlines() if line.strip() and not line.lstrip().startswith("#")
     ]
     return [dict(row) for row in csv.DictReader(io.StringIO("\n".join(body)))]
+
+
+def _refuse_ions(names: list[str]) -> None:
+    """Refuse a cubic over an ion, naming every one.
+
+    An ion's critical columns in NeqSim's table are a default rather than a measurement,
+    so a cubic built from them returns plausible-looking wrong numbers - which is the
+    failure this module is arranged against. An ion belongs to the electrolyte models,
+    which read its charge and diameter instead.
+    """
+    if not names:
+        return
+    verb = "is" if len(names) == 1 else "are"
+    raise InvalidInputError(
+        "components",
+        f"{', '.join(names)} {verb} filed under `{ION}` in NeqSim's component database, "
+        f"whose critical columns hold a default rather than a measurement - `Tc`, `Pc` and "
+        f"`omega` are one shared set on 27 of its 62 rows and a neutral parent's numbers on "
+        f"most of the rest. A cubic built from them would return plausible-looking wrong "
+        f"numbers. An ion belongs to the electrolyte models, which read its charge and "
+        f"diameter instead.",
+    )
+
+
+def _absent_is_zero(text: str) -> float:
+    """One parameter, where an empty cell means zero.
+
+    **Both upstream tables use a blank and a ``0`` interchangeably for "no parameter"**,
+    so a blank infers nothing the row does not already state. Four cells in the compiled
+    tables are blank: ``associationboundingvolume_pr`` on ``h2so4``, ``hno3`` and
+    ``c2h4-``, and ``nrtlgij`` on the ``k+``/``h2s`` pair, which carries ``KIJPR = 1``
+    with no NRTL energy beside it. A *malformed* value still raises - the distinction is
+    between an absent parameter and a broken one, which ``float`` keeps.
+    """
+    return float(text) if text.strip() else 0.0
 
 
 @cache
@@ -494,6 +560,7 @@ def _table() -> dict[str, DatabankEntry]:
             dipole_moment_debye=float(row["dipole_moment_debye"]),
             viscosity_correction_factor=float(row["viscosity_correction_factor"]),
             reference_state=row["referencestatetype"].strip(),
+            component_type=row["comptype"].strip().lower(),
             association=_association(row),
             m_saft=float(row["msaft"]),
             sigma_saft=float(row["sigma_saft_m"]),
@@ -503,6 +570,15 @@ def _table() -> dict[str, DatabankEntry]:
             m_mie=float(row["msaftvrmie"]),
             sigma_mie=float(row["sigma_saft_vr_mie_m"]),
             epsik_mie=float(row["epsiksaftvrmie"]),
+            ionic_charge=float(row["ioniccharge"]),
+            deshmukh_mather_diameter=float(row["deshmationicdiameter"]),
+            dielectric=(
+                float(row["dielectricparameter1"]),
+                float(row["dielectricparameter2"]),
+                float(row["dielectricparameter3"]),
+                float(row["dielectricparameter4"]),
+                float(row["dielectricparameter5"]),
+            ),
             citation=row["citation"],
         )
     return entries
@@ -516,10 +592,10 @@ def _association(row: Mapping[str, str]) -> AssociationParameters | None:
     """One row's association parameters, or ``None`` where it carries no scheme.
 
     **An empty cell means zero here.** The upstream table uses a blank and a ``0``
-    interchangeably for "no parameter": the only two blanks in the compiled table are
-    ``associationboundingvolume_pr`` on ``h2so4`` and ``hno3``, whose every sibling
-    association cell is already ``0.0``. So a blank infers nothing the row does not
-    already state. A *malformed* value still raises rather than becoming zero.
+    interchangeably for "no parameter": the three blanks in the compiled table are
+    ``associationboundingvolume_pr`` on ``h2so4``, ``hno3`` and ``c2h4-``, whose every
+    sibling association cell is already ``0.0``. See :func:`_absent_is_zero` for the
+    fourth. So a blank infers nothing the row does not already state.
     """
     scheme = row["associationscheme"].strip()
     if scheme not in SITE_SCHEMES:
@@ -667,13 +743,13 @@ def _kij() -> dict[tuple[str, str], tuple[float, float]]:
 
     `(srk, pr)`, because **the cubic chooses its column and the two are different
     fits**. NeqSim selects on the phase class - `PhasePrEos` reads `KIJPR` and every
-    other phase reads `KIJSRK` - and 76 of the 516 in-scope pairs differ: benzene/methane
+    other phase reads `KIJSRK` - and 194 of the 957 in-scope pairs differ: benzene/methane
     is `0` in one and `0.0209` in the other.
     """
     pairs: dict[tuple[str, str], tuple[float, float]] = {}
     for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
         pair = (row["component_a"], row["component_b"])
-        columns = (float(row["kijsrk"]), float(row["kij_pr"]))
+        columns = (_absent_is_zero(row["kijsrk"]), _absent_is_zero(row["kij_pr"]))
         pairs[pair] = columns
         pairs[(pair[1], pair[0])] = columns
     return pairs
@@ -691,7 +767,7 @@ def _cpa_kij() -> dict[tuple[str, str], tuple[float, float]]:
     pairs: dict[tuple[str, str], tuple[float, float]] = {}
     for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
         a, b = row["component_a"], row["component_b"]
-        columns = (float(row["cpakij_srk"]), float(row["cpakij_pr"]))
+        columns = (_absent_is_zero(row["cpakij_srk"]), _absent_is_zero(row["cpakij_pr"]))
         pairs[(a, b)] = columns
         pairs[(b, a)] = columns
     return pairs
@@ -707,7 +783,7 @@ def pcsaft_kij_for(names: tuple[str, ...]) -> dict[tuple[int, int], float]:
     substitutes.
 
     **`KIJPCSAFT` is a fit of its own.** Methane/n-butane is ``0.022`` here against the
-    ``0.01289789`` its SRK and PR columns share, and 42 of the 516 in-scope pairs carry one
+    ``0.01289789`` its SRK and PR columns share, and 42 of the 957 in-scope pairs carry one
     at all - so this is a sparse column rather than a convention for one of the others.
 
     **NeqSim reads it in the only configuration that runs.** Its default mixing rule leaves
@@ -737,7 +813,7 @@ def _pcsaft_kij() -> dict[tuple[str, str], float]:
     pairs: dict[tuple[str, str], float] = {}
     for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
         a, b = row["component_a"], row["component_b"]
-        value = float(row["kijpcsaft"])
+        value = _absent_is_zero(row["kijpcsaft"])
         pairs[(a, b)] = value
         pairs[(b, a)] = value
     return pairs
@@ -753,9 +829,9 @@ def _nrtl() -> dict[tuple[str, str], tuple[float, float]]:
     for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
         a = row["component_a"]
         b = row["component_b"]
-        alpha = float(row["nrtlalpha"])
-        pairs[(a, b)] = (alpha, float(row["nrtlgij"]))
-        pairs[(b, a)] = (alpha, float(row["nrtlgji"]))
+        alpha = _absent_is_zero(row["nrtlalpha"])
+        pairs[(a, b)] = (alpha, _absent_is_zero(row["nrtlgij"]))
+        pairs[(b, a)] = (alpha, _absent_is_zero(row["nrtlgji"]))
     return pairs
 
 
@@ -874,6 +950,13 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             dipole_moment_debye=0.0,
             viscosity_correction_factor=0.0,
             reference_state=SOLVENT,
+            # `other` rather than blank, for the same reason: it is the class that permits
+            # a cubic, so a card-added substance is one. Everything below is the electrolyte
+            # data a card does not state, and the zeros are its absence rather than a value.
+            component_type="other",
+            ionic_charge=0.0,
+            deshmukh_mather_diameter=0.0,
+            dielectric=(0.0, 0.0, 0.0, 0.0, 0.0),
             # A card-added substance has no table row to inherit an association from, so
             # the card's is the whole of it - or none, if it states none.
             association=None if stated is None else _card_association(None, stated),
@@ -1934,7 +2017,9 @@ def from_names(
     cubic = _cubic(eos)
     alpha_name = _alpha_name(eos, alpha)
     resolved = [name.strip().lower() for name in names]
-    components = tuple(entry(name, card=card).component(alpha=alpha_name) for name in resolved)
+    entries = [entry(name, card=card) for name in resolved]
+    _refuse_ions([e.name for e in entries if e.component_type == ION])
+    components = tuple(e.component(alpha=alpha_name) for e in entries)
     return mixture(
         components,
         kij=_interaction_pairs(resolved, eos, associating=associating, card=card),
@@ -2053,6 +2138,7 @@ def mixture_of(
         raise InvalidInputError("components", "a mixture needs at least one component")
     resolved = [name.strip().lower() for name in names]
     entries = [entry(name, card=card) for name in resolved]
+    _refuse_ions([e.name for e in entries if e.component_type == ION])
 
     missing = [e.name for e in entries if e.cp is None]
     if missing:

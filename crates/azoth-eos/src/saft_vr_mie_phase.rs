@@ -272,9 +272,9 @@ pub fn departure(
 ///
 /// # Errors
 /// * [`AzothError::InvalidInput`] if a name is not in the databank, or the component has no
-///   SAFT-VR-Mie set - which the table spells as zeros in `m`, `sigma` and `epsilon/k`, 274
-///   of its 286 rows. **The exponents are not the marker**: the table carries the standard
-///   `12`/`6` on every row whether or not the row has a set.
+///   SAFT-VR-Mie set - which the table spells as zeros in `m`, `sigma` and `epsilon/k`, 336
+///   of its 348 rows. `lambda_r` is the standard `12` on exactly those and a fitted
+///   exponent on the 12 that have a set; `lambda_a` is `6` on 347, so it marks nothing.
 pub fn parameters_of(names: &[&str]) -> Result<Vec<MieComponent>> {
     let mut out = Vec::with_capacity(names.len());
     for name in names {

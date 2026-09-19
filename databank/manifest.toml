@@ -14,15 +14,20 @@ upstream_path = "src/main/resources/data/COMP.csv"
 vendored_source = "databank/sources/neqsim/COMP.csv"
 compiled_to = "data/components/components.csv"
 source_rows = 389
-compiled_rows = 286
+compiled_rows = 348
 generated = ["citation"]
 [[upstreams.files.rows]]
 selector = "COMPTYPE == 'ion'"
 count = 62
 reason = """\
-    not-ported: the electrolyte models; NeqSim's `PhaseDesmukhMather` and \
-    `PitzerScaleActivityModel`. NeqSim fills these rows' critical columns with one shared \
-    default, so vendoring them would ship filler as data."""
+    used: the electrolyte models, `PhasePitzer` and `PhaseDesmukhMather`, read \
+    `IONICCHARGE`, `DeshMatIonicDiameter`, `MOLARMASS` and `DIELECTRICPARAMETER1..5` \
+    from these rows. That is what they are kept for. **Their critical constants are \
+    filler** - `Pc` is 290.89 bar on 27 of the 62, `omega` 0.344 on 29, `CRITVOL` \
+    99.0 cm3/mol on 38, one shared default per column over different row sets, and the \
+    rest inherit a neutral parent's numbers (`MDEA+` carries MDEA's). None of it is a \
+    property of an ion. `mixture_of` refuses a cubic over one, so the filler is never \
+    read as data."""
 [[upstreams.files.rows]]
 selector = "COMPTYPE == '0' (the column is empty)"
 count = 18
@@ -52,8 +57,10 @@ as = "cas"
 unit = "text"
 [[upstreams.files.columns]]
 name = "COMPTYPE"
-disposition = "filter"
-reason = "not-a-value: a substance class, read to select rows and never carried as a value"
+disposition = "used"
+as = "comptype"
+unit = "text"
+reason = "carried as well as selected on: `KEEP_TYPES` reads it to choose the rows, and `mixture_of` reads it to refuse a cubic over an `ion`, whose critical columns the file fills with a default. A class is not a property, so this column is only ever compared, never computed with."
 [[upstreams.files.columns]]
 name = "COMPINDEX"
 disposition = "dropped"
@@ -193,7 +200,7 @@ reason = """\
 [[upstreams.files.columns]]
 name = "volcorrSRK_T"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 286 rows kept"
+reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "LJDIAMETER"
 disposition = "vendored"
@@ -257,52 +264,34 @@ unit = "J/mol"
 reason = "not-ported: NeqSim's `ChemicalReactionOperations` and `ModifiedRANDSolver` read it for reaction equilibrium; azoth's `eos.molar_enthalpy_entropy` does not (`getHID` zeroes the formation enthalpy)"
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER1"
-disposition = "vendored"
+disposition = "used"
 as = "dielectricparameter1"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and \
-    `PitzerScaleActivityModel`"""
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER2"
-disposition = "vendored"
+disposition = "used"
 as = "dielectricparameter2"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and \
-    `PitzerScaleActivityModel`"""
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER3"
-disposition = "vendored"
+disposition = "used"
 as = "dielectricparameter3"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and \
-    `PitzerScaleActivityModel`"""
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER4"
-disposition = "vendored"
+disposition = "used"
 as = "dielectricparameter4"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and \
-    `PitzerScaleActivityModel`"""
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER5"
-disposition = "vendored"
+disposition = "used"
 as = "dielectricparameter5"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the electrolyte and polar models; NeqSim's `PhaseDesmukhMather` and \
-    `PitzerScaleActivityModel`"""
 [[upstreams.files.columns]]
 name = "IONICCHARGE"
-disposition = "vendored"
+disposition = "used"
 as = "ioniccharge"
 unit = "count"
-reason = """\
-    not-ported: the electrolyte models; NeqSim's `PhaseDesmukhMather` and \
-    `PitzerScaleActivityModel`"""
 [[upstreams.files.columns]]
 name = "REFERENCESTATETYPE"
 disposition = "used"
@@ -452,7 +441,7 @@ reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSoli
 [[upstreams.files.columns]]
 name = "SOLIDDENSITYCOEFS5"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 286 rows kept"
+reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "LIQUIDDENSITYCOEFS1"
 disposition = "dropped"
@@ -480,7 +469,7 @@ reason = """\
 [[upstreams.files.columns]]
 name = "LIQUIDDENSITYCOEFS5"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 286 rows kept"
+reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "HEATOFVAPORIZATIONCOEFS1"
 disposition = "vendored"
@@ -516,7 +505,7 @@ reason = """\
 [[upstreams.files.columns]]
 name = "HEATOFVAPORIZATIONCOEFS5"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 286 rows kept"
+reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "STDDENS"
 disposition = "vendored"
@@ -544,15 +533,15 @@ reason = "unreachable-upstream: the Mathias-Copeman alpha; NeqSim's `SystemPrMat
 [[upstreams.files.columns]]
 name = "MC1Solid"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 286 rows kept"
+reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "MC2Solid"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 286 rows kept"
+reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "MC3Solid"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 286 rows kept"
+reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "TwuCoon1"
 disposition = "vendored"
@@ -778,12 +767,9 @@ unit = "neqsim-internal"
 reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
 [[upstreams.files.columns]]
 name = "DeshMatIonicDiameter"
-disposition = "vendored"
+disposition = "used"
 as = "deshmationicdiameter"
 unit = "angstrom"
-reason = """\
-    not-ported: the electrolyte models; NeqSim's `PhaseDesmukhMather` and \
-    `PitzerScaleActivityModel`"""
 [[upstreams.files.columns]]
 name = "waxformer"
 disposition = "dropped"
@@ -863,7 +849,7 @@ reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSoli
 [[upstreams.files.columns]]
 name = "CPsolid5"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 286 rows kept"
+reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "CPliquid1"
 disposition = "vendored"
@@ -1027,16 +1013,16 @@ unit = "dimensionless"
 [[upstreams.files.columns]]
 name = "UMRCPA_volcorr_T"
 disposition = "dropped"
-reason = "empty-upstream: zero over all 286 rows kept"
+reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files]]
 id = "neqsim/INTER.csv"
 upstream_path = "src/main/resources/data/INTER.csv"
 vendored_source = "databank/sources/neqsim/INTER.csv"
 compiled_to = "data/components/kij.csv"
 source_rows = 1302
-compiled_rows = 516
+compiled_rows = 957
 [[upstreams.files.rows]]
-selector = "either component outside the 286 substances COMP.csv leaves after filtering"
+selector = "either component outside the 348 substances COMP.csv leaves after filtering"
 count = 786
 reason = """\
     not-a-value: an interaction parameter between a pair where one member is not vendored \
@@ -1075,7 +1061,7 @@ reason = "not-ported: temperature-dependent SRK parameters; NeqSim's `thermo/mix
 [[upstreams.files.columns]]
 name = "KIJTType"
 disposition = "dropped"
-reason = "empty-upstream: none of the 516 in-scope pairs names a temperature-dependent form. 515 carry `0` and one `-1`, both of which are the sentinel for no temperature dependence; the column's own alphabet is a set of type names and none of them appears."
+reason = "empty-upstream: none of the 957 in-scope pairs names a temperature-dependent form. 956 carry `0` and one `-1`, both of which are the sentinel for no temperature dependence; the column's own alphabet is a set of type names and none of them appears."
 [[upstreams.files.columns]]
 name = "KIJPR"
 disposition = "used"
@@ -1113,19 +1099,19 @@ unit = "neqsim-internal"
 [[upstreams.files.columns]]
 name = "CalcWij"
 disposition = "dropped"
-reason = "empty-upstream: zero over the 516 in-scope pairs"
+reason = "not-a-value: a selector rather than a property - `EosMixingRuleHandler` reads it as `wijCalcOrFitted`, which chooses whether `wij` is computed or fitted. `1` on six ion pairs."
 [[upstreams.files.columns]]
 name = "W1"
 disposition = "dropped"
-reason = "empty-upstream: zero over the 516 in-scope pairs"
+reason = "not-ported: the ion-solvent `wij`; NeqSim's `PhaseElectrolyteCPAMM`, read by `EosMixingRuleHandler` as `wij[0]`. Present for 9 in-scope pairs."
 [[upstreams.files.columns]]
 name = "W2"
 disposition = "dropped"
-reason = "empty-upstream: zero over the 516 in-scope pairs"
+reason = "empty-upstream: zero over the 957 in-scope pairs"
 [[upstreams.files.columns]]
 name = "W3"
 disposition = "dropped"
-reason = "empty-upstream: zero over the 516 in-scope pairs"
+reason = "empty-upstream: zero over the 957 in-scope pairs"
 [[upstreams.files.columns]]
 name = "WSTYPE"
 disposition = "used"
@@ -1227,11 +1213,11 @@ unit = "neqsim-internal"
 [[upstreams.files.columns]]
 name = "aijDesMath"
 disposition = "dropped"
-reason = "empty-upstream: zero over the 516 in-scope pairs"
+reason = "not-ported: the extended Debye-Huckel pair term; NeqSim's `PhaseDesmukhMather`, which reads it as `aij`. Present for 4 in-scope pairs."
 [[upstreams.files.columns]]
 name = "bijDesMath"
 disposition = "dropped"
-reason = "empty-upstream: zero over the 516 in-scope pairs"
+reason = "empty-upstream: zero over the 957 in-scope pairs"
 [[upstreams.files.columns]]
 name = "cpaAssosiationType"
 disposition = "dropped"
@@ -1257,7 +1243,7 @@ as = "kijwhitsonsoriede"
 unit = "neqsim-internal"
 reason = """\
     not-ported: the Whitson-Soriede mixing rule; NeqSim's `thermo/mixingrule/`. Present for \
-    235 of the 516 in-scope pairs. Six rows are written with a comma decimal separator; \
+    303 of the 957 in-scope pairs. Six rows are written with a comma decimal separator; \
     NeqSim's own `Double.parseDouble` would throw on them."""
 [[upstreams.files]]
 id = "neqsim/COMP_EXT.csv"

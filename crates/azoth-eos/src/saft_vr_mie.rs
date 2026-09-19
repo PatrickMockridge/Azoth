@@ -30,10 +30,11 @@ pub struct MieComponent {
 impl MieComponent {
     /// Whether the table gave this component a SAFT-VR-Mie set.
     ///
-    /// **`m` is the marker and the exponents are not.** The table carries the standard
-    /// `12`/`6` on every one of its 286 rows, whether or not the row has a set, so
-    /// `lambda_r > 0` says nothing; `m`, `sigma` and `epsik` are zero together on the 274
-    /// rows without one.
+    /// **`m` is the marker, and `lambda_r` coincides with it.** The compiled table carries
+    /// the standard `12` on the 336 rows without a set and a fitted exponent on the 12 with
+    /// one, so `lambda_r == 12.0` and `m == 0.0` hold on the same rows - two spellings of
+    /// one fact, and this reads the one the field is named for. `m`, `sigma` and `epsik`
+    /// are zero together on the 336.
     #[must_use]
     pub fn has_parameters(&self) -> bool {
         self.m > 0.0 && self.sigma > 0.0 && self.epsik > 0.0

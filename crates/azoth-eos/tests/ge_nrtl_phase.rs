@@ -138,8 +138,8 @@ fn a_component_without_a_vapour_pressure_correlation_is_refused() {
 /// `ComponentGE.fugcoef` takes one of two branches on the component's
 /// `REFERENCESTATETYPE`: `gamma_i P0_i / P` for `solvent`, and a Henry's-law coefficient
 /// for anything else. Only the first is ported, so computing the second's expression for
-/// a solute would be a wrong number with nothing to show that it is wrong. 51 of the
-/// databank's 286 substances are tagged this way, and the two acids carry the literal
+/// a solute would be a wrong number with nothing to show that it is wrong. 113 of the
+/// databank's 348 substances are tagged this way, and the two acids carry the literal
 /// `0.0`.
 #[test]
 fn a_henrys_law_component_is_refused_rather_than_computed() {

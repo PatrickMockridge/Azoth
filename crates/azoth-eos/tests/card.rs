@@ -507,7 +507,7 @@ fn the_baseline_card_resolves_to_the_table_it_was_generated_from() {
 
     let mut names = card.overlay().component_names();
     names.sort_unstable();
-    assert_eq!(names.len(), 286, "the table's own count");
+    assert_eq!(names.len(), 348, "the table's own count");
 
     let mut compared = 0;
     for name in names {
@@ -523,6 +523,11 @@ fn the_baseline_card_resolves_to_the_table_it_was_generated_from() {
         assert_eq!(carded.cp, shipped.cp, "{name}: Cp");
         assert_eq!(carded.antoine, shipped.antoine, "{name}: Antoine");
         assert_eq!(carded.reference_state, shipped.reference_state, "{name}");
+        // **A card never changes a substance's class.** It is the class that decides
+        // whether a cubic may be built at all, and the baseline card carries NeqSim's
+        // ion rows - filler `Tc`, `Pc` and `omega` and all - so an overlay that reset it
+        // would hand a cubic the filler the refusal exists to keep out of one.
+        assert_eq!(carded.class, shipped.class, "{name}: class");
 
         let (Some(record), Some(base)) = (&carded.association, &shipped.association) else {
             assert_eq!(
@@ -559,7 +564,7 @@ fn the_baseline_card_resolves_to_the_table_it_was_generated_from() {
     }
 
     assert_eq!(
-        compared, 147,
+        compared, 167,
         "the associating substances the table carries"
     );
 }
@@ -645,7 +650,7 @@ fn the_baseline_cards_pairs_are_the_tables() {
     // the non-zero ones. A generator that dropped the column entirely would leave this at
     // zero and the loop above comparing nothing but zeros.
     assert_eq!(
-        associating, 313,
+        associating, 711,
         "the non-zero associating cells the table has"
     );
 }
