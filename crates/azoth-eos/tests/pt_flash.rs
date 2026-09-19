@@ -7,6 +7,7 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, CalcResult, WarningCode};
+use azoth_eos::Cubic;
 use azoth_eos::mixture::{Component, Mixture, RootSide};
 use azoth_eos::{Phase, databank, model_gen, pt_flash};
 use azoth_test_support as common;
@@ -30,7 +31,7 @@ fn mixture_of(tc: &[f64], pc: &[f64], omega: &[f64], kij: Vec<f64>) -> Mixture {
 /// 0.0115 and 4 599 000 - and the `kij` was an "illustrative" 0.05 rather than the
 /// 0.01289789 `INTER.csv` fits.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"], None)
+    databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
         .expect("the pair resolves")
         .0
 }
@@ -58,7 +59,7 @@ fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
             .expect("the case's associating components resolve")
             .0;
     }
-    databank::mixture_of(names, None)
+    databank::mixture_of(names, cubic, None)
         .expect("the case's components resolve")
         .0
         .with_cubic(cubic)

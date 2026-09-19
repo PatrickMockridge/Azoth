@@ -53,10 +53,11 @@ pub fn entropy_at(
 ///
 /// # Example
 /// ```
+/// use azoth_eos::Cubic;
 /// use azoth_core::units::{joules_per_mole_kelvin, pascals};
 /// use azoth_eos::{databank, ps_flash};
 ///
-/// let (mixture, ideal_gas) = databank::mixture_of(&["methane", "n-butane"], None)
+/// let (mixture, ideal_gas) = databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
 ///     .expect("the pair resolves");
 /// let r = ps_flash::ps_flash(
 ///     &mixture,

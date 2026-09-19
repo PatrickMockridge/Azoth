@@ -55,10 +55,11 @@ fn beta_at(mixture: &Mixture, p: Pressure, feed: &[f64], t: f64) -> Result<(f64,
 /// # Example
 /// ```
 /// use azoth_core::units::{kelvins, pascals};
+/// use azoth_eos::Cubic;
 /// use azoth_eos::databank;
 /// use azoth_eos::pvf_flash::pvf_flash;
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
+/// let mixture = databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
 ///     .expect("the pair resolves")
 ///     .0;
 /// let r = pvf_flash(

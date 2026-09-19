@@ -1,6 +1,9 @@
 //! The component databank: names in, a mixture out.
 
+use azoth_core::units::{kelvins, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
+use azoth_eos::mixture::RootSide;
 
 /// The numbers NeqSim's `COMP.csv` carries for methane, checked against the file
 /// rather than against this crate.
@@ -78,7 +81,7 @@ fn a_name_the_databank_does_not_have_is_refused() {
 #[test]
 fn a_mixture_comes_back_with_its_ideal_gas_model() {
     let (mixture, ideal_gas) =
-        databank::mixture_of(&["methane", "n-butane"], None).expect("a mixture");
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("a mixture");
     assert_eq!(mixture.len(), 2);
     // Both vectors are one entry per component, which is the property the parallel
     // vectors in the specs could only assert.
@@ -95,7 +98,7 @@ fn a_mixture_comes_back_with_its_ideal_gas_model() {
 fn a_pair_the_databank_does_not_carry_falls_back_to_the_ideal_mixture() {
     // NeqSim's own reader substitutes zero for an absent pair, and so does this: an
     // absent parameter is the ideal-mixture default rather than a failure.
-    assert_eq!(databank::kij("methane", "krypton", None), 0.0);
+    assert_eq!(databank::kij("methane", "krypton", Cubic::Pr, None), 0.0);
 }
 
 #[test]
@@ -140,7 +143,7 @@ fn a_name_without_unifac_groups_is_refused() {
 
 #[test]
 fn an_empty_mixture_is_refused() {
-    assert!(databank::mixture_of(&[], None).is_err());
+    assert!(databank::mixture_of(&[], Cubic::Pr, None).is_err());
 }
 
 #[test]
@@ -224,7 +227,7 @@ fn a_zero_kij_from_a_card_is_not_absent() {
     // Overriding a fitted pair back to ideal mixing is a caller stating something, and
     // a lookup that reads a zero as "no opinion" undoes it with no symptom.
     // Sabotage: `.filter(|v| *v != 0.0)` anywhere in the lookup.
-    let fitted = databank::kij("methane", "n-butane", None);
+    let fitted = databank::kij("methane", "n-butane", Cubic::Pr, None);
     assert!(
         fitted.abs() > 1e-6,
         "the fixture needs a fitted non-zero pair, got {fitted}"
@@ -233,7 +236,7 @@ fn a_zero_kij_from_a_card_is_not_absent() {
     let mut overlay = databank::Overlay::new();
     overlay.set_kij("methane", "n-butane", 0.0).unwrap();
     assert_eq!(
-        databank::kij("methane", "n-butane", Some(&overlay)),
+        databank::kij("methane", "n-butane", Cubic::Pr, Some(&overlay)),
         0.0,
         "a card's explicit zero did not beat the fitted value"
     );
@@ -244,8 +247,14 @@ fn a_kij_override_is_paired_whichever_order_it_is_read_in() {
     // Sabotage: store only the ordering the caller wrote.
     let mut overlay = databank::Overlay::new();
     overlay.set_kij("n-butane", "methane", 0.5).unwrap();
-    assert_eq!(databank::kij("methane", "n-butane", Some(&overlay)), 0.5);
-    assert_eq!(databank::kij("n-butane", "methane", Some(&overlay)), 0.5);
+    assert_eq!(
+        databank::kij("methane", "n-butane", Cubic::Pr, Some(&overlay)),
+        0.5
+    );
+    assert_eq!(
+        databank::kij("n-butane", "methane", Cubic::Pr, Some(&overlay)),
+        0.5
+    );
 }
 
 #[test]
@@ -344,7 +353,7 @@ fn the_table_is_the_file() {
     assert!(
         !pairs
             .iter()
-            .any(|(a, b, _)| a == "methane" && b == "ethane"),
+            .any(|(a, b, _, _)| a == "methane" && b == "ethane"),
         "the table gained a card's pair"
     );
 }
@@ -363,7 +372,7 @@ fn a_mixture_needs_a_polynomial() {
             ..Default::default()
         },
     );
-    let refused = databank::mixture_of(&["unobtainium"], Some(&overlay));
+    let refused = databank::mixture_of(&["unobtainium"], Cubic::Pr, Some(&overlay));
     assert!(refused.is_err(), "a mixture was built without a polynomial");
 }
 
@@ -380,7 +389,7 @@ fn a_card_component_with_a_polynomial_has_an_enthalpy() {
             association: None,
         },
     );
-    let (_, ideal_gas) = databank::mixture_of(&["unobtainium"], Some(&overlay))
+    let (_, ideal_gas) = databank::mixture_of(&["unobtainium"], Cubic::Pr, Some(&overlay))
         .expect("a card component with a polynomial has an enthalpy");
     assert_eq!(ideal_gas.cp_a, vec![20.0]);
     assert_eq!(ideal_gas.cp_b, vec![0.1]);
@@ -391,8 +400,9 @@ fn an_overlay_changes_the_mixture_it_builds() {
     // The end of the path: a card reaches a `Mixture`, not only a lookup. Both
     // directions, because a test that checked only the first would pass with the
     // overlay ignored.
-    let (base, _) = databank::mixture_of(&["methane", "n-butane"], None).unwrap();
-    let (carded, _) = databank::mixture_of(&["methane", "n-butane"], Some(&omega_only())).unwrap();
+    let (base, _) = databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).unwrap();
+    let (carded, _) =
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, Some(&omega_only())).unwrap();
 
     assert!(
         (carded.components()[0].omega - 0.5).abs() < 1e-12,
@@ -514,7 +524,8 @@ fn the_only_blank_association_cells_are_pr_volumes_on_zero_rows() {
 fn a_mixture_carries_its_components_association_parameters() {
     use azoth_eos::association::SiteScheme;
 
-    let (mixture, _) = databank::mixture_of(&["water", "methane"], None).expect("a mixture");
+    let (mixture, _) =
+        databank::mixture_of(&["water", "methane"], Cubic::Pr, None).expect("a mixture");
     let water = mixture.components()[0]
         .association
         .as_ref()
@@ -534,7 +545,8 @@ fn a_mixture_carries_its_components_association_parameters() {
 /// A mixture with no associating component says so, rather than failing.
 #[test]
 fn a_mixture_of_non_associating_components_has_none() {
-    let (mixture, _) = databank::mixture_of(&["methane", "n-butane"], None).expect("a mixture");
+    let (mixture, _) =
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("a mixture");
     assert!(
         mixture.components().iter().all(|c| c.association.is_none()),
         "neither methane nor n-butane names a scheme"
@@ -556,7 +568,8 @@ fn an_associating_mixture_resolves_neqsims_parameters() {
     // parameters are per cubic, and water's `kappa_AB` is 0.0692 for SRK against
     // 0.046473789 for PR. `Cubic::default()` is PR, so a mixture that did not say which
     // it is would read the other family's fluid.
-    let (mixture, _) = databank::mixture_of(&["water", "methanol"], None).expect("a mixture");
+    let (mixture, _) =
+        databank::mixture_of(&["water", "methanol"], Cubic::Srk, None).expect("a mixture");
     let mixture = mixture
         .with_cubic(Cubic::Srk)
         .with_association()
@@ -618,7 +631,8 @@ fn the_associating_interaction_column_is_its_own() {
     );
 
     // And the classical column is untouched by a CPA override, in both directions.
-    let (classical, _) = databank::mixture_of(&names, Some(&overlay)).expect("a mixture");
+    let (classical, _) =
+        databank::mixture_of(&names, Cubic::Pr, Some(&overlay)).expect("a mixture");
     assert!(
         (classical.kij(0, 1) - -0.0789).abs() < 1.0e-9,
         "the classical pair: {}",
@@ -1182,7 +1196,7 @@ fn the_pcsaft_interaction_column_is_read() {
         pair[1]
     );
     assert!(
-        (pair[1] - databank::kij("methane", "n-butane", None)).abs() > 1e-6,
+        (pair[1] - databank::kij("methane", "n-butane", Cubic::Pr, None)).abs() > 1e-6,
         "the two columns must differ here, or this proves nothing"
     );
     // Symmetric, and zero for a pair the table does not carry - NeqSim's ideal-mixture
@@ -1190,4 +1204,64 @@ fn the_pcsaft_interaction_column_is_read() {
     assert_eq!(pair[1], pair[2]);
     let absent = databank::pcsaft_kij(&["water", "methanol"]);
     assert_eq!(absent[1], 0.0);
+}
+
+/// **The cubic's interaction column is the cubic's, and the table says so 76 times.**
+///
+/// NeqSim selects on the phase class: `phase.getClass().getName().equals(
+/// "neqsim.thermo.phase.PhasePrEos")` reads `KIJPR` and every other phase - SRK, RK, and
+/// even `PhaseUMRCPA`, which extends `PhasePrEos` without being it - reads `KIJSRK`.
+///
+/// **azoth read `KIJPR` for every cubic until this.** No test could see it, because every
+/// pair the validation cases use has the *same* value in both columns - methane/n-butane
+/// is `0.01289789` in each, methane/propane `0.00747722`, water/methanol `-0.0789` - so
+/// the whole SRK validation ran where reading the wrong column changes nothing. The
+/// sweep below is the check that covers the other 76.
+#[test]
+fn the_interaction_column_follows_the_cubic() {
+    let pairs = databank::all_kij();
+    let differing: Vec<_> = pairs.iter().filter(|(_, _, pr, srk)| pr != srk).collect();
+    assert_eq!(
+        differing.len(),
+        76,
+        "the number of pairs whose `KIJSRK` and `KIJPR` differ, measured over the 516 \
+         in-scope pairs"
+    );
+
+    for (a, b, pr, srk) in differing {
+        assert_eq!(
+            databank::kij(a, b, Cubic::Pr, None),
+            *pr,
+            "{a}/{b}: the PR cubic should read `KIJPR`"
+        );
+        assert_eq!(
+            databank::kij(a, b, Cubic::Srk, None),
+            *srk,
+            "{a}/{b}: the SRK cubic should read `KIJSRK`"
+        );
+    }
+
+    // And the resolution, not only the lookup: `mixture_of` must carry the column of the
+    // cubic it was asked for, because that is what every model actually calls.
+    for (cubic, expected) in [(Cubic::Pr, 0.135_000_01), (Cubic::Srk, 0.1018)] {
+        let (mixture, _) =
+            databank::mixture_of(&["propane", "co2"], cubic, None).expect("the pair resolves");
+        assert_eq!(mixture.kij(0, 1), expected, "{cubic:?}");
+    }
+
+    // The oracle: NeqSim 3.20.0's `SystemSrkEos` at 350 K and 30 bar with `z = 0.5/0.5`,
+    // from `validation/neqsim/SrkKijProbe.java`. azoth reproduces it to fifteen digits
+    // with `KIJSRK` and is 0.57% out with `KIJPR`.
+    let (mixture, _) = databank::mixture_of(&["propane", "co2"], Cubic::Srk, None).unwrap();
+    let reduced = mixture
+        .reduced_parameters(kelvins(350.0), pascals(3.0e6))
+        .expect("a state");
+    let state = mixture
+        .phase_state(&reduced, &[0.5, 0.5], RootSide::Vapour)
+        .expect("a root");
+    assert!(
+        (state.z / 0.823_765_416_605_303 - 1.0).abs() < 1.0e-12,
+        "NeqSim's SRK gives 0.823765416605303 and this gives {}",
+        state.z
+    );
 }

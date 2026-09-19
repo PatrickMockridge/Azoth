@@ -22,7 +22,7 @@ use azoth_eos::{Alpha, Cubic, MixingRule, SoreideWhitsonRole, pr_z_factor};
 /// `COMP.csv`: methane is 0.0115 and 4 599 000 Pa in the table, not 0.01142 and
 /// 4 599 200, and the `kij` was an illustrative 0.05 where `INTER.csv` fits 0.01289789.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"], None)
+    databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
         .expect("the pair resolves")
         .0
 }
@@ -45,7 +45,7 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
     ] {
         let entry = databank::entry(name, None).expect("the databank has it");
         let (tc, omega) = (entry.tc, entry.omega);
-        let mixture = databank::mixture_of(&[name], None)
+        let mixture = databank::mixture_of(&[name], Cubic::Pr, None)
             .expect("the substance resolves")
             .0;
         let reduced = mixture
@@ -85,7 +85,7 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
 /// `N = 1` the reduction test above already covers it.
 #[test]
 fn the_gibbs_identity_holds_for_a_mixture() {
-    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"], None)
+    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"], Cubic::Pr, None)
         .expect("the three resolve")
         .0;
     for (mixture, t, p, z) in [
@@ -121,7 +121,7 @@ fn the_gibbs_identity_holds_for_a_mixture() {
 /// the same statement as the reduction test above, read as an inequality.
 #[test]
 fn psi_bar_lies_between_the_components_psi() {
-    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"], None)
+    let ternary = databank::mixture_of(&["methane", "propane", "n-butane"], Cubic::Pr, None)
         .expect("the three resolve")
         .0;
     for (t, p, z) in [
@@ -417,7 +417,7 @@ fn one_component_state(a: f64, b: f64) -> ReducedParameters {
 /// state directly is the honest way to ask for it.
 #[test]
 fn the_criticality_matrix_vanishes_at_the_cubics_critical_point() {
-    let mixture = databank::mixture_of(&["propane"], None)
+    let mixture = databank::mixture_of(&["propane"], Cubic::Pr, None)
         .expect("propane resolves")
         .0;
     let q = mixture
@@ -443,7 +443,7 @@ fn the_criticality_matrix_vanishes_at_the_cubics_critical_point() {
 /// constants is visible here as well as in `eos.pr_alpha_ab`.
 #[test]
 fn the_shipped_omegas_leave_a_critical_point_residue() {
-    let mixture = databank::mixture_of(&["propane"], None)
+    let mixture = databank::mixture_of(&["propane"], Cubic::Pr, None)
         .expect("propane resolves")
         .0;
     let q = mixture
@@ -475,7 +475,7 @@ fn the_shipped_omegas_leave_a_critical_point_residue() {
 fn the_criticality_matrix_is_minimised_at_the_critical_temperature() {
     let entry = databank::entry("propane", None).expect("the databank has propane");
     let (tc, pc) = (entry.tc, entry.pc);
-    let mixture = databank::mixture_of(&["propane"], None)
+    let mixture = databank::mixture_of(&["propane"], Cubic::Pr, None)
         .expect("propane resolves")
         .0;
 
@@ -587,7 +587,7 @@ fn the_tst_cubic_reduces_to_its_constants() {
     assert_eq!(Cubic::Tst.delta2(), 1.0 - std::f64::consts::SQRT_2);
 
     let entry = databank::entry("methane", None).expect("the databank has it");
-    let mixture = databank::mixture_of(&["methane"], None)
+    let mixture = databank::mixture_of(&["methane"], Cubic::Pr, None)
         .expect("methane resolves")
         .0
         .with_cubic(Cubic::Tst);
@@ -639,7 +639,7 @@ fn the_tst_cubic_reduces_to_its_constants() {
 #[test]
 fn the_volume_translation_mixes_linearly_and_subtracts() {
     let (base, _) =
-        databank::mixture_of(&["methane", "n-butane"], None).expect("the pair resolves");
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair resolves");
     let k = base.kij(0, 1);
     let methane = base.components()[0].clone().with_volume_shift(1.0e-6);
     let butane = base.components()[1].clone().with_volume_shift(3.0e-6);
@@ -677,7 +677,8 @@ fn the_volume_translation_mixes_linearly_and_subtracts() {
 /// rather than the base matrix.
 #[test]
 fn the_soreide_whitson_rule_changes_the_aqueous_a_mix() {
-    let (base, _) = databank::mixture_of(&["water", "methane"], None).expect("the pair resolves");
+    let (base, _) =
+        databank::mixture_of(&["water", "methane"], Cubic::Pr, None).expect("the pair resolves");
     let k = base.kij(0, 1);
     let mixture = base.with_mixing_rule(MixingRule::SoreideWhitson {
         kij: vec![0.0, k, k, 0.0],
@@ -714,7 +715,8 @@ fn the_soreide_whitson_rule_changes_the_aqueous_a_mix() {
 /// carries. The tolerance is the databank's, not the port's.
 #[test]
 fn the_huron_vidal_rule_matches_neqsims_water_ethanol_phase() {
-    let (base, _) = databank::mixture_of(&["water", "ethanol"], None).expect("the pair resolves");
+    let (base, _) =
+        databank::mixture_of(&["water", "ethanol"], Cubic::Srk, None).expect("the pair resolves");
     let k = base.kij(0, 1);
     let mixture = base
         .with_cubic(Cubic::Srk)
@@ -760,7 +762,8 @@ fn the_huron_vidal_rule_matches_neqsims_water_ethanol_phase() {
 /// is what made them a caller's problem in the first place.
 #[test]
 fn the_wong_sandler_rule_matches_neqsims_water_ethanol_phase() {
-    let (base, _) = databank::mixture_of(&["water", "ethanol"], None).expect("the pair resolves");
+    let (base, _) =
+        databank::mixture_of(&["water", "ethanol"], Cubic::Pr, None).expect("the pair resolves");
     let ws =
         databank::wong_sandler_parameters(&["water", "ethanol"], None).expect("the pair resolves");
     assert!(
@@ -959,7 +962,7 @@ fn the_composition_derivative_obeys_gibbs_duhem() {
 /// error types exist to make impossible.
 #[test]
 fn the_activity_rules_are_refused_rather_than_approximated() {
-    let mixture = databank::mixture_of(&["water", "ethanol"], None)
+    let mixture = databank::mixture_of(&["water", "ethanol"], Cubic::Pr, None)
         .expect("the pair resolves")
         .0
         .with_mixing_rule(MixingRule::HuronVidal {

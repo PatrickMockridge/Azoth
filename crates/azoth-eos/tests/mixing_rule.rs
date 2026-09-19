@@ -2,6 +2,7 @@
 //! dependent rule resolves its `kij` once per state.
 
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::mixing_rule::{MixingRule, SoreideWhitsonRole};
 
@@ -116,7 +117,7 @@ fn classic_rule_is_unchanged_by_temperature() {
 #[test]
 fn a_mixture_resolves_the_rule_at_reduced_parameters() {
     let (base, _) =
-        databank::mixture_of(&["methane", "n-butane"], None).expect("the pair resolves");
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair resolves");
     let kij0 = base.kij(0, 1);
     let n = base.len();
     let mut kij = vec![0.0; n * n];

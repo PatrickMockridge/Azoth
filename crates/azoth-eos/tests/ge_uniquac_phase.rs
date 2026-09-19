@@ -1,6 +1,7 @@
 //! Spec-driven tests for the `eos.ge_uniquac_phase` model.
 
 use azoth_core::AzothError;
+use azoth_eos::Cubic;
 use azoth_eos::databank::{ge_nrtl_phase_parameters, ge_uniquac_phase_parameters};
 use azoth_eos::ge_uniquac_phase::ge_uniquac_phase;
 use azoth_test_support as common;
@@ -195,7 +196,7 @@ fn four_ge_phases_share_the_vapour_pressure_and_not_the_activity() {
         &x,
     )
     .unwrap();
-    let (mixture, _) = azoth_eos::databank::mixture_of(&names, None).unwrap();
+    let (mixture, _) = azoth_eos::databank::mixture_of(&names, Cubic::Pr, None).unwrap();
     let wilson = azoth_eos::ge_wilson_phase::ge_wilson_phase(
         &azoth_eos::databank::ge_wilson_phase_parameters(&names, None).unwrap(),
         &mixture,

@@ -3,13 +3,13 @@
 use azoth_core::units::pascals;
 use azoth_core::{AzothError, CalcResult};
 use azoth_eos::mixture::Mixture;
-use azoth_eos::{databank, model_gen, pt_phase_envelope};
+use azoth_eos::{Cubic, databank, model_gen, pt_phase_envelope};
 use azoth_test_support as common;
 
 const MODEL_ID: &str = "eos.pt_phase_envelope";
 
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"], None)
+    databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
         .expect("the pair resolves")
         .0
 }
@@ -21,7 +21,7 @@ fn every_case_in_the_spec() {
         let names = case
             .list("components")
             .expect("the case declares components");
-        let mixture = databank::mixture_of(names, None)
+        let mixture = databank::mixture_of(names, Cubic::Pr, None)
             .expect("the case's components resolve")
             .0;
         let result = pt_phase_envelope(
@@ -112,7 +112,7 @@ fn both_branches_trace_from_the_low_pressure() {
 
 #[test]
 fn a_single_component_is_refused() {
-    let propane = databank::mixture_of(&["propane"], None)
+    let propane = databank::mixture_of(&["propane"], Cubic::Pr, None)
         .expect("propane resolves")
         .0;
     let err = pt_phase_envelope(&propane, pascals(1.0e5), &[1.0]).unwrap_err();

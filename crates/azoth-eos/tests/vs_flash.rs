@@ -1,6 +1,7 @@
 //! Spec-driven tests for the `eos.vs_flash` model.
 
 use azoth_core::units::{cubic_meters_per_mole, joules_per_mole_kelvin};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::vs_flash::vs_flash;
 use azoth_test_support as common;
@@ -12,9 +13,12 @@ fn every_case_in_the_spec() {
     let spec = azoth_eos::model_gen::model(MODEL_ID).expect("the model");
     assert!(!spec.cases.is_empty(), "the model should have cases");
     for case in spec.cases {
-        let (mixture, ideal_gas) =
-            databank::mixture_of(case.list("components").expect("components"), None)
-                .expect("the case's fluid resolves");
+        let (mixture, ideal_gas) = databank::mixture_of(
+            case.list("components").expect("components"),
+            Cubic::Pr,
+            None,
+        )
+        .expect("the case's fluid resolves");
         let context = &format!("{}::{}", spec.id, case.id);
         let result = vs_flash(
             &mixture,
@@ -50,7 +54,8 @@ fn every_case_in_the_spec() {
 fn both_specifications_hold_at_the_answer() {
     use azoth_eos::flash_property::{Property, property_at};
     let (mixture, ideal_gas) =
-        databank::mixture_of(&["methane", "propane", "n-butane"], None).expect("the ternary");
+        databank::mixture_of(&["methane", "propane", "n-butane"], Cubic::Pr, None)
+            .expect("the ternary");
     let z = [0.5, 0.3, 0.2];
     for (t, pbar) in [(380.0, 1.5e6), (320.0, 4.0e6), (430.0, 8.0e6)] {
         let (v, _) = property_at(

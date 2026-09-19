@@ -8,6 +8,7 @@
 //! reading of the same method.
 
 use azoth_core::{AzothError, CalcResult};
+use azoth_eos::Cubic;
 use azoth_eos::critical_point::symmetric_eigen;
 use azoth_eos::mixture::Mixture;
 use azoth_eos::{critical_point, databank, model_gen};
@@ -17,7 +18,7 @@ const MODEL_ID: &str = "eos.critical_point";
 
 /// The methane/n-butane pair the spec's cases use, resolved through the databank.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"], None)
+    databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
         .expect("the pair resolves")
         .0
 }
@@ -26,7 +27,7 @@ fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
     let names = case
         .list("components")
         .expect("the case declares components");
-    databank::mixture_of(names, None)
+    databank::mixture_of(names, Cubic::Pr, None)
         .expect("the case's components resolve")
         .0
 }
@@ -98,7 +99,9 @@ fn a_pure_component_reproduces_the_analytic_critical_point() {
     for name in ["propane", "methane", "n-butane", "co2"] {
         let entry = databank::entry(name, None).expect("a databank entry");
         let (tc, pc) = (entry.tc, entry.pc);
-        let mixture = databank::mixture_of(&[name], None).expect("resolves").0;
+        let mixture = databank::mixture_of(&[name], Cubic::Pr, None)
+            .expect("resolves")
+            .0;
         let r = critical_point(&mixture, &[1.0]).expect("a critical point");
 
         // Measured, on both implementations: Tc to 5.5e-05 relative, Pc to 1.5e-04,

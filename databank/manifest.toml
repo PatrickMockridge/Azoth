@@ -142,7 +142,7 @@ as = "cpe"
 unit = "J/(mol*K5)"
 [[upstreams.files.columns]]
 name = "AntoineVapPresLiqType"
-disposition = "vendored"
+disposition = "used"
 as = "antoine_type"
 unit = "text"
 [[upstreams.files.columns]]
@@ -579,82 +579,69 @@ reason = """\
     `AttractiveTermTwuCoonStatoil`"""
 [[upstreams.files.columns]]
 name = "associationsites"
-disposition = "vendored"
+disposition = "used"
 as = "associationsites"
 unit = "count"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "associationscheme"
-disposition = "vendored"
+disposition = "used"
 as = "associationscheme"
 unit = "text"
-reason = "not-ported: the associating models - CPA, UMR-CPA and their mixing rules; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`. The site count cannot stand in for this: upstream carries `1A` at zero sites, and `2A` and `2B` at two sites each, while `setAssociationScheme` switches on the name."
 [[upstreams.files.columns]]
 name = "racketZCPA"
-disposition = "vendored"
+disposition = "used"
 as = "racketzcpa"
 unit = "dimensionless"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "volcorrCPA_T"
-disposition = "vendored"
+disposition = "used"
 as = "volcorrcpa_t"
 unit = "neqsim-internal"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "associationboundingvolume_SRK"
-disposition = "vendored"
+disposition = "used"
 as = "associationboundingvolume_srk"
 unit = "dimensionless"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "associationenergy"
-disposition = "vendored"
+disposition = "used"
 as = "associationenergy"
 unit = "J/mol"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "aCPA_SRK"
-disposition = "vendored"
+disposition = "used"
 as = "acpa_srk"
 unit = "neqsim-internal"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "bCPA_SRK"
-disposition = "vendored"
+disposition = "used"
 as = "bcpa_srk"
 unit = "neqsim-internal"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "mCPA_SRK"
-disposition = "vendored"
+disposition = "used"
 as = "mcpa_srk"
 unit = "dimensionless"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "aCPA_PR"
-disposition = "vendored"
+disposition = "used"
 as = "acpa_pr"
 unit = "neqsim-internal"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "bCPA_PR"
-disposition = "vendored"
+disposition = "used"
 as = "bcpa_pr"
 unit = "neqsim-internal"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "mCPA_PR"
-disposition = "vendored"
+disposition = "used"
 as = "mcpa_pr"
 unit = "dimensionless"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "associationboundingvolume_PR"
-disposition = "vendored"
+disposition = "used"
 as = "associationboundingvolume_pr"
 unit = "dimensionless"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "calcActivity"
 disposition = "dropped"
@@ -1092,12 +1079,9 @@ unit = "text"
 
 [[upstreams.files.columns]]
 name = "KIJSRK"
-disposition = "vendored"
+disposition = "used"
 as = "kijsrk"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: Soave-Redlich-Kwong; NeqSim's `SystemSrk*` family. Present for 310 of the \
-    516 in-scope pairs."""
 [[upstreams.files.columns]]
 name = "KIJTSRK"
 disposition = "vendored"
@@ -1224,10 +1208,9 @@ disposition = "used"
 
 [[upstreams.files.columns]]
 name = "cpakij_SRK"
-disposition = "vendored"
+disposition = "used"
 as = "cpakij_srk"
 unit = "neqsim-internal"
-reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "cpakijT_SRK"
 disposition = "vendored"
@@ -1248,12 +1231,9 @@ unit = "neqsim-internal"
 reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "cpakij_PR"
-disposition = "vendored"
+disposition = "used"
 as = "cpakij_pr"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`. \
-    Present for 132 of the 516 in-scope pairs."""
 [[upstreams.files.columns]]
 name = "KIJWSunifac"
 disposition = "used"

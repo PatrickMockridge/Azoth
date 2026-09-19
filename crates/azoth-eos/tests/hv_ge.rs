@@ -13,6 +13,7 @@
 //! correctly, and these values came from it.
 
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::hv_ge::{hv_d_ln_gamma_dn, hv_ln_gamma};
 
 /// The water/ethanol NRTL parameters NeqSim's database carries for CLASSIC_HV.
@@ -142,8 +143,9 @@ fn d_ln_gamma_dn_matches_finite_differences() {
 /// rather than quietly changing an answer somewhere downstream.
 #[test]
 fn the_databank_resolves_the_same_water_ethanol_parameters() {
-    let params = azoth_eos::databank::huron_vidal_parameters(&["water", "ethanol"], None)
-        .expect("the pair resolves");
+    let params =
+        azoth_eos::databank::huron_vidal_parameters(&["water", "ethanol"], Cubic::Pr, None)
+            .expect("the pair resolves");
     let (a, b) = water_ethanol();
     let x = [0.5, 0.5];
 
@@ -186,8 +188,9 @@ fn the_databank_resolves_the_same_water_ethanol_parameters() {
 /// is what has to undo that.
 #[test]
 fn a_pair_the_table_marks_classic_is_not_fitted() {
-    let params = azoth_eos::databank::huron_vidal_parameters(&["methane", "nitrogen"], None)
-        .expect("the pair resolves");
+    let params =
+        azoth_eos::databank::huron_vidal_parameters(&["methane", "nitrogen"], Cubic::Pr, None)
+            .expect("the pair resolves");
     assert_eq!(
         params.hv_pairs,
         vec![false, false, false, false],
@@ -219,8 +222,10 @@ fn a_pair_the_table_marks_classic_is_not_fitted() {
 #[test]
 fn the_two_rules_read_their_own_temperature_coefficient() {
     let names = ["CO2", "water"];
-    let (base, _) = azoth_eos::databank::mixture_of(&names, None).expect("the pair resolves");
-    let hv = azoth_eos::databank::huron_vidal_parameters(&names, None).expect("the pair resolves");
+    let (base, _) =
+        azoth_eos::databank::mixture_of(&names, Cubic::Srk, None).expect("the pair resolves");
+    let hv = azoth_eos::databank::huron_vidal_parameters(&names, Cubic::Srk, None)
+        .expect("the pair resolves");
     let ws = azoth_eos::databank::wong_sandler_parameters(&names, None).expect("the pair resolves");
 
     assert_eq!(hv.hv_gij_t, vec![0.0, -0.842_025_353, -0.512_331_604, 0.0]);

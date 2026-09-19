@@ -49,10 +49,11 @@ use crate::saturation_temperature::{Curvature, phase_boundary_temperature};
 /// # Example
 /// ```
 /// use azoth_core::units::{pascals};
+/// use azoth_eos::Cubic;
 /// use azoth_eos::databank::mixture_of;
 /// use azoth_eos::capillary_dew_point;
 ///
-/// let (mixture, _) = mixture_of(&["methane", "n-butane"], None)?;
+/// let (mixture, _) = mixture_of(&["methane", "n-butane"], Cubic::Pr, None)?;
 /// // A wide pore is the flat interface, and the shift goes to nothing with it.
 /// let r = capillary_dew_point(&mixture, pascals(2.0e6), &[0.5, 0.5], 1.0e-3, 0.0, 0.005)?;
 /// assert!((r.temperature.value - 345.1416).abs() < 0.01);

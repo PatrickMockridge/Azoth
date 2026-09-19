@@ -1,6 +1,7 @@
 //! Spec-driven tests for the `eos.pvf_flash` model.
 
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::pvf_flash::pvf_flash;
 use azoth_test_support as common;
@@ -12,8 +13,12 @@ fn every_case_in_the_spec() {
     let spec = azoth_eos::model_gen::model(MODEL_ID).expect("the model");
     assert!(!spec.cases.is_empty(), "the model should have cases");
     for case in spec.cases {
-        let (mixture, _) = databank::mixture_of(case.list("components").expect("components"), None)
-            .expect("the case's fluid resolves");
+        let (mixture, _) = databank::mixture_of(
+            case.list("components").expect("components"),
+            Cubic::Pr,
+            None,
+        )
+        .expect("the case's fluid resolves");
         let context = &format!("{}::{}", spec.id, case.id);
         let result = pvf_flash(
             &mixture,
@@ -46,7 +51,8 @@ fn every_case_in_the_spec() {
 /// would be a second implementation of a calculation that has one.
 #[test]
 fn the_endpoints_are_refused_by_name() {
-    let (mixture, _) = databank::mixture_of(&["methane", "n-butane"], None).expect("the pair");
+    let (mixture, _) =
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair");
     for (beta, which) in [(0.0, "bubble"), (1.0, "dew")] {
         let error = pvf_flash(&mixture, pascals(2.5e6), beta, kelvins(330.0), &[0.6, 0.4])
             .expect_err("an endpoint is another model's");
@@ -64,7 +70,8 @@ fn the_endpoints_are_refused_by_name() {
 /// answered a temperature for *any* fraction would pass them. This walks the interior.
 #[test]
 fn the_answer_reproduces_the_fraction_it_was_asked_for() {
-    let (mixture, _) = databank::mixture_of(&["methane", "n-butane"], None).expect("the pair");
+    let (mixture, _) =
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair");
     for fraction in [0.05, 0.2, 0.5, 0.8, 0.95] {
         let result = pvf_flash(
             &mixture,

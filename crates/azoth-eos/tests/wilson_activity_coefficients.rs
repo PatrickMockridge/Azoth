@@ -1,6 +1,7 @@
 //! Spec-driven tests for the `eos.wilson_activity_coefficients` model.
 
 use azoth_core::{AzothError, CalcResult};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::mixture::{Component, Mixture};
 use azoth_eos::{model_gen, wilson_activity_coefficients};
@@ -11,14 +12,18 @@ const MODEL_ID: &str = "eos.wilson_activity_coefficients";
 /// The n-butane/nc12 mixture the databank resolves for the case, which is also the
 /// doc-test's and the refusal tests' stand-in.
 fn butane_nc12() -> Mixture {
-    databank::mixture_of(&["n-butane", "nc12"], None)
+    databank::mixture_of(&["n-butane", "nc12"], Cubic::Pr, None)
         .expect("the case's components resolve")
         .0
 }
 
 fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::WilsonActivityCoefficientsResult {
-    let (mixture, _) = databank::mixture_of(case.list("components").expect("components"), None)
-        .unwrap_or_else(|e| panic!("case `{}` should resolve but failed: {e}", case.id));
+    let (mixture, _) = databank::mixture_of(
+        case.list("components").expect("components"),
+        Cubic::Pr,
+        None,
+    )
+    .unwrap_or_else(|e| panic!("case `{}` should resolve but failed: {e}", case.id));
     wilson_activity_coefficients(
         &mixture,
         common::input(case, "T"),
@@ -63,7 +68,7 @@ fn the_result_is_clean_at_an_ordinary_state() {
 /// than the numbers, which every case above would follow anywhere.
 #[test]
 fn the_databank_resolves_the_molar_mass_and_critical_temperature() {
-    let (mixture, _) = databank::mixture_of(&["n-butane", "nc12"], None).unwrap();
+    let (mixture, _) = databank::mixture_of(&["n-butane", "nc12"], Cubic::Pr, None).unwrap();
     let components = mixture.components();
     let mass: Vec<f64> = components.iter().filter_map(|c| c.molar_mass).collect();
     let tc: Vec<f64> = components.iter().map(|c| c.tc.value).collect();

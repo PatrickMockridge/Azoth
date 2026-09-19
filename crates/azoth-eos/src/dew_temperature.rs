@@ -26,10 +26,11 @@ use crate::{model_gen, phase_boundary};
 ///
 /// # Example
 /// ```
+/// use azoth_eos::Cubic;
 /// use azoth_core::units::{pascals, kelvins};
 /// use azoth_eos::{dew_pressure, dew_temperature, databank};
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
+/// let mixture = databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
 ///     .expect("the pair resolves")
 ///     .0;
 /// // The round trip: the dew pressure at 300 K, held at that pressure.

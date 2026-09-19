@@ -26,10 +26,11 @@ use crate::results::TvFlashResult;
 ///
 /// # Example
 /// ```
+/// use azoth_eos::Cubic;
 /// use azoth_core::units::{cubic_meters_per_mole, kelvins};
 /// use azoth_eos::{databank, tv_flash};
 ///
-/// let (mixture, ideal_gas) = databank::mixture_of(&["methane", "n-butane"], None)
+/// let (mixture, ideal_gas) = databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
 ///     .expect("the pair resolves");
 /// let r = tv_flash::tv_flash(
 ///     &mixture,

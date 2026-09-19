@@ -50,12 +50,13 @@ use crate::results::{GeNrtlFlashResult, Phase};
 /// # Example
 /// ```
 /// use azoth_core::units::{kelvins, pascals};
+/// use azoth_eos::Cubic;
 /// use azoth_eos::databank::{ge_nrtl_phase_parameters, mixture_of};
 /// use azoth_eos::ge_nrtl_flash::ge_nrtl_flash;
 ///
 /// let names = ["methanol", "water"];
 /// let params = ge_nrtl_phase_parameters(&names, None)?;
-/// let (mixture, _) = mixture_of(&names, None)?;
+/// let (mixture, _) = mixture_of(&names, Cubic::Pr, None)?;
 /// let r = ge_nrtl_flash(&params, &mixture, kelvins(350.0), pascals(1.0e5), &[0.5, 0.5])?;
 /// assert_eq!(r.phase, azoth_eos::Phase::TwoPhase);
 /// # Ok::<(), azoth_core::AzothError>(())

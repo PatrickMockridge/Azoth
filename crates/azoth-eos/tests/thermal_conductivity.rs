@@ -1,6 +1,7 @@
 //! Spec-driven tests for the `eos.thermal_conductivity` model.
 
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::model_gen;
 use azoth_eos::thermal_conductivity;
@@ -14,7 +15,7 @@ fn from_case(
     let names = case
         .list("components")
         .expect("the case declares components");
-    databank::mixture_of(names, None).expect("the case's components resolve")
+    databank::mixture_of(names, Cubic::Pr, None).expect("the case's components resolve")
 }
 
 #[test]

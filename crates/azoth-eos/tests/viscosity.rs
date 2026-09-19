@@ -1,6 +1,7 @@
 //! Spec-driven tests for the `eos.viscosity` model.
 
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::model_gen;
 use azoth_eos::viscosity;
@@ -12,7 +13,7 @@ fn from_case(case: &azoth_core::spec::TestCase) -> azoth_eos::mixture::Mixture {
     let names = case
         .list("components")
         .expect("the case declares components");
-    databank::mixture_of(names, None)
+    databank::mixture_of(names, Cubic::Pr, None)
         .expect("the case's components resolve")
         .0
 }

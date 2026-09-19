@@ -374,10 +374,11 @@ pub struct Overlay {
     /// Overrides of the *associating* interaction columns, keyed by pair and family.
     ///
     /// A separate map because it is a separate column: NeqSim's CPA rule reads
-    /// `cpakij_SRK`/`cpakij_PR` and a classical mixture reads `KIJPR`, and on
-    /// water/methanol they differ by a factor of two. A card stating one is not stating
-    /// the other, so neither may stand in for the other - and the family is part of the
-    /// key because the two `cpakij` columns are two fits rather than one converted.
+    /// `cpakij_SRK`/`cpakij_PR` and a classical mixture reads `KIJSRK` or `KIJPR`
+    /// depending on its cubic, and on water/methanol they differ by a factor of two. A
+    /// card stating one is not stating the other, so neither may stand in for the other -
+    /// and the family is part of the key because the two `cpakij` columns are two fits
+    /// rather than one converted.
     cpa_kij: HashMap<(String, String, AssociationCubic), f64>,
 }
 
@@ -418,6 +419,11 @@ impl Overlay {
     }
 
     /// Override one pair's interaction parameter.
+    ///
+    /// **One number covers both cubic columns.** A card naming `kij` has said what the
+    /// pair is; asking it to say so again per cubic would make the two halves separately
+    /// overridable by accident, and a card that overrode only one would leave the other
+    /// reading the table.
     ///
     /// # Errors
     /// * [`AzothError::InvalidInput`] if both names are the same substance. `Mixture::new`
@@ -533,8 +539,19 @@ impl Overlay {
 /// reversed value, done once where the table is parsed rather than at each read.
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Interaction {
-    /// The cubic binary interaction parameter, symmetric.
-    kij: f64,
+    /// NeqSim's `KIJPR`, the binary interaction parameter its **Peng-Robinson** phase
+    /// reads, symmetric.
+    ///
+    /// **The cubic's column is chosen by cubic, and this one is only PR's.** NeqSim
+    /// selects on the phase class - `phase.getClass().getName().equals(
+    /// "neqsim.thermo.phase.PhasePrEos")` - and every other phase reads `KIJSRK`. The two
+    /// are different fits rather than one converted into the other: water/methane is
+    /// `0.651` here against `0.45`, benzene/methane is `0.0` against `0.0209`, and 76 of
+    /// the 516 in-scope pairs differ at all.
+    kij_pr: f64,
+    /// NeqSim's `KIJSRK`, the column its Soave-Redlich-Kwong phase and every other cubic
+    /// reads. See [`Self::kij_pr`] for why the two are not interchangeable.
+    kij_srk: f64,
     /// NeqSim's `cpakij_SRK`, the interaction parameter its **CPA** mixing rule reads for
     /// the Soave family.
     ///
@@ -841,6 +858,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         "component_a",
         "component_b",
         "kij_pr",
+        "kijsrk",
         "nrtlalpha",
         "nrtlgij",
         "nrtlgji",
@@ -900,6 +918,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         let ws_dij_t = number(&record, index["wsgijt"], "wsgijt", row)?;
         let ws_dji_t = number(&record, index["wsgjit"], "wsgjit", row)?;
         let kij_ws = number(&record, index["kijwsunifac"], "kijwsunifac", row)?;
+        let kij_srk = number(&record, index["kijsrk"], "kijsrk", row)?;
         let cpa_kij_srk = number(&record, index["cpakij_srk"], "cpakij_srk", row)?;
         let cpa_kij_pr = number(&record, index["cpakij_pr"], "cpakij_pr", row)?;
         let pcsaft_kij = number(&record, index["kijpcsaft"], "kijpcsaft", row)?;
@@ -911,7 +930,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         out.insert(
             (a.clone(), b.clone()),
             Interaction {
-                kij: value,
+                kij_pr: value,
+                kij_srk,
                 cpa_kij_srk,
                 cpa_kij_pr,
                 pcsaft_kij,
@@ -929,7 +949,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         out.insert(
             (b, a),
             Interaction {
-                kij: value,
+                kij_pr: value,
+                kij_srk,
                 cpa_kij_srk,
                 cpa_kij_pr,
                 pcsaft_kij,
@@ -1084,14 +1105,25 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
 /// what NeqSim's own reader substitutes. An overlay's zero wins over a fitted value,
 /// because overriding a pair back to ideal mixing is a caller stating something.
 #[must_use]
-pub fn kij(first: &str, second: &str, overlay: Option<&Overlay>) -> f64 {
+pub fn kij(first: &str, second: &str, cubic: Cubic, overlay: Option<&Overlay>) -> f64 {
     if let Some(value) = overlay.and_then(|o| o.kij(first, second)) {
+        // A card names one number and it wins for both columns: a caller writing `kij`
+        // has said what the pair is, and asking them to say it twice would make the two
+        // halves separately overridable by accident. The CPA columns beside it *are*
+        // family-split, because the two families are separate fits of a different
+        // quantity rather than two readings of the same one.
         return value;
     }
     tables()
         .1
         .get(&(first.trim().to_lowercase(), second.trim().to_lowercase()))
-        .map_or(0.0, |interaction| interaction.kij)
+        .map_or(0.0, |interaction| match cubic {
+            // NeqSim's own rule: exactly `PhasePrEos` reads `KIJPR` and every other
+            // phase - SRK, RK, and even `PhaseUMRCPA`, which extends `PhasePrEos`
+            // without being it - reads `KIJSRK`.
+            Cubic::Pr => interaction.kij_pr,
+            _ => interaction.kij_srk,
+        })
 }
 
 /// The Wilke-Chang association parameter for a solvent, by name.
@@ -1177,17 +1209,28 @@ pub fn all_entries() -> Vec<&'static Entry> {
     out
 }
 
-/// Every interaction pair the databank carries, ordered, each pair once.
+/// Every interaction pair the databank carries, ordered, each pair once, as
+/// `(first, second, KIJPR, KIJSRK)`.
+///
+/// **Both columns, because which one a mixture uses is decided by its cubic.** A caller
+/// that collapses them has chosen a fluid for a cubic it does not know about yet.
 ///
 /// The table is stored both ways round so a caller need not know which name came first;
 /// this un-does that by keeping only the ordering where the first name sorts lower.
 #[must_use]
-pub fn all_kij() -> Vec<(String, String, f64)> {
-    let mut out: Vec<(String, String, f64)> = tables()
+pub fn all_kij() -> Vec<(String, String, f64, f64)> {
+    let mut out: Vec<(String, String, f64, f64)> = tables()
         .1
         .iter()
         .filter(|((a, b), _)| a < b)
-        .map(|((a, b), interaction)| (a.clone(), b.clone(), interaction.kij))
+        .map(|((a, b), interaction)| {
+            (
+                a.clone(),
+                b.clone(),
+                interaction.kij_pr,
+                interaction.kij_srk,
+            )
+        })
         .collect();
     out.sort_by(|left, right| (&left.0, &left.1).cmp(&(&right.0, &right.1)));
     out
@@ -1269,15 +1312,16 @@ pub fn pcsaft_kij(names: &[&str]) -> Vec<f64> {
 ///
 /// **One call, because the four steps it replaces were four chances to be wrong.**
 /// `SystemSrkCPA` mixes with `cpakij_SRK` and substitutes the fitted `a` and `b` in place
-/// of the cubic's; a classical mixture reads `KIJPR` and the cubic's own. The two are not
+/// of the cubic's; a classical mixture reads the cubic's own column. The two are not
 /// interchangeable and neither is a refinement of the other, so this resolves the whole
 /// mixture rather than leaving a caller to assemble [`mixture_of`], [`cpa_kij`],
 /// `with_cubic` and `with_association` in the right order with the right arguments.
 ///
-/// The cubic is stated once and read three ways from here - the root finder, the
-/// interaction column and the fitted association set - which is the point: water's
-/// `kappa_AB` is 0.0692 for SRK against 0.046473789 for PR, so a mixture that took its
-/// cubic from one call and its association from another is a different fluid.
+/// The cubic is stated once and read three ways from here - the interaction column (see
+/// [`mixture_of`]), the fitted association family and the root finder - which is the
+/// point: water's `kappa_AB` is 0.0692 for SRK against 0.046473789 for PR, so a mixture
+/// that took its cubic from one call and its association from another is a different
+/// fluid.
 ///
 /// # Errors
 /// * As [`mixture_of`], plus the association's own refusals: a mixture whose association
@@ -1288,7 +1332,7 @@ pub fn associating_mixture_of(
     overlay: Option<&Overlay>,
 ) -> Result<(Mixture, IdealGasModel)> {
     let family = AssociationCubic::of(cubic);
-    let (mixture, ideal_gas) = mixture_of(names, overlay)?;
+    let (mixture, ideal_gas) = mixture_of(names, cubic, overlay)?;
     let mixture = mixture
         .with_mixing_rule(MixingRule::Classic {
             kij: cpa_kij(names, family, overlay),
@@ -1396,6 +1440,7 @@ pub struct WongSandlerParameters {
 ///   overlay.
 pub fn huron_vidal_parameters(
     names: &[&str],
+    cubic: Cubic,
     overlay: Option<&Overlay>,
 ) -> Result<HuronVidalParameters> {
     for name in names {
@@ -1419,7 +1464,10 @@ pub fn huron_vidal_parameters(
             let Some(interaction) = table.get(&key) else {
                 continue;
             };
-            out.kij[i * n + j] = interaction.kij;
+            out.kij[i * n + j] = match cubic {
+                Cubic::Pr => interaction.kij_pr,
+                _ => interaction.kij_srk,
+            };
             out.hv_pairs[i * n + j] = interaction.hv;
             out.hv_alpha[i * n + j] = interaction.hv_alpha;
             out.hv_gij[i * n + j] = interaction.hv_dij;
@@ -2366,7 +2414,11 @@ fn unifac_basis(
 /// * [`AzothError::PropertyUnavailable`] if a name is in neither source, or if one has
 ///   no heat-capacity coefficients - which is what an overlay-added substance is.
 /// * Propagates [`Component::new`]'s range checks.
-pub fn mixture_of(names: &[&str], overlay: Option<&Overlay>) -> Result<(Mixture, IdealGasModel)> {
+pub fn mixture_of(
+    names: &[&str],
+    cubic: Cubic,
+    overlay: Option<&Overlay>,
+) -> Result<(Mixture, IdealGasModel)> {
     if names.is_empty() {
         return Err(AzothError::invalid_input(
             "components",
@@ -2406,7 +2458,7 @@ pub fn mixture_of(names: &[&str], overlay: Option<&Overlay>) -> Result<(Mixture,
     let mut matrix = vec![0.0; n * n];
     for i in 0..n {
         for j in (i + 1)..n {
-            let value = kij(&entries[i].name, &entries[j].name, overlay);
+            let value = kij(&entries[i].name, &entries[j].name, cubic, overlay);
             matrix[i * n + j] = value;
             matrix[j * n + i] = value;
         }
@@ -2427,5 +2479,12 @@ pub fn mixture_of(names: &[&str], overlay: Option<&Overlay>) -> Result<(Mixture,
         cp_e: coefficient(4),
     };
 
-    Ok((Mixture::new(components, matrix)?, ideal_gas))
+    // **The cubic is set here, not left to the caller.** It is not decoration: the `kij`
+    // above was read from *this* cubic's column, so a mixture that then changed cubic
+    // would carry the other family's interaction matrix. Setting it here is what makes
+    // the pair impossible to mismatched - the resolver has the cubic and uses it.
+    Ok((
+        Mixture::new(components, matrix)?.with_cubic(cubic),
+        ideal_gas,
+    ))
 }

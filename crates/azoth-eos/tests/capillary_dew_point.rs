@@ -9,6 +9,7 @@
 //! comparison is of the Kelvin shift and not of a surface-tension correlation.
 
 use azoth_core::units::pascals;
+use azoth_eos::Cubic;
 use azoth_eos::capillary_dew_point;
 use azoth_eos::databank::mixture_of;
 
@@ -22,7 +23,8 @@ struct Case {
 }
 
 fn run(case: &Case) -> azoth_eos::results::CapillaryDewPointResult {
-    let (mixture, _) = mixture_of(&["methane", "n-butane"], None).expect("the pair resolves");
+    let (mixture, _) =
+        mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair resolves");
     capillary_dew_point(
         &mixture,
         pascals(2.0e6),
@@ -174,7 +176,8 @@ fn the_shift_scales_as_the_cosine_of_the_contact_angle() {
 /// A wide enough pore is the flat interface, and the model reduces to `eos.dew_temperature`.
 #[test]
 fn a_wide_pore_reproduces_the_bulk_dew_point() {
-    let (mixture, _) = mixture_of(&["methane", "n-butane"], None).expect("the pair resolves");
+    let (mixture, _) =
+        mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair resolves");
     let bulk = azoth_eos::dew_temperature(&mixture, pascals(2.0e6), &[0.5, 0.5])
         .expect("the bulk dew point converges");
     let wide = capillary_dew_point(&mixture, pascals(2.0e6), &[0.5, 0.5], 1.0e-2, 0.0, 0.005)
@@ -188,7 +191,8 @@ fn a_wide_pore_reproduces_the_bulk_dew_point() {
 
 #[test]
 fn a_non_positive_radius_is_refused() {
-    let (mixture, _) = mixture_of(&["methane", "n-butane"], None).expect("the pair resolves");
+    let (mixture, _) =
+        mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair resolves");
     for radius in [0.0, -1.0e-8] {
         let error = capillary_dew_point(&mixture, pascals(2.0e6), &[0.5, 0.5], radius, 0.0, 0.005)
             .expect_err("a non-positive radius is a division by zero, not a wide pore");
@@ -200,7 +204,8 @@ fn a_non_positive_radius_is_refused() {
 
 #[test]
 fn a_negative_surface_tension_is_refused() {
-    let (mixture, _) = mixture_of(&["methane", "n-butane"], None).expect("the pair resolves");
+    let (mixture, _) =
+        mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair resolves");
     let error = capillary_dew_point(&mixture, pascals(2.0e6), &[0.5, 0.5], 1.0e-7, 0.0, -0.005)
         .expect_err("a negative tension would move the dew point down");
     assert!(matches!(error, azoth_core::AzothError::OutOfRange { .. }));

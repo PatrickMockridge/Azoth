@@ -7,6 +7,7 @@
 
 use std::path::PathBuf;
 
+use azoth_eos::Cubic;
 use azoth_eos::association::SiteScheme;
 use azoth_eos::card::{
     CoefficientValue,
@@ -98,7 +99,7 @@ fn a_card_reaches_the_databank() {
     );
     assert_eq!(carded.omega, shipped.omega);
 
-    let pair = databank::kij("methane", "n-butane", Some(card.overlay()));
+    let pair = databank::kij("methane", "n-butane", Cubic::Pr, Some(card.overlay()));
     assert_eq!(pair, 0.0135);
 }
 
@@ -589,7 +590,7 @@ fn a_kij_row_states_the_associating_columns_beside_the_classical_one() {
         -0.31
     );
     // And the classical column is the card's too, not either of the other two.
-    let (classical, _) = databank::mixture_of(&names, Some(overlay)).expect("a mixture");
+    let (classical, _) = databank::mixture_of(&names, Cubic::Pr, Some(overlay)).expect("a mixture");
     assert!((classical.kij(0, 1) - -0.0789).abs() < 1.0e-12);
 }
 
@@ -626,8 +627,8 @@ fn the_baseline_cards_pairs_are_the_tables() {
     for (first, second) in pairs {
         let names = [first.as_str(), second.as_str()];
         assert_eq!(
-            databank::kij(&first, &second, Some(card.overlay())),
-            databank::kij(&first, &second, None),
+            databank::kij(&first, &second, Cubic::Pr, Some(card.overlay())),
+            databank::kij(&first, &second, Cubic::Pr, None),
             "{first}/{second}: the classical column"
         );
         for family in [AssociationCubic::Srk, AssociationCubic::Pr] {

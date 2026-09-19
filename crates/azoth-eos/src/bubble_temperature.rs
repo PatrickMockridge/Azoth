@@ -26,10 +26,11 @@ use crate::{model_gen, phase_boundary};
 ///
 /// # Example
 /// ```
+/// use azoth_eos::Cubic;
 /// use azoth_core::units::{pascals, kelvins};
 /// use azoth_eos::{bubble_pressure, bubble_temperature, databank};
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
+/// let mixture = databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
 ///     .expect("the pair resolves")
 ///     .0;
 /// // The round trip: the bubble pressure at 300 K, held at that pressure.

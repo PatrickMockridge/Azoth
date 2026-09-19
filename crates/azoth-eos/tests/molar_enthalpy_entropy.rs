@@ -2,6 +2,7 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, CalcResult};
+use azoth_eos::Cubic;
 use azoth_eos::mixture::Mixture;
 use azoth_eos::molar_enthalpy_entropy::{IdealGasModel, molar_enthalpy_entropy};
 use azoth_eos::{databank, model_gen, pr_molar_volume::MOLAR_GAS_CONSTANT};
@@ -10,7 +11,7 @@ const MODEL_ID: &str = "eos.molar_enthalpy_entropy";
 
 /// The methane/n-butane pair the spec's cases use, resolved through the databank.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"], None)
+    databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
         .expect("the pair resolves")
         .0
 }
@@ -20,7 +21,7 @@ fn from_case(case: &azoth_core::spec::TestCase) -> (Mixture, IdealGasModel, f64)
         .list("components")
         .expect("the case declares components");
     let (mixture, ideal_gas) =
-        databank::mixture_of(names, None).expect("the case's components resolve");
+        databank::mixture_of(names, Cubic::Pr, None).expect("the case's components resolve");
     (mixture, ideal_gas, common_input(case, "compressibility"))
 }
 
@@ -142,7 +143,9 @@ fn the_departures_reduce_to_pr_departure_at_one_component() {
     ] {
         let entry = databank::entry(name, None).expect("a databank entry");
         let (tc, omega) = (entry.tc, entry.omega);
-        let mixture = databank::mixture_of(&[name], None).expect("resolves").0;
+        let mixture = databank::mixture_of(&[name], Cubic::Pr, None)
+            .expect("resolves")
+            .0;
         let ideal_gas = IdealGasModel {
             cp_a: vec![4.0],
             cp_b: vec![1.0],

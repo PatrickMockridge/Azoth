@@ -10,6 +10,7 @@
 //! neither implementation agrees to.
 
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::databank::mixture_of;
 use azoth_eos::results::TpMultiflashSeed;
 use azoth_eos::tp_multiflash;
@@ -23,7 +24,8 @@ struct Expected {
 }
 
 fn state(names: &[&str], t: f64, p: f64, z: &[f64]) -> azoth_eos::results::TpMultiflashResult {
-    let (mixture, _) = mixture_of(names, None).expect("the databank resolves these names");
+    let (mixture, _) =
+        mixture_of(names, Cubic::Pr, None).expect("the databank resolves these names");
     tp_multiflash(&mixture, kelvins(t), pascals(p), z).expect("the flash converges")
 }
 

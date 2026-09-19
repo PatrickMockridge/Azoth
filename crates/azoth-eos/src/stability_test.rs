@@ -235,10 +235,11 @@ fn trial(
 ///
 /// # Example
 /// ```
+/// use azoth_eos::Cubic;
 /// use azoth_core::units::{kelvins, pascals};
 /// use azoth_eos::{StabilityVerdict, databank, stability_test};
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
+/// let mixture = databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
 ///     .expect("the pair resolves")
 ///     .0;
 /// let r = stability_test(&mixture, kelvins(330.0), pascals(2_500_000.0), &[0.6, 0.4])?;

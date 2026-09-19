@@ -35,12 +35,13 @@ use crate::results::GeWilsonPhaseResult;
 ///
 /// # Example
 /// ```
+/// use azoth_eos::Cubic;
 /// use azoth_eos::databank::{ge_wilson_phase_parameters, mixture_of};
 /// use azoth_eos::ge_wilson_phase;
 ///
 /// let names = ["n-octane", "nc10"];
 /// let params = ge_wilson_phase_parameters(&names, None)?;
-/// let (mixture, _) = mixture_of(&names, None)?;
+/// let (mixture, _) = mixture_of(&names, Cubic::Pr, None)?;
 /// let r = ge_wilson_phase(&params, &mixture, 350.0, 100_000.0, &[0.4, 0.6])?;
 /// assert!((r.gamma[0] - 1.3244982894719637).abs() < 1e-12);
 /// # Ok::<(), azoth_core::AzothError>(())

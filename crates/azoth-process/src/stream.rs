@@ -5,7 +5,7 @@
 //! a unit operation's kernel reads on its inlets and writes on its outlets.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_eos::{IdealGasModel, Mixture, databank, ph_flash};
+use azoth_eos::{Cubic, IdealGasModel, Mixture, databank, ph_flash};
 
 /// A material stream on the shared record.
 #[derive(Debug, Clone)]
@@ -26,7 +26,7 @@ impl Stream {
     /// Resolve the fluid this stream names.
     pub fn mixture(&self) -> azoth_core::Result<(Mixture, IdealGasModel)> {
         let names: Vec<&str> = self.components.iter().map(String::as_str).collect();
-        databank::mixture_of(&names, None)
+        databank::mixture_of(&names, Cubic::Pr, None)
     }
 
     /// A stream at a known temperature, with its enthalpy computed at that state.
@@ -38,7 +38,7 @@ impl Stream {
         t: ThermodynamicTemperature,
     ) -> azoth_core::Result<Self> {
         let names: Vec<&str> = components.iter().map(String::as_str).collect();
-        let (mixture, ideal_gas) = databank::mixture_of(&names, None)?;
+        let (mixture, ideal_gas) = databank::mixture_of(&names, Cubic::Pr, None)?;
         let (h, _) = ph_flash::enthalpy_at(&mixture, &ideal_gas, t, p, &z)?;
         Ok(Stream {
             components,
@@ -59,7 +59,7 @@ impl Stream {
         h: MolarEnergy,
     ) -> azoth_core::Result<Self> {
         let names: Vec<&str> = components.iter().map(String::as_str).collect();
-        let (mixture, ideal_gas) = databank::mixture_of(&names, None)?;
+        let (mixture, ideal_gas) = databank::mixture_of(&names, Cubic::Pr, None)?;
         let r = ph_flash::ph_flash(&mixture, &ideal_gas, p, h, &z)?;
         Ok(Stream {
             components,

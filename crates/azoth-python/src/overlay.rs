@@ -8,6 +8,7 @@
 
 use pyo3::prelude::*;
 
+use azoth_eos::Cubic;
 use azoth_eos::card::CoefficientValue;
 use azoth_eos::databank::{ComponentOverride, Overlay};
 
@@ -119,7 +120,8 @@ pub fn overlay_kij_rows(overlay: &PyOverlay) -> Vec<(String, String, f64)> {
             // The *effective* value, not the stated one: a card's zero overriding a
             // fitted parameter is the rule worth comparing, and a row carrying only what
             // the card wrote could not show it.
-            let value = azoth_eos::databank::kij(&first, &second, Some(overlay.as_overlay()));
+            let value =
+                azoth_eos::databank::kij(&first, &second, Cubic::Pr, Some(overlay.as_overlay()));
             (first, second, value)
         })
         .collect()

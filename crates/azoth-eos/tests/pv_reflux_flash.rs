@@ -1,6 +1,7 @@
 //! Spec-driven tests for the `eos.pv_reflux_flash` model.
 
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::pv_reflux_flash::{RefluxPhase, pv_reflux_flash};
 use azoth_test_support as common;
@@ -8,8 +9,12 @@ use azoth_test_support as common;
 const MODEL_ID: &str = "eos.pv_reflux_flash";
 
 fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::PvRefluxFlashResult {
-    let (mixture, _) = databank::mixture_of(case.list("components").expect("components"), None)
-        .unwrap_or_else(|e| panic!("case `{}` should resolve but failed: {e}", case.id));
+    let (mixture, _) = databank::mixture_of(
+        case.list("components").expect("components"),
+        Cubic::Pr,
+        None,
+    )
+    .unwrap_or_else(|e| panic!("case `{}` should resolve but failed: {e}", case.id));
     let phase = match common::input_str(case, "phase") {
         "vapour" => RefluxPhase::Vapour,
         _ => RefluxPhase::Liquid,
@@ -55,7 +60,8 @@ fn every_case_in_the_spec() {
 /// liquid ratio is the *reciprocal* of the vapour's is the same temperature.
 #[test]
 fn the_phase_named_decides_the_answer() {
-    let (mixture, _) = databank::mixture_of(&["methane", "n-butane"], None).expect("the pair");
+    let (mixture, _) =
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair");
     let z = [0.6, 0.4];
     let p = pascals(2_500_000.0);
 

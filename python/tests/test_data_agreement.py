@@ -96,7 +96,7 @@ COMPONENT_FIELDS = (
     "association_volume_correction",
 )
 
-KIJ_FIELDS = ("component_a", "component_b", "kij_pr")
+KIJ_FIELDS = ("component_a", "component_b", "kij_pr", "kij_srk")
 
 
 def extension() -> ModuleType:
@@ -169,7 +169,7 @@ def python_kij_rows() -> list[dict[str, Any]]:
     """
     return sorted(
         (
-            {"component_a": a, "component_b": b, "kij_pr": value}
+            {"component_a": a, "component_b": b, "kij_pr": value[1], "kij_srk": value[0]}
             for (a, b), value in components._kij().items()
             if a < b
         ),
@@ -334,10 +334,11 @@ def test_every_interaction_row_agrees_field_by_field() -> None:
     for index, (left, right) in enumerate(zip(rust, python, strict=True)):
         assert left["component_a"] == right["component_a"], f"interaction row {index}"
         assert left["component_b"] == right["component_b"], f"interaction row {index}"
-        assert left["kij_pr"] == pytest.approx(right["kij_pr"], rel=0, abs=0), (
-            f"interaction row {index} ({left['component_a']}/{left['component_b']}): "
-            f"rust {left['kij_pr']!r}, python {right['kij_pr']!r}"
-        )
+        for field in ("kij_pr", "kij_srk"):
+            assert left[field] == pytest.approx(right[field], rel=0, abs=0), (
+                f"interaction row {index} ({left['component_a']}/{left['component_b']}) "
+                f"`{field}`: rust {left[field]!r}, python {right[field]!r}"
+            )
 
 
 def test_the_nrtl_matrices_resolve_from_names() -> None:

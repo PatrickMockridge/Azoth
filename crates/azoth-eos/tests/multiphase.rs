@@ -7,6 +7,7 @@
 //! the same state.
 
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::mixture::{RootSide, wilson_k};
 use azoth_eos::multiphase::{MultiphasePhase, solve_phase_fractions};
@@ -39,7 +40,8 @@ fn phases_from_wilson(
 /// Two phases must be the two-phase flash's answer.
 #[test]
 fn two_phases_reduce_to_the_two_phase_flash() {
-    let (mixture, _) = databank::mixture_of(&["methane", "n-butane"], None).expect("the pair");
+    let (mixture, _) =
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair");
     let algorithm = test_algorithm();
     for (t, p_pa, feed) in [
         (330.0, 2_500_000.0, vec![0.6, 0.4]),
@@ -94,8 +96,8 @@ fn two_phases_reduce_to_the_two_phase_flash() {
 /// rather than the arithmetic's last bit.
 #[test]
 fn the_phases_account_for_the_feed() {
-    let (mixture, _) =
-        databank::mixture_of(&["methane", "propane", "n-butane"], None).expect("the ternary");
+    let (mixture, _) = databank::mixture_of(&["methane", "propane", "n-butane"], Cubic::Pr, None)
+        .expect("the ternary");
     let algorithm = test_algorithm();
     let feed = vec![0.5, 0.3, 0.2];
     let (t, p_pa) = (330.0, 4_000_000.0);

@@ -585,14 +585,20 @@ def form_from_type(label: str, e: float) -> str:
 
 
 @cache
-def _kij() -> dict[tuple[str, str], float]:
-    """Interaction parameters, keyed by the ordered pair of names."""
-    pairs: dict[tuple[str, str], float] = {}
+def _kij() -> dict[tuple[str, str], tuple[float, float]]:
+    """Interaction parameters, keyed by the ordered pair of names.
+
+    `(srk, pr)`, because **the cubic chooses its column and the two are different
+    fits**. NeqSim selects on the phase class - `PhasePrEos` reads `KIJPR` and every
+    other phase reads `KIJSRK` - and 76 of the 516 in-scope pairs differ: benzene/methane
+    is `0` in one and `0.0209` in the other.
+    """
+    pairs: dict[tuple[str, str], tuple[float, float]] = {}
     for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
         pair = (row["component_a"], row["component_b"])
-        value = float(row["kij_pr"])
-        pairs[pair] = value
-        pairs[(pair[1], pair[0])] = value
+        columns = (float(row["kijsrk"]), float(row["kij_pr"]))
+        pairs[pair] = columns
+        pairs[(pair[1], pair[0])] = columns
     return pairs
 
 
@@ -602,8 +608,8 @@ def _cpa_kij() -> dict[tuple[str, str], tuple[float, float]]:
 
     `(srk, pr)`, which are two fits rather than one converted. A separate reader from
     :func:`_kij` because it is a separate column of the same file: NeqSim's
-    `CPAMixingRuleHandler` reads these and a classical rule reads `KIJPR`, and on
-    water/methanol they differ by a factor of two.
+    `CPAMixingRuleHandler` reads these and a classical rule reads `KIJSRK` or
+    `KIJPR` depending on its cubic, and on water/methanol they differ by a factor of two.
     """
     pairs: dict[tuple[str, str], tuple[float, float]] = {}
     for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
@@ -870,7 +876,7 @@ def component(name: str, *, card: keycard.Keycard | None = None) -> Component:
 
 
 def kij_for(
-    names: tuple[str, ...], *, card: keycard.Keycard | None = None
+    names: tuple[str, ...], *, eos: str = "pr", card: keycard.Keycard | None = None
 ) -> dict[tuple[int, int], float]:
     """The interaction pairs the databank knows, for a list of components.
 
@@ -883,7 +889,14 @@ def kij_for(
     deliberate act, and a rule that treated zero as "absent" would silently undo it.
 
     Keyed by index into `names`, which is the form `mixture()` takes.
+
+    ``eos`` selects the column, as it does in NeqSim: only Peng-Robinson reads
+    ``KIJPR`` and every other cubic reads ``KIJSRK``.
     """
+    # NeqSim's own rule: exactly its `PhasePrEos` reads `KIJPR`, and every other
+    # phase - SRK, RK, and even `PhaseUMRCPA`, which extends `PhasePrEos`
+    # without being it - reads `KIJSRK`.
+    column = 1 if eos.strip().lower() == "pr" else 0
     pairs: dict[tuple[int, int], float] = {}
     for i, a in enumerate(names):
         for j in range(i + 1, len(names)):
@@ -893,8 +906,8 @@ def kij_for(
                 pairs[(i, j)] = from_keycard
                 continue
             stored = _kij().get((a.strip().lower(), names[j].strip().lower()))
-            if stored is not None and stored != 0.0:
-                pairs[(i, j)] = stored
+            if stored is not None and stored[column] != 0.0:
+                pairs[(i, j)] = stored[column]
     return pairs
 
 
@@ -1765,7 +1778,7 @@ def _interaction_pairs(
     """
     if associating:
         return cpa_kij_for(tuple(resolved), family_of(eos), card=card)
-    return kij_for(tuple(resolved), card=card)
+    return kij_for(tuple(resolved), eos=eos, card=card)
 
 
 def _cubic(name: str) -> Cubic:

@@ -85,6 +85,7 @@ class KijRow:
     component_a: str
     component_b: str
     kij_pr: float
+    kij_srk: float
 
 @final
 class Overlay:

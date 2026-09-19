@@ -200,9 +200,13 @@ pub struct PyKijRow {
     pub component_a: String,
     #[pyo3(get)]
     pub component_b: String,
-    /// The Peng-Robinson binary interaction parameter.
+    /// The Peng-Robinson binary interaction parameter, `KIJPR`.
     #[pyo3(get)]
     pub kij_pr: f64,
+    /// The Soave-Redlich-Kwong binary interaction parameter, `KIJSRK`, which every cubic
+    /// but Peng-Robinson reads.
+    #[pyo3(get)]
+    pub kij_srk: f64,
 }
 
 /// Every data file this build embeds, with its bytes.
@@ -355,10 +359,11 @@ fn scheme_name(scheme: SiteScheme) -> &'static str {
 pub fn kij_rows() -> Vec<PyKijRow> {
     databank::all_kij()
         .into_iter()
-        .map(|(component_a, component_b, kij_pr)| PyKijRow {
+        .map(|(component_a, component_b, kij_pr, kij_srk)| PyKijRow {
             component_a,
             component_b,
             kij_pr,
+            kij_srk,
         })
         .collect()
 }

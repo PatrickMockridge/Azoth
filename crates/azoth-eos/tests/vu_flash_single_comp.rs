@@ -1,6 +1,7 @@
 //! Spec-driven tests for the `eos.vu_flash_single_comp` model.
 
 use azoth_core::units::{cubic_meters_per_mole, joules_per_mole, pascals};
+use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::vu_flash_single_comp::vu_flash_single_comp;
 use azoth_test_support as common;
@@ -8,9 +9,12 @@ use azoth_test_support as common;
 const MODEL_ID: &str = "eos.vu_flash_single_comp";
 
 fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::VuFlashSingleCompResult {
-    let (mixture, ideal_gas) =
-        databank::mixture_of(case.list("components").expect("components"), None)
-            .unwrap_or_else(|e| panic!("case `{}` should resolve but failed: {e}", case.id));
+    let (mixture, ideal_gas) = databank::mixture_of(
+        case.list("components").expect("components"),
+        Cubic::Pr,
+        None,
+    )
+    .unwrap_or_else(|e| panic!("case `{}` should resolve but failed: {e}", case.id));
     vu_flash_single_comp(
         &mixture,
         &ideal_gas,
@@ -57,7 +61,8 @@ fn every_case_in_the_spec() {
 /// answer is a *rule* reproduces both to the last bit.
 #[test]
 fn the_split_is_the_fraction_of_the_span_the_energy_is() {
-    let (mixture, ideal_gas) = databank::mixture_of(&["propane"], None).expect("propane");
+    let (mixture, ideal_gas) =
+        databank::mixture_of(&["propane"], Cubic::Pr, None).expect("propane");
     let p = pascals(1.0e6);
     let at = |u: f64| {
         vu_flash_single_comp(
@@ -120,7 +125,8 @@ fn the_split_is_the_fraction_of_the_span_the_energy_is() {
 /// limit.
 #[test]
 fn a_state_the_saturation_line_does_not_reach_is_refused() {
-    let (mixture, ideal_gas) = databank::mixture_of(&["propane"], None).expect("propane");
+    let (mixture, ideal_gas) =
+        databank::mixture_of(&["propane"], Cubic::Pr, None).expect("propane");
     let pc = mixture.components()[0].pc.value;
 
     let above_critical = vu_flash_single_comp(
@@ -154,7 +160,7 @@ fn a_state_the_saturation_line_does_not_reach_is_refused() {
 #[test]
 fn a_mixture_is_refused_by_name() {
     let (mixture, ideal_gas) =
-        databank::mixture_of(&["methane", "n-butane"], None).expect("the pair");
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair");
     let error = vu_flash_single_comp(
         &mixture,
         &ideal_gas,

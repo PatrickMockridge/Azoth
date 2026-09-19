@@ -2,6 +2,7 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, CalcResult};
+use azoth_eos::Cubic;
 use azoth_eos::mixture::Mixture;
 use azoth_eos::{bubble_temperature, databank, model_gen, pt_flash};
 use azoth_test_support as common;
@@ -11,13 +12,13 @@ const MODEL_ID: &str = "eos.bubble_temperature";
 /// The methane/n-butane pair the spec's cases use, resolved through the databank so
 /// the pair the sweeps run and the pair the cases run are the same fluid.
 fn methane_butane() -> Mixture {
-    databank::mixture_of(&["methane", "n-butane"], None)
+    databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
         .expect("the pair resolves")
         .0
 }
 
 fn ternary() -> Mixture {
-    databank::mixture_of(&["methane", "propane", "n-butane"], None)
+    databank::mixture_of(&["methane", "propane", "n-butane"], Cubic::Pr, None)
         .expect("the trio resolves")
         .0
 }
@@ -26,7 +27,7 @@ fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
     let names = case
         .list("components")
         .expect("the case declares components");
-    databank::mixture_of(names, None)
+    databank::mixture_of(names, Cubic::Pr, None)
         .expect("the case's components resolve")
         .0
 }
@@ -181,7 +182,7 @@ fn a_genuine_bubble_point_is_never_refused() {
 
 #[test]
 fn a_single_component_is_refused_and_points_at_the_right_calc() {
-    let propane = databank::mixture_of(&["propane"], None)
+    let propane = databank::mixture_of(&["propane"], Cubic::Pr, None)
         .expect("propane resolves")
         .0;
     let err = bubble_temperature(&propane, pascals(1.0e6), &[1.0]).unwrap_err();

@@ -128,12 +128,13 @@ fn distance(a: &[f64], b: &[f64]) -> f64 {
 ///
 /// # Example
 /// ```
+/// use azoth_eos::Cubic;
 /// use azoth_eos::databank::mixture_of;
 /// use azoth_eos::tp_multiflash;
 /// use azoth_core::units::{kelvins, pascals};
 ///
 /// let names = ["CO2", "methane", "nc10"];
-/// let (mixture, _) = mixture_of(&names, None)?;
+/// let (mixture, _) = mixture_of(&names, Cubic::Pr, None)?;
 /// let r = tp_multiflash(&mixture, kelvins(200.0), pascals(1.0e6), &[0.4, 0.3, 0.3])?;
 /// assert_eq!(r.phase_count, 3);
 /// # Ok::<(), azoth_core::AzothError>(())

@@ -73,10 +73,11 @@ impl RefluxPhase {
 /// # Example
 /// ```
 /// use azoth_core::units::{kelvins, pascals};
+/// use azoth_eos::Cubic;
 /// use azoth_eos::databank;
 /// use azoth_eos::pv_reflux_flash::RefluxPhase;
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
+/// let mixture = databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
 ///     .expect("the pair resolves")
 ///     .0;
 /// let r = azoth_eos::pv_reflux_flash::pv_reflux_flash(

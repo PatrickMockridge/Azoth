@@ -110,9 +110,10 @@ fn volume_fraction(
 /// # Example
 /// ```
 /// use azoth_core::units::{kelvins, pascals};
+/// use azoth_eos::Cubic;
 /// use azoth_eos::databank;
 ///
-/// let mixture = databank::mixture_of(&["methane", "n-butane"], None)
+/// let mixture = databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None)
 ///     .expect("the pair resolves")
 ///     .0;
 /// let r = azoth_eos::tv_fraction_flash::tv_fraction_flash(

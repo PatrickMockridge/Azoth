@@ -70,10 +70,11 @@ fn char_energy(m: &[f64], tc: &[f64], t: f64, i: usize, j: usize) -> f64 {
 ///
 /// # Example
 /// ```
+/// use azoth_eos::Cubic;
 /// use azoth_eos::databank::mixture_of;
 /// use azoth_eos::wilson_activity_coefficients;
 ///
-/// let (mixture, _) = mixture_of(&["n-butane", "nc12"], None)?;
+/// let (mixture, _) = mixture_of(&["n-butane", "nc12"], Cubic::Pr, None)?;
 /// let r = wilson_activity_coefficients(&mixture, 298.15, &[0.5, 0.5])?;
 /// assert!((r.gamma[0] - 1.213061319425015).abs() < 1e-15);
 /// # Ok::<(), azoth_core::AzothError>(())

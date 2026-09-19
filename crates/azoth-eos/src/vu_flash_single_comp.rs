@@ -136,9 +136,10 @@ fn saturation_temperature(
 /// # Example
 /// ```
 /// use azoth_core::units::{cubic_meters_per_mole, joules_per_mole, pascals};
+/// use azoth_eos::Cubic;
 /// use azoth_eos::databank;
 ///
-/// let (mixture, ideal_gas) = databank::mixture_of(&["propane"], None)?;
+/// let (mixture, ideal_gas) = databank::mixture_of(&["propane"], Cubic::Pr, None)?;
 /// use azoth_eos::vu_flash_single_comp::vu_flash_single_comp;
 ///
 /// let r = vu_flash_single_comp(

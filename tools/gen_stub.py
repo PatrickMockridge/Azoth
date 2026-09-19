@@ -135,7 +135,7 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
     (
         "KijRow",
         "One row of the interaction table, as the Rust core parsed it.",
-        (("component_a", "str"), ("component_b", "str"), ("kij_pr", "float")),
+        (("component_a", "str"), ("component_b", "str"), ("kij_pr", "float"), ("kij_srk", "float")),
     ),
     (
         "Overlay",

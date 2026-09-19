@@ -27,15 +27,16 @@ fn cubic_of(case: &azoth_core::spec::TestCase) -> Cubic {
 /// The mixture the hand-written tests use: NeqSim's `SystemNRTL` pairs the NRTL liquid
 /// with `PhaseSrkEos`, so the cubic is SRK and not `databank::mixture_of`'s default.
 fn srk(names: &[&str]) -> azoth_eos::mixture::Mixture {
-    let (mixture, _) = mixture_of(names, None).expect("the components resolve");
-    mixture.with_cubic(Cubic::Srk)
+    mixture_of(names, Cubic::Srk, None)
+        .expect("the components resolve")
+        .0
 }
 
 fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::GeNrtlFlashResult {
     let names = case.list("components").expect("components");
     let params = ge_nrtl_phase_parameters(names, None)
         .unwrap_or_else(|e| panic!("case `{}` should resolve but failed: {e}", case.id));
-    let (mixture, _) = mixture_of(names, None).expect("the components resolve");
+    let (mixture, _) = mixture_of(names, Cubic::Pr, None).expect("the components resolve");
     let mixture = mixture.with_cubic(cubic_of(case));
     ge_nrtl_flash(
         &params,
