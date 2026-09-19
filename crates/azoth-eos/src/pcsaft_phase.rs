@@ -84,69 +84,13 @@ pub fn molar_volume(
         Ok(pcsaft::d_pressure_over_rt_dv(components, kij, x, t, v)? * rt)
     };
 
-    // A bisection on a fixed count rather than on the residual: near the floor `h` is a
-    // difference of large terms, and one that stopped at an absolute tolerance there
-    // would stop early.
-    fn bisect(h: &impl Fn(f64) -> Result<f64>, lo: f64, hi: f64) -> Result<f64> {
-        let (mut lo, mut hi) = (lo, hi);
-        let sign = h(lo)?.signum();
-        for _ in 0..200 {
-            let mid = 0.5 * (lo + hi);
-            if h(mid)?.signum() == sign {
-                lo = mid;
-            } else {
-                hi = mid;
-            }
-        }
-        Ok(0.5 * (lo + hi))
-    }
-
-    let (v, iterations) = match side {
-        RootSide::Vapour => {
-            let mut v = ideal;
-            let mut converged = None;
-            for step in 0..100 {
-                // `v += 0.9 (P - P_calc)/(dP_calc/dv)`, NeqSim's step: `h` is
-                // `P_calc - P`, so the sign is Newton's with the residual negated.
-                let delta = -0.9 * h(v)? / slope(v)?;
-                if !delta.is_finite() || v + delta <= floor {
-                    break;
-                }
-                let relative = delta.abs() / v;
-                v += delta;
-                if relative < 1.0e-10 {
-                    converged = Some(step + 1);
-                    break;
-                }
-            }
-            match converged {
-                Some(steps) => (v, steps),
-                // Newton left the domain, or a step was not a number, or it stopped
-                // moving. The vapour root is the **last** zero in volume, so the walk is
-                // taken for the last bracket rather than the first.
-                None => {
-                    let (lo, hi) = walk(&h, floor, ideal)?
-                        .last()
-                        .copied()
-                        .ok_or_else(|| no_root("vapour", t, p))?;
-                    (bisect(&h, lo, hi)?, 0)
-                }
-            }
-        }
-        RootSide::Liquid => {
-            // **The lowest zero above the floor, and Newton from the ideal gas cannot find
-            // it.** At a pressure where the isotherm has one root the vapour one is it, so
-            // a solve seeded dilute converges there and stops - the liquid root is a
-            // separate zero the seed never points at. The walk is geometric because the
-            // root's *ratio* to the floor is what is bounded, not its distance.
-            let (lo, hi) = walk(&h, floor, ideal)?
-                .first()
-                .copied()
-                .ok_or_else(|| no_root("liquid", t, p))?;
-            (bisect(&h, lo, hi)?, 0)
-        }
-    };
-
+    let (v, iterations) = crate::volume_solve::molar_volume(
+        |v| Ok((h(v)?, slope(v)?)),
+        ideal,
+        floor,
+        side,
+        |branch| no_root(branch, t, p),
+    )?;
     let eta = std::f64::consts::PI / 6.0 * pcsaft::AVOGADRO * md3 / v;
     Ok(PcsaftVolume {
         v,
@@ -155,32 +99,6 @@ pub fn molar_volume(
         iterations,
     })
 }
-
-/// The sign-change brackets of `h` between the packing floor and a volume far enough into
-/// ideality that `h` can only be negative, in increasing volume.
-///
-/// `h` is `+inf` at the floor, so the walk starts a hair above it, and at the top
-/// `P_calc v/(RT)` is within `1e-4` of one - below the pressure - so at least one change
-/// is always present.
-fn walk(h: &impl Fn(f64) -> Result<f64>, floor: f64, ideal: f64) -> Result<Vec<(f64, f64)>> {
-    let start = floor * (1.0 + 1.0e-9);
-    let top = 1.0e4 * ideal;
-    let steps = 128;
-    let mut previous = start;
-    let mut previous_value = h(previous)?;
-    let mut out = Vec::new();
-    for step in 1..=steps {
-        let v = start * (top / start).powf(step as f64 / steps as f64);
-        let value = h(v)?;
-        if previous_value.signum() != value.signum() {
-            out.push((previous, v));
-        }
-        previous = v;
-        previous_value = value;
-    }
-    Ok(out)
-}
-
 /// The refusal for a branch whose root does not exist at a state, which is a real answer:
 /// this fluid has no such phase here.
 fn no_root(branch: &str, t: f64, p: f64) -> AzothError {

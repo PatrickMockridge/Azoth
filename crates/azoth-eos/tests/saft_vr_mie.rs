@@ -5,11 +5,13 @@
 //! first layer and the one everything else is built on, so it is pinned before anything
 //! uses it.
 
+use azoth_eos::mixture::RootSide;
 use azoth_eos::saft_vr_mie::{
     MieComponent, a_s1_bare, a1_mie, a2_mie, a3_mie, b_bare, barker_henderson, chain_contact_value,
     chain_g1, chain_g2, contact_value_0, dispersion_pair_sum, eta_effective, g_hs, k_hs, mie_alpha,
     mie_prefactor, pressure_over_rt, state,
 };
+use azoth_eos::saft_vr_mie_phase::molar_volume;
 
 fn methane() -> MieComponent {
     MieComponent {
@@ -451,5 +453,53 @@ fn the_pressure_at_neqsims_volume_is_neqsims_compressibility() {
         (binary * v_binary / 0.851_583_764_555_351 - 1.0).abs() < 1.0e-6,
         "binary Z = {}",
         binary * v_binary
+    );
+}
+
+/// The volume solve, against the volumes NeqSim converged to.
+///
+/// The probe's `volumeSAFT` is the molar volume its own Newton stopped at - `4.6096346320
+/// 3379e-4` for methane and `8.26053775793258e-4` for the binary - and its `Z` the
+/// compressibility on the same phase. Both are checked, because a solve that landed on a
+/// different root of the same isotherm could reproduce one and not the other.
+///
+/// **The tolerance is `1e-5`**, and the reason is the pressure's own, one layer down: this
+/// model's `eta` derivatives are central differences on both sides, and the solve
+/// differentiates that difference again for its slope. Measured over two decades of slope
+/// step the converged volume moves by about `1e-6`, so that is the floor of anything
+/// downstream of it - a tighter tolerance would be checking which step was chosen, not the
+/// model.
+#[test]
+fn the_volume_solve_reaches_neqsims_volume() {
+    let pure =
+        molar_volume(&[methane()], &[1.0], 300.0, 5.0e6, RootSide::Vapour).expect("a volume");
+    assert!(
+        (pure.v / 4.609_634_632_033_79e-4 - 1.0).abs() < 1.0e-5,
+        "methane v = {}",
+        pure.v
+    );
+    assert!(
+        (pure.z / 0.924_019_412_709_511 - 1.0).abs() < 1.0e-5,
+        "methane Z = {}",
+        pure.z
+    );
+
+    let binary = molar_volume(
+        &[methane(), n_butane()],
+        &[0.6, 0.4],
+        350.0,
+        3.0e6,
+        RootSide::Vapour,
+    )
+    .expect("a volume");
+    assert!(
+        (binary.v / 8.260_537_757_932_58e-4 - 1.0).abs() < 1.0e-5,
+        "binary v = {}",
+        binary.v
+    );
+    assert!(
+        (binary.z / 0.851_583_764_555_351 - 1.0).abs() < 1.0e-5,
+        "binary Z = {}",
+        binary.z
     );
 }
