@@ -140,6 +140,32 @@ impl Cubic {
         a / (self.delta_diff() * b)
     }
 
+    /// `z - 1` as the equation of state writes it: `B/(z - B) - A z/((z + d1 B)(z + d2 B))`.
+    ///
+    /// **Equal to `z - 1` at every root of this cubic, and to nothing else anywhere else.**
+    /// The fugacity coefficient's first term is `(B_i/B)` times this, because that term is a
+    /// derivative of the Helmholtz energy *at the volume it is given*: a plain cubic sits at
+    /// its own root and `z - 1` will do, an associating mixture's volume is moved by the
+    /// association's pressure and it will not - by `0.0328` in `ln phi_0` at 356 K and
+    /// 1 bara, which is the whole of the divergence that was first read as NeqSim's.
+    #[must_use]
+    pub fn eos_z_minus_one(self, z: f64, a: f64, b: f64) -> f64 {
+        self.eos_z_minus_one_partials(z, a, b).0
+    }
+
+    /// [`Self::eos_z_minus_one`], with its `d/dz`, `d/dA` and `d/dB`.
+    #[must_use]
+    pub fn eos_z_minus_one_partials(self, z: f64, a: f64, b: f64) -> (f64, f64, f64, f64) {
+        let (d1, d2) = (self.delta1(), self.delta2());
+        let (p1, p2) = (z + d1 * b, z + d2 * b);
+        let d = p1 * p2;
+        let value = b / (z - b) - a * z / d;
+        let dz = -b / ((z - b) * (z - b)) - a * (d - z * (p1 + p2)) / (d * d);
+        let da = -z / d;
+        let db = z / ((z - b) * (z - b)) + a * z * (d1 * p2 + d2 * p1) / (d * d);
+        (value, dz, da, db)
+    }
+
     /// The Huron-Vidal constant `ln((1+delta1)/(1+delta2)) / (delta1 - delta2)`.
     ///
     /// The geometry factor that turns the excess Gibbs energy at infinite pressure into

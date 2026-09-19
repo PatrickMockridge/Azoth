@@ -2,13 +2,13 @@ model = "eos.srk_cpa_phase"
 [[cases]]
 id = "water_methanol_liquid_against_neqsim"
 tolerance = 1e-09
-source = """NeqSim 3.20.0, `SystemSrkCPA` with `setMixingRule(10)`, run from `validation/neqsim/CpaSweep.java`: `java -cp .:neqsim-3.20.0.jar CpaSweep 300 100 0.6`. `z_factor` is its `PhaseInterface.getZ()` on the single-phase state `init(1)` leaves - the liquid root here - and **it agrees to 5.5e-13**, so the whole volume solve is right: the fitted substitution, the `cpakij_SRK` column, the association's pressure and the site-fraction solve.
+source = """NeqSim 3.20.0, `SystemSrkCPA` with `setMixingRule(10)`, run from `validation/neqsim/CpaSweep.java`: `java -cp .:neqsim-3.20.0.jar CpaSweep 300 100 0.6`. `z_factor` is its `PhaseInterface.getZ()` on the single-phase state `init(1)` leaves - the liquid root here - agreeing to **5.5e-13**; `ln_phi` is its `ComponentInterface.getFugacityCoefficient()`, agreeing to **2.2e-11**. So the whole model agrees: the fitted substitution, the `cpakij_SRK` column, the association's pressure, the site-fraction solve and the fugacity coefficient itself.
 
-**`ln_phi` is not asserted because this model's is wrong, and the difference was first recorded the wrong way round.** NeqSim prints `[-8.02010646183615, -6.14028423012298]` where this model gives `[-9.678032114120995, -9.67863909421079]`. That gap was recorded as NeqSim diverging from its own Helmholtz energy. It does not: `validation/neqsim/CpaFdProbe.java` isolates `dF/dn_i` at constant `T` and `V` from constant-`T,P` solves and finds `ComponentEos.dFdN` equal to the derivative of `ComponentEos.getF()` to `3e-10` relative - with `PhaseSrkCPA.dFdV()` as the chain rule's volume term, since it is `FV() + dFCPAdV()` while a bare `FV()` is the cubic part alone. `CpaSweep`'s `euler_dFdN`/`euler_scale` pair is the same check with no finite difference in it, and agrees to `3e-11`. NeqSim's fugacity coefficient is therefore a true derivative of a Helmholtz energy whose repulsive and attractive terms are the textbook ones at the same `a_mix`, `b_mix` and `Z` this model uses.
+**`ln_phi` was 1.7 out here until the cubic term was put right, and that gap was recorded as NeqSim's.** The SRK closed form carries a `Z - 1`, and that `Z - 1` is the *equation of state's*: `B/(Z - B) - A Z/((Z+d1 B)(Z+d2 B))`, which is `z - 1` only where the volume solves the SRK cubic. An associating mixture's volume does not - the association carries a pressure - so the closed form evaluated there is not the derivative of the cubic Helmholtz energy. `Cubic::eos_z_minus_one` is the equation of state's, and the two differ by `0.0328` in component 0 at 356 K and 1 bara.
 
-Two true derivatives of the same function cannot differ by 1.7, so the gap is here. It is in the cubic part: `dFCPAdN` agrees to ten digits with this model's association term, and this model's `ln_phi` for water and methanol differ by `6e-4` where NeqSim's differ by `1.88`.
+The record said NeqSim's `ComponentSrkCPA.dFdN` was not the derivative of its own `getF`, on the strength of `validation/neqsim/CpaFdProbe.java` subtracting `FV()` where the chain rule needs `dFdV()` - which is `FV() + dFCPAdV()`, and the association's `dFCPAdV` is seventeen times the cubic's `FV()` at that state. With `dFdV()` the derivative is reproduced to `3e-10`, `CpaSweep`'s `euler_*` pair is the same statement without a finite difference in it, and a plain Peng-Robinson control passes either way because there the two are the same method.
 
-**`h_res` and `s_res` are not asserted either**: NeqSim reports absolute enthalpies against its own datum, so the sweep has no reading to record; the enthalpy path is pinned to a finite difference of the solve in `python/tests/test_association_agreement.py`."""
+**`h_res` and `s_res` are not asserted**: NeqSim reports absolute enthalpies against its own datum, so the sweep has no reading to record; the enthalpy path is pinned to a finite difference of the solve in `python/tests/test_association_agreement.py`."""
 [cases.inputs]
 components = ["water", "methanol"]
 T = 300.0
@@ -17,3 +17,4 @@ z = [0.6, 0.4]
 compressed_phase = "liquid"
 [cases.expected]
 z_factor = 0.105050962879418
+ln_phi = [-8.02010646183615, -6.14028423012298]

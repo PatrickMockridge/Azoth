@@ -650,6 +650,9 @@ def phase_state_at(
     i_term = c.i_term(z, b_mix)
     coefficient = c.coefficient(a_mix, b_mix)
     ln_z_minus_b = math.log(z - b_mix)
+    # `z - 1` as the equation of state writes it, which is `z - 1` at the cubic's own root
+    # and not at an associating mixture's. See `Cubic.eos_z_minus_one`.
+    z_minus_one = c.eos_z_minus_one(z, a_mix, b_mix)
 
     ln_phi = []
     for i in range(n):
@@ -657,7 +660,7 @@ def phase_state_at(
         # The cross-sum factor, which is 1 for a pure component and makes this
         # identical to `eos.pr_departure` at N = 1.
         factor = 2.0 * cross[i] / a_mix - b_ratio
-        ln_phi.append(b_ratio * (z - 1.0) - ln_z_minus_b - coefficient * factor * i_term)
+        ln_phi.append(b_ratio * z_minus_one - ln_z_minus_b - coefficient * factor * i_term)
 
     # The Wertheim association, when the mixture runs it. Its `ln phi` adds to the cubic's
     # and its Helmholtz energy to the departure enthalpy.
@@ -917,13 +920,14 @@ def phase_derivatives(
     fz = c.df_dz(z, a_mix, b_mix)
     fa = c.df_da(z, b_mix)
     fb = c.df_db(z, a_mix, b_mix)
+    z_minus_one, zmo_dz, zmo_da, zmo_db = c.eos_z_minus_one_partials(z, a_mix, b_mix)
 
     a_ij = [[(1.0 - kij[i][j]) * math.sqrt(a[i] * a[j]) for j in range(n)] for i in range(n)]
     abar = [sum(x[j] * a_ij[i][j] for j in range(n)) for i in range(n)]
     b_ratio = [b[i] / b_mix for i in range(n)]
     factor = [2.0 * abar[i] / a_mix - b_ratio[i] for i in range(n)]
     ln_phi = [
-        b_ratio[i] * (z - 1.0) - ln_z_minus_b - coefficient * factor[i] * i_term for i in range(n)
+        b_ratio[i] * z_minus_one - ln_z_minus_b - coefficient * factor[i] * i_term for i in range(n)
     ]
 
     # --- composition, at constant temperature and pressure -------------------
@@ -985,14 +989,18 @@ def phase_derivatives(
                 2.0 * ((a_ij[i][j] - abar[i]) * a_mix - abar[i] * d_a_dn[j]) / (a_mix * a_mix)
                 + b_ratio[i] * d_b_dn[j] / b_mix
             )
+            # `B_i/B` times the equation of state's `z - 1`, so the composition moves it
+            # through `z`, through `A` and through `B`, and the `B` in the denominator
+            # moves it again.
+            d_z_minus_one = zmo_dz * d_z_dn[j] + zmo_da * d_a_dn[j] + zmo_db * d_b_dn[j]
             d_ln_phi_dn[i][j] = (
-                b_ratio[i] * d_z_dn[j]
+                b_ratio[i] * d_z_minus_one
                 - (d_z_dn[j] - d_b_dn[j]) / (z - b_mix)
                 # `b_ratio_i` is `B_i/B`, and `B` moves with the composition, so the
                 # term above is not the whole of it. The `B_i/B` inside `factor_i`
                 # carries the same derivative with the opposite sign, and the two do
                 # not cancel.
-                - b_ratio[i] * (z - 1.0) * d_b_dn[j] / b_mix
+                - b_ratio[i] * z_minus_one * d_b_dn[j] / b_mix
                 - d_coeff_dn[j] * factor[i] * i_term
                 - coefficient * d_factor * i_term
                 - coefficient * factor[i] * d_i_dn[j]
@@ -1019,8 +1027,9 @@ def phase_derivatives(
         # `b_ratio_i` is `B_i/B`, two quantities that both scale as `1/T`, so it is
         # temperature-independent and drops out of the sum below.
         t_d_factor = 2.0 * (t_d_abar[i] * a_mix - abar[i] * t_d_a) / (a_mix * a_mix)
+        t_d_z_minus_one = zmo_dz * t_d_z + zmo_da * t_d_a + zmo_db * t_d_b
         t_d_ln_phi = (
-            b_ratio[i] * t_d_z
+            b_ratio[i] * t_d_z_minus_one
             - (t_d_z - t_d_b) / (z - b_mix)
             - t_d_coeff * factor[i] * i_term
             - coefficient * t_d_factor * i_term
@@ -1047,8 +1056,11 @@ def phase_derivatives(
     )
     d_ln_phi_dp = [0.0] * n
     for i in range(n):
+        p_d_z_minus_one = zmo_dz * p_d_z + zmo_da * a_mix + zmo_db * b_mix
         p_d_ln_phi = (
-            b_ratio[i] * p_d_z - (p_d_z - b_mix) / (z - b_mix) - coefficient * factor[i] * p_d_i
+            b_ratio[i] * p_d_z_minus_one
+            - (p_d_z - b_mix) / (z - b_mix)
+            - coefficient * factor[i] * p_d_i
         )
         d_ln_phi_dp[i] = p_d_ln_phi / pressure
 

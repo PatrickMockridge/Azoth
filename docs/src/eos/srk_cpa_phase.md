@@ -55,7 +55,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `water_methanol_liquid_against_neqsim` | components = ['water', 'methanol'], T = 300.0, P = 10000000.0, z = [0.6, 0.4], compressed_phase = liquid | z_factor = 0.105050962879418 |
+| `water_methanol_liquid_against_neqsim` | components = ['water', 'methanol'], T = 300.0, P = 10000000.0, z = [0.6, 0.4], compressed_phase = liquid | z_factor = 0.105050962879418, ln_phi = [-8.02010646183615, -6.14028423012298] |
 
 ## References
 

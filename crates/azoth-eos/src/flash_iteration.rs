@@ -109,10 +109,18 @@ pub(crate) fn rms_delta(ln_k_new: &[f64], k: &[f64]) -> f64 {
 
 /// The `ln K` below which the iteration has found the trivial solution.
 ///
-/// `|ln K_i| < 1e-8` for every `i` means the two phases have converged onto the
+/// `|ln K_i| < 1e-6` for every `i` means the two phases have converged onto the
 /// feed. It is compared against the *K-values* and never against `beta`, which is
 /// indeterminate there.
-pub(crate) const TRIVIAL_TOLERANCE: f64 = 1.0e-08;
+///
+/// **The threshold must not sit on the scale of the answer.** The second-order
+/// scheme lands on `|ln K|` within `1e-8` of one at a state where the feed is single
+/// phase (methane/n-butane 355 K, 120 bar), and `1e-8` made the trivial declaration a
+/// coin flip on the last bit of the fugacity coefficient - a one-ulp change in
+/// `Cubic::eos_z_minus_one` moved it from `trivial` at 128 iterations to no
+/// convergence at all. A split has `|ln K|` of order one, so three further decades
+/// cost nothing.
+pub(crate) const TRIVIAL_TOLERANCE: f64 = 1.0e-06;
 
 /// Whether the K-values have converged onto the feed.
 ///

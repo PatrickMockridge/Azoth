@@ -2,6 +2,7 @@ model = "eos.molar_enthalpy_entropy"
 [[cases]]
 id = "methane_and_butane_with_a_zero_datum"
 tolerance = 1e-09
+source = """This model's own values at the stated compressibility, which is the caller's and is not checked against the phase - and at this state it **is not** a root of the cubic: the cubic's own root for methane/n-butane 0.6/0.4 at 330 K and 25 bar is `0.8228100280485471`. The entropy follows `ln phi`, which is the derivative of the Helmholtz energy **at the volume it is given**, so it is stated here at the volume this case gives rather than at the root. `h`, the ideal-gas terms and `psi_bar` do not depend on `ln phi` and are the same either way."""
 [cases.inputs]
 components = ["methane", "n-butane"]
 T = 330.0
@@ -10,15 +11,16 @@ z = [0.6, 0.4]
 compressibility = 0.8274482588400789
 [cases.expected]
 h = 1994.7239657861437
-s = -12.576897250310747
+s = -12.545542746250664
 h_ideal = 3493.2199516588726
 s_ideal = -9.461161141430258
 h_departure = -1498.4959858727289
-s_departure = -3.1157361088804887
+s_departure = -3.084381604820406
 psi_bar = -0.5621211688023077
 [[cases]]
 id = "the_same_state_with_the_ideal_gas_terms_off"
 tolerance = 1e-09
+source = """The same state and the same compressibility as the case above - see its note: the volume given is not the cubic's root, and the entropy here is the one at that volume."""
 [cases.inputs]
 components = ["methane", "n-butane"]
 T = 330.0
@@ -27,9 +29,9 @@ z = [0.6, 0.4]
 compressibility = 0.8274482588400789
 [cases.expected]
 h = 1994.7239657861437
-s = -12.576897250310747
+s = -12.545542746250664
 h_ideal = 3493.2199516588726
 s_ideal = -9.461161141430258
 h_departure = -1498.4959858727289
-s_departure = -3.1157361088804887
+s_departure = -3.084381604820406
 psi_bar = -0.5621211688023077

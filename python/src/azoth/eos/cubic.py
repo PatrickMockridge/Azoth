@@ -51,6 +51,31 @@ class Cubic:
         """``A/((delta1 - delta2) B)``, the coefficient the fugacity term is scaled by."""
         return a / (self.delta_diff * b)
 
+    def eos_z_minus_one(self, z: float, a: float, b: float) -> float:
+        """``z - 1`` as the equation of state writes it.
+
+        ``B/(z - B) - A z/((z + delta1 B)(z + delta2 B))``, which is ``z - 1`` at every
+        root of this cubic and to nothing else anywhere else. The fugacity coefficient's
+        first term is ``B_i/B`` times this, because that term is a derivative of the
+        Helmholtz energy at the volume it is given: a plain cubic sits at its own root and
+        an associating mixture's volume is moved by the association's pressure.
+        """
+        return self.eos_z_minus_one_partials(z, a, b)[0]
+
+    def eos_z_minus_one_partials(
+        self, z: float, a: float, b: float
+    ) -> tuple[float, float, float, float]:
+        """``eos_z_minus_one`` with its ``d/dz``, ``d/dA`` and ``d/dB``."""
+        d1, d2 = self.delta1, self.delta2
+        p1, p2 = z + d1 * b, z + d2 * b
+        d = p1 * p2
+        return (
+            b / (z - b) - a * z / d,
+            -b / ((z - b) * (z - b)) - a * (d - z * (p1 + p2)) / (d * d),
+            -z / d,
+            z / ((z - b) * (z - b)) + a * z * (d1 * p2 + d2 * p1) / (d * d),
+        )
+
     def z_coefficients(self, a: float, b: float) -> tuple[float, float, float]:
         """The monic cubic ``z**3 + c2 z**2 + c1 z + c0`` in the reduced parameters."""
         ds = self.delta_sum

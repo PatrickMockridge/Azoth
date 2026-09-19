@@ -60,8 +60,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_and_butane_with_a_zero_datum` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789 | h = 1994.7239657861437, s = -12.576897250310747, h_ideal = 3493.2199516588726, s_ideal = -9.461161141430258, h_departure = -1498.4959858727289, s_departure = -3.1157361088804887, psi_bar = -0.5621211688023077 |
-| `the_same_state_with_the_ideal_gas_terms_off` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789 | h = 1994.7239657861437, s = -12.576897250310747, h_ideal = 3493.2199516588726, s_ideal = -9.461161141430258, h_departure = -1498.4959858727289, s_departure = -3.1157361088804887, psi_bar = -0.5621211688023077 |
+| `methane_and_butane_with_a_zero_datum` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789 | h = 1994.7239657861437, s = -12.545542746250664, h_ideal = 3493.2199516588726, s_ideal = -9.461161141430258, h_departure = -1498.4959858727289, s_departure = -3.084381604820406, psi_bar = -0.5621211688023077 |
+| `the_same_state_with_the_ideal_gas_terms_off` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4], compressibility = 0.8274482588400789 | h = 1994.7239657861437, s = -12.545542746250664, h_ideal = 3493.2199516588726, s_ideal = -9.461161141430258, h_departure = -1498.4959858727289, s_departure = -3.084381604820406, psi_bar = -0.5621211688023077 |
 
 ## References
 

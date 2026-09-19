@@ -955,39 +955,30 @@ fn the_cpa_liquid_root_is_found_at_low_pressure() {
     );
 }
 
-/// **azoth's cubic `ln phi` is the textbook closed form, evaluated at a volume where it is
-/// not the derivative of anything - and that is this side's defect, not NeqSim's.**
+/// **The cubic `ln phi` is the derivative of the cubic Helmholtz energy at the volume it is
+/// given, and the closed form is that derivative only at the cubic's own root.**
 ///
-/// The closed form - `(b_i/b)(Z-1) - ln(Z-B) - (A/(B(d1-d2)))(2*abar_i/a - b_i/b)*ln(...)` -
-/// is the composition derivative of the Soave-Redlich-Kwong Helmholtz energy **only at the
-/// volume that solves the SRK equation of state**. At any other volume it is some other
-/// number. For a pure component at 350 K and 50 bar: at the cubic's own root it is
-/// `-10.4890220129` against a finite difference of that Helmholtz energy of `-10.48902202`,
-/// and at `Z = 0.5` it is `-1.94579104285` against `-3.47184011449`.
+/// The closed form - `(b_i/B)(Z-1) - ln(Z-B) - (A/(B(d1-d2)))(2*abar_i/a - b_i/B)*ln(...)` -
+/// carries a `Z - 1`. That `Z - 1` is the *equation of state's* `Z - 1`, written as
+/// `B/(Z-B) - A Z/((Z+d1 B)(Z+d2 B))`, and the two agree only where the volume solves the
+/// SRK equation. For a pure component at 350 K and 50 bar: at the cubic's own root the closed
+/// form is `-10.4890220129` against a finite difference of that Helmholtz energy of
+/// `-10.48902202`, and at `Z = 0.5` it is `-1.94579104285` against `-3.47184011449`.
 ///
-/// An associating fluid's volume is not the cubic's root - the association carries a
-/// pressure - so the closed form evaluated at the CPA root is not `d(F_cubic)/dn_i` there.
-/// The first assertion below pins this model's cubic part to the closed form; NeqSim's
-/// `ComponentEos.dFdN` is the true derivative at that volume, and the second assertion
-/// measures the gap between them.
+/// An associating mixture's volume is not the cubic's root - the association carries a
+/// pressure - so the two are not interchangeable here, and they differ by `0.0328` in
+/// component 0 and `0.0699` in component 1 at 356 K and 1 bara. `Cubic::eos_z_minus_one` is
+/// the equation of state's, and the model now uses it. **That gap was recorded as NeqSim's
+/// for a session**, on the strength of a probe that subtracted `FV()` where the chain rule
+/// needs `dFdV()` - `FV() + dFCPAdV()`, and the association's `dFCPAdV` is seventeen times
+/// the cubic's `FV()` here. `validation/neqsim/CpaFdProbe.java` now prints both, and
+/// `CpaSweep`'s `euler_*` keys say the same without a finite difference in it.
 ///
-/// **NeqSim is right here, and this was recorded the other way round first.**
-/// `validation/neqsim/CpaFdProbe.java` isolates `(dF/dn_i)|_{T,V}` by perturbing a mole
-/// number at constant `T` and `P` and subtracting the volume's share, and `CpaSweep`'s
-/// `euler_*` keys are the same statement without any finite difference in it: `F` is
-/// extensive in `(V, n)`, so `V * dFdV() + sum_i n_i dF/dn_i|_V = F`, and NeqSim's `dFdN`
-/// satisfies that to `3e-11`. The chain rule needs `dFdV()`, which for a `PhaseSrkCPA` is
-/// `FV() + dFCPAdV()`; the first version of that probe subtracted a bare `FV()`, seventeen
-/// times smaller at 356 K and 1 bara, and reported NeqSim as 38-54% out. Both volume
-/// derivatives are now printed side by side, and on a plain Peng-Robinson mixture the two
-/// are the same method - which is why a control that passes cannot find this.
-///
-/// So this test records a defect on this side. NeqSim's cubic part and this model's differ
-/// by `0.0328` and `0.0699` at 356 K and 1 bara, while the root, `A_mix`, `B_mix`, `kij`,
-/// the fitted `a`/`b` and the entire association agree to ten digits - which leaves the
-/// volume the closed form is evaluated at, and nothing else.
+/// The derivative is computed three ways below: NeqSim's `dFdN` agrees with this model's
+/// cubic part, a finite difference of *this model's own* Helmholtz energy at a fixed volume
+/// agrees with it, and the closed form does not.
 #[test]
-fn the_cubic_ln_phi_is_the_closed_form_at_the_association_shifted_root() {
+fn the_cubic_ln_phi_is_the_derivative_at_the_association_shifted_root() {
     use azoth_core::units::{kelvins, pascals};
     use azoth_eos::{Cubic, RootSide};
 
@@ -1019,50 +1010,48 @@ fn the_cubic_ln_phi_is_the_closed_form_at_the_association_shifted_root() {
         -0.069_416_678_113_187_5 - -0.113_824_565_989_815,
     ];
 
+    // `d(F/RT)/dn_i` at constant `V`, from this model's own Helmholtz energy. Its
+    // compressibility argument is the state's `Z`, and holding it is what holds the volume:
+    // the energy is homogeneous of degree one in `(V, n)`, so `n_i` moving with `Z` fixed
+    // moves the composition and the total together and the volume not at all.
+    let h = 1.0e-7;
+    let helmholtz_at = |n: [f64; 2]| {
+        mixture
+            .helmholtz_energy(&reduced, &n, z)
+            .expect("a Helmholtz energy")
+    };
+
     for (i, &neqsim) in neqsim_cubic.iter().enumerate() {
         let abar: f64 = (0..2)
             .map(|j| x[j] * (1.0 - mixture.kij(i, j)) * (reduced.a[i] * reduced.a[j]).sqrt())
             .sum();
         let b_ratio = reduced.b[i] / b_red;
         let factor = 2.0 * abar / state.a_mix - b_ratio;
-        let independent = b_ratio * (z - 1.0) - (z - b_red).ln() - coefficient * factor * i_term;
+        let closed_form = b_ratio * (z - 1.0) - (z - b_red).ln() - coefficient * factor * i_term;
 
-        let azoth_cubic = state.ln_phi[i] - kernel.ln_phi[i];
-        assert!(
-            (azoth_cubic / independent - 1.0).abs() < 1.0e-12,
-            "component {i}: this model's cubic ln phi is {azoth_cubic} but the closed \
-             form from its own a, b, z and kij is {independent} - if these have parted, \
-             the implementation stopped being the closed form and the finding below \
-             has to be re-measured"
-        );
-        // The gap between the closed form and the derivative, both at this model's own
-        // volume. `neqsim` is the derivative; `azoth_cubic` is not, because the volume is
-        // the association's root rather than the cubic's.
-        let h = 1.0e-7;
         let mut up = x;
         up[i] += h;
         let mut down = x;
         down[i] -= h;
-        let up = up.map(|value| value / (1.0 + h));
-        let down = down.map(|value| value / (1.0 - h));
-        let z_at = |composition: &[f64]| {
-            mixture
-                .phase_state(&reduced, composition, RootSide::Vapour)
-                .expect("a root")
-                .z
-        };
-        let d_ln_z = (z_at(&up).ln() - z_at(&down).ln()) / (2.0 * h);
-        println!(
-            "i={i}: azoth cubic {azoth_cubic} neqsim cubic {neqsim} difference {} vs dlnZ/dn_i {d_ln_z}",
-            neqsim - azoth_cubic
-        );
+        let finite_difference = (helmholtz_at(up) - helmholtz_at(down)) / (2.0 * h) - z.ln();
 
+        let azoth_cubic = state.ln_phi[i] - kernel.ln_phi[i];
         assert!(
-            (neqsim / azoth_cubic - 1.0).abs() > 1.0,
-            "component {i}: the derivative at this volume is {neqsim} and this model's \
-             cubic part is {azoth_cubic}; if they have met, the cubic contribution has \
-             been moved to the association-shifted volume and this test should become \
-             the equality it is not",
+            (azoth_cubic / neqsim - 1.0).abs() < 1.0e-8,
+            "component {i}: this model's cubic ln phi is {azoth_cubic} and NeqSim's \
+             `dFdN` less its association term is {neqsim}"
+        );
+        assert!(
+            (azoth_cubic / finite_difference - 1.0).abs() < 1.0e-6,
+            "component {i}: this model's cubic ln phi is {azoth_cubic} but a finite \
+             difference of its own Helmholtz energy at a fixed volume is \
+             {finite_difference}"
+        );
+        assert!(
+            (closed_form / azoth_cubic - 1.0).abs() > 0.01,
+            "component {i}: the closed form {closed_form} has met the derivative \
+             {azoth_cubic} - which would mean this volume IS the cubic's root, so the \
+             association has stopped carrying a pressure"
         );
     }
 }
