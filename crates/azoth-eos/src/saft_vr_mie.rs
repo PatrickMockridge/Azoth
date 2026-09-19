@@ -392,3 +392,121 @@ pub fn chain_contact_value(
     }
     (weighted / weight).exp()
 }
+
+/// Lafitte 2013's Padé coefficients, `[coefficient][function]`.
+///
+/// `f_i(alpha) = (T[0][i] + T[1][i] a + T[2][i] a^2 + T[3][i] a^3)
+/// / (1 + T[4][i] a + T[5][i] a^2 + T[6][i] a^3)` with `a` the Mie softness
+/// [`mie_alpha`]. Six functions, used by `chi` and by the third-order term.
+const PHI_PADE: [[f64; 6]; 7] = [
+    [7.5365557, -359.440, 1550.9, -1.199320, -1911.2800, 9236.9],
+    [-37.604630, 1825.60, -5070.1, 9.063632, 21390.175, -129430.0],
+    [71.745953, -3168.00, 6534.6, -17.94820, -51320.700, 357230.0],
+    [-46.835520, 1884.20, -3288.7, 11.34027, 37064.540, -315530.0],
+    [-2.4679820, -0.82376, -2.7171, 20.52142, 1103.7420, 1390.2],
+    [-0.5027200, -3.19350, 2.0883, -56.63770, -3264.6100, -4518.2],
+    [8.0956883, 3.70900, 0.0000, 40.53683, 2556.1810, 4241.6],
+];
+
+/// `f_i(alpha)`, Lafitte 2013's Padé approximant of the `i`th function.
+///
+/// # Panics
+/// Never: the index is a compile-time constant at every call site, and the table is
+/// checked to have seven rows. A caller passing an index outside the six functions would
+/// be a defect rather than a runtime condition.
+#[must_use]
+pub fn pade_f(index: usize, alpha: f64) -> f64 {
+    let a2 = alpha * alpha;
+    let numerator = PHI_PADE[0][index]
+        + PHI_PADE[1][index] * alpha
+        + PHI_PADE[2][index] * a2
+        + PHI_PADE[3][index] * a2 * alpha;
+    let denominator = 1.0
+        + PHI_PADE[4][index] * alpha
+        + PHI_PADE[5][index] * a2
+        + PHI_PADE[6][index] * a2 * alpha;
+    numerator / denominator
+}
+
+/// `a1^S(eta, lambda)`, Sutherland's first-order attractive term at one exponent.
+#[must_use]
+pub fn a1_sutherland(eta: f64, lambda: f64, eps_over_kt: f64) -> f64 {
+    let effective = eta_effective(eta, lambda);
+    let one = 1.0 - effective;
+    -12.0 * eps_over_kt * eta / (lambda - 3.0) * (1.0 - effective / 2.0) / one.powi(3)
+}
+
+/// `B(eta, lambda, x0)`, the correction the softness of the potential adds to Sutherland's
+/// term.
+///
+/// The same `capI`/`capJ` pair the chain's bare `B` uses, but against the *real* contact
+/// value rather than the effective packing fraction's.
+#[must_use]
+pub fn b_correction(eta: f64, lambda: f64, eps_over_kt: f64, x0: f64) -> f64 {
+    let x0_3ml = x0.powf(3.0 - lambda);
+    let x0_4ml = x0.powf(4.0 - lambda);
+    let cap_i = (1.0 - x0_3ml) / (lambda - 3.0);
+    let cap_j = (1.0 - (lambda - 3.0) * x0_4ml + (lambda - 4.0) * x0_3ml)
+        / ((lambda - 3.0) * (lambda - 4.0));
+    let one = 1.0 - eta;
+    let om3 = one.powi(3);
+    let contact = (1.0 - eta / 2.0) / om3;
+    let b_bar = contact * cap_i - 9.0 * eta * (1.0 + eta) / (2.0 * om3) * cap_j;
+    12.0 * eta * eps_over_kt * b_bar
+}
+
+/// `a_1`, the mean-attractive term at one component's exponents.
+#[must_use]
+pub fn a1_mie(
+    eta: f64,
+    lambda_r: f64,
+    lambda_a: f64,
+    eps_over_kt: f64,
+    c_mie: f64,
+    x0: f64,
+) -> f64 {
+    let bare = |lambda: f64| {
+        a1_sutherland(eta, lambda, eps_over_kt) + b_correction(eta, lambda, eps_over_kt, x0)
+    };
+    c_mie * (x0.powf(lambda_a) * bare(lambda_a) - x0.powf(lambda_r) * bare(lambda_r))
+}
+
+/// `chi`, the correction the second-order term's density dependence carries.
+#[must_use]
+pub fn mie_chi(zeta_st: f64, lambda_r: f64, lambda_a: f64) -> f64 {
+    let alpha = mie_alpha(lambda_r, lambda_a);
+    pade_f(0, alpha) * zeta_st
+        + pade_f(1, alpha) * zeta_st.powi(5)
+        + pade_f(2, alpha) * zeta_st.powi(8)
+}
+
+/// `a_2`, the second-order perturbation term at one component's exponents.
+#[must_use]
+pub fn a2_mie(
+    eta: f64,
+    zeta_st: f64,
+    lambda_r: f64,
+    lambda_a: f64,
+    eps_over_kt: f64,
+    c_mie: f64,
+    x0: f64,
+) -> f64 {
+    let bare = |lambda: f64| {
+        a1_sutherland(eta, lambda, eps_over_kt) + b_correction(eta, lambda, eps_over_kt, x0)
+    };
+    let inner = x0.powf(2.0 * lambda_a) * bare(2.0 * lambda_a)
+        - 2.0 * x0.powf(lambda_a + lambda_r) * bare(lambda_a + lambda_r)
+        + x0.powf(2.0 * lambda_r) * bare(2.0 * lambda_r);
+    let chi = mie_chi(zeta_st, lambda_r, lambda_a);
+    0.5 * k_hs(eta) * (1.0 + chi) * eps_over_kt * c_mie * c_mie * inner
+}
+
+/// `a_3`, the third-order term, which is a function of the reduced density alone.
+#[must_use]
+pub fn a3_mie(zeta_st: f64, lambda_r: f64, lambda_a: f64, eps_over_kt: f64) -> f64 {
+    let alpha = mie_alpha(lambda_r, lambda_a);
+    -(eps_over_kt.powi(3))
+        * pade_f(3, alpha)
+        * zeta_st
+        * (pade_f(4, alpha) * zeta_st + pade_f(5, alpha) * zeta_st * zeta_st).exp()
+}
