@@ -102,7 +102,9 @@ pub fn molar_volume(
             let mut v = ideal;
             let mut converged = None;
             for step in 0..100 {
-                let delta = 0.9 * h(v)? / slope(v)?;
+                // `v += 0.9 (P - P_calc)/(dP_calc/dv)`, NeqSim's step: `h` is
+                // `P_calc - P`, so the sign is Newton's with the residual negated.
+                let delta = -0.9 * h(v)? / slope(v)?;
                 if !delta.is_finite() || v + delta <= floor {
                     break;
                 }

@@ -106,7 +106,38 @@ fn an_isotherm_with_one_root_gives_it_to_both_sides() {
         .expect("a volume");
     matches(vapour.v, 6.49279638776721e-4, "methane v");
     matches(vapour.z, 0.976129951289097, "methane Z");
-    assert_eq!(vapour.v, liquid.v, "one root is one root for both sides");
+    // **To a tolerance, not exactly.** The two branches reach this root by different
+    // routes - Newton from the ideal gas and a bisection of the walk - so they meet in
+    // the twelfth digit rather than in the last one.
+    matches(vapour.v, liquid.v, "the two branches at one root");
+}
+
+/// **The vapour branch's Newton converges, rather than the walk answering for it.**
+///
+/// Every state above reproduces NeqSim whether or not the Newton works, because a vapour
+/// solve that does not converge falls back to the walk and the walk finds the same root.
+/// That is exactly what hid a sign error in the step: the first version of this solve
+/// reported `iterations = 0` at every state and matched the oracle to ten digits through
+/// the fallback alone. So the count is asserted here rather than the answer.
+#[test]
+fn the_vapour_branch_converges_by_newton() {
+    for (t, p) in [(300.0, 5.0e6), (400.0, 5.0e6)] {
+        let solved =
+            molar_volume(&[methane()], &[0.0], &[1.0], t, p, RootSide::Vapour).expect("a volume");
+        assert!(
+            solved.iterations > 0,
+            "at {t} K and {p} Pa the vapour branch took the walk's answer, so the Newton \
+             step is not converging"
+        );
+    }
+    // The liquid branch is a bisection by construction and reports no steps, which is how
+    // a caller can tell the two paths apart in the result.
+    let liquid = molar_volume(&[methane()], &[0.0], &[1.0], 150.0, 5.0e6, RootSide::Liquid)
+        .expect("a volume");
+    assert_eq!(
+        liquid.iterations, 0,
+        "the liquid branch is bracketed, not Newtoned"
+    );
 }
 
 /// A pressure at or below zero is refused rather than solved for. The solve divides by
