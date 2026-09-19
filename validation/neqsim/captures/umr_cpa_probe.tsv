@@ -1,0 +1,497 @@
+# azoth UmrCpaProbe - NeqSim 3.20.0's SystemUMRCPAEoS (PhaseUMRCPA).
+# The mixing rule is the lifecycle test's: HV with UNIFAC_UMRPRU.
+
+# methane/water at T=283.150 K, P=30.0000 bara
+phase                      PhaseUMRCPA
+bmixType                           0
+totalAssociationSites              4
+-- component 0 methane x=0.980000000000000
+attractiveTermNumber               22
+alpha_T                            0.839630150810119
+aT_reduced                         20955.7786450799
+b_covolume                         2.68040669852499
+calca                              24958.3446054917
+calcb                              2.68040669852499
+sites                              0.00000000000000
+associationScheme                  0
+associationEnergy                  0.00000000000000
+associationVolume                  4.18626000000000
+qPure_aT_over_bRT                  3.32087389157627
+qPure_calca_over_calcbRT           3.95516274442041
+matiascopemanParamsUMRCPA          0.386600000000000 0.0160000000000000 -0.0174000000000000 0.0118000000000000 0.0208000000000000
+-- component 1 water x=0.0200000000000000
+attractiveTermNumber               22
+alpha_T                            2.48062712211393
+aT_reduced                         25567.8237476283
+b_covolume                         1.47000000000000
+calca                              10307.0000000000
+calcb                              1.47000000000000
+sites                              4.00000000000000
+associationScheme                  4C
+associationEnergy                  14177.0000000000
+associationVolume                  0.125000000000000
+qPure_aT_over_bRT                  7.38797989835795
+qPure_calca_over_calcbRT           2.97827103174704
+matiascopemanParamsUMRCPA          1.89500000000000 -0.991300000000000 1.21030000000000 0.00000000000000 0.00000000000000
+lnGamma[0]                         0.000211014152289128
+dlnGammadT[0]                      2.47982272948217e-06
+lnGamma[1]                         0.763543262080585
+dlnGammadT[1]                      0.00927610502993394
+A_attraction                       21092.5584546826
+B_covolume                         2.65619856455449
+alpha_mix                          3.37301288131407
+Z                                  0.920910004605623
+molarVolume_internal_1e5_m3_per_mol 72.2681039105744
+molarVolume_SI_from_ZRT_over_P     0.000722681039105744
+HresTP_J_per_mol                   -646.011205985740
+SresTP_J_per_molK                  -1.61159107556201
+gibbsEnergy_J_per_mol              7549.42931832437
+lnPhi[0]                           -0.0761917183912148
+lnPhi[1]                           -0.295277418620525
+flashPhases 2
+flashPhase 0 GAS beta=0.980455766387129 Z=0.923894334203654 v=0.000725022981753943 x=0.999517748097674 0.000482251902325858
+flashPhase 0 lnPhi[0]=-0.0777723984360063
+flashPhase 0 lnPhi[1]=-0.139836839471747
+flashPhase 1 AQUEOUS beta=0.0195442336128714 Z=0.0223064044033559 v=1.75048760816034e-05 x=0.000872905619922118 0.999127094380078
+flashPhase 1 lnPhi[0]=6.96542835136481
+flashPhase 1 lnPhi[1]=-7.77600751414593
+
+# methane/water at T=283.150 K, P=70.0000 bara
+phase                      PhaseUMRCPA
+bmixType                           0
+totalAssociationSites              4
+-- component 0 methane x=0.980000000000000
+attractiveTermNumber               22
+alpha_T                            0.839630150810119
+aT_reduced                         20955.7786450799
+b_covolume                         2.68040669852499
+calca                              24958.3446054917
+calcb                              2.68040669852499
+sites                              0.00000000000000
+associationScheme                  0
+associationEnergy                  0.00000000000000
+associationVolume                  4.18626000000000
+qPure_aT_over_bRT                  3.32087389157627
+qPure_calca_over_calcbRT           3.95516274442041
+matiascopemanParamsUMRCPA          0.386600000000000 0.0160000000000000 -0.0174000000000000 0.0118000000000000 0.0208000000000000
+-- component 1 water x=0.0200000000000000
+attractiveTermNumber               22
+alpha_T                            2.48062712211393
+aT_reduced                         25567.8237476283
+b_covolume                         1.47000000000000
+calca                              10307.0000000000
+calcb                              1.47000000000000
+sites                              4.00000000000000
+associationScheme                  4C
+associationEnergy                  14177.0000000000
+associationVolume                  0.125000000000000
+qPure_aT_over_bRT                  7.38797989835795
+qPure_calca_over_calcbRT           2.97827103174704
+matiascopemanParamsUMRCPA          1.89500000000000 -0.991300000000000 1.21030000000000 0.00000000000000 0.00000000000000
+lnGamma[0]                         0.000211014152289128
+dlnGammadT[0]                      2.47982272948217e-06
+lnGamma[1]                         0.763543262080585
+dlnGammadT[1]                      0.00927610502993394
+A_attraction                       21092.5584546826
+B_covolume                         2.65619856455449
+alpha_mix                          3.37301288131407
+Z                                  0.829354234730145
+molarVolume_internal_1e5_m3_per_mol 27.8928409543994
+molarVolume_SI_from_ZRT_over_P     0.000278928409543994
+HresTP_J_per_mol                   -1532.63405638182
+SresTP_J_per_molK                  -3.89629873555943
+gibbsEnergy_J_per_mol              9304.46390891964
+lnPhi[0]                           -0.171388241637018
+lnPhi[1]                           -0.721630054301236
+flashPhases 2
+flashPhase 0 GAS beta=0.980218253119292 Z=0.837617671340402 v=0.000281707568478194 x=0.999741776851091 0.000258223148908560
+flashPhase 0 lnPhi[0]=-0.175192515888596
+flashPhase 0 lnPhi[1]=-0.333666138724872
+flashPhase 1 AQUEOUS beta=0.0197817468807080 Z=0.0520423864143932 v=1.75028949796873e-05 x=0.00176232791048624 0.998237672089514
+flashPhase 1 lnPhi[0]=6.16566889510256
+flashPhase 1 lnPhi[1]=-8.59358868470632
+
+# methane/water at T=283.150 K, P=120.000 bara
+phase                      PhaseUMRCPA
+bmixType                           0
+totalAssociationSites              4
+-- component 0 methane x=0.980000000000000
+attractiveTermNumber               22
+alpha_T                            0.839630150810119
+aT_reduced                         20955.7786450799
+b_covolume                         2.68040669852499
+calca                              24958.3446054917
+calcb                              2.68040669852499
+sites                              0.00000000000000
+associationScheme                  0
+associationEnergy                  0.00000000000000
+associationVolume                  4.18626000000000
+qPure_aT_over_bRT                  3.32087389157627
+qPure_calca_over_calcbRT           3.95516274442041
+matiascopemanParamsUMRCPA          0.386600000000000 0.0160000000000000 -0.0174000000000000 0.0118000000000000 0.0208000000000000
+-- component 1 water x=0.0200000000000000
+attractiveTermNumber               22
+alpha_T                            2.48062712211393
+aT_reduced                         25567.8237476283
+b_covolume                         1.47000000000000
+calca                              10307.0000000000
+calcb                              1.47000000000000
+sites                              4.00000000000000
+associationScheme                  4C
+associationEnergy                  14177.0000000000
+associationVolume                  0.125000000000000
+qPure_aT_over_bRT                  7.38797989835795
+qPure_calca_over_calcbRT           2.97827103174704
+matiascopemanParamsUMRCPA          1.89500000000000 -0.991300000000000 1.21030000000000 0.00000000000000 0.00000000000000
+lnGamma[0]                         0.000211014152289128
+dlnGammadT[0]                      2.47982272948217e-06
+lnGamma[1]                         0.763543262080585
+dlnGammadT[1]                      0.00927610502993394
+A_attraction                       21092.5584546826
+B_covolume                         2.65619856455449
+alpha_mix                          3.37301288131407
+Z                                  0.755360025116159
+molarVolume_internal_1e5_m3_per_mol 14.8191561911541
+molarVolume_SI_from_ZRT_over_P     0.000148191561911541
+HresTP_J_per_mol                   -2570.76938297095
+SresTP_J_per_molK                  -6.62665042930696
+gibbsEnergy_J_per_mol              10308.3547559087
+lnPhi[0]                           -0.274979619946506
+lnPhi[1]                           -1.27456568767511
+flashPhases 2
+flashPhase 0 GAS beta=0.980145785721109 Z=0.770444364274395 v=0.000151150908058987 x=0.999799649610228 0.000200350389771599
+flashPhase 0 lnPhi[0]=-0.281540390526325
+flashPhase 0 lnPhi[1]=-0.582587247858014
+flashPhase 1 AQUEOUS beta=0.0198542142788910 Z=0.0891739634337821 v=1.74947422205228e-05 x=0.00254791594281939 0.997452084057181
+flashPhase 1 lnPhi[0]=5.69073877030180
+flashPhase 1 lnPhi[1]=-9.09547885588379
+
+# methane/water at T=298.150 K, P=30.0000 bara
+phase                      PhaseUMRCPA
+bmixType                           0
+totalAssociationSites              4
+-- component 0 methane x=0.980000000000000
+attractiveTermNumber               22
+alpha_T                            0.817818023905803
+aT_reduced                         20411.3840652232
+b_covolume                         2.68040669852499
+calca                              24958.3446054917
+calcb                              2.68040669852499
+sites                              0.00000000000000
+associationScheme                  0
+associationEnergy                  0.00000000000000
+associationVolume                  4.18626000000000
+qPure_aT_over_bRT                  3.07186968643151
+qPure_calca_over_calcbRT           3.75617753172108
+matiascopemanParamsUMRCPA          0.386600000000000 0.0160000000000000 -0.0174000000000000 0.0118000000000000 0.0208000000000000
+-- component 1 water x=0.0200000000000000
+attractiveTermNumber               22
+alpha_T                            2.39229995896830
+aT_reduced                         24657.4356770862
+b_covolume                         1.47000000000000
+calca                              10307.0000000000
+calcb                              1.47000000000000
+sites                              4.00000000000000
+associationScheme                  4C
+associationEnergy                  14177.0000000000
+associationVolume                  0.125000000000000
+qPure_aT_over_bRT                  6.76646130277970
+qPure_calca_over_calcbRT           2.82843348193585
+matiascopemanParamsUMRCPA          1.89500000000000 -0.991300000000000 1.21030000000000 0.00000000000000 0.00000000000000
+lnGamma[0]                         0.000245756047888700
+dlnGammadT[0]                      2.14529082556278e-06
+lnGamma[1]                         0.887875427408146
+dlnGammadT[1]                      0.00735267931290638
+A_attraction                       20489.9791467672
+B_covolume                         2.65619856455449
+alpha_mix                          3.11180236880546
+Z                                  0.934203684184460
+molarVolume_internal_1e5_m3_per_mol 77.1950215222277
+molarVolume_SI_from_ZRT_over_P     0.000771950215222276
+HresTP_J_per_mol                   -582.345117234036
+SresTP_J_per_molK                  -1.39232333948758
+gibbsEnergy_J_per_mol              7949.52764261238
+lnPhi[0]                           -0.0644374986567295
+lnPhi[1]                           -0.215431114775041
+flashPhases 2
+flashPhase 0 GAS beta=0.981167730381331 Z=0.936190866514485 v=0.000773592261655317 x=0.998796877366596 0.00120312263340363
+flashPhase 0 lnPhi[0]=-0.0655549288751896
+flashPhase 0 lnPhi[1]=-0.109999358634590
+flashPhase 1 AQUEOUS beta=0.0188322696186695 Z=0.0214241171666346 v=1.77031541811661e-05 x=0.000676218135905201 0.999323781864095
+flashPhase 1 lnPhi[0]=7.23223607188139
+flashPhase 1 lnPhi[1]=-6.83215781929128
+
+# methane/water at T=298.150 K, P=70.0000 bara
+phase                      PhaseUMRCPA
+bmixType                           0
+totalAssociationSites              4
+-- component 0 methane x=0.980000000000000
+attractiveTermNumber               22
+alpha_T                            0.817818023905803
+aT_reduced                         20411.3840652232
+b_covolume                         2.68040669852499
+calca                              24958.3446054917
+calcb                              2.68040669852499
+sites                              0.00000000000000
+associationScheme                  0
+associationEnergy                  0.00000000000000
+associationVolume                  4.18626000000000
+qPure_aT_over_bRT                  3.07186968643151
+qPure_calca_over_calcbRT           3.75617753172108
+matiascopemanParamsUMRCPA          0.386600000000000 0.0160000000000000 -0.0174000000000000 0.0118000000000000 0.0208000000000000
+-- component 1 water x=0.0200000000000000
+attractiveTermNumber               22
+alpha_T                            2.39229995896830
+aT_reduced                         24657.4356770862
+b_covolume                         1.47000000000000
+calca                              10307.0000000000
+calcb                              1.47000000000000
+sites                              4.00000000000000
+associationScheme                  4C
+associationEnergy                  14177.0000000000
+associationVolume                  0.125000000000000
+qPure_aT_over_bRT                  6.76646130277970
+qPure_calca_over_calcbRT           2.82843348193585
+matiascopemanParamsUMRCPA          1.89500000000000 -0.991300000000000 1.21030000000000 0.00000000000000 0.00000000000000
+lnGamma[0]                         0.000245756047888700
+dlnGammadT[0]                      2.14529082556278e-06
+lnGamma[1]                         0.887875427408146
+dlnGammadT[1]                      0.00735267931290638
+A_attraction                       20489.9791467672
+B_covolume                         2.65619856455449
+alpha_mix                          3.11180236880546
+Z                                  0.860124667999392
+molarVolume_internal_1e5_m3_per_mol 30.4601708456157
+molarVolume_SI_from_ZRT_over_P     0.000304601708456157
+HresTP_J_per_mol                   -1361.12998393193
+SresTP_J_per_molK                  -3.30552825032943
+gibbsEnergy_J_per_mol              9841.57967635907
+lnPhi[0]                           -0.143929410664324
+lnPhi[1]                           -0.522958472994785
+flashPhases 2
+flashPhase 0 GAS beta=0.980573921414640 Z=0.865633455342091 v=0.000306552572207118 x=0.999387223488167 0.000612776511832817
+flashPhase 0 lnPhi[0]=-0.146643147716477
+flashPhase 0 lnPhi[1]=-0.254793979654883
+flashPhase 1 AQUEOUS beta=0.0194260785853601 Z=0.0499704749585408 v=1.76963789216052e-05 x=0.00138737483226154 0.998612625167738
+flashPhase 1 lnPhi[0]=6.43308581534347
+flashPhase 1 lnPhi[1]=-7.65091591105412
+
+# methane/water at T=298.150 K, P=120.000 bara
+phase                      PhaseUMRCPA
+bmixType                           0
+totalAssociationSites              4
+-- component 0 methane x=0.980000000000000
+attractiveTermNumber               22
+alpha_T                            0.817818023905803
+aT_reduced                         20411.3840652232
+b_covolume                         2.68040669852499
+calca                              24958.3446054917
+calcb                              2.68040669852499
+sites                              0.00000000000000
+associationScheme                  0
+associationEnergy                  0.00000000000000
+associationVolume                  4.18626000000000
+qPure_aT_over_bRT                  3.07186968643151
+qPure_calca_over_calcbRT           3.75617753172108
+matiascopemanParamsUMRCPA          0.386600000000000 0.0160000000000000 -0.0174000000000000 0.0118000000000000 0.0208000000000000
+-- component 1 water x=0.0200000000000000
+attractiveTermNumber               22
+alpha_T                            2.39229995896830
+aT_reduced                         24657.4356770862
+b_covolume                         1.47000000000000
+calca                              10307.0000000000
+calcb                              1.47000000000000
+sites                              4.00000000000000
+associationScheme                  4C
+associationEnergy                  14177.0000000000
+associationVolume                  0.125000000000000
+qPure_aT_over_bRT                  6.76646130277970
+qPure_calca_over_calcbRT           2.82843348193585
+matiascopemanParamsUMRCPA          1.89500000000000 -0.991300000000000 1.21030000000000 0.00000000000000 0.00000000000000
+lnGamma[0]                         0.000245756047888700
+dlnGammadT[0]                      2.14529082556278e-06
+lnGamma[1]                         0.887875427408146
+dlnGammadT[1]                      0.00735267931290638
+A_attraction                       20489.9791467672
+B_covolume                         2.65619856455449
+alpha_mix                          3.11180236880546
+Z                                  0.800353319131029
+molarVolume_internal_1e5_m3_per_mol 16.5336780248414
+molarVolume_SI_from_ZRT_over_P     0.000165336780248414
+HresTP_J_per_mol                   -2260.41656346914
+SresTP_J_per_molK                  -5.55750081200216
+gibbsEnergy_J_per_mol              10949.8677972388
+lnPhi[0]                           -0.229614435984045
+lnPhi[1]                           -0.920296311214395
+flashPhases 2
+flashPhase 0 GAS beta=0.980395719567353 Z=0.810639214880514 v=0.000167461637913823 x=0.999555478040193 0.000444521959806871
+flashPhase 0 lnPhi[0]=-0.234350656306463
+flashPhase 0 lnPhi[1]=-0.437815635942946
+flashPhase 1 AQUEOUS beta=0.0196042804326474 Z=0.0856030949050893 v=1.76838650538411e-05 x=0.00204485236953241 0.997955147630468
+flashPhase 1 lnPhi[0]=5.95763440593670
+flashPhase 1 lnPhi[1]=-8.15427979084889
+
+# methane/water at T=313.150 K, P=30.0000 bara
+phase                      PhaseUMRCPA
+bmixType                           0
+totalAssociationSites              4
+-- component 0 methane x=0.980000000000000
+attractiveTermNumber               22
+alpha_T                            0.796930091999891
+aT_reduced                         19890.0558626194
+b_covolume                         2.68040669852499
+calca                              24958.3446054917
+calcb                              2.68040669852499
+sites                              0.00000000000000
+associationScheme                  0
+associationEnergy                  0.00000000000000
+associationVolume                  4.18626000000000
+qPure_aT_over_bRT                  2.85002542424002
+qPure_calca_over_calcbRT           3.57625524854746
+matiascopemanParamsUMRCPA          0.386600000000000 0.0160000000000000 -0.0174000000000000 0.0118000000000000 0.0208000000000000
+-- component 1 water x=0.0200000000000000
+attractiveTermNumber               22
+alpha_T                            2.30801788713038
+aT_reduced                         23788.7403626528
+b_covolume                         1.47000000000000
+calca                              10307.0000000000
+calcb                              1.47000000000000
+sites                              4.00000000000000
+associationScheme                  4C
+associationEnergy                  14177.0000000000
+associationVolume                  0.125000000000000
+qPure_aT_over_bRT                  6.21537787572255
+qPure_calca_over_calcbRT           2.69295047944811
+matiascopemanParamsUMRCPA          1.89500000000000 -0.991300000000000 1.21030000000000 0.00000000000000 0.00000000000000
+lnGamma[0]                         0.000275213441669033
+dlnGammadT[0]                      1.77875934313099e-06
+lnGamma[1]                         0.985507656382408
+dlnGammadT[1]                      0.00570653342133745
+A_attraction                       19915.1920046198
+B_covolume                         2.65619856455449
+alpha_mix                          2.87963461987253
+Z                                  0.944968282069797
+molarVolume_internal_1e5_m3_per_mol 82.0129721369035
+molarVolume_SI_from_ZRT_over_P     0.000820129721369035
+HresTP_J_per_mol                   -528.716726514680
+SresTP_J_per_molK                  -1.21671559223086
+gibbsEnergy_J_per_mol              8319.70079398380
+lnPhi[0]                           -0.0546405282582267
+lnPhi[1]                           -0.159033916327553
+flashPhases 2
+flashPhase 0 GAS beta=0.982672941832081 Z=0.946252475884088 v=0.000821244261967997 x=0.997269999526421 0.00273000047357909
+flashPhase 0 lnPhi[0]=-0.0554431932911627
+flashPhase 0 lnPhi[1]=-0.0887746306832942
+flashPhase 1 AQUEOUS beta=0.0173270581679190 Z=0.0206377015536216 v=1.79112809879674e-05 x=0.000563036402345049 0.999436963597655
+flashPhase 1 lnPhi[0]=7.42398934709623
+flashPhase 1 lnPhi[1]=-5.99166493202954
+
+# methane/water at T=313.150 K, P=70.0000 bara
+phase                      PhaseUMRCPA
+bmixType                           0
+totalAssociationSites              4
+-- component 0 methane x=0.980000000000000
+attractiveTermNumber               22
+alpha_T                            0.796930091999891
+aT_reduced                         19890.0558626194
+b_covolume                         2.68040669852499
+calca                              24958.3446054917
+calcb                              2.68040669852499
+sites                              0.00000000000000
+associationScheme                  0
+associationEnergy                  0.00000000000000
+associationVolume                  4.18626000000000
+qPure_aT_over_bRT                  2.85002542424002
+qPure_calca_over_calcbRT           3.57625524854746
+matiascopemanParamsUMRCPA          0.386600000000000 0.0160000000000000 -0.0174000000000000 0.0118000000000000 0.0208000000000000
+-- component 1 water x=0.0200000000000000
+attractiveTermNumber               22
+alpha_T                            2.30801788713038
+aT_reduced                         23788.7403626528
+b_covolume                         1.47000000000000
+calca                              10307.0000000000
+calcb                              1.47000000000000
+sites                              4.00000000000000
+associationScheme                  4C
+associationEnergy                  14177.0000000000
+associationVolume                  0.125000000000000
+qPure_aT_over_bRT                  6.21537787572255
+qPure_calca_over_calcbRT           2.69295047944811
+matiascopemanParamsUMRCPA          1.89500000000000 -0.991300000000000 1.21030000000000 0.00000000000000 0.00000000000000
+lnGamma[0]                         0.000275213441669033
+dlnGammadT[0]                      1.77875934313099e-06
+lnGamma[1]                         0.985507656382408
+dlnGammadT[1]                      0.00570653342133745
+A_attraction                       19915.1920046198
+B_covolume                         2.65619856455449
+alpha_mix                          2.87963461987253
+Z                                  0.884461295172169
+molarVolume_internal_1e5_m3_per_mol 32.8978386743508
+molarVolume_SI_from_ZRT_over_P     0.000328978386743508
+HresTP_J_per_mol                   -1221.91647147498
+SresTP_J_per_molK                  -2.84960899367920
+gibbsEnergy_J_per_mol              10343.9288631781
+lnPhi[0]                           -0.121329483173734
+lnPhi[1]                           -0.383632267801579
+flashPhases 2
+flashPhase 0 GAS beta=0.981292177257557 Z=0.888106467604259 v=0.000330334221026655 x=0.998660854288621 0.00133914571137899
+flashPhase 0 lnPhi[0]=-0.123306033931838
+flashPhase 0 lnPhi[1]=-0.196920676686420
+flashPhase 1 AQUEOUS beta=0.0187078227424428 Z=0.0481262784005001 v=1.79007329258919e-05 x=0.00117148604242308 0.998828513957577
+flashPhase 1 lnPhi[0]=6.62483613726558
+flashPhase 1 lnPhi[1]=-6.81147190106672
+
+# methane/water at T=313.150 K, P=120.000 bara
+phase                      PhaseUMRCPA
+bmixType                           0
+totalAssociationSites              4
+-- component 0 methane x=0.980000000000000
+attractiveTermNumber               22
+alpha_T                            0.796930091999891
+aT_reduced                         19890.0558626194
+b_covolume                         2.68040669852499
+calca                              24958.3446054917
+calcb                              2.68040669852499
+sites                              0.00000000000000
+associationScheme                  0
+associationEnergy                  0.00000000000000
+associationVolume                  4.18626000000000
+qPure_aT_over_bRT                  2.85002542424002
+qPure_calca_over_calcbRT           3.57625524854746
+matiascopemanParamsUMRCPA          0.386600000000000 0.0160000000000000 -0.0174000000000000 0.0118000000000000 0.0208000000000000
+-- component 1 water x=0.0200000000000000
+attractiveTermNumber               22
+alpha_T                            2.30801788713038
+aT_reduced                         23788.7403626528
+b_covolume                         1.47000000000000
+calca                              10307.0000000000
+calcb                              1.47000000000000
+sites                              4.00000000000000
+associationScheme                  4C
+associationEnergy                  14177.0000000000
+associationVolume                  0.125000000000000
+qPure_aT_over_bRT                  6.21537787572255
+qPure_calca_over_calcbRT           2.69295047944811
+matiascopemanParamsUMRCPA          1.89500000000000 -0.991300000000000 1.21030000000000 0.00000000000000 0.00000000000000
+lnGamma[0]                         0.000275213441669033
+dlnGammadT[0]                      1.77875934313099e-06
+lnGamma[1]                         0.985507656382408
+dlnGammadT[1]                      0.00570653342133745
+A_attraction                       19915.1920046198
+B_covolume                         2.65619856455449
+alpha_mix                          2.87963461987253
+Z                                  0.836153704259173
+molarVolume_internal_1e5_m3_per_mol 18.1422624840310
+molarVolume_SI_from_ZRT_over_P     0.000181422624840310
+HresTP_J_per_mol                   -2013.43257729626
+SresTP_J_per_molK                  -4.74857561002556
+gibbsEnergy_J_per_mol              11550.4452240806
+lnPhi[0]                           -0.192582904708918
+lnPhi[1]                           -0.672540500794121
+flashPhases 2
+flashPhase 0 GAS beta=0.980873651287635 Z=0.843133786995715 v=0.000182937113056071 x=0.999075102114343 0.000924897885657567
+flashPhase 0 lnPhi[0]=-0.196060741860227
+flashPhase 0 lnPhi[1]=-0.332078578009152
+flashPhase 1 AQUEOUS beta=0.0191263487123650 Z=0.0824272146219344 v=1.78844649719470e-05 x=0.00175447384353305 0.998245526156467
+flashPhase 1 lnPhi[0]=6.14860020354169
+flashPhase 1 lnPhi[1]=-7.31614978370324

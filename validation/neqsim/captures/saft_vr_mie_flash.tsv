@@ -1,0 +1,43 @@
+# azoth SaftVrMieFlashProbe - NeqSim 3.20.0's TPflashSAFT, by dispatch.
+
+# methane/n-butane at T=350.000 K, P=30.0000 bara
+doMultiPhaseCheck=false
+numberOfPhases=1 beta=1.00000000000000
+phaseType[0]=GAS
+phase[0] type=GAS beta=1.00000000000000 Z=0.851583764555351
+phase[0] x = [0.600000000000000, 0.400000000000000]
+phase[0] lnPhi = [0.0303536916953227, -0.394262076488891]
+TPflashSAFT, no init(0) first   phases=1 beta=1.00000000000000
+   no-init type=GAS x = [0.600000000000000, 0.400000000000000]
+TPflashSAFT, init(0) first      phases=2 beta=0.970118166758440
+   init(0) type=GAS x = [0.616156678262252, 0.383843321737748]
+   init(0) type=OIL x = [0.0754706762486942, 0.924529323751306]
+   K = [8.16419209373577, 0.415177294617964]
+
+# methane/n-butane at T=250.000 K, P=30.0000 bara
+doMultiPhaseCheck=false
+numberOfPhases=1 beta=1.00000000000000
+phaseType[0]=GAS
+phase[0] type=GAS beta=1.00000000000000 Z=0.595042771218724
+phase[0] x = [0.600000000000000, 0.400000000000000]
+phase[0] lnPhi = [-0.0270706640893751, -1.56332439398601]
+TPflashSAFT, no init(0) first   phases=1 beta=1.00000000000000
+   no-init type=GAS x = [0.600000000000000, 0.400000000000000]
+TPflashSAFT, init(0) first      phases=2 beta=0.535808206580083
+   init(0) type=GAS x = [0.978419594354518, 0.0215804056454816]
+   init(0) type=OIL x = [0.163196975571159, 0.836803024428841]
+   K = [5.99533083741967, 0.0257891174857343]
+
+# methane/n-butane at T=200.000 K, P=30.0000 bara
+doMultiPhaseCheck=false
+numberOfPhases=1 beta=1.00000000000000
+phaseType[0]=GAS
+phase[0] type=GAS beta=1.00000000000000 Z=1.43552712413758
+phase[0] x = [0.600000000000000, 0.400000000000000]
+phase[0] lnPhi = [-0.844079483826831, -2.13086482881569]
+TPflashSAFT, no init(0) first   phases=1 beta=1.00000000000000
+   no-init type=GAS x = [0.600000000000000, 0.400000000000000]
+TPflashSAFT, init(0) first      phases=2 beta=0.406167928288498
+   init(0) type=GAS x = [0.998180081228510, 0.00181991877149026]
+   init(0) type=OIL x = [0.327653601841742, 0.672346398158258]
+   K = [3.04645017392534, 0.00270681795455541]
