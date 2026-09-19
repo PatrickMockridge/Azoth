@@ -101,6 +101,98 @@ def gibbs_at_root(
     )
 
 
+def test_the_energy_differentiates_to_the_fugacity_it_is_placed_by() -> None:
+    """`d(A^R/RT)/dn_i = ln phi_i + ln Z`, finite-differenced, for an associating fluid.
+
+    This is the identity the whole surface rests on: the energy and the fugacity
+    coefficient are one function twice, and the root is chosen by the energy while the
+    trials are placed by the fugacity. An association in one and not the other would put
+    them on different fluids.
+
+    **It is the sharp test of the association's branch here, and the plain root-choice
+    test is not**: at 356 K and 1 bar the cubic-only energy still orders the two roots the
+    same way, so dropping the branch changes every value and no decision. The identity
+    notices: without the branch the two sides disagree by a factor of three.
+    """
+    from azoth.eos import components as databank
+
+    fluid = databank.from_names(["water", "methanol"], eos="srk", associating=True)
+    reduced = reduced_parameters(fluid, 356.0, 1.0e5)
+    z = [0.6, 0.4]
+    step = 1.0e-6
+    for liquid in (True, False):
+        state = phase_state(reduced, fluid.kij, z, liquid=liquid)
+        for i in range(len(z)):
+            up, down = list(z), list(z)
+            up[i] += step
+            down[i] -= step
+            # `n` at a fixed compressibility is a perturbation at fixed volume: this
+            # function's volume is `Z R T/P` whatever the moles.
+            difference = (
+                helmholtz_energy(reduced, fluid.kij, up, state.z)
+                - helmholtz_energy(reduced, fluid.kij, down, state.z)
+            ) / (2.0 * step)
+            expected = state.ln_phi[i] + math.log(state.z)
+            assert abs(difference / expected - 1.0) < 1.0e-7, (
+                f"{'liquid' if liquid else 'vapour'} root, component {i}: the energy "
+                f"differentiates to {difference} where the fugacity is {expected}"
+            )
+
+
+def test_the_root_the_energy_picks_is_the_root_physics_picks() -> None:
+    """`gibbs_at_root` must place the feed on the same root its own Gibbs energy does.
+
+    The model chooses the feed's root by comparing `A^R/RT - ln Z + Z` at the two cubic
+    roots, and everything downstream - the tangent-plane distances, the trial phases,
+    the verdict - is measured from that root. So a root placed wrong is a verdict
+    measured from the wrong fluid.
+
+    **It is a guard rather than a pin on the association's branch.** Measured: dropping
+    the branch from `helmholtz_energy` leaves this passing at both states here, because
+    the cubic-only energy still orders the two roots the same way - it changes every
+    value and no decision. What it does catch is a change to `gibbs_at_root` or to the
+    energy that ever *does* reverse them, which is the mistake the association's absence
+    was one state away from.
+
+    The control is the plain cubic, where the two have always agreed.
+    """
+    from azoth.eos import components as databank
+
+    for label, fluid, temperature, pressure in (
+        (
+            "water/methanol, associating",
+            databank.from_names(["water", "methanol"], eos="srk", associating=True),
+            356.0,
+            1.0e5,
+        ),
+        (
+            "methane/n-butane, a plain cubic",
+            databank.from_names(["methane", "n-butane"]),
+            300.0,
+            2.0e6,
+        ),
+    ):
+        reduced = reduced_parameters(fluid, temperature, pressure)
+        z = [0.6, 0.4]
+        by_energy = {}
+        by_physics = {}
+        for root, liquid in (("liquid", True), ("vapour", False)):
+            state = phase_state(reduced, fluid.kij, z, liquid=liquid)
+            by_energy[root] = gibbs_at_root(reduced, fluid.kij, z, state.z)
+            # The physical Gibbs energy, up to the standard state, which is the same at
+            # both roots - the same reason `gibbs_at_root` may drop its constant.
+            by_physics[root] = sum(
+                z_i * (math.log(z_i) + ln_phi_i)
+                for z_i, ln_phi_i in zip(z, state.ln_phi, strict=True)
+            )
+        chosen = min(by_energy, key=lambda root: by_energy[root])
+        truth = min(by_physics, key=lambda root: by_physics[root])
+        assert chosen == truth, (
+            f"{label}: the energy places the feed on the {chosen} root and the physical "
+            f"Gibbs energy on the {truth}. {by_energy} against {by_physics}"
+        )
+
+
 def assert_tm(actual: float, expected: float, tolerance: float, context: str) -> None:
     """Compare a trial distance, where an expectation of zero has no scale.
 

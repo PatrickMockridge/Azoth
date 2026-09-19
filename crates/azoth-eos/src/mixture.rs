@@ -1723,7 +1723,35 @@ impl Mixture {
             }
         }
         let g = self.cubic.helmholtz_g(b_sum);
-        Ok(-total * (1.0 - b_sum).ln() - (a_sum / (self.cubic.delta_diff() * b_sum)) * g)
+        let cubic = -total * (1.0 - b_sum).ln() - (a_sum / (self.cubic.delta_diff() * b_sum)) * g;
+        // **The association's own `A^R/RT`, at the same volume.** Without it this surface
+        // is a cubic's, and the two things that read it - `eos.stability_test`'s choice of
+        // the feed's root, and every RootSide choice behind it - compare two roots by the
+        // wrong energy. An associating mixture's two roots at 356 K and 1 bar differ by
+        // `0.157 RT`, and the association is most of that.
+        let Some(association) = self.association() else {
+            return Ok(cubic);
+        };
+        let r_t = R * reduced.t_kelvin;
+        // **Mole numbers, and the volume `V = Z R T/P`.** This function's `n` are mole
+        // numbers and its volume is fixed by `Z` alone - `b_i/V` is `B_i/Z` for every
+        // component, whatever the moles - so a perturbation at fixed `Z` *is* a
+        // perturbation at fixed volume. The kernel's `A_assoc/(RT)` is
+        // `sum_i n_i sum_A (ln X_A - X_A/2 + 1/2)`, extensive in the moles it is given;
+        // fractions there were wrong by the total, which the finite difference caught, and
+        // a volume scaled by the total was wrong again.
+        let covolumes: Vec<f64> = reduced
+            .b
+            .iter()
+            .map(|b| b * r_t / reduced.pressure)
+            .collect();
+        let state = association.solve(
+            &covolumes,
+            n,
+            compressibility * r_t / reduced.pressure,
+            reduced.t_kelvin,
+        )?;
+        Ok(cubic + state.helmholtz_rt)
     }
 
     /// `d2(A^R/RT)/dn_i dn_j` at constant temperature and **volume**.
@@ -1754,6 +1782,20 @@ impl Mixture {
         compressibility: f64,
     ) -> Result<Vec<Vec<f64>>> {
         let count = self.check_mole_numbers(n)?;
+        // **Refused rather than answered from the cubic.** The energy above carries the
+        // association and this does not, so for an associating mixture the two would be
+        // inconsistent - the Hessian would not be the energy's second derivative, and
+        // `criticality_matrix` would place a critical point on a cubic the mixture is not.
+        // The same rule the heat-capacity departure follows: report the association's
+        // absence rather than the cubic's value.
+        if self.association().is_some() {
+            return Err(AzothError::invalid_input(
+                "mixture",
+                "this mixture associates, and the association's second composition \
+                 derivative is not assembled - so the Hessian here would be the cubic's \
+                 and not the energy's",
+            ));
+        }
         let (b_hat, a_ij) = self.scaled_constants(reduced, compressibility, n);
         let total: f64 = n.iter().sum();
         let b_sum: f64 = (0..count).map(|i| n[i] * b_hat[i]).sum();

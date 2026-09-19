@@ -25,7 +25,7 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from azoth.core.errors import OutOfRangeError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.result import Phase
 from azoth.core.warnings import Warning, WarningCode
 from azoth.eos.alpha_term import (
@@ -1133,7 +1133,26 @@ def helmholtz_energy(
         )
     a_sum = sum(n[i] * n[j] * a_ij[i][j] for i in range(count) for j in range(count))
     g = reduced.cubic.helmholtz_g(b_sum)
-    return -total * math.log(1.0 - b_sum) - (a_sum / (reduced.cubic.delta_diff * b_sum)) * g
+    cubic = -total * math.log(1.0 - b_sum) - (a_sum / (reduced.cubic.delta_diff * b_sum)) * g
+    # **The association's own `A^R/RT`, at the same volume.** Without it this surface is a
+    # cubic's, and the two things that read it - `eos.stability_test`'s choice of the feed's
+    # root, and every `RootSide` choice behind it - compare two roots by the wrong energy.
+    # An associating mixture's two roots at 356 K and 1 bar differ by `0.157 RT`, and the
+    # association is most of that.
+    if reduced.association is None:
+        return cubic
+    r_t = R * reduced.t_kelvin
+    # **Mole numbers, and the volume `V = Z R T/P`.** This function's `n` are mole numbers
+    # and its volume is fixed by `Z` alone - `b_i/V` is `B_i/Z` for every component, whatever
+    # the moles - so a perturbation at fixed `Z` *is* a perturbation at fixed volume. The
+    # kernel's `A_assoc/(RT)` is `sum_i n_i sum_A (ln X_A - X_A/2 + 1/2)`, extensive in the
+    # moles it is given; fractions there were wrong by the total, which the finite difference
+    # caught, and a volume scaled by the total was wrong again.
+    covolumes = [b_i * r_t / reduced.pressure for b_i in reduced.b]
+    state = reduced.association.solve(
+        covolumes, list(n), compressibility * r_t / reduced.pressure, reduced.t_kelvin
+    )
+    return cubic + state.helmholtz_rt
 
 
 def helmholtz_hessian(
@@ -1181,6 +1200,18 @@ def helmholtz_hessian(
     wrong.
     """
     count = len(n)
+    # **Refused rather than answered from the cubic.** The energy carries the association
+    # and this does not, so for an associating mixture the two would be inconsistent - the
+    # Hessian would not be the energy's second derivative, and `criticality_matrix` would
+    # place a critical point on a cubic the mixture is not. The same rule the heat-capacity
+    # departure follows: report the association's absence rather than the cubic's value.
+    if reduced.association is not None:
+        raise InvalidInputError(
+            "mixture",
+            "this mixture associates, and the association's second composition derivative "
+            "is not assembled - so the Hessian here would be the cubic's and not the "
+            "energy's",
+        )
     a_hat = [value / compressibility for value in reduced.a]
     b_hat = [value / compressibility for value in reduced.b]
     a_ij = [

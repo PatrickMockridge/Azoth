@@ -10,7 +10,7 @@ the same method.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -204,3 +204,35 @@ def test_the_cases_are_announced_in_the_model_docs() -> None:
     assert page.is_file(), f"{page} was not generated"
     summary = (root / "docs" / "src" / "SUMMARY.md").read_text(encoding="utf-8")
     assert "eos/critical_point.md" in summary
+
+
+def test_an_associating_mixture_is_refused_rather_than_answered_from_the_cubic() -> None:
+    """The critical point is the criticality matrix, and this mixture has no matrix.
+
+    `Mixture::criticality_matrix` is the Helmholtz Hessian reshaped, and the Hessian
+    carries the cubic's second derivatives alone: the association's second composition
+    derivative is not assembled in either kernel. So for an associating mixture the
+    matrix would be a *different fluid's*, and the critical point it places would be a
+    point this mixture does not have.
+
+    The rule is the one the heat-capacity departure follows - report the association's
+    absence rather than the cubic's value - and it is the same in both kernels because
+    the refusal is written in both. Before the association crossed the Python-to-Rust
+    boundary neither kernel could be handed an associating mixture here at all, so this
+    is a case the transport fix created as much as it exposed.
+    """
+    from azoth.eos import components as databank
+
+    associating = databank.from_names(["water", "methanol"], eos="srk", associating=True)
+    for backend in ("python", "rust"):
+        expected = pytest.raises(InvalidInputError, match="associates")
+        with use_backend(cast("Any", backend)), expected:
+            critical_point(associating, [0.6, 0.4])
+
+    # The control: a mixture that does not associate is answered, in both kernels.
+    plain = databank.from_names(["methane", "n-butane"])
+    answers = []
+    for backend in ("python", "rust"):
+        with use_backend(cast("Any", backend)):
+            answers.append(critical_point(plain, [0.6, 0.4]))
+    h.assert_close(answers[1].tc.to("K").magnitude, answers[0].tc.to("K").magnitude, 1e-9, "tc")

@@ -1033,7 +1033,13 @@ fn the_cubic_ln_phi_is_the_derivative_at_the_association_shifted_root() {
         up[i] += h;
         let mut down = x;
         down[i] -= h;
-        let finite_difference = (helmholtz_at(up) - helmholtz_at(down)) / (2.0 * h) - z.ln();
+        // The energy now carries the association, so its gradient is the *whole*
+        // fugacity coefficient - `ln phi` itself, once `ln z` is taken off - and not the
+        // cubic's share of it. That is the identity `helmholtz_energy`'s own test pins,
+        // arriving here as the check that the cubic's share is what the two routes agree
+        // about once the association is added back.
+        let finite_difference =
+            (helmholtz_at(up) - helmholtz_at(down)) / (2.0 * h) - z.ln() - kernel.ln_phi[i];
 
         let azoth_cubic = state.ln_phi[i] - kernel.ln_phi[i];
         assert!(
@@ -1044,8 +1050,8 @@ fn the_cubic_ln_phi_is_the_derivative_at_the_association_shifted_root() {
         assert!(
             (azoth_cubic / finite_difference - 1.0).abs() < 1.0e-6,
             "component {i}: this model's cubic ln phi is {azoth_cubic} but a finite \
-             difference of its own Helmholtz energy at a fixed volume is \
-             {finite_difference}"
+             difference of its own Helmholtz energy at a fixed volume, less the \
+             association, is {finite_difference}"
         );
         assert!(
             (closed_form / azoth_cubic - 1.0).abs() > 0.01,

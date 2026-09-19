@@ -242,6 +242,59 @@ fn the_energy_differentiates_to_the_fugacity_coefficient() {
     }
 }
 
+/// The same identity for an **associating** mixture, where the energy has two parts.
+///
+/// `helmholtz_energy` carried the cubic alone until it carried the association too, and
+/// the two roots of an associating mixture at 356 K and 1 bar differ by `0.157 RT`. The
+/// identity is what notices: with the cubic-only energy the two sides of this disagree by
+/// a factor of three, while the *root choice* they feed still comes out the same way - so
+/// a test of the verdict does not see it and this one does.
+#[test]
+fn the_energy_differentiates_to_the_fugacity_for_an_associating_mixture() {
+    let (mixture, _) = databank::associating_mixture_of(&["water", "methanol"], Cubic::Srk, None)
+        .expect("water and methanol bond");
+    let (t, p, n) = (356.0, 1.0e5, [0.6, 0.4]);
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("a state");
+
+    let h = 1.0e-6;
+    for liquid in [true, false] {
+        let state = mixture
+            .phase_state(
+                &reduced,
+                &n,
+                if liquid {
+                    RootSide::Liquid
+                } else {
+                    RootSide::Vapour
+                },
+            )
+            .expect("a root");
+        for i in 0..2 {
+            let mut up = n;
+            let mut down = n;
+            up[i] += h;
+            down[i] -= h;
+            // `n` at a fixed compressibility is a perturbation at fixed volume: this
+            // function's volume is `Z R T/P` whatever the moles.
+            let gradient = (mixture
+                .helmholtz_energy(&reduced, &up, state.z)
+                .expect("an energy")
+                - mixture
+                    .helmholtz_energy(&reduced, &down, state.z)
+                    .expect("an energy"))
+                / (2.0 * h);
+            let wanted = state.ln_phi[i] + state.z.ln();
+            assert!(
+                (gradient / wanted - 1.0).abs() < 1.0e-6,
+                "{} root, component {i}: the gradient is {gradient} but `ln phi + ln Z` is {wanted}",
+                if liquid { "liquid" } else { "vapour" }
+            );
+        }
+    }
+}
+
 /// The Hessian is the second derivative of the energy, checked by finite difference.
 ///
 /// The step is `1e-3` and the tolerance is loose because a central second difference
