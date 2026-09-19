@@ -857,7 +857,9 @@ impl Mixture {
         let z_minus_one = self.cubic.eos_z_minus_one(z, a_mix, b_mix);
 
         let mut ln_phi: Vec<f64> = match &self.mixing_rule {
-            MixingRule::HuronVidal { .. } | MixingRule::WongSandler { .. } => {
+            MixingRule::HuronVidal { .. }
+            | MixingRule::WongSandler { .. }
+            | MixingRule::Umr { .. } => {
                 // The GE rules carry the activity coefficient and a volume-derivative
                 // term that the classic `factor * i_term` form cannot express.
                 let (ader, alpha_mix, b_der) = self.ge_state(reduced, x);
@@ -1132,7 +1134,9 @@ impl Mixture {
             ));
         }
         match &self.mixing_rule {
-            MixingRule::HuronVidal { .. } | MixingRule::WongSandler { .. } => {
+            MixingRule::HuronVidal { .. }
+            | MixingRule::WongSandler { .. }
+            | MixingRule::Umr { .. } => {
                 return Err(AzothError::invalid_input(
                     "mixing_rule",
                     "the activity-coefficient rules write ln phi as `ader`, `alpha_mix` \
@@ -1537,6 +1541,33 @@ impl Mixture {
             .collect()
     }
 
+    /// The UMR attraction coefficients `A_i/B_i + hwfc ln gamma_i`.
+    ///
+    /// `EosMixingRuleHandler.init`'s `qPure[i] + hwfc * ln(gamma_i)`, with
+    /// `qPure[i] = a_i^T/(b_i R T)` and `hwfc = -1/0.53`. The reduced attraction `A_i`
+    /// that [`ReducedParameters::a`] carries is `a_i^T P/(R T)^2` and the co-volume
+    /// `B_i` is `b_i P/(R T)`, so their ratio **is** `a_i^T/(b_i R T)` and the division
+    /// cancels the state; that is why this needs no pressure.
+    fn umr_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
+        let MixingRule::Umr { unifac, .. } = &self.mixing_rule else {
+            unreachable!("umr_ader is only called for the UMR rule");
+        };
+        let aij = crate::unifac_umrpru_activity_coefficients::umrpru_aij(unifac, reduced.t_kelvin);
+        let (ln_gamma, _) = crate::unifac_activity_coefficients::unifac_ln_gamma(
+            &unifac.groups,
+            &unifac.group_r,
+            &unifac.group_q,
+            &aij,
+            reduced.t_kelvin,
+            x,
+            crate::unifac_activity_coefficients::Combinatorial::FloryHuggins,
+        );
+        let qpure: Vec<f64> = (0..self.len())
+            .map(|i| reduced.a[i] / reduced.b[i])
+            .collect();
+        crate::mixing_rule::umr_ader(&qpure, &ln_gamma)
+    }
+
     /// The Huron-Vidal attraction coefficients.
     fn hv_ader(&self, reduced: &ReducedParameters, x: &[f64]) -> Vec<f64> {
         let MixingRule::HuronVidal {
@@ -1623,6 +1654,11 @@ impl Mixture {
                 let (_, bder) = self.ws_b_mix(reduced, x, &ader);
                 (ader, alpha_mix, bder)
             }
+            MixingRule::Umr { .. } => {
+                let ader = self.umr_ader(reduced, x);
+                let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
+                (ader, alpha_mix, reduced.b.clone())
+            }
             _ => unreachable!("ge_state is only called for GE rules"),
         }
     }
@@ -1651,6 +1687,12 @@ impl Mixture {
                 let ader = self.ws_ader(reduced, x);
                 let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
                 let (b_mix, _) = self.ws_b_mix(reduced, x, &ader);
+                (b_mix * alpha_mix, b_mix)
+            }
+            MixingRule::Umr { .. } => {
+                let ader = self.umr_ader(reduced, x);
+                let alpha_mix: f64 = (0..n).map(|i| x[i] * ader[i]).sum();
+                let b_mix = (0..n).map(|i| x[i] * reduced.b[i]).sum();
                 (b_mix * alpha_mix, b_mix)
             }
             _ => {

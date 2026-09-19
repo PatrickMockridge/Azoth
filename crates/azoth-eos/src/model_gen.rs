@@ -5370,8 +5370,8 @@ static UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[],
         expected_vectors: &[
-            ("ln_gamma", &[0.109465434560284, 0.18285472222380844]),
-            ("gamma", &[1.1156815062468024, 1.200639969105366]),
+            ("ln_gamma", &[0.1301457842119748, 0.21058484854616538]),
+            ("gamma", &[1.138994418625428, 1.23439978580613]),
         ],
     },
     TestCase {
@@ -5389,8 +5389,8 @@ static UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[],
         expected_vectors: &[
-            ("ln_gamma", &[0.10256197762437225, 0.14055133001852516]),
-            ("gamma", &[1.1080059713596933, 1.1509081541855593]),
+            ("ln_gamma", &[0.12324232727606305, 0.1682814563408821]),
+            ("gamma", &[1.131158498295627, 1.1832696025168774]),
         ],
     },
     TestCase {
@@ -5408,8 +5408,8 @@ static UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[],
         expected_vectors: &[
-            ("ln_gamma", &[-0.12328777284280873, -1.0201898437909107]),
-            ("gamma", &[0.8840092321036971, 0.36052648996028214]),
+            ("ln_gamma", &[-0.11770245129283669, -1.015316464175723]),
+            ("gamma", &[0.8889605223204923, 0.36228776059156376]),
         ],
     },
 ];

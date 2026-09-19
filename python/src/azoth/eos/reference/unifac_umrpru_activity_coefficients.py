@@ -55,9 +55,11 @@ def unifac_umrpru_activity_coefficients(
     The group decomposition is NeqSim's ``UNIFACcompUMRPRU`` - 139 subgroups rather
     than the 133 of the plain UNIFAC table - and the interaction is
     ``a_mn(T) = a_mn + b_mn (T - 298.15) + c_mn (T - 298.15)**2``, NeqSim's
-    ``ComponentGEUnifacUMRPRU.calcaij``. The combinatorial term and the residual are
-    the same as :func:`azoth.eos.reference.unifac_activity_coefficients`. ``params``
-    is resolved by name through
+    ``ComponentGEUnifacUMRPRU.calcaij``. **The combinatorial term is not the one
+    :func:`azoth.eos.reference.unifac_activity_coefficients` uses**:
+    ``ComponentGEUnifacUMRPRU`` takes the Flory-Huggins term alone where
+    ``ComponentGEUnifac`` takes Staverman-Guggenheim. ``params`` is resolved by name
+    through
     :func:`azoth.eos.components.unifac_umrpru_parameters`; ``x`` is checked rather
     than renormalised.
 
@@ -145,11 +147,11 @@ def unifac_umrpru_activity_coefficients(
     for i in range(n):
         t1 = sum(x[j] * ri[j] for j in range(n))
         t2 = sum(x[j] * qi[j] for j in range(n))
-        suml = sum(x[j] * (5.0 * (ri[j] - qi[j]) - (ri[j] - 1.0)) for j in range(n))
         v = x[i] * ri[i] / t1
         f = x[i] * qi[i] / t2
-        li = 5.0 * (ri[i] - qi[i]) - (ri[i] - 1.0)
-        lng_c = math.log(v / x[i]) + 5.0 * qi[i] * math.log(f / v) + li - (v / x[i]) * suml
+        # **Flory-Huggins alone**, which is `ComponentGEUnifacUMRPRU`'s combinatorial and
+        # not `ComponentGEUnifac`'s Staverman-Guggenheim one: no `ln(v/x_i)` and no `l_i`.
+        lng_c = -5.0 * qi[i] * (math.log(v / f) + 1.0 - v / f)
 
         denom = sum(x[j] * qi[j] for j in range(n))
         qmix = [

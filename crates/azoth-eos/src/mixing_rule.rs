@@ -6,6 +6,31 @@
 //! the binary interaction parameters is resolved once per state by
 //! [`MixingRule::effective_kij`] rather than per iteration.
 
+use crate::databank::UnifacUmrpruParameters;
+
+/// NeqSim's `hwfc` for the `UNIFAC_UMRPRU` GE model: `EosMixingRuleHandler.init` sets
+/// `-1/0.53` for that model and the cubic's own constant for every other.
+///
+/// **A property of the pairing, not of the cubic.** The same handler computes the
+/// Huron-Vidal rule's coefficient from the cubic's `delta` parameters, so a UMR rule
+/// written with the cubic's `hv_constant()` would be out by a factor that no pure fluid
+/// and no single-component comparison can show.
+pub const UMR_HWFC: f64 = -1.0 / 0.53;
+
+/// The UMR attraction coefficients `qPure_i + hwfc ln gamma_i`.
+///
+/// `EosMixingRuleHandler.init`'s one line, and the whole of what the rule adds to the
+/// cubic: the mixture's `alpha_mix` is `sum_i x_i` of this. `qpure[i]` is NeqSim's
+/// `qPure[i] = a_i^T/(b_i R T)`.
+#[must_use]
+pub fn umr_ader(qpure: &[f64], ln_gamma: &[f64]) -> Vec<f64> {
+    qpure
+        .iter()
+        .zip(ln_gamma)
+        .map(|(&q, &lg)| q + UMR_HWFC * lg)
+        .collect()
+}
+
 /// How the binary interaction parameters enter the mixture.
 #[derive(Debug, Clone, PartialEq)]
 pub enum MixingRule {
@@ -98,6 +123,30 @@ pub enum MixingRule {
         /// cubic's own excess energy.
         hv_pairs: Vec<bool>,
     },
+    /// The UMR universal mixing rule, NeqSim's `SRKHuronVidal2` driven by
+    /// `PhaseGEUnifacUMRPRU`.
+    ///
+    /// The same shape as [`MixingRule::HuronVidal`] - an attraction coefficient per
+    /// component that the mixture averages into `A = n B R T alpha_mix`, with the
+    /// co-volume left at the linear sum - but the excess Gibbs energy is UNIFAC's rather
+    /// than NRTL's, and its coefficient is NeqSim's `hwfc = -1/0.53` rather than the
+    /// cubic's own. `EosMixingRuleHandler.init` writes
+    /// `alpha_mix = sum_i x_i (a_i^T/(b_i R T) + hwfc ln gamma_i)` for exactly the
+    /// `UNIFAC_UMRPRU` GE model, and `calcA` is `n B R T alpha_mix`.
+    ///
+    /// **The UNIFAC parameters travel with the rule rather than being looked up here.**
+    /// The rule is built once per mixture and the interaction matrix is re-evaluated per
+    /// state; resolving the tables inside would put a databank read on the flash's inner
+    /// loop, and the rule would no longer be a value a caller can construct and inspect.
+    Umr {
+        /// The interaction matrix the cubic's classic pairs read. NeqSim's UMR-CPA sets
+        /// the UNIFAC groups and reads no `kij` column, so this is zero for it; it is
+        /// here because the rule is still an equation-of-state mixing rule and a caller
+        /// may pair it with one.
+        kij: Vec<f64>,
+        /// The UNIFAC-UMR-PRU group basis and interaction tables.
+        unifac: UnifacUmrpruParameters,
+    },
 }
 
 /// A component's role in the Soreide-Whitson aqueous correlation.
@@ -130,7 +179,8 @@ impl MixingRule {
             | MixingRule::ClassicT2 { kij, .. }
             | MixingRule::SoreideWhitson { kij, .. }
             | MixingRule::HuronVidal { kij, .. }
-            | MixingRule::WongSandler { kij, .. } => kij,
+            | MixingRule::WongSandler { kij, .. }
+            | MixingRule::Umr { kij, .. } => kij,
         };
         kij[i * n + j]
     }
@@ -178,7 +228,8 @@ impl MixingRule {
                 .collect(),
             MixingRule::SoreideWhitson { kij, .. }
             | MixingRule::HuronVidal { kij, .. }
-            | MixingRule::WongSandler { kij, .. } => kij.clone(),
+            | MixingRule::WongSandler { kij, .. }
+            | MixingRule::Umr { kij, .. } => kij.clone(),
         }
     }
 
@@ -235,7 +286,8 @@ impl MixingRule {
             | MixingRule::ClassicT2 { kij, .. }
             | MixingRule::SoreideWhitson { kij, .. }
             | MixingRule::HuronVidal { kij, .. }
-            | MixingRule::WongSandler { kij, .. } => kij.len(),
+            | MixingRule::WongSandler { kij, .. }
+            | MixingRule::Umr { kij, .. } => kij.len(),
         }
     }
 

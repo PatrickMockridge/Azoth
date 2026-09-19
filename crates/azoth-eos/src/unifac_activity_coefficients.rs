@@ -153,6 +153,7 @@ pub fn unifac_activity_coefficients(
         &params.aij,
         T,
         x,
+        Combinatorial::StavermanGuggenheim,
     );
 
     Ok(UnifacActivityCoefficientsResult {
@@ -162,13 +163,30 @@ pub fn unifac_activity_coefficients(
     })
 }
 
+/// Which combinatorial term a UNIFAC `ln gamma` is built from.
+///
+/// **NeqSim's two UNIFAC components do not share one.** `ComponentGEUnifac` uses the
+/// Staverman-Guggenheim form and `ComponentGEUnifacUMRPRU` uses the Flory-Huggins term
+/// alone - no `ln(V/x)` and no `l_i`. Measured at 298.15 K, methane/water 0.98/0.02:
+/// the two differ by `6.887827e-06` and `0.018913275` in `ln gamma`, which is the whole
+/// of the difference between this library and NeqSim's UMR-CPA at that state.
+pub enum Combinatorial {
+    /// `ComponentGEUnifac`'s, and PSRK's.
+    StavermanGuggenheim,
+    /// `ComponentGEUnifacUMRPRU`'s.
+    FloryHuggins,
+}
+
 /// The UNIFAC activity coefficients from a resolved group basis and interaction matrix.
 ///
 /// The whole of the physics, shared by `eos.unifac_activity_coefficients` and
 /// `eos.unifac_psrk_activity_coefficients`, which differ only in where the interaction
 /// matrix comes from: the PSRK one evaluates `a + b T + c T^2` at the state's
-/// temperature before calling this. Everything here is checked by the caller, so this
-/// assumes `groups` is `N x G`, `aij` is `G x G` and `x` is a composition of `N`.
+/// temperature before calling this. `eos.unifac_umrpru_activity_coefficients` calls it
+/// too, with a different interaction matrix *and* a different combinatorial term - the
+/// one thing about that model the shared kernel cannot assume. Everything here is
+/// checked by the caller, so this assumes `groups` is `N x G`, `aij` is `G x G` and `x`
+/// is a composition of `N`.
 pub(crate) fn unifac_ln_gamma(
     groups: &[f64],
     group_r: &[f64],
@@ -176,6 +194,7 @@ pub(crate) fn unifac_ln_gamma(
     aij: &[f64],
     t: f64,
     x: &[f64],
+    combinatorial: Combinatorial,
 ) -> (Vec<f64>, Vec<f64>) {
     let n = x.len();
     let g = group_r.len();
@@ -201,8 +220,13 @@ pub(crate) fn unifac_ln_gamma(
         }
         let v = x[i] * ri[i] / t1;
         let f = x[i] * qi[i] / t2;
-        let li = 5.0 * (ri[i] - qi[i]) - (ri[i] - 1.0);
-        let lng_c = (v / x[i]).ln() + 5.0 * qi[i] * (f / v).ln() + li - (v / x[i]) * suml;
+        let lng_c = match combinatorial {
+            Combinatorial::StavermanGuggenheim => {
+                let li = 5.0 * (ri[i] - qi[i]) - (ri[i] - 1.0);
+                (v / x[i]).ln() + 5.0 * qi[i] * (f / v).ln() + li - (v / x[i]) * suml
+            }
+            Combinatorial::FloryHuggins => -5.0 * qi[i] * ((v / f).ln() + 1.0 - v / f),
+        };
 
         let denom: f64 = (0..n).map(|j| x[j] * qi[j]).sum();
         let mut qmix = vec![0.0; g];

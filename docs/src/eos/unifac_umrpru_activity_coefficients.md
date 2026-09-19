@@ -42,7 +42,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - UNIFAC with the UMR-PRU interaction parameters: `a_mn(T) = a_mn + b_mn (T - 298.15) + c_mn (T - 298.15)^2`, NeqSim's `ComponentGEUnifacUMRPRU.calcaij`. The offset from 298.15 K is the one place this differs from `eos.unifac_psrk_activity_coefficients` besides the tables.
 
-- the group decomposition is NeqSim's `UNIFACcompUMRPRU`: 139 subgroups rather than the 133 of `UNIFACcomp`. The group constants are the shared `UNIFACGroupParam` table, so only the decomposition and the interaction differ.
+- the group decomposition is NeqSim's `UNIFACcompUMRPRU`: 139 subgroups rather than the 133 of `UNIFACcomp`. The group constants are the shared `UNIFACGroupParam` table.
+
+- **the combinatorial term is `ComponentGEUnifacUMRPRU`'s Flory-Huggins one, not `ComponentGEUnifac`'s Staverman-Guggenheim one.** The two differ by `6.9e-06` and `1.9e-02` in `ln gamma` at 298.15 K on methane/water 0.98/0.02.
 
 - which parameter set is read is a **named input**, not something inferred. NeqSim decides it in `useMcInteractionParameters()`, reading `getComponent(0).getAttractiveTermNumber()` and choosing `_umrmc` when it is 13, 19 or 22.
 
@@ -50,7 +52,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - a pair the interaction tables do not carry is zero in all three terms, which makes `a_mn(T)` zero and the pair ideal.
 
-- there is no differential oracle. NeqSim reaches `PhaseGEUnifacUMRPRU` only through `SystemUMRPRUMCEosNew`, a Mathias-Copeman cubic: every phase a flash of it produces is `PhasePrEosvolcor`, so no GE phase forms and no activity coefficient is ever read. Measured at four states.
+- the differential oracle is `SystemUMRCPAEoS`, which forms a `PhaseGEUnifacUMRPRU` and reads it through the UMR mixing rule; recorded in `validation/neqsim/UmrCpaProbe.java`. `SystemUMRPRUMCEosNew` forms no GE phase.
 
 - `x` is checked (non-negative, sums to one) rather than renormalised.
 
@@ -59,13 +61,13 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methanol_water_umr_at_the_reference_temperature` | components = ['methanol', 'water'], parameters = umr, T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.109465434560284, 0.18285472222380844], gamma = [1.1156815062468024, 1.200639969105366] |
-| `methanol_water_umrmc_at_the_reference_temperature` | components = ['methanol', 'water'], parameters = umrmc, T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.10256197762437225, 0.14055133001852516], gamma = [1.1080059713596933, 1.1509081541855593] |
-| `water_methane_umr_at_350_k` | components = ['water', 'methane'], parameters = umr, T = 350.0, x = [0.5, 0.5] | ln_gamma = [-0.12328777284280873, -1.0201898437909107], gamma = [0.8840092321036971, 0.36052648996028214] |
+| `methanol_water_umr_at_the_reference_temperature` | components = ['methanol', 'water'], parameters = umr, T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.1301457842119748, 0.21058484854616538], gamma = [1.138994418625428, 1.23439978580613] |
+| `methanol_water_umrmc_at_the_reference_temperature` | components = ['methanol', 'water'], parameters = umrmc, T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.12324232727606305, 0.1682814563408821], gamma = [1.131158498295627, 1.1832696025168774] |
+| `water_methane_umr_at_350_k` | components = ['water', 'methane'], parameters = umr, T = 350.0, x = [0.5, 0.5] | ln_gamma = [-0.11770245129283669, -1.015316464175723], gamma = [0.8889605223204923, 0.36228776059156376] |
 
 ## References
 
 - Voutsas, E.; Magoulas, K.; Tassios, D. (2004). "Universal mixing rule for cubic equations of state applicable to symmetric and asymmetric systems: results and simple, predictive scheme for parameters." Industrial & Engineering Chemistry Research 43(19), 6238-6246.
 - Fredenslund, A.; Jones, R. L.; Prausnitz, J. M. (1975). "Group-contribution estimation of activity coefficients in nonideal liquid mixtures." AIChE Journal 21(6), 1086-1099.
-- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEUnifacUMRPRU` and `PhaseGEUnifacUMRPRU` are the port source; neither yields a differential oracle, for the reason the assumptions give.
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEUnifacUMRPRU` and `PhaseGEUnifacUMRPRU` are the port source; the oracle is `SystemUMRCPAEoS`, which reaches the phase through the UMR mixing rule.
 

@@ -9,7 +9,7 @@ use azoth_core::{AzothError, Result, apply_checks};
 use crate::databank::UnifacPsrkParameters;
 use crate::model_gen;
 use crate::results::UnifacPsrkActivityCoefficientsResult;
-use crate::unifac_activity_coefficients::unifac_ln_gamma;
+use crate::unifac_activity_coefficients::{Combinatorial, unifac_ln_gamma};
 
 /// The activity coefficients of a mixture, from UNIFAC with PSRK's interaction
 /// parameters.
@@ -139,8 +139,15 @@ pub fn unifac_psrk_activity_coefficients(
         .map(|((&a, &b), &c)| a + b * T + c * T * T)
         .collect();
 
-    let (ln_gamma, gamma) =
-        unifac_ln_gamma(&params.groups, &params.group_r, &params.group_q, &aij, T, x);
+    let (ln_gamma, gamma) = unifac_ln_gamma(
+        &params.groups,
+        &params.group_r,
+        &params.group_q,
+        &aij,
+        T,
+        x,
+        Combinatorial::StavermanGuggenheim,
+    );
 
     Ok(UnifacPsrkActivityCoefficientsResult {
         ln_gamma,

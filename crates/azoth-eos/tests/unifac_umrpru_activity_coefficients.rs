@@ -69,10 +69,13 @@ fn the_result_is_clean_at_an_ordinary_state() {
     assert!(r.is_clean(), "unexpected warnings: {:?}", r.warnings);
 }
 
-/// The offset is about 298.15 K, not zero, so at that temperature the model must be
-/// plain UNIFAC evaluated on UMR's `a` matrix alone - and the case recorded for the
-/// published UNIFAC value rests on that plus the pair's `a` agreeing. Both halves are
-/// asserted here rather than assumed in prose.
+/// The offset is about 298.15 K, not zero, so at that temperature the resolved matrix
+/// must be the table's `a` itself - and this pair's `a` is the plain UNIFAC one, which
+/// is what makes the two models comparable at that state.
+///
+/// **Their answers are still not equal, and this test says so.** The combinatorial term
+/// differs, and on this pair - where the matrices agree and the offset vanishes - that
+/// difference is the whole of the difference between the two models' cases.
 #[test]
 fn at_the_reference_temperature_only_the_a_matrix_acts() {
     let umr = unifac_umrpru_parameters(&["methanol", "water"], UmrpruSet::Umr).unwrap();
@@ -80,6 +83,11 @@ fn at_the_reference_temperature_only_the_a_matrix_acts() {
     assert_eq!(
         umr.aij, plain.aij,
         "the UMR a matrix's methanol/water pair is the plain UNIFAC one"
+    );
+    assert_eq!(
+        azoth_eos::unifac_umrpru_activity_coefficients::umrpru_aij(&umr, 298.15),
+        umr.aij,
+        "at 298.15 K the offset is zero, so the resolved matrix is the table's a"
     );
 
     let adjusted = UnifacParameters {
@@ -90,41 +98,37 @@ fn at_the_reference_temperature_only_the_a_matrix_acts() {
     };
     let a = unifac_umrpru_activity_coefficients(&umr, 298.15, &[0.5, 0.5]).unwrap();
     let b = unifac_activity_coefficients(&adjusted, 298.15, &[0.5, 0.5]).unwrap();
-    assert_eq!(a.gamma, b.gamma);
+    assert_ne!(
+        a.gamma, b.gamma,
+        "Flory-Huggins and Staverman-Guggenheim differ on the same matrix"
+    );
 }
 
-/// Away from the reference temperature the offset acts, and the model must equal UNIFAC
-/// evaluated on `a + b*dt + c*dt^2` with `dt = T - 298.15`. Using `T` rather than
-/// `T - 298.15` would be the one transcription slip this file exists to catch.
+/// The resolved matrix at a temperature is `a + b*dt + c*dt^2` with `dt = T - 298.15`.
+///
+/// Using `T` rather than `T - 298.15` is the one transcription slip this pins: the PSRK
+/// tables fit about zero, and this model's do not, so the two forms of the offset are
+/// what `parameters` selects between at a state away from the reference.
 #[test]
 fn the_offset_is_about_298_15_not_zero() {
     let umr = unifac_umrpru_parameters(&["water", "methane"], UmrpruSet::Umr).unwrap();
     for t in [320.0, 350.0] {
         let dt = t - 298.15;
-        let adjusted = UnifacParameters {
-            groups: umr.groups.clone(),
-            group_r: umr.group_r.clone(),
-            group_q: umr.group_q.clone(),
-            aij: (0..umr.aij.len())
-                .map(|i| umr.aij[i] + umr.bij[i] * dt + umr.cij[i] * dt * dt)
-                .collect(),
-        };
-        let a = unifac_umrpru_activity_coefficients(&umr, t, &[0.5, 0.5]).unwrap();
-        let b = unifac_activity_coefficients(&adjusted, t, &[0.5, 0.5]).unwrap();
-        assert_eq!(a.gamma, b.gamma, "at {t} K");
+        let expected: Vec<f64> = (0..umr.aij.len())
+            .map(|i| umr.aij[i] + umr.bij[i] * dt + umr.cij[i] * dt * dt)
+            .collect();
+        assert_eq!(
+            azoth_eos::unifac_umrpru_activity_coefficients::umrpru_aij(&umr, t),
+            expected,
+            "at {t} K"
+        );
 
-        // And it is not the PSRK form, which fits about zero: a model that used
-        // `a + b T + c T^2` would disagree here.
-        let psrk_form = UnifacParameters {
-            groups: umr.groups.clone(),
-            group_r: umr.group_r.clone(),
-            group_q: umr.group_q.clone(),
-            aij: (0..umr.aij.len())
-                .map(|i| umr.aij[i] + umr.bij[i] * t + umr.cij[i] * t * t)
-                .collect(),
-        };
-        let wrong = unifac_activity_coefficients(&psrk_form, t, &[0.5, 0.5]).unwrap();
-        assert_ne!(a.gamma, wrong.gamma, "at {t} K the two offsets must differ");
+        // And the form that fits about zero gives a different matrix at this state, so
+        // the two offsets are distinguishable here rather than coinciding.
+        let psrk_form: Vec<f64> = (0..umr.aij.len())
+            .map(|i| umr.aij[i] + umr.bij[i] * t + umr.cij[i] * t * t)
+            .collect();
+        assert_ne!(expected, psrk_form, "at {t} K the two offsets must differ");
     }
 }
 
@@ -183,4 +187,32 @@ fn a_composition_that_does_not_sum_to_one_is_refused() {
     let err = unifac_umrpru_activity_coefficients(&params, 298.15, &[0.6, 0.6]).unwrap_err();
     assert!(matches!(err, AzothError::InvalidInput { .. }), "{err:?}");
     assert_eq!(err.field(), Some("x"));
+}
+
+/// The differential oracle, from `validation/neqsim/UmrCpaProbe.java`.
+///
+/// NeqSim's `SystemUMRCPAEoS` at 298.15 K and 70 bara, methane/water 0.98/0.02, on the
+/// `_umrmc` tables: the GE phase the UMR mixing rule reads. `TPflashUMRCPADehydration`
+/// `LifecycleTest` pins its water-in-gas envelope at that state, so this is the one
+/// state the model's own component can be driven to.
+///
+/// **What this catches that no case can.** The registered cases are this library's own
+/// numbers; this is NeqSim's, on the pair whose `ln gamma` the UMR-CPA model actually
+/// reads. Before the combinatorial term was separated, the two differed by
+/// `6.9e-06` and `1.9e-02` in `ln gamma` - small enough on the first component to read
+/// as rounding, and it is not rounding.
+#[test]
+fn neqsims_umr_cpa_is_a_differential_oracle() {
+    let params = unifac_umrpru_parameters(&["methane", "water"], UmrpruSet::Umrmc).unwrap();
+    let result = unifac_umrpru_activity_coefficients(&params, 298.15, &[0.98, 0.02]).unwrap();
+
+    // The probe's `lnGamma[0]`/`lnGamma[1]`.
+    let expected = [0.000_245_756_047_888_7_f64, 0.887_875_427_408_146];
+    for (i, &want) in expected.iter().enumerate() {
+        let got = result.ln_gamma[i];
+        assert!(
+            (got - want).abs() <= 1e-12 * want.abs().max(1.0),
+            "ln_gamma[{i}] = {got}, NeqSim's {want}"
+        );
+    }
 }

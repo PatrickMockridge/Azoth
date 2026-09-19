@@ -9,22 +9,40 @@ use azoth_core::{AzothError, Result, apply_checks};
 use crate::databank::UnifacUmrpruParameters;
 use crate::model_gen;
 use crate::results::UnifacUmrpruActivityCoefficientsResult;
-use crate::unifac_activity_coefficients::unifac_ln_gamma;
+use crate::unifac_activity_coefficients::{Combinatorial, unifac_ln_gamma};
 
 /// The temperature the UMR-PRU interaction is fitted about: the group parameters are
 /// `a + b (T - 298.15) + c (T - 298.15)^2`, not `a + b T + c T^2`.
 ///
-/// A constant of the model rather than of the state, and the one place it differs from
-/// UNIFAC-PSRK besides the tables it reads.
+/// A constant of the model rather than of the state.
 const REFERENCE_TEMPERATURE: f64 = 298.15;
+
+/// The interaction matrix at a temperature, `a_mn(T) = a_mn + b_mn (T - 298.15) + c_mn
+/// (T - 298.15)^2`, which is NeqSim's `ComponentGEUnifacUMRPRU.calcaij`.
+///
+/// Shared with the UMR mixing rule, which reads the same matrix for its `alpha_mix`:
+/// the formula is one statement, so a change to it moves both.
+#[must_use]
+pub fn umrpru_aij(params: &UnifacUmrpruParameters, t: f64) -> Vec<f64> {
+    let dt = t - REFERENCE_TEMPERATURE;
+    params
+        .aij
+        .iter()
+        .zip(&params.bij)
+        .zip(&params.cij)
+        .map(|((&a, &b), &c)| a + b * dt + c * dt * dt)
+        .collect()
+}
 
 /// The activity coefficients of a mixture, from UNIFAC with UMR-PRU's parameters.
 ///
 /// The group decomposition is NeqSim's `UNIFACcompUMRPRU` - 139 subgroups rather than
 /// the 133 of the plain UNIFAC table - and the interaction is
 /// `a_mn(T) = a_mn + b_mn (T - 298.15) + c_mn (T - 298.15)^2`, NeqSim's
-/// `ComponentGEUnifacUMRPRU.calcaij`. The combinatorial term and the residual are the
-/// same as `eos.unifac_activity_coefficients`. `params` is resolved by name through
+/// `ComponentGEUnifacUMRPRU.calcaij`. **The combinatorial term is not the one
+/// `eos.unifac_activity_coefficients` uses**: `ComponentGEUnifacUMRPRU` takes the
+/// Flory-Huggins term alone where `ComponentGEUnifac` takes Staverman-Guggenheim. See
+/// [`Combinatorial`]. `params` is resolved by name through
 /// [`crate::databank::unifac_umrpru_parameters`]; `x` is checked rather than
 /// renormalised.
 ///
@@ -135,17 +153,17 @@ pub fn unifac_umrpru_activity_coefficients(
         ));
     }
 
-    let dt = T - REFERENCE_TEMPERATURE;
-    let aij: Vec<f64> = params
-        .aij
-        .iter()
-        .zip(&params.bij)
-        .zip(&params.cij)
-        .map(|((&a, &b), &c)| a + b * dt + c * dt * dt)
-        .collect();
+    let aij = umrpru_aij(params, T);
 
-    let (ln_gamma, gamma) =
-        unifac_ln_gamma(&params.groups, &params.group_r, &params.group_q, &aij, T, x);
+    let (ln_gamma, gamma) = unifac_ln_gamma(
+        &params.groups,
+        &params.group_r,
+        &params.group_q,
+        &aij,
+        T,
+        x,
+        Combinatorial::FloryHuggins,
+    );
 
     Ok(UnifacUmrpruActivityCoefficientsResult {
         ln_gamma,

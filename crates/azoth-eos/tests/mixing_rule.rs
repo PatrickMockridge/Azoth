@@ -137,3 +137,58 @@ fn a_mixture_resolves_the_rule_at_reduced_parameters() {
         .expect("the state reduces");
     assert!((reduced.kij[1] - (kij0 + 1.0 / 300.0)).abs() < 1e-15);
 }
+
+/// The UMR rule's two inputs, against NeqSim 3.20.0's `SystemUMRCPAEoS`.
+///
+/// Methane/water 0.98/0.02 at 298.15 K, from `validation/neqsim/UmrCpaProbe.java`: the
+/// state NeqSim's own `TPflashUMRCPADehydrationLifecycleTest` pins its water-in-gas
+/// envelope at. The expected values are NeqSim's output, recorded rather than recomputed.
+///
+/// **The UNIFAC set is the `_umrmc` one**, because the UMR-CPA model pairs the rule
+/// with a Mathias-Copeman attraction term, and NeqSim's
+/// `PhaseGEUnifacUMRPRU.useMcInteractionParameters` selects that table for attractive
+/// terms 13, 19 and 22. The `_umr` tables give a different `ln gamma` here, so this key
+/// is what says which was read.
+#[test]
+fn the_unifac_umrpru_set_reproduces_neqsims_activity_coefficients() {
+    use azoth_eos::databank::UmrpruSet;
+
+    let params = databank::unifac_umrpru_parameters(&["methane", "water"], UmrpruSet::Umrmc)
+        .expect("the pair resolves");
+    let result = azoth_eos::unifac_umrpru_activity_coefficients(&params, 298.15, &[0.98, 0.02])
+        .expect("the coefficients evaluate");
+
+    // The probe's `lnGamma[0]`/`lnGamma[1]`.
+    for (i, expected) in [0.000_245_756_047_888_7_f64, 0.887_875_427_408_146]
+        .iter()
+        .enumerate()
+    {
+        assert!(
+            (result.ln_gamma[i] - expected).abs() < 1e-10,
+            "ln_gamma[{i}] = {}, NeqSim's {expected}",
+            result.ln_gamma[i]
+        );
+    }
+}
+
+/// The UMR rule's `alpha_mix`, against the probe's own `alpha_mix`.
+///
+/// The inputs are the probe's **printed** `qPure_aT_over_bRT` and `lnGamma`, so this
+/// checks the rule's arithmetic and its constant against a measured NeqSim number
+/// without depending on a databank column. `hwfc` is `-1/0.53` there because the GE
+/// model is `UNIFAC_UMRPRU`; the Huron-Vidal rule beside it takes the cubic's own
+/// `hv_constant()`, and nothing about a single component distinguishes the two.
+#[test]
+fn the_umr_rule_reproduces_neqsims_alpha_mix() {
+    use azoth_eos::mixing_rule::umr_ader;
+
+    let qpure = [3.071_869_686_431_51, 6.766_461_302_779_70];
+    let ln_gamma = [0.000_245_756_047_888_7, 0.887_875_427_408_146];
+    let ader = umr_ader(&qpure, &ln_gamma);
+    let alpha_mix = 0.98 * ader[0] + 0.02 * ader[1];
+
+    assert!(
+        (alpha_mix - 3.111_802_368_805_46).abs() < 1e-13,
+        "alpha_mix = {alpha_mix}, NeqSim's 3.11180236880546"
+    );
+}
