@@ -69,4 +69,4 @@ not an equation, and both implementations read it from here.
 ## References
 
 - Kunz, O.; Wagner, W. (2012). "The GERG-2008 wide-range equation of state for natural gases and other mixtures: An expansion of GERG-2004." Journal of Chemical & Engineering Data 57(11), 3032-3091.
-- NeqSim 3.20.0, `thermo/util/gerg/GERG2008.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.
+- NeqSim 3.20.0, `thermo/util/gerg/GERG2008.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.

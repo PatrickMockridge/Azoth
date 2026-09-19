@@ -494,6 +494,76 @@ def consumer_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
     return messages
 
 
+#: How a document cites an upstream revision: the full object name, wherever it sits in the
+#: line. An abbreviation is not matched, because the ambiguous prefix is exactly what a
+#: reader cannot fetch, and a bare 40-hex token is a git object name and nothing else -
+#: `databank/README.md` writes one in parentheses, two lines after the word `commit`.
+COMMIT_CITATION = re.compile(r"\b([0-9a-f]{40})\b")
+
+#: A line that is nothing but one word, which is how `NOTICE` heads each upstream - and
+#: how it does *not* head a TOML key or a Markdown heading. **Three characters or more**,
+#: because `databank/README.md` draws its stages with a lone `v` on a line of its own and
+#: treating that as a heading would silently stop that page being read.
+_SECTION_HEADING = re.compile(r"^[A-Za-z][\w.-]{2,}$")
+
+
+def neqsim_citations(text: str) -> list[str]:
+    """Every commit named by a passage about NeqSim, in order, with duplicates.
+
+    **A document may cite several upstreams.** `NOTICE` gives NeqSim and `lean-units` a
+    section each, and only NeqSim's revision is this manifest's business, so a passage is
+    NeqSim's when it follows a bare-word heading naming NeqSim or when the line itself names
+    it. A document with no such heading - a spec, or `databank/README.md` - is one passage
+    throughout, because everything it cites an upstream for is NeqSim.
+    """
+    found: list[str] = []
+    section = "neqsim"
+    for line in text.splitlines():
+        stripped = line.strip()
+        if _SECTION_HEADING.match(stripped):
+            section = stripped.lower()
+        if section == "neqsim" or "neqsim" in line.lower():
+            found.extend(COMMIT_CITATION.findall(line))
+    return found
+
+
+def citation_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
+    """Check the NeqSim revision the specs cite against the one the manifest records.
+
+    A spec's `references` names the upstream revision it was ported from, and the manifest
+    names the revision vendored under `databank/sources/`. Those are the same revision, so a
+    document naming a different one cites a file this project does not hold - and nothing
+    compared them until now.
+
+    **They had come apart.** The refresh that moved the manifest to `805cf0f` left seventeen
+    specs and `NOTICE` citing `dedba873`, and neither hash is wrong on its own terms, so no
+    gate could see it: the difference was between two documents, not between a document and a
+    file. Measured afterwards, the two revisions differ in one of the twenty-eight cited
+    sources, so the stale citation was not harmless - it named a revision whose source says
+    something else.
+
+    The check is on the *shape* rather than on a known list, so a citation to a third revision
+    is caught the same way, and a document citing none is left alone.
+    """
+    recorded = next((u.commit for u in manifest.upstreams if u.id == "neqsim"), "")
+    if not recorded:
+        return []
+    documents = [*(root / "specs").rglob("*.toml"), root / "NOTICE", MANIFEST.parent / "README.md"]
+    messages: list[str] = []
+    for path in sorted(documents):
+        if not path.is_file():
+            continue
+        for found in sorted(set(neqsim_citations(path.read_text(encoding="utf-8")))):
+            if found != recorded:
+                messages.append(
+                    f"{path.relative_to(root)}: cites NeqSim commit {found}, and the manifest "
+                    f"records {recorded} for the revision vendored under {SOURCES}. A citation "
+                    f"to a revision the project does not hold describes a file nobody can check "
+                    f"this port against."
+                )
+    return messages
+
+
 def empty_upstream_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
     """Check every `empty-upstream` claim against the vendored file.
 
@@ -679,6 +749,8 @@ def vendoring_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
     messages.extend(empty_upstream_problems(manifest, root))
 
     messages.extend(consumer_problems(manifest, root))
+
+    messages.extend(citation_problems(manifest, root))
 
     return messages
 

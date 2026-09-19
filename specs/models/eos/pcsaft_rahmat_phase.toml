@@ -14,7 +14,7 @@ assumptions = [
 ]
 references = [
     "Gross, J.; Sadowski, G. (2001). \"Perturbed-Chain SAFT: An Equation of State Based on a Perturbation Theory for Chain Molecules.\" Industrial & Engineering Chemistry Research 40(4), 1244-1260. DOI 10.1021/ie0003887",
-    "NeqSim 3.20.0, `PhasePCSAFT.java` / `PhasePCSAFTRahmat.java` / `ComponentPCSAFT.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+    "NeqSim 3.20.0, `PhasePCSAFT.java` / `PhasePCSAFTRahmat.java` / `ComponentPCSAFT.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.",
 ]
 [source]
 standard = "Gross, J.; Sadowski, G. (2001)"

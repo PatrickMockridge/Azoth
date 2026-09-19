@@ -85,12 +85,33 @@ VENDORED_FILES = (
     ("neqsim/MBWR32param.csv", "MBWR32param.csv", "mbwr32.csv"),
 )
 
+
 #: The NeqSim release this was generated from, for the `citation` column and for
 #: `NOTICE`. A version and a commit, because a databank is only reproducible against
 #: one revision of the file it came from.
-NEQSIM_VERSION = "3.20.0"
-NEQSIM_COMMIT = "dedba8735d030c6411e09b6fd7e69f6c4a136114"
-CITATION = f"NeqSim v{NEQSIM_VERSION} COMP.csv (Equinor/NTNU), Apache-2.0, retrieved 2026-09-18"
+#:
+#: **Read from `databank/manifest.toml` rather than restated.** What a row's `citation`
+#: names and what the manifest records were two copies of one fact, and they had come
+#: apart: the manifest said `805cf0f` while this said `dedba873`, so the citation in every
+#: compiled row named a revision the vendored files do not match. The manifest is the
+#: record of what was taken - the same reason `COMPONENT_COLUMNS` is read from it.
+def _upstream(key: str) -> str:
+    """One field of the NeqSim upstream, or a failure that says which."""
+    found, problems = manifest_module.read()
+    if problems:
+        raise SystemExit("gen_databank: " + "\n  ".join(problems))
+    for upstream in found.upstreams:
+        if upstream.id == "neqsim":
+            return str(getattr(upstream, key))
+    raise SystemExit("gen_databank: the manifest declares no `neqsim` upstream")
+
+
+NEQSIM_VERSION = _upstream("version")
+NEQSIM_COMMIT = _upstream("commit")
+CITATION = (
+    f"NeqSim v{NEQSIM_VERSION} COMP.csv (Equinor/NTNU), Apache-2.0, "
+    f"retrieved {_upstream('retrieved')}"
+)
 
 #: Output column -> (NeqSim column, conversion). The conversions are the ones
 #: documented above, each with the reason it is that and not another.

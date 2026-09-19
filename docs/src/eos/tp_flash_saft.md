@@ -87,4 +87,4 @@ not an equation, and both implementations read it from here.
 
 - Lafitte, T.; Apostolakou, A.; Avendano, C.; Galindo, A.; Adjiman, C. S.; Muller, E. A.; Jackson, G. (2013). "Accurate statistical associating fluid theory for chain molecules formed from Mie segments." The Journal of Chemical Physics 139(15), 154504. DOI 10.1063/1.4819786
 - Wilson, G. M. (1969). "A Modified Redlich-Kwong Equation of State, Application to General Physical Data Calculations." Paper 15C, AIChE 65th National Meeting.
-- NeqSim 3.20.0, `TPflashSAFT.java` / `SystemSAFTVRMie.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.
+- NeqSim 3.20.0, `TPflashSAFT.java` / `SystemSAFTVRMie.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.

@@ -67,4 +67,4 @@ not an equation, and both implementations read it from here.
 ## References
 
 - Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009). "Fundamental Equations of State for Parahydrogen, Normal Hydrogen, and Orthohydrogen." Journal of Physical and Chemical Reference Data 38(3), 721-748.
-- NeqSim 3.20.0, `thermo/util/leachman/Leachman.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.
+- NeqSim 3.20.0, `thermo/util/leachman/Leachman.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.

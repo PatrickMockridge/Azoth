@@ -6,7 +6,7 @@ url = "https://github.com/equinor/neqsim"
 version = "3.20.0"
 commit = "805cf0f910819a19fdc45702fc44c4a3675d93d8"
 licence = "Apache-2.0"
-retrieved = 2026-09-13
+retrieved = 2026-09-18
 notice = "NOTICE"
 [[upstreams.files]]
 id = "neqsim/COMP.csv"

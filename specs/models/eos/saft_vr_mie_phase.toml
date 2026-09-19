@@ -15,7 +15,7 @@ assumptions = [
 ]
 references = [
     "Lafitte, T.; Apostolakou, A.; Avendano, C.; Galindo, A.; Adjiman, C. S.; Muller, E. A.; Jackson, G. (2013). \"Accurate statistical associating fluid theory for chain molecules formed from Mie segments.\" The Journal of Chemical Physics 139(15), 154504. DOI 10.1063/1.4819786",
-    "NeqSim 3.20.0, `PhaseSAFTVRMie.java` / `ComponentSAFTVRMie.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+    "NeqSim 3.20.0, `PhaseSAFTVRMie.java` / `ComponentSAFTVRMie.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.",
 ]
 [source]
 standard = "Lafitte, T. et al. (2013)"

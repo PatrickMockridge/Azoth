@@ -60,4 +60,4 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - Wagner, W.; Kretzschmar, H.-J. (2008). "International Steam Tables: Properties of Water and Steam Based on the Industrial Formulation IAPWS-IF97." Springer, 2nd edition.
 - IAPWS (2007). "Revised Release on the IAPWS Industrial Formulation 1997 for the Thermodynamic Properties of Water and Steam." International Association for the Properties of Water and Steam, Lucerne.
-- NeqSim 3.20.0, `thermo/util/steam/Iapws_if97.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.
+- NeqSim 3.20.0, `thermo/util/steam/Iapws_if97.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.

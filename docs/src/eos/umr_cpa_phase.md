@@ -66,4 +66,4 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - Voutsas, E.; Magoulas, K.; Tassios, D. (2004). "Universal mixing rule for cubic equations of state applicable to symmetric and asymmetric systems: results and simple, predictive scheme for parameters." Industrial & Engineering Chemistry Research 43(19), 6238-6246.
 - Kontogeorgis, G. M.; Voutsas, E. C.; Yakoumis, I. V.; Tassios, D. P. (1996). "An Equation of State for Associating Fluids." Industrial & Engineering Chemistry Research 35(11), 4310-4318. DOI 10.1021/ie9600203
 - Tasios, I.; et al. (2025). "UMR-CPA for natural gas dehydration." Fluid Phase Equilibria. DOI 10.1016/j.fluid.2024.114241
-- NeqSim 3.20.0, `PhaseUMRCPA.java` / `ComponentUMRCPA.java` / `SystemUMRCPAEoS.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.
+- NeqSim 3.20.0, `PhaseUMRCPA.java` / `ComponentUMRCPA.java` / `SystemUMRCPAEoS.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.

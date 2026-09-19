@@ -9,7 +9,7 @@ assumptions = [
 ]
 references = [
     "Sannerhaugen, A. (2026). \"Equation of State for Solid Para-hydrogen.\" (thesis).",
-    "NeqSim 3.20.0, `thermo/util/solid/ParaHydrogenSolidHelmholtzEquation.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+    "NeqSim 3.20.0, `thermo/util/solid/ParaHydrogenSolidHelmholtzEquation.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.",
 ]
 [source]
 standard = "Sannerhaugen, A. (2026)"

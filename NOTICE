@@ -38,7 +38,7 @@ NeqSim
 --------------------------------------------------------------------------------
 
   Project:   NeqSim - https://github.com/equinor/neqsim
-  Version:   3.20.0 (commit dedba8735d030c6411e09b6fd7e69f6c4a136114)
+  Version:   3.20.0 (commit 805cf0f910819a19fdc45702fc44c4a3675d93d8)
   Licence:   Apache License, Version 2.0
              http://www.apache.org/licenses/LICENSE-2.0
   Copyright: Copyright 2018 neqsim
@@ -54,15 +54,18 @@ here.
 
 **The component databank. `data/components/`** is generated from NeqSim's
 `data/COMP.csv` and `data/INTER.csv` by `tools/gen_databank.py`, which converts the
-columns to SI once and records the conversions. 173 substances - NeqSim's
-`COMP.csv` filtered to the component types a cubic equation of state can describe -
-and 516 binary interaction pairs.
+columns to SI once and records the conversions. 348 substances - NeqSim's
+`COMP.csv` filtered to the component types a model here reads - and 957 binary
+interaction pairs.
 
-Neither file is redistributed as it stands. The ions are excluded, because a cubic
-has no notion of one and NeqSim fills their critical properties with a shared
-default: 29 rows all carrying `Pc = 29.089 MPa`, `omega = 0.344` and
-`Vc = 9.9e-05` is not a coincidence, and shipping them would be shipping
-plausible-looking wrong numbers. `COMP_EXT.csv` is not used at all.
+Neither file is redistributed as it stands. **The 62 ion rows are carried, and a cubic
+is refused over one.** They are included for the columns an electrolyte model reads -
+`IONICCHARGE`, `DeshMatIonicDiameter`, `MOLARMASS` and `DIELECTRICPARAMETER1..5` - and
+never for their critical constants, which are filler: one shared default set on 27 of
+the 62 rows, a neutral parent's numbers on most of the rest (`MDEA+` carries MDEA's
+unchanged), and no stated source for the remainder. So `mixture_of` refuses a cubic over
+anything NeqSim files under `COMPTYPE = 'ion'` rather than computing with those numbers.
+`COMP_EXT.csv` is not used at all.
 
 **Algorithms.** `eos.critical_point`, `eos.stability_test` and the models built on
 the same machinery. Each spec's notes record how its implementation differs from

@@ -10,7 +10,7 @@ assumptions = [
 ]
 references = [
     "Younglove, B. A.; Ely, J. F. (1987). \"Thermophysical Properties of Fluids. II. Methane, Ethane, Propane, Isobutane, and Normal Butane.\" Journal of Physical and Chemical Reference Data 16(4), 577-798. DOI 10.1063/1.555785",
-    "NeqSim 3.20.0, `ComponentBWRS.java` / `PhaseBWRSEos.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+    "NeqSim 3.20.0, `ComponentBWRS.java` / `PhaseBWRSEos.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.",
 ]
 [source]
 standard = "Younglove, B. A.; Ely, J. F. (1987)"

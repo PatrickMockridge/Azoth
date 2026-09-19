@@ -69,4 +69,4 @@ not an equation, and both implementations read it from here.
 ## References
 
 - Gernert, J.; Span, R. (2016). "EOS-CG: A Helmholtz energy mixture model for humid gases and CCS mixtures." Journal of Chemical Thermodynamics 93, 274-293.
-- NeqSim 3.20.0, `thermo/util/gerg/EOSCGModel.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.
+- NeqSim 3.20.0, `thermo/util/gerg/EOSCGModel.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.

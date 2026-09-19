@@ -99,7 +99,7 @@ failing before it writes anything.
 ## What none of this can tell you
 
 **Whether the vendored slice is current.** `manifest.toml` records the NeqSim commit it
-was last checked against (`dedba8735d030c6411e09b6fd7e69f6c4a136114`, v3.20.0), and
+was last checked against (`805cf0f910819a19fdc45702fc44c4a3675d93d8`, v3.20.0), and
 nothing here can tell you a newer NeqSim exists. The `not_vendored` list was built by
 expanding NeqSim's resource directory by hand, at that commit.
 

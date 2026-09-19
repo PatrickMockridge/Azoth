@@ -61,4 +61,4 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - Kontogeorgis, G. M.; Voutsas, E. C.; Yakoumis, I. V.; Tassios, D. P. (1996). "An Equation of State for Associating Fluids." Industrial & Engineering Chemistry Research 35(11), 4310-4318. DOI 10.1021/ie9600203
 - Michelsen, M. L.; Hendriks, E. M. (2001). "Physical properties from association models." Fluid Phase Equilibria 180(1-2), 165-174. DOI 10.1016/S0378-3812(01)00355-7
-- NeqSim 3.20.0, `PhaseSrkCPA.java` / `ComponentSrkCPA.java` / `CPAMixingRuleHandler.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.
+- NeqSim 3.20.0, `PhaseSrkCPA.java` / `ComponentSrkCPA.java` / `CPAMixingRuleHandler.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.
