@@ -156,7 +156,22 @@ def camel_variant(screaming_snake: str) -> str:
 
 
 def collect_numbers(mapping: dict[str, Any]) -> list[tuple[str, float]]:
-    return [(k, v) for k, v in mapping.items() if isinstance(v, (int, float))]
+    """Scalar numbers, **excluding flags**.
+
+    `isinstance(True, int)` is True in Python, so a boolean collected as a number arrives
+    in Rust as `1.0` and a reader of the generated table cannot tell a flag from a
+    quantity. A case's `associating` is the first of them; it crosses as a boolean.
+    """
+    return [
+        (k, v)
+        for k, v in mapping.items()
+        if isinstance(v, (int, float)) and not isinstance(v, bool)
+    ]
+
+
+def collect_flags(mapping: dict[str, Any]) -> list[tuple[str, bool]]:
+    """Scalar booleans: a switch whose value is yes or no."""
+    return [(k, v) for k, v in mapping.items() if isinstance(v, bool)]
 
 
 def collect_lists(mapping: dict[str, Any]) -> list[tuple[str, list[str]]]:
@@ -254,6 +269,7 @@ def emit_test_case(
     numbers = collect_numbers(inputs)
     lists = collect_lists(inputs)
     strings = collect_strings(inputs)
+    flags = collect_flags(inputs)
     vectors = collect_vectors(inputs)
     matrices = collect_matrices(inputs)
     expected_numbers = collect_numbers(expected)
@@ -263,6 +279,12 @@ def emit_test_case(
         if not items:
             return "&[]"
         inner = ", ".join(f"({rust_str(k)}, {rust_f64(v)})" for k, v in items)
+        return f"&[{inner}]"
+
+    def flag_pairs(items: list[tuple[str, bool]]) -> str:
+        if not items:
+            return "&[]"
+        inner = ", ".join(f"({rust_str(k)}, {'true' if v else 'false'})" for k, v in items)
         return f"&[{inner}]"
 
     def list_pairs(items: list[tuple[str, list[str]]]) -> str:
@@ -297,6 +319,7 @@ def emit_test_case(
         f"{indent}    skip_reason: {skip},\n"
         f"{indent}    tolerance: {rust_f64(tolerance)},\n"
         f"{indent}    numbers: {pairs(numbers)},\n"
+        f"{indent}    flags: {flag_pairs(flags)},\n"
         f"{indent}    lists: {list_pairs(lists)},\n"
         f"{indent}    strings: {string_pairs(strings)},\n"
         f"{indent}    vectors: {number_slice_pairs(vectors)},\n"

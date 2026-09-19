@@ -1,0 +1,71 @@
+id = "eos.pr_cpa_phase"
+name = "Peng-Robinson CPA phase state"
+kind = "direct"
+assumptions = [
+    "a component's fitted set (`aCPA_PR`, `bCPA_PR`, `mCPA_PR`, `kappa_AB_PR`) comes from the databank with the keycard's overrides applied. A set that is absent or all zero keeps the cubic's own `a` and `b`, which is NeqSim's `|aCPA| > 1e-6` guard.",
+    "**the PR family is a separate fit, not a conversion of the SRK one.** Water's `kappa_AB` is 0.0692 for SRK against 0.046473789 for PR, and its fitted covolume is 1.4515 against 1.456360879, so a model that read the other set would be a different fluid.",
+    "the interaction matrix is `cpakij_PR`, the PR family's column of the `cpa` pair in `INTER.csv`. This is the first model to read it.",
+    "the association is Wertheim first-order perturbation theory with a Carnahan-Starling radial distribution function: site schemes whose sites bond on a charge-sign product, an Elliott cross rule, and a successive-substitution site-fraction solve refined by Newton.",
+    "**the root is not the cubic's.** The association carries a pressure, so the volume solves `f(Z) = Z - Z/(Z-B) + A Z/((Z+d1 B)(Z+d2 B)) - P_a Z/P = 0` with `P_a = -R T d(A_assoc/(R T))/dV`.",
+    "the liquid root is the *lowest* zero above the covolume and is found by a geometric walk rather than seeded, because at low pressure the substituted cubic has a single real root and the association is what creates the liquid branch.",
+    "no association term is added to the heat-capacity departure, because the association's second temperature derivative is not derived; `cp_res` is therefore absent from the outputs rather than reported from the cubic alone.",
+]
+references = [
+    "Kontogeorgis, G. M.; Voutsas, E. C.; Yakoumis, I. V.; Tassios, D. P. (1996). \"An Equation of State for Associating Fluids.\" Industrial & Engineering Chemistry Research 35(11), 4310-4318. DOI 10.1021/ie9600203",
+    "Michelsen, M. L.; Hendriks, E. M. (2001). \"Physical properties from association models.\" Fluid Phase Equilibria 180(1-2), 165-174. DOI 10.1016/S0378-3812(01)00355-7",
+    "NeqSim 3.20.0, `PhasePrCPA.java` / `ComponentPrCPA.java` / `SystemPrCPA.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114. **The classes are read for their structure, not their answers** - see the case's source for why there is no reading to take.",
+]
+[source]
+standard = "Kontogeorgis, G. M. et al. (1996)"
+edition = "The Peng-Robinson cubic with the Wertheim association contribution added to the residual Helmholtz energy, which is what makes the attraction and covolume per-fluid fitted values rather than critical-constant combinations."
+doi = "10.1021/ie9600203"
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank with the fitted association set and the `cpakij_PR` column"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, checked rather than renormalised"
+[inputs.compressed_phase]
+type = "enum"
+values = ["liquid", "vapour"]
+description = "which root describes the phase wanted. Not a compressibility factor: the association moves the root, so a caller could not supply one without solving the model first."
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor at the chosen root"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fugacity coefficients, as logarithms, at the chosen root"
+[outputs.h_res]
+unit = "J/mol"
+description = "the residual enthalpy, real minus ideal gas at the same temperature, pressure and composition, including the association's `A/(RT) - T d(A/RT)/dT`"
+[outputs.s_res]
+unit = "J/(mol*K)"
+description = "the residual entropy, real minus ideal gas at the same temperature, pressure and composition"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.pr_cpa_phase"
+rust = "azoth_eos::pr_cpa_phase"

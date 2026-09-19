@@ -73,6 +73,12 @@ pub struct TestCase {
     pub tolerance: f64,
     /// Scalar inputs, by name.
     pub numbers: &'static [(&'static str, f64)],
+    /// Boolean inputs, by name - a switch whose value is yes or no.
+    ///
+    /// Separate from [`Self::numbers`] because `isinstance(True, int)` holds in the
+    /// generator's language too: collected as a number, a flag arrives as `1.0` and a
+    /// reader cannot tell it from a quantity.
+    pub flags: &'static [(&'static str, bool)],
     /// List-valued inputs, by name - a list of fitting ids.
     pub lists: &'static [(&'static str, &'static [&'static str])],
     /// String-valued inputs, by name - an enum or categorical input whose value is a name.
@@ -107,6 +113,12 @@ impl TestCase {
             .iter()
             .find(|(k, _)| *k == name)
             .map(|(_, v)| *v)
+    }
+
+    /// Fetch a boolean input. `None` if the spec does not supply it.
+    #[must_use]
+    pub fn flag(&self, name: &str) -> Option<bool> {
+        self.flags.iter().find(|(k, _)| *k == name).map(|(_, v)| *v)
     }
 
     /// Fetch a list-valued input.

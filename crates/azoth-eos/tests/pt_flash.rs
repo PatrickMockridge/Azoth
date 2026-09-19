@@ -35,13 +35,33 @@ fn methane_butane() -> Mixture {
         .0
 }
 
+/// The fluid a case names, built the way the runner builds it.
+///
+/// **The case's *fluid* is the runner's business**, which is why `associating` and `eos`
+/// are boundary keys rather than model inputs: the model takes the mixture whole and would
+/// have nothing to say about a second argument beside it. A case that states them means
+/// the fluid is built with them, exactly as `python/tests/_helpers.py` does - and the two
+/// runners agreeing about that is what keeps a case's numbers meaning one fluid. Without
+/// it every case here flashed a classical mixture, which is how the boundary defect
+/// survived: the tranche's associating models had no case at all until one could say so.
 fn mixture_from_case(case: &azoth_core::spec::TestCase) -> Mixture {
     let names = case
         .list("components")
         .expect("the case declares components");
+    let cubic = match case.string("eos").unwrap_or("pr") {
+        "srk" => azoth_eos::Cubic::Srk,
+        "rk" => azoth_eos::Cubic::Rk,
+        _ => azoth_eos::Cubic::Pr,
+    };
+    if case.flag("associating").unwrap_or(false) {
+        return databank::associating_mixture_of(names, cubic, None)
+            .expect("the case's associating components resolve")
+            .0;
+    }
     databank::mixture_of(names, None)
         .expect("the case's components resolve")
         .0
+        .with_cubic(cubic)
 }
 
 fn flash_case(case: &azoth_core::spec::TestCase) -> azoth_eos::PtFlashResult {

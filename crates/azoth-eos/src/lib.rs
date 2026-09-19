@@ -137,6 +137,10 @@ pub mod spec_gen;
 pub mod srk_alpha_ab;
 pub mod srk_cpa_phase;
 pub mod srk_departure;
+// The CPA phase state's shared arithmetic, private: the two models that use it are
+// `srk_cpa_phase` and `pr_cpa_phase`, which name the family and the result type.
+mod cpa_phase;
+pub mod pr_cpa_phase;
 pub mod srk_kappa;
 pub mod srk_peneloux_shift;
 pub mod srk_z_factor;
@@ -218,6 +222,7 @@ pub use parahydrogen_solid_phase::parahydrogen_solid_phase;
 pub use ph_flash::ph_flash;
 pub use phase_boundary::{Incipient, PhaseBoundary, phase_boundary_pressure};
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
+pub use pr_cpa_phase::{pr_cpa_phase, pr_cpa_phase_of};
 pub use pr_danesh_alpha::pr_danesh_alpha;
 pub use pr_delft1998_alpha::pr_delft1998_alpha;
 pub use pr_departure::pr_departure;

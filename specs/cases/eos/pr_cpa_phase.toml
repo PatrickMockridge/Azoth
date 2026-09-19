@@ -1,0 +1,22 @@
+model = "eos.pr_cpa_phase"
+[[cases]]
+id = "water_methanol_pr_liquid"
+tolerance = 1e-09
+source = """**This model's own values, because NeqSim 3.20.0 has no PR-CPA answer to compare against.** `validation/neqsim/PrCpaFlash.java` builds `SystemPrCPA` at this state and prints `phase_sites=0` beside `component_sites=4,2`: water carries four association sites on its `ComponentSrkCPA`, methanol two, and the phase's own total is zero. `PhaseSrkCPA` sums its components' sites in its init path (`PhaseSrkCPA.java:138-155`, zeroing the count and rebuilding the self- and cross-association schemes as it goes) and **`PhasePrCPA` has the field, the getter and the setter and no block that ever sets it**, so every association term it computes is computed over nothing - its flash is a Peng-Robinson run wearing a CPA name. The same is true of the newer checkout (`805cf0f`), so it is open upstream rather than fixed after 3.20.0. Setting the count from outside the library would be reimplementing the missing block in the oracle, which is not NeqSim's answer.
+
+So the divergence is recorded with the tranche's other two rather than compared against, and the numbers here are recorded from the model. **What is not given up**: both kernels compute them and `test_cross_impl` runs this case through each, so the PR family's fitted columns and its `cpakij_PR` interaction column - read by no shipped model before this one - are compared in two languages.
+
+The state mirrors `eos.srk_cpa_phase`'s case so the two families can be read side by side: the same fluid, temperature, pressure and composition, differing only in which fitted set and which interaction column they read."""
+[cases.inputs]
+components = ["water", "methanol"]
+eos = "pr"
+associating = true
+T = 300.0
+P = 10000000.0
+z = [0.6, 0.4]
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.1075970257848238
+ln_phi = [-7.317420134313837, -7.878653311740308]
+h_res = -60393.96327709108
+s_res = -138.60625775391765

@@ -81,6 +81,7 @@ from azoth.core.result import (
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
+    PrCpaPhaseResult,
     PrDaneshAlphaResult,
     PrDelft1998AlphaResult,
     PrDepartureResult,
@@ -2729,6 +2730,32 @@ def resolve(calc_id: str) -> Callable[..., Any]:
 
     resolved: Callable[..., Any] = globals()[calc_id.rpartition(".")[2]]
     return resolved
+
+
+def pr_cpa_phase(
+    components: Sequence[str], T: Q, P: Q, z: Sequence[float], compressed_phase: str
+) -> PrCpaPhaseResult:
+    """The PR-CPA phase state, computed in Rust.
+
+    The component names cross **unresolved**, as they do for the SRK twin, so the Rust side
+    resolves the fluid itself and reads the PR family's fitted set and its `cpakij_PR`
+    column - the first shipped model to read either.
+    """
+    spec = _models_gen.model("eos.pr_cpa_phase")
+    result = _core.pr_cpa_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        compressed_phase,
+    )
+    return PrCpaPhaseResult(
+        z_factor=result.z_factor,
+        ln_phi=tuple(result.ln_phi),
+        h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
+        s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
+        warnings=_warnings(result.warnings),
+    )
 
 
 def srk_cpa_phase(

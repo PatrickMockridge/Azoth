@@ -29,23 +29,23 @@ use azoth_eos::results::{
     MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PhFlashResult, Pr78KappaResult,
-    PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
-    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
-    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
-    PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkCpaPhaseResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
-    TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult, TwuKappaResult,
-    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    VhFlashResult, ViscosityResult, VsFlashResult, VuFlashResult, VuFlashSingleCompResult,
-    WaterPhaseResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
-    WilsonActivityCoefficientsResult,
+    PrAlphaAbResult, PrCpaPhaseResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,
+    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
+    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
+    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
+    PureSaturationResult, PvFlashResult, PvRefluxFlashResult, PvfFlashResult,
+    RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
+    SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    ThermalConductivityResult, TpMultiflashResult, TsFlashResult, TuFlashResult, TvFlashResult,
+    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrprAlphaResult,
+    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
+    VsFlashResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -5996,6 +5996,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
         BwrsPhaseResult::CALC_ID => BwrsPhaseResult::FIELDS.to_vec(),
         SrkCpaPhaseResult::CALC_ID => SrkCpaPhaseResult::FIELDS.to_vec(),
+        PrCpaPhaseResult::CALC_ID => PrCpaPhaseResult::FIELDS.to_vec(),
         AmmoniaPhaseResult::CALC_ID => AmmoniaPhaseResult::FIELDS.to_vec(),
         Co2PhaseResult::CALC_ID => Co2PhaseResult::FIELDS.to_vec(),
         HeliumPhaseResult::CALC_ID => HeliumPhaseResult::FIELDS.to_vec(),
@@ -6311,6 +6312,58 @@ impl PySrkCpaPhaseResult {
 
 impl From<&azoth_eos::results::SrkCpaPhaseResult> for PySrkCpaPhaseResult {
     fn from(r: &azoth_eos::results::SrkCpaPhaseResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            z_factor: r.z_factor,
+            ln_phi: r.ln_phi.clone(),
+            h_res: qty(r.h_res.value, "J/mol"),
+            s_res: qty(r.s_res.value, "J/(mol*K)"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pr_cpa_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PrCpaPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPrCpaPhaseResult {
+    /// The compressibility factor at the chosen root.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// The residual enthalpy.
+    #[pyo3(get)]
+    pub h_res: PyQty,
+    /// The residual entropy.
+    #[pyo3(get)]
+    pub s_res: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPrCpaPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PrCpaPhaseResult(z_factor={}, ln_phi={:?})",
+            self.z_factor, self.ln_phi
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PrCpaPhaseResult> for PyPrCpaPhaseResult {
+    fn from(r: &azoth_eos::results::PrCpaPhaseResult) -> Self {
         let qty = |v: f64, unit: &str| PyQty {
             magnitude_si: v,
             unit: unit.to_string(),

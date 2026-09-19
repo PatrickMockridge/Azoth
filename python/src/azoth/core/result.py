@@ -2051,6 +2051,34 @@ class SrkCpaPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PrCpaPhaseResult(_HasWarnings):
+    """Result of ``eos.pr_cpa_phase``.
+
+    The Peng-Robinson CPA phase state: the same model as ``eos.srk_cpa_phase`` under a
+    different cubic and a different fitted set. Water's ``kappa_AB`` is 0.0692 for SRK
+    against 0.046473789 for PR and its fitted covolume is 1.4515 against 1.456360879, so
+    the two are separate fits rather than one converted into the other.
+
+    **There is no NeqSim reading for this model.** Against the pinned 3.20.0 jar
+    ``SystemPrCPA`` builds CPA components whose sites its phase never sums, so its
+    association is computed over nothing - see the spec's assumptions. The divergence is
+    recorded with the tranche's others; what is not given up is the two-kernel comparison,
+    which this model's case runs.
+    """
+
+    #: The compressibility factor at the chosen root.
+    z_factor: float
+    #: The fugacity coefficients, as logarithms, one per component.
+    ln_phi: tuple[float, ...]
+    #: The residual enthalpy, including the association's ``A/(RT) - T d(A/RT)/dT``.
+    h_res: Q
+    #: The residual entropy.
+    s_res: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class AmmoniaPhaseResult(_HasWarnings):
     """Result of ``eos.ammonia_phase``.
 

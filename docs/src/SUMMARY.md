@@ -90,6 +90,7 @@
   - [Activity coefficients from the NRTL local-composition model](./eos/nrtl_activity_coefficients.md)
   - [Solid para-hydrogen reference phase state](./eos/parahydrogen_solid_phase.md)
   - [Pressure-enthalpy flash](./eos/ph_flash.md)
+  - [Peng-Robinson CPA phase state](./eos/pr_cpa_phase.md)
   - [Pressure-entropy flash](./eos/ps_flash.md)
   - [Pressure-temperature flash](./eos/pt_flash.md)
   - [PT phase envelope](./eos/pt_phase_envelope.md)

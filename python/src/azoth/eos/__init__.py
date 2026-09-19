@@ -114,6 +114,7 @@ from azoth.core.result import (
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
+    PrCpaPhaseResult,
     PrDaneshAlphaResult,
     PrDelft1998AlphaResult,
     PrDepartureResult,
@@ -247,6 +248,7 @@ __all__ = [
     "ph_flash",
     "pr78_kappa",
     "pr_alpha_ab",
+    "pr_cpa_phase",
     "pr_departure",
     "pr_kappa",
     "pr_mass_density",
@@ -326,6 +328,7 @@ _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
 _SRK_CPA_PHASE = "eos.srk_cpa_phase"
+_PR_CPA_PHASE = "eos.pr_cpa_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
 _GE_UNIQUAC_PHASE = "eos.ge_uniquac_phase"
@@ -2522,6 +2525,41 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
     See :func:`azoth.eos.reference.pure_saturation`.
     """
     return resolve(_PURE_SATURATION)(Tc=Tc, Pc=Pc, omega=omega, T=T)  # type: ignore[no-any-return]
+
+
+def pr_cpa_phase(
+    components: list[str], T: Q, P: Q, z: list[float], compressed_phase: str
+) -> PrCpaPhaseResult:
+    """One Peng-Robinson CPA phase's state at a temperature, pressure and composition.
+
+    The same model as :func:`srk_cpa_phase` under a different cubic and a different fitted
+    set: each component's ``aCPA_PR``/``bCPA_PR`` in place of the cubic's ``a``/``b``, mixed
+    with the ``cpakij_PR`` column, and the Wertheim association added to the residual
+    Helmholtz energy.
+
+    **The two families are separate fits, not one converted into the other.** Water's
+    ``kappa_AB`` is 0.0692 for SRK against 0.046473789 for PR and its fitted covolume is
+    1.4515 against 1.456360879, so this is a different fluid rather than the same one under
+    another cubic.
+
+    **There is no NeqSim reading to compare against, and that is a finding.** Against the
+    pinned 3.20.0 jar, ``SystemPrCPA`` builds association-carrying components whose sites
+    its phase never sums, so its association is computed over nothing and its flash is a
+    Peng-Robinson run wearing the name; ``validation/neqsim/PrCpaFlash.java`` prints both
+    counts. What is not given up is the two-kernel comparison: this model's case runs
+    through both implementations.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or no volume root exists above
+            the mixture's covolume.
+        InvalidInputError: if ``z`` is not a composition, a component name is not in the
+            databank, or ``compressed_phase`` is neither ``"liquid"`` nor ``"vapour"``.
+
+    See :func:`azoth.eos.reference.pr_cpa_phase`.
+    """
+    return resolve(_PR_CPA_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
+    )
 
 
 def srk_cpa_phase(

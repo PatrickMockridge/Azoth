@@ -507,6 +507,14 @@ class PrAlphaAbResult:
     warnings: list[Warning]
 
 @final
+class PrCpaPhaseResult:
+    z_factor: float
+    ln_phi: list[float]
+    h_res: Qty
+    s_res: Qty
+    warnings: list[Warning]
+
+@final
 class PrDaneshAlphaResult:
     alpha: float
     warnings: list[Warning]
@@ -1430,6 +1438,13 @@ def ph_flash(
 ) -> PhFlashResult: ...
 def pr78_kappa(omega: float) -> Pr78KappaResult: ...
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
+def pr_cpa_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+    compressed_phase: str,
+) -> PrCpaPhaseResult: ...
 def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult: ...
 def pr_delft1998_alpha(omega: float, Tr: float) -> PrDelft1998AlphaResult: ...
 def pr_departure(

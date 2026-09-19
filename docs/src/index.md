@@ -148,6 +148,7 @@ Four sections, and the difference between them is the point:
 - [`eos.nrtl_activity_coefficients`](./eos/nrtl_activity_coefficients.md) — Activity coefficients from the NRTL local-composition model
 - [`eos.parahydrogen_solid_phase`](./eos/parahydrogen_solid_phase.md) — Solid para-hydrogen reference phase state
 - [`eos.ph_flash`](./eos/ph_flash.md) — Pressure-enthalpy flash
+- [`eos.pr_cpa_phase`](./eos/pr_cpa_phase.md) — Peng-Robinson CPA phase state
 - [`eos.ps_flash`](./eos/ps_flash.md) — Pressure-entropy flash
 - [`eos.pt_flash`](./eos/pt_flash.md) — Pressure-temperature flash
 - [`eos.pt_phase_envelope`](./eos/pt_phase_envelope.md) — PT phase envelope

@@ -3346,6 +3346,28 @@ pub fn model_schemes(model_id: &str) -> Vec<String> {
     }
 }
 
+/// The PR-CPA phase state, computed in Rust.
+///
+/// **The component names cross unresolved**, as they do for the SRK twin, and this side
+/// looks them up in the Rust databank. What that buys here is the family: `Cubic::Pr`
+/// selects the fitted `aCPA_PR`/`bCPA_PR`/`mCPA_PR` set and the `cpakij_PR` column, both of
+/// which this is the first shipped model to read.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn pr_cpa_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::results::PyPrCpaPhaseResult> {
+    azoth_eos::pr_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
+        .map(|r| crate::results::PyPrCpaPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The SRK-CPA phase state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side looks them up in the Rust
