@@ -1061,3 +1061,50 @@ fn the_cubic_ln_phi_is_the_derivative_at_the_association_shifted_root() {
         );
     }
 }
+
+/// The PC-SAFT columns are read, and zero is how the table spells absence.
+///
+/// The three are vendored and unparsed until a model reads them, and 47 of the 286 rows
+/// carry `0` in all three rather than a blank - so "the table has no PC-SAFT set for this
+/// substance" is a *value*, and a model that computed with `m = 0` would be solving for a
+/// fluid with no segments rather than refusing one it has no parameters for.
+///
+/// Water's numbers are the check against the vendored file rather than against this crate:
+/// `m = 1.0656`, `sigma = 3.0007 Å`, `epsilon/k = 366.51 K`, which is what NeqSim's
+/// `COMP.csv` carries and what `Component.java:547-549` reads, with the ångström division
+/// already done by the generator.
+#[test]
+fn the_pcsaft_columns_are_read_and_zero_means_absent() {
+    let water = databank::entry("water", None).expect("water");
+    assert!((water.m_saft - 1.0656).abs() < 1e-9, "m: {}", water.m_saft);
+    assert!(
+        (water.sigma_saft - 3.0007e-10).abs() < 1e-14,
+        "sigma: {} - the table is SI, so this is metres and not ångström",
+        water.sigma_saft
+    );
+    assert!(
+        (water.epsik_saft - 366.51).abs() < 1e-9,
+        "epsilon/k: {}",
+        water.epsik_saft
+    );
+
+    let methane = databank::entry("methane", None).expect("methane");
+    assert!(
+        (methane.m_saft - 1.0).abs() < 1e-12,
+        "m: {}",
+        methane.m_saft
+    );
+
+    // A substance the table carries no PC-SAFT set for: absent as a zero, in all three,
+    // which is the shape a model has to refuse rather than compute with.
+    let absent = databank::names(None)
+        .into_iter()
+        .filter(|name| {
+            databank::entry(name, None).is_ok_and(|e| e.m_saft == 0.0 && e.sigma_saft == 0.0)
+        })
+        .count();
+    assert_eq!(
+        absent, 47,
+        "rows with no PC-SAFT set; the vendored table has 47"
+    );
+}

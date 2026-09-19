@@ -128,6 +128,9 @@ COLUMNS = (
     "mcpa_pr",
     "racketzcpa",
     "volcorrcpa_t",
+    "msaft",
+    "sigma_saft_m",
+    "epsiksaft",
     "citation",
 )
 
@@ -296,6 +299,17 @@ class DatabankEntry:
     #: scheme - which is 144 of the 286 compiled rows, and is the table's own marker
     #: rather than a missing value.
     association: AssociationParameters | None
+    #: PC-SAFT's segment number ``m``, dimensionless. **Zero means the table carries no
+    #: PC-SAFT set**, which is how 47 of the 286 rows spell absence - the column is never
+    #: blank - so a model must refuse a zero rather than solve for a fluid with no
+    #: segments. The rule ``ComponentSrkCPA``'s ``|aCPA| > 1e-6`` guard already follows.
+    m_saft: float
+    #: PC-SAFT's segment diameter ``sigma``, in **metres**. NeqSim's `COMP.csv` carries it
+    #: in ångström and divides by ``1e10`` as it reads it (``Component.java:548``); this
+    #: table is compiled SI, so the conversion happened once in the generator.
+    sigma_saft: float
+    #: PC-SAFT's segment energy over Boltzmann's constant, ``epsilon/k``, in K.
+    epsik_saft: float
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
@@ -414,6 +428,9 @@ def _table() -> dict[str, DatabankEntry]:
             viscosity_correction_factor=float(row["viscosity_correction_factor"]),
             reference_state=row["referencestatetype"].strip(),
             association=_association(row),
+            m_saft=float(row["msaft"]),
+            sigma_saft=float(row["sigma_saft_m"]),
+            epsik_saft=float(row["epsiksaft"]),
             citation=row["citation"],
         )
     return entries
@@ -711,6 +728,12 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # A card-added substance has no table row to inherit an association from, so
             # the card's is the whole of it - or none, if it states none.
             association=None if stated is None else _card_association(None, stated),
+            # A card carries no PC-SAFT set, and zero is how this table spells absence:
+            # a card states the parameters a cubic reads, and a model needing `m`, `sigma`
+            # and `epsilon/k` refuses rather than inventing them.
+            m_saft=0.0,
+            sigma_saft=0.0,
+            epsik_saft=0.0,
             citation=None,
             source="keycard",
         )

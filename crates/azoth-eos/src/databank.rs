@@ -199,6 +199,20 @@ pub struct Entry {
     /// 144 of the 286 compiled rows carry `0` in the scheme column and are non-associating;
     /// the rest name `1A`, `2A`, `2B` or `4C`.
     pub association: Option<AssociationRecord>,
+    /// PC-SAFT's segment number `m`, dimensionless.
+    ///
+    /// **Zero means the table carries no PC-SAFT set**, which is how 47 of the 286 rows
+    /// spell absence - the column is never blank. A model must refuse a zero rather than
+    /// compute with it, the rule `ComponentSrkCPA`'s `|aCPA| > 1e-6` guard already follows.
+    pub m_saft: f64,
+    /// PC-SAFT's segment diameter `sigma`, in metres.
+    ///
+    /// NeqSim's `COMP.csv` carries it in ångström and divides by `1e10` as it reads it
+    /// (`Component.java:548`); this table is compiled SI, so the conversion has happened
+    /// once and is not repeated here.
+    pub sigma_saft: f64,
+    /// PC-SAFT's segment energy over Boltzmann's constant, `epsilon/k`, in K.
+    pub epsik_saft: f64,
 }
 
 impl Entry {
@@ -683,6 +697,9 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "associationenergy",
         "associationboundingvolume_srk",
         "associationboundingvolume_pr",
+        "msaft",
+        "sigma_saft_m",
+        "epsiksaft",
         "acpa_srk",
         "bcpa_srk",
         "mcpa_srk",
@@ -759,6 +776,9 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     .trim()
                     .to_string(),
                 association: parse_association(&record, &index, row)?,
+                m_saft: number(&record, index["msaft"], "msaft", row)?,
+                sigma_saft: number(&record, index["sigma_saft_m"], "sigma_saft_m", row)?,
+                epsik_saft: number(&record, index["epsiksaft"], "epsiksaft", row)?,
             },
         );
     }
@@ -956,6 +976,12 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 dipole: None,
                 antoine: None,
                 association: over.association.as_ref().map(|a| a.applied_to(None)),
+                // **A card carries no PC-SAFT set**, and zero is how this table spells
+                // absence: a card states the parameters a cubic reads, and a model that
+                // needed `m`, `sigma` and `epsilon/k` would refuse rather than invent them.
+                m_saft: 0.0,
+                sigma_saft: 0.0,
+                epsik_saft: 0.0,
                 // Named rather than left blank: a card states a substance a cubic can
                 // describe, and a cubic has no reference state. The activity-coefficient
                 // phases read this, so a blank would have to mean something.
@@ -973,6 +999,12 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             critical_volume: base.critical_volume,
             dipole: base.dipole,
             antoine: base.antoine,
+            // `ComponentOverride` is a closed list and carries no PC-SAFT set, so the
+            // table's survives a card untouched - the whole point of naming one parameter
+            // rather than restating a record.
+            m_saft: base.m_saft,
+            sigma_saft: base.sigma_saft,
+            epsik_saft: base.epsik_saft,
             reference_state: base.reference_state,
             // The card's scheme wins over the table's, and every parameter the card does
             // not name is the table's: `applied_to` is the one place the two are merged.
