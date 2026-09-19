@@ -62,10 +62,35 @@ result dataclasses in `azoth.core.result` rather than the transport types below 
 see `azoth._rust_bridge`.
 """
 
+#: The entries of `VOCABULARY` that are *inputs*: mappings a caller builds, with no
+#: runtime class behind them.
+TYPED_DICTS: frozenset[str] = frozenset({"ComponentArguments"})
+
 #: The types that cross the boundary but are not results. `(name, docstring, fields)`,
 #: where a field is `(name, type)`. Mirrors the `#[pyclass]` structs in
 #: `crates/azoth-python/src/data.rs` and `results.rs`.
 VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
+    (
+        "ComponentArguments",
+        "One substance as a keycard states it, on its way to the overlay. A record"
+        " rather than a tuple, because it outgrew one: the ion class and the"
+        " electrolyte data joined `Tc`, `Pc` and `omega`. Every field is optional for"
+        " the reason the first three always were - a card stating one parameter keeps"
+        ' the rest - and `ion` is `None` for "the card says nothing", which is'
+        " deliberately not `False`.",
+        (
+            ("name", "str"),
+            ("tc", "float | None"),
+            ("pc", "float | None"),
+            ("omega", "float | None"),
+            ("ion", "bool | None"),
+            ("ionic_charge", "float | None"),
+            # Metres, the card's unit and the merge's input: the crossing to the
+            # databank's angstrom happens once, on the Rust side.
+            ("deshmukh_mather_diameter", "float | None"),
+            ("dielectric", "list[float] | None"),
+        ),
+    ),
     (
         "AssociationSpec",
         "One mixture's association, as every model whose Python side takes a"
@@ -130,6 +155,13 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
             ("association_m_pr", "float"),
             ("association_racket_z", "float"),
             ("association_volume_correction", "float"),
+            # The electrolyte data and the class. `component_type` is a string because the
+            # table carries ten classes and `ion` is the one this crate acts on; the
+            # others are reported so a comparison sees the whole field.
+            ("component_type", "str"),
+            ("ionic_charge", "float"),
+            ("deshmukh_mather_diameter", "float"),
+            ("dielectric", "list[float]"),
         ),
     ),
     (
@@ -196,8 +228,9 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     ("component_rows()", "list[ComponentRow]"),
     ("kij_rows()", "list[KijRow]"),
     (
-        "overlay(components: list[tuple[str, float | None, float | None, float | None]],"
-        " kij: list[tuple[str, str, float]])",
+        # A mapping per substance rather than a tuple: the record outgrew a tuple when the
+        # ion class and the electrolyte data joined `Tc`, `Pc` and `omega`.
+        "overlay(components: list[ComponentArguments], kij: list[tuple[str, str, float]])",
         "Overlay",
     ),
     ("card_overlay(text: str)", "Overlay"),
@@ -470,6 +503,18 @@ def render_vocabulary() -> str:
     """The block of non-result types."""
     blocks = []
     for name, doc, fields in VOCABULARY:
+        if name in TYPED_DICTS:
+            # **An input record is a mapping and no class exists at runtime.** pyo3's
+            # `FromPyObject` on a struct extracts one field per key; it does not export a
+            # constructor, so a `@final class` here would describe something a caller
+            # cannot build and would make a plain dict a type error at the call site.
+            out = [f"class {name}(TypedDict):"]
+            if doc:
+                out.append(f'    """{doc}"""')
+                out.append("")
+            out.extend(f"    {field}: {annotation}" for field, annotation in fields)
+            blocks.append("\n".join(out))
+            continue
         out = ["@final", f"class {name}:"]
         if doc:
             out.append(f'    """{doc}"""')
@@ -507,7 +552,7 @@ def render() -> str:
 
     return (
         f'"""{DOCSTRING}"""\n\n'
-        "from typing import final\n\n"
+        "from typing import TypedDict, final\n\n"
         "# --- transport types ------------------------------------------------------\n"
         "# The values that cross the boundary and are not results. Hand-written here\n"
         "# because a `cdylib` has nothing to introspect; held to the Rust structs by\n"

@@ -49,6 +49,15 @@ COMPONENT_PARAMETERS: Mapping[str, str] = {
     "cp_c": "J/(mol*K**3)",
     "cp_d": "J/(mol*K**4)",
     "cp_e": "J/(mol*K**5)",
+    # The electrolyte data. `ion` is deliberately absent: it is a class rather than a
+    # number with a unit, and :class:`Component` carries it beside this table.
+    "ionic_charge": "dimensionless",
+    "deshmukh_mather_diameter": "angstrom",
+    "dielectric_1": "dimensionless",
+    "dielectric_2": "K",
+    "dielectric_3": "1/K",
+    "dielectric_4": "1/K**2",
+    "dielectric_5": "1/K**3",
 }
 
 #: The subset of `COMPONENT_PARAMETERS` a cubic reads, and therefore what a card must
@@ -115,6 +124,27 @@ class Model:
 
 
 @dataclass(frozen=True, slots=True)
+class Component:
+    """One substance's entry in a card: its parameters, and whether it is an ion.
+
+    ``is_ion`` is separate from ``parameters`` because it is not a parameter and does not
+    fit one - every entry in :data:`COMPONENT_PARAMETERS` is a number in a unit, and this
+    is a class. It belongs beside them because it is a statement about the same substance,
+    the same reason :class:`Association` states the site scheme apart from the fitted
+    values next to it.
+
+    ``None`` means the card says nothing, which leaves the databank's class in force.
+    """
+
+    is_ion: bool | None
+    parameters: Mapping[str, Q]
+
+    def __repr__(self) -> str:
+        kind = "ion" if self.is_ion else "not an ion"
+        return f"Component({kind}, {sorted(self.parameters)})"
+
+
+@dataclass(frozen=True, slots=True)
 class Association:
     """One substance's association, as a card states it.
 
@@ -136,7 +166,7 @@ class Keycard:
 
     keyholder: str | None
     licence: str | None
-    components: Mapping[str, Mapping[str, Q]] = field(default_factory=dict)
+    components: Mapping[str, Component] = field(default_factory=dict)
     associations: Mapping[str, Association] = field(default_factory=dict)
     kij: Mapping[tuple[str, str], float] = field(default_factory=dict)
     cpa_kij: Mapping[tuple[str, str, str], float] = field(default_factory=dict)
@@ -147,8 +177,23 @@ class Keycard:
     fluids: Mapping[str, tuple[Mapping[str, Any], ...]] = field(default_factory=dict)
     path: Path | None = None
 
-    def component(self, name: str) -> Mapping[str, Q] | None:
-        """The parameters this keycard gives a substance, or ``None``."""
+    def is_ion(self, name: str) -> bool | None:
+        """Whether the card states this substance is an ion, or ``None`` if it says nothing.
+
+        ``None`` is not ``False``: a card silent on the question leaves the databank's
+        class in force, and a card that *adds* a substance without saying is adding a
+        non-ion. The distinction is what stops a card clearing a class the databank set.
+        """
+        stated = self.components.get(name.strip().lower())
+        return None if stated is None else stated.is_ion
+
+    def component(self, name: str) -> Component | None:
+        """This keycard's entry for a substance: its parameters and whether it is an ion.
+
+        A :class:`Component` rather than the parameter mapping, because ``ion`` is part of
+        what a card states about a substance and is not a parameter. A caller wanting only
+        the numbers takes ``.parameters``; :meth:`is_ion` is the class on its own.
+        """
         return self.components.get(name.strip().lower())
 
     def association_for(self, name: str) -> Association | None:
@@ -335,16 +380,29 @@ def _quantity(value: Any, unit: Any, expected: str, where: str, field_name: str)
         ) from exc
 
 
-def _components(raw: Any, where: str) -> dict[str, dict[str, Q]]:
+def _components(raw: Any, where: str) -> dict[str, Component]:
     if raw is None:
         return {}
     if not isinstance(raw, Mapping):
         raise KeycardError(where, "`components` must be a mapping of names to parameters")
 
-    out: dict[str, dict[str, Q]] = {}
-    for name, parameters in raw.items():
+    out: dict[str, Component] = {}
+    for name, body in raw.items():
         field_name = f"components.{name}"
-        if not isinstance(parameters, Mapping) or not parameters:
+        if not isinstance(body, Mapping):
+            raise KeycardError(where, f"`{field_name}` must carry at least one parameter")
+        # `ion` is a class rather than a parameter, so it is read out before the loop
+        # rather than inside it - the loop's table is numbers in units, and this is neither.
+        ion = body.get("ion")
+        if ion is not None and not isinstance(ion, bool):
+            raise KeycardError(
+                where,
+                f"`{field_name}.ion` must be `true` or `false`. It is the one entry under "
+                f"a substance that is not a value-and-unit pair: whether a substance is an "
+                f"ion decides whether a cubic may be built over it at all.",
+            )
+        parameters = {k: v for k, v in body.items() if k != "ion"}
+        if not parameters:
             raise KeycardError(where, f"`{field_name}` must carry at least one parameter")
         resolved: dict[str, Q] = {}
         for parameter, body in parameters.items():
@@ -372,7 +430,16 @@ def _components(raw: Any, where: str) -> dict[str, dict[str, Q]]:
                 where,
                 f"`{field_name}` needs all five of `cp_a` through `cp_e`, or none of them",
             )
-        out[str(name).strip().lower()] = resolved
+        # The dielectric constant's polynomial is all five or none, for the reason the
+        # heat capacity is: three coefficients of a `T^3` polynomial is not a correlation.
+        dielectric = [p for p in resolved if p.startswith("dielectric_")]
+        if dielectric and len(dielectric) != 5:
+            raise KeycardError(
+                where,
+                f"`{field_name}` needs all five of `dielectric_1` through `dielectric_5`, "
+                f"or none of them",
+            )
+        out[str(name).strip().lower()] = Component(is_ion=ion, parameters=resolved)
     return out
 
 

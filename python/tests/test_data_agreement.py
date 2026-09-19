@@ -36,6 +36,7 @@ from typing import Any
 import pytest
 
 from azoth._data import find
+from azoth.core.errors import InvalidInputError
 from azoth.eos import components
 from azoth.hydraulics.reference.fittings import registry
 from azoth.properties import available_fluids, provider_for
@@ -94,6 +95,13 @@ COMPONENT_FIELDS = (
     "association_m_pr",
     "association_racket_z",
     "association_volume_correction",
+    # The electrolyte data and the class, read on both sides since P8. `component_type`
+    # is what decides whether a cubic may be built over a substance at all, so a
+    # divergence here is one implementation refusing a fluid the other computes.
+    "component_type",
+    "ionic_charge",
+    "deshmukh_mather_diameter",
+    "dielectric",
 )
 
 KIJ_FIELDS = ("component_a", "component_b", "kij_pr", "kij_srk")
@@ -449,6 +457,10 @@ def python_row(record: Any) -> dict[str, Any]:
         "association_b_pr": 0.0 if association is None else association.b_pr,
         "association_m_pr": 0.0 if association is None else association.m_pr,
         "association_racket_z": 0.0 if association is None else association.racket_z,
+        "component_type": record.component_type,
+        "ionic_charge": record.ionic_charge,
+        "deshmukh_mather_diameter": record.deshmukh_mather_diameter,
+        "dielectric": list(record.dielectric),
         "association_volume_correction": (
             0.0 if association is None else association.volume_correction
         ),
@@ -603,3 +615,34 @@ def test_the_shipped_pair_is_still_there_without_a_card() -> None:
     assert shipped != 0.0, "the fixture needs a fitted non-zero pair"
     card = _card(kij=[{"component_a": "methane", "component_b": "n-butane", "value": 0.0}])
     assert components.kij_for(("methane", "n-butane"), card=card).get((0, 1), 0.0) == 0.0
+
+
+def test_a_card_added_ion_agrees_and_both_refuse_it() -> None:
+    """**The `ion` flag, resolved by both implementations.**
+
+    An ion has no meaningful `Tc`, `Pc` or `omega`, so a card that adds one states no
+    cubic parameters at all - which is why the flag has to cross the boundary rather than
+    being a Python-side convenience. Both sides must resolve it to the same class, the
+    same zeros, and the same refusal.
+    """
+    card = _card(
+        components={
+            "na-plus": {
+                "ion": True,
+                "ionic_charge": {"value": 1.0, "unit": "dimensionless"},
+                "deshmukh_mather_diameter": {"value": 3.0, "unit": "angstrom"},
+            }
+        }
+    )
+    assert_carded_rows_agree(card)
+
+    # The class, and the zeros a card-added ion carries rather than invented constants.
+    row = python_carded_rows(card)[0]
+    assert row["component_type"] == "ion"
+    assert row["ionic_charge"] == pytest.approx(1.0)
+    assert row["deshmukh_mather_diameter"] == pytest.approx(3.0)
+    assert row["tc_k"] == 0.0
+
+    # And neither side builds a cubic over it.
+    with pytest.raises(InvalidInputError):
+        components.from_names(["na-plus"], card=card)

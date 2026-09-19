@@ -145,6 +145,23 @@ pub struct PyComponentRow {
     pub cp_d: Option<f64>,
     #[pyo3(get)]
     pub cp_e: Option<f64>,
+    /// NeqSim's `COMPTYPE` for the row: the substance class.
+    ///
+    /// A string rather than a flag because the table carries ten of them, and `ion` is
+    /// the one this crate acts on - it is what `mixture_of` refuses a cubic over. The
+    /// others are reported so a comparison sees the whole field rather than the one value
+    /// currently read.
+    #[pyo3(get)]
+    pub component_type: String,
+    /// The ionic charge as a **charge number**, in units of the elementary charge.
+    #[pyo3(get)]
+    pub ionic_charge: f64,
+    /// The Deshmukh-Mather ion diameter, in ångström, as the table stores it.
+    #[pyo3(get)]
+    pub deshmukh_mather_diameter: f64,
+    /// The five dielectric-constant coefficients `d0`..`d4`.
+    #[pyo3(get)]
+    pub dielectric: [f64; 5],
     /// The association site scheme's name - `"1A"`, `"2A"`, `"2B"` or `"4C"` - or the
     /// empty string for a component the table gives no scheme.
     ///
@@ -312,6 +329,10 @@ pub(crate) fn row_of(entry: &databank::Entry) -> PyComponentRow {
         cp_c: entry.cp.map(|cp| cp[2]),
         cp_d: entry.cp.map(|cp| cp[3]),
         cp_e: entry.cp.map(|cp| cp[4]),
+        component_type: entry.class.clone(),
+        ionic_charge: entry.ionic_charge,
+        deshmukh_mather_diameter: entry.deshmukh_mather_diameter,
+        dielectric: entry.dielectric,
         association_scheme: entry
             .association
             .as_ref()

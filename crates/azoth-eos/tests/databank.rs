@@ -387,6 +387,7 @@ fn a_card_component_with_a_polynomial_has_an_enthalpy() {
             omega: Some(0.3),
             cp: Some([20.0, 0.1, 0.0, 0.0, 0.0]),
             association: None,
+            ..Default::default()
         },
     );
     let (_, ideal_gas) = databank::mixture_of(&["unobtainium"], Cubic::Pr, Some(&overlay))
@@ -1299,6 +1300,7 @@ fn a_cubic_over_an_ion_is_refused() {
         text.contains("plausible-looking wrong numbers"),
         "the refusal should say what goes wrong without it: {text}"
     );
+    assert!(text.contains("has no notion of one"), "{text}");
 
     // And it is the *class* that decides, not the charge: `caco3` carries a zero charge
     // and is refused with the rest of them.

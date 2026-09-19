@@ -528,6 +528,24 @@ fn the_baseline_card_resolves_to_the_table_it_was_generated_from() {
         // ion rows - filler `Tc`, `Pc` and `omega` and all - so an overlay that reset it
         // would hand a cubic the filler the refusal exists to keep out of one.
         assert_eq!(carded.class, shipped.class, "{name}: class");
+        assert_eq!(
+            carded.ionic_charge, shipped.ionic_charge,
+            "{name}: the charge number"
+        );
+        // The card states the diameter in ångström, which is the table's own unit, so the
+        // crossing on the way out and back is an identity - and this is what says so.
+        assert_eq!(
+            carded.deshmukh_mather_diameter, shipped.deshmukh_mather_diameter,
+            "{name}: the Deshmukh-Mather diameter"
+        );
+        // **Five card entries in five different units come back as one polynomial.** The
+        // card states `d0` dimensionless, `d1` in `K` and `d2`..`d4` in inverse
+        // temperatures, so an exponent written wrong in one of the five shows up here
+        // rather than in a mixing rule three tranches later.
+        assert_eq!(
+            carded.dielectric, shipped.dielectric,
+            "{name}: the dielectric-constant polynomial"
+        );
 
         let (Some(record), Some(base)) = (&carded.association, &shipped.association) else {
             assert_eq!(
@@ -652,5 +670,86 @@ fn the_baseline_cards_pairs_are_the_tables() {
     assert_eq!(
         associating, 711,
         "the non-zero associating cells the table has"
+    );
+}
+
+/// **A card may add an ion, and a cubic over it is refused like any other.**
+///
+/// This is what the `ion` flag is for. An ion has no meaningful `Tc`, `Pc` or `omega`, so
+/// requiring them of a card-added substance would make a user invent the same filler
+/// NeqSim's own table carries - which is exactly what the refusal exists to keep out of a
+/// cubic. Stating the class instead is what makes the substance usable by an electrolyte
+/// model and unusable by a cubic, with no invented numbers in between.
+#[test]
+fn a_card_can_add_an_ion() {
+    let card = Card::from_toml(&a_card(
+        "[components.na-plus]\nion = true\n\
+         [components.na-plus.ionic_charge]\nvalue = 1.0\nunit = \"dimensionless\"\n\
+         [components.na-plus.deshmukh_mather_diameter]\nvalue = 3.0\nunit = \"angstrom\"\n",
+    ))
+    .expect("a valid card");
+    let overlay = card.overlay();
+
+    let sodium = databank::entry("na-plus", Some(overlay)).expect("a card-added ion");
+    assert_eq!(sodium.class, databank::ION);
+    assert_eq!(sodium.ionic_charge, 1.0);
+    assert_eq!(
+        sodium.deshmukh_mather_diameter, 3.0,
+        "the card states metres and the table holds angstrom, so nothing was converted"
+    );
+    // No cubic parameters were given, and the entry carries zeros rather than invented
+    // ones - which is safe because `mixture_of` refuses the substance before a cubic is
+    // built over it.
+    assert_eq!(sodium.tc, 0.0);
+    assert_eq!(sodium.pc, 0.0);
+
+    assert!(
+        databank::mixture_of(&["water", "na-plus"], Cubic::Pr, Some(overlay)).is_err(),
+        "a card-added ion is refused by the same rule as a table one"
+    );
+
+    // **A card-added substance that is not an ion still needs its cubic**, which is what
+    // stops the exemption being a hole rather than a rule.
+    let plain = Card::from_toml(&a_card(
+        "[components.foo.omega]\nvalue = 0.5\nunit = \"dimensionless\"\n",
+    ))
+    .expect("a valid card");
+    assert!(databank::entry("foo", Some(plain.overlay())).is_err());
+}
+
+/// **A card cannot reclassify a substance the databank carries.**
+///
+/// The class is what decides whether a cubic may be built at all, so a card able to clear
+/// it could hand a cubic the filler the refusal exists to keep out of one. `ion = false`
+/// on `na+` is therefore ignored, and the substance stays refused.
+#[test]
+fn a_card_cannot_reclassify_a_shipped_substance() {
+    let card = Card::from_toml(&a_card(
+        "[components.\"na+\"]\nion = false\n\
+         [components.\"na+\".ionic_charge]\nvalue = 1.0\nunit = \"dimensionless\"\n",
+    ))
+    .expect("a valid card");
+    let overlay = card.overlay();
+
+    let stated = databank::entry("na+", Some(overlay)).expect("the table has it");
+    assert_eq!(
+        stated.class,
+        databank::ION,
+        "the table's class survives a card that contradicts it"
+    );
+    assert!(databank::mixture_of(&["na+"], Cubic::Pr, Some(overlay)).is_err());
+
+    // A card *may* correct the numbers beside the class, which is the direction the
+    // override is for - the same rule that lets it correct `Tc`.
+    let corrected = Card::from_toml(&a_card(
+        "[components.\"na+\"]\n\
+         [components.\"na+\".ionic_charge]\nvalue = 2.0\nunit = \"dimensionless\"\n",
+    ))
+    .expect("a valid card");
+    assert_eq!(
+        databank::entry("na+", Some(corrected.overlay()))
+            .expect("the table has it")
+            .ionic_charge,
+        2.0
     );
 }

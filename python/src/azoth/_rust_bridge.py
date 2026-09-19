@@ -20,7 +20,7 @@ guarantee was being verified by nothing.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from azoth import _core, _models_gen
@@ -2682,14 +2682,21 @@ def overlay_from(card: Any) -> Any:
     compares it against `azoth.eos.components`' answer for the same card. Two
     implementations of one merge rule, held to each other the way the two kernels are.
     """
-    components = [
-        (
-            name,
-            _si_of(parameters.get("Tc")),
-            _si_of(parameters.get("Pc")),
-            _plain(parameters.get("omega")),
-        )
-        for name, parameters in sorted(card.components.items())
+    components: list[_core.ComponentArguments] = [
+        {
+            "name": name,
+            "tc": _si_of(stated.parameters.get("Tc")),
+            "pc": _si_of(stated.parameters.get("Pc")),
+            "omega": _plain(stated.parameters.get("omega")),
+            "ion": stated.is_ion,
+            "ionic_charge": _plain(stated.parameters.get("ionic_charge")),
+            # Metres, which is the card's unit and the merge's input. The crossing to the
+            # databank's ångström happens in one place, on the Rust side, so there is no
+            # second conversion here to disagree with it.
+            "deshmukh_mather_diameter": _si_of(stated.parameters.get("deshmukh_mather_diameter")),
+            "dielectric": _dielectric(stated.parameters),
+        }
+        for name, stated in sorted(card.components.items())
     ]
     kij = [(a, b, value) for (a, b), value in sorted(card.kij.items())]
     return _core.overlay(components, kij)
@@ -2698,6 +2705,20 @@ def overlay_from(card: Any) -> Any:
 def _si_of(value: Q | None) -> float | None:
     """A dimensioned card value as an SI magnitude, or ``None`` if the card omits it."""
     return None if value is None else float(value.to_base_units().magnitude)
+
+
+def _dielectric(parameters: Mapping[str, Q]) -> list[float] | None:
+    """The five coefficients the card states, each in its own unit, or ``None``."""
+    names = ("dielectric_1", "dielectric_2", "dielectric_3", "dielectric_4", "dielectric_5")
+    if not all(name in parameters for name in names):
+        return None
+    return [
+        float(parameters["dielectric_1"].to("dimensionless").magnitude),
+        float(parameters["dielectric_2"].to("K").magnitude),
+        float(parameters["dielectric_3"].to("1/K").magnitude),
+        float(parameters["dielectric_4"].to("1/K**2").magnitude),
+        float(parameters["dielectric_5"].to("1/K**3").magnitude),
+    ]
 
 
 def _plain(value: Q | None) -> float | None:

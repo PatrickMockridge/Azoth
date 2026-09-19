@@ -10,12 +10,24 @@ result dataclasses in `azoth.core.result` rather than the transport types below 
 see `azoth._rust_bridge`.
 """
 
-from typing import final
+from typing import TypedDict, final
 
 # --- transport types ------------------------------------------------------
 # The values that cross the boundary and are not results. Hand-written here
 # because a `cdylib` has nothing to introspect; held to the Rust structs by
 # `test_the_stub_matches_the_rust_transport_types`.
+
+class ComponentArguments(TypedDict):
+    """One substance as a keycard states it, on its way to the overlay. A record rather than a tuple, because it outgrew one: the ion class and the electrolyte data joined `Tc`, `Pc` and `omega`. Every field is optional for the reason the first three always were - a card stating one parameter keeps the rest - and `ion` is `None` for "the card says nothing", which is deliberately not `False`."""
+
+    name: str
+    tc: float | None
+    pc: float | None
+    omega: float | None
+    ion: bool | None
+    ionic_charge: float | None
+    deshmukh_mather_diameter: float | None
+    dielectric: list[float] | None
 
 @final
 class AssociationSpec:
@@ -77,6 +89,10 @@ class ComponentRow:
     association_m_pr: float
     association_racket_z: float
     association_volume_correction: float
+    component_type: str
+    ionic_charge: float
+    deshmukh_mather_diameter: float
+    dielectric: list[float]
 
 @final
 class KijRow:
@@ -2018,7 +2034,7 @@ def fittings_rows() -> list[FittingRow]: ...
 def fluid_rows(name: str) -> list[FluidRow]: ...
 def component_rows() -> list[ComponentRow]: ...
 def kij_rows() -> list[KijRow]: ...
-def overlay(components: list[tuple[str, float | None, float | None, float | None]], kij: list[tuple[str, str, float]]) -> Overlay: ...
+def overlay(components: list[ComponentArguments], kij: list[tuple[str, str, float]]) -> Overlay: ...
 def card_overlay(text: str) -> Overlay: ...
 def card_coefficients(text: str) -> list[tuple[str, str, str, int, int, list[float]]]: ...
 def overlay_entry_row(name: str, overlay: Overlay) -> ComponentRow: ...

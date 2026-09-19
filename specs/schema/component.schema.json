@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/component.schema.json",
   "title": "Component parameters",
-  "description": "The parameters a keycard may state for one component, and the canonical unit each is converted to. This is the single declaration the two implementations and the keycard schema hold themselves to, so a parameter one carries and another does not is a test failure rather than a drift.",
+  "description": "The parameters a keycard may state for one component, and the canonical unit each is converted to. This is the single declaration the two implementations and the keycard schema hold themselves to, so a parameter one carries and another does not is a test failure rather than a drift. **`ion` is the one entry here that is not a parameter**: it is a class, and it is stated the way the databank states it because whether a substance is an ion is what decides whether a cubic may be built over it at all.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -53,17 +53,73 @@
       "x-azoth-unit": "J/(mol*K**5)",
       "x-azoth-column": "cpe",
       "description": "Ideal-gas heat-capacity quartic coefficient."
+    },
+    "ion": {
+      "type": "boolean",
+      "x-azoth-column": "comptype",
+      "description": "Whether the substance is an ion. **Only a card that adds a substance need state it**, and one that does needs no `Tc`, `Pc` or `omega` - an ion has no meaningful critical constants, and `mixture_of` refuses a cubic over one. A card cannot reclassify a substance the databank already carries: the databank's answer wins, so a card cannot hand a cubic the filler the refusal exists to keep out of one."
+    },
+    "ionic_charge": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-column": "ioniccharge",
+      "description": "The ionic charge **as a charge number**, in units of the elementary charge: `1` for `Na+`, `-2` for `SO4--`. Dimensionless rather than coulombs because that is the quantity every electrolyte model consumes - Pitzer's ionic strength is `\u00bd \u03a3 m z\u00b2` - and NeqSim's own column holds the same number. Zero does not mean *not an ion*: `caco3` is a neutral salt filed with the ions."
+    },
+    "deshmukh_mather_diameter": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "angstrom",
+      "x-azoth-column": "deshmationicdiameter",
+      "description": "The Deshmukh-Mather ion diameter. NeqSim carries it in \u00e5ngstr\u00f6m and multiplies by `1e-10` at the point of use (`ComponentDesmukhMather`), so this is the same quantity one conversion earlier. The table's absence marker is `0`, which is the infinite-dilution limit of the term it belongs to rather than a diameter."
+    },
+    "dielectric_1": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-column": "dielectricparameter1",
+      "description": "The `d0` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
+    },
+    "dielectric_2": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "K",
+      "x-azoth-column": "dielectricparameter2",
+      "description": "The `d1` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
+    },
+    "dielectric_3": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "1/K",
+      "x-azoth-column": "dielectricparameter3",
+      "description": "The `d2` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
+    },
+    "dielectric_4": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "1/K**2",
+      "x-azoth-column": "dielectricparameter4",
+      "description": "The `d3` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
+    },
+    "dielectric_5": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "1/K**3",
+      "x-azoth-column": "dielectricparameter5",
+      "description": "The `d4` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
     }
   },
   "$defs": {
     "parameter": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["value", "unit"],
+      "required": [
+        "value",
+        "unit"
+      ],
       "properties": {
-        "citation": { "$ref": "calc.schema.json#/$defs/citation" },
-        "value": { "type": "number" },
-        "unit": { "$ref": "calc.schema.json#/$defs/unit" }
+        "citation": {
+          "$ref": "calc.schema.json#/$defs/citation"
+        },
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "$ref": "calc.schema.json#/$defs/unit"
+        }
       }
     }
   }

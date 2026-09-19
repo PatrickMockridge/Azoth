@@ -328,6 +328,36 @@ pub struct ComponentOverride {
     pub cp: Option<[f64; 5]>,
     /// The association this card states, or `None` to keep the table's.
     pub association: Option<AssociationOverride>,
+    /// The ionic charge as a **charge number**, in units of the elementary charge.
+    ///
+    /// The card states this in `dimensionless`, which is the quantity every electrolyte
+    /// model consumes: Pitzer's ionic strength is `1/2 sum m z^2` and NeqSim's own column
+    /// holds the same number. **Zero is not "not an ion"** - `caco3` is a neutral salt
+    /// filed with them - so this is a value and [`Self::ion`] is the marker.
+    pub ionic_charge: Option<f64>,
+    /// The Deshmukh-Mather ion diameter, in **metres**.
+    ///
+    /// The card states metres and the databank carries ångström, which is the one
+    /// crossing between them: `ComponentDesmukhMather` multiplies its own column by
+    /// `1e-10` at the point of use, so the two are the same quantity one conversion apart.
+    pub deshmukh_mather_diameter: Option<f64>,
+    /// The five dielectric-constant coefficients `d0`..`d4`, in the units their positions
+    /// in `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` give them.
+    ///
+    /// All five or none, for the reason [`Self::cp`] is: three of five is not a
+    /// polynomial, and a partial set is not a value any model reads.
+    pub dielectric: Option<[f64; 5]>,
+    /// Whether the substance is an ion, stated only by a card that **adds** one.
+    ///
+    /// `None` is "the card says nothing", which leaves the table's class in force. A card
+    /// cannot reclassify a substance the databank already carries: the class is what
+    /// decides whether a cubic may be built at all, so a card able to clear it could hand
+    /// a cubic the filler the refusal exists to keep out of one.
+    ///
+    /// A card-added ion needs no `Tc`, `Pc` or `omega` - an ion has no meaningful critical
+    /// constants, and [`mixture_of`] refuses one - so this is also what exempts it from
+    /// [`Self::is_complete`].
+    pub ion: Option<bool>,
 }
 
 impl ComponentOverride {
@@ -1145,7 +1175,12 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
         )),
         (Some(base), None) => Ok(base),
         (None, Some(over)) => {
-            if !over.is_complete() {
+            // **An ion is exempt from the cubic's parameters**, and that is the whole point
+            // of the flag: an ion has no meaningful `Tc`, `Pc` or `omega`, so requiring them
+            // would make a user invent the same filler NeqSim's own table carries - which
+            // `mixture_of` refuses for exactly that reason.
+            let ion = over.ion == Some(true);
+            if !ion && !over.is_complete() {
                 let mut missing = Vec::new();
                 if over.tc.is_none() {
                     missing.push("Tc");
@@ -1168,8 +1203,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             }
             Ok(Entry {
                 name: key,
-                // Checked complete above; the defaults are unreachable rather than
-                // meaningful, and a zero here would be a critical constant.
+                // Checked complete above for anything that is not an ion; for an ion the
+                // defaults are deliberate - the zero states that no critical constant was
+                // given, and `mixture_of` refuses one rather than reading the zero.
                 tc: over.tc.unwrap_or_default(),
                 pc: over.pc.unwrap_or_default(),
                 omega: over.omega.unwrap_or_default(),
@@ -1205,10 +1241,18 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // substance it adds is one, and `mixture_of`'s [`ION`] refusal lets it
                 // through. Everything below is the electrolyte data a card does not
                 // state, and the zeros are its absence rather than a value.
-                class: "other".to_string(),
-                ionic_charge: 0.0,
-                deshmukh_mather_diameter: 0.0,
-                dielectric: [0.0; 5],
+                class: if ion {
+                    ION.to_string()
+                } else {
+                    "other".to_string()
+                },
+                ionic_charge: over.ionic_charge.unwrap_or_default(),
+                // The card states metres and the table holds ångström; this is the one
+                // crossing, so the factor appears once rather than at every read.
+                deshmukh_mather_diameter: over
+                    .deshmukh_mather_diameter
+                    .map_or(0.0, |metres| metres * 1.0e10),
+                dielectric: over.dielectric.unwrap_or([0.0; 5]),
             })
         }
         (Some(base), Some(over)) => Ok(Entry {
@@ -1238,9 +1282,11 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             // The table's, for the reason the PC-SAFT set below is: `ComponentOverride` is
             // a closed list, so a card correcting `Tc` does not turn an ion into a cubic.
             class: base.class,
-            ionic_charge: base.ionic_charge,
-            deshmukh_mather_diameter: base.deshmukh_mather_diameter,
-            dielectric: base.dielectric,
+            ionic_charge: over.ionic_charge.unwrap_or(base.ionic_charge),
+            deshmukh_mather_diameter: over
+                .deshmukh_mather_diameter
+                .map_or(base.deshmukh_mather_diameter, |metres| metres * 1.0e10),
+            dielectric: over.dielectric.unwrap_or(base.dielectric),
             // The card's scheme wins over the table's, and every parameter the card does
             // not name is the table's: `applied_to` is the one place the two are merged.
             association: over
@@ -2877,15 +2923,14 @@ pub fn mixture_of(
         return Err(AzothError::invalid_input(
             "components",
             format!(
-                "{} {} filed under `{}` in NeqSim's component database, whose critical \
-                 columns hold a default rather than a measurement - `Tc`, `Pc` and `omega` \
-                 are one shared set on 27 of its 62 rows and a neutral parent's numbers on \
-                 most of the rest. A cubic built from them would return plausible-looking \
-                 wrong numbers. An ion belongs to the electrolyte models, which read its \
-                 charge and diameter instead.",
+                "{} {} an ion, and a cubic has no notion of one. NeqSim's table fills its \
+                 ion rows' critical columns with a default - one shared set on 27 of the 62, \
+                 a neutral parent's numbers on most of the rest - so a cubic built from them \
+                 returns plausible-looking wrong numbers, and a card that adds an ion has no \
+                 better constants to give. An ion belongs to the electrolyte models, which \
+                 read its charge and diameter instead.",
                 ions.join(", "),
                 if ions.len() == 1 { "is" } else { "are" },
-                ION,
             ),
         ));
     }

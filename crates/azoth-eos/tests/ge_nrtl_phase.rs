@@ -122,6 +122,7 @@ fn a_component_without_a_vapour_pressure_correlation_is_refused() {
                 omega: Some(0.2),
                 cp: None,
                 association: None,
+                ..Default::default()
             },
         );
         card

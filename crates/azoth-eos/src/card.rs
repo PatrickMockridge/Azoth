@@ -41,6 +41,15 @@ pub const COMPONENT_PARAMETERS: &[(&str, &str)] = &[
     ("cp_c", "J/(mol*K**3)"),
     ("cp_d", "J/(mol*K**4)"),
     ("cp_e", "J/(mol*K**5)"),
+    // The electrolyte data. `ion` is not here: it is a class rather than a number with a
+    // unit, and `ComponentBody` carries it beside this table rather than in it.
+    ("ionic_charge", "dimensionless"),
+    ("deshmukh_mather_diameter", "angstrom"),
+    ("dielectric_1", "dimensionless"),
+    ("dielectric_2", "K"),
+    ("dielectric_3", "1/K"),
+    ("dielectric_4", "1/K**2"),
+    ("dielectric_5", "1/K**3"),
 ];
 
 /// The association parameters a card may state, and the canonical unit each is converted
@@ -94,6 +103,29 @@ pub struct Keyholder {
     pub name: String,
     /// A fetchable reference to the licence itself, if the holder named one.
     pub licence: Option<String>,
+}
+
+/// One substance's entry in a card: its parameters, and whether it is an ion.
+///
+/// **`ion` is not a parameter and does not fit [`Parameter`]**, which is a number and a
+/// unit. It is a class, and it belongs beside the parameters because that is what it is a
+/// statement about - the same reason `associations` states the site scheme apart from the
+/// fitted values beside it.
+///
+/// **No `deny_unknown_fields`**, because the parameters are flattened into this struct and
+/// serde cannot carry both. The refusal that matters is not lost: an unrecognised name
+/// still reaches `resolve_components`, which refuses it with the list of names it reads,
+/// and a name whose body is not a parameter fails inside [`Parameter`], which does deny
+/// them.
+#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+pub struct ComponentBody {
+    /// Whether the substance is an ion. Absent means the card says nothing, which leaves
+    /// the databank's class in force.
+    #[serde(default)]
+    pub ion: Option<bool>,
+    /// The parameters, keyed by the names `specs/schema/component.schema.json` declares.
+    #[serde(flatten)]
+    pub parameters: BTreeMap<String, Parameter>,
 }
 
 /// One parameter of one substance, as the card states it.
@@ -283,7 +315,7 @@ pub struct Model {
 struct Document {
     schema_version: i64,
     keyholder: Option<Keyholder>,
-    components: Option<BTreeMap<String, BTreeMap<String, Parameter>>>,
+    components: Option<BTreeMap<String, ComponentBody>>,
     associations: Option<BTreeMap<String, AssociationBody>>,
     kij: Option<Vec<KijRow>>,
     coefficients: Option<BTreeMap<String, BTreeMap<String, Coefficient>>>,
@@ -435,15 +467,17 @@ impl Card {
 /// Add every component the document names to the overlay, converting each parameter.
 fn resolve_components(
     overlay: &mut Overlay,
-    components: Option<&BTreeMap<String, BTreeMap<String, Parameter>>>,
+    components: Option<&BTreeMap<String, ComponentBody>>,
 ) -> Result<()> {
     let Some(components) = components else {
         return Ok(());
     };
 
-    for (name, parameters) in components {
+    for (name, body) in components {
+        let parameters = &body.parameters;
         let mut override_ = ComponentOverride::default();
         let mut cp = [None::<f64>; 5];
+        let mut dielectric = [None::<f64>; 5];
         for (parameter, body) in parameters {
             let field = format!("components.{name}.{parameter}");
             let Some((_, canonical)) = COMPONENT_PARAMETERS
@@ -473,6 +507,16 @@ fn resolve_components(
                 "cp_c" => cp[2] = Some(value),
                 "cp_d" => cp[3] = Some(value),
                 "cp_e" => cp[4] = Some(value),
+                // A charge number, which is what every electrolyte model consumes.
+                "ionic_charge" => override_.ionic_charge = Some(value),
+                // The card states metres; the databank holds ångström, and the merge is
+                // where the one crossing happens.
+                "deshmukh_mather_diameter" => override_.deshmukh_mather_diameter = Some(value),
+                "dielectric_1" => dielectric[0] = Some(value),
+                "dielectric_2" => dielectric[1] = Some(value),
+                "dielectric_3" => dielectric[2] = Some(value),
+                "dielectric_4" => dielectric[3] = Some(value),
+                "dielectric_5" => dielectric[4] = Some(value),
                 // Unreachable: the lookup above admits these eight and no others.
                 other => {
                     return Err(AzothError::invalid_input(
@@ -493,6 +537,23 @@ fn resolve_components(
             ));
         }
         override_.cp = has_all.then(|| cp.map(|value| value.expect("checked present")));
+
+        // The dielectric polynomial is all five or none, for the reason the heat capacity
+        // is: three coefficients of a `T^3` polynomial is not a correlation, and a partial
+        // set is not a value anything reads.
+        let all_dielectric = dielectric.iter().all(Option::is_some);
+        if dielectric.iter().any(Option::is_some) && !all_dielectric {
+            return Err(AzothError::invalid_input(
+                format!("components.{name}"),
+                "the dielectric constant's polynomial needs all five of `dielectric_1` \
+                 through `dielectric_5`, or none of them",
+            ));
+        }
+        override_.dielectric =
+            all_dielectric.then(|| dielectric.map(|value| value.expect("checked present")));
+
+        // The card's statement, if it makes one; `None` leaves the databank's class.
+        override_.ion = body.ion;
         overlay.set_component(name, override_);
     }
     Ok(())
@@ -760,6 +821,16 @@ mod tests {
         ("cp_c", "J/(mol*K**3)"),
         ("cp_d", "J/(mol*K**4)"),
         ("cp_e", "J/(mol*K**5)"),
+        // The electrolyte data. `ion` is absent here as it is from `COMPONENT_PARAMETERS`:
+        // it is a class rather than a number with a unit, and the schema states it as a
+        // boolean beside these.
+        ("ionic_charge", "dimensionless"),
+        ("deshmukh_mather_diameter", "angstrom"),
+        ("dielectric_1", "dimensionless"),
+        ("dielectric_2", "K"),
+        ("dielectric_3", "1/K"),
+        ("dielectric_4", "1/K**2"),
+        ("dielectric_5", "1/K**3"),
     ];
 
     /// The association parameter set `specs/schema/association.schema.json` declares, name

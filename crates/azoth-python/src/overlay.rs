@@ -16,7 +16,43 @@ use crate::data::{PyComponentRow, row_of};
 
 /// One substance as a card states it: `(name, Tc, Pc, omega)`, each parameter optional
 /// because a card naming only `omega` keeps the shipped `Tc` and `Pc`.
-pub type ComponentArguments = (String, Option<f64>, Option<f64>, Option<f64>);
+/// One substance as a card states it, on its way across the boundary.
+///
+/// **A record rather than a tuple, because it outgrew one.** `(name, Tc, Pc, omega)` was
+/// readable; adding the ion class and the electrolyte data would have made it eight
+/// positions nobody can check. Each field is optional for the reason the first four were -
+/// a card stating one parameter keeps the rest - and `ion` is `None` for "the card says
+/// nothing", which is deliberately not `false`.
+#[derive(Debug, Clone, Default, FromPyObject)]
+pub struct ComponentArguments {
+    #[pyo3(item)]
+    pub name: String,
+    #[pyo3(item)]
+    pub tc: Option<f64>,
+    #[pyo3(item)]
+    pub pc: Option<f64>,
+    #[pyo3(item)]
+    pub omega: Option<f64>,
+    /// Whether the card states the substance is an ion, stated only by a card that *adds*
+    /// one: the databank's class wins for a substance it already carries.
+    #[pyo3(item)]
+    pub ion: Option<bool>,
+    /// The ionic charge as a charge number.
+    #[pyo3(item)]
+    pub ionic_charge: Option<f64>,
+    /// The Deshmukh-Mather diameter, in **metres**.
+    ///
+    /// The card's own unit and the Rust type's, so the merge on the far side is the same
+    /// arithmetic `databank::entry` runs rather than a second conversion that could
+    /// disagree with it. The first draft of this crossed to ångström here, and the
+    /// agreement test caught it: the merge multiplied by `1e10` on top, so the two
+    /// implementations differed by ten orders of magnitude.
+    #[pyo3(item)]
+    pub deshmukh_mather_diameter: Option<f64>,
+    /// The five dielectric-constant coefficients, `d0`..`d4`.
+    #[pyo3(item)]
+    pub dielectric: Option<Vec<f64>>,
+}
 
 /// A keycard's sections, as this crate can read them. Opaque: a card crosses as a value,
 /// and *what it resolves to* is read through the functions below.
@@ -49,13 +85,36 @@ pub fn overlay(
     kij: Vec<(String, String, f64)>,
 ) -> PyResult<PyOverlay> {
     let mut inner = Overlay::new();
-    for (name, tc, pc, omega) in components {
+    for arguments in components {
+        let dielectric = match arguments.dielectric {
+            Some(values) if values.len() == 5 => {
+                let mut set = [0.0; 5];
+                set.copy_from_slice(&values);
+                Some(set)
+            }
+            // A partial polynomial is refused on the Python side, which is where the card
+            // is read; reaching here with another length would be a bridge defect rather
+            // than a user's, so it is refused rather than truncated.
+            Some(values) => {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "components.{}.dielectric carries {} coefficients and a `T^3` \
+                     polynomial needs 5",
+                    arguments.name,
+                    values.len()
+                )));
+            }
+            None => None,
+        };
         inner.set_component(
-            &name,
+            &arguments.name,
             ComponentOverride {
-                tc,
-                pc,
-                omega,
+                tc: arguments.tc,
+                pc: arguments.pc,
+                omega: arguments.omega,
+                ion: arguments.ion,
+                ionic_charge: arguments.ionic_charge,
+                deshmukh_mather_diameter: arguments.deshmukh_mather_diameter,
+                dielectric,
                 ..Default::default()
             },
         );

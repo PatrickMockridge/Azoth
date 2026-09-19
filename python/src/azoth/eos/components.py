@@ -478,12 +478,12 @@ def _refuse_ions(names: list[str]) -> None:
     verb = "is" if len(names) == 1 else "are"
     raise InvalidInputError(
         "components",
-        f"{', '.join(names)} {verb} filed under `{ION}` in NeqSim's component database, "
-        f"whose critical columns hold a default rather than a measurement - `Tc`, `Pc` and "
-        f"`omega` are one shared set on 27 of its 62 rows and a neutral parent's numbers on "
-        f"most of the rest. A cubic built from them would return plausible-looking wrong "
-        f"numbers. An ion belongs to the electrolyte models, which read its charge and "
-        f"diameter instead.",
+        f"{', '.join(names)} {verb} an ion, and a cubic has no notion of one. NeqSim's table "
+        f"fills its ion rows' critical columns with a default - one shared set on 27 of the "
+        f"62, a neutral parent's numbers on most of the rest - so a cubic built from them "
+        f"returns plausible-looking wrong numbers, and a card that adds an ion has no better "
+        f"constants to give. An ion belongs to the electrolyte models, which read its charge "
+        f"and diameter instead.",
     )
 
 
@@ -1052,8 +1052,14 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
     """
     key = name.strip().lower()
     base = _table().get(key)
-    override = card.component(key) if card is not None else None
+    # The card's entry for the substance, and the parameters out of it: `ion` is a class
+    # rather than a parameter, so it is read separately and the map below is a map.
+    stated_component = card.component(key) if card is not None else None
+    override = None if stated_component is None else stated_component.parameters
     stated = card.association_for(key) if card is not None else None
+    # `None` is "the card says nothing", which is not `False`: a card silent on the
+    # question leaves the databank's class in force.
+    ion = card.is_ion(key) if card is not None else None
 
     if override is None and stated is None:
         if base is None:
@@ -1076,7 +1082,10 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
                 f"have needs every parameter a cubic reads. An association is added to a "
                 f"fluid, not to a name.",
             )
-        missing = sorted(keycard.CUBIC_PARAMETERS - set(override))
+        # **An ion is exempt from the cubic's parameters**, and that is the flag's whole
+        # point: an ion has no meaningful constants, so requiring them would make a user
+        # invent the filler `mixture_of` refuses for exactly that reason.
+        missing = [] if ion else sorted(keycard.CUBIC_PARAMETERS - set(override))
         if missing:
             raise PropertyUnavailableError(
                 name,
@@ -1090,9 +1099,12 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             name=name.strip(),
             cas=None,
             formula=None,
-            Tc=override["Tc"],
-            Pc=override["Pc"],
-            omega=_as_float(override["omega"], key),
+            # An ion has no meaningful `Tc`, `Pc` or `omega`, so a card need not state
+            # them and the entry carries zeros. That is not a silent default: `mixture_of`
+            # refuses a cubic over an ion, so nothing ever reads them.
+            Tc=override["Tc"] if not ion else ureg.Quantity(0.0, "K"),
+            Pc=override["Pc"] if not ion else ureg.Quantity(0.0, "Pa"),
+            omega=0.0 if ion else _as_float(override["omega"], key),
             molar_mass=None,
             critical_volume=None,
             liquid_density=None,
@@ -1105,13 +1117,13 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             dipole_moment_debye=0.0,
             viscosity_correction_factor=0.0,
             reference_state=SOLVENT,
-            # `other` rather than blank, for the same reason: it is the class that permits
-            # a cubic, so a card-added substance is one. Everything below is the electrolyte
-            # data a card does not state, and the zeros are its absence rather than a value.
-            component_type="other",
-            ionic_charge=0.0,
-            deshmukh_mather_diameter=0.0,
-            dielectric=(0.0, 0.0, 0.0, 0.0, 0.0),
+            # The card's own statement, or `other` - the class that permits a cubic, which
+            # is what a card-added substance is unless it says otherwise.
+            component_type=ION if ion else "other",
+            ionic_charge=_card_charge(override),
+            # The card states metres and the databank holds ångström; this is the crossing.
+            deshmukh_mather_diameter=_card_diameter(override),
+            dielectric=_card_dielectric(override) or (0.0, 0.0, 0.0, 0.0, 0.0),
             # A card-added substance has no table row to inherit an association from, so
             # the card's is the whole of it - or none, if it states none.
             association=None if stated is None else _card_association(None, stated),
@@ -1143,6 +1155,21 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
         association=(
             base.association if stated is None else _card_association(base.association, stated)
         ),
+        # **The class is the table's and a card never changes it.** It is what decides
+        # whether a cubic may be built at all, so a card able to clear it could hand a
+        # cubic the filler the refusal exists to keep out of one.
+        component_type=base.component_type,
+        ionic_charge=(
+            base.ionic_charge if override is None else _card_charge(override, base.ionic_charge)
+        ),
+        deshmukh_mather_diameter=(
+            base.deshmukh_mather_diameter
+            if override is None
+            else _card_diameter(override, base.deshmukh_mather_diameter)
+        ),
+        dielectric=(
+            base.dielectric if override is None else (_card_dielectric(override) or base.dielectric)
+        ),
         source="keycard",
     )
 
@@ -1160,6 +1187,51 @@ def _as_float(value: Q, name: str) -> float:
             f"the acentric factor is a pure number, but got {value}",
         )
     return float(value.to("dimensionless").magnitude)
+
+
+def _card_charge(override: Mapping[str, Q], shipped: float = 0.0) -> float:
+    """The charge number the card states, or the databank's.
+
+    A charge number is dimensionless - Pitzer's ionic strength is `1/2 sum m z^2` and
+    NeqSim's own column holds the same number - so the canonical unit is
+    ``dimensionless`` and the magnitude is the value a model takes.
+    """
+    if "ionic_charge" not in override:
+        return shipped
+    return float(override["ionic_charge"].to("dimensionless").magnitude)
+
+
+def _card_diameter(override: Mapping[str, Q], shipped_angstrom: float = 0.0) -> float:
+    """The ion diameter the card states, **in ångström whatever the card wrote**.
+
+    A card states it in the card's own length units and the databank holds ångström -
+    NeqSim's `ComponentDesmukhMather` multiplies its column by `1e-10` at the point of
+    use - so this is the one crossing, and it is here rather than at every read.
+    """
+    if "deshmukh_mather_diameter" not in override:
+        return shipped_angstrom
+    return float(override["deshmukh_mather_diameter"].to("angstrom").magnitude)
+
+
+def _card_dielectric(
+    override: Mapping[str, Q],
+) -> tuple[float, float, float, float, float] | None:
+    """The five dielectric coefficients if the card states all of them, else `None`.
+
+    Each is already a quantity in its own unit - the polynomial's `d0` is dimensionless,
+    `d1` is a temperature, and `d2`..`d4` are inverse temperatures - so the magnitudes are
+    the values the correlation takes.
+    """
+    names = ("dielectric_1", "dielectric_2", "dielectric_3", "dielectric_4", "dielectric_5")
+    if all(name in override for name in names):
+        return (
+            float(override["dielectric_1"].magnitude),
+            float(override["dielectric_2"].to("K").magnitude),
+            float(override["dielectric_3"].to("1/K").magnitude),
+            float(override["dielectric_4"].to("1/K**2").magnitude),
+            float(override["dielectric_5"].to("1/K**3").magnitude),
+        )
+    return None
 
 
 def _cp(override: Mapping[str, Q]) -> tuple[float, float, float, float, float] | None:

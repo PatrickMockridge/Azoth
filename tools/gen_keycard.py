@@ -70,6 +70,11 @@ def parameters(schema_path: Path = SCHEMA) -> list[tuple[str, str, str]]:
         # `scheme` is a name from a closed vocabulary and not a number in a unit, so it has
         # no column and no unit to convert to. The card states it as written.
         if "x-azoth-column" in props
+        # **`ion` has a column and no unit**, because it is a class rather than a
+        # parameter: the card states `true` or `false`, and there is nothing to convert.
+        # The baseline card carries the compiled table, so it has no ion to state either -
+        # an ion is not a cubic component, which is what this file is a subset of.
+        and "x-azoth-unit" in props
     ]
 
 

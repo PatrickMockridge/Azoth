@@ -139,13 +139,35 @@ def test_the_component_parameters_are_what_the_implementation_reads() -> None:
     assert {"Tc", "Pc", "omega"} == keycard.CUBIC_PARAMETERS
     fields = set(Component.__dataclass_fields__)
     assert fields >= keycard.CUBIC_PARAMETERS
-    assert set(keycard.COMPONENT_PARAMETERS) - keycard.CUBIC_PARAMETERS == {
-        "cp_a",
-        "cp_b",
-        "cp_c",
-        "cp_d",
-        "cp_e",
+
+    # The heat-capacity coefficients reach the ideal-gas model, and the electrolyte set
+    # reaches the entry's own fields. Named rather than counted, so the assertion says
+    # which parameter is unaccounted for.
+    electrolyte = {
+        "ionic_charge",
+        "deshmukh_mather_diameter",
+        "dielectric_1",
+        "dielectric_2",
+        "dielectric_3",
+        "dielectric_4",
+        "dielectric_5",
     }
+    assert (
+        set(keycard.COMPONENT_PARAMETERS) - keycard.CUBIC_PARAMETERS
+        == {
+            "cp_a",
+            "cp_b",
+            "cp_c",
+            "cp_d",
+            "cp_e",
+        }
+        | electrolyte
+    )
+    # The five `dielectric_*` share one field, which is why this is a containment rather
+    # than an equality: they are one polynomial, and a card states all five or none.
+    assert {"ionic_charge", "deshmukh_mather_diameter", "dielectric"} <= set(
+        eos.components.DatabankEntry.__dataclass_fields__
+    )
 
 
 def test_component_parameters_mirror_the_single_declaration() -> None:
@@ -156,7 +178,21 @@ def test_component_parameters_mirror_the_single_declaration() -> None:
     parameter added to one and not the other fails here rather than drifting.
     """
     document = json.loads(COMPONENT_SCHEMA.read_text(encoding="utf-8"))
-    declared = {name: props["x-azoth-unit"] for name, props in document["properties"].items()}
+    # **A parameter is the entries that reference `$defs.parameter`**, which is what makes
+    # them a value and a unit. `ion` is the one entry that is not - it is a class, and it
+    # is asserted separately below so that adding a second class-shaped entry fails here
+    # rather than being quietly skipped.
+    declared = {
+        name: props["x-azoth-unit"]
+        for name, props in document["properties"].items()
+        if props.get("$ref") == "#/$defs/parameter"
+    }
+    classes = sorted(set(document["properties"]) - set(declared))
+    assert classes == ["ion"], (
+        f"the schema declares {classes} as something other than a parameter. This test "
+        f"reads only the parameters, so a second class-shaped entry would go unchecked."
+    )
+    assert document["properties"]["ion"]["type"] == "boolean"
     assert dict(keycard.COMPONENT_PARAMETERS) == declared
 
 
@@ -779,3 +815,56 @@ def test_a_card_value_is_restated_in_the_spec_s_own_unit() -> None:
     nested = _in_spec_unit([[q(1.0, "mm")], [q(2.0, "mm")]], "m")
     assert nested[1][0].to("m").magnitude == pytest.approx(0.002)
     assert isinstance(nested, list) and isinstance(nested[0], list), "the shape is kept"
+
+
+def test_a_card_can_add_an_ion() -> None:
+    """**The `ion` flag is what lets a card state an electrolyte substance at all.**
+
+    An ion has no meaningful `Tc`, `Pc` or `omega`, so requiring them of a card-added
+    substance would make a user invent the same filler NeqSim's own table carries - which
+    is exactly what the refusal exists to keep out of a cubic. Stating the class instead
+    makes the substance usable by an electrolyte model and unusable by a cubic, with no
+    invented numbers in between.
+    """
+    card = a_card(
+        components={
+            "na-plus": {
+                "ion": True,
+                "ionic_charge": {"value": 1.0, "unit": "dimensionless"},
+                "deshmukh_mather_diameter": {"value": 3.0, "unit": "angstrom"},
+            }
+        }
+    )
+    sodium = eos.components.entry("na-plus", card=card)
+    assert sodium.component_type == eos.components.ION
+    assert sodium.ionic_charge == 1.0
+    assert sodium.deshmukh_mather_diameter == pytest.approx(3.0)
+    # No cubic parameters were given, and the entry carries zeros rather than invented
+    # ones - safe because `from_names` refuses the substance before a cubic is built.
+    assert sodium.Tc.magnitude == 0.0
+
+    with pytest.raises(InvalidInputError):
+        eos.from_names(["water", "na-plus"], card=card)
+
+    # **A card-added substance that is not an ion still needs its cubic**, which is what
+    # stops the exemption being a hole rather than a rule.
+    plain = a_card(components={"foo": {"omega": {"value": 0.5, "unit": "dimensionless"}}})
+    with pytest.raises(PropertyUnavailableError):
+        eos.components.entry("foo", card=plain)
+
+
+def test_a_card_cannot_reclassify_a_shipped_substance() -> None:
+    """The class decides whether a cubic may be built, so a card cannot clear it."""
+    card = a_card(
+        components={"na+": {"ion": False, "ionic_charge": {"value": 1.0, "unit": "dimensionless"}}}
+    )
+    assert eos.components.entry("na+", card=card).component_type == eos.components.ION
+    with pytest.raises(InvalidInputError):
+        eos.from_names(["na+"], card=card)
+
+    # A card *may* correct the numbers beside the class, which is the direction the
+    # override is for - the same rule that lets it correct `Tc`.
+    corrected = a_card(
+        components={"na+": {"ionic_charge": {"value": 2.0, "unit": "dimensionless"}}}
+    )
+    assert eos.components.entry("na+", card=corrected).ionic_charge == 2.0
