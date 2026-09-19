@@ -825,9 +825,7 @@ def phase_state_at(
         for i in range(n):
             bd = b_der[i]
             fv = alpha_mix * bd * z / ((z + delta1 * b_mix) * (z + delta2 * b_mix))
-            ln_phi.append(
-                -ln_z_minus_b + bd / (z - b_mix) - (ader[i] / c.delta_diff) * i_term - fv
-            )
+            ln_phi.append(-ln_z_minus_b + bd / (z - b_mix) - (ader[i] / c.delta_diff) * i_term - fv)
     else:
         for i in range(n):
             b_ratio = b[i] / b_mix

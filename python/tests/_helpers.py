@@ -295,9 +295,7 @@ def assert_results_equal(
             # pressures, a surface tension per component. Compared entry by entry in base
             # SI, for the reason the scalar branch above converts: the two sides may state
             # the same pressure in different units.
-            assert len(a) == len(b), (
-                f"{context}.{field}: {len(a)} entries against {len(b)}"
-            )
+            assert len(a) == len(b), f"{context}.{field}: {len(a)} entries against {len(b)}"
             for index, (qa, qb) in enumerate(zip(a, b, strict=True)):
                 assert isinstance(qb, pint.Quantity), (
                     f"{context}.{field}[{index}]: one side is a bare number and the other "

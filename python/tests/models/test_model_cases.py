@@ -45,7 +45,6 @@ MODEL_CASES = [
 ]
 
 
-
 def _expected_result(result: Any, case: dict[str, Any]) -> Any:
     """A copy of ``result`` with every field the case records replaced by its value.
 
