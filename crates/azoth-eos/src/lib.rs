@@ -99,6 +99,7 @@ pub mod nrtl_activity_coefficients;
 pub mod parachor_surface_tension;
 pub mod parahydrogen_solid;
 pub mod parahydrogen_solid_phase;
+pub mod pcsaft;
 pub mod ph_flash;
 pub mod phase_boundary;
 pub mod pr78_kappa;
