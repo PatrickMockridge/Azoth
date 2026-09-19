@@ -6,7 +6,7 @@
 //! cancelling, and this tranche has already spent a session on a quantity read at the
 //! wrong scale.
 
-use azoth_eos::pcsaft::{PcsaftComponent, pressure_over_rt, state};
+use azoth_eos::pcsaft::{PcsaftComponent, d_pressure_over_rt_dv, pressure_over_rt, state};
 
 /// Methane at 300 K and 50 bara, and methane/n-butane at 350 K and 30 bara - both from
 /// the probe, whose molar volumes are its `volumeSAFT`.
@@ -181,5 +181,57 @@ fn the_eta_derivative_is_the_energy_s_own() {
         (f_eta / wanted - 1.0).abs() < 1.0e-6,
         "the finite difference gives F_eta = {f_eta} and the pressure's chain rule needs \
          {wanted}"
+    );
+}
+
+/// The second derivative, tied to the energy rather than to the first derivative's own
+/// code: a central difference of `A^R/(RT)` in `v` is `f''(v)`, and the pressure's
+/// curvature is `-(f'' + 1/v^2)`.
+#[test]
+fn the_second_derivative_is_the_energy_s_own() {
+    let components = [methane(), n_butane()];
+    let kij = [0.0, 0.022, 0.022, 0.0];
+    let x = [0.6, 0.4];
+    let (t, v) = (350.0, 8.14109734626316e-4);
+    // **`1e-4` of the volume, not of the energy's scale.** The second difference is
+    // `f'' h^2` against an energy of order `0.1`, so it loses twelve digits to
+    // cancellation before the truncation error is worth anything; measured over six
+    // decades of `h`, this is where the two meet and the difference is good to `1e-8`.
+    let h = 1.0e-4 * v;
+
+    let up = state(&components, &kij, &x, t, v + h).expect("a state");
+    let down = state(&components, &kij, &x, t, v - h).expect("a state");
+    let base = state(&components, &kij, &x, t, v).expect("a state");
+    let f_d2 = (up.f() - 2.0 * base.f() + down.f()) / (h * h);
+
+    let d = d_pressure_over_rt_dv(&components, &kij, &x, t, v).expect("a derivative");
+    let wanted = -f_d2 - 1.0 / (v * v);
+    assert!(
+        (d / wanted - 1.0).abs() < 1.0e-6,
+        "the finite difference gives d2F/dv2 = {f_d2} and the pressure's chain rule needs \
+         {d} against {wanted}"
+    );
+}
+
+/// And the two public functions are consistent: the curvature of `P/(RT)` is the central
+/// difference of `pressure_over_rt` itself. The first test ties the second derivative to
+/// the energy and this one ties it to the pressure, so an error would have to be in both
+/// the energy and the pressure to pass.
+#[test]
+fn the_second_derivative_is_the_pressure_s_own() {
+    let components = [methane(), n_butane()];
+    let kij = [0.0, 0.022, 0.022, 0.0];
+    let x = [0.6, 0.4];
+    let (t, v) = (350.0, 8.14109734626316e-4);
+    let h = 1.0e-5 * v;
+
+    let up = pressure_over_rt(&components, &kij, &x, t, v + h).expect("a pressure");
+    let down = pressure_over_rt(&components, &kij, &x, t, v - h).expect("a pressure");
+    let numeric = (up - down) / (2.0 * h);
+
+    let d = d_pressure_over_rt_dv(&components, &kij, &x, t, v).expect("a derivative");
+    assert!(
+        (d / numeric - 1.0).abs() < 1.0e-6,
+        "the finite difference gives {numeric} and the closed form gives {d}"
     );
 }

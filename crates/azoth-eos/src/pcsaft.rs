@@ -345,11 +345,102 @@ fn series_d_eta(order: &[[f64; 7]; 3], m_bar: f64, eta: f64) -> f64 {
     out
 }
 
+/// `dI²/deta²` for one of the two series, `sum_i i (i-1) a_i(m_bar) eta^(i-2)`.
+fn series_d2_eta(order: &[[f64; 7]; 3], m_bar: f64, eta: f64) -> f64 {
+    let one = (m_bar - 1.0) / m_bar;
+    let two = one * (m_bar - 2.0) / m_bar;
+    let mut out = 0.0;
+    for (i, (a0, (a1, a2))) in order[0]
+        .iter()
+        .zip(order[1].iter().zip(order[2].iter()))
+        .enumerate()
+        .skip(2)
+    {
+        let a_i = a0 + one * a1 + two * a2;
+        out += (i as f64) * (i as f64 - 1.0) * a_i * eta.powi(i as i32 - 2);
+    }
+    out
+}
+
+/// `(F_eta, F_etaeta)`, the first two derivatives of `A^R/(RT)` in the packing fraction.
+///
+/// The volume enters the energy only through `eta`, and the number density is
+/// proportional to it, so `rho/eta = 6/(pi md3)` is a constant along the whole volume
+/// path: every term below is in `eta` alone.
+///
+/// Three of the layers have the shape `(num)/(1 - eta)^k`, so with
+/// `u = (num)' (1 - eta) + k num` the first derivative is `u/(1 - eta)^(k+1)` and the
+/// second is `(u' (1 - eta) + (k+1) u)/(1 - eta)^(k+2)`. The first draft of the first
+/// derivative dropped the `(1 - eta)` in `u`, so they are written to that shape for all
+/// three rather than re-derived per term.
+fn eta_derivatives(s: &PcsaftState, v: f64) -> (f64, f64) {
+    let eta = s.eta;
+    let one = 1.0 - eta;
+
+    // `a_hs = (4 eta - 3 eta^2)/(1 - eta)^2`, so `u = 4 - 2 eta`.
+    let a_hs_d_eta = (4.0 - 2.0 * eta) / one.powi(3);
+    let a_hs_d2_eta = (10.0 - 4.0 * eta) / one.powi(4);
+
+    // `g_hs = (1 - eta/2)/(1 - eta)^3`, so `u = 5/2 - eta`.
+    let g_hs_d_eta = (2.5 - eta) / one.powi(4);
+    let g_hs_d2_eta = (9.0 - 3.0 * eta) / one.powi(5);
+
+    // `C1 = 1/W` with `W = 1 + m_bar A + (1 - m_bar) B`, so `C1' = -C1^2 W'` and
+    // `C1'' = 2 C1^3 W'^2 - C1^2 W''`.
+    //
+    // `A = (8 eta - 2 eta^2)/(1 - eta)^4` is the same shape, with `u = 8 + 20 eta -
+    // 4 eta^2`.
+    let u_a = 8.0 + 20.0 * eta - 4.0 * eta * eta;
+    let a_d_eta = u_a / one.powi(5);
+    let a_d2_eta = ((20.0 - 8.0 * eta) * one + 5.0 * u_a) / one.powi(6);
+
+    // `B = num/P^2` with `P = (1 - eta)(2 - eta)`, so `B' = f/P^3` and `B'' =
+    // (f' P - 3 f P')/P^4`, where `f = num' P - 2 num P'`.
+    let p = (1.0 - eta) * (2.0 - eta);
+    let p_d_eta = 2.0 * eta - 3.0;
+    let b_num = 20.0 * eta - 27.0 * eta * eta + 12.0 * eta.powi(3) - 2.0 * eta.powi(4);
+    let b_num_d_eta = 20.0 - 54.0 * eta + 36.0 * eta * eta - 8.0 * eta.powi(3);
+    let b_num_d2_eta = -54.0 + 72.0 * eta - 24.0 * eta * eta;
+    let f = b_num_d_eta * p - 2.0 * b_num * p_d_eta;
+    let f_d_eta = b_num_d2_eta * p - b_num_d_eta * p_d_eta - 4.0 * b_num;
+    let b_d_eta = f / p.powi(3);
+    let b_d2_eta = (f_d_eta * p - 3.0 * f * p_d_eta) / p.powi(4);
+
+    let w_d_eta = s.m_bar * a_d_eta + (1.0 - s.m_bar) * b_d_eta;
+    let w_d2_eta = s.m_bar * a_d2_eta + (1.0 - s.m_bar) * b_d2_eta;
+    let c1_d_eta = -s.c1 * s.c1 * w_d_eta;
+    let c1_d2_eta = 2.0 * s.c1.powi(3) * w_d_eta * w_d_eta - s.c1 * s.c1 * w_d2_eta;
+
+    let i1_d_eta = series_d_eta(&A_CONST, s.m_bar, eta);
+    let i1_d2_eta = series_d2_eta(&A_CONST, s.m_bar, eta);
+    let i2_d_eta = series_d_eta(&B_CONST, s.m_bar, eta);
+    let i2_d2_eta = series_d2_eta(&B_CONST, s.m_bar, eta);
+
+    // The two dispersion brackets are `(I1 + eta I1')` and `(D + eta D')` with
+    // `D = I2 C1`, and a bracket `(X + eta X')` differentiates to `(2 X' + eta X'')`.
+    let d_d_eta = i2_d_eta * s.c1 + s.i2 * c1_d_eta;
+    let d_d2_eta = i2_d2_eta * s.c1 + 2.0 * i2_d_eta * c1_d_eta + s.i2 * c1_d2_eta;
+
+    let pi = std::f64::consts::PI;
+    let rho_over_eta = AVOGADRO / v / eta;
+    let f_eta = s.m_bar * a_hs_d_eta
+        - s.m_minus_1 * g_hs_d_eta / s.g_hs
+        - 2.0 * pi * rho_over_eta * s.s1 * (s.i1 + eta * i1_d_eta)
+        - pi * s.m_bar * rho_over_eta * s.s2 * (s.i2 * s.c1 + eta * d_d_eta);
+
+    let f_d2_eta = s.m_bar * a_hs_d2_eta
+        - s.m_minus_1 * (g_hs_d2_eta / s.g_hs - (g_hs_d_eta / s.g_hs).powi(2))
+        - 2.0 * pi * rho_over_eta * s.s1 * (2.0 * i1_d_eta + eta * i1_d2_eta)
+        - pi * s.m_bar * rho_over_eta * s.s2 * (2.0 * d_d_eta + eta * d_d2_eta);
+
+    (f_eta, f_d2_eta)
+}
+
 /// The state's pressure at a trial molar volume, over `R T`.
 ///
-/// `P/(RT) = 1/v - F_V`, with `F_V = -eta F_eta / v` because the packing fraction is the
-/// only place the volume enters - `eta` is proportional to `1/v` and every other quantity
-/// is a function of the temperature and the composition alone.
+/// `P/(RT) = 1/v - F_V`, with `F_V = -eta F_eta / v` - the packing fraction is the only
+/// place the volume enters, and every other quantity is a function of the temperature and
+/// the composition alone.
 ///
 /// # Errors
 /// As [`state`].
@@ -361,38 +452,27 @@ pub fn pressure_over_rt(
     v: f64,
 ) -> Result<f64> {
     let s = state(components, kij, x, t, v)?;
+    let (f_eta, _) = eta_derivatives(&s, v);
+    Ok(1.0 / v + s.eta * f_eta / v)
+}
+
+/// `d(P/(RT))/dv` at a trial molar volume, in mol/m^6.
+///
+/// This is what a volume solve divides by. `P/(RT) = 1/v - f'(v)`, and with
+/// `f' = -eta F_eta/v` and `eta` proportional to `1/v`,
+/// `f'' = (2 eta F_eta + eta^2 F_etaeta)/v^2`.
+///
+/// # Errors
+/// As [`state`].
+pub fn d_pressure_over_rt_dv(
+    components: &[PcsaftComponent],
+    kij: &[f64],
+    x: &[f64],
+    t: f64,
+    v: f64,
+) -> Result<f64> {
+    let s = state(components, kij, x, t, v)?;
+    let (f_eta, f_d2_eta) = eta_derivatives(&s, v);
     let eta = s.eta;
-    let d = 1.0 - eta;
-
-    // Each of the three has the shape `(num)/(1 - eta)^k`, so its derivative is
-    // `((num)' (1 - eta) + k num)/(1 - eta)^(k+1)` and the denominator never has to be
-    // squared into a separate variable.
-    let a_hs_d_eta = ((4.0 - 6.0 * eta) * d + 2.0 * (4.0 * eta - 3.0 * eta * eta)) / d.powi(3);
-    let g_hs_d_eta = (2.5 - eta) / d.powi(4);
-
-    // `C1 = 1/(1 + m_bar A + (1-m_bar) B)`, so `C1' = -C1^2 (m_bar A' + (1-m_bar) B')`.
-    let a_d_eta = ((8.0 - 4.0 * eta) * d + 4.0 * (8.0 * eta - 2.0 * eta * eta)) / d.powi(5);
-    let b_num = 20.0 * eta - 27.0 * eta * eta + 12.0 * eta.powi(3) - 2.0 * eta.powi(4);
-    let b_den = ((1.0 - eta) * (2.0 - eta)).powi(2);
-    let b_num_d_eta = 20.0 - 54.0 * eta + 36.0 * eta * eta - 8.0 * eta.powi(3);
-    let b_den_d_eta = 2.0 * (1.0 - eta) * (2.0 - eta) * (2.0 * eta - 3.0);
-    let b_d_eta = (b_num_d_eta * b_den - b_num * b_den_d_eta) / (b_den * b_den);
-    let c1_d_eta = -s.c1 * s.c1 * (s.m_bar * a_d_eta + (1.0 - s.m_bar) * b_d_eta);
-
-    let i1_d_eta = series_d_eta(&A_CONST, s.m_bar, eta);
-    let i2_d_eta = series_d_eta(&B_CONST, s.m_bar, eta);
-
-    // Every term below is proportional to `rho`, which is proportional to `eta`: so
-    // `d(rho X)/deta = (rho/eta) d(eta X)/deta`, and the `rho` never has to be written.
-    let rho_over_eta = AVOGADRO / v / eta;
-    let f_eta = s.m_bar * a_hs_d_eta
-        - s.m_minus_1 * g_hs_d_eta / s.g_hs
-        - 2.0 * std::f64::consts::PI * rho_over_eta * s.s1 * (s.i1 + eta * i1_d_eta)
-        - std::f64::consts::PI
-            * s.m_bar
-            * rho_over_eta
-            * s.s2
-            * (s.i2 * s.c1 + eta * i2_d_eta * s.c1 + eta * s.i2 * c1_d_eta);
-
-    Ok(1.0 / v + eta * f_eta / v)
+    Ok(-(1.0 + 2.0 * eta * f_eta + eta * eta * f_d2_eta) / (v * v))
 }
