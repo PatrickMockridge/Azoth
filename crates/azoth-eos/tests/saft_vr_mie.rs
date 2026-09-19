@@ -8,7 +8,7 @@
 use azoth_eos::saft_vr_mie::{
     MieComponent, a_s1_bare, a1_mie, a2_mie, a3_mie, b_bare, barker_henderson, chain_contact_value,
     chain_g1, chain_g2, contact_value_0, dispersion_pair_sum, eta_effective, g_hs, k_hs, mie_alpha,
-    mie_prefactor, state,
+    mie_prefactor, pressure_over_rt, state,
 };
 
 fn methane() -> MieComponent {
@@ -418,4 +418,38 @@ fn the_helmholtz_energy_is_neqsims() {
         "m_bar",
     );
     via_eta(binary.f(), -0.151_733_795_811_279, "F");
+}
+
+/// The pressure the kernel predicts at NeqSim's own converged volume.
+///
+/// `P v/(RT)` must be the compressibility the probe reports on the same phase:
+/// `0.924019412709511` for methane and `0.851583764555351` for the binary. That ties the
+/// `eta` derivative - the hard-sphere term's in closed form, the other two by the central
+/// differences NeqSim uses - to the *state* the oracle converged to, so a sign, a term or a
+/// power wrong in the chain shows up as a pressure that is not the one the volume came from.
+#[test]
+fn the_pressure_at_neqsims_volume_is_neqsims_compressibility() {
+    // **`1e-6`, because the derivative is noise-limited on both sides.** The port takes
+    // NeqSim's own step - a relative `1e-5` in the packing fraction - and at that step the
+    // difference of two nearly equal energies is in charge: the methane state lands within
+    // `1e-8` of the probe's `Z` and the binary within `5.9e-7`, and *shrinking* the step
+    // makes the binary worse rather than better. At a step ten times larger the same port
+    // gives `0.851583766815854`, which is `2.7e-9` from the probe - so the model is right
+    // and this tolerance is the arithmetic.
+    let v_methane = 4.609_634_632_033_79e-4;
+    let pure = pressure_over_rt(&[methane()], &[1.0], 300.0, v_methane).expect("a pressure");
+    assert!(
+        (pure * v_methane / 0.924_019_412_709_511 - 1.0).abs() < 1.0e-6,
+        "methane Z = {}",
+        pure * v_methane
+    );
+
+    let v_binary = 8.260_537_757_932_58e-4;
+    let binary = pressure_over_rt(&[methane(), n_butane()], &[0.6, 0.4], 350.0, v_binary)
+        .expect("a pressure");
+    assert!(
+        (binary * v_binary / 0.851_583_764_555_351 - 1.0).abs() < 1.0e-6,
+        "binary Z = {}",
+        binary * v_binary
+    );
 }

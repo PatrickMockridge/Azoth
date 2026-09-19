@@ -716,24 +716,7 @@ pub fn state(components: &[MieComponent], x: &[f64], t: f64, v: f64) -> Result<M
         });
     }
 
-    // One component evaluates the dispersion directly and a mixture sums over pairs - and
-    // the direct branch is not the pair sum at `n = 1`, it is a *different expression*
-    // whose cross parameters happen to be the pure ones. Taking NeqSim's branch keeps the
-    // two agreeing by construction rather than by algebra.
-    let (a1, a2, a3) = if n == 1 {
-        let c = components[0];
-        let x0 = if d[0] > 0.0 { c.sigma / d[0] } else { 1.0 };
-        let beta = c.epsik / t;
-        let c_mie = mie_prefactor(c.lambda_r, c.lambda_a);
-        let zeta = eta * x0 * x0 * x0;
-        (
-            a1_mie(eta, c.lambda_r, c.lambda_a, beta, c_mie, x0),
-            a2_mie(eta, zeta, c.lambda_r, c.lambda_a, beta, c_mie, x0),
-            a3_mie(zeta, c.lambda_r, c.lambda_a, beta),
-        )
-    } else {
-        dispersion_pair_sum(components, x, t, eta)?
-    };
+    let (a1, a2, a3) = dispersion_at(components, x, t, eta, &d)?;
 
     let g_hs = chain_contact_value(components, x, t, eta, &d);
     Ok(MieState {
@@ -748,4 +731,88 @@ pub fn state(components: &[MieComponent], x: &[f64], t: f64, v: f64) -> Result<M
         a2,
         a3,
     })
+}
+
+/// The three dispersion terms at a packing fraction, by NeqSim's branch.
+///
+/// **One component evaluates directly and a mixture sums over pairs**, and the direct
+/// expression is not the pair sum at `n = 1` - it is a different expression whose cross
+/// parameters happen to be the pure ones. Taking NeqSim's branch keeps the two agreeing by
+/// construction rather than by algebra.
+///
+/// `diameters` are the *pure* components' effective diameters, which the direct branch
+/// needs; the pair sum computes its own cross diameters from the temperature.
+///
+/// # Errors
+/// As [`dispersion_pair_sum`].
+pub fn dispersion_at(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    eta: f64,
+    diameters: &[f64],
+) -> Result<(f64, f64, f64)> {
+    if components.len() != 1 {
+        return dispersion_pair_sum(components, x, t, eta);
+    }
+    let c = components[0];
+    let d = diameters.first().copied().unwrap_or(0.0);
+    let x0 = if d > 0.0 { c.sigma / d } else { 1.0 };
+    let beta = c.epsik / t;
+    let c_mie = mie_prefactor(c.lambda_r, c.lambda_a);
+    let zeta = eta * x0 * x0 * x0;
+    Ok((
+        a1_mie(eta, c.lambda_r, c.lambda_a, beta, c_mie, x0),
+        a2_mie(eta, zeta, c.lambda_r, c.lambda_a, beta, c_mie, x0),
+        a3_mie(zeta, c.lambda_r, c.lambda_a, beta),
+    ))
+}
+
+/// The state's pressure at a trial molar volume, over `R T`.
+///
+/// `P/(RT) = 1/v - F_V` with `F_V = -eta f_eta/v`, because the packing fraction is the only
+/// place the volume enters.
+///
+/// **The `eta` derivatives are taken the way NeqSim takes them**, which is not one way: the
+/// hard-sphere term is differentiated in closed form there and the chain contact value and
+/// all three dispersion terms are central differences at a relative step of `1e-5`, with a
+/// floor on the lower point. The port does the same rather than deriving them.
+///
+/// **At that step the difference is noise-limited on both sides**, and it is worth knowing
+/// before reading a test's tolerance as a model error. `P v/(RT)` at NeqSim's own converged
+/// volume comes out `0.851583259006834` against the probe's `0.851583764555351` - a
+/// relative `5.9e-7` - and *shrinking* the step makes it worse rather than better
+/// (`1.4e-6` at `1e-8`), which is what a difference of two nearly equal energies does.
+/// Ten times larger, where the cancellation is not in charge, the same port gives
+/// `0.851583766815854`: a relative `2.7e-9`. So the model is right and the `5.9e-7` is the
+/// arithmetic both implementations are doing.
+///
+/// # Errors
+/// As [`state`].
+pub fn pressure_over_rt(components: &[MieComponent], x: &[f64], t: f64, v: f64) -> Result<f64> {
+    let s = state(components, x, t, v)?;
+    let eta = s.eta;
+
+    // NeqSim's step, in the packing fraction: `max(|eta| 1e-5, 1e-12)` with the lower point
+    // floored, and the halved span that its `etaM` correction makes.
+    let step = (eta.abs() * 1.0e-5).max(1.0e-12);
+    let high = eta + step;
+    let low = (eta - step).max(1.0e-15);
+    let step = (high - low) / 2.0;
+
+    let g_eta = (chain_contact_value(components, x, t, high, &s.d)
+        - chain_contact_value(components, x, t, low, &s.d))
+        / (2.0 * step);
+    let dispersion = |e: f64| -> Result<f64> {
+        let (a1, a2, a3) = dispersion_at(components, x, t, e, &s.d)?;
+        Ok(a1 + a2 + a3)
+    };
+    let dispersion_eta = (dispersion(high)? - dispersion(low)?) / (2.0 * step);
+
+    // The hard-sphere term is the one NeqSim differentiates in closed form.
+    let one = 1.0 - eta;
+    let a_hs_eta = (4.0 - 2.0 * eta) / one.powi(3);
+
+    let f_eta = s.m_bar * a_hs_eta - s.m_minus_1 * g_eta / s.g_hs + s.m_bar * dispersion_eta;
+    Ok(1.0 / v + eta * f_eta / v)
 }
