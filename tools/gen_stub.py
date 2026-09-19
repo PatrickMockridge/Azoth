@@ -66,6 +66,12 @@ see `azoth._rust_bridge`.
 #: where a field is `(name, type)`. Mirrors the `#[pyclass]` structs in
 #: `crates/azoth-python/src/data.rs` and `results.rs`.
 VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
+    (
+        "AssociationSpec",
+        "One mixture's association, as every model whose Python side takes a"
+        " `Mixture` requires it.",
+        (("associating", "bool"), ("schemes", "list[str]"), ("values", "list[list[float]]")),
+    ),
     ("DataFile", None, (("name", "str"), ("path", "str"), ("text", "str"))),
     (
         "FittingRow",
@@ -378,6 +384,12 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
                 "omega: list[float]",
                 "kij: list[float]",
             ]
+            # The association, which the boundary used to drop: a mixture whose
+            # association does not cross is a *different fluid* that converges, and
+            # `eos.pt_flash` ran a classical SRK flash for a session because of it. It
+            # is required rather than defaulted, so a caller that forgets gets a
+            # `TypeError` instead of a plausible answer.
+            params.append("association: AssociationSpec")
             if model["id"] in MOLAR_MASS_MODELS:
                 params.append("molar_mass: list[float]")
             if "params" in taken:
@@ -465,6 +477,11 @@ def render_vocabulary() -> str:
         out.extend(f"    {field}: {annotation}" for field, annotation in fields)
         if name == "Qty":
             out.append("    def __init__(self, magnitude_si: float, unit: str) -> None: ...")
+        if name == "AssociationSpec":
+            out.append(
+                "    def __init__(self, associating: bool, schemes: list[str],"
+                " values: list[list[float]]) -> None: ..."
+            )
         if name == "Stream":
             out.append(
                 "    def __init__(self, components: list[str], z: list[float], n: float,"

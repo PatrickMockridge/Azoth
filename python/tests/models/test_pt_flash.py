@@ -630,3 +630,96 @@ def test_the_fallback_converges_a_state_the_outer_scheme_abandons() -> None:
     r = pt_flash(methane_butane(), T=Q(355.0, "K"), P=Q(1.2e7, "Pa"), z=[0.6, 0.4])
     assert r.phase is Phase.TRIVIAL
     assert r.beta is None, "a trivial solution has no vapour fraction"
+
+
+def water_methanol() -> Any:
+    """The associating pair, resolved the way a caller resolves it.
+
+    By name with `associating=True`, which is the model's decision and not the
+    components': the same methanol and water are a classical fluid under an SRK
+    model and an associating one under a CPA model.
+    """
+    from azoth.eos import components as databank
+
+    return databank.from_names(["water", "methanol"], eos="srk", associating=True)
+
+
+def gibbs_energy(T: float, P: float, beta: float, x: list[float], y: list[float]) -> float:
+    """A split's total Gibbs energy per mole of feed, in units of ``R T``.
+
+    Up to the standard state, which cancels between two configurations at the same
+    temperature and pressure - so this compares them without a datum.
+    """
+    from azoth.eos import srk_cpa_phase
+
+    names = ["water", "methanol"]
+    liquid = list(srk_cpa_phase(names, Q(T, "K"), Q(P, "Pa"), list(x), "liquid").ln_phi)
+    vapour = list(srk_cpa_phase(names, Q(T, "K"), Q(P, "Pa"), list(y), "vapour").ln_phi)
+    return (1.0 - beta) * sum(x[i] * (math.log(x[i]) + liquid[i]) for i in range(2)) + beta * sum(
+        y[i] * (math.log(y[i]) + vapour[i]) for i in range(2)
+    )
+
+
+def test_an_associating_flash_answers_the_lowest_gibbs_energy() -> None:
+    """The criterion for an associating flash, with no oracle in it.
+
+    An isothermal flash is a multi-root problem: the trivial solution, spurious ones
+    and the physical split all satisfy its equations. What makes one of them the
+    *answer* is that it is the lowest Gibbs energy, and that is checkable directly.
+
+    At 356 K and 1 bar the split is lower than either single phase by `0.0102 RT`, so
+    the feed is unstable and a single-phase answer is wrong. NeqSim's `TPflash` reports
+    `beta_vapour = 0.208383589004737` here, which is the same state.
+
+    **And it is the same in both kernels, which is what this test is really for.** The
+    association used to be dropped at the Python-to-Rust boundary, so the Rust backend
+    ran a classical SRK flash on a fluid carrying the CPA interaction column and
+    returned `all_liquid`, `beta = -0.016794177236415513` - a plausible answer for a
+    different fluid, from the same mixture through the same registered model.
+    """
+    fluid = water_methanol()
+    cases = (
+        (356.0, 0.20838358902793358, 0.208383589004737),
+        (360.0, 0.466343455177329, 0.466343455177329),
+    )
+    for T, expected, neqsim in cases:
+        answers = []
+        for backend in ("python", "rust"):
+            with use_backend(backend):
+                answers.append(pt_flash(fluid, T=Q(T, "K"), P=Q(1.0e5, "Pa"), z=[0.6, 0.4]))
+        for r in answers:
+            assert r.phase is Phase.TWO_PHASE, f"{T} K: {r.phase}"
+            assert r.beta is not None
+            h.assert_close(r.beta, expected, 1e-8, f"{T} K, vapour fraction")
+            h.assert_close(r.beta, neqsim, 1e-8, f"{T} K, against NeqSim")
+
+        # The answer is the lowest of the candidates: the split, the feed as each of its
+        # two single-phase roots, and the other kernel's answer.
+        answer = answers[0]
+        assert answer.beta is not None
+        split = gibbs_energy(T, 1.0e5, answer.beta, list(answer.x), list(answer.y))
+        for root in ("liquid", "vapour"):
+            from azoth.eos import srk_cpa_phase
+
+            single = srk_cpa_phase(
+                ["water", "methanol"], Q(T, "K"), Q(1.0e5, "Pa"), [0.6, 0.4], root
+            )
+            feed = sum(
+                z_i * (math.log(z_i) + ln_phi)
+                for z_i, ln_phi in zip([0.6, 0.4], single.ln_phi, strict=True)
+            )
+            assert split < feed, f"{T} K: the split is not below the {root} single phase"
+        # The two kernels must find the *same* split, not merely one each that beats the
+        # single phases. They differ in the last ulp of `beta`, which is the flash's own
+        # convergence, so the comparison carries that scale rather than demanding an
+        # exact ordering of two numbers equal to sixteen digits.
+        other = answers[1]
+        assert other.beta is not None and answer.beta is not None
+        h.assert_close(other.beta, answer.beta, 1e-12, f"{T} K, the two kernels")
+        other_split = gibbs_energy(T, 1.0e5, other.beta, list(other.x), list(other.y))
+        h.assert_close(
+            other_split,
+            split,
+            1e-12,
+            f"{T} K, the two kernels' Gibbs energy",
+        )

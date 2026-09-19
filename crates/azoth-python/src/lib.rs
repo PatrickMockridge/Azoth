@@ -90,6 +90,10 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPhFlashResult>()?;
     m.add_class::<PyPsFlashResult>()?;
     m.add_class::<PyCriticalPointResult>()?;
+    // An associating mixture's parameters, which every model whose Python side takes a
+    // `Mixture` requires. A record rather than a defaulted argument: a caller that forgets
+    // must get a `TypeError`, not a plausible answer for a different fluid.
+    m.add_class::<eos::PyAssociationSpec>()?;
     m.add_class::<PyPumpPowerResult>()?;
     m.add_class::<PyOrificeFlowResult>()?;
     m.add_class::<PyControlValveCvResult>()?;

@@ -167,6 +167,46 @@ def _warnings(raw: Sequence[_core.Warning]) -> tuple[Warning, ...]:
     return tuple(Warning(WarningCode(w.code), w.message, w.field) for w in raw)
 
 
+def _association_spec(mixture: Any) -> Any:
+    """The mixture's association, in the form the Rust boundary takes.
+
+    **Every model whose Python side takes a ``Mixture`` crosses this**, and none of them
+    may default it away. A mixture whose association does not cross is a *different
+    fluid* that converges: ``eos.pt_flash`` sent nine arguments and no association, so
+    the Rust backend ran a classical SRK flash on a fluid carrying the CPA interaction
+    column and returned ``all_liquid`` where the associating model splits at
+    ``beta = 0.208383589``. The twelve numbers below are the fields of
+    :class:`AssociationParameters` after the scheme, in the order Rust's
+    ``AssociationRecord`` declares them, in the internal scale the table states them in.
+    """
+    schemes: list[str] = []
+    values: list[list[float]] = []
+    for component in mixture.components:
+        record = component.association
+        if record is None:
+            schemes.append("")
+            values.append([0.0] * 12)
+            continue
+        schemes.append(record.scheme)
+        values.append(
+            [
+                float(record.sites),
+                record.energy,
+                record.volume_srk,
+                record.a_srk,
+                record.b_srk,
+                record.m_srk,
+                record.volume_pr,
+                record.a_pr,
+                record.b_pr,
+                record.m_pr,
+                record.racket_z,
+                record.volume_correction,
+            ]
+        )
+    return _core.AssociationSpec(bool(mixture.associating), schemes, values)
+
+
 def reynolds_number(rho: Q, v: Q, D: Q, mu: Q) -> ReynoldsNumberResult:
     """Reynolds number, computed in Rust."""
     result = _core.reynolds_number(
@@ -1010,6 +1050,7 @@ def wilson_activity_coefficients(
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         molar_mass,
         input_to_si(spec, "T", T),
         list(x),
@@ -1147,6 +1188,7 @@ def viscosity(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> ViscosityResult:
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         molar_mass,
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
@@ -1178,6 +1220,7 @@ def thermal_conductivity(
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         molar_mass,
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
@@ -1308,6 +1351,7 @@ def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
         # crosses as the number the caller used.
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),
@@ -1344,6 +1388,7 @@ def pt_phase_envelope(mixture: Any, P: Q, z: Sequence[float]) -> PtPhaseEnvelope
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "P", P),
         list(z),
         mixture.cubic.name,
@@ -1386,6 +1431,7 @@ def ph_flash(mixture: Any, ideal_gas: Any, P: Q, H: Q, z: Sequence[float]) -> Ph
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1425,6 +1471,7 @@ def ps_flash(mixture: Any, ideal_gas: Any, P: Q, S: Q, z: Sequence[float]) -> Ps
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1460,6 +1507,7 @@ def tv_flash(mixture: Any, ideal_gas: Any, T: Q, V: Q, z: Sequence[float]) -> Tv
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1502,6 +1550,7 @@ def pvf_flash(
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "P", P),
         float(beta),
         input_to_si(spec, "temperature", temperature),
@@ -1538,6 +1587,7 @@ def pv_reflux_flash(
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "P", P),
         float(reflux),
         str(phase),
@@ -1570,6 +1620,7 @@ def pv_flash(mixture: Any, ideal_gas: Any, P: Q, V: Q, z: Sequence[float]) -> Pv
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1610,6 +1661,7 @@ def tp_multiflash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> TpMultiflashR
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),
@@ -1650,6 +1702,7 @@ def stability_test(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> StabilityTes
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         list(z),
@@ -1675,6 +1728,7 @@ def th_flash(mixture: Any, ideal_gas: Any, T: Q, H: Q, z: Sequence[float]) -> Th
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1710,6 +1764,7 @@ def ts_flash(mixture: Any, ideal_gas: Any, T: Q, S: Q, z: Sequence[float]) -> Ts
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1745,6 +1800,7 @@ def tu_flash(mixture: Any, ideal_gas: Any, T: Q, U: Q, z: Sequence[float]) -> Tu
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1780,6 +1836,7 @@ def pu_flash(mixture: Any, ideal_gas: Any, P: Q, U: Q, z: Sequence[float]) -> Pu
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1817,6 +1874,7 @@ def tv_fraction_flash(
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "T", T),
         float(fraction),
         input_to_si(spec, "P", P),
@@ -1850,6 +1908,7 @@ def vu_flash(mixture: Any, ideal_gas: Any, V: Q, U: Q, z: Sequence[float]) -> Vu
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1886,6 +1945,7 @@ def vs_flash(mixture: Any, ideal_gas: Any, V: Q, S: Q, z: Sequence[float]) -> Vs
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1922,6 +1982,7 @@ def vh_flash(mixture: Any, ideal_gas: Any, V: Q, H: Q, z: Sequence[float]) -> Vh
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -1958,6 +2019,7 @@ def vu_flash_single_comp(mixture: Any, ideal_gas: Any, P: Q, V: Q, U: Q) -> VuFl
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -2030,6 +2092,7 @@ def bubble_pressure(mixture: Any, T: Q, x: Sequence[float]) -> BubblePressureRes
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "T", T),
         list(x),
         mixture.cubic.name,
@@ -2051,6 +2114,7 @@ def bubble_temperature(mixture: Any, P: Q, x: Sequence[float]) -> BubbleTemperat
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "P", P),
         list(x),
         mixture.cubic.name,
@@ -2072,6 +2136,7 @@ def critical_point(mixture: Any, z: Sequence[float]) -> CriticalPointResult:
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(z),
         mixture.cubic.name,
         mixture.alpha,
@@ -2101,6 +2166,7 @@ def dew_pressure(mixture: Any, T: Q, y: Sequence[float]) -> DewPressureResult:
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "T", T),
         list(y),
         mixture.cubic.name,
@@ -2130,6 +2196,7 @@ def capillary_dew_point(
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "P", P),
         list(y),
         input_to_si(spec, "pore_radius", pore_radius),
@@ -2173,6 +2240,7 @@ def dew_temperature(mixture: Any, P: Q, y: Sequence[float]) -> DewTemperatureRes
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         input_to_si(spec, "P", P),
         list(y),
         mixture.cubic.name,
@@ -2197,6 +2265,7 @@ def molar_enthalpy_entropy(
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(ideal_gas.cp_a),
         list(ideal_gas.cp_b),
         list(ideal_gas.cp_c),
@@ -2405,6 +2474,7 @@ def ge_wilson_phase(
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         [c.molar_mass.to_base_units().magnitude for c in mixture.components],
         list(params.antoine_type),
         list(params.antoine_coefficients),
@@ -2527,6 +2597,7 @@ def ge_nrtl_flash(params: Any, mixture: Any, T: Q, P: Q, z: Sequence[float]) -> 
         [c.Pc.to_base_units().magnitude for c in mixture.components],
         [c.omega for c in mixture.components],
         mixture.flattened_kij(),
+        _association_spec(mixture),
         list(params.alpha),
         list(params.dij),
         list(params.antoine_type),
