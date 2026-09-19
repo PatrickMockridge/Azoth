@@ -24,6 +24,7 @@ import Azoth.Vocabulary
 import Azoth.Rho
 import Azoth.Barb
 import Azoth.Capability
+import Azoth.Normalisation
 
 #print axioms Azoth.Dim.ofExponentsOn_nil
 #print axioms Azoth.Dim.ofExponents_nil
@@ -59,3 +60,11 @@ import Azoth.Capability
 #print axioms Azoth.Capability.witness_datum_is_outside
 #print axioms Azoth.Capability.the_gate_refuses
 #print axioms Azoth.Capability.the_gate_can_succeed
+
+-- The raw-versus-normalised conversion, `docs/src/calculus/normalisation.md`'s claim. The
+-- basis expansion is named here as well as the conversion: it is what makes the `M x` in
+-- the claim the composition-weighted sum of molar partials a reader takes it for.
+#print axioms Azoth.Normalisation.hasFDerivAt_extensive
+#print axioms Azoth.Normalisation.fderiv_extensive_single
+#print axioms Azoth.Normalisation.clm_apply_eq_sum_single
+#print axioms Azoth.Normalisation.sumCLM_apply

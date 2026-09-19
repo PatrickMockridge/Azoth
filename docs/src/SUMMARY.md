@@ -12,6 +12,7 @@
   - [Processes and channels](./calculus/process.md)
   - [Reflection and feedback](./calculus/rho.md)
   - [The keycard as a capability](./calculus/capability.md)
+  - [Raw and normalised variables](./calculus/normalisation.md)
   - [The vocabulary table](./calculus/vocabulary.md)
 <!-- BEGIN GENERATED: calcs -->
 - [Equations of state](./eos/index.md)
