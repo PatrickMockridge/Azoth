@@ -6425,6 +6425,12 @@ pub struct PySaftVrMiePhaseResult {
     /// The molar volume at the chosen root.
     #[pyo3(get)]
     pub v: PyQty,
+    /// The residual enthalpy.
+    #[pyo3(get)]
+    pub h_res: PyQty,
+    /// The residual entropy.
+    #[pyo3(get)]
+    pub s_res: PyQty,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -6448,6 +6454,14 @@ impl From<&azoth_eos::results::SaftVrMiePhaseResult> for PySaftVrMiePhaseResult 
             v: PyQty {
                 magnitude_si: r.v.value,
                 unit: "m**3/mol".to_string(),
+            },
+            h_res: PyQty {
+                magnitude_si: r.h_res.value,
+                unit: "J/mol".to_string(),
+            },
+            s_res: PyQty {
+                magnitude_si: r.s_res.value,
+                unit: "J/(mol*K)".to_string(),
             },
             warnings: transport(&r.warnings),
         }

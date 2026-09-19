@@ -421,13 +421,18 @@ pub struct SaftVrMiePhaseResult {
     pub ln_phi: Vec<f64>,
     /// The molar volume at the chosen root, in m^3/mol.
     pub v: MolarVolume,
+    /// The residual enthalpy, real minus ideal gas at the same state.
+    pub h_res: MolarEnergy,
+    /// The residual entropy, real minus ideal gas at the same state.
+    pub s_res: MolarHeatCapacity,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
 
 impl CalcResult for SaftVrMiePhaseResult {
     const CALC_ID: &'static str = "eos.saft_vr_mie_phase";
-    const FIELDS: &'static [&'static str] = &["z_factor", "ln_phi", "v", "warnings"];
+    const FIELDS: &'static [&'static str] =
+        &["z_factor", "ln_phi", "v", "h_res", "s_res", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

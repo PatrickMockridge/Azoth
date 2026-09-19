@@ -34,6 +34,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `z_factor` | dimensionless | the compressibility factor at the chosen root |
 | `ln_phi` | dimensionless | the fugacity coefficients, as logarithms, at the chosen root |
+| `h_res` | J/mol | the residual enthalpy, real minus ideal gas at the same temperature, pressure and composition, from `Z - 1 - T d(A^R/(R T))/dT` at constant volume |
+| `s_res` | J/(mol*K) | the residual entropy, real minus ideal gas at the same state |
 | `v` | m**3/mol | the molar volume at the chosen root, which is what the solve returns before the compressibility factor is read from it |
 
 | Bound | On violation | Why |
@@ -50,6 +52,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - the chain term's contact value is the Mie-weighted geometric mean `exp(sum_i w_i ln g_i / sum_i w_i)` over `w_i = x_i (m_i - 1)`, not the Carnahan-Starling value, once any component has more than one segment.
 - the dispersion is a pair sum over segment fractions with cross parameters that are not averages: `sigma_ij` arithmetic, `epsilon_ij` carrying a `sigma^3` volume correction, the exponents `3 + sqrt((lambda_i-3)(lambda_j-3))`.
 - `g_hs` and the dispersion's `eta` derivatives are taken by **central difference** at a relative step of `1e-5`, as NeqSim takes them. The model's own last digits are that difference's arithmetic.
+- `h_res`/`s_res` are `Z - 1 - T d(A^R/(RT))/dT` at constant volume, differentiated analytically. **NeqSim's `dF_HC_SAFTdT` is not usable**: it omits the chain contact value's temperature dependence, so it is wrong for every fluid with `m > 1`. No `cp_res`: the second derivative is not derived.
 - the volume solves `P/(RT) = 1/v + eta f_eta/v`, and the slope it divides by is a difference of that difference at a relative step of `1e-4` - ten times NeqSim's, because the inner difference's cancellation owns the slope at `1e-5`.
 - **no association term.** SAFT-VR-Mie's associating variant is a different class, so a fluid whose components carry sites is refused rather than given an association computed over nothing.
 
@@ -57,7 +60,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_butane_vapour_against_neqsim` | components = ['methane', 'n-butane'], T = 350.0, P = 3000000.0, z = [0.6, 0.4], compressed_phase = vapour | v = 0.0008260515668683107, z_factor = 0.8515814873614467, ln_phi = [0.0303544890821417, -0.394263574814552] |
+| `methane_butane_vapour_against_neqsim` | components = ['methane', 'n-butane'], T = 350.0, P = 3000000.0, z = [0.6, 0.4], compressed_phase = vapour | v = 0.0008260515668683107, z_factor = 0.8515814873614467, ln_phi = [0.0303544890821417, -0.394263574814552], h_res = -1433.6897143213828, s_res = -2.9364502191263444 |
 
 ## References
 

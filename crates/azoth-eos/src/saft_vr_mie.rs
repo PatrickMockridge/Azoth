@@ -46,6 +46,21 @@ impl MieComponent {
     ///   potential - `lambda_a` must be above three, or the integral diverges as the
     ///   attractive well reaches its limit, and `lambda_r` must exceed it.
     pub fn d(self, t: f64) -> Result<f64> {
+        self.d_and_log_derivative(t).map(|(d, _)| d)
+    }
+
+    /// The effective diameter at a temperature, and `T d ln d/dT` beside it.
+    ///
+    /// **The logarithmic derivative is the whole of the diameter's temperature dependence,
+    /// and it is one number for every layer that needs it.** `d = sigma BH(theta)` with
+    /// `theta = C eps/(k T)`, so `T d ln d/dT = -theta d ln BH/dtheta` - a function of the
+    /// Barker-Henderson approximation and nothing else. Written once here because the chain
+    /// term, each dispersion pair and the packing fraction all reach the diameter's
+    /// temperature through it, and a second copy is a second chance to differ.
+    ///
+    /// # Errors
+    /// As [`MieComponent::d`].
+    pub fn d_and_log_derivative(self, t: f64) -> Result<(f64, f64)> {
         if !t.is_finite() || t <= 0.0 {
             return Err(AzothError::OutOfRange {
                 field: "T".to_string(),
@@ -66,7 +81,19 @@ impl MieComponent {
             ));
         }
         let theta = mie_prefactor(self.lambda_r, self.lambda_a) * self.epsik / t;
-        Ok(self.sigma * barker_henderson(theta, self.lambda_r, self.lambda_a))
+        let integral = barker_henderson(theta, self.lambda_r, self.lambda_a);
+        if integral <= 0.0 {
+            return Err(AzothError::OutOfRange {
+                field: "T".to_string(),
+                value: t,
+                detail: format!(
+                    "the Barker-Henderson integral is {integral} at this temperature, and \
+                     the diameter's logarithmic derivative divides by it"
+                ),
+            });
+        }
+        let slope = barker_henderson_d_theta(theta, self.lambda_r, self.lambda_a);
+        Ok((self.sigma * integral, -theta * slope / integral))
     }
 }
 
@@ -154,6 +181,64 @@ pub fn barker_henderson(theta: f64, lambda_r: f64, lambda_a: f64) -> f64 {
         sum += weight * (1.0 - (-reduced(x)).exp()) * (high - low);
     }
     sum
+}
+
+/// `d/dtheta` of [`barker_henderson`], on the same branch and through the same quadrature.
+///
+/// **The derivative of the approximation rather than of the integral**, which is what makes
+/// it NeqSim's own central difference's analytic companion: its cut-off `x_cut` moves with
+/// `theta` and that motion is part of both. NeqSim differences the same call at
+/// `theta +- |theta| 1e-5` (`ComponentSAFTVRMie.getDdSAFTidT`, step `T 1e-5`), so the two
+/// agree to about `1e-11` relative where the branch does not change inside the window.
+#[must_use]
+pub fn barker_henderson_d_theta(theta: f64, lambda_r: f64, lambda_a: f64) -> f64 {
+    let powers = |x: f64| -> (f64, f64) {
+        let inv = 1.0 / x;
+        let repulsive = inv.powf(lambda_r);
+        let attractive = inv.powf(lambda_a);
+        (repulsive, attractive)
+    };
+
+    if theta <= 1.0 {
+        let mut sum = 0.0;
+        for (node, weight) in GAUSS_NODES.iter().zip(GAUSS_WEIGHTS.iter()) {
+            if *node < 1.0e-20 {
+                continue;
+            }
+            let (repulsive, attractive) = powers(*node);
+            let u = theta * (repulsive - attractive);
+            sum += weight * (-u).exp() * (repulsive - attractive);
+        }
+        return sum;
+    }
+
+    let raw_cut = (-(theta + 20.0).ln() / lambda_r).exp();
+    let x_cut = raw_cut.clamp(0.5, 0.999);
+    // Where the clamp holds the cut is constant, and the derivative of a constant is zero.
+    let dx_cut = if raw_cut > 0.5 && raw_cut < 0.999 {
+        -x_cut / (lambda_r * (theta + 20.0))
+    } else {
+        0.0
+    };
+    let width = 1.0 - x_cut;
+    let d_width = -dx_cut;
+
+    let mut covered = 0.0;
+    let mut moving = 0.0;
+    for (node, weight) in GAUSS_NODES.iter().zip(GAUSS_WEIGHTS.iter()) {
+        let x = 1.0 - width * (1.0 - node);
+        if x < 1.0e-20 {
+            continue;
+        }
+        let (repulsive, attractive) = powers(x);
+        let u = theta * (repulsive - attractive);
+        let dx = -(1.0 - node) * d_width;
+        let du = (repulsive - attractive)
+            + theta * (-lambda_r * repulsive / x + lambda_a * attractive / x) * dx;
+        covered += weight * (1.0 - (-u).exp());
+        moving += weight * (-u).exp() * du;
+    }
+    d_width * (covered - 1.0) + width * moving
 }
 
 /// Lafitte 2013's effective-packing-fraction coefficients, `[coefficient][power of 1/lambda]`.
@@ -260,17 +345,67 @@ pub fn contact_value_0(eta: f64, x0: f64) -> f64 {
     (k0 + k1 * x0 + k2 * x0 * x0 + k3 * x0 * x0 * x0).exp()
 }
 
+/// The relative step this module's central differences are taken at, `1e-5`, which is
+/// NeqSim's own: of the packing fraction for the `eta` derivatives, of the temperature for
+/// the temperature ones.
+///
+/// **Small enough that the truncation is invisible and the cancellation is not.** On the
+/// converged volume the two are within `1e-6` of NeqSim measured over two decades of step -
+/// see [`pressure_over_rt`], which records the sweep - so the last digits of anything built
+/// from these differences are the arithmetic rather than the model.
+const RELATIVE_STEP: f64 = 1.0e-5;
+
 /// The step NeqSim's numerical `eta` derivatives use, `max(|eta| 1e-5, 1e-12)`, with its
 /// floor on the lower point.
 ///
-/// Written once because four derivatives use it and a second copy is a second chance to
+/// Written once because five derivatives use it and a second copy is a second chance to
 /// differ; the floor matters, because at a small packing fraction `eta - step` would
 /// otherwise go negative and the derivative would be taken across a state that is not one.
 fn eta_step(eta: f64) -> (f64, f64, f64) {
-    let step = (eta.abs() * 1.0e-5).max(1.0e-12);
+    let step = (eta.abs() * RELATIVE_STEP).max(1.0e-12);
     let high = eta + step;
     let low = (eta - step).max(1.0e-15);
     (high, low, (high - low) / 2.0)
+}
+
+/// The chain contact value's derivative in the packing fraction, at a fixed temperature.
+///
+/// The central difference NeqSim takes, at the same step. It is `d g_hs/d eta` **with the
+/// diameters held**, which is what the pressure and the fugacity coefficients need, and it
+/// is only one of the three routes `g_hs` has - see [`t_d_helmholtz_rt_dt`] for the other
+/// two.
+#[must_use]
+pub fn chain_contact_eta(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    eta: f64,
+    diameters: &[f64],
+) -> f64 {
+    let (high, low, step) = eta_step(eta);
+    (chain_contact_value(components, x, t, high, diameters)
+        - chain_contact_value(components, x, t, low, diameters))
+        / (2.0 * step)
+}
+
+/// The three dispersion terms' sum's derivative in the packing fraction, at a fixed
+/// temperature. The same difference and the same step as [`chain_contact_eta`].
+///
+/// # Errors
+/// As [`dispersion_at`].
+pub fn dispersion_eta(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    eta: f64,
+    diameters: &[f64],
+) -> Result<f64> {
+    let (high, low, step) = eta_step(eta);
+    let total = |e: f64| -> Result<f64> {
+        let (a1, a2, a3) = dispersion_at(components, x, t, e, diameters)?;
+        Ok(a1 + a2 + a3)
+    };
+    Ok((total(high)? - total(low)?) / (2.0 * step))
 }
 
 /// `g1`, the first-order chain perturbation at one component's exponents.
@@ -521,6 +656,123 @@ pub fn a3_mie(zeta_st: f64, lambda_r: f64, lambda_a: f64, eps_over_kt: f64) -> f
         * (pade_f(4, alpha) * zeta_st + pade_f(5, alpha) * zeta_st * zeta_st).exp()
 }
 
+/// One Mie fluid's three dispersion terms, and `T d/dT` of their sum at a fixed packing
+/// fraction.
+///
+/// The fluid is a component for the direct branch and a cross pair for the pair sum; the
+/// arithmetic is the same either way, which is why it lives here once.
+#[derive(Debug, Clone, Copy)]
+struct FluidDispersion {
+    a1: f64,
+    a2: f64,
+    a3: f64,
+    /// `T d(a_1 + a_2 + a_3)/dT` at a fixed packing fraction.
+    t_d_sum: f64,
+}
+
+/// `d b_bar/d x0`, the derivative of [`b_correction`]'s bracket in `x0 = sigma/d`.
+///
+/// Both caps are powers of `x0`, so their slopes are too: `d cap_i/d x0 = x0^(2-lambda)`
+/// and `d cap_j/d x0 = x0^(3-lambda) - x0^(2-lambda)`, the `(lambda - 3)` and
+/// `(lambda - 4)` denominators cancelling against the derivative of each exponent. **The
+/// second is a difference and not a sum**, which is the one place in this expansion where
+/// the signs of two powers of `x0` do not match: `cap_i`'s numerator is `1 - x0^(3-lambda)`
+/// and `cap_j`'s is `1 - (lambda-3) x0^(4-lambda) + (lambda-4) x0^(3-lambda)`, and the two
+/// exponents bring opposite signs down with them.
+fn b_bar_d_x0(eta: f64, lambda: f64, x0: f64) -> f64 {
+    let one = 1.0 - eta;
+    let om3 = one.powi(3);
+    let contact = (1.0 - eta / 2.0) / om3;
+    let cap_i = x0.powf(2.0 - lambda);
+    let cap_j = x0.powf(3.0 - lambda) - cap_i;
+    contact * cap_i - 9.0 * eta * (1.0 + eta) / (2.0 * om3) * cap_j
+}
+
+/// The three dispersion terms of one Mie fluid at a packing fraction, with their
+/// temperature derivative.
+///
+/// **The temperature reaches the dispersion through two arguments and neither is the
+/// packing fraction.** `a_k` is a function of `(eta, x0, beta)` with `x0 = sigma/d(T)` and
+/// `beta = eps/(k T)`, so at a fixed `eta`
+///
+/// ```text
+/// T d a_k/dT = -lam (d a_k/d ln x0) - beta (d a_k/d beta)
+/// ```
+///
+/// with `lam = T d ln d/dT` the diameter's own logarithmic derivative, and the minus sign
+/// is the whole of it: `x0 = sigma/d`, so `x0` and `d` move **opposite** ways. The second
+/// term is free: `a_1`, `a_2` and `a_3` are homogeneous in `beta` of degree one, two and
+/// three, so it is `-a_1`, `-2 a_2` and `-3 a_3` respectively. The first is written out,
+/// which is what makes this an independent check on NeqSim's central difference in `T`
+/// rather than a copy of it.
+fn fluid_dispersion(
+    t: f64,
+    eta: f64,
+    fluid: &MieComponent,
+    d: f64,
+    t_d_ln_d: f64,
+) -> FluidDispersion {
+    let (lambda_r, lambda_a) = (fluid.lambda_r, fluid.lambda_a);
+    let beta = fluid.epsik / t;
+    let x0 = if d > 0.0 { fluid.sigma / d } else { 1.0 };
+    let c_mie = mie_prefactor(lambda_r, lambda_a);
+    let alpha = mie_alpha(lambda_r, lambda_a);
+    let zeta = eta * x0 * x0 * x0;
+
+    let bare = |lambda: f64| a1_sutherland(eta, lambda, beta) + b_correction(eta, lambda, beta, x0);
+    let bare_d_x0 = |lambda: f64| 12.0 * eta * beta * b_bar_d_x0(eta, lambda, x0);
+
+    let a1 = a1_mie(eta, lambda_r, lambda_a, beta, c_mie, x0);
+    let a2 = a2_mie(eta, zeta, lambda_r, lambda_a, beta, c_mie, x0);
+    let a3 = a3_mie(zeta, lambda_r, lambda_a, beta);
+
+    let d_a1_d_x0 = c_mie
+        * (lambda_a * x0.powf(lambda_a - 1.0) * bare(lambda_a)
+            + x0.powf(lambda_a) * bare_d_x0(lambda_a)
+            - lambda_r * x0.powf(lambda_r - 1.0) * bare(lambda_r)
+            - x0.powf(lambda_r) * bare_d_x0(lambda_r));
+
+    let inner = |lambda: f64| x0.powf(lambda) * bare(lambda);
+    let d_inner_d_x0 = |lambda: f64| {
+        lambda * x0.powf(lambda - 1.0) * bare(lambda) + x0.powf(lambda) * bare_d_x0(lambda)
+    };
+    let d_a2_d_x0 = 0.5
+        * k_hs(eta)
+        * beta
+        * c_mie
+        * c_mie
+        * ((1.0 + mie_chi(zeta, lambda_r, lambda_a))
+            * (d_inner_d_x0(2.0 * lambda_a) - 2.0 * d_inner_d_x0(lambda_a + lambda_r)
+                + d_inner_d_x0(2.0 * lambda_r))
+            + (inner(2.0 * lambda_a) - 2.0 * inner(lambda_a + lambda_r) + inner(2.0 * lambda_r))
+                * (pade_f(0, alpha)
+                    + 5.0 * pade_f(1, alpha) * zeta.powi(4)
+                    + 8.0 * pade_f(2, alpha) * zeta.powi(7))
+                * 3.0
+                * eta
+                * x0
+                * x0);
+
+    let exponent = pade_f(4, alpha) * zeta + pade_f(5, alpha) * zeta * zeta;
+    let d_a3_d_zeta = -beta.powi(3)
+        * pade_f(3, alpha)
+        * exponent.exp()
+        * (1.0 + zeta * (pade_f(4, alpha) + 2.0 * pade_f(5, alpha) * zeta));
+
+    // `T d x0/dT = -x0 lam` and `T d zeta/dT = -3 zeta lam`: `x0` is `sigma/d` and `zeta` is
+    // `eta x0^3`, so both carry the diameter's derivative backwards.
+    let t_d_x0 = -x0 * t_d_ln_d;
+    FluidDispersion {
+        a1,
+        a2,
+        a3,
+        t_d_sum: d_a1_d_x0 * t_d_x0 - a1 + d_a2_d_x0 * t_d_x0
+            - 2.0 * a2
+            - d_a3_d_zeta * 3.0 * zeta * t_d_ln_d
+            - 3.0 * a3,
+    }
+}
+
 /// The three dispersion terms of a mixture, by pair summation.
 ///
 /// Lafitte 2013 Eqs. 37-40 with the cross parameters of its Eq. 36, and **the cross
@@ -541,6 +793,23 @@ pub fn dispersion_pair_sum(
     t: f64,
     eta: f64,
 ) -> Result<(f64, f64, f64)> {
+    pair_sum(components, x, t, eta).map(|(a1, a2, a3, _)| (a1, a2, a3))
+}
+
+/// The pair sum's three terms and `T d/dT` of their sum at a fixed packing fraction.
+///
+/// The weights are temperature-independent, so the whole temperature dependence is the
+/// cross fluid's - through its `beta_ij` and through its Barker-Henderson diameter `d_ij`,
+/// which is the cross potential's own and not an average of the two pure ones.
+///
+/// # Errors
+/// As [`dispersion_pair_sum`].
+fn pair_sum(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    eta: f64,
+) -> Result<(f64, f64, f64, f64)> {
     let n = components.len();
     if x.len() != n {
         return Err(AzothError::invalid_input(
@@ -564,7 +833,7 @@ pub fn dispersion_pair_sum(
         .map(|(xi, c)| xi * c.m / m_bar)
         .collect();
 
-    let mut sum = (0.0, 0.0, 0.0);
+    let mut sum = (0.0, 0.0, 0.0, 0.0);
     for (i, ci) in components.iter().enumerate() {
         for (j, cj) in components.iter().enumerate() {
             let weight = segment[i] * segment[j];
@@ -584,15 +853,13 @@ pub fn dispersion_pair_sum(
                 sigma: sigma_ij,
                 epsik: eps_ij,
             };
-            let d_ij = cross.d(t)?;
-            let c_mie = mie_prefactor(lambda_r, lambda_a);
-            let x0 = if d_ij > 0.0 { sigma_ij / d_ij } else { 1.0 };
-            let beta = eps_ij / t;
-            let zeta = eta * x0 * x0 * x0;
+            let (d_ij, t_d_ln_d) = cross.d_and_log_derivative(t)?;
+            let terms = fluid_dispersion(t, eta, &cross, d_ij, t_d_ln_d);
 
-            sum.0 += weight * a1_mie(eta, lambda_r, lambda_a, beta, c_mie, x0);
-            sum.1 += weight * a2_mie(eta, zeta, lambda_r, lambda_a, beta, c_mie, x0);
-            sum.2 += weight * a3_mie(zeta, lambda_r, lambda_a, beta);
+            sum.0 += weight * terms.a1;
+            sum.1 += weight * terms.a2;
+            sum.2 += weight * terms.a3;
+            sum.3 += weight * terms.t_d_sum;
         }
     }
     Ok(sum)
@@ -767,15 +1034,33 @@ pub fn dispersion_at(
     }
     let c = components[0];
     let d = diameters.first().copied().unwrap_or(0.0);
-    let x0 = if d > 0.0 { c.sigma / d } else { 1.0 };
-    let beta = c.epsik / t;
-    let c_mie = mie_prefactor(c.lambda_r, c.lambda_a);
-    let zeta = eta * x0 * x0 * x0;
-    Ok((
-        a1_mie(eta, c.lambda_r, c.lambda_a, beta, c_mie, x0),
-        a2_mie(eta, zeta, c.lambda_r, c.lambda_a, beta, c_mie, x0),
-        a3_mie(zeta, c.lambda_r, c.lambda_a, beta),
-    ))
+    let (_, t_d_ln_d) = c.d_and_log_derivative(t)?;
+    let terms = fluid_dispersion(t, eta, &c, d, t_d_ln_d);
+    Ok((terms.a1, terms.a2, terms.a3))
+}
+
+/// `T d(a_1 + a_2 + a_3)/dT` at a fixed packing fraction, by NeqSim's branch.
+///
+/// The same branch [`dispersion_at`] takes, and the same reason: one component evaluates
+/// its own potential directly and a mixture sums over pairs, and the two are different
+/// expressions whose cross parameters happen to coincide at `n = 1`.
+///
+/// # Errors
+/// As [`dispersion_pair_sum`].
+pub fn dispersion_t_d_dt(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    eta: f64,
+    diameters: &[f64],
+) -> Result<f64> {
+    if components.len() != 1 {
+        return pair_sum(components, x, t, eta).map(|(_, _, _, t_d)| t_d);
+    }
+    let c = components[0];
+    let d = diameters.first().copied().unwrap_or(0.0);
+    let (_, t_d_ln_d) = c.d_and_log_derivative(t)?;
+    Ok(fluid_dispersion(t, eta, &c, d, t_d_ln_d).t_d_sum)
 }
 
 /// The state's pressure at a trial molar volume, over `R T`.
@@ -803,21 +1088,8 @@ pub fn pressure_over_rt(components: &[MieComponent], x: &[f64], t: f64, v: f64) 
     let s = state(components, x, t, v)?;
     let eta = s.eta;
 
-    // NeqSim's step, in the packing fraction: `max(|eta| 1e-5, 1e-12)` with the lower point
-    // floored, and the halved span that its `etaM` correction makes.
-    let step = (eta.abs() * 1.0e-5).max(1.0e-12);
-    let high = eta + step;
-    let low = (eta - step).max(1.0e-15);
-    let step = (high - low) / 2.0;
-
-    let g_eta = (chain_contact_value(components, x, t, high, &s.d)
-        - chain_contact_value(components, x, t, low, &s.d))
-        / (2.0 * step);
-    let dispersion = |e: f64| -> Result<f64> {
-        let (a1, a2, a3) = dispersion_at(components, x, t, e, &s.d)?;
-        Ok(a1 + a2 + a3)
-    };
-    let dispersion_eta = (dispersion(high)? - dispersion(low)?) / (2.0 * step);
+    let g_eta = chain_contact_eta(components, x, t, eta, &s.d);
+    let dispersion_eta = dispersion_eta(components, x, t, eta, &s.d)?;
 
     // The hard-sphere term is the one NeqSim differentiates in closed form.
     let one = 1.0 - eta;
@@ -825,6 +1097,93 @@ pub fn pressure_over_rt(components: &[MieComponent], x: &[f64], t: f64, v: f64) 
 
     let f_eta = s.m_bar * a_hs_eta - s.m_minus_1 * g_eta / s.g_hs + s.m_bar * dispersion_eta;
     Ok(1.0 / v + eta * f_eta / v)
+}
+
+/// `T d(A^R/(R T))/dT` at constant volume, per mole.
+///
+/// **NeqSim publishes this and its SAFT-VR-Mie value is wrong for any fluid with a chain.**
+/// `PhaseSAFTVRMie.dF_HC_SAFTdT` carries `m a_hs'(eta) d eta/dT - m_min1 d ln g_hs/d eta
+/// d eta/dT` and stops there, so it differentiates the contact value as though it moved
+/// with the packing fraction alone. It does not: `g_hs` is the Mie-weighted contact value,
+/// `exp(sum_i w_i ln g_Mie_ii / W)`, and `g_Mie_ii = g_HS0 exp(beta (g_1 + beta g_2)/g_HS0)`
+/// carries `beta = eps/(k T)` as well. On n-butane alone at 350 K and 30 bara that class
+/// reports `-6.58e-05` where a difference of its own `F_hc` at fixed volume gives
+/// `+1.81e-04` - opposite signs. Methane, `m = 1`, is the exception the class's own probe
+/// state happens to be, because its chain block is skipped outright. Its **volume**
+/// derivative is right, which is why the pressure and the fugacity coefficients here agree
+/// with it.
+///
+/// The check this function is held to is therefore a **finite difference of NeqSim's own
+/// `F` at a pinned molar volume**, which uses none of the derivative code the defect
+/// reaches, and the write-up is at
+/// `~/Desktop/neqsim-saft-vr-mie-chain-contact-value-temperature.md`. Its
+/// `dF_DISP_SAFTdT` is correct and is used as the oracle for that half.
+///
+/// # The three routes
+///
+/// At constant volume the temperature reaches everything through two functions of it - the
+/// packing fraction and `g_hs` - and the packing fraction only through the diameters:
+///
+/// * `T d eta/dT = eta (T d(md3)/dT)/md3` with `md3 = sum_i x_i m_i d_i^3`, and
+///   `T d(md3)/dT = sum_i x_i m_i 3 d_i^3 lam_i`, where `lam_i = T d ln d_i/dT`;
+/// * the hard-sphere term is `m_bar a_hs(eta)`, and it moves with `eta` alone;
+/// * `g_hs` moves with `eta`, with `T` and with each diameter, and all three are carried.
+///
+/// The dispersion is `m_bar (a_1 + a_2 + a_3)`: its own temperature derivative at a fixed
+/// packing fraction from [`dispersion_t_d_dt`], plus its `eta` derivative times
+/// `T d eta/dT`.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] or [`AzothError::OutOfRange`] as
+///   [`MieComponent::d_and_log_derivative`] and [`dispersion_at`].
+pub fn t_d_helmholtz_rt_dt(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    state: &MieState,
+) -> Result<f64> {
+    let mut t_d_ln_d = Vec::with_capacity(components.len());
+    let mut t_d_md3 = 0.0;
+    for (i, component) in components.iter().enumerate() {
+        let (_, lam) = component.d_and_log_derivative(t)?;
+        t_d_ln_d.push(lam);
+        t_d_md3 += x[i] * component.m * 3.0 * state.d[i].powi(3) * lam;
+    }
+    let t_d_eta = state.eta * t_d_md3 / state.md3;
+
+    let eta = state.eta;
+    let one = 1.0 - eta;
+    let a_hs_d_eta = ((4.0 - 6.0 * eta) * one + 2.0 * (4.0 * eta - 3.0 * eta * eta)) / one.powi(3);
+
+    // `g_hs`'s three routes: the packing fraction, the temperature with the diameters held,
+    // and each diameter scaled by its own `lam_i`.
+    let g_eta = chain_contact_eta(components, x, t, eta, &state.d);
+    let t_step = t * RELATIVE_STEP;
+    let g_t = (chain_contact_value(components, x, t + t_step, eta, &state.d)
+        - chain_contact_value(components, x, t - t_step, eta, &state.d))
+        / (2.0 * t_step);
+    let scaled = |sign: f64| -> Vec<f64> {
+        state
+            .d
+            .iter()
+            .zip(&t_d_ln_d)
+            .map(|(d, lam)| d * (1.0 + sign * lam * RELATIVE_STEP))
+            .collect()
+    };
+    let g_d = (chain_contact_value(components, x, t, eta, &scaled(1.0))
+        - chain_contact_value(components, x, t, eta, &scaled(-1.0)))
+        / (2.0 * RELATIVE_STEP);
+    // The third route is `sum_i d_i lam_i d g/d d_i`, which is what the difference above
+    // is and therefore what is added - `T d d_i/dT` is `d_i lam_i`, with no sign to turn.
+    let t_d_g_hs = g_eta * t_d_eta + t * g_t + g_d;
+
+    let t_d_f_hc = state.m_bar * a_hs_d_eta * t_d_eta - state.m_minus_1 * t_d_g_hs / state.g_hs;
+
+    let dispersion_eta = dispersion_eta(components, x, t, eta, &state.d)?;
+    let t_d_dispersion = dispersion_t_d_dt(components, x, t, eta, &state.d)?;
+    let t_d_f_disp = state.m_bar * (t_d_dispersion + dispersion_eta * t_d_eta);
+
+    Ok(t_d_f_hc + t_d_f_disp)
 }
 
 /// The dispersion's **row sums**: `sum_l xi_l a^{il}` for each component `i`.

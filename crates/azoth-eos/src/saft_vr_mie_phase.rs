@@ -239,6 +239,35 @@ pub fn ln_phi(components: &[MieComponent], x: &[f64], t: f64, v: f64) -> Result<
     Ok(out)
 }
 
+/// A SAFT-VR-Mie phase's residual enthalpy and entropy, per mole.
+///
+/// **`Z - 1` is the volume's own contribution and `-T dF/dT` the temperature's.** NeqSim
+/// assembles the same two from `AresTV + T SresTV + P V - n R T` with
+/// `SresTV = (-T dFdT - F) R`, and the two `F`-terms cancel: `Hres/(R T) = Z - 1 - T dFdT`.
+/// The entropy then carries the `P`-to-`V` conversion, `SresTP = SresTV + n R ln Z`.
+///
+/// **This is a finite difference of NeqSim's own `F` at a pinned volume before it is
+/// NeqSim's `dFdT`**, because for this model the two disagree wherever the fluid has a
+/// chain: [`saft_vr_mie::t_d_helmholtz_rt_dt`] carries the note, and the write-up is at
+/// `~/Desktop/neqsim-saft-vr-mie-chain-contact-value-temperature.md`. Only the chain term
+/// is affected - NeqSim's `dF_DISP_SAFTdT` is right, and is the oracle for that half.
+///
+/// # Errors
+/// As [`saft_vr_mie::state`].
+pub fn departure(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    v: f64,
+    compressibility: f64,
+) -> Result<(f64, f64)> {
+    let state = saft_vr_mie::state(components, x, t, v)?;
+    let t_d_f = saft_vr_mie::t_d_helmholtz_rt_dt(components, x, t, &state)?;
+    let h_over_rt = compressibility - 1.0 - t_d_f;
+    let s_over_r = compressibility.ln() - t_d_f - state.f();
+    Ok((h_over_rt, s_over_r))
+}
+
 /// A name list resolved to SAFT-VR-Mie parameters.
 ///
 /// # Errors
@@ -354,10 +383,14 @@ pub fn phase_state_of(
     }
 
     let solved = molar_volume(components, z, t.value, p.value, side)?;
+    let (h_over_rt, s_over_r) = departure(components, z, t.value, solved.v, solved.z)?;
+    let r_t = R * t.value;
     Ok(SaftVrMiePhaseResult {
         z_factor: solved.z,
         ln_phi: ln_phi(components, z, t.value, solved.v)?,
         v: cubic_meters_per_mole(solved.v),
+        h_res: azoth_core::units::joules_per_mole(h_over_rt * r_t),
+        s_res: azoth_core::units::joules_per_mole_kelvin(s_over_r * R),
         warnings: Vec::new(),
     })
 }

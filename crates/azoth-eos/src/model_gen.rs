@@ -4230,6 +4230,8 @@ static SAFT_VR_MIE_PHASE_CASES: &[TestCase] = &[TestCase {
     expected: &[
         ("v", 0.0008260515668683107),
         ("z_factor", 0.8515814873614467),
+        ("h_res", -1433.6897143213828),
+        ("s_res", -2.9364502191263444),
     ],
     expected_vectors: &[("ln_phi", &[0.0303544890821417, -0.394263574814552])],
 }];

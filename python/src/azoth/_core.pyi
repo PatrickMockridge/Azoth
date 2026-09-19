@@ -732,6 +732,8 @@ class SaftVrMiePhaseResult:
     z_factor: float
     ln_phi: list[float]
     v: Qty
+    h_res: Qty
+    s_res: Qty
     warnings: list[Warning]
 
 @final

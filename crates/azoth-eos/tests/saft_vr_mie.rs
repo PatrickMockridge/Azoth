@@ -8,10 +8,10 @@
 use azoth_eos::mixture::RootSide;
 use azoth_eos::saft_vr_mie::{
     MieComponent, a_s1_bare, a1_mie, a2_mie, a3_mie, b_bare, barker_henderson, chain_contact_value,
-    chain_g1, chain_g2, contact_value_0, dispersion_pair_sum, eta_effective, g_hs, k_hs, mie_alpha,
-    mie_prefactor, pressure_over_rt, state,
+    chain_g1, chain_g2, contact_value_0, dispersion_pair_sum, dispersion_t_d_dt, eta_effective,
+    g_hs, k_hs, mie_alpha, mie_prefactor, pressure_over_rt, state, t_d_helmholtz_rt_dt,
 };
-use azoth_eos::saft_vr_mie_phase::{ln_phi, ln_phi_pure, molar_volume};
+use azoth_eos::saft_vr_mie_phase::{departure, ln_phi, ln_phi_pure, molar_volume};
 
 fn methane() -> MieComponent {
     MieComponent {
@@ -563,5 +563,201 @@ fn the_mixture_fugacity_coefficients_are_neqsims() {
         (pure[0] / -0.077_323_712_579_758_6 - 1.0).abs() < 1.0e-6,
         "methane alone ln phi = {}",
         pure[0]
+    );
+}
+
+/// The effective diameter's temperature derivative, against the probe's `ddSAFTidT`.
+///
+/// The probe prints `d = 3.57210695782575e-10` and `ddSAFTidT = -2.95078695968885e-14`
+/// for methane at 350 K, and the two components of the binary below.
+///
+/// **The port's is the analytic companion of NeqSim's own difference, not a copy of it.**
+/// `ComponentSAFTVRMie.getDdSAFTidT` differences `calcEffectiveDiameter` in `T` at a
+/// relative `1e-5`; this differentiates the same ten-point rule in `theta`, with the moving
+/// cut-off `x_cut` and its clamp carried. The two agree to about `1e-11` relative, which is
+/// where the difference quotient's own truncation sits.
+#[test]
+fn the_diameter_temperature_derivative_is_neqsims() {
+    let cases = [
+        (
+            methane(),
+            350.0,
+            3.572_106_957_825_75e-10,
+            -2.950_786_959_688_85e-14,
+        ),
+        (
+            n_butane(),
+            350.0,
+            3.966_657_850_558_17e-10,
+            -2.391_856_990_235_50e-14,
+        ),
+    ];
+    for (component, t, d, dd_dt) in cases {
+        let (got_d, got_log) = component.d_and_log_derivative(t).expect("a diameter");
+        matches(got_d, d, "the diameter");
+        let expected = t * dd_dt / d;
+        let relative = (got_log / expected - 1.0).abs();
+        assert!(
+            relative < 1.0e-9,
+            "T d ln d/dT = {got_log} against the probe's difference {expected}, a relative \
+             {relative:e}"
+        );
+    }
+}
+
+/// The dispersion's temperature derivative at a fixed packing fraction, against the
+/// probe's own.
+///
+/// `0.000523927720192623`, `0.000127264907341662` and `0.0000191077980074115` for
+/// methane/n-butane at 350 K, and `0.000592372377872241`, `0.000112728860286968` and
+/// `0.0000140759194795463` for methane at 300 K.
+///
+/// **This half of NeqSim is correct, so it is the oracle rather than something to work
+/// around**: `PhaseSAFTVRMie` differences `calcPairDispSum(eta, T)` in `T` at a relative
+/// `1e-5` and the port differentiates the same pair sum in closed form, so the two are
+/// independent and land `1e-9` apart. The chain contact value, one layer up, is the half
+/// that is not - see [`the_chain_temperature_derivative_neqsim_omits`].
+#[test]
+fn the_dispersion_temperature_derivative_is_neqsims() {
+    let binary = [methane(), n_butane()];
+    let mixed = state(&binary, &[0.6, 0.4], 350.0, 8.260_537_757_932_58e-4).expect("a state");
+    let got = dispersion_t_d_dt(&binary, &[0.6, 0.4], 350.0, mixed.eta, &mixed.d).expect("a slope");
+    let expected = 350.0
+        * (0.000_523_927_720_192_623 + 0.000_127_264_907_341_662 + 0.000_019_107_798_007_411_5);
+    let relative = (got / expected - 1.0).abs();
+    assert!(
+        relative < 1.0e-8,
+        "binary T d(sum a_k)/dT = {got} against the probe's {expected}, a relative \
+         {relative:e}"
+    );
+
+    let pure = [methane()];
+    let alone = state(&pure, &[1.0], 300.0, 4.609_634_632_033_79e-4).expect("a state");
+    let got = dispersion_t_d_dt(&pure, &[1.0], 300.0, alone.eta, &alone.d).expect("a slope");
+    let expected = 300.0
+        * (0.000_592_372_377_872_241 + 0.000_112_728_860_286_968 + 0.000_014_075_919_479_546_3);
+    let relative = (got / expected - 1.0).abs();
+    assert!(
+        relative < 1.0e-8,
+        "methane T d(sum a_k)/dT = {got} against the probe's {expected}, a relative \
+         {relative:e}"
+    );
+}
+
+/// **The chain contact value moves with the temperature, and NeqSim's `dF_HC_SAFTdT` does
+/// not carry it.**
+///
+/// `PhaseSAFTVRMie.dF_HC_SAFTdT` is `n (m a_hs'(eta) d eta/dT - m_min1 d ln g_hs/d eta
+/// d eta/dT)` and stops there, which differentiates `g_hs` as though it were a function of
+/// the packing fraction alone. It is not: it is the Mie-weighted contact value,
+/// `exp(sum_i w_i ln g_Mie_ii / W)`, and `g_Mie_ii = g_HS0 exp(beta (g_1 + beta g_2)/g_HS0)`
+/// carries `beta = eps/(k T)`. So the class is missing the `T` route and the diameter's.
+///
+/// The measurement is a **difference of NeqSim's own `F_hc` at a pinned molar volume**,
+/// which is what the probe's `fAtFixedVolume` does - it perturbs `T`, restores the volume
+/// with `setMolarVolume` and re-runs `volInit`, the same two calls `PhaseSAFTVRMie.dFdVdVdV`
+/// makes - and it uses none of the derivative code the defect reaches.
+///
+/// | state | NeqSim `dF_HC_SAFTdT` | the difference of its own `F_hc` |
+/// |---|---|---|
+/// | methane, `m = 1` | `-3.69985758564022e-05` | `-3.69985760007019e-05` |
+/// | n-butane, `m = 1.8514` | `-6.58222781509927e-05` | `+1.80907699712241e-04` |
+/// | methane/n-butane | `-3.09846277671377e-05` | `+2.34611958374598e-05` |
+///
+/// Methane agrees because its chain block is skipped outright at `m = 1` and the contact
+/// value falls back to the Carnahan-Starling one, which *is* a function of the packing
+/// fraction alone. Every fluid with a chain is wrong, and on n-butane the two disagree in
+/// sign.
+#[test]
+fn the_chain_temperature_derivative_neqsim_omits() {
+    // The two the class gets right, to the difference quotient's own precision.
+    let pure = [methane()];
+    let alone = state(&pure, &[1.0], 300.0, 4.609_634_632_033_79e-4).expect("a state");
+    let t_d_f = t_d_helmholtz_rt_dt(&pure, &[1.0], 300.0, &alone).expect("a slope");
+    // `F_hc` and `F_disp` differenced separately at the pinned volume, `h = 0.01`:
+    // `-3.69985760007019e-05` and `0.000776705643252551`; `F` itself gives
+    // `0.000739707042661519`, which differs from their sum in the eleventh digit by the
+    // empty association term's own noise.
+    let expected = 300.0 * 0.000_739_707_042_661_519;
+    let relative = (t_d_f / expected - 1.0).abs();
+    assert!(
+        relative < 1.0e-6,
+        "methane T dF/dT = {t_d_f} against the probe's own {expected}, a relative {relative:e}"
+    );
+
+    // Where the class is wrong, the model's own `F` at a pinned volume is the oracle.
+    let binary = [methane(), n_butane()];
+    let mixed = state(&binary, &[0.6, 0.4], 350.0, 8.260_537_757_932_58e-4).expect("a state");
+    let t_d_f = t_d_helmholtz_rt_dt(&binary, &[0.6, 0.4], 350.0, &mixed).expect("a slope");
+    // `0.000983564014718497`, `0.000983562869673882` and `0.000983562884046621` at
+    // `h = 0.01`, `0.05` and `0.2`, so the difference carries `1.4e-6` of its own spread.
+    let expected = 350.0 * 0.000_983_562_869_673_882;
+    let relative = (t_d_f / expected - 1.0).abs();
+    assert!(
+        relative < 1.0e-4,
+        "binary T dF/dT = {t_d_f} against the difference of NeqSim's own F, {expected}, a \
+         relative {relative:e}"
+    );
+
+    // And the value the class reports instead is not close to it: `T dFdT = 0.325191366576064`.
+    let neqsim = 350.0 * 0.000_929_118_190_217_325;
+    assert!(
+        (t_d_f / neqsim - 1.0).abs() > 0.05,
+        "the port should not reproduce NeqSim's chain derivative here: {t_d_f} against \
+         {neqsim}"
+    );
+}
+
+/// The departure, against NeqSim where NeqSim is right and against its own `F` where it is
+/// not.
+///
+/// For methane the class's chain block is skipped, so its `Hres`/`Sres` are correct and it
+/// is the oracle: `-743.045268700689` J/mol and `-1.83391248465549` J/(mol K) against this
+/// model's `-743.0452692786` and `-1.8339124859`, a relative `8e-10`. For the binary the
+/// same class reports `-1378.22736004559` and `-2.77798635110702`, which is the chain
+/// defect carried into the departure - the state below is the one the difference of its own
+/// `F` puts at `-1433.68` and `-2.9364`.
+#[test]
+fn the_departure_is_neqsims_where_neqsim_is_right() {
+    let pure = [methane()];
+    let (h, s) = departure(
+        &pure,
+        &[1.0],
+        300.0,
+        4.609_634_632_033_79e-4,
+        0.924_019_412_709_511,
+    )
+    .expect("a departure");
+    let h_res = h * 8.314_462_1 * 300.0;
+    let s_res = s * 8.314_462_1;
+    assert!(
+        (h_res / -743.045_268_700_689 - 1.0).abs() < 1.0e-8,
+        "methane h_res = {h_res}"
+    );
+    assert!(
+        (s_res / -1.833_912_484_655_49 - 1.0).abs() < 1.0e-8,
+        "methane s_res = {s_res}"
+    );
+
+    let binary = [methane(), n_butane()];
+    let (h, s) = departure(
+        &binary,
+        &[0.6, 0.4],
+        350.0,
+        8.260_537_757_932_58e-4,
+        0.851_583_764_555_351,
+    )
+    .expect("a departure");
+    let h_res = h * 8.314_462_1 * 350.0;
+    let s_res = s * 8.314_462_1;
+    // NeqSim's own `HresTP/n` and `SresTP/n` at this state are `-1378.22736004559` and
+    // `-2.77798635110702`; the difference of its `F` at a pinned volume puts them here.
+    assert!(
+        (h_res / -1.433_681_608_724_57e3 - 1.0).abs() < 1.0e-4,
+        "binary h_res = {h_res}"
+    );
+    assert!(
+        (s_res / -2.936_427_061_618_4e0 - 1.0).abs() < 1.0e-4,
+        "binary s_res = {s_res}"
     );
 }

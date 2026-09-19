@@ -2064,9 +2064,11 @@ class SaftVrMiePhaseResult(_HasWarnings):
     """Result of ``eos.saft_vr_mie_phase``.
 
     The SAFT-VR-Mie phase state: the compressibility factor, the molar volume the solve
-    converged to, and the fugacity coefficients. **No departure function is reported**,
-    because the temperature derivative of the Helmholtz energy is not derived - and for
-    this model the ``eta`` derivatives the pressure needs are central differences besides.
+    converged to, the fugacity coefficients and the residual departures.
+
+    **There is no ``cp_res``.** It needs ``d^2(A^R/RT)/dT^2``, and the chain contact value's
+    second temperature derivative is not derived in either kernel, so a heat capacity from
+    the dispersion alone would be a wrong answer rather than a missing one.
     """
 
     #: The compressibility factor at the chosen root.
@@ -2075,6 +2077,10 @@ class SaftVrMiePhaseResult(_HasWarnings):
     ln_phi: tuple[float, ...]
     #: The molar volume at the chosen root.
     v: Q
+    #: The residual enthalpy, real minus ideal gas at the same state.
+    h_res: Q
+    #: The residual entropy, real minus ideal gas at the same state.
+    s_res: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
 

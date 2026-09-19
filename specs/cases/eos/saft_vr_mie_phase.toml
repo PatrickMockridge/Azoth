@@ -2,11 +2,13 @@ model = "eos.saft_vr_mie_phase"
 [[cases]]
 id = "methane_butane_vapour_against_neqsim"
 tolerance = 1e-05
-source = """NeqSim 3.20.0, `SystemSAFTVRMie` - which builds `PhaseSAFTVRMie` - run from `validation/neqsim/SaftVrMieProbe.java`: `java -cp .:neqsim-3.20.0.jar SaftVrMieProbe 350 30 methane 0.6 n-butane 0.4`. The probe's `volumeSAFT` and `Z` agree with the model at **2.6e-6** and **2.7e-6** relative, and its two `lnPhi` values at **2.6e-5** and **3.8e-6**. Every layer reproduces one at a time in `crates/azoth-eos/tests/saft_vr_mie.rs` - the diameter, the chain contact value, `g1`, `g2`, the three dispersion terms, the Helmholtz energy, the pressure and the fugacity coefficients - and the pressure at the probe's *own* volume is checked separately, which is where the `Z` agreement is `5.9e-7` rather than the solved root's `2.7e-6`. The `ln phi` gap is that root displacement carried through, not a term.
+source = """NeqSim 3.20.0, `SystemSAFTVRMie` - which builds `PhaseSAFTVRMie` - run from `validation/neqsim/SaftVrMieProbe.java`: `java -cp .:neqsim-3.20.0.jar SaftVrMieProbe 350 30 methane 0.6 n-butane 0.4`. The probe's `volumeSAFT` and `Z` agree with the model at **2.6e-6** and **2.7e-6** relative, and its two `lnPhi` values at **2.6e-5** and **3.8e-6**. Every layer reproduces one at a time in `crates/azoth-eos/tests/saft_vr_mie.rs` - the diameter, the chain contact value, `g1`, `g2`, the dispersion, the Helmholtz energy, the pressure and the fugacity coefficients - and the pressure at the probe's *own* volume is checked separately, where the `Z` agreement is `5.9e-7` rather than the solved root's `2.7e-6`. The `ln phi` gap is that root displacement carried through.
 
-**The tolerance is 1e-5 because this model's last digits are an arithmetic rather than a model**, and the numbers are the model's own, recorded from it, with the oracle's agreement above stated rather than asserted through the digits the case compares. NeqSim takes the `eta` derivatives of `gHS` and of the dispersion by central difference at a relative step of `1e-5`, and the crate reproduces that step, so the two sides are differencing the same nearly-equal energies. Measured over two decades of step the converged volume moves by about `1e-6`; a tighter tolerance would be checking which step was chosen. The single-pressure check in the test file records the same measurement in full.
+**The tolerance is 1e-5 because this model's last digits are an arithmetic rather than a model.** The `eta` derivatives of `gHS` and of the dispersion are central differences on both sides, at the same relative step of `1e-5`, so the two are differencing the same nearly-equal energies. Measured over two decades of step the converged volume moves by about `1e-6`.
 
-**The state is a mixture on purpose.** Methane alone has `m = 1`, so the chain term is the Carnahan-Starling contact value rather than the Mie-weighted mean, and `F_disp` is `a_1+a_2+a_3` rather than 1.34 times it: a pure-fluid case would pass with either wrong. The probe's own two states cover both, and `crates/azoth-eos/tests/saft_vr_mie.rs` checks methane as well."""
+**The departures are checked against a finite difference of NeqSim's energy at a pinned molar volume, not against its `HresTP`**: `PhaseSAFTVRMie.dF_HC_SAFTdT` leaves out the chain contact value's own temperature dependence, so its `-1378.23 J/mol` here is 4% from the `-1433.69` the energy terms give. The dispersion half of that derivative is correct, and the test file checks the model's analytic form against it to `1e-9`. `validation/neqsim/SaftVrMieDepartureProbe.java` prints the layers, the difference and both.
+
+**The state is a mixture on purpose.** Methane alone has `m = 1`, so the chain term is the Carnahan-Starling contact value rather than the Mie-weighted mean, and `F_disp` is `a_1+a_2+a_3` rather than 1.34 times it: a pure-fluid case would pass with either wrong. The probe's two states cover both."""
 [cases.inputs]
 components = ["methane", "n-butane"]
 T = 350.0
@@ -17,3 +19,5 @@ compressed_phase = "vapour"
 v = 0.0008260515668683107
 z_factor = 0.8515814873614467
 ln_phi = [0.0303544890821417, -0.394263574814552]
+h_res = -1433.6897143213828
+s_res = -2.9364502191263444

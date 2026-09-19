@@ -184,11 +184,70 @@ def barker_henderson(theta: float, lambda_r: float, lambda_a: float) -> float:
     return total
 
 
+def barker_henderson_d_theta(theta: float, lambda_r: float, lambda_a: float) -> float:
+    """``d/dtheta`` of :func:`barker_henderson`, on the same branch.
+
+    **The derivative of the approximation rather than of the integral**, which is what makes
+    it the analytic companion of NeqSim's own central difference: the cut-off ``x_cut``
+    moves with ``theta`` and that motion is part of both.
+    """
+
+    def powers(x: float) -> tuple[float, float]:
+        inv = 1.0 / x
+        return math.pow(inv, lambda_r), math.pow(inv, lambda_a)
+
+    if theta <= 1.0:
+        total = 0.0
+        for node, weight in zip(_GAUSS_NODES, _GAUSS_WEIGHTS, strict=True):
+            if node < 1.0e-20:
+                continue
+            repulsive, attractive = powers(node)
+            u = theta * (repulsive - attractive)
+            total += weight * _exp(-u) * (repulsive - attractive)
+        return total
+
+    raw_cut = _exp(-math.log(theta + 20.0) / lambda_r)
+    x_cut = min(max(raw_cut, 0.5), 0.999)
+    # Where the clamp holds the cut is constant, and the derivative of a constant is zero.
+    d_cut = -x_cut / (lambda_r * (theta + 20.0)) if 0.5 < raw_cut < 0.999 else 0.0
+    width = 1.0 - x_cut
+    d_width = -d_cut
+
+    covered = 0.0
+    moving = 0.0
+    for node, weight in zip(_GAUSS_NODES, _GAUSS_WEIGHTS, strict=True):
+        x = 1.0 - width * (1.0 - node)
+        if x < 1.0e-20:
+            continue
+        repulsive, attractive = powers(x)
+        u = theta * (repulsive - attractive)
+        dx = -(1.0 - node) * d_width
+        du = (repulsive - attractive) + theta * (
+            -lambda_r * repulsive / x + lambda_a * attractive / x
+        ) * dx
+        covered += weight * (1.0 - _exp(-u))
+        moving += weight * _exp(-u) * du
+    return d_width * (covered - 1.0) + width * moving
+
+
 def effective_diameter(component: _Component, t: float) -> float:
     """``d = sigma * integral_0^1 (1 - exp(-u*(x))) dx``.
 
     Raises:
         OutOfRangeError: if ``t`` is not positive, or the exponents do not make a potential.
+    """
+    return effective_diameter_and_log_derivative(component, t)[0]
+
+
+def effective_diameter_and_log_derivative(component: _Component, t: float) -> tuple[float, float]:
+    """The diameter, and ``T d ln d/dT`` beside it.
+
+    ``d = sigma BH(theta)`` with ``theta = C eps/(k T)``, so ``T d ln d/dT`` is
+    ``-theta d ln BH/dtheta`` - one number for every layer that needs the diameter's
+    temperature dependence.
+
+    Raises:
+        OutOfRangeError: as :func:`effective_diameter`, or if the integral is not positive.
     """
     if not t > 0.0:
         raise OutOfRangeError("T", t, "the effective diameter is a function of temperature")
@@ -199,7 +258,13 @@ def effective_diameter(component: _Component, t: float) -> float:
             f"{component.lambda_a}, so there is no potential well to average",
         )
     theta = mie_prefactor(component.lambda_r, component.lambda_a) * component.epsik / t
-    return component.sigma * barker_henderson(theta, component.lambda_r, component.lambda_a)
+    integral = barker_henderson(theta, component.lambda_r, component.lambda_a)
+    if integral <= 0.0:
+        raise OutOfRangeError(
+            "T", t, f"the Barker-Henderson integral is {integral} at this temperature"
+        )
+    slope = barker_henderson_d_theta(theta, component.lambda_r, component.lambda_a)
+    return component.sigma * integral, -theta * slope / integral
 
 
 def eta_effective(eta: float, lambda_: float) -> float:
@@ -258,6 +323,11 @@ def contact_value_0(eta: float, x0: float) -> float:
     k2 = -3.0 * eta2 / (8.0 * one * one)
     k3 = (3.0 * eta + 3.0 * eta2 - eta4) / (6.0 * om3)
     return _exp(k0 + k1 * x0 + k2 * x0 * x0 + k3 * x0 * x0 * x0)
+
+
+#: The relative step the central differences here are taken at, ``1e-5``, which is
+#: NeqSim's own. Small enough that the truncation is invisible and the cancellation is not.
+_RELATIVE_STEP = 1.0e-5
 
 
 def _eta_step(eta: float) -> tuple[float, float, float]:
@@ -472,6 +542,115 @@ def a3_mie(zeta_st: float, lambda_r: float, lambda_a: float, eps_over_kt: float)
     )
 
 
+def _b_bar_d_x0(eta: float, lambda_: float, x0: float) -> float:
+    """``d b_bar/d x0``, the derivative of :func:`b_correction`'s bracket.
+
+    ``d cap_i/d x0 = x0^(2-lambda)`` and ``d cap_j/d x0 = x0^(3-lambda) - x0^(2-lambda)``:
+    the two exponents bring opposite signs down with them, so the second is a difference.
+    """
+    one = 1.0 - eta
+    om3 = one**3
+    contact = (1.0 - eta / 2.0) / om3
+    cap_i = math.pow(x0, 2.0 - lambda_)
+    cap_j = math.pow(x0, 3.0 - lambda_) - cap_i
+    return contact * cap_i - 9.0 * eta * (1.0 + eta) / (2.0 * om3) * cap_j
+
+
+def _fluid_dispersion(
+    t: float, eta: float, component: _Component, d: float, t_d_ln_d: float
+) -> tuple[float, float, float, float]:
+    """One Mie fluid's three dispersion terms and ``T d/dT`` of their sum at a fixed ``eta``.
+
+    The temperature reaches the dispersion through ``x0 = sigma/d(T)`` and
+    ``beta = eps/(k T)`` and not through the packing fraction:
+
+    ``T d a_k/dT = -lam (d a_k/d ln x0) - beta (d a_k/d beta)``
+
+    with ``lam = T d ln d/dT``, the minus sign because ``x0`` and ``d`` move opposite ways.
+    The second term is free - ``a_1``, ``a_2`` and ``a_3`` are homogeneous in ``beta`` of
+    degree one, two and three - and the first is written out.
+    """
+    lambda_r, lambda_a = component.lambda_r, component.lambda_a
+    beta = component.epsik / t
+    x0 = component.sigma / d if d > 0.0 else 1.0
+    c_mie = mie_prefactor(lambda_r, lambda_a)
+    alpha = mie_alpha(lambda_r, lambda_a)
+    zeta = eta * x0 * x0 * x0
+
+    def bare(lambda_: float) -> float:
+        return a1_sutherland(eta, lambda_, beta) + b_correction(eta, lambda_, beta, x0)
+
+    def bare_d_x0(lambda_: float) -> float:
+        return 12.0 * eta * beta * _b_bar_d_x0(eta, lambda_, x0)
+
+    a1 = a1_mie(eta, lambda_r, lambda_a, beta, c_mie, x0)
+    a2 = a2_mie(eta, zeta, lambda_r, lambda_a, beta, c_mie, x0)
+    a3 = a3_mie(zeta, lambda_r, lambda_a, beta)
+
+    d_a1_d_x0 = c_mie * (
+        lambda_a * math.pow(x0, lambda_a - 1.0) * bare(lambda_a)
+        + math.pow(x0, lambda_a) * bare_d_x0(lambda_a)
+        - lambda_r * math.pow(x0, lambda_r - 1.0) * bare(lambda_r)
+        - math.pow(x0, lambda_r) * bare_d_x0(lambda_r)
+    )
+
+    def inner(lambda_: float) -> float:
+        return math.pow(x0, lambda_) * bare(lambda_)
+
+    def d_inner_d_x0(lambda_: float) -> float:
+        return lambda_ * math.pow(x0, lambda_ - 1.0) * bare(lambda_) + math.pow(
+            x0, lambda_
+        ) * bare_d_x0(lambda_)
+
+    d_a2_d_x0 = (
+        0.5
+        * k_hs(eta)
+        * beta
+        * c_mie
+        * c_mie
+        * (
+            (1.0 + mie_chi(zeta, lambda_r, lambda_a))
+            * (
+                d_inner_d_x0(2.0 * lambda_a)
+                - 2.0 * d_inner_d_x0(lambda_a + lambda_r)
+                + d_inner_d_x0(2.0 * lambda_r)
+            )
+            + (inner(2.0 * lambda_a) - 2.0 * inner(lambda_a + lambda_r) + inner(2.0 * lambda_r))
+            * (
+                pade_f(0, alpha)
+                + 5.0 * pade_f(1, alpha) * zeta**4
+                + 8.0 * pade_f(2, alpha) * zeta**7
+            )
+            * 3.0
+            * eta
+            * x0
+            * x0
+        )
+    )
+
+    exponent = pade_f(4, alpha) * zeta + pade_f(5, alpha) * zeta * zeta
+    d_a3_d_zeta = (
+        -(beta**3)
+        * pade_f(3, alpha)
+        * _exp(exponent)
+        * (1.0 + zeta * (pade_f(4, alpha) + 2.0 * pade_f(5, alpha) * zeta))
+    )
+
+    # ``T d x0/dT = -x0 lam`` and ``T d zeta/dT = -3 zeta lam``.
+    t_d_x0 = -x0 * t_d_ln_d
+    return (
+        a1,
+        a2,
+        a3,
+        d_a1_d_x0 * t_d_x0
+        - a1
+        + d_a2_d_x0 * t_d_x0
+        - 2.0 * a2
+        - d_a3_d_zeta * 3.0 * zeta * t_d_ln_d
+        - 3.0 * a3,
+    )
+
+
 def _segment_fractions(components: Sequence[_Component], x: Sequence[float]) -> list[float]:
     """``xi_i = x_i m_i / m_bar``, the segment fractions the dispersion sums over."""
     m_bar = sum(xi * c.m for xi, c in zip(x, components, strict=True))
@@ -485,24 +664,16 @@ def _segment_fractions(components: Sequence[_Component], x: Sequence[float]) -> 
 
 def _pair_terms(
     first: _Component, second: _Component, t: float, eta: float
-) -> tuple[float, float, float]:
-    """The three dispersion terms of one pair, at a packing fraction."""
+) -> tuple[float, float, float, float]:
+    """One pair's three dispersion terms and their ``T d/dT`` at a packing fraction."""
     sigma_ij = 0.5 * (first.sigma + second.sigma)
     sigma3 = first.sigma**3 * second.sigma**3
     eps_ij = math.sqrt(first.epsik * second.epsik) * math.sqrt(sigma3) / sigma_ij**3
     lambda_r = 3.0 + math.sqrt((first.lambda_r - 3.0) * (second.lambda_r - 3.0))
     lambda_a = 3.0 + math.sqrt((first.lambda_a - 3.0) * (second.lambda_a - 3.0))
     cross = _Component(1.0, lambda_r, lambda_a, sigma_ij, eps_ij)
-    d_ij = effective_diameter(cross, t)
-    c_mie = mie_prefactor(lambda_r, lambda_a)
-    x0 = sigma_ij / d_ij if d_ij > 0.0 else 1.0
-    beta = eps_ij / t
-    zeta = eta * x0 * x0 * x0
-    return (
-        a1_mie(eta, lambda_r, lambda_a, beta, c_mie, x0),
-        a2_mie(eta, zeta, lambda_r, lambda_a, beta, c_mie, x0),
-        a3_mie(zeta, lambda_r, lambda_a, beta),
-    )
+    d_ij, t_d_ln_d = effective_diameter_and_log_derivative(cross, t)
+    return _fluid_dispersion(t, eta, cross, d_ij, t_d_ln_d)
 
 
 def dispersion_at(
@@ -526,7 +697,7 @@ def dispersion_at(
                 weight = segment[i] * segment[j]
                 if weight < 1.0e-30:
                     continue
-                one, two, three = _pair_terms(first, second, t, eta)
+                one, two, three, _ = _pair_terms(first, second, t, eta)
                 a1 += weight * one
                 a2 += weight * two
                 a3 += weight * three
@@ -534,15 +705,34 @@ def dispersion_at(
 
     component = components[0]
     d = diameters[0] if diameters else 0.0
-    x0 = component.sigma / d if d > 0.0 else 1.0
-    beta = component.epsik / t
-    c_mie = mie_prefactor(component.lambda_r, component.lambda_a)
-    zeta = eta * x0 * x0 * x0
-    return (
-        a1_mie(eta, component.lambda_r, component.lambda_a, beta, c_mie, x0),
-        a2_mie(eta, zeta, component.lambda_r, component.lambda_a, beta, c_mie, x0),
-        a3_mie(zeta, component.lambda_r, component.lambda_a, beta),
-    )
+    _, t_d_ln_d = effective_diameter_and_log_derivative(component, t)
+    one, two, three, _ = _fluid_dispersion(t, eta, component, d, t_d_ln_d)
+    return one, two, three
+
+
+def dispersion_t_d_dt(
+    components: Sequence[_Component],
+    x: Sequence[float],
+    t: float,
+    eta: float,
+    diameters: Sequence[float],
+) -> float:
+    """``T d(a_1 + a_2 + a_3)/dT`` at a fixed packing fraction, on NeqSim's branch."""
+    if len(components) != 1:
+        segment = _segment_fractions(components, x)
+        total = 0.0
+        for i, first in enumerate(components):
+            for j, second in enumerate(components):
+                weight = segment[i] * segment[j]
+                if weight < 1.0e-30:
+                    continue
+                total += weight * _pair_terms(first, second, t, eta)[3]
+        return total
+
+    component = components[0]
+    d = diameters[0] if diameters else 0.0
+    _, t_d_ln_d = effective_diameter_and_log_derivative(component, t)
+    return _fluid_dispersion(t, eta, component, d, t_d_ln_d)[3]
 
 
 def dispersion_row_sums(
@@ -556,7 +746,7 @@ def dispersion_row_sums(
         for weight, second in zip(segment, components, strict=True):
             if weight < 1.0e-30:
                 continue
-            one, two, three = _pair_terms(first, second, t, eta)
+            one, two, three, _ = _pair_terms(first, second, t, eta)
             total += weight * (one + two + three)
         out.append(total)
     return out
@@ -571,6 +761,8 @@ class _State(NamedTuple):
     m_bar: float
     #: ``sum_i x_i (m_i - 1)``, the chain term's weight.
     m_minus_1: float
+    #: ``sum_i x_i m_i d_i^3``, in m^3/mol.
+    md3: float
     #: The packing fraction.
     eta: float
     #: The hard-sphere compressibility.
@@ -616,7 +808,98 @@ def _state(components: Sequence[_Component], x: Sequence[float], t: float, v: fl
     a_hs = (4.0 * eta - 3.0 * eta * eta) / (one * one)
     g_hs = chain_contact_value(components, x, t, eta, diameters)
     a1, a2, a3 = dispersion_at(components, x, t, eta, diameters)
-    return _State(tuple(diameters), m_bar, m_minus_1, eta, a_hs, g_hs, a1, a2, a3)
+    return _State(tuple(diameters), m_bar, m_minus_1, md3, eta, a_hs, g_hs, a1, a2, a3)
+
+
+def chain_contact_eta(
+    components: Sequence[_Component],
+    x: Sequence[float],
+    t: float,
+    eta: float,
+    diameters: Sequence[float],
+) -> float:
+    """``d g_hs/d eta`` at a fixed temperature, by NeqSim's central difference."""
+    high, low, step = _eta_step(eta)
+    return (
+        chain_contact_value(components, x, t, high, diameters)
+        - chain_contact_value(components, x, t, low, diameters)
+    ) / (2.0 * step)
+
+
+def dispersion_eta(
+    components: Sequence[_Component],
+    x: Sequence[float],
+    t: float,
+    eta: float,
+    diameters: Sequence[float],
+) -> float:
+    """``d(a_1 + a_2 + a_3)/d eta`` at a fixed temperature, by the same difference."""
+
+    def total(e: float) -> float:
+        a1, a2, a3 = dispersion_at(components, x, t, e, diameters)
+        return a1 + a2 + a3
+
+    high, low, step = _eta_step(eta)
+    return (total(high) - total(low)) / (2.0 * step)
+
+
+def t_d_helmholtz_rt_dt(
+    components: Sequence[_Component], x: Sequence[float], t: float, state: _State
+) -> float:
+    """``T d(A^R/(R T))/dT`` at constant volume, per mole.
+
+    **NeqSim publishes this and its value is wrong for any fluid with a chain.**
+    ``PhaseSAFTVRMie.dF_HC_SAFTdT`` differentiates ``g_hs`` as though it moved with the
+    packing fraction alone; it is the Mie-weighted contact value, so it carries
+    ``beta = eps/(k T)`` as well, and the class is missing that route and the diameter's.
+    For methane (``m = 1``) its chain block is skipped and the two agree; for n-butane they
+    disagree in sign. Its ``dF_DISP_SAFTdT`` is right, and its volume derivatives are right.
+
+    The check is a difference of NeqSim's own ``F`` at a pinned molar volume, so the ``F``
+    below is with the diameters held and the third route is the diameters' own.
+    """
+    t_d_ln_d = []
+    t_d_md3 = 0.0
+    for i, component in enumerate(components):
+        _, lam = effective_diameter_and_log_derivative(component, t)
+        t_d_ln_d.append(lam)
+        t_d_md3 += x[i] * component.m * 3.0 * state.d[i] ** 3 * lam
+    t_d_eta = state.eta * t_d_md3 / state.md3
+
+    eta = state.eta
+    one = 1.0 - eta
+    a_hs_d_eta = ((4.0 - 6.0 * eta) * one + 2.0 * (4.0 * eta - 3.0 * eta * eta)) / one**3
+
+    g_eta = chain_contact_eta(components, x, t, eta, state.d)
+    t_step = t * _RELATIVE_STEP
+    g_t = (
+        chain_contact_value(components, x, t + t_step, eta, state.d)
+        - chain_contact_value(components, x, t - t_step, eta, state.d)
+    ) / (2.0 * t_step)
+    # Each diameter scaled by its own ``lam_i``, so the difference is ``sum_i d_i lam_i
+    # d g/d d_i`` - which is exactly what the diameter's route contributes.
+    high = [d * (1.0 + lam * _RELATIVE_STEP) for d, lam in zip(state.d, t_d_ln_d, strict=True)]
+    low = [d * (1.0 - lam * _RELATIVE_STEP) for d, lam in zip(state.d, t_d_ln_d, strict=True)]
+    g_d = (
+        chain_contact_value(components, x, t, eta, high)
+        - chain_contact_value(components, x, t, eta, low)
+    ) / (2.0 * _RELATIVE_STEP)
+    t_d_g_hs = g_eta * t_d_eta + t * g_t + g_d
+
+    t_d_f_hc = state.m_bar * a_hs_d_eta * t_d_eta - state.m_minus_1 * t_d_g_hs / state.g_hs
+
+    dispersion_eta_value = dispersion_eta(components, x, t, eta, state.d)
+    t_d_dispersion = dispersion_t_d_dt(components, x, t, eta, state.d)
+    return t_d_f_hc + state.m_bar * (t_d_dispersion + dispersion_eta_value * t_d_eta)
+
+
+def _departure(
+    components: Sequence[_Component], x: Sequence[float], t: float, v: float, z: float
+) -> tuple[float, float]:
+    """``(H^R/(RT), S^R/R)``, from ``Z - 1 - T dF/dT`` and the ``P``-to-``V`` conversion."""
+    state = _state(components, x, t, v)
+    t_d_f = t_d_helmholtz_rt_dt(components, x, t, state)
+    return z - 1.0 - t_d_f, _log(z) - t_d_f - _energy(state)
 
 
 def _energy(state: _State) -> float:
@@ -844,10 +1127,13 @@ def saft_vr_mie_phase(
 
     resolved = [_Component.of(name) for name in components]
     v, z_factor, _ = _molar_volume(resolved, z, t_si, p_si, side)
+    h_over_rt, s_over_r = _departure(resolved, z, t_si, v, z_factor)
     return SaftVrMiePhaseResult(
         z_factor=z_factor,
         ln_phi=tuple(_ln_phi(resolved, z, t_si, v)),
         v=ureg.Quantity(v, "m**3/mol"),
+        h_res=ureg.Quantity(h_over_rt * R * t_si, "J/mol"),
+        s_res=ureg.Quantity(s_over_r * R, "J/(mol*K)"),
         warnings=tuple(warnings),
     )
 
