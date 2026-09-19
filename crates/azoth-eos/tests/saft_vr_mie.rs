@@ -5,7 +5,10 @@
 //! first layer and the one everything else is built on, so it is pinned before anything
 //! uses it.
 
-use azoth_eos::saft_vr_mie::{MieComponent, barker_henderson, mie_prefactor};
+use azoth_eos::saft_vr_mie::{
+    MieComponent, a_s1_bare, b_bare, barker_henderson, chain_contact_value, chain_g1, chain_g2,
+    contact_value_0, eta_effective, g_hs, k_hs, mie_alpha, mie_prefactor,
+};
 
 fn methane() -> MieComponent {
     MieComponent {
@@ -28,6 +31,17 @@ fn n_butane() -> MieComponent {
 }
 
 /// To the probe's printed digits, which is fifteen.
+/// The bare layers are read at the probe's own `eta` and `x0`, which are printed to
+/// fifteen digits - so the agreement asked for is `1e-8`, the same as the packing-fraction
+/// layers, and not the diameter's `1e-13`.
+fn via_eta(actual: f64, expected: f64, context: &str) {
+    let relative = (actual / expected - 1.0).abs();
+    assert!(
+        relative < 1.0e-8,
+        "{context}: {actual} against the probe's {expected}, a relative {relative:e}"
+    );
+}
+
 fn matches(actual: f64, expected: f64, context: &str) {
     let relative = (actual / expected - 1.0).abs();
     assert!(
@@ -170,5 +184,120 @@ fn absent_or_impossible_inputs_are_refused() {
     assert!(
         inverted.d(300.0).is_err(),
         "an attractive exponent that is not below the repulsive one is not a potential"
+    );
+}
+
+/// The effective packing fraction, the bare `aS1`/`B` pair and `K_HS`, at the two states
+/// the probe prints.
+#[test]
+fn the_bare_layers_are_neqsims() {
+    // Methane at 300 K: eta = 0.0315889086860159, x0 = 1.04283207030119.
+    let (eta, x0) = (0.031_588_908_686_015_9, 1.042_832_070_301_19);
+    // **`eta_eff` has no oracle of its own**: the probe does not print it, and it is not
+    // `eta` - the softness of the potential moves the hard-sphere reference off the real
+    // packing fraction, which is the whole point of the correction. What pins it is the two
+    // layers built on it, `aS1Bare` and `B`, below.
+    assert!(
+        (eta_effective(eta, 6.0) - eta).abs() > 0.01,
+        "the effective packing fraction should differ from the packing fraction"
+    );
+    via_eta(a_s1_bare(eta, 6.0), -0.346_542_502_308_464, "aS1Bare(6)");
+    via_eta(
+        a_s1_bare(eta, 12.65),
+        -0.110_203_246_791_488,
+        "aS1Bare(12.65)",
+    );
+    via_eta(b_bare(eta, 6.0, x0), 0.042_574_771_360_466_2, "B(6)");
+    via_eta(b_bare(eta, 12.65, x0), 0.037_267_259_194_146_6, "B(12.65)");
+    via_eta(k_hs(eta), 0.778_171_407_751_256, "K_HS");
+    via_eta(
+        mie_alpha(12.65, 6.0),
+        0.856_481_516_794_185,
+        "Lafitte alpha",
+    );
+}
+
+/// The contact value's quartic and the two chain perturbations, per component.
+#[test]
+fn the_chain_layers_are_neqsims() {
+    let methane = methane();
+    let butane = n_butane();
+    // The binary at 350 K: eta = 0.0280863049064808, and each component's own x0.
+    let eta = 0.028_086_304_906_480_8;
+    for (component, x0, g_hs_0, g1, g2) in [
+        (
+            methane,
+            1.047_337_060_219_82,
+            1.067_442_307_213_12,
+            -0.139_081_494_124_591,
+            0.086_337_566_007_181_9,
+        ),
+        (
+            butane,
+            1.030_766_996_811_85,
+            1.069_756_432_606_19,
+            -0.137_475_062_806_657,
+            0.106_318_540_526_763,
+        ),
+    ] {
+        let t = 350.0;
+        let c_mie = mie_prefactor(component.lambda_r, component.lambda_a);
+        let zeta = eta * x0 * x0 * x0;
+        via_eta(contact_value_0(eta, x0), g_hs_0, "gHS0");
+        via_eta(
+            chain_g1(eta, component.lambda_r, component.lambda_a, c_mie, x0),
+            g1,
+            "g1",
+        );
+        via_eta(
+            chain_g2(
+                eta,
+                zeta,
+                component.lambda_r,
+                component.lambda_a,
+                component.epsik / t,
+                c_mie,
+                x0,
+            ),
+            g2,
+            "g2",
+        );
+    }
+}
+
+/// **The mixture's `gHS` is the blended one and a pure fluid's is the contact value.**
+///
+/// This is the layer a port is most likely to stop short of: methane's `gHS` above is the
+/// Carnahan-Starling number to every printed digit, and the binary's is `1.02809527174773`,
+/// which the CS form does not give.
+#[test]
+fn the_mixture_contact_value_is_the_blended_one() {
+    let eta = 0.028_086_304_906_480_8;
+    let methane_d = methane().d(350.0).expect("a diameter");
+    let butane_d = n_butane().d(350.0).expect("a diameter");
+    let diameters = [methane_d, butane_d];
+
+    let blended = chain_contact_value(
+        &[methane(), n_butane()],
+        &[0.6, 0.4],
+        350.0,
+        eta,
+        &diameters,
+    );
+    via_eta(blended, 1.028_095_271_747_73, "the binary's gHS");
+
+    // And the pure fluid keeps the Carnahan-Starling value, because `w = x (m - 1)` is zero.
+    let pure_eta = 0.031_588_908_686_015_9;
+    let pure = chain_contact_value(
+        &[methane()],
+        &[1.0],
+        300.0,
+        pure_eta,
+        &[methane().d(300.0).expect("a diameter")],
+    );
+    assert_eq!(
+        pure,
+        g_hs(pure_eta),
+        "a one-segment fluid keeps the CS value"
     );
 }

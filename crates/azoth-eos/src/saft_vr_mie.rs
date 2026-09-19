@@ -155,3 +155,240 @@ pub fn barker_henderson(theta: f64, lambda_r: f64, lambda_a: f64) -> f64 {
     }
     sum
 }
+
+/// Lafitte 2013's effective-packing-fraction coefficients, `[coefficient][power of 1/lambda]`.
+///
+/// `c_i(lambda) = A[i][0] + A[i][1]/lambda + A[i][2]/lambda^2 + A[i][3]/lambda^3`, from
+/// that paper's Table 5. NeqSim's own rounded literals, like the Gauss nodes above.
+const ETA_EFF_COEFFS: [[f64; 4]; 4] = [
+    [0.81096, 1.7888, -37.578, 92.284],
+    [1.0205, -19.341, 151.26, -463.50],
+    [-1.9057, 22.845, -228.14, 973.92],
+    [1.08850, -6.1962, 106.98, -677.64],
+];
+
+/// `eta_eff = c1 eta + c2 eta^2 + c3 eta^3 + c4 eta^4`, the packing fraction a Mie
+/// exponent's own hard-sphere reference is evaluated at.
+///
+/// The whole chain term is built on this: the bare `aS1` a segment's pair correlation
+/// carries is the Carnahan-Starling contact value at `eta_eff`, not at `eta`, because the
+/// softness of the potential lets neighbours interpenetrate.
+#[must_use]
+pub fn eta_effective(eta: f64, lambda: f64) -> f64 {
+    let inv = 1.0 / lambda;
+    let mut out = 0.0;
+    let mut power = eta;
+    for coefficient in &ETA_EFF_COEFFS {
+        let c = coefficient[0]
+            + coefficient[1] * inv
+            + coefficient[2] * inv * inv
+            + coefficient[3] * inv * inv * inv;
+        out += c * power;
+        power *= eta;
+    }
+    out
+}
+
+/// The bare `aS1(eta, lambda)` a Mie exponent contributes: the contact value at its own
+/// effective packing fraction, scaled by `1/(lambda - 3)`.
+#[must_use]
+pub fn a_s1_bare(eta: f64, lambda: f64) -> f64 {
+    let effective = eta_effective(eta, lambda);
+    let one = 1.0 - effective;
+    let g_cs = (1.0 - effective / 2.0) / one.powi(3);
+    -g_cs / (lambda - 3.0)
+}
+
+/// The bare `B(eta, lambda, x0)` a Mie exponent contributes, `x0 = sigma/d`.
+#[must_use]
+pub fn b_bare(eta: f64, lambda: f64, x0: f64) -> f64 {
+    let x0_3l = x0.powf(3.0 - lambda);
+    let cap_i = (1.0 - x0_3l) / (lambda - 3.0);
+    let cap_j = (1.0 - (lambda - 3.0) * x0.powf(4.0 - lambda) + (lambda - 4.0) * x0_3l)
+        / ((lambda - 3.0) * (lambda - 4.0));
+    let one = 1.0 - eta;
+    cap_i * (1.0 - eta / 2.0) / one.powi(3) - 9.0 * cap_j * eta * (eta + 1.0) / (2.0 * one.powi(3))
+}
+
+/// `K_HS`, the hard-sphere isothermal compressibility the second-order chain term is
+/// scaled by.
+#[must_use]
+pub fn k_hs(eta: f64) -> f64 {
+    let one = 1.0 - eta;
+    one.powi(4) / (1.0 + 4.0 * eta + 4.0 * eta * eta - 4.0 * eta.powi(3) + eta.powi(4))
+}
+
+/// Lafitte's `alpha = C (1/(lambda_a - 3) - 1/(lambda_r - 3))`, the well's softness.
+#[must_use]
+pub fn mie_alpha(lambda_r: f64, lambda_a: f64) -> f64 {
+    mie_prefactor(lambda_r, lambda_a) * (1.0 / (lambda_a - 3.0) - 1.0 / (lambda_r - 3.0))
+}
+
+/// The Carnahan-Starling compressibility `(4 eta - 3 eta^2)/(1 - eta)^2`, which SAFT-VR-Mie
+/// shares with PC-SAFT: the hard-sphere term is the same one, and only the diameter it is
+/// evaluated at differs.
+#[must_use]
+pub fn a_hs(eta: f64) -> f64 {
+    let one = 1.0 - eta;
+    (4.0 * eta - 3.0 * eta * eta) / (one * one)
+}
+
+/// The Carnahan-Starling contact value `(1 - eta/2)/(1 - eta)^3`.
+///
+/// **Not the mixture's `g` when `m_minus_1 > 0`** - see [`chain_contact_value`], which
+/// replaces it.
+#[must_use]
+pub fn g_hs(eta: f64) -> f64 {
+    let one = 1.0 - eta;
+    (1.0 - eta / 2.0) / one.powi(3)
+}
+
+/// The Mie contact value at one component's own exponents, `g_HS0(eta, x0)`.
+///
+/// A quartic in `x0 = sigma/d` with `eta`-dependent coefficients: the hard-sphere value of
+/// a soft potential is not the hard-sphere value of a hard one, and the difference grows
+/// with the ratio of the potential's range to the segment's effective size.
+#[must_use]
+pub fn contact_value_0(eta: f64, x0: f64) -> f64 {
+    let one = 1.0 - eta;
+    let (eta2, eta3, eta4) = (eta * eta, eta * eta * eta, eta.powi(4));
+    let om3 = one.powi(3);
+    let k0 = -one.ln() + (42.0 * eta - 39.0 * eta2 + 9.0 * eta3 - 2.0 * eta4) / (6.0 * om3);
+    let k1 = (-12.0 * eta + 6.0 * eta2 + eta4) / (2.0 * om3);
+    let k2 = -3.0 * eta2 / (8.0 * one * one);
+    let k3 = (3.0 * eta + 3.0 * eta2 - eta4) / (6.0 * om3);
+    (k0 + k1 * x0 + k2 * x0 * x0 + k3 * x0 * x0 * x0).exp()
+}
+
+/// The step NeqSim's numerical `eta` derivatives use, `max(|eta| 1e-5, 1e-12)`, with its
+/// floor on the lower point.
+///
+/// Written once because four derivatives use it and a second copy is a second chance to
+/// differ; the floor matters, because at a small packing fraction `eta - step` would
+/// otherwise go negative and the derivative would be taken across a state that is not one.
+fn eta_step(eta: f64) -> (f64, f64, f64) {
+    let step = (eta.abs() * 1.0e-5).max(1.0e-12);
+    let high = eta + step;
+    let low = (eta - step).max(1.0e-15);
+    (high, low, (high - low) / 2.0)
+}
+
+/// `g1`, the first-order chain perturbation at one component's exponents.
+///
+/// Contains two `eta` derivatives NeqSim takes by central difference; the shape is
+/// reproduced rather than differentiated, so the port lands on the same number for the same
+/// reason.
+#[must_use]
+pub fn chain_g1(eta: f64, lambda_r: f64, lambda_a: f64, c_mie: f64, x0: f64) -> f64 {
+    let bare = |e: f64, lambda: f64| a_s1_bare(e, lambda) + b_bare(e, lambda, x0);
+    let (high, low, step) = eta_step(eta);
+
+    let d_full = |lambda: f64| (high * bare(high, lambda) - low * bare(low, lambda)) / (2.0 * step);
+    let da1_drho =
+        c_mie * (x0.powf(lambda_a) * d_full(lambda_a) - x0.powf(lambda_r) * d_full(lambda_r));
+
+    3.0 * da1_drho
+        - c_mie
+            * (lambda_a * x0.powf(lambda_a) * bare(eta, lambda_a)
+                - lambda_r * x0.powf(lambda_r) * bare(eta, lambda_r))
+}
+
+/// `g2`, the second-order chain perturbation at one component's exponents.
+///
+/// The `gamma_c` factor is Lafitte 2013's Eq. 39 correction, which switches off the
+/// second-order term as the potential softens past `alpha = 0.57`.
+#[must_use]
+pub fn chain_g2(
+    eta: f64,
+    zeta_st: f64,
+    lambda_r: f64,
+    lambda_a: f64,
+    eps_over_kt: f64,
+    c_mie: f64,
+    x0: f64,
+) -> f64 {
+    let bare = |e: f64, lambda: f64| a_s1_bare(e, lambda) + b_bare(e, lambda, x0);
+    let inner = |e: f64| {
+        x0.powf(2.0 * lambda_a) * bare(e, 2.0 * lambda_a)
+            - 2.0 * x0.powf(lambda_a + lambda_r) * bare(e, lambda_a + lambda_r)
+            + x0.powf(2.0 * lambda_r) * bare(e, 2.0 * lambda_r)
+    };
+
+    let (high, low, step) = eta_step(eta);
+    let da2_product =
+        (high * k_hs(high) * inner(high) - low * k_hs(low) * inner(low)) / (2.0 * step);
+    let da2_drho = 0.5 * c_mie * c_mie * da2_product;
+
+    let g_mca2 = 3.0 * da2_drho
+        - k_hs(eta)
+            * c_mie
+            * c_mie
+            * (lambda_r * x0.powf(2.0 * lambda_r) * bare(eta, 2.0 * lambda_r)
+                - (lambda_a + lambda_r)
+                    * x0.powf(lambda_a + lambda_r)
+                    * bare(eta, lambda_a + lambda_r)
+                + lambda_a * x0.powf(2.0 * lambda_a) * bare(eta, 2.0 * lambda_a));
+
+    let alpha = mie_alpha(lambda_r, lambda_a);
+    let theta = eps_over_kt.exp() - 1.0;
+    let gamma_c = 10.0
+        * (-(10.0 * (0.57 - alpha)).tanh() + 1.0)
+        * zeta_st
+        * theta
+        * (-6.7 * zeta_st - 8.0 * zeta_st * zeta_st).exp();
+
+    (1.0 + gamma_c) * g_mca2
+}
+
+/// The mixture's chain contact value: `exp(sum_i w_i ln g_i / sum_i w_i)`.
+///
+/// **A pure fluid with `m = 1` keeps the Carnahan-Starling value**, and that is the model's
+/// behaviour rather than a special case here: `w_i = x_i (m_i - 1)` is zero for a
+/// one-segment molecule, so the weighted mean has no weight to take and NeqSim's block is
+/// skipped outright. A mixture always has weight, and then the value is *not* the contact
+/// value - which is why `validation/neqsim/SaftVrMieProbe.java` prints methane's `gHS` as
+/// the CS number and methane/n-butane's as the blended one.
+#[must_use]
+pub fn chain_contact_value(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    eta: f64,
+    diameters: &[f64],
+) -> f64 {
+    let weight: f64 = x
+        .iter()
+        .zip(components)
+        .map(|(xi, c)| xi * (c.m - 1.0))
+        .sum();
+    if weight <= 1.0e-10 {
+        return g_hs(eta);
+    }
+    let mut weighted = 0.0;
+    for ((xi, component), d) in x.iter().zip(components).zip(diameters) {
+        let w = xi * (component.m - 1.0);
+        if w < 1.0e-30 {
+            continue;
+        }
+        let x0 = if *d > 0.0 { component.sigma / d } else { 1.0 };
+        let eps_over_kt = component.epsik / t;
+        let c_mie = mie_prefactor(component.lambda_r, component.lambda_a);
+        let zeta_st = eta * x0 * x0 * x0;
+        let g0 = contact_value_0(eta, x0);
+        let g1 = chain_g1(eta, component.lambda_r, component.lambda_a, c_mie, x0);
+        let g2 = chain_g2(
+            eta,
+            zeta_st,
+            component.lambda_r,
+            component.lambda_a,
+            eps_over_kt,
+            c_mie,
+            x0,
+        );
+        // The full Mie correction: the class's default blend fraction is `1.0`, and its
+        // adaptive selection only ever lowers it.
+        let g_mie = g0 * (eps_over_kt * (g1 + eps_over_kt * g2) / g0).exp();
+        weighted += w * g_mie.ln();
+    }
+    (weighted / weight).exp()
+}
