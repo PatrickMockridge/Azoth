@@ -44,20 +44,20 @@ them (35 files, 1,496 columns) is listed with what was done with it and a reason
 `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (35 vendored file(s), 1497 column(s), 1463 carried of which 982 read, 0 not-vendored entr(ies))
-  481  carried, nothing reads it yet
+check_manifest: OK (35 vendored file(s), 1497 column(s), 1463 carried of which 987 read, 0 not-vendored entr(ies))
+  476  carried, nothing reads it yet
   1108  carried with no unit NeqSim states (neqsim-internal)
-  477  not-ported
+  472  not-ported
     9  not-a-value
    16  empty-upstream
     6  superseded-by
     7  unreachable-upstream
 ```
 
-**The porting backlog is "carried, nothing reads it yet" — 481 columns — and it is
+**The porting backlog is "carried, nothing reads it yet" — 476 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — **477 of the 481**, with a
+`not-ported` reason names the class that would close it — **472 of the 476**, with a
 handful `unreachable-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
 `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the
 rest. The check refuses a `not-ported` reason with no NeqSim name in it, so the list

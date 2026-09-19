@@ -7,11 +7,13 @@
 //! The layers are [`crate::saft_vr_mie`]'s and the solve is [`crate::volume_solve`]'s, which
 //! is what turns them into a state. This module is the two together and the floor.
 
+use azoth_core::units::{Pressure, ThermodynamicTemperature, cubic_meters_per_mole};
 use azoth_core::{AzothError, Result};
 
 use crate::association::R;
 use crate::mixture::RootSide;
 use crate::pcsaft::AVOGADRO;
+use crate::results::SaftVrMiePhaseResult;
 use crate::saft_vr_mie::{self, MieComponent};
 use crate::volume_solve;
 
@@ -235,4 +237,127 @@ pub fn ln_phi(components: &[MieComponent], x: &[f64], t: f64, v: f64) -> Result<
         out.push(hard_chain + dispersion_i - z.ln());
     }
     Ok(out)
+}
+
+/// A name list resolved to SAFT-VR-Mie parameters.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if a name is not in the databank, or the component has no
+///   SAFT-VR-Mie set - which the table spells as zeros in `m`, `sigma` and `epsilon/k`, 274
+///   of its 286 rows. **The exponents are not the marker**: the table carries the standard
+///   `12`/`6` on every row whether or not the row has a set.
+pub fn parameters_of(names: &[&str]) -> Result<Vec<MieComponent>> {
+    let mut out = Vec::with_capacity(names.len());
+    for name in names {
+        let entry = crate::databank::entry(name, None)?;
+        out.push(MieComponent {
+            m: entry.m_mie,
+            lambda_r: entry.lambda_r_mie,
+            lambda_a: entry.lambda_a_mie,
+            sigma: entry.sigma_mie,
+            epsik: entry.epsik_mie,
+        });
+    }
+    Ok(out)
+}
+
+/// `eos.saft_vr_mie_phase`: the phase state SAFT-VR-Mie gives at a temperature and a
+/// pressure.
+///
+/// The model NeqSim runs as `TPflashSAFT`'s phase, and the last of the tranche's. The names
+/// cross unresolved and are looked up here, so the two-kernel comparison covers the
+/// resolution as well as the arithmetic - which for this model means the five Mie columns
+/// and the zero-means-absent convention on three of them.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] as [`parameters_of`], or if `z` is not one entry per
+///   component or does not sum to one.
+/// * [`AzothError::OutOfRange`] if `T` or `P` is not positive, or the wanted branch has no
+///   root at this state.
+pub fn saft_vr_mie_phase(
+    components: &[String],
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    compressed_phase: &str,
+) -> Result<SaftVrMiePhaseResult> {
+    let spec = &crate::model_gen::SAFT_VR_MIE_PHASE_SPEC;
+    let mut warnings = Vec::new();
+    azoth_core::range::apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(t.value),
+            "P" => Some(p.value),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let parameters = parameters_of(&names)?;
+    let side = side_of(compressed_phase)?;
+    let mut result = phase_state_of(&parameters, t, p, z, side)?;
+    warnings.extend(result.warnings);
+    result.warnings = warnings;
+    Ok(result)
+}
+
+/// The side a case's `compressed_phase` names.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for anything but the two names the spec declares, rather
+/// than a default: a caller that mistyped a branch would otherwise be handed a root.
+pub fn side_of(compressed_phase: &str) -> Result<RootSide> {
+    match compressed_phase.trim().to_lowercase().as_str() {
+        "liquid" => Ok(RootSide::Liquid),
+        "vapour" | "vapor" => Ok(RootSide::Vapour),
+        other => Err(AzothError::invalid_input(
+            "compressed_phase",
+            format!("{other:?} is not a side. The spec's values are \"liquid\" and \"vapour\""),
+        )),
+    }
+}
+
+/// The same state, for a caller that resolved the fluid itself.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if `z` is not one entry per component or does not sum to
+///   one.
+/// * [`AzothError::OutOfRange`] as [`molar_volume`] and [`ln_phi`].
+pub fn phase_state_of(
+    components: &[MieComponent],
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    side: RootSide,
+) -> Result<SaftVrMiePhaseResult> {
+    let n = components.len();
+    if z.len() != n {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "a mixture of {n} components needs {n} mole fractions, but z has {}",
+                z.len()
+            ),
+        ));
+    }
+    let sum: f64 = z.iter().sum();
+    if (sum - 1.0).abs() > 1.0e-9 {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "the mole fractions sum to {sum}, not to one. Renormalising them here would \
+                 make a composition error invisible in every number downstream, so it is \
+                 refused instead"
+            ),
+        ));
+    }
+
+    let solved = molar_volume(components, z, t.value, p.value, side)?;
+    Ok(SaftVrMiePhaseResult {
+        z_factor: solved.z,
+        ln_phi: ln_phi(components, z, t.value, solved.v)?,
+        v: cubic_meters_per_mole(solved.v),
+        warnings: Vec::new(),
+    })
 }

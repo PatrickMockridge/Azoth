@@ -726,6 +726,13 @@ class RkDepartureResult:
     warnings: list[Warning]
 
 @final
+class SaftVrMiePhaseResult:
+    z_factor: float
+    ln_phi: list[float]
+    v: Qty
+    warnings: list[Warning]
+
+@final
 class SchwartzentruberAlphaResult:
     alpha: float
     warnings: list[Warning]
@@ -1596,6 +1603,13 @@ def rackett_molar_volume(
 ) -> RackettMolarVolumeResult: ...
 def rk_alpha_ab(Tr: float, Pr: float) -> RkAlphaAbResult: ...
 def rk_departure(a_reduced: float, b_reduced: float, z: float) -> RkDepartureResult: ...
+def saft_vr_mie_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+    compressed_phase: str,
+) -> SaftVrMiePhaseResult: ...
 def schwartzentruber_alpha(
     omega: float,
     p1: float,

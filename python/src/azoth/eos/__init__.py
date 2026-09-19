@@ -140,6 +140,7 @@ from azoth.core.result import (
     RackettMolarVolumeResult,
     RkAlphaAbResult,
     RkDepartureResult,
+    SaftVrMiePhaseResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult,
@@ -270,6 +271,7 @@ __all__ = [
     "rackett_molar_volume",
     "rk_alpha_ab",
     "rk_departure",
+    "saft_vr_mie_phase",
     "siddiqi_lucas_diffusivity",
     "srk_alpha_ab",
     "srk_cpa_phase",
@@ -331,6 +333,7 @@ _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
 _SRK_CPA_PHASE = "eos.srk_cpa_phase"
 _PCSAFT_RAHMAT_PHASE = "eos.pcsaft_rahmat_phase"
+_SAFT_VR_MIE_PHASE = "eos.saft_vr_mie_phase"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
@@ -2528,6 +2531,33 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
     See :func:`azoth.eos.reference.pure_saturation`.
     """
     return resolve(_PURE_SATURATION)(Tc=Tc, Pc=Pc, omega=omega, T=T)  # type: ignore[no-any-return]
+
+
+def saft_vr_mie_phase(
+    components: list[str], T: Q, P: Q, z: list[float], compressed_phase: str
+) -> SaftVrMiePhaseResult:
+    """One SAFT-VR-Mie phase's state at a temperature, pressure and composition.
+
+    Lafitte 2013's statistical associating fluid theory for chain molecules formed from Mie
+    segments, without its association term: a hard-sphere term, a chain term from the Mie
+    pair correlation, and a third-order perturbation expansion in the dispersion. The
+    parameters are the databank's ``mSAFTVRMie``/``sigmaSAFTVRMie``/``epsikSAFTVRMie`` and
+    the two exponents.
+
+    **The dispersion and the chain term are scaled by the segment number**, and the chain
+    contact value is a weighted geometric mean rather than the hard-sphere one, so a pure
+    fluid and a mixture differ structurally and not only in magnitude.
+
+    Raises:
+        InvalidInputError: if a component carries no SAFT-VR-Mie set, if ``z`` is not a
+            composition of the right length, or if ``compressed_phase`` is neither name.
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or the wanted branch has no root.
+
+    See :func:`azoth.eos.reference.saft_vr_mie_phase`.
+    """
+    return resolve(_SAFT_VR_MIE_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
+    )
 
 
 def pcsaft_rahmat_phase(

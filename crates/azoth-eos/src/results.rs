@@ -361,6 +361,28 @@ impl CalcResult for BwrsPhaseResult {
     }
 }
 
+/// Result of `eos.saft_vr_mie_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SaftVrMiePhaseResult {
+    /// The compressibility factor at the chosen root.
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    pub ln_phi: Vec<f64>,
+    /// The molar volume at the chosen root, in m^3/mol.
+    pub v: MolarVolume,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SaftVrMiePhaseResult {
+    const CALC_ID: &'static str = "eos.saft_vr_mie_phase";
+    const FIELDS: &'static [&'static str] = &["z_factor", "ln_phi", "v", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.pcsaft_rahmat_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PcsaftRahmatPhaseResult {

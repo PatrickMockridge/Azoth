@@ -1,0 +1,69 @@
+id = "eos.saft_vr_mie_phase"
+name = "SAFT-VR-Mie phase state"
+kind = "direct"
+assumptions = [
+    "a component's `m`, `sigma`, `epsilon/k` and two exponents come from the databank. **`m` is the absence marker and the exponents are not**: the table carries the standard `12`/`6` on all 286 rows and a set on 12, so `lambda_r > 0` says nothing.",
+    "the potential is `u = C epsilon ((sigma/r)^lambda_r - (sigma/r)^lambda_a)` with `C = lambda_r/(lambda_r-lambda_a) (lambda_r/lambda_a)^(lambda_a/(lambda_r-lambda_a))`, which puts the well's minimum at `-epsilon`.",
+    "the segment diameter is the Barker-Henderson integral of the potential's Boltzmann factor, by ten Gauss-Legendre points with NeqSim's own split at `theta = 1` and its own rounded nodes. Both the split and the coarseness of the rule are the model's.",
+    "`A^R/(RT) = m_bar a_hs - m_minus_1 ln g_hs + m_bar (a_1 + a_2 + a_3)` per mole. **The dispersion carries the segment number as well as the mole number**, so `a_1 + a_2 + a_3` is exact only for a fluid whose `m_bar` is one.",
+    "the chain term's contact value is the Mie-weighted geometric mean `exp(sum_i w_i ln g_i / sum_i w_i)` over `w_i = x_i (m_i - 1)`, not the Carnahan-Starling value, once any component has more than one segment.",
+    "the dispersion is a pair sum over segment fractions with cross parameters that are not averages: `sigma_ij` arithmetic, `epsilon_ij` carrying a `sigma^3` volume correction, the exponents `3 + sqrt((lambda_i-3)(lambda_j-3))`.",
+    "`g_hs` and the dispersion's `eta` derivatives are taken by **central difference** at a relative step of `1e-5`, as NeqSim takes them. The model's own last digits are that difference's arithmetic.",
+    "the volume solves `P/(RT) = 1/v + eta f_eta/v`, and the slope it divides by is a difference of that difference at a relative step of `1e-4` - ten times NeqSim's, because the inner difference's cancellation owns the slope at `1e-5`.",
+    "**no association term.** SAFT-VR-Mie's associating variant is a different class, so a fluid whose components carry sites is refused rather than given an association computed over nothing.",
+]
+references = [
+    "Lafitte, T.; Apostolakou, A.; Avendano, C.; Galindo, A.; Adjiman, C. S.; Muller, E. A.; Jackson, G. (2013). \"Accurate statistical associating fluid theory for chain molecules formed from Mie segments.\" The Journal of Chemical Physics 139(15), 154504. DOI 10.1063/1.4819786",
+    "NeqSim 3.20.0, `PhaseSAFTVRMie.java` / `ComponentSAFTVRMie.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Lafitte, T. et al. (2013)"
+edition = "The variable-range Mie potential in a statistical associating fluid theory, without its association term: a chain term from the hard-sphere pair correlation and a third-order perturbation expansion in the dispersion."
+doi = "10.1063/1.4819786"
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank with their SAFT-VR-Mie set"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, checked rather than renormalised"
+[inputs.compressed_phase]
+type = "enum"
+values = ["liquid", "vapour"]
+description = "which root describes the phase wanted. Not a compressibility factor: the root is what the model solves for."
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor at the chosen root"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fugacity coefficients, as logarithms, at the chosen root"
+[outputs.v]
+unit = "m**3/mol"
+description = "the molar volume at the chosen root, which is what the solve returns before the compressibility factor is read from it"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.saft_vr_mie_phase"
+rust = "azoth_eos::saft_vr_mie_phase"

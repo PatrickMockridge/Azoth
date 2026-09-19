@@ -2024,6 +2024,26 @@ class BwrsPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SaftVrMiePhaseResult(_HasWarnings):
+    """Result of ``eos.saft_vr_mie_phase``.
+
+    The SAFT-VR-Mie phase state: the compressibility factor, the molar volume the solve
+    converged to, and the fugacity coefficients. **No departure function is reported**,
+    because the temperature derivative of the Helmholtz energy is not derived - and for
+    this model the ``eta`` derivatives the pressure needs are central differences besides.
+    """
+
+    #: The compressibility factor at the chosen root.
+    z_factor: float
+    #: The fugacity coefficients, as logarithms, one per component.
+    ln_phi: tuple[float, ...]
+    #: The molar volume at the chosen root.
+    v: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PcsaftRahmatPhaseResult(_HasWarnings):
     """Result of ``eos.pcsaft_rahmat_phase``.
 

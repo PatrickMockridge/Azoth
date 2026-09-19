@@ -3346,6 +3346,33 @@ pub fn model_schemes(model_id: &str) -> Vec<String> {
     }
 }
 
+/// The SAFT-VR-Mie phase state, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side looks them up in the Rust
+/// databank - the five Mie columns, whose absence the table spells as zeros in three of
+/// them and not in the exponents.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn saft_vr_mie_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::results::PySaftVrMiePhaseResult> {
+    azoth_eos::saft_vr_mie_phase::saft_vr_mie_phase(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &z,
+        compressed_phase,
+    )
+    .map(|r| crate::results::PySaftVrMiePhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The PC-SAFT phase state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side looks them up in the Rust

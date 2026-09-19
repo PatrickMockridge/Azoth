@@ -159,6 +159,7 @@ Four sections, and the difference between them is the point:
 - [`eos.pv_reflux_flash`](./eos/pv_reflux_flash.md) — Pressure and reflux-ratio flash
 - [`eos.pvf_flash`](./eos/pvf_flash.md) — Pressure and vapour-fraction flash
 - [`eos.rachford_rice`](./eos/rachford_rice.md) — Vapour fraction from the Rachford-Rice equation
+- [`eos.saft_vr_mie_phase`](./eos/saft_vr_mie_phase.md) — SAFT-VR-Mie phase state
 - [`eos.srk_cpa_phase`](./eos/srk_cpa_phase.md) — Soave-Redlich-Kwong CPA phase state
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
 - [`eos.th_flash`](./eos/th_flash.md) — Temperature-enthalpy flash
