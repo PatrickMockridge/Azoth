@@ -131,6 +131,7 @@ pub mod rackett_molar_volume;
 pub mod results;
 pub mod rk_alpha_ab;
 pub mod rk_departure;
+pub mod saft_vr_mie;
 pub mod saturation_temperature;
 pub mod schwartzentruber_alpha;
 pub mod siddiqi_lucas_diffusivity;
