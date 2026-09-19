@@ -129,6 +129,11 @@ def _segment_diameter(sigma: float, epsik: float, t: float) -> float:
     return sigma * (1.0 - 0.12 * math.exp(-3.0 * epsik / t))
 
 
+def _segment_diameter_d_t(sigma: float, epsik: float, t: float) -> float:
+    """``d d_i/dT``, the derivative of :func:`_segment_diameter`."""
+    return -0.36 * sigma * epsik * math.exp(-3.0 * epsik / t) / (t * t)
+
+
 def _series(
     order: Sequence[Sequence[float]], m_bar: float, eta: float
 ) -> tuple[float, float, float, float]:
@@ -261,6 +266,58 @@ class _State:
         self.i1 = _series(A_CONST, self.m_bar, eta)[0]
         self.i2 = _series(B_CONST, self.m_bar, eta)[0]
         self.rho = AVOGADRO / v
+
+    def t_d_helmholtz_rt_dt(self) -> float:
+        """``T d(A^R/(RT))/dT`` at constant volume, per mole.
+
+        **NeqSim publishes this and its PC-SAFT value cannot be used.**
+        ``PhasePCSAFT.getdDSAFTdT`` multiplies the chain rule for the segment diameter by
+        an extra ``3 d_i**2``, so every ``eta``-dependent part of its ``dFdT`` is about
+        ``1e-18`` too small. The write-up is at
+        ``~/Desktop/neqsim-pcsaft-hard-chain-temperature-derivative.md``; the check this
+        is held to is a finite difference of NeqSim's own ``F`` at fixed volume.
+
+        ``eta`` is the only place the volume and the temperature meet, so at constant
+        ``v`` everything moves through ``T d eta/dT``; the two dispersion sums each carry
+        a ``1/T`` of their own, which is the ``-S`` beside each.
+        """
+        t_d_md3 = sum(
+            self.x[i]
+            * self.m[i]
+            * 3.0
+            * self.d[i] ** 2
+            * (self.t * _segment_diameter_d_t(self.sigma[i], self.epsik[i], self.t))
+            for i in range(len(self.x))
+        )
+        t_d_eta = self.eta * t_d_md3 / self.md3
+
+        a_hs_d_eta, _, g_hs_d_eta, _, c1_d_eta, _ = self._eta_layers()
+        t_d_f_hc = (
+            self.m_bar * a_hs_d_eta * t_d_eta - self.m_minus_1 * g_hs_d_eta / self.g_hs * t_d_eta
+        )
+        t_d_c1 = c1_d_eta * t_d_eta
+        i1_d_eta = _series(A_CONST, self.m_bar, self.eta)[1]
+        i2_d_eta = _series(B_CONST, self.m_bar, self.eta)[1]
+        t_d_f_disp1 = -2.0 * math.pi * self.rho * self.s1 * (i1_d_eta * t_d_eta - self.i1)
+        t_d_f_disp2 = (
+            -math.pi
+            * self.m_bar
+            * self.rho
+            * self.s2
+            * (self.i2 * (-self.c1 + t_d_c1) + self.c1 * (i2_d_eta * t_d_eta - self.i2))
+        )
+        return t_d_f_hc + t_d_f_disp1 + t_d_f_disp2
+
+    def departure(self) -> tuple[float, float]:
+        """``(h_res/(R T), s_res/R)`` at this state.
+
+        ``Hres/(R T) = Z - 1 - T dF/dT``: the two ``F``-terms in NeqSim's
+        ``AresTV + T SresTV + P V - n R T`` cancel, and the entropy then carries the
+        ``P``-to-``V`` conversion, ``SresTP = SresTV + n R ln Z``.
+        """
+        z = self.pressure_over_rt() * self.v
+        t_d_f = self.t_d_helmholtz_rt_dt()
+        return z - 1.0 - t_d_f, math.log(z) - t_d_f - self.f()
 
     def f(self) -> float:
         """``A^R/(RT)`` per mole: the hard-sphere, chain and two dispersion terms."""
@@ -561,10 +618,13 @@ def pcsaft_rahmat_phase(
 
     v, z_factor, _ = _molar_volume(resolved, kij, z, t_si, p_si, side)
     state = _State(resolved, kij, z, t_si, v)
+    h_over_rt, s_over_r = state.departure()
     return PcsaftRahmatPhaseResult(
         z_factor=z_factor,
         ln_phi=tuple(state.ln_fugacity_coefficients()),
         v=ureg.Quantity(v, "m**3/mol"),
+        h_res=ureg.Quantity(h_over_rt * R * t_si, "J/mol"),
+        s_res=ureg.Quantity(s_over_r * R, "J/(mol*K)"),
         warnings=tuple(warnings),
     )
 

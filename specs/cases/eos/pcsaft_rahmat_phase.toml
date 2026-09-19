@@ -6,7 +6,9 @@ source = """NeqSim 3.20.0, `SystemPCSAFT` - which builds `PhasePCSAFTRahmat`, th
 
 **The state is a mixture on purpose.** Methane alone has `m = 1`, so `m_bar - 1` is zero and the chain term, `m_bar`'s derivatives and the whole `k_ij` column vanish: a pure-fluid case would pass with any of them wrong. This pair has `k_ij = 0.022` in the `KIJPCSAFT` column, which no shipped model read before this one.
 
-**The numbers are the model's own, recorded from it**, with the oracle's agreement above stated rather than asserted through the digit the case compares. They moved in the twelfth digit when the vapour solve's Newton was given the sign its residual needs: the fallback's root and the converged one are the same root to `8e-12`, which is why every oracle comparison passed either way. The probe is `validation/neqsim/PcsaftProbe.java`, and the class it drives has two recorded defects that do not touch this state: `validation/neqsim/PcsaftVolumeProbe.java` shows its volume solve leaving the physical domain at n-butane 300 K / 50 bara, and `PcsaftDVdVProbe.java` shows `PhasePCSAFT.dF_HC_SAFTdVdV`'s chain term short a factor of `dnSAFT/dV` - which `PhasePCSAFTa` inherits and `PhasePCSAFTRahmat` does not."""
+**The numbers are the model's own, recorded from it**, with the oracle's agreement above stated rather than asserted through the digit the case compares. They moved in the twelfth digit when the vapour solve's Newton was given the sign its residual needs: the fallback's root and the converged one are the same root to `8e-12`, which is why every oracle comparison passed either way. The probe is `validation/neqsim/PcsaftProbe.java`, and the class it drives has two recorded defects that do not touch this state: `validation/neqsim/PcsaftVolumeProbe.java` shows its volume solve leaving the physical domain at n-butane 300 K / 50 bara, and `PcsaftDVdVProbe.java` shows `PhasePCSAFT.dF_HC_SAFTdVdV`'s chain term short a factor of `dnSAFT/dV`.
+
+**The departures are checked against a finite difference of NeqSim's energy at fixed volume, not against its `HresTP`**: `PhasePCSAFT.getdDSAFTdT` carries an extra `3 d_i**2`, so its `-1536.95 J/mol` here is 3% from the `-1487.25` the energy terms give. `validation/neqsim/PcsaftDepartureProbe.java` prints both."""
 [cases.inputs]
 components = ["methane", "n-butane"]
 T = 350.0
@@ -17,3 +19,5 @@ compressed_phase = "vapour"
 v = 0.0008141097344315069
 z_factor = 0.8392705810739511
 ln_phi = [0.02297989515406737, -0.4210924858702312]
+h_res = -1487.2509968943298
+s_res = -2.963464837211711

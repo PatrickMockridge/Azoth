@@ -108,10 +108,15 @@ pub fn phase_state_of(
     }
 
     let solved = molar_volume(components, kij, z, t.value, p.value, side)?;
+    let (h_over_rt, s_over_r) =
+        crate::pcsaft_phase::departure(components, kij, z, t.value, solved.v, solved.z)?;
+    let r_t = crate::association::R * t.value;
     Ok(PcsaftRahmatPhaseResult {
         z_factor: solved.z,
         ln_phi: crate::pcsaft::ln_fugacity_coefficients(components, kij, z, t.value, solved.v)?,
         v: cubic_meters_per_mole(solved.v),
+        h_res: azoth_core::units::joules_per_mole(h_over_rt * r_t),
+        s_res: azoth_core::units::joules_per_mole_kelvin(s_over_r * crate::association::R),
         warnings: Vec::new(),
     })
 }

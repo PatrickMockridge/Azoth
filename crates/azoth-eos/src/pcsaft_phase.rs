@@ -147,3 +147,32 @@ pub fn side_of(compressed_phase: &str) -> Result<RootSide> {
         )),
     }
 }
+
+/// A PC-SAFT phase's residual enthalpy and entropy, per mole.
+///
+/// **`Z - 1` is the volume's own contribution and `-T dF/dT` the temperature's.** NeqSim
+/// assembles the same two from `AresTV + T SresTV + P V - n R T` with
+/// `SresTV = (-T dFdT - F) R`, and the two `F`-terms cancel: `Hres/(R T) = Z - 1 - T dFdT`.
+/// The entropy then carries the `P`-to-`V` conversion, `SresTP = SresTV + n R ln Z`.
+///
+/// **This is a finite difference of NeqSim's own `F` at fixed volume before it is
+/// NeqSim's `dFdT`**, because for PC-SAFT the two disagree:
+/// [`crate::pcsaft::t_d_helmholtz_rt_dt`] carries the note and the write-up is at
+/// `~/Desktop/neqsim-pcsaft-hard-chain-temperature-derivative.md`.
+///
+/// # Errors
+/// As [`crate::pcsaft::state`].
+pub fn departure(
+    components: &[PcsaftComponent],
+    kij: &[f64],
+    z: &[f64],
+    t: f64,
+    v: f64,
+    compressibility: f64,
+) -> Result<(f64, f64)> {
+    let state = crate::pcsaft::state(components, kij, z, t, v)?;
+    let t_d_f = crate::pcsaft::t_d_helmholtz_rt_dt(components, z, t, v, &state);
+    let h_over_rt = compressibility - 1.0 - t_d_f;
+    let s_over_r = compressibility.ln() - t_d_f - state.f();
+    Ok((h_over_rt, s_over_r))
+}

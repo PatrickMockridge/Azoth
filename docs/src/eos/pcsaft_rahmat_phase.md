@@ -34,6 +34,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `z_factor` | dimensionless | the compressibility factor at the chosen root |
 | `ln_phi` | dimensionless | the fugacity coefficients, as logarithms, at the chosen root |
+| `h_res` | J/mol | the residual enthalpy, real minus ideal gas at the same temperature, pressure and composition, from `Z - 1 - T d(A^R/(R T))/dT` |
+| `s_res` | J/(mol*K) | the residual entropy, real minus ideal gas at the same state |
 | `v` | m**3/mol | the molar volume at the chosen root, which is what the solve returns before the compressibility factor is read from it |
 
 | Bound | On violation | Why |
@@ -57,7 +59,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_butane_vapour_against_neqsim` | components = ['methane', 'n-butane'], T = 350.0, P = 3000000.0, z = [0.6, 0.4], compressed_phase = vapour | v = 0.0008141097344315069, z_factor = 0.8392705810739511, ln_phi = [0.02297989515406737, -0.4210924858702312] |
+| `methane_butane_vapour_against_neqsim` | components = ['methane', 'n-butane'], T = 350.0, P = 3000000.0, z = [0.6, 0.4], compressed_phase = vapour | v = 0.0008141097344315069, z_factor = 0.8392705810739511, ln_phi = [0.02297989515406737, -0.4210924858702312], h_res = -1487.2509968943298, s_res = -2.963464837211711 |
 
 ## References
 

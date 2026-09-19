@@ -68,6 +68,16 @@ impl PcsaftComponent {
     pub fn d(self, t: f64) -> f64 {
         self.sigma * (1.0 - 0.12 * (-3.0 * self.epsik / t).exp())
     }
+
+    /// `d d_i/dT`, in metres per kelvin.
+    ///
+    /// The derivative of the line above: `-0.36 sigma_i eps_i exp(-3 eps_i/T)/T^2`.
+    /// Carried here rather than differenced because the departure functions need it to
+    /// full precision and it is one line.
+    #[must_use]
+    pub fn d_d_t(self, t: f64) -> f64 {
+        -0.36 * self.sigma * self.epsik * (-3.0 * self.epsik / t).exp() / (t * t)
+    }
 }
 
 /// The `C1`/`I1` polynomial constants, Gross-Sadowski 2001: `[order in m][power of eta]`.
@@ -589,4 +599,74 @@ pub fn ln_fugacity_coefficients(
         out.push(d - z.ln());
     }
     Ok(out)
+}
+
+/// `T d(A^R/(R T))/dT` at constant volume, per mole.
+///
+/// **NeqSim publishes this and its PC-SAFT value cannot be used.** `PhasePCSAFT.getdDSAFTdT`
+/// multiplies the chain rule for the segment diameter by an extra `3 d_i^2`, so every
+/// `eta`-dependent part of its `dFdT` is about `1e-18` too small: the volume's own
+/// derivative is right and the temperature's is not. The write-up is at
+/// `~/Desktop/neqsim-pcsaft-hard-chain-temperature-derivative.md`; the check this function
+/// is held to is a **finite difference of NeqSim's own `F` at fixed volume**, which uses
+/// none of the derivative code the defect reaches.
+///
+/// # The three terms
+///
+/// `eta` is the only place the volume and the temperature meet, so at constant `v`
+/// everything moves through `T d eta/dT = eta (T d(md3)/dT)/md3` with
+/// `md3 = sum_i x_i m_i d_i^3`. Then
+///
+/// * the hard-sphere and chain term is `m_bar a_hs - (m_bar - 1) ln g_hs`, differentiated
+///   in `eta`;
+/// * the first dispersion sum carries `sqrt(eps_i eps_j)/T`, so `T dS1/dT = -S1`, and `I1`
+///   moves with `eta`;
+/// * the second is the same with `C1` beside it, whose own `eta` derivative is
+///   `-C1^2 (m_bar A' + (1 - m_bar) B')`.
+#[must_use]
+pub fn t_d_helmholtz_rt_dt(
+    components: &[PcsaftComponent],
+    x: &[f64],
+    t: f64,
+    v: f64,
+    state: &PcsaftState,
+) -> f64 {
+    let n = components.len();
+    // `T d(md3)/dT`, which is the whole of the temperature's reach through the packing
+    // fraction.
+    let t_d_md3 = (0..n)
+        .map(|i| x[i] * components[i].m * 3.0 * state.d[i].powi(2) * (t * components[i].d_d_t(t)))
+        .sum::<f64>();
+    let t_d_eta = state.eta * t_d_md3 / state.md3;
+
+    let eta = state.eta;
+    let one = 1.0 - eta;
+    // The two hard-sphere layers' own derivatives in `eta`.
+    let a_hs_d_eta = ((4.0 - 6.0 * eta) * one + 2.0 * (4.0 * eta - 3.0 * eta * eta)) / one.powi(3);
+    let g_hs_d_eta = (2.5 - eta) / one.powi(4);
+
+    let t_d_f_hc =
+        state.m_bar * a_hs_d_eta * t_d_eta - state.m_minus_1 * g_hs_d_eta / state.g_hs * t_d_eta;
+
+    let terms = c1_terms(eta);
+    let t_d_c1 = -state.c1
+        * state.c1
+        * (state.m_bar * terms.a_d_eta + (1.0 - state.m_bar) * terms.b_d_eta)
+        * t_d_eta;
+
+    let i1_d_eta = series(&A_CONST, state.m_bar, eta).d_eta;
+    let i2_d_eta = series(&B_CONST, state.m_bar, eta).d_eta;
+    let rho = AVOGADRO / v;
+
+    // `-2 pi rho S1 I1` with `T dS1/dT = -S1` and `I1` moving through `eta`.
+    let t_d_f_disp1 =
+        -2.0 * std::f64::consts::PI * rho * state.s1 * (i1_d_eta * t_d_eta - state.i1);
+    // `-pi m_bar rho S2 I2 C1`, the same with `C1`'s own derivative beside it.
+    let t_d_f_disp2 = -std::f64::consts::PI
+        * state.m_bar
+        * rho
+        * state.s2
+        * (state.i2 * (-state.c1 + t_d_c1) + state.c1 * (i2_d_eta * t_d_eta - state.i2));
+
+    t_d_f_hc + t_d_f_disp1 + t_d_f_disp2
 }

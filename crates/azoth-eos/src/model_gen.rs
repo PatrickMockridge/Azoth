@@ -2950,6 +2950,8 @@ static PCSAFT_RAHMAT_PHASE_CASES: &[TestCase] = &[TestCase {
     expected: &[
         ("v", 0.0008141097344315069),
         ("z_factor", 0.8392705810739511),
+        ("h_res", -1487.2509968943298),
+        ("s_res", -2.963464837211711),
     ],
     expected_vectors: &[("ln_phi", &[0.02297989515406737, -0.4210924858702312])],
 }];

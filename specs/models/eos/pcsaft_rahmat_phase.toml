@@ -49,6 +49,12 @@ type = "vector"
 unit = "dimensionless"
 length = "one per component"
 description = "the fugacity coefficients, as logarithms, at the chosen root"
+[outputs.h_res]
+unit = "J/mol"
+description = "the residual enthalpy, real minus ideal gas at the same temperature, pressure and composition, from `Z - 1 - T d(A^R/(R T))/dT`"
+[outputs.s_res]
+unit = "J/(mol*K)"
+description = "the residual entropy, real minus ideal gas at the same state"
 [outputs.v]
 unit = "m**3/mol"
 description = "the molar volume at the chosen root, which is what the solve returns before the compressibility factor is read from it"

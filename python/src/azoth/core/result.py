@@ -2095,6 +2095,10 @@ class PcsaftRahmatPhaseResult(_HasWarnings):
     ln_phi: tuple[float, ...]
     #: The molar volume at the chosen root.
     v: Q
+    #: The residual enthalpy, real minus ideal gas at the same state.
+    h_res: Q
+    #: The residual entropy, real minus ideal gas at the same state.
+    s_res: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
 

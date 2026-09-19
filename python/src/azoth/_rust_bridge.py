@@ -2810,6 +2810,8 @@ def pcsaft_rahmat_phase(
         z_factor=result.z_factor,
         ln_phi=tuple(result.ln_phi),
         v=from_si(result.v.magnitude_si, result.v.unit),
+        h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
+        s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
         warnings=_warnings(result.warnings),
     )
 
