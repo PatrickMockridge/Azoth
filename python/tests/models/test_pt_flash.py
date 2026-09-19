@@ -10,6 +10,8 @@ an earlier draft of the model got wrong.
 from __future__ import annotations
 
 import math
+import re
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -723,3 +725,31 @@ def test_an_associating_flash_answers_the_lowest_gibbs_energy() -> None:
             1e-12,
             f"{T} K, the two kernels' Gibbs energy",
         )
+
+
+def test_the_two_kernels_share_one_trivial_tolerance() -> None:
+    """The one constant both flashes carry, checked where it lives.
+
+    Rust's is `pub(crate)` in `flash_iteration.rs` and Python's is a module constant in
+    the reference, so neither can read the other and no behavioural test sees a drift
+    until it is large. They disagreed by two decades - `1e-8` against `1e-6` - after the
+    Rust one moved, and nothing noticed, because the two kernels are compared on answers
+    and not on their constants.
+
+    A constant has no behaviour of its own to test, so this reads both sources. That is
+    the only place the two numbers exist.
+    """
+    root = Path(__file__).resolve().parents[3]
+    sources = {
+        "rust": root / "crates/azoth-eos/src/flash_iteration.rs",
+        "python": root / "python/src/azoth/eos/reference/pt_flash.py",
+    }
+    values = {}
+    for language, path in sources.items():
+        match = re.search(r"TRIVIAL_TOLERANCE[^=]*= ([0-9.eE+-]+)", path.read_text("utf-8"))
+        assert match is not None, f"{language}: no TRIVIAL_TOLERANCE in {path}"
+        values[language] = float(match.group(1))
+    assert values["rust"] == values["python"], (
+        f"the two kernels declare different trivial tolerances: {values}. They are one "
+        f"number in two languages and have to move together"
+    )

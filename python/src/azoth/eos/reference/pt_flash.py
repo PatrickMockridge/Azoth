@@ -41,11 +41,20 @@ MODEL_ID = "eos.pt_flash"
 
 #: The ``ln K`` below which the iteration has found the trivial solution.
 #:
-#: ``|ln K_i| < 1e-8`` for every ``i`` means the two phases have converged onto the
+#: ``|ln K_i| < 1e-6`` for every ``i`` means the two phases have converged onto the
 #: feed. It is compared against the *K-values* and never against ``beta``, which is
 #: indeterminate there - see the spec's correction 2 for the feed a ``beta`` test
 #: would have mislabelled.
-TRIVIAL_TOLERANCE = 1.0e-08
+#:
+#: **The threshold must not sit on the scale of the answer, and this one did.** The
+#: second-order scheme lands on ``|ln K|`` within ``1e-8`` of one at a single-phase state,
+#: so ``1e-8`` made the trivial declaration a coin flip on the last bit: a one-ulp change
+#: in the cubic's first term moved that state from ``trivial`` at 128 iterations to no
+#: convergence at all. A split has ``|ln K|`` of order one, so three further decades cost
+#: nothing. **The Rust kernel's ``TRIVIAL_TOLERANCE`` is this number** - the two are one
+#: constant in two languages and have to move together, which nothing enforced until they
+#: were found differing by two decades.
+TRIVIAL_TOLERANCE = 1.0e-06
 
 
 def settled_tolerance(algorithm: dict[str, Any], from_newton: bool) -> float:
