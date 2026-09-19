@@ -87,6 +87,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.molar_enthalpy_entropy`](./molar_enthalpy_entropy.md) | `direct composition` | The composition of ideal-gas and residual contributions |
 | [`eos.nrtl_activity_coefficients`](./nrtl_activity_coefficients.md) | `direct composition` | Renon, H.; Prausnitz, J. M. (1968) |
 | [`eos.parahydrogen_solid_phase`](./parahydrogen_solid_phase.md) | `bracketed_log_volume_newton` | Sannerhaugen, A. (2026) |
+| [`eos.pcsaft_phase`](./pcsaft_phase.md) | `direct composition` | Gross, J.; Sadowski, G. (2001) |
 | [`eos.ph_flash`](./ph_flash.md) | `ph_flash_inverse_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.pr_cpa_phase`](./pr_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
 | [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |

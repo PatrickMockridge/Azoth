@@ -25,6 +25,7 @@
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
 //!   - specs/models/eos/parahydrogen_solid_phase.toml
+//!   - specs/models/eos/pcsaft_phase.toml
 //!   - specs/models/eos/ph_flash.toml
 //!   - specs/models/eos/pr_cpa_phase.toml
 //!   - specs/models/eos/ps_flash.toml
@@ -2895,6 +2896,68 @@ pub static PARAHYDROGEN_SOLID_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&PARAHYDROGEN_SOLID_PHASE_ALGORITHM),
     checks: PARAHYDROGEN_SOLID_PHASE_CHECKS,
     cases: PARAHYDROGEN_SOLID_PHASE_CASES,
+};
+
+static PCSAFT_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static PCSAFT_PHASE_CASES: &[TestCase] = &[TestCase {
+    id: "methane_butane_vapour_against_neqsim",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-09,
+    numbers: &[("T", 350.0), ("P", 3000000.0)],
+    flags: &[],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[("compressed_phase", "vapour")],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[
+        ("v", 0.0008141097344383686),
+        ("z_factor", 0.8392705810810248),
+    ],
+    expected_vectors: &[("ln_phi", &[0.022979895153786956, -0.4210924858670044])],
+}];
+
+/// Registry entry for `eos.pcsaft_phase`.
+pub static PCSAFT_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pcsaft_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: PCSAFT_PHASE_CHECKS,
+    cases: PCSAFT_PHASE_CASES,
 };
 
 static PH_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -6184,6 +6247,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &NRTL_ACTIVITY_COEFFICIENTS_SPEC,
     &PARAHYDROGEN_SOLID_PHASE_SPEC,
+    &PCSAFT_PHASE_SPEC,
     &PH_FLASH_SPEC,
     &PR_CPA_PHASE_SPEC,
     &PS_FLASH_SPEC,

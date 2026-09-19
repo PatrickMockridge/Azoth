@@ -89,6 +89,7 @@
   - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)
   - [Activity coefficients from the NRTL local-composition model](./eos/nrtl_activity_coefficients.md)
   - [Solid para-hydrogen reference phase state](./eos/parahydrogen_solid_phase.md)
+  - [PC-SAFT phase state](./eos/pcsaft_phase.md)
   - [Pressure-enthalpy flash](./eos/ph_flash.md)
   - [Peng-Robinson CPA phase state](./eos/pr_cpa_phase.md)
   - [Pressure-entropy flash](./eos/ps_flash.md)

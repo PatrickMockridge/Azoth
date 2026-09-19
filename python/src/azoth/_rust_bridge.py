@@ -78,6 +78,7 @@ from azoth.core.result import (
     OrificeFlowResult,
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
+    PcsaftPhaseResult,
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
@@ -2730,6 +2731,31 @@ def resolve(calc_id: str) -> Callable[..., Any]:
 
     resolved: Callable[..., Any] = globals()[calc_id.rpartition(".")[2]]
     return resolved
+
+
+def pcsaft_phase(
+    components: Sequence[str], T: Q, P: Q, z: Sequence[float], compressed_phase: str
+) -> PcsaftPhaseResult:
+    """The PC-SAFT phase state, computed in Rust.
+
+    The component names cross **unresolved**, as they do for both CPA twins, so the Rust
+    side resolves the fluid itself - the `mSAFT`/`sigmaSAFT`/`epsikSAFT` set, whose absence
+    the table spells as zeros in all three columns, and the `KIJPCSAFT` column.
+    """
+    spec = _models_gen.model("eos.pcsaft_phase")
+    result = _core.pcsaft_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        compressed_phase,
+    )
+    return PcsaftPhaseResult(
+        z_factor=result.z_factor,
+        ln_phi=tuple(result.ln_phi),
+        v=from_si(result.v.magnitude_si, result.v.unit),
+        warnings=_warnings(result.warnings),
+    )
 
 
 def pr_cpa_phase(

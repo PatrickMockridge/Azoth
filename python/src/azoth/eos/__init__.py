@@ -111,6 +111,7 @@ from azoth.core.result import (
     NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
+    PcsaftPhaseResult,
     PhFlashResult,
     Pr78KappaResult,
     PrAlphaAbResult,
@@ -245,6 +246,7 @@ __all__ = [
     "nitric_sulfuric_acid_vapor_pressure",
     "nrtl_activity_coefficients",
     "parahydrogen_solid_phase",
+    "pcsaft_phase",
     "ph_flash",
     "pr78_kappa",
     "pr_alpha_ab",
@@ -328,6 +330,7 @@ _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
 _EOS_CG_PHASE = "eos.eos_cg_phase"
 _SRK_CPA_PHASE = "eos.srk_cpa_phase"
+_PCSAFT_PHASE = "eos.pcsaft_phase"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
@@ -2525,6 +2528,35 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
     See :func:`azoth.eos.reference.pure_saturation`.
     """
     return resolve(_PURE_SATURATION)(Tc=Tc, Pc=Pc, omega=omega, T=T)  # type: ignore[no-any-return]
+
+
+def pcsaft_phase(
+    components: list[str], T: Q, P: Q, z: list[float], compressed_phase: str
+) -> PcsaftPhaseResult:
+    """One PC-SAFT phase's state at a temperature, pressure and composition.
+
+    Gross and Sadowski's perturbed-chain statistical associating fluid theory without its
+    association term: a hard-sphere term weighted by the segment number, a chain term from
+    the hard-sphere pair correlation, and the two dispersion terms of the perturbed-chain
+    expansion. The parameters are the databank's ``mSAFT``/``sigmaSAFT``/``epsikSAFT`` set
+    and the ``KIJPCSAFT`` interaction column.
+
+    **Which root is a caller's statement.** A PC-SAFT isotherm is not monotonic - below the
+    critical temperature one pressure admits three volumes - so ``compressed_phase`` names
+    the branch rather than the solve guessing a seed. A packing fraction of one is where
+    the hard-sphere terms diverge, and a state below that volume does not exist.
+
+    Raises:
+        InvalidInputError: if a component carries no PC-SAFT set, if ``z`` is not a
+            composition of the right length, or if ``compressed_phase`` is neither name.
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or the wanted branch has no root
+            at this state.
+
+    See :func:`azoth.eos.reference.pcsaft_phase`.
+    """
+    return resolve(_PCSAFT_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
+    )
 
 
 def pr_cpa_phase(

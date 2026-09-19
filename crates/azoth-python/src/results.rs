@@ -28,12 +28,12 @@ use azoth_eos::results::{
     Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
     MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
-    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PhFlashResult, Pr78KappaResult,
-    PrAlphaAbResult, PrCpaPhaseResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,
-    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvFlashResult, PvRefluxFlashResult, PvfFlashResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftPhaseResult, PhFlashResult,
+    Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult, PrDaneshAlphaResult,
+    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
+    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
+    PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult, PvfFlashResult,
     RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult,
     RkDepartureResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
@@ -5996,6 +5996,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
         BwrsPhaseResult::CALC_ID => BwrsPhaseResult::FIELDS.to_vec(),
         SrkCpaPhaseResult::CALC_ID => SrkCpaPhaseResult::FIELDS.to_vec(),
+        PcsaftPhaseResult::CALC_ID => PcsaftPhaseResult::FIELDS.to_vec(),
         PrCpaPhaseResult::CALC_ID => PrCpaPhaseResult::FIELDS.to_vec(),
         AmmoniaPhaseResult::CALC_ID => AmmoniaPhaseResult::FIELDS.to_vec(),
         Co2PhaseResult::CALC_ID => Co2PhaseResult::FIELDS.to_vec(),
@@ -6321,6 +6322,53 @@ impl From<&azoth_eos::results::SrkCpaPhaseResult> for PySrkCpaPhaseResult {
             ln_phi: r.ln_phi.clone(),
             h_res: qty(r.h_res.value, "J/mol"),
             s_res: qty(r.s_res.value, "J/(mol*K)"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.pcsaft_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PcsaftPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPcsaftPhaseResult {
+    /// The compressibility factor at the chosen root.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// The molar volume at the chosen root.
+    #[pyo3(get)]
+    pub v: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPcsaftPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PcsaftPhaseResult(z_factor={}, ln_phi={:?})",
+            self.z_factor, self.ln_phi
+        )
+    }
+}
+
+impl From<&azoth_eos::results::PcsaftPhaseResult> for PyPcsaftPhaseResult {
+    fn from(r: &azoth_eos::results::PcsaftPhaseResult) -> Self {
+        Self {
+            z_factor: r.z_factor,
+            ln_phi: r.ln_phi.clone(),
+            v: PyQty {
+                magnitude_si: r.v.value,
+                unit: "m**3/mol".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }

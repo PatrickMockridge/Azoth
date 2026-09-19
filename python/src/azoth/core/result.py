@@ -2024,6 +2024,26 @@ class BwrsPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PcsaftPhaseResult(_HasWarnings):
+    """Result of ``eos.pcsaft_phase``.
+
+    The PC-SAFT phase state: the compressibility factor, the molar volume the solve
+    converged to, and the fugacity coefficients. **No departure function is reported**,
+    because the temperature derivative of the Helmholtz energy is not derived - an
+    enthalpy taken from somewhere else would be a different fluid's.
+    """
+
+    #: The compressibility factor at the chosen root.
+    z_factor: float
+    #: The fugacity coefficients, as logarithms, one per component.
+    ln_phi: tuple[float, ...]
+    #: The molar volume at the chosen root.
+    v: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SrkCpaPhaseResult(_HasWarnings):
     """Result of ``eos.srk_cpa_phase``.
 

@@ -3346,6 +3346,27 @@ pub fn model_schemes(model_id: &str) -> Vec<String> {
     }
 }
 
+/// The PC-SAFT phase state, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side looks them up in the Rust
+/// databank - which for this model means the `mSAFT`/`sigmaSAFT`/`epsikSAFT` set, whose
+/// absence the table spells as zeros, and the `KIJPCSAFT` column.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn pcsaft_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::results::PyPcsaftPhaseResult> {
+    azoth_eos::pcsaft_phase::pcsaft_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
+        .map(|r| crate::results::PyPcsaftPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The PR-CPA phase state, computed in Rust.
 ///
 /// **The component names cross unresolved**, as they do for the SRK twin, and this side

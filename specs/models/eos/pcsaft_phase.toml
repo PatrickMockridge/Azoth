@@ -1,0 +1,68 @@
+id = "eos.pcsaft_phase"
+name = "PC-SAFT phase state"
+kind = "direct"
+assumptions = [
+    "a component's `m`, `sigma` and `epsilon/k` are the databank's `mSAFT`/`sigmaSAFT`/`epsikSAFT`, sigma converted from angstrom. An absent set is spelled as zeros in all three columns - 47 of 286 rows - and is refused rather than solved for.",
+    "the interaction matrix is `KIJPCSAFT`, a third fitted column rather than a convention for the cubic's or the CPA one. NeqSim reads it only under the classic mixing rule, which is the only rule its PC-SAFT can be driven with.",
+    "`A^R/(RT) = m_bar a_hs - (m_bar - 1) ln g_hs - 2 pi rho S1 I1 - pi m_bar rho S2 I2 C1` per mole, with `d_i = sigma_i (1 - 0.12 exp(-3 (epsilon_i/k)/T))` and `eta = (pi/6) N_A sum_i x_i m_i d_i^3 / v`, weighted by `x_i m_i`.",
+    "**Avogadro's constant is NeqSim's `6.023e23` and the gas constant its `8.3144621`**, not the CODATA values - a relative `1.4e-4` and `1.4e-8` away. The packing fraction and the dispersion terms are built on the first.",
+    "the volume solves `P_calc(v) = P` with `P/(RT) = 1/v - eta F_eta/v`, by NeqSim's damped Newton on the volume. **Which root is a caller's statement**: below the critical temperature one pressure admits three volumes.",
+    "the packing fraction reaching one is where the hard-sphere terms diverge, so it floors the solve: a state below it does not exist, and the model refuses rather than answering from outside the domain.",
+    "the fugacity coefficients are `ln phi_i = d(nF)/dn_i - ln Z`, the derivative of the extensive `A^R/(RT)` at fixed temperature and volume.",
+    "**no temperature derivative of the Helmholtz energy is derived**, so `h_res`, `s_res` and `cp_res` are absent rather than taken from something else.",
+]
+references = [
+    "Gross, J.; Sadowski, G. (2001). \"Perturbed-Chain SAFT: An Equation of State Based on a Perturbation Theory for Chain Molecules.\" Industrial & Engineering Chemistry Research 40(4), 1244-1260. DOI 10.1021/ie0003887",
+    "NeqSim 3.20.0, `PhasePCSAFT.java` / `PhasePCSAFTRahmat.java` / `ComponentPCSAFT.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Gross, J.; Sadowski, G. (2001)"
+edition = "The perturbed-chain form of statistical associating fluid theory, without its association term: a hard-sphere term weighted by the segment number, a chain term from the hard-sphere pair correlation, and two dispersion terms from the second-order perturbation expansion."
+doi = "10.1021/ie0003887"
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank with their PC-SAFT set and the `KIJPCSAFT` column"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, checked rather than renormalised"
+[inputs.compressed_phase]
+type = "enum"
+values = ["liquid", "vapour"]
+description = "which root describes the phase wanted. Not a compressibility factor: the root is what the model solves for, so a caller could not supply one without solving the model first."
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor at the chosen root"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fugacity coefficients, as logarithms, at the chosen root"
+[outputs.v]
+unit = "m**3/mol"
+description = "the molar volume at the chosen root, which is what the solve returns before the compressibility factor is read from it"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.pcsaft_phase"
+rust = "azoth_eos::pcsaft_phase"

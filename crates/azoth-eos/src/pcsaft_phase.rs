@@ -14,11 +14,13 @@
 //! describes the phase wanted is the caller's statement, not the fluid's, and it is the
 //! same `RootSide` the cubic roots are asked for by.
 
+use azoth_core::units::{Pressure, ThermodynamicTemperature, cubic_meters_per_mole};
 use azoth_core::{AzothError, Result};
 
 use crate::association::R;
 use crate::mixture::RootSide;
 use crate::pcsaft::{self, PcsaftComponent};
+use crate::results::PcsaftPhaseResult;
 
 /// A solved PC-SAFT volume.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -189,4 +191,124 @@ fn no_root(branch: &str, t: f64, p: f64) -> AzothError {
              rather than a volume to report"
         ),
     }
+}
+
+/// A name list resolved to PC-SAFT parameters and the `KIJPCSAFT` matrix.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if a name is not in the databank, or the component has no
+///   PC-SAFT set - which the table spells as zeros in all three columns, 47 of its 286
+///   rows, and a model that took them would answer for a fluid with no segments.
+pub fn parameters_of(names: &[&str]) -> Result<(Vec<PcsaftComponent>, Vec<f64>)> {
+    let mut components = Vec::with_capacity(names.len());
+    for name in names {
+        let entry = crate::databank::entry(name, None)?;
+        components.push(PcsaftComponent {
+            m: entry.m_saft,
+            sigma: entry.sigma_saft,
+            epsik: entry.epsik_saft,
+        });
+    }
+    Ok((components, crate::databank::pcsaft_kij(names)))
+}
+
+/// `eos.pcsaft_phase`: the phase state PC-SAFT gives at a temperature and a pressure.
+///
+/// The names cross unresolved and are looked up here, so the two-kernel comparison covers
+/// the resolution as well as the arithmetic - which for this model means the `KIJPCSAFT`
+/// column and the zero-means-absent convention on the parameters.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] as [`parameters_of`], or if `z` is not one entry per
+///   component or does not sum to one.
+/// * [`AzothError::OutOfRange`] if `T` or `P` is not positive, or the wanted branch has no
+///   root at this state.
+pub fn pcsaft_phase(
+    components: &[String],
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    compressed_phase: &str,
+) -> Result<PcsaftPhaseResult> {
+    let spec = &crate::model_gen::PCSAFT_PHASE_SPEC;
+    let mut warnings = Vec::new();
+    azoth_core::range::apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(t.value),
+            "P" => Some(p.value),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (parameters, kij) = parameters_of(&names)?;
+    let side = side_of(compressed_phase)?;
+    let mut result = pcsaft_phase_of(&parameters, &kij, t, p, z, side)?;
+    warnings.extend(result.warnings);
+    result.warnings = warnings;
+    Ok(result)
+}
+
+/// The side a case's `compressed_phase` names.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for anything but the two names the spec declares, rather
+/// than a default: a caller that mistyped a branch would otherwise be handed a root.
+pub fn side_of(compressed_phase: &str) -> Result<RootSide> {
+    match compressed_phase.trim().to_lowercase().as_str() {
+        "liquid" => Ok(RootSide::Liquid),
+        "vapour" | "vapor" => Ok(RootSide::Vapour),
+        other => Err(AzothError::invalid_input(
+            "compressed_phase",
+            format!("{other:?} is not a side. The spec's values are \"liquid\" and \"vapour\""),
+        )),
+    }
+}
+
+/// The same state, for a caller that resolved the fluid itself.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if `z` is not one entry per component or does not sum to
+///   one.
+/// * [`AzothError::OutOfRange`] as [`molar_volume`] and
+///   [`crate::pcsaft::ln_fugacity_coefficients`].
+pub fn pcsaft_phase_of(
+    components: &[PcsaftComponent],
+    kij: &[f64],
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    side: RootSide,
+) -> Result<PcsaftPhaseResult> {
+    let n = components.len();
+    if z.len() != n {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "a mixture of {n} components needs {n} mole fractions, but z has {}",
+                z.len()
+            ),
+        ));
+    }
+    let sum: f64 = z.iter().sum();
+    if (sum - 1.0).abs() > 1.0e-9 {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "the mole fractions sum to {sum}, not to one. Renormalising them here would \
+                 make a composition error invisible in every number downstream, so it is \
+                 refused instead"
+            ),
+        ));
+    }
+
+    let solved = molar_volume(components, kij, z, t.value, p.value, side)?;
+    Ok(PcsaftPhaseResult {
+        z_factor: solved.z,
+        ln_phi: crate::pcsaft::ln_fugacity_coefficients(components, kij, z, t.value, solved.v)?,
+        v: cubic_meters_per_mole(solved.v),
+        warnings: Vec::new(),
+    })
 }
