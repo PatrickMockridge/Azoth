@@ -1,0 +1,44 @@
+model = "eos.umr_cpa_phase"
+[[cases]]
+id = "methane_water_umr_cpa_vapour"
+tolerance = 1e-09
+source = """NeqSim 3.20.0's own `SystemUMRCPAEoS` at this state, from `validation/neqsim/UmrCpaProbe.java`: `Z = 0.860124667999392`, `lnPhi = [-0.143929410664324, -0.522958472994785]`, `Hres = -1361.12998393193` and `Sres = -3.30552825032943`, at the 298.15 K and 70 bara state `TPflashUMRCPADehydrationLifecycleTest` pins its water-in-gas envelope at. The phase is the feed at the vapour root, which is what NeqSim's `init(1)` solves at a single-phase system.
+
+**These four numbers are what found the tranche's last two defects.** Matching them needed the UMR rule's `T d alpha_mix/dT` - which needed UNIFAC's `ln gamma` temperature derivative, and with it the discovery that `ComponentGEUnifacUMRPRU` uses a different combinatorial term from plain UNIFAC - and it needed the association's departure to be `-T d(A/RT)/dT` rather than `A/(RT) - T d(A/RT)/dT`. Neither was visible on a pure fluid, where both expressions agree exactly."""
+[cases.inputs]
+components = ["methane", "water"]
+T = 298.15
+P = 7000000.0
+z = [0.98, 0.02]
+compressed_phase = "vapour"
+[cases.expected]
+z_factor = 0.860124667999392
+ln_phi = [-0.143929410664324, -0.522958472994785]
+h_res = -1361.12998393193
+s_res = -3.30552825032943
+[[cases]]
+id = "methane_water_umr_cpa_liquid"
+tolerance = 1e-09
+source = "the same probe at the aqueous root of the same feed, `Z = 0.0499704749585408` and `lnPhi = [6.43308581534347, -7.65091591105412]` at the flashed aqueous composition. The association's own contribution is largest here: this is the phase whose `kappa_AB` and `eps` come from the `UMRCPA_*` columns rather than the PR family's, and reading the wrong set moves `ln phi_1` in the third decimal while leaving the methane beside it almost untouched."
+[cases.inputs]
+components = ["methane", "water"]
+T = 298.15
+P = 7000000.0
+z = [0.00138737483226154, 0.998612625167738]
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.0499704749585408
+ln_phi = [6.43308581534347, -7.65091591105412]
+[[cases]]
+id = "methane_water_umr_cpa_flashed_gas"
+tolerance = 1e-09
+source = "the probe's flashed gas phase - `x = [0.999387223488167, 0.000612776511832817]`, `Z = 0.865633455342091`, `lnPhi = [-0.146643147716477, -0.254793979654883]`. **The composition is NeqSim's, not this library's**, because a UMR-CPA mixture cannot be flashed here: the generic flash's Jacobian is the excess Gibbs energy's second derivative, which no excess-Gibbs rule provides. Recording the state the oracle reports is what remains, and it is the state the lifecycle test's water-in-gas envelope is measured at."
+[cases.inputs]
+components = ["methane", "water"]
+T = 298.15
+P = 7000000.0
+z = [0.999387223488167, 0.000612776511832817]
+compressed_phase = "vapour"
+[cases.expected]
+z_factor = 0.865633455342091
+ln_phi = [-0.146643147716477, -0.254793979654883]

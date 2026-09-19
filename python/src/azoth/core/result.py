@@ -2155,6 +2155,32 @@ class PrCpaPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class UmrCpaPhaseResult(_HasWarnings):
+    """Result of ``eos.umr_cpa_phase``.
+
+    The only model in this library whose attraction is mixed by a universal rule rather
+    than an interaction matrix: ``alpha_mix = sum_i x_i (a_i^T/(b_i R T) + hwfc ln
+    gamma_i)`` with ``hwfc = -1/0.53`` over UNIFAC-UMR-PRU's activity coefficients, and
+    ``A = n B R T alpha_mix``. No ``kij`` column is read.
+
+    **There is no flash for this model.** ``eos.pt_flash``'s Jacobian is ``d ln phi / d
+    n``, which every excess-Gibbs rule refuses because that derivative is the excess
+    Gibbs energy's own Hessian.
+    """
+
+    #: The compressibility factor at the chosen root.
+    z_factor: float
+    #: The fugacity coefficients, as logarithms, one per component.
+    ln_phi: tuple[float, ...]
+    #: The residual enthalpy, including the association's ``-T d(A/RT)/dT``.
+    h_res: Q
+    #: The residual entropy.
+    s_res: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class AmmoniaPhaseResult(_HasWarnings):
     """Result of ``eos.ammonia_phase``.
 

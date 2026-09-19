@@ -141,3 +141,64 @@ pub(crate) fn side_of(compressed_phase: &str) -> Result<RootSide> {
         )),
     }
 }
+
+/// The same, for a model whose mixture is not a cubic family plus a `kij` column.
+///
+/// `eos.umr_cpa_phase` resolves its fluid through the UMR mixing rule rather than through
+/// `associating_mixture_of`, and every other line - the range checks, the composition
+/// check, the root choice, the departure - is the same. Taking the resolver as an argument
+/// keeps one expression of those rather than a second copy that would have to be kept in
+/// step.
+///
+/// # Errors
+/// As [`cpa_phase`], plus whatever the resolver refuses.
+pub(crate) fn cpa_phase_with(
+    spec: &ModelSpec,
+    components: &[String],
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    compressed_phase: &str,
+    resolve: impl FnOnce(&[&str]) -> Result<Mixture>,
+) -> Result<CpaPhaseState> {
+    let mut warnings = Vec::new();
+
+    azoth_core::range::apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(t.value),
+            "P" => Some(p.value),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
+    let n = components.len();
+    if z.len() != n {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "a mixture of {n} components needs {n} mole fractions, but z has {}",
+                z.len()
+            ),
+        ));
+    }
+    let sum: f64 = z.iter().sum();
+    if (sum - 1.0).abs() > 1.0e-9 {
+        return Err(AzothError::invalid_input(
+            "z",
+            format!(
+                "the mole fractions sum to {sum}, not to one. Renormalising them here would \
+                 make a composition error invisible in every number downstream, so it is \
+                 refused instead"
+            ),
+        ));
+    }
+
+    let side = side_of(compressed_phase)?;
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let mixture = resolve(&names)?;
+    let state = phase_state_of(&mixture, t, p, z, side)?;
+    warnings.extend(state.warnings);
+    Ok(CpaPhaseState { warnings, ..state })
+}

@@ -163,6 +163,7 @@ pub mod twucoon_alpha;
 pub mod twucoon_param_alpha;
 pub mod twucoon_statoil_alpha;
 pub mod tyn_calus_diffusivity;
+pub mod umr_cpa_phase;
 pub mod umrpr_alpha;
 pub mod unifac_activity_coefficients;
 pub mod unifac_psrk_activity_coefficients;
@@ -274,11 +275,11 @@ pub use results::{
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict, ThFlashResult,
     ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,
     TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
-    UmrprAlphaResult, UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
-    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
-    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
-    VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult, WilkeChangDiffusivityResult,
-    WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    UmrCpaPhaseResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
+    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    VhFlashResult, ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
+    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
@@ -303,6 +304,7 @@ pub use twucoon_alpha::twucoon_alpha;
 pub use twucoon_param_alpha::twucoon_param_alpha;
 pub use twucoon_statoil_alpha::twucoon_statoil_alpha;
 pub use tyn_calus_diffusivity::tyn_calus_diffusivity;
+pub use umr_cpa_phase::umr_cpa_phase;
 pub use umrpr_alpha::umrpr_alpha;
 pub use unifac_activity_coefficients::unifac_activity_coefficients;
 pub use unifac_psrk_activity_coefficients::unifac_psrk_activity_coefficients;

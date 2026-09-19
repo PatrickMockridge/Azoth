@@ -3440,6 +3440,29 @@ pub fn pr_cpa_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The UMR-CPA phase state, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves the UMR-CPA parameter
+/// set, the `UMRCPA_MC1..5` coefficients and the `UNIFACcompUMRPRU` group decomposition
+/// itself. What that buys here is everything the model is: a third fitted set, a
+/// five-parameter alpha and a universal mixing rule, none of which a caller could state as
+/// numbers without reimplementing the model.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn umr_cpa_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::results::PyUmrCpaPhaseResult> {
+    azoth_eos::umr_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
+        .map(|r| crate::results::PyUmrCpaPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The SRK-CPA phase state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side looks them up in the Rust

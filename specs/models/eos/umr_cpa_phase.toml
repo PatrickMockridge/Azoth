@@ -1,0 +1,73 @@
+id = "eos.umr_cpa_phase"
+name = "UMR-CPA phase state"
+kind = "direct"
+assumptions = [
+    "**the attraction is mixed by a universal rule, not by an interaction matrix.** `alpha_mix = sum_i x_i (a_i^T/(b_i R T) + hwfc ln gamma_i)` with `hwfc = -1/0.53`, and `A = n B R T alpha_mix` with the co-volume at the linear sum. No `kij` column is read.",
+    "the `ln gamma_i` are UNIFAC-UMR-PRU's on the `_umrmc` tables, which is what `SystemUMRCPAEoS` pairs the rule with; that model's combinatorial term is Flory-Huggins, not plain UNIFAC's.",
+    "`a` and `b` are the `UMRCPA_a0`/`UMRCPA_b` columns for a component that carries them - a third fitted set beside the SRK and PR families - and the bounding volume and energy are `UMRCPA_assocVolume`/`UMRCPA_assocEnergy`. Water's `kappa_AB` is 0.125 here against the PR family's.",
+    "the attractive term is the five-parameter Mathias-Copeman form seeded with `UMRCPA_MC1..5`. A component without that set is **refused**, because NeqSim's per-component fallback is not expressible as one mixture-level alpha.",
+    "the association is Wertheim first-order perturbation theory with a Carnahan-Starling radial distribution function: site schemes whose sites bond on a charge-sign product, an Elliott cross rule, and a successive-substitution site-fraction solve refined by Newton.",
+    "**the root is not the cubic's.** The association carries a pressure, so the volume solves `f(Z) = Z - Z/(Z-B) + A Z/((Z+d1 B)(Z+d2 B)) - P_a Z/P = 0` with `P_a = -R T d(A_assoc/(R T))/dV`.",
+    "no `cp_res`, because the association's second temperature derivative is not derived; it is absent from the outputs rather than reported from the cubic alone.",
+    "**there is no flash.** `eos.pt_flash`'s Jacobian is `d ln phi / d n`, which every excess-Gibbs rule refuses because that derivative is the excess Gibbs energy's own Hessian.",
+]
+references = [
+    "Voutsas, E.; Magoulas, K.; Tassios, D. (2004). \"Universal mixing rule for cubic equations of state applicable to symmetric and asymmetric systems: results and simple, predictive scheme for parameters.\" Industrial & Engineering Chemistry Research 43(19), 6238-6246.",
+    "Kontogeorgis, G. M.; Voutsas, E. C.; Yakoumis, I. V.; Tassios, D. P. (1996). \"An Equation of State for Associating Fluids.\" Industrial & Engineering Chemistry Research 35(11), 4310-4318. DOI 10.1021/ie9600203",
+    "Tasios, I.; et al. (2025). \"UMR-CPA for natural gas dehydration.\" Fluid Phase Equilibria. DOI 10.1016/j.fluid.2024.114241",
+    "NeqSim 3.20.0, `PhaseUMRCPA.java` / `ComponentUMRCPA.java` / `SystemUMRCPAEoS.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Voutsas, E. et al. (2004)"
+edition = "The Peng-Robinson cubic mixed by the UMR universal rule over UNIFAC-UMR-PRU activity coefficients, with the Wertheim association contribution added to the residual Helmholtz energy."
+doi = "10.1021/ie049580s"
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank with the UMR-CPA parameter set, the `UMRCPA_MC1..5` coefficients and the `UNIFACcompUMRPRU` group decomposition"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the mixture's mole fractions, checked rather than renormalised"
+[inputs.compressed_phase]
+type = "enum"
+values = ["liquid", "vapour"]
+description = "which root describes the phase wanted. Not a compressibility factor: the association moves the root, so a caller could not supply one without solving the model first."
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor at the chosen root"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fugacity coefficients, as logarithms, at the chosen root"
+[outputs.h_res]
+unit = "J/mol"
+description = "the residual enthalpy, real minus ideal gas at the same temperature, pressure and composition, including the association's `-T d(A/RT)/dT`"
+[outputs.s_res]
+unit = "J/(mol*K)"
+description = "the residual entropy, real minus ideal gas at the same temperature, pressure and composition"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.umr_cpa_phase"
+rust = "azoth_eos::umr_cpa_phase"

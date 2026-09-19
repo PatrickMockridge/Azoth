@@ -135,6 +135,7 @@ from azoth.core.result import (
     TwucoonStatoilAlphaResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
+    UmrCpaPhaseResult,
     UmrprAlphaResult,
     UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult,
@@ -2831,6 +2832,33 @@ def pr_cpa_phase(
         compressed_phase,
     )
     return PrCpaPhaseResult(
+        z_factor=result.z_factor,
+        ln_phi=tuple(result.ln_phi),
+        h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
+        s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def umr_cpa_phase(
+    components: Sequence[str], T: Q, P: Q, z: Sequence[float], compressed_phase: str
+) -> UmrCpaPhaseResult:
+    """The UMR-CPA phase state, computed in Rust.
+
+    The component names cross **unresolved**, as they do for the other CPA models, so the
+    Rust side resolves the UMR-CPA parameter set, the `UMRCPA_MC1..5` coefficients and the
+    UNIFAC group decomposition itself - which is what makes the two-kernel comparison cover
+    the resolution as well as the arithmetic.
+    """
+    spec = _models_gen.model("eos.umr_cpa_phase")
+    result = _core.umr_cpa_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        compressed_phase,
+    )
+    return UmrCpaPhaseResult(
         z_factor=result.z_factor,
         ln_phi=tuple(result.ln_phi),
         h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),

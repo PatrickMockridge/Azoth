@@ -164,6 +164,7 @@ from azoth.core.result import (
     TwucoonStatoilAlphaResult,
     TwuKappaResult,
     TynCalusDiffusivityResult,
+    UmrCpaPhaseResult,
     UmrprAlphaResult,
     UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult,
@@ -290,6 +291,7 @@ __all__ = [
     "tv_fraction_flash",
     "twu_kappa",
     "tyn_calus_diffusivity",
+    "umr_cpa_phase",
     "unifac_activity_coefficients",
     "unifac_psrk_activity_coefficients",
     "unifac_umrpru_activity_coefficients",
@@ -338,6 +340,7 @@ _PCSAFT_RAHMAT_PHASE = "eos.pcsaft_rahmat_phase"
 _SAFT_VR_MIE_PHASE = "eos.saft_vr_mie_phase"
 _TP_FLASH_SAFT = "eos.tp_flash_saft"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
+_UMR_CPA_PHASE = "eos.umr_cpa_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
 _GE_UNIQUAC_PHASE = "eos.ge_uniquac_phase"
@@ -2642,6 +2645,43 @@ def pr_cpa_phase(
     See :func:`azoth.eos.reference.pr_cpa_phase`.
     """
     return resolve(_PR_CPA_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
+    )
+
+
+def umr_cpa_phase(
+    components: list[str], T: Q, P: Q, z: list[float], compressed_phase: str
+) -> UmrCpaPhaseResult:
+    """One UMR-CPA phase's state at a temperature, pressure and composition.
+
+    The only model in this library whose attraction is mixed by a **universal rule**
+    rather than an interaction matrix: ``alpha_mix = sum_i x_i (a_i^T/(b_i R T) + hwfc
+    ln gamma_i)`` with ``hwfc = -1/0.53`` over UNIFAC-UMR-PRU's activity coefficients, and
+    ``A = n B R T alpha_mix``. NeqSim's rule reads no ``kij`` column for it, and neither
+    does this.
+
+    Three fitted sets, not one: a component's ``a`` and ``b`` are the ``UMRCPA_a0`` and
+    ``UMRCPA_b`` columns where it carries them - a third set beside the SRK and PR
+    families - its bounding volume and energy are ``UMRCPA_assocVolume`` and
+    ``UMRCPA_assocEnergy``, and its attractive term is the five-parameter Mathias-Copeman
+    form seeded with ``UMRCPA_MC1..5``. A component with no ``UMRCPA_MC`` set is refused
+    rather than given a different attractive term.
+
+    **There is no flash.** :func:`pt_flash`'s Jacobian is ``d ln phi / d n``, which every
+    excess-Gibbs rule refuses because that derivative is the excess Gibbs energy's own
+    Hessian - the boundary :func:`huron_vidal` and Wong-Sandler already sit behind.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or no volume root exists above
+            the mixture's covolume.
+        InvalidInputError: if ``z`` is not a composition, a component name is not in the
+            databank, or ``compressed_phase`` is neither ``"liquid"`` nor ``"vapour"``.
+        PropertyUnavailableError: if a component carries no ``UMRCPA_MC1..5`` set or no
+            ``UNIFACcompUMRPRU`` group decomposition.
+
+    See :func:`azoth.eos.reference.umr_cpa_phase`.
+    """
+    return resolve(_UMR_CPA_PHASE)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
     )
 

@@ -931,6 +931,14 @@ class TynCalusDiffusivityResult:
     warnings: list[Warning]
 
 @final
+class UmrCpaPhaseResult:
+    z_factor: float
+    ln_phi: list[float]
+    h_res: Qty
+    s_res: Qty
+    warnings: list[Warning]
+
+@final
 class UmrprAlphaResult:
     alpha: float
     warnings: list[Warning]
@@ -1805,6 +1813,13 @@ def tyn_calus_diffusivity(
     T: float,
     eta: float,
 ) -> TynCalusDiffusivityResult: ...
+def umr_cpa_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+    compressed_phase: str,
+) -> UmrCpaPhaseResult: ...
 def umrpr_alpha(omega: float, Tr: float) -> UmrprAlphaResult: ...
 def unifac_activity_coefficients(
     groups: list[float],

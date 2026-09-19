@@ -48,6 +48,7 @@
 //!   - specs/models/eos/tu_flash.toml
 //!   - specs/models/eos/tv_flash.toml
 //!   - specs/models/eos/tv_fraction_flash.toml
+//!   - specs/models/eos/umr_cpa_phase.toml
 //!   - specs/models/eos/unifac_activity_coefficients.toml
 //!   - specs/models/eos/unifac_psrk_activity_coefficients.toml
 //!   - specs/models/eos/unifac_umrpru_activity_coefficients.toml
@@ -5187,6 +5188,103 @@ pub static TV_FRACTION_FLASH_SPEC: ModelSpec = ModelSpec {
     cases: TV_FRACTION_FLASH_CASES,
 };
 
+static UMR_CPA_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static UMR_CPA_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methane_water_umr_cpa_vapour",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15), ("P", 7000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "water"])],
+        strings: &[("compressed_phase", "vapour")],
+        vectors: &[("z", &[0.98, 0.02])],
+        matrices: &[],
+        expected: &[
+            ("z_factor", 0.860124667999392),
+            ("h_res", -1361.12998393193),
+            ("s_res", -3.30552825032943),
+        ],
+        expected_vectors: &[("ln_phi", &[-0.143929410664324, -0.522958472994785])],
+    },
+    TestCase {
+        id: "methane_water_umr_cpa_liquid",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15), ("P", 7000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "water"])],
+        strings: &[("compressed_phase", "liquid")],
+        vectors: &[("z", &[0.00138737483226154, 0.998612625167738])],
+        matrices: &[],
+        expected: &[("z_factor", 0.0499704749585408)],
+        expected_vectors: &[("ln_phi", &[6.43308581534347, -7.65091591105412])],
+    },
+    TestCase {
+        id: "methane_water_umr_cpa_flashed_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 298.15), ("P", 7000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "water"])],
+        strings: &[("compressed_phase", "vapour")],
+        vectors: &[("z", &[0.999387223488167, 0.000612776511832817])],
+        matrices: &[],
+        expected: &[("z_factor", 0.865633455342091)],
+        expected_vectors: &[("ln_phi", &[-0.146643147716477, -0.254793979654883])],
+    },
+];
+
+/// Registry entry for `eos.umr_cpa_phase`.
+pub static UMR_CPA_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.umr_cpa_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: UMR_CPA_PHASE_CHECKS,
+    cases: UMR_CPA_PHASE_CASES,
+};
+
 static UNIFAC_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -6425,6 +6523,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &TU_FLASH_SPEC,
     &TV_FLASH_SPEC,
     &TV_FRACTION_FLASH_SPEC,
+    &UMR_CPA_PHASE_SPEC,
     &UNIFAC_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_SPEC,
     &UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS_SPEC,

@@ -1944,6 +1944,79 @@ def from_names(
     )
 
 
+def umr_cpa_mixture_of(
+    names: list[str],
+    *,
+    card: keycard.Keycard | None = None,
+) -> tuple[Mixture, IdealGasModel]:
+    """The UMR-CPA fluid: Peng-Robinson, the UMR mixing rule and the association.
+
+    NeqSim's ``SystemUMRCPAEoS``, and the only mixture in this library whose attraction is
+    mixed by a universal rule rather than an interaction matrix. Three choices are made
+    here and nowhere else:
+
+    * the mixing rule is ``"umr"`` over the ``_umrmc`` UNIFAC tables, which is what
+      ``SystemUMRCPAEoS``'s construction and ``SystemThermo``'s ``"UMR-CPA"`` selector
+      both name, and the interaction matrix is **zero** - the rule reads no ``kij`` column;
+    * the alpha is the five-parameter Mathias-Copeman term seeded with ``UMRCPA_MC1..5``,
+      which is ``ComponentUMRCPA.setAttractiveTerm``'s term 22;
+    * a component whose row carries no ``UMRCPA_MC`` set is **refused**. NeqSim falls back
+      per component - term 19 seeded with ``MCPR1..3`` for a non-associating one, term 1
+      with ``mCPA`` for an associating one - and this library's alpha is one per mixture,
+      so a mixture of a component that carries the set and one that does not could not be
+      expressed at all.
+
+    Raises:
+        PropertyUnavailableError: if a name is not in the databank, has no
+            ``UMRCPA_MC1..5`` set, or has no ``UNIFACcompUMRPRU`` group decomposition.
+    """
+    if not names:
+        raise InvalidInputError("components", "a mixture needs at least one component")
+    resolved = [name.strip().lower() for name in names]
+    entries = [entry(name, card=card) for name in resolved]
+
+    missing = [e.name for e in entries if e.cp is None]
+    if missing:
+        raise InvalidInputError(
+            "components",
+            f"no heat-capacity coefficients for {missing}. The databank carries them for "
+            f"every substance it ships; one a keycard adds needs its own, because a cubic "
+            f"needs `Tc`, `Pc` and `omega` and an enthalpy needs the polynomial as well",
+        )
+
+    alpha = "matcop_5prumr"
+    for e in entries:
+        coefficients = e.alpha_params.get(alpha, ())
+        if not any(abs(c) > 1.0e-20 for c in coefficients):
+            raise PropertyUnavailableError(
+                e.name,
+                "UMRCPA_MC1..5",
+                "carries no UMR-CPA Mathias-Copeman set; the UMR-CPA model's attractive "
+                "term is that set, and NeqSim's per-component fallback to term 19 or term "
+                "1 is not expressible as one mixture-level alpha",
+            )
+
+    tables = unifac_umrpru_parameters(resolved, "umrmc")
+    fluid = mixture(
+        tuple(e.component(alpha=alpha) for e in entries),
+        cubic=_cubic("pr"),
+        alpha=alpha,
+        associating=True,
+        mixing_rule="umr",
+        umr=tables,
+    )
+    return (
+        fluid,
+        IdealGasModel(
+            cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]
+            cp_b=tuple(e.cp[1] for e in entries),  # type: ignore[index]
+            cp_c=tuple(e.cp[2] for e in entries),  # type: ignore[index]
+            cp_d=tuple(e.cp[3] for e in entries),  # type: ignore[index]
+            cp_e=tuple(e.cp[4] for e in entries),  # type: ignore[index]
+        ),
+    )
+
+
 def mixture_of(
     names: list[str],
     *,

@@ -154,6 +154,8 @@ def mixture(
     cubic: Cubic = PR,
     alpha: str = "pr",
     associating: bool = False,
+    mixing_rule: str = "classic",
+    umr: UnifacUmrpruParameters | None = None,
 ) -> Mixture:
     """A :class:`Mixture` from a component list and sparse interaction pairs.
 
@@ -170,6 +172,12 @@ def mixture(
             :mod:`azoth.eos.cubic`. Defaults to Peng-Robinson.
         associating: whether a phase model runs the Wertheim association
             contribution. See :attr:`Mixture.associating`.
+        mixing_rule: ``"classic"``, the default, or ``"umr"``. See
+            :attr:`Mixture.mixing_rule`.
+        umr: the UNIFAC-UMR-PRU tables the ``"umr"`` rule reads, and ``None`` for
+            every other rule. Both of these exist for one model,
+            :func:`azoth.eos.components.umr_cpa_mixture_of`, which is the only caller
+            that names either.
 
     Returns:
         The mixture, with a full symmetric matrix built from the pairs.
@@ -200,4 +208,6 @@ def mixture(
         cubic=cubic,
         alpha=alpha,
         associating=associating,
+        mixing_rule=mixing_rule,
+        umr=umr,
     )

@@ -210,6 +210,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::saft_vr_mie_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::tp_flash_saft, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_cpa_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::umr_cpa_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::ammonia_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::co2_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::helium_phase, m)?)?;
