@@ -11,7 +11,7 @@ use azoth_eos::saft_vr_mie::{
     chain_g1, chain_g2, contact_value_0, dispersion_pair_sum, eta_effective, g_hs, k_hs, mie_alpha,
     mie_prefactor, pressure_over_rt, state,
 };
-use azoth_eos::saft_vr_mie_phase::molar_volume;
+use azoth_eos::saft_vr_mie_phase::{ln_phi, ln_phi_pure, molar_volume};
 
 fn methane() -> MieComponent {
     MieComponent {
@@ -501,5 +501,67 @@ fn the_volume_solve_reaches_neqsims_volume() {
         (binary.z / 0.851_583_764_555_351 - 1.0).abs() < 1.0e-5,
         "binary Z = {}",
         binary.z
+    );
+}
+
+/// The pure component's fugacity coefficient, against the probe's `lnPhi`.
+///
+/// NeqSim's pure branch of `dFdN` is the identity `F/n - v dF/dV`, which is `f + Z - 1`
+/// here, so this is `f + Z - 1 - ln Z`. The probe prints `-0.0773237125797586` for methane
+/// at 300 K and 50 bara.
+#[test]
+fn the_pure_fugacity_coefficient_is_neqsims() {
+    let v = 4.609_634_632_033_79e-4;
+    let ln_phi = ln_phi_pure(&[methane()], &[1.0], 300.0, v).expect("a coefficient");
+    assert!(
+        (ln_phi / -0.077_323_712_579_758_6 - 1.0).abs() < 1.0e-6,
+        "methane ln phi = {ln_phi}"
+    );
+
+    // **A mixture is refused**, because the identity above is the *pure* branch: for a
+    // mixture NeqSim sums three analytic per-component derivatives, and the pure formula
+    // would be right only where `m_bar` is one.
+    let error = ln_phi_pure(
+        &[methane(), n_butane()],
+        &[0.6, 0.4],
+        350.0,
+        8.260_537_757_932_58e-4,
+    )
+    .expect_err("a mixture has no pure coefficient");
+    assert!(
+        error.to_string().contains("not derived"),
+        "the refusal should say the mixture's derivative is not derived: {error}"
+    );
+}
+
+/// The mixture's fugacity coefficients, against the probe's two `lnPhi` values.
+///
+/// `0.0303536916953227` and `-0.394262076488891` for methane and n-butane at 350 K, 30 bara.
+/// This is the layer the whole model was built for: it is the composition derivative, and it
+/// is where a port is most likely to be approximately right - every term here is a product
+/// of a number the layers already checked.
+#[test]
+fn the_mixture_fugacity_coefficients_are_neqsims() {
+    let v = 8.260_537_757_932_58e-4;
+    let coefficients =
+        ln_phi(&[methane(), n_butane()], &[0.6, 0.4], 350.0, v).expect("coefficients");
+    assert!(
+        (coefficients[0] / 0.030_353_691_695_322_7 - 1.0).abs() < 1.0e-5,
+        "methane ln phi = {}",
+        coefficients[0]
+    );
+    assert!(
+        (coefficients[1] / -0.394_262_076_488_891 - 1.0).abs() < 1.0e-5,
+        "n-butane ln phi = {}",
+        coefficients[1]
+    );
+    // The general function agrees with the pure one at one component, which is the check
+    // that the two branches are one model rather than two.
+    let pure = ln_phi(&[methane()], &[1.0], 300.0, 4.609_634_632_033_79e-4).expect("a coefficient");
+    assert_eq!(pure.len(), 1);
+    assert!(
+        (pure[0] / -0.077_323_712_579_758_6 - 1.0).abs() < 1.0e-6,
+        "methane alone ln phi = {}",
+        pure[0]
     );
 }

@@ -816,3 +816,75 @@ pub fn pressure_over_rt(components: &[MieComponent], x: &[f64], t: f64, v: f64) 
     let f_eta = s.m_bar * a_hs_eta - s.m_minus_1 * g_eta / s.g_hs + s.m_bar * dispersion_eta;
     Ok(1.0 / v + eta * f_eta / v)
 }
+
+/// The dispersion's **row sums**: `sum_l xi_l a^{il}` for each component `i`.
+///
+/// Not a derivative and not the total: the total is `sum_i xi_i` times this. It is what the
+/// *composition* derivative of the quadratic form needs - differentiating
+/// `a = sum_i sum_j xi_i xi_j a^{ij}` in one mole number brings half of this down with it -
+/// and NeqSim computes exactly these, in `calcPairDispSumPerComp`, for that reason.
+///
+/// # Errors
+/// As [`dispersion_pair_sum`].
+pub fn dispersion_row_sums(
+    components: &[MieComponent],
+    x: &[f64],
+    t: f64,
+    eta: f64,
+) -> Result<Vec<f64>> {
+    let n = components.len();
+    if x.len() != n {
+        return Err(AzothError::invalid_input(
+            "x",
+            format!(
+                "{n} components need {n} mole fractions, but got {}",
+                x.len()
+            ),
+        ));
+    }
+    let m_bar: f64 = x.iter().zip(components).map(|(xi, c)| xi * c.m).sum();
+    if m_bar <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "components",
+            "the mixture's segment number is zero, so no segment fraction is defined".to_string(),
+        ));
+    }
+    let segment: Vec<f64> = x
+        .iter()
+        .zip(components)
+        .map(|(xi, c)| xi * c.m / m_bar)
+        .collect();
+
+    let mut out = Vec::with_capacity(n);
+    for ci in components {
+        let mut sum = 0.0;
+        for (segment_l, cj) in segment.iter().zip(components) {
+            if *segment_l < 1.0e-30 {
+                continue;
+            }
+            let sigma_ij = 0.5 * (ci.sigma + cj.sigma);
+            let sigma3 = ci.sigma.powi(3) * cj.sigma.powi(3);
+            let eps_ij = (ci.epsik * cj.epsik).sqrt() * sigma3.sqrt() / sigma_ij.powi(3);
+            let lambda_r = 3.0 + ((ci.lambda_r - 3.0) * (cj.lambda_r - 3.0)).sqrt();
+            let lambda_a = 3.0 + ((ci.lambda_a - 3.0) * (cj.lambda_a - 3.0)).sqrt();
+            let cross = MieComponent {
+                m: 1.0,
+                lambda_r,
+                lambda_a,
+                sigma: sigma_ij,
+                epsik: eps_ij,
+            };
+            let d_ij = cross.d(t)?;
+            let c_mie = mie_prefactor(lambda_r, lambda_a);
+            let x0 = if d_ij > 0.0 { sigma_ij / d_ij } else { 1.0 };
+            let beta = eps_ij / t;
+            let zeta = eta * x0 * x0 * x0;
+            sum += segment_l
+                * (a1_mie(eta, lambda_r, lambda_a, beta, c_mie, x0)
+                    + a2_mie(eta, zeta, lambda_r, lambda_a, beta, c_mie, x0)
+                    + a3_mie(zeta, lambda_r, lambda_a, beta));
+        }
+        out.push(sum);
+    }
+    Ok(out)
+}
