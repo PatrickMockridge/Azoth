@@ -3,7 +3,7 @@ name = "Volume-internal-energy flash of a pure component"
 kind = "procedure"
 assumptions = [
     "A pure component has no two-phase split for a flash to find: one K-value is either above one or below it, so `eos.vu_flash`'s iteration has nothing to converge on and refuses. This model answers instead from the saturation line, where the split is a lever rule rather than an equilibrium.",
-    "the pressure fixes the saturation temperature and the internal energy fixes the split. NeqSim's `VUflashSingleComp` takes a volume and never reads it; this checks the volume those two imply against the caller's, and warns when they disagree.",
+    "the pressure fixes the saturation temperature and the internal energy fixes the split. NeqSim's `VUflashSingleComp` takes a volume and never reads it: `validation/neqsim/VuSingleCompProbe.java` runs a state at two volumes four decades apart and prints one answer, so the caller's is checked.",
     "the temperature is solved for by bisection on the saturation pressure `eos.pure_saturation` computes, so the temperature is only as good as that calculation - including its degradation near the critical point, which this model inherits and cannot detect.",
     "both phases are the *pure component's*, at the saturation temperature and pressure: there is no composition to report and no fugacity equality to converge. The lever rule is exact for a pure component and would be an approximation for a mixture.",
     "`U` must lie between the saturated liquid's and vapour's internal energies at the pressure. Outside that the state is single phase, and this model refuses rather than extrapolating a split that does not exist.",

@@ -11,8 +11,12 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * hands the halfway value back to `ThermodynamicOperations.VUflash` - which routes a pure
  * component to `VUflashSingleComp` - and prints the temperature and vapour fraction it returns.
  *
- * <p>The `Vspec` NeqSim takes is never read by that class; the volume follows from the pressure
- * and the internal energy. The probe passes one anyway, because the signature requires it.
+ * <p><b>The claim under test is that the `Vspec` it takes is never read.</b> So the probe runs
+ * every state twice with the same pressure and internal energy and two wildly different volumes
+ * - one the physical `z R T/P` of the saturation state, and one a cubic metre for a mole - and
+ * prints both answers beside each other. If the volume were read anywhere in the flash the two
+ * lines would differ; they are the measurement, and the printed pair is what makes this a test
+ * rather than an assertion about the source.
  */
 public class VuSingleCompProbe {
 
@@ -36,17 +40,22 @@ public class VuSingleCompProbe {
     System.out.printf("%-10s %6.1f bar  Tsat=%.12f  u_liq=%.9f  u_gas=%.9f  u_spec=%.9f%n", name,
         pressureBar, tsat, uLiq, uGas, uSpec);
 
-    SystemInterface flash = new SystemPrEos(298.0, pressureBar);
-    flash.addComponent(name, 1.0);
-    flash.setMixingRule("classic");
-    flash.setAttractiveTerm(1);
-    try {
-      new ThermodynamicOperations(flash).VUflash(1.0, uSpec);
-      System.out.printf("            -> T=%.12f beta=%.12f P=%.6f bar%n", flash.getTemperature(),
-          flash.getBeta(), flash.getPressure());
-    } catch (Exception e) {
-      System.out.printf("            -> VUflash THREW %s: %s%n", e.getClass().getSimpleName(),
-          e.getMessage());
+    // Two volumes: the physical one for this state, and a cubic metre for a mole, which is
+    // four orders of magnitude away. A flash that read it could not answer the same twice.
+    double physical = sat.getPhase(0).getZ() * 8.3144621 * tsat / (pressureBar * 1.0e5);
+    for (double volume : new double[] {physical, 1.0}) {
+      SystemInterface flash = new SystemPrEos(298.0, pressureBar);
+      flash.addComponent(name, 1.0);
+      flash.setMixingRule("classic");
+      flash.setAttractiveTerm(1);
+      try {
+        new ThermodynamicOperations(flash).VUflash(volume, uSpec);
+        System.out.printf("   V=%-12.6g -> T=%.12f beta=%.12f P=%.6f bar%n", volume,
+            flash.getTemperature(), flash.getBeta(), flash.getPressure());
+      } catch (Exception e) {
+        System.out.printf("   V=%-12.6g -> VUflash THREW %s: %s%n", volume,
+            e.getClass().getSimpleName(), e.getMessage());
+      }
     }
   }
 
