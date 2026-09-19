@@ -78,6 +78,7 @@ because the unit is already its own SI base unit:
 |---|---|---|
 | `mol/s` | `N·T⁻¹` | `MolarFlux` is mol/(m²·s) and `MolarConcentration` is mol/m³; neither is this |
 | `J/(mol*K**2)` … `J/(mol*K**5)` | `M·L²·T⁻²·Θ⁻ⁿ·N⁻¹` | the Cp polynomial coefficients; `uom` carries no fractional power of the temperature unit |
+| `1/K` … `1/K**3` | `Θ⁻¹` … `Θ⁻³` | the dielectric-constant coefficients `ε(T) = d₀ + d₁/T + d₂T + d₃T² + d₄T³`; `uom` carries a temperature and not its reciprocal |
 
 A null is therefore the *list of dimensions azoth names itself*, stated rather
 than left for a reader to discover — and a row that claims a path for one of them

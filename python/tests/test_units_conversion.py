@@ -27,12 +27,12 @@ from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si, unit_for
 
 #: The SI base magnitude of one of each unit, where it is not simply 1.0.
 #:
-#: Every vocabulary entry is its own SI base unit except ``mm``, so the default is
-#: 1.0 and this table carries only the exceptions. Having them spelled out means
-#: the assertion below is a statement about the world rather than a restatement of
-#: the implementation - and it is what would catch a change of convention, or a new
-#: entry whose base magnitude nobody thought about.
-NOT_ITS_OWN_SI_BASE_UNIT: dict[str, float] = {"mm": 1.0e-3}
+#: Every vocabulary entry is its own SI base unit except the two below, so the default
+#: is 1.0 and this table carries only the exceptions. Having them spelled out means the
+#: assertion below is a statement about the world rather than a restatement of the
+#: implementation - and it is what would catch a change of convention, or a new entry
+#: whose base magnitude nobody thought about. It caught `angstrom`.
+NOT_ITS_OWN_SI_BASE_UNIT: dict[str, float] = {"mm": 1.0e-3, "angstrom": 1.0e-10}
 
 
 @pytest.mark.parametrize("spec_unit", sorted(CANONICAL_UNITS))

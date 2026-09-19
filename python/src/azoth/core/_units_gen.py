@@ -49,6 +49,11 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     "J/(mol*K**3)": "joule/(mole*kelvin**3)",
     "J/(mol*K**4)": "joule/(mole*kelvin**4)",
     "J/(mol*K**5)": "joule/(mole*kelvin**5)",
+    "C": "coulomb",
+    "angstrom": "angstrom",
+    "1/K": "1/kelvin",
+    "1/K**2": "1/kelvin**2",
+    "1/K**3": "1/kelvin**3",
 }
 
 #: The canonical unit strings, in table order. The keycard loader validates

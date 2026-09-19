@@ -226,3 +226,40 @@ pint = "joule/(mole*kelvin**4)"
 id = "J/(mol*K**5)"
 dimension = "molar_heat_capacity_coefficient_5"
 pint = "joule/(mole*kelvin**5)"
+
+[[dimensions]]
+id = "charge"
+exponents = [0, 0, 1, 1, 0, 0, 0]
+[[dimensions]]
+id = "per_temperature"
+exponents = [0, 0, 0, 0, -1, 0, 0]
+[[dimensions]]
+id = "per_temperature_squared"
+exponents = [0, 0, 0, 0, -2, 0, 0]
+[[dimensions]]
+id = "per_temperature_cubed"
+exponents = [0, 0, 0, 0, -3, 0, 0]
+[[units]]
+id = "C"
+dimension = "charge"
+pint = "coulomb"
+uom = "electric_charge::coulomb"
+rust_ctor = "coulombs"
+[[units]]
+id = "angstrom"
+dimension = "length"
+pint = "angstrom"
+uom = "length::angstrom"
+rust_ctor = "angstroms"
+[[units]]
+id = "1/K"
+dimension = "per_temperature"
+pint = "1/kelvin"
+[[units]]
+id = "1/K**2"
+dimension = "per_temperature_squared"
+pint = "1/kelvin**2"
+[[units]]
+id = "1/K**3"
+dimension = "per_temperature_cubed"
+pint = "1/kelvin**3"

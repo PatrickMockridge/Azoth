@@ -37,3 +37,8 @@ import Azoth.Vocabulary
 #print axioms Azoth.Vocabulary.u_J_per__mol_times_K_pow_3_dimension
 #print axioms Azoth.Vocabulary.u_J_per__mol_times_K_pow_4_dimension
 #print axioms Azoth.Vocabulary.u_J_per__mol_times_K_pow_5_dimension
+#print axioms Azoth.Vocabulary.u_C_dimension
+#print axioms Azoth.Vocabulary.u_angstrom_dimension
+#print axioms Azoth.Vocabulary.u_1_per_K_dimension
+#print axioms Azoth.Vocabulary.u_1_per_K_pow_2_dimension
+#print axioms Azoth.Vocabulary.u_1_per_K_pow_3_dimension

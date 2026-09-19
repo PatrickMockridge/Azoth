@@ -86,7 +86,7 @@ def _to_si(values: Sequence[float], spec_unit: str) -> list[float]:
     """Convert a whole input array to SI base magnitudes.
 
     The multiply is skipped when the factor is exactly 1, which is the common case: every
-    unit in the vocabulary except `mm` is its own SI base unit.
+    unit in the vocabulary except `mm` and `angstrom` is its own SI base unit.
     """
     factor = _si_per_canonical(spec_unit)
     if factor == 1.0:

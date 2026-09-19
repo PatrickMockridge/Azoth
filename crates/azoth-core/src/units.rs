@@ -15,14 +15,15 @@
 //! resistance coefficient - are plain `f64`, here and in the Python API.
 
 pub use uom::si::f64::{
-    Area, DiffusionCoefficient, DynamicViscosity, HeatTransfer, Length, MassDensity, MassRate,
-    MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity,
-    SurfaceTension, TemperatureInterval, ThermalConductivity, ThermodynamicTemperature, Velocity,
-    VolumeRate,
+    Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, HeatTransfer, Length,
+    MassDensity, MassRate, MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure,
+    SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductivity,
+    ThermodynamicTemperature, Velocity, VolumeRate,
 };
 pub use uom::si::{
     area::square_meter, diffusion_coefficient::square_meter_per_second,
-    dynamic_viscosity::pascal_second, heat_transfer::watt_per_square_meter_kelvin, length::meter,
+    dynamic_viscosity::pascal_second, electric_charge::coulomb,
+    heat_transfer::watt_per_square_meter_kelvin, length::angstrom, length::meter,
     length::millimeter, mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
     molar_energy::joule_per_mole, molar_heat_capacity::joule_per_kelvin_mole,
     molar_mass::kilogram_per_mole, molar_volume::cubic_meter_per_mole, power::watt,
@@ -40,14 +41,33 @@ pub fn meters(value: f64) -> Length {
 
 /// A length in millimetres.
 ///
-/// The one unit in the vocabulary that is not its own SI base unit, which is why
-/// it is worth having explicitly: `.value` is still metres, so a caller building a
+/// One of the two units in the vocabulary that are not their own SI base unit, which is
+/// why it is worth having explicitly: `.value` is still metres, so a caller building a
 /// length from millimetres cannot accidentally work in them. Pipe diameters are
-/// conventionally quoted in millimetres, so this is the constructor the next
-/// hydraulics calcs will reach for.
+/// conventionally quoted in millimetres, so this is the constructor the next hydraulics
+/// calcs will reach for.
 #[must_use]
 pub fn millimeters(value: f64) -> Length {
     Length::new::<millimeter>(value)
+}
+
+/// A length in ångström.
+///
+/// `.value` is still metres. The electrolyte models carry ion diameters in ångström -
+/// NeqSim's `ComponentDesmukhMather` multiplies its own column by `1e-10` at the point of
+/// use - and the conversion belongs here rather than at each read.
+#[must_use]
+pub fn angstroms(value: f64) -> Length {
+    Length::new::<angstrom>(value)
+}
+
+/// A charge in coulombs.
+///
+/// SI has no base dimension for charge: the ampere is base and a coulomb is `A s`, which
+/// is why this quantity's exponents are the `T` and `I` slots and not a slot of its own.
+#[must_use]
+pub fn coulombs(value: f64) -> ElectricCharge {
+    ElectricCharge::new::<coulomb>(value)
 }
 
 /// A velocity in metres per second.

@@ -104,8 +104,20 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (2, 1, -2, 0, -3, -1, 0): None,
     (2, 1, -2, 0, -4, -1, 0): None,
     (2, 1, -2, 0, -5, -1, 0): None,
+    # Charge, which uom carries: SI's base dimension is the current and a charge is
+    # `I * T`, so this is the `T` and `I` slots rather than a slot of its own.
+    (0, 0, 1, 1, 0, 0, 0): "ElectricCharge",
+    # The dielectric-constant coefficients, which are the reciprocals of the temperature
+    # raised to a power. uom carries a temperature and not its reciprocal, so these are
+    # azoth's own, like the `Cp` coefficients above.
+    (0, 0, 0, 0, -1, 0, 0): None,
+    (0, 0, 0, 0, -2, 0, 0): None,
+    (0, 0, 0, 0, -3, 0, 0): None,
 }
 
+
+# ruff: noqa: RUF001 -- the entries below are Lean source, where the rational
+# type is its own character and spelling it `Q` would generate a name that does not resolve.
 
 #: The `lean-units` dimension for each dimension in the table, as a Lean term.
 #:
@@ -155,6 +167,13 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "J/(mol*K**3)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 3)",
     "J/(mol*K**4)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 4)",
     "J/(mol*K**5)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature ^ 5)",
+    # Charge is `Current * Time` in SI, which is why its exponents are the `T` and `I`
+    # slots and not a slot of its own: `lean-units` derives it the same way.
+    "C": "Dimension.Charge",
+    "angstrom": "Dimension.Length",
+    "1/K": "Dimension.Temperature ^ (-1 : ℚ)",
+    "1/K**2": "Dimension.Temperature ^ (-2 : ℚ)",
+    "1/K**3": "Dimension.Temperature ^ (-3 : ℚ)",
 }
 
 
@@ -536,6 +555,9 @@ _DIMENSION_LEMMAS = " ".join(
         "Units.Dimension.Acceleration,",
         "Units.Dimension.AmountOfSubstance,",
         "Units.Dimension.Area,",
+        # `Charge` is derived from `Current * Time`, so unfolding it needs both.
+        "Units.Dimension.Charge,",
+        "Units.Dimension.Current,",
         "Units.Dimension.Energy,",
         "Units.Dimension.Force,",
         "Units.Dimension.Length,",
@@ -550,6 +572,7 @@ _DIMENSION_LEMMAS = " ".join(
         "Units.Dimension.div_eq_sub,",
         "Units.Dimension.mul_eq_add,",
         "Units.Dimension.npow_eq_nsmul,",
+        "Units.Dimension.qpow_eq_qsmul,",
         "sub_eq_add_neg,",
         "List.zip_cons_cons,",
         "List.zip_nil_right,",
