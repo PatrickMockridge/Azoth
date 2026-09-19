@@ -124,6 +124,7 @@ from azoth.core.result import (
     SwameeJainResult,
     ThermalConductivityResult,
     ThFlashResult,
+    TpFlashSaftResult,
     TpMultiflashResult,
     TsFlashResult,
     TuFlashResult,
@@ -2732,6 +2733,35 @@ def resolve(calc_id: str) -> Callable[..., Any]:
 
     resolved: Callable[..., Any] = globals()[calc_id.rpartition(".")[2]]
     return resolved
+
+
+def tp_flash_saft(components: Sequence[str], T: Q, P: Q, z: Sequence[float]) -> TpFlashSaftResult:
+    """The SAFT-VR-Mie flash, computed in Rust.
+
+    The component names cross **unresolved**, so the Rust side resolves the fluid itself -
+    the Mie set and the cubic constants the Wilson seed is built from.
+    """
+    spec = _models_gen.model("eos.tp_flash_saft")
+    result = _core.tp_flash_saft(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+    )
+    return TpFlashSaftResult(
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        ln_phi_liquid=tuple(result.ln_phi_liquid),
+        ln_phi_vapour=tuple(result.ln_phi_vapour),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        phase=_Phase(result.phase),
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
 
 
 def saft_vr_mie_phase(

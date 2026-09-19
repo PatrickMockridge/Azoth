@@ -2024,6 +2024,42 @@ class BwrsPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TpFlashSaftResult(_HasWarnings):
+    """Result of ``eos.tp_flash_saft``.
+
+    The SAFT-VR-Mie flash: the vapour fraction, both compositions and both phases' fugacity
+    coefficients. **``beta`` is absent rather than zero when the flash reports one phase**,
+    because a single-phase answer has no vapour fraction - and which phase it is comes from
+    the Gibbs comparison, not from the loop.
+    """
+
+    #: The vapour fraction, present only when the flash found a split.
+    beta: float | None
+    #: Liquid-phase mole fractions, the feed itself when there is one phase.
+    x: tuple[float, ...]
+    #: Vapour-phase mole fractions, the feed itself when there is one phase.
+    y: tuple[float, ...]
+    #: ``K_i = phi_liquid_i / phi_vapour_i``, the iterate the loop converges on.
+    k: tuple[float, ...]
+    #: ``ln phi_i`` in the liquid phase.
+    ln_phi_liquid: tuple[float, ...]
+    #: ``ln phi_i`` in the vapour phase.
+    ln_phi_vapour: tuple[float, ...]
+    #: The compressibility factor of the liquid solve.
+    z_liquid: float
+    #: The compressibility factor of the vapour solve.
+    z_vapour: float
+    #: What the converged state is.
+    phase: Phase
+    #: Successive-substitution steps taken.
+    iterations: int
+    #: The largest relative change in a K-value at the last step.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SaftVrMiePhaseResult(_HasWarnings):
     """Result of ``eos.saft_vr_mie_phase``.
 

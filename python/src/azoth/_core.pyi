@@ -819,6 +819,21 @@ class ThermalConductivityResult:
     warnings: list[Warning]
 
 @final
+class TpFlashSaftResult:
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    ln_phi_liquid: list[float]
+    ln_phi_vapour: list[float]
+    z_liquid: float
+    z_vapour: float
+    phase: str
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class TpMultiflashResult:
     phase_count: int
     beta: list[float]
@@ -1693,6 +1708,12 @@ def thermal_conductivity(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> ThermalConductivityResult: ...
+def tp_flash_saft(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+) -> TpFlashSaftResult: ...
 def tp_multiflash(
     Tc: list[float],
     Pc: list[float],

@@ -1,0 +1,110 @@
+id = "eos.tp_flash_saft"
+name = "SAFT-VR-Mie flash"
+kind = "procedure"
+assumptions = [
+    "**it is a different algorithm from every other flash here, and that is the model.** NeqSim dispatches a `SystemSAFTVRMie` to `TPflashSAFT` by `instanceof`, and that class reaches its K-values by successive substitution rather than by the Newton scheme the generic `TPflash` uses.",
+    "the seed is Wilson's, `exp(ln(Pc/P) + 5.373 (1 + omega)(1 - Tc/T))`, from the **cubic** constants beside the Mie set. It is a ratio of pressures, so it is unit-free.",
+    "each phase's fugacity coefficients come from a single-phase solve at that trial composition, on that side - which is what NeqSim does by building a fresh system per call, and what makes this model's cost a volume solve per phase per iteration.",
+    "**the loop stops at a relative K change of `1e-5` where NeqSim stops at `1e-6`**: the K-values carry this model's central differences and their noise floor is about `2e-6`. The threshold decides which branch is taken, so one below that floor is a different answer, not a stricter test.",
+    "a vapour fraction outside `(1e-10, 1 - 1e-10)` is **a branch, not a failure**: the model reports a single phase and picks between gas and liquid by comparing `sum_i x_i ln phi_i` on the two roots. The ideal part is identical in both, so that is the whole of the Gibbs comparison.",
+    "the chain term's contact value is guarded to the Carnahan-Starling one outside a packing fraction of `(1e-10, 0.7)`, as `calcGMieBlended` is: the quartic it would otherwise evaluate carries `ln(1 - eta)`, which past one is not a number. A flash's trial compositions walk through that region.",
+    "**no association term**, for the reason `eos.saft_vr_mie_phase` records. A fluid whose components carry sites is refused rather than given an association computed over nothing.",
+    "the two phases are assumed to be at the same temperature and pressure as the feed - a flash, not a rigorous column stage. Nothing here does an energy balance.",
+]
+references = [
+    "Lafitte, T.; Apostolakou, A.; Avendano, C.; Galindo, A.; Adjiman, C. S.; Muller, E. A.; Jackson, G. (2013). \"Accurate statistical associating fluid theory for chain molecules formed from Mie segments.\" The Journal of Chemical Physics 139(15), 154504. DOI 10.1063/1.4819786",
+    "Wilson, G. M. (1969). \"A Modified Redlich-Kwong Equation of State, Application to General Physical Data Calculations.\" Paper 15C, AIChE 65th National Meeting.",
+    "NeqSim 3.20.0, `TPflashSAFT.java` / `SystemSAFTVRMie.java`, Apache-2.0, commit dedba8735d030c6411e09b6fd7e69f6c4a136114.",
+]
+[source]
+standard = "Lafitte, T. et al. (2013)"
+edition = "NeqSim's own flash for this family: Wilson K-values to seed, successive substitution with Rachford-Rice inside, and each phase's fugacity coefficients from a separate single-phase solve."
+doi = "10.1063/1.4819786"
+[algorithm]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "relative"
+tolerance = 1e-05
+max_iterations = 50
+[algorithm.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank with their SAFT-VR-Mie set and the cubic constants the seed is built from"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the feed's mole fractions, checked rather than renormalised"
+[outputs]
+[outputs.beta]
+unit = "dimensionless"
+optional = true
+description = "the vapour fraction, present only when the flash found a split. A single-phase answer has no vapour fraction rather than a zero one."
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions, the feed itself when there is one phase"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions, the feed itself when there is one phase"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "K-values, `K_i = phi_i^L / phi_i^V`, the iterate the loop converges on"
+[outputs.ln_phi_liquid]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "fugacity coefficients in the liquid phase, as logarithms"
+[outputs.ln_phi_vapour]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "fugacity coefficients in the vapour phase, as logarithms"
+[outputs.z_liquid]
+unit = "dimensionless"
+description = "the compressibility factor of the liquid solve"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the compressibility factor of the vapour solve"
+[outputs.phase]
+type = "enum"
+values = ["two_phase", "all_liquid", "all_vapour", "trivial"]
+description = "what the converged state is. `all_liquid` and `all_vapour` are the Gibbs comparison's two answers, and `trivial` is not reachable here: a loop that stops on its bound reports one phase by the comparison rather than by a trivial solution."
+[outputs.iterations]
+unit = "dimensionless"
+description = "successive-substitution steps taken"
+[outputs.residual]
+unit = "dimensionless"
+description = "the largest relative change in a K-value at the last step"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.tp_flash_saft"
+rust = "azoth_eos::tp_flash_saft"

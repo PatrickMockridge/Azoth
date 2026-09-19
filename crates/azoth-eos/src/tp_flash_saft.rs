@@ -233,6 +233,18 @@ pub fn tp_flash_saft(
     p: Pressure,
     z: &[f64],
 ) -> Result<SaftFlashResult> {
+    let spec = &crate::model_gen::TP_FLASH_SAFT_SPEC;
+    let mut warnings = Vec::new();
+    azoth_core::range::apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(t.value),
+            "P" => Some(p.value),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let parameters = crate::saft_vr_mie_phase::parameters_of(&names)?;
 
@@ -246,5 +258,8 @@ pub fn tp_flash_saft(
         tc.push(entry.tc);
     }
     let seed = wilson_k(&pc, &omega, &tc, t.value, p.value);
-    tp_flash_saft_of(&parameters, &seed, t.value, p.value, z)
+    let mut result = tp_flash_saft_of(&parameters, &seed, t.value, p.value, z)?;
+    warnings.extend(result.warnings);
+    result.warnings = warnings;
+    Ok(result)
 }

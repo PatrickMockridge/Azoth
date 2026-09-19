@@ -35,7 +35,7 @@ use azoth_eos::results::{
     PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
     PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult, PvfFlashResult,
     RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult,
-    RkDepartureResult, SaftVrMiePhaseResult, SchwartzentruberAlphaResult,
+    RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult, SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkCpaPhaseResult,
     SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
     StabilityTestResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
@@ -5999,6 +5999,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         SrkCpaPhaseResult::CALC_ID => SrkCpaPhaseResult::FIELDS.to_vec(),
         PcsaftRahmatPhaseResult::CALC_ID => PcsaftRahmatPhaseResult::FIELDS.to_vec(),
         SaftVrMiePhaseResult::CALC_ID => SaftVrMiePhaseResult::FIELDS.to_vec(),
+        SaftFlashResult::CALC_ID => SaftFlashResult::FIELDS.to_vec(),
         PrCpaPhaseResult::CALC_ID => PrCpaPhaseResult::FIELDS.to_vec(),
         AmmoniaPhaseResult::CALC_ID => AmmoniaPhaseResult::FIELDS.to_vec(),
         Co2PhaseResult::CALC_ID => Co2PhaseResult::FIELDS.to_vec(),
@@ -6324,6 +6325,82 @@ impl From<&azoth_eos::results::SrkCpaPhaseResult> for PySrkCpaPhaseResult {
             ln_phi: r.ln_phi.clone(),
             h_res: qty(r.h_res.value, "J/mol"),
             s_res: qty(r.s_res.value, "J/(mol*K)"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.tp_flash_saft`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TpFlashSaftResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTpFlashSaftResult {
+    /// The vapour fraction, absent when the flash reports one phase.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// The K-values the loop converged on.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// `ln phi_i` in the liquid phase.
+    #[pyo3(get)]
+    pub ln_phi_liquid: Vec<f64>,
+    /// `ln phi_i` in the vapour phase.
+    #[pyo3(get)]
+    pub ln_phi_vapour: Vec<f64>,
+    /// The compressibility factor of the liquid solve.
+    #[pyo3(get)]
+    pub z_liquid: f64,
+    /// The compressibility factor of the vapour solve.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// What the converged state is.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Successive-substitution steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The largest relative change in a K-value at the last step.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTpFlashSaftResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TpFlashSaftResult(phase={}, beta={:?})",
+            self.phase, self.beta
+        )
+    }
+}
+
+impl From<&azoth_eos::results::SaftFlashResult> for PyTpFlashSaftResult {
+    fn from(r: &azoth_eos::results::SaftFlashResult) -> Self {
+        Self {
+            beta: r.beta,
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            ln_phi_liquid: r.ln_phi_liquid.clone(),
+            ln_phi_vapour: r.ln_phi_vapour.clone(),
+            z_liquid: r.z_liquid,
+            z_vapour: r.z_vapour,
+            phase: r.phase.as_str().to_string(),
+            iterations: r.iterations,
+            residual: r.residual,
             warnings: transport(&r.warnings),
         }
     }

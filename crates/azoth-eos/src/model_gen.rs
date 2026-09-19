@@ -42,6 +42,7 @@
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/th_flash.toml
 //!   - specs/models/eos/thermal_conductivity.toml
+//!   - specs/models/eos/tp_flash_saft.toml
 //!   - specs/models/eos/tp_multiflash.toml
 //!   - specs/models/eos/ts_flash.toml
 //!   - specs/models/eos/tu_flash.toml
@@ -4533,6 +4534,97 @@ pub static THERMAL_CONDUCTIVITY_SPEC: ModelSpec = ModelSpec {
     cases: THERMAL_CONDUCTIVITY_CASES,
 };
 
+static TP_FLASH_SAFT_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static TP_FLASH_SAFT_CASES: &[TestCase] = &[TestCase {
+    id: "methane_butane_two_phase_against_neqsim",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 0.0001,
+    numbers: &[("T", 250.0), ("P", 3000000.0)],
+    flags: &[],
+    lists: &[("components", &["methane", "n-butane"])],
+    strings: &[],
+    vectors: &[("z", &[0.6, 0.4])],
+    matrices: &[],
+    expected: &[
+        ("beta", 0.5358099100649695),
+        ("z_liquid", 0.12428945085670298),
+        ("z_vapour", 0.8971134509509505),
+    ],
+    expected_vectors: &[
+        ("x", &[0.1631945070550116, 0.8368054929449847]),
+        ("y", &[0.9784192439248908, 0.021580756075112423]),
+        ("k", &[5.995400724282181, 0.025789345710502048]),
+    ],
+}];
+
+static TP_FLASH_SAFT_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "rachford_rice_bisection",
+    convergence: "absolute",
+    tolerance: 1e-14,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+static TP_FLASH_SAFT_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "relative",
+    tolerance: 1e-05,
+    max_iterations: 50,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: Some(&TP_FLASH_SAFT_INNER),
+    fallback: None,
+};
+
+/// Registry entry for `eos.tp_flash_saft`.
+pub static TP_FLASH_SAFT_SPEC: ModelSpec = ModelSpec {
+    id: "eos.tp_flash_saft",
+    kind: "procedure",
+    algorithm: Some(&TP_FLASH_SAFT_ALGORITHM),
+    checks: TP_FLASH_SAFT_CHECKS,
+    cases: TP_FLASH_SAFT_CASES,
+};
+
 static TP_MULTIFLASH_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -6327,6 +6419,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &STABILITY_TEST_SPEC,
     &TH_FLASH_SPEC,
     &THERMAL_CONDUCTIVITY_SPEC,
+    &TP_FLASH_SAFT_SPEC,
     &TP_MULTIFLASH_SPEC,
     &TS_FLASH_SPEC,
     &TU_FLASH_SPEC,

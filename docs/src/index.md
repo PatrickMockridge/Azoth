@@ -164,6 +164,7 @@ Four sections, and the difference between them is the point:
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
 - [`eos.th_flash`](./eos/th_flash.md) — Temperature-enthalpy flash
 - [`eos.thermal_conductivity`](./eos/thermal_conductivity.md) — Liquid thermal conductivity from the Pedersen (PFCT) correlation
+- [`eos.tp_flash_saft`](./eos/tp_flash_saft.md) — SAFT-VR-Mie flash
 - [`eos.tp_multiflash`](./eos/tp_multiflash.md) — Multiphase flash at fixed temperature and pressure
 - [`eos.ts_flash`](./eos/ts_flash.md) — Temperature-entropy flash
 - [`eos.tu_flash`](./eos/tu_flash.md) — Temperature-internal-energy flash

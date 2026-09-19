@@ -54,6 +54,15 @@ __all__ = [
 #: calls that a factor-of-three divergence, and the quantity it is measuring is not there.
 _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset({"residual", "tm"})
 
+#: Fields that are **not compared across implementations at all**, because their value is a
+#: property of the arithmetic rather than of the model. An iteration count is the clearest
+#: case: two implementations of the same loop and the same stopping rule reach the same
+#: answer in a different number of steps whenever one of them rounds differently on the way,
+#: and `eos.tp_flash_saft`'s do - seven steps against fourteen, on the same state, to the same
+#: K-values. The tolerance the loop stops at is asserted through `residual`, which carries
+#: the bound the solver declared.
+_UNCOMPARED_FIELDS: frozenset[str] = frozenset({"iterations"})
+
 
 def spec(calc_id: str) -> dict[str, Any]:
     """Fetch a spec, failing loudly if the id is wrong."""
@@ -259,6 +268,10 @@ def assert_results_equal(
         a = getattr(left, field)
         b = getattr(right, field)
 
+        if field in _UNCOMPARED_FIELDS:
+            # One side has to have produced *something*; that the loop ran is the claim.
+            assert a is not None and b is not None, f"{context}.{field}: absent on one side"
+            continue
         if isinstance(a, pint.Quantity) or isinstance(b, pint.Quantity):
             assert isinstance(a, pint.Quantity) and isinstance(b, pint.Quantity), (
                 f"{context}.{field}: one side is a bare number and the other a quantity"

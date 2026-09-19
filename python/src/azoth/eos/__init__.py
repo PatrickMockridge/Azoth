@@ -153,6 +153,7 @@ from azoth.core.result import (
     StabilityTestResult,
     ThermalConductivityResult,
     ThFlashResult,
+    TpFlashSaftResult,
     TpMultiflashResult,
     TsFlashResult,
     TuFlashResult,
@@ -281,6 +282,7 @@ __all__ = [
     "srk_z_factor",
     "stability_test",
     "th_flash",
+    "tp_flash_saft",
     "tp_multiflash",
     "ts_flash",
     "tu_flash",
@@ -334,6 +336,7 @@ _EOS_CG_PHASE = "eos.eos_cg_phase"
 _SRK_CPA_PHASE = "eos.srk_cpa_phase"
 _PCSAFT_RAHMAT_PHASE = "eos.pcsaft_rahmat_phase"
 _SAFT_VR_MIE_PHASE = "eos.saft_vr_mie_phase"
+_TP_FLASH_SAFT = "eos.tp_flash_saft"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
@@ -2531,6 +2534,25 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
     See :func:`azoth.eos.reference.pure_saturation`.
     """
     return resolve(_PURE_SATURATION)(Tc=Tc, Pc=Pc, omega=omega, T=T)  # type: ignore[no-any-return]
+
+
+def tp_flash_saft(components: list[str], T: Q, P: Q, z: list[float]) -> TpFlashSaftResult:
+    """The SAFT-VR-Mie flash at a temperature and a pressure.
+
+    **NeqSim's own route for this family**, which is not the generic flash: Wilson K-values
+    to seed, successive substitution to a relative K change, and each phase's fugacity
+    coefficients from a single-phase solve at that trial composition.
+
+    Raises:
+        InvalidInputError: if a component carries no SAFT-VR-Mie set, or ``z`` is not a
+            composition of the right length.
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or a trial phase has no root.
+
+    See :func:`azoth.eos.reference.tp_flash_saft`.
+    """
+    return resolve(_TP_FLASH_SAFT)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z
+    )
 
 
 def saft_vr_mie_phase(

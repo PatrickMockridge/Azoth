@@ -3346,6 +3346,25 @@ pub fn model_schemes(model_id: &str) -> Vec<String> {
     }
 }
 
+/// The SAFT-VR-Mie flash, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side looks them up in the Rust
+/// databank - the Mie set and the cubic constants the Wilson seed is built from.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn tp_flash_saft(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<crate::results::PyTpFlashSaftResult> {
+    azoth_eos::tp_flash_saft::tp_flash_saft(&components, kelvins(T), pascals(P), &z)
+        .map(|r| crate::results::PyTpFlashSaftResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The SAFT-VR-Mie phase state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side looks them up in the Rust
