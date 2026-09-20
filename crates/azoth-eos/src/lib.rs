@@ -87,6 +87,7 @@ pub mod heat_of_vaporization;
 pub mod helium_phase;
 pub mod henry;
 pub mod hv_ge;
+pub mod hydrate;
 pub mod hydrogen_phase;
 pub mod iapws_if97;
 pub mod ideal_gas_cp;

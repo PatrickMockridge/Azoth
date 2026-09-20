@@ -65,13 +65,13 @@ public class HydrateProbe {
         return;
       }
       row("hydrate_phase_index", hydratePhaseIndex(fluid));
-      int structure = 0;
-      for (int i = 0; i < hydrate.getNumberOfComponents(); i++) {
-        if (hydrate.getComponent(i) instanceof ComponentHydrate) {
-          structure = ((ComponentHydrate) hydrate.getComponent(i)).getHydrateStructure();
-          break;
-        }
-      }
+      // **The stable structure lives on the *water* component**, and reading it from whichever
+      // component comes first reads a stale zero: NeqSim's `ComponentHydratePVTsim.fugcoef`
+      // runs its two-structure selection inside the water branch and writes the winner into
+      // the water component's own field. A capture that read methane's reported structure I
+      // for a phase whose cages are structure II, and every occupancy printed from it was the
+      // wrong structure's.
+      int structure = ((ComponentHydrate) hydrate.getComponent("water")).getHydrateStructure();
       row("hydrate_structure", structure);
 
       // **Which phase the equilibrium partners, and every phase's water fugacity.** NeqSim's
@@ -86,6 +86,15 @@ public class HydrateProbe {
         row("phase[" + p + "].water_fugacity", phase.getFugacity("water"));
       }
       row("phase0_water_fugacity", fluid.getPhase(0).getFugacity("water"));
+      // **The kernel's own input**: the gas phase's per-component fugacities, which are what
+      // `setFug` copies into the hydrate's `reffug` before every occupancy evaluation. Printed
+      // so the hydrate arithmetic can be checked against the capture *without* the fluid - a
+      // divergence in an occupancy is then the kernel's and not the flash's.
+      for (int i = 0; i < fluid.getPhase(0).getNumberOfComponents(); i++) {
+        System.out.printf(
+            "f[%s] = %.15g%n",
+            fluid.getPhase(0).getComponent(i).getName(), fluid.getPhase(0).getFugacity(i));
+      }
 
       for (int i = 0; i < hydrate.getNumberOfComponents(); i++) {
         String name = hydrate.getComponent(i).getName();
