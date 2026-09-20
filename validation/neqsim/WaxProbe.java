@@ -94,10 +94,15 @@ public class WaxProbe {
         for (int i = 0; i < phase.getNumberOfComponents(); i++) {
           String name = phase.getComponent(i).getName();
           row("phase[" + p + "].x[" + name + "]", phase.getComponent(i).getx());
-          if (phase.getComponent(i).isWaxFormer()) {
+          // **The wax model's own coefficient, and only in the wax phase.** `ComponentWax`
+          // is what the wax phase's components are; the same component in the gas is an
+          // ordinary cubic one, and its coefficient there is the cubic's. Printing both for
+          // one name would make the model look like it agreed with itself.
+          if (phase.getType() == neqsim.thermo.phase.PhaseType.WAX) {
             row(
-                "phase[" + p + "].fugcoef[" + name + "]",
+                "wax_fugcoef[" + name + "]",
                 phase.getComponent(i).getFugacityCoefficient());
+            row("wax_x[" + name + "]", phase.getComponent(i).getx());
           }
         }
       }
