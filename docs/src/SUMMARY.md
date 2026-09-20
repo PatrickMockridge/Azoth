@@ -91,6 +91,7 @@
   - [Fugacity coefficients of a Wilson activity-coefficient liquid](./eos/ge_wilson_phase.md)
   - [GERG-2008 phase state](./eos/gerg2008_phase.md)
   - [Helium reference phase state](./eos/helium_phase.md)
+  - [Hydrate formation pressure](./eos/hydrate_formation_pressure.md)
   - [Hydrate formation temperature](./eos/hydrate_formation_temperature.md)
   - [Hydrate fraction](./eos/hydrate_fraction.md)
   - [Hydrogen reference phase state](./eos/hydrogen_phase.md)

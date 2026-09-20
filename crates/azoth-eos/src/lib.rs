@@ -88,6 +88,7 @@ pub mod helium_phase;
 pub mod henry;
 pub mod hv_ge;
 pub mod hydrate;
+pub mod hydrate_formation_pressure;
 pub mod hydrate_formation_temperature;
 pub mod hydrate_fraction;
 pub mod hydrogen_phase;
@@ -233,6 +234,7 @@ pub use hayduk_minhas_diffusivity::{HaydukMinhasForm, hayduk_minhas_diffusivity}
 pub use heat_of_vaporization::heat_of_vaporization;
 pub use helium_phase::helium_phase;
 pub use hydrate::hydrate_mixture_of;
+pub use hydrate_formation_pressure::hydrate_formation_pressure;
 pub use hydrate_formation_temperature::hydrate_formation_temperature;
 pub use hydrate_fraction::hydrate_fraction;
 pub use hydrogen_phase::hydrogen_phase;

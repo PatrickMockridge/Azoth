@@ -365,6 +365,22 @@ class HydrateFormationTemperatureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HydrateFormationPressureResult(_HasWarnings):
+    """Result of ``eos.hydrate_formation_pressure``."""
+
+    #: The pressure at which the hydrate's water fugacity meets the fluid's.
+    pressure: Q
+    #: The structure that comparison found stable.
+    structure: HydrateStructure
+    #: Flash evaluations taken, the scan's and the bisection's together.
+    iterations: int
+    #: ``f_w^hydrate / f_w^fluid - 1`` at the reported pressure.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HydrateFractionResult(_HasWarnings):
     """Result of ``eos.hydrate_fraction``."""
 

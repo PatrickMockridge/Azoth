@@ -100,6 +100,7 @@ from azoth.core.result import (
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HydrateFormationPressureResult,
     HydrateFormationTemperatureResult,
     HydrateFractionResult,
     HydrogenPhaseResult,
@@ -349,6 +350,7 @@ _CO2_PHASE = "eos.co2_phase"
 _HELIUM_PHASE = "eos.helium_phase"
 _HYDRATE_FORMATION_TEMPERATURE = "eos.hydrate_formation_temperature"
 _HYDRATE_FRACTION = "eos.hydrate_fraction"
+_HYDRATE_FORMATION_PRESSURE = "eos.hydrate_formation_pressure"
 _FREEZING_POINT = "eos.freezing_point"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _WATER_PHASE = "eos.water_phase"
@@ -1971,6 +1973,34 @@ def hydrate_fraction(
     """
     return resolve(_HYDRATE_FRACTION)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z, eos=eos
+    )
+
+
+def hydrate_formation_pressure(
+    components: list[str], T: Q, z: list[float], eos: str = "srk"
+) -> HydrateFormationPressureResult:
+    """The pressure at which a fluid's hydrate appears, at a temperature.
+
+    The same equilibrium :func:`hydrate_formation_temperature` reads the other way round: the
+    hydrate and the fluid meet where **water's** fugacity is the same in both, and this solves
+    that equality for the pressure at a fixed temperature. NeqSim iterates
+    ``P <- P (f_w^hydrate/f_w^fluid)`` and this brackets and bisects, so the two agree on the
+    root and differ on where to stop - measured, its answer is ``1.03e-5`` relative low with a
+    residual of ``1.15e-6`` at it where this bisects to ``1.65e-9``.
+
+    ``components`` names the substances because the hydrate's guest tables are keyed by name -
+    a mixture carries critical constants and no names. ``eos`` is the cubic the fluid runs,
+    and it is also the one the reference water phase is built from.
+
+    Raises:
+        InvalidInputError: if the fluid has no water, or nothing in it occupies a cage.
+        OutOfRangeError: if ``T`` is not positive, or a trial's cavity sum has no value.
+        SolverNotConvergedError: if the search does not bracket or does not converge.
+
+    See :func:`azoth.eos.reference.hydrate_formation_pressure`.
+    """
+    return resolve(_HYDRATE_FORMATION_PRESSURE)(  # type: ignore[no-any-return]
+        components=components, T=T, z=z, eos=eos
     )
 
 

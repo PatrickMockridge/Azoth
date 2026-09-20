@@ -1,0 +1,69 @@
+model = "eos.hydrate_formation_pressure"
+[[cases]]
+id = "the_probes_feed_at_288_15_k"
+tolerance = 1e-08
+source = """**This library's own answer, and NeqSim's is the same root reached more
+loosely.** Its `HydrateFormationPressureFlash` lands on `47.5586513856629` bara at 288.15 K,
+where this returns `4755816.196713141165674` Pa - `48.94` Pa lower, a relative `1.03e-5`.
+**The gap is its stopping rule and not a disagreement**: at *its* pressure this model's
+residual is `-1.151e-6` and at its own it is `-1.650e-9`, which is the same statement as the
+objective NeqSim logs at that state, `-1.24e-06`. It scales the pressure by the fugacity
+ratio until that ratio is one to `1e-8`, and a residual of `1e-6` in the ratio is a part in
+`1e-5` in the pressure; this bisects the equality instead.
+
+So the case pins the converged root rather than the stopping point, and it pins `structure`
+beside it because the cages are an output of the same comparison.
+
+The three cases are the three temperatures the fraction probe drives, so the hydrate curve
+this family is drawn on is pinned at the same states by three models."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+T = 288.15
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+pressure = 4755816.196713141
+structure = "structure_ii"
+[[cases]]
+id = "the_probes_feed_at_283_15_k"
+tolerance = 1e-08
+source = """The same root at 283.15 K: `2553765.013200786896050` Pa here against
+NeqSim's `25.5377610408892` bara, `4.34e-6` relative apart, with its residual at its own
+pressure `-5.271e-7` against `7.585e-9` at this one."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+T = 283.15
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+pressure = 2553765.013200787
+structure = "structure_ii"
+[[cases]]
+id = "the_probes_feed_at_278_15_k"
+tolerance = 1e-08
+source = """The same root at 278.15 K: `1408645.517847312614322` Pa here against
+NeqSim's `14.0865125281320` bara, `4.07e-6` relative apart, with its residual at its own
+pressure `-5.174e-7` against `-9.816e-9` at this one."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+T = 278.15
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+pressure = 1408645.517847312
+structure = "structure_ii"

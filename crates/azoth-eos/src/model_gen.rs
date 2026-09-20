@@ -24,6 +24,7 @@
 //!   - specs/models/eos/ge_wilson_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
+//!   - specs/models/eos/hydrate_formation_pressure.toml
 //!   - specs/models/eos/hydrate_formation_temperature.toml
 //!   - specs/models/eos/hydrate_fraction.toml
 //!   - specs/models/eos/hydrogen_phase.toml
@@ -3060,6 +3061,143 @@ pub static HELIUM_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&HELIUM_PHASE_ALGORITHM),
     checks: HELIUM_PHASE_CHECKS,
     cases: HELIUM_PHASE_CASES,
+};
+
+static HYDRATE_FORMATION_PRESSURE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; the answer cannot be at or below zero",
+        },
+    },
+];
+
+static HYDRATE_FORMATION_PRESSURE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_probes_feed_at_288_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 288.15)],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[
+                0.7810182896688087,
+                0.09985170538803756,
+                0.020266930301532374,
+                0.09886307464162135,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("pressure", 4755816.196713141)],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+    },
+    TestCase {
+        id: "the_probes_feed_at_283_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 283.15)],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[
+                0.7810182896688087,
+                0.09985170538803756,
+                0.020266930301532374,
+                0.09886307464162135,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("pressure", 2553765.013200787)],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+    },
+    TestCase {
+        id: "the_probes_feed_at_278_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 278.15)],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[
+                0.7810182896688087,
+                0.09985170538803756,
+                0.020266930301532374,
+                0.09886307464162135,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("pressure", 1408645.517847312)],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+    },
+];
+
+static HYDRATE_FORMATION_PRESSURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "hydrate_pressure_bisection",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 60,
+    bracket: Some(ModelBracket {
+        scheme: "log_scan_pressure",
+        lower: 10000.0,
+        upper: 20000000.0,
+        steps: 80,
+    }),
+    initialisation: Some("log_scan_for_sign_change"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.hydrate_formation_pressure`.
+pub static HYDRATE_FORMATION_PRESSURE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.hydrate_formation_pressure",
+    kind: "procedure",
+    algorithm: Some(&HYDRATE_FORMATION_PRESSURE_ALGORITHM),
+    checks: HYDRATE_FORMATION_PRESSURE_CHECKS,
+    cases: HYDRATE_FORMATION_PRESSURE_CASES,
 };
 
 static HYDRATE_FORMATION_TEMPERATURE_CHECKS: &[SpecCheck] = &[
@@ -8004,6 +8142,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &GE_WILSON_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
+    &HYDRATE_FORMATION_PRESSURE_SPEC,
     &HYDRATE_FORMATION_TEMPERATURE_SPEC,
     &HYDRATE_FRACTION_SPEC,
     &HYDROGEN_PHASE_SPEC,

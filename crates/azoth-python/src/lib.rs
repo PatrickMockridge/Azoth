@@ -44,14 +44,14 @@ mod thermal;
 use results::{
     PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
     PyCriticalPointResult, PyDarcyWeisbachResult, PyFreezingPointResult, PyHaalandResult,
-    PyHydrateFormationTemperatureResult, PyHydrateFractionResult, PyKComponent, PyKFactorsResult,
-    PyOrificeFlowResult, PyPhFlashResult, PyPr78KappaResult, PyPrAlphaAbResult,
-    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPumpPowerResult,
-    PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult, PyReynoldsNumberResult,
-    PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult, PySrkDepartureResult,
-    PySrkKappaResult, PySrkZFactorResult, PySwameeJainResult, PyTwuKappaResult,
-    PyVdw1fMixBinaryResult, PyWarning,
+    PyHydrateFormationPressureResult, PyHydrateFormationTemperatureResult, PyHydrateFractionResult,
+    PyKComponent, PyKFactorsResult, PyOrificeFlowResult, PyPhFlashResult, PyPr78KappaResult,
+    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
+    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
+    PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
+    PyReynoldsNumberResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
+    PySrkDepartureResult, PySrkKappaResult, PySrkZFactorResult, PySwameeJainResult,
+    PyTwuKappaResult, PyVdw1fMixBinaryResult, PyWarning,
 };
 
 #[pymodule]
@@ -91,6 +91,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFreezingPointResult>()?;
     m.add_class::<PyHydrateFormationTemperatureResult>()?;
     m.add_class::<PyHydrateFractionResult>()?;
+    m.add_class::<PyHydrateFormationPressureResult>()?;
     m.add_class::<PyPhFlashResult>()?;
     m.add_class::<PyPsFlashResult>()?;
     m.add_class::<PyCriticalPointResult>()?;
@@ -223,6 +224,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::helium_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::freezing_point, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrate_formation_temperature, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::hydrate_formation_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrate_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrogen_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::water_phase, m)?)?;

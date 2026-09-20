@@ -64,6 +64,7 @@ from azoth.core.result import (
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HydrateFormationPressureResult,
     HydrateFormationTemperatureResult,
     HydrateFractionResult,
     HydrateStructure,
@@ -2781,6 +2782,28 @@ def hydrate_fraction(
         beta=result.beta,
         structure=HydrateStructure(result.structure),
         balance_error=result.balance_error,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hydrate_formation_pressure(
+    components: Sequence[str], T: Q, z: Sequence[float], eos: str = "srk"
+) -> HydrateFormationPressureResult:
+    """The hydrate formation pressure of a fluid, computed in Rust.
+
+    **The component names cross unresolved**, and the Rust side resolves them: the hydrate's
+    guest tables are keyed by name, so a mixture built from constants alone could not carry
+    them.
+    """
+    spec = _models_gen.model("eos.hydrate_formation_pressure")
+    result = _core.hydrate_formation_pressure(
+        list(components), input_to_si(spec, "T", T), list(z), eos
+    )
+    return HydrateFormationPressureResult(
+        pressure=from_si(result.pressure.magnitude_si, result.pressure.unit),
+        structure=HydrateStructure(result.structure),
         iterations=result.iterations,
         residual=result.residual,
         warnings=_warnings(result.warnings),

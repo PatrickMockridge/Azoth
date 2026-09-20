@@ -146,6 +146,7 @@ Four sections, and the difference between them is the point:
 - [`eos.ge_wilson_phase`](./eos/ge_wilson_phase.md) — Fugacity coefficients of a Wilson activity-coefficient liquid
 - [`eos.gerg2008_phase`](./eos/gerg2008_phase.md) — GERG-2008 phase state
 - [`eos.helium_phase`](./eos/helium_phase.md) — Helium reference phase state
+- [`eos.hydrate_formation_pressure`](./eos/hydrate_formation_pressure.md) — Hydrate formation pressure
 - [`eos.hydrate_formation_temperature`](./eos/hydrate_formation_temperature.md) — Hydrate formation temperature
 - [`eos.hydrate_fraction`](./eos/hydrate_fraction.md) — Hydrate fraction
 - [`eos.hydrogen_phase`](./eos/hydrogen_phase.md) — Hydrogen reference phase state

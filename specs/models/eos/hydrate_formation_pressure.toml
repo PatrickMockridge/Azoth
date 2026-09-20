@@ -1,0 +1,77 @@
+id = "eos.hydrate_formation_pressure"
+name = "Hydrate formation pressure"
+kind = "procedure"
+assumptions = [
+    "the fluid is flashed at each trial pressure by `eos.pt_flash`, and the hydrate's guests take their fugacities from the **vapour** phase's - what NeqSim's `setFug` copies in.",
+    "**the same equilibrium `eos.hydrate_formation_temperature` reads the other way round**: both solve for the state where the hydrate's water fugacity equals the fluid's, one at a fixed pressure and this one at a fixed temperature, and the residual here is the quantity that model drives to zero.",
+    "**NeqSim iterates `P <- P (f_w^hydrate/f_w^fluid)` and this brackets and bisects**: measured, its answer is `1.03e-5` relative low with a residual of `-1.15e-6` at it where this bisects to `1.65e-9`, so the two agree on the root and differ on where to stop.",
+    "**the scan steps in the logarithm of the pressure**, because that is the variable a hydrate curve is drawn on; a linear scan over the bracket's decades would put every point of interest in its first two steps.",
+    "the solid is the fitted model, `ComponentHydratePVTsim`, as for the formation temperature, and the structure is taken as the lower of the two coefficients.",
+    "the reference water phase is a one-component phase of the **same cubic the fluid runs**, so the identity `f_w^hydrate = f_w^fluid` settles the pressure rather than the reference.",
+    "no inhibitor and no energy balance, as for the formation temperature.",
+]
+references = [
+    "van der Waals, J. H.; Platteeuw, J. C. (1959). \"Clathrate Solutions.\" Advances in Chemical Physics 2(1), 1-57. DOI 10.1002/9780470143483.ch1.",
+    "Sloan, E. D.; Koh, C. A. (2008). \"Clathrate Hydrates of Natural Gases.\", 3rd ed., CRC Press.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `HydrateFormationPressureFlash`, `ComponentHydratePVTsim` and `PhaseHydrate` are the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `HydrateFormationPressureFlash`"
+edition = "The path that runs when the system is not a `SystemPitzer`: NeqSim dispatches `PitzerHydrateFlash` for that one, and its coupling to the electrolyte models is carried rather than ported."
+[algorithm]
+scheme = "hydrate_pressure_bisection"
+initialisation = "log_scan_for_sign_change"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 60
+[algorithm.bracket]
+scheme = "log_scan_pressure"
+lower = 10000.0
+upper = 20000000.0
+steps = 80
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, resolved against the component databank with the keycard's overrides applied. At least one must be water and one a hydrate former."
+[inputs.T]
+unit = "K"
+description = "absolute temperature at which the formation pressure is wanted; the pressure is what is solved for."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions, checked rather than renormalised."
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+description = "the cubic the fluid runs. It is also the equation the hydrate's reference water phase is built from, because NeqSim's is a phase of the *host's* own class - so this is a real choice and not a label."
+[outputs]
+[outputs.pressure]
+unit = "Pa"
+description = "the pressure at which the hydrate's water fugacity equals the fluid's."
+[outputs.structure]
+type = "enum"
+values = ["structure_i", "structure_ii"]
+description = "the stable structure at the answer, from the same comparison of the two coefficients that `eos.hydrate_formation_temperature` makes."
+[outputs.iterations]
+unit = "dimensionless"
+description = "flash evaluations taken, counting the scan's and the bisection's together."
+[outputs.residual]
+unit = "dimensionless"
+description = "`f_w^hydrate / f_w^fluid - 1` at the reported pressure."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; the answer cannot be at or below zero"
+[implementations]
+python = "azoth.eos.hydrate_formation_pressure"
+rust = "azoth_eos::hydrate_formation_pressure"

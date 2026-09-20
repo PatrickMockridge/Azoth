@@ -3223,6 +3223,32 @@ pub fn hydrate_formation_temperature(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The hydrate formation pressure of a fluid at a temperature, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves them: the hydrate's guest
+/// tables are keyed by name, so a mixture built from constants alone could not carry them.
+#[pyfunction]
+#[pyo3(signature = (components, T, z, eos = "srk"))]
+#[allow(non_snake_case)] // `T` is the symbol in the chemistry
+pub fn hydrate_formation_pressure(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    z: Vec<f64>,
+    eos: &str,
+) -> PyResult<crate::results::PyHydrateFormationPressureResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
+        &names,
+        eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
+        None,
+    )
+    .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::hydrate_formation_pressure(&mixture, kelvins(T), &z)
+        .map(|r| crate::results::PyHydrateFormationPressureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The fraction of a feed that is hydrate at a state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side resolves them: the hydrate's guest

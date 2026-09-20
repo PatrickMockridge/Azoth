@@ -25,8 +25,8 @@ use azoth_eos::results::{
     FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
     GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
-    HydrateFormationTemperatureResult, HydrateFractionResult, HydrogenPhaseResult,
-    IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    HydrateFormationPressureResult, HydrateFormationTemperatureResult, HydrateFractionResult,
+    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
     MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
     MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
@@ -3975,6 +3975,57 @@ impl From<&HydrateFormationTemperatureResult> for PyHydrateFormationTemperatureR
     }
 }
 
+/// Result of `eos.hydrate_formation_pressure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HydrateFormationPressureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateFormationPressureResult {
+    /// The pressure at which the hydrate's water fugacity meets the fluid's.
+    #[pyo3(get)]
+    pub pressure: PyQty,
+    /// The stable structure, as its spec spelling.
+    #[pyo3(get)]
+    pub structure: String,
+    /// Flash evaluations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `f_w^hydrate / f_w^fluid - 1` at the reported pressure.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHydrateFormationPressureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateFormationPressureResult(pressure={} {}, structure={}, {} iteration(s))",
+            self.pressure.magnitude_si, self.pressure.unit, self.structure, self.iterations
+        )
+    }
+}
+
+impl From<&HydrateFormationPressureResult> for PyHydrateFormationPressureResult {
+    fn from(r: &HydrateFormationPressureResult) -> Self {
+        Self {
+            pressure: PyQty {
+                magnitude_si: r.pressure.value,
+                unit: "Pa".to_string(),
+            },
+            structure: r.structure.as_str().to_string(),
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.hydrate_fraction`, transported.
 #[pyclass(
     frozen,
@@ -6328,6 +6379,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
             HydrateFormationTemperatureResult::FIELDS.to_vec()
         }
         HydrateFractionResult::CALC_ID => HydrateFractionResult::FIELDS.to_vec(),
+        HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
         EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),

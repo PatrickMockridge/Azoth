@@ -654,6 +654,36 @@ impl CalcResult for HydrateFormationTemperatureResult {
     }
 }
 
+/// Result of `eos.hydrate_formation_pressure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateFormationPressureResult {
+    /// The pressure at which the hydrate's water fugacity meets the fluid's.
+    pub pressure: Pressure,
+    /// The structure that comparison found stable.
+    pub structure: HydrateStructure,
+    /// Flash evaluations taken, the scan's and the bisection's together.
+    pub iterations: u32,
+    /// `f_w^hydrate / f_w^fluid - 1` at the reported pressure.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HydrateFormationPressureResult {
+    const CALC_ID: &'static str = "eos.hydrate_formation_pressure";
+    const FIELDS: &'static [&'static str] = &[
+        "pressure",
+        "structure",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.pure_saturation`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PureSaturationResult {
