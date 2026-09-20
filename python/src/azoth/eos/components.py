@@ -374,10 +374,16 @@ class FurstElectrolyte:
     species: tuple[FurstSpecies, ...]
     table: Any
     rule: str = "molar_average"
+    #: Whether this is the **2004 revision**, which zeroes five quantities and adds an
+    #: extensive `FBornD` to every `ln phi`. See `eos.furst_electrolyte_mod2004_phase`.
+    mod2004: bool = False
 
     @classmethod
     def build(
-        cls, species: tuple[FurstSpecies, ...], rule: str = "molar_average"
+        cls,
+        species: tuple[FurstSpecies, ...],
+        rule: str = "molar_average",
+        mod2004: bool = False,
     ) -> FurstElectrolyte:
         """Assemble the term, building the short-range table from the names."""
         components = tuple(
@@ -389,7 +395,12 @@ class FurstElectrolyte:
             )
             for s in species
         )
-        return cls(species=species, table=_furst_wij_table(components, furst_wij), rule=rule)
+        return cls(
+            species=species,
+            table=_furst_wij_table(components, furst_wij),
+            rule=rule,
+            mod2004=mod2004,
+        )
 
     def short_range(self, temperature: float, mole_numbers: Sequence[float]) -> Any:
         """The short-range sums at a composition and temperature."""
@@ -2752,6 +2763,7 @@ def furst_mixture_of(
     names: list[str],
     *,
     salinity_rule: str = "molar_average",
+    mod2004: bool = False,
     card: keycard.Keycard | None = None,
 ) -> tuple[Mixture, IdealGasModel]:
     """The Fürst fluid: an SRK cubic, the Huron-Vidal rule and the electrolyte term.
@@ -2812,7 +2824,7 @@ def furst_mixture_of(
         )
 
     hv = huron_vidal_parameters(tuple(resolved), eos="srk")
-    term = FurstElectrolyte.build(tuple(species), _mixing_rule(salinity_rule))
+    term = FurstElectrolyte.build(tuple(species), _mixing_rule(salinity_rule), mod2004)
     # **The rule's own interaction matrix, and not the mixture's default of zero.** The HV
     # rule reads `kij` for the pairs it does not fit, and `hv.kij` is that column - so a
     # mixture built without it evaluates every pair at ideal mixing, which is a plausible

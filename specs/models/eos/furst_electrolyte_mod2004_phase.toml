@@ -1,0 +1,67 @@
+id = "eos.furst_electrolyte_mod2004_phase"
+name = "Phase state of a Furst electrolyte fluid, 2004 revision"
+kind = "direct"
+assumptions = [
+    "this is NeqSim's `SystemFurstElectrolyteEosMod2004`, the older sibling of `eos.furst_electrolyte_phase`. **The two differ in one term and one set of zeroes**, and both are stated rather than left to be inferred.",
+    "**the solvent dielectric constant has no temperature and no composition dependence.** `volInit` multiplies its two temperature derivatives by zero and `calcSolventdiElectricdn` returns `0.0`, its body commented out. Measured: `-0.359218709298880` in the base, `-0.00000000000000` here.",
+    "the shielding parameter's and `XLR`'s temperature derivatives go the same way: `volInit` never assigns them here, so they keep their field defaults of zero.",
+    "**`dFBorndN` is `FBornX XBorni + FBornD`**, where the base is `FBornX XBorni + FBornD solventdiElectricdn`. With that derivative zero the base gives `FBornX XBorni` alone, so this variant adds a term to every `ln phi` - and `FBornD` is **extensive**, so its `ln phi` depends on the phase size.",
+    "everything else is identical, including the component constructors, which differ from the base's only in their class names: an ion's attraction is `1e-35` and its covolume is the fitted `(p0 d^3 + p1)`.",
+    "the mixing rule is Huron-Vidal, as it is for the base model; the alpha is Schwartzentruber for every component, with each row's own fitted parameters.",
+    "the short-range table, the MSA long-range term and the Born term are the base model's, with the TEG defect it carries (NeqSim issue 3846) reproduced rather than corrected.",
+    "**there is no flash**, for the reason the base model gives: `eos.pt_flash`'s Jacobian is `d ln phi / d n`, which the Huron-Vidal rule refuses.",
+    "no `h_res` or `s_res`: the departure is not assembled.",
+    "`x` is checked rather than renormalised.",
+]
+references = [
+    "Furst, W.; Renon, H. (1993). \"Representation of excess properties of electrolyte solutions using a new equation of state.\" AIChE Journal 39(2), 335-343.",
+    "Schwartzentruber, J.; Renon, H. (1989). \"Development of a new cubic equation of state for phase equilibrium calculations.\" Fluid Phase Equilibria 52, 127-134.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `SystemFurstElectrolyteEosMod2004`, `PhaseModifiedFurstElectrolyteEosMod2004` and `ComponentModifiedFurstElectrolyteEosMod2004` are the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `SystemFurstElectrolyteEosMod2004`"
+edition = "`PhaseModifiedFurstElectrolyteEosMod2004`, which is `eos.furst_electrolyte_phase`'s port with the five quantities its `volInit` and its component zero. The parameters are the same hardcoded `FurstElectrolyteConstants`."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, ions included"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions, checked rather than renormalised"
+[inputs.compressed_phase]
+type = "enum"
+values = ["liquid", "vapour"]
+description = "which root describes the phase wanted. The electrolyte terms carry a pressure, so neither root is the cubic's."
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor at the chosen root"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fugacity coefficients, as logarithms, at the chosen root. Every entry carries the component-independent `FBornD` term this revision adds."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states, and the dielectric polynomial carries a `1/T` term"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.furst_electrolyte_mod2004_phase"
+rust = "azoth_eos::furst_electrolyte_mod2004_phase"

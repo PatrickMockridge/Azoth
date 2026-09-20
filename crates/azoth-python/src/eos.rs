@@ -3582,6 +3582,32 @@ pub fn furst_electrolyte_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The 2004 revision of the Fürst electrolyte phase state, computed in Rust.
+///
+/// The same kernels as `furst_electrolyte_phase` with five quantities zeroed and one term
+/// added; the resolver carries the difference, so this is the same call.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x, compressed_phase))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn furst_electrolyte_mod2004_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::results::PyFurstElectrolyteMod2004PhaseResult> {
+    azoth_eos::furst_electrolyte_mod2004_phase(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &x,
+        compressed_phase,
+    )
+    .map(|r| crate::results::PyFurstElectrolyteMod2004PhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The SRK-CPA phase state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side looks them up in the Rust

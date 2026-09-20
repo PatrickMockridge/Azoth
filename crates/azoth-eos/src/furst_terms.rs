@@ -462,6 +462,7 @@ pub fn ln_phi_contributions(
     state: &FurstState,
     components: &[ComponentDerivatives],
     mole_numbers: &[f64],
+    mod2004: bool,
 ) -> Result<Vec<CompositionContribution>> {
     if components.len() != mole_numbers.len() {
         return Err(AzothError::invalid_input(
@@ -508,7 +509,11 @@ pub fn ln_phi_contributions(
 
         // `calcSolventdiElectricdn`: zero for an ion, else the component's own constant less
         // the mixture's, over the neutral moles.
-        let solvent_dn = if component.charge != 0.0 {
+        // **Zero in the 2004 revision.** `ComponentModifiedFurstElectrolyteEosMod2004`'s
+        // `calcSolventdiElectricdn` returns `0.0` with its body commented out, so the solvent
+        // dielectric constant has no composition dependence there - and the Born term's
+        // composition path is the `dYdf` that goes with it.
+        let solvent_dn = if mod2004 || component.charge != 0.0 {
             0.0
         } else {
             (component.dielectric - state.solvent_dielectric) / neutral_moles
@@ -535,7 +540,18 @@ pub fn ln_phi_contributions(
 
         let fsr2 = fsr2_eps * scale + fsr2_w * component.w_i;
         let flr = flr_xlr * xlr_i + d_f_d_alpha * alpha_i;
-        let born = f_born_x * born_i + f_born_d * solvent_dn;
+        // **`FBornD` is *added* in the 2004 revision, not weighted by the solvent's
+        // composition derivative.** `ComponentModifiedFurstElectrolyteEosMod2004.dFBorndN` is
+        // `FBornX XBorni + FBornD`, where the base is `FBornX XBorni + FBornD
+        // solventdiElectricdn` - and since that derivative is zero there, the base would give
+        // `FBornX XBorni` alone. So the variant adds a **component-independent** `4.94e-5` to
+        // every `ln phi`, which is the whole of the difference between the two models'
+        // fugacity coefficients.
+        let born = if mod2004 {
+            f_born_x * born_i + f_born_d
+        } else {
+            f_born_x * born_i + f_born_d * solvent_dn
+        };
         out.push(CompositionContribution {
             short_range: fsr2,
             long_range: flr,
@@ -1125,7 +1141,7 @@ mod tests {
         )
         .collect::<Vec<_>>();
 
-        let got = ln_phi_contributions(&state, &components, &moles).expect("computes");
+        let got = ln_phi_contributions(&state, &components, &moles, false).expect("computes");
         let want: [(f64, f64, f64); 4] = [
             (
                 -0.026_957_328_895_281_1,
@@ -1201,7 +1217,7 @@ mod tests {
             dielectric: 0.0,
             w_i: 0.0,
         }];
-        let error = ln_phi_contributions(&state, &components, &[1.0])
+        let error = ln_phi_contributions(&state, &components, &[1.0], false)
             .expect_err("a lone ion has no solvent to differentiate against");
         assert_eq!(error.field(), Some("mole_numbers"), "{error:?}");
     }

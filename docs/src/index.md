@@ -135,6 +135,7 @@ Four sections, and the difference between them is the point:
 - [`eos.dew_pressure`](./eos/dew_pressure.md) — Dew-point pressure
 - [`eos.dew_temperature`](./eos/dew_temperature.md) — Dew-point temperature
 - [`eos.eos_cg_phase`](./eos/eos_cg_phase.md) — EOS-CG phase state
+- [`eos.furst_electrolyte_mod2004_phase`](./eos/furst_electrolyte_mod2004_phase.md) — Phase state of a Furst electrolyte fluid, 2004 revision
 - [`eos.furst_electrolyte_phase`](./eos/furst_electrolyte_phase.md) — Phase state of a Furst electrolyte fluid
 - [`eos.ge_nrtl_flash`](./eos/ge_nrtl_flash.md) — Gamma-phi flash with an NRTL liquid
 - [`eos.ge_nrtl_phase`](./eos/ge_nrtl_phase.md) — Fugacity coefficients of an NRTL activity-coefficient liquid

@@ -50,6 +50,7 @@ from azoth.core.result import (
     DewTemperatureResult,
     EosCgPhaseResult,
     FlowRegime,
+    FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
@@ -3026,6 +3027,33 @@ def furst_electrolyte_phase(
         compressed_phase,
     )
     return FurstElectrolytePhaseResult(
+        z_factor=result.z_factor,
+        ln_phi=tuple(result.ln_phi),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def furst_electrolyte_mod2004_phase(
+    components: Sequence[str],
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+    compressed_phase: str,
+) -> FurstElectrolyteMod2004PhaseResult:
+    """The 2004 revision of the Fürst electrolyte phase state, computed in Rust.
+
+    The same kernels as `furst_electrolyte_phase` in Python here, resolved to the Rust
+    function that carries the difference.
+    """
+    spec = _models_gen.model("eos.furst_electrolyte_mod2004_phase")
+    result = _core.furst_electrolyte_mod2004_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+        compressed_phase,
+    )
+    return FurstElectrolyteMod2004PhaseResult(
         z_factor=result.z_factor,
         ln_phi=tuple(result.ln_phi),
         warnings=_warnings(result.warnings),

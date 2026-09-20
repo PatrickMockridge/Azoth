@@ -421,6 +421,7 @@ def ln_phi_contributions(
     state: FurstState,
     components: Sequence[ComponentDerivatives],
     mole_numbers: Sequence[float],
+    mod2004: bool = False,
 ) -> list[CompositionContribution]:
     """The three electrolyte contributions to ``dFdN_i``.
 
@@ -462,9 +463,11 @@ def ln_phi_contributions(
     for component in components:
         scale = NEQSIM_AVOGADRO * NEQSIM_PI / 6.0 * component.diameter_m**3 / vn
         eps_ionic_i = 0.0 if component.charge == 0.0 else scale
+        # **Zero in the 2004 revision**, whose `calcSolventdiElectricdn` returns `0.0` with
+        # its body commented out.
         solvent_dn = (
             0.0
-            if component.charge != 0.0
+            if mod2004 or component.charge != 0.0
             else (component.dielectric - state.solvent_dielectric) / neutral_moles
         )
         x = (1.0 - state.ionic_packing) / eps_ionic_half
@@ -482,11 +485,17 @@ def ln_phi_contributions(
             component.charge**2 * state.shielding / (1.0 + state.shielding * component.diameter_m)
         )
         born_i = component.charge**2 / component.diameter_m if component.diameter_m > 0.0 else 0.0
+        # **`FBornD` is *added* in the 2004 revision, not weighted by the solvent's
+        # composition derivative.** The variant's `dFBorndN` is `FBornX XBorni + FBornD`
+        # where the base's is `+ FBornD solventdiElectricdn`, and since that derivative is
+        # zero there the base would give `FBornX XBorni` alone. So the variant adds a
+        # component-independent term to every `ln phi`.
+        born = f_born_x * born_i + (f_born_d if mod2004 else f_born_d * solvent_dn)
         out.append(
             CompositionContribution(
                 short_range=fsr2_eps * scale + fsr2_w * component.w_i,
                 long_range=flr_xlr * xlr_i + d_f_d_alpha * alpha_i,
-                born=f_born_x * born_i + f_born_d * solvent_dn,
+                born=born,
             )
         )
     return out

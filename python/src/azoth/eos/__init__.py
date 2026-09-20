@@ -87,6 +87,7 @@ from azoth.core.result import (
     DewPressureResult,
     DewTemperatureResult,
     EosCgPhaseResult,
+    FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
@@ -236,6 +237,7 @@ __all__ = [
     "eos_cg_phase",
     "from_model",
     "from_names",
+    "furst_electrolyte_mod2004_phase",
     "furst_electrolyte_phase",
     "ge_nrtl_flash",
     "ge_nrtl_phase",
@@ -353,6 +355,7 @@ _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _UMR_CPA_PHASE = "eos.umr_cpa_phase"
 _SOREIDE_WHITSON_PHASE = "eos.soreide_whitson_phase"
 _FURST_ELECTROLYTE_PHASE = "eos.furst_electrolyte_phase"
+_FURST_ELECTROLYTE_MOD2004_PHASE = "eos.furst_electrolyte_mod2004_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
 _GE_UNIQUAC_PHASE = "eos.ge_uniquac_phase"
@@ -2829,6 +2832,33 @@ def soreide_whitson_phase(
         x=x,
         salinity=salinity,
         compressed_phase=compressed_phase,
+    )
+
+
+def furst_electrolyte_mod2004_phase(
+    components: list[str],
+    T: Q,
+    P: Q,
+    x: list[float],
+    compressed_phase: str,
+) -> FurstElectrolyteMod2004PhaseResult:
+    """One Fürst electrolyte phase's state, as the **2004 revision** computes it.
+
+    The same kernels as :func:`furst_electrolyte_phase` with five quantities zeroed and one
+    term added. The solvent dielectric constant loses its temperature and composition
+    dependence - NeqSim multiplies the two derivatives by zero - and every ``ln phi`` gains a
+    component-independent ``FBornD``, which is **extensive**, so this revision's answer
+    depends on the phase's size and its cases carry a looser tolerance than the base model's.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or no volume root exists.
+        InvalidInputError: if ``x`` is not a composition, a name is not in the databank, or
+            ``compressed_phase`` is neither ``"liquid"`` nor ``"vapour"``.
+
+    See :func:`azoth.eos.reference.furst_electrolyte_mod2004_phase`.
+    """
+    return resolve(_FURST_ELECTROLYTE_MOD2004_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, x=x, compressed_phase=compressed_phase
     )
 
 

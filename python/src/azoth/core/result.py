@@ -2191,6 +2191,24 @@ class UmrCpaPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FurstElectrolyteMod2004PhaseResult(_HasWarnings):
+    """Result of ``eos.furst_electrolyte_mod2004_phase``.
+
+    The 2004 revision of :class:`FurstElectrolytePhaseResult`: the same kernels with the
+    solvent dielectric constant's temperature and composition derivatives zeroed, and a
+    component-independent ``FBornD`` added to every ``ln phi`` - which makes that entry
+    depend on the phase's *size*, so this model's cases carry a looser tolerance.
+    """
+
+    #: The compressibility factor at the chosen root.
+    z_factor: float
+    #: The fugacity coefficients, as logarithms, one per component.
+    ln_phi: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FurstElectrolytePhaseResult(_HasWarnings):
     """Result of ``eos.furst_electrolyte_phase``.
 

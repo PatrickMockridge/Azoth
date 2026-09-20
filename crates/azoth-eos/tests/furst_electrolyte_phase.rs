@@ -111,3 +111,56 @@ fn a_composition_that_is_not_one_is_refused() {
     assert!(matches!(err, AzothError::InvalidInput { .. }), "{err:?}");
     assert_eq!(err.field(), Some("x"));
 }
+
+/// **The 2004 revision, against its own probe.**
+///
+/// `SystemFurstElectrolyteEosMod2004` is the base with five quantities zeroed - the solvent
+/// dielectric constant's two temperature derivatives, the shielding parameter's, `XLR`'s, and
+/// the solvent's composition derivative. Measured: the base's
+/// `getSolventDiElectricConstantdT` is `-0.359218709298880` and this variant's is
+/// `-0.00000000000000`, which is the `0 *` the source multiplies it by.
+///
+/// The two models are close - `Z` differs in the ninth digit - so what separates them is the
+/// fugacity coefficients, and that is what this asserts.
+#[test]
+fn the_2004_revision_matches_its_own_oracle() {
+    let names = ["methane", "water", "Na+", "Cl-"];
+    let x = [
+        0.000_226_524_776_743_935,
+        0.997_777_272_904_135,
+        0.000_998_101_159_560_386,
+        0.000_998_101_159_560_386,
+    ];
+    let (mod2004, _) = azoth_eos::furst_electrolyte::furst_mod2004_mixture_of(
+        &names,
+        azoth_eos::furst_dielectric::MixingRule::default_for_the_model(),
+        None,
+    )
+    .expect("the 2004 mixture builds");
+    let reduced = mod2004
+        .reduced_parameters(kelvins(298.15), pascals(1001325.0))
+        .expect("reduces");
+    let state = mod2004
+        .phase_state(&reduced, &x, azoth_eos::mixture::RootSide::Liquid)
+        .expect("solves");
+
+    assert!(
+        (state.z - 0.009_635_856_436_241_56).abs() < 1.0e-8,
+        "Z = {}, NeqSim gives 0.00963585643624156",
+        state.z
+    );
+    let want: [f64; 4] = [
+        8.372_546_431_068_63,
+        -5.748_832_668_306_57,
+        -275.908_842_538_599,
+        -166.578_404_248_661,
+    ];
+    for (i, &expected) in want.iter().enumerate() {
+        let scale = expected.abs().max(1.0);
+        assert!(
+            (state.ln_phi[i] - expected).abs() < 1.0e-6 * scale,
+            "ln phi[{i}] = {}, NeqSim gives {expected}",
+            state.ln_phi[i]
+        );
+    }
+}

@@ -70,6 +70,20 @@ pub struct FurstElectrolyte {
     species: Vec<FurstSpecies>,
     table: WijTable,
     rule: MixingRule,
+    /// Whether this is the **2004 revision** of the model.
+    ///
+    /// `PhaseModifiedFurstElectrolyteEosMod2004` is the base with five quantities zeroed, and
+    /// the zeroing is written into the source rather than left out: `volInit` computes
+    /// `solventDiElectricConstantdT` and then multiplies it by zero, and the component's
+    /// `calcSolventdiElectricdn` returns `0.0` with its body commented out. Measured against
+    /// the probe: the base's `getSolventDiElectricConstantdT` is `-0.359218709298880` and
+    /// Mod2004's is `-0.00000000000000`.
+    ///
+    /// So the solvent dielectric constant has **no temperature and no composition
+    /// dependence** in this variant - but the ionic packing fraction keeps both, so the
+    /// phase's own constant still moves. `shielding_dt` and `xlr_dt` go with them, because
+    /// `volInit` never assigns them there.
+    mod2004: bool,
 }
 
 /// What the term returns at one volume.
@@ -108,7 +122,15 @@ impl FurstElectrolyte {
             species,
             table,
             rule,
+            mod2004: false,
         })
+    }
+
+    /// The same term, as `SystemFurstElectrolyteEosMod2004` runs it.
+    #[must_use]
+    pub fn as_mod2004(mut self) -> Self {
+        self.mod2004 = true;
+        self
     }
 
     /// How many components the term is over.
@@ -228,7 +250,27 @@ impl FurstElectrolyte {
                         .sum::<f64>(),
             })
             .collect();
-        let contributions = ln_phi_contributions(&state, &derivatives, mole_numbers)?;
+        let contributions = ln_phi_contributions(&state, &derivatives, mole_numbers, self.mod2004)?;
+        let mut state = state;
+        if self.mod2004 {
+            // **The zeroings, applied where the source applies them.** `volInit` computes the
+            // solvent dielectric constant's temperature derivatives and multiplies them by
+            // zero, and never assigns the shielding parameter's or `XLR`'s at all. Measured:
+            // the base's `getSolventDiElectricConstantdT` is `-0.359218709298880` and this
+            // variant's is `-0.00000000000000`.
+            // **Order matters, and NeqSim's is the opposite of the obvious one.** Its
+            // `volInit` zeroes the solvent field and *then* computes the phase's constant
+            // from it, so `diElectricConstantdT` is `0 * X` = 0 too - and so are its
+            // successors. Zeroing only the solvent field after the fact would leave the
+            // phase's derivative standing, which is invisible in `Z` and `ln phi` but wrong
+            // in every temperature derivative the phase reports.
+            state.solvent_dielectric_dt = 0.0;
+            state.dielectric_dt = 0.0;
+            state.dielectric_dtdt = 0.0;
+            state.dielectric_dtdv = 0.0;
+            state.shielding_dt = 0.0;
+            state.xlr_dt = 0.0;
+        }
 
         Ok(FurstSolution {
             helmholtz_rt,
@@ -266,6 +308,41 @@ pub fn furst_mixture_of(
     names: &[&str],
     rule: crate::furst_dielectric::MixingRule,
     overlay: Option<&crate::databank::Overlay>,
+) -> azoth_core::Result<(
+    crate::mixture::Mixture,
+    crate::molar_enthalpy_entropy::IdealGasModel,
+)> {
+    furst_mixture_with(names, rule, overlay, false)
+}
+
+/// The same, for `SystemFurstElectrolyteEosMod2004`.
+///
+/// The 2004 revision is the base with five quantities zeroed - see
+/// [`FurstElectrolyte::as_mod2004`] - and nothing else differs, including the components'
+/// constructors, which are identical apart from their class names.
+///
+/// # Errors
+/// As [`furst_mixture_of`].
+pub fn furst_mod2004_mixture_of(
+    names: &[&str],
+    rule: crate::furst_dielectric::MixingRule,
+    overlay: Option<&crate::databank::Overlay>,
+) -> azoth_core::Result<(
+    crate::mixture::Mixture,
+    crate::molar_enthalpy_entropy::IdealGasModel,
+)> {
+    furst_mixture_with(names, rule, overlay, true)
+}
+
+/// The fluid both Fürst systems are, with the revision chosen.
+///
+/// # Errors
+/// As [`furst_mixture_of`].
+pub fn furst_mixture_with(
+    names: &[&str],
+    rule: crate::furst_dielectric::MixingRule,
+    overlay: Option<&crate::databank::Overlay>,
+    mod2004: bool,
 ) -> azoth_core::Result<(
     crate::mixture::Mixture,
     crate::molar_enthalpy_entropy::IdealGasModel,
@@ -379,6 +456,7 @@ pub fn furst_mixture_of(
         }
     };
     let term = FurstElectrolyte::new(species, rule)?;
+    let term = if mod2004 { term.as_mod2004() } else { term };
     let mixture = crate::mixture::Mixture::new(components, matrix)?
         .with_cubic(crate::Cubic::Srk)
         .with_alpha(crate::alpha_term::Alpha::Schwartzentruber)

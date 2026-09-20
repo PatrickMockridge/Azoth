@@ -21,28 +21,28 @@ use azoth_eos::results::{
     BubbleTemperatureResult, BwrsPhaseResult, CapillaryDewPointResult, ChungConductivityResult,
     ChungViscosityResult, Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult,
     CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult,
-    EosCgPhaseResult, FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult,
-    GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
-    Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult,
-    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
-    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
-    MolarEnthalpyEntropyResult, MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult,
-    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult,
-    PcsaftRahmatPhaseResult, PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult,
-    PrCpaPhaseResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
-    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
-    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
-    PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SaftFlashResult,
-    SaftVrMiePhaseResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
-    SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
-    TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult, TwuKappaResult,
-    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
+    EosCgPhaseResult, FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult,
+    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
+    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
+    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
+    PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
+    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
+    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
+    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult,
+    PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
+    RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
+    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
+    SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    ThermalConductivityResult, TpMultiflashResult, TsFlashResult, TuFlashResult, TvFlashResult,
+    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
@@ -6163,6 +6163,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         UmrCpaPhaseResult::CALC_ID => UmrCpaPhaseResult::FIELDS.to_vec(),
         SoreideWhitsonPhaseResult::CALC_ID => SoreideWhitsonPhaseResult::FIELDS.to_vec(),
         FurstElectrolytePhaseResult::CALC_ID => FurstElectrolytePhaseResult::FIELDS.to_vec(),
+        FurstElectrolyteMod2004PhaseResult::CALC_ID => {
+            FurstElectrolyteMod2004PhaseResult::FIELDS.to_vec()
+        }
         AmmoniaPhaseResult::CALC_ID => AmmoniaPhaseResult::FIELDS.to_vec(),
         Co2PhaseResult::CALC_ID => Co2PhaseResult::FIELDS.to_vec(),
         HeliumPhaseResult::CALC_ID => HeliumPhaseResult::FIELDS.to_vec(),
@@ -6807,6 +6810,45 @@ pub struct PyFurstElectrolytePhaseResult {
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
+}
+
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FurstElectrolyteMod2004PhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFurstElectrolyteMod2004PhaseResult {
+    /// The compressibility factor at the chosen root.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFurstElectrolyteMod2004PhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FurstElectrolyteMod2004PhaseResult(z_factor={}, ln_phi={:?})",
+            self.z_factor, self.ln_phi
+        )
+    }
+}
+
+impl From<&FurstElectrolyteMod2004PhaseResult> for PyFurstElectrolyteMod2004PhaseResult {
+    fn from(r: &FurstElectrolyteMod2004PhaseResult) -> Self {
+        Self {
+            z_factor: r.z_factor,
+            ln_phi: r.ln_phi.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
 }
 
 #[pymethods]

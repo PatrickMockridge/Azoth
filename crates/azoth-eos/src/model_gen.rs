@@ -13,6 +13,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/furst_electrolyte_mod2004_phase.toml
 //!   - specs/models/eos/furst_electrolyte_phase.toml
 //!   - specs/models/eos/ge_nrtl_flash.toml
 //!   - specs/models/eos/ge_nrtl_phase.toml
@@ -1678,6 +1679,117 @@ pub static EOS_CG_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&EOS_CG_PHASE_ALGORITHM),
     checks: EOS_CG_PHASE_CHECKS,
     cases: EOS_CG_PHASE_CASES,
+};
+
+static FURST_ELECTROLYTE_MOD2004_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states, and the dielectric polynomial carries a `1/T` term",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static FURST_ELECTROLYTE_MOD2004_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_shipped_test_aqueous_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 298.15), ("P", 1001325.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "water", "Na+", "Cl-"])],
+        strings: &[("compressed_phase", "liquid")],
+        vectors: &[(
+            "x",
+            &[
+                0.000226524776743935,
+                0.997777272904135,
+                0.000998101159560386,
+                0.000998101159560386,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.00963585643624156)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                8.37254643106863,
+                -5.74883266830657,
+                -275.908842538599,
+                -166.578404248661,
+            ],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_shipped_test_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 298.15), ("P", 1001325.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "water", "Na+", "Cl-"])],
+        strings: &[("compressed_phase", "vapour")],
+        vectors: &[(
+            "x",
+            &[
+                0.996758133992898,
+                0.00324186600710256,
+                1.0000986677163e-43,
+                1.0000986677163e-43,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.983240760727211)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                -0.0168629980706276,
+                -0.0194516878489426,
+                -71.766130185231,
+                -96.5397755302439,
+            ],
+        )],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `eos.furst_electrolyte_mod2004_phase`.
+pub static FURST_ELECTROLYTE_MOD2004_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.furst_electrolyte_mod2004_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: FURST_ELECTROLYTE_MOD2004_PHASE_CHECKS,
+    cases: FURST_ELECTROLYTE_MOD2004_PHASE_CASES,
 };
 
 static FURST_ELECTROLYTE_PHASE_CHECKS: &[SpecCheck] = &[
@@ -7508,6 +7620,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
     &EOS_CG_PHASE_SPEC,
+    &FURST_ELECTROLYTE_MOD2004_PHASE_SPEC,
     &FURST_ELECTROLYTE_PHASE_SPEC,
     &GE_NRTL_FLASH_SPEC,
     &GE_NRTL_PHASE_SPEC,

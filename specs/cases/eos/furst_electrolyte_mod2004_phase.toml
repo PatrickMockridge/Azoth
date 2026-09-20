@@ -1,0 +1,67 @@
+model = "eos.furst_electrolyte_mod2004_phase"
+
+[[cases]]
+id = "the_shipped_test_aqueous_phase"
+tolerance = 1e-06
+source = """**This case carries `1e-6` and not the `1e-8` the other electrolyte cases do**, because
+this revision's `ln phi` depends on the phase's *size* and a composition cannot express that.
+Its `dFBorndN` is `FBornX XBorni + FBornD` with `FBornD = -K bornX/eps_s^2` built from
+`bornX = sum_i n_i z_i^2/sigma_i` - **extensive**. The base model multiplies that same
+`FBornD` by the solvent's composition derivative, which is `1/sum_i n_i` and makes the
+product intensive; this revision adds it unweighted, so every `ln phi` carries a term
+proportional to the total moles. Measured at this state: `FBornD = -4.9371195292414854e-05`
+and the phase holds `n = 1.00190245289410`, so `FBornD (n - 1) = -9.3926e-08` against a
+residual of `-9.3748e-08` - the whole of the difference, to 0.2%. A model taking a
+composition has `n = 1` and cannot reproduce the rest.
+
+NeqSim 3.20.0's `SystemFurstElectrolyteEosMod2004` with its own test's mixture - methane,
+water, Na+ and Cl- at `0.1 1.0 0.001 0.001` - flashed at 25 C and 10.01325 bara, from the
+same probe (`reportMod2004`): `Z = 0.00963585643624156` and
+`lnPhi = [8.37254643106863, -5.74883266830657, -275.908842538599, -166.578404248661]`.
+
+**The two Fürst revisions differ by one term and it is not a zeroing.** Mod2004's
+`dFBorndN` is `FBornX XBorni + FBornD`, where the base's is `FBornX XBorni + FBornD
+solventdiElectricdn` - and since that derivative is zero in this variant, the base would give
+`FBornX XBorni` alone. So Mod2004 adds a **component-independent** `4.937e-5` to every
+`ln phi`, and that is the whole of the difference between the two rows above and the base
+model's. Measured twice: it is the size of `FBornD` at this state, and it is what the first
+draft of this port was out by when it read the variant as a pure zeroing."""
+[cases.inputs]
+components = ["methane", "water", "Na+", "Cl-"]
+T = 298.15
+P = 1001325.0
+x = [
+    0.000226524776743935,
+    0.997777272904135,
+    0.000998101159560386,
+    0.000998101159560386,
+]
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.00963585643624156
+ln_phi = [8.37254643106863, -5.74883266830657, -275.908842538599, -166.578404248661]
+[[cases]]
+id = "the_shipped_test_gas"
+tolerance = 1e-06
+source = """The same probe at the same state on the other root: `Z = 0.983240760727211` and
+`lnPhi = [-0.0168629980706276, -0.0194516878489426, -71.7661301852310, -96.5397755302439]`.
+
+The vapour's `Z` differs from the base model's in the tenth digit - `0.983240760727211`
+against `0.983240760287343` - because the zeroed derivatives enter the root only through the
+electrolyte's pressure, which is small here. The ions' `ln phi` differ by `3.2e-4`, which is
+the `FBornD` shift again, and this case carries the same `1e-6` tolerance for the same
+reason: the phase's size enters this revision's `ln phi` and a composition cannot state it."""
+[cases.inputs]
+components = ["methane", "water", "Na+", "Cl-"]
+T = 298.15
+P = 1001325.0
+x = [
+    0.996758133992898,
+    0.00324186600710256,
+    1.00009866771630e-43,
+    1.00009866771630e-43,
+]
+compressed_phase = "vapour"
+[cases.expected]
+z_factor = 0.983240760727211
+ln_phi = [-0.0168629980706276, -0.0194516878489426, -71.7661301852310, -96.5397755302439]

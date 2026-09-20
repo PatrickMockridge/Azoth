@@ -221,6 +221,46 @@ public class FurstProbe {
     }
   }
 
+  /** The same rows for the Mod2004 phase, whose class shares its method names. */
+  private static void reportMod2004(String label, String[] names, double[] moles, double tC,
+      double pBara) {
+    System.out.printf("# %s%n", label);
+    neqsim.thermo.system.SystemInterface system =
+        new neqsim.thermo.system.SystemFurstElectrolyteEosMod2004(298.15, 10.01325);
+    for (int i = 0; i < names.length; i++) {
+      system.addComponent(names[i], moles[i]);
+    }
+    system.setMixingRule(4);
+    system.setTemperature(tC, "C");
+    system.setPressure(pBara, "bara");
+    try {
+      ThermodynamicOperations ops = new ThermodynamicOperations(system);
+      ops.TPflash();
+      system.initProperties();
+      for (int p = 0; p < system.getNumberOfPhases(); p++) {
+        PhaseInterface phase = system.getPhase(p);
+        System.out.printf("# %s phase %d%n", label, p);
+        row("T", phase.getTemperature());
+        row("n_total", phase.getNumberOfMolesInPhase());
+        row("V", phase.getMolarVolume());
+        row("Z", phase.getZ());
+        int n = phase.getNumberOfComponents();
+        for (int i = 0; i < n; i++) {
+          row("x[" + i + "]", phase.getComponent(i).getx());
+          row("lnPhi[" + i + "]", Math.log(phase.getComponent(i).getFugacityCoefficient()));
+        }
+        // The five quantities Mod2004 zeroes, read reflectively so one method serves both
+        // classes - and printed so the difference from the base model is a measurement.
+        for (String name : new String[] {"getSolventDiElectricConstantdT", "getShieldingParameter",
+            "getXLR", "getSolventDiElectricConstant", "getDielectricConstant"}) {
+          row(name, (Double) phase.getClass().getMethod(name).invoke(phase));
+        }
+      }
+    } catch (Throwable error) {
+      System.out.printf("# %s failed: %s%n", label, error);
+    }
+  }
+
   public static void main(String[] args) {
     // `SystemFurstElectrolyteEosTest`'s own mixture, at its own state.
     report("the shipped test: methane water Na+ Cl-",
@@ -247,6 +287,9 @@ public class FurstProbe {
     report("the same at ten times the moles",
         new String[] {"methane", "water", "Na+", "Cl-"},
         new double[] {1.0, 10.0, 0.01, 0.01}, 25.0, 10.01325);
+
+    reportMod2004("MOD2004 shipped test", new String[] {"methane", "water", "Na+", "Cl-"},
+        new double[] {0.1, 1.0, 0.001, 0.001}, 25.0, 10.01325);
 
     // A gas-rich state, where the aqueous phase barely exists.
     report("at 60 C and 40 bara",

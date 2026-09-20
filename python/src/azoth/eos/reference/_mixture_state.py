@@ -865,6 +865,17 @@ def _furst_solve(reduced: ReducedParameters, x: list[float], molar_volume: float
     """
     term = reduced.furst
     state = _furst_state(reduced, x, molar_volume)
+    if term.mod2004:
+        # The five zeroings the 2004 revision applies: the solvent dielectric constant's
+        # temperature derivative, the shielding parameter's and `XLR`'s. Measured: the base's
+        # `getSolventDiElectricConstantdT` is `-0.359218709298880` and the variant's is
+        # `-0.00000000000000`.
+        state.solvent_dielectric_dt = 0.0
+        state.dielectric_dt = 0.0
+        state.dielectric_dtdt = 0.0
+        state.dielectric_dtdv = 0.0
+        state.shielding_dt = 0.0
+        state.xlr_dt = 0.0
     derivatives = [
         _FurstComponentDerivatives(
             charge=s.charge,
@@ -875,7 +886,7 @@ def _furst_solve(reduced: ReducedParameters, x: list[float], molar_volume: float
         )
         for i, s in enumerate(term.species)
     ]
-    contributions = _furst_ln_phi_contributions(state, derivatives, list(x))
+    contributions = _furst_ln_phi_contributions(state, derivatives, list(x), term.mod2004)
     return _FurstSolution(
         helmholtz_rt=_furst_fsr2(state) + _furst_flr(state) + _furst_fborn(state),
         helmholtz_rt_dv=1.0e5 * (_furst_fsr2_dv(state) + _furst_flr_dv(state)),

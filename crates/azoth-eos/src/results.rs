@@ -2366,6 +2366,26 @@ impl CalcResult for FurstElectrolytePhaseResult {
     }
 }
 
+/// Result of `eos.furst_electrolyte_mod2004_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FurstElectrolyteMod2004PhaseResult {
+    /// The compressibility factor at the chosen root.
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    pub ln_phi: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for FurstElectrolyteMod2004PhaseResult {
+    const CALC_ID: &'static str = "eos.furst_electrolyte_mod2004_phase";
+    const FIELDS: &'static [&'static str] = &["z_factor", "ln_phi", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.soreide_whitson_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SoreideWhitsonPhaseResult {
