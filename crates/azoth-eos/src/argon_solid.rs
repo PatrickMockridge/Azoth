@@ -104,6 +104,9 @@ pub fn helmholtz(temperature: f64, molar_volume: f64) -> Dual {
     let zero_point = ((Z2 / Z3) * (1.0 - (reduced_volume * (V0 / Z4)).powf(Z3))).exp() * (Z1 * R);
 
     let theta_d_temperature =
+    // numerics-ok: `Dual` has no `powi` - it is the dual-number type, and its `powf`
+    // documents its own domain ("valid while the value is positive"). The
+    // integral-exponent rule is about `f64`, where `powi` exists.
         THETA_D0 + A_D * ((-B_D * temp.powf(2.0) - C_D * temp.powf(3.0)).exp() - 1.0);
     let theta_d = ((GAMMA_D0 / Q_D) * (1.0 - reduced_volume.powf(Q_D))).exp() * theta_d_temperature;
     let weight_sum: f64 = EINSTEIN_WEIGHTS.iter().sum();
@@ -118,6 +121,9 @@ pub fn helmholtz(temperature: f64, molar_volume: f64) -> Dual {
     let einstein = einstein * temp * (3.0 * R);
 
     let temperature_ratio = temp / THETA_D0;
+    // numerics-ok: `Dual` has no `powi` - it is the dual-number type, and its `powf`
+    // documents its own domain ("valid while the value is positive"). The
+    // integral-exponent rule is about `f64`, where `powi` exists.
     let anharmonic_temperature = temperature_ratio.powf(4.0)
         / (temperature_ratio.powf(2.0) * B2 + 1.0)
         * theta_d_temperature
@@ -153,6 +159,9 @@ fn buckingham_pair_potential(distance: Dual) -> Dual {
     let repulsive =
         (distance * (-REPULSIVE_EXPONENT / MINIMUM_POTENTIAL_DISTANCE) + REPULSIVE_EXPONENT).exp()
             * (EPSILON * 6.0 / (REPULSIVE_EXPONENT - 6.0));
+    // numerics-ok: `Dual` has no `powi` - it is the dual-number type, and its `powf`
+    // documents its own domain ("valid while the value is positive"). The
+    // integral-exponent rule is about `f64`, where `powi` exists.
     let attractive = (distance.reciprocal() * MINIMUM_POTENTIAL_DISTANCE).powf(6.0)
         * (EPSILON * REPULSIVE_EXPONENT / (REPULSIVE_EXPONENT - 6.0));
     repulsive - attractive

@@ -224,6 +224,7 @@ tolerance = 1.0e-9
 |---|---|
 | `tools/spec_lint.py` | schema conformance, the semantic rules a schema cannot express, and every string's length and shape |
 | `tools/check_json_keys.py` | a duplicated key, which `json.loads` silently resolves to the last one |
+| `tools/check_numerics.py` | an integral exponent written as a float, and a decimal exponent that approximates a rational |
 | `test_registry_contract.py` | spec ↔ registry ↔ code agreement, in both languages |
 | `test_model_contract.py` | the same for models, plus the algorithm-scheme vocabulary |
 | the `docs-drift` job | a spec edited without regenerating its output |

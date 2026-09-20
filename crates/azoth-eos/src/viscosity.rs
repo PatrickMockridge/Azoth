@@ -91,7 +91,7 @@ fn get_ref_viscosity(t0: f64, p0: f64) -> Result<f64> {
     let red_mol_dens = (mol_dens_molar - CRIT_MOL_DENS) / CRIT_MOL_DENS; // subtraction here
     let mol_dens = rho * 1e-3; // g/cm^3
 
-    let visc_ref_o = GVCOEF[0] * t0.powf(-1.0)
+    let visc_ref_o = GVCOEF[0] * t0.powi(-1)
         + GVCOEF[1] * t0.powf(-2.0 / 3.0)
         + GVCOEF[2] * t0.powf(-1.0 / 3.0)
         + GVCOEF[3]

@@ -46,7 +46,7 @@ pub fn soreide_whitson_alpha(salinity: f64, Tr: f64) -> Result<SoreideWhitsonAlp
 
     let a = 1.0
         + 0.453 * (1.0 - Tr * (1.0 - 0.0103 * salinity.powf(1.1)))
-        + 0.0034 * ((1.0 / Tr).powf(3.0) - 1.0);
+        + 0.0034 * ((1.0 / Tr).powi(3) - 1.0);
     let alpha = a * a;
 
     apply_checks(

@@ -93,6 +93,9 @@ pub fn helmholtz(temperature: f64, molar_volume: f64) -> Dual {
     let vinet = vinet_energy(reduced_volume);
 
     let theta_d_temperature =
+    // numerics-ok: `Dual` has no `powi` - it is the dual-number type, and its `powf`
+    // documents its own domain ("valid while the value is positive"). The
+    // integral-exponent rule is about `f64`, where `powi` exists.
         THETA_D0 + A_D * ((-B_D * temp.powf(2.0) - C_D * temp.powf(3.0)).exp() - 1.0);
     let theta_d = ((GAMMA_D0 / Q_D) * (1.0 - reduced_volume.powf(Q_D))).exp() * theta_d_temperature;
     let weight_sum: f64 = EINSTEIN_WEIGHTS.iter().sum();
@@ -112,6 +115,9 @@ pub fn helmholtz(temperature: f64, molar_volume: f64) -> Dual {
     let internal = (theta_internal / temp).log_one_minus_exp_negative() * temp * R;
 
     let temperature_ratio = temp / THETA_D0;
+    // numerics-ok: `Dual` has no `powi` - it is the dual-number type, and its `powf`
+    // documents its own domain ("valid while the value is positive"). The
+    // integral-exponent rule is about `f64`, where `powi` exists.
     let anharmonic_temperature = temperature_ratio.powf(4.0)
         / (temperature_ratio.powf(2.0) * B2 + 1.0)
         * theta_d_temperature

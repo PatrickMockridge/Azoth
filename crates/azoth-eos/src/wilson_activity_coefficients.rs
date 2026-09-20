@@ -21,14 +21,23 @@ fn interaction_energy(m: f64, tc: f64, t: f64) -> f64 {
     let coordination = 6.0;
     let carbon = m / 0.014;
     let x = 1.0 - t / tc;
+    // numerics-ok: NeqSim ComponentGEWilson.java:146 writes 0.3333 / 0.8333 / 1.2083,
+    // which are 1/3, 5/6 and 29/24. Transcribed, not rationalised - the divergence
+    // from the rational form is recorded in the module doc.
     let d0 = 5.2804 * x.powf(0.3333) + 12.865 * x.powf(0.8333) + 1.171 * x.powf(1.2083)
         - 13.166 * x
         + 0.4858 * x.powi(2)
         - 1.088 * x.powi(3);
+    // numerics-ok: NeqSim ComponentGEWilson.java:146 writes 0.3333 / 0.8333 / 1.2083,
+    // which are 1/3, 5/6 and 29/24. Transcribed, not rationalised - the divergence
+    // from the rational form is recorded in the module doc.
     let d1 = 0.80022 * x.powf(0.3333) + 273.23 * x.powf(0.8333) + 465.08 * x.powf(1.2083)
         - 638.51 * x
         - 145.12 * x.powi(2)
         - 74.049 * x.powi(3);
+    // numerics-ok: NeqSim ComponentGEWilson.java:146 writes 0.3333 / 0.8333 / 1.2083,
+    // which are 1/3, 5/6 and 29/24. Transcribed, not rationalised - the divergence
+    // from the rational form is recorded in the module doc.
     let d2 = 7.2543 * x.powf(0.3333) - 346.45 * x.powf(0.8333) - 610.48 * x.powf(1.2083)
         + 839.89 * x
         + 160.05 * x.powi(2)

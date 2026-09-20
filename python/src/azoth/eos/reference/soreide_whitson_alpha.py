@@ -38,11 +38,7 @@ def soreide_whitson_alpha(salinity: float, Tr: float) -> SoreideWhitsonAlphaResu
     values = {"salinity": salinity, "Tr": Tr}
     apply_checks(checks.on_input, values.get, warnings)
 
-    a = (
-        1.0
-        + 0.453 * (1.0 - Tr * (1.0 - 0.0103 * salinity**1.1))
-        + 0.0034 * ((1.0 / Tr) ** 3.0 - 1.0)
-    )
+    a = 1.0 + 0.453 * (1.0 - Tr * (1.0 - 0.0103 * salinity**1.1)) + 0.0034 * ((1.0 / Tr) ** 3 - 1.0)
     alpha = a * a
 
     apply_checks(checks.derived, lambda name: alpha if name == "alpha" else None, warnings)

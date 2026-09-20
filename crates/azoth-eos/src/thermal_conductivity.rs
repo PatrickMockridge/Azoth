@@ -96,7 +96,7 @@ fn methane_cp0(t: f64) -> f64 {
 fn dilute_gas_viscosity(t: f64) -> f64 {
     let mol_dens = ATM / NEQSIM_GAS_CONSTANT / t / 1e3;
     let red = (mol_dens - 10.15) / 10.15;
-    let visc_ref_o = VISC_GV[0] * t.powf(-1.0)
+    let visc_ref_o = VISC_GV[0] * t.powi(-1)
         + VISC_GV[1] * t.powf(-2.0 / 3.0)
         + VISC_GV[2] * t.powf(-1.0 / 3.0)
         + VISC_GV[3]
@@ -123,7 +123,7 @@ fn reference_conductivity(t: f64, p_pa: f64) -> Result<f64> {
     let red = (mol_dens_molar - 10.15) / 10.15;
     let mol_dens = rho * 1e-3;
 
-    let visc_ref_o = COND_GV[0] * t.powf(-1.0)
+    let visc_ref_o = COND_GV[0] * t.powi(-1)
         + COND_GV[1] * t.powf(-2.0 / 3.0)
         + COND_GV[2] * t.powf(-1.0 / 3.0)
         + COND_GV[3]

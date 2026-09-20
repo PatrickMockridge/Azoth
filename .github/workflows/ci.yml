@@ -36,6 +36,12 @@ jobs:
       # schema can carry a duplicated keyword and pass every other gate here.
       # keycard.schema.json did, in two places.
       - run: python tools/check_json_keys.py
+      # The numerical-safety rule in `docs/src/calculus/numerics.md`, for the two cases
+      # that are decidable from a line of source: an integral exponent written as a
+      # float (which is NaN or complex for a negative base), and a decimal that
+      # approximates a rational (`0.3333` for `1/3`, measured to differ by 4.6e-4 at
+      # x = 10^6). A line says its decimal is NeqSim's own with a `numerics-ok:` marker.
+      - run: python tools/check_numerics.py
       # The vendoring record: every column of every vendored upstream, and what was
       # done with it. It also prints the tally, because the interesting number is how
       # many columns are absent because the model does not exist yet.

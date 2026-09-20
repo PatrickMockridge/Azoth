@@ -16,7 +16,9 @@ import pytest
 
 from azoth.core.errors import OutOfRangeError
 from azoth.core.units import quantity
+from azoth.eos import from_names
 from azoth.eos.reference.antoine_vapor_pressure import antoine_vapor_pressure
+from azoth.eos.reference.wilson_activity_coefficients import wilson_activity_coefficients
 
 WAGNER = (-7.0, 1.5, -2.0, 0.5, 0.0)
 TC = 190.56
@@ -88,3 +90,29 @@ def test_python_promotes_a_negative_base_and_lean_does_not() -> None:
     assert value == pytest.approx(complex(1.0, 1.7320508075688772), abs=1e-12)
     assert value.real == pytest.approx(1.0), "Lean's Real.rpow value"
     assert math.cbrt(-8.0) == -2.0, "and the real odd root is neither"
+
+
+def test_a_supercritical_component_propagates_nan_in_both_kernels() -> None:
+    """**The second site the rule found, and the same defect class as the Wagner form.**
+
+    `eos.wilson_activity_coefficients`' correlation is a power of `1 - T/Tc`, so a
+    component above its critical temperature has a negative base and fractional
+    exponents. Its spec says a supercritical component "yields `NaN` exactly as NeqSim
+    does, which is not refused here" - and that was true of the Rust kernel and false of
+    the Python one, which raised `ValueError: math domain error` from `math.pow`. The two
+    disagreed in *kind* about a state neither refuses.
+
+    The policy here is **propagate** rather than refuse, because the spec states NaN as
+    the model's own domain ending and NeqSim does the same. So the fix is Python returning
+    NaN, not both refusing.
+    """
+    mixture = from_names(["n-heptane", "n-octane"])
+    # n-heptane's Tc is 540.2 K, so 560 K is supercritical for one component.
+    below = wilson_activity_coefficients(mixture, quantity(400.0, "K"), [0.5, 0.5])
+    assert all(math.isfinite(v) for v in below.ln_gamma)
+
+    above = wilson_activity_coefficients(mixture, quantity(560.0, "K"), [0.5, 0.5])
+    assert all(math.isnan(v) for v in above.ln_gamma), (
+        "a supercritical component must propagate NaN, which is what NeqSim and the Rust "
+        "kernel both do - and what the spec says"
+    )

@@ -27,6 +27,18 @@ def _interaction_energy(m: float, tc: float, t: float) -> float:
     coordination = 6.0
     carbon = m / 0.014
     x = 1.0 - t / tc
+    # **A supercritical component propagates `NaN`, deliberately.** `x = 1 - T/Tc` is
+    # negative above `Tc` and the correlation's exponents are fractional, so the four
+    # powers below are not real. `math.pow` raises there where Rust's `f64::powf` returns
+    # `NaN` and NeqSim's `Math.pow` does too - so without this the two kernels would
+    # disagree in *kind* about a state neither refuses, and the spec's own words ("yields
+    # `NaN` exactly as NeqSim does") would be true of one of them.
+    #
+    # This is the ***propagate*** policy from `docs/src/calculus/numerics.md`, stated
+    # rather than inherited: `NaN` is what the model's domain ends in, and it reaches the
+    # caller through the ordinary arithmetic rather than as an exception.
+    if x < 0.0:
+        return math.nan
     d0 = (
         5.2804 * math.pow(x, 0.3333)
         + 12.865 * math.pow(x, 0.8333)
