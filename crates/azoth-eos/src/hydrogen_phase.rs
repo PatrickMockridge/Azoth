@@ -24,13 +24,20 @@ use crate::results::HydrogenPhaseResult;
 /// boundary-only: the spec declares `T` and `P`, and the isomer is a caller's choice that
 /// the bridge carries as a string.
 ///
+/// `compressed_phase` selects the **root**, and below the critical temperature the two are
+/// different states at the same temperature and pressure - the spec declares it, because a
+/// caller cannot supply a compressibility factor instead without solving this model first.
+///
 /// # Errors
-/// * [`AzothError::OutOfRange`] if `T` or `P` is not positive.
-/// * [`AzothError::InvalidInput`] if `hydrogen_type` is not `normal`, `para` or `ortho`.
+/// * [`AzothError::OutOfRange`] if `T` or `P` is not positive, or if the dense root was
+///   asked for at a state whose dense root is outside the range the equation is fitted to.
+/// * [`AzothError::InvalidInput`] if `hydrogen_type` is not `normal`, `para` or `ortho`, or
+///   `compressed_phase` is neither `liquid` nor `vapour`.
 pub fn hydrogen_phase(
     t: ThermodynamicTemperature,
     p: Pressure,
     hydrogen_type: &str,
+    compressed_phase: &str,
 ) -> Result<HydrogenPhaseResult> {
     let spec = &model_gen::HYDROGEN_PHASE_SPEC;
     let mut warnings = Vec::new();
@@ -51,7 +58,25 @@ pub fn hydrogen_phase(
 
     let tk = t.value;
     let p_pa = p.value;
-    let rho = leachman::solve_density(tk, p_pa, ht);
+    let rho = match compressed_phase {
+        "vapour" => leachman::solve_density(tk, p_pa, ht),
+        "liquid" => leachman::solve_density_dense(tk, p_pa, ht).ok_or_else(|| {
+            AzothError::out_of_range(
+                "compressed_phase",
+                p_pa,
+                "the dense root was asked for, and this state has none within the density \
+                 range the equation is fitted to: the isotherm does not cross the pressure \
+                 there below the ceiling the solve brackets from. `vapour` is the root such a \
+                 state is on.",
+            )
+        })?,
+        other => {
+            return Err(AzothError::invalid_input(
+                "compressed_phase",
+                format!("`{other}`; expected `liquid` or `vapour`"),
+            ));
+        }
+    };
     let props = leachman::properties(tk, rho, ht);
 
     Ok(HydrogenPhaseResult {

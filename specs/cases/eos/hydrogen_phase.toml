@@ -5,6 +5,7 @@ tolerance = 1e-09
 [cases.inputs]
 T = 300.0
 P = 100000.0
+compressed_phase = "vapour"
 [cases.expected]
 z_factor = 1.000584534646334
 u = 5483.632550699886
@@ -19,6 +20,7 @@ tolerance = 1e-09
 [cases.inputs]
 T = 100.0
 P = 1000000.0
+compressed_phase = "vapour"
 [cases.expected]
 z_factor = 0.9983759652275699
 u = 1773.315295196198

@@ -1447,7 +1447,12 @@ def heat_of_vaporization(
     T: float,
 ) -> HeatOfVaporizationResult: ...
 def helium_phase(T: float, P: float) -> HeliumPhaseResult: ...
-def hydrogen_phase(T: float, P: float, hydrogen_type: str = "normal") -> HydrogenPhaseResult: ...
+def hydrogen_phase(
+    T: float,
+    P: float,
+    compressed_phase: str,
+    hydrogen_type: str = "normal",
+) -> HydrogenPhaseResult: ...
 def ideal_gas_cp(
     cp_a: float,
     cp_b: float,

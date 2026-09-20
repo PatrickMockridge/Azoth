@@ -18,11 +18,14 @@ not an equation, and both implementations read it from here.
 
 | Setting | Value |
 |---|---|
-| Scheme | `newton_density_solve` |
+| Scheme | `density_solve_on_the_selected_root` |
 | Convergence | `absolute` |
 | Tolerance | `1e-12` |
 | Max iterations | `100` |
-| Initialisation | `ideal_gas` |
+| Initialisation | `ideal_gas_or_dense_side` |
+| Bracket | `dense_side_log_expansion` |
+| Bracket range | `0.001` to `4.0` |
+| Bracket steps | `200` |
 
 ## Inputs
 
@@ -30,6 +33,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `T` | K | absolute temperature |
 | `P` | Pa | absolute pressure |
+| `compressed_phase` | liquid / vapour | which root of the isotherm is wanted. Below the critical temperature they are different states at the same temperature and pressure, so a caller cannot supply a compressibility factor instead without solving the model first. |
 
 
 ## Outputs
@@ -52,7 +56,8 @@ not an equation, and both implementations read it from here.
 ## Assumptions
 
 - the fluid is pure hydrogen; the equation of state is the Leachman multiparameter Helmholtz formulation of NeqSim's `thermo.util.leachman.Leachman`, with a Planck-Einstein ideal-gas part and polynomial, exponential and Gaussian residual terms.
-- the density solve is Newton's method from the ideal-gas guess, so it finds the gas-like root; the dense (liquid) root is not selected.
+- **the root is the caller's**: below the critical temperature the isotherm crosses a pressure three times, so the dilute root is as much a solution as the dense one - at 13.8 K and 7042 Pa they are `Z = 0.985` and `Z = 0.0016`.
+- the dilute root is Newton from the ideal-gas guess; the dense one is bracketed from the dense side **down** and bisected, because walking up from a dilute start meets the vapour's crossing first and stops there.
 - every property follows from the Helmholtz derivatives, so the property set is a rearrangement of one derivative evaluation.
 - the spin-isomer (normal, para or ortho hydrogen) is a boundary-only choice carried as a string, not a declared input; the default is normal hydrogen, the 3:1 ortho:para equilibrium mixture.
 - the gas constant is the equation's own `R = 8.31451` J/(mol.K), the same rounded value the other reference equations use.
@@ -61,8 +66,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `gas_at_1_bar` | T = 300.0, P = 100000.0 | z_factor = 1.000584534646334, u = 5483.632550699886, h = 7979.443586448574, s = 107.8880264448619, cv = 20.53458433576209, cp = 28.85299070530393, g = -24386.96434700999 |
-| `gas_at_10_bar` | T = 100.0, P = 1000000.0 | z_factor = 0.9983759652275699, u = 1773.315295196198, h = 2603.415989860626, s = 59.74983629167724, cv = 14.32576936590632, cp = 23.20854934562025, g = -3371.567639307098 |
+| `gas_at_1_bar` | T = 300.0, P = 100000.0, compressed_phase = vapour | z_factor = 1.000584534646334, u = 5483.632550699886, h = 7979.443586448574, s = 107.8880264448619, cv = 20.53458433576209, cp = 28.85299070530393, g = -24386.96434700999 |
+| `gas_at_10_bar` | T = 100.0, P = 1000000.0, compressed_phase = vapour | z_factor = 0.9983759652275699, u = 1773.315295196198, h = 2603.415989860626, s = 59.74983629167724, cv = 14.32576936590632, cp = 23.20854934562025, g = -3371.567639307098 |
 
 ## References
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import math
 
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import HydrogenPhaseResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -23,6 +23,18 @@ MODEL_ID = "eos.hydrogen_phase"
 
 #: The gas constant, J/(mol*K).
 R = 8.31451
+
+#: The densest reduced density the dense-root solve considers, and the dilute end of the same
+#: search. Guards rather than physical bounds: the residual's fitted terms run out before the
+#: densest state reached here, which is `delta = 2.46`.
+_MAXIMUM_REDUCED_DENSITY = 4.0
+_MINIMUM_REDUCED_DENSITY = 1.0e-3
+
+#: The bracket expansion in log density - ten per cent a step, as the solid volume solve uses
+#: - and the two caps.
+_DENSITY_EXPANSION = 0.0953102
+_MAXIMUM_BRACKET_STEPS = 200
+_MAXIMUM_BISECTION_STEPS = 200
 
 _TYPES = {
     "normal": (
@@ -284,7 +296,18 @@ def _properties(t: float, rho: float, ht: str) -> dict[str, float]:
     return {"z": z, "u": u, "h": h, "s": s, "cv": cv, "cp": cp, "g": g}
 
 
+def _pressure_residual(t: float, rho: float, p: float, ht: str) -> float:
+    """The pressure a state carries at a molar density, minus the one asked for."""
+    tc, rhoc, _, _ = _TYPES[ht]
+    delta = rho / rhoc
+    res = _residual(delta, tc / t, ht)
+    return rho * R * t * (1.0 + delta * res["alpha_delta"]) - p
+
+
 def _solve_density(t: float, p: float, ht: str) -> float:
+    """The **dilute** root: Newton from the ideal-gas guess, which follows whichever branch
+    that guess is on. For a compressed liquid that is not the liquid's - see
+    :func:`_solve_density_dense`."""
     tc, rhoc, _, _ = _TYPES[ht]
     rho = p / (R * t)
     for _ in range(100):
@@ -304,17 +327,71 @@ def _solve_density(t: float, p: float, ht: str) -> float:
     return rho
 
 
-def hydrogen_phase(T: Q, P: Q, hydrogen_type: str = "normal") -> HydrogenPhaseResult:
+def _solve_density_dense(t: float, p: float, ht: str) -> float | None:
+    """The **dense** root, or ``None`` where the state has none in the fitted range.
+
+    Bracketed from the dense side **down**, which is the whole difference from
+    :func:`_solve_density`: below the critical temperature the isotherm crosses a pressure
+    three times, so walking up from a dilute start meets the vapour's crossing first and
+    stops there. The bracket is then bisected, which needs no derivative and cannot leave
+    the interval.
+    """
+    _tc, rhoc, _, _ = _TYPES[ht]
+    upper = math.log(_MAXIMUM_REDUCED_DENSITY * rhoc)
+    upper_residual = _pressure_residual(t, math.exp(upper), p, ht)
+    if not math.isfinite(upper_residual) or upper_residual < 0.0:
+        return None
+
+    lower = upper - _DENSITY_EXPANSION
+    lower_residual = _pressure_residual(t, math.exp(lower), p, ht)
+    bracketed = False
+    for _ in range(_MAXIMUM_BRACKET_STEPS):
+        if math.isfinite(lower_residual) and lower_residual * upper_residual < 0.0:
+            bracketed = True
+            break
+        upper, upper_residual = lower, lower_residual
+        lower -= _DENSITY_EXPANSION
+        if math.exp(lower) <= _MINIMUM_REDUCED_DENSITY * rhoc:
+            break
+        lower_residual = _pressure_residual(t, math.exp(lower), p, ht)
+    if not bracketed:
+        return None
+
+    # The residual rises with density on the dense branch, so a positive one means the trial
+    # is above the root. Bisection in log density, which is monotone in the same direction.
+    lo, hi = lower, upper
+    for _ in range(_MAXIMUM_BISECTION_STEPS):
+        if hi - lo < 1.0e-14:
+            break
+        mid = 0.5 * (lo + hi)
+        trial = _pressure_residual(t, math.exp(mid), p, ht)
+        if not math.isfinite(trial):
+            return None
+        if trial > 0.0:
+            hi = mid
+        else:
+            lo = mid
+    return math.exp(0.5 * (lo + hi))
+
+
+def hydrogen_phase(
+    T: Q, P: Q, hydrogen_type: str = "normal", compressed_phase: str = "vapour"
+) -> HydrogenPhaseResult:
     """The Leachman hydrogen phase state at a temperature and pressure.
 
     Args:
         T: absolute temperature.
         P: absolute pressure.
         hydrogen_type: the spin-isomer, one of ``normal``, ``para`` or ``ortho``.
+        compressed_phase: which root of the isotherm is wanted. Below the critical
+            temperature the two are different states at the same temperature and pressure -
+            at 13.8 K and 7042 Pa they are ``Z = 0.985`` and ``Z = 0.0016``.
 
     Raises:
-        OutOfRangeError: if ``T`` or ``P`` is not positive.
-        InvalidInputError: if ``hydrogen_type`` is not a known isomer.
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or the dense root was asked for
+            at a state whose dense root is outside the range the equation is fitted to.
+        InvalidInputError: if ``hydrogen_type`` is not a known isomer, or
+            ``compressed_phase`` is neither ``liquid`` nor ``vapour``.
     """
     from azoth import _models_gen
 
@@ -333,7 +410,25 @@ def hydrogen_phase(T: Q, P: Q, hydrogen_type: str = "normal") -> HydrogenPhaseRe
             f"unknown hydrogen type {hydrogen_type!r}; expected normal, para or ortho",
         )
 
-    rho = _solve_density(t_si, p_si, ht)
+    if compressed_phase == "vapour":
+        rho = _solve_density(t_si, p_si, ht)
+    elif compressed_phase == "liquid":
+        dense = _solve_density_dense(t_si, p_si, ht)
+        if dense is None:
+            raise OutOfRangeError(
+                "compressed_phase",
+                p_si,
+                "the dense root was asked for, and this state has none within the density "
+                "range the equation is fitted to: the isotherm does not cross the pressure "
+                "there below the ceiling the solve brackets from. `vapour` is the root such a "
+                "state is on.",
+            )
+        rho = dense
+    else:
+        raise InvalidInputError(
+            "compressed_phase",
+            f"{compressed_phase!r}; expected `liquid` or `vapour`",
+        )
     props = _properties(t_si, rho, ht)
 
     return HydrogenPhaseResult(

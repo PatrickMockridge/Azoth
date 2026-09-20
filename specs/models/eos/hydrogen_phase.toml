@@ -3,7 +3,8 @@ name = "Hydrogen reference phase state"
 kind = "procedure"
 assumptions = [
     "the fluid is pure hydrogen; the equation of state is the Leachman multiparameter Helmholtz formulation of NeqSim's `thermo.util.leachman.Leachman`, with a Planck-Einstein ideal-gas part and polynomial, exponential and Gaussian residual terms.",
-    "the density solve is Newton's method from the ideal-gas guess, so it finds the gas-like root; the dense (liquid) root is not selected.",
+    "**the root is the caller's**: below the critical temperature the isotherm crosses a pressure three times, so the dilute root is as much a solution as the dense one - at 13.8 K and 7042 Pa they are `Z = 0.985` and `Z = 0.0016`.",
+    "the dilute root is Newton from the ideal-gas guess; the dense one is bracketed from the dense side **down** and bisected, because walking up from a dilute start meets the vapour's crossing first and stops there.",
     "every property follows from the Helmholtz derivatives, so the property set is a rearrangement of one derivative evaluation.",
     "the spin-isomer (normal, para or ortho hydrogen) is a boundary-only choice carried as a string, not a declared input; the default is normal hydrogen, the 3:1 ortho:para equilibrium mixture.",
     "the gas constant is the equation's own `R = 8.31451` J/(mol.K), the same rounded value the other reference equations use.",
@@ -16,11 +17,16 @@ references = [
 standard = "Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009)"
 edition = "The multiparameter Helmholtz equation for the hydrogen spin-isomers, evaluated in the reduced variables tau = Tc/T and delta = rho/rho_c and differentiated for the full property set."
 [algorithm]
-scheme = "newton_density_solve"
-initialisation = "ideal_gas"
+scheme = "density_solve_on_the_selected_root"
+initialisation = "ideal_gas_or_dense_side"
 convergence = "absolute"
 tolerance = 1e-12
 max_iterations = 100
+[algorithm.bracket]
+scheme = "dense_side_log_expansion"
+lower = 0.001
+upper = 4.0
+steps = 200
 [inputs]
 [inputs.T]
 unit = "K"
@@ -28,6 +34,10 @@ description = "absolute temperature"
 [inputs.P]
 unit = "Pa"
 description = "absolute pressure"
+[inputs.compressed_phase]
+type = "enum"
+values = ["liquid", "vapour"]
+description = "which root of the isotherm is wanted. Below the critical temperature they are different states at the same temperature and pressure, so a caller cannot supply a compressibility factor instead without solving the model first."
 [outputs]
 [outputs.z_factor]
 unit = "dimensionless"

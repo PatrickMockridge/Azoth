@@ -132,6 +132,7 @@ fn hydrogen_phase_model_matches_the_worked_example() {
         azoth_core::units::kelvins(300.0),
         azoth_core::units::pascals(100_000.0),
         "normal",
+        "vapour",
     )
     .unwrap();
     assert_close(r.z_factor, 1.000584534646334);
@@ -193,13 +194,14 @@ fn the_dense_root_reproduces_the_freezing_states() {
         assert_close(props.s, s_expected);
         // **`Z` is compared loosely, and the reason is a measurement rather than a shrug.**
         // At `delta = 2.46` the isotherm is soft - `dP/drho` is about 2.3e3 against an ideal
-        // `R T` of 115 - so a difference between two implementations' residual terms that is
-        // invisible in `g` moves the density crossing by more than it moves the energy. The
-        // two disagree here by 1e-4 relative in `Z` while agreeing in `g` to 1e-9, which is
-        // the opposite of what a wrong term would do, and it is recorded rather than widened
-        // away.
+        // `R T` of 115 - so a difference between two implementations that is invisible in the
+        // energy moves the density crossing. The two disagree by `6.53e-5` relative here, and
+        // by **the same 6.53e-5 at all three states**, which is a constant pressure difference
+        // at a fixed density on a soft branch rather than a term that is wrong: a wrong term
+        // would move the three by different amounts, and would move `g` with them. `g` agrees
+        // to 1e-9 and `Z` to 6.53e-5, and it is recorded rather than widened away.
         assert!(
-            (props.z / z_expected - 1.0).abs() < 1.0e-3,
+            (props.z / z_expected - 1.0).abs() < 1.0e-4,
             "Z is {} against NeqSim's {z_expected}",
             props.z
         );

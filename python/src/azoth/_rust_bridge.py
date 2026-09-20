@@ -2734,11 +2734,13 @@ def gerg2008_phase(
     )
 
 
-def hydrogen_phase(T: Q, P: Q, hydrogen_type: str = "normal") -> HydrogenPhaseResult:
+def hydrogen_phase(
+    T: Q, P: Q, hydrogen_type: str = "normal", compressed_phase: str = "vapour"
+) -> HydrogenPhaseResult:
     """The Leachman hydrogen phase state, computed in Rust."""
     spec = _models_gen.model("eos.hydrogen_phase")
     result = _core.hydrogen_phase(
-        input_to_si(spec, "T", T), input_to_si(spec, "P", P), hydrogen_type
+        input_to_si(spec, "T", T), input_to_si(spec, "P", P), hydrogen_type, compressed_phase
     )
     return HydrogenPhaseResult(
         z_factor=result.z_factor,

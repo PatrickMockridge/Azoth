@@ -3183,15 +3183,16 @@ pub fn helium_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyHeliumPhaseRes
 
 /// The Leachman hydrogen phase state, computed in Rust.
 #[pyfunction]
-#[pyo3(signature = (T, P, hydrogen_type = "normal"))]
+#[pyo3(signature = (T, P, hydrogen_type = "normal", compressed_phase = "vapour"))]
 #[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
 pub fn hydrogen_phase(
     py: Python<'_>,
     T: f64,
     P: f64,
     hydrogen_type: &str,
+    compressed_phase: &str,
 ) -> PyResult<PyHydrogenPhaseResult> {
-    azoth_eos::hydrogen_phase(kelvins(T), pascals(P), hydrogen_type)
+    azoth_eos::hydrogen_phase(kelvins(T), pascals(P), hydrogen_type, compressed_phase)
         .map(|r| PyHydrogenPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

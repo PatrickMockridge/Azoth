@@ -1910,21 +1910,31 @@ def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
     return resolve(_HELIUM_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
 
 
-def hydrogen_phase(T: Q, P: Q, hydrogen_type: str = "normal") -> HydrogenPhaseResult:
+def hydrogen_phase(
+    T: Q, P: Q, hydrogen_type: str = "normal", compressed_phase: str = "vapour"
+) -> HydrogenPhaseResult:
     """The Leachman hydrogen phase state at a temperature and pressure.
 
-    Pure hydrogen, so there is no composition: the density is solved from the pressure by
-    Newton from the ideal-gas guess (the gas-like root), and the Helmholtz derivatives
-    give the compressibility factor and the property set. ``hydrogen_type`` names the
-    spin-isomer: ``normal``, ``para`` or ``ortho``.
+    Pure hydrogen, so there is no composition: the density is solved from the pressure, and
+    the Helmholtz derivatives give the compressibility factor and the property set.
+    ``hydrogen_type`` names the spin-isomer: ``normal``, ``para`` or ``ortho``.
+
+    ``compressed_phase`` names the **root**, and below the critical temperature the two are
+    different states at the same temperature and pressure: at 13.8 K and 7042 Pa they are
+    ``Z = 0.985`` and ``Z = 0.0016``. It is a root and not a compressibility factor, because
+    a caller could not supply one without solving this model first.
 
     Raises:
-        OutOfRangeError: if ``T`` or ``P`` is not positive.
-        InvalidInputError: if ``hydrogen_type`` is not a known isomer.
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or the dense root was asked for at
+            a state whose dense root is outside the range the equation is fitted to.
+        InvalidInputError: if ``hydrogen_type`` is not a known isomer, or
+            ``compressed_phase`` is neither ``liquid`` nor ``vapour``.
 
     See :func:`azoth.eos.reference.hydrogen_phase`.
     """
-    return resolve(_HYDROGEN_PHASE)(T=T, P=P, hydrogen_type=hydrogen_type)  # type: ignore[no-any-return]
+    return resolve(_HYDROGEN_PHASE)(  # type: ignore[no-any-return]
+        T=T, P=P, hydrogen_type=hydrogen_type, compressed_phase=compressed_phase
+    )
 
 
 def water_phase(T: Q, P: Q) -> WaterPhaseResult:

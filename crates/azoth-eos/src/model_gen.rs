@@ -3007,7 +3007,7 @@ static HYDROGEN_PHASE_CASES: &[TestCase] = &[
         numbers: &[("T", 300.0), ("P", 100000.0)],
         flags: &[],
         lists: &[],
-        strings: &[],
+        strings: &[("compressed_phase", "vapour")],
         vectors: &[],
         matrices: &[],
         expected: &[
@@ -3032,7 +3032,7 @@ static HYDROGEN_PHASE_CASES: &[TestCase] = &[
         numbers: &[("T", 100.0), ("P", 1000000.0)],
         flags: &[],
         lists: &[],
-        strings: &[],
+        strings: &[("compressed_phase", "vapour")],
         vectors: &[],
         matrices: &[],
         expected: &[
@@ -3050,12 +3050,17 @@ static HYDROGEN_PHASE_CASES: &[TestCase] = &[
 ];
 
 static HYDROGEN_PHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
-    scheme: "newton_density_solve",
+    scheme: "density_solve_on_the_selected_root",
     convergence: "absolute",
     tolerance: 1e-12,
     max_iterations: 100,
-    bracket: None,
-    initialisation: Some("ideal_gas"),
+    bracket: Some(ModelBracket {
+        scheme: "dense_side_log_expansion",
+        lower: 0.001,
+        upper: 4.0,
+        steps: 200,
+    }),
+    initialisation: Some("ideal_gas_or_dense_side"),
     initial_temperature: None,
     inner: None,
     fallback: None,
