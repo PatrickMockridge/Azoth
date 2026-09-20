@@ -1094,20 +1094,47 @@ unit = "neqsim-internal"
 
 [[upstreams.files.columns]]
 name = "CalcWij"
-disposition = "dropped"
-reason = "not-a-value: a selector rather than a property - `EosMixingRuleHandler` reads it as `wijCalcOrFitted`, which chooses whether `wij` is computed or fitted. `1` on six ion pairs."
+disposition = "used"
+as = "calcwij"
+unit = "dimensionless"
+reason = """\
+    read by `eos.furst_electrolyte_phase`. `EosMixingRuleHandler` takes it as \
+    `wijCalcOrFitted`, which chooses for each pair whether the short-range parameter `W` is \
+    taken from `W1` or computed from `furstParamsCPA`. **`0` on 948 of the 957 rows**, so on \
+    an ordinary brine the correlation runs and this column changes nothing; on the nine \
+    amine rows it is what decides. Carried because a model that read the correlation where \
+    NeqSim reads the fitted value would be a different model on exactly those mixtures."""
 [[upstreams.files.columns]]
 name = "W1"
-disposition = "dropped"
-reason = "not-ported: the ion-solvent `wij`; NeqSim's `PhaseElectrolyteCPAMM`, read by `EosMixingRuleHandler` as `wij[0]`. Present for 9 in-scope pairs."
+disposition = "used"
+as = "w1"
+unit = "neqsim-internal"
+reason = """\
+    read by `eos.furst_electrolyte_phase`, as `wij[0]` - the short-range pair parameter at \
+    ambient temperature. **Not `PhaseElectrolyteCPAMM`'s alone, which is what this row said \
+    before**: the fitted value is what the *Fuerst* phase uses whenever `CalcWij` is 1, and \
+    the correlation is what it uses otherwise. Present on 9 rows, every one of them an amine \
+    pair (`mdea+`, `h3o+`, `hco3-`, `co3--`, `hs-`, `piperazine+`), so it is unexercised by \
+    any mixture this tranche oracles and carried for the mixtures it is not."""
 [[upstreams.files.columns]]
 name = "W2"
-disposition = "dropped"
-reason = "empty-upstream: zero over the 957 in-scope pairs"
+disposition = "used"
+as = "w2"
+unit = "neqsim-internal"
+reason = """\
+    read by `eos.furst_electrolyte_phase`, as `wij[1]` - the coefficient of `1/T - 1/298.15` \
+    in `Wij(T)`. **Zero on all 957 rows**, so the fitted temperature dependence is entirely \
+    from the correlation's `furstParamsCPA_TDep`; carried because it is read, and because a \
+    column that is empty today is not a column that is absent."""
 [[upstreams.files.columns]]
 name = "W3"
-disposition = "dropped"
-reason = "empty-upstream: zero over the 957 in-scope pairs"
+disposition = "used"
+as = "w3"
+unit = "neqsim-internal"
+reason = """\
+    read by `eos.furst_electrolyte_phase`, as `wij[2]` - the coefficient of \
+    `(298.15 - T)/T + ln(T/298.15)`. Zero on all 957 rows, as `W2` is, and carried for the \
+    same reason."""
 [[upstreams.files.columns]]
 name = "WSTYPE"
 disposition = "used"

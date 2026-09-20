@@ -752,6 +752,21 @@ struct Interaction {
     /// `aij + bij * T`, so carrying it is what makes the temperature dependence
     /// *stated* rather than assumed absent.
     bij_desmukh_mather: f64,
+    /// The Fürst short-range pair parameter `W1`, as `wij[0]`.
+    ///
+    /// **Present on nine rows, every one an amine pair**, and read only where `calc_wij`
+    /// says the pair is fitted rather than computed. On an ordinary brine the correlation
+    /// supplies `Wij` and this is not read at all.
+    w1: f64,
+    /// The coefficient of `1/T - 1/298.15` in `Wij(T)`, `W2`. Zero on every row.
+    w2: f64,
+    /// The coefficient of `(298.15 - T)/T + ln(T/298.15)`, `W3`. Zero on every row.
+    w3: f64,
+    /// Whether the pair's `Wij` is **fitted** rather than computed, `CalcWij`.
+    ///
+    /// Taken as a boolean because that is how the handler reads it: `wijCalcOrFitted`,
+    /// tested for zero. `1` on six rows, all amine pairs.
+    calc_wij: bool,
 }
 
 /// The two parsed tables: substances by name, and interaction parameters by pair.
@@ -1121,6 +1136,10 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         "aijdesmath",
         "bijdesmath",
         "kijwhitsonsoriede",
+        "w1",
+        "w2",
+        "w3",
+        "calcwij",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -1179,6 +1198,12 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         )?;
         let aij_desmukh_mather = optional_number(&record, index["aijdesmath"], "aijdesmath", row)?;
         let bij_desmukh_mather = optional_number(&record, index["bijdesmath"], "bijdesmath", row)?;
+        let w1 = optional_number(&record, index["w1"], "w1", row)?;
+        let w2 = optional_number(&record, index["w2"], "w2", row)?;
+        let w3 = optional_number(&record, index["w3"], "w3", row)?;
+        // A selector rather than a value, so it is read as a flag: the handler tests it for
+        // zero and takes the fitted `W1` when it is set.
+        let calc_wij = optional_number(&record, index["calcwij"], "calcwij", row)? != 0.0;
 
         // `kij`, `alpha`, `hv_alpha` and the two selectors are symmetric, stored both
         // ways round so a caller need not know which name came first. `gij`, `hv_dij`,
@@ -1204,6 +1229,10 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 kij_whitson_soreide,
                 aij_desmukh_mather,
                 bij_desmukh_mather,
+                w1,
+                w2,
+                w3,
+                calc_wij,
             },
         );
         out.insert(
@@ -1226,6 +1255,10 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 kij_whitson_soreide,
                 aij_desmukh_mather,
                 bij_desmukh_mather,
+                w1,
+                w2,
+                w3,
+                calc_wij,
             },
         );
     }
@@ -1442,6 +1475,23 @@ pub fn desmukh_mather_pair(first: &str, second: &str) -> Option<(f64, f64)> {
     let (a, b) = (first.trim().to_lowercase(), second.trim().to_lowercase());
     let record = tables().1.get(&(a, b))?;
     Some((record.aij_desmukh_mather, record.bij_desmukh_mather))
+}
+
+/// The Fürst short-range pair parameters `(W1, W2, W3, fitted)`, either order round.
+///
+/// `fitted` is `CalcWij` read as a flag: when it is true the handler takes `W1` as the
+/// pair's `Wij` and when it is false it computes one from `furstParamsCPA`. So the three
+/// numbers are read on a minority of pairs and the flag decides which pairs those are.
+///
+/// **`None` for a pair with no row**, which the handler reads as all three zero *and* the
+/// flag unset - the correlation path. NeqSim cannot tell an absent row from a fitted zero
+/// there either, so the two agree; the `Option` is here because the caller has to say
+/// which it means, as it does for [`desmukh_mather_pair`].
+#[must_use]
+pub fn furst_wij(first: &str, second: &str) -> Option<(f64, f64, f64, bool)> {
+    let (a, b) = (first.trim().to_lowercase(), second.trim().to_lowercase());
+    let record = tables().1.get(&(a, b))?;
+    Some((record.w1, record.w2, record.w3, record.calc_wij))
 }
 
 /// The binary interaction parameter for a pair, or zero.
