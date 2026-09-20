@@ -99,19 +99,31 @@ public class FurstProbe {
     row("eps", furst.getSolventDiElectricConstant());
     row("eps_dT", furst.getSolventDiElectricConstantdT());
     row("eps_dTdT", furst.getSolventDiElectricConstantdTdT());
+    row("eps_phase", furst.calcDiElectricConstant(temperature));
+    row("eps_phase_dT", furst.calcDiElectricConstantdT(temperature));
+    row("eps_phase_dTdT", furst.calcDiElectricConstantdTdT(temperature));
     row("packing", furst.getEps());
+    row("packing_V", furst.calcEpsV());
+    row("packing_VV", furst.calcEpsVV());
     row("packing_ionic", furst.getEpsIonic());
+    row("packing_ionic_V", furst.calcEpsIonicdV());
     row("gamma", furst.getShieldingParameter());
+    row("gamma_dT", furst.calcShieldingParameterdT());
     row("alphaLR2", furst.getAlphaLR2());
     row("XLR", furst.getXLR());
+    row("XLR_dT", furst.calcXLRdT());
     row("bornX", furst.calcBornX());
 
-    // The short-range parameter table and the three terms.
+    // The short-range parameter table and the three terms, with the temperature
+    // derivatives that say each is live rather than merely present.
     row("W", furst.getW());
     row("WT", furst.getWT());
     row("FSR2", furst.FSR2());
+    row("FSR2_dT", furst.dFSR2dT());
     row("FLR", furst.FLR());
+    row("FLR_dT", furst.dFLRdT());
     row("FBorn", furst.FBorn());
+    row("FBorn_dT", furst.dFBorndT());
 
     // The Helmholtz energy and the derivatives the cubic's root and fugacity read.
     row("F", furst.getF());
