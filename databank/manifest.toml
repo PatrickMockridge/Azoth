@@ -2563,26 +2563,43 @@ reason = """\
     used: `ComponentModifiedFurstElectrolyteEos`'s constructor and `initFurstParam` read \
     `[0]` and `[1]` to build an ion's covolume, `b = (p0 d^3 + p1) 1e5`, and then derive \
     the Lennard-Jones diameter back out of it. **`[2]`..`[5]` are read by nothing in \
-    3.20.0** - the class's own doc comments describe `Wij` correlations that would use \
-    them, and no code implements those - so four of the six are carried and unread."""
+    3.20.0** - `getFurstParam(i)`, the accessor that would reach them, has no caller in \
+    `src/main`, and the `Wij` correlations its doc comments describe are not implemented \
+    - so four of the six are carried and unread."""
 [[upstreams.files.rows]]
 selector = "`furstParamsCPA` and its seven solvent variants"
 count = 8
 reason = """\
-    not-ported: the electrolyte-CPA family. `setFurstParams("electrolyteCPA")` swaps \
-    `furstParams` for `furstParamsCPA`, which is what `SystemElectrolyteCPA*` calls, and \
+    used by the base model and by the carried CPA family. **The Fürst phase reads this \
+    one through `EosMixingRuleHandler`'s `wij` construction**, which is where its \
+    short-range `W` comes from: for a pair whose `CalcWij` is zero it computes \
+    `Wij(cation-water) = p2 d_stokes + p3` and \
+    `Wij(cation-anion) = p4 (d_stokes + d_pauling)^4 + p5`, so four of `furstParamsCPA`'s \
+    ten coefficients are live for the model this tranche ports. \
+    `setFurstParams("electrolyteCPA")` additionally swaps `furstParams` for \
+    `furstParamsCPA`, which is what `SystemElectrolyteCPA*` calls, and \
     `ComponentSrkCPAMM` reads it directly. The seven named variants (`_MDEA`, `_MEG`, \
     `_MeOH`, `_EtOH`, `_MEA`, `_TEG`, `_TDep`) are mixed-solvent fits, and `_TDep` is \
-    sixteen coefficients rather than ten - a temperature-dependent form the others do \
-    not have. Carried because `PhaseElectrolyteCPA` and its siblings are carried."""
+    sixteen coefficients rather than ten - the temperature coefficients `Wij(T)` needs, \
+    which is why they are not optional."""
 [[upstreams.files.rows]]
-selector = "`furstParamsGasIon` and `furstParamsOIIon`"
-count = 2
+selector = "`furstParamsGasIon`"
+count = 1
 reason = """\
-    unreachable-upstream: the two residual tables - gas-ion salting-out and oil-ion \
-    interactions - are read by their own getters and setters and by nothing else in \
-    `src/main`. The class's comments describe them as calibrated for this model; no \
-    caller in 3.20.0 reaches them."""
+    used: `EosMixingRuleHandler`'s second pass over the components. For a non-polar gas \
+    - `CO2`, `CH4`, `C2H6`, `C3H8`, butanes, `C5+`, `N2`, `H2S`, `H2` - it overwrites \
+    the gas-ion `wij[0]` that the cation pass had just filled from `furstParamsCPA`, \
+    taking `[2]`/`[3]` for methane and a different index pair for each other gas. \
+    Measured: methane/Na+ is `1.05e-4` here against the `-4.0616e-4` the predictive \
+    correlation gives, and including it is what makes the aqueous phase's `W` come out \
+    at the probe's `-3.2544424183588394e-07` rather than `-1.92e-07`."""
+[[upstreams.files.rows]]
+selector = "`furstParamsOIIon`"
+count = 1
+reason = """\
+    used: the same handler's third pass, for the oil-ion pairs - the heavier components \
+    the gas pass does not name. Read through `getFurstParamOIIon`, which is why a grep \
+    for the array's own name finds only its definition."""
 
 [[upstreams.files]]
 id = "neqsim/element.csv"
