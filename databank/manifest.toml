@@ -203,11 +203,19 @@ disposition = "dropped"
 reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "LJDIAMETER"
-disposition = "vendored"
+disposition = "used"
 as = "ljdiameter"
 unit = "angstrom"
-reason = "not-ported: the gas diffusivity method; NeqSim's `physicalproperties/methods/gasphysicalproperties/diffusivity/Diffusivity`. `eos.viscosity` and `eos.thermal_conductivity` do not read it - they port `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod` respectively, neither of which reads these."
-consumer = "roadmap:P1"
+reason = """\
+    read by `eos.furst_electrolyte_phase` and its Mod2004 revision. A solvent's is its \
+    diameter, the column times `1e-10`; an ion's enters the fitted covolume \
+    `(p0 d^3 + p1)`, and the diameter the MSA shielding and the Born radius `z^2/sigma` \
+    are built from is derived back out of that covolume - so the table's number is read \
+    twice, once for those and once by the short-range correlation, which takes the column \
+    itself. **The gas diffusivity method is still not ported**, NeqSim's \
+    `physicalproperties/methods/gasphysicalproperties/diffusivity/Diffusivity`, and \
+    neither `eos.viscosity` nor `eos.thermal_conductivity` reads this: they port \
+    `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod`."""
 [[upstreams.files.columns]]
 name = "LJEPS"
 disposition = "vendored"
@@ -319,28 +327,43 @@ as = "henrycoef4"
 unit = "1/K"
 [[upstreams.files.columns]]
 name = "SCHWARTZENTRUBER1"
-disposition = "vendored"
+disposition = "used"
 as = "schwartzentruber1"
 unit = "dimensionless"
 reason = """\
-    not-ported: the Schwartz-Entruber solubility correlation; NeqSim reads \
-    `SCHWARTZENTRUBER1`-`3` in `thermo/component/`"""
+    read by `eos.furst_electrolyte_phase` and its Mod2004 revision, which install \
+    `AttractiveTermSchwartzentruber` and give every component its own fitted triple: \
+    `alpha = (1 + m (1 - sqrt(Tr)) - p0 (1 - Tr) (1 + p1 Tr + p2 Tr^2))^2`. Water's row \
+    carries them, and they are what moves its alpha by 2.6% and `Z` by 0.34%; a row of \
+    three zeroes is Soave's form with `m` from the acentric factor. \
+    `eos.schwartzentruber_alpha` is the same correlation reached from the caller's numbers \
+    rather than from the file."""
 [[upstreams.files.columns]]
 name = "SCHWARTZENTRUBER2"
-disposition = "vendored"
+disposition = "used"
 as = "schwartzentruber2"
 unit = "dimensionless"
 reason = """\
-    not-ported: the Schwartz-Entruber solubility correlation; NeqSim reads \
-    `SCHWARTZENTRUBER1`-`3` in `thermo/component/`"""
+    read by `eos.furst_electrolyte_phase` and its Mod2004 revision, which install \
+    `AttractiveTermSchwartzentruber` and give every component its own fitted triple: \
+    `alpha = (1 + m (1 - sqrt(Tr)) - p0 (1 - Tr) (1 + p1 Tr + p2 Tr^2))^2`. Water's row \
+    carries them, and they are what moves its alpha by 2.6% and `Z` by 0.34%; a row of \
+    three zeroes is Soave's form with `m` from the acentric factor. \
+    `eos.schwartzentruber_alpha` is the same correlation reached from the caller's numbers \
+    rather than from the file."""
 [[upstreams.files.columns]]
 name = "SCHWARTZENTRUBER3"
-disposition = "vendored"
+disposition = "used"
 as = "schwartzentruber3"
 unit = "dimensionless"
 reason = """\
-    not-ported: the Schwartz-Entruber solubility correlation; NeqSim reads \
-    `SCHWARTZENTRUBER1`-`3` in `thermo/component/`"""
+    read by `eos.furst_electrolyte_phase` and its Mod2004 revision, which install \
+    `AttractiveTermSchwartzentruber` and give every component its own fitted triple: \
+    `alpha = (1 + m (1 - sqrt(Tr)) - p0 (1 - Tr) (1 + p1 Tr + p2 Tr^2))^2`. Water's row \
+    carries them, and they are what moves its alpha by 2.6% and `Z` by 0.34%; a row of \
+    three zeroes is Soave's form with `m` from the acentric factor. \
+    `eos.schwartzentruber_alpha` is the same correlation reached from the caller's numbers \
+    rather than from the file."""
 [[upstreams.files.columns]]
 name = "LIQUIDCONDUCTIVITY1"
 disposition = "vendored"
