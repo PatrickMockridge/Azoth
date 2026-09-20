@@ -37,8 +37,8 @@ use azoth_eos::results::{
     PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
     RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
     SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
-    SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult, SrkKappaResult,
-    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
     ThermalConductivityResult, TpMultiflashResult, TsFlashResult, TuFlashResult, TvFlashResult,
     TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
@@ -6160,6 +6160,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         SaftFlashResult::CALC_ID => SaftFlashResult::FIELDS.to_vec(),
         PrCpaPhaseResult::CALC_ID => PrCpaPhaseResult::FIELDS.to_vec(),
         UmrCpaPhaseResult::CALC_ID => UmrCpaPhaseResult::FIELDS.to_vec(),
+        SoreideWhitsonPhaseResult::CALC_ID => SoreideWhitsonPhaseResult::FIELDS.to_vec(),
         AmmoniaPhaseResult::CALC_ID => AmmoniaPhaseResult::FIELDS.to_vec(),
         Co2PhaseResult::CALC_ID => Co2PhaseResult::FIELDS.to_vec(),
         HeliumPhaseResult::CALC_ID => HeliumPhaseResult::FIELDS.to_vec(),
@@ -6766,6 +6767,45 @@ pub struct PyUmrCpaPhaseResult {
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
+}
+
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SoreideWhitsonPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySoreideWhitsonPhaseResult {
+    /// The compressibility factor at the chosen root.
+    #[pyo3(get)]
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySoreideWhitsonPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SoreideWhitsonPhaseResult(z_factor={}, ln_phi={:?})",
+            self.z_factor, self.ln_phi
+        )
+    }
+}
+
+impl From<&azoth_eos::results::SoreideWhitsonPhaseResult> for PySoreideWhitsonPhaseResult {
+    fn from(r: &azoth_eos::results::SoreideWhitsonPhaseResult) -> Self {
+        Self {
+            z_factor: r.z_factor,
+            ln_phi: r.ln_phi.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
 }
 
 #[pymethods]

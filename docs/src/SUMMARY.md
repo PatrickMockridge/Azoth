@@ -108,6 +108,7 @@
   - [Pressure and vapour-fraction flash](./eos/pvf_flash.md)
   - [Vapour fraction from the Rachford-Rice equation](./eos/rachford_rice.md)
   - [SAFT-VR-Mie phase state](./eos/saft_vr_mie_phase.md)
+  - [Phase state of a Soreide-Whitson fluid](./eos/soreide_whitson_phase.md)
   - [Soave-Redlich-Kwong CPA phase state](./eos/srk_cpa_phase.md)
   - [Tangent-plane stability test](./eos/stability_test.md)
   - [Temperature-enthalpy flash](./eos/th_flash.md)

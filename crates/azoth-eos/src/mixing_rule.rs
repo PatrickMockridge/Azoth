@@ -165,6 +165,27 @@ pub enum SoreideWhitsonRole {
     Hydrocarbon,
 }
 
+impl SoreideWhitsonRole {
+    /// The role a component's **name** gives it.
+    ///
+    /// NeqSim's own test, on `EosMixingRuleHandler.getkijWhitsonSoreideAqueous`: every role
+    /// is decided by the name, because the correlation was fitted per named gas. `H2O` is
+    /// water beside `water`, `N2` beside `nitrogen`, and `CO2` has no synonym there, so a
+    /// mixture naming its carbon dioxide anything else takes the hydrocarbon branch.
+    ///
+    /// This is the lookup [`crate::databank::soreide_whitson_mixture_of`] performs, which
+    /// is why it is here rather than in the model: the role is a property of the rule.
+    #[must_use]
+    pub fn from_name(name: &str) -> Self {
+        match name.trim().to_lowercase().as_str() {
+            "water" | "h2o" => Self::Water,
+            "n2" | "nitrogen" => Self::Nitrogen,
+            "co2" => Self::CarbonDioxide,
+            _ => Self::Hydrocarbon,
+        }
+    }
+}
+
 impl MixingRule {
     /// The constant part of the interaction parameter between `i` and `j`.
     ///

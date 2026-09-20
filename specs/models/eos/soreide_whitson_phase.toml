@@ -1,0 +1,74 @@
+id = "eos.soreide_whitson_phase"
+name = "Phase state of a Soreide-Whitson fluid"
+kind = "direct"
+assumptions = [
+    "this is NeqSim's `SystemSoreideWhitson`: Peng-Robinson 1978 with a brine in it. Two things distinguish it and both are salinity-dependent - water's alpha, and the water-gas interaction parameter of a water-rich phase. Every other component and pair is PR78.",
+    "**the aqueous correlation applies only where `x_water > 0.8`**, which is NeqSim's own gate. A vapour phase whose water is a few molecules in a thousand keeps the base matrix, so a model that skipped the gate would agree with the oracle on the gas and be wrong on every brine.",
+    "the base interaction matrix is `INTER.csv`'s `KIJWhitsonSoriede`, read as the file writes it. Six rows carry a decimal comma, which NeqSim's reader throws on and its per-pair `catch` swallows, so on those six this model deliberately diverges. The condensate case pins both numbers.",
+    "**the salinity is the caller's, and it is a molality** over the phase's water. NeqSim's `calcSalinity` recomputes it from the flashed aqueous phase, which is a flash-level iteration this model does not perform.",
+    "at a non-zero salinity this model also diverges from NeqSim: its `calcSalinity` never reaches `setSalinityFromPhase`, so NeqSim's water alpha is evaluated at zero however concentrated the brine. This model applies it.",
+    "the salt is not a component. NeqSim carries it as an extra mole number the flash splits between the phases; here it is the scalar the rule reads, so the composition is the fluid's alone.",
+    "the roles - which component is water, which is nitrogen, which is carbon dioxide - are decided by **name**, as NeqSim's `getkijWhitsonSoreideAqueous` decides them. A `Component` carries no name, so the databank resolver assigns the role where it resolves the name.",
+    "the two newer aqueous parameterisations NeqSim carries - Chabab 2019 and Burgoyne-Nielsen 2026 - are **not ported**. This is the legacy one, which is that system's default.",
+    "`x` is checked rather than renormalised.",
+    "no `h_res` or `s_res`: this model's oracle is NeqSim's `Phase.getFugacityCoefficient` surface, and a departure would be a claim without one.",
+]
+references = [
+    "Soreide, I.; Whitson, C. H. (1992). \"Peng-Robinson predictions for hydrocarbons, CO2, N2, and H2S with pure water and NaCl brine.\" Fluid Phase Equilibria 77, 217-240.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `SystemSoreideWhitson`, `PhaseSoreideWhitson`, `AttractiveTermSoreideWhitson` and `EosMixingRuleHandler.getkijWhitsonSoreideAqueous` are the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `SystemSoreideWhitson`"
+edition = "`PhaseSoreideWhitson` and `EosMixingRuleHandler`'s rule 11, ported with the legacy aqueous parameterisation. The water alpha is `eos.soreide_whitson_alpha`'s."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the fluid's substances, by name. The databank supplies each one's critical constants and heat-capacity coefficients, and its name decides which role it takes in the aqueous correlation."
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions, checked rather than renormalised. The rule reads the water fraction against its `0.8` gate."
+[inputs.salinity]
+unit = "mol/kg"
+description = "the equivalent-NaCl molality of the brine, in mol per kg of water. The alpha and the aqueous interaction correlation both read it."
+[inputs.compressed_phase]
+type = "enum"
+values = ["liquid", "vapour"]
+description = "which root describes the phase wanted: the largest admissible root for the vapour, the smallest for the liquid."
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor at the chosen root"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fugacity coefficients, as logarithms, at the chosen root"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "salinity"
+min = 0
+severity = "error"
+rationale = "a molality; the correlation's `s**0.75` and `s**1.1` are real for a negative salinity and would return a fitted value for a brine that cannot exist"
+[implementations]
+python = "azoth.eos.soreide_whitson_phase"
+rust = "azoth_eos::soreide_whitson_phase"

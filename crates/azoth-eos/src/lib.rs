@@ -144,6 +144,7 @@ pub mod saturation_temperature;
 pub mod schwartzentruber_alpha;
 pub mod siddiqi_lucas_diffusivity;
 pub mod soreide_whitson_alpha;
+pub mod soreide_whitson_phase;
 pub mod spanwagner;
 pub mod spec_gen;
 pub mod srk_alpha_ab;
@@ -282,21 +283,23 @@ pub use results::{
     PuFlashResult, PureSaturationResult, PvRefluxFlashResult, PvfFlashResult,
     RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult,
     RkDepartureResult, RootStructure, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
-    SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
-    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict, ThFlashResult,
-    ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,
-    TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
-    UmrCpaPhaseResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    VhFlashResult, ViscosityResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
+    StabilityVerdict, ThFlashResult, ThermalConductivityResult, TsFlashResult, TuFlashResult,
+    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
+    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
+    VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult, WilkeChangDiffusivityResult,
+    WilkeViscosityResult, WilsonActivityCoefficientsResult,
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
 pub use schwartzentruber_alpha::schwartzentruber_alpha;
 pub use siddiqi_lucas_diffusivity::{SiddiqiLucasForm, siddiqi_lucas_diffusivity};
 pub use soreide_whitson_alpha::soreide_whitson_alpha;
+pub use soreide_whitson_phase::soreide_whitson_phase;
 pub use srk_alpha_ab::srk_alpha_ab;
 pub use srk_cpa_phase::{srk_cpa_phase, srk_cpa_phase_of};
 pub use srk_departure::srk_departure;

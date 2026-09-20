@@ -796,6 +796,12 @@ class SoreideWhitsonAlphaResult:
     warnings: list[Warning]
 
 @final
+class SoreideWhitsonPhaseResult:
+    z_factor: float
+    ln_phi: list[float]
+    warnings: list[Warning]
+
+@final
 class SrkAlphaAbResult:
     alpha: float
     a_reduced: float
@@ -1709,6 +1715,14 @@ def siddiqi_lucas_diffusivity(
     eta: float,
 ) -> SiddiqiLucasDiffusivityResult: ...
 def soreide_whitson_alpha(salinity: float, Tr: float) -> SoreideWhitsonAlphaResult: ...
+def soreide_whitson_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    x: list[float],
+    salinity: float,
+    compressed_phase: str,
+) -> SoreideWhitsonPhaseResult: ...
 def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult: ...
 def srk_cpa_phase(
     components: list[str],

@@ -103,6 +103,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.pvf_flash`](./pvf_flash.md) | `pvf_flash_illinois_temperature` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.rachford_rice`](./rachford_rice.md) | `rachford_rice_nielsen_2023` | Nielsen, L. (2023) |
 | [`eos.saft_vr_mie_phase`](./saft_vr_mie_phase.md) | `direct composition` | Lafitte, T. et al. (2013) |
+| [`eos.soreide_whitson_phase`](./soreide_whitson_phase.md) | `direct composition` | NeqSim 3.20.0 `SystemSoreideWhitson` |
 | [`eos.srk_cpa_phase`](./srk_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |
 | [`eos.th_flash`](./th_flash.md) | `th_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |

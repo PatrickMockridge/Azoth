@@ -41,6 +41,7 @@
 //!   - specs/models/eos/pvf_flash.toml
 //!   - specs/models/eos/rachford_rice.toml
 //!   - specs/models/eos/saft_vr_mie_phase.toml
+//!   - specs/models/eos/soreide_whitson_phase.toml
 //!   - specs/models/eos/srk_cpa_phase.toml
 //!   - specs/models/eos/stability_test.toml
 //!   - specs/models/eos/th_flash.toml
@@ -4815,6 +4816,180 @@ pub static SAFT_VR_MIE_PHASE_SPEC: ModelSpec = ModelSpec {
     cases: SAFT_VR_MIE_PHASE_CASES,
 };
 
+static SOREIDE_WHITSON_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "salinity",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a molality; the correlation's `s**0.75` and `s**1.1` are real for a negative salinity and would return a fitted value for a brine that cannot exist",
+        },
+    },
+];
+
+static SOREIDE_WHITSON_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_shipped_tests_gas_at_318_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 318.15), ("P", 4000000.0), ("salinity", 0.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["nitrogen", "CO2", "methane", "ethane", "water"],
+        )],
+        strings: &[("compressed_phase", "vapour")],
+        vectors: &[(
+            "x",
+            &[
+                0.110818402794,
+                0.221422141728,
+                0.332455899714,
+                0.332455590773,
+                0.00284796499037,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.870487529540554)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                0.0471688081401,
+                -0.154317433458,
+                -0.0560489328823,
+                -0.250178013049,
+                -0.173340993361,
+            ],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_shipped_tests_aqueous_phase_at_318_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 318.15), ("P", 4000000.0), ("salinity", 0.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["nitrogen", "CO2", "methane", "ethane", "water"],
+        )],
+        strings: &[("compressed_phase", "liquid")],
+        vectors: &[(
+            "x",
+            &[
+                4.43466786008e-05,
+                0.00207206064762,
+                0.000126652518641,
+                0.00012950695283,
+                0.997627433202,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.0325913627959958)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                7.87077912257,
+                4.51720999562,
+                7.81676630214,
+                7.60034898607,
+                -6.03211618573,
+            ],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "a_condensate_at_333_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 333.15), ("P", 10000000.0), ("salinity", 0.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "methane", "n-butane", "n-heptane", "water"],
+        )],
+        strings: &[("compressed_phase", "vapour")],
+        vectors: &[(
+            "x",
+            &[
+                0.183288952782,
+                0.683579694669,
+                0.0399702490289,
+                0.0186031829599,
+                0.0745579205601,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.7700995223966778)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                -0.34438750978488825,
+                -0.08912685266260975,
+                -1.2856335983970442,
+                -2.0495469364865997,
+                -0.5762876807455574,
+            ],
+        )],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `eos.soreide_whitson_phase`.
+pub static SOREIDE_WHITSON_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.soreide_whitson_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: SOREIDE_WHITSON_PHASE_CHECKS,
+    cases: SOREIDE_WHITSON_PHASE_CASES,
+};
+
 static SRK_CPA_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -7145,6 +7320,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PVF_FLASH_SPEC,
     &RACHFORD_RICE_SPEC,
     &SAFT_VR_MIE_PHASE_SPEC,
+    &SOREIDE_WHITSON_PHASE_SPEC,
     &SRK_CPA_PHASE_SPEC,
     &STABILITY_TEST_SPEC,
     &TH_FLASH_SPEC,

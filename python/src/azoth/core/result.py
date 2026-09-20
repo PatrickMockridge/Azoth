@@ -2191,6 +2191,27 @@ class UmrCpaPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SoreideWhitsonPhaseResult(_HasWarnings):
+    """Result of ``eos.soreide_whitson_phase``.
+
+    Peng-Robinson 1978 with a brine in it: water's alpha and the water-gas interaction
+    parameter of a water-rich phase both read the salinity, and every other component and
+    pair is PR78.
+
+    **There is no flash for this model.** ``eos.pt_flash``'s Jacobian is ``d ln phi / d
+    n``, and this rule's interaction matrix moves with the composition being
+    differentiated against.
+    """
+
+    #: The compressibility factor at the chosen root.
+    z_factor: float
+    #: The fugacity coefficients, as logarithms, one per component.
+    ln_phi: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class AmmoniaPhaseResult(_HasWarnings):
     """Result of ``eos.ammonia_phase``.
 

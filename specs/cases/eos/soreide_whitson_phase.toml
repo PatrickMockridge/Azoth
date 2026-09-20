@@ -1,0 +1,107 @@
+model = "eos.soreide_whitson_phase"
+[[cases]]
+id = "the_shipped_tests_gas_at_318_k"
+tolerance = 1e-08
+source = """NeqSim 3.20.0's own `SoreideWhitsonSystemTest` mixture - nitrogen, CO2, methane, ethane,
+water at `0.1 0.2 0.3 0.3 0.1` - flashed at 45 C and 40 bara, from
+`validation/neqsim/SoreideWhitsonArithmetic.java`: `Z = 0.870487529540554` and
+`lnPhi = [0.0471688081401, -0.154317433458, -0.0560489328823, -0.250178013049, -0.173340993361]`.
+
+**The composition is NeqSim's flashed vapour, not this library's**, because a Soreide-Whitson
+mixture cannot be flashed here: `eos.pt_flash`'s Jacobian is `d ln phi / d n`, and this rule's
+interaction matrix moves with the composition being differentiated against. Recording the state
+the oracle reports is what remains, and it is the state the shipped test's own fractions are
+reproduced at.
+
+The salinity is zero - the value the shipped test adds - so this case pins the PR78 half of the
+model: the roles are assigned, the rule resolves, and at `s = 0` the aqueous correlation returns
+the base matrix's fitted values rather than the SRK ones. It is the case a model that never
+called `phase_kij` would also pass, which is why it is not the only one."""
+[cases.inputs]
+components = ["nitrogen", "CO2", "methane", "ethane", "water"]
+T = 318.15
+P = 4000000.0
+x = [
+    0.110818402794,
+    0.221422141728,
+    0.332455899714,
+    0.332455590773,
+    0.00284796499037,
+]
+salinity = 0.0
+compressed_phase = "vapour"
+[cases.expected]
+z_factor = 0.870487529540554
+ln_phi = [
+    0.0471688081401,
+    -0.154317433458,
+    -0.0560489328823,
+    -0.250178013049,
+    -0.173340993361,
+]
+[[cases]]
+id = "the_shipped_tests_aqueous_phase_at_318_k"
+tolerance = 1e-08
+source = """The same probe at the same state, on the phase the model is named for: `Z =
+0.0325913627959958` and `lnPhi = [7.87077912257, 4.51720999562, 7.81676630214, 7.60034898607,
+-6.03211618573]` at the flashed aqueous composition.
+
+**This is the case the `x_water > 0.8` gate is on the right side of.** Water is at 0.9976 here
+against 0.0028 in the gas, so the aqueous correlation fires for this phase and not for that one,
+and the two cases together are what say the gate is implemented rather than assumed."""
+[cases.inputs]
+components = ["nitrogen", "CO2", "methane", "ethane", "water"]
+T = 318.15
+P = 4000000.0
+x = [
+    4.43466786008e-05,
+    0.00207206064762,
+    0.000126652518641,
+    0.00012950695283,
+    0.997627433202,
+]
+salinity = 0.0
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.0325913627959958
+ln_phi = [7.87077912257, 4.51720999562, 7.81676630214, 7.60034898607, -6.03211618573]
+[[cases]]
+id = "a_condensate_at_333_k"
+tolerance = 1e-08
+source = """NeqSim 3.20.0, the same probe's third mixture - CO2, methane, n-butane, n-heptane,
+water at `0.15 0.4 0.15 0.1 0.2`, flashed at 60 C and 100 bara - at its flashed vapour
+composition. **The expected values are this library's, and NeqSim's differ**: it gives
+`Z = 0.769862281664881` and `lnPhi = [-0.345400985060, -0.0888646269367, -1.27926109832,
+-2.07522298313, -0.576172200859]`, and its aqueous phase differs the same way.
+
+The whole of the difference is the six comma-decimal rows of `KIJWhitsonSoriede`. This mixture
+contains two of them - `CO2`/`n-butane` and `CO2`/`n-heptane` - and NeqSim's own reader throws on
+those rows and leaves `KIJSRK` in place by the per-pair `catch` in `EosMixingRuleHandler`. Feeding
+the model `KIJSRK` for those two pairs alone reproduces NeqSim's numbers above to twelve digits,
+which is the measurement that says the divergence is those two rows and nothing else.
+
+So this case is the divergence pinned rather than described, and it is the reason the model's
+specification states it: azoth reads the column as the file writes it, and NeqSim evaluates a
+different fitted parameter without saying so."""
+[cases.inputs]
+components = ["CO2", "methane", "n-butane", "n-heptane", "water"]
+T = 333.15
+P = 10000000.0
+x = [
+    0.183288952782,
+    0.683579694669,
+    0.0399702490289,
+    0.0186031829599,
+    0.0745579205601,
+]
+salinity = 0.0
+compressed_phase = "vapour"
+[cases.expected]
+z_factor = 0.7700995223966778
+ln_phi = [
+    -0.34438750978488825,
+    -0.08912685266260975,
+    -1.2856335983970442,
+    -2.0495469364865997,
+    -0.5762876807455574,
+]

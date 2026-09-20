@@ -147,6 +147,7 @@ from azoth.core.result import (
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult,
+    SoreideWhitsonPhaseResult,
     SrkAlphaAbResult,
     SrkCpaPhaseResult,
     SrkDepartureResult,
@@ -281,6 +282,7 @@ __all__ = [
     "rk_departure",
     "saft_vr_mie_phase",
     "siddiqi_lucas_diffusivity",
+    "soreide_whitson_phase",
     "srk_alpha_ab",
     "srk_cpa_phase",
     "srk_departure",
@@ -347,6 +349,7 @@ _SAFT_VR_MIE_PHASE = "eos.saft_vr_mie_phase"
 _TP_FLASH_SAFT = "eos.tp_flash_saft"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _UMR_CPA_PHASE = "eos.umr_cpa_phase"
+_SOREIDE_WHITSON_PHASE = "eos.soreide_whitson_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
 _GE_UNIQUAC_PHASE = "eos.ge_uniquac_phase"
@@ -2780,6 +2783,49 @@ def umr_cpa_phase(
     """
     return resolve(_UMR_CPA_PHASE)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
+    )
+
+
+def soreide_whitson_phase(
+    components: list[str],
+    T: Q,
+    P: Q,
+    x: list[float],
+    salinity: Q,
+    compressed_phase: str,
+) -> SoreideWhitsonPhaseResult:
+    """One Soreide-Whitson phase's state at a temperature, pressure and composition.
+
+    Peng-Robinson 1978 with a brine in it, which is NeqSim's ``SystemSoreideWhitson``: two
+    things are salinity-dependent - water's alpha, and the water-gas interaction parameter
+    of a **water-rich** phase, gated on ``x_water > 0.8`` - and every other component and
+    pair is PR78.
+
+    The interaction matrix is ``INTER.csv``'s ``KIJWhitsonSoriede`` read as the file writes
+    it. **Six of its 303 rows carry a decimal comma**, which NeqSim's own reader throws on;
+    the per-pair ``catch`` in ``EosMixingRuleHandler`` swallows the throw and leaves that
+    pair's ``KIJSRK`` in place, so on those six pairs this model deliberately diverges. The
+    model's specification records it and one case pins both numbers.
+
+    **There is no flash.** :func:`pt_flash`'s Jacobian is ``d ln phi / d n``, and this
+    rule's interaction matrix moves with the composition being differentiated against.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or no volume root exists above
+            the mixture's covolume.
+        InvalidInputError: if ``x`` is not a composition, a name is not in the databank, an
+            ion is named, ``salinity`` is negative, or ``compressed_phase`` is neither
+            ``"liquid"`` nor ``"vapour"``.
+
+    See :func:`azoth.eos.reference.soreide_whitson_phase`.
+    """
+    return resolve(_SOREIDE_WHITSON_PHASE)(  # type: ignore[no-any-return]
+        components=components,
+        T=T,
+        P=P,
+        x=x,
+        salinity=salinity,
+        compressed_phase=compressed_phase,
     )
 
 

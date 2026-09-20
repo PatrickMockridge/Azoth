@@ -3124,3 +3124,132 @@ pub fn mixture_of(
         ideal_gas,
     ))
 }
+
+/// The Soreide-Whitson fluid: Peng-Robinson 1978, its rule, and its brine.
+///
+/// NeqSim's `SystemSoreideWhitson`. Three choices are made here and nowhere else:
+///
+/// * the interaction matrix is `KIJWhitsonSoriede`, read by [`kij_whitson_soreide`] and
+///   **as the file writes it** - see that accessor for the six rows this library and
+///   NeqSim part on;
+/// * the alpha is [`crate::alpha_term::Alpha::SoreideWhitson`], which is the
+///   salinity-dependent form for water and PR78 for every other component, decided by the
+///   role the *name* gives;
+/// * the salinity is the caller's, and it is a molality. NeqSim's own `calcSalinity`
+///   recomputes it from the flashed aqueous phase, which is a flash-level iteration this
+///   library's phase model does not perform.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if `names` is empty, an ion is named - a cubic has no
+///   notion of one - or the salinity is negative.
+/// * [`AzothError::PropertyUnavailable`] if a name is in neither source, or one has no
+///   heat-capacity coefficients.
+pub fn soreide_whitson_mixture_of(
+    names: &[&str],
+    salinity: f64,
+    overlay: Option<&Overlay>,
+) -> Result<(Mixture, IdealGasModel)> {
+    if names.is_empty() {
+        return Err(AzothError::invalid_input(
+            "components",
+            "a mixture needs at least one component",
+        ));
+    }
+    // Not `!(salinity >= 0.0)`, which clippy reads - rightly - as a negated comparison on
+    // a partially ordered type. Both reject a `NaN` as well as a negative, which is the
+    // point: the correlation's `s**0.75` would return a number for either.
+    if !salinity.is_finite() || salinity < 0.0 {
+        return Err(AzothError::invalid_input(
+            "salinity",
+            format!(
+                "the salinity is {salinity} mol/kg, and a molality is a finite, non-negative number"
+            ),
+        ));
+    }
+    let entries: Vec<Entry> = names
+        .iter()
+        .map(|name| entry(name, overlay))
+        .collect::<Result<_>>()?;
+
+    let ions: Vec<&str> = entries
+        .iter()
+        .filter(|e| e.class == ION)
+        .map(|e| e.name.as_str())
+        .collect();
+    if !ions.is_empty() {
+        return Err(AzothError::invalid_input(
+            "components",
+            format!(
+                "{} {} an ion, and a cubic has no notion of one. The Soreide-Whitson \
+                 model is a cubic with a brine in it, not an electrolyte phase model",
+                ions.join(", "),
+                if ions.len() == 1 { "is" } else { "are" },
+            ),
+        ));
+    }
+
+    let missing: Vec<&str> = entries
+        .iter()
+        .filter(|e| e.cp.is_none())
+        .map(|e| e.name.as_str())
+        .collect();
+    if !missing.is_empty() {
+        return Err(AzothError::property_unavailable(
+            missing.join(", "),
+            "heat-capacity coefficients".to_string(),
+            "the databank carries them for every substance it ships; one a keycard adds \
+             needs its own"
+                .to_string(),
+        ));
+    }
+
+    let n = entries.len();
+    let mut matrix = vec![0.0; n * n];
+    for i in 0..n {
+        for j in (i + 1)..n {
+            // `None` is NeqSim's own ideal-mixture default: its reader leaves the array
+            // at zero when the query finds no row.
+            let value = kij_whitson_soreide(&entries[i].name, &entries[j].name).unwrap_or(0.0);
+            matrix[i * n + j] = value;
+            matrix[j * n + i] = value;
+        }
+    }
+
+    let roles: Vec<crate::mixing_rule::SoreideWhitsonRole> = entries
+        .iter()
+        .map(|e| crate::mixing_rule::SoreideWhitsonRole::from_name(&e.name))
+        .collect();
+
+    let components = entries
+        .iter()
+        .map(Entry::component)
+        .collect::<Result<Vec<_>>>()?;
+    let coefficient = |index: usize| -> Vec<f64> {
+        entries
+            .iter()
+            .map(|e| e.cp.map_or(0.0, |cp| cp[index]))
+            .collect()
+    };
+    let ideal_gas = IdealGasModel {
+        cp_a: coefficient(0),
+        cp_b: coefficient(1),
+        cp_c: coefficient(2),
+        cp_d: coefficient(3),
+        cp_e: coefficient(4),
+    };
+
+    // **The matrix lives in the rule, not in the constructor's slot.** `Mixture`'s own
+    // `kij` is the `Classic` rule's, and `reduced_parameters` takes the state's matrix
+    // from `mixing_rule.effective_kij` - which for this rule is the rule's own field. A
+    // matrix handed to `new` and a rule carrying zeros would evaluate every pair at the
+    // ideal-mixture default and look entirely plausible doing it.
+    let mixture = Mixture::new(components, vec![0.0; n * n])?
+        .with_cubic(Cubic::Pr)
+        .with_alpha(crate::alpha_term::Alpha::SoreideWhitson)
+        .with_mixing_rule(crate::mixing_rule::MixingRule::SoreideWhitson {
+            kij: matrix,
+            roles,
+            salinity,
+        });
+    Ok((mixture, ideal_gas))
+}

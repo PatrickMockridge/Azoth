@@ -3531,6 +3531,36 @@ pub fn umr_cpa_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The Soreide-Whitson phase state, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves each name's role in the
+/// aqueous correlation and reads its row of `KIJWhitsonSoriede`. Both are `name` lookups on
+/// NeqSim's side too, so a caller could not state them as numbers without reimplementing the
+/// model - and the roles are what decide which component gets the salinity-dependent alpha.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x, salinity, compressed_phase))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn soreide_whitson_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+    salinity: f64,
+    compressed_phase: &str,
+) -> PyResult<crate::results::PySoreideWhitsonPhaseResult> {
+    azoth_eos::soreide_whitson_phase(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &x,
+        salinity,
+        compressed_phase,
+    )
+    .map(|r| crate::results::PySoreideWhitsonPhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The SRK-CPA phase state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side looks them up in the Rust

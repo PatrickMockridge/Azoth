@@ -117,6 +117,7 @@ from azoth.core.result import (
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult,
+    SoreideWhitsonPhaseResult,
     SrkAlphaAbResult,
     SrkCpaPhaseResult,
     SrkDepartureResult,
@@ -2967,6 +2968,37 @@ def umr_cpa_phase(
         ln_phi=tuple(result.ln_phi),
         h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
         s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def soreide_whitson_phase(
+    components: Sequence[str],
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+    salinity: Q,
+    compressed_phase: str,
+) -> SoreideWhitsonPhaseResult:
+    """The Soreide-Whitson phase state, computed in Rust.
+
+    The component names cross **unresolved**, and the Rust side resolves each one's role in
+    the aqueous correlation and reads its row of `KIJWhitsonSoriede` itself. Both are name
+    lookups on NeqSim's side too, so a caller could not state them as numbers without
+    reimplementing the model.
+    """
+    spec = _models_gen.model("eos.soreide_whitson_phase")
+    result = _core.soreide_whitson_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+        input_to_si(spec, "salinity", salinity),
+        compressed_phase,
+    )
+    return SoreideWhitsonPhaseResult(
+        z_factor=result.z_factor,
+        ln_phi=tuple(result.ln_phi),
         warnings=_warnings(result.warnings),
     )
 
