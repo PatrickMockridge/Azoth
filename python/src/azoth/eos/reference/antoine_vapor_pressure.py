@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 
 from azoth._registry_gen import spec as _spec_for
-from azoth.core.errors import OutOfRangeError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import AntoineVaporPressureResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -85,7 +85,7 @@ def antoine_vapor_pressure(
         p_sat = 10.0 ** (A - B / (t + C))
     elif form == "exp":
         p_sat = 1e5 * math.exp(A - B / (t + C))
-    else:
+    elif form == "wagner":
         # **The form is defined on `0 < T <= Tc`, and the kernel says so.** Above the
         # critical temperature `x = 1 - T/Tc` is negative and `x**1.5` is not real: Rust's
         # `powf` returns `NaN` there and Python's `**` returns a *complex*, so the two
@@ -102,6 +102,18 @@ def antoine_vapor_pressure(
                 f"refused rather than reported as `NaN`",
             )
         p_sat = math.exp((A * x + B * x**1.5 + C * x**3 + D * x**6) / (1.0 - x)) * values["Pc"]
+    else:
+        # **A form the table does not carry is refused, not defaulted.** The Rust kernel
+        # resolves the label through `form_from_type` and refuses an unknown one; this
+        # branch used to be an `else`, so every unlisted label - including `none`, which
+        # upstream retracted 93 rows to - evaluated the Wagner form and raised whatever
+        # `math.exp` did with it. A pure-Python install therefore answered a bogus label
+        # with an `OverflowError` where the compiled one answered with this.
+        raise InvalidInputError(
+            "form",
+            f"unknown Antoine form `{form}`; expected `dippr101`, `pow10`, `pow10kpa`, "
+            f"`exp` or `wagner`",
+        )
 
     apply_checks(checks.derived, lambda name: p_sat if name == "p_sat" else None, warnings)
 
