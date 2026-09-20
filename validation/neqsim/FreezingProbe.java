@@ -56,6 +56,24 @@ public class FreezingProbe {
       row("system_pressure_bara", system.getPressure());
       row("phases", system.getNumberOfPhases());
       row("z", phaseZ(system));
+      // **The two Gibbs energies the residual is the difference of.** At the answer they are
+      // equal by construction, so printing them says which of the two a port has to get right
+      // rather than only that their difference is zero: a port whose solid is 3 J/mol off and
+      // whose fluid compensates would reproduce the temperature and not the physics.
+      row("g_fluid_J_per_mol", molarGibbs(system.getPhase(0)));
+      row("solid_phase_index", solidPhaseIndex(system));
+      row("g_solid_J_per_mol", molarGibbs(solidPhase(system)));
+      // The solid's whole property set, because the Gibbs energy is a rearrangement of the
+      // same Helmholtz evaluation its `u`, `h`, `s` and `cp` come from: a port that has one
+      // of them wrong usually has the others wrong too, and printing all of them says which.
+      neqsim.thermo.phase.PhaseInterface solid = solidPhase(system);
+      row("solid_v", solid == null ? Double.NaN : solid.getMolarVolume());
+      row("solid_u_J_per_mol", molarProperty(solid, "u"));
+      row("solid_h_J_per_mol", molarProperty(solid, "h"));
+      row("solid_s_J_per_molK", molarProperty(solid, "s"));
+      row("solid_cv_J_per_molK", molarProperty(solid, "cv"));
+      row("solid_cp_J_per_molK", molarProperty(solid, "cp"));
+      row("solid_z", solid == null ? Double.NaN : solid.getZ());
     } catch (Exception error) {
       System.out.printf("# failed: %s: %s%n", error.getClass().getSimpleName(), error.getMessage());
     }
@@ -66,6 +84,57 @@ public class FreezingProbe {
   private static double phaseZ(SystemInterface system) {
     try {
       return system.getPhase(0).getZ();
+    } catch (Throwable error) {
+      return Double.NaN;
+    }
+  }
+
+  /** The phase of the configured solid type, or null. */
+  private static neqsim.thermo.phase.PhaseInterface solidPhase(SystemInterface system) {
+    for (neqsim.thermo.phase.PhaseInterface phase : system.getPhases()) {
+      if (phase != null && phase.getType() == neqsim.thermo.phase.PhaseType.SOLID) {
+        return phase;
+      }
+    }
+    return null;
+  }
+
+  private static double solidPhaseIndex(SystemInterface system) {
+    for (int i = 0; i < system.getPhases().length; i++) {
+      if (system.getPhases()[i] != null
+          && system.getPhases()[i].getType() == neqsim.thermo.phase.PhaseType.SOLID) {
+        return i;
+      }
+    }
+    return Double.NaN;
+  }
+
+  /** A phase's molar Gibbs energy, or NaN where it has no moles to divide by. */
+  private static double molarGibbs(neqsim.thermo.phase.PhaseInterface phase) {
+    return molarProperty(phase, "g");
+  }
+
+  /** One of a phase's extensive properties, per mole. */
+  private static double molarProperty(neqsim.thermo.phase.PhaseInterface phase, String which) {
+    if (phase == null) {
+      return Double.NaN;
+    }
+    try {
+      double moles = phase.getNumberOfMolesInPhase();
+      if (!(moles > 0.0)) {
+        return Double.NaN;
+      }
+      double total =
+          switch (which) {
+            case "g" -> phase.getGibbsEnergy();
+            case "u" -> phase.getInternalEnergy();
+            case "h" -> phase.getEnthalpy();
+            case "s" -> phase.getEntropy();
+            case "cv" -> phase.getCv();
+            case "cp" -> phase.getCp();
+            default -> Double.NaN;
+          };
+      return total / moles;
     } catch (Throwable error) {
       return Double.NaN;
     }

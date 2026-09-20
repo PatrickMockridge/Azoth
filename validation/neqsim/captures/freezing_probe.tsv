@@ -8,6 +8,16 @@ system_temperature_K = 13.8032999997377
 system_pressure_bara = 0.0704199999975335
 phases = 2.00000000000000
 z = 0.00160696602425623
+g_fluid_J_per_mol = -22.5217800854402
+solid_phase_index = 4.00000000000000
+g_solid_J_per_mol = -22.5217800876996
+solid_v = 2.33988419170201
+solid_u_J_per_mol = -226.502066793754
+solid_h_J_per_mol = -226.337292148980
+solid_s_J_per_molK = -14.7657090742904
+solid_cv_J_per_molK = 4.66210573617951
+solid_cp_J_per_molK = 5.29367970772977
+solid_z = 0.00143573173181037
 
 # para-hydrogen at T = 13.8000000000000 K, P = 3.51270690962515 bara
 converged = 1.00000000000000
@@ -19,6 +29,16 @@ system_temperature_K = 13.9150932717025
 system_pressure_bara = 3.51270690949658
 phases = 2.00000000000000
 z = 0.0793095770640014
+g_fluid_J_per_mol = -12.8248590270691
+solid_phase_index = 4.00000000000000
+g_solid_J_per_mol = -12.8248590302796
+solid_v = 2.33550284216354
+solid_u_J_per_mol = -226.301296678275
+solid_h_J_per_mol = -218.097359707458
+solid_s_J_per_molK = -14.7517876214755
+solid_cv_J_per_molK = 4.69491737847993
+solid_cp_J_per_molK = 5.32940530947824
+solid_z = 0.0709091101530638
 
 # para-hydrogen at T = 13.8000000000000 K, P = 18.7643278589988 bara
 converged = 1.00000000000000
@@ -30,4 +50,14 @@ system_temperature_K = 14.3982923022496
 system_pressure_bara = 18.7643278599501
 phases = 2.00000000000000
 z = 0.404945862579157
+g_fluid_J_per_mol = 29.7651864957071
+solid_phase_index = 4.00000000000000
+g_solid_J_per_mol = 29.7651865068223
+solid_v = 2.31684884781705
+solid_u_J_per_mol = -225.251422869788
+solid_h_J_per_mol = -181.777311487401
+solid_s_J_per_molK = -14.6921935986236
+solid_cv_J_per_molK = 4.83438460082438
+solid_cp_J_per_molK = 5.48073941185808
+solid_z = 0.363149599649719
 
