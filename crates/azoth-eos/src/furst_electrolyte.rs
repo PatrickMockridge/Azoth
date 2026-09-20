@@ -391,6 +391,11 @@ pub fn furst_mixture_with(
             let diameter_m = if e.ionic_charge == 0.0 {
                 table_diameter * 1.0e-10
             } else {
+                // **Total by construction.** `p0` and `p1` are both positive for every ion in
+                // the table, so the fitted covolume is positive whatever the diameter is, and
+                // the exponent is written as the rational `1.0 / 3.0` because that is what the
+                // source writes - `Math.pow(x, 1.0/3.0)`, whose non-integral exponent is the
+                // branch `f64::powf` and Rust's `cbrt` disagree about on the negative axis.
                 let covolume = p0 * table_diameter.powi(3) + p1;
                 (6.0 * covolume / (NEQSIM_PI * NEQSIM_AVOGADRO)).powf(1.0 / 3.0)
             };

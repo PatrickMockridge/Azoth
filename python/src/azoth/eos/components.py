@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import cache
@@ -2807,8 +2808,13 @@ def furst_mixture_of(
         if e.ionic_charge == 0.0:
             diameter_m = table_diameter * 1.0e-10
         else:
+            # **Total by construction.** `p0` and `p1` are both positive in the fitted set, so
+            # the covolume is positive whatever the diameter is. The exponent is the rational
+            # `1.0 / 3.0` and it is taken with `math.pow` rather than `**`, because a negative
+            # base under `**` returns a *complex* - a value, and one that would propagate into
+            # every layer above it - where Rust's `powf` and NeqSim's `Math.pow` give NaN.
             covolume = p0 * table_diameter**3 + p1
-            diameter_m = (6.0 * covolume / (NEQSIM_PI * NEQSIM_AVOGADRO)) ** (1.0 / 3.0)
+            diameter_m = math.pow(6.0 * covolume / (NEQSIM_PI * NEQSIM_AVOGADRO), 1.0 / 3.0)
         species.append(
             FurstSpecies(
                 name=e.name,

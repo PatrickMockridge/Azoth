@@ -128,7 +128,15 @@ class ComponentState:
 
 
 def alpha_lr2(dielectric: float, temperature: float) -> float:
-    """``alphaLR2 = e^2 N_A/(eps0 eps R T)``, ``eps`` the *phase's* constant."""
+    """``alphaLR2 = e^2 N_A/(eps0 eps R T)``, ``eps`` the *phase's* constant.
+
+    **Propagated, and deliberately.** ``eps`` is the phase's own and ``T`` the state's, and a
+    non-positive one of either is not a state - so this returns the infinity or NaN the
+    division gives rather than a value invented here. ``T > 0`` is refused at the model's
+    boundary; ``eps`` comes out of a fitted polynomial, and these three functions are what
+    the probe prints, so a guard would be a divergence from the oracle at exactly the states
+    nobody can interpret.
+    """
     return (
         ELECTRON_CHARGE
         * ELECTRON_CHARGE
@@ -509,6 +517,12 @@ def shielding_parameter(
     From ``1e10``, ``gamma -= 0.8 f/f'``, with a 1000-iteration cap and a **three-iteration
     floor**. The floor matters: a phase carrying no ion returns exactly zero, and one
     carrying ions at ``1e-43`` mol returns a residue of the solve rather than a number.
+
+    **Its two divisors are total by construction.** ``v_total`` is the phase's volume, which
+    ``packing_fraction`` has already refused when it was not positive, and ``f'`` is a
+    sum of positive terms for every ``gamma > 0`` - where the iteration starts and where the
+    probe's own states leave it. The damping and the floor are NeqSim's, reproduced as they
+    stand rather than augmented with a clamp this model would not have.
     """
     alpha = alpha_lr2(state.dielectric, state.temperature)
     v_total = state.molar_volume * state.moles

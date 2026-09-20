@@ -98,6 +98,11 @@ impl WijTable {
     /// `Wij(T)` for one pair.
     #[must_use]
     pub fn wij(&self, i: usize, j: usize, temperature: f64) -> f64 {
+        // **Total by construction.** `temperature` is an absolute temperature, refused at the
+        // model's boundary when it is not positive, so `1/T` and `ln(T/298.15)` are both
+        // defined. The `ln` is NeqSim's own form of the temperature correction and is kept
+        // rather than rewritten as `ln T - ln 298.15`, because the two differ in the last
+        // digits and this is a layer the probe prints.
         let at = i * self.n + j;
         self.w0[at]
             + self.w1[at] * (1.0 / temperature - 1.0 / T_REFERENCE)

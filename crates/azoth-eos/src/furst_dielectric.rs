@@ -201,6 +201,9 @@ pub fn solvent_dielectric(
                 .map(|(((n, eps), vc), _)| {
                     let fraction = n * vc / total_volume;
                     match rule {
+                        // `cbrt` is total over the reals, negatives included, so a dielectric
+                        // constant the fitted polynomial took below zero is the real cube root
+                        // here and not a NaN - which is what NeqSim's `Math.cbrt` gives.
                         MixingRule::Looyenga => fraction * eps.cbrt(),
                         _ => fraction * eps,
                     }
@@ -289,6 +292,9 @@ pub fn packing_fraction_dvdv(packing: f64, total_moles: f64, molar_volume: f64) 
 /// the result is not; the caller states that, this does not re-check it.
 #[must_use]
 pub fn phase_dielectric(solvent: f64, ionic_packing: f64) -> f64 {
+    // **Total by construction.** `ionic_packing` is a packing fraction: a sum of volumes over
+    // the phase's own volume, which `packing_fraction` refuses when that volume is not
+    // positive. So it is at least zero, and `1 + p/2` cannot reach the zero at `p = -2`.
     1.0 + (solvent - 1.0) * (1.0 - ionic_packing) / (1.0 + ionic_packing / 2.0)
 }
 

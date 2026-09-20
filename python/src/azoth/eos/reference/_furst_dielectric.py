@@ -133,6 +133,9 @@ def solvent_dielectric(
         if ion:
             continue
         fraction = n * vc / total_volume
+        # `math.cbrt` is total over the reals, negatives included, so a dielectric constant
+        # the fitted polynomial took below zero is the real cube root here and not a NaN -
+        # which is what NeqSim's `Math.cbrt` gives.
         total += fraction * (math.cbrt(eps) if rule is MixingRule.looyenga else eps)
     return total**3 if rule is MixingRule.looyenga else total
 
@@ -187,5 +190,10 @@ def packing_fraction_dvdv(packing: float, total_moles: float, molar_volume: floa
 
 
 def phase_dielectric(solvent: float, ionic_packing: float) -> float:
-    """The phase's dielectric constant, with the ions' own volume taken out of it."""
+    """The phase's dielectric constant, with the ions' own volume taken out of it.
+
+    **Total by construction.** ``ionic_packing`` is a packing fraction - a sum of volumes
+    over the phase's own volume, which ``packing_fraction`` refuses when that volume is
+    not positive - so it is at least zero and ``1 + p/2`` cannot reach the zero at ``p = -2``.
+    """
     return 1.0 + (solvent - 1.0) * (1.0 - ionic_packing) / (1.0 + ionic_packing / 2.0)

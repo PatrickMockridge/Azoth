@@ -134,6 +134,12 @@ impl TermSwitches {
 /// `78.3148814553987`.
 #[must_use]
 pub fn alpha_lr2(dielectric: f64, temperature: f64) -> f64 {
+    // **Propagated, and deliberately.** `eps` is the phase's own and `T` the state's, and a
+    // non-positive one of either is not a state - so this returns the infinity or NaN
+    // NeqSim's own division does rather than a value invented here. `T > 0` is refused at the
+    // model's boundary; `eps` comes out of a fitted polynomial, and the same three functions
+    // are what the probe prints, so a guard here would be a divergence from the oracle at
+    // exactly the states no one can interpret.
     ELECTRON_CHARGE * ELECTRON_CHARGE * NEQSIM_AVOGADRO
         / (VACUUM_PERMITTIVITY * dielectric * R * temperature)
 }
@@ -757,6 +763,12 @@ fn shielding_parameter(
     components: &[ComponentState],
     mole_numbers: &[f64],
 ) -> f64 {
+    // **The solve's two divisors are total by construction.** `v_total` is the phase's
+    // volume, which `packing_fraction` has already refused when it was not positive. `df` is
+    // a sum of positive terms - `8 gamma/N_A` plus a `2 alpha n_i z_i^2 sigma_i` over a cube -
+    // for every `gamma > 0`, which is where the iteration starts and where the probe's own
+    // states leave it. The scheme's damping and its floor are NeqSim's, reproduced as they
+    // stand rather than augmented with a clamp this model would not have.
     let alpha = alpha_lr2(state.dielectric, state.temperature);
     let v_total = state.molar_volume * state.moles;
     let mut gamma = 1.0e10_f64;

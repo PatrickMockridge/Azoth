@@ -56,7 +56,14 @@ class WijTable:
     n: int
 
     def wij(self, i: int, j: int, temperature: float) -> float:
-        """``Wij(T)`` for one pair."""
+        """``Wij(T)`` for one pair.
+
+        **Total by construction.** ``temperature`` is an absolute temperature, refused at the
+        model's boundary when it is not positive, so ``1/T`` and ``ln(T/298.15)`` are both
+        defined. The ``log`` is NeqSim's own form of the temperature correction and is kept
+        rather than rewritten as ``ln T - ln 298.15``: the two differ in the last digits, and
+        this is a layer the probe prints.
+        """
         at = i * self.n + j
         return (
             self.w0[at]
