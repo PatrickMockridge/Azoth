@@ -1,0 +1,121 @@
+// The wax family's layers, printed so each can be ported and checked.
+//
+// **The fluid is the first layer, and it is the one a port cannot build.** A wax system is
+// made from a TBP fraction and a plus fraction: `addPlusFraction` plus
+// `characterisePlusFraction()` splits the plus into pseudo-components with a Pedersen plus
+// model, and `getWaxModel().addTBPWax()` then splits *those* again into parallel `wax<name>`
+// components and sets each one's `waxFormer`, `heatOfFusion` and `triplePointTemperature`.
+// So the components below - their molar masses, normal liquid densities, critical constants
+// and the two wax temperatures - are what a port has to be *given*, because the subsystem
+// that invents them is 16,000 lines of plus-fraction characterisation.
+//
+// The second layer is the wax phase: `ComponentWax.fugcoef2` builds the solid's fugacity from
+// a **reference liquid phase** of the same component, the heat of fusion, the triple point and
+// a heat-capacity difference, and the phase's composition follows. Both are printed.
+//
+//   javac -proc:none -cp neqsim-3.20.0.jar WaxProbe.java
+//   java -cp .:neqsim-3.20.0.jar WaxProbe > captures/wax_probe.tsv
+
+import neqsim.thermo.component.ComponentInterface;
+import neqsim.thermo.phase.PhaseInterface;
+import neqsim.thermo.system.SystemInterface;
+import neqsim.thermo.system.SystemSrkEos;
+import neqsim.thermodynamicoperations.ThermodynamicOperations;
+import neqsim.util.database.NeqSimDataBase;
+
+public class WaxProbe {
+
+  private static void row(String key, double value) {
+    System.out.printf("%s = %.15g%n", key, value);
+  }
+
+  public static void main(String[] args) {
+    // NeqSim's own wax test fluid at 261 K and 5 bara, where it reports a wax phase.
+    double[] temperatures = {285.0, 275.0, 261.0};
+    for (double temperatureK : temperatures) {
+      report(temperatureK, 5.0);
+    }
+  }
+
+  private static SystemInterface build() {
+    NeqSimDataBase.setCreateTemporaryTables(true);
+    SystemInterface system = new SystemSrkEos(298.0, 10.0);
+    system.addComponent("methane", 6.78);
+    system.addTBPfraction("C19", 10.13, 170.0 / 1000.0, 0.7814);
+    system.addPlusFraction("C20", 10.62, 381.0 / 1000.0, 0.850871882888);
+    system.getCharacterization().characterisePlusFraction();
+    system.getWaxModel().addTBPWax();
+    system.createDatabase(true);
+    system.setMixingRule(2);
+    system.addSolidComplexPhase("wax");
+    system.setMultiphaseWaxCheck(true);
+    system.setMultiPhaseCheck(true);
+    NeqSimDataBase.setCreateTemporaryTables(false);
+    system.init(0);
+    system.init(1);
+    return system;
+  }
+
+  private static void report(double temperatureK, double pressureBara) {
+    System.out.printf("# wax fluid at T = %.15g K, P = %.15g bara%n", temperatureK, pressureBara);
+    try {
+      SystemInterface fluid = build();
+      // **The fluid a port has to be given.** Printed before the flash so it is the same at
+      // every state, and once in enough detail to rebuild: the characterisation is what azoth
+      // does not have, and these rows are its output.
+      for (int i = 0; i < fluid.getPhase(0).getNumberOfComponents(); i++) {
+        ComponentInterface component = fluid.getPhase(0).getComponent(i);
+        String name = component.getName();
+        row("component[" + i + "].mw", component.getMolarMass());
+        row("component[" + i + "].normal_liquid_density", component.getNormalLiquidDensity());
+        row("component[" + i + "].tc", component.getTC());
+        row("component[" + i + "].pc", component.getPC());
+        row("component[" + i + "].acentric", component.getAcentricFactor());
+        row("component[" + i + "].moles", component.getNumberOfmoles());
+        System.out.printf("component[%d] = %s%n", i, name);
+        row("component[" + i + "].wax_former", component.isWaxFormer() ? 1.0 : 0.0);
+        row("component[" + i + "].heat_of_fusion", component.getHeatOfFusion());
+        row("component[" + i + "].triple_point_temperature", component.getTriplePointTemperature());
+        if (component.getAttractiveTerm() != null) {
+          row("component[" + i + "].attractive_m", component.getAttractiveTerm().getm());
+        }
+      }
+
+      fluid.setTemperature(temperatureK);
+      fluid.setPressure(pressureBara);
+      ThermodynamicOperations operations = new ThermodynamicOperations(fluid);
+      operations.TPflash();
+
+      row("phases", fluid.getNumberOfPhases());
+      for (int p = 0; p < fluid.getNumberOfPhases(); p++) {
+        PhaseInterface phase = fluid.getPhase(p);
+        System.out.printf("phase[%d] = %s%n", p, phase.getType());
+        row("phase[" + p + "].beta", phase.getBeta());
+        for (int i = 0; i < phase.getNumberOfComponents(); i++) {
+          String name = phase.getComponent(i).getName();
+          row("phase[" + p + "].x[" + name + "]", phase.getComponent(i).getx());
+          if (phase.getComponent(i).isWaxFormer()) {
+            row(
+                "phase[" + p + "].fugcoef[" + name + "]",
+                phase.getComponent(i).getFugacityCoefficient());
+          }
+        }
+      }
+
+      // **A material balance, because a wax fraction is one.** Counting each component
+      // across the phases against the feed, as `HydrateFractionProbe` does for its own.
+      int n = fluid.getPhase(0).getNumberOfComponents();
+      for (int i = 0; i < n; i++) {
+        double inPhases = 0.0;
+        for (int p = 0; p < fluid.getNumberOfPhases(); p++) {
+          inPhases += fluid.getPhase(p).getBeta() * fluid.getPhase(p).getComponent(i).getx();
+        }
+        String name = fluid.getPhase(0).getComponent(i).getName();
+        row("balance_error[" + name + "]", inPhases - fluid.getPhase(0).getComponent(i).getz());
+      }
+    } catch (Exception error) {
+      System.out.printf("# failed: %s: %s%n", error.getClass().getSimpleName(), error.getMessage());
+    }
+    System.out.println();
+  }
+}
