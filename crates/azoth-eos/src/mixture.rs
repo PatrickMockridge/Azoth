@@ -261,6 +261,14 @@ pub struct Mixture {
     cubic: Cubic,
     alpha: Alpha,
     associating: bool,
+    /// The Fürst electrolyte term, or `None` for every mixture that is not one.
+    ///
+    /// Carried whole rather than as a flag because it is not a property of the components:
+    /// the short-range table is built from the *whole* composition's names, and the
+    /// dielectric coefficients are read per component - so the term is assembled by the
+    /// resolver that knows the names, exactly as [`crate::association::Association`] is
+    /// assembled from the records the databank supplies.
+    furst: Option<crate::furst_electrolyte::FurstElectrolyte>,
 }
 
 impl Mixture {
@@ -295,12 +303,31 @@ impl Mixture {
             cubic: Cubic::default(),
             alpha: Alpha::default(),
             associating: false,
+            furst: None,
         };
         // Refused here rather than at the first phase evaluation: a mixture whose
         // association cannot be computed is a mistake in what was asked for, and the
         // caller is the one who can fix it.
         mixture.check_association()?;
         Ok(mixture)
+    }
+
+    /// This mixture, running the Fürst electrolyte term.
+    ///
+    /// The term carries its own components and its own short-range table, so this is a
+    /// statement that the mixture *is* a Fürst one - the same kind of statement
+    /// [`Self::with_association`] makes, and for the same reason: the same substances are
+    /// a classical fluid under another model.
+    #[must_use]
+    pub fn with_furst(mut self, furst: crate::furst_electrolyte::FurstElectrolyte) -> Self {
+        self.furst = Some(furst);
+        self
+    }
+
+    /// The Fürst electrolyte term, if this mixture has one.
+    #[must_use]
+    pub fn furst(&self) -> Option<&crate::furst_electrolyte::FurstElectrolyte> {
+        self.furst.as_ref()
     }
 
     /// This mixture, running the Wertheim association contribution.
@@ -700,9 +727,20 @@ impl Mixture {
         // contributes to the pressure, and NeqSim's `PhaseSrkCPA.molarVolume` solves for
         // the volume where the *total* pressure equals the specified one. See
         // [`Self::associating_root`].
-        let z = match self.association() {
-            Some(association) => self.associating_root(reduced, x, &association, side)?,
-            None => seed,
+        let z = match (self.association(), self.furst.as_ref()) {
+            (Some(_), Some(_)) => {
+                return Err(AzothError::invalid_input(
+                    "mixture",
+                    "this mixture carries both the Wertheim association and the Fürst \
+                     electrolyte term. NeqSim's `PhaseElectrolyteCPA` is the model that \
+                     has both, and it is not ported - so a mixture naming two terms is a \
+                     request for a model that does not exist here rather than a phase \
+                     whose pressure is the sum of the two",
+                ));
+            }
+            (Some(association), None) => self.associating_root(reduced, x, &association, side)?,
+            (None, Some(furst)) => self.furst_root(reduced, x, furst, side)?,
+            (None, None) => seed,
         };
         self.phase_state_at(reduced, x, z)
     }
@@ -746,16 +784,7 @@ impl Mixture {
         let (a_mix, b_mix) = self.mixture_parameters(reduced, x);
         // The cubic's own root for this side is the seed, and its ordering is what picks
         // the branch: the association moves a root, it does not choose between them.
-        let seed = match self.cubic {
-            Cubic::Pr | Cubic::Tst => match side {
-                RootSide::Liquid => pr_z_factor(a_mix, b_mix)?.z_min,
-                RootSide::Vapour => pr_z_factor(a_mix, b_mix)?.z_max,
-            },
-            Cubic::Srk | Cubic::Rk => match side {
-                RootSide::Liquid => srk_z_factor(a_mix, b_mix)?.z_min,
-                RootSide::Vapour => srk_z_factor(a_mix, b_mix)?.z_max,
-            },
-        };
+        let seed = self.cubic_root(a_mix, b_mix, side)?;
         let (r, t, p) = (R, reduced.t_kelvin, reduced.pressure);
         let delta1 = self.cubic.delta1();
         let delta2 = self.cubic.delta2();
@@ -775,6 +804,94 @@ impl Mixture {
             Ok(cubic - p_assoc * z / p)
         };
 
+        Self::root_with_extra_pressure(&residual, seed, b_mix, side, "associating")
+    }
+
+    /// The root of a Fürst electrolyte mixture's equation of state.
+    ///
+    /// **The electrolyte terms carry a pressure, so the root is not the cubic's**, and the
+    /// residual has the same shape as the association's:
+    ///
+    /// ```text
+    /// f(Z) = Z - Z/(Z - B) + A Z/((Z + d1 B)(Z + d2 B)) - P_e Z/P
+    /// ```
+    ///
+    /// with `P_e = -R T d(A_e/(R T))/dV_si` evaluated at `V = Z R T/P`. NeqSim gives this
+    /// model its own Halley iteration rather than the CPA one, but the *equation* is the
+    /// same pressure balance: at the probe's converged root `dFdV = 0.415155577019407` and
+    /// `Z = 1 - V 1e5 dFdV` gives `0.00963585` against the printed
+    /// `0.00963585200923298`. The root of an equation does not depend on the iteration that
+    /// found it, so this reuses the shared solver and the probe's `Z` is the check.
+    ///
+    /// **The composition is passed as mole numbers summing to one**, which is what makes the
+    /// term's *intensive* outputs - the pressure and the `ln phi` - independent of how large
+    /// the phase is. Its Helmholtz energy is extensive and is not read here.
+    ///
+    /// # Errors
+    /// * Propagates the term's errors.
+    /// * [`AzothError::OutOfRange`] if no root is found above `B`.
+    fn furst_root(
+        &self,
+        reduced: &ReducedParameters,
+        x: &[f64],
+        furst: &crate::furst_electrolyte::FurstElectrolyte,
+        side: RootSide,
+    ) -> Result<f64> {
+        let (a_mix, b_mix) = self.mixture_parameters(reduced, x);
+        let seed = self.cubic_root(a_mix, b_mix, side)?;
+        let (r, t, p) = (R, reduced.t_kelvin, reduced.pressure);
+        let delta1 = self.cubic.delta1();
+        let delta2 = self.cubic.delta2();
+
+        let residual = |z: f64| -> Result<f64> {
+            let solution = furst.solve(t, x, z * r * t / p)?;
+            let p_term = -r * t * solution.helmholtz_rt_dv;
+            let cubic =
+                z - z / (z - b_mix) + a_mix * z / ((z + delta1 * b_mix) * (z + delta2 * b_mix));
+            Ok(cubic - p_term * z / p)
+        };
+        Self::root_with_extra_pressure(&residual, seed, b_mix, side, "electrolyte")
+    }
+
+    /// The cubic's own root for a side, which both pressure roots seed from.
+    ///
+    /// # Errors
+    /// * [`AzothError::OutOfRange`] if the cubic has no admissible root.
+    fn cubic_root(&self, a_mix: f64, b_mix: f64, side: RootSide) -> Result<f64> {
+        match self.cubic {
+            Cubic::Pr | Cubic::Tst => match side {
+                RootSide::Liquid => Ok(pr_z_factor(a_mix, b_mix)?.z_min),
+                RootSide::Vapour => Ok(pr_z_factor(a_mix, b_mix)?.z_max),
+            },
+            Cubic::Srk | Cubic::Rk => match side {
+                RootSide::Liquid => Ok(srk_z_factor(a_mix, b_mix)?.z_min),
+                RootSide::Vapour => Ok(srk_z_factor(a_mix, b_mix)?.z_max),
+            },
+        }
+    }
+
+    /// The walk, Newton and scan a cubic-plus-pressure root solve shares.
+    ///
+    /// Both terms that carry a pressure need the same three passes - a geometric walk up
+    /// from the covolume for the liquid side, Newton from the cubic's own root, and a
+    /// linear scan with a bisection for whatever neither finds - and they differ only in
+    /// the residual. Factored rather than copied because the *solver* is the part that
+    /// must not drift: a fix to the walk in one is a fix the other needs.
+    ///
+    /// `seed` is the cubic's own root for the side wanted, which is what makes the walk
+    /// and Newton safe to start from; `what` names the term in the failure message, so a
+    /// refusal says which pressure carried the equation away.
+    ///
+    /// # Errors
+    /// * Propagates the residual's own errors.
+    /// * [`AzothError::OutOfRange`] if no sign change is found above `B`.
+    fn root_with_extra_pressure(
+        residual: &impl Fn(f64) -> Result<f64>,
+        seed: f64,
+        b_mix: f64,
+        side: RootSide,
+        what: &str,
+    ) -> Result<f64> {
         /// The zero of `f` in `[lo, hi]`, by bisection. The count is fixed rather than
         /// converged on a residual: near the covolume `f` is a difference of two large
         /// terms, and a bisection that stopped at an absolute tolerance there would stop
@@ -872,8 +989,8 @@ impl Mixture {
             field: "z".to_string(),
             value: seed,
             detail: format!(
-                "no volume root for this associating mixture above B = {b_mix}: the \
-                 residual has no sign change between the covolume and {ceiling}"
+                "no volume root for this {what} mixture above B = {b_mix}: the residual \
+             has no sign change between the covolume and {ceiling}"
             ),
         })
     }
@@ -996,6 +1113,19 @@ impl Mixture {
             let derivatives =
                 association.derivatives(&covolumes, x, v, reduced.t_kelvin, &state)?;
             assoc_dep_rt = -reduced.t_kelvin * derivatives.d_helmholtz_dt;
+        }
+
+        // The Fürst electrolyte contribution, at the same root. **`ln phi` and not the
+        // Helmholtz energy**: the term's `dFdN` is `ln phi_i = dFdN_i - ln Z`'s own
+        // `dFdN`, and this library's cubic `ln phi` is already that identity for its part,
+        // so the contributions add. The term takes the composition as mole numbers summing
+        // to one, which is what makes its intensive outputs independent of the phase size.
+        if let Some(furst) = self.furst.as_ref() {
+            let r_t = R * reduced.t_kelvin;
+            let solution = furst.solve(reduced.t_kelvin, x, z * r_t / reduced.pressure)?;
+            for (value, addition) in ln_phi.iter_mut().zip(&solution.ln_phi) {
+                *value += addition;
+            }
         }
 
         // The mixture's departure functions. `psi_bar` is the composition-weighted

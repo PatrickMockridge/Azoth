@@ -1127,3 +1127,62 @@ fn the_derivative_surface_matches_neqsims() {
         }
     }
 }
+
+/// **The two pressure-carrying terms are refused together rather than one winning.**
+///
+/// `PhaseElectrolyteCPA` is the model that has both, and it is carried rather than ported -
+/// so a mixture naming the Wertheim association and the Fürst electrolyte at once is a
+/// request for a model that does not exist here. Silently summing the two pressures would
+/// give a root for neither.
+#[test]
+fn a_mixture_carrying_two_pressure_terms_is_refused() {
+    use azoth_eos::furst_dielectric::MixingRule;
+    use azoth_eos::furst_electrolyte::{FurstElectrolyte, FurstSpecies};
+
+    let species = vec![
+        FurstSpecies {
+            name: "methane".into(),
+            charge: 0.0,
+            diameter_m: 2.52e-10,
+            table_diameter: 2.52,
+            dielectric_coefficients: [2.0, 0.0, 0.0, 0.0, 0.0],
+            critical_volume: 9.9e-5,
+            dielectric_at_reference: 2.0,
+        },
+        FurstSpecies {
+            name: "water".into(),
+            charge: 0.0,
+            diameter_m: 2.52e-10,
+            table_diameter: 2.52,
+            dielectric_coefficients: [-19.2905, 29814.5, -0.019678, 0.000132, -3.11e-07],
+            critical_volume: 5.6e-5,
+            dielectric_at_reference: 78.4,
+        },
+    ];
+    let term = FurstElectrolyte::new(species, MixingRule::default_for_the_model())
+        .expect("the two build a table");
+
+    // A plain mixture and a term is a statement about the model, and it is accepted.
+    let (base, _) = azoth_eos::databank::mixture_of(&["methane", "water"], Cubic::Pr, None)
+        .expect("the databank has both");
+    let furst = base.clone().with_furst(term.clone());
+    assert!(furst.furst().is_some());
+    assert!(
+        base.furst().is_none(),
+        "the term is opt-in, like the association: the same substances are a classical \
+         mixture under another model"
+    );
+
+    // Both at once is refused, at the phase rather than at construction, because which
+    // terms a mixture runs is not a shape error.
+    let both = furst.with_association();
+    if let Ok(both) = both {
+        let reduced = both
+            .reduced_parameters(kelvins(298.15), pascals(1.0e5))
+            .expect("reduces");
+        let error = both
+            .phase_state(&reduced, &[0.5, 0.5], RootSide::Vapour)
+            .expect_err("the two terms cannot both carry the pressure");
+        assert_eq!(error.field(), Some("mixture"), "{error:?}");
+    }
+}
