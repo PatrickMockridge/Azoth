@@ -2,6 +2,33 @@ import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.system.SystemSoreideWhitson;
 import neqsim.thermodynamicoperations.ThermodynamicOperations;
 
+// Which of a Soreide-Whitson phase's salinity-dependent quantities actually respond.
+//
+//     javac -proc:none -cp neqsim-3.20.0.jar AlphaSalinity.java
+//     java -cp .:neqsim-3.20.0.jar AlphaSalinity
+//
+// The tranche's third F instrument, and the one that separates two things that look alike.
+// Over eight brines from zero to `7.59 mol/kg`:
+//
+//   * **`alpha(water)` is `1.576491803452` at every one of them** - the value a freshly
+//     constructed `AttractiveTermSoreideWhitson` gives with no salinity set. The push in
+//     `SystemSoreideWhitson.calcSalinity` is guarded by `comp.getClass().getName().equals(
+//     "...ComponentEosInterface")`, which compares a concrete class name to an interface
+//     name, so it is false for every component and `setSalinityFromPhase` never runs.
+//   * **`ln phi(CO2)` in the aqueous phase moves from `4.517210` to `6.005369`.** The
+//     salinity-dependent CO2/water correlation *is* wired up.
+//
+// **And the second of those is why a first reading of this was wrong.** The correlation
+// lives in `EosMixingRuleHandler.WhitsonSoreideMixingRule.calcA`, where it multiplies `aij`;
+// it never writes the `intparam` matrix, which is where `getkij` reads and where an earlier
+// probe looked. Reading that matrix showed a constant `0.1896` at every salinity - the
+// interaction table's value - and looked like a dead correlation. It is not one, and this
+// probe measures the quantity that carries it instead.
+//
+// `calcA` also reads the salinity **only when water's mole fraction exceeds 0.8**, so the
+// brine's concentration reaches the aqueous phase and not the gas. That is coherent - the
+// concentration is set on the aqueous phase by `calcSalinity` and means a brine property.
+
 public class AlphaSalinity {
   private static void report(double salt) throws Exception {
     SystemSoreideWhitson s = new SystemSoreideWhitson(298.0, 20.0);
@@ -38,14 +65,12 @@ public class AlphaSalinity {
     double[][] intparam = (double[][]) f.get(handler);
     int co2 = aqueous.getComponent("CO2").getComponentNumber();
     double kij = intparam[co2][w];
-    double tr = s.getTemperature() / aqueous.getComponent(co2).getTC();
-    double bare = 0.989 * (-0.31092 * (1 + 0.15587 * Math.pow(concentration, 0.75))
-        + 0.2358 * (1 + 0.17837 * Math.pow(concentration, 0.98)) * tr
-        - 21.2566 * Math.exp(-Math.pow(6.7222, tr) - concentration));
-    System.out.printf("  salt = %6.3f   c = %18.12g   alpha(water) = %.12f   kij(CO2,water)"
-            + " = %20.12g   multipK = %s%n",
-        salt, concentration, alpha, kij, (Math.abs(bare) > 1e-12 && kij != 0.1896)
-            ? String.format("%.6f", kij / bare) : "not this branch");
+    // **What the salinity actually reaches**: `calcA`'s aqueous branch multiplies `aij` by
+    // `(1 - kijWhitsonSoreideAqueous(...))`, which never touches `intparam` - so the CO2
+    // fugacity coefficient in the brine is the observable, not that matrix.
+    double lnPhiCO2 = Math.log(aqueous.getComponent(co2).getFugacityCoefficient());
+    System.out.printf("  salt = %6.3f   c = %18.12g   alpha(water) = %.12f   "
+            + "ln phi(CO2, aqueous) = %.12f%n", salt, concentration, alpha, lnPhiCO2);
   }
 
   public static void main(String[] args) throws Exception {
