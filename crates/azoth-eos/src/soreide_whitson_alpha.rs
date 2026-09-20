@@ -63,7 +63,7 @@ pub fn soreide_whitson_alpha(salinity: f64, Tr: f64) -> Result<SoreideWhitsonAlp
 /// Factored out because both derivatives need it and the three must agree by construction
 /// rather than by three copies of the same expression.
 #[must_use]
-fn bracket(salinity: f64, reduced_temperature: f64) -> f64 {
+pub fn bracket(salinity: f64, reduced_temperature: f64) -> f64 {
     1.0 + 0.453 * (1.0 - reduced_temperature * (1.0 - 0.0103 * salinity.powf(1.1)))
         + 0.0034 * ((1.0 / reduced_temperature).powi(3) - 1.0)
 }
@@ -183,6 +183,43 @@ mod derivative_tests {
                 (d2 - want_d2).abs() < 1.0e-18,
                 "d2alpha/dT2({salinity}, {temperature}) = {d2}, and NeqSim gives {want_d2}"
             );
+        }
+    }
+
+    /// **The term's two logarithmic derivatives against the calculus**, which is what the
+    /// departure surface reads them as.
+    ///
+    /// `psi = d ln alpha / d ln Tr` and `psi_t = Tr d(psi)/dTr`, checked against a central
+    /// difference of `alpha` rather than against a second transcription of the same algebra.
+    /// The step is `1e-6` and the tolerance `1e-5` relative, which is what a central
+    /// difference of a smooth function buys at that step.
+    #[test]
+    fn the_logarithmic_derivatives_are_the_calculus() {
+        use crate::alpha_term::AlphaTerm;
+        for salinity in [0.0, 1.0, 4.0] {
+            for tr in [0.45, 0.55, 0.75] {
+                let term = crate::alpha_term::SoreideWhitsonWater {
+                    salinity,
+                    critical_temperature: 647.3,
+                };
+                let h = 1.0e-6;
+                let alpha = term.alpha(tr);
+                let slope = (term.alpha(tr + h) - term.alpha(tr - h)) / (2.0 * h);
+                let want_psi = tr * slope / alpha;
+                assert!(
+                    (term.psi(tr) - want_psi).abs() < 1.0e-5 * want_psi.abs().max(1.0e-3),
+                    "psi({salinity}, {tr}) = {} and the difference quotient gives {want_psi}",
+                    term.psi(tr)
+                );
+                let second = (term.psi(tr + h) - term.psi(tr - h)) / (2.0 * h);
+                let want_psi_t = tr * second;
+                assert!(
+                    (term.psi_t(tr) - want_psi_t).abs() < 1.0e-3 * want_psi_t.abs().max(1.0e-2),
+                    "psi_t({salinity}, {tr}) = {} and the difference quotient gives \
+                     {want_psi_t}",
+                    term.psi_t(tr)
+                );
+            }
         }
     }
 

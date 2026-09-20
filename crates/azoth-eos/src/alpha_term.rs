@@ -126,6 +126,61 @@ pub struct Soave {
     pub kappa: f64,
 }
 
+/// Soreide-Whitson's water term: the alpha's salinity dependence, and its two logarithmic
+/// derivatives.
+///
+/// **The salinity and the critical temperature are both fields**, which is what makes this
+/// the one term that is not a function of the component alone. NeqSim reaches the same two
+/// numbers through `AttractiveTermSoreideWhitson.setSalinityFromPhase` and
+/// `ComponentEosInterface.getTC()`.
+///
+/// `psi` and `psi_t` follow [`Soave`]'s convention - `psi = Tr alpha'(Tr) / alpha` and
+/// `psi_t = Tr d(psi)/dTr` - so the departure surface reads this term and that one the same
+/// way. The two temperature derivatives `eos.soreide_whitson_alpha` exports are in *kelvin*
+/// and carry a `1/Tc` each; the conversions back to reduced temperature are here.
+#[derive(Debug, Clone, Copy)]
+pub struct SoreideWhitsonWater {
+    /// The brine's NaCl molality, in mol/kg water.
+    pub salinity: f64,
+    /// The component's critical temperature, in K.
+    pub critical_temperature: f64,
+}
+
+impl SoreideWhitsonWater {
+    /// `dA/dTr`, the bracket's slope.
+    fn bracket_slope(&self, tr: f64) -> f64 {
+        -0.453 * (1.0 - 0.0103 * self.salinity.powf(1.1)) - 3.0 * 0.0034 * (1.0 / tr).powi(4)
+    }
+
+    /// `d^2A/dTr^2`, the bracket's curvature.
+    fn bracket_curvature(&self, tr: f64) -> f64 {
+        12.0 * 0.0034 * (1.0 / tr).powi(5)
+    }
+}
+
+impl AlphaTerm for SoreideWhitsonWater {
+    fn alpha(&self, tr: f64) -> f64 {
+        crate::soreide_whitson_alpha::bracket(self.salinity, tr).powi(2)
+    }
+
+    fn psi(&self, tr: f64) -> f64 {
+        tr * 2.0 * self.bracket_slope(tr) / crate::soreide_whitson_alpha::bracket(self.salinity, tr)
+    }
+
+    fn psi_t(&self, tr: f64) -> f64 {
+        // `psi = Tr A'/A` with `A = bracket`, so
+        // `dpsi/dTr = A'/A + Tr (A''/A - (A'/A)^2)` and `psi_t = Tr` times that.
+        let (a, d1, d2) = (
+            crate::soreide_whitson_alpha::bracket(self.salinity, tr),
+            self.bracket_slope(tr),
+            self.bracket_curvature(tr),
+        );
+        // **The `2` is `psi`'s**: `psi = Tr 2A'/A` because `alpha = A^2`, so its derivative
+        // carries the same factor. Without it this returns exactly half.
+        2.0 * tr * (d1 / a + tr * (d2 / a - (d1 / a).powi(2)))
+    }
+}
+
 impl AlphaTerm for Soave {
     fn alpha(&self, tr: f64) -> f64 {
         let attraction = 1.0 + self.kappa * (1.0 - tr.sqrt());
