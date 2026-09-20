@@ -263,3 +263,13 @@ pint = "1/kelvin**2"
 id = "1/K**3"
 dimension = "per_temperature_cubed"
 pint = "1/kelvin**3"
+
+[[dimensions]]
+id = "molality"
+exponents = [0, -1, 0, 0, 0, 1, 0]
+[[units]]
+id = "mol/kg"
+dimension = "molality"
+pint = "mole/kilogram"
+uom = "molality::mole_per_kilogram"
+rust_ctor = "moles_per_kilogram"

@@ -42,3 +42,4 @@ import Azoth.Vocabulary
 #print axioms Azoth.Vocabulary.u_1_per_K_dimension
 #print axioms Azoth.Vocabulary.u_1_per_K_pow_2_dimension
 #print axioms Azoth.Vocabulary.u_1_per_K_pow_3_dimension
+#print axioms Azoth.Vocabulary.u_mol_per_kg_dimension

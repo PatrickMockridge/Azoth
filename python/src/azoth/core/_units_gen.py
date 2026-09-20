@@ -54,6 +54,7 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     "1/K": "1/kelvin",
     "1/K**2": "1/kelvin**2",
     "1/K**3": "1/kelvin**3",
+    "mol/kg": "mole/kilogram",
 }
 
 #: The canonical unit strings, in table order. The keycard loader validates

@@ -44,6 +44,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "per_temperature",
     "per_temperature_squared",
     "per_temperature_cubed",
+    "molality",
 ];
 
 /// Each dimension id, as exponents in [`SLOTS`] order.
@@ -90,6 +91,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("per_temperature", [0, 0, 0, 0, -1, 0, 0]),
     ("per_temperature_squared", [0, 0, 0, 0, -2, 0, 0]),
     ("per_temperature_cubed", [0, 0, 0, 0, -3, 0, 0]),
+    ("molality", [0, -1, 0, 0, 0, 1, 0]),
 ];
 
 /// The exponents of one named dimension, or `None` if the id is not in the
@@ -140,6 +142,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "1/K",
     "1/K**2",
     "1/K**3",
+    "mol/kg",
 ];
 
 /// Each unit's dimension, as exponents in [`SLOTS`] order.
@@ -176,6 +179,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("1/K", [0, 0, 0, 0, -1, 0, 0]),
     ("1/K**2", [0, 0, 0, 0, -2, 0, 0]),
     ("1/K**3", [0, 0, 0, 0, -3, 0, 0]),
+    ("mol/kg", [0, -1, 0, 0, 0, 1, 0]),
 ];
 
 /// One row of [`CONVERSION_PATHS`]: a canonical unit string, and the
@@ -237,6 +241,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("1/K", |v| v),
     ("1/K**2", |v| v),
     ("1/K**3", |v| v),
+    ("mol/kg", |v| crate::units::moles_per_kilogram(v).value),
 ];
 
 /// The conversion for one canonical unit, or `None` if the name is not in
@@ -304,5 +309,6 @@ mod dimension_assertions {
         let _: uom::si::f64::MolarHeatCapacity = crate::units::joules_per_mole_kelvin(1.0);
         let _: uom::si::f64::ElectricCharge = crate::units::coulombs(1.0);
         let _: uom::si::f64::Length = crate::units::angstroms(1.0);
+        let _: uom::si::f64::Molality = crate::units::moles_per_kilogram(1.0);
     }
 }

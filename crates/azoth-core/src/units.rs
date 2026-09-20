@@ -16,8 +16,8 @@
 
 pub use uom::si::f64::{
     Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, HeatTransfer, Length,
-    MassDensity, MassRate, MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power, Pressure,
-    SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductivity,
+    MassDensity, MassRate, Molality, MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power,
+    Pressure, SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductivity,
     ThermodynamicTemperature, Velocity, VolumeRate,
 };
 pub use uom::si::{
@@ -25,12 +25,13 @@ pub use uom::si::{
     dynamic_viscosity::pascal_second, electric_charge::coulomb,
     heat_transfer::watt_per_square_meter_kelvin, length::angstrom, length::meter,
     length::millimeter, mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
-    molar_energy::joule_per_mole, molar_heat_capacity::joule_per_kelvin_mole,
-    molar_mass::kilogram_per_mole, molar_volume::cubic_meter_per_mole, power::watt,
-    pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
-    surface_tension::newton_per_meter, temperature_interval::kelvin as kelvin_interval,
-    thermal_conductivity::watt_per_meter_kelvin, thermodynamic_temperature::kelvin,
-    velocity::meter_per_second, volume_rate::cubic_meter_per_second,
+    molality::mole_per_kilogram, molar_energy::joule_per_mole,
+    molar_heat_capacity::joule_per_kelvin_mole, molar_mass::kilogram_per_mole,
+    molar_volume::cubic_meter_per_mole, power::watt, pressure::pascal,
+    specific_heat_capacity::joule_per_kilogram_kelvin, surface_tension::newton_per_meter,
+    temperature_interval::kelvin as kelvin_interval, thermal_conductivity::watt_per_meter_kelvin,
+    thermodynamic_temperature::kelvin, velocity::meter_per_second,
+    volume_rate::cubic_meter_per_second,
 };
 
 /// A length in metres.
@@ -219,6 +220,16 @@ pub fn joules_per_mole(value: f64) -> MolarEnergy {
 #[must_use]
 pub fn joules_per_mole_kelvin(value: f64) -> MolarHeatCapacity {
     MolarHeatCapacity::new::<joule_per_kelvin_mole>(value)
+}
+
+/// A molality in moles per kilogram of solvent.
+///
+/// `.value` is still mol/kg. This is the scale every activity-coefficient phase works in,
+/// and it is per kilogram of *solvent* rather than of solution - a distinction the number
+/// cannot carry and the models' own documentation has to.
+#[must_use]
+pub fn moles_per_kilogram(value: f64) -> Molality {
+    Molality::new::<mole_per_kilogram>(value)
 }
 
 /// A molar mass in kilograms per mole.

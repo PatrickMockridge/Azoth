@@ -107,6 +107,9 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
     # Charge, which uom carries: SI's base dimension is the current and a charge is
     # `I * T`, so this is the `T` and `I` slots rather than a slot of its own.
     (0, 0, 1, 1, 0, 0, 0): "ElectricCharge",
+    # Molality, `mol/kg`: the scale every activity-coefficient phase works in. uom
+    # carries it, and its `I` and `N` slots are the mass and the amount.
+    (0, -1, 0, 0, 0, 1, 0): "Molality",
     # The dielectric-constant coefficients, which are the reciprocals of the temperature
     # raised to a power. uom carries a temperature and not its reciprocal, so these are
     # azoth's own, like the `Cp` coefficients above.
@@ -174,6 +177,10 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "1/K": "Dimension.Temperature ^ (-1 : ℚ)",
     "1/K**2": "Dimension.Temperature ^ (-2 : ℚ)",
     "1/K**3": "Dimension.Temperature ^ (-3 : ℚ)",
+    # Molality is an amount over a mass, and the mass never appears as a divisor
+    # anywhere else in this table - every other ratio here divides by a time, a
+    # temperature or an amount.
+    "mol/kg": "Dimension.AmountOfSubstance / Dimension.Mass",
 }
 
 
