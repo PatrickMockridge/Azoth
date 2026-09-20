@@ -1,7 +1,8 @@
 # The middleware
 
 This page states what sits between the [process schema](./process-schema.md) and its
-front-ends — a flowsheet editor (egui or azul), a notebook (Jupyter/conda), and an agent
+front-ends — a flowsheet editor (web front-end, [the stack](#the-stack)), a notebook
+(Jupyter/conda), and an agent
 — and it states it as a use of [reflection](../calculus/rho.md), not a parallel layer. A
 flowsheet is a process; quoting it and dropping it back is the identity (`*@P ≅ P`, proved
 as structural congruence), and that round trip is what an editor, a file and a notebook
@@ -55,6 +56,16 @@ The widgets of a HYSYS/UniSim-style editor are these layers viewed one way:
 | input/output fields | the field record, one field name to a dimension | form schema + units |
 | palette dropdown | the `UnitOpSpec` registry | the palette |
 | top-bar menu | new / open / save / solve | command model + quote/drop |
+
+### The stack
+
+- **graph** — xyflow (formerly React Flow). A flowsheet's connection graph is already a
+  node/edge set, so the editor's model is the schema's rather than a translation of it.
+- **language** — JS/TS, the working choice: the front-end ecosystem is far more developed
+  than Rust's. Rust/WASM takes the parts where performance or code safety warrants it, and
+  is the longer-term direction for more of the front-end.
+- **the kernels** — remain Rust. WASM is how the front-end reaches them, which is what keeps
+  the front-end a consumer of the middleware rather than a second implementation of it.
 
 ## The agent
 
