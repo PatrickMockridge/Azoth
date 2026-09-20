@@ -671,6 +671,77 @@ def spec_ids(root: Path = ROOT) -> set[str]:
     return found
 
 
+#: The crate file that parses the compiled component table, and the anchors that find the
+#: list of column names it indexes. Both are names in the source, so a rename is something
+#: this reports rather than a check that quietly stops firing.
+COMPONENT_PARSER = Path("crates") / "azoth-eos" / "src" / "databank.rs"
+COMPONENTS_CONSTANT = "COMPONENTS_CSV"
+PARSER_FUNCTION = "fn parse_components()"
+
+
+def indexed_column_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
+    """A column the component parser indexes is `used`, whatever the manifest says.
+
+    `used` and `vendored` differ by one claim - something reads it - and that claim is the
+    one a manifest cannot check for itself. The parser can: its allow-list is the set of
+    names it looks up in every record, so being in it *is* the claim. `LJDIAMETER` and
+    `SCHWARTZENTRUBER1`-`3` were `vendored` while all four were indexed into every `Entry`,
+    and the tally printed four columns a registered model reads as carried-and-unread. It
+    was wrong for three tranches, and nothing but reading the Rust could have told anyone.
+
+    **One file, one direction.** The allow-list belongs to `parse_components`, whose
+    compiled output is one table; `COMP_EXT.csv` and the reaction tables carry columns of
+    the same names with no reader at all, so applying this to every vendored file would
+    fail on sixty-five rows that are right. The reverse direction is false for the same
+    reason in miniature: `cas`, `liquid_density_kg_per_m3` and `viscosity_correction_factor`
+    are `used` and read by something other than this parser.
+    """
+    base = root.resolve()
+    try:
+        source = (base / COMPONENT_PARSER).read_text(encoding="utf-8")
+    except OSError as error:
+        return [f"{COMPONENT_PARSER}: {error}"]
+
+    include = re.search(rf'const {COMPONENTS_CONSTANT}: &str = include_str!\("([^"]+)"\)', source)
+    if include is None:
+        return [
+            f"{COMPONENT_PARSER}: no `{COMPONENTS_CONSTANT}` include, so the table this rule "
+            f"is about cannot be named"
+        ]
+    try:
+        compiled = str(
+            (base / COMPONENT_PARSER.parent / include.group(1)).resolve().relative_to(base)
+        )
+    except ValueError:
+        return [
+            f"{COMPONENT_PARSER}: `{COMPONENTS_CONSTANT}` points outside the tree, at "
+            f"{include.group(1)!r}"
+        ]
+
+    entry = next((item for item in manifest.files() if item.compiled_to == compiled), None)
+    if entry is None:
+        return [f"{compiled}: parsed by {COMPONENT_PARSER}, and no manifest file compiles to it"]
+
+    start = source.find(PARSER_FUNCTION)
+    opened = source.find("for name in [", start) if start >= 0 else -1
+    if start < 0 or opened < 0:
+        return [
+            f"{COMPONENT_PARSER}: no `{PARSER_FUNCTION}` with a `for name in [`, so the "
+            f"columns it indexes cannot be read and this rule decides nothing. It reports "
+            f"rather than passes, because a rule that cannot find its subject is the one "
+            f"case where silence looks like agreement."
+        ]
+    indexed = set(re.findall(r'"([A-Za-z0-9_]+)"', source[opened : source.find("]", opened)]))
+
+    return [
+        f"{entry.id}.{column.name}: disposition is {column.disposition!r} and "
+        f"{COMPONENT_PARSER} indexes it into every record. A column the parser reads is "
+        f"`used`; `vendored` says nothing reads it, and the tally prints it as carried."
+        for column in entry.columns
+        if column.disposition == "vendored" and column.as_field in indexed
+    ]
+
+
 def vendoring_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
     """Every rule this manifest breaks, as messages. Empty means it holds.
 
@@ -749,6 +820,8 @@ def vendoring_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
     messages.extend(empty_upstream_problems(manifest, root))
 
     messages.extend(consumer_problems(manifest, root))
+
+    messages.extend(indexed_column_problems(manifest, root))
 
     messages.extend(citation_problems(manifest, root))
 
