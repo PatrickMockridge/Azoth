@@ -1208,12 +1208,14 @@ unit = "neqsim-internal"
 
 [[upstreams.files.columns]]
 name = "aijDesMath"
-disposition = "dropped"
-reason = "not-ported: the extended Debye-Huckel pair term; NeqSim's `PhaseDesmukhMather`, which reads it as `aij`. Present for 4 in-scope pairs."
+disposition = "used"
+as = "aijdesmath"
+unit = "neqsim-internal"
 [[upstreams.files.columns]]
 name = "bijDesMath"
-disposition = "dropped"
-reason = "empty-upstream: zero over the 957 in-scope pairs"
+disposition = "used"
+as = "bijdesmath"
+unit = "neqsim-internal"
 [[upstreams.files.columns]]
 name = "cpaAssosiationType"
 disposition = "dropped"

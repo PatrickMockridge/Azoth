@@ -103,9 +103,30 @@
     Na+       z = +1  x = 0.0500000000000  gamma = 0.302269779010361  ln gamma = -1.19643535238806  molality = 3.08384987819  refstate = solute  phi = 1.00000000000000e-15
     Cl-       z = -1  x = 0.0500000000000  gamma = 0.302269779010361  ln gamma = -1.19643535238806  molality = 3.08384987819  refstate = solute  phi = 1.00000000000000e-15
 
+=== water + MDEA+ + Cl- + CO2 ===
+  phase class = PhaseDesmukhMather
+  T = 313.15 K   P = 5.00 bara   moles = 1.000000000
+    water     z = +0  x = 0.890000000000  gamma = 1.12359550561798  ln gamma = 0.116533816255951  molality = 55.5092978074  refstate = solvent  phi = 0.0166938288734500
+    MDEA+     z = +1  x = 0.0400000000000  gamma = 0.429375480220153  ln gamma = -0.845423497589490  molality = 2.49479990146  refstate = solute  phi = 1.00000000000000e-15
+    Cl-       z = -1  x = 0.0400000000000  gamma = 0.333064679011398  ln gamma = -1.09941857659668  molality = 2.49479990146  refstate = solute  phi = 1.00000000000000e-15
+    CO2       z = +0  x = 0.0300000000000  gamma = 1.57647906673492  ln gamma = 0.455193921598877  molality = 1.87109992609  refstate = solute  phi = 23.6205710928773
+
+=== water + methanol + Na+ + Cl- ===
+  phase class = PhaseDesmukhMather
+  T = 313.15 K   P = 5.00 bara   moles = 1.000000000
+    water     z = +0  x = 0.850000000000  gamma = 1.11111111111111  ln gamma = 0.105360515657826  molality = 50.2517019069  refstate = solvent  phi = 0.0165083418859673
+    methanol  z = +0  x = 0.0500000000000  gamma = 1.11111111111111  ln gamma = 0.105360515657826  molality = 2.95598246511  refstate = solvent  phi = 0.0787625124657153
+    Na+       z = +1  x = 0.0500000000000  gamma = 0.307561742004006  ln gamma = -1.17907942488568  molality = 2.95598246511  refstate = solute  phi = 1.00000000000000e-15
+    Cl-       z = -1  x = 0.0500000000000  gamma = 0.307561742004006  ln gamma = -1.17907942488568  molality = 2.95598246511  refstate = solute  phi = 1.00000000000000e-15
+  the infinite-dilution activity coefficient `getActivityCoefficientInfDilWater`:
+    water     reference phase: NullPointerException: Cannot invoke "neqsim.thermo.component.ComponentInterface.init(double, double, double, double, int)" because "this.componentArray[i]" is null
+    MDEA+     reference phase: 0.999980441790587
+    Cl-       reference phase: 0.999980441790587
+    CO2       reference phase: 1.00000000001000
+
 ################ Duan-Sun ################
 Exception in thread "main" java.lang.RuntimeException: SystemDuanSun supports only CO2
 	at neqsim.thermo.system.SystemDuanSun.addComponent(SystemDuanSun.java:86)
 	at GeElectrolyteProbe.build(GeElectrolyteProbe.java:56)
 	at GeElectrolyteProbe.report(GeElectrolyteProbe.java:77)
-	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:238)
+	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:280)

@@ -118,6 +118,16 @@ public class GeElectrolyteProbe {
     }
   }
 
+  /** The infinite-dilution ratio, or the exception that stood in for it. */
+  private static String describeInfiniteDilution(neqsim.thermo.phase.PhaseGE phase, int k,
+      int waterNumber) {
+    try {
+      return String.format("%.15g", phase.getActivityCoefficientInfDilWater(k, waterNumber));
+    } catch (Throwable error) {
+      return error.getClass().getSimpleName() + ": " + error.getMessage();
+    }
+  }
+
   public static void main(String[] args) {
     // ---------------------------------------------------------------------------------
     System.out.println("################ a one-component GE phase ################");
@@ -226,6 +236,38 @@ public class GeElectrolyteProbe {
 
     report("water + Na+ + Cl-", new SystemDesmukhMather(T, P),
         new String[] {"water", "Na+", "Cl-"}, new double[] {0.90, 0.05, 0.05}, true);
+
+    // **The brine whose pair the table actually carries.** `MDEA+`/`CO2` is one of the
+    // four nonzero `aijDesMath` rows, so this is the whole model: everywhere else the pair
+    // sum is identically zero and only the Debye-Huckel term is left.
+    report("water + MDEA+ + Cl- + CO2", new SystemDesmukhMather(T, P),
+        new String[] {"water", "MDEA+", "Cl-", "CO2"}, new double[] {0.89, 0.04, 0.04, 0.03},
+        true);
+
+    // **A mixed solvent, which is the case the reference-state rule is for.** Methanol is
+    // tagged `solvent` and carries a real Antoine row, so it joins water in the solvent
+    // weight and the mean molar mass is neither component's. `MDEA` would be the amine
+    // case and cannot be used: it is `solvent`-tagged with no vapour pressure at all.
+    report("water + methanol + Na+ + Cl-", new SystemDesmukhMather(T, P),
+        new String[] {"water", "methanol", "Na+", "Cl-"},
+        new double[] {0.85, 0.05, 0.05, 0.05}, true);
+
+    // And the infinite-dilution ratio the solute branch divides by, which is a second
+    // evaluation of the same arithmetic at a two-component reference state.
+    {
+      SystemInterface dm = build(new SystemDesmukhMather(T, P),
+          new String[] {"water", "MDEA+", "Cl-", "CO2"}, new double[] {0.89, 0.04, 0.04, 0.03});
+      PhaseDesmukhMather p2 = (PhaseDesmukhMather) phase(dm);
+      System.out.println("  the infinite-dilution activity coefficient `getActivityCoefficientInfDilWater`:");
+      int waterNumber = p2.getComponent("water").getComponentNumber();
+      for (int i = 0; i < p2.getNumberOfComponents(); i++) {
+        ComponentInterface c = p2.getComponent(i);
+        System.out.printf("    %-9s reference phase: %s%n", c.getComponentName(),
+            neqsim.thermo.component.ComponentGEInterface.class.isAssignableFrom(c.getClass())
+                ? describeInfiniteDilution(p2, i, waterNumber)
+                : "(not a GE component)");
+      }
+    }
 
     // ---------------------------------------------------------------------------------
     System.out.println();

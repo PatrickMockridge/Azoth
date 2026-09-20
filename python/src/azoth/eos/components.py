@@ -77,6 +77,20 @@ COMPSALT_CSV = "data/components/COMPSALT.csv"
 #: the table's rows carry.
 SOLVENT = "solvent"
 
+#: The ``REFERENCESTATETYPE`` NeqSim treats as the Henry (infinite-dilution) reference.
+#:
+#: The third value the column carries is the literal ``0.0``, which is neither - and
+#: `ComponentDesmukhMather.fugcoef` tests for the two names, so a component carrying it
+#: falls to the ion constant whatever its charge.
+SOLUTE = "solute"
+
+#: Water's molar mass, in kg/mol, as the databank's own row states it.
+#:
+#: Named rather than restated at the call sites that build a reference phase, because
+#: `Phase.initRefPhases` weights its reference by this and a second copy that drifted would
+#: move every infinite-dilution ratio.
+WATER_MOLAR_MASS = 0.018015
+
 #: The `COMPTYPE` value whose rows carry no critical constants of their own.
 #:
 #: `COMP.csv` files 62 rows under it, and for 27 of them the four critical columns hold one
@@ -767,6 +781,38 @@ def _kij() -> dict[tuple[str, str], tuple[float, float]]:
         pairs[pair] = columns
         pairs[(pair[1], pair[0])] = columns
     return pairs
+
+
+@cache
+def _desmukh_mather() -> dict[tuple[str, str], tuple[float, float]]:
+    """The Desmukh-Mather pair columns, keyed by the ordered pair.
+
+    `(aij, bij)`, and **only four of the 957 rows carry a nonzero `aij`** - one chemistry:
+    `mdea+`/`co2`, `hco3-`/`mdea`, `co3--`/`mdea` and `hco3-`/`mdea+`. `bij` is zero on every
+    row. A separate reader from :func:`_kij` because these are different columns of the
+    same file, read by a different model.
+    """
+    pairs: dict[tuple[str, str], tuple[float, float]] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        a, b = row["component_a"], row["component_b"]
+        columns = (
+            _absent_is_zero(row["aijdesmath"]),
+            _absent_is_zero(row["bijdesmath"]),
+        )
+        pairs[(a, b)] = columns
+        pairs[(b, a)] = columns
+    return pairs
+
+
+def desmukh_mather_pair(first: str, second: str) -> tuple[float, float] | None:
+    """The `(aij, bij)` for a pair, either order round, or ``None`` for a pair with no row.
+
+    **`None` and `(0.0, 0.0)` are different answers** even though NeqSim cannot tell them
+    apart: `PhaseDesmukhMather.getParameters` queries the pair and leaves its arrays at
+    zero when the query finds nothing, so an absent row and a fitted zero both evaluate to
+    zero there.
+    """
+    return _desmukh_mather().get((first.strip().lower(), second.strip().lower()))
 
 
 @cache
@@ -2499,7 +2545,9 @@ from azoth.eos.mixture import mixture  # noqa: E402
 __all__ = [
     "SELF_BONDLESS_SCHEMES",
     "SITE_SCHEMES",
+    "SOLUTE",
     "SOLVENT",
+    "WATER_MOLAR_MASS",
     "AssociationParameters",
     "BwrsCoefficients",
     "DatabankEntry",
@@ -2519,6 +2567,7 @@ __all__ = [
     "available",
     "bwrs_coefficients",
     "component",
+    "desmukh_mather_pair",
     "entry",
     "from_model",
     "from_names",

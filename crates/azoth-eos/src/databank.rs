@@ -175,6 +175,13 @@ pub fn embedded_mbwr32() -> &'static str {
 /// of the table's rows carry.
 pub const SOLVENT: &str = "solvent";
 
+/// The `REFERENCESTATETYPE` value NeqSim treats as the Henry (infinite-dilution) reference.
+///
+/// The third value the column carries is the literal `0.0`, which is neither - and
+/// `ComponentDesmukhMather.fugcoef` tests for the two names, so a component carrying it
+/// falls to the ion constant whatever its charge.
+pub const SOLUTE: &str = "solute";
+
 /// The `COMPTYPE` value whose rows carry no critical constants of their own.
 ///
 /// `COMP.csv` files 62 rows under it, and for 27 of them the four critical columns hold
@@ -712,6 +719,21 @@ struct Interaction {
     /// overwrites it from `KIJWSunifac` on the next line, so the first read has never
     /// had an effect.
     kij_ws: f64,
+    /// The Desmukh-Mather pair parameter, `aijDesMath`, symmetric.
+    ///
+    /// **Four of the 957 in-scope pairs carry one at all**, and they are one chemistry:
+    /// `MDEA+`/`CO2`, `HCO3-`/`MDEA`, `CO3--`/`MDEA` and `HCO3-`/`MDEA+`. Every other row
+    /// is a zero. NeqSim's reader queries the pair **either order** and leaves the matrix
+    /// at zero when the query finds nothing, so a zero here is as often an absent row as
+    /// a fitted zero - and the two are not the same thing.
+    aij_desmukh_mather: f64,
+    /// The Desmukh-Mather temperature coefficient, `bijDesMath`.
+    ///
+    /// **Zero on every in-scope row**, which is why it was recorded `empty-upstream` and
+    /// dropped until this model needed it. `PhaseDesmukhMather.getBetaDesMatij` is
+    /// `aij + bij * T`, so carrying it is what makes the temperature dependence
+    /// *stated* rather than assumed absent.
+    bij_desmukh_mather: f64,
 }
 
 /// The two parsed tables: substances by name, and interaction parameters by pair.
@@ -1076,6 +1098,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         "cpakij_srk",
         "cpakij_pr",
         "kijpcsaft",
+        "aijdesmath",
+        "bijdesmath",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -1126,6 +1150,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         let cpa_kij_srk = optional_number(&record, index["cpakij_srk"], "cpakij_srk", row)?;
         let cpa_kij_pr = optional_number(&record, index["cpakij_pr"], "cpakij_pr", row)?;
         let pcsaft_kij = optional_number(&record, index["kijpcsaft"], "kijpcsaft", row)?;
+        let aij_desmukh_mather = optional_number(&record, index["aijdesmath"], "aijdesmath", row)?;
+        let bij_desmukh_mather = optional_number(&record, index["bijdesmath"], "bijdesmath", row)?;
 
         // `kij`, `alpha`, `hv_alpha` and the two selectors are symmetric, stored both
         // ways round so a caller need not know which name came first. `gij`, `hv_dij`,
@@ -1148,6 +1174,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 ws,
                 ws_dij_t,
                 kij_ws,
+                aij_desmukh_mather,
+                bij_desmukh_mather,
             },
         );
         out.insert(
@@ -1167,6 +1195,8 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 ws,
                 ws_dij_t: ws_dji_t,
                 kij_ws,
+                aij_desmukh_mather,
+                bij_desmukh_mather,
             },
         );
     }
@@ -1348,6 +1378,24 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             name: base.name,
         }),
     }
+}
+
+/// The Desmukh-Mather pair parameters `(aij, bij)`, either order round.
+///
+/// **`None` for a pair the table does not carry**, and that is a different answer from
+/// `Some((0.0, 0.0))` even though NeqSim cannot tell them apart:
+/// `PhaseDesmukhMather.getParameters` queries the pair and leaves its arrays at zero when
+/// the query finds nothing, so an absent row and a fitted zero both evaluate to zero. This
+/// returns the absence, and the model states what it does with one.
+///
+/// The table stores the pair under **both** orderings, done once where it is parsed, so a
+/// caller need not know which name came first - which matters here because NeqSim's own
+/// query is `(comp1=A AND comp2=B) OR (comp1=B AND comp2=A)`.
+#[must_use]
+pub fn desmukh_mather_pair(first: &str, second: &str) -> Option<(f64, f64)> {
+    let (a, b) = (first.trim().to_lowercase(), second.trim().to_lowercase());
+    let record = tables().1.get(&(a, b))?;
+    Some((record.aij_desmukh_mather, record.bij_desmukh_mather))
 }
 
 /// The binary interaction parameter for a pair, or zero.
