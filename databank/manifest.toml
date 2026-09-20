@@ -2438,6 +2438,99 @@ disposition = "used"
 as = "waterstoc"
 unit = "neqsim-internal"
 [[upstreams.files]]
+id = "neqsim/thermo/phase/phreeqc/pitzer-b0b3be767158ccc3322d2c816625cf470045e67e.dat"
+upstream_path = "src/main/resources/neqsim/thermo/phase/phreeqc/pitzer-b0b3be767158ccc3322d2c816625cf470045e67e.dat"
+vendored_source = "databank/sources/neqsim/phreeqc/pitzer-b0b3be767158ccc3322d2c816625cf470045e67e.dat"
+compiled_to = "data/components/PitzerPhreeqc.csv"
+source_rows = 268
+compiled_rows = 268
+#: **No `columns:`.** The source is a `.dat` with sections, not a CSV, so it has no
+#: columns to disposition - the ledger's own "vendored whole, columns not yet read".
+#: What was taken is recorded by the row groups below, and the compiled table's every
+#: column is written by the parser rather than carried from an upstream column, which is
+#: what `generated` means here.
+generated = ["family", "species_key", "a0", "a1", "a2", "a3", "a4", "a5"]
+[[upstreams.files.rows]]
+selector = "the `-B0` section"
+count = 54
+reason = """\
+    used: `PhasePitzer` reads this family through \
+    `PhreeqcPitzerParameterCatalog`, and it is the family a `B0` term is built \
+    from. The compiled table carries NeqSim's own lookup key - the species \
+    canonicalised (`Ba+2` -> `Ba++`) and sorted, joined with `|` - so a row is found \
+    whichever order the catalogue writes its species in."""
+[[upstreams.files.rows]]
+selector = "the `-B1` section"
+count = 48
+reason = """\
+    used: `PhasePitzer` reads this family through \
+    `PhreeqcPitzerParameterCatalog`, and it is the family a `B1` term is built \
+    from. The compiled table carries NeqSim's own lookup key - the species \
+    canonicalised (`Ba+2` -> `Ba++`) and sorted, joined with `|` - so a row is found \
+    whichever order the catalogue writes its species in."""
+[[upstreams.files.rows]]
+selector = "the `-B2` section"
+count = 8
+reason = """\
+    used: `PhasePitzer` reads this family through \
+    `PhreeqcPitzerParameterCatalog`, and it is the family a `B2` term is built \
+    from. The compiled table carries NeqSim's own lookup key - the species \
+    canonicalised (`Ba+2` -> `Ba++`) and sorted, joined with `|` - so a row is found \
+    whichever order the catalogue writes its species in."""
+[[upstreams.files.rows]]
+selector = "the `-C0` section"
+count = 32
+reason = """\
+    used: `PhasePitzer` reads this family through \
+    `PhreeqcPitzerParameterCatalog`, and it is the family a `C0` term is built \
+    from. The compiled table carries NeqSim's own lookup key - the species \
+    canonicalised (`Ba+2` -> `Ba++`) and sorted, joined with `|` - so a row is found \
+    whichever order the catalogue writes its species in."""
+[[upstreams.files.rows]]
+selector = "the `-THETA` section"
+count = 30
+reason = """\
+    used: `PhasePitzer` reads this family through \
+    `PhreeqcPitzerParameterCatalog`, and it is the family a `THETA` term is built \
+    from. The compiled table carries NeqSim's own lookup key - the species \
+    canonicalised (`Ba+2` -> `Ba++`) and sorted, joined with `|` - so a row is found \
+    whichever order the catalogue writes its species in."""
+[[upstreams.files.rows]]
+selector = "the `-LAMBDA` section"
+count = 27
+reason = """\
+    used: `PhasePitzer` reads this family through \
+    `PhreeqcPitzerParameterCatalog`, and it is the family a `LAMBDA` term is built \
+    from. The compiled table carries NeqSim's own lookup key - the species \
+    canonicalised (`Ba+2` -> `Ba++`) and sorted, joined with `|` - so a row is found \
+    whichever order the catalogue writes its species in."""
+[[upstreams.files.rows]]
+selector = "the `-ZETA` section"
+count = 10
+reason = """\
+    used: `PhasePitzer` reads this family through \
+    `PhreeqcPitzerParameterCatalog`, and it is the family a `ZETA` term is built \
+    from. The compiled table carries NeqSim's own lookup key - the species \
+    canonicalised (`Ba+2` -> `Ba++`) and sorted, joined with `|` - so a row is found \
+    whichever order the catalogue writes its species in."""
+[[upstreams.files.rows]]
+selector = "the `-PSI` section"
+count = 59
+reason = """\
+    used: `PhasePitzer` reads this family through \
+    `PhreeqcPitzerParameterCatalog`, and it is the family a `PSI` term is built \
+    from. The compiled table carries NeqSim's own lookup key - the species \
+    canonicalised (`Ba+2` -> `Ba++`) and sorted, joined with `|` - so a row is found \
+    whichever order the catalogue writes its species in."""
+[[upstreams.files.rows]]
+selector = "the `-MU`, `-ETA` and `-ALPHAS` sections"
+count = 0
+reason = """\
+    not-a-value: `PhreeqcPitzerParameterCatalog.Family` declares these three and the \
+    bundled catalogue carries no rows for them, so nothing is missing here - the enum \
+    is wider than the file."""
+
+[[upstreams.files]]
 id = "neqsim/element.csv"
 upstream_path = "src/main/resources/data/element.csv"
 vendored_source = "databank/sources/neqsim/element.csv"

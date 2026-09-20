@@ -92,6 +92,41 @@ VENDORED_FILES = (
 )
 
 
+#: The PHREEQC Pitzer catalogue NeqSim bundles, and the families it carries.
+#:
+#: **A `.dat` and not a CSV**, so it has its own parser rather than a `VENDORED_FILES`
+#: entry. The format is PHREEQC's: a `-FAMILY` line opens a section, and each row below it
+#: is `species... coefficients...`, whitespace-separated, up to six coefficients.
+#:
+#: **The species names are PHREEQC's and the lookup key is NeqSim's.**
+#: `PhreeqcPitzerParameterCatalog` rewrites a numeric suffix - `Ba+2` becomes `Ba++`,
+#: `SO4-2` becomes `SO4--` - and then sorts the names and joins them with `|`, so a row is
+#: found whichever order its species are written in. That canonical form is what the
+#: compiled table carries, because it is what the model looks up by.
+PHREEQC_CATALOG = (
+    "neqsim/thermo/phase/phreeqc/pitzer-b0b3be767158ccc3322d2c816625cf470045e67e.dat",
+    "phreeqc/pitzer-b0b3be767158ccc3322d2c816625cf470045e67e.dat",
+    "PitzerPhreeqc.csv",
+)
+
+#: How many species each family's rows name, from `PhreeqcPitzerParameterCatalog.Family`.
+#: A family the file does not carry compiles to no rows, which is how `MU`, `ETA` and
+#: `ALPHAS` come out: the enum declares them and the shipped catalogue has none.
+PHREEQC_FAMILIES: dict[str, int] = {
+    "B0": 2,
+    "B1": 2,
+    "B2": 2,
+    "C0": 2,
+    "THETA": 2,
+    "PSI": 3,
+    "LAMBDA": 2,
+    "ZETA": 3,
+    "MU": 3,
+    "ETA": 3,
+    "ALPHAS": 2,
+}
+
+
 #: The NeqSim release this was generated from, for the `citation` column and for
 #: `NOTICE`. A version and a commit, because a databank is only reproducible against
 #: one revision of the file it came from.
@@ -406,6 +441,99 @@ def build_unifac(source: Path, file_id: str) -> tuple[tuple[str, ...], list[dict
     return header, rows
 
 
+def build_phreeqc(source: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
+    """The PHREEQC Pitzer catalogue, re-rendered so both kernels read it the same way.
+
+    Reproduces `PhreeqcPitzerParameterCatalog.load`, which is short and worth reading
+    beside this:
+
+    * A `#` starts a comment and the rest of the line is dropped; a blank line and the
+      `PITZER` banner are skipped.
+    * A line beginning `-` opens a family, uppercased, with `LAMDA` accepted for
+      `LAMBDA` - PHREEQC's own spelling in older databases. **A family the enum does not
+      name closes the section** rather than erroring, so rows under an unknown heading
+      are skipped.
+    * A row is whitespace-split: the first `speciesCount` tokens are the species and the
+      next at most six are the coefficients. **Fewer than six is not an error** - the
+      rest are zero, which is how a PHREEQC row with one coefficient compiles.
+    * The species are **canonicalised** (`Ba+2` -> `Ba++`, `SO4-2` -> `SO4--`) and then
+      sorted, and the key is the sorted names joined with `|`, so a row is found
+      whichever order its species are written in.
+    * **A duplicate key is an error**, as it is upstream.
+
+    The six coefficients are the PHREEQC temperature form's own, written `a0`..`a5` in
+    the compiled header because that is how `PitzerTemperatureFunction` indexes them:
+
+    ```text
+    phi(T) = a0 + a1 (1/T - 1/Tr) + a2 ln(T/Tr) + a3 (T - Tr)
+                + a4 (T^2 - Tr^2) + a5 (1/T^2 - 1/Tr^2)
+    ```
+
+    with `Tr` a reference temperature. **Their units are relative to the family's own** -
+    `a1` carries `U K`, `a3` carries `U / K` - so no single unit per column exists, which
+    the manifest records rather than guesses. A different polynomial from the four
+    coefficients `PitzerParameters.csv` carries.
+    """
+    # `a0`..`a5`, which is the form's own indexing (`PitzerTemperatureFunction.valueAt`
+    # reads `coefficients[0]` as the constant term) rather than the file's 1st..6th. An
+    # off-by-one between a table's column names and the formula that reads them is the
+    # kind of confusion that survives a review.
+    header = ("family", "species_key", *[f"a{i}" for i in range(6)])
+    rows: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    family: str | None = None
+    for line in source.read_text(encoding="utf-8").splitlines():
+        data = line.split("#", 1)[0].strip()
+        if not data or data.upper() == "PITZER":
+            continue
+        if data.startswith("-"):
+            section = data[1:].strip().upper()
+            section = "LAMBDA" if section == "LAMDA" else section
+            family = section if section in PHREEQC_FAMILIES else None
+            continue
+        if family is None:
+            continue
+        tokens = data.split()
+        count = PHREEQC_FAMILIES[family]
+        if len(tokens) <= count:
+            raise ValueError(
+                f"{source.name}: `{data}` names {len(tokens)} token(s) and the {family} "
+                f"family needs {count} species and at least one coefficient"
+            )
+        species = [canonical_species(token) for token in tokens[:count]]
+        coefficients = [0.0] * 6
+        for index, token in enumerate(tokens[count : count + 6]):
+            coefficients[index] = float(token)
+        key = "|".join(sorted(species))
+        if (family, key) in seen:
+            raise ValueError(
+                f"{source.name}: duplicate {family} row for {key}, which upstream refuses"
+            )
+        seen.add((family, key))
+        rows.append(
+            {
+                "family": family,
+                "species_key": key,
+                **{f"a{i}": repr(value) for i, value in enumerate(coefficients)},
+            }
+        )
+    return header, rows
+
+
+def canonical_species(name: str) -> str:
+    """One species name in NeqSim's spelling: `PhreeqcPitzerParameterCatalog`.
+
+    A numeric charge suffix is rewritten to NeqSim's repeated-sign form and nothing else
+    changes - `Ba+2` to `Ba++`, `SO4-2` to `SO4--`, `B(OH)4-` left alone. So this is a
+    rewrite and not a table, which is what makes it safe: a species the catalogue carries
+    and NeqSim's databank does not still compiles, and the model refuses it later.
+    """
+    for suffix, sign in (("+3", "+++"), ("-3", "---"), ("+2", "++"), ("-2", "--")):
+        if name.endswith(suffix):
+            return name[: -len(suffix)] + sign
+    return name
+
+
 def render(header: tuple[str, ...], rows: list[dict[str, str]]) -> str:
     """A file's whole contents, as it will be written."""
     buffer = io.StringIO()
@@ -464,6 +592,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         components = build_components(resources)
+        # The catalogue is a `.dat` and its own parser, so its refusals - a short row, a
+        # duplicate key - arrive here rather than from the shared path.
+        phreeqc = build_phreeqc(resources / PHREEQC_CATALOG[1])
     except ValueError as error:
         print(f"gen_databank: {error}", file=sys.stderr)
         return 1
@@ -488,6 +619,7 @@ def main(argv: list[str] | None = None) -> int:
             (OUT_DIR / compiled, *build_unifac(resources / source, file_id))
             for file_id, source, compiled in VENDORED_FILES
         ],
+        (OUT_DIR / PHREEQC_CATALOG[2], *phreeqc),
     ]
 
     if args.check:
@@ -500,7 +632,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"gen_databank: {path.relative_to(ROOT)} is out of date")
         if stale:
             return 1
-        print(f"gen_databank: {len(components)} component(s), {len(kij)} kij row(s) up to date")
+        print(
+            f"gen_databank: {len(components)} component(s), {len(kij)} kij row(s), "
+            f"{len(phreeqc[1])} PHREEQC Pitzer row(s) up to date"
+        )
         return 0
 
     for path, header, rows in outputs:
