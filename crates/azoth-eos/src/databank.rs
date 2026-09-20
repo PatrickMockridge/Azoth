@@ -303,6 +303,14 @@ pub struct Entry {
     /// the infinite-dilution limit of the term it belongs to, so a plausible number would
     /// come out of it.
     pub deshmukh_mather_diameter: f64,
+    /// `LJDIAMETER`, the Lennard-Jones molecular diameter, in ångströms.
+    ///
+    /// The Fürst electrolyte reads it, and for an **ion** it is a starting value rather
+    /// than the one the phase ends up using: `ComponentModifiedFurstElectrolyteEos`'s
+    /// constructor builds the ion's covolume from it - `b = (p0 d^3 + p1) 1e5` with the
+    /// fitted `furstParams` - and then *overwrites* the diameter with the value derived
+    /// back out of that covolume. So a neutral keeps this number and an ion does not.
+    pub lennard_jones_diameter: f64,
     /// The four coefficients of NeqSim's Henry correlation.
     ///
     /// **All four are zero on 296 of the 348 rows**, which is how the table spells "no
@@ -914,6 +922,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "formula",
         "ioniccharge",
         "deshmationicdiameter",
+        "ljdiameter",
         "henrycoef1",
         "henrycoef2",
         "henrycoef3",
@@ -1061,6 +1070,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     "deshmationicdiameter",
                     row,
                 )?,
+                lennard_jones_diameter: number(&record, index["ljdiameter"], "ljdiameter", row)?,
                 henry: crate::henry::HenryRecord {
                     h0: number(&record, index["henrycoef1"], "henrycoef1", row)?,
                     h1: number(&record, index["henrycoef2"], "henrycoef2", row)?,
@@ -1351,6 +1361,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                     .deshmukh_mather_diameter
                     .map_or(0.0, |metres| metres * 1.0e10),
                 dielectric: over.dielectric.unwrap_or([0.0; 5]),
+                // Not overridable: a card states the parameters a cubic needs, and the
+                // Lennard-Jones diameter is not one of them.
+                lennard_jones_diameter: 0.0,
             })
         }
         (Some(base), Some(over)) => Ok(Entry {
@@ -1387,6 +1400,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 .deshmukh_mather_diameter
                 .map_or(base.deshmukh_mather_diameter, |metres| metres * 1.0e10),
             dielectric: over.dielectric.unwrap_or(base.dielectric),
+            lennard_jones_diameter: base.lennard_jones_diameter,
             // The card's scheme wins over the table's, and every parameter the card does
             // not name is the table's: `applied_to` is the one place the two are merged.
             association: over

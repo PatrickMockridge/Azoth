@@ -2538,6 +2538,53 @@ reason = """\
     is wider than the file."""
 
 [[upstreams.files]]
+id = "neqsim/src/main/java/neqsim/thermo/util/constants/FurstElectrolyteConstants.java"
+upstream_path = "src/main/java/neqsim/thermo/util/constants/FurstElectrolyteConstants.java"
+vendored_source = "databank/sources/neqsim/FurstElectrolyteConstants.java"
+compiled_to = "data/components/furst_parameters.csv"
+source_rows = 11
+compiled_rows = 116
+#: **The first vendored source that is not tabular.** The Fürst electrolyte's parameters
+#: are 937 lines of hardcoded `static double[]` in Java and the class does no file I/O, so
+#: there is no CSV to carry: the model's fitted numbers exist only as source code.
+#: `ComponentModifiedFurstElectrolyteEos`'s constructor reads `furstParams[0]` and `[1]` to
+#: build an ion's covolume, so this is read data and not a comment.
+#:
+#: Vendored as bytes rather than transcribed, for the reason every other source is: the
+#: file can be diffed against the pinned commit, and a transcription that drifted from
+#: NeqSim would be undetectable. **`source_rows` counts arrays and `compiled_rows` counts
+#: values**, because the arrays are four different lengths - six, ten, sixteen and eighteen
+#: - and the long form is what holds them all.
+generated = ["set", "index", "value"]
+[[upstreams.files.rows]]
+selector = "`furstParams`, the base model's set"
+count = 1
+reason = """\
+    used: `ComponentModifiedFurstElectrolyteEos`'s constructor and `initFurstParam` read \
+    `[0]` and `[1]` to build an ion's covolume, `b = (p0 d^3 + p1) 1e5`, and then derive \
+    the Lennard-Jones diameter back out of it. **`[2]`..`[5]` are read by nothing in \
+    3.20.0** - the class's own doc comments describe `Wij` correlations that would use \
+    them, and no code implements those - so four of the six are carried and unread."""
+[[upstreams.files.rows]]
+selector = "`furstParamsCPA` and its seven solvent variants"
+count = 8
+reason = """\
+    not-ported: the electrolyte-CPA family. `setFurstParams("electrolyteCPA")` swaps \
+    `furstParams` for `furstParamsCPA`, which is what `SystemElectrolyteCPA*` calls, and \
+    `ComponentSrkCPAMM` reads it directly. The seven named variants (`_MDEA`, `_MEG`, \
+    `_MeOH`, `_EtOH`, `_MEA`, `_TEG`, `_TDep`) are mixed-solvent fits, and `_TDep` is \
+    sixteen coefficients rather than ten - a temperature-dependent form the others do \
+    not have. Carried because `PhaseElectrolyteCPA` and its siblings are carried."""
+[[upstreams.files.rows]]
+selector = "`furstParamsGasIon` and `furstParamsOIIon`"
+count = 2
+reason = """\
+    unreachable-upstream: the two residual tables - gas-ion salting-out and oil-ion \
+    interactions - are read by their own getters and setters and by nothing else in \
+    `src/main`. The class's comments describe them as calibrated for this model; no \
+    caller in 3.20.0 reaches them."""
+
+[[upstreams.files]]
 id = "neqsim/element.csv"
 upstream_path = "src/main/resources/data/element.csv"
 vendored_source = "databank/sources/neqsim/element.csv"

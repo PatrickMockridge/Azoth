@@ -41,6 +41,8 @@ from __future__ import annotations
 import argparse
 import csv
 import io
+import math
+import re
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -107,6 +109,24 @@ PHREEQC_CATALOG = (
     "neqsim/thermo/phase/phreeqc/pitzer-b0b3be767158ccc3322d2c816625cf470045e67e.dat",
     "phreeqc/pitzer-b0b3be767158ccc3322d2c816625cf470045e67e.dat",
     "PitzerPhreeqc.csv",
+)
+
+#: The Fürst electrolyte's fitted parameters, which are **Java rather than data**.
+#:
+#: `FurstElectrolyteConstants` is 937 lines of hardcoded `static double[]` and does no file
+#: I/O, so there is no upstream CSV to carry - the model's parameters exist only as source
+#: code, and `ComponentModifiedFurstElectrolyteEos`'s constructor reads `furstParams[0]` and
+#: `[1]` to build an ion's covolume. **This is the first vendored source that is not
+#: tabular**, and it is vendored as bytes rather than transcribed for the reason every other
+#: source is: a transcription that drifts from NeqSim is undetectable, and a vendored file
+#: can be diffed against the pinned commit.
+#:
+#: `PHREEQC_CATALOG`'s shape - a source, a vendored path, an output - because it has the
+#: same property: a format of its own and therefore its own parser.
+FURST_CONSTANTS = (
+    "neqsim/src/main/java/neqsim/thermo/util/constants/FurstElectrolyteConstants.java",
+    "FurstElectrolyteConstants.java",
+    "furst_parameters.csv",
 )
 
 #: How many species each family's rows name, from `PhreeqcPitzerParameterCatalog.Family`.
@@ -524,6 +544,59 @@ def build_phreeqc(source: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
     return header, rows
 
 
+def build_furst(source: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
+    """`FurstElectrolyteConstants`' arrays, re-rendered so a reader can find one.
+
+    **Long form - `set`, `index`, `value` - because the arrays are four different
+    lengths.** `furstParams` carries six coefficients, the electrolyte-CPA sets ten,
+    `furstParamsCPA_TDep` sixteen and `furstParamsGasIon` eighteen, so a fixed
+    `param1..param6` header would have to pad or truncate, and either is a silent lie about
+    what the source holds.
+
+    Comments are stripped before the match, because the class keeps every superseded fit as
+    a commented-out array beside the live one - eight of them for `furstParams` alone. A
+    parser that matched those would compile a parameter set NeqSim stopped using, and the
+    numbers would still look plausible.
+
+    A duplicate set name is refused, as a missing value is. The class's own `furstParams`
+    is a `public static` field that `setFurstParams` reassigns, so a file that declared it
+    twice would leave the compiled table's meaning to whichever line came last.
+    """
+    header = ("set", "index", "value")
+    text = source.read_text(encoding="utf-8")
+    # Block comments first, then line comments: a `//` inside a `/* */` block would
+    # otherwise end the strip early and expose an array the block was hiding.
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    text = re.sub(r"//[^\n]*", "", text)
+
+    rows: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for match in re.finditer(
+        r"public static (?:final )?double\[\]\s+(\w+)\s*=\s*\{(.*?)\};", text, re.DOTALL
+    ):
+        name, body = match.group(1), match.group(2)
+        if name in seen:
+            raise ValueError(f"{source.name}: `{name}` is declared twice")
+        seen.add(name)
+        values = [token.strip() for token in body.split(",")]
+        values = [value for value in values if value]
+        if not values:
+            raise ValueError(f"{source.name}: `{name}` is an empty array")
+        for index, value in enumerate(values):
+            try:
+                number = float(value)
+            except ValueError:
+                raise ValueError(
+                    f"{source.name}: `{name}[{index}]` is {value!r}, which is not a number"
+                ) from None
+            if not math.isfinite(number):
+                raise ValueError(f"{source.name}: `{name}[{index}]` is {value!r}")
+            rows.append({"set": name, "index": str(index), "value": repr(number)})
+    if not rows:
+        raise ValueError(f"{source.name}: no `public static double[]` array was found")
+    return header, rows
+
+
 def canonical_species(name: str) -> str:
     """One species name in NeqSim's spelling: `PhreeqcPitzerParameterCatalog`.
 
@@ -599,6 +672,8 @@ def main(argv: list[str] | None = None) -> int:
         # The catalogue is a `.dat` and its own parser, so its refusals - a short row, a
         # duplicate key - arrive here rather than from the shared path.
         phreeqc = build_phreeqc(resources / PHREEQC_CATALOG[1])
+        # Java rather than data, so its own parser too. See `FURST_CONSTANTS`.
+        furst = build_furst(SOURCES / FURST_CONSTANTS[1])
     except ValueError as error:
         print(f"gen_databank: {error}", file=sys.stderr)
         return 1
@@ -624,6 +699,7 @@ def main(argv: list[str] | None = None) -> int:
             for file_id, source, compiled in VENDORED_FILES
         ],
         (OUT_DIR / PHREEQC_CATALOG[2], *phreeqc),
+        (OUT_DIR / FURST_CONSTANTS[2], *furst),
     ]
 
     if args.check:
@@ -638,7 +714,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(
             f"gen_databank: {len(components)} component(s), {len(kij)} kij row(s), "
-            f"{len(phreeqc[1])} PHREEQC Pitzer row(s) up to date"
+            f"{len(phreeqc[1])} PHREEQC Pitzer row(s), {len(furst[1])} Furst "
+            f"constant(s) up to date"
         )
         return 0
 

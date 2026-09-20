@@ -1560,3 +1560,60 @@ fn the_umr_cpa_fluid_reproduces_neqsims_state() {
         );
     }
 }
+
+/// **The chain the Fürst model's ion radius runs on, end to end.**
+///
+/// `ComponentModifiedFurstElectrolyteEos`'s constructor does not take an ion's
+/// Lennard-Jones diameter from the table. It builds the covolume from it -
+/// `b = (p0 d^3 + p1) 1e5` with the fitted `furstParams` - and then derives a *new*
+/// diameter back out of that covolume, which is the number every later term uses:
+///
+/// ```text
+/// d' = ((6 b / 1e5) / (pi N_A))**(1/3) * 1e10
+/// ```
+///
+/// Retyped from the Java rather than read from this crate, and with **both of NeqSim's
+/// own constants rather than the standard ones**: its `avagadroNumber` is `6.023e23`
+/// where CODATA says `6.02214076e23`, and its `pi` is `3.14159265` where `Math.PI` has
+/// sixteen digits. Each lands in the ninth significant digit of the radius, and the
+/// truncated `pi` is the one that would be least likely to be noticed: a port that wrote
+/// `std::f64::consts::PI` would be wrong in every ion's Born radius and MSA shielding by
+/// an amount no plausibility check would flag. With both, this reproduces the probe's
+/// printed `4.34371766217081` exactly.
+///
+/// The expected `d'` is the value `validation/neqsim/captures/furst_probe.tsv` prints for
+/// `lj[2]`, so this is the one place the ported chain and the oracle meet before any
+/// model exists.
+#[test]
+fn a_furst_ion_radius_is_derived_from_its_covolume() {
+    const FURST_P0: f64 = 0.000_000_111_7;
+    const FURST_P1: f64 = 0.000_005_377_1;
+    const NEQSIM_AVOGADRO: f64 = 6.023e23;
+    // Not an approximation of `std::f64::consts::PI` - it is NeqSim's own literal, from
+    // `ThermodynamicConstantsInterface`, and using the accurate one is the mistake this
+    // test exists to catch.
+    #[allow(clippy::approx_constant)]
+    const NEQSIM_PI: f64 = 3.14159265;
+
+    let sodium = databank::entry("Na+", None).expect("Na+ is in the databank");
+    assert!(
+        (sodium.lennard_jones_diameter - 5.68).abs() < 1e-12,
+        "Na+ LJDIAMETER is {}, and the vendored table says 5.68",
+        sodium.lennard_jones_diameter
+    );
+
+    let b = (FURST_P0 * sodium.lennard_jones_diameter.powi(3) + FURST_P1) * 1.0e5;
+    // `powf(1.0/3.0)` and not `cbrt`, because that is what the Java writes:
+    // `Math.pow(x, 1.0/3.0)`.
+    let derived = (6.0 * b / 1.0e5 / (NEQSIM_PI * NEQSIM_AVOGADRO)).powf(1.0 / 3.0) * 1.0e10;
+    assert!(
+        (derived - 4.343_717_662_170_81).abs() < 1.0e-11,
+        "the derived Na+ diameter is {derived}, and the probe prints 4.34371766217081"
+    );
+    assert!(
+        (derived - sodium.lennard_jones_diameter).abs() > 1.0,
+        "the derived diameter is not the table's, which is the whole point: {} against {}",
+        derived,
+        sodium.lennard_jones_diameter
+    );
+}
