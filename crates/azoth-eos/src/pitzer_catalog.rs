@@ -35,6 +35,21 @@
 //! takes the CSV - which is why `water + CO2` does despite the catalogue carrying
 //! `CO2|CO2` and `CO2|Na+`.
 //!
+//! # What the chosen dataset covers
+//!
+//! [`coverage`] is the second question, and a different one: not which dataset *would*
+//! apply but whether the one that loaded defines every interaction the topology needs.
+//! **The legacy CSV carries no same-sign rows at all**, so its theta and psi sets are empty
+//! and every mixed topology it is asked to cover is incomplete.
+//!
+//! Measured, and the reason the audit is not merely a diagnostic:
+//! `water + Na+ + K+ + Cl- + HCO3-` falls back to the CSV and then **throws from `init(1)`**,
+//! because `validateParameterCoverageOncePerState` refuses on the first
+//! `getExcessGibbsEnergy` after a level-zero init. A single cation and a single anion are
+//! exempt from that refusal, so `water + NH4+ + Cl-` initializes and evaluates an absent
+//! pair at **zero** - which is what [`require_complete`] exists to make a caller able to
+//! refuse instead.
+//!
 //! # The species names
 //!
 //! PHREEQC's, canonicalised: a numeric charge suffix becomes NeqSim's repeated-sign form
@@ -45,6 +60,8 @@
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
+
+use azoth_core::{AzothError, Result};
 
 /// A Pitzer parameter family, as `PhreeqcPitzerParameterCatalog.Family` names it.
 ///
@@ -405,6 +422,290 @@ pub fn select_dataset(species: &[Species<'_>]) -> Selection {
     Selection::Phreeqc
 }
 
+/// The identity NeqSim gives the legacy dataset: `PhasePitzer.DEFAULT_PARAMETER_DATASET_ID`.
+pub const LEGACY_DATASET_ID: &str = "neqsim-legacy-pitzer-parameters-v1";
+
+/// The identity NeqSim gives the catalogue:
+/// `PitzerParameterDatasets.PHREEQC_PITZER_CATALOG_ID`.
+///
+/// It carries the commit the vendored file came from, so it is a literal rather than a
+/// composed string - the hash is part of the identity, not a path.
+pub const PHREEQC_DATASET_ID: &str =
+    "usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1";
+
+impl Selection {
+    /// The identity of the dataset this selection loads.
+    #[must_use]
+    pub fn dataset_id(&self) -> &'static str {
+        match self {
+            Selection::Phreeqc => PHREEQC_DATASET_ID,
+            Selection::Legacy(_) => LEGACY_DATASET_ID,
+        }
+    }
+}
+
+/// Molality above which an ion is in the audited topology: `ACTIVE_ION_MOLALITY`.
+///
+/// **A different threshold from the selection rule's `1e-20` moles**, and deliberately:
+/// `tryApplyCompletePhreeqcPitzerCatalog` tests an absolute mole count while
+/// `activeIonIndexes` tests a *molality*, so the audit's topology is the narrower one. A
+/// trace ion can therefore be absent from the audit and still have forced the fallback.
+pub const ACTIVE_ION_MOLALITY: f64 = 1.0e-8;
+
+/// The four species the primary-salt audit excludes, by
+/// `PhasePitzer.isPrimarySaltCoverageSpecies`.
+///
+/// They are the acid-base species the reaction solver creates, whose trial molalities are
+/// not a stable input-brine topology. [`reaction_coverage`] is the variant that keeps
+/// them, and `SystemPitzer` exposes it separately for that reason.
+const REACTION_SPECIES: [&str; 4] = ["H3O+", "OH-", "HCO3-", "CO3--"];
+
+/// Whether a component is covered by the primary-salt audit rather than the reaction one.
+#[must_use]
+pub fn is_primary_salt_species(name: &str) -> bool {
+    !REACTION_SPECIES
+        .iter()
+        .any(|species| species.eq_ignore_ascii_case(name))
+}
+
+/// What the loaded dataset fails to cover, in the shape `PitzerParameterCoverage` reports.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Coverage {
+    /// The identity of the dataset the audit ran against.
+    pub dataset_id: &'static str,
+    /// Active cations, sorted.
+    pub active_cations: Vec<String>,
+    /// Active anions, sorted.
+    pub active_anions: Vec<String>,
+    /// Absent cation-anion pairs.
+    pub missing_binary: Vec<String>,
+    /// Absent same-sign pairs.
+    pub missing_theta: Vec<String>,
+    /// Absent cation-cation-anion and anion-anion-cation triples.
+    pub missing_psi: Vec<String>,
+}
+
+impl Coverage {
+    /// Whether every interaction the active topology needs is defined.
+    #[must_use]
+    pub fn is_complete(&self) -> bool {
+        self.missing_binary.is_empty()
+            && self.missing_theta.is_empty()
+            && self.missing_psi.is_empty()
+    }
+
+    /// The diagnostic, byte for byte as `formatDiagnostic` writes it.
+    ///
+    /// Java's `List.toString`, which is the form a reader of NeqSim's exceptions has seen.
+    #[must_use]
+    pub fn diagnostic(&self) -> String {
+        format!(
+            "Pitzer parameter coverage incomplete for dataset '{}': activeCations={}, \
+             activeAnions={}, missingBinary={}, missingTheta={}, missingPsi={}",
+            self.dataset_id,
+            java_list(&self.active_cations),
+            java_list(&self.active_anions),
+            java_list(&self.missing_binary),
+            java_list(&self.missing_theta),
+            java_list(&self.missing_psi)
+        )
+    }
+}
+
+/// `requireCompletePitzerParameterCoverage`: the audit's refusal.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] with [`Coverage::diagnostic`] as the reason, where an
+/// interaction the topology needs is absent from the loaded dataset. **A refusal rather
+/// than a zero**: an absent same-sign or ternary parameter is not a fitted ideal solution,
+/// so evaluating it as one would return a number with no symptom.
+///
+/// **NeqSim does not always enforce this.** `validateParameterCoverageOncePerState` calls
+/// it only when [`has_mixed_primary_salt_topology`] holds, so a single-salt brine with an
+/// absent binary pair initializes and evaluates the pair at zero. The audit still reports
+/// it incomplete, and a caller wanting NeqSim's behaviour asks for the audit rather than
+/// the refusal.
+pub fn require_complete(coverage: &Coverage) -> Result<()> {
+    if coverage.is_complete() {
+        return Ok(());
+    }
+    Err(AzothError::invalid_input(
+        "composition",
+        coverage.diagnostic(),
+    ))
+}
+
+/// Whether more than one active primary-salt cation or anion is present.
+///
+/// The condition under which NeqSim enforces the audit at all: a single cation and a
+/// single anion keep the "established binary behavior", and a mixed topology does not.
+#[must_use]
+pub fn has_mixed_primary_salt_topology(species: &[Species<'_>], solvent_mass: f64) -> bool {
+    let active_moles = ACTIVE_ION_MOLALITY * solvent_mass;
+    let (mut cations, mut anions) = (0_usize, 0_usize);
+    for one in species {
+        let charge = one.charge;
+        if charge == 0.0 || !is_primary_salt_species(one.name) || one.moles <= active_moles {
+            continue;
+        }
+        if charge > 0.0 {
+            cations += 1;
+        } else {
+            anions += 1;
+        }
+        if cations > 1 || anions > 1 {
+            return true;
+        }
+    }
+    false
+}
+
+/// The coverage audit of a phase's primary-salt ions: `getPitzerParameterCoverage`.
+#[must_use]
+pub fn coverage(species: &[Species<'_>], selection: &Selection, solvent_mass: f64) -> Coverage {
+    audit(species, selection, solvent_mass, false)
+}
+
+/// The same audit including the reaction solver's acid-base species:
+/// `getPitzerReactionParameterCoverage`.
+#[must_use]
+pub fn reaction_coverage(
+    species: &[Species<'_>],
+    selection: &Selection,
+    solvent_mass: f64,
+) -> Coverage {
+    audit(species, selection, solvent_mass, true)
+}
+
+fn audit(
+    species: &[Species<'_>],
+    selection: &Selection,
+    solvent_mass: f64,
+    include_reaction_species: bool,
+) -> Coverage {
+    let active_moles = ACTIVE_ION_MOLALITY * solvent_mass;
+    let active = |one: &&Species<'_>, positive: bool| {
+        let charge = one.charge;
+        let wanted = if positive { charge > 0.0 } else { charge < 0.0 };
+        wanted
+            && (include_reaction_species || is_primary_salt_species(one.name))
+            && one.moles > active_moles
+    };
+    let cations: Vec<&Species<'_>> = species.iter().filter(|s| active(s, true)).collect();
+    let anions: Vec<&Species<'_>> = species.iter().filter(|s| active(s, false)).collect();
+
+    let mut missing_binary = Vec::new();
+    for cation in &cations {
+        for anion in &anions {
+            if !binary_is_defined(selection, cation.name, anion.name) {
+                missing_binary.push(report_pair_key(cation.name, anion.name));
+            }
+        }
+    }
+
+    let mut missing_theta = Vec::new();
+    let mut missing_psi = Vec::new();
+    mixed_interactions(
+        &cations,
+        &anions,
+        selection,
+        &mut missing_theta,
+        &mut missing_psi,
+    );
+    mixed_interactions(
+        &anions,
+        &cations,
+        selection,
+        &mut missing_theta,
+        &mut missing_psi,
+    );
+
+    Coverage {
+        dataset_id: selection.dataset_id(),
+        active_cations: sorted(cations.iter().map(|s| s.name.to_string()).collect()),
+        active_anions: sorted(anions.iter().map(|s| s.name.to_string()).collect()),
+        missing_binary: sorted(missing_binary),
+        missing_theta: sorted(missing_theta),
+        missing_psi: sorted(missing_psi),
+    }
+}
+
+/// The absent theta/psi definitions of every same-sign pair against every opposite ion.
+fn mixed_interactions(
+    same_sign: &[&Species<'_>],
+    opposite: &[&Species<'_>],
+    selection: &Selection,
+    missing_theta: &mut Vec<String>,
+    missing_psi: &mut Vec<String>,
+) {
+    for (first, one) in same_sign.iter().enumerate() {
+        for other in same_sign.iter().skip(first + 1) {
+            let names = [one.name, other.name];
+            if !mixed_is_defined(selection, Family::Theta, &names) {
+                missing_theta.push(report_pair_key(one.name, other.name));
+            }
+            for third in opposite {
+                let triple = [one.name, other.name, third.name];
+                if !mixed_is_defined(selection, Family::Psi, &triple) {
+                    missing_psi.push(report_psi_key(one.name, other.name, third.name));
+                }
+            }
+        }
+    }
+}
+
+/// Whether the loaded dataset defines a cation-anion pair.
+///
+/// **Per pair and not per family**, which is NeqSim's own model: the loader calls
+/// `setBinaryParameters(i, j, b0, b1, c)` once for a pair and records one key, so the
+/// three families are defined together or not at all.
+fn binary_is_defined(selection: &Selection, first: &str, second: &str) -> bool {
+    match selection {
+        Selection::Phreeqc => [Family::B0, Family::B1, Family::C0]
+            .iter()
+            .all(|family| find(*family, &[first, second]).is_some()),
+        Selection::Legacy(_) => crate::databank::pitzer_pair(first, second).is_some(),
+    }
+}
+
+/// Whether the loaded dataset defines a same-sign or ternary interaction.
+///
+/// **False for the legacy dataset however the row reads.** Its loader calls no theta or
+/// psi setter at all, so `definedThetaPairs` and `definedPsiTuples` stay empty and every
+/// mixed topology is incomplete - which is what makes a mixed legacy brine uninitializable
+/// rather than merely inaccurate.
+fn mixed_is_defined(selection: &Selection, family: Family, names: &[&str]) -> bool {
+    matches!(selection, Selection::Phreeqc) && find(family, names).is_some()
+}
+
+fn sorted(mut values: Vec<String>) -> Vec<String> {
+    values.sort();
+    values
+}
+
+/// `PitzerParameterCoverage.immutableSortedCopy`'s rendering: Java's `List.toString`.
+fn java_list(values: &[String]) -> String {
+    format!("[{}]", values.join(", "))
+}
+
+/// `PhasePitzer.pairKey`: the two names sorted and joined with `|`.
+///
+/// **Not [`species_key`]**, although the two agree on two names. This one is a *report*
+/// key and never a lookup - the catalogue's own key sorts all three of a psi row's species
+/// and this one must not, or the diagnostic would name a triple NeqSim never writes.
+fn report_pair_key(first: &str, second: &str) -> String {
+    if first <= second {
+        format!("{first}|{second}")
+    } else {
+        format!("{second}|{first}")
+    }
+}
+
+/// `PhasePitzer.psiKey`: the sorted same-sign pair, then the opposite ion unsorted.
+fn report_psi_key(first: &str, second: &str, opposite: &str) -> String {
+    format!("{}|{opposite}", report_pair_key(first, second))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -588,5 +889,186 @@ mod tests {
                 "{name} is already in the canonical spelling"
             );
         }
+    }
+
+    /// One mole of mixture's worth, with the solvent mass the audit's threshold scales by.
+    fn brine<'a>(entries: &'a [(&'a str, f64, f64)]) -> (Vec<Species<'a>>, f64) {
+        let water = 0.9;
+        let mut out = vec![Species {
+            name: "water",
+            moles: water,
+            charge: 0.0,
+            formula: "H2O",
+            hydrocarbon: false,
+        }];
+        out.extend(entries.iter().map(|(name, charge, moles)| Species {
+            name,
+            moles: *moles,
+            charge: *charge,
+            formula: "",
+            hydrocarbon: false,
+        }));
+        (out, water * 0.018_015)
+    }
+
+    /// **The catalogue covers a mixed brine**, so the audit accepts it and nothing is
+    /// missing in any of the three families. Measured on the real system.
+    #[test]
+    fn a_mixed_catalogue_brine_is_complete() {
+        let (mixture, mass) = brine(&[
+            ("Na+", 1.0, 0.01),
+            ("K+", 1.0, 0.01),
+            ("Cl-", -1.0, 0.01),
+            ("SO4--", -2.0, 0.01),
+        ]);
+        let selection = select_dataset(&mixture);
+        assert_eq!(selection, Selection::Phreeqc);
+        let audit = coverage(&mixture, &selection, mass);
+        assert!(audit.is_complete(), "{audit:?}");
+        assert_eq!(audit.active_cations, ["K+", "Na+"]);
+        assert_eq!(audit.active_anions, ["Cl-", "SO4--"]);
+        assert_eq!(audit.dataset_id, PHREEQC_DATASET_ID);
+        assert!(require_complete(&audit).is_ok());
+    }
+
+    /// **A pair with no parameters is refused, not evaluated at zero.** This is the
+    /// sabotage check: `NH4+`/`Cl-` appears in neither dataset, and the audit must say so
+    /// rather than let the model compute a substance as an ideal solution.
+    #[test]
+    fn a_pair_with_no_parameters_is_refused() {
+        let (mixture, mass) = brine(&[("NH4+", 1.0, 0.01), ("Cl-", -1.0, 0.01)]);
+        let selection = select_dataset(&mixture);
+        assert_eq!(
+            selection,
+            Selection::Legacy(LegacyReason::Uncovered("B0 for NH4+, Cl-".to_string())),
+            "the catalogue has no ammonium rows at all"
+        );
+        assert!(databank::pitzer_pair("NH4+", "Cl-").is_none());
+        assert!(find(Family::B0, &["NH4+", "Cl-"]).is_none());
+
+        let audit = coverage(&mixture, &selection, mass);
+        assert!(!audit.is_complete());
+        assert_eq!(audit.missing_binary, ["Cl-|NH4+"]);
+        assert!(audit.missing_theta.is_empty());
+        assert!(audit.missing_psi.is_empty());
+
+        // **The refusal, and its exact wording** - the string is NeqSim's, because a
+        // reader comparing a port's failure against NeqSim's exception must not have to
+        // tell two formats apart.
+        let refused = require_complete(&audit).expect_err("a missing pair is a refusal");
+        assert_eq!(
+            refused.to_string(),
+            "invalid input `composition`: Pitzer parameter coverage incomplete for dataset \
+             'neqsim-legacy-pitzer-parameters-v1': activeCations=[NH4+], activeAnions=[Cl-], \
+             missingBinary=[Cl-|NH4+], missingTheta=[], missingPsi=[]"
+        );
+
+        // **And NeqSim would still initialize it.** A single cation and a single anion is
+        // not a mixed topology, and `validateParameterCoverageOncePerState` only enforces
+        // the audit when it is - so this brine evaluates the pair at zero. The audit
+        // reports it; the phase does not refuse it.
+        assert!(!has_mixed_primary_salt_topology(&mixture, mass));
+    }
+
+    /// A mixed brine on the legacy dataset cannot pass, because that dataset carries no
+    /// same-sign rows at all. Measured: NeqSim throws from `init(1)` here.
+    #[test]
+    fn a_mixed_legacy_brine_is_incomplete() {
+        let (mixture, mass) = brine(&[
+            ("Na+", 1.0, 0.01),
+            ("K+", 1.0, 0.01),
+            ("Cl-", -1.0, 0.01),
+            ("HCO3-", -1.0, 0.01),
+        ]);
+        let selection = select_dataset(&mixture);
+        assert!(
+            matches!(selection, Selection::Legacy(_)),
+            "hydrogen carbonate is in no catalogue family"
+        );
+        let audit = coverage(&mixture, &selection, mass);
+
+        // **`HCO3-` is absent from `activeAnions`** although it is the larger of the two
+        // anions, because the primary-salt audit excludes the reaction species. The
+        // topology it audits is `Na+`/`K+`/`Cl-`.
+        assert_eq!(audit.active_cations, ["K+", "Na+"]);
+        assert_eq!(audit.active_anions, ["Cl-"]);
+        assert!(
+            audit.missing_binary.is_empty(),
+            "the CSV carries both chlorides"
+        );
+        assert_eq!(audit.missing_theta, ["K+|Na+"]);
+        assert_eq!(audit.missing_psi, ["K+|Na+|Cl-"]);
+        assert!(has_mixed_primary_salt_topology(&mixture, mass));
+        assert_eq!(
+            require_complete(&audit).unwrap_err().to_string(),
+            "invalid input `composition`: Pitzer parameter coverage incomplete for dataset \
+             'neqsim-legacy-pitzer-parameters-v1': activeCations=[K+, Na+], activeAnions=[Cl-], \
+             missingBinary=[], missingTheta=[K+|Na+], missingPsi=[K+|Na+|Cl-]"
+        );
+    }
+
+    /// **The reaction variant is a different observable.** The same brine is complete
+    /// under the primary-salt audit and incomplete under the reaction one, which is what
+    /// `SystemPitzer` exposes both for.
+    #[test]
+    fn the_reaction_audit_keeps_the_species_the_primary_audit_drops() {
+        let (mixture, mass) = brine(&[
+            ("Na+", 1.0, 0.01),
+            ("HCO3-", -1.0, 0.01),
+            ("CO3--", -2.0, 0.01),
+        ]);
+        let selection = select_dataset(&mixture);
+
+        let primary = coverage(&mixture, &selection, mass);
+        assert!(primary.active_anions.is_empty());
+        assert!(primary.is_complete());
+
+        let reaction = reaction_coverage(&mixture, &selection, mass);
+        assert_eq!(reaction.active_anions, ["CO3--", "HCO3-"]);
+        assert!(!reaction.is_complete());
+        assert_eq!(reaction.missing_theta, ["CO3--|HCO3-"]);
+        assert_eq!(reaction.missing_psi, ["CO3--|HCO3-|Na+"]);
+    }
+
+    /// **The audit's threshold is a molality and the selection's is a mole count**, so a
+    /// trace ion can have chosen the dataset and still not be audited. The psi and theta
+    /// loops see only what the binary loop saw.
+    #[test]
+    fn a_trace_ion_leaves_the_audited_topology() {
+        let (mixture, mass) = brine(&[
+            ("Na+", 1.0, 0.01),
+            ("Cl-", -1.0, 0.01),
+            ("K+", 1.0, 1.0e-11),
+        ]);
+        let molality = 1.0e-11 / mass;
+        assert!(
+            molality < ACTIVE_ION_MOLALITY && molality > 1.0e-20,
+            "k+ is under the audit's threshold and over the selection's: {molality:e}"
+        );
+
+        // The selection sees it, and the catalogue covers it, so the answer is still the
+        // catalogue - the two thresholds agreeing here is a coincidence of the data.
+        let selection = select_dataset(&mixture);
+        assert_eq!(selection, Selection::Phreeqc);
+        let audit = coverage(&mixture, &selection, mass);
+        assert_eq!(audit.active_cations, ["Na+"]);
+        assert!(!has_mixed_primary_salt_topology(&mixture, mass));
+    }
+
+    /// A same-sign pair on the catalogue is covered, and the psi tuple is reported with
+    /// **only its first two species sorted** - `psiKey`'s own order, not the catalogue's
+    /// all-sorted lookup key.
+    #[test]
+    fn the_reported_keys_are_neqsims() {
+        assert_eq!(report_pair_key("Na+", "K+"), "K+|Na+");
+        assert_eq!(report_pair_key("Cl-", "Na+"), "Cl-|Na+");
+        assert_eq!(report_psi_key("Na+", "K+", "Cl-"), "K+|Na+|Cl-");
+        // The catalogue's own key would sort all three and write `Cl-|K+|Na+`, which is a
+        // triple NeqSim's diagnostic never contains.
+        assert_eq!(species_key(&["Na+", "K+", "Cl-"]), "Cl-|K+|Na+");
+        assert_ne!(
+            report_psi_key("Na+", "K+", "Cl-"),
+            species_key(&["Na+", "K+", "Cl-"])
+        );
     }
 }

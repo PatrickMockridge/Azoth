@@ -1,0 +1,114 @@
+
+=== water + Na+ + Cl- ===
+  dataset        = usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1
+  activeCations  = [Na+]
+  activeAnions   = [Cl-]
+  missingBinary  = []
+  missingTheta   = []
+  missingPsi     = []
+  isComplete     = true
+  require()      = accepted
+  reaction isComplete = true
+
+=== water + Na+ + K+ + Cl- ===
+  dataset        = usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1
+  activeCations  = [K+, Na+]
+  activeAnions   = [Cl-]
+  missingBinary  = []
+  missingTheta   = []
+  missingPsi     = []
+  isComplete     = true
+  require()      = accepted
+  reaction isComplete = true
+
+=== water + Na+ + Cl- + SO4-- ===
+  dataset        = usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1
+  activeCations  = [Na+]
+  activeAnions   = [Cl-, SO4--]
+  missingBinary  = []
+  missingTheta   = []
+  missingPsi     = []
+  isComplete     = true
+  require()      = accepted
+  reaction isComplete = true
+
+=== water + Na+ + K+ + Cl- + SO4-- ===
+  dataset        = usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1
+  activeCations  = [K+, Na+]
+  activeAnions   = [Cl-, SO4--]
+  missingBinary  = []
+  missingTheta   = []
+  missingPsi     = []
+  isComplete     = true
+  require()      = accepted
+  reaction isComplete = true
+
+=== water + Na+ + Ca++ + Cl- ===
+  dataset        = usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1
+  activeCations  = [Ca++, Na+]
+  activeAnions   = [Cl-]
+  missingBinary  = []
+  missingTheta   = []
+  missingPsi     = []
+  isComplete     = true
+  require()      = accepted
+  reaction isComplete = true
+
+=== water + Na+ + HCO3- ===
+  dataset        = neqsim-legacy-pitzer-parameters-v1
+  activeCations  = [Na+]
+  activeAnions   = []
+  missingBinary  = []
+  missingTheta   = []
+  missingPsi     = []
+  isComplete     = true
+  require()      = accepted
+  reaction isComplete = true
+
+=== water + Na+ + HCO3- + CO3-- ===
+  dataset        = neqsim-legacy-pitzer-parameters-v1
+  activeCations  = [Na+]
+  activeAnions   = []
+  missingBinary  = []
+  missingTheta   = []
+  missingPsi     = []
+  isComplete     = true
+  require()      = accepted
+  reaction isComplete = false
+  reaction missingBinary = []
+  reaction missingTheta  = [CO3--|HCO3-]
+  reaction missingPsi    = [CO3--|HCO3-|Na+]
+
+=== water + Na+ + K+ + Cl- + HCO3- ===
+  init()         = REFUSED: Pitzer parameter coverage incomplete for dataset 'neqsim-legacy-pitzer-parameters-v1': activeCations=[K+, Na+], activeAnions=[Cl-], missingBinary=[], missingTheta=[K+|Na+], missingPsi=[K+|Na+|Cl-]
+
+=== water + Na+ + Li+ + Cl- ===
+  init()         = REFUSED: Pitzer parameter coverage incomplete for dataset 'neqsim-legacy-pitzer-parameters-v1': activeCations=[Li+, Na+], activeAnions=[Cl-], missingBinary=[Cl-|Li+], missingTheta=[Li+|Na+], missingPsi=[Li+|Na+|Cl-]
+
+=== water + Na+ + Cl- + Br- ===
+  init()         = REFUSED: Pitzer parameter coverage incomplete for dataset 'neqsim-legacy-pitzer-parameters-v1': activeCations=[Na+], activeAnions=[Br-, Cl-], missingBinary=[Br-|Na+], missingTheta=[Br-|Cl-], missingPsi=[Br-|Cl-|Na+]
+
+=== water + NH4+ + Cl- ===
+  dataset        = neqsim-legacy-pitzer-parameters-v1
+  activeCations  = [NH4+]
+  activeAnions   = [Cl-]
+  missingBinary  = [Cl-|NH4+]
+  missingTheta   = []
+  missingPsi     = []
+  isComplete     = false
+  require()      = REFUSED: Pitzer parameter coverage incomplete for dataset 'neqsim-legacy-pitzer-parameters-v1': activeCations=[NH4+], activeAnions=[Cl-], missingBinary=[Cl-|NH4+], missingTheta=[], missingPsi=[]
+  reaction isComplete = false
+  reaction missingBinary = [Cl-|NH4+]
+  reaction missingTheta  = []
+  reaction missingPsi    = []
+
+=== water + Na+ + Cl- + trace K+ (molality 5.7e-10) ===
+  dataset        = usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1
+  activeCations  = [Na+]
+  activeAnions   = [Cl-]
+  missingBinary  = []
+  missingTheta   = []
+  missingPsi     = []
+  isComplete     = true
+  require()      = accepted
+  reaction isComplete = true

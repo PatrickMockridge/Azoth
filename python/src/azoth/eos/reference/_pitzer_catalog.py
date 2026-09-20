@@ -37,6 +37,8 @@ from functools import cache
 from typing import NamedTuple
 
 from azoth._data import find as _find_file
+from azoth.core.errors import InvalidInputError
+from azoth.eos.components import pitzer_pair
 
 #: The compiled catalogue.
 PITZER_PHREEQC_CSV = "data/components/PitzerPhreeqc.csv"
@@ -215,3 +217,217 @@ def select_dataset(species: Sequence[Species]) -> tuple[str, str | None]:
                     return ("legacy", reason)
 
     return ("phreeqc", None)
+
+
+#: The identity NeqSim gives the legacy dataset: `PhasePitzer.DEFAULT_PARAMETER_DATASET_ID`.
+LEGACY_DATASET_ID = "neqsim-legacy-pitzer-parameters-v1"
+
+#: The identity NeqSim gives the catalogue, carrying the commit the file came from.
+PHREEQC_DATASET_ID = "usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1"
+
+#: Molality above which an ion is in the audited topology.
+#:
+#: **A different threshold from the selection rule's** ``ACTIVE_MOLES``, and deliberately:
+#: `tryApplyCompletePhreeqcPitzerCatalog` tests an absolute mole count while
+#: `activeIonIndexes` tests a *molality*, so the audit's topology is the narrower one. A
+#: trace ion can be absent from the audit and still have forced the fallback.
+ACTIVE_ION_MOLALITY = 1.0e-8
+
+#: The four species the primary-salt audit excludes: `isPrimarySaltCoverageSpecies`.
+REACTION_SPECIES = ("H3O+", "OH-", "HCO3-", "CO3--")
+
+_REACTION_SPECIES_LOWER = frozenset(species.lower() for species in REACTION_SPECIES)
+
+
+def is_primary_salt_species(name: str) -> bool:
+    """Whether a component is covered by the primary-salt audit rather than the reaction one."""
+    return name.lower() not in _REACTION_SPECIES_LOWER
+
+
+def dataset_id(selection: tuple[str, str | None]) -> str:
+    """The identity of the dataset a selection loads."""
+    return PHREEQC_DATASET_ID if selection[0] == "phreeqc" else LEGACY_DATASET_ID
+
+
+class Coverage(NamedTuple):
+    """What the loaded dataset fails to cover, in the shape `PitzerParameterCoverage` reports."""
+
+    dataset_id: str
+    active_cations: tuple[str, ...]
+    active_anions: tuple[str, ...]
+    missing_binary: tuple[str, ...]
+    missing_theta: tuple[str, ...]
+    missing_psi: tuple[str, ...]
+
+    def is_complete(self) -> bool:
+        """Whether every interaction the active topology needs is defined."""
+        return not (self.missing_binary or self.missing_theta or self.missing_psi)
+
+    def diagnostic(self) -> str:
+        """The diagnostic, byte for byte as `formatDiagnostic` writes it."""
+        return (
+            f"Pitzer parameter coverage incomplete for dataset '{self.dataset_id}': "
+            f"activeCations={_java_list(self.active_cations)}, "
+            f"activeAnions={_java_list(self.active_anions)}, "
+            f"missingBinary={_java_list(self.missing_binary)}, "
+            f"missingTheta={_java_list(self.missing_theta)}, "
+            f"missingPsi={_java_list(self.missing_psi)}"
+        )
+
+
+def _java_list(values: Sequence[str]) -> str:
+    """`PitzerParameterCoverage.immutableSortedCopy`'s rendering: Java's ``List.toString``."""
+    return "[" + ", ".join(values) + "]"
+
+
+def require_complete(audit: Coverage) -> None:
+    """`requireCompletePitzerParameterCoverage`: the audit's refusal.
+
+    **A refusal rather than a zero**: an absent same-sign or ternary parameter is not a
+    fitted ideal solution, so evaluating it as one would return a number with no symptom.
+
+    **NeqSim does not always enforce this.** `validateParameterCoverageOncePerState` calls
+    it only when :func:`has_mixed_primary_salt_topology` holds, so a single-salt brine with
+    an absent binary pair initializes and evaluates the pair at zero. The audit still
+    reports it incomplete.
+
+    :raises InvalidInputError: where an interaction the topology needs is absent.
+    """
+    if not audit.is_complete():
+        raise InvalidInputError("composition", audit.diagnostic())
+
+
+def has_mixed_primary_salt_topology(species: Sequence[Species], solvent_mass: float) -> bool:
+    """Whether more than one active primary-salt cation or anion is present.
+
+    The condition under which NeqSim enforces the audit at all: a single cation and a
+    single anion keep the "established binary behavior", and a mixed topology does not.
+    """
+    active_moles = ACTIVE_ION_MOLALITY * solvent_mass
+    cations = 0
+    anions = 0
+    for one in species:
+        if (
+            one.charge == 0.0
+            or not is_primary_salt_species(one.name)
+            or not one.moles > active_moles
+        ):
+            continue
+        if one.charge > 0.0:
+            cations += 1
+        else:
+            anions += 1
+        if cations > 1 or anions > 1:
+            return True
+    return False
+
+
+def coverage(
+    species: Sequence[Species], selection: tuple[str, str | None], solvent_mass: float
+) -> Coverage:
+    """The coverage audit of a phase's primary-salt ions: `getPitzerParameterCoverage`."""
+    return _audit(species, selection, solvent_mass, False)
+
+
+def reaction_coverage(
+    species: Sequence[Species], selection: tuple[str, str | None], solvent_mass: float
+) -> Coverage:
+    """The same audit including the reaction solver's acid-base species."""
+    return _audit(species, selection, solvent_mass, True)
+
+
+def _audit(
+    species: Sequence[Species],
+    selection: tuple[str, str | None],
+    solvent_mass: float,
+    include_reaction_species: bool,
+) -> Coverage:
+    active_moles = ACTIVE_ION_MOLALITY * solvent_mass
+    cations = [s for s in species if _is_active(s, True, include_reaction_species, active_moles)]
+    anions = [s for s in species if _is_active(s, False, include_reaction_species, active_moles)]
+
+    missing_binary = [
+        _report_pair_key(cation.name, anion.name)
+        for cation in cations
+        for anion in anions
+        if not _binary_is_defined(selection, cation.name, anion.name)
+    ]
+
+    missing_theta: list[str] = []
+    missing_psi: list[str] = []
+    _mixed_interactions(cations, anions, selection, missing_theta, missing_psi)
+    _mixed_interactions(anions, cations, selection, missing_theta, missing_psi)
+
+    return Coverage(
+        dataset_id=dataset_id(selection),
+        active_cations=tuple(sorted(s.name for s in cations)),
+        active_anions=tuple(sorted(s.name for s in anions)),
+        missing_binary=tuple(sorted(missing_binary)),
+        missing_theta=tuple(sorted(missing_theta)),
+        missing_psi=tuple(sorted(missing_psi)),
+    )
+
+
+def _is_active(
+    one: Species, positive: bool, include_reaction_species: bool, active_moles: float
+) -> bool:
+    wanted = one.charge > 0.0 if positive else one.charge < 0.0
+    return (
+        wanted
+        and (include_reaction_species or is_primary_salt_species(one.name))
+        and one.moles > active_moles
+    )
+
+
+def _mixed_interactions(
+    same_sign: Sequence[Species],
+    opposite: Sequence[Species],
+    selection: tuple[str, str | None],
+    missing_theta: list[str],
+    missing_psi: list[str],
+) -> None:
+    """The absent theta/psi definitions of every same-sign pair against every opposite ion."""
+    for index, one in enumerate(same_sign):
+        for other in same_sign[index + 1 :]:
+            if not _mixed_is_defined(selection, "THETA", [one.name, other.name]):
+                missing_theta.append(_report_pair_key(one.name, other.name))
+            for third in opposite:
+                if not _mixed_is_defined(selection, "PSI", [one.name, other.name, third.name]):
+                    missing_psi.append(_report_psi_key(one.name, other.name, third.name))
+
+
+def _binary_is_defined(selection: tuple[str, str | None], first: str, second: str) -> bool:
+    """Whether the loaded dataset defines a cation-anion pair.
+
+    **Per pair and not per family**, which is NeqSim's own model: the loader calls
+    ``setBinaryParameters(i, j, b0, b1, c)`` once for a pair and records one key, so the
+    three families are defined together or not at all.
+    """
+    if selection[0] != "phreeqc":
+        return pitzer_pair(first, second) is not None
+    return all(find(family, [first, second]) is not None for family in ("B0", "B1", "C0"))
+
+
+def _mixed_is_defined(selection: tuple[str, str | None], family: str, names: Sequence[str]) -> bool:
+    """Whether the loaded dataset defines a same-sign or ternary interaction.
+
+    **False for the legacy dataset however the row reads.** Its loader calls no theta or
+    psi setter at all, so ``definedThetaPairs`` and ``definedPsiTuples`` stay empty and
+    every mixed topology is incomplete.
+    """
+    return selection[0] == "phreeqc" and find(family, names) is not None
+
+
+def _report_pair_key(first: str, second: str) -> str:
+    """`PhasePitzer.pairKey`: the two names sorted and joined with ``|``.
+
+    **Not** :func:`species_key`, although the two agree on two names. This one is a *report*
+    key and never a lookup - the catalogue's own key sorts all three of a psi row's species
+    and this one must not, or the diagnostic would name a triple NeqSim never writes.
+    """
+    return f"{first}|{second}" if first <= second else f"{second}|{first}"
+
+
+def _report_psi_key(first: str, second: str, opposite: str) -> str:
+    """`PhasePitzer.psiKey`: the sorted same-sign pair, then the opposite ion unsorted."""
+    return f"{_report_pair_key(first, second)}|{opposite}"

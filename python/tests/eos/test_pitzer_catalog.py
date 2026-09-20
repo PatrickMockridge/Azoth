@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import pytest
 
+from azoth.core.errors import InvalidInputError
 from azoth.eos.reference import _pitzer_catalog as catalog
 from azoth.eos.reference import _pitzer_phase as phase
 
@@ -140,3 +141,118 @@ def test_the_alpha_coefficients_follow_the_charge() -> None:
     # data because the highest charge it carries is 2.
     assert phase.alpha1_as_used(3.0, -3.0) == 1.4
     assert phase.alpha1(3.0, -3.0) == 2.0
+
+
+def _brine(entries: list[tuple[str, float, float]]) -> tuple[list[catalog.Species], float]:
+    """One mole of mixture's worth, and the solvent mass the audit's threshold scales by."""
+    water = 0.9
+    out = [catalog.Species("water", water, 0.0, "H2O", False)]
+    out += [catalog.Species(name, moles, charge, "", False) for name, charge, moles in entries]
+    return out, water * 0.018015
+
+
+def test_a_mixed_catalogue_brine_is_complete() -> None:
+    """The catalogue covers a mixed brine, so nothing is missing in any family."""
+    mixture, mass = _brine(
+        [("Na+", 1.0, 0.01), ("K+", 1.0, 0.01), ("Cl-", -1.0, 0.01), ("SO4--", -2.0, 0.01)]
+    )
+    selection = catalog.select_dataset(mixture)
+    assert selection == ("phreeqc", None)
+    audit = catalog.coverage(mixture, selection, mass)
+    assert audit.is_complete(), audit
+    assert audit.active_cations == ("K+", "Na+")
+    assert audit.active_anions == ("Cl-", "SO4--")
+    assert audit.dataset_id == catalog.PHREEQC_DATASET_ID
+    assert catalog.require_complete(audit) is None
+
+
+def test_a_pair_with_no_parameters_is_refused() -> None:
+    """**A pair with no parameters is refused, not evaluated at zero.**
+
+    The sabotage check: `NH4+`/`Cl-` appears in neither dataset, and the audit must say so
+    rather than let the model compute a substance as an ideal solution.
+    """
+    mixture, mass = _brine([("NH4+", 1.0, 0.01), ("Cl-", -1.0, 0.01)])
+    selection = catalog.select_dataset(mixture)
+    assert selection == ("legacy", "B0 for NH4+, Cl-"), "no ammonium rows in the catalogue"
+    assert catalog.find("B0", ["NH4+", "Cl-"]) is None
+
+    audit = catalog.coverage(mixture, selection, mass)
+    assert not audit.is_complete()
+    assert audit.missing_binary == ("Cl-|NH4+",)
+    assert audit.missing_theta == ()
+    assert audit.missing_psi == ()
+
+    # **The refusal, and its exact wording** - the string is NeqSim's, because a reader
+    # comparing a port's failure against NeqSim's exception must not have to tell two
+    # formats apart.
+    with pytest.raises(InvalidInputError) as raised:
+        catalog.require_complete(audit)
+    assert raised.value.reason == audit.diagnostic()
+
+    # **And NeqSim would still initialize it.** A single cation and a single anion is not a
+    # mixed topology, and `validateParameterCoverageOncePerState` only enforces the audit
+    # when it is - so this brine evaluates the pair at zero.
+    assert not catalog.has_mixed_primary_salt_topology(mixture, mass)
+
+
+def test_a_mixed_legacy_brine_is_incomplete() -> None:
+    """**Measured: NeqSim throws from `init(1)` here.** The legacy CSV has no same-sign rows."""
+    mixture, mass = _brine(
+        [
+            ("Na+", 1.0, 0.01),
+            ("K+", 1.0, 0.01),
+            ("Cl-", -1.0, 0.01),
+            ("HCO3-", -1.0, 0.01),
+        ]
+    )
+    selection = catalog.select_dataset(mixture)
+    assert selection[0] == "legacy", "hydrogen carbonate is in no catalogue family"
+    audit = catalog.coverage(mixture, selection, mass)
+
+    # **`HCO3-` is absent from `active_anions`** although it is the larger of the two
+    # anions, because the primary-salt audit excludes the reaction species.
+    assert audit.active_cations == ("K+", "Na+")
+    assert audit.active_anions == ("Cl-",)
+    assert audit.missing_binary == ()
+    assert audit.missing_theta == ("K+|Na+",)
+    assert audit.missing_psi == ("K+|Na+|Cl-",)
+    assert catalog.has_mixed_primary_salt_topology(mixture, mass)
+    assert audit.diagnostic() == (
+        "Pitzer parameter coverage incomplete for dataset "
+        "'neqsim-legacy-pitzer-parameters-v1': activeCations=[K+, Na+], "
+        "activeAnions=[Cl-], missingBinary=[], missingTheta=[K+|Na+], "
+        "missingPsi=[K+|Na+|Cl-]"
+    )
+
+
+def test_the_reaction_audit_keeps_the_species_the_primary_audit_drops() -> None:
+    """The reaction variant is a different observable, which is why both are exposed."""
+    mixture, mass = _brine([("Na+", 1.0, 0.01), ("HCO3-", -1.0, 0.01), ("CO3--", -2.0, 0.01)])
+    selection = catalog.select_dataset(mixture)
+
+    primary = catalog.coverage(mixture, selection, mass)
+    assert primary.active_anions == ()
+    assert primary.is_complete()
+
+    reaction = catalog.reaction_coverage(mixture, selection, mass)
+    assert reaction.active_anions == ("CO3--", "HCO3-")
+    assert not reaction.is_complete()
+    assert reaction.missing_theta == ("CO3--|HCO3-",)
+    assert reaction.missing_psi == ("CO3--|HCO3-|Na+",)
+
+
+def test_a_trace_ion_leaves_the_audited_topology() -> None:
+    """**The audit's threshold is a molality and the selection's is a mole count.**
+
+    A trace ion can have chosen the dataset and still not be audited.
+    """
+    mixture, mass = _brine([("Na+", 1.0, 0.01), ("Cl-", -1.0, 0.01), ("K+", 1.0, 1.0e-11)])
+    molality = 1.0e-11 / mass
+    assert catalog.ACTIVE_MOLES < molality < catalog.ACTIVE_ION_MOLALITY
+
+    selection = catalog.select_dataset(mixture)
+    assert selection == ("phreeqc", None)
+    audit = catalog.coverage(mixture, selection, mass)
+    assert audit.active_cations == ("Na+",)
+    assert not catalog.has_mixed_primary_salt_topology(mixture, mass)
