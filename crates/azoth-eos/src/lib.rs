@@ -66,6 +66,7 @@ pub mod flash_iteration;
 pub mod flash_newton;
 pub mod flash_property;
 pub mod furst_dielectric;
+pub mod furst_mixing;
 pub mod furst_terms;
 pub mod ge_nrtl_flash;
 pub mod ge_nrtl_phase;

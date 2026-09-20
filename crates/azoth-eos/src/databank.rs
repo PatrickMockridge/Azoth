@@ -70,6 +70,13 @@ const PITZER_PARAMETERS_CSV: &str = include_str!("../../../data/components/Pitze
 /// The compiled salt table, generated from NeqSim's `COMPSALT.csv`.
 const COMPSALT_CSV: &str = include_str!("../../../data/components/COMPSALT.csv");
 
+/// The compiled Fürst electrolyte constants.
+///
+/// Generated from `FurstElectrolyteConstants.java`, which is a Java source file rather than
+/// a table - see the manifest entry. Long-form `set, index, value`, because the arrays are
+/// four different lengths.
+const FURST_PARAMETERS_CSV: &str = include_str!("../../../data/components/furst_parameters.csv");
+
 /// The compiled PHREEQC Pitzer catalogue.
 ///
 /// `PhasePitzer`'s **default** parameters, ahead of `PitzerParameters.csv`'s 30 rows: the
@@ -3316,4 +3323,49 @@ pub fn soreide_whitson_mixture_of(
             salinity,
         });
     Ok((mixture, ideal_gas))
+}
+
+/// One of `FurstElectrolyteConstants`' arrays, by the name the Java declares it under.
+///
+/// The sets are `furstParams`, `furstParamsCPA` and its seven solvent variants,
+/// `furstParamsCPA_TDep`, `furstParamsGasIon` and `furstParamsOIIon` - twelve in all, of
+/// four different lengths. A name the table does not carry is an empty slice rather than a
+/// panic, and the caller that needs a coefficient states what it does about a missing one.
+///
+/// **The temperature coefficients live in their own set.** `furstParamsCPA_TDep` holds
+/// sixteen numbers where `furstParamsCPA` holds ten, and they are what `Wij(T)`'s `w1` and
+/// `w2` come from on the computed path - so a model that read only the ten would have a
+/// short-range term with no temperature dependence at all, which is a plausible-looking
+/// answer rather than a failure.
+#[must_use]
+pub fn furst_parameters(set: &str) -> &'static [f64] {
+    fn parse() -> HashMap<String, Vec<f64>> {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(FURST_PARAMETERS_CSV.as_bytes());
+        let index = column_index(FURST_PARAMETERS_CSV);
+        let mut out: HashMap<String, Vec<f64>> = HashMap::new();
+        for record in reader.records().flatten() {
+            let name = field_of(&index, &record, "set").trim().to_string();
+            let position: usize = field_of(&index, &record, "index")
+                .trim()
+                .parse()
+                .unwrap_or(usize::MAX);
+            let value: f64 = field_of(&index, &record, "value")
+                .trim()
+                .parse()
+                .unwrap_or(f64::NAN);
+            if position == usize::MAX {
+                continue;
+            }
+            let entry = out.entry(name).or_default();
+            if entry.len() <= position {
+                entry.resize(position + 1, 0.0);
+            }
+            entry[position] = value;
+        }
+        out
+    }
+    static TABLE: OnceLock<HashMap<String, Vec<f64>>> = OnceLock::new();
+    TABLE.get_or_init(parse).get(set).map_or(&[], Vec::as_slice)
 }
