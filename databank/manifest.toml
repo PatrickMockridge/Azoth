@@ -229,7 +229,7 @@ disposition = "vendored"
 as = "sphericalcoreradius"
 unit = "angstrom"
 reason = "unreachable-upstream: the hydrate cavity models; NeqSim's `ComponentHydrateKluda` is referenced by nothing but its own file - no construction site and no call - and `eos.viscosity` does not read these either: it ports `PFCTViscosityMethodHeavyOil`."
-consumer = "roadmap:P9"
+
 [[upstreams.files.columns]]
 name = "LIQVISCMODEL"
 disposition = "dropped"
@@ -689,56 +689,67 @@ reason = "not-ported: the friction-theory viscosity method; NeqSim's `FrictionTh
 consumer = "roadmap:P1"
 [[upstreams.files.columns]]
 name = "HydrateA1Small"
-disposition = "vendored"
+disposition = "used"
 as = "hydratea1small"
 unit = "K"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by `eos.hydrate_formation_temperature` and `eos.hydrate_formation_pressure`, through the Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydratePVTsim.calcCKI` builds from them. **That class is the one `PhaseHydrate` constructs** - the base `ComponentHydrate` integrates a Kihara potential instead and never reads these."""
 [[upstreams.files.columns]]
 name = "HydrateB1Small"
-disposition = "vendored"
+disposition = "used"
 as = "hydrateb1small"
 unit = "K"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by `eos.hydrate_formation_temperature` and `eos.hydrate_formation_pressure`, through the Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydratePVTsim.calcCKI` builds from them. **That class is the one `PhaseHydrate` constructs** - the base `ComponentHydrate` integrates a Kihara potential instead and never reads these."""
 [[upstreams.files.columns]]
 name = "HydrateA1Large"
-disposition = "vendored"
+disposition = "used"
 as = "hydratea1large"
 unit = "K"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by `eos.hydrate_formation_temperature` and `eos.hydrate_formation_pressure`, through the Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydratePVTsim.calcCKI` builds from them. **That class is the one `PhaseHydrate` constructs** - the base `ComponentHydrate` integrates a Kihara potential instead and never reads these."""
 [[upstreams.files.columns]]
 name = "HydrateB1Large"
-disposition = "vendored"
+disposition = "used"
 as = "hydrateb1large"
 unit = "K"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by `eos.hydrate_formation_temperature` and `eos.hydrate_formation_pressure`, through the Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydratePVTsim.calcCKI` builds from them. **That class is the one `PhaseHydrate` constructs** - the base `ComponentHydrate` integrates a Kihara potential instead and never reads these."""
 [[upstreams.files.columns]]
 name = "HydrateA2Small"
-disposition = "vendored"
+disposition = "used"
 as = "hydratea2small"
 unit = "K"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by `eos.hydrate_formation_temperature` and `eos.hydrate_formation_pressure`, through the Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydratePVTsim.calcCKI` builds from them. **That class is the one `PhaseHydrate` constructs** - the base `ComponentHydrate` integrates a Kihara potential instead and never reads these."""
 [[upstreams.files.columns]]
 name = "HydrateB2Small"
-disposition = "vendored"
+disposition = "used"
 as = "hydrateb2small"
 unit = "K"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by `eos.hydrate_formation_temperature` and `eos.hydrate_formation_pressure`, through the Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydratePVTsim.calcCKI` builds from them. **That class is the one `PhaseHydrate` constructs** - the base `ComponentHydrate` integrates a Kihara potential instead and never reads these."""
 [[upstreams.files.columns]]
 name = "HydrateA2Large"
-disposition = "vendored"
+disposition = "used"
 as = "hydratea2large"
 unit = "K"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by `eos.hydrate_formation_temperature` and `eos.hydrate_formation_pressure`, through the Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydratePVTsim.calcCKI` builds from them. **That class is the one `PhaseHydrate` constructs** - the base `ComponentHydrate` integrates a Kihara potential instead and never reads these."""
 [[upstreams.files.columns]]
 name = "HydrateB2Large"
-disposition = "vendored"
+disposition = "used"
 as = "hydrateb2large"
 unit = "K"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by `eos.hydrate_formation_temperature` and `eos.hydrate_formation_pressure`, through the Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydratePVTsim.calcCKI` builds from them. **That class is the one `PhaseHydrate` constructs** - the base `ComponentHydrate` integrates a Kihara potential instead and never reads these."""
 [[upstreams.files.columns]]
 name = "HydrateFormer"
-disposition = "dropped"
-    reason = "not-ported: the hydrate models; NeqSim's `PhaseHydrate` and `thermodynamicoperations/flashops/HydrateFlash`. Every kept row states `yes` or `no`."
+disposition = "used"
+as = "hydrateformer"
+unit = "text"
+reason = """\
+    read by `eos.hydrate_formation_temperature` and `eos.hydrate_formation_pressure`. NeqSim reads it in `Component`'s constructor into `isHydrateFormer`, and every occupancy loop tests it: a substance that is not a former is a guest of no cage. Every kept row states `yes` or `no`, and water is excluded by name rather than by this."""
 [[upstreams.files.columns]]
 name = "mSAFT"
 disposition = "used"
@@ -771,19 +782,43 @@ name = "LJDIAMETERHYDRATE"
 disposition = "vendored"
 as = "ljdiameterhydrate"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's **base** `ComponentHydrate`, which integrates a Kihara potential over \
+    the guest's Lennard-Jones parameters and its spherical core radius (`potIntegral` \
+    through `getPot` and `delt`). The model this tranche ports is \
+    `ComponentHydratePVTsim`, which `PhaseHydrate` constructs by default and which \
+    **overrides that machinery away** for a fitted Langmuir constant - so this is carried \
+    with its reader named, and the reader is the route not taken. The classes that reach it \
+    and are constructible nowhere - `ComponentHydrateBallard`, `...Kluda` - are why it is \
+    not called unreachable."""
 [[upstreams.files.columns]]
 name = "LJEPSHYDRATE"
 disposition = "vendored"
 as = "ljepshydrate"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's **base** `ComponentHydrate`, which integrates a Kihara potential over \
+    the guest's Lennard-Jones parameters and its spherical core radius (`potIntegral` \
+    through `getPot` and `delt`). The model this tranche ports is \
+    `ComponentHydratePVTsim`, which `PhaseHydrate` constructs by default and which \
+    **overrides that machinery away** for a fitted Langmuir constant - so this is carried \
+    with its reader named, and the reader is the route not taken. The classes that reach it \
+    and are constructible nowhere - `ComponentHydrateBallard`, `...Kluda` - are why it is \
+    not called unreachable."""
 [[upstreams.files.columns]]
 name = "SphericalCoreRadiusHYDRATE"
 disposition = "vendored"
 as = "sphericalcoreradiushydrate"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's **base** `ComponentHydrate`, which integrates a Kihara potential over \
+    the guest's Lennard-Jones parameters and its spherical core radius (`potIntegral` \
+    through `getPot` and `delt`). The model this tranche ports is \
+    `ComponentHydratePVTsim`, which `PhaseHydrate` constructs by default and which \
+    **overrides that machinery away** for a fitted Langmuir constant - so this is carried \
+    with its reader named, and the reader is the route not taken. The classes that reach it \
+    and are constructible nowhere - `ComponentHydrateBallard`, `...Kluda` - are why it is \
+    not called unreachable."""
 [[upstreams.files.columns]]
 name = "DeshMatIonicDiameter"
 disposition = "used"
@@ -798,49 +833,81 @@ name = "B2_largeGF"
 disposition = "vendored"
 as = "b2_largegf"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
+    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
+    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
+    port, so it is carried with its reader named rather than left unread."""
 [[upstreams.files.columns]]
 name = "A1_smallGF"
 disposition = "vendored"
 as = "a1_smallgf"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
+    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
+    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
+    port, so it is carried with its reader named rather than left unread."""
 [[upstreams.files.columns]]
 name = "B1_smallGF"
 disposition = "vendored"
 as = "b1_smallgf"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
+    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
+    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
+    port, so it is carried with its reader named rather than left unread."""
 [[upstreams.files.columns]]
 name = "A1_largeGF"
 disposition = "vendored"
 as = "a1_largegf"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
+    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
+    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
+    port, so it is carried with its reader named rather than left unread."""
 [[upstreams.files.columns]]
 name = "B1_largeGF"
 disposition = "vendored"
 as = "b1_largegf"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
+    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
+    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
+    port, so it is carried with its reader named rather than left unread."""
 [[upstreams.files.columns]]
 name = "A2_smallGF"
 disposition = "vendored"
 as = "a2_smallgf"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
+    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
+    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
+    port, so it is carried with its reader named rather than left unread."""
 [[upstreams.files.columns]]
 name = "B2_smallGF"
 disposition = "vendored"
 as = "b2_smallgf"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
+    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
+    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
+    port, so it is carried with its reader named rather than left unread."""
 [[upstreams.files.columns]]
 name = "A2_largeGF"
 disposition = "vendored"
 as = "a2_largegf"
 unit = "neqsim-internal"
-reason = "not-ported: hydrate formation; NeqSim's `PhaseHydrate` and `TPHydrateFlash`"
+reason = """\
+    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
+    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
+    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
+    port, so it is carried with its reader named rather than left unread."""
 [[upstreams.files.columns]]
 name = "CPsolid1"
 disposition = "vendored"

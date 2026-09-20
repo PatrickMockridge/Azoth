@@ -286,6 +286,16 @@ pub struct Entry {
     /// alpha 2.56% high - which is 0.34% on the phase's compressibility factor, and was the
     /// whole of this model's divergence from NeqSim.
     pub schwartzentruber: [f64; 3],
+    /// The hydrate Langmuir constants' fitted pair, `[structure][cavity]`: `C = A/T exp(B/T)`.
+    /// Read by NeqSim's `ComponentHydratePVTsim`, the class `PhaseHydrate` builds; `A` is in
+    /// K and so is `B`.
+    pub hydrate_langmuir_a: [[f64; 2]; 2],
+    /// The same pair's `B`.
+    pub hydrate_langmuir_b: [[f64; 2]; 2],
+    /// Whether the substance can occupy a hydrate cavity: NeqSim's `HydrateFormer`, read
+    /// through `isHydrateFormer` by every occupancy loop. A non-former is a guest of no cage,
+    /// and water is excluded by name rather than by this.
+    pub hydrate_former: bool,
     /// SAFT-VR-Mie's repulsive exponent `lambda_r`, dimensionless.
     ///
     /// **This one is an absence marker too, on exactly the rows `m_mie` is.** The table
@@ -990,6 +1000,15 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "umrcpa_mc3",
         "umrcpa_mc4",
         "umrcpa_mc5",
+        "hydrateformer",
+        "hydratea1small",
+        "hydrateb1small",
+        "hydratea1large",
+        "hydrateb1large",
+        "hydratea2small",
+        "hydrateb2small",
+        "hydratea2large",
+        "hydrateb2large",
         "schwartzentruber1",
         "schwartzentruber2",
         "schwartzentruber3",
@@ -1077,6 +1096,31 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     .trim()
                     .to_string(),
                 association: parse_association(&record, &index, row)?,
+                hydrate_langmuir_a: {
+                    let mut fitted = [[0.0; 2]; 2];
+                    for (structure, cavities) in fitted.iter_mut().enumerate() {
+                        for (cavity, slot) in cavities.iter_mut().enumerate() {
+                            let size = if cavity == 0 { "small" } else { "large" };
+                            let column = format!("hydratea{}{size}", structure + 1);
+                            *slot = number(&record, index[column.as_str()], &column, row)?;
+                        }
+                    }
+                    fitted
+                },
+                hydrate_langmuir_b: {
+                    let mut fitted = [[0.0; 2]; 2];
+                    for (structure, cavities) in fitted.iter_mut().enumerate() {
+                        for (cavity, slot) in cavities.iter_mut().enumerate() {
+                            let size = if cavity == 0 { "small" } else { "large" };
+                            let column = format!("hydrateb{}{size}", structure + 1);
+                            *slot = number(&record, index[column.as_str()], &column, row)?;
+                        }
+                    }
+                    fitted
+                },
+                hydrate_former: record
+                    .get(index["hydrateformer"])
+                    .is_some_and(|value| value.trim() == "yes"),
                 m_saft: number(&record, index["msaft"], "msaft", row)?,
                 sigma_saft: number(&record, index["sigma_saft_m"], "sigma_saft_m", row)?,
                 epsik_saft: number(&record, index["epsiksaft"], "epsiksaft", row)?,
@@ -1385,6 +1429,11 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 epsik_saft: 0.0,
                 umrcpa_mc: [0.0; 5],
                 schwartzentruber: [0.0; 3],
+                // A card states what a cubic reads, and a hydrate model reading these would
+                // refuse rather than treat a card's substance as a guest of a cage.
+                hydrate_langmuir_a: [[0.0; 2]; 2],
+                hydrate_langmuir_b: [[0.0; 2]; 2],
+                hydrate_former: false,
                 lambda_r_mie: 0.0,
                 lambda_a_mie: 0.0,
                 m_mie: 0.0,
@@ -1447,6 +1496,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             epsik_saft: base.epsik_saft,
             umrcpa_mc: base.umrcpa_mc,
             schwartzentruber: base.schwartzentruber,
+            hydrate_langmuir_a: base.hydrate_langmuir_a,
+            hydrate_langmuir_b: base.hydrate_langmuir_b,
+            hydrate_former: base.hydrate_former,
             lambda_r_mie: base.lambda_r_mie,
             lambda_a_mie: base.lambda_a_mie,
             m_mie: base.m_mie,
