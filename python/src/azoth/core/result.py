@@ -333,6 +333,37 @@ class FreezingPointResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+class HydrateStructure(StrEnum):
+    """Which of the two hydrate structures a state's cages are.
+
+    The structure is an *output* of the same comparison the formation temperature is:
+    NeqSim evaluates both and keeps the lower water fugacity coefficient, so a caller
+    reading an occupancy needs it and a model that reported only the temperature would
+    leave the cages unnamed.
+    """
+
+    #: Two small ``5^12`` and six large ``5^12 6^2`` cavities per forty-six waters.
+    STRUCTURE_I = "structure_i"
+    #: Sixteen small ``5^12`` and eight large ``5^12 6^4`` per a hundred and thirty-six.
+    STRUCTURE_II = "structure_ii"
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class HydrateFormationTemperatureResult(_HasWarnings):
+    """Result of ``eos.hydrate_formation_temperature``."""
+
+    #: The temperature at which the hydrate's water fugacity meets the fluid's.
+    temperature: Q
+    #: The structure that comparison found stable.
+    structure: HydrateStructure
+    #: Flash evaluations taken, the scan's and the bisection's together.
+    iterations: int
+    #: ``f_w^hydrate / f_w^fluid - 1`` at the reported temperature.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 @dataclass(frozen=True, slots=True, eq=False)
 class PrMolarVolumeResult(_HasWarnings):
     """Result of ``eos.pr_molar_volume``.

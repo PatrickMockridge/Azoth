@@ -3197,6 +3197,32 @@ pub fn hydrogen_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The hydrate formation temperature of a fluid, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves them: the hydrate's guest
+/// tables are keyed by name, so a mixture built from constants alone could not carry them.
+#[pyfunction]
+#[pyo3(signature = (components, P, z, eos = "srk"))]
+#[allow(non_snake_case)] // `P` is the symbol in the chemistry
+pub fn hydrate_formation_temperature(
+    py: Python<'_>,
+    components: Vec<String>,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+) -> PyResult<crate::results::PyHydrateFormationTemperatureResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
+        &names,
+        eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
+        None,
+    )
+    .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::hydrate_formation_temperature(&mixture, pascals(P), &z)
+        .map(|r| crate::results::PyHydrateFormationTemperatureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The freezing point of para-hydrogen at a pressure, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side checks them: the solid equation

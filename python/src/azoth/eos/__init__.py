@@ -100,6 +100,7 @@ from azoth.core.result import (
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HydrateFormationTemperatureResult,
     HydrogenPhaseResult,
     IdealGasCpResult,
     KentEisenbergPhaseResult,
@@ -343,6 +344,7 @@ _BWRS_PHASE = "eos.bwrs_phase"
 _AMMONIA_PHASE = "eos.ammonia_phase"
 _CO2_PHASE = "eos.co2_phase"
 _HELIUM_PHASE = "eos.helium_phase"
+_HYDRATE_FORMATION_TEMPERATURE = "eos.hydrate_formation_temperature"
 _FREEZING_POINT = "eos.freezing_point"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _WATER_PHASE = "eos.water_phase"
@@ -1910,6 +1912,31 @@ def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
     See :func:`azoth.eos.reference.helium_phase`.
     """
     return resolve(_HELIUM_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
+
+
+def hydrate_formation_temperature(
+    components: list[str], P: Q, z: list[float], eos: str = "srk"
+) -> HydrateFormationTemperatureResult:
+    """The temperature at which a fluid's hydrate appears, at a pressure.
+
+    The hydrate and the fluid meet where **water's** fugacity is the same in both. The
+    structure is an output of the same comparison rather than an input: NeqSim evaluates
+    structure I and structure II and keeps the lower water fugacity coefficient.
+
+    ``components`` names the substances because the hydrate's guest tables are keyed by name -
+    a mixture carries critical constants and no names. ``eos`` is the cubic the fluid runs,
+    and it is also the one the reference water phase is built from.
+
+    Raises:
+        InvalidInputError: if the fluid has no water, or nothing in it occupies a cage.
+        OutOfRangeError: if ``P`` is not positive, or a trial's cavity sum has no value.
+        SolverNotConvergedError: if the search does not bracket or does not converge.
+
+    See :func:`azoth.eos.reference.hydrate_formation_temperature`.
+    """
+    return resolve(_HYDRATE_FORMATION_TEMPERATURE)(  # type: ignore[no-any-return]
+        components=components, P=P, z=z, eos=eos
+    )
 
 
 def freezing_point(components: list[str], P: Q) -> FreezingPointResult:

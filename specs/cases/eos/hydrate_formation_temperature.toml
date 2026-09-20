@@ -1,0 +1,62 @@
+model = "eos.hydrate_formation_temperature"
+[[cases]]
+id = "methane_ethane_propane_water_at_100_bara"
+tolerance = 1e-06
+source = """NeqSim 3.20.0, an SRK fluid of methane/ethane/propane/water at `79.0 10.10 2.050 10.0`
+moles, flashed by `HydrateFormationTemperatureFlash` from
+`validation/neqsim/HydrateProbe.java`: the hydrate forms at `293.227691103840` K, and the
+capture prints the same state's cavity occupancies and water fugacities beside it.
+
+**The fluid is a plain SRK on purpose**, and NeqSim's own published case for this calculation
+is `SystemSrkCPAstatoil` with `CLASSIC_TX_CPA` - a second thing to be right about rather than a
+first. The hydrate's arithmetic takes its guests' fugacities from whatever fluid it is
+attached to, so this case pins the hydrate and not the mixing rule."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+P = 10000000.0
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+temperature = 293.227691103840
+structure = "structure_ii"
+[[cases]]
+id = "the_same_feed_at_50_bara"
+tolerance = 1e-06
+source = """The same probe at 50 bara: `288.530460404555` K. Lower pressure, lower formation
+temperature, which is the direction the phase boundary runs."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+P = 5000000.0
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+temperature = 288.530460404555
+structure = "structure_ii"
+[[cases]]
+id = "the_same_feed_at_200_bara"
+tolerance = 1e-06
+source = """The same probe at 200 bara: `297.061002920514` K. The three together are what says the
+model is monotone in pressure rather than right at one point."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+P = 20000000.0
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+temperature = 297.061002920514
+structure = "structure_ii"

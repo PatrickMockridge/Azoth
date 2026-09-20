@@ -105,25 +105,32 @@ fn reference_water_fugacity(t: f64, p: f64) -> f64 {
     state.ln_phi[0].exp() * p
 }
 
-fn entries() -> Vec<azoth_eos::databank::Entry> {
+/// The four substances' hydrate records, as the resolver builds them.
+fn guests() -> Vec<hydrate::HydrateGuest> {
     ["methane", "ethane", "propane", "water"]
         .iter()
-        .map(|name| databank::entry(name, None).expect("the guest is in the databank"))
+        .map(|name| {
+            let entry = databank::entry(name, None).expect("the substance is in the databank");
+            hydrate::HydrateGuest {
+                name: entry.name.clone(),
+                langmuir_a: entry.hydrate_langmuir_a,
+                langmuir_b: entry.hydrate_langmuir_b,
+                former: entry.hydrate_former,
+            }
+        })
         .collect()
 }
 
 #[test]
 fn the_occupancies_reproduce_the_capture() {
     for (t, _p_bara, fugacities, structure, expected) in STATES {
-        let records = entries();
-        let borrowed: Vec<&azoth_eos::databank::Entry> = records.iter().collect();
-        // The capture's fugacities are in bara, as NeqSim's internal ones are; the kernel's
-        // chemical-potential term is the one place the pressure's unit matters, and it is not
-        // in an occupancy.
+        let records = guests();
+        // The capture's fugacities are in bara, as NeqSim's internal ones are; the kernel
+        // states its own in pascals and converts where the Langmuir product needs it.
         let refs: Vec<f64> = fugacities.iter().map(|value| value * 1.0e5).collect();
 
         for cavity in 0..2 {
-            let occupied = hydrate::occupancy(&borrowed, &refs, structure, cavity, t);
+            let occupied = hydrate::occupancy(&records, &refs, structure, cavity, t);
             for (index, guest) in ["methane", "ethane", "propane"].iter().enumerate() {
                 let wanted = expected[cavity * 3 + index];
                 assert!(
@@ -142,12 +149,11 @@ fn the_water_fugacity_coefficient_reproduces_the_capture() {
     // At the answer the coefficient is `alpha_water / P`, because the hydrate's water fugacity
     // *is* the fluid's there - which is the definition of the temperature being solved for.
     for (t, p_bara, fugacities, structure, _) in STATES {
-        let records = entries();
-        let borrowed: Vec<&azoth_eos::databank::Entry> = records.iter().collect();
+        let records = guests();
         let refs: Vec<f64> = fugacities.iter().map(|value| value * 1.0e5).collect();
 
         let (found, coefficient) = hydrate::stable_structure(
-            &borrowed,
+            &records,
             &refs,
             t,
             p_bara * 1.0e5,
@@ -174,13 +180,12 @@ fn the_water_fugacity_coefficient_reproduces_the_capture() {
 #[test]
 fn the_cavity_sum_reproduces_the_probe() {
     let (t, _p_bara, fugacities, structure, _) = STATES[0];
-    let records = entries();
-    let borrowed: Vec<&azoth_eos::databank::Entry> = records.iter().collect();
+    let records = guests();
     let refs: Vec<f64> = fugacities.iter().map(|value| value * 1.0e5).collect();
 
     let mut cavity_sum = 0.0;
     for cavity in 0..2 {
-        let occupied: f64 = hydrate::occupancy(&borrowed, &refs, structure, cavity, t)
+        let occupied: f64 = hydrate::occupancy(&records, &refs, structure, cavity, t)
             .iter()
             .sum();
         cavity_sum += hydrate::CAVITIES_PER_WATER[structure][cavity] * (1.0 - occupied).ln();
@@ -193,13 +198,12 @@ fn the_cavity_sum_reproduces_the_probe() {
 
 #[test]
 fn a_full_cavity_is_refused_rather_than_clamped() {
-    let records = entries();
-    let borrowed: Vec<&azoth_eos::databank::Entry> = records.iter().collect();
+    let records = guests();
     // Fugacities large enough that the cavity sum passes one: at 100 bar the guests' are of
     // order `1e7` Pa and the Langmuir constants of order one, so `1e30` saturates.
     let saturated = vec![1.0e30, 1.0e30, 1.0e30, 1.0e30];
     let error = hydrate::stable_structure(
-        &borrowed,
+        &records,
         &saturated,
         293.0,
         1.0e7,

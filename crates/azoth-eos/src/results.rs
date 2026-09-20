@@ -570,6 +570,57 @@ pub struct PrMolarVolumeResult {
     pub warnings: Vec<Warning>,
 }
 
+/// Which of the two hydrate structures a state's cages are.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HydrateStructure {
+    /// Structure I: two small `5^12` and six large `5^12 6^2` cavities per forty-six waters.
+    StructureI,
+    /// Structure II: sixteen small `5^12` and eight large `5^12 6^4` per a hundred and
+    /// thirty-six.
+    StructureIi,
+}
+
+impl HydrateStructure {
+    /// The name the spec's enum declares.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::StructureI => "structure_i",
+            Self::StructureIi => "structure_ii",
+        }
+    }
+}
+
+/// Result of `eos.hydrate_formation_temperature`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateFormationTemperatureResult {
+    /// The temperature at which the hydrate's water fugacity meets the fluid's.
+    pub temperature: ThermodynamicTemperature,
+    /// The structure that comparison found stable.
+    pub structure: HydrateStructure,
+    /// Flash evaluations taken, the scan's and the bisection's together.
+    pub iterations: u32,
+    /// `f_w^hydrate / f_w^fluid - 1` at the reported temperature.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HydrateFormationTemperatureResult {
+    const CALC_ID: &'static str = "eos.hydrate_formation_temperature";
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "structure",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.pure_saturation`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PureSaturationResult {

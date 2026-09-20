@@ -25,10 +25,11 @@ use azoth_eos::results::{
     FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
     GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
-    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
-    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
-    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    HydrateFormationTemperatureResult, HydrogenPhaseResult, IdealGasCpResult,
+    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
     PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
     PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
@@ -3927,6 +3928,57 @@ impl From<&ArgonSolidPhaseResult> for PyArgonSolidPhaseResult {
     frozen,
     skip_from_py_object,
     module = "azoth._core",
+    name = "HydrateFormationTemperatureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateFormationTemperatureResult {
+    /// The temperature at which the hydrate's water fugacity meets the fluid's.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// The stable structure, as its spec spelling.
+    #[pyo3(get)]
+    pub structure: String,
+    /// Flash evaluations taken, the scan's and the bisection's together.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `f_w^hydrate / f_w^fluid - 1` at the reported temperature.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHydrateFormationTemperatureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateFormationTemperatureResult(temperature={} {}, structure={}, {} iteration(s))",
+            self.temperature.magnitude_si, self.temperature.unit, self.structure, self.iterations
+        )
+    }
+}
+
+impl From<&HydrateFormationTemperatureResult> for PyHydrateFormationTemperatureResult {
+    fn from(r: &HydrateFormationTemperatureResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            temperature: qty(r.temperature.value, "K"),
+            structure: r.structure.as_str().to_string(),
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
     name = "FreezingPointResult"
 )]
 #[derive(Debug, Clone, PartialEq)]
@@ -6220,6 +6272,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         WaterPhaseResult::CALC_ID => WaterPhaseResult::FIELDS.to_vec(),
         ArgonSolidPhaseResult::CALC_ID => ArgonSolidPhaseResult::FIELDS.to_vec(),
         FreezingPointResult::CALC_ID => FreezingPointResult::FIELDS.to_vec(),
+        HydrateFormationTemperatureResult::CALC_ID => {
+            HydrateFormationTemperatureResult::FIELDS.to_vec()
+        }
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
         EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),

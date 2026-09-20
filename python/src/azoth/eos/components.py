@@ -139,6 +139,15 @@ COLUMNS = (
     "cpc",
     "cpd",
     "cpe",
+    "hydrateformer",
+    "hydratea1small",
+    "hydrateb1small",
+    "hydratea1large",
+    "hydrateb1large",
+    "hydratea2small",
+    "hydrateb2small",
+    "hydratea2large",
+    "hydrateb2large",
     "schwartzentruber1",
     "schwartzentruber2",
     "schwartzentruber3",
@@ -528,6 +537,16 @@ class DatabankEntry:
     #: built from it and the diameter is then overwritten by the value derived back out of
     #: that covolume. The short-range correlation reads the table's value for both.
     lennard_jones_diameter: float
+    #: The hydrate Langmuir constants' fitted ``A``, indexed ``structure * 2 + cavity`` -
+    #: structure I's small and large cavities first, then structure II's. The guest's
+    #: constant is ``C = A/T exp(B/T)``, and a zero here means the guest does not occupy
+    #: that cavity at all: ethane's and propane's small-cavity cells are empty.
+    hydrate_langmuir_a: tuple[float, float, float, float]
+    #: The same, for ``B``.
+    hydrate_langmuir_b: tuple[float, float, float, float]
+    #: Whether the substance occupies a hydrate cage at all: NeqSim's ``HydrateFormer``,
+    #: read by every occupancy loop. Water is excluded by name rather than by this.
+    hydrate_former: bool
     #: The ionic charge, in units of the elementary charge; zero for a neutral. **Zero
     #: does not mean "not an ion"**: four rows typed ``"ion"`` carry it - ``h+pzcoo-`` is
     #: a zwitterion and ``caco3``, ``nacl`` and ``cacl2`` are neutral salts filed with
@@ -669,6 +688,19 @@ def _table() -> dict[str, DatabankEntry]:
                 float(row["cpd"]),
                 float(row["cpe"]),
             ),
+            hydrate_langmuir_a=(
+                float(row["hydratea1small"]),
+                float(row["hydratea1large"]),
+                float(row["hydratea2small"]),
+                float(row["hydratea2large"]),
+            ),
+            hydrate_langmuir_b=(
+                float(row["hydrateb1small"]),
+                float(row["hydrateb1large"]),
+                float(row["hydrateb2small"]),
+                float(row["hydrateb2large"]),
+            ),
+            hydrate_former=row["hydrateformer"].strip() == "yes",
             alpha_params={
                 "schwartzentruber": _three(
                     row, "schwartzentruber1", "schwartzentruber2", "schwartzentruber3"
@@ -1300,6 +1332,11 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # an activity model reads, and this is neither.
             henry=HenryRecord(h0=0.0, h1=0.0, h2=0.0, h3=0.0),
             lennard_jones_diameter=0.0,
+            # A card states what a cubic or an activity model reads, and a hydrate's guest
+            # table is neither: a substance a card supplies is not a guest of a cage.
+            hydrate_langmuir_a=(0.0, 0.0, 0.0, 0.0),
+            hydrate_langmuir_b=(0.0, 0.0, 0.0, 0.0),
+            hydrate_former=False,
             ionic_charge=_card_charge(override),
             # The card states metres and the databank holds ångström; this is the crossing.
             deshmukh_mather_diameter=_card_diameter(override),

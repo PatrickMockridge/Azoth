@@ -1,0 +1,77 @@
+id = "eos.hydrate_formation_temperature"
+name = "Hydrate formation temperature"
+kind = "procedure"
+assumptions = [
+    "the fluid is flashed at each trial temperature by `eos.pt_flash`, and the hydrate's guests take their fugacities from the **vapour** phase's - what NeqSim's `setFug` copies in.",
+    "the equilibrium is on **water**: the temperature is where the hydrate's water fugacity equals the fluid's. A flash equalises water's fugacity across the fluid's own phases, so which of them is read does not change the answer - NeqSim prefers the aqueous, and its pressure flash takes the vapour.",
+    "**the solid is the fitted model**, `ComponentHydratePVTsim`: a Langmuir constant `C = A/T exp(B/T)` from the `HydrateA*`/`B*` columns, and the structure taken as the lower of the two coefficients. NeqSim's base `ComponentHydrate` integrates a Kihara potential instead and is not this.",
+    "the reference water phase is a one-component phase of the **same cubic the fluid runs**, which is where its fugacity comes from; the identity `f_w^hydrate = f_w^fluid` therefore settles the temperature rather than the reference.",
+    "the stable structure is reported for the answer, I or II, because it is what decides which cages the occupancies refer to and a caller reading an occupancy needs it.",
+    "no inhibitor: NeqSim's `HydrateInhibitorConcentrationFlash` and `...wtFlash` are the models that add methanol or MEG, and neither is ported here.",
+    "no energy balance. The formation temperature is a statement about phase equilibrium at one pressure, not about how a stream got there.",
+]
+references = [
+    "van der Waals, J. H.; Platteeuw, J. C. (1959). \"Clathrate Solutions.\" Advances in Chemical Physics 2(1), 1-57. DOI 10.1002/9780470143483.ch1.",
+    "Sloan, E. D.; Koh, C. A. (2008). \"Clathrate Hydrates of Natural Gases.\", 3rd ed., CRC Press.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `HydrateFormationTemperatureFlash`, `ComponentHydratePVTsim` and `PhaseHydrate` are the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `HydrateFormationTemperatureFlash`"
+edition = "The path that runs when the system is not a `SystemPitzer`: NeqSim dispatches `PitzerHydrateFlash` for that one, and its coupling to the electrolyte models is carried rather than ported."
+[algorithm]
+scheme = "hydrate_temperature_bisection"
+initialisation = "linear_scan_for_sign_change"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 60
+[algorithm.bracket]
+scheme = "linear_scan_temperature"
+lower = 200.0
+upper = 350.0
+steps = 60
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, resolved against the component databank with the keycard's overrides applied. At least one must be water and one a hydrate former."
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the formation temperature is wanted; the temperature is what is solved for."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions, checked rather than renormalised."
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+description = "the cubic the fluid runs. It is also the equation the hydrate's reference water phase is built from, because NeqSim's is a phase of the *host's* own class - so this is a real choice and not a label: a PR fluid and an SRK one give different temperatures."
+[outputs]
+[outputs.temperature]
+unit = "K"
+description = "the temperature at which the hydrate's water fugacity equals the fluid's."
+[outputs.structure]
+type = "enum"
+values = ["structure_i", "structure_ii"]
+description = "the stable structure at the answer: structure I's cages are two small and six large per forty-six waters, structure II's sixteen small and eight large per a hundred and thirty-six."
+[outputs.iterations]
+unit = "dimensionless"
+description = "flash evaluations taken, counting the scan's and the bisection's together."
+[outputs.residual]
+unit = "dimensionless"
+description = "`f_w^hydrate / f_w^fluid - 1` at the reported temperature."
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; the answer cannot be at or below zero kelvin"
+[implementations]
+python = "azoth.eos.hydrate_formation_temperature"
+rust = "azoth_eos::hydrate_formation_temperature"

@@ -269,6 +269,12 @@ pub struct Mixture {
     /// resolver that knows the names, exactly as [`crate::association::Association`] is
     /// assembled from the records the databank supplies.
     furst: Option<crate::furst_electrolyte::FurstElectrolyte>,
+    /// The hydrate's own tables, when a mixture was resolved from names for one.
+    ///
+    /// The `Mixture` holds critical constants and no names, and the hydrate's guest data is
+    /// keyed by name - so it travels here, assembled by the resolver that knows them. The
+    /// same reason [`Self::furst`] is a field rather than a lookup.
+    hydration: Option<crate::hydrate::Hydration>,
 }
 
 impl Mixture {
@@ -304,6 +310,7 @@ impl Mixture {
             alpha: Alpha::default(),
             associating: false,
             furst: None,
+            hydration: None,
         };
         // Refused here rather than at the first phase evaluation: a mixture whose
         // association cannot be computed is a mistake in what was asked for, and the
@@ -328,6 +335,22 @@ impl Mixture {
     #[must_use]
     pub fn furst(&self) -> Option<&crate::furst_electrolyte::FurstElectrolyte> {
         self.furst.as_ref()
+    }
+
+    /// This mixture, with the hydrate's guest tables attached.
+    ///
+    /// A statement that the mixture *is* one a hydrate can be calculated for - the species
+    /// are the same substances under another model.
+    #[must_use]
+    pub fn with_hydration(mut self, hydration: crate::hydrate::Hydration) -> Self {
+        self.hydration = Some(hydration);
+        self
+    }
+
+    /// The hydrate's tables, if this mixture was resolved for one.
+    #[must_use]
+    pub fn hydration(&self) -> Option<&crate::hydrate::Hydration> {
+        self.hydration.as_ref()
     }
 
     /// This mixture, running the Wertheim association contribution.

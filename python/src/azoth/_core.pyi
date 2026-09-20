@@ -428,6 +428,14 @@ class HeliumPhaseResult:
     warnings: list[Warning]
 
 @final
+class HydrateFormationTemperatureResult:
+    temperature: Qty
+    structure: str
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class HydrogenPhaseResult:
     z_factor: float
     u: Qty
@@ -1455,6 +1463,12 @@ def heat_of_vaporization(
     T: float,
 ) -> HeatOfVaporizationResult: ...
 def helium_phase(T: float, P: float) -> HeliumPhaseResult: ...
+def hydrate_formation_temperature(
+    components: list[str],
+    P: float,
+    z: list[float],
+    eos: str,
+) -> HydrateFormationTemperatureResult: ...
 def hydrogen_phase(
     T: float,
     P: float,

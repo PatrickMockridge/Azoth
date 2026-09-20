@@ -51,9 +51,8 @@ const CHEMICAL_POTENTIAL: [[f64; 4]; 2] = [
 /// that cavity at all: ethane's and propane's small-cavity columns are empty, which is why
 /// their occupancies there are exactly zero rather than merely small.
 #[must_use]
-pub fn langmuir(entry: &Entry, structure: usize, cavity: usize, t: f64) -> f64 {
-    entry.hydrate_langmuir_a[structure][cavity] / t
-        * (entry.hydrate_langmuir_b[structure][cavity] / t).exp()
+pub fn langmuir(guest: &HydrateGuest, structure: usize, cavity: usize, t: f64) -> f64 {
+    guest.langmuir_a[structure][cavity] / t * (guest.langmuir_b[structure][cavity] / t).exp()
 }
 
 /// The occupancy of one cavity type by one guest, `C f_i / (1 + sum_j C_j f_j)`.
@@ -68,7 +67,7 @@ pub fn langmuir(entry: &Entry, structure: usize, cavity: usize, t: f64) -> f64 {
 /// solver finds is a different one - which is how this was found.
 #[must_use]
 pub fn occupancy(
-    entries: &[&Entry],
+    guests: &[HydrateGuest],
     ref_fugacities: &[f64],
     structure: usize,
     cavity: usize,
@@ -76,17 +75,17 @@ pub fn occupancy(
 ) -> Vec<f64> {
     const PA_PER_BAR: f64 = 1.0e5;
     let mut denominator = 1.0;
-    for (entry, fugacity) in entries.iter().zip(ref_fugacities) {
-        if entry.hydrate_former {
-            denominator += langmuir(entry, structure, cavity, t) * fugacity / PA_PER_BAR;
+    for (guest, fugacity) in guests.iter().zip(ref_fugacities) {
+        if guest.former {
+            denominator += langmuir(guest, structure, cavity, t) * fugacity / PA_PER_BAR;
         }
     }
-    entries
+    guests
         .iter()
         .zip(ref_fugacities)
-        .map(|(entry, fugacity)| {
-            if entry.hydrate_former {
-                langmuir(entry, structure, cavity, t) * fugacity / PA_PER_BAR / denominator
+        .map(|(guest, fugacity)| {
+            if guest.former {
+                langmuir(guest, structure, cavity, t) * fugacity / PA_PER_BAR / denominator
             } else {
                 0.0
             }
@@ -128,7 +127,7 @@ fn chemical_potential(structure: usize, t: f64, p: f64) -> f64 {
 ///   no value. That is a real refusal rather than a clamp: a saturation of one means the
 ///   occupancy model has left the region it was fitted to.
 pub fn water_fugacity_coefficient(
-    entries: &[&Entry],
+    guests: &[HydrateGuest],
     ref_fugacities: &[f64],
     t: f64,
     p: f64,
@@ -138,7 +137,7 @@ pub fn water_fugacity_coefficient(
 ) -> Result<f64, AzothError> {
     let mut val = 0.0;
     for (cavity, per_water) in CAVITIES_PER_WATER[structure].iter().enumerate() {
-        let occupied: f64 = occupancy(entries, ref_fugacities, structure, cavity, t)
+        let occupied: f64 = occupancy(guests, ref_fugacities, structure, cavity, t)
             .iter()
             .sum();
         if occupied >= 1.0 {
@@ -169,7 +168,7 @@ pub fn water_fugacity_coefficient(
 /// # Errors
 /// * [`AzothError::OutOfRange`] from either structure's cavity sum.
 pub fn stable_structure(
-    entries: &[&Entry],
+    guests: &[HydrateGuest],
     ref_fugacities: &[f64],
     t: f64,
     p: f64,
@@ -177,7 +176,7 @@ pub fn stable_structure(
     reference_water_fugacity: f64,
 ) -> Result<(usize, f64), AzothError> {
     let first = water_fugacity_coefficient(
-        entries,
+        guests,
         ref_fugacities,
         t,
         p,
@@ -186,7 +185,7 @@ pub fn stable_structure(
         reference_water_fugacity,
     )?;
     let second = water_fugacity_coefficient(
-        entries,
+        guests,
         ref_fugacities,
         t,
         p,
@@ -199,4 +198,86 @@ pub fn stable_structure(
     } else {
         (1, second)
     })
+}
+
+/// A gas the mixture's fluid carries, and whether the hydrate takes it into a cage.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateGuest {
+    /// The substance's name, as the databank spells it.
+    pub name: String,
+    /// The Langmuir pair, `[structure][cavity]`, in K.
+    pub langmuir_a: [[f64; 2]; 2],
+    /// The same pair's `B`, in K.
+    pub langmuir_b: [[f64; 2]; 2],
+    /// Whether it occupies a cage at all.
+    pub former: bool,
+}
+
+/// What a mixture needs to have a hydrate calculated for it, carried beside the fluid.
+///
+/// The `Mixture` holds critical constants and nothing else, so a substance's *name* - which is
+/// what the hydrate's tables are keyed by, and which decides whether it is a guest - has to
+/// travel here. The same shape [`crate::furst_electrolyte`] uses, and for the same reason.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Hydration {
+    /// One entry per component, in the fluid's own order.
+    pub guests: Vec<HydrateGuest>,
+    /// Where water is, or `None` if the fluid has none - and a hydrate needs one.
+    pub water_index: Option<usize>,
+}
+
+/// A fluid with the hydrate's tables attached, built from names.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if a name is not in the databank, if there is no water, or
+///   if nothing in the mixture is a hydrate former.
+pub fn hydrate_mixture_of(
+    names: &[&str],
+    cubic: crate::Cubic,
+    overlay: Option<&crate::databank::Overlay>,
+) -> azoth_core::Result<(
+    crate::mixture::Mixture,
+    crate::molar_enthalpy_entropy::IdealGasModel,
+)> {
+    let entries: Vec<Entry> = names
+        .iter()
+        .map(|name| crate::databank::entry(name, overlay))
+        .collect::<azoth_core::Result<Vec<_>>>()?;
+
+    let guests: Vec<HydrateGuest> = entries
+        .iter()
+        .map(|entry| HydrateGuest {
+            name: entry.name.clone(),
+            langmuir_a: entry.hydrate_langmuir_a,
+            langmuir_b: entry.hydrate_langmuir_b,
+            former: entry.hydrate_former,
+        })
+        .collect();
+
+    let water_index = entries.iter().position(|entry| entry.name == "water");
+    if water_index.is_none() {
+        return Err(AzothError::invalid_input(
+            "components",
+            "no water: a hydrate is water's, so a fluid without it has no formation \
+             temperature"
+                .to_string(),
+        ));
+    }
+    if !guests.iter().any(|guest| guest.former) {
+        return Err(AzothError::invalid_input(
+            "components",
+            "nothing in this mixture is a hydrate former, so no cage would have a guest and \
+             the hydrate's fugacity would be its empty one"
+                .to_string(),
+        ));
+    }
+
+    let (mixture, ideal_gas) = crate::databank::mixture_of(names, cubic, overlay)?;
+    Ok((
+        mixture.with_hydration(Hydration {
+            guests,
+            water_index,
+        }),
+        ideal_gas,
+    ))
 }
