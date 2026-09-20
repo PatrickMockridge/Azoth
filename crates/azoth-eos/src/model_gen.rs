@@ -9,6 +9,7 @@
 //!   - specs/models/eos/capillary_dew_point.toml
 //!   - specs/models/eos/co2_phase.toml
 //!   - specs/models/eos/critical_point.toml
+//!   - specs/models/eos/desmukh_mather_phase.toml
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/eos_cg_phase.toml
@@ -1113,6 +1114,206 @@ pub static CRITICAL_POINT_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&CRITICAL_POINT_ALGORITHM),
     checks: CRITICAL_POINT_CHECKS,
     cases: CRITICAL_POINT_CASES,
+};
+
+static DESMUKH_MATHER_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static DESMUKH_MATHER_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "mdea_plus_chloride_co2_at_313_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 313.15), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "MDEA+", "Cl-", "CO2"])],
+        strings: &[],
+        vectors: &[("x", &[0.89, 0.04, 0.04, 0.03])],
+        matrices: &[],
+        expected: &[
+            ("ionic_strength", 2.494799901455404),
+            ("solvent_molar_mass", 0.018015),
+        ],
+        expected_vectors: &[
+            (
+                "gamma",
+                &[
+                    1.12359550561798,
+                    0.429375480220153,
+                    0.333064679011398,
+                    1.57647906673492,
+                ],
+            ),
+            (
+                "ln_gamma",
+                &[
+                    0.116533816255951,
+                    -0.84542349758949,
+                    -1.09941857659668,
+                    0.455193921598877,
+                ],
+            ),
+            (
+                "molality",
+                &[
+                    55.509297807382744,
+                    2.494799901455404,
+                    2.494799901455404,
+                    1.871099926091553,
+                ],
+            ),
+            (
+                "ln_phi",
+                &[
+                    -4.09271615638785,
+                    -34.538776394910684,
+                    -34.538776394910684,
+                    3.1621179888375215,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "sodium_chloride_at_313_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 313.15), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "Na+", "Cl-"])],
+        strings: &[],
+        vectors: &[("x", &[0.9, 0.05, 0.05])],
+        matrices: &[],
+        expected: &[
+            ("ionic_strength", 3.08384987818793),
+            ("solvent_molar_mass", 0.018015),
+        ],
+        expected_vectors: &[
+            (
+                "gamma",
+                &[1.11111111111111, 0.302269779010361, 0.302269779010361],
+            ),
+            (
+                "ln_gamma",
+                &[0.105360515657826, -1.19643535238806, -1.19643535238806],
+            ),
+            (
+                "molality",
+                &[55.509297807382744, 3.08384987818793, 3.08384987818793],
+            ),
+            (
+                "ln_phi",
+                &[
+                    -4.1038894569859705,
+                    -34.538776394910684,
+                    -34.538776394910684,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "water_methanol_sodium_chloride_at_313_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 313.15), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "methanol", "Na+", "Cl-"])],
+        strings: &[],
+        vectors: &[("x", &[0.85, 0.05, 0.05, 0.05])],
+        matrices: &[],
+        expected: &[
+            ("ionic_strength", 2.9559824651120175),
+            ("solvent_molar_mass", 0.018794277777777774),
+        ],
+        expected_vectors: &[
+            (
+                "gamma",
+                &[
+                    1.11111111111111,
+                    1.11111111111111,
+                    0.307561742004006,
+                    0.307561742004006,
+                ],
+            ),
+            (
+                "ln_gamma",
+                &[
+                    0.105360515657826,
+                    0.105360515657826,
+                    -1.17907942488568,
+                    -1.17907942488568,
+                ],
+            ),
+            (
+                "molality",
+                &[
+                    50.251701906904295,
+                    2.9559824651120175,
+                    2.9559824651120175,
+                    2.9559824651120175,
+                ],
+            ),
+            (
+                "ln_phi",
+                &[
+                    -4.1038894569859705,
+                    -2.5413181254443002,
+                    -34.538776394910684,
+                    -34.538776394910684,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `eos.desmukh_mather_phase`.
+pub static DESMUKH_MATHER_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.desmukh_mather_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: DESMUKH_MATHER_PHASE_CHECKS,
+    cases: DESMUKH_MATHER_PHASE_CASES,
 };
 
 static DEW_PRESSURE_CHECKS: &[SpecCheck] = &[
@@ -6912,6 +7113,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &CAPILLARY_DEW_POINT_SPEC,
     &CO2_PHASE_SPEC,
     &CRITICAL_POINT_SPEC,
+    &DESMUKH_MATHER_PHASE_SPEC,
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
     &EOS_CG_PHASE_SPEC,

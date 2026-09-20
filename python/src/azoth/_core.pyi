@@ -277,6 +277,16 @@ class CriticalPointResult:
     warnings: list[Warning]
 
 @final
+class DesmukhMatherPhaseResult:
+    gamma: list[float]
+    ln_gamma: list[float]
+    molality: list[float]
+    ionic_strength: float
+    solvent_molar_mass: float
+    ln_phi: list[float]
+    warnings: list[Warning]
+
+@final
 class DewPressureResult:
     pressure: Qty
     incipient: list[float]
@@ -1270,6 +1280,12 @@ def critical_point(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> CriticalPointResult: ...
+def desmukh_mather_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    x: list[float],
+) -> DesmukhMatherPhaseResult: ...
 def dew_pressure(
     Tc: list[float],
     Pc: list[float],

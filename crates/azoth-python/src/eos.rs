@@ -18,23 +18,23 @@ use crate::results::{
     PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyArgonSolidPhaseResult, PyBwrsPhaseResult,
     PyCapillaryDewPointResult, PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
-    PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
-    PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult, PyGeWilsonPhaseResult,
-    PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult,
-    PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult, PyKentEisenbergPhaseResult,
-    PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult,
-    PyMatcopAlphaResult, PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult,
-    PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
-    PyNitricSulfuricAcidVaporPressureResult, PyNrtlActivityCoefficientsResult,
-    PyParachorSurfaceTensionResult, PyParahydrogenSolidPhaseResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
-    PyPitzerPhaseResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
-    PyPrDelft1998AlphaResult, PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult,
-    PyPrLeeKeslerAlphaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
-    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
-    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceBinaryResult, PyRachfordRiceResult,
-    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PyDesmukhMatherPhaseResult, PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult,
+    PyGeUnifacPhaseResult, PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult,
+    PyGeWilsonPhaseResult, PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult,
+    PyHeatOfVaporizationResult, PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult,
+    PyKentEisenbergPhaseResult, PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult,
+    PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult, PyMatcopPrAlphaResult,
+    PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult,
+    PyMollerupAlphaResult, PyNitricSulfuricAcidVaporPressureResult,
+    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
+    PyParahydrogenSolidPhaseResult, PyPhFlashResult, PyPhaseBoundaryResult,
+    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPitzerPhaseResult,
+    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
+    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
+    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
+    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
+    PyPvFlashResult, PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceBinaryResult,
+    PyRachfordRiceResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
     PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
     PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
@@ -1240,6 +1240,28 @@ pub fn ge_wilson_phase(
     };
     azoth_eos::ge_wilson_phase::ge_wilson_phase(&params, &mixture, T, P, &x)
         .map(|r| PyGeWilsonPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The activity coefficients of a Desmukh-Mather electrolyte phase.
+///
+/// The extended Debye-Huckel plus pair-sum expression, then NeqSim's mole-fraction
+/// conversion, and the `(gamma / gamma^infinity) H / P` fugacity branch. The solvent is
+/// whatever `REFERENCESTATETYPE` says it is, not whatever is named `water`.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x))]
+#[pyo3(text_signature = "(components, T, P, x)")]
+#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
+pub fn desmukh_mather_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+) -> PyResult<PyDesmukhMatherPhaseResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::desmukh_mather_phase::desmukh_mather_phase(&names, T, P, &x)
+        .map(|r| PyDesmukhMatherPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

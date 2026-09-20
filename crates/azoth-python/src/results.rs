@@ -20,9 +20,9 @@ use azoth_eos::results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, CapillaryDewPointResult, ChungConductivityResult,
     ChungViscosityResult, Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult,
-    CriticalPointResult, DewPressureResult, DewTemperatureResult, EosCgPhaseResult,
-    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
-    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
+    CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult,
+    EosCgPhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
+    GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
     HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
@@ -2356,6 +2356,62 @@ impl From<&GeWilsonPhaseResult> for PyGeWilsonPhaseResult {
                     unit: "Pa".to_string(),
                 })
                 .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.desmukh_mather_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "DesmukhMatherPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyDesmukhMatherPhaseResult {
+    /// The activity coefficient of each component.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// The natural logarithm of each activity coefficient.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// Each component's molality, in mol/kg of solvent.
+    #[pyo3(get)]
+    pub molality: Vec<f64>,
+    /// The ionic strength, in mol/kg.
+    #[pyo3(get)]
+    pub ionic_strength: f64,
+    /// The mean molar mass of the `solvent`-reference components, in kg/mol.
+    #[pyo3(get)]
+    pub solvent_molar_mass: f64,
+    /// The natural logarithm of each fugacity coefficient.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyDesmukhMatherPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "DesmukhMatherPhaseResult(I={}, ln_phi={:?})",
+            self.ionic_strength, self.ln_phi
+        )
+    }
+}
+
+impl From<&DesmukhMatherPhaseResult> for PyDesmukhMatherPhaseResult {
+    fn from(r: &DesmukhMatherPhaseResult) -> Self {
+        Self {
+            gamma: r.gamma.clone(),
+            ln_gamma: r.ln_gamma.clone(),
+            molality: r.molality.clone(),
+            ionic_strength: r.ionic_strength,
+            solvent_molar_mass: r.solvent_molar_mass,
+            ln_phi: r.ln_phi.clone(),
             warnings: transport(&r.warnings),
         }
     }
@@ -6121,6 +6177,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         GeWilsonPhaseResult::CALC_ID => GeWilsonPhaseResult::FIELDS.to_vec(),
         PitzerPhaseResult::CALC_ID => PitzerPhaseResult::FIELDS.to_vec(),
         KentEisenbergPhaseResult::CALC_ID => KentEisenbergPhaseResult::FIELDS.to_vec(),
+        DesmukhMatherPhaseResult::CALC_ID => DesmukhMatherPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         CapillaryDewPointResult::CALC_ID => CapillaryDewPointResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),

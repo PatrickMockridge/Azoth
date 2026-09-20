@@ -71,6 +71,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.capillary_dew_point`](./capillary_dew_point.md) | `capillary_dew_point_newton` | NeqSim 3.20.0 `CapillaryDewPointFlash` |
 | [`eos.co2_phase`](./co2_phase.md) | `newton_density_solve` | Span, R.; Wagner, W. (1996) |
 | [`eos.critical_point`](./critical_point.md) | `heidemann_khalil_critical` | Heidemann, R. A.; Khalil, A. M. (1980) |
+| [`eos.desmukh_mather_phase`](./desmukh_mather_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseDesmukhMather` |
 | [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.dew_temperature`](./dew_temperature.md) | `dew_temperature_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.eos_cg_phase`](./eos_cg_phase.md) | `log_volume_newton` | Gernert, J.; Span, R. (2016) |

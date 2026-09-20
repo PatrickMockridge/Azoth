@@ -2457,6 +2457,26 @@ class KentEisenbergPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class DesmukhMatherPhaseResult(_HasWarnings):
+    """Result of ``eos.desmukh_mather_phase``."""
+
+    #: The activity coefficient of each component.
+    gamma: tuple[float, ...]
+    #: The natural logarithm of each activity coefficient.
+    ln_gamma: tuple[float, ...]
+    #: Each component's molality ``n_i / m_solvent``, in mol/kg of solvent.
+    molality: tuple[float, ...]
+    #: ``I = 1/2 sum m_i z_i^2``, in mol/kg.
+    ionic_strength: float
+    #: The mean molar mass of the ``solvent``-reference components, in kg/mol.
+    solvent_molar_mass: float
+    #: The natural logarithm of each fugacity coefficient.
+    ln_phi: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class GeUniquacPhaseResult(_HasWarnings):
     """Result of ``eos.ge_uniquac_phase``."""
 

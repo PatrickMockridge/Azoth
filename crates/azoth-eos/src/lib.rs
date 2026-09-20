@@ -54,6 +54,7 @@ pub mod costald_molar_volume;
 pub mod critical_point;
 pub mod cubic;
 pub mod databank;
+pub mod desmukh_mather_phase;
 pub mod dew_pressure;
 pub mod dew_temperature;
 pub mod dual;
@@ -204,6 +205,7 @@ pub use co2_water_diffusivity::co2_water_diffusivity;
 pub use costald_molar_volume::costald_molar_volume;
 pub use critical_point::critical_point;
 pub use cubic::Cubic;
+pub use desmukh_mather_phase::desmukh_mather_phase;
 pub use dew_pressure::dew_pressure;
 pub use dew_temperature::dew_temperature;
 pub use eos_cg_phase::eos_cg_phase;
@@ -264,14 +266,14 @@ pub use results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DewPressureResult, DewTemperatureResult, EosCgPhaseResult, GeNrtlFlashResult,
-    GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult,
-    GeWilsonPhaseResult, Gerg2008PhaseResult, HaydukMinhasDiffusivityResult,
-    HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
-    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EosCgPhaseResult,
+    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
+    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
+    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, Phase, PitzerDataset,
     PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
     PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,

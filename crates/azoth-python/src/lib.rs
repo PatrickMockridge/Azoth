@@ -233,6 +233,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::ge_wilson_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pitzer_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::kent_eisenberg_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::desmukh_mather_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::umrpr_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::unifac_activity_coefficients, m)?)?;
     m.add_function(wrap_pyfunction!(eos::unifac_psrk_activity_coefficients, m)?)?;

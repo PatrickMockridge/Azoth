@@ -2414,6 +2414,49 @@ impl CalcResult for KentEisenbergPhaseResult {
     }
 }
 
+/// Result of `eos.desmukh_mather_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DesmukhMatherPhaseResult {
+    /// The activity coefficient of each component, in the mole-fraction scale that
+    /// `ComponentDesmukhMather.getGamma` converts into.
+    pub gamma: Vec<f64>,
+    /// The natural logarithm of each activity coefficient.
+    pub ln_gamma: Vec<f64>,
+    /// Each component's molality `n_i / m_solvent`, in mol/kg.
+    pub molality: Vec<f64>,
+    /// `I = 1/2 sum m_i z_i^2`, in mol/kg.
+    pub ionic_strength: f64,
+    /// The mean molar mass of the `solvent`-reference components, in kg/mol.
+    ///
+    /// **A mixture mean and not water's**, because this model selects its solvent by
+    /// `REFERENCESTATETYPE` rather than by the name - so an amine tagged `solvent` joins
+    /// the average, and this number multiplies every activity coefficient.
+    pub solvent_molar_mass: f64,
+    /// The natural logarithm of each component's fugacity coefficient: `ln(gamma P0 / P)`
+    /// for a solvent, `ln((gamma / gamma^inf) H / P)` for a neutral solute, and `ln(1e-15)`
+    /// for an ion.
+    pub ln_phi: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for DesmukhMatherPhaseResult {
+    const CALC_ID: &'static str = "eos.desmukh_mather_phase";
+    const FIELDS: &'static [&'static str] = &[
+        "gamma",
+        "ln_gamma",
+        "molality",
+        "ionic_strength",
+        "solvent_molar_mass",
+        "ln_phi",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.ge_uniquac_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeUniquacPhaseResult {

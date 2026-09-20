@@ -45,6 +45,7 @@ from azoth.core.result import (
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DarcyWeisbachResult,
+    DesmukhMatherPhaseResult,
     DewPressureResult,
     DewTemperatureResult,
     EosCgPhaseResult,
@@ -2499,6 +2500,33 @@ def ge_wilson_phase(
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),
         p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def desmukh_mather_phase(
+    components: Sequence[str], T: Q, P: Q, x: Sequence[float]
+) -> DesmukhMatherPhaseResult:
+    """The activity coefficients of a Desmukh-Mather phase, computed in Rust.
+
+    Only the names and the state cross: which component is the solvent, which pairs carry
+    parameters and which branch each component's fugacity coefficient takes are all read
+    from the Rust side's own databank.
+    """
+    spec = _models_gen.model("eos.desmukh_mather_phase")
+    result = _core.desmukh_mather_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+    )
+    return DesmukhMatherPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        molality=tuple(result.molality),
+        ionic_strength=result.ionic_strength,
+        solvent_molar_mass=result.solvent_molar_mass,
+        ln_phi=tuple(result.ln_phi),
         warnings=_warnings(result.warnings),
     )
 

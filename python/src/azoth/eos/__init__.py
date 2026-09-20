@@ -83,6 +83,7 @@ from azoth.core.result import (
     Co2WaterDiffusivityResult,
     CostaldMolarVolumeResult,
     CriticalPointResult,
+    DesmukhMatherPhaseResult,
     DewPressureResult,
     DewTemperatureResult,
     EosCgPhaseResult,
@@ -227,6 +228,7 @@ __all__ = [
     "component",
     "costald_molar_volume",
     "critical_point",
+    "desmukh_mather_phase",
     "dew_pressure",
     "dew_temperature",
     "eos_cg_phase",
@@ -367,6 +369,7 @@ _DEW_TEMPERATURE = "eos.dew_temperature"
 _CAPILLARY_DEW_POINT = "eos.capillary_dew_point"
 _PH_FLASH = "eos.ph_flash"
 _KENT_EISENBERG_PHASE = "eos.kent_eisenberg_phase"
+_DESMUKH_MATHER_PHASE = "eos.desmukh_mather_phase"
 _PITZER_PHASE = "eos.pitzer_phase"
 _PS_FLASH = "eos.ps_flash"
 _TH_FLASH = "eos.th_flash"
@@ -2032,6 +2035,34 @@ def ge_wilson_phase(
     """
     return resolve(_GE_WILSON_PHASE)(  # type: ignore[no-any-return]
         params=params, mixture=mixture, T=T, P=P, x=x
+    )
+
+
+def desmukh_mather_phase(
+    components: Sequence[str],
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+) -> DesmukhMatherPhaseResult:
+    """The activity coefficients of a phase whose non-ideality is Desmukh and Mather's.
+
+    An extended Debye-Huckel term plus a pairwise sum, then NeqSim's mole-fraction
+    conversion. ``components`` are names because the model reads the databank for three
+    separate decisions: which component is the *solvent* (by ``REFERENCESTATETYPE``, not by
+    the name ``water``), which pairs carry parameters, and which branch each component's
+    fugacity coefficient takes.
+
+    Raises:
+        InvalidInputError: if a component is not in the databank, if ``x`` is not a
+            composition, or if the mixture carries no ``solvent``-reference component.
+        PropertyUnavailableError: if a ``solvent`` component carries no Antoine correlation
+            or a neutral solute one carries no Henry row.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.desmukh_mather_phase`.
+    """
+    return resolve(_DESMUKH_MATHER_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, x=x
     )
 
 

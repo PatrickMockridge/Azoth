@@ -76,6 +76,7 @@
   - [Capillary dew point](./eos/capillary_dew_point.md)
   - [CO2 reference phase state](./eos/co2_phase.md)
   - [Mixture critical point](./eos/critical_point.md)
+  - [Activity coefficients of a Desmukh-Mather electrolyte phase](./eos/desmukh_mather_phase.md)
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Dew-point temperature](./eos/dew_temperature.md)
   - [EOS-CG phase state](./eos/eos_cg_phase.md)

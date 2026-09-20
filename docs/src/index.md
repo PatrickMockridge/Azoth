@@ -131,6 +131,7 @@ Four sections, and the difference between them is the point:
 - [`eos.capillary_dew_point`](./eos/capillary_dew_point.md) — Capillary dew point
 - [`eos.co2_phase`](./eos/co2_phase.md) — CO2 reference phase state
 - [`eos.critical_point`](./eos/critical_point.md) — Mixture critical point
+- [`eos.desmukh_mather_phase`](./eos/desmukh_mather_phase.md) — Activity coefficients of a Desmukh-Mather electrolyte phase
 - [`eos.dew_pressure`](./eos/dew_pressure.md) — Dew-point pressure
 - [`eos.dew_temperature`](./eos/dew_temperature.md) — Dew-point temperature
 - [`eos.eos_cg_phase`](./eos/eos_cg_phase.md) — EOS-CG phase state
