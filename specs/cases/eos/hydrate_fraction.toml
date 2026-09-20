@@ -1,0 +1,75 @@
+model = "eos.hydrate_fraction"
+[[cases]]
+id = "the_probes_feed_at_288_15_k"
+tolerance = 1e-09
+source = """**This library's own answer, recorded, because NeqSim's is not one.** Its
+`TPHydrateFlash` returns its `maxHydrateFraction` bound at this state - and returns the *same*
+fraction at 288.15, 283.15 and 278.15 K, because that bound is a constant - and leaves phases
+holding `+0.0874` water and `-0.0734` methane against the feed, as
+`validation/neqsim/captures/hydrate_fraction_probe.tsv` records. So the oracle here is the
+model's own solve, and what the case pins is the invariant beside it.
+
+`balance_error` is that invariant: the largest `|sum_p beta_p x_ip - z_i|` over the
+components at the answer. It is zero on this model by construction and `0.0874` on NeqSim's
+state, so a case that pinned only `beta` would not say which of the two it is looking at.
+
+`residual` is the objective at the feed, which is what decides between no hydrate and all of
+the water; `eos.hydrate_formation_temperature` drives the same quantity to zero, so the two
+models are checked against one equilibrium rather than against each other."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+T = 288.15
+P = 10000000.0
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+beta = 0.1151303722044179
+structure = "structure_ii"
+balance_error = 0.0
+[[cases]]
+id = "the_probes_feed_at_283_15_k"
+tolerance = 1e-09
+source = """The probe's second state, and the one that says the fraction moves with the
+temperature: NeqSim returns `0.116056652840164` here as it does at 288.15 K, where this model
+returns a value `1.51e-3` lower - its bound is `z_water/w_water`, and `w_water` is the
+hydrate's own composition, which the cages refill as the temperature falls."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+T = 283.15
+P = 10000000.0
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+beta = 0.1153041888231433
+structure = "structure_ii"
+balance_error = 0.0
+[[cases]]
+id = "the_probes_feed_at_278_15_k"
+tolerance = 1e-09
+source = """The probe's third state. The three are pinned together because the temperature
+is the axis NeqSim's own answer does not have."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+T = 278.15
+P = 10000000.0
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+beta = 0.1154586779476380
+structure = "structure_ii"
+balance_error = 0.0

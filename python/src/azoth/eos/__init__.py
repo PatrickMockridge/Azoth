@@ -101,6 +101,7 @@ from azoth.core.result import (
     HeatOfVaporizationResult,
     HeliumPhaseResult,
     HydrateFormationTemperatureResult,
+    HydrateFractionResult,
     HydrogenPhaseResult,
     IdealGasCpResult,
     KentEisenbergPhaseResult,
@@ -251,6 +252,8 @@ __all__ = [
     "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
     "helium_phase",
+    "hydrate_formation_temperature",
+    "hydrate_fraction",
     "hydrogen_phase",
     "ideal_gas_cp",
     "kent_eisenberg_phase",
@@ -345,6 +348,7 @@ _AMMONIA_PHASE = "eos.ammonia_phase"
 _CO2_PHASE = "eos.co2_phase"
 _HELIUM_PHASE = "eos.helium_phase"
 _HYDRATE_FORMATION_TEMPERATURE = "eos.hydrate_formation_temperature"
+_HYDRATE_FRACTION = "eos.hydrate_fraction"
 _FREEZING_POINT = "eos.freezing_point"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _WATER_PHASE = "eos.water_phase"
@@ -1936,6 +1940,37 @@ def hydrate_formation_temperature(
     """
     return resolve(_HYDRATE_FORMATION_TEMPERATURE)(  # type: ignore[no-any-return]
         components=components, P=P, z=z, eos=eos
+    )
+
+
+def hydrate_fraction(
+    components: list[str], T: Q, P: Q, z: list[float], eos: str = "srk"
+) -> HydrateFractionResult:
+    """The fraction of a feed that is hydrate at a temperature and pressure.
+
+    Below its formation temperature a hydrate takes **the whole of the water there is**:
+    while an aqueous phase is present it pins water's fugacity, so the objective is flat and
+    a hydrate that is stable at all is stable at every fraction up to the bound, and the
+    answer goes from zero above the formation temperature to that bound below it.
+
+    ``balance_error`` is the invariant this model exists to keep - the largest
+    ``|sum_p beta_p x_ip - z_i|`` over the components at the answer. It is zero here by
+    construction and ``0.0874`` on NeqSim's own state at the same feed.
+
+    ``components`` names the substances because the hydrate's guest tables are keyed by name -
+    a mixture carries critical constants and no names. ``eos`` is the cubic the fluid runs,
+    and it is also the one the reference water phase is built from.
+
+    Raises:
+        InvalidInputError: if the fluid has no water, or nothing in it occupies a cage.
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or a trial's cavity sum has no
+            value.
+        SolverNotConvergedError: if the fraction and the composition do not settle.
+
+    See :func:`azoth.eos.reference.hydrate_fraction`.
+    """
+    return resolve(_HYDRATE_FRACTION)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z, eos=eos
     )
 
 

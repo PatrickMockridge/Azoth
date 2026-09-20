@@ -112,7 +112,7 @@ def hydrate_formation_temperature(
         fugacities = _guest_fugacities(flash, z, p_si)
         reference = _reference_water_fugacity(eos, t, p_si)
         _structure, coefficient = _hydrate.stable_structure(
-            hydration.guests, fugacities, t, p_si, water_index, reference
+            hydration.guests, fugacities, t, p_si, reference
         )
         return coefficient * p_si / fugacities[water_index] - 1.0
 
@@ -149,7 +149,7 @@ def hydrate_formation_temperature(
             fugacities = _guest_fugacities(flash, z, p_si)
             reference = _reference_water_fugacity(eos, mid, p_si)
             structure, _coefficient = _hydrate.stable_structure(
-                hydration.guests, fugacities, mid, p_si, water_index, reference
+                hydration.guests, fugacities, mid, p_si, reference
             )
             return HydrateFormationTemperatureResult(
                 temperature=from_si(mid, "K"),

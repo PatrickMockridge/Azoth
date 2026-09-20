@@ -117,14 +117,8 @@ pub fn hydrate_formation_temperature(
         let flash = pt_flash(mixture, kelvins(t), p, z)?;
         let fugacities = guest_fugacities(&flash, z, p.value);
         let reference = reference_water_fugacity(mixture, t, p.value)?;
-        let (_structure, coefficient) = hydrate::stable_structure(
-            &hydration.guests,
-            &fugacities,
-            t,
-            p.value,
-            water_index,
-            reference,
-        )?;
+        let (_structure, coefficient) =
+            hydrate::stable_structure(&hydration.guests, &fugacities, t, p.value, reference)?;
         Ok(coefficient * p.value / fugacities[water_index] - 1.0)
     };
 
@@ -162,17 +156,7 @@ pub fn hydrate_formation_temperature(
         let value = residual(mid)?;
         iterations += 1;
         if value.abs() < algorithm.tolerance || hi - lo < 1.0e-9 {
-            return finish(
-                mixture,
-                p,
-                z,
-                hydration,
-                water_index,
-                mid,
-                value,
-                iterations,
-                warnings,
-            );
+            return finish(mixture, p, z, hydration, mid, value, iterations, warnings);
         }
         if lo_value * value <= 0.0 {
             hi = mid;
@@ -196,7 +180,6 @@ fn finish(
     p: Pressure,
     z: &[f64],
     hydration: &hydrate::Hydration,
-    water_index: usize,
     temperature: f64,
     residual: f64,
     iterations: u32,
@@ -210,7 +193,6 @@ fn finish(
         &fugacities,
         temperature,
         p.value,
-        water_index,
         reference,
     )?;
 

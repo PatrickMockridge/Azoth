@@ -25,6 +25,7 @@
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
 //!   - specs/models/eos/hydrate_formation_temperature.toml
+//!   - specs/models/eos/hydrate_fraction.toml
 //!   - specs/models/eos/hydrogen_phase.toml
 //!   - specs/models/eos/kent_eisenberg_phase.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
@@ -3196,6 +3197,138 @@ pub static HYDRATE_FORMATION_TEMPERATURE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&HYDRATE_FORMATION_TEMPERATURE_ALGORITHM),
     checks: HYDRATE_FORMATION_TEMPERATURE_CHECKS,
     cases: HYDRATE_FORMATION_TEMPERATURE_CASES,
+};
+
+static HYDRATE_FRACTION_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states, and the dielectric polynomial is not involved here but the flash is",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static HYDRATE_FRACTION_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_probes_feed_at_288_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 288.15), ("P", 10000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[
+                0.7810182896688087,
+                0.09985170538803756,
+                0.020266930301532374,
+                0.09886307464162135,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("beta", 0.1151303722044179), ("balance_error", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+    },
+    TestCase {
+        id: "the_probes_feed_at_283_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 283.15), ("P", 10000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[
+                0.7810182896688087,
+                0.09985170538803756,
+                0.020266930301532374,
+                0.09886307464162135,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("beta", 0.1153041888231433), ("balance_error", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+    },
+    TestCase {
+        id: "the_probes_feed_at_278_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("T", 278.15), ("P", 10000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "water"])],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[
+                0.7810182896688087,
+                0.09985170538803756,
+                0.020266930301532374,
+                0.09886307464162135,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("beta", 0.115458677947638), ("balance_error", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[("structure", "structure_ii")],
+    },
+];
+
+static HYDRATE_FRACTION_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "hydrate_bound_fixed_point",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 40,
+    bracket: None,
+    initialisation: Some("feed_fluid"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.hydrate_fraction`.
+pub static HYDRATE_FRACTION_SPEC: ModelSpec = ModelSpec {
+    id: "eos.hydrate_fraction",
+    kind: "procedure",
+    algorithm: Some(&HYDRATE_FRACTION_ALGORITHM),
+    checks: HYDRATE_FRACTION_CHECKS,
+    cases: HYDRATE_FRACTION_CASES,
 };
 
 static HYDROGEN_PHASE_CHECKS: &[SpecCheck] = &[
@@ -7872,6 +8005,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
     &HYDRATE_FORMATION_TEMPERATURE_SPEC,
+    &HYDRATE_FRACTION_SPEC,
     &HYDROGEN_PHASE_SPEC,
     &KENT_EISENBERG_PHASE_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,

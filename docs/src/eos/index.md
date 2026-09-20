@@ -87,6 +87,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.gerg2008_phase`](./gerg2008_phase.md) | `log_volume_newton` | Kunz, O.; Wagner, W. (2012) |
 | [`eos.helium_phase`](./helium_phase.md) | `newton_density_solve` | Vega (NIST IR 8474) helium equation of state |
 | [`eos.hydrate_formation_temperature`](./hydrate_formation_temperature.md) | `hydrate_temperature_bisection` | NeqSim 3.20.0 `HydrateFormationTemperatureFlash` |
+| [`eos.hydrate_fraction`](./hydrate_fraction.md) | `hydrate_bound_fixed_point` | NeqSim 3.20.0 `TPHydrateFlash`, with the composition and the bound corrected |
 | [`eos.hydrogen_phase`](./hydrogen_phase.md) | `density_solve_on_the_selected_root` | Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009) |
 | [`eos.kent_eisenberg_phase`](./kent_eisenberg_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseKentEisenberg` |
 | [`eos.mason_saxena_conductivity`](./mason_saxena_conductivity.md) | `direct composition` | Mason, E. A.; Saxena, S. C. (1958); Chung et al. (1988) |

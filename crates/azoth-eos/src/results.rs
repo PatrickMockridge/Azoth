@@ -591,6 +591,39 @@ impl HydrateStructure {
     }
 }
 
+/// Result of `eos.hydrate_fraction`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateFractionResult {
+    /// The fraction of the feed's moles that is hydrate.
+    pub beta: f64,
+    /// The stable structure.
+    pub structure: HydrateStructure,
+    /// The largest `|sum_p beta_p x_ip - z_i|` over the components at the answer.
+    pub balance_error: f64,
+    /// Flash evaluations taken.
+    pub iterations: u32,
+    /// `ln(f_w^hydrate/f_w^fluid)` at the reported fraction.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HydrateFractionResult {
+    const CALC_ID: &'static str = "eos.hydrate_fraction";
+    const FIELDS: &'static [&'static str] = &[
+        "beta",
+        "structure",
+        "balance_error",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.hydrate_formation_temperature`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HydrateFormationTemperatureResult {

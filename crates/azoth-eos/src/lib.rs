@@ -89,6 +89,7 @@ pub mod henry;
 pub mod hv_ge;
 pub mod hydrate;
 pub mod hydrate_formation_temperature;
+pub mod hydrate_fraction;
 pub mod hydrogen_phase;
 pub mod iapws_if97;
 pub mod ideal_gas_cp;
@@ -233,6 +234,7 @@ pub use heat_of_vaporization::heat_of_vaporization;
 pub use helium_phase::helium_phase;
 pub use hydrate::hydrate_mixture_of;
 pub use hydrate_formation_temperature::hydrate_formation_temperature;
+pub use hydrate_fraction::hydrate_fraction;
 pub use hydrogen_phase::hydrogen_phase;
 pub use ideal_gas_cp::ideal_gas_cp;
 pub use kent_eisenberg_phase::kent_eisenberg_phase;
@@ -286,11 +288,11 @@ pub use results::{
     GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
-    HydrateFormationTemperatureResult, HydrateStructure, HydrogenPhaseResult, IdealGasCpResult,
-    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    HydrateFormationTemperatureResult, HydrateFractionResult, HydrateStructure,
+    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, Phase, PitzerDataset,
     PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
     PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,

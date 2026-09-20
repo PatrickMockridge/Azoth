@@ -103,37 +103,35 @@ fn chemical_potential(structure: usize, t: f64, p: f64) -> f64 {
         + dvolume / R / t * p
 }
 
-/// The hydrate's water fugacity coefficient on one structure.
+/// The exponent of a structure's water fugacity coefficient: the part that is its own.
 ///
 /// ```text
-/// f_w/P = (f_w^fluid/P) exp( sum_cav n_cav ln(1 - sum_j theta_j) + dMu + ln(f_w^ref/f_w^fluid) )
+/// f_w^hydrate/P = (f_w^ref/P) exp( sum_cav n_cav ln(1 - sum_j theta_j) + dMu )
 /// ```
 ///
-/// **`f_w^ref` is the reference water phase's fugacity and is *not* the pressure.** NeqSim
-/// builds that reference as a one-component phase of the **host's own class** -
-/// `setSolidRefFluidPhase` clones the phase type the hydrate is attached to - so its water
-/// component is the host's (`ComponentSrk` for an SRK fluid) and its fugacity is a real
-/// number: at the probe's first state `0.0188312033887596` bar against the fluid's
-/// `0.0188311981257476`, which is why the term nearly vanishes and why substituting the
-/// pressure for it put the coefficient out by a factor of `P/f_w^ref`. The caller states it,
-/// because only the caller knows which equation the fluid is.
+/// **The fluid's own water fugacity cancels out of this**, which is why it is not an
+/// argument. NeqSim writes the coefficient as
+/// `(f_w^fluid/P) exp(sum + dMu + ln(f_w^ref/f_w^fluid))`, where the fluid's water fugacity is
+/// multiplied in and divided out again inside the logarithm - it is not what the hydrate's
+/// water fugacity depends on, and `f_w^ref` is. Written out that way the coefficient is
+/// `0 * inf` on a fluid with no water, which is a state a hydrate fraction's *bound* is, so
+/// the cancellation is taken here and the structure comparison below is a comparison of
+/// finite exponents rather than of `NaN`s.
 ///
-/// Filled with the three terms, the coefficient at that state is `1.8831197e-4` - the
-/// capture's own - with the cavity sum `-0.577685053` and the chemical-potential change
+/// Filled with the three terms, the coefficient at the probe's first state is `1.8831197e-4`,
+/// the capture's own, with the cavity sum `-0.577685053` and the chemical-potential change
 /// `+0.577684724` cancelling to a part in `1e7`.
 ///
 /// # Errors
 /// * [`AzothError::OutOfRange`] if a cavity type is fully occupied, where `ln(1 - sum)` has
 ///   no value. That is a real refusal rather than a clamp: a saturation of one means the
 ///   occupancy model has left the region it was fitted to.
-pub fn water_fugacity_coefficient(
+fn exponent(
     guests: &[HydrateGuest],
     ref_fugacities: &[f64],
     t: f64,
     p: f64,
-    water_index: usize,
     structure: usize,
-    reference_water_fugacity: f64,
 ) -> Result<f64, AzothError> {
     let mut val = 0.0;
     for (cavity, per_water) in CAVITIES_PER_WATER[structure].iter().enumerate() {
@@ -154,16 +152,39 @@ pub fn water_fugacity_coefficient(
         val += per_water * (1.0 - occupied).ln();
     }
 
-    let alpha_water = ref_fugacities[water_index];
-    let water_alpha_ref = (reference_water_fugacity / alpha_water).ln();
+    Ok(val + chemical_potential(structure, t, p))
+}
 
-    Ok(alpha_water * (val + chemical_potential(structure, t, p) + water_alpha_ref).exp() / p)
+/// The hydrate's water fugacity coefficient on one structure, `f_w^hydrate/P`.
+///
+/// **`f_w^ref` is the reference water phase's fugacity and is *not* the pressure.** NeqSim
+/// builds that reference as a one-component phase of the **host's own class** -
+/// `setSolidRefFluidPhase` clones the phase type the hydrate is attached to - so its water
+/// component is the host's (`ComponentSrk` for an SRK fluid) and its fugacity is a real
+/// number: at the probe's first state `0.0188312033887596` bar against the fluid's
+/// `0.0188311981257476`, which is why the term nearly vanishes and why substituting the
+/// pressure for it put the coefficient out by a factor of `P/f_w^ref`. The caller states it,
+/// because only the caller knows which equation the fluid is.
+///
+/// # Errors
+/// * [`AzothError::OutOfRange`] from the structure's cavity sum.
+pub fn water_fugacity_coefficient(
+    guests: &[HydrateGuest],
+    ref_fugacities: &[f64],
+    t: f64,
+    p: f64,
+    structure: usize,
+    reference_water_fugacity: f64,
+) -> Result<f64, AzothError> {
+    Ok(exponent(guests, ref_fugacities, t, p, structure)?.exp() * reference_water_fugacity / p)
 }
 
 /// The stable structure and its water fugacity coefficient.
 ///
 /// NeqSim evaluates both structures and keeps the **lower** coefficient, which is the more
-/// stable hydrate at that state.
+/// stable hydrate at that state. The reference term is the same for both - it is the
+/// *reference fluid's* fugacity over the pressure, and neither depends on the structure - so
+/// the comparison is the exponents'.
 ///
 /// # Errors
 /// * [`AzothError::OutOfRange`] from either structure's cavity sum.
@@ -172,32 +193,16 @@ pub fn stable_structure(
     ref_fugacities: &[f64],
     t: f64,
     p: f64,
-    water_index: usize,
     reference_water_fugacity: f64,
 ) -> Result<(usize, f64), AzothError> {
-    let first = water_fugacity_coefficient(
-        guests,
-        ref_fugacities,
-        t,
-        p,
-        water_index,
-        0,
-        reference_water_fugacity,
-    )?;
-    let second = water_fugacity_coefficient(
-        guests,
-        ref_fugacities,
-        t,
-        p,
-        water_index,
-        1,
-        reference_water_fugacity,
-    )?;
-    Ok(if first <= second {
+    let first = exponent(guests, ref_fugacities, t, p, 0)?;
+    let second = exponent(guests, ref_fugacities, t, p, 1)?;
+    let (structure, chosen) = if first <= second {
         (0, first)
     } else {
         (1, second)
-    })
+    };
+    Ok((structure, chosen.exp() * reference_water_fugacity / p))
 }
 
 /// A gas the mixture's fluid carries, and whether the hydrate takes it into a cage.
@@ -280,4 +285,51 @@ pub fn hydrate_mixture_of(
         }),
         ideal_gas,
     ))
+}
+
+/// The cavities and the water molecules of one unit cell: structure I then II.
+///
+/// NeqSim's `ComponentHydrate` constructor, and the counts its `46/54` and `136/160` bounds
+/// come from - which are the *fully occupied* limits, not the composition at a state.
+pub const CAVITIES_PER_CELL: [[f64; 2]; 2] = [[2.0, 6.0], [16.0, 8.0]];
+
+/// The water molecules in one unit cell.
+pub const WATER_PER_CELL: [f64; 2] = [46.0, 136.0];
+
+/// The hydrate's mole fractions at a state, from **both** cavity types of a structure.
+///
+/// A cell of structure I holds `46` waters with two small and six large cavities, and one of
+/// structure II `136` with sixteen and eight. A cavity of type `cav` holds guest `i` with
+/// probability `theta_icav`, so the cell's guest count is the cavities' own weighted sum of
+/// the occupancies, and each guest's is the one weighted by its own.
+///
+/// **The second cavity is the whole point.** NeqSim's `updateHydrateComposition` distributes
+/// the guests by cavity 0 alone - the small cage - which for structure I is where a guest
+/// mostly is not: its ethane and propane fractions come out as the *feed's* own, because the
+/// loop writes a zero there and the field keeps what it had, and the phase's fractions then
+/// sum to `1.1201` rather than one.
+#[must_use]
+pub fn composition(
+    guests: &[HydrateGuest],
+    ref_fugacities: &[f64],
+    structure: usize,
+    t: f64,
+    water_index: usize,
+) -> Vec<f64> {
+    let mut counts = vec![0.0; guests.len()];
+    let mut total_guests = 0.0;
+    for (cavity, &per_cell) in CAVITIES_PER_CELL[structure].iter().enumerate() {
+        for (index, occupied) in occupancy(guests, ref_fugacities, structure, cavity, t)
+            .iter()
+            .enumerate()
+        {
+            counts[index] += per_cell * occupied;
+            total_guests += per_cell * occupied;
+        }
+    }
+    let water = WATER_PER_CELL[structure];
+    let total = water + total_guests;
+    let mut fractions: Vec<f64> = counts.iter().map(|count| count / total).collect();
+    fractions[water_index] = water / total;
+    fractions
 }

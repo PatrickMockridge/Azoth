@@ -37,6 +37,14 @@ _CHEMICAL_POTENTIAL: tuple[tuple[float, float, float, float], ...] = (
 #: NeqSim works its fugacities in bara and this states its own in pascals.
 _PA_PER_BAR = 1.0e5
 
+#: The cavities of each type in one unit cell: structure I then II, small then large.
+#: NeqSim's ``ComponentHydrate`` constructor, and the counts its ``46/54`` and ``136/160``
+#: bounds come from - which are the *fully occupied* limits, not the composition at a state.
+CAVITIES_PER_CELL: tuple[tuple[float, float], tuple[float, float]] = ((2.0, 6.0), (16.0, 8.0))
+
+#: The water molecules in one unit cell.
+WATER_PER_CELL: tuple[float, float] = (46.0, 136.0)
+
 
 class HydrateGuest:
     """A substance's hydrate record: what the occupancy loops read, and no more."""
@@ -111,21 +119,24 @@ def _chemical_potential(structure: int, t: float, p: float) -> float:
     )
 
 
-def water_fugacity_coefficient(
+def exponent(
     guests: list[HydrateGuest],
     ref_fugacities: list[float],
     t: float,
     p: float,
-    water_index: int,
     structure: int,
-    reference_water_fugacity: float,
 ) -> float:
-    """The hydrate's water fugacity coefficient on one structure.
+    """The exponent of a structure's water fugacity coefficient: the part that is its own.
 
-    ``f_w^ref`` is the reference water phase's fugacity and is **not** the pressure: NeqSim
-    builds it from a one-component phase of the host's own class, so its water component is
-    the host's and its fugacity is a real number. The caller states it, because only the
-    caller knows which equation the fluid is.
+    ``f_w^hydrate/P = (f_w^ref/P) exp(sum_cav n_cav ln(1 - sum_j theta_j) + dMu)``.
+
+    **The fluid's own water fugacity cancels out of this**, which is why it is not an
+    argument. NeqSim writes the coefficient as
+    ``(f_w^fluid/P) exp(sum + dMu + ln(f_w^ref/f_w^fluid))``, where the fluid's water fugacity
+    is multiplied in and divided out again inside the logarithm - it is not what the
+    hydrate's water fugacity depends on, and ``f_w^ref`` is. Written out that way the
+    coefficient is ``0 * inf`` on a fluid with no water, which is a state a hydrate
+    fraction's *bound* is, so the cancellation is taken here.
 
     Raises:
         OutOfRangeError: if a cavity type is fully occupied, where the sum's logarithm has no
@@ -143,10 +154,30 @@ def water_fugacity_coefficient(
                 f"where the cavity sum's logarithm has no value",
             )
         val += per_water * math.log(1.0 - occupied)
+    return val + _chemical_potential(structure, t, p)
 
-    alpha_water = ref_fugacities[water_index]
-    water_alpha_ref = math.log(reference_water_fugacity / alpha_water)
-    return alpha_water * math.exp(val + _chemical_potential(structure, t, p) + water_alpha_ref) / p
+
+def water_fugacity_coefficient(
+    guests: list[HydrateGuest],
+    ref_fugacities: list[float],
+    t: float,
+    p: float,
+    structure: int,
+    reference_water_fugacity: float,
+) -> float:
+    """The hydrate's water fugacity coefficient on one structure, ``f_w^hydrate/P``.
+
+    ``f_w^ref`` is the reference water phase's fugacity and is **not** the pressure: NeqSim
+    builds it from a one-component phase of the host's own class, so its water component is
+    the host's and its fugacity is a real number. The caller states it, because only the
+    caller knows which equation the fluid is.
+
+    Raises:
+        OutOfRangeError: from the structure's cavity sum.
+    """
+    return (
+        math.exp(exponent(guests, ref_fugacities, t, p, structure)) * reference_water_fugacity / p
+    )
 
 
 def stable_structure(
@@ -154,17 +185,51 @@ def stable_structure(
     ref_fugacities: list[float],
     t: float,
     p: float,
-    water_index: int,
     reference_water_fugacity: float,
 ) -> tuple[int, float]:
-    """The stable structure and its coefficient: the **lower** of the two."""
-    first = water_fugacity_coefficient(
-        guests, ref_fugacities, t, p, water_index, 0, reference_water_fugacity
-    )
-    second = water_fugacity_coefficient(
-        guests, ref_fugacities, t, p, water_index, 1, reference_water_fugacity
-    )
-    return (0, first) if first <= second else (1, second)
+    """The stable structure and its coefficient: the **lower** of the two.
+
+    The reference term is the same for both - it is the *reference fluid's* fugacity over the
+    pressure, and neither depends on the structure - so the comparison is the exponents'.
+    """
+    first = exponent(guests, ref_fugacities, t, p, 0)
+    second = exponent(guests, ref_fugacities, t, p, 1)
+    structure, chosen = (0, first) if first <= second else (1, second)
+    return structure, math.exp(chosen) * reference_water_fugacity / p
+
+
+def composition(
+    guests: list[HydrateGuest],
+    ref_fugacities: list[float],
+    structure: int,
+    t: float,
+    water_index: int,
+) -> list[float]:
+    """The hydrate's mole fractions at a state, from **both** cavity types of a structure.
+
+    A cell of structure I holds 46 waters with two small and six large cavities, and one of
+    structure II 136 with sixteen and eight. A cavity of type ``cav`` holds guest ``i`` with
+    probability ``theta_icav``, so the cell's guest count is the cavities' own weighted sum
+    of the occupancies, and each guest's is the one weighted by its own.
+
+    **The second cavity is the whole point.** NeqSim's ``updateHydrateComposition``
+    distributes the guests by cavity 0 alone - the small cage - which for structure I is where
+    a guest mostly is not: its ethane and propane fractions come out as the *feed's* own,
+    because the loop writes a zero there and the field keeps what it had, and the phase's
+    fractions then sum to ``1.1201`` rather than one.
+    """
+    counts = [0.0] * len(guests)
+    total_guests = 0.0
+    for cavity in range(2):
+        per_cell = CAVITIES_PER_CELL[structure][cavity]
+        for index, occupied in enumerate(occupancy(guests, ref_fugacities, structure, cavity, t)):
+            counts[index] += per_cell * occupied
+            total_guests += per_cell * occupied
+    water = WATER_PER_CELL[structure]
+    total = water + total_guests
+    fractions = [count / total for count in counts]
+    fractions[water_index] = water / total
+    return fractions
 
 
 def hydration_for(names: list[str]) -> Hydration:

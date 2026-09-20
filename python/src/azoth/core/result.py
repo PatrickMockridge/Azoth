@@ -365,6 +365,29 @@ class HydrateFormationTemperatureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HydrateFractionResult(_HasWarnings):
+    """Result of ``eos.hydrate_fraction``."""
+
+    #: The fraction of the feed's moles that is hydrate, on the feed's own basis.
+    beta: float
+    #: The structure the cages at the answer are.
+    structure: HydrateStructure
+    #: The largest ``|sum_p beta_p x_ip - z_i|`` over the components at the answer.
+    #:
+    #: The invariant this model exists to keep: it is zero here by construction and
+    #: ``0.0874`` on NeqSim's own state at the same feed.
+    balance_error: float
+    #: Flash evaluations taken: the feed's, the fixed point's and the answer's own.
+    iterations: int
+    #: ``ln(f_w^hydrate/f_w^fluid)`` at the **feed**, which is what decides between no
+    #: hydrate and all of the water. Not read at the answer: the fluid there holds no
+    #: water, so the ratio has no finite value at it.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PrMolarVolumeResult(_HasWarnings):
     """Result of ``eos.pr_molar_volume``.
 

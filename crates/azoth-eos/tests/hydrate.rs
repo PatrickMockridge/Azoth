@@ -157,7 +157,6 @@ fn the_water_fugacity_coefficient_reproduces_the_capture() {
             &refs,
             t,
             p_bara * 1.0e5,
-            3,
             reference_water_fugacity(t, p_bara * 1.0e5),
         )
         .expect("the sum");
@@ -207,7 +206,6 @@ fn a_full_cavity_is_refused_rather_than_clamped() {
         &saturated,
         293.0,
         1.0e7,
-        3,
         reference_water_fugacity(293.0, 1.0e7),
     )
     .expect_err("a fully occupied cavity has no logarithm");

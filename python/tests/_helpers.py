@@ -52,7 +52,14 @@ __all__ = [
 #: floating-point operation left. Measured, `eos.tp_multiflash`'s CO2/methane/nc10 case has
 #: one implementation at ``6.66e-16`` and the other at ``-1.78e-15``: a relative comparison
 #: calls that a factor-of-three divergence, and the quantity it is measuring is not there.
-_DIAGNOSTIC_FIELDS: frozenset[str] = frozenset({"residual", "tm"})
+#:
+#: ``balance_error`` is the third and the same thing again: it is `sum_p beta_p x_ip - z_i`,
+#: zero **by construction** wherever a model assembles its phases from the same `z` it was
+#: given, so what crosses the boundary is the last ulp of the arithmetic that reached it -
+#: measured, `eos.hydrate_fraction`'s first case is ``0.0`` in Rust and ``1.11e-16`` in
+#: Python. The model's case records the zero because that is the claim; comparing the two
+#: kernels to each other at that magnitude compares rounding, not the claim.
+_DIAGNOSTIC_FIELDS: frozenset[str] = frozenset({"balance_error", "residual", "tm"})
 
 #: Fields that are **not compared across implementations at all**, because their value is a
 #: property of the arithmetic rather than of the model. An iteration count is the clearest

@@ -436,6 +436,15 @@ class HydrateFormationTemperatureResult:
     warnings: list[Warning]
 
 @final
+class HydrateFractionResult:
+    beta: float
+    structure: str
+    balance_error: float
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class HydrogenPhaseResult:
     z_factor: float
     u: Qty
@@ -1469,6 +1478,13 @@ def hydrate_formation_temperature(
     z: list[float],
     eos: str,
 ) -> HydrateFormationTemperatureResult: ...
+def hydrate_fraction(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+    eos: str,
+) -> HydrateFractionResult: ...
 def hydrogen_phase(
     T: float,
     P: float,

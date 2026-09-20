@@ -25,11 +25,11 @@ use azoth_eos::results::{
     FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
     GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
-    HydrateFormationTemperatureResult, HydrogenPhaseResult, IdealGasCpResult,
-    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    HydrateFormationTemperatureResult, HydrateFractionResult, HydrogenPhaseResult,
+    IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
     PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
     PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
@@ -3975,6 +3975,58 @@ impl From<&HydrateFormationTemperatureResult> for PyHydrateFormationTemperatureR
     }
 }
 
+/// Result of `eos.hydrate_fraction`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HydrateFractionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateFractionResult {
+    /// The fraction of the feed's moles that is hydrate.
+    #[pyo3(get)]
+    pub beta: f64,
+    /// The stable structure, as its spec spelling.
+    #[pyo3(get)]
+    pub structure: String,
+    /// The largest `|sum_p beta_p x_ip - z_i|` over the components at the answer.
+    #[pyo3(get)]
+    pub balance_error: f64,
+    /// Flash evaluations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `ln(f_w^hydrate/f_w^fluid)` at the feed.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHydrateFractionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateFractionResult(beta={}, structure={}, balance_error={:.3e}, {} iteration(s))",
+            self.beta, self.structure, self.balance_error, self.iterations
+        )
+    }
+}
+
+impl From<&HydrateFractionResult> for PyHydrateFractionResult {
+    fn from(r: &HydrateFractionResult) -> Self {
+        Self {
+            beta: r.beta,
+            structure: r.structure.as_str().to_string(),
+            balance_error: r.balance_error,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 #[pyclass(
     frozen,
     skip_from_py_object,
@@ -6275,6 +6327,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HydrateFormationTemperatureResult::CALC_ID => {
             HydrateFormationTemperatureResult::FIELDS.to_vec()
         }
+        HydrateFractionResult::CALC_ID => HydrateFractionResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
         EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),
