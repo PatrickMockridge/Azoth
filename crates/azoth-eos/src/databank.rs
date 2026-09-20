@@ -727,6 +727,16 @@ struct Interaction {
     /// at zero when the query finds nothing, so a zero here is as often an absent row as
     /// a fitted zero - and the two are not the same thing.
     aij_desmukh_mather: f64,
+    /// The Soreide-Whitson interaction parameter, `KIJWhitsonSoriede`, symmetric.
+    ///
+    /// **303 of the 957 in-scope pairs carry one, and six of those are written with a
+    /// decimal comma** - `propane`/`CO2`, `n-butane`/`CO2`, `n-pentane`/`CO2`,
+    /// `n-hexane`/`CO2`, `n-heptane`/`CO2` and `mercury`/`CO2`. NeqSim reads the column with
+    /// `Double.parseDouble`, which throws on a comma, and the per-pair `catch` swallows it
+    /// so those six pairs evaluate with the plain SRK value instead. **This table holds the
+    /// value the file states**, so the port diverges from NeqSim on exactly those six pairs
+    /// and on nothing else.
+    kij_whitson_soreide: f64,
     /// The Desmukh-Mather temperature coefficient, `bijDesMath`.
     ///
     /// **Zero on every in-scope row**, which is why it was recorded `empty-upstream` and
@@ -1100,6 +1110,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         "kijpcsaft",
         "aijdesmath",
         "bijdesmath",
+        "kijwhitsonsoriede",
     ] {
         index.insert(name, column(&header, name)?);
     }
@@ -1150,6 +1161,12 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
         let cpa_kij_srk = optional_number(&record, index["cpakij_srk"], "cpakij_srk", row)?;
         let cpa_kij_pr = optional_number(&record, index["cpakij_pr"], "cpakij_pr", row)?;
         let pcsaft_kij = optional_number(&record, index["kijpcsaft"], "kijpcsaft", row)?;
+        let kij_whitson_soreide = optional_number(
+            &record,
+            index["kijwhitsonsoriede"],
+            "kijwhitsonsoriede",
+            row,
+        )?;
         let aij_desmukh_mather = optional_number(&record, index["aijdesmath"], "aijdesmath", row)?;
         let bij_desmukh_mather = optional_number(&record, index["bijdesmath"], "bijdesmath", row)?;
 
@@ -1174,6 +1191,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 ws,
                 ws_dij_t,
                 kij_ws,
+                kij_whitson_soreide,
                 aij_desmukh_mather,
                 bij_desmukh_mather,
             },
@@ -1195,6 +1213,7 @@ fn parse_kij() -> Result<HashMap<(String, String), Interaction>> {
                 ws,
                 ws_dij_t: ws_dji_t,
                 kij_ws,
+                kij_whitson_soreide,
                 aij_desmukh_mather,
                 bij_desmukh_mather,
             },
@@ -1378,6 +1397,19 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             name: base.name,
         }),
     }
+}
+
+/// The Soreide-Whitson interaction parameter for a pair, either order round.
+///
+/// `None` for a pair the table does not carry, which the rule's own `base_kij` reads as a
+/// zero - the ideal-mixture default NeqSim substitutes.
+#[must_use]
+pub fn kij_whitson_soreide(first: &str, second: &str) -> Option<f64> {
+    let (a, b) = (first.trim().to_lowercase(), second.trim().to_lowercase());
+    tables()
+        .1
+        .get(&(a, b))
+        .map(|record| record.kij_whitson_soreide)
 }
 
 /// The Desmukh-Mather pair parameters `(aij, bij)`, either order round.

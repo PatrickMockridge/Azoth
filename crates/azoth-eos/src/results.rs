@@ -2457,6 +2457,32 @@ impl CalcResult for DesmukhMatherPhaseResult {
     }
 }
 
+/// Result of `eos.soreide_whitson_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SoreideWhitsonPhaseResult {
+    /// The compressibility factor at the chosen root.
+    pub z_factor: f64,
+    /// The fugacity coefficients, as logarithms, one per component.
+    pub ln_phi: Vec<f64>,
+    /// `A_i = omega_a alpha_i Pr_i / Tr_i^2`, one per component.
+    ///
+    /// Reported because **water's entry is where the salinity shows**: `alpha` is
+    /// proportional to this, so a port that had left the brine out of the alpha would have
+    /// a water `A_i` that does not move while the matrix beside it does.
+    pub a_reduced: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SoreideWhitsonPhaseResult {
+    const CALC_ID: &'static str = "eos.soreide_whitson_phase";
+    const FIELDS: &'static [&'static str] = &["z_factor", "ln_phi", "a_reduced", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.ge_uniquac_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeUniquacPhaseResult {

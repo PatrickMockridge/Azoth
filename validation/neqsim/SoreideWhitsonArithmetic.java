@@ -80,8 +80,8 @@ public class SoreideWhitsonArithmetic {
           system.getNumberOfPhases(), system.getTemperature(), system.getPressure());
       for (int p = 0; p < system.getNumberOfPhases(); p++) {
         PhaseInterface phase = system.getPhase(p);
-        System.out.printf("  [%d] %-12s beta = %.12g  salinity = %.12g%n", p,
-            phase.getClass().getSimpleName(), phase.getBeta(),
+        System.out.printf("  [%d] %-12s beta = %.12g  z = %.15g  salinity = %.12g%n", p,
+            phase.getClass().getSimpleName(), phase.getBeta(), phase.getZ(),
             phase instanceof neqsim.thermo.phase.PhaseSoreideWhitson
                 ? ((neqsim.thermo.phase.PhaseSoreideWhitson) phase).getSalinityConcentration()
                 : Double.NaN);

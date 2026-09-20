@@ -1236,11 +1236,11 @@ unit = "neqsim-internal"
 reason = "not-ported: CPA association; NeqSim's `CPAMixingRuleHandler` and `PhaseCPAInterface`"
 [[upstreams.files.columns]]
 name = "KIJWhitsonSoriede"
-disposition = "vendored"
+disposition = "used"
 as = "kijwhitsonsoriede"
 unit = "neqsim-internal"
 reason = """\
-    not-ported: the Whitson-Soriede mixing rule; NeqSim's `thermo/mixingrule/`. Present for \
+    read by `eos.soreide_whitson_phase`, which is NeqSim's `thermo/mixingrule/`. Present for \
     303 of the 957 in-scope pairs. **Six rows are written with a comma decimal separator - \
     `propane`/`CO2`, `n-butane`/`CO2`, `n-pentane`/`CO2`, `n-hexane`/`CO2`, `n-heptane`/`CO2` \
     and `mercury`/`CO2` - and NeqSim reads them with `Double.parseDouble`, which throws.** \
