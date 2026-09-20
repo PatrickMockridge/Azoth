@@ -23,6 +23,7 @@ from typing import Any
 
 from azoth.eos.reference import _electrolyte as electrolyte
 from azoth.eos.reference import _pitzer_electrostatic as electrostatic
+from azoth.eos.reference._pitzer_catalog import find
 
 #: The gas constant is not used here; the Debye-Huckel parameter carries its own arithmetic.
 
@@ -487,3 +488,140 @@ def ln_gamma_water(
     if x_water < 1.0e-10:
         return 0.0
     return ln_a_w - math.log(x_water)
+
+
+#: The neutral-solute families: a neutral with a neutral, an ion, or a pair of ions.
+LAMBDA, ZETA, MU, ETA = "LAMBDA", "ZETA", "MU", "ETA"
+
+
+class NeutralInteraction:
+    """One neutral-family interaction over a tuple of components.
+
+    **The coefficients come from the tuple's repetition structure**, not from the file:
+
+    =========================  =========================  =====================
+    tuple                      ``log_gamma_coefficients``  ``osmotic_coefficient``
+    =========================  =========================  =====================
+    two equal indexes          ``[1, 1]``                 ``0.5``
+    two different              ``[2, 2]``                 ``1.0``
+    three, family ``MU``       ``[m, m, m]``              ``m`` for ``m`` in {1, 3, 6}
+    three, otherwise           ``[1, 1, 1]``              ``1.0``
+    =========================  =========================  =====================
+
+    with ``m`` counting the tuple's distinct permutations. **The repeated-species case is
+    the one to get right** - PHREEQC differentiates both slots before accumulating them,
+    which is why it is ``[1, 1]`` and a half rather than ``[2, 2]`` and one.
+    """
+
+    __slots__ = ("family", "form", "indexes", "log_gamma_coefficients", "osmotic_coefficient")
+
+    def __init__(self, family: str, indexes: Sequence[int], form: Sequence[float]) -> None:
+        self.indexes = sorted(indexes)
+        self.family = family
+        self.form = form
+        if len(self.indexes) == 2:
+            if self.indexes[0] == self.indexes[1]:
+                self.log_gamma_coefficients, self.osmotic_coefficient = [1.0, 1.0], 0.5
+            else:
+                self.log_gamma_coefficients, self.osmotic_coefficient = [2.0, 2.0], 1.0
+        elif len(self.indexes) == 3 and family == MU:
+            if self.indexes[0] == self.indexes[2]:
+                multiplicity = 1.0
+            elif self.indexes[0] == self.indexes[1] or self.indexes[1] == self.indexes[2]:
+                multiplicity = 3.0
+            else:
+                multiplicity = 6.0
+            self.log_gamma_coefficients = [multiplicity] * 3
+            self.osmotic_coefficient = multiplicity
+        else:
+            self.log_gamma_coefficients = [1.0] * len(self.indexes)
+            self.osmotic_coefficient = 1.0
+
+    def log_gamma_contribution(
+        self, molality: Sequence[float], component: int, temperature: float
+    ) -> float:
+        """This interaction's contribution to one component's ``ln gamma``.
+
+        The component contributes once per *position* it occupies, and the molality product
+        is over the tuple's other members - so a component appearing twice contributes
+        twice from one tuple.
+        """
+        parameter = catalog_value(self.form, temperature)
+        contribution = 0.0
+        for position, index in enumerate(self.indexes):
+            if index != component:
+                continue
+            product = 1.0
+            for other, other_index in enumerate(self.indexes):
+                if other != position:
+                    product *= molality[other_index]
+            contribution += self.log_gamma_coefficients[position] * product * parameter
+        return contribution
+
+    def osmotic_contribution(self, molality: Sequence[float], temperature: float) -> float:
+        """This interaction's contribution to PHREEQC's osmotic sum."""
+        product = 1.0
+        for index in self.indexes:
+            product *= molality[index]
+        return self.osmotic_coefficient * product * catalog_value(self.form, temperature)
+
+
+def ln_gamma_neutral(
+    interactions: Sequence[NeutralInteraction],
+    molality: Sequence[float],
+    component: int,
+    temperature: float,
+) -> float:
+    """Every neutral-family contribution to one component's ``ln gamma``."""
+    return sum(i.log_gamma_contribution(molality, component, temperature) for i in interactions)
+
+
+def osmotic_neutral(
+    interactions: Sequence[NeutralInteraction],
+    molality: Sequence[float],
+    temperature: float,
+) -> float:
+    """Every neutral-family contribution to the osmotic sum."""
+    return sum(i.osmotic_contribution(molality, temperature) for i in interactions)
+
+
+def catalogue_interactions(
+    species: Sequence[str],
+    charge: Sequence[float],
+    ions: Sequence[int],
+    neutrals: Sequence[int],
+) -> list[NeutralInteraction] | None:
+    """The neutral interactions the PHREEQC catalogue imposes on a topology.
+
+    ``PitzerParameterDatasets.applyCatalogNeutralRows``: for each neutral, a ``LAMBDA`` with
+    every neutral **including itself** and with every ion, and a ``ZETA`` with every
+    cation-anion pair. **The sign filter on that pair is not optional** - without it the
+    lookup asks for ``(CO2, Na+, Na+)``, which the catalogue does not carry, and the whole
+    layer is abandoned.
+
+    ``None`` for a tuple the catalogue does not carry, which is the coverage rule's answer
+    and not a defect: the whole dataset is abandoned rather than half-applied.
+    """
+    out: list[NeutralInteraction] = []
+    for position, neutral in enumerate(neutrals):
+        for second in neutrals[position:]:
+            form = find(LAMBDA, [species[neutral], species[second]])
+            if form is None:
+                return None
+            out.append(NeutralInteraction(LAMBDA, [neutral, second], form))
+        for ion in ions:
+            form = find(LAMBDA, [species[neutral], species[ion]])
+            if form is None:
+                return None
+            out.append(NeutralInteraction(LAMBDA, [neutral, ion], form))
+        for cation in ions:
+            if charge[cation] <= 0.0:
+                continue
+            for anion in ions:
+                if charge[anion] >= 0.0:
+                    continue
+                form = find(ZETA, [species[neutral], species[cation], species[anion]])
+                if form is None:
+                    return None
+                out.append(NeutralInteraction(ZETA, [neutral, cation, anion], form))
+    return out

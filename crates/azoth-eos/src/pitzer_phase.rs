@@ -1156,3 +1156,335 @@ mod water_tests {
         }
     }
 }
+
+/// The neutral-solute families: a neutral with a neutral, an ion, or a pair of ions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NeutralFamily {
+    /// A neutral-neutral or neutral-ion interaction.
+    Lambda,
+    /// A neutral with a cation and an anion.
+    Zeta,
+    /// A three-body interaction.
+    Mu,
+    /// A neutral with two ions.
+    Eta,
+}
+
+impl NeutralFamily {
+    /// The catalogue's section name.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            NeutralFamily::Lambda => "LAMBDA",
+            NeutralFamily::Zeta => "ZETA",
+            NeutralFamily::Mu => "MU",
+            NeutralFamily::Eta => "ETA",
+        }
+    }
+}
+
+/// One neutral-family interaction over a tuple of components.
+///
+/// # The coefficients are not all one
+///
+/// NeqSim derives them from the tuple's *repetition structure* rather than storing them,
+/// and the rules are not uniform:
+///
+/// | tuple | `log_gamma_coefficients` | `osmotic_coefficient` |
+/// |---|---|---|
+/// | two equal indexes | `[1, 1]` | `0.5` |
+/// | two different | `[2, 2]` | `1.0` |
+/// | three, family `Mu` | `[m, m, m]` | `m`, for `m` in `{1, 3, 6}` |
+/// | three, otherwise | `[1, 1, 1]` | `1.0` |
+///
+/// with `m` counting the tuple's distinct permutations: one for three equal indexes,
+/// three for two equal, six for three distinct. **The repeated-species case is the one to
+/// get right** - PHREEQC differentiates both slots before accumulating them, which is why
+/// it is `[1, 1]` and a half rather than `[2, 2]` and one.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NeutralInteraction {
+    /// Which family this is.
+    pub family: NeutralFamily,
+    /// The component indexes, **sorted**, which is the order the coefficients are keyed by.
+    pub indexes: Vec<usize>,
+    log_gamma_coefficients: Vec<f64>,
+    osmotic_coefficient: f64,
+    /// The parameter across temperature, from whichever dataset built this.
+    pub form: TemperatureForm,
+}
+
+impl NeutralInteraction {
+    /// One interaction, with the coefficients its tuple's structure implies.
+    #[must_use]
+    pub fn new(family: NeutralFamily, mut indexes: Vec<usize>, form: TemperatureForm) -> Self {
+        indexes.sort_unstable();
+        let (log_gamma_coefficients, osmotic_coefficient) = match indexes.len() {
+            2 => {
+                if indexes[0] == indexes[1] {
+                    (vec![1.0, 1.0], 0.5)
+                } else {
+                    (vec![2.0, 2.0], 1.0)
+                }
+            }
+            3 if family == NeutralFamily::Mu => {
+                let multiplicity = if indexes[0] == indexes[2] {
+                    1.0
+                } else if indexes[0] == indexes[1] || indexes[1] == indexes[2] {
+                    3.0
+                } else {
+                    6.0
+                };
+                (vec![multiplicity; 3], multiplicity)
+            }
+            _ => (vec![1.0; indexes.len()], 1.0),
+        };
+        Self {
+            family,
+            indexes,
+            log_gamma_coefficients,
+            osmotic_coefficient,
+            form,
+        }
+    }
+
+    /// This interaction's contribution to one component's `ln gamma`.
+    ///
+    /// The component contributes once per *position* it occupies, and the molality product
+    /// is over the tuple's other members - so a component appearing twice contributes
+    /// twice from one tuple.
+    #[must_use]
+    pub fn log_gamma_contribution(
+        &self,
+        molality: &[f64],
+        component: usize,
+        temperature: f64,
+    ) -> f64 {
+        let parameter = self.form.value_at(temperature);
+        let mut contribution = 0.0;
+        for (position, &index) in self.indexes.iter().enumerate() {
+            if index != component {
+                continue;
+            }
+            let mut product = 1.0;
+            for (other, &other_index) in self.indexes.iter().enumerate() {
+                if other != position {
+                    product *= molality[other_index];
+                }
+            }
+            contribution += self.log_gamma_coefficients[position] * product * parameter;
+        }
+        contribution
+    }
+
+    /// This interaction's contribution to PHREEQC's osmotic sum, before the `2/sum(m)`.
+    #[must_use]
+    pub fn osmotic_contribution(&self, molality: &[f64], temperature: f64) -> f64 {
+        let product: f64 = self.indexes.iter().map(|&index| molality[index]).product();
+        self.osmotic_coefficient * product * self.form.value_at(temperature)
+    }
+}
+
+/// Every neutral-family contribution to one component's `ln gamma`.
+#[must_use]
+pub fn ln_gamma_neutral(
+    interactions: &[NeutralInteraction],
+    molality: &[f64],
+    component: usize,
+    temperature: f64,
+) -> f64 {
+    interactions
+        .iter()
+        .map(|interaction| interaction.log_gamma_contribution(molality, component, temperature))
+        .sum()
+}
+
+/// Every neutral-family contribution to the osmotic sum.
+#[must_use]
+pub fn osmotic_neutral(
+    interactions: &[NeutralInteraction],
+    molality: &[f64],
+    temperature: f64,
+) -> f64 {
+    interactions
+        .iter()
+        .map(|interaction| interaction.osmotic_contribution(molality, temperature))
+        .sum()
+}
+
+/// The neutral interactions the PHREEQC catalogue imposes on a topology.
+///
+/// `PitzerParameterDatasets.applyCatalogNeutralRows`: for each neutral, a `LAMBDA` with
+/// every neutral **including itself** and with every ion, and a `ZETA` with every
+/// cation-anion pair. A `MU` or `ETA` interaction is never built from the catalogue - the
+/// families are in the enum and the file carries no rows - so they are reachable only
+/// through whatever a keycard states, which is why they are modelled and not omitted.
+///
+/// Returns `None` for a tuple the catalogue does not carry, which is the coverage rule's
+/// answer and not a defect: the whole dataset is abandoned rather than half-applied.
+#[must_use]
+pub fn catalogue_interactions(
+    species: &[&str],
+    charge: &[f64],
+    ions: &[usize],
+    neutrals: &[usize],
+) -> Option<Vec<NeutralInteraction>> {
+    use crate::pitzer_catalog::Family;
+    let mut out = Vec::new();
+    let lookup = |family: Family, names: &[&str]| {
+        crate::pitzer_catalog::find(family, names).map(TemperatureForm::Catalog)
+    };
+    for (position, &neutral) in neutrals.iter().enumerate() {
+        for &second in &neutrals[position..] {
+            let form = lookup(Family::Lambda, &[species[neutral], species[second]])?;
+            out.push(NeutralInteraction::new(
+                NeutralFamily::Lambda,
+                vec![neutral, second],
+                form,
+            ));
+        }
+        for &ion in ions {
+            let form = lookup(Family::Lambda, &[species[neutral], species[ion]])?;
+            out.push(NeutralInteraction::new(
+                NeutralFamily::Lambda,
+                vec![neutral, ion],
+                form,
+            ));
+        }
+        for &cation in ions {
+            if charge[cation] <= 0.0 {
+                continue;
+            }
+            for &anion in ions {
+                if charge[anion] >= 0.0 {
+                    continue;
+                }
+                let form = lookup(
+                    Family::Zeta,
+                    &[species[neutral], species[cation], species[anion]],
+                )?;
+                out.push(NeutralInteraction::new(
+                    NeutralFamily::Zeta,
+                    vec![neutral, cation, anion],
+                    form,
+                ));
+            }
+        }
+    }
+    Some(out)
+}
+
+#[cfg(test)]
+mod neutral_tests {
+    use super::*;
+
+    /// **The neutral layer against the built phase**, on the one topology the catalogue
+    /// covers for it.
+    ///
+    /// The oracle is `validation/neqsim/PitzerArithmetic.java`'s CO2-brine section, and
+    /// the composition is its own. **The chloride case falls back to the legacy dataset**,
+    /// because the catalogue has no `ZETA(CO2, Na+, Cl-)` row - it pairs CO2 and H2S with
+    /// *sulphate* - so the layer is reachable only through a sulphate-bearing brine.
+    #[test]
+    fn the_neutral_layer_matches_neqsim() {
+        // water 0.86 / Na+ 0.06 / SO4-- 0.03 / CO2 0.05, the probe's own.
+        let species = ["water", "Na+", "SO4--", "CO2"];
+        let mole_fraction = [0.86, 0.06, 0.03, 0.05];
+        let molality: Vec<f64> = {
+            let mass_of_water = mole_fraction[0] * WATER_MOLAR_MASS;
+            mole_fraction.iter().map(|&x| x / mass_of_water).collect()
+        };
+        let ions = [1, 2];
+        let neutrals = [3];
+
+        let interactions =
+            catalogue_interactions(&species, &[0.0, 1.0, -2.0, 0.0], &ions, &neutrals)
+                .expect("the catalogue covers CO2 with Na+ and SO4--");
+        assert_eq!(
+            interactions.len(),
+            4,
+            "one LAMBDA(CO2,CO2), two LAMBDA(CO2,ion) and one ZETA(CO2,Na+,SO4--)"
+        );
+
+        // The osmotic contribution, before the `2/sum(m)` factor.
+        let osmotic = osmotic_neutral(&interactions, &molality, 298.15);
+        assert!(
+            (osmotic - 1.098_251_743_71).abs() < 1.0e-9,
+            "osmotic contribution = {osmotic}, and NeqSim gives 1.09825174371"
+        );
+
+        for (component, expected) in [
+            (1, 0.454_900_106_480_425),
+            (2, 0.296_616_109_274_644),
+            (3, 0.749_844_524_371_078),
+        ] {
+            let got = ln_gamma_neutral(&interactions, &molality, component, 298.15);
+            assert!(
+                (got - expected).abs() < 1.0e-9,
+                "ln gamma contribution to {} = {got}, and NeqSim gives {expected}",
+                species[component]
+            );
+        }
+    }
+
+    /// **The tuple's repetition structure decides the coefficients**, and the repeated case
+    /// is the one that is not `[2, 2]`.
+    #[test]
+    fn the_repetition_structure_decides_the_coefficients() {
+        let form = TemperatureForm::Catalog([1.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+
+        // Two different components pair with two, and a whole.
+        let distinct = NeutralInteraction::new(NeutralFamily::Lambda, vec![0, 1], form);
+        assert_eq!(distinct.osmotic_contribution(&[2.0, 3.0], 298.15), 6.0);
+
+        // The same component twice pairs with one each and a half - PHREEQC differentiates
+        // both slots before accumulating them, which is not the same as two.
+        let repeated = NeutralInteraction::new(NeutralFamily::Lambda, vec![0, 0], form);
+        assert_eq!(repeated.osmotic_contribution(&[2.0, 3.0], 298.15), 2.0);
+        assert_eq!(
+            repeated.log_gamma_contribution(&[2.0, 3.0], 0, 298.15),
+            4.0,
+            "1 * m * 1 from each of the two positions"
+        );
+
+        // `Mu`'s multiplicity counts the tuple's distinct permutations.
+        let all_equal = NeutralInteraction::new(NeutralFamily::Mu, vec![0, 0, 0], form);
+        assert_eq!(
+            all_equal.osmotic_contribution(&[2.0, 0.0, 0.0], 298.15),
+            8.0
+        );
+        // Multiplicity 3 times `m_0 m_0 m_1` = 3 * 2 * 2 * 3 = 36.
+        let two_equal = NeutralInteraction::new(NeutralFamily::Mu, vec![0, 0, 1], form);
+        assert_eq!(
+            two_equal.osmotic_contribution(&[2.0, 3.0, 0.0], 298.15),
+            36.0
+        );
+        let all_distinct = NeutralInteraction::new(NeutralFamily::Mu, vec![0, 1, 2], form);
+        assert_eq!(
+            all_distinct.osmotic_contribution(&[2.0, 3.0, 4.0], 298.15),
+            144.0
+        );
+    }
+
+    /// **An uncovered tuple abandons the layer**, which is the coverage rule rather than a
+    /// defect - and the reason a CO2/NaCl brine loses the whole family.
+    #[test]
+    fn an_uncovered_zeta_row_abandons_the_layer() {
+        let species = ["water", "Na+", "Cl-", "CO2"];
+        assert!(
+            crate::pitzer_catalog::find(
+                crate::pitzer_catalog::Family::Zeta,
+                &["CO2", "Na+", "Cl-"]
+            )
+            .is_none(),
+            "the catalogue pairs CO2 with sulphate, not chloride"
+        );
+        assert_eq!(
+            catalogue_interactions(&species, &[0.0, 1.0, -1.0, 0.0], &[1, 2], &[3]),
+            None
+        );
+
+        // And the sulphate pair it does carry.
+        let species = ["water", "Na+", "SO4--", "CO2"];
+        assert!(catalogue_interactions(&species, &[0.0, 1.0, -2.0, 0.0], &[1, 2], &[3]).is_some());
+    }
+}

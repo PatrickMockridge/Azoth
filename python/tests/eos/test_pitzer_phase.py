@@ -195,3 +195,85 @@ def test_the_osmotic_coefficient_matches_neqsim() -> None:
         sum_m = sum(m for m, z in zip(molality, charges, strict=False) if z != 0.0)
         phi = -ln_a_w / (phase.WATER_MOLAR_MASS * sum_m)
         assert phi == pytest.approx(expected, abs=1e-9), names
+
+
+def test_the_neutral_layer_matches_neqsim() -> None:
+    """**The λ/ζ/μ/η layer, on the one topology the catalogue covers for it.**
+
+    The oracle is `PitzerArithmetic.java`'s CO2-brine section. **The chloride case falls
+    back to the legacy dataset**, because the catalogue has no `ZETA(CO2, Na+, Cl-)` row -
+    it pairs CO2 and H2S with *sulphate* - so the layer is reachable only through a
+    sulphate-bearing brine, and a CO2/NaCl brine gets no neutral physics at all.
+    """
+    names = ["water", "Na+", "SO4--", "CO2"]
+    charge = [0.0, 1.0, -2.0, 0.0]
+    molality = molalities([0.86, 0.06, 0.03, 0.05])
+
+    interactions = phase.catalogue_interactions(names, charge, [1, 2], [3])
+    assert interactions is not None, "the catalogue covers CO2 with Na+ and SO4--"
+    assert len(interactions) == 4, "one LAMBDA(CO2,CO2), two LAMBDA(CO2,ion), one ZETA"
+
+    assert phase.osmotic_neutral(interactions, molality, 298.15) == pytest.approx(
+        1.09825174371, abs=1e-9
+    )
+    for component, expected in (
+        (1, 0.454900106480425),
+        (2, 0.296616109274644),
+        (3, 0.749844524371078),
+    ):
+        got = phase.ln_gamma_neutral(interactions, molality, component, 298.15)
+        assert got == pytest.approx(expected, abs=1e-9), names[component]
+
+
+def test_the_repetition_structure_decides_the_coefficients() -> None:
+    """The repeated-species case is the one that is not `[2, 2]`.
+
+    PHREEQC differentiates both slots before accumulating them, so the same component twice
+    pairs with one each and a **half** - not two each and one.
+    """
+    form = (1.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+    distinct = phase.NeutralInteraction(phase.LAMBDA, [0, 1], form)
+    assert distinct.osmotic_contribution([2.0, 3.0], 298.15) == 6.0
+
+    repeated = phase.NeutralInteraction(phase.LAMBDA, [0, 0], form)
+    assert repeated.osmotic_contribution([2.0, 3.0], 298.15) == 2.0
+    assert repeated.log_gamma_contribution([2.0, 3.0], 0, 298.15) == 4.0
+
+    # `Mu`'s multiplicity counts the tuple's distinct permutations: 1, 3 and 6.
+    assert (
+        phase.NeutralInteraction(phase.MU, [0, 0, 0], form).osmotic_contribution(
+            [2.0, 0.0, 0.0], 298.15
+        )
+        == 8.0
+    )
+    assert (
+        phase.NeutralInteraction(phase.MU, [0, 0, 1], form).osmotic_contribution(
+            [2.0, 3.0, 0.0], 298.15
+        )
+        == 36.0
+    )
+    assert (
+        phase.NeutralInteraction(phase.MU, [0, 1, 2], form).osmotic_contribution(
+            [2.0, 3.0, 4.0], 298.15
+        )
+        == 144.0
+    )
+
+
+def test_an_uncovered_zeta_row_abandons_the_layer() -> None:
+    """The coverage rule rather than a defect, and the reason a CO2/NaCl brine loses the
+    whole family."""
+    assert catalog.find("ZETA", ["CO2", "Na+", "Cl-"]) is None
+    assert (
+        phase.catalogue_interactions(
+            ["water", "Na+", "Cl-", "CO2"], [0.0, 1.0, -1.0, 0.0], [1, 2], [3]
+        )
+        is None
+    )
+    assert (
+        phase.catalogue_interactions(
+            ["water", "Na+", "SO4--", "CO2"], [0.0, 1.0, -2.0, 0.0], [1, 2], [3]
+        )
+        is not None
+    )

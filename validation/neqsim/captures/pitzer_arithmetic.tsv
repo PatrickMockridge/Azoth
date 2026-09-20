@@ -2,8 +2,8 @@
 # PitzerElectrostaticMixing.
 # Committed verbatim from `validation/neqsim/PitzerArithmetic.java`; regenerate by running it.
 # The Debye-Huckel parameter across temperature; the parameter getters for both datasets'
-# temperature forms; the ion activity coefficient and the osmotic coefficient end to end;
-# and the E_theta integral of the same-sign electrostatic mixing.
+# temperature forms; the ion and water activity coefficients and the osmotic coefficient
+# end to end; the neutral layer; and the E_theta integral of the electrostatic mixing.
 
 === Debye-Huckel parameter against temperature ===
    T / K        Agamma = debyeHuckelAphi(T)      Aphi = Agamma / 3
@@ -93,6 +93,16 @@
     ln gamma(Na+   ) =     -0.504259131023400   molality = 1.89236242525   z = +1
     ln gamma(Ca++  ) =      -1.84132192677047   molality = 1.89236242525   z = +2
     ln gamma(Cl-   ) =      0.726599630955942   molality = 3.78472485050   z = -1
+
+=== the neutral layer, on a CO2-bearing brine ===
+  dataset = legacy
+  neutral interactions active = false
+  osmotic contribution = 0.00000000000000
+  I = 1.93637085374591   phi = 0.980468325449398
+    water  ln gamma =     0.0824181228427651   neutral contribution =       0.00000000000000
+    Na+    ln gamma =     -0.411007421036427   neutral contribution =       0.00000000000000
+    Cl-    ln gamma =     -0.411007421036427   neutral contribution =       0.00000000000000
+    CO2    ln gamma =       0.00000000000000   neutral contribution =       0.00000000000000
 
 === PitzerElectrostaticMixing, the E_theta integral ===
        z_j      z_k            I       Aphi                E_theta            dE_theta/dI

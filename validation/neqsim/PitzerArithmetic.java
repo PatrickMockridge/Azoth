@@ -109,6 +109,34 @@ public class PitzerArithmetic {
     }
 
     System.out.println();
+    System.out.println("=== the neutral layer, on a CO2-bearing brine ===");
+    SystemInterface system = new SystemPitzer(298.15, 1.0);
+    system.addComponent("water", 0.86);
+    system.addComponent("Na+", 0.03);
+    system.addComponent("Cl-", 0.03);
+    system.addComponent("CO2", 0.08);
+    system.setMixingRule("classic");
+    system.init(0);
+    system.init(1);
+    PhasePitzer neutralPhase = (PhasePitzer) system.getPhase(1);
+    System.out.printf("  dataset = %s%n",
+        neutralPhase.getParameterDatasetId().startsWith("usgs") ? "phreeqc" : "legacy");
+    System.out.printf("  neutral interactions active = %s%n",
+        neutralPhase.hasNeutralPitzerInteractions());
+    System.out.printf("  osmotic contribution = %.15g%n",
+        neutralPhase.getNeutralPitzerOsmoticContribution(298.15));
+    System.out.printf("  I = %.15g   phi = %.15g%n", neutralPhase.getIonicStrength(),
+        neutralPhase.getOsmoticCoefficientOfWater());
+    for (int i = 0; i < neutralPhase.getNumberOfComponents(); i++) {
+      ComponentGePitzer component = (ComponentGePitzer) neutralPhase.getComponent(i);
+      System.out.printf("    %-6s ln gamma = %22.15g   neutral contribution = %22.15g%n",
+          component.getComponentName(),
+          Math.log(component.getGamma(neutralPhase, neutralPhase.getNumberOfComponents(), 298.15, 1.0,
+              neutralPhase.getType())),
+          neutralPhase.getNeutralPitzerLogGammaContribution(i, 298.15));
+    }
+
+    System.out.println();
     System.out.println("=== PitzerElectrostaticMixing, the E_theta integral ===");
     System.out.printf("  %8s %8s %12s %10s %22s %22s%n", "z_j", "z_k", "I", "Aphi", "E_theta", "dE_theta/dI");
     double[] result = new double[2];
