@@ -11,7 +11,7 @@
 //! the cleaning rule, and the dead DIPPR-101 branch.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature, pascals};
-use azoth_core::{Result, apply_checks};
+use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::results::AntoineVaporPressureResult;
 use crate::spec_gen;
@@ -167,7 +167,23 @@ pub fn antoine_vapor_pressure(
         AntoineForm::Pow10Kpa => (10.0_f64).powf(A - B / (t + C)),
         AntoineForm::Exp => 1e5 * (A - B / (t + C)).exp(),
         AntoineForm::Wagner => {
+            // **The form is defined on `0 < T <= Tc`, and the kernel says so.** `x = 1 -
+            // T/Tc` is negative above the critical temperature, and `x.powf(1.5)` is then
+            // `NaN` - which flows through the `exp` into `p_sat` and is returned as a
+            // *result*. A caller checking `p_sat > 0` sees `false` and has nothing to
+            // attribute it to, so the out-of-domain state is refused rather than computed.
+            // Above `Tc` there is no saturation pressure to report, which is why this is a
+            // refusal and not a clamp.
             let x = 1.0 - t / Tc.value;
+            if x < 0.0 {
+                return Err(AzothError::out_of_range(
+                    "T",
+                    t,
+                    format!(
+                        "the Wagner form is defined up to the critical temperature, and this                          state is above it: `1 - T/Tc` is {x}, whose 1.5 power is not a real                          number. There is no saturation pressure above `Tc` to return, so the                          state is refused rather than reported as `NaN`"
+                    ),
+                ));
+            }
             ((A * x + B * x.powf(1.5) + C * x.powi(3) + D * x.powi(6)) / (1.0 - x)).exp() * Pc.value
         }
     };

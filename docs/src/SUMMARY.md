@@ -8,6 +8,7 @@
   - [The middleware](./architecture/middleware.md)
 - [The calculus of thermodynamic dimensionality](./calculus/index.md)
   - [Dimensions](./calculus/dimensions.md)
+  - [Numerical safety](./calculus/numerics.md)
   - [Barbs](./calculus/barbs.md)
   - [Processes and channels](./calculus/process.md)
   - [Reflection and feedback](./calculus/rho.md)

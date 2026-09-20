@@ -26,11 +26,18 @@ import Azoth.Barb
 import Azoth.Capability
 import Azoth.Implicit
 import Azoth.Normalisation
+import Azoth.Pow
 
 #print axioms Azoth.Dim.ofExponentsOn_nil
 #print axioms Azoth.Dim.ofExponents_nil
 #print axioms Azoth.Dim.ofExponentsOn_singleton
 #print axioms Azoth.Dim.exponents_ofExponents
+#print axioms Azoth.Dim.exponents_smul
+#print axioms Azoth.Dim.not_integer_smul
+#print axioms Azoth.Pow.rpow_natCast
+#print axioms Azoth.Pow.rpow_third_of_neg_pos
+#print axioms Azoth.Pow.rpow_two_thirds_of_neg_neg
+#print axioms Azoth.Pow.the_conventions_disagree
 #print axioms Azoth.Rho.quote_injective
 #print axioms Azoth.Rho.drop_injective
 #print axioms Azoth.Rho.round_trip

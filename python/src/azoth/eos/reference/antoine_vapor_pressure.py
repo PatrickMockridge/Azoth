@@ -14,6 +14,7 @@ from __future__ import annotations
 import math
 
 from azoth._registry_gen import spec as _spec_for
+from azoth.core.errors import OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import AntoineVaporPressureResult
 from azoth.core.units import Q, from_si, input_to_si
@@ -44,7 +45,8 @@ def antoine_vapor_pressure(
         The vapour pressure, in ``Pa``.
 
     Raises:
-        OutOfRangeError: if ``T``, ``Tc`` or ``Pc`` is not positive.
+        OutOfRangeError: if ``T``, ``Tc`` or ``Pc`` is not positive, or if the Wagner
+            form is evaluated above ``Tc``, where it is not real.
 
     Example:
         >>> import azoth
@@ -84,7 +86,21 @@ def antoine_vapor_pressure(
     elif form == "exp":
         p_sat = 1e5 * math.exp(A - B / (t + C))
     else:
+        # **The form is defined on `0 < T <= Tc`, and the kernel says so.** Above the
+        # critical temperature `x = 1 - T/Tc` is negative and `x**1.5` is not real: Rust's
+        # `powf` returns `NaN` there and Python's `**` returns a *complex*, so the two
+        # kernels would disagree in kind rather than in value. The state is refused
+        # instead, because there is no saturation pressure above `Tc` to report.
         x = 1.0 - t / values["Tc"]
+        if x < 0.0:
+            raise OutOfRangeError(
+                "T",
+                t,
+                f"the Wagner form is defined up to the critical temperature, and this state "
+                f"is above it: `1 - T/Tc` is {x}, whose 1.5 power is not a real number. "
+                f"There is no saturation pressure above `Tc` to return, so the state is "
+                f"refused rather than reported as `NaN`",
+            )
         p_sat = math.exp((A * x + B * x**1.5 + C * x**3 + D * x**6) / (1.0 - x)) * values["Pc"]
 
     apply_checks(checks.derived, lambda name: p_sat if name == "p_sat" else None, warnings)

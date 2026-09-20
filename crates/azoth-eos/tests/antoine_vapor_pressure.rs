@@ -131,3 +131,54 @@ fn the_dippr_form_returns_pascals_without_a_factor() {
         r.p_sat.value
     );
 }
+
+/// **The Wagner form above `Tc` is refused, and it used to be `NaN`.**
+///
+/// `x = 1 - T/Tc` is negative above the critical temperature, and `x.powf(1.5)` is not
+/// real there. Rust's `powf` returns `NaN`, which flowed through the `exp` into `p_sat`
+/// and came back as a *result* - so a caller checking `p_sat > 0` saw `false` with nothing
+/// to attribute it to. The Python reference was worse in kind rather than degree: `**`
+/// promotes a negative base to a **complex**, so it raised `TypeError` where Rust returned
+/// a number, and the two kernels disagreed about what the function even is.
+///
+/// The fix is the third of the policy's options rather than the first: this is a refusal
+/// and not a clamp, because there is no saturation pressure above `Tc` to report.
+#[test]
+fn the_wagner_form_is_refused_above_the_critical_temperature() {
+    let tc = 190.56;
+    // Below `Tc` it is an ordinary number, so the refusal is about the domain and not
+    // about the coefficients.
+    let below = antoine_vapor_pressure(
+        -7.0,
+        1.5,
+        -2.0,
+        0.5,
+        0.0,
+        "wagner".parse().unwrap(),
+        kelvins(tc),
+        pascals(4.5992e6),
+        kelvins(150.0),
+    )
+    .expect("150 K is below the critical temperature");
+    assert!(below.p_sat.value.is_finite() && below.p_sat.value > 0.0);
+
+    // And above it, a refusal naming the state.
+    for t in [190.57, 200.0, 300.0] {
+        let error = antoine_vapor_pressure(
+            -7.0,
+            1.5,
+            -2.0,
+            0.5,
+            0.0,
+            "wagner".parse().unwrap(),
+            kelvins(tc),
+            pascals(4.5992e6),
+            kelvins(t),
+        )
+        .expect_err("above Tc there is no saturation pressure");
+        assert!(
+            error.to_string().contains("critical temperature"),
+            "{error}"
+        );
+    }
+}

@@ -28,6 +28,7 @@ tranches will write:
 |---|---|---|---|
 | Dimensions | what a unit's dimension is, and when two are equal | `Azoth/Dim.lean` ✅ | [Dimensions](./dimensions.md) |
 | Vocabulary | which units a spec may declare, and what each one is | `Azoth/Vocabulary.lean` ✅ | [The vocabulary table](./vocabulary.md) |
+| Numerics | which partial functions are total, and what a fractional exponent means | `Azoth/Pow.lean` ✅ | [Numerical safety](./numerics.md) |
 | Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` (barbed bisimulation) | [Barbs](./barbs.md) |
 | Processes | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` | [Processes](./process.md) |
 | Reflection | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` (binder-free) | [Reflection](./rho.md) |
