@@ -392,6 +392,159 @@ pub fn t2_d2_fborn_dt2(state: &FurstState) -> f64 {
     (f_born_tt + f_born_td * state.solvent_dielectric_dt) * t * t
 }
 
+/// One component's inputs to the composition derivatives.
+///
+/// Assembled by the phase rather than stored, because three of the four come from somewhere
+/// else: the ion diameter is the one the phase resolves (derived from the fitted covolume),
+/// the dielectric constant is the component's own at `T`, and `w_i` is a row sum of the
+/// short-range table rather than a property of the component at all.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ComponentDerivatives {
+    /// The ionic charge, in elementary charges.
+    pub charge: f64,
+    /// The ion diameter in **metres**, as the phase resolves it. Zero for a component with
+    /// none, which makes its Born radius zero rather than infinite.
+    pub diameter_m: f64,
+    /// The component's own dielectric constant at the state's temperature.
+    pub dielectric: f64,
+    /// NeqSim's `calcWi`, which is **`-2 sum_j n_j Wij(i, j, T)`** and not the row sum.
+    ///
+    /// The `-2` is the handler's own: `calcW`, `calcWij` and `calcWi` each return their sum
+    /// negated and doubled, so a caller reading them as the sums they are named for is wrong
+    /// by that factor in `W`, in the pair table and here. Taken as the handler returns it.
+    pub w_i: f64,
+}
+
+/// One component's electrolyte contribution to `dFdN_i`, by term.
+///
+/// Carried apart rather than summed because each is oracled apart: the capture prints
+/// `dFSR2dN`, `dFLRdN` and `dFBorndN` per component, and a sum that matched while its parts
+/// did not would be three compensating errors.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CompositionContribution {
+    /// The short-range `W` term's contribution.
+    pub short_range: f64,
+    /// The MSA long-range term's.
+    pub long_range: f64,
+    /// The Born term's.
+    pub born: f64,
+}
+
+impl CompositionContribution {
+    /// The three added, which is what the fugacity coefficient takes.
+    #[must_use]
+    pub fn total(&self) -> f64 {
+        self.short_range + self.long_range + self.born
+    }
+}
+
+/// The three electrolyte contributions to `dFdN_i`, which is what `ln phi_i` is built from.
+///
+/// `ComponentEos.fugcoef` is `exp(dFdN - ln(PV/RT))`, and this library's cubic `ln phi` is
+/// already `dFdN - ln Z` for its own part - so these are the *changes*, and adding them to
+/// the cubic's logarithm gives the electrolyte phase's fugacity coefficient. The identity is
+/// checked rather than assumed: the capture's `lnPhi[2]` is `-275.908826771314` and its
+/// `dFdN[2]` `-280.551091323773`, which differ by `-ln Z` to the last digit.
+///
+/// # The gamma chain is missing, upstream
+///
+/// `dFLRdN` is `FLRXLR XLRi + dFdAlphaLR alphai`, and **the chain through the shielding
+/// parameter is commented out in the source** - `FLRGammaLR * gammaLRdn` is written and
+/// disabled, and `dFLRdNdN` has the same hole. A port that completed it would have a
+/// different fugacity coefficient from the one being ported, so it is reproduced and the
+/// omission stated where a reader meets it.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if the two slices are not one per component.
+/// * [`AzothError::OutOfRange`] if no neutral component carries any moles, which the solvent
+///   dielectric constant's composition derivative divides by.
+pub fn ln_phi_contributions(
+    state: &FurstState,
+    components: &[ComponentDerivatives],
+    mole_numbers: &[f64],
+) -> Result<Vec<CompositionContribution>> {
+    if components.len() != mole_numbers.len() {
+        return Err(AzothError::invalid_input(
+            "components",
+            format!(
+                "{} components and {} mole numbers; the composition derivative is one per \
+                 component",
+                components.len(),
+                mole_numbers.len()
+            ),
+        ));
+    }
+    let neutral_moles: f64 = components
+        .iter()
+        .zip(mole_numbers)
+        .filter(|(c, _)| c.charge == 0.0)
+        .map(|(_, n)| n)
+        .sum();
+    if !neutral_moles.is_finite() || neutral_moles <= 0.0 {
+        return Err(AzothError::out_of_range(
+            "mole_numbers",
+            neutral_moles,
+            "the solvent dielectric constant's composition derivative divides by the neutral \
+             components' total moles, and a phase with none has no such derivative",
+        ));
+    }
+
+    let vn = state.molar_volume * state.moles;
+    let one_minus = 1.0 - state.packing;
+    let fsr2_eps = state.w / (vn * one_minus * one_minus);
+    let fsr2_w = 1.0 / (vn * one_minus);
+    let flr_xlr = -alpha_lr2(state.dielectric, state.temperature) / (4.0 * NEQSIM_PI);
+    let d_f_d_alpha = -state.xlr / (4.0 * NEQSIM_PI);
+    let k = born_scale(state.temperature);
+    let f_born_x = k * (1.0 / state.solvent_dielectric - 1.0);
+    let f_born_d = -k / state.solvent_dielectric.powi(2) * state.born_x;
+    let eps_ionic_half = 1.0 + state.ionic_packing / 2.0;
+
+    let mut out = Vec::with_capacity(components.len());
+    for component in components {
+        // `dEpsdNi`, and `dEpsIonicdNi` which is the same expression zeroed for a neutral.
+        let scale = NEQSIM_AVOGADRO * NEQSIM_PI / 6.0 * component.diameter_m.powi(3) / vn;
+        let eps_ionic_i = if component.charge == 0.0 { 0.0 } else { scale };
+
+        // `calcSolventdiElectricdn`: zero for an ion, else the component's own constant less
+        // the mixture's, over the neutral moles.
+        let solvent_dn = if component.charge != 0.0 {
+            0.0
+        } else {
+            (component.dielectric - state.solvent_dielectric) / neutral_moles
+        };
+
+        // `calcdiElectricdn = dYdf X + Y dXdf`.
+        let x = (1.0 - state.ionic_packing) / eps_ionic_half;
+        let y = state.solvent_dielectric - 1.0;
+        let d_x = eps_ionic_i * -1.5 / (eps_ionic_half * eps_ionic_half);
+        let dielectric_dn = solvent_dn * x + y * d_x;
+
+        // `alphai = -e^2 N_A/(eps0 eps^2 R T) deps/dn_i`.
+        let alpha_i = -ELECTRON_CHARGE * ELECTRON_CHARGE * NEQSIM_AVOGADRO
+            / (VACUUM_PERMITTIVITY * state.dielectric.powi(2) * R * state.temperature)
+            * dielectric_dn;
+
+        let xlr_i = component.charge.powi(2) * state.shielding
+            / (1.0 + state.shielding * component.diameter_m);
+        let born_i = if component.diameter_m > 0.0 {
+            component.charge.powi(2) / component.diameter_m
+        } else {
+            0.0
+        };
+
+        let fsr2 = fsr2_eps * scale + fsr2_w * component.w_i;
+        let flr = flr_xlr * xlr_i + d_f_d_alpha * alpha_i;
+        let born = f_born_x * born_i + f_born_d * solvent_dn;
+        out.push(CompositionContribution {
+            short_range: fsr2,
+            long_range: flr,
+            born,
+        });
+    }
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -602,5 +755,150 @@ mod tests {
         state.packing = 1.0;
         let error = fsr2(&state).expect_err("the excluded volume is the whole phase");
         assert_eq!(error.field(), Some("packing"), "{error:?}");
+    }
+
+    /// **The composition derivatives, against the capture's own per-component rows.**
+    ///
+    /// The three terms are checked apart, because a sum that matched while its parts
+    /// cancelled would be three coincidences. The state and the components are the aqueous
+    /// phase's: the diameters are the ones the *phase* resolves, which for an ion is the
+    /// value derived from the fitted covolume - 4.3437 Å - and not the correlation's 5.68.
+    #[test]
+    fn the_composition_derivatives_match_the_oracle() {
+        let state = FurstState {
+            w: -3.254_442_418_358_84e-07,
+            ..aqueous()
+        };
+        // The short-range table, which `w_i` is a row sum of. Built here rather than
+        // restated, and it is the same table `tests` in `furst_mixing` checks pairwise.
+        let mixture = |name: &str, charge: f64, angstrom: f64, dielectric: f64| {
+            crate::furst_mixing::FurstComponent {
+                name: name.to_string(),
+                charge,
+                diameter: angstrom,
+                dielectric_at_reference: dielectric,
+            }
+        };
+        let table = crate::furst_mixing::wij_table(
+            &[
+                mixture("methane", 0.0, 2.52, 2.0),
+                mixture("water", 0.0, 2.52, 78.332_147_573_168_0),
+                mixture("na+", 1.0, 5.68, 0.0),
+                mixture("cl-", -1.0, 3.60, 0.0),
+            ],
+            crate::databank::furst_wij,
+        )
+        .expect("the shipped mixture builds a table");
+        let moles: Vec<f64> = [
+            0.000_225_745_660_581_355,
+            0.997_778_050_427_449,
+            0.000_998_101_955_985_164,
+            0.000_998_101_955_985_164,
+        ]
+        .iter()
+        .map(|x| x * 1.001_901_653_436_76)
+        .collect();
+        let components = [
+            (0.0, 2.52, 2.0),
+            (0.0, 2.52, 78.332_147_573_168_0),
+            (1.0, 4.343_717_662_170_81, 0.0),
+            (-1.0, 3.226_081_589_674_81, 0.0),
+        ]
+        .iter()
+        .enumerate()
+        .map(
+            |(i, &(charge, angstrom, dielectric))| ComponentDerivatives {
+                charge,
+                diameter_m: angstrom * 1.0e-10,
+                dielectric,
+                // `calcWi`: the row sum negated and doubled, which is how the handler
+                // returns it - the same `-2` that `calcW` and `calcWij` carry.
+                w_i: -2.0
+                    * (0..4)
+                        .map(|j| moles[j] * table.wij(i, j, state.temperature))
+                        .sum::<f64>(),
+            },
+        )
+        .collect::<Vec<_>>();
+
+        let got = ln_phi_contributions(&state, &components, &moles).expect("computes");
+        let want: [(f64, f64, f64); 4] = [
+            (
+                -0.026_957_328_895_281_1,
+                -0.000_379_609_469_205_052,
+                0.003_768_121_783_018_29,
+            ),
+            (
+                -0.021_959_491_597_569_0,
+                8.588_602_480_471_29e-08,
+                -8.525_314_228_889_12e-07,
+            ),
+            (
+                -17.315_614_106_443_6,
+                -0.192_435_547_491_505,
+                -127.400_565_779_252,
+            ),
+            (
+                0.014_107_883_057_089_9,
+                -0.197_975_495_079_022,
+                -171.536_916_337_467,
+            ),
+        ];
+        for (i, &(short, long, born)) in want.iter().enumerate() {
+            let scale = short.abs().max(long.abs()).max(born.abs());
+            assert!(
+                (got[i].short_range - short).abs() < 1.0e-12 * scale.max(1.0),
+                "component {i}: dFSR2dN = {}, the probe prints {short}",
+                got[i].short_range
+            );
+            assert!(
+                (got[i].long_range - long).abs() < 1.0e-12 * scale.max(1.0),
+                "component {i}: dFLRdN = {}, the probe prints {long}",
+                got[i].long_range
+            );
+            assert!(
+                (got[i].born - born).abs() < 1.0e-12 * scale.max(1.0),
+                "component {i}: dFBorndN = {}, the probe prints {born}",
+                got[i].born
+            );
+        }
+        // And the identity the whole thing exists for: `ln phi_i = dFdN_i - ln Z`.
+        let ln_z = 0.009_635_852_009_232_98_f64.ln();
+        let d_f_d_n = [
+            3.733_727_075_442_27,
+            -10.391_048_596_690_5,
+            -280.551_091_323_773,
+            -171.220_609_647_619,
+        ];
+        let ln_phi = [
+            8.375_991_627_901_69,
+            -5.748_784_044_231_08,
+            -275.908_826_771_314,
+            -166.578_345_095_159,
+        ];
+        for i in 0..4 {
+            assert!(
+                (d_f_d_n[i] - ln_z - ln_phi[i]).abs() < 1.0e-9,
+                "ln phi[{i}] is {} and dFdN[{i}] - ln Z is {}",
+                ln_phi[i],
+                d_f_d_n[i] - ln_z
+            );
+        }
+    }
+
+    /// A phase with no neutral component has no solvent-dielectric composition derivative,
+    /// so it is refused rather than divided by.
+    #[test]
+    fn a_phase_with_no_solvent_is_refused() {
+        let state = aqueous();
+        let components = [ComponentDerivatives {
+            charge: 1.0,
+            diameter_m: 4.34e-10,
+            dielectric: 0.0,
+            w_i: 0.0,
+        }];
+        let error = ln_phi_contributions(&state, &components, &[1.0])
+            .expect_err("a lone ion has no solvent to differentiate against");
+        assert_eq!(error.field(), Some("mole_numbers"), "{error:?}");
     }
 }

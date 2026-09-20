@@ -163,6 +163,21 @@ public class FurstProbe {
     for (int i = 0; i < n; i++) {
       row("lnPhi[" + i + "]", Math.log(phase.getComponent(i).getFugacityCoefficient()));
     }
+
+    // **The composition derivatives, which are what `ln phi` is actually built from.**
+    // `ComponentEos.fugcoef` is `exp(dFdN - ln(PV/RT))`, so a port that reproduces `F` and
+    // not `dFdN` has reproduced the energy and not the fugacity. These are the three
+    // electrolyte contributions separately, so the model's `ln phi` can be checked layer by
+    // layer rather than only at the end.
+    for (int i = 0; i < n; i++) {
+      neqsim.thermo.component.ComponentModifiedFurstElectrolyteEos c =
+          (neqsim.thermo.component.ComponentModifiedFurstElectrolyteEos) phase.getComponent(i);
+      row("dFdN[" + i + "]", c.dFdN(phase, n, temperature, phase.getPressure()));
+      row("dFSR2dN[" + i + "]", c.dFSR2dN(phase, n, temperature, phase.getPressure()));
+      row("dFLRdN[" + i + "]", c.dFLRdN(phase, n, temperature, phase.getPressure()));
+      row("dFBorndN[" + i + "]", c.dFBorndN(phase, n, temperature, phase.getPressure()));
+      row("xlnN[" + i + "]", c.getx() * phase.getNumberOfMolesInPhase());
+    }
   }
 
   public static void main(String[] args) {
