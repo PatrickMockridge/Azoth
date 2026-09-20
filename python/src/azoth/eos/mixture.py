@@ -16,6 +16,7 @@ everything downstream still takes the numbers.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -23,10 +24,11 @@ from azoth.core.errors import InvalidInputError
 from azoth.eos.cubic import PR, Cubic
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Mapping, Sequence
 
     from azoth.core.units import Q
     from azoth.eos.components import AssociationParameters, UnifacUmrpruParameters
+    from azoth.eos.reference._mixture_state import ReducedParameters as ReducedParametersLike
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +71,66 @@ class Component:
                 )
 
 
+#: The roles a component can take in the Soreide-Whitson aqueous correlation, as the
+#: strings :func:`soreide_whitson_role` returns. `hydrocarbon` is NeqSim's `else` branch, so
+#: it is the role of anything the other three names do not claim.
+SOREIDE_WHITSON_ROLES: tuple[str, ...] = ("water", "nitrogen", "carbon_dioxide", "hydrocarbon")
+
+
+def soreide_whitson_role(name: str) -> str:
+    """Which role a component's **name** gives it in the Soreide-Whitson correlation.
+
+    NeqSim's own test, on `EosMixingRuleHandler.getkijWhitsonSoreideAqueous`: every role is
+    decided by the name, because the correlation was fitted per named gas. `H2O` is water
+    beside `water`, `N2` beside `nitrogen`, and `CO2` has no synonym there, so a mixture
+    naming its carbon dioxide anything else takes the hydrocarbon branch.
+    """
+    lowered = name.strip().lower()
+    if lowered in ("water", "h2o"):
+        return "water"
+    if lowered in ("n2", "nitrogen"):
+        return "nitrogen"
+    if lowered == "co2":
+        return "carbon_dioxide"
+    return "hydrocarbon"
+
+
+def soreide_whitson_roles(names: Iterable[str]) -> tuple[str, ...]:
+    """One role per component, from the names, in the order given."""
+    return tuple(soreide_whitson_role(name) for name in names)
+
+
+@dataclass(frozen=True, slots=True)
+class SoreideWhitsonParameters:
+    """The two things the Soreide-Whitson rule carries beside the base matrix.
+
+    The base matrix is the mixture's own :attr:`Mixture.kij`, which for this rule is
+    `INTER.csv`'s `KIJWhitsonSoriede` column.
+
+    Attributes:
+        roles: one role per component, from :func:`soreide_whitson_roles`. Carried rather
+            than re-derived from a name because :class:`Component` carries no name - the
+            same reason Rust's rule carries a `Vec<SoreideWhitsonRole>`.
+        salinity: the equivalent-NaCl molality of the aqueous phase, in mol/kg water.
+    """
+
+    roles: tuple[str, ...]
+    salinity: float
+
+    def __post_init__(self) -> None:
+        for index, role in enumerate(self.roles):
+            if role not in SOREIDE_WHITSON_ROLES:
+                raise InvalidInputError(
+                    "soreide_whitson",
+                    f"role {index} is {role!r}; the roles are {list(SOREIDE_WHITSON_ROLES)}",
+                )
+        if self.salinity < 0.0:
+            raise InvalidInputError(
+                "soreide_whitson",
+                f"the salinity is {self.salinity} mol/kg, and a molality cannot be negative",
+            )
+
+
 @dataclass(frozen=True, slots=True)
 class Mixture:
     """A set of components and the binary interaction parameters between them.
@@ -107,11 +169,29 @@ class Mixture:
     #: property of the fluid, and resolving them inside the solve would put a databank
     #: read on a flash's inner loop.
     umr: UnifacUmrpruParameters | None = field(default=None)
+    #: The Soreide-Whitson rule's roles and salinity, or ``None`` for every mixture that
+    #: does not name that rule. Its *interaction matrix* is :attr:`kij` - the column the
+    #: rule reads as its base - and the correlation replaces the water-gas entries of a
+    #: water-rich phase with its own. See :meth:`phase_kij`.
+    soreide_whitson: SoreideWhitsonParameters | None = field(default=None)
 
     def __post_init__(self) -> None:
         if not self.components:
             raise InvalidInputError("components", "a mixture needs at least one component")
         n = len(self.components)
+        if self.mixing_rule == "soreide_whitson":
+            if self.soreide_whitson is None:
+                raise InvalidInputError(
+                    "soreide_whitson",
+                    "the Soreide-Whitson rule resolves its water-gas entries from each "
+                    "component's role and the brine's salinity, and neither is set",
+                )
+            if len(self.soreide_whitson.roles) != n:
+                raise InvalidInputError(
+                    "soreide_whitson",
+                    f"the mixture has {n} components and the rule carries "
+                    f"{len(self.soreide_whitson.roles)} roles",
+                )
         if self.kij:
             if len(self.kij) != n or any(len(row) != n for row in self.kij):
                 raise InvalidInputError(
@@ -147,6 +227,79 @@ class Mixture:
         """The interaction matrix as one row-major list, for the Rust boundary."""
         return [value for row in self.kij for value in row]
 
+    def phase_kij(
+        self, reduced: ReducedParametersLike, x: Sequence[float]
+    ) -> tuple[tuple[float, ...], ...]:
+        """The interaction matrix at a phase's composition.
+
+        The phase-independent rules resolve their matrix once per state and this returns
+        it unchanged. **The Soreide-Whitson rule is phase-dependent**: its salinity
+        correlation replaces the water-gas entries, and only in a water-rich phase, so the
+        matrix is a function of the composition and this is where it is computed.
+
+        The gate is NeqSim's own `water.x > 0.8`: a vapour phase whose water is a few
+        molecules in a thousand keeps the base matrix, which is why a model that skipped
+        the gate would agree with the oracle on a gas and be wrong on every brine.
+        """
+        parameters = self.soreide_whitson
+        if self.mixing_rule != "soreide_whitson" or parameters is None:
+            return self.kij
+        roles = parameters.roles
+        if not any(
+            role == "water" and fraction > 0.8 for role, fraction in zip(roles, x, strict=True)
+        ):
+            return self.kij
+        salinity = parameters.salinity
+        return tuple(
+            tuple(
+                self.kij[i][j]
+                if roles[j] != "water"
+                else self._aqueous_kij(i, roles[i], reduced.reduced_temperatures[i], salinity)
+                for j in range(len(roles))
+            )
+            for i in range(len(roles))
+        )
+
+    def _aqueous_kij(
+        self, index: int, role: str, reduced_temperature: float, salinity: float
+    ) -> float:
+        """One water-gas entry of the Soreide-Whitson correlation.
+
+        `getkijWhitsonSoreideAqueous`'s chain, on the legacy parameterisation - the two
+        newer ones (Chabab 2019, Burgoyne-Nielsen 2026) are not ported and this model does
+        not claim them.
+        """
+        if role == "water":
+            return 0.0
+        if role == "nitrogen":
+            return 0.997 * (
+                -1.70235 * (1.0 + 0.025587 * math.pow(salinity, 0.75))
+                + 0.44338 * (1.0 + 0.08126 * math.pow(salinity, 0.75)) * reduced_temperature
+            )
+        if role == "carbon_dioxide":
+            # NeqSim's ladder has a 0.8 branch above 3.5 mol/kg, but the 0.9 branch above
+            # 2.0 fires first, so it is unreachable.
+            multip_k = 0.9 if salinity > 2.0 else 1.0
+            return (
+                multip_k
+                * 0.989
+                * (
+                    -0.31092 * (1.0 + 0.15587 * math.pow(salinity, 0.75))
+                    + 0.2358 * (1.0 + 0.17837 * math.pow(salinity, 0.98)) * reduced_temperature
+                    - 21.2566 * math.exp(-math.pow(6.7222, reduced_temperature) - salinity)
+                )
+            )
+        omega = self.components[index].omega
+        c0, c1, c2 = 0.017407, 0.033516, 0.011478
+        a0 = 1.112 - 1.7369 * math.pow(omega, -0.1)
+        a1 = 1.1001 + 0.83 * omega
+        a2 = -0.15742 - 1.0988 * omega
+        return 0.777 * (
+            (1.0 + c0 * salinity) * a0
+            + (1.0 + c1 * salinity) * a1 * reduced_temperature
+            + (1.0 + c2 * salinity) * a2 * reduced_temperature * reduced_temperature
+        )
+
 
 def mixture(
     components: Iterable[Component],
@@ -156,6 +309,7 @@ def mixture(
     associating: bool = False,
     mixing_rule: str = "classic",
     umr: UnifacUmrpruParameters | None = None,
+    soreide_whitson: SoreideWhitsonParameters | None = None,
 ) -> Mixture:
     """A :class:`Mixture` from a component list and sparse interaction pairs.
 
@@ -178,6 +332,9 @@ def mixture(
             every other rule. Both of these exist for one model,
             :func:`azoth.eos.components.umr_cpa_mixture_of`, which is the only caller
             that names either.
+        soreide_whitson: the roles and salinity the ``"soreide_whitson"`` rule reads,
+            and ``None`` for every other rule. The ``kij`` given beside it is that rule's
+            base matrix, which is ``INTER.csv``'s ``KIJWhitsonSoriede`` column.
 
     Returns:
         The mixture, with a full symmetric matrix built from the pairs.
@@ -210,4 +367,5 @@ def mixture(
         associating=associating,
         mixing_rule=mixing_rule,
         umr=umr,
+        soreide_whitson=soreide_whitson,
     )

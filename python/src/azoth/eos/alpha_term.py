@@ -350,3 +350,54 @@ class Delft1998:
                 alpha * alpha
             )
         return Soave(self.kappa).psi_t(tr)
+
+
+class SoreideWhitsonWater:
+    """Soreide-Whitson's alpha function for **water**, the one term that reads the brine.
+
+    ``alpha = A(Tr)**2`` with ``A = 1 + 0.453 (1 - Tr (1 - 0.0103 s**1.1)) + 0.0034
+    (Tr**-3 - 1)``, so the salinity enters the bracket and this is the only alpha in the
+    library that is not a function of the component and the temperature alone. Every other
+    component of a Soreide-Whitson mixture is Peng-Robinson 1978, which is :class:`Soave`
+    with ``eos.pr78_kappa``.
+
+    The critical temperature is carried because ``psi_t`` is a derivative at a fixed
+    critical temperature and ``Tr = T / Tc`` is what the bracket is written against - the
+    term itself never needs it, the calculus does.
+    """
+
+    def __init__(self, salinity: float, critical_temperature: float) -> None:
+        self.salinity = salinity
+        self.critical_temperature = critical_temperature
+
+    def _bracket(self, tr: float) -> float:
+        # Imported here rather than at module scope: `azoth.eos.reference` imports
+        # `pt_flash`, which reaches this module, so a top-level import would close a cycle.
+        from azoth.eos.reference.soreide_whitson_alpha import bracket
+
+        return bracket(self.salinity, tr)
+
+    def _bracket_slope(self, tr: float) -> float:
+        """``dA/dTr``."""
+        return (
+            -0.453 * (1.0 - 0.0103 * math.pow(self.salinity, 1.1)) - 3.0 * 0.0034 * (1.0 / tr) ** 4
+        )
+
+    def _bracket_curvature(self, tr: float) -> float:
+        """``d2A/dTr2``."""
+        return 12.0 * 0.0034 * (1.0 / tr) ** 5
+
+    def alpha(self, tr: float) -> float:
+        """The attraction scale at reduced temperature ``Tr``."""
+        return self._bracket(tr) ** 2
+
+    def psi(self, tr: float) -> float:
+        """``d ln alpha / d ln T``, the logarithmic derivative."""
+        return tr * 2.0 * self._bracket_slope(tr) / self._bracket(tr)
+
+    def psi_t(self, tr: float) -> float:
+        """``T * d(psi)/dT``, already multiplied by ``T``."""
+        a, d1, d2 = self._bracket(tr), self._bracket_slope(tr), self._bracket_curvature(tr)
+        # The `2` is `psi`'s: `psi = Tr 2A'/A` because `alpha = A**2`, so its derivative
+        # carries the same factor. Without it this returns exactly half.
+        return 2.0 * tr * (d1 / a + tr * (d2 / a - (d1 / a) ** 2))

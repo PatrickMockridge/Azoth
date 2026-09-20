@@ -38,6 +38,7 @@ from azoth.eos.alpha_term import (
     RkAlpha,
     Schwartzentruber,
     Soave,
+    SoreideWhitsonWater,
     TwuCoon,
     matcop_kappa,
     umr_kappa,
@@ -177,6 +178,16 @@ class ReducedParameters(NamedTuple):
     #: an interaction matrix. Present is what makes :func:`mixture_parameters` mix by the
     #: universal rule instead.
     umr: UnifacTables | None = None
+    #: `Tr_i = T / Tc_i`, one per component. The reduced temperature the alpha terms were
+    #: evaluated at, carried because the Soreide-Whitson mixing rule reads it again when it
+    #: resolves its phase-dependent interaction matrix - and a caller holding the reduced
+    #: parameters should not have to recover `Tc_i` from them to do so.
+    reduced_temperatures: tuple[float, ...] = ()
+    #: Whether the mixture's interaction matrix is a function of the *phase composition*.
+    #: True only for the Soreide-Whitson rule, and carried so that
+    #: :func:`phase_derivatives` can refuse it: `A_ij` then has a composition derivative
+    #: the classical surface does not have.
+    composition_dependent_kij: bool = False
 
 
 class PhaseState(NamedTuple):
@@ -249,9 +260,11 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
     b: list[float] = []
     psi: list[float] = []
     psi_t: list[float] = []
+    reduced_temperatures: list[float] = []
     warnings: list[Warning] = []
-    for component in mixture.components:
+    for index, component in enumerate(mixture.components):
         reduced_temperature = temperature / component.Tc.to_base_units().magnitude
+        reduced_temperatures.append(reduced_temperature)
         reduced_pressure = pressure / component.Pc.to_base_units().magnitude
         # An associating component carries its own attraction and covolume, and NeqSim's
         # `ComponentSrkCPA` substitutes them for the cubic's: `if (|aCPA| > 1e-6) { a =
@@ -312,6 +325,42 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
             b_reduced = rk_ab.b_reduced
             psi_value = rk_term.psi(reduced_temperature)
             psi_t_value = rk_term.psi_t(reduced_temperature)
+        elif mixture.alpha == "soreide_whitson":
+            # **Water by role, and the salinity from the rule.** This is the one alpha
+            # that is not a function of the component and the temperature alone, and the
+            # role vector is the only per-component identity this layer has - so beside
+            # another rule there would be nothing to read either from, and this refuses
+            # rather than resolving against a zero. Rust's `Alpha::SoreideWhitson` makes
+            # the same refusal.
+            parameters = mixture.soreide_whitson
+            if parameters is None:
+                raise InvalidInputError(
+                    "mixing_rule",
+                    "the Soreide-Whitson alpha takes its salinity from the "
+                    "Soreide-Whitson mixing rule and reads which component is water from "
+                    "that rule's roles, so it cannot be resolved beside any other rule",
+                )
+            if parameters.roles[index] == "water":
+                a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                    mixture.cubic,
+                    SoreideWhitsonWater(
+                        salinity=parameters.salinity,
+                        critical_temperature=component.Tc.to_base_units().magnitude,
+                    ),
+                    reduced_temperature,
+                    reduced_pressure,
+                )
+            else:
+                # Every other component is Peng-Robinson 1978, which is what
+                # `AttractiveTermSoreideWhitson.alpha` delegates to.
+                soreide_kappa = pr78_kappa(component.omega)
+                warnings.extend(soreide_kappa.warnings)
+                a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
+                    mixture.cubic,
+                    Soave(kappa=soreide_kappa.kappa),
+                    reduced_temperature,
+                    reduced_pressure,
+                )
         elif mixture.alpha == "twucoon":
             a_reduced, b_reduced, psi_value, psi_t_value = _non_soave(
                 mixture.cubic, TwuCoon(omega=component.omega), reduced_temperature, reduced_pressure
@@ -437,6 +486,8 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
         umr=_unifac_tables(mixture),
         cubic=mixture.cubic,
         warnings=warnings,
+        reduced_temperatures=tuple(reduced_temperatures),
+        composition_dependent_kij=mixture.mixing_rule == "soreide_whitson",
     )
 
 
@@ -1092,6 +1143,17 @@ def phase_derivatives(
     a, b = reduced.a, reduced.b
     c = reduced.cubic
     n = len(x)
+    if reduced.composition_dependent_kij:
+        # The Soreide-Whitson rule's matrix is a function of the composition this is
+        # differentiated against, so `A_ij` below would carry a term nothing here supplies.
+        # The same refusal Rust's `Mixture::phase_derivatives` makes.
+        raise InvalidInputError(
+            "mixing_rule",
+            "the Soreide-Whitson rule resolves its interaction matrix against the phase "
+            "composition, so its `A_ij` carries a composition derivative this classical "
+            "one does not have. The derivative surface covers the rules whose matrix is "
+            "fixed by the state",
+        )
     if reduced.umr is not None:
         # The activity-coefficient rules write `ln phi` as `ader`, `alpha_mix` and
         # `b_der`, whose composition derivative is the excess Gibbs energy's second

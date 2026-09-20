@@ -53,7 +53,12 @@ from azoth._data import find
 from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 from azoth.core.units import Q, ureg
 from azoth.eos.cubic import CUBICS, Cubic
-from azoth.eos.mixture import Component, Mixture
+from azoth.eos.mixture import (
+    Component,
+    Mixture,
+    SoreideWhitsonParameters,
+    soreide_whitson_roles,
+)
 from azoth.eos.reference._association import family_of
 from azoth.eos.reference._henry import HenryRecord
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
@@ -1401,6 +1406,54 @@ def cpa_kij_for(
     return pairs
 
 
+@cache
+def _soreide_whitson_kij() -> dict[tuple[str, str], float]:
+    """`KIJWhitsonSoriede`, keyed by the ordered pair and stored both ways round.
+
+    **Read as the file writes it, which is where this library and NeqSim part.** Six of
+    the 303 rows - `propane`/`CO2`, `n-butane`/`CO2`, `n-pentane`/`CO2`, `n-hexane`/`CO2`,
+    `n-heptane`/`CO2` and `mercury`/`CO2` - carry a **decimal comma**, and NeqSim hands
+    the row to `Double.parseDouble`, which throws; the per-pair `catch` in
+    `EosMixingRuleHandler` swallows it with both diagnostics commented out, so on those
+    six pairs the rule evaluates the *SRK* column instead and nothing says so. The
+    generator resolves the comma to a point, so the fitted value is what is read here.
+    """
+    pairs: dict[tuple[str, str], float] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        a, b = row["component_a"], row["component_b"]
+        value = _absent_is_zero(row["kijwhitsonsoriede"])
+        pairs[(a, b)] = value
+        pairs[(b, a)] = value
+    return pairs
+
+
+def soreide_whitson_kij_for(
+    names: tuple[str, ...], *, card: keycard.Keycard | None = None
+) -> dict[tuple[int, int], float]:
+    """The Soreide-Whitson interaction pairs for a list of components, by index.
+
+    The sibling of :func:`kij_for` for the column the Soreide-Whitson rule reads as its
+    base matrix, with the same conventions: an unlisted pair is zero, and a keycard's
+    value wins over the databank's including when it is exactly zero.
+
+    **This is the base matrix and not the whole of the rule.** The water-gas entries of a
+    water-rich phase are replaced by the salinity correlation, which
+    :meth:`azoth.eos.mixture.Mixture.phase_kij` computes; this is what every other pair,
+    and every pair in a non-aqueous phase, keeps.
+    """
+    pairs: dict[tuple[int, int], float] = {}
+    for i, a in enumerate(names):
+        for j in range(i + 1, len(names)):
+            from_keycard = card.kij_for(a, names[j]) if card is not None else None
+            if from_keycard is not None:
+                pairs[(i, j)] = from_keycard
+                continue
+            stored = _soreide_whitson_kij().get((a.strip().lower(), names[j].strip().lower()))
+            if stored:
+                pairs[(i, j)] = stored
+    return pairs
+
+
 @dataclass(frozen=True, slots=True)
 class GeNrtlPhaseParameters:
     """The parameters of an NRTL activity-coefficient *phase*.
@@ -2260,6 +2313,7 @@ _ALPHAS: frozenset[str] = frozenset(
         "matcop_prumr",
         "matcop_5prumr",
         "delft1998",
+        "soreide_whitson",
     }
 )
 
@@ -2378,6 +2432,71 @@ def umr_cpa_mixture_of(
         associating=True,
         mixing_rule="umr",
         umr=tables,
+    )
+    return (
+        fluid,
+        IdealGasModel(
+            cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]
+            cp_b=tuple(e.cp[1] for e in entries),  # type: ignore[index]
+            cp_c=tuple(e.cp[2] for e in entries),  # type: ignore[index]
+            cp_d=tuple(e.cp[3] for e in entries),  # type: ignore[index]
+            cp_e=tuple(e.cp[4] for e in entries),  # type: ignore[index]
+        ),
+    )
+
+
+def soreide_whitson_mixture_of(
+    names: list[str],
+    salinity: float,
+    *,
+    card: keycard.Keycard | None = None,
+) -> tuple[Mixture, IdealGasModel]:
+    """The Soreide-Whitson fluid: Peng-Robinson 1978, its rule, and its brine.
+
+    NeqSim's ``SystemSoreideWhitson``. Four choices are made here and nowhere else:
+
+    * the cubic is Peng-Robinson 1978 and the alpha is ``"soreide_whitson"``, which is
+      the salinity-dependent form for water and PR78 for every other component - the
+      role vector is what says which is which, and it comes from the names;
+    * the interaction matrix is ``KIJWhitsonSoriede``, which is **read as the file writes
+      it**: six rows carry a decimal comma that NeqSim's own reader throws on, and the
+      six pairs it leaves at ``KIJSRK`` are this library's one deliberate divergence;
+    * the salinity is a **molality** over the phase's water, and this is the *feed's*
+      equivalent-NaCl value. NeqSim's own `calcSalinity` recomputes it from the flashed
+      aqueous phase, which is a flash-level iteration this library's model does not
+      perform - so the caller states the brine, and the model states what it read.
+
+    Raises:
+        InvalidInputError: if the list is empty, an ion is named - a cubic has no notion
+            of one - or the salinity is negative.
+        PropertyUnavailableError: if a name is not in the databank, or has no
+            heat-capacity coefficients.
+    """
+    if not names:
+        raise InvalidInputError("components", "a mixture needs at least one component")
+    resolved = [name.strip().lower() for name in names]
+    entries = [entry(name, card=card) for name in resolved]
+    _refuse_ions([e.name for e in entries if e.component_type == ION])
+
+    missing = [e.name for e in entries if e.cp is None]
+    if missing:
+        raise InvalidInputError(
+            "components",
+            f"no heat-capacity coefficients for {missing}. The databank carries them for "
+            f"every substance it ships; one a keycard adds needs its own, because a cubic "
+            f"needs `Tc`, `Pc` and `omega` and an enthalpy needs the polynomial as well",
+        )
+
+    alpha = "soreide_whitson"
+    fluid = mixture(
+        tuple(e.component(alpha=alpha) for e in entries),
+        kij=soreide_whitson_kij_for(tuple(resolved), card=card),
+        cubic=_cubic("pr"),
+        alpha=alpha,
+        mixing_rule="soreide_whitson",
+        soreide_whitson=SoreideWhitsonParameters(
+            roles=soreide_whitson_roles(resolved), salinity=salinity
+        ),
     )
     return (
         fluid,
