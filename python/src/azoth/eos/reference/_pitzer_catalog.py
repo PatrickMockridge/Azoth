@@ -79,13 +79,17 @@ def canonical_species(name: str) -> str:
 
 
 def species_key(species: Sequence[str]) -> str:
-    """The catalogue's lookup key: the canonical species **sorted** and joined with ``|``.
+    """The catalogue's lookup key: the canonical species **sorted**, **folded**, joined.
 
     Sorted, so a row is found whichever order its species are written in - the catalogue
     writes ``Ba+2 Cl-`` and ``Cl- H+``, and both must be found by a caller holding the
     names in either order.
+
+    **Folded, because the catalogue's namespace is NeqSim's and this library's is not.**
+    The catalogue writes ``Na+`` and ``HCO3-``, which are ``getComponentName()``'s
+    spellings, while the component table writes ``na+`` and ``hco3-``.
     """
-    return "|".join(sorted(canonical_species(name) for name in species))
+    return "|".join(sorted(canonical_species(name).lower() for name in species))
 
 
 @cache

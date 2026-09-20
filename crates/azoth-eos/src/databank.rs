@@ -229,6 +229,13 @@ pub struct Entry {
     /// no cubic over an [`ION`], because the table's critical columns for those rows are
     /// a default rather than a measurement. Never computed with.
     pub class: String,
+    /// The molecular formula, as `COMP.csv` states it.
+    ///
+    /// Read by the Pitzer catalogue's hydrocarbon test, which cannot use [`Self::class`]
+    /// alone: a database component such as methane keeps the type `normal` in a GE phase,
+    /// so `isHydrocarbonForAutomaticCatalog` falls back to **a formula of carbon, hydrogen
+    /// and digits with both present**.
+    pub formula: String,
     /// The association parameters, or `None` for a component the table gives no scheme.
     ///
     /// 181 of the 348 compiled rows carry `0` in the scheme column and are non-associating;
@@ -872,6 +879,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "antoinee",
         "referencestatetype",
         "comptype",
+        "formula",
         "ioniccharge",
         "deshmationicdiameter",
         "henrycoef1",
@@ -987,6 +995,11 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     .unwrap_or("")
                     .trim()
                     .to_lowercase(),
+                formula: record
+                    .get(index["formula"])
+                    .unwrap_or("")
+                    .trim()
+                    .to_string(),
                 association: parse_association(&record, &index, row)?,
                 m_saft: number(&record, index["msaft"], "msaft", row)?,
                 sigma_saft: number(&record, index["sigma_saft_m"], "sigma_saft_m", row)?,
@@ -1270,6 +1283,10 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 } else {
                     "other".to_string()
                 },
+                // Blank rather than invented: a card states no formula, and the one test
+                // that reads this - the Pitzer catalogue's hydrocarbon clause - treats an
+                // empty formula as "not a hydrocarbon" rather than as an unknown.
+                formula: String::new(),
                 // A card carries no Henry correlation: `ComponentOverride` is a closed list
                 // and an overlay states the parameters a cubic or an activity model reads.
                 henry: crate::henry::HenryRecord {
@@ -1314,6 +1331,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             // The table's, for the reason the PC-SAFT set below is: `ComponentOverride` is
             // a closed list, so a card correcting `Tc` does not turn an ion into a cubic.
             class: base.class,
+            formula: base.formula,
             henry: base.henry,
             ionic_charge: over.ionic_charge.unwrap_or(base.ionic_charge),
             deshmukh_mather_diameter: over

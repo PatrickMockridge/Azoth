@@ -504,7 +504,11 @@ def build_phreeqc(source: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
         coefficients = [0.0] * 6
         for index, token in enumerate(tokens[count : count + 6]):
             coefficients[index] = float(token)
-        key = "|".join(sorted(species))
+        # Folded, because the catalogue spells a species as NeqSim's `getComponentName()`
+        # does - `Na+`, `HCO3-` - and this library's component table spells it lower case.
+        # The lookup is a resolution between two namespaces, and case is the only thing
+        # that differs between them.
+        key = "|".join(sorted(name.lower() for name in species))
         if (family, key) in seen:
             raise ValueError(
                 f"{source.name}: duplicate {family} row for {key}, which upstream refuses"

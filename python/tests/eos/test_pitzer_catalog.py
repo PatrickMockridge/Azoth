@@ -163,7 +163,7 @@ def test_a_mixed_catalogue_brine_is_complete() -> None:
     assert audit.active_cations == ("K+", "Na+")
     assert audit.active_anions == ("Cl-", "SO4--")
     assert audit.dataset_id == catalog.PHREEQC_DATASET_ID
-    assert catalog.require_complete(audit) is None
+    catalog.require_complete(audit)
 
 
 def test_a_pair_with_no_parameters_is_refused() -> None:

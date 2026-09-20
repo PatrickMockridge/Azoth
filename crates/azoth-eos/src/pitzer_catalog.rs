@@ -164,14 +164,24 @@ pub fn canonical_species(name: &str) -> String {
     name.to_string()
 }
 
-/// The catalogue's lookup key: the canonical species **sorted** and joined with `|`.
+/// The catalogue's lookup key: the canonical species **sorted**, **folded to lower case**,
+/// and joined with `|`.
 ///
 /// Sorted, so a row is found whichever order its species are written in - the catalogue
-/// writes `Ba+2 Cl-` and `Cl- H+`, and both must be found by a caller holding the names
-/// in either order.
+/// writes `Ba+2 Cl-` and `Cl- H+`, and both must be found by a caller holding the names in
+/// either order.
+///
+/// **Folded, because the catalogue's namespace is NeqSim's and this library's is not.**
+/// The catalogue writes `Na+` and `HCO3-`, which are `getComponentName()`'s spellings,
+/// while the component table writes `na+` and `hco3-`. Case is the only thing that differs
+/// between the two, and resolving names without regard to case is this library's rule, so
+/// folding here is what makes a databank name addressable against the catalogue at all.
 #[must_use]
 pub fn species_key(species: &[&str]) -> String {
-    let mut canonical: Vec<String> = species.iter().map(|name| canonical_species(name)).collect();
+    let mut canonical: Vec<String> = species
+        .iter()
+        .map(|name| canonical_species(name).to_lowercase())
+        .collect();
     canonical.sort();
     canonical.join("|")
 }
@@ -325,7 +335,10 @@ pub fn is_hydrocarbon(species: &Species<'_>) -> bool {
 const ACTIVE_MOLES: f64 = 1.0e-20;
 
 /// Charge below which a component is a neutral rather than an ion.
-const ACTIVE_CHARGE: f64 = 0.5;
+///
+/// `PhasePitzer`'s own test, written inline in each place that needs it; named here because
+/// the model classifies its components by the same rule the selection does.
+pub const ACTIVE_CHARGE: f64 = 0.5;
 
 /// Which dataset covers a phase's topology, and why not when the answer is the CSV.
 ///
@@ -877,18 +890,43 @@ mod tests {
         assert_eq!(select_dataset(&mixture), Selection::Phreeqc);
     }
 
-    /// The databank's own rows resolve to the catalogue's species, which is what makes
-    /// the two tables addressable from each other.
+    /// **The databank's own names address the catalogue's rows**, which is what the fold is
+    /// for and was not true before it.
+    ///
+    /// The catalogue spells a species the way NeqSim's `getComponentName()` does and the
+    /// component table spells it lower case, so a case-sensitive key finds nothing here -
+    /// and every brine silently falls back to the CSV, where the numbers differ. Asserting
+    /// the two spellings resolve to the *same row* is the property; asserting either one
+    /// alone is not.
     #[test]
-    fn the_databanks_ions_are_the_catalogues_species() {
-        for name in ["na+", "cl-", "ca++", "so4--", "hco3-", "mg++", "k+"] {
-            let entry = databank::entry(name, None).expect("the databank has it");
-            assert_eq!(
-                canonical_species(&entry.name),
-                entry.name,
-                "{name} is already in the canonical spelling"
-            );
-        }
+    fn the_databanks_ions_address_the_catalogue() {
+        let named = |key: &str| {
+            databank::entry(key, None)
+                .expect("the databank has it")
+                .name
+        };
+        let sodium = named("na+");
+        let chloride = named("cl-");
+        let hydrogen_carbonate = named("hco3-");
+        assert_eq!(sodium, "na+", "the table's own spelling is lower case");
+
+        let from_the_table = find(Family::B0, &[&sodium, &chloride]);
+        assert!(from_the_table.is_some());
+        assert_eq!(
+            from_the_table,
+            find(Family::B0, &["Na+", "Cl-"]),
+            "two spellings of one species are one row"
+        );
+        // And the PHREEQC spelling the file itself carries, for a species whose charge
+        // suffix is numeric there.
+        assert_eq!(
+            find(Family::B0, &["Ba+2", "Cl-"]),
+            find(Family::B0, &["ba++", "cl-"])
+        );
+        // Hydrogen carbonate is the measured fallback: `B0` and `B1` are there and `C0` is
+        // not, which is what takes `water + Na+ + HCO3-` to the CSV.
+        assert!(find(Family::B0, &[&sodium, &hydrogen_carbonate]).is_some());
+        assert!(find(Family::C0, &[&sodium, &hydrogen_carbonate]).is_none());
     }
 
     /// One mole of mixture's worth, with the solvent mass the audit's threshold scales by.
@@ -1057,15 +1095,16 @@ mod tests {
 
     /// A same-sign pair on the catalogue is covered, and the psi tuple is reported with
     /// **only its first two species sorted** - `psiKey`'s own order, not the catalogue's
-    /// all-sorted lookup key.
+    /// all-sorted, folded lookup key.
     #[test]
     fn the_reported_keys_are_neqsims() {
         assert_eq!(report_pair_key("Na+", "K+"), "K+|Na+");
         assert_eq!(report_pair_key("Cl-", "Na+"), "Cl-|Na+");
         assert_eq!(report_psi_key("Na+", "K+", "Cl-"), "K+|Na+|Cl-");
-        // The catalogue's own key would sort all three and write `Cl-|K+|Na+`, which is a
-        // triple NeqSim's diagnostic never contains.
-        assert_eq!(species_key(&["Na+", "K+", "Cl-"]), "Cl-|K+|Na+");
+        // The lookup key sorts all three, which is a triple NeqSim's diagnostic never
+        // contains - and it folds case, which the reported key must not because the
+        // diagnostic has to read the way NeqSim's exception does.
+        assert_eq!(species_key(&["Na+", "K+", "Cl-"]), "cl-|k+|na+");
         assert_ne!(
             report_psi_key("Na+", "K+", "Cl-"),
             species_key(&["Na+", "K+", "Cl-"])
