@@ -1186,3 +1186,87 @@ fn a_mixture_carrying_two_pressure_terms_is_refused() {
         assert_eq!(error.field(), Some("mixture"), "{error:?}");
     }
 }
+
+/// **The Fürst phase, end to end, against the NeqSim oracle — and the one layer that does
+/// not yet match.**
+///
+/// `Z = 0.00963585200923298` and four `ln phi` are the probe's, for the shipped
+/// `SystemFurstElectrolyteEosTest` mixture at its own state. What this exercises that
+/// nothing else does: the ion substitution (`a = 1e-35`, the fitted covolume), the
+/// Schwartzentruber alpha that is Soave's form with a different coefficient, the shared root
+/// solve with a pressure that is not the association's, and the `ln phi` contributions added
+/// to the cubic's.
+///
+/// **It does not pass, and the reason is recorded rather than tuned away.** Measured, this
+/// gives `Z = 0.00960282877819137` against the oracle's `0.00963585200923298` - 0.34% - and
+/// every layer of the *electrolyte term* is verified separately in `furst_terms` and
+/// `furst_electrolyte` against the same capture. So the difference is in the **cubic's `A`
+/// and `B` under this model's mixing rule**, and isolating it needs an instrument this
+/// session did not build: the probe prints `A_phase = 96724.5120456906` and
+/// `B_phase = 2.11461248960916`, but neither `A_phase/n` nor `A_phase` is a root of the
+/// SRK cubic in the form this library writes it, so the scaling between NeqSim's `A` and
+/// this library's reduced `A` is not yet established. `setMixingRule(4)` is taken to be the
+/// Huron-Vidal rule, which is what the enumeration says.
+///
+/// `#[ignore]` rather than deleted: the numbers are the measurement, and a port that
+/// reproduced the *terms* and stopped one layer short should say so where a reader meets it.
+#[test]
+#[ignore = "the mixing layer's A and B are not isolated yet - see the note above"]
+fn the_furst_phase_matches_the_oracle() {
+    use azoth_eos::furst_dielectric::MixingRule;
+    use azoth_eos::furst_electrolyte::furst_mixture_of;
+
+    let (mixture, _) = furst_mixture_of(
+        &["methane", "water", "Na+", "Cl-"],
+        MixingRule::default_for_the_model(),
+        None,
+    )
+    .expect("the shipped mixture builds");
+    // NeqSim's `setMixingRule(4)`, which is the Huron-Vidal rule.
+    let params = azoth_eos::databank::huron_vidal_parameters(
+        &["methane", "water", "Na+", "Cl-"],
+        Cubic::Srk,
+        None,
+    )
+    .expect("the databank carries the pairs");
+    let mixture = mixture.with_mixing_rule(azoth_eos::MixingRule::HuronVidal {
+        kij: params.kij,
+        hv_gij: params.hv_gij,
+        hv_gij_t: params.hv_gij_t,
+        hv_alpha: params.hv_alpha,
+        hv_pairs: params.hv_pairs,
+    });
+
+    let reduced = mixture
+        .reduced_parameters(kelvins(298.15), pascals(1_001_325.0))
+        .expect("reduces");
+    let x = [
+        0.000_225_745_660_581_355,
+        0.997_778_050_427_449,
+        0.000_998_101_955_985_164,
+        0.000_998_101_955_985_164,
+    ];
+    let state = mixture
+        .phase_state(&reduced, &x, RootSide::Liquid)
+        .expect("solves");
+
+    assert!(
+        (state.z - 0.009_635_852_009_232_98).abs() < 1.0e-8,
+        "Z = {}, NeqSim gives 0.00963585200923298",
+        state.z
+    );
+    let want_ln_phi: [f64; 4] = [
+        8.375_991_627_901_69,
+        -5.748_784_044_231_08,
+        -275.908_826_771_314,
+        -166.578_345_095_159,
+    ];
+    for (i, &want) in want_ln_phi.iter().enumerate() {
+        let scale = want.abs().max(1.0);
+        assert!(
+            (state.ln_phi[i] - want).abs() < 1.0e-6 * scale,
+            "ln phi[{i}] = {}, NeqSim gives {want}",
+            state.ln_phi[i]
+        );
+    }
+}

@@ -454,6 +454,32 @@ impl Mixture {
             let reduced_temperature = t.value / component.tc.value;
             let reduced_pressure = p.value / component.pc.value;
             reduced_temperatures.push(reduced_temperature);
+            // **A Fürst ion's attraction and covolume are not the cubic's.** NeqSim's
+            // `ComponentModifiedFurstElectrolyteEos` overwrites both in its constructor -
+            // `b = (p0 d^3 + p1)` from the fitted parameters and `a = 1e-35` - so a port
+            // that left them at Peng-Robinson's would give every ion a real attraction and
+            // a covolume of the wrong size, and the root would be plausible and wrong.
+            // Substituted here rather than on the component because it is the *model's*
+            // statement, exactly as the association's fitted `a`/`b` substitution is.
+            if let Some(furst) = self.furst.as_ref()
+                && let Some(covolume) = furst.ion_covolume(index)
+            {
+                // The reduced forms of the two: `A_i = a_i P/(R T)^2` and `B_i = b_i P/(R T)`,
+                // both already dimensionless, so this is the same reduction the cubic's own
+                // branch does with `omega_a alpha Pr/Tr^2` and `omega_b Pr/Tr`.
+                let r_t = R * t.value;
+                a.push(
+                    crate::furst_electrolyte::FurstElectrolyte::ion_attraction() * p.value
+                        / (r_t * r_t),
+                );
+                b.push(covolume * p.value / r_t);
+                // The ion's alpha is Schwartzentruber's in NeqSim and contributes nothing:
+                // `psi` is read only through weights carrying `sqrt(A_i A_j)`, and `A` is
+                // `1e-35`.
+                psi.push(0.0);
+                psi_t.push(0.0);
+                continue;
+            }
             // The kappa correlation belongs to the alpha term; the Omega constants to
             // the cubic. SRK and PR share the Soave alpha form and differ in both; RK
             // is kappa-free.

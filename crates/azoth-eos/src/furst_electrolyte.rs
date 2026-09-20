@@ -33,7 +33,8 @@
 use azoth_core::Result;
 
 use crate::furst_dielectric::{
-    MixingRule, component_dielectric, component_dielectric_dt, component_dielectric_dtdt,
+    MixingRule, NEQSIM_AVOGADRO, NEQSIM_PI, component_dielectric, component_dielectric_dt,
+    component_dielectric_dtdt,
 };
 use crate::furst_mixing::{FurstComponent, ShortRange, WijTable, short_range, wij_table};
 use crate::furst_terms::{
@@ -122,6 +123,41 @@ impl FurstElectrolyte {
         self.species.is_empty()
     }
 
+    /// An ion's covolume in m³/mol, or `None` for a component that is not one.
+    ///
+    /// **Not `omega_b R Tc/Pc`.** `ComponentModifiedFurstElectrolyteEos`'s constructor
+    /// overwrites an ion's covolume with `(p0 d^3 + p1)` from the fitted parameters, where
+    /// `d` is the **table's** diameter in ångströms - and sets its attraction to `1e-35`,
+    /// which is zero for every purpose a term has.
+    ///
+    /// Measured: the probe prints `b = 2.58461732544` for Na+ against the fit's
+    /// `(1.117e-7 * 5.68^3 + 5.3771e-6) = 2.58461732544e-5`, and `1.05885752` for Cl-. So
+    /// `Molarmass` and the fitted coefficient are in the same m³/mol the rest of this
+    /// module works in, and NeqSim's own `getb()` is that times `1e5` - the same scaling
+    /// `getMolarVolume()` carries.
+    #[must_use]
+    pub fn ion_covolume(&self, index: usize) -> Option<f64> {
+        let species = self.species.get(index)?;
+        if species.charge == 0.0 {
+            return None;
+        }
+        let parameters = crate::databank::furst_parameters("furstParams");
+        let p0 = parameters.first().copied().unwrap_or(0.0);
+        let p1 = parameters.get(1).copied().unwrap_or(0.0);
+        Some(p0 * species.table_diameter.powi(3) + p1)
+    }
+
+    /// The attraction NeqSim gives an ion, in joules per mole times m³ per mole squared.
+    ///
+    /// `1e-35`, which is NeqSim's literal and is zero to every digit any term of this model
+    /// reads. Exposed rather than assumed because a port that left the ion's attraction at
+    /// the cubic's would give it a real attraction, and its fugacity coefficient would be
+    /// plausible and wrong.
+    #[must_use]
+    pub fn ion_attraction() -> f64 {
+        1.0e-35
+    }
+
     /// The short-range sums at a composition and temperature.
     ///
     /// # Errors
@@ -201,6 +237,145 @@ impl FurstElectrolyte {
             state,
         })
     }
+}
+
+/// The Fürst fluid: an SRK cubic, its mixing rule, and the electrolyte term.
+///
+/// NeqSim's `SystemFurstElectrolyteEos`. Four things are set here and nowhere else:
+///
+/// * **the alpha is Schwartzentruber for every component**, which is what
+///   `ComponentModifiedFurstElectrolyteEos`'s constructor installs. With the fitted
+///   parameters left at zero - and NeqSim's single-argument constructor leaves them there -
+///   that reduces to `(1 + m(1 - sqrt(Tr)))^2` with `m = 0.48508 + 1.55191 w - 0.15613 w^2`,
+///   which is Soave's form with a different coefficient from PR78's. A component's own
+///   `Schwartzentruber*` columns must therefore **not** be read: NeqSim never reads them.
+/// * **an ion's attraction is `1e-35` and its covolume is the fitted value**, substituted in
+///   [`crate::mixture::Mixture::reduced_parameters`] because it is the model's statement and
+///   not the component's.
+/// * **the short-range table is built from the names**, so the term is assembled here where
+///   the names are.
+/// * the mixing rule is the caller's, and `SystemFurstElectrolyteEosTest` uses NeqSim's 4,
+///   which is the Huron-Vidal rule.
+///
+/// # Errors
+/// * [`azoth_core::AzothError::InvalidInput`] if `names` is empty or a component is not in
+///   the databank.
+/// * [`azoth_core::AzothError::PropertyUnavailable`] if a component has no heat-capacity
+///   coefficients.
+pub fn furst_mixture_of(
+    names: &[&str],
+    rule: crate::furst_dielectric::MixingRule,
+    overlay: Option<&crate::databank::Overlay>,
+) -> azoth_core::Result<(
+    crate::mixture::Mixture,
+    crate::molar_enthalpy_entropy::IdealGasModel,
+)> {
+    use azoth_core::AzothError;
+
+    if names.is_empty() {
+        return Err(AzothError::invalid_input(
+            "components",
+            "a mixture needs at least one component",
+        ));
+    }
+    let entries: Vec<crate::databank::Entry> = names
+        .iter()
+        .map(|name| crate::databank::entry(name, overlay))
+        .collect::<azoth_core::Result<Vec<_>>>()?;
+
+    let missing: Vec<&str> = entries
+        .iter()
+        .filter(|e| e.cp.is_none())
+        .map(|e| e.name.as_str())
+        .collect();
+    if !missing.is_empty() {
+        return Err(AzothError::property_unavailable(
+            missing.join(", "),
+            "heat-capacity coefficients".to_string(),
+            "the databank carries them for every substance it ships; one a keycard adds \
+             needs its own"
+                .to_string(),
+        ));
+    }
+
+    // The species, in the databank's own order. **An ion's diameter here is the one derived
+    // from the fitted covolume**, because that is what the phase's MSA and Born terms read;
+    // the *table's* diameter travels beside it for the short-range correlation, which reads
+    // a different number. See `furst_mixing`.
+    let fitted = crate::databank::furst_parameters("furstParams");
+    let (p0, p1) = (
+        fitted.first().copied().unwrap_or(0.0),
+        fitted.get(1).copied().unwrap_or(0.0),
+    );
+    let species: Vec<FurstSpecies> = entries
+        .iter()
+        .map(|e| {
+            let table_diameter = e.lennard_jones_diameter;
+            let diameter_m = if e.ionic_charge == 0.0 {
+                table_diameter * 1.0e-10
+            } else {
+                let covolume = p0 * table_diameter.powi(3) + p1;
+                (6.0 * covolume / (NEQSIM_PI * NEQSIM_AVOGADRO)).powf(1.0 / 3.0)
+            };
+            FurstSpecies {
+                name: e.name.clone(),
+                charge: e.ionic_charge,
+                diameter_m,
+                table_diameter,
+                dielectric_coefficients: e.dielectric,
+                critical_volume: e.critical_volume.unwrap_or(0.0),
+                dielectric_at_reference: component_dielectric(&e.dielectric, 298.15),
+            }
+        })
+        .collect();
+
+    let n = entries.len();
+    let mut matrix = vec![0.0; n * n];
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let value = crate::databank::kij(
+                &entries[i].name,
+                &entries[j].name,
+                crate::Cubic::Srk,
+                overlay,
+            );
+            matrix[i * n + j] = value;
+            matrix[j * n + i] = value;
+        }
+    }
+    let components = entries
+        .iter()
+        .map(|e| e.component())
+        .collect::<azoth_core::Result<Vec<_>>>()?;
+    // **Empty alpha parameters, deliberately.** NeqSim's `AttractiveTermSchwartzentruber`
+    // is constructed with the component alone, which leaves its three fitted parameters at
+    // zero and reduces the correlation to Soave's form. The databank carries
+    // `schwartzentruber1..3` columns for some substances and this model must not read them.
+    let components: Vec<crate::mixture::Component> = components
+        .into_iter()
+        .map(|c| c.with_alpha_params(Vec::new()))
+        .collect();
+    let ideal_gas = {
+        let coefficient = |index: usize| -> Vec<f64> {
+            entries
+                .iter()
+                .map(|e| e.cp.map_or(0.0, |cp| cp[index]))
+                .collect()
+        };
+        crate::molar_enthalpy_entropy::IdealGasModel {
+            cp_a: coefficient(0),
+            cp_b: coefficient(1),
+            cp_c: coefficient(2),
+            cp_d: coefficient(3),
+            cp_e: coefficient(4),
+        }
+    };
+    let term = FurstElectrolyte::new(species, rule)?;
+    let mixture = crate::mixture::Mixture::new(components, matrix)?
+        .with_cubic(crate::Cubic::Srk)
+        .with_alpha(crate::alpha_term::Alpha::Schwartzentruber)
+        .with_furst(term);
+    Ok((mixture, ideal_gas))
 }
 
 #[cfg(test)]

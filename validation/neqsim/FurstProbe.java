@@ -93,6 +93,18 @@ public class FurstProbe {
     row("Z", phase.getZ());
 
     int n = phase.getNumberOfComponents();
+    // **The covolumes, which is the one thing the port cannot get from a formula.** An ion's
+    // `b` is not `0.08664 R Tc/Pc`: `ComponentModifiedFurstElectrolyteEos` overwrites it
+    // with `(p0 d^3 + p1) 1e5` from the fitted parameters and sets `a = 1e-35`, and azoth's
+    // `Component` cannot express either. Reading both sides is what fixes the conversion.
+    row("A_phase", ((neqsim.thermo.phase.PhaseEos) phase).getA());
+    row("B_phase", phase.getB());
+    for (int i = 0; i < n; i++) {
+      neqsim.thermo.component.ComponentEosInterface component =
+          (neqsim.thermo.component.ComponentEosInterface) phase.getComponent(i);
+      row("b[" + i + "]", component.getb());
+      row("a[" + i + "]", component.geta());
+    }
     for (int i = 0; i < n; i++) {
       row("x[" + i + "]", phase.getComponent(i).getx());
       row("charge[" + i + "]", phase.getComponent(i).getIonicCharge());
