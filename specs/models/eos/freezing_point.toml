@@ -1,0 +1,59 @@
+id = "eos.freezing_point"
+name = "Freezing-point temperature"
+kind = "procedure"
+assumptions = [
+    "**one pure substance, and it is para-hydrogen.** `thermo/util/solid/` gives a solid Helmholtz equation for para-hydrogen and for argon, and argon is not a hydrogen phase, so `components` names one entry and it must be `para-hydrogen`.",
+    "the fluid is the para-Leachman reference equation, and **which of its roots** is NeqSim's own rule: a gas below the triple-point pressure and a liquid at and above it. The two are different states at the same temperature and pressure.",
+    "**the solid is calibrated, not raw.** `eos.parahydrogen_solid_phase` is the thesis equation as it stands; NeqSim's `SystemLeachmanEos` shifts it to the liquid at the triple point. Unshifted it misses the triple point's own definition - the two Gibbs energies equal there - by `3.12` J/mol.",
+    "the calibration's constants are computed here from the two models and are not tunables: NeqSim derives them at first use, so a port that hardcoded them would report a number whose provenance nothing holds.",
+    "the residual is `(g_fluid - g_solid)/(R T)`, dimensionless, with NeqSim's `R = 8.3144621` - not the Leachman equation's own `8.31451` nor the solid's, both of which are rounded values of their own era.",
+    "the answer is a property of the substance and the pressure, so the starting temperature is a search path and not a state; the spec states it in `[algorithm]` rather than as an input, where NeqSim takes it from the system it is given.",
+    "no `h_res` or `s_res`: the operation reports a temperature, and the phases it passed through are the caller's to evaluate.",
+]
+references = [
+    "Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009). \"Fundamental Equations of State for Parahydrogen, Normal Hydrogen, and Orthohydrogen.\" Journal of Physical and Chemical Reference Data 38(3), 721-748.",
+    "Sannerhaugen, E. (2026). The hcp phase-I solid para-hydrogen Helmholtz equation, as NeqSim's `thermo/util/solid/ParaHydrogenSolidHelmholtzEquation` carries it.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `FreezingPointTemperatureFlash`, `SystemLeachmanEos.createCalibratedParaHydrogenSolidEquation` and `PhaseSolidHelmholtzEos` are the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `FreezingPointTemperatureFlash`"
+edition = "The route that requires a `PhaseSolidHelmholtzEos`, with the reference the phase is on: the flash's own test is the oracle, and its two other routes - a tabulated solid, and the legacy variants - are carried rather than ported."
+[algorithm]
+scheme = "freezing_point_bracket_bisection"
+initialisation = "span_expansion_from_the_start"
+initial_temperature = 14.0
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 100
+[algorithm.bracket]
+scheme = "symmetric_span_expansion"
+lower = 0.5
+upper = 5000.0
+steps = 50
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry"
+description = "the substance, by name. `para-hydrogen` is the one this has a solid equation for; the name is resolved against the component databank like every other model's."
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the freezing point is wanted; the temperature is what is solved for."
+[outputs]
+[outputs.temperature]
+unit = "K"
+description = "the freezing-point temperature: where the calibrated solid's molar Gibbs energy equals the fluid's."
+[outputs.iterations]
+unit = "dimensionless"
+description = "Bracket expansions and bisection steps together, as NeqSim counts them."
+[outputs.residual]
+unit = "dimensionless"
+description = "The dimensionless Gibbs difference at the reported temperature, `(g_fluid - g_solid)/(R T)`."
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.freezing_point"
+rust = "azoth_eos::freezing_point"

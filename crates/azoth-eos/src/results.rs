@@ -599,6 +599,29 @@ impl CalcResult for PureSaturationResult {
     }
 }
 
+/// Result of `eos.freezing_point`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FreezingPointResult {
+    /// The temperature at which the calibrated solid's Gibbs energy meets the fluid's.
+    pub temperature: ThermodynamicTemperature,
+    /// Bracket expansions and bisection steps together, as NeqSim counts them.
+    pub iterations: u32,
+    /// The dimensionless Gibbs difference at the reported temperature,
+    /// `(g_fluid - g_solid)/(R T)`.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for FreezingPointResult {
+    const CALC_ID: &'static str = "eos.freezing_point";
+    const FIELDS: &'static [&'static str] = &["temperature", "iterations", "residual", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// What a converged flash turned out to be.
 ///
 /// A separate type from [`RootStructure`], which counts the roots of a *pure*

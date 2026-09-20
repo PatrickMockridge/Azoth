@@ -13,6 +13,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/freezing_point.toml
 //!   - specs/models/eos/furst_electrolyte_mod2004_phase.toml
 //!   - specs/models/eos/furst_electrolyte_phase.toml
 //!   - specs/models/eos/ge_nrtl_flash.toml
@@ -1679,6 +1680,102 @@ pub static EOS_CG_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&EOS_CG_PHASE_ALGORITHM),
     checks: EOS_CG_PHASE_CHECKS,
     cases: EOS_CG_PHASE_CASES,
+};
+
+static FREEZING_POINT_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "P",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute pressure; zero and below are not states",
+    },
+}];
+
+static FREEZING_POINT_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_triple_point",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("P", 7042.0)],
+        flags: &[],
+        lists: &[("components", &["para-hydrogen"])],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("temperature", 13.8032999997377)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "above_the_triple_point",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("P", 351270.6909625152)],
+        flags: &[],
+        lists: &[("components", &["para-hydrogen"])],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("temperature", 13.9150932717025)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "well_above_the_triple_point",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-09,
+        numbers: &[("P", 1876432.785899884)],
+        flags: &[],
+        lists: &[("components", &["para-hydrogen"])],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("temperature", 14.3982923022496)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+static FREEZING_POINT_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "freezing_point_bracket_bisection",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 100,
+    bracket: Some(ModelBracket {
+        scheme: "symmetric_span_expansion",
+        lower: 0.5,
+        upper: 5000.0,
+        steps: 50,
+    }),
+    initialisation: Some("span_expansion_from_the_start"),
+    initial_temperature: Some(14.0),
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.freezing_point`.
+pub static FREEZING_POINT_SPEC: ModelSpec = ModelSpec {
+    id: "eos.freezing_point",
+    kind: "procedure",
+    algorithm: Some(&FREEZING_POINT_ALGORITHM),
+    checks: FREEZING_POINT_CHECKS,
+    cases: FREEZING_POINT_CASES,
 };
 
 static FURST_ELECTROLYTE_MOD2004_PHASE_CHECKS: &[SpecCheck] = &[
@@ -7625,6 +7722,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
     &EOS_CG_PHASE_SPEC,
+    &FREEZING_POINT_SPEC,
     &FURST_ELECTROLYTE_MOD2004_PHASE_SPEC,
     &FURST_ELECTROLYTE_PHASE_SPEC,
     &GE_NRTL_FLASH_SPEC,

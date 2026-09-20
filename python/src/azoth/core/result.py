@@ -320,6 +320,20 @@ class PureSaturationResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FreezingPointResult(_HasWarnings):
+    """Result of ``eos.freezing_point``."""
+
+    #: The temperature at which the calibrated solid's Gibbs energy meets the fluid's.
+    temperature: Q
+    #: Bracket expansions and bisection steps together, as NeqSim counts them.
+    iterations: int
+    #: The dimensionless Gibbs difference at the reported temperature.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PrMolarVolumeResult(_HasWarnings):
     """Result of ``eos.pr_molar_volume``.
 

@@ -21,9 +21,9 @@ use azoth_eos::results::{
     BubbleTemperatureResult, BwrsPhaseResult, CapillaryDewPointResult, ChungConductivityResult,
     ChungViscosityResult, Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult,
     CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult,
-    EosCgPhaseResult, FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult,
-    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
-    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
+    EosCgPhaseResult, FreezingPointResult, FurstElectrolyteMod2004PhaseResult,
+    FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
+    GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
     HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
@@ -3927,6 +3927,53 @@ impl From<&ArgonSolidPhaseResult> for PyArgonSolidPhaseResult {
     frozen,
     skip_from_py_object,
     module = "azoth._core",
+    name = "FreezingPointResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFreezingPointResult {
+    /// The temperature at which the calibrated solid's Gibbs energy meets the fluid's.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// Bracket expansions and bisection steps together.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The dimensionless Gibbs difference at the reported temperature.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFreezingPointResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FreezingPointResult(temperature={} {}, {} iteration(s))",
+            self.temperature.magnitude_si, self.temperature.unit, self.iterations
+        )
+    }
+}
+
+impl From<&FreezingPointResult> for PyFreezingPointResult {
+    fn from(r: &FreezingPointResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            temperature: qty(r.temperature.value, "K"),
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
     name = "ParahydrogenSolidPhaseResult"
 )]
 #[derive(Debug, Clone, PartialEq)]
@@ -6172,6 +6219,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HydrogenPhaseResult::CALC_ID => HydrogenPhaseResult::FIELDS.to_vec(),
         WaterPhaseResult::CALC_ID => WaterPhaseResult::FIELDS.to_vec(),
         ArgonSolidPhaseResult::CALC_ID => ArgonSolidPhaseResult::FIELDS.to_vec(),
+        FreezingPointResult::CALC_ID => FreezingPointResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
         EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),

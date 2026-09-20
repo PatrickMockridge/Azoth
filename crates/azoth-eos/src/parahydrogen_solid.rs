@@ -10,7 +10,18 @@ use crate::dual::{Dual, SolidState, state_from_helmholtz};
 /// The gas constant of the thesis equation, J/(mol.K).
 pub const R: f64 = 8.314_462_1;
 
-const TRIPLE_POINT_TEMPERATURE: f64 = 13.8033;
+/// The triple point, and the enthalpy of fusion there, in K, Pa and J/mol.
+///
+/// Public because the equation's own **reference** is not fixed by the equation: NeqSim's
+/// `ParaHydrogenSolidHelmholtzEquation` is constructed raw and shifted to the para-hydrogen
+/// liquid at these coordinates by its system, so a caller that compares this solid against a
+/// fluid needs all three. See `freezing_point`, which is that caller.
+pub const TRIPLE_POINT_TEMPERATURE: f64 = 13.8033;
+/// The triple-point pressure, Pa. NeqSim states it in bara, as `0.07042`.
+pub const TRIPLE_POINT_PRESSURE: f64 = 7042.0;
+/// NeqSim's `TRIPLE_POINT_ENTHALPY_OF_FUSION`: what the solid's entropy is shifted by, over
+/// this temperature, to meet the liquid's.
+pub const TRIPLE_POINT_ENTHALPY_OF_FUSION: f64 = 118.0;
 
 const MAXIMUM_TEMPERATURE: f64 = 200.0;
 const MAXIMUM_PRESSURE: f64 = 100_000.0e5;

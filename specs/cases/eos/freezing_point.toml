@@ -1,0 +1,36 @@
+model = "eos.freezing_point"
+[[cases]]
+id = "the_triple_point"
+tolerance = 1e-09
+source = """NeqSim 3.20.0's own `FreezingPointTemperatureFlashTest` mixture -
+`SystemLeachmanEos(13.6, 0.07042, "para-hydrogen", true)` with `setSolidPhaseCheck` - run
+from `validation/neqsim/FreezingProbe.java`: the flash returns `13.8032999997377` K, which is
+the calibrated triple point its test asserts to 1e-4, and a residual of `1.97e-11` after 32
+iterations."""
+[cases.inputs]
+components = ["para-hydrogen"]
+P = 7042.0
+[cases.expected]
+temperature = 13.8032999997377
+[[cases]]
+id = "above_the_triple_point"
+tolerance = 1e-09
+source = """The same probe and the same test at 3.5127 bara, from a 13.8 K start: `13.9150932717025`
+K, residual `2.77e-11`, 30 iterations. The two states are the test's own check that an
+invalid bracket trial does not abort a valid melting state."""
+[cases.inputs]
+components = ["para-hydrogen"]
+P = 351270.6909625152
+[cases.expected]
+temperature = 13.9150932717025
+[[cases]]
+id = "well_above_the_triple_point"
+tolerance = 1e-09
+source = """The same probe and test at 18.7643 bara: `14.3982923022496` K, residual `-9.28e-11`, 38
+iterations. Between them the three states are the whole of that test's para-hydrogen
+coverage."""
+[cases.inputs]
+components = ["para-hydrogen"]
+P = 1876432.785899884
+[cases.expected]
+temperature = 14.3982923022496

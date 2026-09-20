@@ -80,6 +80,7 @@
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Dew-point temperature](./eos/dew_temperature.md)
   - [EOS-CG phase state](./eos/eos_cg_phase.md)
+  - [Freezing-point temperature](./eos/freezing_point.md)
   - [Phase state of a Furst electrolyte fluid, 2004 revision](./eos/furst_electrolyte_mod2004_phase.md)
   - [Phase state of a Furst electrolyte fluid](./eos/furst_electrolyte_phase.md)
   - [Gamma-phi flash with an NRTL liquid](./eos/ge_nrtl_flash.md)

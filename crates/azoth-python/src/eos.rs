@@ -3197,6 +3197,24 @@ pub fn hydrogen_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The freezing point of para-hydrogen at a pressure, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side checks them: the solid equation
+/// this composes is para-hydrogen's, so a name that is not that is refused rather than
+/// approximated.
+#[pyfunction]
+#[pyo3(signature = (components, P))]
+#[allow(non_snake_case)] // `P` is the symbol in the chemistry
+pub fn freezing_point(
+    py: Python<'_>,
+    components: Vec<String>,
+    P: f64,
+) -> PyResult<crate::results::PyFreezingPointResult> {
+    azoth_eos::freezing_point(&components, pascals(P))
+        .map(|r| crate::results::PyFreezingPointResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The IAPWS-IF97 water phase state, computed in Rust.
 #[pyfunction]
 #[pyo3(signature = (T, P))]

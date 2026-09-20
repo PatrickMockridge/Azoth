@@ -87,6 +87,7 @@ from azoth.core.result import (
     DewPressureResult,
     DewTemperatureResult,
     EosCgPhaseResult,
+    FreezingPointResult,
     FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
     GeNrtlFlashResult,
@@ -342,6 +343,7 @@ _BWRS_PHASE = "eos.bwrs_phase"
 _AMMONIA_PHASE = "eos.ammonia_phase"
 _CO2_PHASE = "eos.co2_phase"
 _HELIUM_PHASE = "eos.helium_phase"
+_FREEZING_POINT = "eos.freezing_point"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _WATER_PHASE = "eos.water_phase"
 _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
@@ -1908,6 +1910,25 @@ def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
     See :func:`azoth.eos.reference.helium_phase`.
     """
     return resolve(_HELIUM_PHASE)(T=T, P=P)  # type: ignore[no-any-return]
+
+
+def freezing_point(components: list[str], P: Q) -> FreezingPointResult:
+    """The freezing-point temperature of para-hydrogen at a pressure.
+
+    The temperature where the calibrated solid's molar Gibbs energy equals the fluid's, with
+    the fluid on whichever root NeqSim's flash takes: a gas below the triple-point pressure
+    and a liquid at and above it. One substance, and it is ``para-hydrogen`` - the solid
+    equations in NeqSim's ``thermo/util/solid/`` are para-hydrogen's and argon's.
+
+    Raises:
+        InvalidInputError: if ``components`` is not one entry, or names a substance this has
+            no solid equation for.
+        OutOfRangeError: if ``P`` is not positive.
+        SolverNotConvergedError: if the search does not bracket or does not converge.
+
+    See :func:`azoth.eos.reference.freezing_point`.
+    """
+    return resolve(_FREEZING_POINT)(components=components, P=P)  # type: ignore[no-any-return]
 
 
 def hydrogen_phase(
