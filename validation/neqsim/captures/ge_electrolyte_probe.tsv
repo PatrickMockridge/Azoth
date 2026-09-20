@@ -1,0 +1,76 @@
+################ Kent-Eisenberg ################
+
+=== water + MDEA + Na+ + Cl- + CO2 ===
+  phase class = PhaseKentEisenberg
+  T = 313.15 K   P = 5.00 bara   moles = 1.000000000
+    water     z = +0  x = 0.800000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 28.5275613328  refstate = solvent  phi = 0.0148069549104026
+    MDEA      z = +0  x = 0.0800000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.85275613328  refstate = solvent  phi = NaN
+    Na+       z = +1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.42637806664  refstate = solute  phi = 100000000.000000
+    Cl-       z = -1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.42637806664  refstate = solute  phi = 100000000.000000
+    CO2       z = +0  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.42637806664  refstate = solute  phi = 14.9831174999581
+
+=== water + Na+ + Cl- ===
+  phase class = PhaseKentEisenberg
+  T = 313.15 K   P = 5.00 bara   moles = 1.000000000
+    water     z = +0  x = 0.900000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 47.0330014894  refstate = solvent  phi = 0.0148069549104026
+    Na+       z = +1  x = 0.0500000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.61294452719  refstate = solute  phi = 100000000.000000
+    Cl-       z = -1  x = 0.0500000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.61294452719  refstate = solute  phi = 100000000.000000
+
+################ Desmukh-Mather ################
+
+=== water + MDEA + Na+ + Cl- + CO2 ===
+  phase class = PhaseDesmukhMather
+  T = 313.15 K   P = 5.00 bara   moles = 1.000000000
+    water     z = +0  x = 0.800000000000  gamma = 1.13636363636364  ln gamma = 0.127833371509885  molality = 33.4098195469  refstate = solvent  phi = 0.0168835314742847
+    MDEA      z = +0  x = 0.0800000000000  gamma = 0.653273989578573  ln gamma = -0.425758651828879  molality = 3.34098195469  refstate = solvent  phi = NaN
+    Na+       z = +1  x = 0.0400000000000  gamma = 0.393151708641170  ln gamma = -0.933559714525390  molality = 1.67049097734  refstate = solute  phi = 1.00000000000000e-15
+    Cl-       z = -1  x = 0.0400000000000  gamma = 0.393151708641170  ln gamma = -0.933559714525390  molality = 1.67049097734  refstate = solute  phi = 1.00000000000000e-15
+    CO2       z = +0  x = 0.0400000000000  gamma = 1.13636363636364  ln gamma = 0.127833371509885  molality = 1.67049097734  refstate = solute  phi = 17.0262698861457
+
+  I = 1.67049097734413   solvent weight = 0.0239450560000000   solvent molar mass = 0.0272102909090909
+  aij / bij, and beta = aij + bij T:
+    water     water     aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    water     MDEA      aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    water     Na+       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    water     Cl-       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    water     CO2       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    MDEA      water     aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    MDEA      MDEA      aij =  -0.0828487000000000  bij =     0.00000000000000  beta =  -0.0828487000000000
+    MDEA      Na+       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    MDEA      Cl-       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    MDEA      CO2       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Na+       water     aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Na+       MDEA      aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Na+       Na+       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Na+       Cl-       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Na+       CO2       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Cl-       water     aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Cl-       MDEA      aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Cl-       Na+       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Cl-       Cl-       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    Cl-       CO2       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    CO2       water     aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    CO2       MDEA      aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    CO2       Na+       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    CO2       Cl-       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+    CO2       CO2       aij =     0.00000000000000  bij =     0.00000000000000  beta =     0.00000000000000
+  ionic diameters, as the component's own constructor reads them:
+    water     comptemp  = 1.0          comp = 1.0
+    MDEA      comptemp  = 1.0          comp = 1.0
+    Na+       comptemp  = 1.0          comp = 1.0
+    Cl-       comptemp  = 1.0          comp = 1.0
+    CO2       comptemp  = 1.0          comp = 1.0
+
+=== water + Na+ + Cl- ===
+  phase class = PhaseDesmukhMather
+  T = 313.15 K   P = 5.00 bara   moles = 1.000000000
+    water     z = +0  x = 0.900000000000  gamma = 1.11111111111111  ln gamma = 0.105360515657827  molality = 55.5092978074  refstate = solvent  phi = 0.0165083418859673
+    Na+       z = +1  x = 0.0500000000000  gamma = 0.302269779010361  ln gamma = -1.19643535238806  molality = 3.08384987819  refstate = solute  phi = 1.00000000000000e-15
+    Cl-       z = -1  x = 0.0500000000000  gamma = 0.302269779010361  ln gamma = -1.19643535238806  molality = 3.08384987819  refstate = solute  phi = 1.00000000000000e-15
+
+################ Duan-Sun ################
+Exception in thread "main" java.lang.RuntimeException: SystemDuanSun supports only CO2
+	at neqsim.thermo.system.SystemDuanSun.addComponent(SystemDuanSun.java:86)
+	at GeElectrolyteProbe.build(GeElectrolyteProbe.java:40)
+	at GeElectrolyteProbe.report(GeElectrolyteProbe.java:61)
+	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:168)
