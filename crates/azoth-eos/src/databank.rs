@@ -281,6 +281,12 @@ pub struct Entry {
     /// the infinite-dilution limit of the term it belongs to, so a plausible number would
     /// come out of it.
     pub deshmukh_mather_diameter: f64,
+    /// The four coefficients of NeqSim's Henry correlation.
+    ///
+    /// **All four are zero on 296 of the 348 rows**, which is how the table spells "no
+    /// correlation", so a caller must refuse rather than evaluate - see
+    /// [`crate::henry`], which is the surface a model takes them through.
+    pub henry: crate::henry::HenryRecord,
     /// `DIELECTRICPARAMETER1..5`, the dielectric mixing rule's coefficients.
     ///
     /// Carried exactly as NeqSim stores them. The unit is not established - the manifest
@@ -860,6 +866,10 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "comptype",
         "ioniccharge",
         "deshmationicdiameter",
+        "henrycoef1",
+        "henrycoef2",
+        "henrycoef3",
+        "henrycoef4",
         "dielectricparameter1",
         "dielectricparameter2",
         "dielectricparameter3",
@@ -998,6 +1008,12 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     "deshmationicdiameter",
                     row,
                 )?,
+                henry: crate::henry::HenryRecord {
+                    h0: number(&record, index["henrycoef1"], "henrycoef1", row)?,
+                    h1: number(&record, index["henrycoef2"], "henrycoef2", row)?,
+                    h2: number(&record, index["henrycoef3"], "henrycoef3", row)?,
+                    h3: number(&record, index["henrycoef4"], "henrycoef4", row)?,
+                },
                 dielectric: {
                     let mut dielectric = [0.0; 5];
                     for (k, slot) in dielectric.iter_mut().enumerate() {
@@ -1246,6 +1262,14 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 } else {
                     "other".to_string()
                 },
+                // A card carries no Henry correlation: `ComponentOverride` is a closed list
+                // and an overlay states the parameters a cubic or an activity model reads.
+                henry: crate::henry::HenryRecord {
+                    h0: 0.0,
+                    h1: 0.0,
+                    h2: 0.0,
+                    h3: 0.0,
+                },
                 ionic_charge: over.ionic_charge.unwrap_or_default(),
                 // The card states metres and the table holds ångström; this is the one
                 // crossing, so the factor appears once rather than at every read.
@@ -1282,6 +1306,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             // The table's, for the reason the PC-SAFT set below is: `ComponentOverride` is
             // a closed list, so a card correcting `Tc` does not turn an ion into a cubic.
             class: base.class,
+            henry: base.henry,
             ionic_charge: over.ionic_charge.unwrap_or(base.ionic_charge),
             deshmukh_mather_diameter: over
                 .deshmukh_mather_diameter

@@ -76,6 +76,7 @@ pub mod gerg2008_phase;
 pub mod hayduk_minhas_diffusivity;
 pub mod heat_of_vaporization;
 pub mod helium_phase;
+pub mod henry;
 pub mod hv_ge;
 pub mod hydrogen_phase;
 pub mod iapws_if97;

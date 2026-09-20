@@ -55,6 +55,7 @@ from azoth.core.units import Q, ureg
 from azoth.eos.cubic import CUBICS, Cubic
 from azoth.eos.mixture import Component, Mixture
 from azoth.eos.reference._association import family_of
+from azoth.eos.reference._henry import HenryRecord
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
 COMPONENTS_CSV = "data/components/components.csv"
@@ -410,6 +411,11 @@ class DatabankEntry:
     #: exactly as NeqSim stores them. The unit is not established - the manifest records
     #: ``neqsim-internal`` - so no conversion is applied and none is guessed.
     dielectric: tuple[float, float, float, float, float]
+    #: The four coefficients of NeqSim's Henry correlation. **All four are zero on 296 of
+    #: the 348 rows**, which is how the table spells "no correlation", so a caller must
+    #: refuse rather than evaluate - see :mod:`azoth.eos.reference._henry`, which is the
+    #: surface a model takes them through.
+    henry: HenryRecord
     citation: str | None
     #: Where these values came from: the vendored databank, or the keycard in force.
     #: Not part of a citation - it is the *provenance of the lookup*, which a caller
@@ -572,6 +578,12 @@ def _table() -> dict[str, DatabankEntry]:
             m_mie=float(row["msaftvrmie"]),
             sigma_mie=float(row["sigma_saft_vr_mie_m"]),
             epsik_mie=float(row["epsiksaftvrmie"]),
+            henry=HenryRecord(
+                h0=float(row["henrycoef1"]),
+                h1=float(row["henrycoef2"]),
+                h2=float(row["henrycoef3"]),
+                h3=float(row["henrycoef4"]),
+            ),
             ionic_charge=float(row["ioniccharge"]),
             deshmukh_mather_diameter=float(row["deshmationicdiameter"]),
             dielectric=(
@@ -1120,6 +1132,9 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # The card's own statement, or `other` - the class that permits a cubic, which
             # is what a card-added substance is unless it says otherwise.
             component_type=ION if ion else "other",
+            # A card carries no Henry correlation: a card states the parameters a cubic or
+            # an activity model reads, and this is neither.
+            henry=HenryRecord(h0=0.0, h1=0.0, h2=0.0, h3=0.0),
             ionic_charge=_card_charge(override),
             # The card states metres and the databank holds ångström; this is the crossing.
             deshmukh_mather_diameter=_card_diameter(override),
@@ -1159,6 +1174,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
         # whether a cubic may be built at all, so a card able to clear it could hand a
         # cubic the filler the refusal exists to keep out of one.
         component_type=base.component_type,
+        henry=base.henry,
         ionic_charge=(
             base.ionic_charge if override is None else _card_charge(override, base.ionic_charge)
         ),
