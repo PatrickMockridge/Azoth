@@ -104,15 +104,41 @@ solubility, electrolytes, salts and scale, and freezing.
   `thermo/util/steam/Iapws_if97`.
 - **Water content and dehydration.** `WATcalc`, `WaterDewPointTemperatureFlash`,
   `WaterDewPointTemperatureMultiphaseFlash`, `WaterDewPointEquilibriumLine`.
-- **Acid gas.** `ComponentSoreideWhitson`, `ComponentGEVanLaarAcid`,
-  `CO2BrinePhaseEquilibrium`, `SaturateWithWater`.
-- **Electrolytes.** `ComponentGePitzer`, `ComponentKentEisenberg`,
-  `ComponentDesmukhMather`, `ComponentGeDuanSun`, `ComponentModifiedFurstElectrolyteEos`
-  and `…Mod2004`, with `PhasePitzer`, `PhaseKentEisenberg`, `PhaseDesmukhMather`,
-  `PhaseDuanSun`, `PhaseModifiedFurstElectrolyteEos`, `SystemPitzer`,
-  `SystemKentEisenberg`, `SystemDesmukhMather`, `SystemDuanSun`,
-  `SystemFurstElectrolyteEos`, and the `Pitzer*` machinery (`PitzerNeutralInteraction`,
-  `PitzerElectrostaticMixing`, `PitzerTemperatureFunction`, and the parameter catalogs).
+- **Acid gas.** `ComponentSoreideWhitson` and `AttractiveTermSoreideWhitson` with
+  `PhaseSoreideWhitson` (`eos.soreide_whitson_phase`) and `SystemSoreideWhitson`;
+  `ComponentGEVanLaarAcid` with `PhaseGEVanLaarAcid` (`eos.ge_van_laar_acid_phase`).
+  **The brine operations are not ported.** `CO2BrinePhaseEquilibrium`,
+  `ReactiveCO2BrinePhaseEquilibrium`, `SaturateWithWater` and `CalcIonicComposition` all
+  need the EoS/GE hybrid seam — `SystemEosGE`, `HybridEosGeFlashModel` and
+  `TPHybridEosGeFlash`, 1,636 lines between them — which is a flash whose two phases run
+  *different models*. azoth's `Mixture` carries one mixing rule for the whole system, so
+  closing this is a change in the flash and not in the electrolyte physics.
+- **Electrolytes.** Ported, each with the id that carries it: `ComponentGePitzer`,
+  `PhasePitzer` (`eos.pitzer_phase`) and `SystemPitzer`, with the `Pitzer*` machinery
+  (`PitzerNeutralInteraction`, `PitzerElectrostaticMixing`, `PitzerTemperatureFunction`,
+  and the parameter catalogs);
+  `ComponentKentEisenberg`, `PhaseKentEisenberg` (`eos.kent_eisenberg_phase`) and
+  `SystemKentEisenberg`; `ComponentDesmukhMather`, `PhaseDesmukhMather`
+  (`eos.desmukh_mather_phase`) and `SystemDesmukhMather`;
+  `ComponentModifiedFurstElectrolyteEos`, `PhaseModifiedFurstElectrolyteEos`
+  (`eos.furst_electrolyte_phase`) and `SystemFurstElectrolyteEos`, with the same three
+  again for Mod2004 (`eos.furst_electrolyte_mod2004_phase`) over the parameters
+  `FurstElectrolyteConstants` hardcodes.
+- **Duan-Sun, reachable and unimplementable.** `ComponentGeDuanSun`, `PhaseDuanSun`,
+  `SystemDuanSun` and `thermo/util/empiric/DuanSun.java` are **not ported, and no state
+  they accept exists**: `SystemDuanSun.addComponent` throws for every name but `CO2`, and
+  the phase it would build divides by the moles and molar mass of a component named
+  `water`, which a system that admits only `CO2` does not have. There is nothing to
+  reproduce (NeqSim issues 3837 and 3839), and this is not the carried-as-unreachable case
+  below, because `SystemThermo`'s model-name factory does construct it.
+- **Electrolyte-CPA.** `PhaseElectrolyteCPA`, `PhaseElectrolyteCPAAdvanced`,
+  `PhaseElectrolyteCPAMM`, `PhaseElectrolyteCPAOld` and their `SystemElectrolyte*` are
+  **carried as unreachable upstream**: 5,727 lines with no non-test construction site
+  anywhere — each phase is built only by its own `SystemElectrolyte*`, and
+  `SystemThermo`'s factory maps `Electrolyte-CPA-EOS` to `CPAstatoil` and never to
+  `SystemElectrolyteCPA`. `SystemElectrolyteCPAstatoil` and
+  `PhaseElectrolyteCPAstatoil` are **not ported** — 145 lines, eleven `src/main` sites
+  that build them, and Fürst plus the Wertheim association this library already has.
 - **Salts and scale.** `MultiSaltPrecipitation`, `CalcSaltSatauration`,
   `CheckScalePotential`, `AddIonToScaleSaturation`.
 - **Freezing.** `FreezeOut`, `FreezingPointTemperatureFlash`.
