@@ -1,0 +1,33 @@
+# para-hydrogen at T = 13.6000000000000 K, P = 0.0704200000000000 bara
+converged = 1.00000000000000
+temperature_K = 13.8032999997377
+iterations = 32.0000000000000
+residual = 1.96870095833609e-11
+component = para-hydrogen
+system_temperature_K = 13.8032999997377
+system_pressure_bara = 0.0704199999975335
+phases = 2.00000000000000
+z = 0.00160696602425623
+
+# para-hydrogen at T = 13.8000000000000 K, P = 3.51270690962515 bara
+converged = 1.00000000000000
+temperature_K = 13.9150932717025
+iterations = 30.0000000000000
+residual = 2.77494179563634e-11
+component = para-hydrogen
+system_temperature_K = 13.9150932717025
+system_pressure_bara = 3.51270690949658
+phases = 2.00000000000000
+z = 0.0793095770640014
+
+# para-hydrogen at T = 13.8000000000000 K, P = 18.7643278589988 bara
+converged = 1.00000000000000
+temperature_K = 14.3982923022496
+iterations = 38.0000000000000
+residual = -9.28475650650451e-11
+component = para-hydrogen
+system_temperature_K = 14.3982923022496
+system_pressure_bara = 18.7643278599501
+phases = 2.00000000000000
+z = 0.404945862579157
+
