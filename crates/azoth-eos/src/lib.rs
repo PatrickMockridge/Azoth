@@ -107,6 +107,7 @@ pub mod pcsaft_rahmat_phase;
 pub mod ph_flash;
 pub mod phase_boundary;
 pub mod pitzer_catalog;
+pub mod pitzer_electrostatic;
 pub mod pitzer_phase;
 pub mod pr78_kappa;
 pub mod pr_alpha_ab;

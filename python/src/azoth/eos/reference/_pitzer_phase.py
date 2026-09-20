@@ -1,0 +1,345 @@
+"""Pitzer's activity-coefficient arithmetic, as NeqSim's `ComponentGePitzer` carries it.
+
+The Python mirror of ``crates/azoth-eos/src/pitzer_phase.rs``, held to the same constants
+by the tests on both sides. The catalogue and the dataset selection are
+``_pitzer_catalog``'s; this is the arithmetic that reads them.
+
+**The ion branch is one long expression and the three pieces that are easy to lose are
+the ones the flags gate.** ``fBprime`` is not accumulated when PHREEQC's common-ion terms
+are active, because :func:`common_ion_contribution` computes its own over every pair;
+``beta2`` applies only for a 2:2 pair or when the dataset activated it elsewhere; and
+``E_theta`` enters twice, once through ``F`` and once through the theta sum.
+
+``ln(gamma_M) = z_M^2 F + sum_a m_a (2 B_Ma + Z C_Ma)`` with
+``F = -A_phi [ sqrt(I)/(1 + b sqrt(I)) + (2/b) ln(1 + b sqrt(I)) ] + sum_c sum_a m_c m_a B'_ca``,
+NeqSim's own comment.
+"""
+
+from __future__ import annotations
+
+import math
+from collections.abc import Sequence
+from typing import Any
+
+from azoth.eos.reference import _electrolyte as electrolyte
+from azoth.eos.reference import _pitzer_electrostatic as electrostatic
+
+#: The gas constant is not used here; the Debye-Huckel parameter carries its own arithmetic.
+
+
+def debye_huckel_a_phi(temperature_k: float) -> float:
+    """The Debye-Huckel parameter ``A_phi(T)``, in ``(mol/kg)^-1/2``.
+
+    ``ComponentGePitzer.debyeHuckelAphi``, divided by the three its callers divide by.
+    Water density from Kell (1975) with the IAPWS-style branch above 100 C and a 700 kg/m3
+    floor; the dielectric constant from Archer and Wang (1990) floored at 20; then
+    ``1.4006e6 sqrt(rho_g_per_cm3) / (eps T)^1.5``.
+
+    **There is no clamp below 0 C** - the Kell polynomial is extrapolated - and the
+    density floor is what keeps the cold end from going negative under the square root.
+    """
+    celsius = temperature_k - 273.15
+    density = (
+        999.83
+        + 5.0948e-2 * celsius
+        - 7.5722e-3 * celsius**2
+        + 3.8907e-5 * celsius**3
+        - 1.2e-7 * celsius**4
+    )
+    if celsius > 100.0:
+        excess = celsius - 100.0
+        density = 958.0 - 1.08 * excess - 0.0028 * excess**2
+    density = max(density, 700.0)
+    per_cm3 = density / 1000.0
+
+    dielectric = 87.740 - 0.40008 * celsius + 9.398e-4 * celsius**2 - 1.410e-6 * celsius**3
+    dielectric = max(dielectric, 20.0)
+    # **`math.pow` and not `**`, because `**` is typed `Any` and is not.** typeshed
+    # returns `Any` from `float ** float` for the reason `docs/src/calculus/numerics.md`
+    # gives: a negative base with a fractional exponent promotes to a *complex* in Python.
+    # The base here is `dielectric * T` with the dielectric floored at 20 and a positive
+    # temperature, so it is positive by construction and `math.pow` is total - which is
+    # also the form whose return type is `float`, so the type system can see it.
+    return 1.4006e6 * math.sqrt(per_cm3) / math.pow(dielectric * temperature_k, 1.5)
+
+
+def _g(x: float) -> float:
+    """``2 (1 - (1 + x) exp(-x)) / x^2``, zero below the floor as NeqSim has it."""
+    if x <= DERIVATIVE_FLOOR:
+        return 0.0
+    return 2.0 * (1.0 - (1.0 + x) * math.exp(-x)) / (x * x)
+
+
+def _g_prime(x: float) -> float:
+    """The derivative of :func:`_g`, zero below the same floor."""
+    if x <= DERIVATIVE_FLOOR:
+        return 0.0
+    return -2.0 * (1.0 - (1.0 + x + x * x / 2.0) * math.exp(-x)) / (x * x)
+
+
+#: The temperature both of NeqSim's Pitzer forms state their value at, in K.
+#:
+#: ``PitzerParameterDatasets.PHREEQC_REFERENCE_TEMPERATURE_K`` and the ``298.15`` the
+#: Silvester form divides by are the same number, which is why one constant serves both.
+REFERENCE_TEMPERATURE_K = 298.15
+
+#: Within this many kelvin of the reference, the catalogue form returns its constant term
+#: unchanged rather than evaluating the polynomial (``PitzerTemperatureFunction``).
+REFERENCE_TOLERANCE_K = 1.0e-3
+
+
+def catalog_value(a: Sequence[float], temperature_k: float) -> float:
+    """`PitzerTemperatureFunction.valueAt`, the PHREEQC six-coefficient form.
+
+    ``a0 + a1(1/T - 1/Tr) + a2 ln(T/Tr) + a3(T - Tr) + a4(T^2 - Tr^2) + a5(1/T^2 - 1/Tr^2)``
+
+    **The reference window is a branch and not a rounding guard.** Within
+    :data:`REFERENCE_TOLERANCE_K` of the reference the constant term is returned exactly,
+    so ``value_at(298.1501)`` is ``a0`` and not ``a0`` plus about ``1e-8``.
+    """
+    if abs(temperature_k - REFERENCE_TEMPERATURE_K) < REFERENCE_TOLERANCE_K:
+        return a[0]
+    inverse = 1.0 / temperature_k
+    inverse_reference = 1.0 / REFERENCE_TEMPERATURE_K
+    return (
+        a[0]
+        + a[1] * (inverse - inverse_reference)
+        + a[2] * math.log(temperature_k / REFERENCE_TEMPERATURE_K)
+        + a[3] * (temperature_k - REFERENCE_TEMPERATURE_K)
+        + a[4] * (temperature_k**2 - REFERENCE_TEMPERATURE_K**2)
+        + a[5] * (inverse**2 - inverse_reference**2)
+    )
+
+
+def silvester_value(at_25: float, t1: float, t2: float, temperature_k: float) -> float:
+    """Silvester and Pitzer's form, from `PitzerParameters.csv`.
+
+    ``value_25 + t1 (1/T - 1/Tr) + t2 ln(T/Tr)``, and **zero `t1` and `t2` is the flat
+    case**, where NeqSim returns ``value_25`` rather than evaluating the sum. The two
+    differ only in the last bit, but they differ, so the branch is reproduced.
+    """
+    if abs(t1) < 1.0e-20 and abs(t2) < 1.0e-20:
+        return at_25
+    return (
+        at_25
+        + t1 * (1.0 / temperature_k - 1.0 / REFERENCE_TEMPERATURE_K)
+        + t2 * math.log(temperature_k / REFERENCE_TEMPERATURE_K)
+    )
+
+
+def alpha1(first_charge: float, second_charge: float) -> float:
+    """``PhasePitzer.getPitzerAlpha1``'s **bounded** form: 1.4 for a 2:2 pair, else 2.0.
+
+    **Three call sites in NeqSim use an unbounded form instead** - ``getGamma``,
+    ``getWaterGamma`` and ``phreeqcBinaryBprime`` all test ``|z| >= 1.5`` with no upper
+    bound, so a 3-valent ion gets 1.4 there and 2.0 here. The two agree for every charge
+    the vendored data carries (the highest is 2), so this is a latent inconsistency.
+    :func:`alpha1_as_used` is what the activity coefficient is built from.
+    """
+
+    def bounded(z: float) -> bool:
+        """NeqSim's own two-clause test, upper bound included."""
+        return 1.5 <= abs(z) < 2.5
+
+    return 1.4 if bounded(first_charge) and bounded(second_charge) else 2.0
+
+
+def alpha1_as_used(first_charge: float, second_charge: float) -> float:
+    """The ``alpha1`` the activity coefficient is actually built from."""
+    if abs(first_charge) >= 1.5 and abs(second_charge) >= 1.5:
+        return 1.4
+    return 2.0
+
+
+def alpha2(first_charge: float, second_charge: float) -> float:
+    """``PhasePitzer.getPitzerAlpha2``: 12.0 when monovalent **or** 2:2, else 50.0.
+
+    The 2:2 clause is not redundant with the monovalent one and is why ``CaCl2``'s
+    qualified ``B2`` row survives: that row is a 2:1 term with ``alpha2 = 12``, and a
+    2:2-only branch would have discarded it.
+    """
+    one, two = abs(first_charge), abs(second_charge)
+    monovalent = one < 1.5 or two < 1.5
+    two_two = 1.5 <= one < 2.5 and 1.5 <= two < 2.5
+    return 12.0 if monovalent or two_two else 50.0
+
+
+#: `b`, the Debye-Huckel denominator constant, the same `1.2` in every Pitzer expression.
+B = 1.2
+
+#: Below these an `x`, an ionic strength or a fitted `beta2` is treated as absent.
+DERIVATIVE_FLOOR = 1.0e-12
+BETA2_FLOOR = 1.0e-20
+
+#: Below this a component's charge makes it a neutral rather than an ion.
+ION_CHARGE = 0.5
+
+
+def ln_gamma(
+    molality: Sequence[float],
+    charge: Sequence[float],
+    temperature_k: float,
+    a_phi: float,
+    parameters: Any,
+    component: int,
+    *,
+    common_ion_terms: bool,
+    non_two_two_beta2: bool,
+    unequal_charge_same_sign: bool,
+) -> float:
+    """``ln gamma_M`` for one ion: ``ComponentGePitzer.getGamma``'s ion branch.
+
+    NeqSim's own comment gives the shape:
+
+    .. code-block:: text
+
+        ln(gamma_M) = z_M^2 F + sum_a m_a (2 B_Ma + Z C_Ma)
+        F = -A_phi [ sqrt(I)/(1 + b sqrt(I)) + (2/b) ln(1 + b sqrt(I)) ]
+              + sum_c sum_a m_c m_a B'_ca
+
+    and the three pieces that are easy to lose are the ones the flags gate: ``fBprime`` is
+    *not* accumulated when the common-ion terms are active, because
+    :func:`common_ion_contribution` computes its own; ``beta2`` applies only for a 2:2 pair
+    or when the dataset activated it elsewhere; and ``E_theta`` enters twice, once through
+    ``F`` and once through the theta sum.
+
+    ``parameters`` answers the six per-pair getters, so the caller supplies whichever
+    dataset the selection rule chose.
+    """
+    z = charge[component]
+    ionic_strength = electrolyte.ionic_strength(molality, charge)
+    sqrt_i = math.sqrt(ionic_strength)
+
+    # f^phi = -A_phi [ sqrt(I)/(1 + b sqrt(I)) + (2/b) ln(1 + b sqrt(I)) ]
+    debye_huckel = -a_phi * (sqrt_i / (1.0 + B * sqrt_i) + (2.0 / B) * math.log(1.0 + B * sqrt_i))
+
+    z_sum = sum(m * abs(x) for m, x in zip(molality, charge, strict=False) if abs(x) > ION_CHARGE)
+    common_ion = (
+        common_ion_contribution(molality, charge, temperature_k, parameters, z)
+        if common_ion_terms
+        else 0.0
+    )
+
+    m_this = molality[component]
+    total = 0.0
+    b_prime_sum = 0.0
+
+    for j, other in enumerate(charge):
+        if j == component or other * z >= 0.0:
+            continue
+        m_j = molality[j]
+        beta0 = parameters.beta0(component, j, temperature_k)
+        beta1 = parameters.beta1(component, j, temperature_k)
+        cphi = parameters.cphi(component, j, temperature_k)
+
+        alpha_one = alpha1_as_used(z, other)
+        two_two = abs(z) >= 1.5 and abs(other) >= 1.5
+        x1 = alpha_one * sqrt_i
+        b_value = beta0 + beta1 * _g(x1)
+        b_derivative = (
+            beta1 * _g_prime(x1) / ionic_strength if ionic_strength > DERIVATIVE_FLOOR else 0.0
+        )
+
+        if two_two or non_two_two_beta2:
+            beta2 = parameters.beta2(component, j, temperature_k)
+            if abs(beta2) > BETA2_FLOOR:
+                x2 = alpha2(z, other) * sqrt_i
+                b_value += beta2 * _g(x2)
+                if ionic_strength > DERIVATIVE_FLOOR:
+                    b_derivative += beta2 * _g_prime(x2) / ionic_strength
+
+        c_value = cphi / (2.0 * math.sqrt(abs(z * other)))
+        total += m_j * (2.0 * b_value + z_sum * c_value)
+        if not common_ion_terms:
+            b_prime_sum += m_this * m_j * b_derivative
+
+    e_theta_prime = 0.0
+    if unequal_charge_same_sign:
+        for first in range(len(molality)):
+            if abs(charge[first]) < ION_CHARGE:
+                continue
+            for second in range(first + 1, len(molality)):
+                other = charge[second]
+                if charge[first] * other <= 0.0 or abs(charge[first] - other) < DERIVATIVE_FLOOR:
+                    continue
+                _, derivative = electrostatic.calculate(charge[first], other, ionic_strength, a_phi)
+                e_theta_prime += molality[first] * molality[second] * derivative
+
+    for j, other in enumerate(charge):
+        if j == component or abs(other) < ION_CHARGE or other * z <= 0.0:
+            continue
+        m_j = molality[j]
+        theta = parameters.theta(component, j, temperature_k)
+        e_theta = 0.0
+        if unequal_charge_same_sign and abs(z - other) >= DERIVATIVE_FLOOR:
+            e_theta, _ = electrostatic.calculate(z, other, ionic_strength, a_phi)
+        total += m_j * 2.0 * (theta + e_theta)
+
+        for k, third in enumerate(charge):
+            if third * z >= 0.0 or abs(third) < ION_CHARGE:
+                continue
+            total += m_j * molality[k] * parameters.psi(component, j, k, temperature_k)
+
+    return z * z * (debye_huckel + b_prime_sum + e_theta_prime) + total + common_ion
+
+
+def common_ion_contribution(
+    molality: Sequence[float],
+    charge: Sequence[float],
+    temperature_k: float,
+    parameters: Any,
+    target_charge: float,
+) -> float:
+    """PHREEQC's common B-prime and C0 contributions to one ion's ``ln gamma``.
+
+    ``ComponentGePitzer.phreeqcCommonIonContribution``: it sums over **every**
+    cation-anion pair rather than over this ion's pairs, and adds a ``C0`` term the main
+    loop has no counterpart for.
+    """
+    ionic_strength = electrolyte.ionic_strength(molality, charge)
+    sqrt_i = math.sqrt(ionic_strength)
+    b_prime = 0.0
+    cphi_sum = 0.0
+    for cation, cation_charge in enumerate(charge):
+        if cation_charge <= 0.0:
+            continue
+        for anion, anion_charge in enumerate(charge):
+            if anion_charge >= 0.0:
+                continue
+            first, second = molality[cation], molality[anion]
+            b_prime += (
+                first
+                * second
+                * _binary_b_prime(
+                    charge, temperature_k, parameters, cation, anion, ionic_strength, sqrt_i
+                )
+            )
+            cphi_sum += (
+                first
+                * second
+                * parameters.cphi(cation, anion, temperature_k)
+                / (2.0 * math.sqrt(abs(cation_charge * anion_charge)))
+            )
+    return target_charge**2 * b_prime + abs(target_charge) * cphi_sum
+
+
+def _binary_b_prime(
+    charge: Sequence[float],
+    temperature_k: float,
+    parameters: Any,
+    first: int,
+    second: int,
+    ionic_strength: float,
+    sqrt_i: float,
+) -> float:
+    """One pair's ``B'`` as the common-ion sum computes it, which applies ``beta2``
+    wherever the dataset carries one rather than gating on the 2:2 test."""
+    x1 = alpha1_as_used(charge[first], charge[second]) * sqrt_i
+    derivative = 0.0
+    if x1 > DERIVATIVE_FLOOR and ionic_strength > DERIVATIVE_FLOOR:
+        derivative = parameters.beta1(first, second, temperature_k) * _g_prime(x1) / ionic_strength
+    beta2 = parameters.beta2(first, second, temperature_k)
+    x2 = alpha2(charge[first], charge[second]) * sqrt_i
+    if abs(beta2) > BETA2_FLOOR and x2 > DERIVATIVE_FLOOR and ionic_strength > DERIVATIVE_FLOOR:
+        derivative += beta2 * _g_prime(x2) / ionic_strength
+    return derivative

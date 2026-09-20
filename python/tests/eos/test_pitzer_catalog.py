@@ -11,6 +11,7 @@ from __future__ import annotations
 import pytest
 
 from azoth.eos.reference import _pitzer_catalog as catalog
+from azoth.eos.reference import _pitzer_phase as phase
 
 
 def test_the_catalogue_is_read() -> None:
@@ -110,32 +111,32 @@ def test_both_temperature_forms_match_neqsim() -> None:
     assert pair is not None
 
     # At the reference the value is `a0`, and it stays `a0` inside the 1e-3 K window.
-    assert catalog.catalog_value(pair, 298.15) == pytest.approx(0.07534, abs=1e-15)
-    assert catalog.catalog_value(pair, 298.1501) == pytest.approx(0.07534, abs=1e-15)
+    assert phase.catalog_value(pair, 298.15) == pytest.approx(0.07534, abs=1e-15)
+    assert phase.catalog_value(pair, 298.1501) == pytest.approx(0.07534, abs=1e-15)
 
     for temperature, expected in (
         (273.15, 0.0493895679117),
         (323.15, 0.0892387746618),
         (373.15, 0.100154205617),
     ):
-        assert catalog.catalog_value(pair, temperature) == pytest.approx(expected, abs=1e-12)
+        assert phase.catalog_value(pair, temperature) == pytest.approx(expected, abs=1e-12)
 
     # The CSV's flat case: zero `t1`/`t2` gives the same number at every temperature.
     for temperature in (273.15, 298.15, 323.15, 373.15):
-        assert catalog.silvester_value(0.0277, 0.0, 0.0, temperature) == 0.0277
+        assert phase.silvester_value(0.0277, 0.0, 0.0, temperature) == 0.0277
 
 
 def test_the_alpha_coefficients_follow_the_charge() -> None:
     """The oracle prints `Na+/Cl-` as `alpha1 = 2.0`, `alpha2 = 12.0`."""
-    assert catalog.alpha1_as_used(1.0, -1.0) == 2.0
-    assert catalog.alpha2(1.0, -1.0) == 12.0
-    assert catalog.alpha1_as_used(2.0, -2.0) == 1.4
-    assert catalog.alpha2(2.0, -2.0) == 12.0
-    assert catalog.alpha1_as_used(2.0, -1.0) == 2.0
-    assert catalog.alpha2(2.0, -1.0) == 12.0
-    assert catalog.alpha2(3.0, -1.0) == 12.0, "the chloride is monovalent"
+    assert phase.alpha1_as_used(1.0, -1.0) == 2.0
+    assert phase.alpha2(1.0, -1.0) == 12.0
+    assert phase.alpha1_as_used(2.0, -2.0) == 1.4
+    assert phase.alpha2(2.0, -2.0) == 12.0
+    assert phase.alpha1_as_used(2.0, -1.0) == 2.0
+    assert phase.alpha2(2.0, -1.0) == 12.0
+    assert phase.alpha2(3.0, -1.0) == 12.0, "the chloride is monovalent"
 
     # **The one charge where the two alpha1 definitions part**, unreachable with vendored
     # data because the highest charge it carries is 2.
-    assert catalog.alpha1_as_used(3.0, -3.0) == 1.4
-    assert catalog.alpha1(3.0, -3.0) == 2.0
+    assert phase.alpha1_as_used(3.0, -3.0) == 1.4
+    assert phase.alpha1(3.0, -3.0) == 2.0

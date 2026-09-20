@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 
 import neqsim.thermo.component.ComponentGePitzer;
 import neqsim.thermo.phase.PhasePitzer;
+import neqsim.thermo.phase.PitzerElectrostaticMixing;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPitzer;
 
@@ -69,6 +70,51 @@ public class PitzerArithmetic {
     // datasets use different forms, so each is printed across temperature: a catalogue
     // pair (the PHREEQC six coefficients) and a CSV pair (Silvester-Pitzer's two).
     parameters();
+    activityCoefficients();
+  }
+
+  private static void activityCoefficients() {
+    System.out.println();
+    System.out.println("=== the ion activity coefficient, end to end ===");
+    for (String[] brine : new String[][] {
+        {"water", "Na+", "Cl-"},
+        {"water", "Na+", "Ca++", "Cl-", "Cl-"}}) {
+      SystemInterface system = new SystemPitzer(298.15, 1.0);
+      double[] z = new double[brine.length];
+      for (int i = 0; i < brine.length; i++) {
+        z[i] = brine[i].equals("water") ? 0.88 : (brine.length - 1) == 2 ? 0.06 : 0.03;
+      }
+      for (int i = 0; i < brine.length; i++) {
+        system.addComponent(brine[i], z[i]);
+      }
+      system.setMixingRule("classic");
+      system.init(0);
+      system.init(1);
+      PhasePitzer phase = (PhasePitzer) system.getPhase(1);
+      System.out.printf("  %s   (common-ion=%s, unequal-charge-same-sign=%s, non-2-2 beta2=%s)%n",
+          String.join(" + ", brine), phase.isPhreeqcCommonIonTermsActive(),
+          phase.hasUnequalChargeSameSignPair(), phase.isNonTwoTwoBeta2Active());
+      System.out.printf("    I = %.15g%n", phase.getIonicStrength());
+      for (int i = 0; i < phase.getNumberOfComponents(); i++) {
+        ComponentGePitzer component = (ComponentGePitzer) phase.getComponent(i);
+        double gamma = component.getGamma(phase, phase.getNumberOfComponents(), 298.15, 1.0, phase.getType());
+        System.out.printf("    ln gamma(%-6s) = %22.15g   molality = %.12g   z = %+.0f%n",
+            component.getComponentName(), Math.log(gamma), component.getMolality(phase),
+            component.getIonicCharge());
+      }
+    }
+
+    System.out.println();
+    System.out.println("=== PitzerElectrostaticMixing, the E_theta integral ===");
+    System.out.printf("  %8s %8s %12s %10s %22s %22s%n", "z_j", "z_k", "I", "Aphi", "E_theta", "dE_theta/dI");
+    double[] result = new double[2];
+    double aphi = 0.392034451863750;
+    for (double[] row : new double[][] {{1.0, 2.0, 6.0}, {1.0, 2.0, 0.5}, {2.0, 2.0, 6.0},
+        {1.0, 3.0, 1.0}, {1.0, 2.0, 100.0}}) {
+      PitzerElectrostaticMixing.calculate(row[0], row[1], row[2], aphi, result);
+      System.out.printf("  %8.1f %8.1f %12.6g %10.6g %22.15g %22.15g%n", row[0], row[1], row[2], aphi,
+          result[0], result[1]);
+    }
   }
 
   private static void parameters() {

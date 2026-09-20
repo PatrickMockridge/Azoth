@@ -1,7 +1,9 @@
-# azoth PitzerArithmetic - NeqSim 3.20.0's ComponentGePitzer and PhasePitzer.
+# azoth PitzerArithmetic - NeqSim 3.20.0's ComponentGePitzer, PhasePitzer and
+# PitzerElectrostaticMixing.
 # Committed verbatim from `validation/neqsim/PitzerArithmetic.java`; regenerate by running it.
-# The parameter-getter section prints both temperature forms across temperature: the
-# PHREEQC catalogue's six coefficients and `PitzerParameters.csv`'s Silvester-Pitzer two.
+# Three sections: the Debye-Huckel parameter across temperature, the parameter getters for
+# both datasets' temperature forms, the ion activity coefficient end to end, and the
+# E_theta integral of the same-sign electrostatic mixing.
 
 === Debye-Huckel parameter against temperature ===
    T / K        Agamma = debyeHuckelAphi(T)      Aphi = Agamma / 3
@@ -78,3 +80,24 @@
 === the alpha coefficients against charge ===
       z1     z2     alpha1     alpha2
      1.0   -1.0     2.0000    12.0000
+
+=== the ion activity coefficient, end to end ===
+  water + Na+ + Cl-   (common-ion=true, unequal-charge-same-sign=false, non-2-2 beta2=false)
+    I = 3.78472485050337
+    ln gamma(water ) =    -0.0220339385649971   molality = 55.5092978074   z = +0
+    ln gamma(Na+   ) =     -0.267512432075052   molality = 3.78472485050   z = +1
+    ln gamma(Cl-   ) =     -0.267512432075052   molality = 3.78472485050   z = -1
+  water + Na+ + Ca++ + Cl- + Cl-   (common-ion=true, unequal-charge-same-sign=true, non-2-2 beta2=true)
+    I = 6.62326848838089
+    ln gamma(water ) =    -0.0563151245495846   molality = 55.5092978074   z = +0
+    ln gamma(Na+   ) =     -0.504259131023400   molality = 1.89236242525   z = +1
+    ln gamma(Ca++  ) =      -1.84132192677047   molality = 1.89236242525   z = +2
+    ln gamma(Cl-   ) =      0.726599630955942   molality = 3.78472485050   z = -1
+
+=== PitzerElectrostaticMixing, the E_theta integral ===
+       z_j      z_k            I       Aphi                E_theta            dE_theta/dI
+       1.0      2.0      6.00000   0.392034    -0.0600260902189980    0.00495726907958956
+       1.0      2.0     0.500000   0.392034     -0.200307694629454      0.187941360122380
+       2.0      2.0      6.00000   0.392034       0.00000000000000       0.00000000000000
+       1.0      3.0      1.00000   0.392034     -0.876198487983861      0.429161203530903
+       1.0      2.0      100.000   0.392034    -0.0147362371500576   7.37883987972693e-05

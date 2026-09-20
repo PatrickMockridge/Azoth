@@ -408,3 +408,437 @@ mod parameter_tests {
         assert_ne!(alpha1_as_used(3.0, -3.0), alpha1(3.0, -3.0));
     }
 }
+
+/// `b`, the Debye-Huckel denominator constant, the same `1.2` in every Pitzer expression
+/// NeqSim carries.
+pub const B: f64 = 1.2;
+
+/// Below this an ionic strength or an `x` makes a derivative term zero rather than small.
+const DERIVATIVE_FLOOR: f64 = 1.0e-12;
+
+/// Below this a fitted `beta2` is treated as absent.
+const BETA2_FLOOR: f64 = 1.0e-20;
+
+/// Below this a component's charge makes it a neutral rather than an ion.
+const ION_CHARGE: f64 = 0.5;
+
+/// The pair parameters the activity coefficient reads, from whichever dataset is in force.
+///
+/// **A trait and not a struct, because the two datasets answer differently.** The PHREEQC
+/// catalogue evaluates six coefficients through [`TemperatureForm::Catalog`] and
+/// `PitzerParameters.csv` evaluates Silvester-Pitzer's two; both are reachable from the
+/// selection rule, and which one answers a given pair is a property of the phase's
+/// topology rather than of the pair.
+pub trait PairParameters {
+    /// `PhasePitzer.getBeta0ij(i, j, T)`.
+    fn beta0(&self, first: usize, second: usize, temperature: f64) -> f64;
+    /// `PhasePitzer.getBeta1ij(i, j, T)`.
+    fn beta1(&self, first: usize, second: usize, temperature: f64) -> f64;
+    /// `PhasePitzer.getCphiij(i, j, T)`.
+    fn cphi(&self, first: usize, second: usize, temperature: f64) -> f64;
+    /// `PhasePitzer.getBeta2ij(i, j, T)`.
+    fn beta2(&self, first: usize, second: usize, temperature: f64) -> f64;
+    /// `PhasePitzer.getThetaij(i, j, T)`.
+    fn theta(&self, first: usize, second: usize, temperature: f64) -> f64;
+    /// `PhasePitzer.getPsiijk(i, j, k, T)`.
+    fn psi(&self, first: usize, second: usize, third: usize, temperature: f64) -> f64;
+}
+
+/// The phase state the ion branch is a function of, and the three topology flags that
+/// decide which of its terms are live.
+///
+/// The flags are NeqSim's, read off the phase: `isPhreeqcCommonIonTermsActive`,
+/// `isNonTwoTwoBeta2Active` and `hasUnequalChargeSameSignPair`. They are not derivable
+/// from the composition - `nonTwoTwoBeta2Active` is a property of which rows the dataset
+/// *configured*, not of which ions are present - which is why they are passed in.
+#[derive(Debug, Clone, Copy)]
+pub struct IonActivityContext<'a> {
+    /// Molality per component, from [`crate::electrolyte::composition`].
+    pub molality: &'a [f64],
+    /// Ionic charge per component, in units of the elementary charge.
+    pub charge: &'a [f64],
+    /// Temperature, in K.
+    pub temperature: f64,
+    /// `A_phi` at that temperature, from [`debye_huckel_a_phi`].
+    pub a_phi: f64,
+    /// `PhasePitzer.isPhreeqcCommonIonTermsActive`.
+    pub common_ion_terms: bool,
+    /// `PhasePitzer.isNonTwoTwoBeta2Active`.
+    pub non_two_two_beta2: bool,
+    /// `PhasePitzer.hasUnequalChargeSameSignPair`.
+    pub unequal_charge_same_sign: bool,
+}
+
+impl IonActivityContext<'_> {
+    /// `I = 1/2 sum m_i z_i^2`, recomputed here so the context cannot disagree with
+    /// [`crate::electrolyte::ionic_strength`] about what it holds.
+    #[must_use]
+    pub fn ionic_strength(&self) -> f64 {
+        crate::electrolyte::ionic_strength(self.molality, self.charge)
+    }
+
+    /// `Z = sum m_i |z_i|` over the ions, the `Z` of the `Z C` term.
+    #[must_use]
+    pub fn charge_sum(&self) -> f64 {
+        self.molality
+            .iter()
+            .zip(self.charge)
+            .filter(|&(_, z)| z.abs() > ION_CHARGE)
+            .map(|(m, z)| m * z.abs())
+            .sum()
+    }
+}
+
+/// `ln gamma_M` for one ion, as `ComponentGePitzer.getGamma`'s ion branch computes it.
+///
+/// NeqSim's own comment gives the shape:
+///
+/// ```text
+/// ln(gamma_M) = z_M^2 F + sum_a m_a (2 B_Ma + Z C_Ma)
+/// F = -A_phi [ sqrt(I)/(1 + b sqrt(I)) + (2/b) ln(1 + b sqrt(I)) ] + sum_c sum_a m_c m_a B'_ca
+/// ```
+///
+/// and the pieces that are easy to lose are the three the flags gate: `fBprime` is *not*
+/// accumulated when the common-ion terms are active, because
+/// [`common_ion_contribution`] computes its own; `beta2` is applied only for a 2:2 pair or
+/// when the dataset activated it elsewhere; and `E_theta` enters twice, once through `F`
+/// and once through the theta sum.
+#[must_use]
+pub fn ln_gamma(
+    context: &IonActivityContext<'_>,
+    parameters: &dyn PairParameters,
+    component: usize,
+) -> f64 {
+    let charge = context.charge[component];
+    let i = context.ionic_strength();
+    let sqrt_i = i.sqrt();
+    let a_phi = context.a_phi;
+
+    // f^phi = -A_phi [ sqrt(I)/(1 + b sqrt(I)) + (2/b) ln(1 + b sqrt(I)) ]
+    let debye_huckel = -a_phi * (sqrt_i / (1.0 + B * sqrt_i) + (2.0 / B) * (1.0 + B * sqrt_i).ln());
+
+    let z_sum = context.charge_sum();
+    let common_ion = if context.common_ion_terms {
+        common_ion_contribution(context, parameters, charge)
+    } else {
+        0.0
+    };
+
+    let m_this = context.molality[component];
+    let mut sum = 0.0;
+    let mut b_prime_sum = 0.0;
+
+    // The binary terms: this ion against every opposite-sign ion.
+    for j in 0..context.molality.len() {
+        if j == component {
+            continue;
+        }
+        let other_charge = context.charge[j];
+        if other_charge * charge >= 0.0 {
+            continue;
+        }
+        let m_j = context.molality[j];
+        let beta0 = parameters.beta0(component, j, context.temperature);
+        let beta1 = parameters.beta1(component, j, context.temperature);
+        let cphi = parameters.cphi(component, j, context.temperature);
+
+        // **The unbounded charge test**, which is what the three sites that compute an
+        // activity coefficient use. See [`alpha1`] and [`alpha1_as_used`].
+        let alpha_one = alpha1_as_used(charge, other_charge);
+        let is_two_two = charge.abs() >= 1.5 && other_charge.abs() >= 1.5;
+        let x1 = alpha_one * sqrt_i;
+        let mut b_value = beta0 + beta1 * g(x1);
+        let mut b_derivative = if i > DERIVATIVE_FLOOR {
+            beta1 * g_prime(x1) / i
+        } else {
+            0.0
+        };
+
+        if is_two_two || context.non_two_two_beta2 {
+            let beta2 = parameters.beta2(component, j, context.temperature);
+            if beta2.abs() > BETA2_FLOOR {
+                let x2 = alpha2(charge, other_charge) * sqrt_i;
+                b_value += beta2 * g(x2);
+                if i > DERIVATIVE_FLOOR {
+                    b_derivative += beta2 * g_prime(x2) / i;
+                }
+            }
+        }
+
+        // C_ca = Cphi_ca / (2 sqrt(|z_c z_a|))
+        let c_value = cphi / (2.0 * (charge * other_charge).abs().sqrt());
+        sum += m_j * (2.0 * b_value + z_sum * c_value);
+
+        if !context.common_ion_terms {
+            b_prime_sum += m_this * m_j * b_derivative;
+        }
+    }
+
+    // E_theta's derivative through F, over the unequal-charge same-sign pairs.
+    let mut e_theta_prime = 0.0;
+    if context.unequal_charge_same_sign {
+        for first in 0..context.molality.len() {
+            let first_charge = context.charge[first];
+            if first_charge.abs() < ION_CHARGE {
+                continue;
+            }
+            for second in (first + 1)..context.molality.len() {
+                let second_charge = context.charge[second];
+                if first_charge * second_charge <= 0.0
+                    || (first_charge - second_charge).abs() < DERIVATIVE_FLOOR
+                {
+                    continue;
+                }
+                let (_, derivative) =
+                    crate::pitzer_electrostatic::calculate(first_charge, second_charge, i, a_phi);
+                e_theta_prime += context.molality[first] * context.molality[second] * derivative;
+            }
+        }
+    }
+
+    // The same-sign theta and opposite-sign psi terms.
+    for j in 0..context.molality.len() {
+        if j == component {
+            continue;
+        }
+        let other_charge = context.charge[j];
+        if other_charge.abs() < ION_CHARGE || other_charge * charge <= 0.0 {
+            continue;
+        }
+        let m_j = context.molality[j];
+        let theta = parameters.theta(component, j, context.temperature);
+        let mut e_theta = 0.0;
+        if context.unequal_charge_same_sign && (charge - other_charge).abs() >= DERIVATIVE_FLOOR {
+            let (value, _) = crate::pitzer_electrostatic::calculate(charge, other_charge, i, a_phi);
+            e_theta = value;
+        }
+        sum += m_j * 2.0 * (theta + e_theta);
+
+        for k in 0..context.molality.len() {
+            let third_charge = context.charge[k];
+            if third_charge * charge >= 0.0 || third_charge.abs() < ION_CHARGE {
+                continue;
+            }
+            let m_k = context.molality[k];
+            let psi = parameters.psi(component, j, k, context.temperature);
+            sum += m_j * m_k * psi;
+        }
+    }
+
+    let f = debye_huckel + b_prime_sum + e_theta_prime;
+    charge * charge * f + sum + common_ion
+}
+
+/// PHREEQC's common B-prime and C0 contributions to one ion's `ln gamma`.
+///
+/// `ComponentGePitzer.phreeqcCommonIonContribution`, which replaces the `fBprime` the main
+/// loop would otherwise accumulate: it sums over **every** cation-anion pair rather than
+/// over this ion's pairs, and adds a `C0` term the main loop has no counterpart for.
+fn common_ion_contribution(
+    context: &IonActivityContext<'_>,
+    parameters: &dyn PairParameters,
+    target_charge: f64,
+) -> f64 {
+    let i = context.ionic_strength();
+    let sqrt_i = i.sqrt();
+    let mut b_prime = 0.0;
+    let mut cphi_sum = 0.0;
+    for cation in 0..context.molality.len() {
+        let cation_charge = context.charge[cation];
+        if cation_charge <= 0.0 {
+            continue;
+        }
+        for anion in 0..context.molality.len() {
+            let anion_charge = context.charge[anion];
+            if anion_charge >= 0.0 {
+                continue;
+            }
+            let first = context.molality[cation];
+            let second = context.molality[anion];
+            b_prime +=
+                first * second * binary_b_prime(context, parameters, cation, anion, i, sqrt_i);
+            cphi_sum += first * second * parameters.cphi(cation, anion, context.temperature)
+                / (2.0 * (cation_charge * anion_charge).abs().sqrt());
+        }
+    }
+    target_charge * target_charge * b_prime + target_charge.abs() * cphi_sum
+}
+
+/// One pair's `B'` as the common-ion sum computes it: `PitzerParameterDatasets`' shape,
+/// which differs from the main loop's in that it applies `beta2` wherever the catalogue
+/// carries one rather than gating on the 2:2 test.
+fn binary_b_prime(
+    context: &IonActivityContext<'_>,
+    parameters: &dyn PairParameters,
+    first: usize,
+    second: usize,
+    i: f64,
+    sqrt_i: f64,
+) -> f64 {
+    let first_charge = context.charge[first];
+    let second_charge = context.charge[second];
+    let x1 = alpha1_as_used(first_charge, second_charge) * sqrt_i;
+    let mut derivative = 0.0;
+    if x1 > DERIVATIVE_FLOOR && i > DERIVATIVE_FLOOR {
+        derivative = parameters.beta1(first, second, context.temperature) * g_prime(x1) / i;
+    }
+    let beta2 = parameters.beta2(first, second, context.temperature);
+    let x2 = alpha2(first_charge, second_charge) * sqrt_i;
+    if beta2.abs() > BETA2_FLOOR && x2 > DERIVATIVE_FLOOR && i > DERIVATIVE_FLOOR {
+        derivative += beta2 * g_prime(x2) / i;
+    }
+    derivative
+}
+
+#[cfg(test)]
+mod ion_tests {
+    use super::*;
+    use crate::pitzer_catalog::{Family, find};
+
+    /// One pair's parameter as the PHREEQC catalogue states it: six coefficients, or zero
+    /// where the catalogue carries no row.
+    ///
+    /// A zero for an absent row is NeqSim's own behaviour - its parameter arrays are
+    /// zero-initialised and only the rows it read are written - so this reproduces the
+    /// arithmetic rather than papering over a gap. A gap that *matters* is caught earlier,
+    /// by the selection rule's coverage requirement.
+    fn form(family: Family, names: &[&str]) -> TemperatureForm {
+        match find(family, names) {
+            Some(a) => TemperatureForm::Catalog(a),
+            None => TemperatureForm::Catalog([0.0; 6]),
+        }
+    }
+
+    /// The catalogue-backed [`PairParameters`], which is what a selected brine reads.
+    struct CatalogParameters {
+        species: Vec<String>,
+    }
+
+    impl CatalogParameters {
+        fn new(names: &[&str]) -> Self {
+            Self {
+                species: names
+                    .iter()
+                    .map(|name| crate::pitzer_catalog::canonical_species(name))
+                    .collect(),
+            }
+        }
+
+        fn pair(&self, first: usize, second: usize) -> [&str; 2] {
+            [&self.species[first], &self.species[second]]
+        }
+    }
+
+    impl PairParameters for CatalogParameters {
+        fn beta0(&self, first: usize, second: usize, t: f64) -> f64 {
+            form(Family::B0, &self.pair(first, second)).value_at(t)
+        }
+        fn beta1(&self, first: usize, second: usize, t: f64) -> f64 {
+            form(Family::B1, &self.pair(first, second)).value_at(t)
+        }
+        fn cphi(&self, first: usize, second: usize, t: f64) -> f64 {
+            form(Family::C0, &self.pair(first, second)).value_at(t)
+        }
+        fn beta2(&self, first: usize, second: usize, t: f64) -> f64 {
+            form(Family::B2, &self.pair(first, second)).value_at(t)
+        }
+        fn theta(&self, first: usize, second: usize, t: f64) -> f64 {
+            form(Family::Theta, &self.pair(first, second)).value_at(t)
+        }
+        fn psi(&self, first: usize, second: usize, third: usize, t: f64) -> f64 {
+            let names = [
+                self.species[first].as_str(),
+                self.species[second].as_str(),
+                self.species[third].as_str(),
+            ];
+            form(Family::Psi, &names).value_at(t)
+        }
+    }
+
+    /// The molalities of a composition, per kilogram of water.
+    ///
+    /// One mole of mixture's worth: `m_i = x_i / (x_water M_water)`, with the water molar
+    /// mass the databank carries.
+    fn molalities(x: &[f64]) -> Vec<f64> {
+        let solvent = 0.018015;
+        let mass_of_water = x[0] * solvent;
+        x.iter().map(|&xi| xi / mass_of_water).collect()
+    }
+
+    /// **The end-to-end oracle**, from `validation/neqsim/PitzerArithmetic.java` on a live
+    /// `SystemPitzer` at 298.15 K.
+    ///
+    /// The compositions are the probe's own. The first brine has no same-sign pair and no
+    /// non-2:2 `beta2`, so it exercises the plain path; the second has both, and is the
+    /// case the two flags exist for.
+    #[test]
+    fn the_ion_activity_coefficient_matches_neqsim() {
+        // water + Na+ + Cl- at mole fractions 0.88 / 0.06 / 0.06, and the molalities
+        // **computed from them** rather than copied from the probe's twelve-digit
+        // printout - which is what the first draft did, and it failed in the thirteenth
+        // digit of `I`.
+        let names = ["water", "Na+", "Cl-"];
+        let mole_fraction = [0.88, 0.06, 0.06];
+        let molality = molalities(&mole_fraction);
+        let charge = [0.0, 1.0, -1.0];
+        let parameters = CatalogParameters::new(&names);
+        let context = IonActivityContext {
+            molality: &molality,
+            charge: &charge,
+            temperature: 298.15,
+            a_phi: debye_huckel_a_phi(298.15),
+            common_ion_terms: true,
+            non_two_two_beta2: false,
+            unequal_charge_same_sign: false,
+        };
+        assert!(
+            (context.ionic_strength() - 3.784_724_850_503_37).abs() < 1.0e-12,
+            "I = {}",
+            context.ionic_strength()
+        );
+        for (index, expected) in [(1, -0.267_512_432_075_052), (2, -0.267_512_432_075_052)] {
+            let got = ln_gamma(&context, &parameters, index);
+            assert!(
+                (got - expected).abs() < 1.0e-10,
+                "ln gamma({}) = {got}, and NeqSim gives {expected}",
+                names[index]
+            );
+        }
+    }
+
+    /// The brine with a same-sign pair of unequal charge and a non-2:2 `beta2`, which is
+    /// the case `CaCl2` in the catalogue creates.
+    #[test]
+    fn the_same_sign_and_beta2_terms_match_neqsim() {
+        // The probe adds `Cl-` twice and NeqSim aggregates the two entries, so the
+        // effective composition is water 0.88 / Na+ 0.03 / Ca++ 0.03 / Cl- 0.06.
+        let names = ["water", "Na+", "Ca++", "Cl-"];
+        let mole_fraction = [0.88, 0.03, 0.03, 0.06];
+        let molality = molalities(&mole_fraction);
+        let charge = [0.0, 1.0, 2.0, -1.0];
+        let parameters = CatalogParameters::new(&names);
+        let context = IonActivityContext {
+            molality: &molality,
+            charge: &charge,
+            temperature: 298.15,
+            a_phi: debye_huckel_a_phi(298.15),
+            common_ion_terms: true,
+            non_two_two_beta2: true,
+            unequal_charge_same_sign: true,
+        };
+        assert!((context.ionic_strength() - 6.623_268_488_380_89).abs() < 1.0e-12);
+
+        for (index, expected) in [
+            (1, -0.504_259_131_023_400),
+            (2, -1.841_321_926_770_47),
+            (3, 0.726_599_630_955_942),
+        ] {
+            let got = ln_gamma(&context, &parameters, index);
+            assert!(
+                (got - expected).abs() < 1.0e-10,
+                "ln gamma({}) = {got}, and NeqSim gives {expected}",
+                names[index]
+            );
+        }
+    }
+}
