@@ -19,6 +19,22 @@
 //      x_i`, with `exp(lngamma)` as the fallback when that is not finite or not positive.
 //   4. **Duan-Sun's salinity is `sum m_i` over the ions**, not `1/2 sum m_i z_i^2`, and its
 //      correlation is for three named gases only - every other component gets `gamma = 1`.
+//
+// # The one-component GE phase, and where it breaks
+//
+// `SystemDuanSun`'s constructor adds a mole of CO2 and its `addComponent` refuses every
+// other name, so **every state it can hold is one component and water-free**. That is the
+// shape `PhaseGE.getActivityCoefficientInfDil` cannot take: it clones the phase, passes
+// the clone's own component count to `init`, and then a **literal `2`** to
+// `getExcessGibbsEnergy` - which every `PhaseGE` subclass loops on. The clone has one
+// component, so the subclass reads a component that does not exist.
+//
+// This is not Duan-Sun's defect and `oneComponentGe` below shows that: a one-component
+// `SystemNRTL` or `SystemGEWilson` holding a `solute`-reference component crashes the same
+// way, with a different exception per subclass. Duan-Sun's own defect is separate - the
+// system holds one mole of CO2 whatever fluid it is handed, because `setModel` catches the
+// guard's exception and returns the half-built system, and with the count fixed the
+// correlation still contributes nothing: salinity is zero, so `gamma` is exactly one.
 
 import neqsim.thermo.component.ComponentDesmukhMather;
 import neqsim.thermo.component.ComponentGeDuanSun;
@@ -82,7 +98,45 @@ public class GeElectrolyteProbe {
     }
   }
 
+  private static void oneComponentGe(String label, SystemInterface system) {
+    system.addComponent("CO2", 1.0);
+    system.setMixingRule("classic");
+    System.out.printf("  %-15s ", label);
+    try {
+      system.init(0);
+      system.init(1);
+      System.out.printf("ok, gamma = %.12g%n",
+          system.getPhase(1).getActivityCoefficient(0, 0));
+    } catch (Throwable error) {
+      StackTraceElement[] frames = error.getStackTrace();
+      String site = frames.length > 0 ? frames[0].toString() : "?";
+      System.out.printf("%s: %s%n      at %s%n", error.getClass().getSimpleName(),
+          error.getMessage(), site);
+    }
+  }
+
   public static void main(String[] args) {
+    // ---------------------------------------------------------------------------------
+    System.out.println("################ a one-component GE phase ################");
+    // ---------------------------------------------------------------------------------
+    // CO2 rather than water, because `ComponentGE.fugcoef` only reaches the
+    // infinite-dilution path for a `solute`-reference component in a phase with no water.
+    oneComponentGe("SystemNRTL", new neqsim.thermo.system.SystemNRTL(313.15, 1.0));
+    oneComponentGe("SystemGEWilson", new neqsim.thermo.system.SystemGEWilson(313.15, 1.0));
+    oneComponentGe("SystemDuanSun", new SystemDuanSun(313.15, 1.0));
+    System.out.println("  (a one-component phase holding water, or a two-component one,");
+    System.out.println("   takes the solvent branch and is unaffected)");
+    {
+      SystemInterface waterOnly = new neqsim.thermo.system.SystemNRTL(313.15, 1.0);
+      waterOnly.addComponent("water", 1.0);
+      waterOnly.setMixingRule("classic");
+      waterOnly.init(0);
+      waterOnly.init(1);
+      System.out.printf("  %-15s ok, gamma = %.12g%n", "SystemNRTL water",
+          waterOnly.getPhase(1).getActivityCoefficient(0, 0));
+    }
+    System.out.println();
+
     // ---------------------------------------------------------------------------------
     System.out.println("################ Kent-Eisenberg ################");
     // ---------------------------------------------------------------------------------

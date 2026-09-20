@@ -1,3 +1,14 @@
+################ a one-component GE phase ################
+  SystemNRTL      ArrayIndexOutOfBoundsException: Index 1 out of bounds for length 1
+      at neqsim.thermo.component.ComponentGeNRTL.getGamma(ComponentGeNRTL.java:118)
+  SystemGEWilson  NullPointerException: Cannot invoke "neqsim.thermo.component.ComponentInterface.getx()" because the return value of "neqsim.thermo.phase.PhaseInterface.getComponent(int)" is null
+      at neqsim.thermo.phase.PhaseGEWilson.getExcessGibbsEnergy(PhaseGEWilson.java:99)
+  SystemDuanSun   NullPointerException: Cannot invoke "neqsim.thermo.component.ComponentInterface.isIsIon()" because the return value of "neqsim.thermo.phase.PhaseInterface.getComponent(int)" is null
+      at neqsim.thermo.phase.PhaseDuanSun.getExcessGibbsEnergy(PhaseDuanSun.java:88)
+  (a one-component phase holding water, or a two-component one,
+   takes the solvent branch and is unaffected)
+  SystemNRTL water ok, gamma = 1.00000000000
+
 ################ Kent-Eisenberg ################
 
 === water + MDEA + Na+ + Cl- + CO2 ===
@@ -71,6 +82,6 @@
 ################ Duan-Sun ################
 Exception in thread "main" java.lang.RuntimeException: SystemDuanSun supports only CO2
 	at neqsim.thermo.system.SystemDuanSun.addComponent(SystemDuanSun.java:86)
-	at GeElectrolyteProbe.build(GeElectrolyteProbe.java:40)
-	at GeElectrolyteProbe.report(GeElectrolyteProbe.java:61)
-	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:168)
+	at GeElectrolyteProbe.build(GeElectrolyteProbe.java:56)
+	at GeElectrolyteProbe.report(GeElectrolyteProbe.java:77)
+	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:222)
