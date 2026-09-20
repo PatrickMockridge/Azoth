@@ -552,7 +552,7 @@ pub fn ln_phi_contributions(
         // solventdiElectricdn` - and since that derivative is zero there, the base would give
         // `FBornX XBorni` alone. So the variant adds a **component-independent** `4.94e-5` to
         // every `ln phi`, which is the whole of the difference between the two models'
-        // fugacity coefficients.
+        // fugacity coefficients. Reported as NeqSim issue 3862.
         let born = if mod2004 {
             f_born_x * born_i + f_born_d
         } else {

@@ -12,7 +12,7 @@ product intensive; this revision adds it unweighted, so every `ln phi` carries a
 proportional to the total moles. Measured at this state: `FBornD = -4.9371195292414854e-05`
 and the phase holds `n = 1.00190245289410`, so `FBornD (n - 1) = -9.3926e-08` against a
 residual of `-9.3748e-08` - the whole of the difference, to 0.2%. A model taking a
-composition has `n = 1` and cannot reproduce the rest.
+composition has `n = 1` and cannot reproduce the rest. Reported as NeqSim issue 3862.
 
 NeqSim 3.20.0's `SystemFurstElectrolyteEosMod2004` with its own test's mixture - methane,
 water, Na+ and Cl- at `0.1 1.0 0.001 0.001` - flashed at 25 C and 10.01325 bara, from the
