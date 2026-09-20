@@ -154,6 +154,107 @@ def _umr_cpa(inputs: Mapping[str, Any]) -> dict[str, float]:
     return out
 
 
+def _furst(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """The Fürst electrolyte layers, under the names `FurstProbe.java` prints.
+
+    **The electrostatic surface and the composition derivatives are the point.** `gamma`,
+    `alphaLR2`, the phase dielectric and the packing fractions are where this model's
+    arithmetic lives, and the three terms' `dFdN` contributions - what `ln phi` is actually
+    built from - are printed one per term, so a divergence says which term moved rather than
+    that `ln phi` did.
+
+    **The extensive keys are not offered, and that is a measurement rather than a
+    convenience.** A case states mole *fractions* and a model refuses a vector that does not
+    sum to one, so the dump's phase holds one mole where the capture's holds
+    `1.00190165343676`. NeqSim's `XLR`, `bornX`, the three terms and the packing fractions'
+    volume derivatives are extensive in it - `W` by `n^2`, the rest by `n` - so comparing
+    them would compare a scale factor and not a layer. The capture carries the control for
+    this in its own right: `the same at ten times the moles` exists to show which keys move
+    with the size. `A_phase` and `B_phase` are `n^2 A` and `n B` of the per-mole pair for
+    the same reason. What is compared is what a mole fraction determines: the dielectric
+    surface, the packing fractions, the shielding parameter, `alphaLR2`, the three terms'
+    composition derivatives - which are what `ln phi` is built from - and `ln phi` itself.
+
+    **Three more are not offered.** `dFdN[i]` is the component's *whole* `dFdN`, the cubic's
+    part included, while the three the model adds are compared here one per term; `a[i]` and
+    `alpha[i]` are two views of `aT[i]`, which the reduced state carries as the
+    temperature-dependent attraction; and `aT[i]` is compared for a solvent only, because an
+    ion's is `1e-35` against a mixture attraction of `2.3e4` - the two implementations'
+    zeroes differ by `1e5` there, which is a fact about the resolution and not about the
+    model, and the value cancels out of the mixture either way.
+    """
+    from azoth.eos.components import furst_mixture_of
+    from azoth.eos.reference import _furst_terms as terms
+    from azoth.eos.reference._furst_dielectric import component_dielectric
+    from azoth.eos.reference._furst_terms import ComponentDerivatives, ln_phi_contributions
+    from azoth.eos.reference._mixture_state import (
+        R_NEQSIM as R,
+    )
+    from azoth.eos.reference._mixture_state import (
+        _furst_state,
+        phase_state,
+        reduced_parameters,
+    )
+
+    t_si = float(inputs["T"])
+    p_si = float(inputs["P"])
+    fluid, _ = furst_mixture_of(list(inputs["components"]))
+    reduced = reduced_parameters(fluid, t_si, p_si)
+    # The Fürst spec names the composition `x`, where the cubic models name it `z`.
+    x = [float(value) for value in inputs["x"]]
+    state = phase_state(reduced, fluid.kij, x, liquid=_side(inputs))
+
+    # The term is a function of the volume, so the layers are built at the volume the phase
+    # solved to - the one state the probe's own numbers belong to.
+    molar_volume = state.z * R * t_si / p_si
+    inner = _furst_state(reduced, x, molar_volume)
+    term = reduced.furst
+    derivatives = [
+        ComponentDerivatives(
+            charge=species.charge,
+            diameter_m=species.diameter_m,
+            dielectric=component_dielectric(species.dielectric_coefficients, t_si),
+            w_i=-2.0 * sum(x[j] * term.table.wij(i, j, t_si) for j in range(len(x))),
+        )
+        for i, species in enumerate(term.species)
+    ]
+    contributions = ln_phi_contributions(inner, derivatives, x, term.mod2004)
+
+    # The probe's own units, which are neither SI nor the internal scale: `P` is bara, and
+    # a molar volume carries NeqSim's `1e5` the same way its `a` and `b` do.
+    out: dict[str, float] = {
+        "T": t_si,
+        "P": p_si * 1.0e-5,
+        "V": molar_volume * 1.0e5,
+        "Z": state.z,
+    }
+    for i, species in enumerate(term.species):
+        out[f"b[{i}]"] = _internal(0.0, reduced.b[i], t_si, p_si)[1]
+        if species.charge == 0.0:
+            out[f"aT[{i}]"] = _internal(reduced.a[i], 0.0, t_si, p_si)[0]
+        out[f"x[{i}]"] = x[i]
+        # The probe prints the diameter the *phase* holds, which for an ion is the one
+        # derived back out of the fitted covolume and not the table's.
+        out[f"lj[{i}]"] = species.diameter_m * 1.0e10
+        out[f"charge[{i}]"] = species.charge
+        out[f"eps_i[{i}]"] = derivatives[i].dielectric
+        out[f"lnPhi[{i}]"] = state.ln_phi[i]
+        out[f"dFSR2dN[{i}]"] = contributions[i].short_range
+        out[f"dFLRdN[{i}]"] = contributions[i].long_range
+        out[f"dFBorndN[{i}]"] = contributions[i].born
+
+    out["eps"] = inner.solvent_dielectric
+    out["eps_dT"] = inner.solvent_dielectric_dt
+    out["eps_phase"] = inner.dielectric
+    out["eps_phase_dT"] = inner.dielectric_dt
+    out["packing"] = inner.packing
+    out["packing_ionic"] = inner.ionic_packing
+    out["gamma"] = inner.shielding
+    out["gamma_dT"] = inner.shielding_dt
+    out["alphaLR2"] = terms.alpha_lr2(inner.dielectric, t_si)
+    return out
+
+
 def _pcsaft_kij(names: list[str]) -> list[float]:
     """The interaction matrix, as `pcsaft_rahmat_phase`'s own entry function builds it.
 
@@ -261,6 +362,7 @@ def _saft_vr_mie(inputs: Mapping[str, Any]) -> dict[str, float]:
 #: rows a capture reader can key.
 DUMPERS: dict[str, Dumper] = {
     "eos.srk_cpa_phase": _srk_cpa,
+    "eos.furst_electrolyte_phase": _furst,
     "eos.pcsaft_rahmat_phase": _pcsaft,
     "eos.saft_vr_mie_phase": _saft_vr_mie,
     "eos.umr_cpa_phase": _umr_cpa,

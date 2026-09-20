@@ -425,6 +425,53 @@ CASES: tuple[Case, ...] = (
             Mapping("s_res", "SresTP_J_per_molK"),
         ),
     ),
+    Case(
+        capture="furst_probe.tsv",
+        shape="block",
+        state=2,
+        id="methane_water_sodium_chloride_furst_against_neqsim",
+        calc="eos.furst_electrolyte_phase",
+        tol=1.0e-10,
+        command="java -cp .:neqsim-3.20.0.jar FurstProbe",
+        header="# the shipped test: methane water Na+ Cl- phase 1",
+        attribution=(
+            "NeqSim 3.20.0, SystemFurstElectrolyteEos - which builds "
+            "PhaseModifiedFurstElectrolyteEos - run from validation/neqsim/FurstProbe.java"
+        ),
+        notes=(
+            "**The aqueous phase of the shipped test, which is the state the model was built "
+            "against**, and the layers are why this case exists: the shielding solve, the "
+            "Born radius, the solvent dielectric and the short-range table all reach "
+            "`ln phi` as one number, and this is what says which of them moved. `Z` and "
+            "`lnPhi` are the state `specs/cases/eos/furst_electrolyte_phase.toml` pins."
+        ),
+        note=(
+            "`W = -3.25444241835884e-07` is the value the gas-ion pass gives the methane/Na+ "
+            "pair; the predictive correlation alone gives `-1.92e-07`, so the layer is live. "
+            "`eps_dT = -0.359218709298880` is the solvent dielectric's temperature "
+            "derivative, which the Mod2004 revision zeroes."
+        ),
+        inputs={
+            "components": ["methane", "water", "Na+", "Cl-"],
+            "T": 298.15,
+            "P": 1001325.0,
+            "x": [
+                0.000225745660581355,
+                0.997778050427449,
+                0.000998101955985164,
+                0.000998101955985164,
+            ],
+            "compressed_phase": "liquid",
+        },
+        eos=None,
+        mappings=(
+            Mapping("z_factor", "Z"),
+            Mapping("ln_phi", "lnPhi[0]", index=0, under="ln_phi"),
+            Mapping("ln_phi", "lnPhi[1]", index=1, under="ln_phi"),
+            Mapping("ln_phi", "lnPhi[2]", index=2, under="ln_phi"),
+            Mapping("ln_phi", "lnPhi[3]", index=3, under="ln_phi"),
+        ),
+    ),
 )
 
 
