@@ -1241,8 +1241,13 @@ as = "kijwhitsonsoriede"
 unit = "neqsim-internal"
 reason = """\
     not-ported: the Whitson-Soriede mixing rule; NeqSim's `thermo/mixingrule/`. Present for \
-    303 of the 957 in-scope pairs. Six rows are written with a comma decimal separator; \
-    NeqSim's own `Double.parseDouble` would throw on them."""
+    303 of the 957 in-scope pairs. **Six rows are written with a comma decimal separator - \
+    `propane`/`CO2`, `n-butane`/`CO2`, `n-pentane`/`CO2`, `n-hexane`/`CO2`, `n-heptane`/`CO2` \
+    and `mercury`/`CO2` - and NeqSim reads them with `Double.parseDouble`, which throws.** \
+    Measured, the throw is swallowed by the per-pair `catch` in `EosMixingRuleHandler` and \
+    `intparam` keeps the `KIJSRK` value written earlier in the same chain, so those six pairs \
+    evaluate with the ordinary SRK interaction rather than the fitted one: `mercury`/`CO2` is \
+    `0.369` against this column's `0.0145`. Written up to the Desktop."""
 [[upstreams.files]]
 id = "neqsim/COMP_EXT.csv"
 upstream_path = "src/main/resources/data/COMP_EXT.csv"
