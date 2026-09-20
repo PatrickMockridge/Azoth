@@ -545,6 +545,310 @@ pub fn ln_phi_contributions(
     Ok(out)
 }
 
+/// One component's contribution to the state, as `volInit` reads it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ComponentState {
+    /// The ionic charge, in elementary charges.
+    pub charge: f64,
+    /// The diameter in **metres**, as the phase resolves it - the value derived from the
+    /// fitted covolume for an ion. Zero makes the component contribute nothing to the
+    /// packing fraction or the Born sum, which is NeqSim's own treatment.
+    pub diameter_m: f64,
+    /// `eps_i(T)`, the component's own dielectric constant.
+    pub dielectric: f64,
+    /// `d eps_i/dT`.
+    pub dielectric_dt: f64,
+    /// `d^2 eps_i/dT^2`.
+    pub dielectric_dtdt: f64,
+    /// The component's critical volume, in m³/mol. Read only by the two volume-fraction
+    /// dielectric mixing rules, so a molar-average caller may leave it zero.
+    pub critical_volume: f64,
+}
+
+/// Everything `volInit` reads, handed to [`build_state`] as one argument.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StateInputs<'a> {
+    /// The state's absolute temperature.
+    pub temperature: f64,
+    /// The phase's molar volume, in m³/mol.
+    pub molar_volume: f64,
+    /// The mole numbers, one per component.
+    pub mole_numbers: &'a [f64],
+    /// The components.
+    pub components: &'a [ComponentState],
+    /// How the solvent dielectric constants are combined.
+    pub rule: crate::furst_dielectric::MixingRule,
+    /// The short-range sums, from [`crate::furst_mixing::short_range`].
+    pub short_range: crate::furst_mixing::ShortRange,
+    /// The pair table, for the per-component row sums.
+    pub table: &'a crate::furst_mixing::WijTable,
+    /// The component names, lower-cased, for the alternating short-range rows.
+    pub names: &'a [String],
+}
+
+/// Build the state, in `volInit`'s own order.
+///
+/// The order is load-bearing and is the reason this is one function rather than a set of
+/// accessors: the packing fraction needs the volume, the dielectric constants need the
+/// packing fraction, `alphaLR2` needs the dielectric, and **the shielding parameter needs
+/// `alphaLR2`** - so a `gamma` read before the dielectric is a `gamma` of the wrong brine.
+///
+/// # Errors
+/// * Propagates [`crate::furst_dielectric::solvent_dielectric`]'s refusal of a phase with no
+///   solvent, and the packing fraction's refusal of a non-positive total volume.
+/// * [`AzothError::InvalidInput`] if the slices are not one per component.
+pub fn build_state(inputs: &StateInputs<'_>) -> Result<FurstState> {
+    let n = inputs.components.len();
+    if inputs.mole_numbers.len() != n || inputs.names.len() != n {
+        return Err(AzothError::invalid_input(
+            "components",
+            format!(
+                "{} components, {} mole numbers and {} names; the state is one per component",
+                n,
+                inputs.mole_numbers.len(),
+                inputs.names.len()
+            ),
+        ));
+    }
+    let is_ion: Vec<bool> = inputs.components.iter().map(|c| c.charge != 0.0).collect();
+    let diameters: Vec<f64> = inputs.components.iter().map(|c| c.diameter_m).collect();
+    let total_moles: f64 = inputs.mole_numbers.iter().sum();
+
+    // `calcEps` and `calcEpsIonic` are one sum over two different sets.
+    let packing = crate::furst_dielectric::packing_fraction(
+        &diameters,
+        inputs.mole_numbers,
+        &is_ion,
+        total_moles,
+        inputs.molar_volume,
+        false,
+    )?;
+    let ionic_packing = crate::furst_dielectric::packing_fraction(
+        &diameters,
+        inputs.mole_numbers,
+        &is_ion,
+        total_moles,
+        inputs.molar_volume,
+        true,
+    )?;
+
+    // The solvent mixture's constant, and its temperature derivatives. The derivatives use
+    // the per-component `d eps_i/dT` in the same mole-number average - the ions are excluded
+    // from all three, which is what `calcSolventDiElectricConstantdT` does whatever mixing
+    // rule is selected.
+    let eps_i: Vec<f64> = inputs.components.iter().map(|c| c.dielectric).collect();
+    let eps_dt: Vec<f64> = inputs.components.iter().map(|c| c.dielectric_dt).collect();
+    let eps_dtdt: Vec<f64> = inputs
+        .components
+        .iter()
+        .map(|c| c.dielectric_dtdt)
+        .collect();
+    let critical_volumes: Vec<f64> = inputs
+        .components
+        .iter()
+        .map(|c| c.critical_volume)
+        .collect();
+    let solvent_dielectric = crate::furst_dielectric::solvent_dielectric(
+        inputs.rule,
+        inputs.mole_numbers,
+        &eps_i,
+        &is_ion,
+        &critical_volumes,
+    )?;
+    let solvent_dielectric_dt = crate::furst_dielectric::solvent_dielectric(
+        inputs.rule,
+        inputs.mole_numbers,
+        &eps_dt,
+        &is_ion,
+        &critical_volumes,
+    )?;
+    let solvent_dielectric_dtdt = crate::furst_dielectric::solvent_dielectric(
+        inputs.rule,
+        inputs.mole_numbers,
+        &eps_dtdt,
+        &is_ion,
+        &critical_volumes,
+    )?;
+
+    // The phase's own constant and its derivatives. Note that `epsIonic` does not depend on
+    // `T` at fixed `V`, so `d eps/dT` carries the solvent term alone and `d2 eps/dT2` is the
+    // solvent's scaled by the same `X`.
+    let x = (1.0 - ionic_packing) / (1.0 + ionic_packing / 2.0);
+    let y = solvent_dielectric - 1.0;
+    let dielectric = 1.0 + y * x;
+    let dielectric_dt = solvent_dielectric_dt * x;
+    let dielectric_dtdt = solvent_dielectric_dtdt * x;
+    let ionic_dv = crate::furst_dielectric::packing_fraction_dv(
+        ionic_packing,
+        total_moles,
+        inputs.molar_volume,
+    );
+    let ionic_dvdv = crate::furst_dielectric::packing_fraction_dvdv(
+        ionic_packing,
+        total_moles,
+        inputs.molar_volume,
+    );
+    let d_x_dv = ionic_dv * -1.5 / (1.0 + ionic_packing / 2.0).powi(2);
+    let dielectric_dv = y * d_x_dv;
+    let d_x_dvdv = ionic_dvdv * -1.5 / (1.0 + ionic_packing / 2.0).powi(2)
+        + ionic_dv * ionic_dv * 1.5 / (1.0 + ionic_packing / 2.0).powi(3);
+    let dielectric_dvdv = y * d_x_dvdv;
+    let dielectric_dtdv = solvent_dielectric_dt * d_x_dv;
+
+    let mut state = FurstState {
+        temperature: inputs.temperature,
+        molar_volume: inputs.molar_volume,
+        moles: total_moles,
+        packing,
+        ionic_packing,
+        solvent_dielectric,
+        solvent_dielectric_dt,
+        dielectric,
+        dielectric_dt,
+        dielectric_dtdt,
+        dielectric_dv,
+        dielectric_dvdv,
+        dielectric_dtdv,
+        shielding: 0.0,
+        shielding_dt: 0.0,
+        xlr: 0.0,
+        xlr_dt: 0.0,
+        born_x: 0.0,
+        w: inputs.short_range.w,
+        w_dt: inputs.short_range.w_dt,
+        w_dtdt: inputs.short_range.w_dtdt,
+    };
+
+    state.shielding = shielding_parameter(&state, inputs.components, inputs.mole_numbers);
+    state.shielding_dt = shielding_parameter_dt(&state, inputs.components, inputs.mole_numbers);
+    state.xlr = xlr(&state, inputs.components, inputs.mole_numbers);
+    state.xlr_dt = xlr_dt(&state, inputs.components, inputs.mole_numbers);
+    state.born_x = born_x(inputs.components, inputs.mole_numbers, inputs.names);
+    Ok(state)
+}
+
+/// `calcShieldingParameter`: a damped Newton solve for `gamma`.
+///
+/// `f(gamma) = 4 gamma^2/N_A - alphaLR2 sum_i n_i/V (z_i/(1 + gamma sigma_i))^2`, solved by
+/// `gamma -= 0.8 f/f'` from `1e10`, with a 1000-iteration cap and a **three-iteration
+/// floor**. The floor is NeqSim's and it matters: a phase carrying no ion returns exactly
+/// zero, but a phase carrying ions at `1e-43` mol does not - its `f` is dominated by
+/// `4 gamma^2/N_A`, so the solve walks down and stops wherever the floor leaves it. The
+/// probe prints that residue as `gamma = 1692665.9444736` for the vapour, which is not a
+/// physical number and is what the iteration returns.
+fn shielding_parameter(
+    state: &FurstState,
+    components: &[ComponentState],
+    mole_numbers: &[f64],
+) -> f64 {
+    let alpha = alpha_lr2(state.dielectric, state.temperature);
+    let v_total = state.molar_volume * state.moles;
+    let mut gamma = 1.0e10_f64;
+    let mut iterations = 0;
+    loop {
+        iterations += 1;
+        let gamma_old = gamma;
+        let mut f = 4.0 * gamma * gamma / NEQSIM_AVOGADRO;
+        let mut df = 8.0 * gamma / NEQSIM_AVOGADRO;
+        let mut ions = 0;
+        for (component, &moles) in components.iter().zip(mole_numbers) {
+            if component.charge == 0.0 {
+                continue;
+            }
+            ions += 1;
+            let sigma = component.diameter_m;
+            let denominator = 1.0 + gamma * sigma;
+            f -= alpha * moles / v_total
+                * (component.charge / denominator)
+                * (component.charge / denominator);
+            df += 2.0 * alpha * moles / v_total * component.charge.powi(2) * sigma
+                / denominator.powi(3);
+        }
+        gamma = if ions > 0 {
+            gamma_old - 0.8 * f / df
+        } else {
+            0.0
+        };
+        if !((f.abs() > 1.0e-10 && iterations < 1000) || iterations < 3) {
+            break;
+        }
+    }
+    gamma
+}
+
+/// `calcShieldingParameterdT`, by implicit differentiation.
+fn shielding_parameter_dt(
+    state: &FurstState,
+    components: &[ComponentState],
+    mole_numbers: &[f64],
+) -> f64 {
+    if state.shielding < 1.0e-10 {
+        return 0.0;
+    }
+    let alpha = alpha_lr2(state.dielectric, state.temperature);
+    let alpha_dt = alpha_lr2_dt(state);
+    let v_total = state.molar_volume * state.moles;
+    let mut dfdgamma = 8.0 * state.shielding / NEQSIM_AVOGADRO;
+    let mut sum = 0.0;
+    for (component, &moles) in components.iter().zip(mole_numbers) {
+        if component.charge == 0.0 {
+            continue;
+        }
+        let sigma = component.diameter_m;
+        let denominator = 1.0 + state.shielding * sigma;
+        dfdgamma +=
+            2.0 * alpha * moles / v_total * component.charge.powi(2) * sigma / denominator.powi(3);
+        sum += moles / v_total * component.charge.powi(2) / denominator.powi(2);
+    }
+    let dfdt = -alpha_dt * sum;
+    if dfdgamma.abs() < 1.0e-50 {
+        return 0.0;
+    }
+    -dfdt / dfdgamma
+}
+
+/// `calcXLR = sum_i n_i z_i^2 gamma/(1 + gamma sigma_i)` over the ions.
+fn xlr(state: &FurstState, components: &[ComponentState], mole_numbers: &[f64]) -> f64 {
+    let mut sum = 0.0;
+    for (component, &moles) in components.iter().zip(mole_numbers) {
+        if component.charge == 0.0 {
+            continue;
+        }
+        sum += moles * component.charge.powi(2) * state.shielding
+            / (1.0 + state.shielding * component.diameter_m);
+    }
+    sum
+}
+
+/// `calcXLRdT`, whose `d/dT` carries only the shielding parameter's own derivative.
+fn xlr_dt(state: &FurstState, components: &[ComponentState], mole_numbers: &[f64]) -> f64 {
+    let mut sum = 0.0;
+    for (component, &moles) in components.iter().zip(mole_numbers) {
+        if component.charge == 0.0 {
+            continue;
+        }
+        let denominator = 1.0 + state.shielding * component.diameter_m;
+        sum += moles * component.charge.powi(2) * state.shielding_dt / (denominator * denominator);
+    }
+    sum
+}
+
+/// `calcBornX = sum_i n_i z_i^2/sigma_i` over every component with a diameter.
+///
+/// Every component and not only the ions, because that is how NeqSim writes it - a neutral
+/// contributes `z = 0` and so contributes nothing, which makes the two readings the same
+/// number here and is stated so that it stays that way.
+fn born_x(components: &[ComponentState], mole_numbers: &[f64], names: &[String]) -> f64 {
+    let _ = names;
+    let mut sum = 0.0;
+    for (component, &moles) in components.iter().zip(mole_numbers) {
+        if component.diameter_m > 0.0 {
+            sum += moles * component.charge.powi(2) / component.diameter_m;
+        }
+    }
+    sum
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -900,5 +1204,207 @@ mod tests {
         let error = ln_phi_contributions(&state, &components, &[1.0])
             .expect_err("a lone ion has no solvent to differentiate against");
         assert_eq!(error.field(), Some("mole_numbers"), "{error:?}");
+    }
+
+    /// **The whole state, built the way `volInit` builds it.**
+    ///
+    /// Every layer the capture prints for the aqueous phase comes out of one call in
+    /// `volInit`'s own order: the two packing fractions, the solvent dielectric constant and
+    /// its first two temperature derivatives, the phase's own constant, the shielding
+    /// parameter from the Newton solve, `XLR` and `bornX`.
+    ///
+    /// **The shielding parameter is the interesting one.** It is a damped Newton solve with
+    /// a three-iteration floor, so for the vapour - whose ions sit at `1e-43` mol - it
+    /// returns a residue of the solve rather than a physical number, and the capture prints
+    /// `1692665.94447360` there. That value is asserted too, in the module's own test below,
+    /// because a port that "fixed" the floor would diverge on every vapour phase.
+    #[test]
+    fn the_state_matches_the_oracle_layer_by_layer() {
+        let components = [
+            ComponentState {
+                charge: 0.0,
+                diameter_m: 2.52e-10,
+                dielectric: 2.0,
+                dielectric_dt: 0.0,
+                dielectric_dtdt: 0.0,
+                critical_volume: 9.9e-5,
+            },
+            ComponentState {
+                charge: 0.0,
+                diameter_m: 2.52e-10,
+                dielectric: 78.332_147_573_168_0,
+                dielectric_dt: -0.359_299_981_947_430_96,
+                dielectric_dtdt: 0.001_957_499_618_060_916,
+                critical_volume: 5.6e-5,
+            },
+            ComponentState {
+                charge: 1.0,
+                diameter_m: 4.343_717_662_170_81e-10,
+                dielectric: 0.0,
+                dielectric_dt: 0.0,
+                dielectric_dtdt: 0.0,
+                critical_volume: 0.0,
+            },
+            ComponentState {
+                charge: -1.0,
+                diameter_m: 3.226_081_589_674_81e-10,
+                dielectric: 0.0,
+                dielectric_dt: 0.0,
+                dielectric_dtdt: 0.0,
+                critical_volume: 0.0,
+            },
+        ];
+        let names: Vec<String> = ["methane", "water", "na+", "cl-"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let mixture = |name: &str, charge: f64, angstrom: f64, dielectric: f64| {
+            crate::furst_mixing::FurstComponent {
+                name: name.to_string(),
+                charge,
+                diameter: angstrom,
+                dielectric_at_reference: dielectric,
+            }
+        };
+        let table = crate::furst_mixing::wij_table(
+            &[
+                mixture("methane", 0.0, 2.52, 2.0),
+                mixture("water", 0.0, 2.52, 78.332_147_573_168_0),
+                mixture("na+", 1.0, 5.68, 0.0),
+                mixture("cl-", -1.0, 3.60, 0.0),
+            ],
+            crate::databank::furst_wij,
+        )
+        .expect("the shipped mixture builds a table");
+        let total = 1.001_901_653_436_76;
+        let mole_numbers: Vec<f64> = [
+            0.000_225_745_660_581_355,
+            0.997_778_050_427_449,
+            0.000_998_101_955_985_164,
+            0.000_998_101_955_985_164,
+        ]
+        .iter()
+        .map(|x| x * total)
+        .collect();
+        let short =
+            crate::furst_mixing::short_range(&table, &mole_numbers, 298.15).expect("computes");
+
+        let state = build_state(&StateInputs {
+            temperature: 298.15,
+            molar_volume: 2.385_525_337_515_67e-5,
+            mole_numbers: &mole_numbers,
+            components: &components,
+            rule: crate::furst_dielectric::MixingRule::default_for_the_model(),
+            short_range: short,
+            table: &table,
+            names: &names,
+        })
+        .expect("the aqueous phase builds a state");
+
+        let check = |got: f64, want: f64, what: &str| {
+            let scale = want.abs().max(1.0);
+            assert!(
+                (got - want).abs() < 1.0e-11 * scale,
+                "{what}: got {got}, the probe prints {want}"
+            );
+        };
+        check(state.packing, 0.212_659_929_859_501, "packing");
+        check(
+            state.ionic_packing,
+            0.001_524_427_057_062_24,
+            "packing_ionic",
+        );
+        check(state.solvent_dielectric, 78.314_881_455_398_7, "eps");
+        check(
+            state.solvent_dielectric_dt,
+            -0.359_218_709_298_880,
+            "eps_dT",
+        );
+        // The solvent's second derivative is computed on the way to the phase's and is not
+        // carried: no term reads it, because `d2FBorn/dT2` takes the first derivative and
+        // nothing takes the second. The phase's own is carried and is checked below.
+        check(state.dielectric, 78.138_224_759_715_8, "eps_phase");
+        check(state.dielectric_dt, -0.358_397_930_827_548, "eps_phase_dT");
+        check(
+            state.dielectric_dtdt,
+            0.001_952_585_159_916_30,
+            "eps_phase_dTdT",
+        );
+        check(state.dielectric_dv, 7_385.673_022_877_76, "eps_phase_dV");
+        check(
+            shielding_parameter(&state, &components, &mole_numbers),
+            302_510_558.954_255,
+            "gamma",
+        );
+        check(state.xlr, 542_989.558_795_128, "XLR");
+        check(state.born_x, 5_401_911.027_213_43, "bornX");
+        check(state.w, -3.254_442_418_358_84e-07, "W");
+    }
+
+    /// **The vapour's shielding parameter is a residue, not a number.**
+    ///
+    /// A phase whose ions sit at `1e-43` mol has an `f` dominated by `4 gamma^2/N_A`, so the
+    /// damped Newton walks `gamma` down and the three-iteration floor stops it. The capture
+    /// prints `1692665.9444736` - identical for two different brines, because the ion term
+    /// is below the noise. Reproduced rather than guarded: it is what NeqSim returns.
+    #[test]
+    fn a_phase_with_no_ions_returns_an_exact_zero() {
+        let components = [
+            ComponentState {
+                charge: 0.0,
+                diameter_m: 2.52e-10,
+                dielectric: 2.0,
+                dielectric_dt: 0.0,
+                dielectric_dtdt: 0.0,
+                critical_volume: 9.9e-5,
+            },
+            ComponentState {
+                charge: 0.0,
+                diameter_m: 2.52e-10,
+                dielectric: 78.332_147_573_168_0,
+                dielectric_dt: -0.359_299_981_947_430_96,
+                dielectric_dtdt: 0.001_957_499_618_060_916,
+                critical_volume: 5.6e-5,
+            },
+        ];
+        let names: Vec<String> = ["methane", "water"].iter().map(|s| s.to_string()).collect();
+        let table = crate::furst_mixing::wij_table(
+            &[
+                crate::furst_mixing::FurstComponent {
+                    name: "methane".into(),
+                    charge: 0.0,
+                    diameter: 2.52,
+                    dielectric_at_reference: 2.0,
+                },
+                crate::furst_mixing::FurstComponent {
+                    name: "water".into(),
+                    charge: 0.0,
+                    diameter: 2.52,
+                    dielectric_at_reference: 78.332_147_573_168_0,
+                },
+            ],
+            crate::databank::furst_wij,
+        )
+        .expect("builds");
+        let mole_numbers = [0.1, 1.0];
+        let short =
+            crate::furst_mixing::short_range(&table, &mole_numbers, 298.15).expect("computes");
+        let state = build_state(&StateInputs {
+            temperature: 298.15,
+            molar_volume: 2.385_525_337_515_67e-5,
+            mole_numbers: &mole_numbers,
+            components: &components,
+            rule: crate::furst_dielectric::MixingRule::default_for_the_model(),
+            short_range: short,
+            table: &table,
+            names: &names,
+        })
+        .expect("builds");
+        assert_eq!(
+            state.shielding, 0.0,
+            "a phase with no ion returns exactly zero rather than the solve's floor"
+        );
+        assert_eq!(state.xlr, 0.0);
+        assert_eq!(state.born_x, 0.0);
     }
 }
