@@ -14,8 +14,12 @@ the physics behind them:
 
 - **Associating models (CPA, PC-SAFT, SAFT-VR-Mie)** — no flow-assurance hydrate or
   process skill can be `azoth`-basis until tranche P7.
-- **Electrolytes and acid gas** — safety, produced-water scale and dehydration skills
-  wait on P8.
+- **Electrolytes** — P8 is closed: `eos.pitzer_phase`, `eos.kent_eisenberg_phase`,
+  `eos.desmukh_mather_phase`, `eos.soreide_whitson_phase` and the Fürst pair
+  (`eos.furst_electrolyte_phase`, `eos.furst_electrolyte_mod2004_phase`) are ported, and no
+  skill drives them. The brine and scale skill waits on P9 and both dehydration skills on
+  P11, so this is the one closed tranche that promotes nothing: the physics a scale
+  calculation is built on is here, and the calculation is not.
 - **Activity-coefficient models (NRTL, UNIFAC, UNIQUAC, Wilson, Van Laar)** — P5 is
   closed: all five activity models are ported, and all five have a phase
   (`eos.ge_nrtl_phase`, `eos.ge_unifac_phase`, `eos.ge_uniquac_phase`,
@@ -43,8 +47,8 @@ the physics behind them:
 | `eos`, `hydraulics`, `thermal` | `azoth` | P0–P2 (done) |
 | `pvt` | `screening` | P1, P3 (mixing), P4 (reference EOS), Tier 1 (characterisation) |
 | `process` | `screening` | P1, P5, P6, P10, P11 (unit ops), P12 (flowsheet) |
-| `flow-assurance` | `screening` | P7, P8, P9 |
-| `safety` | `screening` | P1, P6, P8, P11 |
+| `flow-assurance` | `screening` | P7, P9 |
+| `safety` | `screening` | P1, P6, P11 |
 | `subsurface` | `screening` | Tier 1 (PVT) |
 | `environment` | `advisory` | none needed |
 | `field-development` | `advisory` | none needed |
