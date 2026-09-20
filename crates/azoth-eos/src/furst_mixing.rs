@@ -331,11 +331,11 @@ fn cation_solvent(cation: &FurstComponent, solvent: &FurstComponent, divalent: b
                 cpa(2) * d + cpa(3)
             }
         }
-        // **`TEG` reads the `MEG` set**, in NeqSim and here: the chain tests `TEG` twice
+        // **`TEG` reads the `MEG` set** (NeqSim issue 3846), in NeqSim and here: the chain tests `TEG` twice
         // and the first match wins, so the branch written for TEG is unreachable and
         // `furstParamsCPA_TEG` is never read by anything. Reproduced rather than corrected,
         // because a port that silently improved on its source would be a different model;
-        // it is reported upstream and the fix is one array swap here.
+        // it is NeqSim issue 3846 and the fix is one array swap here.
         "teg" | "triethylene glycol" | "meg" | "ethylene glycol" => meg_fit(d, divalent),
         "mdea" => {
             if divalent {
