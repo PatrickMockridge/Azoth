@@ -43,6 +43,17 @@ public class FurstProbe {
     System.out.printf("%s = %.15g%n", key, value);
   }
 
+  /** One package-private field, by name. */
+  private static double field(Object target, String name) {
+    try {
+      java.lang.reflect.Field f = target.getClass().getDeclaredField(name);
+      f.setAccessible(true);
+      return f.getDouble(target);
+    } catch (Throwable e) {
+      return Double.NaN;
+    }
+  }
+
   private static void report(String label, String[] names, double[] moles, double tC, double pBara) {
     System.out.printf("# %s%n", label);
     SystemInterface system = new SystemFurstElectrolyteEos(298.15, 10.01325);
@@ -102,6 +113,9 @@ public class FurstProbe {
     row("eps_phase", furst.calcDiElectricConstant(temperature));
     row("eps_phase_dT", furst.calcDiElectricConstantdT(temperature));
     row("eps_phase_dTdT", furst.calcDiElectricConstantdTdT(temperature));
+    row("eps_phase_dV", furst.calcDiElectricConstantdV(temperature));
+    row("eps_phase_dVdV", furst.calcDiElectricConstantdVdV(temperature));
+    row("eps_phase_dTdV", furst.calcDiElectricConstantdTdV(temperature));
     row("packing", furst.getEps());
     row("packing_V", furst.calcEpsV());
     row("packing_VV", furst.calcEpsVV());
@@ -118,6 +132,9 @@ public class FurstProbe {
     // derivatives that say each is live rather than merely present.
     row("W", furst.getW());
     row("WT", furst.getWT());
+    // `WTT` is a package-private field with no accessor, so it is read by reflection -
+    // the same reach `PitzerArithmetic` makes for `debyeHuckelAphi`.
+    row("WTT", field(furst, "WTT"));
     row("FSR2", furst.FSR2());
     row("FSR2_dT", furst.dFSR2dT());
     row("FSR2_dTdT", furst.dFSR2dTdT());
