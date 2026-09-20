@@ -74,10 +74,18 @@ public class HydrateProbe {
       }
       row("hydrate_structure", structure);
 
-      // The gas phase the guests' fugacities come from, and the two water fugacities the
-      // equilibrium is the equality of.
-      row("gas_water_fugacity", fluid.getPhase(0).getFugacity("water"));
+      // **Which phase the equilibrium partners, and every phase's water fugacity.** NeqSim's
+      // temperature flash prefers the *aqueous* phase for this comparison and its pressure
+      // flash takes phase 0, so which one is the partner is not a detail a port can assume -
+      // and the phases are printed so the answer is read rather than guessed.
       row("hydrate_water_fugacity", hydrate.getFugacity("water"));
+      for (int p = 0; p < fluid.getNumberOfPhases(); p++) {
+        PhaseInterface phase = fluid.getPhase(p);
+        System.out.printf("phase[%d] = %s%n", p, phase.getType());
+        row("phase[" + p + "].beta", phase.getBeta());
+        row("phase[" + p + "].water_fugacity", phase.getFugacity("water"));
+      }
+      row("phase0_water_fugacity", fluid.getPhase(0).getFugacity("water"));
 
       for (int i = 0; i < hydrate.getNumberOfComponents(); i++) {
         String name = hydrate.getComponent(i).getName();
