@@ -343,3 +343,147 @@ def _binary_b_prime(
     if abs(beta2) > BETA2_FLOOR and x2 > DERIVATIVE_FLOOR and ionic_strength > DERIVATIVE_FLOOR:
         derivative += beta2 * _g_prime(x2) / ionic_strength
     return derivative
+
+
+#: The water molar mass NeqSim hard-codes in the osmotic expression, in kg/mol.
+#:
+#: ``getWaterGamma`` writes ``double Mw = 18.015`` in g/mol and divides by 1000, and the
+#: databank's water row is ``0.018015 kg/mol`` - the two agree exactly.
+WATER_MOLAR_MASS = 0.018015
+
+
+def _electrostatic_phi(
+    first_charge: float,
+    second_charge: float,
+    ionic_strength: float,
+    a_phi: float,
+    unequal_charge_same_sign: bool,
+) -> float:
+    """``E_theta + I dE_theta/dI``, the combination the *osmotic* route uses.
+
+    The ion branch takes the value and the derivative separately - through the theta sum
+    and through ``F`` - so this sum appears here and nowhere else.
+    """
+    if not unequal_charge_same_sign or abs(first_charge - second_charge) < DERIVATIVE_FLOOR:
+        return 0.0
+    value, derivative = electrostatic.calculate(first_charge, second_charge, ionic_strength, a_phi)
+    return value + ionic_strength * derivative
+
+
+def ln_gamma_water(
+    molality: Sequence[float],
+    charge: Sequence[float],
+    temperature_k: float,
+    a_phi: float,
+    parameters: Any,
+    solvent: int,
+    x_water: float,
+    neutral_osmotic: float,
+    *,
+    non_two_two_beta2: bool,
+    unequal_charge_same_sign: bool,
+    neutral_interactions_active: bool,
+) -> float:
+    """``ln gamma_w``, as ``ComponentGePitzer.getWaterGamma`` computes it.
+
+    **This route does not go through the ion expression at all.** The solvent's activity
+    coefficient comes from the Pitzer *osmotic* coefficient, and that is built from a
+    different binary function:
+
+    .. code-block:: text
+
+        phi - 1 = (2 / sum m) [ -A_phi I^1.5/(1 + b sqrt(I))
+                                + sum_c sum_a m_c m_a (B^phi_ca + Z C_ca) + theta + psi ]
+        B^phi_ca = beta0 + beta1 exp(-alpha1 sqrt(I))
+        ln a_w = -phi M_w sum m
+        ln gamma_w = ln a_w - ln x_w
+
+    where the ion branch's ``B`` is ``beta0 + beta1 g(alpha1 sqrt(I))``. **``exp(-alpha
+    sqrt(I))`` and ``g(alpha sqrt(I))`` are different functions**, so a port that shared
+    them would be wrong at every state.
+
+    NeqSim returns the ideal ``gamma = 1`` when the water mole fraction falls below
+    ``1e-10``, and that is reproduced here. :func:`_electrolyte.water_activity_coefficient`
+    refuses the same state, and the two differ deliberately.
+    """
+    ionic_strength = electrolyte.ionic_strength(molality, charge)
+    sqrt_i = math.sqrt(ionic_strength)
+    n = len(molality)
+
+    # Charged components, plus the neutral solutes when that layer is active - and
+    # **`charge != 0` exactly**, a different test from the `|z| >= 0.5` the ion branch uses.
+    sum_molalities = sum(
+        molality[k]
+        for k in range(n)
+        if charge[k] != 0.0 or (neutral_interactions_active and k != solvent)
+    )
+    if sum_molalities < 1.0e-10:
+        return 0.0
+
+    # f^phi = -A_phi I^1.5 / (1 + b sqrt(I)); the base is non-negative by construction.
+    f_phi = -a_phi * ionic_strength**1.5 / (1.0 + B * sqrt_i)
+
+    # Z = sum |z_i| m_i over **every** component, water included; its charge is zero.
+    z = sum(abs(x) * m for m, x in zip(molality, charge, strict=False))
+
+    binary = 0.0
+    for cation, cation_charge in enumerate(charge):
+        if cation_charge <= 0.0:
+            continue
+        for anion, anion_charge in enumerate(charge):
+            if anion_charge >= 0.0:
+                continue
+            beta0 = parameters.beta0(cation, anion, temperature_k)
+            beta1 = parameters.beta1(cation, anion, temperature_k)
+            cphi = parameters.cphi(cation, anion, temperature_k)
+            alpha_one = alpha1_as_used(cation_charge, anion_charge)
+            b_phi = beta0 + beta1 * math.exp(-alpha_one * sqrt_i)
+            if (abs(cation_charge) >= 1.5 and abs(anion_charge) >= 1.5) or non_two_two_beta2:
+                beta2 = parameters.beta2(cation, anion, temperature_k)
+                if abs(beta2) > BETA2_FLOOR:
+                    b_phi += beta2 * math.exp(-alpha2(cation_charge, anion_charge) * sqrt_i)
+            product = abs(cation_charge * anion_charge)
+            c_value = cphi / (2.0 * math.sqrt(product)) if product > 0.0 else 0.0
+            binary += molality[cation] * molality[anion] * (b_phi + z * c_value)
+
+    theta_psi = 0.0
+    for first, first_charge in enumerate(charge):
+        for second in range(first + 1, n):
+            second_charge = charge[second]
+            same_sign = (first_charge > 0.0 and second_charge > 0.0) or (
+                first_charge < 0.0 and second_charge < 0.0
+            )
+            if not same_sign:
+                continue
+            m_first, m_second = molality[first], molality[second]
+            theta = parameters.theta(first, second, temperature_k)
+            theta_psi += (
+                m_first
+                * m_second
+                * (
+                    theta
+                    + _electrostatic_phi(
+                        first_charge,
+                        second_charge,
+                        ionic_strength,
+                        a_phi,
+                        unequal_charge_same_sign,
+                    )
+                )
+            )
+            # The third ion is the opposite sign to the pair.
+            for third, third_charge in enumerate(charge):
+                if third_charge * first_charge >= 0.0:
+                    continue
+                theta_psi += (
+                    m_first
+                    * m_second
+                    * molality[third]
+                    * parameters.psi(first, second, third, temperature_k)
+                )
+
+    phi = 1.0 + (2.0 / sum_molalities) * (f_phi + binary + theta_psi + neutral_osmotic)
+    ln_a_w = electrolyte.ln_water_activity(phi, sum_molalities, WATER_MOLAR_MASS)
+    if x_water < 1.0e-10:
+        return 0.0
+    return ln_a_w - math.log(x_water)

@@ -94,7 +94,11 @@ public class PitzerArithmetic {
       System.out.printf("  %s   (common-ion=%s, unequal-charge-same-sign=%s, non-2-2 beta2=%s)%n",
           String.join(" + ", brine), phase.isPhreeqcCommonIonTermsActive(),
           phase.hasUnequalChargeSameSignPair(), phase.isNonTwoTwoBeta2Active());
-      System.out.printf("    I = %.15g%n", phase.getIonicStrength());
+      // `getGamma` for water already *is* the water gamma - it dispatches to
+      // `getWaterGamma` - so the ion loop below prints it and this adds the osmotic
+      // coefficient, which `getGamma` does not return.
+      System.out.printf("    I = %.15g   phi = %.15g%n", phase.getIonicStrength(),
+          phase.getOsmoticCoefficientOfWater());
       for (int i = 0; i < phase.getNumberOfComponents(); i++) {
         ComponentGePitzer component = (ComponentGePitzer) phase.getComponent(i);
         double gamma = component.getGamma(phase, phase.getNumberOfComponents(), 298.15, 1.0, phase.getType());

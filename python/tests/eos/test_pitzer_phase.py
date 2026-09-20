@@ -9,6 +9,8 @@ The end-to-end numbers come from `validation/neqsim/PitzerArithmetic.java` on a 
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from azoth.eos.reference import _pitzer_catalog as catalog
@@ -128,3 +130,68 @@ def test_the_same_sign_and_beta2_terms_match_neqsim() -> None:
             **context,
         )
         assert got == pytest.approx(expected, abs=1e-10), names[index]
+
+
+def test_the_water_activity_coefficient_matches_neqsim() -> None:
+    """**The solvent route is not the ion one.**
+
+    `getWaterGamma` builds the solvent's coefficient from the Pitzer *osmotic* coefficient,
+    whose binary function is `beta0 + beta1 exp(-alpha sqrt(I))` - where the ion branch's is
+    `beta0 + beta1 g(alpha sqrt(I))`. A port that shared the two would agree on neither
+    number, which is what these two cases pin.
+    """
+    for names, x, charges, expected in (
+        (["water", "Na+", "Cl-"], [0.88, 0.06, 0.06], [0.0, 1.0, -1.0], -0.0220339385649971),
+        (
+            ["water", "Na+", "Ca++", "Cl-"],
+            [0.88, 0.03, 0.03, 0.06],
+            [0.0, 1.0, 2.0, -1.0],
+            -0.0563151245495846,
+        ),
+    ):
+        four = len(charges) == 4
+        got = phase.ln_gamma_water(
+            molalities(x),
+            charges,
+            298.15,
+            phase.debye_huckel_a_phi(298.15),
+            CatalogParameters(names),
+            0,
+            0.88,
+            0.0,
+            non_two_two_beta2=four,
+            unequal_charge_same_sign=four,
+            neutral_interactions_active=False,
+        )
+        assert got == pytest.approx(expected, abs=1e-10), names
+
+
+def test_the_osmotic_coefficient_matches_neqsim() -> None:
+    """Inverted from `ln a_w = -phi M_w sum m`, so the number checked is the model's own."""
+    for names, x, charges, expected in (
+        (["water", "Na+", "Cl-"], [0.88, 0.06, 0.06], [0.0, 1.0, -1.0], 1.09902694054914),
+        (
+            ["water", "Na+", "Ca++", "Cl-"],
+            [0.88, 0.03, 0.03, 0.06],
+            [0.0, 1.0, 2.0, -1.0],
+            1.35042230443611,
+        ),
+    ):
+        four = len(charges) == 4
+        molality = molalities(x)
+        ln_a_w = phase.ln_gamma_water(
+            molality,
+            charges,
+            298.15,
+            phase.debye_huckel_a_phi(298.15),
+            CatalogParameters(names),
+            0,
+            0.88,
+            0.0,
+            non_two_two_beta2=four,
+            unequal_charge_same_sign=four,
+            neutral_interactions_active=False,
+        ) + math.log(0.88)
+        sum_m = sum(m for m, z in zip(molality, charges, strict=False) if z != 0.0)
+        phi = -ln_a_w / (phase.WATER_MOLAR_MASS * sum_m)
+        assert phi == pytest.approx(expected, abs=1e-9), names

@@ -467,6 +467,12 @@ pub struct IonActivityContext<'a> {
     pub non_two_two_beta2: bool,
     /// `PhasePitzer.hasUnequalChargeSameSignPair`.
     pub unequal_charge_same_sign: bool,
+    /// Whether the neutral Pitzer layer is active, `ComponentGePitzer`'s
+    /// `neutralPitzerInteractionsActive`.
+    ///
+    /// Read by the water node as well as the ion one, and for a second reason there: it
+    /// decides whether `sumMolalities` counts the neutral solutes or only the ions.
+    pub neutral_interactions_active: bool,
 }
 
 impl IonActivityContext<'_> {
@@ -702,7 +708,7 @@ mod ion_tests {
     /// zero-initialised and only the rows it read are written - so this reproduces the
     /// arithmetic rather than papering over a gap. A gap that *matters* is caught earlier,
     /// by the selection rule's coverage requirement.
-    fn form(family: Family, names: &[&str]) -> TemperatureForm {
+    pub(super) fn form(family: Family, names: &[&str]) -> TemperatureForm {
         match find(family, names) {
             Some(a) => TemperatureForm::Catalog(a),
             None => TemperatureForm::Catalog([0.0; 6]),
@@ -710,12 +716,12 @@ mod ion_tests {
     }
 
     /// The catalogue-backed [`PairParameters`], which is what a selected brine reads.
-    struct CatalogParameters {
+    pub(super) struct CatalogParameters {
         species: Vec<String>,
     }
 
     impl CatalogParameters {
-        fn new(names: &[&str]) -> Self {
+        pub(super) fn new(names: &[&str]) -> Self {
             Self {
                 species: names
                     .iter()
@@ -759,7 +765,7 @@ mod ion_tests {
     ///
     /// One mole of mixture's worth: `m_i = x_i / (x_water M_water)`, with the water molar
     /// mass the databank carries.
-    fn molalities(x: &[f64]) -> Vec<f64> {
+    pub(super) fn molalities(x: &[f64]) -> Vec<f64> {
         let solvent = 0.018015;
         let mass_of_water = x[0] * solvent;
         x.iter().map(|&xi| xi / mass_of_water).collect()
@@ -790,6 +796,7 @@ mod ion_tests {
             common_ion_terms: true,
             non_two_two_beta2: false,
             unequal_charge_same_sign: false,
+            neutral_interactions_active: false,
         };
         assert!(
             (context.ionic_strength() - 3.784_724_850_503_37).abs() < 1.0e-12,
@@ -825,6 +832,7 @@ mod ion_tests {
             common_ion_terms: true,
             non_two_two_beta2: true,
             unequal_charge_same_sign: true,
+            neutral_interactions_active: false,
         };
         assert!((context.ionic_strength() - 6.623_268_488_380_89).abs() < 1.0e-12);
 
@@ -838,6 +846,312 @@ mod ion_tests {
                 (got - expected).abs() < 1.0e-10,
                 "ln gamma({}) = {got}, and NeqSim gives {expected}",
                 names[index]
+            );
+        }
+    }
+}
+
+/// The water molar mass NeqSim hard-codes in the osmotic expression, in kg/mol.
+///
+/// `getWaterGamma` writes `double Mw = 18.015` in g/mol and divides by `1000`, and the
+/// databank's water row is `0.018015 kg/mol` - the two agree exactly, so this is a named
+/// restatement rather than a second value, and
+/// [`crate::electrolyte::ln_water_activity`] takes it as an argument for that reason.
+pub const WATER_MOLAR_MASS: f64 = 0.018015;
+
+/// `ln gamma_w`, as `ComponentGePitzer.getWaterGamma` computes it.
+///
+/// **This route does not go through the ion expression at all.** The solvent's activity
+/// coefficient comes from the Pitzer *osmotic* coefficient, and the osmotic coefficient is
+/// built from a different binary function:
+///
+/// ```text
+/// phi - 1 = (2 / sum m) [ -A_phi I^1.5/(1 + b sqrt(I)) + sum_c sum_a m_c m_a (B^phi_ca + Z C_ca)
+///                         + theta + psi ]          with   B^phi_ca = beta0 + beta1 exp(-alpha1 sqrt(I))
+/// ln a_w = -phi M_w sum m
+/// ln gamma_w = ln a_w - ln x_w
+/// ```
+///
+/// where the ion branch's `B` is `beta0 + beta1 g(alpha1 sqrt(I))`. **`exp(-alpha sqrt(I))`
+/// and `g(alpha sqrt(I))` are different functions**, not two spellings of one, so a port
+/// that shared them would be wrong at every state.
+///
+/// `neutral_osmotic` is the neutral layer's contribution, zero when the layer is
+/// inactive; it is passed in because it is the one term here that is not a function of the
+/// ions.
+///
+/// # The two policies for a vanished solvent
+///
+/// NeqSim returns `gamma = 1` - the ideal value - when the water mole fraction falls below
+/// `1e-10`, and that is reproduced. [`crate::electrolyte::water_activity_coefficient`]
+/// *refuses* the same state, and the two differ deliberately: that helper is the shared
+/// relation, where a silently-ideal answer is the failure this library is organised
+/// against, and this is a port of a model that chose otherwise.
+#[must_use]
+pub fn ln_gamma_water(
+    context: &IonActivityContext<'_>,
+    parameters: &dyn PairParameters,
+    solvent: usize,
+    x_water: f64,
+    neutral_osmotic: f64,
+) -> f64 {
+    let i = context.ionic_strength();
+    let sqrt_i = i.sqrt();
+    let a_phi = context.a_phi;
+    let n = context.molality.len();
+
+    // Charged components, plus the neutral solutes when that layer is active - and
+    // **`charge != 0` exactly**, which is a different test from the `|z| >= 0.5` the ion
+    // branch uses, so a component with a tiny charge counts here and not there.
+    let sum_molalities: f64 = (0..n)
+        .filter(|&k| {
+            context.charge[k] != 0.0 || (context.neutral_interactions_active && k != solvent)
+        })
+        .map(|k| context.molality[k])
+        .sum();
+
+    // NeqSim's own guard, and its own answer: the ideal value rather than a refusal.
+    if sum_molalities < 1.0e-10 {
+        return 0.0;
+    }
+
+    // f^phi = -A_phi I^1.5 / (1 + b sqrt(I)). **The base is non-negative by construction**
+    // - an ionic strength is a sum of non-negative terms - so the fractional power is
+    // total here and needs no guard.
+    let f_phi = -a_phi * i.powf(1.5) / (1.0 + B * sqrt_i);
+
+    // Z = sum |z_i| m_i over **every** component, water included; its charge is zero.
+    let z: f64 = context
+        .charge
+        .iter()
+        .zip(context.molality)
+        .map(|(&charge, &m)| charge.abs() * m)
+        .sum();
+
+    let mut binary = 0.0;
+    for cation in 0..n {
+        let cation_charge = context.charge[cation];
+        if cation_charge <= 0.0 {
+            continue;
+        }
+        for anion in 0..n {
+            let anion_charge = context.charge[anion];
+            if anion_charge >= 0.0 {
+                continue;
+            }
+            let beta0 = parameters.beta0(cation, anion, context.temperature);
+            let beta1 = parameters.beta1(cation, anion, context.temperature);
+            let cphi = parameters.cphi(cation, anion, context.temperature);
+            let alpha_one = alpha1_as_used(cation_charge, anion_charge);
+            let mut b_phi = beta0 + beta1 * (-alpha_one * sqrt_i).exp();
+            if cation_charge.abs() >= 1.5 && anion_charge.abs() >= 1.5 || context.non_two_two_beta2
+            {
+                let beta2 = parameters.beta2(cation, anion, context.temperature);
+                if beta2.abs() > BETA2_FLOOR {
+                    b_phi += beta2 * (-alpha2(cation_charge, anion_charge) * sqrt_i).exp();
+                }
+            }
+            let product = (cation_charge * anion_charge).abs();
+            let c = if product > 0.0 {
+                cphi / (2.0 * product.sqrt())
+            } else {
+                0.0
+            };
+            binary += context.molality[cation] * context.molality[anion] * (b_phi + z * c);
+        }
+    }
+
+    let mut theta_psi = 0.0;
+    // Cation-cation, then cation-cation-anion.
+    for first in 0..n {
+        let first_charge = context.charge[first];
+        if first_charge <= 0.0 {
+            continue;
+        }
+        for second in (first + 1)..n {
+            let second_charge = context.charge[second];
+            if second_charge <= 0.0 {
+                continue;
+            }
+            let m_first = context.molality[first];
+            let m_second = context.molality[second];
+            let theta = parameters.theta(first, second, context.temperature);
+            let electrostatic = electrostatic_phi(context, first_charge, second_charge, i);
+            theta_psi += m_first * m_second * (theta + electrostatic);
+            for anion in 0..n {
+                if context.charge[anion] >= 0.0 {
+                    continue;
+                }
+                let m = context.molality[anion];
+                theta_psi += m_first
+                    * m_second
+                    * m
+                    * parameters.psi(first, second, anion, context.temperature);
+            }
+        }
+    }
+    // Anion-anion, then anion-anion-cation.
+    for first in 0..n {
+        let first_charge = context.charge[first];
+        if first_charge >= 0.0 {
+            continue;
+        }
+        for second in (first + 1)..n {
+            let second_charge = context.charge[second];
+            if second_charge >= 0.0 {
+                continue;
+            }
+            let m_first = context.molality[first];
+            let m_second = context.molality[second];
+            let theta = parameters.theta(first, second, context.temperature);
+            let electrostatic = electrostatic_phi(context, first_charge, second_charge, i);
+            theta_psi += m_first * m_second * (theta + electrostatic);
+            for cation in 0..n {
+                if context.charge[cation] <= 0.0 {
+                    continue;
+                }
+                let m = context.molality[cation];
+                theta_psi += m_first
+                    * m_second
+                    * m
+                    * parameters.psi(first, second, cation, context.temperature);
+            }
+        }
+    }
+
+    let phi = 1.0 + (2.0 / sum_molalities) * (f_phi + binary + theta_psi + neutral_osmotic);
+    let ln_a_w = crate::electrolyte::ln_water_activity(phi, sum_molalities, WATER_MOLAR_MASS);
+
+    if x_water < 1.0e-10 {
+        return 0.0;
+    }
+    ln_a_w - x_water.ln()
+}
+
+/// `E_theta + I dE_theta/dI`, the combination the *osmotic* route uses.
+///
+/// The ion branch takes `E_theta` and its derivative separately - the value through the
+/// theta sum, the derivative through `F` - so this sum appears here and nowhere else.
+fn electrostatic_phi(
+    context: &IonActivityContext<'_>,
+    first_charge: f64,
+    second_charge: f64,
+    ionic_strength: f64,
+) -> f64 {
+    if !context.unequal_charge_same_sign || (first_charge - second_charge).abs() < DERIVATIVE_FLOOR
+    {
+        return 0.0;
+    }
+    let (value, derivative) = crate::pitzer_electrostatic::calculate(
+        first_charge,
+        second_charge,
+        ionic_strength,
+        context.a_phi,
+    );
+    value + ionic_strength * derivative
+}
+
+#[cfg(test)]
+mod water_tests {
+    use super::ion_tests::{CatalogParameters, molalities};
+    use super::*;
+
+    /// **The water node against the built phase**, at the two brines the ion tests use.
+    ///
+    /// The osmotic coefficient and `ln gamma_w` both come from the capture, and they are
+    /// the check that this route is not the ion one: the ion branch's `B` is
+    /// `beta0 + beta1 g(alpha sqrt(I))` and this is `beta0 + beta1 exp(-alpha sqrt(I))`, so
+    /// a shared implementation would agree on neither number.
+    #[test]
+    fn the_water_activity_coefficient_matches_neqsim() {
+        // water + Na+ + Cl-.
+        let names = ["water", "Na+", "Cl-"];
+        let molality = molalities(&[0.88, 0.06, 0.06]);
+        let charge = [0.0, 1.0, -1.0];
+        let parameters = CatalogParameters::new(&names);
+        let context = IonActivityContext {
+            molality: &molality,
+            charge: &charge,
+            temperature: 298.15,
+            a_phi: debye_huckel_a_phi(298.15),
+            common_ion_terms: true,
+            non_two_two_beta2: false,
+            unequal_charge_same_sign: false,
+            neutral_interactions_active: false,
+        };
+        let got = ln_gamma_water(&context, &parameters, 0, 0.88, 0.0);
+        assert!(
+            (got - -0.022_033_938_564_997_1).abs() < 1.0e-9,
+            "ln gamma_w = {got}, and NeqSim gives -0.0220339385649971"
+        );
+
+        // water + Na+ + Ca++ + Cl-, where `E_theta` reaches the osmotic route too.
+        let names = ["water", "Na+", "Ca++", "Cl-"];
+        let molality = molalities(&[0.88, 0.03, 0.03, 0.06]);
+        let charge = [0.0, 1.0, 2.0, -1.0];
+        let parameters = CatalogParameters::new(&names);
+        let context = IonActivityContext {
+            molality: &molality,
+            charge: &charge,
+            temperature: 298.15,
+            a_phi: debye_huckel_a_phi(298.15),
+            common_ion_terms: true,
+            non_two_two_beta2: true,
+            unequal_charge_same_sign: true,
+            neutral_interactions_active: false,
+        };
+        let got = ln_gamma_water(&context, &parameters, 0, 0.88, 0.0);
+        assert!(
+            (got - -0.056_315_124_549_584_6).abs() < 1.0e-9,
+            "ln gamma_w = {got}, and NeqSim gives -0.0563151245495846"
+        );
+    }
+
+    /// **The osmotic coefficient itself**, which is the number both `gamma_w` and
+    /// `getOsmoticCoefficientOfWater` report.
+    ///
+    /// Inverted from `ln a_w = -phi M_w sum m` so the number checked is the one the model
+    /// reports. The first draft of this sliced one name list for both cases and paired
+    /// `Cl-` with `Ca++`'s parameters, which is why the two are written out per case.
+    #[test]
+    fn the_osmotic_coefficient_matches_neqsim() {
+        for (names, mole_fraction, charges, expected) in [
+            (
+                vec!["water", "Na+", "Cl-"],
+                vec![0.88, 0.06, 0.06],
+                vec![0.0, 1.0, -1.0],
+                1.099_026_940_549_14,
+            ),
+            (
+                vec!["water", "Na+", "Ca++", "Cl-"],
+                vec![0.88, 0.03, 0.03, 0.06],
+                vec![0.0, 1.0, 2.0, -1.0],
+                1.350_422_304_436_11,
+            ),
+        ] {
+            let molality = molalities(&mole_fraction);
+            let parameters = CatalogParameters::new(&names);
+            let context = IonActivityContext {
+                molality: &molality,
+                charge: &charges,
+                temperature: 298.15,
+                a_phi: debye_huckel_a_phi(298.15),
+                common_ion_terms: true,
+                non_two_two_beta2: charges.len() == 4,
+                unequal_charge_same_sign: charges.len() == 4,
+                neutral_interactions_active: false,
+            };
+            let ln_a_w = ln_gamma_water(&context, &parameters, 0, 0.88, 0.0) + 0.88f64.ln();
+            let sum_m: f64 = molality
+                .iter()
+                .zip(&charges)
+                .filter(|&(_, z)| *z != 0.0)
+                .map(|(&m, _)| m)
+                .sum();
+            let phi = -ln_a_w / (WATER_MOLAR_MASS * sum_m);
+            assert!(
+                (phi - expected).abs() < 1.0e-9,
+                "phi = {phi}, and NeqSim gives {expected}"
             );
         }
     }

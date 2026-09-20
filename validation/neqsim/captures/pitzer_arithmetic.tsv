@@ -1,9 +1,9 @@
 # azoth PitzerArithmetic - NeqSim 3.20.0's ComponentGePitzer, PhasePitzer and
 # PitzerElectrostaticMixing.
 # Committed verbatim from `validation/neqsim/PitzerArithmetic.java`; regenerate by running it.
-# Three sections: the Debye-Huckel parameter across temperature, the parameter getters for
-# both datasets' temperature forms, the ion activity coefficient end to end, and the
-# E_theta integral of the same-sign electrostatic mixing.
+# The Debye-Huckel parameter across temperature; the parameter getters for both datasets'
+# temperature forms; the ion activity coefficient and the osmotic coefficient end to end;
+# and the E_theta integral of the same-sign electrostatic mixing.
 
 === Debye-Huckel parameter against temperature ===
    T / K        Agamma = debyeHuckelAphi(T)      Aphi = Agamma / 3
@@ -83,12 +83,12 @@
 
 === the ion activity coefficient, end to end ===
   water + Na+ + Cl-   (common-ion=true, unequal-charge-same-sign=false, non-2-2 beta2=false)
-    I = 3.78472485050337
+    I = 3.78472485050337   phi = 1.09902694054914
     ln gamma(water ) =    -0.0220339385649971   molality = 55.5092978074   z = +0
     ln gamma(Na+   ) =     -0.267512432075052   molality = 3.78472485050   z = +1
     ln gamma(Cl-   ) =     -0.267512432075052   molality = 3.78472485050   z = -1
   water + Na+ + Ca++ + Cl- + Cl-   (common-ion=true, unequal-charge-same-sign=true, non-2-2 beta2=true)
-    I = 6.62326848838089
+    I = 6.62326848838089   phi = 1.35042230443611
     ln gamma(water ) =    -0.0563151245495846   molality = 55.5092978074   z = +0
     ln gamma(Na+   ) =     -0.504259131023400   molality = 1.89236242525   z = +1
     ln gamma(Ca++  ) =      -1.84132192677047   molality = 1.89236242525   z = +2
