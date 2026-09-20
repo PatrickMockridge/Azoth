@@ -120,10 +120,19 @@ public class FurstProbe {
     row("WT", furst.getWT());
     row("FSR2", furst.FSR2());
     row("FSR2_dT", furst.dFSR2dT());
+    row("FSR2_dTdT", furst.dFSR2dTdT());
+    row("FSR2_dV", furst.dFSR2dV());
+    row("FSR2_dVdV", furst.dFSR2dVdV());
+    row("FSR2_dTdV", furst.dFSR2dTdV());
     row("FLR", furst.FLR());
     row("FLR_dT", furst.dFLRdT());
+    row("FLR_dTdT", furst.dFLRdTdT());
+    row("FLR_dV", furst.dFLRdV());
+    row("FLR_dVdV", furst.dFLRdVdV());
+    row("FLR_dTdV", furst.dFLRdTdV());
     row("FBorn", furst.FBorn());
     row("FBorn_dT", furst.dFBorndT());
+    row("FBorn_dTdT", furst.dFBorndTdT());
 
     // The Helmholtz energy and the derivatives the cubic's root and fugacity read.
     row("F", furst.getF());
@@ -131,6 +140,8 @@ public class FurstProbe {
     row("dFdT", furst.dFdT());
     row("dFdV", furst.dFdV());
     row("dFdTdT", furst.dFdTdT());
+    row("dFdVdV", furst.dFdVdV());
+    row("dFdTdV", furst.dFdTdV());
 
     for (int i = 0; i < n; i++) {
       row("lnPhi[" + i + "]", Math.log(phase.getComponent(i).getFugacityCoefficient()));
@@ -153,6 +164,16 @@ public class FurstProbe {
     report("a mixed solvent: methanol joins the water",
         new String[] {"methane", "water", "methanol", "Na+", "Cl-"},
         new double[] {0.1, 0.6, 0.4, 0.001, 0.001}, 25.0, 10.01325);
+
+    // **The same composition at ten times the moles.** A Helmholtz energy's volume
+    // derivative is a pressure and is intensive: `dFdV` must not move with the phase's
+    // size. `FSR2V` is written against `(V n)^2` and `epsdV` against `V n`, which is the
+    // *total* volume - so if the `1e-5` beside them is the only scaling, every volume
+    // derivative here carries one factor of `n` too many or too few, and this is the
+    // measurement that says which. `lnPhi` is the control: it does not depend on them.
+    report("the same at ten times the moles",
+        new String[] {"methane", "water", "Na+", "Cl-"},
+        new double[] {1.0, 10.0, 0.01, 0.01}, 25.0, 10.01325);
 
     // A gas-rich state, where the aqueous phase barely exists.
     report("at 60 C and 40 bara",
