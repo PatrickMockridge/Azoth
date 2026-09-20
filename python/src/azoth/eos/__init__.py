@@ -113,6 +113,7 @@ from azoth.core.result import (
     ParahydrogenSolidPhaseResult,
     PcsaftRahmatPhaseResult,
     PhFlashResult,
+    PitzerPhaseResult,
     Pr78KappaResult,
     PrAlphaAbResult,
     PrCpaPhaseResult,
@@ -251,6 +252,7 @@ __all__ = [
     "parahydrogen_solid_phase",
     "pcsaft_rahmat_phase",
     "ph_flash",
+    "pitzer_phase",
     "pr78_kappa",
     "pr_alpha_ab",
     "pr_cpa_phase",
@@ -362,6 +364,7 @@ _DEW_PRESSURE = "eos.dew_pressure"
 _DEW_TEMPERATURE = "eos.dew_temperature"
 _CAPILLARY_DEW_POINT = "eos.capillary_dew_point"
 _PH_FLASH = "eos.ph_flash"
+_PITZER_PHASE = "eos.pitzer_phase"
 _PS_FLASH = "eos.ps_flash"
 _TH_FLASH = "eos.th_flash"
 _TS_FLASH = "eos.ts_flash"
@@ -2026,6 +2029,36 @@ def ge_wilson_phase(
     """
     return resolve(_GE_WILSON_PHASE)(  # type: ignore[no-any-return]
         params=params, mixture=mixture, T=T, P=P, x=x
+    )
+
+
+def pitzer_phase(
+    components: Sequence[str],
+    T: Q,
+    x: Sequence[float],
+) -> PitzerPhaseResult:
+    """The activity coefficients of an electrolyte phase whose non-ideality is Pitzer's.
+
+    ``components`` are names rather than a resolved record, because the parameter datasets
+    are keyed by them: the model resolves each component's ionic charge, molar mass and
+    ``REFERENCESTATETYPE`` against the databank itself. ``T`` is the only state variable -
+    a molality is a function of the mole fractions alone - and there is no pressure
+    argument, because none of the branches NeqSim's ``getGamma`` dispatches to reads one.
+
+    **Which dataset answers is a property of the brine's topology**: the PHREEQC catalogue
+    where it covers every pair, ``PitzerParameters.csv`` otherwise. The two disagree on
+    pairs they share, so the answer is reported as ``dataset``.
+
+    Raises:
+        InvalidInputError: if a component is not in the databank, if ``x`` is not a
+            composition, if the mixture carries no water, or if the loaded dataset does
+            not cover the brine's topology.
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.pitzer_phase`.
+    """
+    return resolve(_PITZER_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, x=x
     )
 
 

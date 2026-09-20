@@ -859,6 +859,13 @@ mod ion_tests {
 /// [`crate::electrolyte::ln_water_activity`] takes it as an argument for that reason.
 pub const WATER_MOLAR_MASS: f64 = 0.018015;
 
+/// The molality total below which `getPitzerOsmoticCoefficient` returns the ideal `phi`.
+///
+/// **Lower than the `1e-10` `getWaterGamma` applies**, which is the one thing the two
+/// disagree about: between them the osmotic coefficient is a computed number and the
+/// activity coefficient is the ideal one.
+pub const OSMOTIC_FLOOR: f64 = 1.0e-12;
+
 /// `ln gamma_w`, as `ComponentGePitzer.getWaterGamma` computes it.
 ///
 /// **This route does not go through the ion expression at all.** The solvent's activity
@@ -895,6 +902,39 @@ pub fn ln_gamma_water(
     x_water: f64,
     neutral_osmotic: f64,
 ) -> f64 {
+    let (osmotic, sum_molalities) = water_terms(context, parameters, solvent, neutral_osmotic);
+    if sum_molalities < 1.0e-10 || x_water < 1.0e-10 {
+        return 0.0;
+    }
+    crate::electrolyte::ln_water_activity(osmotic, sum_molalities, WATER_MOLAR_MASS) - x_water.ln()
+}
+
+/// `getPitzerOsmoticCoefficient`, the `phi` the water node is built on.
+///
+/// **The same number `getOsmoticCoefficientOfWater` returns**, which is what the model
+/// reports; `getOsmoticCoefficientOfWaterMolality` returns it too, and the two agreeing is
+/// a property of NeqSim's code rather than a coincidence.
+#[must_use]
+pub fn osmotic_coefficient(
+    context: &IonActivityContext<'_>,
+    parameters: &dyn PairParameters,
+    solvent: usize,
+    neutral_osmotic: f64,
+) -> f64 {
+    water_terms(context, parameters, solvent, neutral_osmotic).0
+}
+
+/// The water node in one pass: `(phi, sum of molalities)`.
+///
+/// One pass because NeqSim computes both inside `getWaterGamma` and reports `phi` through
+/// a getter of its own, so splitting them would recompute the pair sums or duplicate them.
+/// `ln_gamma_water` is the only consumer that needs the second number.
+fn water_terms(
+    context: &IonActivityContext<'_>,
+    parameters: &dyn PairParameters,
+    solvent: usize,
+    neutral_osmotic: f64,
+) -> (f64, f64) {
     let i = context.ionic_strength();
     let sqrt_i = i.sqrt();
     let a_phi = context.a_phi;
@@ -909,11 +949,6 @@ pub fn ln_gamma_water(
         })
         .map(|k| context.molality[k])
         .sum();
-
-    // NeqSim's own guard, and its own answer: the ideal value rather than a refusal.
-    if sum_molalities < 1.0e-10 {
-        return 0.0;
-    }
 
     // f^phi = -A_phi I^1.5 / (1 + b sqrt(I)). **The base is non-negative by construction**
     // - an ionic strength is a sum of non-negative terms - so the fractional power is
@@ -1019,13 +1054,14 @@ pub fn ln_gamma_water(
         }
     }
 
-    let phi = 1.0 + (2.0 / sum_molalities) * (f_phi + binary + theta_psi + neutral_osmotic);
-    let ln_a_w = crate::electrolyte::ln_water_activity(phi, sum_molalities, WATER_MOLAR_MASS);
-
-    if x_water < 1.0e-10 {
-        return 0.0;
-    }
-    ln_a_w - x_water.ln()
+    // NeqSim's own guard, and its own answer: the ideal value, and a floor **lower** than
+    // the one `getWaterGamma` applies to its own sum.
+    let osmotic = if sum_molalities < OSMOTIC_FLOOR {
+        1.0
+    } else {
+        1.0 + (2.0 / sum_molalities) * (f_phi + binary + theta_psi + neutral_osmotic)
+    };
+    (osmotic, sum_molalities)
 }
 
 /// `E_theta + I dE_theta/dI`, the combination the *osmotic* route uses.
@@ -1371,6 +1407,323 @@ pub fn catalogue_interactions(
         }
     }
     Some(out)
+}
+
+/// The phase's parameters, from whichever dataset the selection rule chose.
+///
+/// **One type over two forms**, because a pair's temperature form is a property of which
+/// dataset answered rather than of the pair: the catalogue carries six coefficients and the
+/// CSV two. A parameter the dataset does not carry is **zero** - NeqSim's own behaviour,
+/// since its arrays are zero-initialised and only the rows it read are written - and the
+/// coverage audit is what refuses a topology where that zero would matter.
+pub struct DatasetParameters {
+    catalogue: bool,
+    species: Vec<String>,
+}
+
+impl DatasetParameters {
+    /// The parameters for a phase, from its component names and the selection rule's answer.
+    #[must_use]
+    pub fn new(names: &[&str], selection: &crate::pitzer_catalog::Selection) -> Self {
+        Self {
+            catalogue: matches!(selection, crate::pitzer_catalog::Selection::Phreeqc),
+            species: names.iter().map(|name| (*name).to_string()).collect(),
+        }
+    }
+
+    fn pair(&self, first: usize, second: usize) -> [&str; 2] {
+        [&self.species[first], &self.species[second]]
+    }
+
+    fn two(
+        &self,
+        family: crate::pitzer_catalog::Family,
+        first: usize,
+        second: usize,
+    ) -> TemperatureForm {
+        self.form(family, &self.pair(first, second))
+    }
+
+    fn form(&self, family: crate::pitzer_catalog::Family, names: &[&str]) -> TemperatureForm {
+        use crate::pitzer_catalog::Family;
+        if self.catalogue {
+            return TemperatureForm::Catalog(
+                crate::pitzer_catalog::find(family, names).unwrap_or([0.0; 6]),
+            );
+        }
+        // The legacy loader calls `setBinaryParameters` for a row whose two ions are both
+        // in the phase and writes `beta2` straight into the array. **It calls no theta or
+        // psi setter at all**, so those two stay zero here however the CSV's columns read -
+        // the same fact the coverage audit reports as an incomplete topology.
+        let binary = matches!(family, Family::B0 | Family::B1 | Family::C0 | Family::B2);
+        let record = if binary {
+            crate::databank::pitzer_pair(names[0], names[1])
+        } else {
+            None
+        };
+        match (family, record) {
+            (Family::B0, Some(r)) => TemperatureForm::Silvester {
+                at_25: r.beta0_25,
+                t1: r.beta0_t[0],
+                t2: r.beta0_t[1],
+            },
+            (Family::B1, Some(r)) => TemperatureForm::Silvester {
+                at_25: r.beta1_25,
+                t1: r.beta1_t[0],
+                t2: r.beta1_t[1],
+            },
+            (Family::C0, Some(r)) => TemperatureForm::Silvester {
+                at_25: r.cphi_25,
+                t1: r.cphi_t[0],
+                t2: r.cphi_t[1],
+            },
+            // `beta2` has no temperature coefficients in the table, so it is flat in `T`.
+            (Family::B2, Some(r)) => TemperatureForm::Silvester {
+                at_25: r.beta2_25,
+                t1: 0.0,
+                t2: 0.0,
+            },
+            _ => TemperatureForm::Silvester {
+                at_25: 0.0,
+                t1: 0.0,
+                t2: 0.0,
+            },
+        }
+    }
+}
+
+impl PairParameters for DatasetParameters {
+    fn beta0(&self, first: usize, second: usize, temperature: f64) -> f64 {
+        self.two(crate::pitzer_catalog::Family::B0, first, second)
+            .value_at(temperature)
+    }
+    fn beta1(&self, first: usize, second: usize, temperature: f64) -> f64 {
+        self.two(crate::pitzer_catalog::Family::B1, first, second)
+            .value_at(temperature)
+    }
+    fn cphi(&self, first: usize, second: usize, temperature: f64) -> f64 {
+        self.two(crate::pitzer_catalog::Family::C0, first, second)
+            .value_at(temperature)
+    }
+    fn beta2(&self, first: usize, second: usize, temperature: f64) -> f64 {
+        self.two(crate::pitzer_catalog::Family::B2, first, second)
+            .value_at(temperature)
+    }
+    fn theta(&self, first: usize, second: usize, temperature: f64) -> f64 {
+        self.two(crate::pitzer_catalog::Family::Theta, first, second)
+            .value_at(temperature)
+    }
+    fn psi(&self, first: usize, second: usize, third: usize, temperature: f64) -> f64 {
+        let names = [
+            self.species[first].as_str(),
+            self.species[second].as_str(),
+            self.species[third].as_str(),
+        ];
+        self.form(crate::pitzer_catalog::Family::Psi, &names)
+            .value_at(temperature)
+    }
+}
+
+/// `eos.pitzer_phase` - the activity coefficients of a Pitzer electrolyte phase.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if a component is not in the databank, if it carries no
+///   molar mass, if `x` is not a composition, if the mixture carries no water, or if the
+///   dataset the selection rule chose does not cover the brine's topology.
+/// * [`AzothError::OutOfRange`] if `T` is not positive.
+///
+/// # Example
+/// ```
+/// use azoth_eos::pitzer_phase;
+///
+/// let r = pitzer_phase(&["water", "Na+", "Cl-"], 298.15, &[0.88, 0.06, 0.06])?;
+/// assert!((r.ionic_strength - 3.784_724_850_503_368).abs() < 1e-12);
+/// assert!((r.osmotic_coefficient - 1.099_026_940_549_14).abs() < 1e-12);
+/// assert_eq!(r.dataset.name(), "phreeqc");
+/// # Ok::<(), azoth_core::AzothError>(())
+/// ```
+#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
+pub fn pitzer_phase(
+    names: &[&str],
+    T: f64,
+    x: &[f64],
+) -> azoth_core::Result<crate::results::PitzerPhaseResult> {
+    use crate::pitzer_catalog::{Family, Selection, Species};
+    let spec = &crate::model_gen::PITZER_PHASE_SPEC;
+    let mut warnings = Vec::new();
+    azoth_core::apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(T),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
+    let n = names.len();
+    if x.len() != n {
+        return Err(crate::AzothError::invalid_input(
+            "x",
+            format!("a mixture of {n} components has {} mole fractions", x.len()),
+        ));
+    }
+    if let Some(bad) = x.iter().position(|&value| value < 0.0) {
+        return Err(crate::AzothError::invalid_input(
+            "x",
+            format!(
+                "x[{bad}] is {} but a mole fraction cannot be negative",
+                x[bad]
+            ),
+        ));
+    }
+    let sum: f64 = x.iter().sum();
+    if (sum - 1.0).abs() > 1.0e-09 {
+        return Err(crate::AzothError::invalid_input(
+            "x",
+            format!(
+                "the mole fractions sum to {sum}, not to one. Renormalising them here would \
+                 make a composition error invisible in every number downstream, so it is \
+                 refused instead"
+            ),
+        ));
+    }
+
+    // Held rather than borrowed per field: `Species` borrows the names and formulae, so
+    // the owned entries have to outlive it.
+    let entries: Vec<crate::databank::Entry> = names
+        .iter()
+        .map(|name| crate::databank::entry(name, None))
+        .collect::<azoth_core::Result<Vec<_>>>()?;
+    let mut charge = Vec::with_capacity(n);
+    let mut molar_mass = Vec::with_capacity(n);
+    for (name, entry) in names.iter().zip(&entries) {
+        let mass = entry.molar_mass.ok_or_else(|| {
+            crate::AzothError::property_unavailable(
+                (*name).to_string(),
+                "molar mass".to_string(),
+                "a molality is a mole count over a solvent mass, so every component needs \
+                 one"
+                .to_string(),
+            )
+        })?;
+        charge.push(entry.ionic_charge);
+        molar_mass.push(mass);
+    }
+
+    let composition = crate::electrolyte::composition(names, x, &molar_mass, &charge)?;
+
+    let species: Vec<Species<'_>> = entries
+        .iter()
+        .zip(x)
+        .map(|(entry, &moles)| Species {
+            name: &entry.name,
+            moles,
+            charge: entry.ionic_charge,
+            formula: &entry.formula,
+            hydrocarbon: entry.class == "hc",
+        })
+        .collect();
+
+    let selection = crate::pitzer_catalog::select_dataset(&species);
+    let audit = crate::pitzer_catalog::coverage(&species, &selection, composition.solvent_mass);
+    crate::pitzer_catalog::require_complete(&audit)?;
+    let parameters = DatasetParameters::new(names, &selection);
+    let catalogue = matches!(selection, Selection::Phreeqc);
+
+    // The ion and neutral lists the neutral layer and the flags are both built from, by
+    // the same rule `select_dataset` classified by.
+    let ions: Vec<usize> = (0..n)
+        .filter(|&i| charge[i].abs() >= crate::pitzer_catalog::ACTIVE_CHARGE)
+        .collect();
+    let neutrals: Vec<usize> = (0..n)
+        .filter(|&i| {
+            charge[i].abs() < crate::pitzer_catalog::ACTIVE_CHARGE
+                && !names[i].eq_ignore_ascii_case("water")
+                && !crate::pitzer_catalog::is_hydrocarbon(&species[i])
+        })
+        .collect();
+
+    let interactions = if catalogue {
+        catalogue_interactions(names, &charge, &ions, &neutrals)
+    } else {
+        None
+    };
+    let neutral_interactions_active = interactions.as_ref().is_some_and(|list| !list.is_empty());
+    let neutral_osmotic = interactions
+        .as_deref()
+        .map_or(0.0, |list| osmotic_neutral(list, &composition.molality, T));
+
+    // `isNonTwoTwoBeta2Active` is set by `setBeta2`, which the catalogue loader calls for
+    // every row it applies - so a non-2:2 pair with a `B2` is enough, whatever the brine.
+    // The legacy loader writes the array without the setter, so it never fires there.
+    let non_two_two_beta2 = catalogue
+        && (0..n).any(|first| {
+            (first + 1..n).any(|second| {
+                if charge[first].abs() >= 1.5 && charge[second].abs() >= 1.5 {
+                    return false;
+                }
+                crate::pitzer_catalog::find(Family::B2, &[names[first], names[second]])
+                    .is_some_and(|a| a[0].abs() > 1.0e-20)
+            })
+        });
+    let unequal_charge_same_sign = (0..n).any(|first| {
+        (first + 1..n).any(|second| {
+            charge[first] * charge[second] > 0.0
+                && (charge[first] - charge[second]).abs() >= 1.0e-12
+        })
+    });
+
+    let context = IonActivityContext {
+        molality: &composition.molality,
+        charge: &charge,
+        temperature: T,
+        a_phi: debye_huckel_a_phi(T),
+        common_ion_terms: catalogue,
+        non_two_two_beta2,
+        unequal_charge_same_sign,
+        neutral_interactions_active,
+    };
+
+    let solvent = names
+        .iter()
+        .position(|name| name.eq_ignore_ascii_case("water"))
+        .ok_or_else(|| {
+            crate::AzothError::invalid_input(
+                "components",
+                "the mixture names no water, so there is no solvent to measure a molality \
+                 against"
+                    .to_string(),
+            )
+        })?;
+
+    let (osmotic, _) = water_terms(&context, &parameters, solvent, neutral_osmotic);
+    let ln_gamma: Vec<f64> = (0..n)
+        .map(|i| {
+            if i == solvent && entries[i].reference_state == crate::databank::SOLVENT {
+                ln_gamma_water(&context, &parameters, solvent, x[solvent], neutral_osmotic)
+            } else if charge[i].abs() < 0.5 {
+                interactions.as_deref().map_or(0.0, |list| {
+                    ln_gamma_neutral(list, &composition.molality, i, T)
+                })
+            } else {
+                ln_gamma(&context, &parameters, i)
+            }
+        })
+        .collect();
+
+    Ok(crate::results::PitzerPhaseResult {
+        gamma: ln_gamma.iter().map(|value| value.exp()).collect(),
+        water_activity: ln_gamma[solvent].exp() * x[solvent],
+        ln_gamma,
+        molality: composition.molality,
+        ionic_strength: composition.ionic_strength,
+        osmotic_coefficient: osmotic,
+        dataset: match selection {
+            Selection::Phreeqc => crate::results::PitzerDataset::Phreeqc,
+            Selection::Legacy(_) => crate::results::PitzerDataset::Legacy,
+        },
+        warnings,
+    })
 }
 
 #[cfg(test)]

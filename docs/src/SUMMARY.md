@@ -94,6 +94,7 @@
   - [Solid para-hydrogen reference phase state](./eos/parahydrogen_solid_phase.md)
   - [PC-SAFT (Rahmat) phase state](./eos/pcsaft_rahmat_phase.md)
   - [Pressure-enthalpy flash](./eos/ph_flash.md)
+  - [Activity coefficients of a Pitzer electrolyte phase](./eos/pitzer_phase.md)
   - [Peng-Robinson CPA phase state](./eos/pr_cpa_phase.md)
   - [Pressure-entropy flash](./eos/ps_flash.md)
   - [Pressure-temperature flash](./eos/pt_flash.md)

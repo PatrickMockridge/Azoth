@@ -89,6 +89,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.parahydrogen_solid_phase`](./parahydrogen_solid_phase.md) | `bracketed_log_volume_newton` | Sannerhaugen, A. (2026) |
 | [`eos.pcsaft_rahmat_phase`](./pcsaft_rahmat_phase.md) | `direct composition` | Gross, J.; Sadowski, G. (2001) |
 | [`eos.ph_flash`](./ph_flash.md) | `ph_flash_inverse_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
+| [`eos.pitzer_phase`](./pitzer_phase.md) | `direct composition` | NeqSim 3.20.0 `PhasePitzer` |
 | [`eos.pr_cpa_phase`](./pr_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
 | [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.pt_flash`](./pt_flash.md) | `successive_substitution_flash` | Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982) |

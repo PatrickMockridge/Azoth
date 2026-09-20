@@ -80,6 +80,7 @@ from azoth.core.result import (
     ParahydrogenSolidPhaseResult,
     PcsaftRahmatPhaseResult,
     PhFlashResult,
+    PitzerPhaseResult,
     Pr78KappaResult,
     PrAlphaAbResult,
     PrCpaPhaseResult,
@@ -2497,6 +2498,33 @@ def ge_wilson_phase(
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),
         p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pitzer_phase(
+    components: Sequence[str], T: Q, x: Sequence[float]
+) -> PitzerPhaseResult:
+    """The activity coefficients of a Pitzer electrolyte phase, computed in Rust.
+
+    Only the names and the composition cross: the Rust side resolves each component's
+    charge, molar mass and reference state against its own copy of the databank, because
+    the parameter datasets are keyed by the name and the model reads them itself.
+    """
+    spec = _models_gen.model("eos.pitzer_phase")
+    result = _core.pitzer_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        list(x),
+    )
+    return PitzerPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        molality=tuple(result.molality),
+        ionic_strength=result.ionic_strength,
+        osmotic_coefficient=result.osmotic_coefficient,
+        water_activity=result.water_activity,
+        dataset=result.dataset,
         warnings=_warnings(result.warnings),
     )
 

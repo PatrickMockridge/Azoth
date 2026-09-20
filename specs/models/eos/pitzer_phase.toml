@@ -1,0 +1,72 @@
+id = "eos.pitzer_phase"
+name = "Activity coefficients of a Pitzer electrolyte phase"
+kind = "direct"
+assumptions = [
+    "this is NeqSim's `PhasePitzer`, its `ComponentGePitzer` components and `PitzerElectrostaticMixing`. It is the activity-coefficient surface only: the fugacity coefficient `fugcoef` builds from it carries a Henry reference state each model states for itself, and is not here.",
+    "**which of two datasets answers is a property of the brine's topology, not of the build.** The PHREEQC catalogue applies where it covers every pair and `PitzerParameters.csv` otherwise; the two disagree on shared pairs, so the dataset is reported.",
+    "the brine is refused where the loaded dataset does not cover its topology. NeqSim enforces that only for a mixture with more than one cation or anion, so a single salt over an absent pair initializes there and evaluates the pair at zero; this model refuses it.",
+    "`getGamma`'s `pressure` argument is never read - the ion, water and neutral branches all ignore it - so this model takes no pressure input.",
+    "the branch a component takes is its charge, except for water: water with the `solvent` reference state takes the osmotic route, any other neutral takes the sparse neutral layer, and an ion takes the extended Pitzer expression.",
+    "a molality is `n_i / m_water` from the mole fractions alone, so the phase's size cancels and no density is needed. `T` is the only state variable.",
+    "`x` is checked rather than renormalised.",
+    "`beta2`, `theta` and `psi` are zero for a brine on the legacy dataset, whatever the CSV's columns say: that loader calls no setter for them. The coverage audit is what refuses a topology where the zero matters.",
+]
+references = [
+    "Pitzer, K. S. (1991). \"Activity Coefficients in Electrolyte Solutions\", 2nd edition. CRC Press. The extended equations this ports are 8-2-8, 8-2-10 and 8-3-2.",
+    "Harvie, C. E. and Weare, J. H. (1984). \"The prediction of mineral solubilities in natural waters: the Na-K-Mg-Ca-H-Cl-SO4-OH-HCO3-CO3-CO2-H2O system.\" Geochimica et Cosmochimica Acta 48(4), 723-751.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhasePitzer`, `ComponentGePitzer`, `PitzerParameterDatasets`, `PitzerElectrostaticMixing` and `PitzerNeutralInteraction` are the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `PhasePitzer`"
+edition = "`ComponentGePitzer.getGamma`, `getWaterGamma` and `getPitzerOsmoticCoefficient`, ported verbatim; the catalogue is the USGS PHREEQC file NeqSim bundles, at the commit its dataset id carries."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the brine is made of, by name. The databank supplies each one's molar mass, ionic charge and reference state, and the charge decides which branch of the activity coefficient it takes."
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the liquid's mole fractions; non-negative and summing to one. One must be water, or there is no solvent to measure a molality against."
+[outputs]
+[outputs.gamma]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the activity coefficient of each component: the ion expression for an ion, the osmotic route for water, and the neutral layer for any other neutral."
+[outputs.ln_gamma]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the natural logarithm of each activity coefficient"
+[outputs.molality]
+type = "vector"
+unit = "mol/kg"
+length = "one per component"
+description = "each component's molality `n_i / m_water`. The solvent's own entry is about `55.5 mol/kg`, which is its reciprocal molar mass."
+[outputs.ionic_strength]
+unit = "mol/kg"
+description = "`I = 1/2 sum m_i z_i^2` over every component"
+[outputs.osmotic_coefficient]
+unit = "dimensionless"
+description = "`phi`, the Pitzer osmotic coefficient of the water. The same number `getOsmoticCoefficientOfWater` and `getOsmoticCoefficientOfWaterMolality` return."
+[outputs.water_activity]
+unit = "dimensionless"
+description = "`a_w`, from `phi` and the molality sum the osmotic coefficient was built over"
+[outputs.dataset]
+type = "enum"
+values = ["phreeqc", "legacy"]
+description = "which parameter dataset was in force: `phreeqc` for the USGS catalogue, `legacy` for `PitzerParameters.csv`. Reported because the two disagree on pairs they share."
+[implementations]
+python = "azoth.eos.pitzer_phase"
+rust = "azoth_eos::pitzer_phase"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"

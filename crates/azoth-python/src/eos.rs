@@ -27,13 +27,13 @@ use crate::results::{
     PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNitricSulfuricAcidVaporPressureResult,
     PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
     PyParahydrogenSolidPhaseResult, PyPhFlashResult, PyPhaseBoundaryResult,
-    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPr78KappaResult, PyPrAlphaAbResult,
-    PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult, PyPrDepartureResult,
-    PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult,
-    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
-    PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceBinaryResult, PyRachfordRiceResult,
-    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPitzerPhaseResult,
+    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
+    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
+    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
+    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
+    PyPvFlashResult, PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceBinaryResult,
+    PyRachfordRiceResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
     PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
     PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
@@ -1239,6 +1239,29 @@ pub fn ge_wilson_phase(
     };
     azoth_eos::ge_wilson_phase::ge_wilson_phase(&params, &mixture, T, P, &x)
         .map(|r| PyGeWilsonPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The activity coefficients of an electrolyte phase whose non-ideality is Pitzer's.
+///
+/// Takes the component **names** rather than resolved arrays, because the names are what
+/// the parameter datasets are keyed by: the model resolves each one's charge, molar mass
+/// and reference state against the databank itself. `T` is the only state variable - a
+/// molality is a function of the mole fractions alone - and there is no pressure input,
+/// because the branches `getGamma` dispatches to never read the one it is given.
+#[pyfunction]
+#[pyo3(signature = (components, T, x))]
+#[pyo3(text_signature = "(components, T, x)")]
+#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
+pub fn pitzer_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    x: Vec<f64>,
+) -> PyResult<PyPitzerPhaseResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::pitzer_phase(&names, T, &x)
+        .map(|r| PyPitzerPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

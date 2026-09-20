@@ -2322,6 +2322,73 @@ impl CalcResult for GeWilsonPhaseResult {
     }
 }
 
+/// Which of the two vendored Pitzer datasets answered.
+///
+/// Reported rather than assumed, because the two give different numbers for a pair they
+/// share - Na+/Cl- differs by 16% in `Cphi` - so a coefficient without its dataset is not
+/// reproducible.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PitzerDataset {
+    /// The USGS PHREEQC catalogue `PhasePitzer` bundles.
+    Phreeqc,
+    /// `PitzerParameters.csv`, the table this library has always carried.
+    Legacy,
+}
+
+impl PitzerDataset {
+    /// The name the spec and the Python side use.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            PitzerDataset::Phreeqc => "phreeqc",
+            PitzerDataset::Legacy => "legacy",
+        }
+    }
+}
+
+/// Result of `eos.pitzer_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PitzerPhaseResult {
+    /// The activity coefficient of each component.
+    pub gamma: Vec<f64>,
+    /// The natural logarithm of each activity coefficient.
+    pub ln_gamma: Vec<f64>,
+    /// Each component's molality `n_i / m_water`, in mol/kg.
+    ///
+    /// Reported beside the coefficients because it is the scale the whole model works in:
+    /// a wrong solvent mass moves every coefficient at once, and only the molalities show
+    /// which of the two is wrong.
+    pub molality: Vec<f64>,
+    /// `I = 1/2 sum m_i z_i^2`, in mol/kg.
+    pub ionic_strength: f64,
+    /// The Pitzer osmotic coefficient of the water, `phi`.
+    pub osmotic_coefficient: f64,
+    /// The water activity `a_w`.
+    pub water_activity: f64,
+    /// Which dataset the parameters came from.
+    pub dataset: PitzerDataset,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PitzerPhaseResult {
+    const CALC_ID: &'static str = "eos.pitzer_phase";
+    const FIELDS: &'static [&'static str] = &[
+        "gamma",
+        "ln_gamma",
+        "molality",
+        "ionic_strength",
+        "osmotic_coefficient",
+        "water_activity",
+        "dataset",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.ge_uniquac_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeUniquacPhaseResult {

@@ -76,23 +76,33 @@ public class PitzerArithmetic {
   private static void activityCoefficients() {
     System.out.println();
     System.out.println("=== the ion activity coefficient, end to end ===");
-    for (String[] brine : new String[][] {
+    // **The third brine is the legacy path's.** The catalogue carries no `C0` row for
+    // Na+/HCO3-, so that mixture falls back to `PitzerParameters.csv` and reads every
+    // parameter through Silvester-Pitzer's two-coefficient form instead of the six. It is
+    // also a single salt, so it is the one topology NeqSim initializes with an absent pair
+    // rather than refusing - which is why the audit and the refusal are separate.
+    String[][] brines = {
         {"water", "Na+", "Cl-"},
-        {"water", "Na+", "Ca++", "Cl-", "Cl-"}}) {
+        {"water", "Na+", "Ca++", "Cl-"},
+        {"water", "Na+", "HCO3-"}};
+    double[][] compositions = {
+        {0.88, 0.06, 0.06}, {0.88, 0.03, 0.03, 0.06}, {0.88, 0.06, 0.06}};
+    for (int b = 0; b < brines.length; b++) {
+      String[] names = brines[b];
+      double[] z = compositions[b];
       SystemInterface system = new SystemPitzer(298.15, 1.0);
-      double[] z = new double[brine.length];
-      for (int i = 0; i < brine.length; i++) {
-        z[i] = brine[i].equals("water") ? 0.88 : (brine.length - 1) == 2 ? 0.06 : 0.03;
-      }
-      for (int i = 0; i < brine.length; i++) {
-        system.addComponent(brine[i], z[i]);
+      for (int i = 0; i < names.length; i++) {
+        system.addComponent(names[i], z[i]);
       }
       system.setMixingRule("classic");
       system.init(0);
       system.init(1);
       PhasePitzer phase = (PhasePitzer) system.getPhase(1);
-      System.out.printf("  %s   (common-ion=%s, unequal-charge-same-sign=%s, non-2-2 beta2=%s)%n",
-          String.join(" + ", brine), phase.isPhreeqcCommonIonTermsActive(),
+      System.out.printf("  %s   (dataset=%s, common-ion=%s, unequal-charge-same-sign=%s, "
+              + "non-2-2 beta2=%s)%n",
+          String.join(" + ", names),
+          phase.getParameterDatasetId().startsWith("usgs") ? "phreeqc" : "legacy",
+          phase.isPhreeqcCommonIonTermsActive(),
           phase.hasUnequalChargeSameSignPair(), phase.isNonTwoTwoBeta2Active());
       // `getGamma` for water already *is* the water gamma - it dispatches to
       // `getWaterGamma` - so the ion loop below prints it and this adds the osmotic

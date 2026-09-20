@@ -2421,6 +2421,28 @@ class GeWilsonPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PitzerPhaseResult(_HasWarnings):
+    """Result of ``eos.pitzer_phase``."""
+
+    #: The activity coefficient of each component.
+    gamma: tuple[float, ...]
+    #: The natural logarithm of each activity coefficient.
+    ln_gamma: tuple[float, ...]
+    #: Each component's molality ``n_i / m_water``, in mol/kg of solvent.
+    molality: tuple[float, ...]
+    #: ``I = 1/2 sum m_i z_i^2``, in mol/kg.
+    ionic_strength: float
+    #: The Pitzer osmotic coefficient of the water.
+    osmotic_coefficient: float
+    #: The water activity ``a_w``.
+    water_activity: float
+    #: Which parameter dataset answered: ``phreeqc`` or ``legacy``.
+    dataset: str
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class GeUniquacPhaseResult(_HasWarnings):
     """Result of ``eos.ge_uniquac_phase``."""
 

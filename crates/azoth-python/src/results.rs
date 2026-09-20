@@ -29,19 +29,19 @@ use azoth_eos::results::{
     MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
-    PhFlashResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult, PrDaneshAlphaResult,
-    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
-    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
-    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
-    PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult, PvfFlashResult,
-    RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult,
-    RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkCpaPhaseResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
-    TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult, TwuKappaResult,
-    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
+    PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
+    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
+    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
+    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult,
+    PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
+    RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
+    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
+    SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
+    ThermalConductivityResult, TpMultiflashResult, TsFlashResult, TuFlashResult, TvFlashResult,
+    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
@@ -2360,6 +2360,67 @@ impl From<&GeWilsonPhaseResult> for PyGeWilsonPhaseResult {
         }
     }
 }
+
+/// Result of `eos.pitzer_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PitzerPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPitzerPhaseResult {
+    /// The activity coefficient of each component.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// The natural logarithm of each activity coefficient.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// Each component's molality, in mol/kg of solvent.
+    #[pyo3(get)]
+    pub molality: Vec<f64>,
+    /// The ionic strength, in mol/kg.
+    #[pyo3(get)]
+    pub ionic_strength: f64,
+    /// The Pitzer osmotic coefficient of the water.
+    #[pyo3(get)]
+    pub osmotic_coefficient: f64,
+    /// The water activity.
+    #[pyo3(get)]
+    pub water_activity: f64,
+    /// Which parameter dataset answered: `phreeqc` or `legacy`.
+    #[pyo3(get)]
+    pub dataset: String,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPitzerPhaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PitzerPhaseResult(dataset={}, I={}, phi={})",
+            self.dataset, self.ionic_strength, self.osmotic_coefficient
+        )
+    }
+}
+
+impl From<&PitzerPhaseResult> for PyPitzerPhaseResult {
+    fn from(r: &PitzerPhaseResult) -> Self {
+        Self {
+            gamma: r.gamma.clone(),
+            ln_gamma: r.ln_gamma.clone(),
+            molality: r.molality.clone(),
+            ionic_strength: r.ionic_strength,
+            osmotic_coefficient: r.osmotic_coefficient,
+            water_activity: r.water_activity,
+            dataset: r.dataset.name().to_string(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.ge_uniquac_phase`, transported.
 #[pyclass(
     frozen,
@@ -6017,6 +6078,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         GeUniquacPhaseResult::CALC_ID => GeUniquacPhaseResult::FIELDS.to_vec(),
         GeVanLaarAcidPhaseResult::CALC_ID => GeVanLaarAcidPhaseResult::FIELDS.to_vec(),
         GeWilsonPhaseResult::CALC_ID => GeWilsonPhaseResult::FIELDS.to_vec(),
+        PitzerPhaseResult::CALC_ID => PitzerPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         CapillaryDewPointResult::CALC_ID => CapillaryDewPointResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),

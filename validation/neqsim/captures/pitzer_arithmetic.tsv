@@ -1,10 +1,3 @@
-# azoth PitzerArithmetic - NeqSim 3.20.0's ComponentGePitzer, PhasePitzer and
-# PitzerElectrostaticMixing.
-# Committed verbatim from `validation/neqsim/PitzerArithmetic.java`; regenerate by running it.
-# The Debye-Huckel parameter across temperature; the parameter getters for both datasets'
-# temperature forms; the ion and water activity coefficients and the osmotic coefficient
-# end to end; the neutral layer; and the E_theta integral of the electrostatic mixing.
-
 === Debye-Huckel parameter against temperature ===
    T / K        Agamma = debyeHuckelAphi(T)      Aphi = Agamma / 3
   273.1500          1.13240090084782         0.377466966949275
@@ -82,17 +75,22 @@
      1.0   -1.0     2.0000    12.0000
 
 === the ion activity coefficient, end to end ===
-  water + Na+ + Cl-   (common-ion=true, unequal-charge-same-sign=false, non-2-2 beta2=false)
+  water + Na+ + Cl-   (dataset=phreeqc, common-ion=true, unequal-charge-same-sign=false, non-2-2 beta2=false)
     I = 3.78472485050337   phi = 1.09902694054914
     ln gamma(water ) =    -0.0220339385649971   molality = 55.5092978074   z = +0
     ln gamma(Na+   ) =     -0.267512432075052   molality = 3.78472485050   z = +1
     ln gamma(Cl-   ) =     -0.267512432075052   molality = 3.78472485050   z = -1
-  water + Na+ + Ca++ + Cl- + Cl-   (common-ion=true, unequal-charge-same-sign=true, non-2-2 beta2=true)
+  water + Na+ + Ca++ + Cl-   (dataset=phreeqc, common-ion=true, unequal-charge-same-sign=true, non-2-2 beta2=true)
     I = 6.62326848838089   phi = 1.35042230443611
     ln gamma(water ) =    -0.0563151245495846   molality = 55.5092978074   z = +0
     ln gamma(Na+   ) =     -0.504259131023400   molality = 1.89236242525   z = +1
     ln gamma(Ca++  ) =      -1.84132192677047   molality = 1.89236242525   z = +2
     ln gamma(Cl-   ) =      0.726599630955942   molality = 3.78472485050   z = -1
+  water + Na+ + HCO3-   (dataset=legacy, common-ion=false, unequal-charge-same-sign=false, non-2-2 beta2=false)
+    I = 3.78472485050337   phi = 0.879292649731133
+    ln gamma(water ) =    0.00792982836473036   molality = 55.5092978074   z = +0
+    ln gamma(Na+   ) =     -0.784271695618960   molality = 3.78472485050   z = +1
+    ln gamma(HCO3- ) =     -0.784271695618960   molality = 3.78472485050   z = -1
 
 === the neutral layer, on a CO2-bearing brine ===
   dataset = legacy

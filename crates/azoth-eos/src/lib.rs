@@ -235,6 +235,7 @@ pub use parahydrogen_solid_phase::parahydrogen_solid_phase;
 pub use pcsaft_rahmat_phase::pcsaft_rahmat_phase;
 pub use ph_flash::ph_flash;
 pub use phase_boundary::{Incipient, PhaseBoundary, phase_boundary_pressure};
+pub use pitzer_phase::pitzer_phase;
 pub use pr_alpha_ab::{OMEGA_A, OMEGA_B, pr_alpha_ab};
 pub use pr_cpa_phase::{pr_cpa_phase, pr_cpa_phase_of};
 pub use pr_danesh_alpha::pr_danesh_alpha;
@@ -269,13 +270,13 @@ pub use results::{
     MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
     MolarEnthalpyEntropyResult, MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult,
-    Phase, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult,
-    PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult,
-    PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult,
-    PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult,
-    PureSaturationResult, PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult,
-    RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult,
-    RootStructure, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
+    Phase, PitzerDataset, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
+    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
+    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
+    PuFlashResult, PureSaturationResult, PvRefluxFlashResult, PvfFlashResult,
+    RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, RootStructure, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
     SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, StabilityVerdict, ThFlashResult,
     ThermalConductivityResult, TsFlashResult, TuFlashResult, TwuKappaResult, TwucoonAlphaResult,

@@ -18,9 +18,10 @@ NeqSim's own comment.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
+from azoth.eos import components as _components
 from azoth.eos.reference import _electrolyte as electrolyte
 from azoth.eos.reference import _pitzer_electrostatic as electrostatic
 from azoth.eos.reference._pitzer_catalog import find
@@ -371,20 +372,19 @@ def _electrostatic_phi(
     return value + ionic_strength * derivative
 
 
-def ln_gamma_water(
+def _water_terms(
     molality: Sequence[float],
     charge: Sequence[float],
     temperature_k: float,
     a_phi: float,
     parameters: Any,
     solvent: int,
-    x_water: float,
     neutral_osmotic: float,
     *,
     non_two_two_beta2: bool,
     unequal_charge_same_sign: bool,
     neutral_interactions_active: bool,
-) -> float:
+) -> tuple[float, float]:
     """``ln gamma_w``, as ``ComponentGePitzer.getWaterGamma`` computes it.
 
     **This route does not go through the ion expression at all.** The solvent's activity
@@ -418,8 +418,6 @@ def ln_gamma_water(
         for k in range(n)
         if charge[k] != 0.0 or (neutral_interactions_active and k != solvent)
     )
-    if sum_molalities < 1.0e-10:
-        return 0.0
 
     # f^phi = -A_phi I^1.5 / (1 + b sqrt(I)); the base is non-negative by construction.
     f_phi = -a_phi * ionic_strength**1.5 / (1.0 + B * sqrt_i)
@@ -483,11 +481,84 @@ def ln_gamma_water(
                     * parameters.psi(first, second, third, temperature_k)
                 )
 
-    phi = 1.0 + (2.0 / sum_molalities) * (f_phi + binary + theta_psi + neutral_osmotic)
-    ln_a_w = electrolyte.ln_water_activity(phi, sum_molalities, WATER_MOLAR_MASS)
-    if x_water < 1.0e-10:
+    # NeqSim's own guard for `phi`, and its own answer: the ideal value, and a floor
+    # **lower** than the one `getWaterGamma` applies to its own sum.
+    if sum_molalities < OSMOTIC_FLOOR:
+        return 1.0, sum_molalities
+    return (
+        1.0 + (2.0 / sum_molalities) * (f_phi + binary + theta_psi + neutral_osmotic),
+        sum_molalities,
+    )
+
+
+#: The molality total below which `getPitzerOsmoticCoefficient` returns the ideal ``phi``.
+OSMOTIC_FLOOR = 1.0e-12
+
+
+def osmotic_coefficient(
+    molality: Sequence[float],
+    charge: Sequence[float],
+    temperature_k: float,
+    a_phi: float,
+    parameters: Any,
+    solvent: int,
+    neutral_osmotic: float,
+    *,
+    non_two_two_beta2: bool,
+    unequal_charge_same_sign: bool,
+    neutral_interactions_active: bool,
+) -> float:
+    """``getPitzerOsmoticCoefficient``, the ``phi`` the water node is built on.
+
+    The same number ``getOsmoticCoefficientOfWater`` returns; the molality variant returns
+    it too, and the two agreeing is a property of NeqSim's code rather than a coincidence.
+    """
+    return _water_terms(
+        molality,
+        charge,
+        temperature_k,
+        a_phi,
+        parameters,
+        solvent,
+        neutral_osmotic,
+        non_two_two_beta2=non_two_two_beta2,
+        unequal_charge_same_sign=unequal_charge_same_sign,
+        neutral_interactions_active=neutral_interactions_active,
+    )[0]
+
+
+def ln_gamma_water(
+    molality: Sequence[float],
+    charge: Sequence[float],
+    temperature_k: float,
+    a_phi: float,
+    parameters: Any,
+    solvent: int,
+    x_water: float,
+    neutral_osmotic: float,
+    *,
+    non_two_two_beta2: bool,
+    unequal_charge_same_sign: bool,
+    neutral_interactions_active: bool,
+) -> float:
+    """``ln gamma_w`` alone, for a caller that wants only it."""
+    osmotic, sum_molalities = _water_terms(
+        molality,
+        charge,
+        temperature_k,
+        a_phi,
+        parameters,
+        solvent,
+        neutral_osmotic,
+        non_two_two_beta2=non_two_two_beta2,
+        unequal_charge_same_sign=unequal_charge_same_sign,
+        neutral_interactions_active=neutral_interactions_active,
+    )
+    if sum_molalities < 1.0e-10 or x_water < 1.0e-10:
         return 0.0
-    return ln_a_w - math.log(x_water)
+    return electrolyte.ln_water_activity(osmotic, sum_molalities, WATER_MOLAR_MASS) - math.log(
+        x_water
+    )
 
 
 #: The neutral-solute families: a neutral with a neutral, an ion, or a pair of ions.
@@ -625,3 +696,70 @@ def catalogue_interactions(
                     return None
                 out.append(NeutralInteraction(ZETA, [neutral, cation, anion], form))
     return out
+
+
+class DatasetParameters:
+    """The phase's parameters, from whichever dataset the selection rule chose.
+
+    **One class over two forms**, because a pair's temperature form is a property of which
+    dataset answered rather than of the pair: the catalogue carries six coefficients and the
+    CSV two. A parameter the dataset does not carry is **zero** - NeqSim's own behaviour,
+    since its arrays are zero-initialised and only the rows it read are written - and the
+    coverage audit is what refuses a topology where that zero would matter.
+    """
+
+    def __init__(self, names: Sequence[str], catalogue: bool) -> None:
+        self._catalogue = catalogue
+        self._species = list(names)
+
+    def _form(self, family: str, names: Sequence[str]) -> Callable[[float], float]:
+        if self._catalogue:
+            a = find(family, names)
+            coefficients = list(a) if a is not None else [0.0] * 6
+            return lambda temperature: catalog_value(coefficients, temperature)
+        # The legacy loader calls `setBinaryParameters` for a row whose two ions are both
+        # in the phase and writes `beta2` straight into the array. **It calls no theta or
+        # psi setter at all**, so those two stay zero here however the CSV's columns read.
+        record = (
+            _components.pitzer_pair(names[0], names[1])
+            if family in ("B0", "B1", "C0", "B2")
+            else None
+        )
+        if record is None:
+            return lambda _temperature: 0.0
+        if family == "B0":
+            return lambda t: silvester_value(record.beta0_25, *record.beta0_t, t)
+        if family == "B1":
+            return lambda t: silvester_value(record.beta1_25, *record.beta1_t, t)
+        if family == "C0":
+            return lambda t: silvester_value(record.cphi_25, *record.cphi_t, t)
+        # `beta2` has no temperature coefficients in the table, so it is flat in `T`.
+        return lambda _temperature: record.beta2_25
+
+    def _two(self, family: str, first: int, second: int) -> Callable[[float], float]:
+        return self._form(family, [self._species[first], self._species[second]])
+
+    def beta0(self, first: int, second: int, temperature: float) -> float:
+        """``PhasePitzer.getBeta0ij(i, j, T)``."""
+        return self._two("B0", first, second)(temperature)
+
+    def beta1(self, first: int, second: int, temperature: float) -> float:
+        """``PhasePitzer.getBeta1ij(i, j, T)``."""
+        return self._two("B1", first, second)(temperature)
+
+    def cphi(self, first: int, second: int, temperature: float) -> float:
+        """``PhasePitzer.getCphiij(i, j, T)``."""
+        return self._two("C0", first, second)(temperature)
+
+    def beta2(self, first: int, second: int, temperature: float) -> float:
+        """``PhasePitzer.getBeta2ij(i, j, T)``."""
+        return self._two("B2", first, second)(temperature)
+
+    def theta(self, first: int, second: int, temperature: float) -> float:
+        """``PhasePitzer.getThetaij(i, j, T)``."""
+        return self._two("THETA", first, second)(temperature)
+
+    def psi(self, first: int, second: int, third: int, temperature: float) -> float:
+        """``PhasePitzer.getPsiijk(i, j, k, T)``."""
+        names = [self._species[first], self._species[second], self._species[third]]
+        return self._form("PSI", names)(temperature)

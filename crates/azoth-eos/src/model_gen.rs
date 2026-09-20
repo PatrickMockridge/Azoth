@@ -27,6 +27,7 @@
 //!   - specs/models/eos/parahydrogen_solid_phase.toml
 //!   - specs/models/eos/pcsaft_rahmat_phase.toml
 //!   - specs/models/eos/ph_flash.toml
+//!   - specs/models/eos/pitzer_phase.toml
 //!   - specs/models/eos/pr_cpa_phase.toml
 //!   - specs/models/eos/ps_flash.toml
 //!   - specs/models/eos/pt_flash.toml
@@ -128,6 +129,7 @@ static AMMONIA_PHASE_CASES: &[TestCase] = &[
             ("g", -1723.471755832757),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "gas_at_1_bar",
@@ -152,6 +154,7 @@ static AMMONIA_PHASE_CASES: &[TestCase] = &[
             ("g", -7410.217012926424),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "dense_at_100_bar",
@@ -176,6 +179,7 @@ static AMMONIA_PHASE_CASES: &[TestCase] = &[
             ("g", -3454.615056464115),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -257,6 +261,7 @@ static ARGON_SOLID_PHASE_CASES: &[TestCase] = &[
             ("g", -9501.377555901736),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "moderate",
@@ -281,6 +286,7 @@ static ARGON_SOLID_PHASE_CASES: &[TestCase] = &[
             ("g", -8983.50346306555),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "high_pressure_limit",
@@ -305,6 +311,7 @@ static ARGON_SOLID_PHASE_CASES: &[TestCase] = &[
             ("g", 219330.4015918258),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -387,6 +394,7 @@ static BUBBLE_PRESSURE_CASES: &[TestCase] = &[
             ("incipient", &[0.8903950538193843, 0.10960494618061567]),
             ("k", &[4.4519752690926016, 0.13700618272563664]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_propane_and_butane_at_320_k",
@@ -418,6 +426,7 @@ static BUBBLE_PRESSURE_CASES: &[TestCase] = &[
                 &[3.6209889774997, 0.5271916617602039, 0.23528941194291553],
             ),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -500,6 +509,7 @@ static BUBBLE_TEMPERATURE_CASES: &[TestCase] = &[
             ("incipient", &[0.8903950417247901, 0.10960495827520991]),
             ("k", &[4.451975208624962, 0.1370061978440435]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_propane_and_butane_at_320_k",
@@ -531,6 +541,7 @@ static BUBBLE_TEMPERATURE_CASES: &[TestCase] = &[
                 &[3.620989116905298, 0.5271916204127911, 0.23528938099038602],
             ),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -609,6 +620,7 @@ static BWRS_PHASE_CASES: &[TestCase] = &[
             ("cp_res", 7.100809443311604),
         ],
         expected_vectors: &[("ln_phi", &[-0.013319302953322648, -0.1773749663515858])],
+        expected_strings: &[],
     },
     TestCase {
         id: "pure_methane",
@@ -630,6 +642,7 @@ static BWRS_PHASE_CASES: &[TestCase] = &[
             ("cp_res", 0.9343242529486586),
         ],
         expected_vectors: &[("ln_phi", &[-0.016953681620111363])],
+        expected_strings: &[],
     },
 ];
 
@@ -741,6 +754,7 @@ static CAPILLARY_DEW_POINT_CASES: &[TestCase] = &[
             ("capillary_pressure", 957842.1135999999),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_butane_at_20_bar_in_a_100_nm_pore",
@@ -765,6 +779,7 @@ static CAPILLARY_DEW_POINT_CASES: &[TestCase] = &[
             ("capillary_pressure", 99950.46912000001),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_butane_at_20_bar_non_wetting_at_60_degrees",
@@ -789,6 +804,7 @@ static CAPILLARY_DEW_POINT_CASES: &[TestCase] = &[
             ("capillary_pressure", 50093.798440000006),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_butane_at_20_bar_in_a_micron_pore",
@@ -813,6 +829,7 @@ static CAPILLARY_DEW_POINT_CASES: &[TestCase] = &[
             ("capillary_pressure", 10037.773094),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -894,6 +911,7 @@ static CO2_PHASE_CASES: &[TestCase] = &[
             ("g", -8272.605669834247),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "gas_at_1_bar",
@@ -918,6 +936,7 @@ static CO2_PHASE_CASES: &[TestCase] = &[
             ("g", -8027.997092458026),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "dense_at_50_bar",
@@ -942,6 +961,7 @@ static CO2_PHASE_CASES: &[TestCase] = &[
             ("g", -9140.039320543745),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -1035,6 +1055,7 @@ static CRITICAL_POINT_CASES: &[TestCase] = &[
             ("z_c", 0.3074013092188133),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_and_butane",
@@ -1056,6 +1077,7 @@ static CRITICAL_POINT_CASES: &[TestCase] = &[
             ("z_c", 0.4701353007478311),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -1150,6 +1172,7 @@ static DEW_PRESSURE_CASES: &[TestCase] = &[
             ("incipient", &[0.07356449482911534, 0.9264355051708847]),
             ("k", &[10.87481130481427, 0.2158811907400535]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_propane_and_butane_at_300_k",
@@ -1181,6 +1204,7 @@ static DEW_PRESSURE_CASES: &[TestCase] = &[
                 &[15.359377034393615, 0.9684336086735432, 0.304104804780905],
             ),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -1263,6 +1287,7 @@ static DEW_TEMPERATURE_CASES: &[TestCase] = &[
             ("incipient", &[0.07356449416596675, 0.9264355058340331]),
             ("k", &[10.874811402836803, 0.21588119058535227]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_propane_and_butane_at_300_k",
@@ -1294,6 +1319,7 @@ static DEW_TEMPERATURE_CASES: &[TestCase] = &[
                 &[15.359377523635496, 0.9684336139714743, 0.30410480351724356],
             ),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -1375,6 +1401,7 @@ static EOS_CG_PHASE_CASES: &[TestCase] = &[
             ("g", 5550.050809366434),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "pure_methane_gas",
@@ -1399,6 +1426,7 @@ static EOS_CG_PHASE_CASES: &[TestCase] = &[
             ("g", -36.91036625462061),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "natural_gas_mixture",
@@ -1423,6 +1451,7 @@ static EOS_CG_PHASE_CASES: &[TestCase] = &[
             ("g", 3866.961019834134),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -1508,6 +1537,7 @@ static GE_NRTL_FLASH_CASES: &[TestCase] = &[
                 &[-0.01577783917724521, -0.0104378903674061],
             ),
         ],
+        expected_strings: &[("phase", "two_phase")],
     },
     TestCase {
         id: "methanol_water_lean_at_353_k_1_bar",
@@ -1536,6 +1566,7 @@ static GE_NRTL_FLASH_CASES: &[TestCase] = &[
                 &[-0.015434372366168085, -0.010104919589718743],
             ),
         ],
+        expected_strings: &[("phase", "two_phase")],
     },
     TestCase {
         id: "ethanol_water_lean_at_360_k_1_bar",
@@ -1564,6 +1595,7 @@ static GE_NRTL_FLASH_CASES: &[TestCase] = &[
                 &[-0.019012146765247262, -0.008673145511841318],
             ),
         ],
+        expected_strings: &[("phase", "two_phase")],
     },
 ];
 
@@ -1654,6 +1686,7 @@ static GE_NRTL_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[-1.5658530965838922, -3.0258410151978015]),
             ("p_sat", &[16940.747558344778, 3178.7528699883305]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "ethanol_water_equimolar_at_350_k_1_bar",
@@ -1675,6 +1708,7 @@ static GE_NRTL_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[-0.0368209604820562, -0.6216821329673664]),
             ("p_sat", &[95797.11447554835, 41603.98070870418]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -1741,6 +1775,7 @@ static GE_UNIFAC_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[-1.6659829334051697, -3.265826523143544]),
             ("p_sat", &[16940.74755834478, 3178.7528699883305]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "methanol_benzene_lean_at_330_k_1_bar",
@@ -1762,6 +1797,7 @@ static GE_UNIFAC_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[0.5943403414559508, -0.3985351322447149]),
             ("p_sat", &[74296.1636937194, 52349.94248595396]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_toluene_at_340_k_1_bar",
@@ -1783,6 +1819,7 @@ static GE_UNIFAC_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[-0.45549541840173835, 1.1230427732916306]),
             ("p_sat", &[27169.38673684547, 26605.116506459886]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -1849,6 +1886,7 @@ static GE_UNIQUAC_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[-1.577791512846852, -3.154658356172792]),
             ("p_sat", &[16940.747558344778, 3178.7528699883305]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_decane_at_350_k_1_bar",
@@ -1870,6 +1908,7 @@ static GE_UNIQUAC_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[-0.4877713168336418, -2.748121946265136]),
             ("p_sat", &[41603.98070870418, 6670.013533199679]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -1951,6 +1990,7 @@ static GE_VAN_LAAR_ACID_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[-8.79676627386883, -7.85761975700227]),
             ("p_sat", &[95.76791536798726, 396.1629357961019]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_nitric_sulfuric_ternary_at_250_k_1_bar",
@@ -1988,6 +2028,7 @@ static GE_VAN_LAAR_ACID_PHASE_CASES: &[TestCase] = &[
                 &[95.76791536798726, 396.1629357961019, 2.6554098435359023e-06],
             ),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "ternary_at_273_15_k_2_bar",
@@ -2025,6 +2066,7 @@ static GE_VAN_LAAR_ACID_PHASE_CASES: &[TestCase] = &[
                 &[610.3592249571752, 2052.9169266045096, 8.305997595294622e-05],
             ),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -2091,6 +2133,7 @@ static GE_WILSON_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[-0.7223683220963804, -2.469267539112864]),
             ("p_sat", &[36663.00196112154, 6670.013533199678]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "heptane_nonane_at_320_k_1_bar",
@@ -2112,6 +2155,7 @@ static GE_WILSON_PHASE_CASES: &[TestCase] = &[
             ("ln_phi", &[-1.2171489374520243, -2.6890676330028507]),
             ("p_sat", &[26537.12803675743, 4025.616322494449]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -2181,6 +2225,7 @@ static GERG2008_PHASE_CASES: &[TestCase] = &[
             ("g", 5550.057216027023),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "pure_methane_gas",
@@ -2205,6 +2250,7 @@ static GERG2008_PHASE_CASES: &[TestCase] = &[
             ("g", -36.91040307570142),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "natural_gas_mixture",
@@ -2229,6 +2275,7 @@ static GERG2008_PHASE_CASES: &[TestCase] = &[
             ("g", 3866.965443554885),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -2310,6 +2357,7 @@ static HELIUM_PHASE_CASES: &[TestCase] = &[
             ("g", -13813.007480745353),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "gas_at_1_bar",
@@ -2334,6 +2382,7 @@ static HELIUM_PHASE_CASES: &[TestCase] = &[
             ("g", -27373.56957976801),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "dense_at_200_bar",
@@ -2358,6 +2407,7 @@ static HELIUM_PHASE_CASES: &[TestCase] = &[
             ("g", -21051.16810827694),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -2439,6 +2489,7 @@ static HYDROGEN_PHASE_CASES: &[TestCase] = &[
             ("g", -24386.96434700999),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "gas_at_10_bar",
@@ -2463,6 +2514,7 @@ static HYDROGEN_PHASE_CASES: &[TestCase] = &[
             ("g", -3371.567639307098),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -2528,6 +2580,7 @@ static MASON_SAXENA_CONDUCTIVITY_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("k", 0.025062059480046174)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_butane_propane_at_350_k",
@@ -2553,6 +2606,7 @@ static MASON_SAXENA_CONDUCTIVITY_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("k", 0.03158159895228681)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_rich_propane_at_300_k",
@@ -2578,6 +2632,7 @@ static MASON_SAXENA_CONDUCTIVITY_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("k", 0.030199640093392578)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -2666,6 +2721,7 @@ static MOLAR_ENTHALPY_ENTROPY_CASES: &[TestCase] = &[
             ("psi_bar", -0.5621211688023077),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "the_same_state_with_the_ideal_gas_terms_off",
@@ -2694,6 +2750,7 @@ static MOLAR_ENTHALPY_ENTROPY_CASES: &[TestCase] = &[
             ("psi_bar", -0.5621211688023077),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -2741,6 +2798,7 @@ static NRTL_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[0.20959527138156164, 0.4228402301695509]),
             ("gamma", &[1.2331788561677834, 1.5262904213232393]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "ethanol_water_equimolar_at_298_15_k",
@@ -2760,6 +2818,7 @@ static NRTL_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[-0.04091499634696748, 0.24111595048976658]),
             ("gamma", &[0.9599107223979105, 1.2726685933000568]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -2829,6 +2888,7 @@ static PARAHYDROGEN_SOLID_PHASE_CASES: &[TestCase] = &[
             ("g", -19.39909671236972),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "moderate",
@@ -2853,6 +2913,7 @@ static PARAHYDROGEN_SOLID_PHASE_CASES: &[TestCase] = &[
             ("g", 1981.832684399983),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "high_pressure",
@@ -2877,6 +2938,7 @@ static PARAHYDROGEN_SOLID_PHASE_CASES: &[TestCase] = &[
             ("g", 14465.26865790226),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -2954,6 +3016,7 @@ static PCSAFT_RAHMAT_PHASE_CASES: &[TestCase] = &[TestCase {
         ("s_res", -2.963464837211711),
     ],
     expected_vectors: &[("ln_phi", &[0.02297989515406737, -0.4210924858702312])],
+    expected_strings: &[],
 }];
 
 /// Registry entry for `eos.pcsaft_rahmat_phase`.
@@ -2997,6 +3060,7 @@ static PH_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 300.0), ("beta", 0.6824887179287704)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "single_phase_vapour_round_trip",
@@ -3013,6 +3077,7 @@ static PH_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 399.99999997477255)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -3047,6 +3112,151 @@ pub static PH_FLASH_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&PH_FLASH_ALGORITHM),
     checks: PH_FLASH_CHECKS,
     cases: PH_FLASH_CASES,
+};
+
+static PITZER_PHASE_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute temperature; zero and below are not states",
+    },
+}];
+
+static PITZER_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "sodium_chloride_at_298_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15)],
+        flags: &[],
+        lists: &[("components", &["water", "Na+", "Cl-"])],
+        strings: &[],
+        vectors: &[("x", &[0.88, 0.06, 0.06])],
+        matrices: &[],
+        expected: &[
+            ("ionic_strength", 3.784724850503368),
+            ("osmotic_coefficient", 1.09902694054914),
+            ("water_activity", 0.8608221912794107),
+        ],
+        expected_vectors: &[
+            (
+                "gamma",
+                &[0.9782070355447849, 0.7652808165351388, 0.7652808165351388],
+            ),
+            (
+                "ln_gamma",
+                &[-0.0220339385649971, -0.267512432075052, -0.267512432075052],
+            ),
+            (
+                "molality",
+                &[55.50929780738273, 3.784724850503368, 3.784724850503368],
+            ),
+        ],
+        expected_strings: &[("dataset", "phreeqc")],
+    },
+    TestCase {
+        id: "sodium_calcium_chloride_at_298_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15)],
+        flags: &[],
+        lists: &[("components", &["water", "Na+", "Ca++", "Cl-"])],
+        strings: &[],
+        vectors: &[("x", &[0.88, 0.03, 0.03, 0.06])],
+        matrices: &[],
+        expected: &[
+            ("ionic_strength", 6.623268488380894),
+            ("osmotic_coefficient", 1.35042230443611),
+            ("water_activity", 0.8318122738101592),
+        ],
+        expected_vectors: &[
+            (
+                "gamma",
+                &[
+                    0.9452412202388173,
+                    0.6039528596541243,
+                    0.15860761980456956,
+                    2.0680365507955862,
+                ],
+            ),
+            (
+                "ln_gamma",
+                &[
+                    -0.0563151245495846,
+                    -0.5042591310234,
+                    -1.84132192677047,
+                    0.726599630955942,
+                ],
+            ),
+            (
+                "molality",
+                &[
+                    55.50929780738273,
+                    1.892362425251684,
+                    1.892362425251684,
+                    3.784724850503368,
+                ],
+            ),
+        ],
+        expected_strings: &[("dataset", "phreeqc")],
+    },
+    TestCase {
+        id: "sodium_bicarbonate_on_the_legacy_dataset_at_298_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15)],
+        flags: &[],
+        lists: &[("components", &["water", "Na+", "HCO3-"])],
+        strings: &[],
+        vectors: &[("x", &[0.88, 0.06, 0.06])],
+        matrices: &[],
+        expected: &[
+            ("ionic_strength", 3.784724850503368),
+            ("osmotic_coefficient", 0.879292649731133),
+            ("water_activity", 0.8870059903990346),
+        ],
+        expected_vectors: &[
+            (
+                "gamma",
+                &[1.0079613527261757, 0.4564520167612656, 0.4564520167612656],
+            ),
+            (
+                "ln_gamma",
+                &[0.00792982836473036, -0.78427169561896, -0.78427169561896],
+            ),
+            (
+                "molality",
+                &[55.50929780738273, 3.784724850503368, 3.784724850503368],
+            ),
+        ],
+        expected_strings: &[("dataset", "legacy")],
+    },
+];
+
+/// Registry entry for `eos.pitzer_phase`.
+pub static PITZER_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.pitzer_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: PITZER_PHASE_CHECKS,
+    cases: PITZER_PHASE_CASES,
 };
 
 static PR_CPA_PHASE_CHECKS: &[SpecCheck] = &[
@@ -3101,6 +3311,7 @@ static PR_CPA_PHASE_CASES: &[TestCase] = &[TestCase {
         ("s_res", -82.26162261793057),
     ],
     expected_vectors: &[("ln_phi", &[-7.317420134313837, -7.878653311740308])],
+    expected_strings: &[],
 }];
 
 /// Registry entry for `eos.pr_cpa_phase`.
@@ -3144,6 +3355,7 @@ static PS_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 300.00000000000006), ("beta", 0.6824887179287709)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "single_phase_vapour_round_trip",
@@ -3160,6 +3372,7 @@ static PS_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 400.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -3275,6 +3488,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
                 &[-0.007402155428089113, -0.4088269917844861],
             ),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_propane_and_butane_at_350_k_and_50_bar",
@@ -3318,6 +3532,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
                 &[0.0631344844938096, -0.5431046362123848, -0.8137065905986997],
             ),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "a_subcooled_liquid_feed",
@@ -3349,6 +3564,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
                 &[-0.05565202843993218, -0.5105026790902871],
             ),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_methanol_cpa_at_356_k_and_1_bar",
@@ -3377,6 +3593,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
             ("ln_phi_liquid", &[-0.789379766771299, 0.668790784130641]),
             ("ln_phi_vapour", &[-0.0374062219152301, -0.070345690341699]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -3484,6 +3701,7 @@ static PT_PHASE_ENVELOPE_CASES: &[TestCase] = &[TestCase {
         ("iterations", 62.0),
     ],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 static PT_PHASE_ENVELOPE_INNER: ModelAlgorithm = ModelAlgorithm {
@@ -3550,6 +3768,7 @@ static PU_FLASH_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("T", 300.0), ("beta", 0.8356955)],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 static PU_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
@@ -3634,6 +3853,7 @@ static PURE_SATURATION_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("p_sat", 997905.585109325)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "carbon_dioxide_at_280_k",
@@ -3650,6 +3870,7 @@ static PURE_SATURATION_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("p_sat", 4150449.601020932)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -3727,6 +3948,7 @@ static PV_FLASH_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("T", 300.0), ("beta", 0.8356955)],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 static PV_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
@@ -3815,6 +4037,7 @@ static PV_REFLUX_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 330.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "a_reboilers_reflux_ratio_round_trips",
@@ -3835,6 +4058,7 @@ static PV_REFLUX_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 300.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "a_ratio_that_is_not_a_states_own",
@@ -3851,6 +4075,7 @@ static PV_REFLUX_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 166.402852)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -3940,6 +4165,7 @@ static PVF_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 330.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "a_second_state",
@@ -3960,6 +4186,7 @@ static PVF_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 350.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -4036,6 +4263,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("beta", 0.8422055475803871)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_butane_at_300_k_30_bar",
@@ -4055,6 +4283,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("beta", 0.6218202763585349)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "all_liquid_returns_the_lower_clamp",
@@ -4071,6 +4300,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("beta", 1e-12)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "all_vapour_returns_the_upper_clamp",
@@ -4087,6 +4317,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("beta", 0.999999999999)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "a_wide_k_range_keeps_its_precision",
@@ -4103,6 +4334,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("beta", 0.29999959999960013)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "a_negative_flash_is_reported_rather_than_clamped",
@@ -4122,6 +4354,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("beta", -0.0700043258053189)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "a_superheated_feed_is_reported_rather_than_clamped",
@@ -4138,6 +4371,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("beta", 3.9999999999999916)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "an_ion_is_skipped",
@@ -4157,6 +4391,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("beta", 0.6754007405823642)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -4234,6 +4469,7 @@ static SAFT_VR_MIE_PHASE_CASES: &[TestCase] = &[TestCase {
         ("s_res", -2.9364502191263444),
     ],
     expected_vectors: &[("ln_phi", &[0.0303544890821417, -0.394263574814552])],
+    expected_strings: &[],
 }];
 
 /// Registry entry for `eos.saft_vr_mie_phase`.
@@ -4293,6 +4529,7 @@ static SRK_CPA_PHASE_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("z_factor", 0.105050962879418)],
     expected_vectors: &[("ln_phi", &[-8.02010646183615, -6.14028423012298])],
+    expected_strings: &[],
 }];
 
 /// Registry entry for `eos.srk_cpa_phase`.
@@ -4371,6 +4608,7 @@ static STABILITY_TEST_CASES: &[TestCase] = &[
             ("tm", &[-2.220446049250313e-16, -0.21403386436968574]),
             ("iterations", &[16.0, 9.0]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "a_trivial_flash_is_not_a_stable_feed",
@@ -4390,6 +4628,7 @@ static STABILITY_TEST_CASES: &[TestCase] = &[
             ("tm", &[-2.220446049250313e-16, -2.220446049250313e-16]),
             ("iterations", &[15.0, 17.0]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -4445,6 +4684,7 @@ static TH_FLASH_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("P", 1000000.0), ("beta", 0.8356955)],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 static TH_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
@@ -4528,6 +4768,7 @@ static THERMAL_CONDUCTIVITY_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("k", 0.11961650179494385)],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 /// Registry entry for `eos.thermal_conductivity`.
@@ -4595,6 +4836,7 @@ static TP_FLASH_SAFT_CASES: &[TestCase] = &[TestCase {
         ("y", &[0.9784192439248908, 0.021580756075112423]),
         ("k", &[5.995400724282181, 0.025789345710502048]),
     ],
+    expected_strings: &[("phase", "two_phase")],
 }];
 
 static TP_FLASH_SAFT_INNER: ModelAlgorithm = ModelAlgorithm {
@@ -4718,6 +4960,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
                 &[0.9060977631578389, 0.08159861613379736, 0.02068639206922768],
             ),
         ],
+        expected_strings: &[("seeded", "stability_seeded")],
     },
     TestCase {
         id: "co2_methane_decane_three_phase_at_180_k_2_bar",
@@ -4751,6 +4994,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
                 ],
             ),
         ],
+        expected_strings: &[("seeded", "stability_seeded")],
     },
     TestCase {
         id: "n2_co2_octane_three_phase_at_180_k_10_bar_diverges",
@@ -4776,6 +5020,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
                 &[0.9495405616635599, 0.07716944734261964, 0.02175230239149613],
             ),
         ],
+        expected_strings: &[("seeded", "stability_seeded")],
     },
     TestCase {
         id: "n2_co2_octane_two_phase_at_190_k_1_bar",
@@ -4795,6 +5040,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
             ("beta", &[0.39215551375730107, 0.6078444862426989]),
             ("z_factor", &[0.9856288252087966, 0.00860682835745079]),
         ],
+        expected_strings: &[("seeded", "two_phase_flash")],
     },
     TestCase {
         id: "methane_butane_dense_liquid_at_370_k_40_bar",
@@ -4814,6 +5060,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
             ("beta", &[0.9901437619923031, 0.009856238007696907]),
             ("z_factor", &[0.7452177737328194, 0.1588137538319941]),
         ],
+        expected_strings: &[("seeded", "two_phase_flash")],
     },
     TestCase {
         id: "methane_butane_two_phase_at_360_k_40_bar",
@@ -4833,6 +5080,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
             ("beta", &[0.8139457129518551, 0.18605428704814486]),
             ("z_factor", &[0.7784548921212494, 0.15404179516968172]),
         ],
+        expected_strings: &[("seeded", "two_phase_flash")],
     },
     TestCase {
         id: "methane_butane_two_phase_at_250_k_50_bar",
@@ -4852,6 +5100,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
             ("beta", &[0.21848944858961394, 0.7815105514103861]),
             ("z_factor", &[0.7871775377076164, 0.1786351934671386]),
         ],
+        expected_strings: &[("seeded", "two_phase_flash")],
     },
 ];
 
@@ -4907,6 +5156,7 @@ static TS_FLASH_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("P", 1000000.0), ("beta", 0.8356955)],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 static TS_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
@@ -4973,6 +5223,7 @@ static TU_FLASH_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("P", 1000000.0), ("beta", 0.8356955)],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 static TU_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
@@ -5056,6 +5307,7 @@ static TV_FLASH_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("P", 1000000.0), ("beta", 0.8356955)],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 static TV_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
@@ -5140,6 +5392,7 @@ static TV_FRACTION_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("P", 10750635.8)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "ninety_per_cent_of_the_volume_is_gas",
@@ -5156,6 +5409,7 @@ static TV_FRACTION_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("P", 4982832.4)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -5245,6 +5499,7 @@ static UMR_CPA_PHASE_CASES: &[TestCase] = &[
             ("s_res", -3.30552825032943),
         ],
         expected_vectors: &[("ln_phi", &[-0.143929410664324, -0.522958472994785])],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_water_umr_cpa_liquid",
@@ -5261,6 +5516,7 @@ static UMR_CPA_PHASE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("z_factor", 0.0499704749585408)],
         expected_vectors: &[("ln_phi", &[6.43308581534347, -7.65091591105412])],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_water_umr_cpa_flashed_gas",
@@ -5277,6 +5533,7 @@ static UMR_CPA_PHASE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("z_factor", 0.865633455342091)],
         expected_vectors: &[("ln_phi", &[-0.146643147716477, -0.254793979654883])],
+        expected_strings: &[],
     },
 ];
 
@@ -5324,6 +5581,7 @@ static UNIFAC_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[0.42003577558486405, 0.4424161881344282]),
             ("gamma", &[1.522016005657412, 1.556463387246744]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "methanol_water_equimolar_at_298_15_k",
@@ -5343,6 +5601,7 @@ static UNIFAC_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[0.109465434560284, 0.18285472222380844]),
             ("gamma", &[1.1156815062468024, 1.200639969105366]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -5390,6 +5649,7 @@ static UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[0.109465434560284, 0.18285472222380844]),
             ("gamma", &[1.1156815062468024, 1.200639969105366]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_methane_equimolar_at_250_k",
@@ -5409,6 +5669,7 @@ static UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[0.8381920105028207, 0.9674010863177143]),
             ("gamma", &[2.3121827932351917, 2.631097570496052]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_methane_equimolar_at_400_k",
@@ -5428,6 +5689,7 @@ static UNIFAC_PSRK_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[0.887381334379193, 0.8684378121136531]),
             ("gamma", &[2.4287612030473236, 2.3831849613326668]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -5475,6 +5737,7 @@ static UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[0.1301457842119748, 0.21058484854616538]),
             ("gamma", &[1.138994418625428, 1.23439978580613]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "methanol_water_umrmc_at_the_reference_temperature",
@@ -5494,6 +5757,7 @@ static UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[0.12324232727606305, 0.1682814563408821]),
             ("gamma", &[1.131158498295627, 1.1832696025168774]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_methane_umr_at_350_k",
@@ -5513,6 +5777,7 @@ static UNIFAC_UMRPRU_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[-0.11770245129283669, -1.015316464175723]),
             ("gamma", &[0.8889605223204923, 0.36228776059156376]),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -5559,6 +5824,7 @@ static UNIQUAC_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[TestCase {
         ("ln_gamma", &[0.1976568551186017, 0.29402288919456004]),
         ("gamma", &[1.2185441848728196, 1.3418146163712932]),
     ],
+    expected_strings: &[],
 }];
 
 /// Registry entry for `eos.uniquac_activity_coefficients`.
@@ -5632,6 +5898,7 @@ static VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
                 ],
             ),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_nitric_binary_at_220_k",
@@ -5651,6 +5918,7 @@ static VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[-2.220998639658006, -2.814133626811252]),
             ("gamma", &[0.10850070160055082, 0.05995664107111809]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_sulfuric_binary_at_290_k",
@@ -5670,6 +5938,7 @@ static VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[-2.625566201906584, -7.533366108703209]),
             ("gamma", &[0.07239875311505023, 0.0005349345747660633]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "nitric_sulfuric_binary_at_273_15_k",
@@ -5689,6 +5958,7 @@ static VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
             ("ln_gamma", &[-0.3810666728665312, -0.22769455391617024]),
             ("gamma", &[0.6831323417100698, 0.7963674700147698]),
         ],
+        expected_strings: &[],
     },
     TestCase {
         id: "water_with_a_dissolved_carrier_gas_at_250_k",
@@ -5714,6 +5984,7 @@ static VAN_LAAR_ACID_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[
                 &[0.18817512674335166, 0.07432382423947895, 1000000000000.0],
             ),
         ],
+        expected_strings: &[],
     },
 ];
 
@@ -5758,6 +6029,7 @@ static VH_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("P", 1000000.0), ("T", 400.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "two_phase_round_trip",
@@ -5774,6 +6046,7 @@ static VH_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("P", 2500000.0), ("T", 330.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "subcooled_liquid_round_trip",
@@ -5790,6 +6063,7 @@ static VH_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("P", 5000000.0), ("T", 300.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -5874,6 +6148,7 @@ static VISCOSITY_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("mu", 0.00027260541411752915)],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 /// Registry entry for `eos.viscosity`.
@@ -5917,6 +6192,7 @@ static VS_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("P", 1000000.0), ("T", 400.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "two_phase_round_trip",
@@ -5933,6 +6209,7 @@ static VS_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("P", 2500000.0), ("T", 330.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "subcooled_liquid_round_trip",
@@ -5949,6 +6226,7 @@ static VS_FLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("P", 5000000.0), ("T", 300.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -6016,6 +6294,7 @@ static VU_FLASH_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[("P", 1000000.0), ("T", 400.0)],
     expected_vectors: &[],
+    expected_strings: &[],
 }];
 
 static VU_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
@@ -6087,6 +6366,7 @@ static VU_FLASH_SINGLE_COMP_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 300.082995991047), ("beta", 0.5)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "propane_at_10_bar_a_quarter_vapour",
@@ -6107,6 +6387,7 @@ static VU_FLASH_SINGLE_COMP_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 300.082995991047), ("beta", 0.25)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "propane_at_20_bar_half_vapour",
@@ -6127,6 +6408,7 @@ static VU_FLASH_SINGLE_COMP_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 330.189683051239), ("beta", 0.5)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "n_butane_at_2_bar_half_vapour",
@@ -6147,6 +6429,7 @@ static VU_FLASH_SINGLE_COMP_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("T", 292.041483332711), ("beta", 0.5)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -6233,6 +6516,7 @@ static WATER_PHASE_CASES: &[TestCase] = &[
             ("g", -78.58921729099703),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "subcooled_liquid_5_mpa",
@@ -6257,6 +6541,7 @@ static WATER_PHASE_CASES: &[TestCase] = &[
             ("g", -5625.54464644975),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "superheated_vapour_0_1_mpa",
@@ -6281,6 +6566,7 @@ static WATER_PHASE_CASES: &[TestCase] = &[
             ("g", -4874.259390774879),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "superheated_vapour_10_mpa",
@@ -6305,6 +6591,7 @@ static WATER_PHASE_CASES: &[TestCase] = &[
             ("g", -11627.04395626384),
         ],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -6374,6 +6661,7 @@ static WILKE_VISCOSITY_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("mu", 9.543074369236108e-06)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_butane_propane_at_350_k",
@@ -6398,6 +6686,7 @@ static WILKE_VISCOSITY_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("mu", 1.0826970028242582e-05)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "methane_rich_propane_at_300_k",
@@ -6422,6 +6711,7 @@ static WILKE_VISCOSITY_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("mu", 1.0447753047985489e-05)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -6468,6 +6758,7 @@ static WILSON_ACTIVITY_COEFFICIENTS_CASES: &[TestCase] = &[TestCase {
         ("ln_gamma", &[0.19314718055973779, 0.49999935609153545]),
         ("gamma", &[1.213061319425015, 1.648720209074888]),
     ],
+    expected_strings: &[],
 }];
 
 /// Registry entry for `eos.wilson_activity_coefficients`.
@@ -6506,6 +6797,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PARAHYDROGEN_SOLID_PHASE_SPEC,
     &PCSAFT_RAHMAT_PHASE_SPEC,
     &PH_FLASH_SPEC,
+    &PITZER_PHASE_SPEC,
     &PR_CPA_PHASE_SPEC,
     &PS_FLASH_SPEC,
     &PT_FLASH_SPEC,
