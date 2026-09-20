@@ -1,0 +1,99 @@
+"""The PHREEQC Pitzer catalogue and the rule that chooses it, as Python carries them.
+
+The Python mirror of the Rust tests in `crates/azoth-eos/src/pitzer_catalog.rs`, asserting
+the same constants. The two measured cases - a brine the catalogue covers and one it does
+not - are reproduced without a `SystemPitzer`, because the rule is about a phase's
+*topology* rather than its state.
+"""
+
+from __future__ import annotations
+
+import pytest
+
+from azoth.eos.reference import _pitzer_catalog as catalog
+
+
+def test_the_catalogue_is_read() -> None:
+    """The probe's own reading: `b0(Na+,Cl-) = 0.07534` under PHREEQC."""
+    sodium_chloride = catalog.find("B0", ["Na+", "Cl-"])
+    assert sodium_chloride is not None
+    assert sodium_chloride[0] == pytest.approx(0.07534, abs=1.0e-12)
+
+    # **Either order round**, because the key is sorted - the catalogue writes `Cl- Na+`
+    # and a caller holds the cation first.
+    assert catalog.find("B0", ["Cl-", "Na+"]) == sodium_chloride
+
+    # **And PHREEQC's spelling of a charge is canonicalised**, so a caller holding NeqSim's
+    # `Ba++` finds the row the catalogue wrote as `Ba+2`.
+    assert catalog.find("B0", ["Ba++", "Cl-"]) is not None
+    assert catalog.canonical_species("Ba+2") == "Ba++"
+    assert catalog.canonical_species("SO4-2") == "SO4--"
+    assert catalog.canonical_species("Fe+3") == "Fe+++"
+    # `+3` is tested before `+2`, or `Fe+3` would come back `Fe+` with a stray `3`.
+    assert catalog.canonical_species("B(OH)4-") == "B(OH)4-"
+
+    # The families the enum declares and the file does not carry are empty, which is a
+    # different answer from a family that does not exist.
+    for family in ("MU", "ETA", "ALPHAS"):
+        assert catalog.family_rows(family) == ()
+    assert len(catalog.family_rows("B0")) == 54
+    assert sum(len(catalog.family_rows(f)) for f in catalog.FAMILY_SPECIES) == 268
+
+
+def _species(
+    ions: list[tuple[str, float]], neutrals: list[tuple[str, str]]
+) -> list[catalog.Species]:
+    out = [catalog.Species("water", 0.9, 0.0, "H2O", False)]
+    out += [catalog.Species(name, 0.01, 0.0, formula, False) for name, formula in neutrals]
+    out += [catalog.Species(name, 0.05, charge, "", False) for name, charge in ions]
+    return out
+
+
+def test_an_ion_free_phase_falls_back_before_the_catalogue_is_consulted() -> None:
+    """**Why `water + CO2` takes the CSV** although the catalogue carries `CO2|CO2`.
+
+    `tryApplyCompletePhreeqcPitzerCatalog` returns `false` on an empty ion list before it
+    looks at the catalogue at all, so this is not a coverage question.
+    """
+    assert catalog.find("LAMBDA", ["CO2", "CO2"]) is not None
+    assert catalog.select_dataset(_species([], [("CO2", "CO2")])) == ("legacy", "NoIons")
+
+
+def test_the_coverage_rule_decides_the_dataset() -> None:
+    """A brine the catalogue covers takes it; one it does not falls back."""
+    assert catalog.select_dataset(_species([("Na+", 1.0), ("Cl-", -1.0)], [])) == ("phreeqc", None)
+
+    # **Hydrogen carbonate is the measured case**: `B0` and `B1` exist, `C0` does not, and
+    # the whole dataset is abandoned rather than completed from the other one.
+    assert catalog.find("B0", ["Na+", "HCO3-"]) is not None
+    assert catalog.find("B1", ["Na+", "HCO3-"]) is not None
+    assert catalog.find("C0", ["Na+", "HCO3-"]) is None
+    assert catalog.select_dataset(_species([("Na+", 1.0), ("HCO3-", -1.0)], [])) == (
+        "legacy",
+        "C0 for Na+, HCO3-",
+    )
+
+
+def test_an_optional_family_does_not_gate_the_selection() -> None:
+    """`B2` is looked up rather than required, so its presence is not a gate."""
+    assert catalog.find("B2", ["Mg++", "SO4--"]) is not None
+    assert catalog.select_dataset(_species([("Mg++", 2.0), ("SO4--", -2.0)], [])) == (
+        "phreeqc",
+        None,
+    )
+
+
+def test_a_hydrocarbon_is_excluded_from_the_neutral_topology() -> None:
+    """The formula test is what the method exists for: methane keeps the type `normal`."""
+    methane = catalog.Species("methane", 0.1, 0.0, "CH4", False)
+    assert catalog.is_hydrocarbon(methane)
+    # `CO2` has an oxygen, so it is an active neutral - and the catalogue covers it.
+    assert not catalog.is_hydrocarbon(catalog.Species("CO2", 0.1, 0.0, "CO2", False))
+    assert catalog.is_hydrocarbon(catalog.Species("default", 0.1, 0.0, "", True))
+
+
+def test_a_trace_component_does_not_enter_the_topology() -> None:
+    """Lithium has no catalogue rows, so if the trace entry counted this would fall back."""
+    mixture = _species([("Na+", 1.0), ("Cl-", -1.0)], [])
+    mixture.append(catalog.Species("Li+", 1.0e-25, 1.0, "", False))
+    assert catalog.select_dataset(mixture) == ("phreeqc", None)

@@ -44,7 +44,7 @@ them (35 files, 1,497 columns) is listed with what was done with it and a reason
 `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (35 vendored file(s), 1497 column(s), 1464 carried of which 1039 read, 0 not-vendored entr(ies))
+check_manifest: OK (36 vendored file(s), 1497 column(s), 1464 carried of which 1039 read, 0 not-vendored entr(ies))
   425  carried, nothing reads it yet
   1104  carried with no unit NeqSim states (neqsim-internal)
   421  not-ported

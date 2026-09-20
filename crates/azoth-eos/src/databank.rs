@@ -70,6 +70,14 @@ const PITZER_PARAMETERS_CSV: &str = include_str!("../../../data/components/Pitze
 /// The compiled salt table, generated from NeqSim's `COMPSALT.csv`.
 const COMPSALT_CSV: &str = include_str!("../../../data/components/COMPSALT.csv");
 
+/// The compiled PHREEQC Pitzer catalogue.
+///
+/// `PhasePitzer`'s **default** parameters, ahead of `PitzerParameters.csv`'s 30 rows: the
+/// selection between them is `crate::pitzer_catalog`'s, and the two disagree on pairs they
+/// share. `pub(crate)` because the catalogue's own module reads it and nothing else does.
+pub(crate) const PITZER_PHREEQC_CSV: &str =
+    include_str!("../../../data/components/PitzerPhreeqc.csv");
+
 /// Repo-relative path of the component table, which is how Python addresses the same
 /// file. A constant rather than a string restated at the call site for the reason the
 /// whole databank exists: two copies of a path can disagree.
