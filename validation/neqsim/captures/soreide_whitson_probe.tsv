@@ -1,16 +1,32 @@
 the shipped test's own mixture:
   N2 CO2 C1 C2 water                     ok   phase[1] = PhaseSoreideWhitson
+        kij(nitrogen  ,CO2       ) = 0.000000000
+        kij(nitrogen  ,methane   ) = 0.03110000000
+        kij(nitrogen  ,ethane    ) = 0.05150000000
+        kij(CO2       ,methane   ) = 0.1070000000
+        kij(CO2       ,ethane    ) = 0.1322000000
+        kij(methane   ,ethane    ) = 0.002600000000
 
 the six pairs whose row carries a comma:
   CO2 + propane                          ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,propane   ) = 0.1018000000
   CO2 + n-butane                         ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,n-butane  ) = 0.1474000000
   CO2 + n-pentane                        ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,n-pentane ) = 0.1278000000
   CO2 + n-hexane                         ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,n-hexane  ) = 0.1200000000
   CO2 + n-heptane                        ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,n-heptane ) = 0.1099999910
   CO2 + mercury                          ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,mercury   ) = 0.3690000000
 
 and neighbours whose row does not:
   CO2 + methane                          ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,methane   ) = 0.1070000000
   CO2 + ethane                           ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,ethane    ) = 0.1322000000
   CO2 + n-octane                         ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,n-octane  ) = 0.3012000000
   CO2 + nC10                             ok   phase[1] = PhaseSoreideWhitson
+        kij(CO2       ,nC10      ) = 0.000000000
