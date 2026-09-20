@@ -61,6 +61,16 @@ public class FreezingProbe {
       // rather than only that their difference is zero: a port whose solid is 3 J/mol off and
       // whose fluid compensates would reproduce the temperature and not the physics.
       row("g_fluid_J_per_mol", molarGibbs(system.getPhase(0)));
+      // The fluid's whole property set, for the same reason as the solid's: the calibration
+      // the freezing operation applies needs the liquid's Gibbs energy *and* its entropy at
+      // the triple point, so a port that has one right and the other wrong would still land
+      // on a temperature.
+      row("fluid_v", system.getPhase(0).getMolarVolume());
+      row("fluid_u_J_per_mol", molarProperty(system.getPhase(0), "u"));
+      row("fluid_h_J_per_mol", molarProperty(system.getPhase(0), "h"));
+      row("fluid_s_J_per_molK", molarProperty(system.getPhase(0), "s"));
+      row("fluid_cv_J_per_molK", molarProperty(system.getPhase(0), "cv"));
+      row("fluid_cp_J_per_molK", molarProperty(system.getPhase(0), "cp"));
       row("solid_phase_index", solidPhaseIndex(system));
       row("g_solid_J_per_mol", molarGibbs(solidPhase(system)));
       // The solid's whole property set, because the Gibbs energy is a rearrangement of the

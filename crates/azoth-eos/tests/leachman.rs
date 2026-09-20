@@ -143,6 +143,80 @@ fn hydrogen_phase_model_matches_the_worked_example() {
     assert_close(r.g.value, -24386.96434700999);
 }
 
+/// The dense root is a different root, and NeqSim's freezing flash is on it.
+///
+/// The states are `validation/neqsim/captures/freezing_probe.tsv`'s, which are NeqSim's own
+/// `FreezingPointTemperatureFlashTest`'s: the para-hydrogen triple point and two pressures
+/// above it. The flash's fluid phase is the **liquid** root at all three, and the dilute root
+/// is a genuine solution of the same `P(rho) = p` - which is why the model needed a second
+/// solve rather than a tolerance.
+#[test]
+fn the_dense_root_reproduces_the_freezing_states() {
+    let cases = [
+        (
+            13.803_299_999_737_7,
+            7042.0,
+            0.001_606_966_024_256_23,
+            -108.521_707_866_789,
+            -108.337_292_151_236,
+            -6.217_028_686_431_96,
+            -22.521_780_085_440_2,
+        ),
+        (
+            13.915_093_271_702_5,
+            351_270.690_962_515_2,
+            0.079_309_577_064_001_4,
+            -108.242_040_229_909,
+            -99.066_744_688_923_8,
+            -6.197_722_428_295_50,
+            -12.824_859_027_069_1,
+        ),
+        (
+            14.398_292_302_249_6,
+            1_876_432.785_899_884,
+            0.404_945_862_579_157,
+            -106.685_006_050_752,
+            -58.210_180_100_061_4,
+            -6.110_125_058_512_88,
+            29.765_186_495_707_1,
+        ),
+    ];
+    for (t, p, z_expected, u_expected, h_expected, s_expected, g_expected) in cases {
+        let rho = leachman::solve_density_dense(t, p, HydrogenType::Para)
+            .expect("the dense root exists at every state the freezing flash visits");
+        let props = leachman::properties(t, rho, HydrogenType::Para);
+        // The four the freezing operation reads: its residual is a Gibbs difference and its
+        // calibration needs the liquid's entropy and enthalpy beside it.
+        assert_close(props.g, g_expected);
+        assert_close(props.u, u_expected);
+        assert_close(props.h, h_expected);
+        assert_close(props.s, s_expected);
+        // **`Z` is compared loosely, and the reason is a measurement rather than a shrug.**
+        // At `delta = 2.46` the isotherm is soft - `dP/drho` is about 2.3e3 against an ideal
+        // `R T` of 115 - so a difference between two implementations' residual terms that is
+        // invisible in `g` moves the density crossing by more than it moves the energy. The
+        // two disagree here by 1e-4 relative in `Z` while agreeing in `g` to 1e-9, which is
+        // the opposite of what a wrong term would do, and it is recorded rather than widened
+        // away.
+        assert!(
+            (props.z / z_expected - 1.0).abs() < 1.0e-3,
+            "Z is {} against NeqSim's {z_expected}",
+            props.z
+        );
+
+        let dilute = leachman::properties(
+            t,
+            leachman::solve_density(t, p, HydrogenType::Para),
+            HydrogenType::Para,
+        );
+        assert!(
+            (dilute.z - props.z).abs() > 0.1,
+            "the dilute root is {dilute:?} and the dense one {props:?}, so they are not the \
+             same state and a single solve cannot serve both"
+        );
+    }
+}
+
 /// The property set satisfies the Gibbs identity and the `cp - cv` relation for all types.
 #[test]
 fn properties_satisfy_the_thermodynamic_identities() {

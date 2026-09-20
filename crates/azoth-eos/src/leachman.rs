@@ -17,6 +17,46 @@ pub const R: f64 = 8.31451;
 /// The molar mass of hydrogen, kg/mol.
 pub const MOLAR_MASS: f64 = 0.002_015_88;
 
+/// The densest reduced density the dense-root solve will consider.
+///
+/// A guard rather than a physical bound: the residual's exponential and Gaussian terms are
+/// fitted to the fluid to about `delta = 3`, and the solve expands its bracket from the dense
+/// side, so without a ceiling a state with no dense root would walk into a region where the
+/// equation's own terms overflow instead of into an answer. The densest state this is reached
+/// at is `delta = 2.46` - para-hydrogen at 14.4 K and 18.8 bar - so four leaves room.
+const MAXIMUM_REDUCED_DENSITY: f64 = 4.0;
+
+/// The dilute end of the same search, as a reduced density.
+const MINIMUM_REDUCED_DENSITY: f64 = 1.0e-3;
+
+/// The bracket expansion, in log density. Ten per cent a step, as the solid volume solve
+/// uses.
+const DENSITY_EXPANSION: f64 = 0.095_310_2;
+
+/// How many steps the bracket may take, and how many bisections after it.
+const MAXIMUM_BRACKET_STEPS: usize = 200;
+const MAXIMUM_BISECTION_STEPS: usize = 200;
+
+/// Which root of the isotherm a density solve lands on.
+///
+/// A pure fluid's isotherm crosses a pressure up to three times below the critical
+/// temperature: a dilute root, the mechanically unstable middle one, and a dense root. Above
+/// it there is one, and both selections find it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DensityRoot {
+    /// The dilute root, by Newton from the ideal-gas guess.
+    Gas,
+    /// The dense root, by bracketing from the dense side downward.
+    Liquid,
+}
+
+/// The pressure a state carries at a molar density, minus the one asked for.
+fn pressure_residual(t: f64, rho: f64, p: f64, ht: HydrogenType) -> f64 {
+    let delta = rho / ht.rhoc();
+    let res = residual(delta, ht.tc() / t, ht);
+    rho * R * t * (1.0 + delta * res.alpha_delta) - p
+}
+
 /// The hydrogen spin-isomer the equation is parameterised for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HydrogenType {
@@ -416,6 +456,11 @@ pub fn properties(t: f64, rho: f64, ht: HydrogenType) -> Properties {
 
 /// Solve `P(rho) = p` for the molar density by Newton's method from the ideal-gas guess.
 /// `p` in Pa, `rho` in mol/m³.
+///
+/// This finds the **dilute** root: Newton from `p/(R T)` follows whichever branch that guess
+/// is on, and for a compressed liquid that is not the liquid's. See
+/// [`solve_density_dense`] for the other, and [`DensityRoot`] for how a caller states which
+/// it wants.
 #[must_use]
 pub fn solve_density(t: f64, p: f64, ht: HydrogenType) -> f64 {
     let mut rho = p / (R * t);
@@ -433,4 +478,73 @@ pub fn solve_density(t: f64, p: f64, ht: HydrogenType) -> f64 {
         }
     }
     rho
+}
+
+/// Solve `P(rho) = p` for the molar density on the **dense** root, or `None` where the state
+/// has none within the fitted range.
+///
+/// **It is not the solve above and the two do not agree where both are defined.** Below the
+/// critical temperature the isotherm crosses a pressure three times, and the dilute root is
+/// as much a solution of `P(rho) = p` as the dense one: para-hydrogen at 14.4 K and 18.8 bar
+/// has the dilute root at `Z = 1.006` and the dense root at `Z = 0.405`, and a state whose
+/// pressure is above the saturation line is the dense one. Newton from the ideal-gas guess
+/// reaches the first and stops.
+///
+/// So this brackets **from the dense side downward**: it starts at the ceiling, where the
+/// pressure is above any state the equation is asked for, and walks the log density down
+/// until the residual changes sign. Walking up from a dilute start would meet the vapour's
+/// crossing first, which is the root this exists not to return. The bracket is then bisected,
+/// which needs no derivative and cannot leave the interval.
+///
+/// **The refusal is a `None`, not a panic**: a pressure above what the equation gives at the
+/// ceiling, or a search that reaches the dilute end without a sign change, means the dense
+/// root is outside the range this equation is fitted to.
+#[must_use]
+pub fn solve_density_dense(t: f64, p: f64, ht: HydrogenType) -> Option<f64> {
+    let ceiling = (MAXIMUM_REDUCED_DENSITY * ht.rhoc()).ln();
+    let mut upper = ceiling;
+    let mut upper_residual = pressure_residual(t, upper.exp(), p, ht);
+    if !upper_residual.is_finite() || upper_residual < 0.0 {
+        return None;
+    }
+
+    let mut lower = upper - DENSITY_EXPANSION;
+    let mut lower_residual = pressure_residual(t, lower.exp(), p, ht);
+    let mut bracketed = false;
+    for _ in 0..MAXIMUM_BRACKET_STEPS {
+        if lower_residual.is_finite() && lower_residual * upper_residual < 0.0 {
+            bracketed = true;
+            break;
+        }
+        upper = lower;
+        upper_residual = lower_residual;
+        lower -= DENSITY_EXPANSION;
+        if lower.exp() <= MINIMUM_REDUCED_DENSITY * ht.rhoc() {
+            break;
+        }
+        lower_residual = pressure_residual(t, lower.exp(), p, ht);
+    }
+    if !bracketed {
+        return None;
+    }
+
+    // The residual rises with density on the dense branch, so a positive one means the trial
+    // is above the root. Bisection in log density, which is monotone in the same direction.
+    let (mut lo, mut hi) = (lower, upper);
+    for _ in 0..MAXIMUM_BISECTION_STEPS {
+        let mid = 0.5 * (lo + hi);
+        if hi - lo < 1.0e-14 {
+            break;
+        }
+        let trial = pressure_residual(t, mid.exp(), p, ht);
+        if !trial.is_finite() {
+            return None;
+        }
+        if trial > 0.0 {
+            hi = mid;
+        } else {
+            lo = mid;
+        }
+    }
+    Some((0.5 * (lo + hi)).exp())
 }
