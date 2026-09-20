@@ -296,6 +296,29 @@ def _soave_kappa(alpha: str, omega: float) -> tuple[float, tuple[Warning, ...]]:
     return pr_result.kappa, pr_result.warnings
 
 
+def _soave_ab(
+    cubic: Cubic,
+    kappa: float,
+    reduced_temperature: float,
+    reduced_pressure: float,
+    warnings: list[Warning],
+) -> tuple[float, float, float, float]:
+    """The reduced parameters of the Soave form at one coefficient."""
+    ab = (
+        pr_alpha_ab(kappa, reduced_temperature, reduced_pressure)
+        if cubic.name == "pr"
+        else srk_alpha_ab(kappa, reduced_temperature, reduced_pressure)
+    )
+    warnings.extend(ab.warnings)
+    term = Soave(kappa=kappa)
+    return (
+        ab.a_reduced,
+        ab.b_reduced,
+        term.psi(reduced_temperature),
+        term.psi_t(reduced_temperature),
+    )
+
+
 def _non_soave(
     cubic: Cubic, term: Any, reduced_temperature: float, reduced_pressure: float
 ) -> tuple[float, float, float, float]:
@@ -521,23 +544,32 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
                 reduced_temperature,
                 reduced_pressure,
             )
+        elif mixture.alpha == "srk_fitted":
+            # **The coefficient is supplied rather than derived**, which is what makes this
+            # a variant of its own rather than a flag on ``srk``: there is no correlation to
+            # fall back to, so a component without one is refused rather than given Soave's
+            # default for an acentric factor nobody stated.
+            if not component.alpha_params:
+                raise InvalidInputError(
+                    "alpha_params",
+                    f"component {index} takes the fitted Soave alpha and carries no coefficient; "
+                    "``alpha_params[0]`` is where it is read from, and "
+                    "``eos.tbp_fraction_properties`` is what gives a cut its own",
+                )
+            a_reduced, b_reduced, psi_value, psi_t_value = _soave_ab(
+                mixture.cubic,
+                component.alpha_params[0],
+                reduced_temperature,
+                reduced_pressure,
+                warnings,
+            )
         else:
             # The kappa correlation belongs to the alpha term; the Omega to the cubic.
             kappa_value, kappa_warnings = _soave_kappa(mixture.alpha, component.omega)
             warnings.extend(kappa_warnings)
-            if mixture.cubic.name == "pr":
-                pr_ab = pr_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)
-                warnings.extend(pr_ab.warnings)
-                a_reduced = pr_ab.a_reduced
-                b_reduced = pr_ab.b_reduced
-            else:
-                srk_ab = srk_alpha_ab(kappa_value, reduced_temperature, reduced_pressure)
-                warnings.extend(srk_ab.warnings)
-                a_reduced = srk_ab.a_reduced
-                b_reduced = srk_ab.b_reduced
-            term = Soave(kappa=kappa_value)
-            psi_value = term.psi(reduced_temperature)
-            psi_t_value = term.psi_t(reduced_temperature)
+            a_reduced, b_reduced, psi_value, psi_t_value = _soave_ab(
+                mixture.cubic, kappa_value, reduced_temperature, reduced_pressure, warnings
+            )
         # The alpha term's own two derivatives, so the form lives in one place rather
         # than being restated per call site.
         a.append(a_reduced)

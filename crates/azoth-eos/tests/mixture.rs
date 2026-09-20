@@ -920,6 +920,80 @@ fn the_state_derivatives_are_the_fugacity_coefficients_own() {
 /// the whole matrix - it couples all `N**2` entries - so a single wrong term cannot
 /// satisfy it, and it holds at any state rather than at the one a difference is taken
 /// at. It is also the test a matrix built by differencing the raw vector fails.
+/// **The fitted Soave coefficient is the one a pseudo-component carries.**
+///
+/// NeqSim's `AttractiveTermSrk.setm` puts a cut's own `m` on its attractive term, and its
+/// TBP machinery does that for every pseudo-component - so a mixture read through
+/// `eos.srk_kappa`'s acentric-factor correlation is a different fluid. Measured, a cut at
+/// `mw = 150` g/mol has a fitted `m` of `1.388519025` where the correlation gives `1.53`
+/// for its acentric factor: the two differ by ten per cent, which is not a rounding.
+///
+/// The reduction this is checked by: at one component the mixture's attraction must be the
+/// registered `eos.srk_alpha_ab` at the coefficient the component carries, whatever that
+/// coefficient is - and the two variants must then disagree.
+#[test]
+fn the_fitted_soave_coefficient_is_the_components_own() {
+    use azoth_eos::mixture::Component;
+    use azoth_eos::{srk_alpha_ab, tbp_fraction_properties};
+
+    // A `C19`-scale cut, whose fitted coefficient the correlation gives.
+    let cut = tbp_fraction_properties(0.200, 800.0).expect("the cut computes");
+    let fitted = cut.attraction_exponent;
+    assert!((fitted - 1.564_540_560).abs() < 1e-9, "m = {fitted}");
+
+    let component = Component::new(cut.tc, cut.pc, cut.acentric_factor)
+        .expect("the cut's constants are positive")
+        .with_molar_mass(Some(0.200))
+        .with_alpha_params(vec![fitted]);
+    let mixture = Mixture::new(vec![component.clone()], vec![0.0])
+        .expect("one component and a 1x1 matrix")
+        .with_cubic(Cubic::Srk)
+        .with_alpha(Alpha::SrkFitted);
+
+    let (t, p) = (450.0, 1.0e7);
+    let reduced = mixture
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("reduces");
+    let expected = srk_alpha_ab(fitted, t / cut.tc.value, p / cut.pc.value).expect("alpha");
+    assert!((reduced.a[0] - expected.a_reduced).abs() < 1e-14);
+    assert!((reduced.a[0] / expected.a_reduced - 1.0).abs() < 1e-14);
+
+    // And the correlation would have given a different fluid: `kappa(omega)` for this cut
+    // is `1.911`, not `1.5645`, so the two variants' attractions differ by a few per cent.
+    let correlated = Mixture::new(
+        vec![component.clone().with_alpha_params(Vec::new())],
+        vec![0.0],
+    )
+    .expect("one component")
+    .with_cubic(Cubic::Srk)
+    .with_alpha(Alpha::Srk);
+    let other = correlated
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect("reduces");
+    let relative = (reduced.a[0] - other.a[0]).abs() / other.a[0];
+    assert!(
+        relative > 0.01,
+        "the two alphas differ by only {relative}, so this is not the seam it claims"
+    );
+
+    // A component that takes the fitted alpha and carries no coefficient is refused rather
+    // than given Soave's default for an acentric factor nobody stated.
+    let bare = Mixture::new(
+        vec![Component::new(cut.tc, cut.pc, cut.acentric_factor).expect("positive")],
+        vec![0.0],
+    )
+    .expect("one component")
+    .with_cubic(Cubic::Srk)
+    .with_alpha(Alpha::SrkFitted);
+    let error = bare
+        .reduced_parameters(kelvins(t), pascals(p))
+        .expect_err("no coefficient, no alpha");
+    assert!(
+        matches!(error, azoth_core::AzothError::InvalidInput { .. }),
+        "{error:?}"
+    );
+}
+
 #[test]
 fn the_composition_derivative_obeys_gibbs_duhem() {
     let mixture = methane_butane();

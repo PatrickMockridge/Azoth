@@ -37,6 +37,20 @@ pub enum Alpha {
     Pr,
     /// Soave's `m`, from `eos.srk_kappa`.
     Srk,
+    /// Soave's form with the coefficient **supplied per component** rather than derived
+    /// from the acentric factor.
+    ///
+    /// This is NeqSim's `AttractiveTermSrk.setm`, which its TBP machinery calls on every
+    /// pseudo-component: `addTBPfraction` reads `eos.tbp_fraction_properties`'s
+    /// `m` and sets it on the component's attractive term, bypassing the correlation. It
+    /// matters because the two disagree - a cut at `mw = 150` g/mol has a fitted `m` of
+    /// `1.388519025` where `eos.srk_kappa` gives `1.53` for its acentric factor - so a
+    /// mixture read through the correlation is a different fluid.
+    ///
+    /// The coefficient is [`crate::mixture::Component::alpha_params`]'s first entry, in
+    /// the same slot the fitted correlations read theirs from; a component without one is
+    /// refused rather than given Soave's default.
+    SrkFitted,
     /// The 1978 Peng-Robinson `m`, from `eos.pr78_kappa`.
     Pr78,
     /// Twu's `m`, from `eos.twu_kappa`.
@@ -79,6 +93,7 @@ impl Alpha {
         match self {
             Alpha::Pr => "pr",
             Alpha::Srk => "srk",
+            Alpha::SrkFitted => "srk_fitted",
             Alpha::Pr78 => "pr78",
             Alpha::Twu => "twu",
             Alpha::TwuCoon => "twucoon",
@@ -103,6 +118,7 @@ impl std::str::FromStr for Alpha {
         match s {
             "pr" => Ok(Alpha::Pr),
             "srk" => Ok(Alpha::Srk),
+            "srk_fitted" => Ok(Alpha::SrkFitted),
             "pr78" => Ok(Alpha::Pr78),
             "twu" => Ok(Alpha::Twu),
             "twucoon" => Ok(Alpha::TwuCoon),
@@ -119,7 +135,7 @@ impl std::str::FromStr for Alpha {
             other => Err(format!(
                 "unknown alpha `{other}`; expected `pr`, `srk`, `pr78`, `twu`, `twucoon`, \
                  `gassem2001`, `danesh`, `schwartzentruber`, `mollerup`, `matcop`, \
-                 `matcop_pr`, `matcop_prumr`, `matcop_5prumr` or `delft1998`"
+                 `matcop_pr`, `matcop_prumr`, `matcop_5prumr`, `delft1998` or `srk_fitted`"
             )),
         }
     }

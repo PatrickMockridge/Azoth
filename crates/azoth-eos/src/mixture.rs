@@ -619,7 +619,7 @@ impl Mixture {
                             non_soave(&Soave { kappa: kappa.kappa })
                         }
                     }
-                    Alpha::Pr | Alpha::Srk | Alpha::Pr78 | Alpha::Twu => {
+                    Alpha::Pr | Alpha::Srk | Alpha::Pr78 | Alpha::Twu | Alpha::SrkFitted => {
                         let (kappa_value, kappa_warnings) = match self.alpha {
                             Alpha::Pr => {
                                 let kappa = pr_kappa(component.omega)?;
@@ -637,6 +637,26 @@ impl Mixture {
                                 let kappa = twu_kappa(component.omega)?;
                                 (kappa.kappa, kappa.warnings)
                             }
+                            // **The coefficient is supplied rather than derived**, which is
+                            // what makes this a variant of its own rather than a flag on
+                            // `Alpha::Srk`: there is no correlation to fall back to, so a
+                            // component without one is refused rather than given Soave's
+                            // default for an acentric factor nobody stated.
+                            Alpha::SrkFitted => (
+                                component.alpha_params.first().copied().ok_or_else(|| {
+                                    AzothError::invalid_input(
+                                        "alpha_params",
+                                        format!(
+                                            "component {index} takes the fitted Soave alpha \
+                                                 and carries no coefficient; `alpha_params[0]` \
+                                                 is where it is read from, and \
+                                                 `eos.tbp_fraction_properties` is what gives a \
+                                                 cut its own"
+                                        ),
+                                    )
+                                })?,
+                                Vec::new(),
+                            ),
                             _ => unreachable!("handled above"),
                         };
                         warnings.extend(kappa_warnings);

@@ -2588,6 +2588,7 @@ _ALPHAS: frozenset[str] = frozenset(
     {
         "pr",
         "srk",
+        "srk_fitted",
         "pr78",
         "twu",
         "twucoon",
