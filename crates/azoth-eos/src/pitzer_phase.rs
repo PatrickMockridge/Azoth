@@ -217,3 +217,194 @@ mod tests {
         }
     }
 }
+
+/// The temperature both of NeqSim's Pitzer forms state their value at, in K.
+///
+/// `PitzerParameterDatasets.PHREEQC_REFERENCE_TEMPERATURE_K` and the `298.15` the
+/// Silvester form divides by are the same number, which is why one constant serves both.
+pub const REFERENCE_TEMPERATURE_K: f64 = 298.15;
+
+/// Within this many kelvin of the reference, the catalogue form returns its constant term
+/// unchanged rather than evaluating the polynomial.
+///
+/// `PitzerTemperatureFunction.REFERENCE_TOLERANCE_K`. It is a *branch* and not a rounding
+/// guard: at `298.1501 K` the six coefficients evaluate to `a0` plus about `1e-8`, and
+/// NeqSim returns exactly `a0`. Measured on the built phase, which is where the oracle for
+/// it lives.
+const REFERENCE_TOLERANCE_K: f64 = 1.0e-3;
+
+/// How a Pitzer parameter varies with temperature.
+///
+/// **The two datasets use different forms, and this is where that shows.** The PHREEQC
+/// catalogue carries six coefficients and evaluates a polynomial; `PitzerParameters.csv`
+/// carries two and evaluates Silvester and Pitzer's log form. NeqSim keeps them in one
+/// class behind two getters, so a pair knows which it is only by which dataset answered.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TemperatureForm {
+    /// The PHREEQC six-coefficient form `a0`..`a5`, from the vendored catalogue.
+    Catalog([f64; 6]),
+    /// Silvester and Pitzer's `value_25 + t1 (1/T - 1/Tr) + t2 ln(T/Tr)`, from the CSV.
+    ///
+    /// **Zero `t1` and `t2` is the flat case**, and NeqSim returns `value_25` for it
+    /// rather than evaluating the sum - which differs from the sum only in the last bit,
+    /// but differs, so the branch is reproduced.
+    Silvester { at_25: f64, t1: f64, t2: f64 },
+}
+
+impl TemperatureForm {
+    /// The parameter at a temperature.
+    #[must_use]
+    pub fn value_at(&self, t: f64) -> f64 {
+        match *self {
+            TemperatureForm::Catalog(a) => catalog_value(&a, t),
+            TemperatureForm::Silvester { at_25, t1, t2 } => {
+                if t1.abs() < 1.0e-20 && t2.abs() < 1.0e-20 {
+                    return at_25;
+                }
+                at_25
+                    + t1 * (1.0 / t - 1.0 / REFERENCE_TEMPERATURE_K)
+                    + t2 * (t / REFERENCE_TEMPERATURE_K).ln()
+            }
+        }
+    }
+}
+
+/// `PitzerTemperatureFunction.valueAt`, whose form is
+/// `a0 + a1(1/T - 1/Tr) + a2 ln(T/Tr) + a3(T - Tr) + a4(T^2 - Tr^2) + a5(1/T^2 - 1/Tr^2)`.
+fn catalog_value(a: &[f64; 6], t: f64) -> f64 {
+    if (t - REFERENCE_TEMPERATURE_K).abs() < REFERENCE_TOLERANCE_K {
+        return a[0];
+    }
+    let inverse = 1.0 / t;
+    let inverse_reference = 1.0 / REFERENCE_TEMPERATURE_K;
+    a[0] + a[1] * (inverse - inverse_reference)
+        + a[2] * (t / REFERENCE_TEMPERATURE_K).ln()
+        + a[3] * (t - REFERENCE_TEMPERATURE_K)
+        + a[4] * (t * t - REFERENCE_TEMPERATURE_K * REFERENCE_TEMPERATURE_K)
+        + a[5] * (inverse * inverse - inverse_reference * inverse_reference)
+}
+
+/// `PhasePitzer.getPitzerAlpha1`'s **bounded** form: `1.4` for a 2:2 pair, else `2.0`.
+///
+/// **Three call sites in NeqSim use an unbounded form instead** - `getGamma`,
+/// `getWaterGamma` and `phreeqcBinaryBprime` all test `|z| >= 1.5` with no upper bound,
+/// so a 3-valent ion gets `1.4` there and `2.0` here. The two agree for every charge the
+/// vendored data carries - the highest is `2` - so this is a latent inconsistency rather
+/// than a defect, and it is recorded rather than resolved. [`alpha1_as_used`] is what the
+/// activity coefficient is actually built from.
+#[must_use]
+pub fn alpha1(first_charge: f64, second_charge: f64) -> f64 {
+    let bounded = |z: f64| (1.5..2.5).contains(&z);
+    if bounded(first_charge.abs()) && bounded(second_charge.abs()) {
+        1.4
+    } else {
+        2.0
+    }
+}
+
+/// The `alpha1` the activity coefficient is actually built from, at the three sites that
+/// use the unbounded test. See [`alpha1`] for why both exist.
+#[must_use]
+pub fn alpha1_as_used(first_charge: f64, second_charge: f64) -> f64 {
+    if first_charge.abs() >= 1.5 && second_charge.abs() >= 1.5 {
+        1.4
+    } else {
+        2.0
+    }
+}
+
+/// `PhasePitzer.getPitzerAlpha2`: `12.0` when either ion is monovalent **or** the pair is
+/// 2:2, else `50.0`.
+///
+/// The 2:2 clause is not redundant with the monovalent one and is why `CaCl2`'s qualified
+/// `B2` row survives: that row is a 2:1 term with `alpha2 = 12`, and a 2:2-only branch
+/// would have discarded it.
+#[must_use]
+pub fn alpha2(first_charge: f64, second_charge: f64) -> f64 {
+    let (one, two) = (first_charge.abs(), second_charge.abs());
+    let monovalent = one < 1.5 || two < 1.5;
+    let two_two = (1.5..2.5).contains(&one) && (1.5..2.5).contains(&two);
+    if monovalent || two_two { 12.0 } else { 50.0 }
+}
+
+#[cfg(test)]
+mod parameter_tests {
+    use super::*;
+
+    /// **Both temperature forms against the built phase.**
+    ///
+    /// `validation/neqsim/PitzerArithmetic.java` prints each across temperature from a
+    /// live `SystemPitzer`, so these are NeqSim's numbers rather than a restatement of
+    /// its formula. The catalogue pair is `Na+/Cl-` (the PHREEQC six coefficients) and the
+    /// CSV pair is `Na+/HCO3-`, whose two coefficients are zero and which is therefore
+    /// flat.
+    #[test]
+    fn both_temperature_forms_match_neqsim() {
+        // Na+/Cl- from the PHREEQC catalogue: a0 = 0.07534, a1 = 9598.4, ... (the row
+        // `Cl-|Na+` of B0). The other coefficients come from the compiled table.
+        let catalogue =
+            crate::pitzer_catalog::find(crate::pitzer_catalog::Family::B0, &["Na+", "Cl-"])
+                .expect("the catalogue carries Na+/Cl-");
+        let form = TemperatureForm::Catalog(catalogue);
+
+        // At the reference the value is `a0`, and it stays `a0` inside the 1e-3 K window.
+        assert!((form.value_at(298.15) - 0.07534).abs() < 1.0e-15);
+        assert!(
+            (form.value_at(298.1501) - 0.07534).abs() < 1.0e-15,
+            "within the reference tolerance the constant term is returned unchanged"
+        );
+
+        // And outside it, the oracle's own column.
+        for (t, expected) in [
+            (273.15, 0.0493895679117),
+            (323.15, 0.0892387746618),
+            (373.15, 0.100154205617),
+        ] {
+            let got = form.value_at(t);
+            assert!(
+                (got - expected).abs() < 1.0e-12,
+                "beta0({t}) = {got}, and NeqSim gives {expected}"
+            );
+        }
+
+        // The CSV's flat case: `Na+/HCO3-` carries beta0_25 = 0.0277 with no temperature
+        // coefficients, so every temperature gives the same number.
+        let flat = TemperatureForm::Silvester {
+            at_25: 0.0277,
+            t1: 0.0,
+            t2: 0.0,
+        };
+        for t in [273.15, 298.15, 323.15, 373.15] {
+            assert_eq!(flat.value_at(t), 0.0277);
+        }
+    }
+
+    /// The two `alpha` functions, at the charges the vendored data carries.
+    #[test]
+    fn the_alpha_coefficients_follow_the_charge() {
+        // Monovalent against monovalent: alpha1 = 2.0, alpha2 = 12.0. The oracle prints
+        // exactly this for `Na+/Cl-`.
+        assert_eq!(alpha1_as_used(1.0, -1.0), 2.0);
+        assert_eq!(alpha2(1.0, -1.0), 12.0);
+
+        // A 2:2 pair: alpha1 = 1.4, alpha2 = 12.0 (the redundant-looking second clause).
+        assert_eq!(alpha1_as_used(2.0, -2.0), 1.4);
+        assert_eq!(alpha2(2.0, -2.0), 12.0);
+
+        // A 2:1 pair: alpha1 = 2.0, alpha2 = 12.0, which is what keeps CaCl2's B2 row.
+        assert_eq!(alpha1_as_used(2.0, -1.0), 2.0);
+        assert_eq!(alpha2(2.0, -1.0), 12.0);
+
+        // A 3:1 pair: alpha1 = 2.0 and alpha2 = 50.0, since nothing is monovalent.
+        assert_eq!(alpha1_as_used(3.0, -1.0), 2.0);
+        assert_eq!(alpha2(3.0, -1.0), 12.0, "the chloride is monovalent");
+
+        // **And the one charge where the two alpha1 definitions part.** A 3-valent pair
+        // gets 1.4 from the sites that compute the activity coefficient and 2.0 from the
+        // getter. Nothing vendored carries a charge above 2, so this is unreachable
+        // rather than wrong.
+        assert_eq!(alpha1_as_used(3.0, -3.0), 1.4);
+        assert_eq!(alpha1(3.0, -3.0), 2.0);
+        assert_ne!(alpha1_as_used(3.0, -3.0), alpha1(3.0, -3.0));
+    }
+}

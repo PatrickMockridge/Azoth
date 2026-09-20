@@ -1,8 +1,7 @@
-# azoth PitzerArithmetic - NeqSim 3.20.0's ComponentGePitzer.
+# azoth PitzerArithmetic - NeqSim 3.20.0's ComponentGePitzer and PhasePitzer.
 # Committed verbatim from `validation/neqsim/PitzerArithmetic.java`; regenerate by running it.
-# The dataset ids below are the record of NeqSim's per-topology parameter choice:
-# `usgs-phreeqc-...-catalog-v1` is the PHREEQC catalogue and
-# `neqsim-legacy-pitzer-parameters-v1` is `PitzerParameters.csv`.
+# The parameter-getter section prints both temperature forms across temperature: the
+# PHREEQC catalogue's six coefficients and `PitzerParameters.csv`'s Silvester-Pitzer two.
 
 === Debye-Huckel parameter against temperature ===
    T / K        Agamma = debyeHuckelAphi(T)      Aphi = Agamma / 3
@@ -59,3 +58,23 @@
   ln gamma(Na+   ) = -0.729784139681492
   ln gamma(Ca++  ) = -2.98316821081693
   ln gamma(Cl-   ) = 1.00206452801946
+
+=== the parameter getters across temperature ===
+  catalogue: Na+ / Cl-   (dataset phreeqc)
+         T/K              beta0              beta1               Cphi              beta2              theta
+    273.1500    0.0493895679117     0.246299999975   0.00499695027456      0.00000000000      0.00000000000
+    298.1500    0.0753400000000     0.276900000000   0.00148000000000      0.00000000000      0.00000000000
+    298.1501    0.0753400000000     0.276900000000   0.00148000000000      0.00000000000      0.00000000000
+    323.1500    0.0892387746618     0.297048311303 -0.000806290226484      0.00000000000      0.00000000000
+    373.1500     0.100154205617     0.332376592643  -0.00334730831071      0.00000000000      0.00000000000
+  legacy: Na+ / HCO3-   (dataset legacy)
+         T/K              beta0              beta1               Cphi              beta2              theta
+    273.1500    0.0277000000000    0.0411000000000      0.00000000000      0.00000000000      0.00000000000
+    298.1500    0.0277000000000    0.0411000000000      0.00000000000      0.00000000000      0.00000000000
+    298.1501    0.0277000000000    0.0411000000000      0.00000000000      0.00000000000      0.00000000000
+    323.1500    0.0277000000000    0.0411000000000      0.00000000000      0.00000000000      0.00000000000
+    373.1500    0.0277000000000    0.0411000000000      0.00000000000      0.00000000000      0.00000000000
+
+=== the alpha coefficients against charge ===
+      z1     z2     alpha1     alpha2
+     1.0   -1.0     2.0000    12.0000

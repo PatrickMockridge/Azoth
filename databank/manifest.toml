@@ -266,27 +266,27 @@ reason = "not-ported: NeqSim's `ChemicalReactionOperations` and `ModifiedRANDSol
 name = "DIELECTRICPARAMETER1"
 disposition = "used"
 as = "dielectricparameter1"
-unit = "neqsim-internal"
+unit = "dimensionless"
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER2"
 disposition = "used"
 as = "dielectricparameter2"
-unit = "neqsim-internal"
+unit = "K"
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER3"
 disposition = "used"
 as = "dielectricparameter3"
-unit = "neqsim-internal"
+unit = "1/K"
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER4"
 disposition = "used"
 as = "dielectricparameter4"
-unit = "neqsim-internal"
+unit = "1/K**2"
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER5"
 disposition = "used"
 as = "dielectricparameter5"
-unit = "neqsim-internal"
+unit = "1/K**3"
 [[upstreams.files.columns]]
 name = "IONICCHARGE"
 disposition = "used"

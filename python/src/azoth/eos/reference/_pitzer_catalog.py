@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 from collections.abc import Sequence
 from functools import cache
 from typing import NamedTuple
@@ -215,3 +216,89 @@ def select_dataset(species: Sequence[Species]) -> tuple[str, str | None]:
                     return ("legacy", reason)
 
     return ("phreeqc", None)
+
+
+#: The temperature both of NeqSim's Pitzer forms state their value at, in K.
+#:
+#: ``PitzerParameterDatasets.PHREEQC_REFERENCE_TEMPERATURE_K`` and the ``298.15`` the
+#: Silvester form divides by are the same number, which is why one constant serves both.
+REFERENCE_TEMPERATURE_K = 298.15
+
+#: Within this many kelvin of the reference, the catalogue form returns its constant term
+#: unchanged rather than evaluating the polynomial (``PitzerTemperatureFunction``).
+REFERENCE_TOLERANCE_K = 1.0e-3
+
+
+def catalog_value(a: Sequence[float], temperature_k: float) -> float:
+    """`PitzerTemperatureFunction.valueAt`, the PHREEQC six-coefficient form.
+
+    ``a0 + a1(1/T - 1/Tr) + a2 ln(T/Tr) + a3(T - Tr) + a4(T^2 - Tr^2) + a5(1/T^2 - 1/Tr^2)``
+
+    **The reference window is a branch and not a rounding guard.** Within
+    :data:`REFERENCE_TOLERANCE_K` of the reference the constant term is returned exactly,
+    so ``value_at(298.1501)`` is ``a0`` and not ``a0`` plus about ``1e-8``.
+    """
+    if abs(temperature_k - REFERENCE_TEMPERATURE_K) < REFERENCE_TOLERANCE_K:
+        return a[0]
+    inverse = 1.0 / temperature_k
+    inverse_reference = 1.0 / REFERENCE_TEMPERATURE_K
+    return (
+        a[0]
+        + a[1] * (inverse - inverse_reference)
+        + a[2] * math.log(temperature_k / REFERENCE_TEMPERATURE_K)
+        + a[3] * (temperature_k - REFERENCE_TEMPERATURE_K)
+        + a[4] * (temperature_k**2 - REFERENCE_TEMPERATURE_K**2)
+        + a[5] * (inverse**2 - inverse_reference**2)
+    )
+
+
+def silvester_value(at_25: float, t1: float, t2: float, temperature_k: float) -> float:
+    """Silvester and Pitzer's form, from `PitzerParameters.csv`.
+
+    ``value_25 + t1 (1/T - 1/Tr) + t2 ln(T/Tr)``, and **zero `t1` and `t2` is the flat
+    case**, where NeqSim returns ``value_25`` rather than evaluating the sum. The two
+    differ only in the last bit, but they differ, so the branch is reproduced.
+    """
+    if abs(t1) < 1.0e-20 and abs(t2) < 1.0e-20:
+        return at_25
+    return (
+        at_25
+        + t1 * (1.0 / temperature_k - 1.0 / REFERENCE_TEMPERATURE_K)
+        + t2 * math.log(temperature_k / REFERENCE_TEMPERATURE_K)
+    )
+
+
+def alpha1(first_charge: float, second_charge: float) -> float:
+    """``PhasePitzer.getPitzerAlpha1``'s **bounded** form: 1.4 for a 2:2 pair, else 2.0.
+
+    **Three call sites in NeqSim use an unbounded form instead** - ``getGamma``,
+    ``getWaterGamma`` and ``phreeqcBinaryBprime`` all test ``|z| >= 1.5`` with no upper
+    bound, so a 3-valent ion gets 1.4 there and 2.0 here. The two agree for every charge
+    the vendored data carries (the highest is 2), so this is a latent inconsistency.
+    :func:`alpha1_as_used` is what the activity coefficient is built from.
+    """
+    def bounded(z: float) -> bool:
+        """NeqSim's own two-clause test, upper bound included."""
+        return 1.5 <= abs(z) < 2.5
+
+    return 1.4 if bounded(first_charge) and bounded(second_charge) else 2.0
+
+
+def alpha1_as_used(first_charge: float, second_charge: float) -> float:
+    """The ``alpha1`` the activity coefficient is actually built from."""
+    if abs(first_charge) >= 1.5 and abs(second_charge) >= 1.5:
+        return 1.4
+    return 2.0
+
+
+def alpha2(first_charge: float, second_charge: float) -> float:
+    """``PhasePitzer.getPitzerAlpha2``: 12.0 when monovalent **or** 2:2, else 50.0.
+
+    The 2:2 clause is not redundant with the monovalent one and is why ``CaCl2``'s
+    qualified ``B2`` row survives: that row is a 2:1 term with ``alpha2 = 12``, and a
+    2:2-only branch would have discarded it.
+    """
+    one, two = abs(first_charge), abs(second_charge)
+    monovalent = one < 1.5 or two < 1.5
+    two_two = 1.5 <= one < 2.5 and 1.5 <= two < 2.5
+    return 12.0 if monovalent or two_two else 50.0

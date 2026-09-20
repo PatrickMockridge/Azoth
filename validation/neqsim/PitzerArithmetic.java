@@ -64,6 +64,56 @@ public class PitzerArithmetic {
         {"water", "Na+", "Ca++", "Cl-"}}) {
       report(brine);
     }
+
+    // **The parameter getters, which is what the temperature forms are for.** The two
+    // datasets use different forms, so each is printed across temperature: a catalogue
+    // pair (the PHREEQC six coefficients) and a CSV pair (Silvester-Pitzer's two).
+    parameters();
+  }
+
+  private static void parameters() {
+    System.out.println();
+    System.out.println("=== the parameter getters across temperature ===");
+    for (String label : new String[] {"catalogue", "legacy"}) {
+      String[] names = label.equals("catalogue")
+          ? new String[] {"water", "Na+", "Cl-"}
+          : new String[] {"water", "Na+", "HCO3-"};
+      SystemInterface system = new SystemPitzer(298.15, 1.0);
+      system.addComponent(names[0], 0.9);
+      system.addComponent(names[1], 0.05);
+      system.addComponent(names[2], 0.05);
+      system.setMixingRule("classic");
+      system.init(0);
+      system.init(1);
+      PhasePitzer phase = (PhasePitzer) system.getPhase(1);
+      System.out.printf("  %s: %s / %s   (dataset %s)%n", label, names[1], names[2],
+          phase.getParameterDatasetId().startsWith("usgs") ? "phreeqc" : "legacy");
+      int first = phase.getComponent(names[1]).getComponentNumber();
+      int second = phase.getComponent(names[2]).getComponentNumber();
+      System.out.printf("    %8s %18s %18s %18s %18s %18s%n", "T/K", "beta0", "beta1", "Cphi",
+          "beta2", "theta");
+      for (double temp : new double[] {273.15, 298.15, 298.15005, 323.15, 373.15}) {
+        System.out.printf("    %8.4f %18.12g %18.12g %18.12g %18.12g %18.12g%n", temp,
+            phase.getBeta0ij(first, second, temp), phase.getBeta1ij(first, second, temp),
+            phase.getCphiij(first, second, temp), phase.getBeta2ij(first, second, temp),
+            phase.getThetaij(first, second, temp));
+      }
+    }
+
+    System.out.println();
+    System.out.println("=== the alpha coefficients against charge ===");
+    System.out.printf("  %6s %6s %10s %10s%n", "z1", "z2", "alpha1", "alpha2");
+    SystemInterface system = new SystemPitzer(298.15, 1.0);
+    system.addComponent("water", 0.99);
+    system.addComponent("Na+", 0.01);
+    system.setMixingRule("classic");
+    system.init(0);
+    system.init(1);
+    PhasePitzer phase = (PhasePitzer) system.getPhase(1);
+    // The charge enters through the components, so this is read off the pair the phase
+    // actually holds; a wider charge sweep would need wider components.
+    System.out.printf("  %6.1f %6.1f %10.4f %10.4f%n", 1.0, -1.0,
+        phase.getPitzerAlpha1(0, 1), phase.getPitzerAlpha2(0, 1));
   }
 
   /** Any built `ComponentGePitzer`, for reaching the instance methods by reflection. */
