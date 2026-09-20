@@ -1197,16 +1197,33 @@ fn a_mixture_carrying_two_pressure_terms_is_refused() {
 /// solve with a pressure that is not the association's, and the `ln phi` contributions added
 /// to the cubic's.
 ///
-/// **It does not pass, and the reason is recorded rather than tuned away.** Measured, this
-/// gives `Z = 0.00960282877819137` against the oracle's `0.00963585200923298` - 0.34% - and
-/// every layer of the *electrolyte term* is verified separately in `furst_terms` and
-/// `furst_electrolyte` against the same capture. So the difference is in the **cubic's `A`
-/// and `B` under this model's mixing rule**, and isolating it needs an instrument this
-/// session did not build: the probe prints `A_phase = 96724.5120456906` and
-/// `B_phase = 2.11461248960916`, but neither `A_phase/n` nor `A_phase` is a root of the
-/// SRK cubic in the form this library writes it, so the scaling between NeqSim's `A` and
-/// this library's reduced `A` is not yet established. `setMixingRule(4)` is taken to be the
-/// Huron-Vidal rule, which is what the enumeration says.
+/// **It does not pass, and where it diverges is now localised to one quantity.**
+///
+/// Measured: `Z = 0.00960282877819137` against the oracle's `0.00963585200923298`, 0.34%.
+/// The covolume is exactly right - `B = 0.008525341552880811` against NeqSim's
+/// `0.008525341552880816`, to fifteen digits - so every layer of the *electrolyte term* and
+/// the whole of the ion substitution are ruled out, and what remains is the attraction.
+///
+/// `SRKHuronVidal2.calcA` is `A = n B R T alpha_mix` with `B = sum_i n_i b_i`, so
+/// `alpha_mix = A_int/(B_int R T)` from the probe's own `A_phase` and `B_phase`:
+///
+/// | | `alpha_mix` |
+/// |---|---|
+/// | NeqSim, from `A_phase = 96724.5120456906` | `18.417` |
+/// | this library | `18.884` |
+///
+/// 2.54% high, which is the whole of the discrepancy. And `alpha_mix = sum_i x_i ader_i`
+/// with `ader_i = a_i/b_i - ln(gamma_i)/lambda`, where `sum_i x_i a_i/b_i` is `18.668` - so
+/// **the NRTL activity-coefficient term contributes `+0.216` here against `-0.251` there**.
+/// The sign differs, and the pair table has entries for `methane`/`water` (`4875.09`),
+/// `water`/`methane` (`-123.60`) and both ions against water (`241.5`, `-1911.0`) - so the
+/// divergence is in `hv_ln_gamma` for a mixture containing **ions**, which is a case the
+/// Huron-Vidal rule's own tests do not cover.
+///
+/// The next measurement is therefore specific: print NeqSim's `alpha_mix` and its four
+/// `ader_i` for this mixture, and compare each against this library's. `setMixingRule(4)` is
+/// confirmed to be the Huron-Vidal rule, from `EosMixingRuleType.HV(4)` and the
+/// `SRKHuronVidal2` branch that constructs it.
 ///
 /// `#[ignore]` rather than deleted: the numbers are the measurement, and a port that
 /// reproduced the *terms* and stopped one layer short should say so where a reader meets it.
@@ -1246,6 +1263,20 @@ fn the_furst_phase_matches_the_oracle() {
         0.000_998_101_955_985_164,
         0.000_998_101_955_985_164,
     ];
+    let (a_mix, b_mix) = mixture.mixture_parameters(&reduced, &x);
+    // The two quantities the divergence is localised to, printed rather than asserted:
+    // `B` matches and `alpha_mix` does not. The mapping from NeqSim's own `A` and `B` to
+    // this library's reduced pair is `A = A_phase/n^2 1e-5 P/(R T)^2` and
+    // `B = B_phase/n 1e-5 P/(R T)`, which is what makes `B` a check on the scaling: it
+    // agrees to fifteen digits, so the ion covolumes and the `1e5` are right.
+    let r_t = 8.314_462_1 * 298.15;
+    let pressure = 1_001_325.0_f64;
+    let neqsim_a =
+        96724.5120456906_f64 / 1.001_901_653_436_76_f64.powi(2) * 1.0e-5 * pressure / (r_t * r_t);
+    let neqsim_b = 2.114_612_489_609_16_f64 / 1.001_901_653_436_76_f64 * 1.0e-5 * pressure / r_t;
+    eprintln!("alphaMix this = {:?}", a_mix / b_mix);
+    eprintln!("alphaMix NeqSim = {:?}", neqsim_a / neqsim_b);
+    eprintln!("B this = {b_mix:?}  NeqSim = {neqsim_b:?}");
     let state = mixture
         .phase_state(&reduced, &x, RootSide::Liquid)
         .expect("solves");
