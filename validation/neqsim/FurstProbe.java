@@ -1,0 +1,150 @@
+// The Furst electrolyte layers, printed one at a time so each can be ported and checked.
+//
+//     javac -proc:none -cp neqsim-3.20.0.jar FurstProbe.java
+//     java -cp .:neqsim-3.20.0.jar FurstProbe
+//
+// `PhaseModifiedFurstElectrolyteEos` is `PhaseSrkEos` plus three additive Helmholtz terms:
+//
+//     getF() = super.getF() + FSR2()*sr2On + FLR()*lrOn + FBorn()*bornOn
+//
+// The short-range `W` term, the MSA long-range term and the Born solvation term. Everything
+// each of them needs is computed in `volInit()`: the solvent dielectric constant and its
+// derivatives, the packing fraction, the shielding parameter, `XLR`, `alphaLR2` and `bornX`.
+// This prints all of it, in the order the phase builds it, so a port can be checked layer by
+// layer rather than only at `ln phi`.
+//
+// **The rows are `key = value` and the blocks are `#`-opened**, which is the shape
+// `tools/neqsim_layer_diff.py` reads. The other electrolyte probes print aligned tables and
+// so cannot feed it; this one can, and `eos.furst_electrolyte_phase` gets a layer diff
+// because of it.
+//
+// Three things the source does not make obvious, which the rows below are here to measure:
+//
+//   1. **The solvent dielectric constant sums over `ionicCharge == 0` only.** The ions are
+//      excluded from the average, so adding salt does not move the dielectric constant
+//      directly - it moves it through the mole fractions of what is left.
+//   2. **`calcSolventDiElectricConstantdT` is the molar-average formula whatever rule is
+//      selected.** `setDielectricMixingRule` switches the value and not its derivative, so
+//      the two disagree under VOLUME_AVERAGE and LOOYENGA.
+//   3. **The Born term is absent from `dFdV`, `dFdTdV`, `dFdVdV` and `dFdVdVdV`.** It is in
+//      `getF`, `dFdT` and `dFdTdT` only - which is consistent, because `FBorn` carries no
+//      volume, but it is the kind of omission a port has to confirm rather than assume.
+
+import neqsim.thermo.phase.PhaseInterface;
+import neqsim.thermo.phase.PhaseModifiedFurstElectrolyteEos;
+import neqsim.thermo.system.SystemFurstElectrolyteEos;
+import neqsim.thermo.system.SystemInterface;
+import neqsim.thermodynamicoperations.ThermodynamicOperations;
+
+public class FurstProbe {
+
+  /** One `key = value` row. */
+  private static void row(String key, double value) {
+    System.out.printf("%s = %.15g%n", key, value);
+  }
+
+  private static void report(String label, String[] names, double[] moles, double tC, double pBara) {
+    System.out.printf("# %s%n", label);
+    SystemInterface system = new SystemFurstElectrolyteEos(298.15, 10.01325);
+    for (int i = 0; i < names.length; i++) {
+      system.addComponent(names[i], moles[i]);
+    }
+    system.setMixingRule(4);
+    system.setTemperature(tC, "C");
+    system.setPressure(pBara, "bara");
+    try {
+      ThermodynamicOperations ops = new ThermodynamicOperations(system);
+      ops.TPflash();
+      system.initProperties();
+      row("phases", system.getNumberOfPhases());
+      for (int p = 0; p < system.getNumberOfPhases(); p++) {
+        PhaseInterface phase = system.getPhase(p);
+        System.out.printf("# %s phase %d%n", label, p);
+        reportPhase(phase);
+      }
+    } catch (Throwable error) {
+      System.out.printf("# %s failed%n", label);
+      System.out.println("error = " + error.getClass().getSimpleName() + ": " + error.getMessage());
+      for (StackTraceElement frame : error.getStackTrace()) {
+        if (frame.getClassName().startsWith("neqsim.")) {
+          System.out.println("#   at " + frame);
+        }
+      }
+    }
+  }
+
+  private static void reportPhase(PhaseInterface phase) {
+    double temperature = phase.getTemperature();
+    row("T", temperature);
+    row("P", phase.getPressure());
+    row("n_total", phase.getNumberOfMolesInPhase());
+    row("V", phase.getMolarVolume());
+    row("Z", phase.getZ());
+
+    int n = phase.getNumberOfComponents();
+    for (int i = 0; i < n; i++) {
+      row("x[" + i + "]", phase.getComponent(i).getx());
+      row("charge[" + i + "]", phase.getComponent(i).getIonicCharge());
+      row("lj[" + i + "]", phase.getComponent(i).getLennardJonesMolecularDiameter());
+      row("eps_i[" + i + "]", phase.getComponent(i).getDielectricConstant(temperature));
+    }
+
+    if (!(phase instanceof PhaseModifiedFurstElectrolyteEos)) {
+      System.out.println("note = not a Furst phase: " + phase.getClass().getSimpleName());
+      return;
+    }
+    PhaseModifiedFurstElectrolyteEos furst = (PhaseModifiedFurstElectrolyteEos) phase;
+
+    // What `volInit` built, in the order it built it.
+    row("eps", furst.getSolventDiElectricConstant());
+    row("eps_dT", furst.getSolventDiElectricConstantdT());
+    row("eps_dTdT", furst.getSolventDiElectricConstantdTdT());
+    row("packing", furst.getEps());
+    row("packing_ionic", furst.getEpsIonic());
+    row("gamma", furst.getShieldingParameter());
+    row("alphaLR2", furst.getAlphaLR2());
+    row("XLR", furst.getXLR());
+    row("bornX", furst.calcBornX());
+
+    // The short-range parameter table and the three terms.
+    row("W", furst.getW());
+    row("WT", furst.getWT());
+    row("FSR2", furst.FSR2());
+    row("FLR", furst.FLR());
+    row("FBorn", furst.FBorn());
+
+    // The Helmholtz energy and the derivatives the cubic's root and fugacity read.
+    row("F", furst.getF());
+    row("F_srk", furst.getF() - furst.FSR2() - furst.FLR() - furst.FBorn());
+    row("dFdT", furst.dFdT());
+    row("dFdV", furst.dFdV());
+    row("dFdTdT", furst.dFdTdT());
+
+    for (int i = 0; i < n; i++) {
+      row("lnPhi[" + i + "]", Math.log(phase.getComponent(i).getFugacityCoefficient()));
+    }
+  }
+
+  public static void main(String[] args) {
+    // `SystemFurstElectrolyteEosTest`'s own mixture, at its own state.
+    report("the shipped test: methane water Na+ Cl-",
+        new String[] {"methane", "water", "Na+", "Cl-"},
+        new double[] {0.1, 1.0, 0.001, 0.001}, 25.0, 10.01325);
+
+    // The same at four times the salt, so the electrostatic terms move and the SRK part
+    // barely does.
+    report("the same at four times the salt",
+        new String[] {"methane", "water", "Na+", "Cl-"},
+        new double[] {0.1, 1.0, 0.004, 0.004}, 25.0, 10.01325);
+
+    // A mixed solvent: the dielectric mixing rule is what separates this from the above.
+    report("a mixed solvent: methanol joins the water",
+        new String[] {"methane", "water", "methanol", "Na+", "Cl-"},
+        new double[] {0.1, 0.6, 0.4, 0.001, 0.001}, 25.0, 10.01325);
+
+    // A gas-rich state, where the aqueous phase barely exists.
+    report("at 60 C and 40 bara",
+        new String[] {"methane", "water", "Na+", "Cl-"},
+        new double[] {0.1, 1.0, 0.001, 0.001}, 60.0, 40.0);
+  }
+}
