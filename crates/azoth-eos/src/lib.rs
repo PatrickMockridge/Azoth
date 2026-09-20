@@ -57,6 +57,7 @@ pub mod databank;
 pub mod dew_pressure;
 pub mod dew_temperature;
 pub mod dual;
+pub mod electrolyte;
 pub mod eos_cg;
 mod eos_cg_data;
 pub mod eos_cg_phase;
