@@ -21,6 +21,7 @@
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
 //!   - specs/models/eos/hydrogen_phase.toml
+//!   - specs/models/eos/kent_eisenberg_phase.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
@@ -2537,6 +2538,138 @@ pub static HYDROGEN_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&HYDROGEN_PHASE_ALGORITHM),
     checks: HYDROGEN_PHASE_CHECKS,
     cases: HYDROGEN_PHASE_CASES,
+};
+
+static KENT_EISENBERG_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static KENT_EISENBERG_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "brine_at_313_k_and_5_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 313.15), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "Na+", "Cl-", "CO2"])],
+        strings: &[],
+        vectors: &[("x", &[0.89, 0.04, 0.04, 0.03])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.0, 1.0, 1.0, 1.0]),
+            ("ln_gamma", &[0.0, 0.0, 0.0, 0.0]),
+            (
+                "ln_phi",
+                &[
+                    -4.212658282214335,
+                    18.420680743952367,
+                    18.420680743952367,
+                    2.7069240672486448,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "brine_at_298_k_and_5_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "Na+", "Cl-", "CO2"])],
+        strings: &[],
+        vectors: &[("x", &[0.89, 0.04, 0.04, 0.03])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.0, 1.0, 1.0, 1.0]),
+            ("ln_gamma", &[0.0, 0.0, 0.0, 0.0]),
+            (
+                "ln_phi",
+                &[
+                    -5.058119157801453,
+                    18.420680743952367,
+                    18.420680743952367,
+                    2.3351395840225817,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "brine_at_373_k_and_5_bar",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 373.15), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "Na+", "Cl-", "CO2"])],
+        strings: &[],
+        vectors: &[("x", &[0.89, 0.04, 0.04, 0.03])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("gamma", &[1.0, 1.0, 1.0, 1.0]),
+            ("ln_gamma", &[0.0, 0.0, 0.0, 0.0]),
+            (
+                "ln_phi",
+                &[
+                    -1.5990198338566504,
+                    18.420680743952367,
+                    18.420680743952367,
+                    3.5581577891204947,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `eos.kent_eisenberg_phase`.
+pub static KENT_EISENBERG_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.kent_eisenberg_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: KENT_EISENBERG_PHASE_CHECKS,
+    cases: KENT_EISENBERG_PHASE_CASES,
 };
 
 static MASON_SAXENA_CONDUCTIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -6791,6 +6924,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
     &HYDROGEN_PHASE_SPEC,
+    &KENT_EISENBERG_PHASE_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &NRTL_ACTIVITY_COEFFICIENTS_SPEC,

@@ -82,6 +82,7 @@ pub mod hv_ge;
 pub mod hydrogen_phase;
 pub mod iapws_if97;
 pub mod ideal_gas_cp;
+pub mod kent_eisenberg_phase;
 pub mod leachman;
 pub mod liquid_heat_capacity;
 pub mod mason_saxena_conductivity;
@@ -217,6 +218,7 @@ pub use heat_of_vaporization::heat_of_vaporization;
 pub use helium_phase::helium_phase;
 pub use hydrogen_phase::hydrogen_phase;
 pub use ideal_gas_cp::ideal_gas_cp;
+pub use kent_eisenberg_phase::kent_eisenberg_phase;
 pub use liquid_heat_capacity::liquid_heat_capacity;
 pub use mason_saxena_conductivity::mason_saxena_conductivity;
 pub use matcop_alpha::matcop_alpha;
@@ -266,11 +268,12 @@ pub use results::{
     GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult, Gerg2008PhaseResult, HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult, HeliumPhaseResult, HydrogenPhaseResult, IdealGasCpResult,
-    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
-    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
-    MolarEnthalpyEntropyResult, MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult,
-    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult,
-    Phase, PitzerDataset, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
+    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, Phase, PitzerDataset,
+    PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
     PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
     PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
     PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,

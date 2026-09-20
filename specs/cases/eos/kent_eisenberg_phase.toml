@@ -1,0 +1,40 @@
+model = "eos.kent_eisenberg_phase"
+[[cases]]
+id = "brine_at_313_k_and_5_bar"
+tolerance = 1e-08
+source = "NeqSim 3.20.0 `ComponentKentEisenberg.fugcoef`, on a live `SystemKentEisenberg`: validation/neqsim/GeElectrolyteProbe.java. All three branches are exercised - water on the Antoine one, CO2 on the Henry one, and the two ions on the constant. The two ions' `ln_phi` is `ln(1e8)` exactly at every temperature, because that branch reads nothing."
+[cases.inputs]
+components = ["water", "Na+", "Cl-", "CO2"]
+T = 313.15
+P = 500000.0
+x = [0.89, 0.04, 0.04, 0.03]
+[cases.expected]
+gamma = [1.0, 1.0, 1.0, 1.0]
+ln_gamma = [0.0, 0.0, 0.0, 0.0]
+ln_phi = [-4.212658282214335, 18.420680743952367, 18.420680743952367, 2.7069240672486448]
+[[cases]]
+id = "brine_at_298_k_and_5_bar"
+tolerance = 1e-08
+source = "The same probe at 298.15 K. The ion branch does not move, and the other two do: this is the case that says which of the three branches reads the temperature."
+[cases.inputs]
+components = ["water", "Na+", "Cl-", "CO2"]
+T = 298.15
+P = 500000.0
+x = [0.89, 0.04, 0.04, 0.03]
+[cases.expected]
+gamma = [1.0, 1.0, 1.0, 1.0]
+ln_gamma = [0.0, 0.0, 0.0, 0.0]
+ln_phi = [-5.058119157801453, 18.420680743952367, 18.420680743952367, 2.3351395840225817]
+[[cases]]
+id = "brine_at_373_k_and_5_bar"
+tolerance = 1e-08
+source = "The same probe at 373.15 K, the hot end of the three. The `phi` values are the correlation's own, so a port that had swapped `P0` for `H` would still agree at one temperature and disagree at the others."
+[cases.inputs]
+components = ["water", "Na+", "Cl-", "CO2"]
+T = 373.15
+P = 500000.0
+x = [0.89, 0.04, 0.04, 0.03]
+[cases.expected]
+gamma = [1.0, 1.0, 1.0, 1.0]
+ln_gamma = [0.0, 0.0, 0.0, 0.0]
+ln_phi = [-1.5990198338566504, 18.420680743952367, 18.420680743952367, 3.5581577891204947]

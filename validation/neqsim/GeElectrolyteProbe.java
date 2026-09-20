@@ -78,8 +78,11 @@ public class GeElectrolyteProbe {
     PhaseInterface phase = phase(system);
     System.out.printf("%n=== %s ===%n", label);
     System.out.printf("  phase class = %s%n", phase.getClass().getSimpleName());
-    System.out.printf("  T = %.2f K   P = %.2f bara   moles = %.10g%n", T, P,
-        phase.getNumberOfMolesInPhase());
+    // **The system's own state**, not this class's constants: `report` is called with
+    // systems built at other temperatures, and printing the constants labelled those
+    // blocks with the wrong temperature while their numbers were right.
+    System.out.printf("  T = %.2f K   P = %.2f bara   moles = %.10g%n",
+        system.getTemperature(), system.getPressure(), phase.getNumberOfMolesInPhase());
     for (int i = 0; i < phase.getNumberOfComponents(); i++) {
       ComponentInterface component = phase.getComponent(i);
       // The gamma `fugcoef` builds on, from the phase's own dispatch - which is what
@@ -148,6 +151,19 @@ public class GeElectrolyteProbe {
         new SystemKentEisenberg(T, P),
         new String[] {"water", "Na+", "Cl-"},
         new double[] {0.90, 0.05, 0.05}, true);
+    // **The brine a Kent-Eisenberg case can state**: no MDEA, because MDEA's reference
+    // state is `solvent` and it carries no vapour pressure, so its `phi` is `NaN` and a
+    // port that refuses rather than returning NaN cannot take it. This one exercises the
+    // solvent branch (water), the constant ion branch, and the Henry branch (CO2).
+    report("water + Na+ + Cl- + CO2", new SystemKentEisenberg(T, P),
+        new String[] {"water", "Na+", "Cl-", "CO2"}, new double[] {0.89, 0.04, 0.04, 0.03},
+        true);
+    // At two more states, because the Henry branch is the only one that moves with `T`.
+    for (double t : new double[] {298.15, 373.15}) {
+      report(String.format("water + Na+ + Cl- + CO2 at %.2f K", t), new SystemKentEisenberg(t, P),
+          new String[] {"water", "Na+", "Cl-", "CO2"}, new double[] {0.89, 0.04, 0.04, 0.03},
+          true);
+    }
 
     // ---------------------------------------------------------------------------------
     System.out.println();

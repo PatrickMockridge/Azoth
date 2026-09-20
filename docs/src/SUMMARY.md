@@ -88,6 +88,7 @@
   - [GERG-2008 phase state](./eos/gerg2008_phase.md)
   - [Helium reference phase state](./eos/helium_phase.md)
   - [Hydrogen reference phase state](./eos/hydrogen_phase.md)
+  - [Fugacity coefficients of a Kent-Eisenberg phase](./eos/kent_eisenberg_phase.md)
   - [Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities](./eos/mason_saxena_conductivity.md)
   - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)
   - [Activity coefficients from the NRTL local-composition model](./eos/nrtl_activity_coefficients.md)

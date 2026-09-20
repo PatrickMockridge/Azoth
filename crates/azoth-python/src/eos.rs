@@ -21,19 +21,20 @@ use crate::results::{
     PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
     PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult, PyGeWilsonPhaseResult,
     PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult, PyHeatOfVaporizationResult,
-    PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult, PyLiquidHeatCapacityResult,
-    PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
-    PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
-    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNitricSulfuricAcidVaporPressureResult,
-    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
-    PyParahydrogenSolidPhaseResult, PyPhFlashResult, PyPhaseBoundaryResult,
-    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPitzerPhaseResult,
-    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
-    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
-    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
-    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
-    PyPvFlashResult, PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceBinaryResult,
-    PyRachfordRiceResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult, PyKentEisenbergPhaseResult,
+    PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult,
+    PyMatcopAlphaResult, PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult,
+    PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
+    PyNitricSulfuricAcidVaporPressureResult, PyNrtlActivityCoefficientsResult,
+    PyParachorSurfaceTensionResult, PyParahydrogenSolidPhaseResult, PyPhFlashResult,
+    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
+    PyPitzerPhaseResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
+    PyPrDelft1998AlphaResult, PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult,
+    PyPrLeeKeslerAlphaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
+    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
+    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceBinaryResult, PyRachfordRiceResult,
+    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
     PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
     PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
@@ -1239,6 +1240,28 @@ pub fn ge_wilson_phase(
     };
     azoth_eos::ge_wilson_phase::ge_wilson_phase(&params, &mixture, T, P, &x)
         .map(|r| PyGeWilsonPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The fugacity coefficients of a Kent-Eisenberg phase, whose activity coefficients are one.
+///
+/// Takes the component names, because the branch each component takes is its databank
+/// `REFERENCESTATETYPE` and its charge - a `solvent` gets `P0_i(T)/P`, a neutral solute
+/// `H_i(T)/P`, and an ion the constant `1e8`.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x))]
+#[pyo3(text_signature = "(components, T, P, x)")]
+#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
+pub fn kent_eisenberg_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+) -> PyResult<PyKentEisenbergPhaseResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::kent_eisenberg_phase::kent_eisenberg_phase(&names, T, P, &x)
+        .map(|r| PyKentEisenbergPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

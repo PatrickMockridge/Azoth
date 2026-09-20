@@ -2389,6 +2389,31 @@ impl CalcResult for PitzerPhaseResult {
     }
 }
 
+/// Result of `eos.kent_eisenberg_phase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct KentEisenbergPhaseResult {
+    /// The activity coefficient of each component. **Identically one**, which is the
+    /// model's defining property rather than a computed column.
+    pub gamma: Vec<f64>,
+    /// The natural logarithm of each activity coefficient, identically zero.
+    pub ln_gamma: Vec<f64>,
+    /// The natural logarithm of each fugacity coefficient: `ln(P0_i / P)` for a
+    /// `solvent` reference state, `ln(H_i / P)` for a neutral solute, and `ln(1e8)` for an
+    /// ion.
+    pub ln_phi: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for KentEisenbergPhaseResult {
+    const CALC_ID: &'static str = "eos.kent_eisenberg_phase";
+    const FIELDS: &'static [&'static str] = &["gamma", "ln_gamma", "ln_phi", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.ge_uniquac_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeUniquacPhaseResult {

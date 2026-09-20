@@ -1,0 +1,66 @@
+id = "eos.kent_eisenberg_phase"
+name = "Fugacity coefficients of a Kent-Eisenberg phase"
+kind = "direct"
+assumptions = [
+    "NeqSim's `PhaseKentEisenberg` overrides `getActivityCoefficient` to return `1.0` for every component, so **the activity coefficient is identically one** and this model's whole content is the reference state its component takes.",
+    "the branch is `ComponentKentEisenberg.fugcoef`: a `solvent` reference state gets `P0_i(T)/P`, a neutral with any other reference state gets `H_i(T)/P`, and an ion gets the constant `1e8`.",
+    "**`1e8` is this model's own constant**, not a shared one: NeqSim gives `1e12` in `ComponentGePitzer` and `1e-15` in `ComponentDesmukhMather`, and the three say different things about an ion being in the vapour.",
+    "`P0_i` is `eos.antoine_vapor_pressure`'s and `H_i` is the Henry correlation under `henry.rs`, so neither is recomputed. A `solvent` component with no Antoine row is refused rather than given a filler number, which is where this model diverges from NeqSim.",
+    "the NRTL parameters `ComponentKentEisenberg` inherits are loaded and **never read**, because the activity coefficient that would use them is overridden. Nothing here depends on them.",
+    "`P` enters only as the denominator of `P0/P` and `H/P`, so it is unit-consistent rather than scaled: NeqSim works in bar throughout and this model in pascals.",
+    "`x` is checked rather than renormalised.",
+]
+references = [
+    "Kent, R. L. and Eisenberg, B. (1976). \"Better data for amine treating.\" Hydrocarbon Processing 55(2), 87-90.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhaseKentEisenberg`, `ComponentKentEisenberg` and `ComponentGeNRTL` are the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `PhaseKentEisenberg`"
+edition = "`ComponentKentEisenberg.fugcoef`, ported verbatim. The activity coefficient is `PhaseKentEisenberg.getActivityCoefficient`'s override, which is the constant one."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the phase is made of, by name. The databank supplies each one's reference state, ionic charge and - for a solvent - its Antoine correlation, and those decide which branch of the fugacity coefficient it takes."
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions; non-negative and summing to one. They do not enter any branch of this model and are checked because a caller supplying a composition means it."
+[outputs]
+[outputs.gamma]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the activity coefficient of each component, which this model returns as exactly one"
+[outputs.ln_gamma]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the natural logarithm of each activity coefficient, exactly zero"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the natural logarithm of each component's fugacity coefficient. Which of `P0_i(T)/P`, `H_i(T)/P` and `1e8` it is comes from the component's reference state and charge, which the spec lists above."
+[implementations]
+python = "azoth.eos.kent_eisenberg_phase"
+rust = "azoth_eos::kent_eisenberg_phase"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"

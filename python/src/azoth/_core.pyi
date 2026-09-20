@@ -415,6 +415,13 @@ class IdealGasCpResult:
     warnings: list[Warning]
 
 @final
+class KentEisenbergPhaseResult:
+    gamma: list[float]
+    ln_gamma: list[float]
+    ln_phi: list[float]
+    warnings: list[Warning]
+
+@final
 class LiquidHeatCapacityResult:
     cp: Qty
     warnings: list[Warning]
@@ -1401,6 +1408,12 @@ def ideal_gas_cp(
     cp_e: float,
     T: float,
 ) -> IdealGasCpResult: ...
+def kent_eisenberg_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    x: list[float],
+) -> KentEisenbergPhaseResult: ...
 def liquid_heat_capacity(
     c0: float,
     c1: float,

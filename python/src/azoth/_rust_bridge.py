@@ -63,6 +63,7 @@ from azoth.core.result import (
     HydrogenPhaseResult,
     IdealGasCpResult,
     KComponent,
+    KentEisenbergPhaseResult,
     KFactorsResult,
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
@@ -2502,9 +2503,31 @@ def ge_wilson_phase(
     )
 
 
-def pitzer_phase(
-    components: Sequence[str], T: Q, x: Sequence[float]
-) -> PitzerPhaseResult:
+def kent_eisenberg_phase(
+    components: Sequence[str], T: Q, P: Q, x: Sequence[float]
+) -> KentEisenbergPhaseResult:
+    """The fugacity coefficients of a Kent-Eisenberg phase, computed in Rust.
+
+    Only the names and the state cross: the Rust side resolves each component's reference
+    state, charge and correlations against its own copy of the databank, because which
+    branch a component takes is what the model is.
+    """
+    spec = _models_gen.model("eos.kent_eisenberg_phase")
+    result = _core.kent_eisenberg_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+    )
+    return KentEisenbergPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        ln_phi=tuple(result.ln_phi),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pitzer_phase(components: Sequence[str], T: Q, x: Sequence[float]) -> PitzerPhaseResult:
     """The activity coefficients of a Pitzer electrolyte phase, computed in Rust.
 
     Only the names and the composition cross: the Rust side resolves each component's

@@ -27,6 +27,30 @@
     Na+       z = +1  x = 0.0500000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.61294452719  refstate = solute  phi = 100000000.000000
     Cl-       z = -1  x = 0.0500000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.61294452719  refstate = solute  phi = 100000000.000000
 
+=== water + Na+ + Cl- + CO2 ===
+  phase class = PhaseKentEisenberg
+  T = 313.15 K   P = 5.00 bara   moles = 1.000000000
+    water     z = +0  x = 0.890000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 45.1977401130  refstate = solvent  phi = 0.0148069549104026
+    Na+       z = +1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
+    Cl-       z = -1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
+    CO2       z = +0  x = 0.0300000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.52351932965  refstate = solute  phi = 14.9831174999581
+
+=== water + Na+ + Cl- + CO2 at 298.15 K ===
+  phase class = PhaseKentEisenberg
+  T = 298.15 K   P = 5.00 bara   moles = 1.000000000
+    water     z = +0  x = 0.890000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 45.1977401130  refstate = solvent  phi = 0.00635750573997666
+    Na+       z = +1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
+    Cl-       z = -1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
+    CO2       z = +0  x = 0.0300000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.52351932965  refstate = solute  phi = 10.3309018575703
+
+=== water + Na+ + Cl- + CO2 at 373.15 K ===
+  phase class = PhaseKentEisenberg
+  T = 373.15 K   P = 5.00 bara   moles = 1.000000000
+    water     z = +0  x = 0.890000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 45.1977401130  refstate = solvent  phi = 0.202094507141332
+    Na+       z = +1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
+    Cl-       z = -1  x = 0.0400000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 2.03135910620  refstate = solute  phi = 100000000.000000
+    CO2       z = +0  x = 0.0300000000000  gamma = 1.00000000000000  ln gamma = 0.00000000000000  molality = 1.52351932965  refstate = solute  phi = 35.0984787515352
+
 ################ Desmukh-Mather ################
 
 === water + MDEA + Na+ + Cl- + CO2 ===
@@ -84,4 +108,4 @@ Exception in thread "main" java.lang.RuntimeException: SystemDuanSun supports on
 	at neqsim.thermo.system.SystemDuanSun.addComponent(SystemDuanSun.java:86)
 	at GeElectrolyteProbe.build(GeElectrolyteProbe.java:56)
 	at GeElectrolyteProbe.report(GeElectrolyteProbe.java:77)
-	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:222)
+	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:238)

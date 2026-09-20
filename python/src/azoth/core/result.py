@@ -2443,6 +2443,20 @@ class PitzerPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class KentEisenbergPhaseResult(_HasWarnings):
+    """Result of ``eos.kent_eisenberg_phase``."""
+
+    #: The activity coefficient of each component, identically one.
+    gamma: tuple[float, ...]
+    #: The natural logarithm of each activity coefficient, identically zero.
+    ln_gamma: tuple[float, ...]
+    #: The natural logarithm of each fugacity coefficient.
+    ln_phi: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class GeUniquacPhaseResult(_HasWarnings):
     """Result of ``eos.ge_uniquac_phase``."""
 

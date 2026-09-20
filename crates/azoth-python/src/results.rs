@@ -24,10 +24,10 @@ use azoth_eos::results::{
     GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
-    HydrogenPhaseResult, IdealGasCpResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
     PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
     PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
@@ -2356,6 +2356,47 @@ impl From<&GeWilsonPhaseResult> for PyGeWilsonPhaseResult {
                     unit: "Pa".to_string(),
                 })
                 .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.kent_eisenberg_phase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "KentEisenbergPhaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyKentEisenbergPhaseResult {
+    /// The activity coefficient of each component, identically one.
+    #[pyo3(get)]
+    pub gamma: Vec<f64>,
+    /// The natural logarithm of each activity coefficient, identically zero.
+    #[pyo3(get)]
+    pub ln_gamma: Vec<f64>,
+    /// The natural logarithm of each fugacity coefficient.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyKentEisenbergPhaseResult {
+    fn __repr__(&self) -> String {
+        format!("KentEisenbergPhaseResult(ln_phi={:?})", self.ln_phi)
+    }
+}
+
+impl From<&KentEisenbergPhaseResult> for PyKentEisenbergPhaseResult {
+    fn from(r: &KentEisenbergPhaseResult) -> Self {
+        Self {
+            gamma: r.gamma.clone(),
+            ln_gamma: r.ln_gamma.clone(),
+            ln_phi: r.ln_phi.clone(),
             warnings: transport(&r.warnings),
         }
     }
@@ -6079,6 +6120,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         GeVanLaarAcidPhaseResult::CALC_ID => GeVanLaarAcidPhaseResult::FIELDS.to_vec(),
         GeWilsonPhaseResult::CALC_ID => GeWilsonPhaseResult::FIELDS.to_vec(),
         PitzerPhaseResult::CALC_ID => PitzerPhaseResult::FIELDS.to_vec(),
+        KentEisenbergPhaseResult::CALC_ID => KentEisenbergPhaseResult::FIELDS.to_vec(),
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         CapillaryDewPointResult::CALC_ID => CapillaryDewPointResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),

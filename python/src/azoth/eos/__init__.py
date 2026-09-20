@@ -98,6 +98,7 @@ from azoth.core.result import (
     HeliumPhaseResult,
     HydrogenPhaseResult,
     IdealGasCpResult,
+    KentEisenbergPhaseResult,
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
     Matcop5PrumrAlphaResult,
@@ -243,6 +244,7 @@ __all__ = [
     "helium_phase",
     "hydrogen_phase",
     "ideal_gas_cp",
+    "kent_eisenberg_phase",
     "liquid_heat_capacity",
     "mason_saxena_conductivity",
     "mixture",
@@ -364,6 +366,7 @@ _DEW_PRESSURE = "eos.dew_pressure"
 _DEW_TEMPERATURE = "eos.dew_temperature"
 _CAPILLARY_DEW_POINT = "eos.capillary_dew_point"
 _PH_FLASH = "eos.ph_flash"
+_KENT_EISENBERG_PHASE = "eos.kent_eisenberg_phase"
 _PITZER_PHASE = "eos.pitzer_phase"
 _PS_FLASH = "eos.ps_flash"
 _TH_FLASH = "eos.th_flash"
@@ -2029,6 +2032,36 @@ def ge_wilson_phase(
     """
     return resolve(_GE_WILSON_PHASE)(  # type: ignore[no-any-return]
         params=params, mixture=mixture, T=T, P=P, x=x
+    )
+
+
+def kent_eisenberg_phase(
+    components: Sequence[str],
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+) -> KentEisenbergPhaseResult:
+    """The fugacity coefficients of a phase whose activity coefficients are one.
+
+    NeqSim's ``PhaseKentEisenberg`` overrides ``getActivityCoefficient`` to return ``1.0``
+    for every component, so this model's whole content is the branch a component's
+    ``REFERENCESTATETYPE`` and charge select: a ``solvent`` gets ``P0_i(T)/P``, a neutral
+    solute ``H_i(T)/P``, and an ion the constant ``1e8``.
+
+    ``components`` are names, because which branch a component takes is what the model is.
+    The NRTL parameters ``ComponentKentEisenberg`` inherits are loaded and never read.
+
+    Raises:
+        InvalidInputError: if a component is not in the databank, if ``x`` is not a
+            composition, or if a ``solvent``-reference component carries no Antoine
+            correlation.
+        PropertyUnavailableError: if a component's Henry row is the all-zero filler.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.kent_eisenberg_phase`.
+    """
+    return resolve(_KENT_EISENBERG_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, x=x
     )
 
 
