@@ -365,6 +365,25 @@ class HydrateFormationTemperatureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TbpFractionPropertiesResult(_HasWarnings):
+    """Result of ``eos.tbp_fraction_properties``."""
+
+    #: Critical temperature.
+    tc: Q
+    #: Critical pressure.
+    pc: Q
+    #: Normal boiling point.
+    boiling_temperature: Q
+    #: Pitzer's acentric factor.
+    acentric_factor: float
+    #: The ``m`` of the cubic's alpha function, which replaces the acentric-factor
+    #: correlation for a pseudo-component.
+    attraction_exponent: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HydrateFormationPressureResult(_HasWarnings):
     """Result of ``eos.hydrate_formation_pressure``."""
 

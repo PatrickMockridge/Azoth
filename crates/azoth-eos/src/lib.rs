@@ -161,6 +161,7 @@ pub mod spec_gen;
 pub mod srk_alpha_ab;
 pub mod srk_cpa_phase;
 pub mod srk_departure;
+pub mod tbp_fraction_properties;
 // The CPA phase state's shared arithmetic, private: the two models that use it are
 // `srk_cpa_phase` and `pr_cpa_phase`, which name the family and the result type.
 mod cpa_phase;
@@ -327,6 +328,7 @@ pub use srk_kappa::srk_kappa;
 pub use srk_peneloux_shift::srk_peneloux_shift;
 pub use srk_z_factor::srk_z_factor;
 pub use stability_test::stability_test;
+pub use tbp_fraction_properties::tbp_fraction_properties;
 pub use th_flash::th_flash;
 pub use thermal_conductivity::thermal_conductivity;
 pub use tp_multiflash::tp_multiflash;

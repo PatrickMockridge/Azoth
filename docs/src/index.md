@@ -112,6 +112,7 @@ Four sections, and the difference between them is the point:
 - [`eos.srk_kappa`](./eos/srk_kappa.md)
 - [`eos.srk_peneloux_shift`](./eos/srk_peneloux_shift.md)
 - [`eos.srk_z_factor`](./eos/srk_z_factor.md)
+- [`eos.tbp_fraction_properties`](./eos/tbp_fraction_properties.md)
 - [`eos.twu_kappa`](./eos/twu_kappa.md)
 - [`eos.twucoon_alpha`](./eos/twucoon_alpha.md)
 - [`eos.twucoon_param_alpha`](./eos/twucoon_param_alpha.md)

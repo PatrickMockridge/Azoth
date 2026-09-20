@@ -40,10 +40,11 @@ use azoth_eos::results::{
     RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
     SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
     SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, ThFlashResult,
-    ThermalConductivityResult, TpMultiflashResult, TsFlashResult, TuFlashResult, TvFlashResult,
-    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
+    TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
+    TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult, TwuKappaResult,
+    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
@@ -3975,6 +3976,67 @@ impl From<&HydrateFormationTemperatureResult> for PyHydrateFormationTemperatureR
     }
 }
 
+/// Result of `eos.tbp_fraction_properties`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TbpFractionPropertiesResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTbpFractionPropertiesResult {
+    /// Critical temperature.
+    #[pyo3(get)]
+    pub tc: PyQty,
+    /// Critical pressure.
+    #[pyo3(get)]
+    pub pc: PyQty,
+    /// Normal boiling point.
+    #[pyo3(get)]
+    pub boiling_temperature: PyQty,
+    /// Pitzer's acentric factor.
+    #[pyo3(get)]
+    pub acentric_factor: f64,
+    /// The `m` of the cubic's alpha function.
+    #[pyo3(get)]
+    pub attraction_exponent: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTbpFractionPropertiesResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TbpFractionPropertiesResult(tc={} {}, pc={} {}, acentric_factor={}, m={})",
+            self.tc.magnitude_si,
+            self.tc.unit,
+            self.pc.magnitude_si,
+            self.pc.unit,
+            self.acentric_factor,
+            self.attraction_exponent
+        )
+    }
+}
+
+impl From<&TbpFractionPropertiesResult> for PyTbpFractionPropertiesResult {
+    fn from(r: &TbpFractionPropertiesResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            tc: qty(r.tc.value, "K"),
+            pc: qty(r.pc.value, "Pa"),
+            boiling_temperature: qty(r.boiling_temperature.value, "K"),
+            acentric_factor: r.acentric_factor,
+            attraction_exponent: r.attraction_exponent,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.hydrate_formation_pressure`, transported.
 #[pyclass(
     frozen,
@@ -6380,6 +6442,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         }
         HydrateFractionResult::CALC_ID => HydrateFractionResult::FIELDS.to_vec(),
         HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
+        TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
         EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),
@@ -6478,6 +6541,7 @@ pub fn calc_ids() -> Vec<String> {
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),
+        TbpFractionPropertiesResult::CALC_ID.to_string(),
     ]
 }
 

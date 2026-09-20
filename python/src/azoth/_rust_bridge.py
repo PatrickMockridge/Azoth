@@ -133,6 +133,7 @@ from azoth.core.result import (
     SrkZFactorResult,
     StabilityTestResult,
     SwameeJainResult,
+    TbpFractionPropertiesResult,
     ThermalConductivityResult,
     ThFlashResult,
     TpFlashSaftResult,
@@ -2806,6 +2807,23 @@ def hydrate_formation_pressure(
         structure=HydrateStructure(result.structure),
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tbp_fraction_properties(molar_mass: Q, density: Q) -> TbpFractionPropertiesResult:
+    """A TBP pseudo-component's properties, computed in Rust."""
+    result = _core.tbp_fraction_properties(
+        float(molar_mass.to("kg/mol").magnitude), float(density.to("kg/m**3").magnitude)
+    )
+    return TbpFractionPropertiesResult(
+        tc=from_si(result.tc.magnitude_si, result.tc.unit),
+        pc=from_si(result.pc.magnitude_si, result.pc.unit),
+        boiling_temperature=from_si(
+            result.boiling_temperature.magnitude_si, result.boiling_temperature.unit
+        ),
+        acentric_factor=result.acentric_factor,
+        attraction_exponent=result.attraction_exponent,
         warnings=_warnings(result.warnings),
     )
 

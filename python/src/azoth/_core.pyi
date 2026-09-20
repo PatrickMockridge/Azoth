@@ -898,6 +898,15 @@ class StabilityTestResult:
     warnings: list[Warning]
 
 @final
+class TbpFractionPropertiesResult:
+    tc: Qty
+    pc: Qty
+    boiling_temperature: Qty
+    acentric_factor: float
+    attraction_exponent: float
+    warnings: list[Warning]
+
+@final
 class ThFlashResult:
     P: Qty
     beta: float | None
@@ -1837,6 +1846,7 @@ def stability_test(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> StabilityTestResult: ...
+def tbp_fraction_properties(molar_mass: float, density: float) -> TbpFractionPropertiesResult: ...
 def th_flash(
     Tc: list[float],
     Pc: list[float],

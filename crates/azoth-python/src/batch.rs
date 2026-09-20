@@ -704,6 +704,47 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "kappa", "dimensionless", kappa);
         }
 
+        "eos.tbp_fraction_properties" => {
+            let (molar_mass, density) = (take(&inputs, "molar_mass")?, take(&inputs, "density")?);
+            let mut tc = Vec::with_capacity(n);
+            let mut pc = Vec::with_capacity(n);
+            let mut boiling_temperature = Vec::with_capacity(n);
+            let mut acentric_factor = Vec::with_capacity(n);
+            let mut attraction_exponent = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::tbp_fraction_properties(molar_mass[i], density[i]),
+                    &mut warnings,
+                )?;
+                tc.push(r.tc.value);
+                pc.push(r.pc.value);
+                boiling_temperature.push(r.boiling_temperature.value);
+                acentric_factor.push(r.acentric_factor);
+                attraction_exponent.push(r.attraction_exponent);
+            }
+            push_values(&mut columns, "tc", "K", tc);
+            push_values(&mut columns, "pc", "Pa", pc);
+            push_values(
+                &mut columns,
+                "boiling_temperature",
+                "K",
+                boiling_temperature,
+            );
+            push_values(
+                &mut columns,
+                "acentric_factor",
+                "dimensionless",
+                acentric_factor,
+            );
+            push_values(
+                &mut columns,
+                "attraction_exponent",
+                "dimensionless",
+                attraction_exponent,
+            );
+        }
+
         "eos.pr78_kappa" => {
             let omega = take(&inputs, "omega")?;
             let mut kappa = Vec::with_capacity(n);

@@ -3276,6 +3276,19 @@ pub fn hydrate_fraction(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// A TBP pseudo-component's properties, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (molar_mass, density))]
+pub fn tbp_fraction_properties(
+    py: Python<'_>,
+    molar_mass: f64,
+    density: f64,
+) -> PyResult<crate::results::PyTbpFractionPropertiesResult> {
+    azoth_eos::tbp_fraction_properties(molar_mass, density)
+        .map(|r| crate::results::PyTbpFractionPropertiesResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The freezing point of para-hydrogen at a pressure, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side checks them: the solid equation

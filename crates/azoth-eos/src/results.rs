@@ -654,6 +654,40 @@ impl CalcResult for HydrateFormationTemperatureResult {
     }
 }
 
+/// Result of `eos.tbp_fraction_properties`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TbpFractionPropertiesResult {
+    /// Critical temperature.
+    pub tc: ThermodynamicTemperature,
+    /// Critical pressure.
+    pub pc: Pressure,
+    /// Normal boiling point.
+    pub boiling_temperature: ThermodynamicTemperature,
+    /// Pitzer's acentric factor.
+    pub acentric_factor: f64,
+    /// The `m` of the cubic's alpha function, which replaces the acentric-factor
+    /// correlation for a pseudo-component.
+    pub attraction_exponent: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TbpFractionPropertiesResult {
+    const CALC_ID: &'static str = "eos.tbp_fraction_properties";
+    const FIELDS: &'static [&'static str] = &[
+        "tc",
+        "pc",
+        "boiling_temperature",
+        "acentric_factor",
+        "attraction_exponent",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.hydrate_formation_pressure`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HydrateFormationPressureResult {

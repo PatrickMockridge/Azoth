@@ -147,6 +147,16 @@ solubility, electrolytes, salts and scale, and freezing.
 
 The specialist physics.
 
+- **Plus-fraction characterisation.** The wax and asphaltene families' foundation.
+  `thermo/characterization/` — 16,204 lines across 39 classes: `PlusFractionModel`
+  and `TBPfractionModel`'s eight cut models, `PlusCharacterize`, `PedersenPlusModelSolver`,
+  `LumpingModel`, `Recombine`, and the assay and refinery-blend machinery around them. A wax
+  or asphaltene fluid is built from TBP and plus fractions, so this is what those models
+  stand on. **azoth has the seam and not the subsystem**: `eos.tbp_fraction_properties` is
+  Pedersen's `PedersenSRK` cut correlations, so a pseudo-component can be *described* by a
+  molar mass and a normal liquid density — but a plus fraction cannot be split into cuts,
+  lumped, or recombined into one, and `racketZ` (the Peneloux shift `addTBPfraction` sets from
+  a flashed reference system) is carried with it.
 - **Hydrate.** `ComponentHydrate`, `ComponentHydrateBallard`, `ComponentHydrateGF`,
   `ComponentHydrateKluda`, `ComponentHydratePitzer`, `ComponentHydratePVTsim`,
   `ComponentHydrateStatoil`, `PhaseHydrate`, `TPHydrateFlash`,

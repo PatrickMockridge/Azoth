@@ -1,0 +1,120 @@
+id = "eos.tbp_fraction_properties"
+name = "TBP pseudo-component properties"
+equation = "Pedersen's TBP correlations: mw = molar_mass*1000 (g/mol), d = density/1000 (g/cm3), then\n\n  oil = mw < 1120\n  tc  = c_tc[oil][0]*d + c_tc[oil][1]*ln(mw) + c_tc[oil][2]*mw + c_tc[oil][3]/mw                        [K]\n  pc  = exp(0.01325 + c_pc[oil][0] + c_pc[oil][1]*d**c_pc[oil][4] + c_pc[oil][2]/mw + c_pc[oil][3]/mw**2)  [bar]\n  tb  = 2e-6*mw**3 - 0.0035*mw**2 + 2.4003*mw + 171.74          if mw < 540                             [K]\n  tb  = 97.58*mw**0.3323*d**0.04609                            otherwise                                [K]\n  m   = c_m[oil][0] + c_m[oil][1]*mw + c_m[oil][2]*d + c_m[oil][3]*mw**2\n  omega = 3/7 * log10(pc / 1.01325) / (tc/tb - 1) - 1"
+latex = '''T_{c} = c_{0}d + c_{1}\ln M + c_{2}M + \frac{c_{3}}{M}, \qquad P_{c} = \exp\left(0.01325 + c_{0} + c_{1}d^{c_{4}} + \frac{c_{2}}{M} + \frac{c_{3}}{M^{2}}\right), \qquad \omega = \frac{3}{7}\frac{\log_{10}(P_{c}/1.01325)}{T_{c}/T_{b} - 1} - 1'''
+assumptions = [
+    "**this is NeqSim's default TBP model, `PedersenSRK`** - `Characterise.TBPFractionModelName`. The class holds eight models and this is the one `addTBPfraction` runs; `RiaziDaubert`, `Lee-Kesler`, `Twu`, `Cavett`, `Standing` and the two heavy-oil variants are carried by name.",
+    "**a cut is two numbers**, a molar mass and a normal liquid density, and everything a cubic needs follows from them. That is what `addTBPfraction` is: it evaluates these correlations and hands the results to a component.",
+    "the correlation is written in **g/mol and g/cm3** and this states SI, so the conversion is at the boundary and the coefficients keep NeqSim's own scale. `pc` is computed in **bar** - its coefficients and `0.01325` (= ln 1.01325) say so - and reported in pascals.",
+    "**the coefficient set switches at `mw = 1120` and the boiling-point correlation at `mw = 540`**, both in g/mol. The two crossings are pinned by tests, because a port that read either threshold in kg/mol would agree at every light cut and diverge only at heavy ones.",
+    "**above `mw = 1120` the acentric factor is unphysical and is returned anyway.** Measured at `mw = 1121`, `d = 1.0`: `tb = 1006.34005439028` K against `tc = 994.658850370848` K, so `omega` is `-44.6358323245519`. The correlation's behaviour, reproduced rather than repaired; the range warns.",
+    "`racketZ` - the Peneloux volume shift `addTBPfraction` also sets - is **not here**, and is not a function of these two numbers: it takes a flashed reference system. It is carried, and a pseudo-component built without it has the cubic's own volume rather than the measured one.",
+    "`calcCriticalVolume`, `calcParachorParameter`, `calcCriticalViscosity` and `calcWatsonCharacterizationFactor` are the same class's neighbours and are carried by name: nothing in the ported families reads them.",
+    "the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.",
+]
+references = [
+    "Pedersen, K. S.; Thomassen, P.; Fredenslund, A. (1989). \"Characterization of gas condensate mixtures.\" Advances in Thermodynamics 1, 137-152.",
+    "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TBPfractionModel.PedersenTBPModelSRK` is the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `TBPfractionModel.PedersenTBPModelSRK`"
+edition = "`calcTC`, `calcPC`, `calcTB`, `calcm` and the base class's `calcAcentricFactor`, as `addTBPfraction` composes them."
+[inputs]
+[inputs.molar_mass]
+unit = "kg/mol"
+description = "The cut's molar mass. A pseudo-component has no databank row, so this is what stands in for its identity.\n"
+[inputs.density]
+unit = "kg/m**3"
+description = "The cut's normal liquid density, at 15 C and 1 atm. The correlation takes g/cm3 and this is the same quantity a thousand times larger.\n"
+[outputs]
+[outputs.tc]
+unit = "K"
+description = "Critical temperature.\n"
+[outputs.pc]
+unit = "Pa"
+description = "Critical pressure. NeqSim's correlation is written in bar and this reports pascals.\n"
+[outputs.boiling_temperature]
+unit = "K"
+description = "Normal boiling point. Two correlations meet at `mw = 540` g/mol and the switch is pinned by a test.\n"
+[outputs.acentric_factor]
+unit = "dimensionless"
+description = "Pitzer's acentric factor, from Edmister's three-parameter form rather than from a vapour-pressure fit.\n"
+[outputs.attraction_exponent]
+unit = "dimensionless"
+description = "The `m` of the cubic's alpha function, which for a pseudo-component **replaces** the acentric-factor correlation `eos.srk_kappa` makes. NeqSim's `addTBPfraction` sets it on the component's attractive term.\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a molar mass; zero would divide by zero in four coefficients and below it the correlation has no meaning\n"
+[[valid_range]]
+quantity = "density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a normal liquid density; the critical-pressure coefficient raises it to a fractional power\n"
+[[valid_range]]
+quantity = "acentric_factor"
+min = -1
+max = 2
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "**Measured outside this at `mw >= 1120`**: the heavy set gives a boiling point above the critical temperature, so the factor comes out at `-44.6358323245519` at `mw = 1121`, `d = 1.0`. A Pitzer factor outside `[-1, 2]` describes no fluid, so it is reported rather than passed on.\n"
+[worked_example]
+source = "NeqSim 3.20.0, `TBPfractionModel.PedersenTBPModelSRK`, from `validation/neqsim/captures/tbp_fraction_probe.tsv` cut[4]"
+derivation = "A `C19`-scale cut at `mw = 500.0` g/mol and `d = 0.88` g/cm3 - the two numbers `addTBPfraction` takes - which is below both switches, so the oil set and the cubic boiling point apply:\n\n  ln(mw)         = 6.214608098422191\n  tc = 163.12*0.88 + 86.052*6.214608098422191 + 0.43475*500.0 - 1877.4/500.0\n     = 143.5456 + 534.7873345... + 217.375 - 3.7548 = 891.945256085426  K\n  pc = exp(0.01325 - 0.13408 + 2.5019*0.88**1.0 + 208.46/500.0 - 3987.2/500.0**2)\n     = exp(0.01325 - 0.13408 + 2.201672 + 0.41692 - 0.0159488) = 11.9629359599742  bar\n  tb = 2e-6*500.0**3 - 0.0035*500.0**2 + 2.4003*500.0 + 171.74 = 746.890000000000  K\n  m  = 0.7431 + 0.0048122*500.0 + 0.0096707*0.88 - 3.7184e-6*500.0**2 = 2.22811021600000\n  omega = 3/7*log10(11.9629359599742/1.01325)/(891.945256085426/746.89 - 1) - 1\n        = 3/7*1.0717984/0.1942125 - 1 = 1.36586663262266\n\nThe capture's rows are those five numbers."
+tolerance = 1e-12
+[worked_example.inputs]
+molar_mass = 0.5
+density = 880.0
+[worked_example.expected]
+tc = 891.945256085426
+pc = 1196293.59599742
+boiling_temperature = 746.89
+acentric_factor = 1.36586663262266
+attraction_exponent = 2.228110216
+[implementations]
+python = "azoth.eos.tbp_fraction_properties"
+rust = "azoth_eos::tbp_fraction_properties"
+[[tests]]
+id = "c19_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "the_boiling_point_switch_at_mw_540"
+type = "reference"
+status = "active"
+source = "The capture's cut[5] and cut[6], which straddle the switch: `mw = 539.0` g/mol takes the cubic and `mw = 541.0` the power law, at `d = 0.89` and `0.90`. A port that read the threshold in kg/mol would take the cubic for both.\n"
+tolerance = 1e-12
+[tests.inputs]
+molar_mass = 0.539
+density = 890.0
+[tests.expected]
+tc = 917.266537424744
+pc = 1192801.62245329
+boiling_temperature = 761.859838
+acentric_factor = 1.24987220957008
+attraction_exponent = 2.2652094366
+[[tests]]
+id = "the_coefficient_set_switch_at_mw_1120"
+type = "reference"
+status = "active"
+source = "The capture's cut[10], just over the second switch: the heavy-oil set applies from `mw = 1120` g/mol and gives `tc = 994.658850370848` K against the oil set's `1250.39775284238` at `mw = 1119` (cut[9]). The acentric factor is unphysical here and the output's range says so; the test pins the correlation, not a fluid.\n"
+tolerance = 1e-12
+[tests.inputs]
+molar_mass = 1.121
+density = 1000.0
+[tests.expected]
+tc = 994.658850370848
+pc = 1540167.95450655
+boiling_temperature = 1006.34005439028
+acentric_factor = -44.6358323245519
+attraction_exponent = -7177.99524606
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

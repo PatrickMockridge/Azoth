@@ -60,6 +60,7 @@
   - [Soave-Redlich-Kwong attraction-parameter coefficient](./eos/srk_kappa.md)
   - [Soave-Redlich-Kwong Peneloux volume-translation parameter](./eos/srk_peneloux_shift.md)
   - [Soave-Redlich-Kwong compressibility factor](./eos/srk_z_factor.md)
+  - [TBP pseudo-component properties](./eos/tbp_fraction_properties.md)
   - [Twu attraction-parameter coefficient](./eos/twu_kappa.md)
   - [Twu-Coon alpha function](./eos/twucoon_alpha.md)
   - [Twu-Coon parameter alpha function](./eos/twucoon_param_alpha.md)

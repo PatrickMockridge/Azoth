@@ -62,6 +62,7 @@ __all__ = [
     "SrkKappaBatch",
     "SrkPenelouxShiftBatch",
     "SrkZFactorBatch",
+    "TbpFractionPropertiesBatch",
     "TwuKappaBatch",
     "TwucoonAlphaBatch",
     "TwucoonParamAlphaBatch",
@@ -109,6 +110,7 @@ __all__ = [
     "srk_kappa",
     "srk_peneloux_shift",
     "srk_z_factor",
+    "tbp_fraction_properties",
     "twu_kappa",
     "twucoon_alpha",
     "twucoon_param_alpha",
@@ -150,6 +152,7 @@ _SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
 _HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
 _SRK_KAPPA = "eos.srk_kappa"
+_TBP_FRACTION_PROPERTIES = "eos.tbp_fraction_properties"
 _SCHWARTZENTRUBER_ALPHA = "eos.schwartzentruber_alpha"
 _SOREIDE_WHITSON_ALPHA = "eos.soreide_whitson_alpha"
 _SRK_ALPHA_AB = "eos.srk_alpha_ab"
@@ -1404,6 +1407,56 @@ def _build_srk_kappa(
     warnings: tuple[tuple[Warning, ...], ...],
 ) -> SrkKappaBatch:
     return SrkKappaBatch(warnings=warnings, units=units, kappa=columns["kappa"])  # type: ignore[arg-type]
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class TbpFractionPropertiesBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.tbp_fraction_properties`."""
+
+    #: Critical temperature per element, in K.
+    tc: array[float]
+    #: Critical pressure per element, in Pa.
+    pc: array[float]
+    #: Normal boiling point per element, in K.
+    boiling_temperature: array[float]
+    #: Pitzer's acentric factor per element. Dimensionless.
+    acentric_factor: array[float]
+    #: The ``m`` of the cubic's alpha function per element. Dimensionless.
+    attraction_exponent: array[float]
+
+
+def _build_tbp_fraction_properties(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> TbpFractionPropertiesBatch:
+    return TbpFractionPropertiesBatch(
+        warnings=warnings,
+        units=units,
+        tc=columns["tc"],  # type: ignore[arg-type]
+        pc=columns["pc"],  # type: ignore[arg-type]
+        boiling_temperature=columns["boiling_temperature"],  # type: ignore[arg-type]
+        acentric_factor=columns["acentric_factor"],  # type: ignore[arg-type]
+        attraction_exponent=columns["attraction_exponent"],  # type: ignore[arg-type]
+    )
+
+
+def tbp_fraction_properties(
+    *, molar_mass: Sequence[float], density: Sequence[float]
+) -> TbpFractionPropertiesBatch:
+    """A TBP pseudo-component's properties, over an array.
+
+    See :func:`azoth.eos.tbp_fraction_properties` for the calculation itself.
+    """
+    result: TbpFractionPropertiesBatch = run(
+        _TBP_FRACTION_PROPERTIES,
+        {
+            "molar_mass": sequence(molar_mass, "molar_mass"),
+            "density": sequence(density, "density"),
+        },
+        _build_tbp_fraction_properties,
+    )
+    return result
 
 
 def srk_kappa(*, omega: Sequence[float]) -> SrkKappaBatch:

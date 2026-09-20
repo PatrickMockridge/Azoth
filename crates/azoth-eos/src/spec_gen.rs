@@ -44,6 +44,7 @@
 //!   - specs/calcs/eos/srk_kappa.toml
 //!   - specs/calcs/eos/srk_peneloux_shift.toml
 //!   - specs/calcs/eos/srk_z_factor.toml
+//!   - specs/calcs/eos/tbp_fraction_properties.toml
 //!   - specs/calcs/eos/twu_kappa.toml
 //!   - specs/calcs/eos/twucoon_alpha.toml
 //!   - specs/calcs/eos/twucoon_param_alpha.toml
@@ -4944,6 +4945,157 @@ pub static SRK_Z_FACTOR_SPEC: CalcSpec = CalcSpec {
     tests: SRK_Z_FACTOR_TESTS,
 };
 
+/// Registry entry for `eos.tbp_fraction_properties`.
+static TBP_FRACTION_PROPERTIES_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "molar_mass",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a molar mass; zero would divide by zero in four coefficients and below it the correlation has no meaning",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "density",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a normal liquid density; the critical-pressure coefficient raises it to a fractional power",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "acentric_factor",
+            min: Some(-1.0),
+            min_inclusive: true,
+            max: Some(2.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Warning,
+            code: WarningCode::OutOfValidRange,
+            rationale: "**Measured outside this at `mw >= 1120`**: the heavy set gives a boiling point above the critical temperature, so the factor comes out at `-44.6358323245519` at `mw = 1121`, `d = 1.0`. A Pitzer factor outside `[-1, 2]` describes no fluid, so it is reported rather than passed on.",
+        },
+    },
+];
+
+static TBP_FRACTION_PROPERTIES_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "the_boiling_point_switch_at_mw_540",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("molar_mass", 0.539), ("density", 890.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("tc", 917.266537424744),
+            ("pc", 1192801.62245329),
+            ("boiling_temperature", 761.859838),
+            ("acentric_factor", 1.24987220957008),
+            ("attraction_exponent", 2.2652094366),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_coefficient_set_switch_at_mw_1120",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("molar_mass", 1.121), ("density", 1000.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("tc", 994.658850370848),
+            ("pc", 1540167.95450655),
+            ("boiling_temperature", 1006.34005439028),
+            ("acentric_factor", -44.6358323245519),
+            ("attraction_exponent", -7177.99524606),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+/// Registered spec for `eos.tbp_fraction_properties`.
+///
+/// Public and addressable directly, so a calc can hold `&TBP_FRACTION_PROPERTIES_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static TBP_FRACTION_PROPERTIES_SPEC: CalcSpec = CalcSpec {
+    id: "eos.tbp_fraction_properties",
+    checks: TBP_FRACTION_PROPERTIES_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "c19_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("molar_mass", 0.5), ("density", 880.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[
+            ("tc", 891.945256085426),
+            ("pc", 1196293.59599742),
+            ("boiling_temperature", 746.89),
+            ("acentric_factor", 1.36586663262266),
+            ("attraction_exponent", 2.228110216),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    tests: TBP_FRACTION_PROPERTIES_TESTS,
+};
+
 /// Registry entry for `eos.twu_kappa`.
 static TWU_KAPPA_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: false,
@@ -5733,6 +5885,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &SRK_KAPPA_SPEC,
     &SRK_PENELOUX_SHIFT_SPEC,
     &SRK_Z_FACTOR_SPEC,
+    &TBP_FRACTION_PROPERTIES_SPEC,
     &TWU_KAPPA_SPEC,
     &TWUCOON_ALPHA_SPEC,
     &TWUCOON_PARAM_ALPHA_SPEC,

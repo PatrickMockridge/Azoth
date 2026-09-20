@@ -48,6 +48,7 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.srk_kappa`](./srk_kappa.md) | $\kappa = 0.48 + 1.574\,\omega - 0.176\,\omega^{2}$ | Soave, G. (1972) |
 | [`eos.srk_peneloux_shift`](./srk_peneloux_shift.md) | $c = 0.40768\,\left(0.29441 - Z_{\mathrm{RA}}\right)\frac{R\,T_c}{P_c}, \qquad Z_{\mathrm{RA}} = 0.29056 - 0.08775\,\omega$ | Péneloux, A.; Rauzy, E.; Fréze, R. (1982) |
 | [`eos.srk_z_factor`](./srk_z_factor.md) | $z^{3} - z^{2} + \left(A - B - B^{2}\right)z - AB = 0$ | Redlich, O.; Kwong, J. N. S. (1949) |
+| [`eos.tbp_fraction_properties`](./tbp_fraction_properties.md) | $T_{c} = c_{0}d + c_{1}\ln M + c_{2}M + \frac{c_{3}}{M}, \qquad P_{c} = \exp\left(0.01325 + c_{0} + c_{1}d^{c_{4}} + \frac{c_{2}}{M} + \frac{c_{3}}{M^{2}}\right), \qquad \omega = \frac{3}{7}\frac{\log_{10}(P_{c}/1.01325)}{T_{c}/T_{b} - 1} - 1$ | NeqSim 3.20.0 `TBPfractionModel.PedersenTBPModelSRK` |
 | [`eos.twu_kappa`](./twu_kappa.md) | $\kappa = 0.48 + 1.574\,\omega - 0.175\,\omega^{2}$ | Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991) |
 | [`eos.twucoon_alpha`](./twucoon_alpha.md) | $\alpha = T_r^{a} e^{b(1 - T_r^{c})} + \omega\left(T_r^{d} e^{e(1 - T_r^{f})} - T_r^{a} e^{b(1 - T_r^{c})}\right)$ | NeqSim 3.20.0 `AttractiveTermTwuCoon` |
 | [`eos.twucoon_param_alpha`](./twucoon_param_alpha.md) | $\alpha = T_r^{c(b-1)} \exp\left(a\left(1 - T_r^{bc}\right)\right)$ | NeqSim 3.20.0 `AttractiveTermTwuCoonParam` |

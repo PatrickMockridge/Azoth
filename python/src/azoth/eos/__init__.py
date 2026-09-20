@@ -161,6 +161,7 @@ from azoth.core.result import (
     SrkPenelouxShiftResult,
     SrkZFactorResult,
     StabilityTestResult,
+    TbpFractionPropertiesResult,
     ThermalConductivityResult,
     ThFlashResult,
     TpFlashSaftResult,
@@ -2001,6 +2002,26 @@ def hydrate_formation_pressure(
     """
     return resolve(_HYDRATE_FORMATION_PRESSURE)(  # type: ignore[no-any-return]
         components=components, T=T, z=z, eos=eos
+    )
+
+
+def tbp_fraction_properties(molar_mass: Q, density: Q) -> TbpFractionPropertiesResult:
+    """A TBP pseudo-component's properties, from a molar mass and a normal liquid density.
+
+    A pseudo-component has no databank row: a plus fraction is split into cuts and each is
+    described by these two numbers, which is what NeqSim's ``addTBPfraction`` takes. Pedersen's
+    correlations turn them into everything a cubic needs.
+
+    The acentric factor comes back carrying ``OUT_OF_VALID_RANGE`` when it is outside
+    ``[-1, 2]``, which the heavy coefficient set produces above ``mw = 1120`` g/mol.
+
+    Raises:
+        OutOfRangeError: if the molar mass or the density is not positive.
+
+    See :func:`azoth.eos.reference.tbp_fraction_properties`.
+    """
+    return resolve("eos.tbp_fraction_properties")(  # type: ignore[no-any-return]
+        molar_mass=molar_mass, density=density
     )
 
 
