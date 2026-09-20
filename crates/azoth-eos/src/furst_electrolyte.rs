@@ -343,17 +343,20 @@ pub fn furst_mixture_of(
             matrix[j * n + i] = value;
         }
     }
-    let components = entries
+    // **The component's own `schwartzentruber1..3`, and not an empty set.** NeqSim's
+    // `AttractiveTermSchwartzentruber` is constructed with the component alone, and that
+    // constructor leaves the three fitted parameters *as the component already has them* -
+    // zero for most substances and **not for water**, whose row carries
+    // `0.054783425, 0.094678512, -2.267329403`. With them dropped the correlation reduces
+    // to `(1 + m(1 - sqrt(Tr)))^2`, and for water that is 2.56% high - which is 0.34% on
+    // the phase's `Z` and was the whole of this model's divergence from NeqSim.
+    let components: Vec<crate::mixture::Component> = entries
         .iter()
         .map(|e| e.component())
-        .collect::<azoth_core::Result<Vec<_>>>()?;
-    // **Empty alpha parameters, deliberately.** NeqSim's `AttractiveTermSchwartzentruber`
-    // is constructed with the component alone, which leaves its three fitted parameters at
-    // zero and reduces the correlation to Soave's form. The databank carries
-    // `schwartzentruber1..3` columns for some substances and this model must not read them.
-    let components: Vec<crate::mixture::Component> = components
+        .collect::<azoth_core::Result<Vec<_>>>()?
         .into_iter()
-        .map(|c| c.with_alpha_params(Vec::new()))
+        .zip(&entries)
+        .map(|(c, e)| c.with_alpha_params(e.schwartzentruber.to_vec()))
         .collect();
     let ideal_gas = {
         let coefficient = |index: usize| -> Vec<f64> {

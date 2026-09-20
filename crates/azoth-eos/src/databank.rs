@@ -276,6 +276,16 @@ pub struct Entry {
     /// `ComponentUMRCPA.setAttractiveTerm` installs term 22 for a component whose set
     /// has them - a hydrocarbon as readily as a glycol. 23 of the 348 rows carry one.
     pub umrcpa_mc: [f64; 5],
+    /// `schwartzentruber1..3`, the fitted parameters of the Schwartzentruber attractive
+    /// term.
+    ///
+    /// **Zero for most substances and not for water**, which is why they matter: the Fürst
+    /// electrolyte's alpha is Schwartzentruber for every component, and with the parameters
+    /// zero it is Soave's form with that correlation's `m`. Water's row carries
+    /// `0.054783425, 0.094678512, -2.267329403` and a component that drops them computes an
+    /// alpha 2.56% high - which is 0.34% on the phase's compressibility factor, and was the
+    /// whole of this model's divergence from NeqSim.
+    pub schwartzentruber: [f64; 3],
     /// SAFT-VR-Mie's repulsive exponent `lambda_r`, dimensionless.
     ///
     /// **This one is an absence marker too, on exactly the rows `m_mie` is.** The table
@@ -980,6 +990,9 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "umrcpa_mc3",
         "umrcpa_mc4",
         "umrcpa_mc5",
+        "schwartzentruber1",
+        "schwartzentruber2",
+        "schwartzentruber3",
         "umrcpa_a0",
         "umrcpa_b",
         "umrcpa_assocenergy",
@@ -1067,6 +1080,14 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                 m_saft: number(&record, index["msaft"], "msaft", row)?,
                 sigma_saft: number(&record, index["sigma_saft_m"], "sigma_saft_m", row)?,
                 epsik_saft: number(&record, index["epsiksaft"], "epsiksaft", row)?,
+                schwartzentruber: {
+                    let mut fitted = [0.0; 3];
+                    for (k, slot) in fitted.iter_mut().enumerate() {
+                        let column = format!("schwartzentruber{}", k + 1);
+                        *slot = number(&record, index[column.as_str()], &column, row)?;
+                    }
+                    fitted
+                },
                 umrcpa_mc: {
                     let mut mc = [0.0; 5];
                     for (k, slot) in mc.iter_mut().enumerate() {
@@ -1363,6 +1384,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 sigma_saft: 0.0,
                 epsik_saft: 0.0,
                 umrcpa_mc: [0.0; 5],
+                schwartzentruber: [0.0; 3],
                 lambda_r_mie: 0.0,
                 lambda_a_mie: 0.0,
                 m_mie: 0.0,
@@ -1424,6 +1446,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             sigma_saft: base.sigma_saft,
             epsik_saft: base.epsik_saft,
             umrcpa_mc: base.umrcpa_mc,
+            schwartzentruber: base.schwartzentruber,
             lambda_r_mie: base.lambda_r_mie,
             lambda_a_mie: base.lambda_a_mie,
             m_mie: base.m_mie,

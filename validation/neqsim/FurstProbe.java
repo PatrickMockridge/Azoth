@@ -104,6 +104,35 @@ public class FurstProbe {
           (neqsim.thermo.component.ComponentEosInterface) phase.getComponent(i);
       row("b[" + i + "]", component.getb());
       row("a[" + i + "]", component.geta());
+      row("aT[" + i + "]", component.getaT());
+      // **The Huron-Vidal rule's own per-component quantity.** `ader_i` is
+      // `a_i/(b_i R T) - ln(gamma_i)/lambda`, and `alphaMix = sum_i x_i ader_i` is what
+      // `calcA` multiplies by `n B R T`. Printed beside `A` because a difference in the
+      // sum is a difference in one of these, and every way of getting one wrong looks the
+      // same in `A` alone.
+      row("ader[" + i + "]", component.getAder());
+      row("alpha[" + i + "]", component.getAttractiveTerm().alpha(temperature));
+      // The component's own constants, which need not be the table's: `TC`/`PC` are the
+      // table's in degrees C and bar, and `getTC()` is kelvin.
+      row("omega[" + i + "]", component.getAcentricFactor());
+      row("tc[" + i + "]", component.getTC());
+      {
+        java.lang.Object term = component.getAttractiveTerm();
+        java.lang.Object params = null;
+        for (java.lang.Class<?> k = term.getClass(); k != null; k = k.getSuperclass()) {
+          try {
+            java.lang.reflect.Field f = k.getDeclaredField("parameters");
+            f.setAccessible(true);
+            params = f.get(term);
+            break;
+          } catch (Throwable ignored) {
+            // keep walking up
+          }
+        }
+        System.out.printf("params[%d] = %s  term = %s%n", i, java.util.Arrays.toString((double[]) params),
+            term.getClass().getSimpleName());
+      }
+      row("pc[" + i + "]", component.getPC());
     }
     for (int i = 0; i < n; i++) {
       row("x[" + i + "]", phase.getComponent(i).getx());
