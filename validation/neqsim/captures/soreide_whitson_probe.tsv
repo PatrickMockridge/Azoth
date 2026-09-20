@@ -1,0 +1,16 @@
+the shipped test's own mixture:
+  N2 CO2 C1 C2 water                     ok   phase[1] = PhaseSoreideWhitson
+
+the six pairs whose row carries a comma:
+  CO2 + propane                          ok   phase[1] = PhaseSoreideWhitson
+  CO2 + n-butane                         ok   phase[1] = PhaseSoreideWhitson
+  CO2 + n-pentane                        ok   phase[1] = PhaseSoreideWhitson
+  CO2 + n-hexane                         ok   phase[1] = PhaseSoreideWhitson
+  CO2 + n-heptane                        ok   phase[1] = PhaseSoreideWhitson
+  CO2 + mercury                          ok   phase[1] = PhaseSoreideWhitson
+
+and neighbours whose row does not:
+  CO2 + methane                          ok   phase[1] = PhaseSoreideWhitson
+  CO2 + ethane                           ok   phase[1] = PhaseSoreideWhitson
+  CO2 + n-octane                         ok   phase[1] = PhaseSoreideWhitson
+  CO2 + nC10                             ok   phase[1] = PhaseSoreideWhitson
