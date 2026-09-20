@@ -61,6 +61,15 @@ pub enum Alpha {
     MatCop5PrUmr,
     /// Delft (1998), methane-specific, Soave otherwise.
     Delft1998,
+    /// Soreide-Whitson: **water takes the salinity-dependent form and everything else is
+    /// `Pr78`**.
+    ///
+    /// **The one variant that is not a function of the component alone.** The component that
+    /// takes it and the salinity it takes both come from
+    /// [`crate::mixing_rule::MixingRule::SoreideWhitson`], so
+    /// [`crate::mixture::Mixture::new`] refuses this alpha beside any other rule rather than
+    /// resolving it against a salinity of zero.
+    SoreideWhitson,
 }
 
 impl Alpha {
@@ -82,6 +91,7 @@ impl Alpha {
             Alpha::MatCopPrUmr => "matcop_prumr",
             Alpha::MatCop5PrUmr => "matcop_5prumr",
             Alpha::Delft1998 => "delft1998",
+            Alpha::SoreideWhitson => "soreide_whitson",
         }
     }
 }
@@ -105,6 +115,7 @@ impl std::str::FromStr for Alpha {
             "matcop_prumr" => Ok(Alpha::MatCopPrUmr),
             "matcop_5prumr" => Ok(Alpha::MatCop5PrUmr),
             "delft1998" => Ok(Alpha::Delft1998),
+            "soreide_whitson" => Ok(Alpha::SoreideWhitson),
             other => Err(format!(
                 "unknown alpha `{other}`; expected `pr`, `srk`, `pr78`, `twu`, `twucoon`, \
                  `gassem2001`, `danesh`, `schwartzentruber`, `mollerup`, `matcop`, \

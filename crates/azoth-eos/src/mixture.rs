@@ -13,14 +13,14 @@ use azoth_core::{AzothError, Result, Warning};
 
 use crate::alpha_term::{
     Alpha, AlphaTerm, Danesh, Delft1998, Gassem2001, MatCop, MatCopFallback, Mollerup, RkAlpha,
-    Schwartzentruber, Soave, TwuCoon, matcop_kappa, umr_kappa,
+    Schwartzentruber, Soave, SoreideWhitsonWater, TwuCoon, matcop_kappa, umr_kappa,
 };
 use crate::association::{
     Association, AssociationCubic, AssociationRecord, NON_ASSOCIATING, R, SiteDerivatives,
     SiteScheme,
 };
 use crate::cubic::Cubic;
-use crate::mixing_rule::{MixingRule, UMR_HWFC};
+use crate::mixing_rule::{MixingRule, SoreideWhitsonRole, UMR_HWFC};
 use crate::{
     pr_alpha_ab, pr_kappa, pr_z_factor, pr78_kappa, rk_alpha_ab, srk_alpha_ab, srk_kappa,
     srk_z_factor, twu_kappa,
@@ -423,7 +423,7 @@ impl Mixture {
         let mut reduced_temperatures = Vec::with_capacity(self.len());
         let mut warnings = Vec::new();
 
-        for component in &self.components {
+        for (index, component) in self.components.iter().enumerate() {
             let reduced_temperature = t.value / component.tc.value;
             let reduced_pressure = p.value / component.pc.value;
             reduced_temperatures.push(reduced_temperature);
@@ -506,6 +506,42 @@ impl Mixture {
                             kappa: kappa.kappa,
                             is_methane,
                         })
+                    }
+                    Alpha::SoreideWhitson => {
+                        // **Water by role, and the salinity from the same rule.** The role
+                        // vector is the only per-component identity this layer has, which is
+                        // why `Mixture::new` refuses this alpha beside any other rule: there
+                        // would be nothing to read the role from.
+                        // **Refused rather than resolved against a zero.** This is the one
+                        // alpha that is not a function of the component alone - it needs the
+                        // salinity and the role vector, and beside another rule there is
+                        // nothing to read either from. An error rather than a panic, per this
+                        // crate's no-panic rule.
+                        let MixingRule::SoreideWhitson {
+                            roles, salinity, ..
+                        } = &self.mixing_rule
+                        else {
+                            return Err(AzothError::invalid_input(
+                                "mixing_rule",
+                                "the Soreide-Whitson alpha takes its salinity from the \
+                                 Soreide-Whitson mixing rule and reads which component is \
+                                 water from that rule's roles, so it cannot be resolved \
+                                 beside any other rule",
+                            ));
+                        };
+                        let salinity = *salinity;
+                        if roles[index] == SoreideWhitsonRole::Water {
+                            non_soave(&SoreideWhitsonWater {
+                                salinity,
+                                critical_temperature: component.tc.value,
+                            })
+                        } else {
+                            // Every other component is Peng-Robinson 1978, which is what
+                            // `AttractiveTermSoreideWhitson.alpha` delegates to.
+                            let kappa = pr78_kappa(component.omega)?;
+                            warnings.extend(kappa.warnings);
+                            non_soave(&Soave { kappa: kappa.kappa })
+                        }
                     }
                     Alpha::Pr | Alpha::Srk | Alpha::Pr78 | Alpha::Twu => {
                         let (kappa_value, kappa_warnings) = match self.alpha {
