@@ -1,0 +1,79 @@
+# azoth PitzerProbe - NeqSim 3.20.0's SystemPitzer.
+# Committed verbatim from `validation/neqsim/PitzerProbe.java`; regenerate by running it.
+# The dataset ids below are the record of NeqSim's per-topology parameter choice:
+# `usgs-phreeqc-...-catalog-v1` is the PHREEQC catalogue and
+# `neqsim-legacy-pitzer-parameters-v1` is `PitzerParameters.csv`.
+
+
+=== water + NaCl ===
+phases = 2
+  [0] GAS          PhaseSrkEos
+  [1] AQUEOUS      PhasePitzer
+       dataset id     = usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1
+       common-ion     = true
+       ionic strength = 6.167699756 mol/kg
+       solvent weight = 0.01621350000 kg
+       osmotic (water) = 1.288253328
+       osmotic (molal) = 1.288253328
+       density         = 1197.626384 kg/m3
+       b0(water,Na+)  = 0.000000000   b1 = 0.000000000   cphi = 0.000000000   b2 = 0.000000000
+       b0(water,Cl-)  = 0.000000000   b1 = 0.000000000   cphi = 0.000000000   b2 = 0.000000000
+       b0(Na+,Cl-)  = 0.07534000000   b1 = 0.2769000000   cphi = 0.001480000000   b2 = 0.000000000
+  x[0] water      = 0.8181818182  charge = +0  molality = 55.50929781
+  x[1] Na+        = 0.09090909091  charge = +1  molality = 6.167699756
+  x[2] Cl-        = 0.09090909091  charge = -1  molality = 6.167699756
+
+=== water + NaCl + CaCl2 ===
+phases = 2
+  [0] GAS          PhaseSrkEos
+  [1] AQUEOUS      PhasePitzer
+       dataset id     = usgs-phreeqc-pitzer-b0b3be767158ccc3322d2c816625cf470045e67e-catalog-v1
+       common-ion     = true
+       ionic strength = 6.857030906 mol/kg
+       solvent weight = 0.01531275000 kg
+       osmotic (water) = 1.390314018
+       osmotic (molal) = 1.390314018
+       density         = 1188.334587 kg/m3
+       b0(water,Na+)  = 0.000000000   b1 = 0.000000000   cphi = 0.000000000   b2 = 0.000000000
+       b0(water,Ca++)  = 0.000000000   b1 = 0.000000000   cphi = 0.000000000   b2 = 0.000000000
+       b0(water,Cl-)  = 0.000000000   b1 = 0.000000000   cphi = 0.000000000   b2 = 0.000000000
+       b0(Na+,Ca++)  = 0.000000000   b1 = 0.000000000   cphi = 0.000000000   b2 = 0.000000000
+       b0(Na+,Cl-)  = 0.07534000000   b1 = 0.2769000000   cphi = 0.001480000000   b2 = 0.000000000
+       b0(Ca++,Cl-)  = 0.3159000000   b1 = 1.614000000   cphi = 0.0001400000000   b2 = -1.130000000
+  x[0] water      = 0.8500000000  charge = +0  molality = 55.50929781
+  x[1] Na+        = 0.05000000000  charge = +1  molality = 3.265252812
+  x[2] Ca++       = 0.02000000000  charge = +2  molality = 1.306101125
+  x[3] Cl-        = 0.08000000000  charge = -1  molality = 5.224404500
+
+=== water + CO2 ===
+phases = 2
+  [0] GAS          PhaseSrkEos
+  [1] AQUEOUS      PhasePitzer
+       dataset id     = neqsim-legacy-pitzer-parameters-v1
+       common-ion     = false
+       ionic strength = 0.000000000 mol/kg
+       solvent weight = 0.01783485000 kg
+       osmotic (water) = 1.000000000
+       osmotic (molal) = 1.000000000
+       density         = 999.2997832 kg/m3
+       b0(water,CO2)  = 0.000000000   b1 = 0.000000000   cphi = 0.000000000   b2 = 0.000000000
+  x[0] water      = 0.9900000000  charge = +0  molality = 55.50929781
+  x[1] CO2        = 0.01000000000  charge = +0  molality = 0.5606999779
+
+=== water + Na+ + HCO3- ===
+phases = 2
+  [0] GAS          PhaseSrkEos
+  [1] AQUEOUS      PhasePitzer
+       dataset id     = neqsim-legacy-pitzer-parameters-v1
+       common-ion     = false
+       ionic strength = 3.083849878 mol/kg
+       solvent weight = 0.01621350000 kg
+       osmotic (water) = 0.8676461164
+       osmotic (molal) = 0.8676461164
+       density         = 948.0903941 kg/m3
+       b0(water,Na+)  = 0.000000000   b1 = 0.000000000   cphi = 0.000000000   b2 = 0.000000000
+       b0(water,HCO3-)  = 0.000000000   b1 = 0.000000000   cphi = 0.000000000   b2 = 0.000000000
+       b0(Na+,HCO3-)  = 0.02770000000   b1 = 0.04110000000   cphi = 0.000000000   b2 = 0.000000000
+  x[0] water      = 0.9000000000  charge = +0  molality = 55.50929781
+  x[1] Na+        = 0.05000000000  charge = +1  molality = 3.083849878
+  x[2] HCO3-      = 0.05000000000  charge = -1  molality = 3.083849878
