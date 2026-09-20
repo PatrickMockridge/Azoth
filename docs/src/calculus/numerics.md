@@ -55,10 +55,31 @@ So the rule has two parts:
   through `exp (2 log x)` and is `NaN` for `x < 0`. `Azoth.Pow.rpow_natCast` is the theorem:
   the integral exponents are exactly where the conventions coincide.
 
-For a rational `p/q` in lowest terms with `q` odd the real-valued power **is** defined on
-all of `R`, and its sign is `sign(x)^p` — the numerator's parity, not the denominator's.
-Measured, against the definition `(x^p)^(1/q)`: `(-8)^(2/3) = +4` and `(-32)^(3/5) = -8`.
-A kernel that writes `sign(x) · |x|^(p/q)` is wrong for every even `p`.
+### How many roots
+
+**`x^(p/q)` is a `q`-valued expression, and any single number returned for it is a branch
+selection.** In lowest terms, the number of *real* values is:
+
+| `x^p` | `q` odd | `q` even |
+|---|---|---|
+| `> 0` | 1 | **2** |
+| `< 0` | 1 | 0 |
+
+`q` even forces `p` odd, so `x^p` carries the sign of `x`; the table's second column is
+therefore "`x > 0`" and its third is "`x < 0`". Over the complexes the count is always `q`,
+for any `q` — which is the form of the statement that matters: the number of roots is a
+property of the exponent's denominator, not something a two-case rule settles.
+
+**So `sign(x)^p · |x|^(p/q)` is not a formula, it is a choice.** For `q` odd it picks the
+one real root and there is nothing to choose — `(-8)^(1/3) = -2` and `(-8)^(2/3) = +4`, both
+unique. For `q` even and `x > 0` it picks the non-negative one and **silently discards the
+other**: `4^(1/2)` is `±2`, and a kernel that returns `+2` without saying so has made a
+convention decision where the mathematics has not.
+
+`Azoth.Pow.even_power_has_two_roots` is the fact underneath: `(-y)^n = y^n` for even `n`,
+so the `n`-th power is not injective and its inverse is not a function. A kernel computing a
+root of an even power states which branch it wants — `sqrt` returns the non-negative one,
+and any use of it is that choice.
 
 ## Where a fractional dimension goes
 

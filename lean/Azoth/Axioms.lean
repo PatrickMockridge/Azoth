@@ -35,6 +35,7 @@ import Azoth.Pow
 #print axioms Azoth.Dim.exponents_smul
 #print axioms Azoth.Dim.not_integer_smul
 #print axioms Azoth.Pow.rpow_natCast
+#print axioms Azoth.Pow.even_power_has_two_roots
 #print axioms Azoth.Pow.rpow_third_of_neg_pos
 #print axioms Azoth.Pow.rpow_two_thirds_of_neg_neg
 #print axioms Azoth.Pow.the_conventions_disagree

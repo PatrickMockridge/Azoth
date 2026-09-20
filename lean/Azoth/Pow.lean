@@ -28,6 +28,22 @@ not say which it means is not implementing either.
 **Where the three agree is exactly the integral exponents**, which is `rpow_natCast`
 below and the reason `powi` is safe where `powf` is not. `Azoth.Pow.rpow_natCast` states
 it as this development's anchor rather than leaving a reader to find Mathlib's.
+
+# How many roots, which is not two cases
+
+**`x^(p/q)` is a `q`-valued expression**, and the number of *real* values is not settled by
+the parity of `q` alone. In lowest terms: one for odd `q` whatever the sign; and for even
+`q`, **two** when `x > 0` and none when `x < 0`, since even `q` forces odd `p` and the
+radicand then carries the sign of `x`. Over the complexes the count is always `q`, for any
+`q` - which is the form of the statement that matters, because `q` is a denominator and not
+a flag.
+
+So a single-valued form is a **branch selection**, not a formula. For odd `q` there is
+nothing to select - `(-8)^(1/3) = -2` and `(-8)^(2/3) = +4` are each the only real value.
+For even `q` and `x > 0` there are two, and `sign(x)^p |x|^(p/q)` returns the non-negative
+one: `4^(1/2)` is `±2`, and a kernel returning `+2` has made a convention decision where the
+mathematics has not. `even_power_has_two_roots` is the fact underneath: an even power is not
+injective, so its inverse is not a function.
 -/
 
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
@@ -112,6 +128,18 @@ theorem rpow_two_thirds_of_neg_neg {x : ℝ} (hx : x < 0) : x ^ ((2 : ℝ) / 3) 
   rw [show (2 : ℝ) / 3 * Real.pi = 2 * (Real.pi / 3) by ring, Real.cos_two_mul,
       Real.cos_pi_div_three]
   norm_num
+
+/-- **An even power is not injective, so its inverse has two branches.**
+
+`(-y)^n = y^n` for even `n`. The `n`-th root of a positive number is therefore two real
+numbers, not one, and any single-valued root - `Real.sqrt`, or a `sign(x)^p |x|^(p/q)`
+formula - is selecting one of them. That selection is a convention the kernel owes its
+reader, and it is what `4^(1/2) = +2` is doing rather than a consequence of the arithmetic.
+
+This is also why `q` odd is the *easy* case: with an odd denominator there is one real root
+whatever the sign of the radicand, so there is nothing for a formula to choose.-/
+theorem even_power_has_two_roots (n : ℕ) (hn : Even n) (y : ℝ) : (-y) ^ n = y ^ n :=
+  hn.neg_pow y
 
 /-- **The two conventions can never agree on the negative axis, for a third-power
 exponent.**

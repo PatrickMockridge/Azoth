@@ -10,6 +10,8 @@ this is the call site.
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from azoth.core.errors import OutOfRangeError
@@ -47,3 +49,42 @@ def test_the_wagner_form_is_exact_at_the_critical_point() -> None:
         *WAGNER, "wagner", quantity(TC, "K"), quantity(PC, "Pa"), quantity(TC, "K")
     )
     assert at_tc.p_sat.magnitude == pytest.approx(PC)
+
+
+def test_an_even_root_has_two_real_values() -> None:
+    """**The page's table, checked.** `x^(p/q)` is `q`-valued, and for even `q` with a
+    positive radicand there are **two** real roots, not one.
+
+    `Azoth.Pow.even_power_has_two_roots` is the fact underneath - an even power is not
+    injective, so its inverse is not a function - and `sign(x)^p |x|^(p/q)` is a *selection*
+    among them rather than a formula.
+    """
+    # Two values, and both are roots.
+    for root in (2.0, -2.0):
+        assert root**2 == 4.0
+    assert math.sqrt(4.0) == 2.0, "the single-valued form picks one, which is the choice"
+
+    # **An odd denominator is the easy case**: one real root whatever the sign, so there is
+    # nothing for a formula to choose. Python's `**` will not give it - it promotes the
+    # negative base, which is the next test - so the real odd root is written out.
+    assert math.cbrt(-8.0) == -2.0
+    assert pytest.approx(2.0, abs=1e-12) == 32.0 ** (1 / 5)
+
+
+def test_python_promotes_a_negative_base_and_lean_does_not() -> None:
+    """The *fourth* convention, and the reason the two azoth kernels disagreed in kind.
+
+    Python's `**` with a negative base and a fractional exponent returns a **complex** -
+    `(1.0 + 1.732j)` for `(-8)^(1/3)`, whose real part is `1.0`. That is Lean's
+    `Real.rpow` value to the digit, and neither is the real cube root, which is `-2`. Rust's
+    `powf` returns `NaN`.
+
+    The Wagner form's refusal exists because of this: one kernel would have returned `NaN`
+    as a result and the other would have raised a `TypeError`, so they disagreed about what
+    the function *is*, and no case reached the state to say so.
+    """
+    value = (-8.0) ** (1 / 3)
+    assert isinstance(value, complex)
+    assert value == pytest.approx(complex(1.0, 1.7320508075688772), abs=1e-12)
+    assert value.real == pytest.approx(1.0), "Lean's Real.rpow value"
+    assert math.cbrt(-8.0) == -2.0, "and the real odd root is neither"
