@@ -103,6 +103,14 @@ pub struct TestCase {
     /// component. Separate from [`Self::expected`] for the same reason
     /// [`Self::vectors`] is separate from [`Self::lists`].
     pub expected_vectors: &'static [(&'static str, &'static [f64])],
+    /// Expected categorical outputs, by name - an enum such as a flow regime or the
+    /// parameter dataset a phase loaded.
+    ///
+    /// Present because a model can answer a question with a *name* rather than a number,
+    /// and a case that pins the numbers and not the name pins half of what the model
+    /// says. A string expectation this generator cannot carry is refused rather than
+    /// dropped, so a case cannot declare one that nothing checks.
+    pub expected_strings: &'static [(&'static str, &'static str)],
 }
 
 impl TestCase {
@@ -158,6 +166,15 @@ impl TestCase {
     #[must_use]
     pub fn expected_value(&self, name: &str) -> Option<f64> {
         self.expected
+            .iter()
+            .find(|(k, _)| *k == name)
+            .map(|(_, v)| *v)
+    }
+
+    /// Fetch an expected string output. `None` if the test does not assert it.
+    #[must_use]
+    pub fn expected_string(&self, name: &str) -> Option<&'static str> {
+        self.expected_strings
             .iter()
             .find(|(k, _)| *k == name)
             .map(|(_, v)| *v)

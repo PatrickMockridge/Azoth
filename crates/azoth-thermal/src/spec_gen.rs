@@ -80,6 +80,7 @@ static CONDUCTION_PLANE_WALL_TESTS: &[TestCase] = &[
         matrices: &[],
         expected: &[("q", 700.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "sign_follows_the_temperature_difference",
@@ -96,6 +97,7 @@ static CONDUCTION_PLANE_WALL_TESTS: &[TestCase] = &[
         matrices: &[],
         expected: &[("q", -54000.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "monotonic",
@@ -112,6 +114,7 @@ static CONDUCTION_PLANE_WALL_TESTS: &[TestCase] = &[
         matrices: &[],
         expected: &[],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -128,6 +131,7 @@ static CONDUCTION_PLANE_WALL_TESTS: &[TestCase] = &[
         matrices: &[],
         expected: &[],
         expected_vectors: &[],
+        expected_strings: &[],
     },
 ];
 
@@ -156,6 +160,7 @@ pub static CONDUCTION_PLANE_WALL_SPEC: CalcSpec = CalcSpec {
         matrices: &[],
         expected: &[("q", 54000.0)],
         expected_vectors: &[],
+        expected_strings: &[],
     },
     tests: CONDUCTION_PLANE_WALL_TESTS,
 };

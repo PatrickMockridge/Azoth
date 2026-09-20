@@ -155,6 +155,23 @@ def camel_variant(screaming_snake: str) -> str:
     return "".join(part.capitalize() for part in screaming_snake.split("_"))
 
 
+#: Expected keys this generator does not carry and that a model's own test reads from
+#: the raw spec instead.
+#:
+#: Named rather than allowed silently: a case that asserts something *nothing* reads is
+#: worse than one that asserts nothing, because it reads as verified. An entry here is a
+#: claim that somewhere does read it, and the test named beside each is where.
+SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
+    {
+        # `stability_test`'s per-trial phase compositions, which are a matrix and have no
+        # field in `TestCase`. `crates/azoth-eos/tests/stability_test.rs` asserts their
+        # structure and `python/tests/models/test_stability_test.py` reads this same spec
+        # and compares both backends against them.
+        "w",
+    }
+)
+
+
 def collect_numbers(mapping: dict[str, Any]) -> list[tuple[str, float]]:
     """Scalar numbers, **excluding flags**.
 
@@ -274,6 +291,21 @@ def emit_test_case(
     matrices = collect_matrices(inputs)
     expected_numbers = collect_numbers(expected)
     expected_vectors = collect_vectors(expected)
+    expected_strings = collect_strings(expected)
+    # A case's expectation this generator cannot carry is refused rather than dropped:
+    # an assertion nothing reads is worse than no assertion, because it reads as one.
+    carried = (
+        {k for k, _ in expected_numbers}
+        | {k for k, _ in expected_vectors}
+        | {k for k, _ in expected_strings}
+    )
+    if (unreachable := sorted(set(expected) - carried - SELF_ASSERTED_EXPECTATIONS)):
+        raise ValueError(
+            f"case '{test_id}' asserts {unreachable}, which this generator cannot "
+            f"carry. Declare it as a number, a vector or a string, add it to "
+            f"SELF_ASSERTED_EXPECTATIONS with the test that reads it, or assert it in "
+            f"the model's own test"
+        )
 
     def pairs(items: list[tuple[str, float]]) -> str:
         if not items:
@@ -326,6 +358,7 @@ def emit_test_case(
         f"{indent}    matrices: {number_slice_pairs(matrices)},\n"
         f"{indent}    expected: {pairs(expected_numbers)},\n"
         f"{indent}    expected_vectors: {number_slice_pairs(expected_vectors)},\n"
+        f"{indent}    expected_strings: {string_pairs(expected_strings)},\n"
         f"{indent}}},\n"
     )
 
