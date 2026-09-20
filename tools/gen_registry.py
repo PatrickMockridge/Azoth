@@ -299,7 +299,7 @@ def emit_test_case(
         | {k for k, _ in expected_vectors}
         | {k for k, _ in expected_strings}
     )
-    if (unreachable := sorted(set(expected) - carried - SELF_ASSERTED_EXPECTATIONS)):
+    if unreachable := sorted(set(expected) - carried - SELF_ASSERTED_EXPECTATIONS):
         raise ValueError(
             f"case '{test_id}' asserts {unreachable}, which this generator cannot "
             f"carry. Declare it as a number, a vector or a string, add it to "
