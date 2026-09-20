@@ -212,6 +212,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::pr_cpa_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::umr_cpa_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::soreide_whitson_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::furst_electrolyte_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::ammonia_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::co2_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::helium_phase, m)?)?;

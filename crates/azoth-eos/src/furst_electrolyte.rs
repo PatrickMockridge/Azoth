@@ -343,6 +343,11 @@ pub fn furst_mixture_of(
             matrix[j * n + i] = value;
         }
     }
+    // **The mixing rule is the model's own.** `SystemFurstElectrolyteEosTest` sets NeqSim's
+    // rule 4, which `EosMixingRuleType.HV(4)` and the `SRKHuronVidal2` branch that
+    // constructs it both confirm is the Huron-Vidal rule - so the resolver installs it
+    // rather than leaving it to a caller who would have to know that.
+    let hv = crate::databank::huron_vidal_parameters(names, crate::Cubic::Srk, overlay)?;
     // **The component's own `schwartzentruber1..3`, and not an empty set.** NeqSim's
     // `AttractiveTermSchwartzentruber` is constructed with the component alone, and that
     // constructor leaves the three fitted parameters *as the component already has them* -
@@ -377,6 +382,13 @@ pub fn furst_mixture_of(
     let mixture = crate::mixture::Mixture::new(components, matrix)?
         .with_cubic(crate::Cubic::Srk)
         .with_alpha(crate::alpha_term::Alpha::Schwartzentruber)
+        .with_mixing_rule(crate::mixing_rule::MixingRule::HuronVidal {
+            kij: hv.kij,
+            hv_gij: hv.hv_gij,
+            hv_gij_t: hv.hv_gij_t,
+            hv_alpha: hv.hv_alpha,
+            hv_pairs: hv.hv_pairs,
+        })
         .with_furst(term);
     Ok((mixture, ideal_gas))
 }

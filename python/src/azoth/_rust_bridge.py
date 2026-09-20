@@ -50,6 +50,7 @@ from azoth.core.result import (
     DewTemperatureResult,
     EosCgPhaseResult,
     FlowRegime,
+    FurstElectrolytePhaseResult,
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
@@ -2997,6 +2998,34 @@ def soreide_whitson_phase(
         compressed_phase,
     )
     return SoreideWhitsonPhaseResult(
+        z_factor=result.z_factor,
+        ln_phi=tuple(result.ln_phi),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def furst_electrolyte_phase(
+    components: Sequence[str],
+    T: Q,
+    P: Q,
+    x: Sequence[float],
+    compressed_phase: str,
+) -> FurstElectrolytePhaseResult:
+    """The Fürst electrolyte phase state, computed in Rust.
+
+    The component names cross **unresolved**, and the Rust side resolves each one's
+    dielectric coefficients, fitted covolume, Schwartzentruber parameters and short-range
+    pair table. The salt is a component and not a scalar, so an ion crosses like any name.
+    """
+    spec = _models_gen.model("eos.furst_electrolyte_phase")
+    result = _core.furst_electrolyte_phase(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+        compressed_phase,
+    )
+    return FurstElectrolytePhaseResult(
         z_factor=result.z_factor,
         ln_phi=tuple(result.ln_phi),
         warnings=_warnings(result.warnings),

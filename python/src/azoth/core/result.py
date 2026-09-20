@@ -2191,6 +2191,28 @@ class UmrCpaPhaseResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FurstElectrolytePhaseResult(_HasWarnings):
+    """Result of ``eos.furst_electrolyte_phase``.
+
+    An SRK cubic with Schwartzentruber's attractive term, three additive Helmholtz terms and
+    the Huron-Vidal mixing rule - NeqSim's ``SystemFurstElectrolyteEos``. **The salt is a
+    component and not a scalar**, so ``ln_phi`` carries an entry per ion: an ion's is large
+    and negative, because its attraction is ``1e-35`` and its covolume is fitted.
+
+    **There is no flash.** ``eos.pt_flash``'s Jacobian is ``d ln phi / d n``, which the
+    Huron-Vidal rule refuses because that derivative is the excess Gibbs energy's second
+    derivative.
+    """
+
+    #: The compressibility factor at the chosen root.
+    z_factor: float
+    #: The fugacity coefficients, as logarithms, one per component.
+    ln_phi: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SoreideWhitsonPhaseResult(_HasWarnings):
     """Result of ``eos.soreide_whitson_phase``.
 

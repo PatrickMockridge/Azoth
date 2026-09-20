@@ -3561,6 +3561,27 @@ pub fn soreide_whitson_phase(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The Fürst electrolyte phase state, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves each one's dielectric
+/// coefficients, fitted covolume, Schwartzentruber parameters and short-range pair table.
+/// The salt is a component and not a scalar, so an ion crosses as a name like any other.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x, compressed_phase))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn furst_electrolyte_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::results::PyFurstElectrolytePhaseResult> {
+    azoth_eos::furst_electrolyte_phase(&components, kelvins(T), pascals(P), &x, compressed_phase)
+        .map(|r| crate::results::PyFurstElectrolytePhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The SRK-CPA phase state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side looks them up in the Rust

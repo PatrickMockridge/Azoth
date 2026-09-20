@@ -87,6 +87,7 @@ from azoth.core.result import (
     DewPressureResult,
     DewTemperatureResult,
     EosCgPhaseResult,
+    FurstElectrolytePhaseResult,
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
@@ -235,6 +236,7 @@ __all__ = [
     "eos_cg_phase",
     "from_model",
     "from_names",
+    "furst_electrolyte_phase",
     "ge_nrtl_flash",
     "ge_nrtl_phase",
     "ge_unifac_phase",
@@ -350,6 +352,7 @@ _TP_FLASH_SAFT = "eos.tp_flash_saft"
 _PR_CPA_PHASE = "eos.pr_cpa_phase"
 _UMR_CPA_PHASE = "eos.umr_cpa_phase"
 _SOREIDE_WHITSON_PHASE = "eos.soreide_whitson_phase"
+_FURST_ELECTROLYTE_PHASE = "eos.furst_electrolyte_phase"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
 _GE_UNIQUAC_PHASE = "eos.ge_uniquac_phase"
@@ -2826,6 +2829,41 @@ def soreide_whitson_phase(
         x=x,
         salinity=salinity,
         compressed_phase=compressed_phase,
+    )
+
+
+def furst_electrolyte_phase(
+    components: list[str],
+    T: Q,
+    P: Q,
+    x: list[float],
+    compressed_phase: str,
+) -> FurstElectrolytePhaseResult:
+    """One Fürst electrolyte phase's state at a temperature, pressure and composition.
+
+    An SRK cubic with Schwartzentruber's attractive term, three additive Helmholtz terms
+    whose pressure moves the root, and the Huron-Vidal mixing rule - NeqSim's
+    ``SystemFurstElectrolyteEos``.
+
+    **The salt is a component and not a scalar**, which is the opposite of
+    :func:`soreide_whitson_phase`: ``Na+`` and ``Cl-`` are in the composition and carry the
+    electrostatics, and an ion's fugacity coefficient is large and negative because its
+    attraction is ``1e-35`` and its fitted covolume is not.
+
+    **There is no flash.** :func:`pt_flash`'s Jacobian is ``d ln phi / d n``, which the
+    Huron-Vidal rule refuses because that derivative is the excess Gibbs energy's second
+    derivative - the boundary :func:`umr_cpa_phase` sits behind too.
+
+    Raises:
+        OutOfRangeError: if ``T`` or ``P`` is not positive, or no volume root exists above
+            the mixture's covolume.
+        InvalidInputError: if ``x`` is not a composition, a name is not in the databank, an
+            ion is named, or ``compressed_phase`` is neither ``"liquid"`` nor ``"vapour"``.
+
+    See :func:`azoth.eos.reference.furst_electrolyte_phase`.
+    """
+    return resolve(_FURST_ELECTROLYTE_PHASE)(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, x=x, compressed_phase=compressed_phase
     )
 
 

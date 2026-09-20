@@ -27,7 +27,12 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
 
     from azoth.core.units import Q
-    from azoth.eos.components import AssociationParameters, UnifacUmrpruParameters
+    from azoth.eos.components import (
+        AssociationParameters,
+        FurstElectrolyte,
+        HuronVidalParameters,
+        UnifacUmrpruParameters,
+    )
     from azoth.eos.reference._mixture_state import ReducedParameters as ReducedParametersLike
 
 
@@ -174,11 +179,25 @@ class Mixture:
     #: rule reads as its base - and the correlation replaces the water-gas entries of a
     #: water-rich phase with its own. See :meth:`phase_kij`.
     soreide_whitson: SoreideWhitsonParameters | None = field(default=None)
+    #: The Huron-Vidal rule's fitted NRTL matrices, or ``None`` for every mixture that does
+    #: not name that rule. A parameterised rule like the two beside it, and for the same
+    #: reason: its parameters are a property of the fluid.
+    huron_vidal: HuronVidalParameters | None = field(default=None)
+    #: The Fürst electrolyte term, or ``None`` for every mixture that is not one. Carried
+    #: whole rather than as a flag because its short-range table is built from the *whole*
+    #: composition's names.
+    furst: FurstElectrolyte | None = field(default=None)
 
     def __post_init__(self) -> None:
         if not self.components:
             raise InvalidInputError("components", "a mixture needs at least one component")
         n = len(self.components)
+        if self.mixing_rule == "huron_vidal" and self.huron_vidal is None:
+            raise InvalidInputError(
+                "huron_vidal",
+                "the Huron-Vidal rule mixes the attraction with a co-volume-weighted NRTL "
+                "whose parameters are the fluid's, and none is set",
+            )
         if self.mixing_rule == "soreide_whitson":
             if self.soreide_whitson is None:
                 raise InvalidInputError(
@@ -310,6 +329,8 @@ def mixture(
     mixing_rule: str = "classic",
     umr: UnifacUmrpruParameters | None = None,
     soreide_whitson: SoreideWhitsonParameters | None = None,
+    huron_vidal: HuronVidalParameters | None = None,
+    furst: FurstElectrolyte | None = None,
 ) -> Mixture:
     """A :class:`Mixture` from a component list and sparse interaction pairs.
 
@@ -368,4 +389,6 @@ def mixture(
         mixing_rule=mixing_rule,
         umr=umr,
         soreide_whitson=soreide_whitson,
+        huron_vidal=huron_vidal,
+        furst=furst,
     )

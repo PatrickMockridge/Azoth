@@ -1,0 +1,149 @@
+model = "eos.furst_electrolyte_phase"
+[[cases]]
+id = "the_shipped_tests_aqueous_phase"
+tolerance = 1e-08
+source = """NeqSim 3.20.0's own `SystemFurstElectrolyteEosTest` mixture - methane, water, Na+ and Cl-
+at `0.1 1.0 0.001 0.001` - flashed at 25 C and 10.01325 bara, from
+`validation/neqsim/FurstProbe.java`: `Z = 0.00963585200923298` and
+`lnPhi = [8.37599162790169, -5.74878404423108, -275.908826771314, -166.578345095159]`.
+
+**The composition is NeqSim's flashed aqueous phase, not this library's**, because a
+Fürst mixture cannot be flashed here: `eos.pt_flash`'s Jacobian is `d ln phi / d n`, and
+this system's Huron-Vidal mixing rule refuses it. Recording the state the oracle reports
+is what remains, as it is for `eos.umr_cpa_phase`.
+
+This is the case the model was built against. An ion's `ln phi` is `-275.9`: its
+attraction is `1e-35` and its covolume is fitted, so it is present in the phase and
+absent from the vapour, and a port that gave it the cubic's own parameters would report
+a plausible number two orders away."""
+[cases.inputs]
+components = ["methane", "water", "Na+", "Cl-"]
+T = 298.15
+P = 1001325.0
+x = [
+    0.000225745660581355,
+    0.997778050427449,
+    0.000998101955985164,
+    0.000998101955985164,
+]
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.00963585200923298
+ln_phi = [8.37599162790169, -5.74878404423108, -275.908826771314, -166.578345095159]
+[[cases]]
+id = "the_shipped_tests_gas"
+tolerance = 1e-08
+source = """The same probe at the same state, on the other root: `Z = 0.983240760287343` and
+`lnPhi = [-0.0168629975224907, -0.0194518563773277, -71.7664457639914,
+-96.5401973512273]` at the flashed vapour composition.
+
+**The brine is at a mole fraction of `1e-43` here**, which is NeqSim's own answer and not
+zero: the ions are assigned to both phases by the flash and the vapour's share is that
+small. It matters, because the shielding parameter's solve has a three-iteration floor and
+a phase carrying ions at `1e-43` returns a residue of the iteration rather than zero -
+`gamma = 1692665.9444736` for this phase. A port that "fixed" that would diverge on every
+vapour, so the case pins it."""
+[cases.inputs]
+components = ["methane", "water", "Na+", "Cl-"]
+T = 298.15
+P = 1001325.0
+x = [
+    0.996757973283532,
+    0.00324202671646845,
+    1.00009946578941e-43,
+    1.00009946578941e-43,
+]
+compressed_phase = "vapour"
+[cases.expected]
+z_factor = 0.983240760287343
+ln_phi = [-0.0168629975224907, -0.0194518563773277, -71.7664457639914, -96.5401973512273]
+[[cases]]
+id = "a_brine_at_four_times_the_salt"
+tolerance = 1e-08
+source = """The same probe with four times the salt - `0.1 1.0 0.004 0.004` - at its flashed aqueous
+composition: `Z = 0.00958228035603257` and `lnPhi = [8.45805667305687, -5.77356338889385,
+-266.223296544841, -166.277606606331]`.
+
+This is the case that makes the electrolyte terms move. Four times the salt takes the
+mole fractions of the ions from `0.001` to `0.004`, and every term reads them: the
+packing fractions, `XLR`, `bornX` and the short-range table's ion pairs. A port whose
+terms were wired to the composition but not to the *salt* would pass the case above and
+move by a fraction of this one."""
+[cases.inputs]
+components = ["methane", "water", "Na+", "Cl-"]
+T = 298.15
+P = 1001325.0
+x = [
+    0.00020798027485278,
+    0.991854684464275,
+    0.0039686676304359,
+    0.0039686676304359,
+]
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.00958228035603257
+ln_phi = [8.45805667305687, -5.77356338889385, -266.223296544841, -166.277606606331]
+[[cases]]
+id = "a_mixed_solvent_brine"
+tolerance = 1e-08
+source = """The same probe with methanol joining the water - `0.1 0.6 0.4 0.001 0.001` - at its
+flashed aqueous composition: `Z = 0.0143169079260678` and
+`lnPhi = [8.1240382842901, -5.80843124874109, -3.7502294824506, -244.763115915202,
+-171.000171568275]`.
+
+**A second solvent is what exercises the dielectric mixing rule and the short-range
+table's per-solvent branch at once.** `eps = sum_i n_i eps_i(T) / sum_i n_i` over the two
+neutrals, and the cation sweep takes `furstParamsCPA_MeOH` for the methanol side rather
+than the water fit. A port that read a single solvent's correlation for every neutral
+would agree with the case above and not with this one."""
+[cases.inputs]
+components = ["methane", "water", "methanol", "Na+", "Cl-"]
+T = 298.15
+P = 1001325.0
+x = [
+    0.000287690429746332,
+    0.599209614955317,
+    0.398504711342053,
+    0.00099899163644202,
+    0.00099899163644202,
+]
+compressed_phase = "liquid"
+[cases.expected]
+z_factor = 0.0143169079260678
+ln_phi = [
+    8.1240382842901,
+    -5.80843124874109,
+    -3.7502294824506,
+    -244.763115915202,
+    -171.000171568275,
+]
+[[cases]]
+id = "the_shipped_mixture_at_sixty_c"
+tolerance = 1e-08
+source = """The shipped mixture at 60 C and 40 bara, at its flashed vapour composition:
+`Z = 0.961828896991428` and `lnPhi = [-0.0402397605190196, -0.0624465131459805,
+-66.8663870397073, -89.7133010982492]`.
+
+**The temperature is the point.** Every electrolyte layer is a function of it - the
+component dielectric polynomials with their `1/T` term, the shielding solve's implicit
+derivative, the short-range `Wij(T)` - so a state 35 K away from the others is where a
+port that had frozen one of them apart from its temperature would show it."""
+[cases.inputs]
+components = ["methane", "water", "Na+", "Cl-"]
+T = 333.15
+P = 4000000.0
+x = [
+    0.994528454609112,
+    0.0054715453908882,
+    9.99959608122957e-44,
+    9.99959608122957e-44,
+]
+compressed_phase = "vapour"
+[cases.expected]
+z_factor = 0.961828896991428
+ln_phi = [
+    -0.0402397605190196,
+    -0.0624465131459805,
+    -66.8663870397073,
+    -89.7133010982492,
+]

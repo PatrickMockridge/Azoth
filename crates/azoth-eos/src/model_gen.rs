@@ -13,6 +13,7 @@
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
 //!   - specs/models/eos/eos_cg_phase.toml
+//!   - specs/models/eos/furst_electrolyte_phase.toml
 //!   - specs/models/eos/ge_nrtl_flash.toml
 //!   - specs/models/eos/ge_nrtl_phase.toml
 //!   - specs/models/eos/ge_unifac_phase.toml
@@ -1677,6 +1678,221 @@ pub static EOS_CG_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&EOS_CG_PHASE_ALGORITHM),
     checks: EOS_CG_PHASE_CHECKS,
     cases: EOS_CG_PHASE_CASES,
+};
+
+static FURST_ELECTROLYTE_PHASE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states, and the dielectric polynomial carries a `1/T` term",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static FURST_ELECTROLYTE_PHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_shipped_tests_aqueous_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 1001325.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "water", "Na+", "Cl-"])],
+        strings: &[("compressed_phase", "liquid")],
+        vectors: &[(
+            "x",
+            &[
+                0.000225745660581355,
+                0.997778050427449,
+                0.000998101955985164,
+                0.000998101955985164,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.00963585200923298)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                8.37599162790169,
+                -5.74878404423108,
+                -275.908826771314,
+                -166.578345095159,
+            ],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_shipped_tests_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 1001325.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "water", "Na+", "Cl-"])],
+        strings: &[("compressed_phase", "vapour")],
+        vectors: &[(
+            "x",
+            &[
+                0.996757973283532,
+                0.00324202671646845,
+                1.00009946578941e-43,
+                1.00009946578941e-43,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.983240760287343)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                -0.0168629975224907,
+                -0.0194518563773277,
+                -71.7664457639914,
+                -96.5401973512273,
+            ],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "a_brine_at_four_times_the_salt",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 1001325.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "water", "Na+", "Cl-"])],
+        strings: &[("compressed_phase", "liquid")],
+        vectors: &[(
+            "x",
+            &[
+                0.00020798027485278,
+                0.991854684464275,
+                0.0039686676304359,
+                0.0039686676304359,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.00958228035603257)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                8.45805667305687,
+                -5.77356338889385,
+                -266.223296544841,
+                -166.277606606331,
+            ],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "a_mixed_solvent_brine",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 298.15), ("P", 1001325.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["methane", "water", "methanol", "Na+", "Cl-"],
+        )],
+        strings: &[("compressed_phase", "liquid")],
+        vectors: &[(
+            "x",
+            &[
+                0.000287690429746332,
+                0.599209614955317,
+                0.398504711342053,
+                0.00099899163644202,
+                0.00099899163644202,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.0143169079260678)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                8.1240382842901,
+                -5.80843124874109,
+                -3.7502294824506,
+                -244.763115915202,
+                -171.000171568275,
+            ],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_shipped_mixture_at_sixty_c",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 333.15), ("P", 4000000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "water", "Na+", "Cl-"])],
+        strings: &[("compressed_phase", "vapour")],
+        vectors: &[(
+            "x",
+            &[
+                0.994528454609112,
+                0.0054715453908882,
+                9.99959608122957e-44,
+                9.99959608122957e-44,
+            ],
+        )],
+        matrices: &[],
+        expected: &[("z_factor", 0.961828896991428)],
+        expected_vectors: &[(
+            "ln_phi",
+            &[
+                -0.0402397605190196,
+                -0.0624465131459805,
+                -66.8663870397073,
+                -89.7133010982492,
+            ],
+        )],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `eos.furst_electrolyte_phase`.
+pub static FURST_ELECTROLYTE_PHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.furst_electrolyte_phase",
+    kind: "direct",
+    algorithm: None,
+    checks: FURST_ELECTROLYTE_PHASE_CHECKS,
+    cases: FURST_ELECTROLYTE_PHASE_CASES,
 };
 
 static GE_NRTL_FLASH_CHECKS: &[SpecCheck] = &[
@@ -7292,6 +7508,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
     &EOS_CG_PHASE_SPEC,
+    &FURST_ELECTROLYTE_PHASE_SPEC,
     &GE_NRTL_FLASH_SPEC,
     &GE_NRTL_PHASE_SPEC,
     &GE_UNIFAC_PHASE_SPEC,

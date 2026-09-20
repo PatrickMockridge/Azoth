@@ -54,6 +54,47 @@ from azoth.eos.reference._association import (
     SiteScheme,
     family_of,
 )
+from azoth.eos.reference._furst_dielectric import MixingRule as _FurstRule
+from azoth.eos.reference._furst_dielectric import (
+    component_dielectric as _furst_component_dielectric,
+)
+from azoth.eos.reference._furst_dielectric import (
+    component_dielectric_dt as _furst_component_dielectric_dt,
+)
+from azoth.eos.reference._furst_dielectric import (
+    component_dielectric_dtdt as _furst_component_dielectric_dtdt,
+)
+from azoth.eos.reference._furst_terms import (
+    ComponentDerivatives as _FurstComponentDerivatives,
+)
+from azoth.eos.reference._furst_terms import (
+    ComponentState as _FurstComponentState,
+)
+from azoth.eos.reference._furst_terms import (
+    FurstSolution as _FurstSolution,
+)
+from azoth.eos.reference._furst_terms import (
+    build_state as _furst_build_state,
+)
+from azoth.eos.reference._furst_terms import (
+    fborn as _furst_fborn,
+)
+from azoth.eos.reference._furst_terms import (
+    flr as _furst_flr,
+)
+from azoth.eos.reference._furst_terms import (
+    flr_dv as _furst_flr_dv,
+)
+from azoth.eos.reference._furst_terms import (
+    fsr2 as _furst_fsr2,
+)
+from azoth.eos.reference._furst_terms import (
+    fsr2_dv as _furst_fsr2_dv,
+)
+from azoth.eos.reference._furst_terms import (
+    ln_phi_contributions as _furst_ln_phi_contributions,
+)
+from azoth.eos.reference._hv_ge import hv_ln_gamma as _hv_ln_gamma
 from azoth.eos.reference.pr78_kappa import pr78_kappa
 from azoth.eos.reference.pr_alpha_ab import pr_alpha_ab
 from azoth.eos.reference.pr_kappa import pr_kappa
@@ -67,6 +108,11 @@ from azoth.eos.reference.twu_kappa import twu_kappa
 if TYPE_CHECKING:
     from azoth.eos.components import AssociationParameters
     from azoth.eos.mixture import Component
+
+#: NeqSim's ``R``, which the Fürst electrolyte's electrostatics are built on - and it is
+#: ``8.3144621``, not the current CODATA value. The reference module carries its own copy
+#: because the ion substitution needs it before any term is evaluated.
+R_NEQSIM = 8.3144621
 
 #: Wilson's constant. Some sources print 5.37 and the paper is dated 1968 in some
 #: and 1969 in others; the discrepancy is recorded in the model specs' references
@@ -188,6 +234,13 @@ class ReducedParameters(NamedTuple):
     #: :func:`phase_derivatives` can refuse it: `A_ij` then has a composition derivative
     #: the classical surface does not have.
     composition_dependent_kij: bool = False
+    #: The Huron-Vidal rule's fitted matrices, or `None` for every mixture that does not
+    #: name that rule. Present is what makes :func:`mixture_parameters` mix by the
+    #: co-volume-weighted NRTL.
+    huron_vidal: Any = None
+    #: The Fürst electrolyte term, or `None`. Present is what makes :func:`phase_state`
+    #: solve a root that is not the cubic's and :func:`phase_state_at` add its `ln phi`.
+    furst: Any = None
 
 
 class PhaseState(NamedTuple):
@@ -265,6 +318,22 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
     for index, component in enumerate(mixture.components):
         reduced_temperature = temperature / component.Tc.to_base_units().magnitude
         reduced_temperatures.append(reduced_temperature)
+        # **A Fürst ion's attraction and covolume are not the cubic's.** NeqSim's
+        # `ComponentModifiedFurstElectrolyteEos` overwrites both in its constructor -
+        # `b = (p0 d^3 + p1)` from the fitted parameters and `a = 1e-35` - so a port that
+        # left them at the cubic's would give every ion a real attraction and a covolume of
+        # the wrong size, and the root would be plausible and wrong.
+        if mixture.furst is not None:
+            covolume = mixture.furst.ion_covolume(index)
+            if covolume is not None:
+                r_t = R_NEQSIM * temperature
+                a.append(1.0e-35 * pressure / (r_t * r_t))
+                b.append(covolume * pressure / r_t)
+                # The ion's alpha contributes nothing: `psi` is read only through weights
+                # carrying `sqrt(A_i A_j)`, and `A` is `1e-35`.
+                psi.append(0.0)
+                psi_t.append(0.0)
+                continue
         reduced_pressure = pressure / component.Pc.to_base_units().magnitude
         # An associating component carries its own attraction and covolume, and NeqSim's
         # `ComponentSrkCPA` substitutes them for the cubic's: `if (|aCPA| > 1e-6) { a =
@@ -488,6 +557,8 @@ def reduced_parameters(mixture: Mixture, temperature: float, pressure: float) ->
         warnings=warnings,
         reduced_temperatures=tuple(reduced_temperatures),
         composition_dependent_kij=mixture.mixing_rule == "soreide_whitson",
+        huron_vidal=mixture.huron_vidal,
+        furst=mixture.furst,
     )
 
 
@@ -589,6 +660,56 @@ def _association_of(mixture: Mixture) -> Association | None:
 UMR_HWFC = -1.0 / 0.53
 
 
+def _hv_ader(reduced: ReducedParameters, x: list[float]) -> list[float]:
+    """The Huron-Vidal rule's ``ader_i = a_i/b_i - ln(gamma_i)/lambda``.
+
+    The excess-Gibbs rule the Fürst model's system installs. Its activity coefficient is a
+    co-volume-weighted NRTL over the *reduced* attraction and repulsion, and ``lambda`` is the
+    cubic's Huron-Vidal constant - so this is the same shape as the UMR rule's ``ader`` with a
+    different activity model behind it and a different constant in front.
+    """
+    params = reduced.huron_vidal
+    lambda_ = reduced.cubic.hv_constant()
+    ln_gamma = _hv_ln_gamma(
+        x,
+        reduced.t_kelvin,
+        reduced.a,
+        reduced.b,
+        list(params.kij),
+        list(params.hv_gij),
+        list(params.hv_gij_t),
+        list(params.hv_alpha),
+        list(params.hv_pairs),
+        lambda_,
+    )
+    return [reduced.a[i] / reduced.b[i] - ln_gamma[i] / lambda_ for i in range(len(x))]
+
+
+def _ge_alpha_mix(reduced: ReducedParameters, x: list[float]) -> float | None:
+    """``sum_i x_i ader_i`` for whichever excess-Gibbs rule the mixture runs.
+
+    ``None`` for a classical rule, which is what tells :func:`mixture_parameters` and
+    :func:`phase_state_at` they are on the van der Waals one-fluid path. One dispatcher
+    rather than a ternary at each of the three callers, because the choice is the *same*
+    choice in all three.
+    """
+    if reduced.umr is not None:
+        return umr_ader(reduced, x)[1]
+    if reduced.huron_vidal is not None:
+        ader = _hv_ader(reduced, x)
+        return sum(xi * a for xi, a in zip(x, ader, strict=True))
+    return None
+
+
+def _ge_ader(reduced: ReducedParameters, x: list[float]) -> list[float] | None:
+    """The ``ader_i`` themselves, for the ``ln phi`` form the excess-Gibbs rules write."""
+    if reduced.umr is not None:
+        return umr_ader(reduced, x)[0]
+    if reduced.huron_vidal is not None:
+        return _hv_ader(reduced, x)
+    return None
+
+
 def _umr_alpha_mix(reduced: ReducedParameters, x: list[float]) -> float | None:
     """``sum_i x_i ader_i``, or ``None`` for every mixture that mixes classically."""
     if reduced.umr is None:
@@ -678,13 +799,18 @@ def phase_state(
     ``eos.pr_z_factor`` fixes. A caller who already has a root should use
     :func:`phase_state_at` instead, which does not re-derive it.
     """
-    a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, kij, x, _umr_alpha_mix(reduced, x))
+    a_mix, b_mix = mixture_parameters(reduced.a, reduced.b, kij, x, _ge_alpha_mix(reduced, x))
     roots = (
         srk_z_factor(a_mix, b_mix)
         if reduced.cubic.name in ("srk", "rk")
         else pr_z_factor(a_mix, b_mix)
     )
     seed = roots.z_min if liquid else roots.z_max
+    if reduced.furst is not None:
+        # **The electrolyte terms carry a pressure, so the root is not the cubic's.** The
+        # residual is `cubic(Z) - P_e Z/P` with `P_e = -R T d(A_e/(R T))/dV`, the same shape
+        # the association's has, and the same solver finds it.
+        return phase_state_at(reduced, kij, x, _furst_root(reduced, x, seed, a_mix, b_mix, liquid))
     if reduced.association is None:
         return phase_state_at(reduced, kij, x, seed)
     return phase_state_at(
@@ -693,6 +819,102 @@ def phase_state(
         x,
         _associating_root(reduced, x, seed, a_mix, b_mix, liquid=liquid),
     )
+
+
+def _furst_state(reduced: ReducedParameters, x: list[float], molar_volume: float) -> Any:
+    """The Fürst state at one volume, rebuilt from scratch.
+
+    The term is a function of the volume, so the root solve rebuilds it at every step -
+    which is what NeqSim's ``volInit`` does inside its own iteration and the reason this is
+    a solve and not a stored state.
+    """
+    term = reduced.furst
+    temperature = reduced.t_kelvin
+    components = [
+        _FurstComponentState(
+            charge=s.charge,
+            diameter_m=s.diameter_m,
+            dielectric=_furst_component_dielectric(s.dielectric_coefficients, temperature),
+            dielectric_dt=_furst_component_dielectric_dt(s.dielectric_coefficients, temperature),
+            dielectric_dtdt=_furst_component_dielectric_dtdt(
+                s.dielectric_coefficients, temperature
+            ),
+            critical_volume=s.critical_volume,
+        )
+        for s in term.species
+    ]
+    short = term.short_range(temperature, x)
+    return _furst_build_state(
+        temperature,
+        molar_volume,
+        list(x),
+        components,
+        _FurstRule[term.rule],
+        short.w,
+        short.w_dt,
+        short.w_dtdt,
+    )
+
+
+def _furst_solve(reduced: ReducedParameters, x: list[float], molar_volume: float) -> _FurstSolution:
+    """The Fürst term's three outputs at one volume.
+
+    ``helmholtz_rt_dv`` is ``1e5`` times the sum of the two volume derivatives, because
+    NeqSim's ``dFdV`` is against the **total** volume in its own scaled units - the factor
+    the identity ``Z = 1 - V 1e5 dFdV`` fixes.
+    """
+    term = reduced.furst
+    state = _furst_state(reduced, x, molar_volume)
+    derivatives = [
+        _FurstComponentDerivatives(
+            charge=s.charge,
+            diameter_m=s.diameter_m,
+            dielectric=_furst_component_dielectric(s.dielectric_coefficients, reduced.t_kelvin),
+            # `calcWi`: the row sum negated and doubled, as the handler returns it.
+            w_i=-2.0 * sum(x[j] * term.table.wij(i, j, reduced.t_kelvin) for j in range(len(x))),
+        )
+        for i, s in enumerate(term.species)
+    ]
+    contributions = _furst_ln_phi_contributions(state, derivatives, list(x))
+    return _FurstSolution(
+        helmholtz_rt=_furst_fsr2(state) + _furst_flr(state) + _furst_fborn(state),
+        helmholtz_rt_dv=1.0e5 * (_furst_fsr2_dv(state) + _furst_flr_dv(state)),
+        ln_phi=[c.total() for c in contributions],
+    )
+
+
+def _furst_root(
+    reduced: ReducedParameters,
+    x: list[float],
+    seed: float,
+    a_mix: float,
+    b_mix: float,
+    liquid: bool,
+) -> float:
+    """The root of a Fürst mixture's equation of state, by the shared solver.
+
+    The residual is the cubic's plus the electrolyte's pressure, exactly as the
+    association's is - so this reaches for the same walk, Newton and scan rather than a
+    second copy of them.
+    """
+    r_t = R * reduced.t_kelvin
+    pressure = reduced.pressure
+    cubic = reduced.cubic
+
+    def residual(z: float) -> float:
+        solution = _furst_solve(reduced, x, z * r_t / pressure)
+        p_term = -r_t * solution.helmholtz_rt_dv
+        return (
+            z
+            - z / (z - b_mix)
+            + a_mix * z / ((z + cubic.delta1 * b_mix) * (z + cubic.delta2 * b_mix))
+            - p_term * z / pressure
+        )
+
+    root: float = _root_with_extra_pressure(
+        residual, seed, b_mix, liquid=liquid, what="electrolyte"
+    )
+    return root
 
 
 def _associating_root(
@@ -736,6 +958,29 @@ def _associating_root(
             - z / (z - b_mix)
             + a_mix * z / ((z + cubic.delta1 * b_mix) * (z + cubic.delta2 * b_mix))
         ) - p_assoc * z / pressure
+
+    return _root_with_extra_pressure(residual, seed, b_mix, liquid=liquid, what="associating")
+
+
+def _root_with_extra_pressure(
+    residual: Any,
+    seed: float,
+    b_mix: float,
+    *,
+    liquid: bool,
+    what: str,
+) -> float:
+    """The walk, Newton and scan a cubic-plus-pressure root solve shares.
+
+    Both terms that carry a pressure need the same three passes - a geometric walk up from
+    the covolume for the liquid side, Newton from the cubic's own root, and a linear scan
+    with a bisection for whatever neither finds - and they differ only in the residual.
+    Factored rather than copied because the *solver* is the part that must not drift: a fix
+    to the walk in one is a fix the other needs.
+
+    ``seed`` is the cubic's own root for the side wanted; ``what`` names the term in the
+    failure message, so a refusal says which pressure carried the equation away.
+    """
 
     def bisect(lo: float, hi: float) -> float:
         """The zero of `residual` in `[lo, hi]`, by bisection.
@@ -817,7 +1062,7 @@ def _associating_root(
     raise OutOfRangeError(
         "z",
         seed,
-        f"no volume root for this associating mixture above B = {b_mix}: the residual has "
+        f"no volume root for this {what} mixture above B = {b_mix}: the residual has "
         f"no sign change between the covolume and {ceiling}",
     )
 
@@ -843,7 +1088,7 @@ def phase_state_at(
     a, b = reduced.a, reduced.b
     c = reduced.cubic
     n = len(x)
-    alpha_mix = _umr_alpha_mix(reduced, x)
+    alpha_mix = _ge_alpha_mix(reduced, x)
     a_mix, b_mix = mixture_parameters(a, b, kij, x, alpha_mix)
     if not z > b_mix:
         raise OutOfRangeError(
@@ -871,7 +1116,9 @@ def phase_state_at(
         # carries the activity coefficient per component and a volume-derivative term, and
         # the two expressions do not reduce to one another off the pure component - which
         # is the only state at which this library's tests could tell them apart.
-        ader, _, b_der, _ = umr_ader(reduced, x)
+        ader = _ge_ader(reduced, x)
+        assert ader is not None  # alpha_mix being set is what put us here
+        b_der = list(reduced.b)
         delta1, delta2 = c.delta1, c.delta2
         for i in range(n):
             bd = b_der[i]
@@ -914,6 +1161,14 @@ def phase_state_at(
             reduced.association.temperature_derivative(covolumes, x, v, reduced.t_kelvin, kernel)
         )
 
+    # The Fürst electrolyte contribution. **`ln phi` and not the Helmholtz energy**: the
+    # term's `dFdN` is that identity's own `dFdN`, and this library's cubic `ln phi` is
+    # already `dFdN - ln Z` for its part, so the contributions add.
+    if reduced.furst is not None:
+        solution = _furst_solve(reduced, x, z * R * reduced.t_kelvin / reduced.pressure)
+        for index, addition in enumerate(solution.ln_phi):
+            ln_phi[index] += addition
+
     # The mixture's departure functions. `psi_bar` is the composition-weighted average
     # of the components' `psi`, and the two lines below are then `pr_departure`'s
     # expressions with `psi_bar` in place of `psi` - which is what makes them reduce to
@@ -942,7 +1197,11 @@ def phase_state_at(
     # collapses to `B * T d alpha_mix/dT` and the term is `T d alpha_mix/dT / delta_diff * I`
     # - no `psi_bar` in it at all. A pure fluid hides the difference: there `alpha_mix` is
     # one component's `qPure`, and the two expressions agree exactly.
-    if alpha_mix is not None:
+    # **The UMR rule's departure and the Huron-Vidal rule's are not the same expression**,
+    # and only the first is assembled here: `t_d_alpha_mix` is the universal rule's own, and
+    # for Huron-Vidal this falls back to the classical form - which is what the Rust kernel
+    # does, and which is why neither model reports `h_res`.
+    if reduced.umr is not None:
         _, _, _, t_d_alpha = umr_ader(reduced, x)
         excess = t_d_alpha / c.delta_diff
     else:

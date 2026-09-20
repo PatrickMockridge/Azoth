@@ -47,6 +47,15 @@ class Cubic:
         """``ln((z + delta1 B)/(z + delta2 B))``, the "I" term of the fugacity."""
         return math.log((z + self.delta1 * b) / (z + self.delta2 * b))
 
+    def hv_constant(self) -> float:
+        """``ln((1 + delta1)/(1 + delta2)) / (delta1 - delta2)``, the Huron-Vidal constant.
+
+        The ``lambda`` the Huron-Vidal rule scales its excess energy by, and the reciprocal
+        of the ``hwfc`` the UMR rule uses - which is why the two rules' `ader` differ by more
+        than their activity model.
+        """
+        return math.log((1.0 + self.delta1) / (1.0 + self.delta2)) / self.delta_diff
+
     def coefficient(self, a: float, b: float) -> float:
         """``A/((delta1 - delta2) B)``, the coefficient the fugacity term is scaled by."""
         return a / (self.delta_diff * b)

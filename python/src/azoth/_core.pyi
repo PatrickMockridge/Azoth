@@ -322,6 +322,12 @@ class EosCgPhaseResult:
     warnings: list[Warning]
 
 @final
+class FurstElectrolytePhaseResult:
+    z_factor: float
+    ln_phi: list[float]
+    warnings: list[Warning]
+
+@final
 class GeNrtlFlashResult:
     beta: float | None
     x: list[float]
@@ -1317,6 +1323,13 @@ def dew_temperature(
     alpha_params: list[list[float]] | None = None,
 ) -> DewTemperatureResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
+def furst_electrolyte_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    x: list[float],
+    compressed_phase: str,
+) -> FurstElectrolytePhaseResult: ...
 def ge_nrtl_flash(
     Tc: list[float],
     Pc: list[float],

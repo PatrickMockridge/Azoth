@@ -46,7 +46,7 @@ import io
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import cache
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from azoth import keycard
 from azoth._data import find
@@ -60,6 +60,20 @@ from azoth.eos.mixture import (
     soreide_whitson_roles,
 )
 from azoth.eos.reference._association import family_of
+from azoth.eos.reference._furst_dielectric import (
+    NEQSIM_AVOGADRO,
+    NEQSIM_PI,
+)
+from azoth.eos.reference._furst_dielectric import component_dielectric as _component_dielectric
+from azoth.eos.reference._furst_mixing import (
+    FurstComponent as _FurstComponent,
+)
+from azoth.eos.reference._furst_mixing import (
+    short_range as _furst_short_range,
+)
+from azoth.eos.reference._furst_mixing import (
+    wij_table as _furst_wij_table,
+)
 from azoth.eos.reference._henry import HenryRecord
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
@@ -328,6 +342,85 @@ class AssociationParameters:
 
 
 @dataclass(frozen=True, slots=True)
+class FurstSpecies:
+    """One component of a Fürst mixture, as the model reads it."""
+
+    name: str
+    charge: float
+    #: The **derived** diameter in metres - what the MSA and Born terms read.
+    diameter_m: float
+    #: The **table's** diameter in ångströms - what the short-range correlation reads.
+    table_diameter: float
+    dielectric_coefficients: tuple[float, ...]
+    critical_volume: float
+    dielectric_at_reference: float
+
+    def dielectric_constant(self, temperature: float) -> float:
+        """``eps_i(T)``, this component's own dielectric constant."""
+        d = self.dielectric_coefficients
+        return (
+            d[0]
+            + d[1] / temperature
+            + d[2] * temperature
+            + d[3] * temperature**2
+            + d[4] * temperature**3
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class FurstElectrolyte:
+    """A Fürst mixture's electrolyte term: the species and the pair table."""
+
+    species: tuple[FurstSpecies, ...]
+    table: Any
+    rule: str = "molar_average"
+
+    @classmethod
+    def build(
+        cls, species: tuple[FurstSpecies, ...], rule: str = "molar_average"
+    ) -> FurstElectrolyte:
+        """Assemble the term, building the short-range table from the names."""
+        components = tuple(
+            _FurstComponent(
+                name=s.name,
+                charge=s.charge,
+                diameter=s.table_diameter,
+                dielectric_at_reference=s.dielectric_at_reference,
+            )
+            for s in species
+        )
+        return cls(species=species, table=_furst_wij_table(components, furst_wij), rule=rule)
+
+    def short_range(self, temperature: float, mole_numbers: Sequence[float]) -> Any:
+        """The short-range sums at a composition and temperature."""
+        return _furst_short_range(self.table, mole_numbers, temperature)
+
+    def ion_covolume(self, index: int) -> float | None:
+        """An ion's covolume in m3/mol, or ``None`` for a component that is not one.
+
+        ``(p0 d^3 + p1)`` from the fitted parameters, with ``d`` the **table's** diameter -
+        not ``omega_b R Tc/Pc``, and not the diameter the phase ends up using.
+        """
+        species = self.species[index]
+        if species.charge == 0.0:
+            return None
+        fitted = furst_parameters("furstParams")
+        p0 = fitted[0] if len(fitted) > 0 else 0.0
+        p1 = fitted[1] if len(fitted) > 1 else 0.0
+        return p0 * species.table_diameter**3 + p1
+
+
+def _mixing_rule(name: str) -> str:
+    """The dielectric mixing rule named, with the names the vocabulary carries."""
+    known = ("molar_average", "volume_average", "looyenga")
+    if name not in known:
+        raise InvalidInputError(
+            "salinity_rule", f"unknown dielectric mixing rule {name!r}; expected one of {known}"
+        )
+    return name
+
+
+@dataclass(frozen=True, slots=True)
 class DatabankEntry:
     """One substance, as the file records it.
 
@@ -416,6 +509,13 @@ class DatabankEntry:
     sigma_mie: float
     #: SAFT-VR-Mie's segment energy over Boltzmann's constant, ``epsilon/k``, in K.
     epsik_mie: float
+    #: ``LJDIAMETER``, the Lennard-Jones molecular diameter, in ångströms.
+    #:
+    #: The Fürst electrolyte reads it twice over: for a **neutral** it is the diameter its
+    #: MSA and Born terms use, and for an **ion** it is a *starting* value - the covolume is
+    #: built from it and the diameter is then overwritten by the value derived back out of
+    #: that covolume. The short-range correlation reads the table's value for both.
+    lennard_jones_diameter: float
     #: The ionic charge, in units of the elementary charge; zero for a neutral. **Zero
     #: does not mean "not an ion"**: four rows typed ``"ion"`` carry it - ``h+pzcoo-`` is
     #: a zwitterion and ``caco3``, ``nacl`` and ``cacl2`` are neutral salts filed with
@@ -604,6 +704,7 @@ def _table() -> dict[str, DatabankEntry]:
                 h3=float(row["henrycoef4"]),
             ),
             ionic_charge=float(row["ioniccharge"]),
+            lennard_jones_diameter=float(row["ljdiameter"]),
             deshmukh_mather_diameter=float(row["deshmationicdiameter"]),
             dielectric=(
                 float(row["dielectricparameter1"]),
@@ -1186,6 +1287,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # A card carries no Henry correlation: a card states the parameters a cubic or
             # an activity model reads, and this is neither.
             henry=HenryRecord(h0=0.0, h1=0.0, h2=0.0, h3=0.0),
+            lennard_jones_diameter=0.0,
             ionic_charge=_card_charge(override),
             # The card states metres and the databank holds ångström; this is the crossing.
             deshmukh_mather_diameter=_card_diameter(override),
@@ -1452,6 +1554,142 @@ def soreide_whitson_kij_for(
             if stored:
                 pairs[(i, j)] = stored
     return pairs
+
+
+#: The compiled Fürst electrolyte constants, generated from
+#: `FurstElectrolyteConstants.java` - a Java source file rather than a table, and the
+#: manifest says so.
+FURST_PARAMETERS_CSV = "data/components/furst_parameters.csv"
+
+
+@cache
+def furst_parameters(set_name: str) -> tuple[float, ...]:
+    """One of ``FurstElectrolyteConstants``' arrays, by the name the Java declares it under.
+
+    Long-form ``set, index, value``, because the arrays are four different lengths. A name
+    the table does not carry is an empty tuple, and the caller states what it does about a
+    missing coefficient.
+
+    **The temperature coefficients live in their own set.** ``furstParamsCPA_TDep`` holds
+    sixteen numbers where ``furstParamsCPA`` holds ten, and they are what ``Wij(T)``'s ``w1``
+    and ``w2`` come from on the computed path.
+    """
+    values: dict[int, float] = {}
+    for row in _rows(find(FURST_PARAMETERS_CSV).read_text(encoding="utf-8")):
+        if row["set"] != set_name or not row["value"]:
+            continue
+        values[int(row["index"])] = float(row["value"])
+    if not values:
+        return ()
+    return tuple(values[i] for i in range(max(values) + 1))
+
+
+@cache
+def _furst_wij() -> dict[tuple[str, str], tuple[float, float, float, bool]]:
+    """`W1`, `W2`, `W3` and `CalcWij`, keyed by the ordered pair and stored both ways round.
+
+    Read by the Fürst phase as ``wij[0..2]`` and the fitted-or-computed flag. **`W1` is
+    present on nine rows, every one an amine pair**, so on an ordinary brine the correlation
+    supplies ``Wij`` and these are not read at all.
+    """
+    pairs: dict[tuple[str, str], tuple[float, float, float, bool]] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        a, b = row["component_a"], row["component_b"]
+        columns = (
+            _absent_is_zero(row["w1"]),
+            _absent_is_zero(row["w2"]),
+            _absent_is_zero(row["w3"]),
+            _absent_is_zero(row["calcwij"]) != 0.0,
+        )
+        pairs[(a, b)] = columns
+        pairs[(b, a)] = columns
+    return pairs
+
+
+def furst_wij(first: str, second: str) -> tuple[float, float, float, bool] | None:
+    """The Fürst short-range pair parameters, either order round, or ``None`` for no row."""
+    return _furst_wij().get((first.strip().lower(), second.strip().lower()))
+
+
+@dataclass(frozen=True, slots=True)
+class HuronVidalParameters:
+    """The resolved Huron-Vidal parameters for a mixture, each matrix flattened row-major."""
+
+    #: The cubic interaction matrix.
+    kij: tuple[float, ...]
+    #: The fitted NRTL energy `Dij` in kelvin. Directional.
+    hv_gij: tuple[float, ...]
+    #: The fitted temperature coefficient `DijT`. Directional.
+    hv_gij_t: tuple[float, ...]
+    #: The fitted non-randomness `alpha`. Symmetric.
+    hv_alpha: tuple[float, ...]
+    #: One flag per interaction: `true` where `HVTYPE` says `HV`.
+    hv_pairs: tuple[bool, ...]
+
+
+def huron_vidal_parameters(names: tuple[str, ...], *, eos: str = "srk") -> HuronVidalParameters:
+    """The Huron-Vidal matrices for a list of components, by index.
+
+    ``kij`` comes from the cubic's own column, as it does for every other rule; the three
+    NRTL matrices come from `HVGIJ`/`HVGJI`, `HVGIJT`/`HVGJIT` and `HVALPHA`, symmetrised
+    where the source entry is symmetric and transposed where it is directional.
+    """
+    resolved = tuple(name.strip().lower() for name in names)
+    n = len(resolved)
+    stored = _hv_rows(resolved)
+    kij = [0.0] * (n * n)
+    gij = [0.0] * (n * n)
+    gij_t = [0.0] * (n * n)
+    alpha = [0.0] * (n * n)
+    pairs = [False] * (n * n)
+    column = 1 if eos.strip().lower() == "pr" else 0
+    for i, a in enumerate(resolved):
+        for j in range(n):
+            at = i * n + j
+            record = _kij().get((a, resolved[j]))
+            if record is not None:
+                kij[at] = record[column]
+            row = stored.get((a, resolved[j]))
+            if row is None:
+                continue
+            pairs[at] = row["hv"]
+            alpha[at] = row["alpha"]
+            gij[at] = row["gij"]
+            gij_t[at] = row["gijt"]
+    return HuronVidalParameters(
+        kij=tuple(kij),
+        hv_gij=tuple(gij),
+        hv_gij_t=tuple(gij_t),
+        hv_alpha=tuple(alpha),
+        hv_pairs=tuple(pairs),
+    )
+
+
+@cache
+def _hv_rows(names: tuple[str, ...]) -> dict[tuple[str, str], dict[str, Any]]:
+    """The Huron-Vidal columns, keyed by the ordered pair **both ways round**.
+
+    `HVGIJ`/`HVGJI` and `HVGIJT`/`HVGJIT` are two readings of one pair - `Dij` and `Dji` -
+    and the rule is *directional*, so `(a, b)` carries the first entry's forward values and
+    `(b, a)` the backward ones. **Storing one order and picking by index, as the first draft
+    did, silently gives the reverse pair the wrong `Dij`** - and for a name list whose order
+    differs from the file's, every fitted pair is wrong at once.
+    """
+    wanted = set(names)
+    out: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in _rows(find(KIJ_CSV).read_text(encoding="utf-8")):
+        a, b = row["component_a"], row["component_b"]
+        if a not in wanted or b not in wanted:
+            continue
+        hv = row["hvtype"].strip().upper() == "HV"
+        alpha = _absent_is_zero(row["hvalpha"])
+        forward = _absent_is_zero(row["hvgij"])
+        backward = _absent_is_zero(row["hvgji"])
+        forward_t = _absent_is_zero(row["hvgijt"])
+        backward_t = _absent_is_zero(row["hvgjit"])
+        out[(a, b)] = {"hv": hv, "alpha": alpha, "gij": forward, "gijt": forward_t}
+        out[(b, a)] = {"hv": hv, "alpha": alpha, "gij": backward, "gijt": backward_t}
+    return out
 
 
 @dataclass(frozen=True, slots=True)
@@ -2497,6 +2735,98 @@ def soreide_whitson_mixture_of(
         soreide_whitson=SoreideWhitsonParameters(
             roles=soreide_whitson_roles(resolved), salinity=salinity
         ),
+    )
+    return (
+        fluid,
+        IdealGasModel(
+            cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]
+            cp_b=tuple(e.cp[1] for e in entries),  # type: ignore[index]
+            cp_c=tuple(e.cp[2] for e in entries),  # type: ignore[index]
+            cp_d=tuple(e.cp[3] for e in entries),  # type: ignore[index]
+            cp_e=tuple(e.cp[4] for e in entries),  # type: ignore[index]
+        ),
+    )
+
+
+def furst_mixture_of(
+    names: list[str],
+    *,
+    salinity_rule: str = "molar_average",
+    card: keycard.Keycard | None = None,
+) -> tuple[Mixture, IdealGasModel]:
+    """The Fürst fluid: an SRK cubic, the Huron-Vidal rule and the electrolyte term.
+
+    NeqSim's ``SystemFurstElectrolyteEos``. Five choices are made here and nowhere else:
+
+    * the cubic is SRK with **Schwartzentruber's** attractive term for every component,
+      reading each row's own ``schwartzentruber1..3`` - zero for most substances and **not
+      for water**, whose fitted set moves its alpha 2.6%;
+    * an ion's attraction is ``1e-35`` and its covolume is the fitted ``(p0 d^3 + p1)``,
+      substituted in the state's reduction rather than here;
+    * the mixing rule is **Huron-Vidal**, NeqSim's rule 4, which the system installs;
+    * the short-range table is built from the names;
+    * the ions are ordinary components. A cubic built from the table refuses them, so this
+      resolver deliberately does not go through :func:`mixture_of`.
+
+    Raises:
+        PropertyUnavailableError: if a name is not in the databank or carries no
+            heat-capacity coefficients.
+    """
+    if not names:
+        raise InvalidInputError("components", "a mixture needs at least one component")
+    resolved = [name.strip().lower() for name in names]
+    entries = [entry(name, card=card) for name in resolved]
+
+    missing = [e.name for e in entries if e.cp is None]
+    if missing:
+        raise PropertyUnavailableError(
+            missing[0],
+            "heat-capacity coefficients",
+            "the databank carries them for every substance it ships; one a keycard adds "
+            "needs its own",
+        )
+
+    fitted = furst_parameters("furstParams")
+    p0 = fitted[0] if len(fitted) > 0 else 0.0
+    p1 = fitted[1] if len(fitted) > 1 else 0.0
+    species = []
+    for e in entries:
+        table_diameter = e.lennard_jones_diameter
+        if e.ionic_charge == 0.0:
+            diameter_m = table_diameter * 1.0e-10
+        else:
+            covolume = p0 * table_diameter**3 + p1
+            diameter_m = (6.0 * covolume / (NEQSIM_PI * NEQSIM_AVOGADRO)) ** (1.0 / 3.0)
+        species.append(
+            FurstSpecies(
+                name=e.name,
+                charge=e.ionic_charge,
+                diameter_m=diameter_m,
+                table_diameter=table_diameter,
+                dielectric_coefficients=e.dielectric,
+                critical_volume=(
+                    e.critical_volume.to_base_units().magnitude if e.critical_volume else 0.0
+                ),
+                dielectric_at_reference=_component_dielectric(e.dielectric, 298.15),
+            )
+        )
+
+    hv = huron_vidal_parameters(tuple(resolved), eos="srk")
+    term = FurstElectrolyte.build(tuple(species), _mixing_rule(salinity_rule))
+    # **The rule's own interaction matrix, and not the mixture's default of zero.** The HV
+    # rule reads `kij` for the pairs it does not fit, and `hv.kij` is that column - so a
+    # mixture built without it evaluates every pair at ideal mixing, which is a plausible
+    # phase and a different one.
+    n = len(resolved)
+    pairs = {(i, j): hv.kij[i * n + j] for i in range(n) for j in range(i + 1, n)}
+    fluid = mixture(
+        tuple(e.component(alpha="schwartzentruber") for e in entries),
+        kij=pairs,
+        cubic=_cubic("srk"),
+        alpha="schwartzentruber",
+        mixing_rule="huron_vidal",
+        huron_vidal=hv,
+        furst=term,
     )
     return (
         fluid,

@@ -80,6 +80,7 @@
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Dew-point temperature](./eos/dew_temperature.md)
   - [EOS-CG phase state](./eos/eos_cg_phase.md)
+  - [Phase state of a Furst electrolyte fluid](./eos/furst_electrolyte_phase.md)
   - [Gamma-phi flash with an NRTL liquid](./eos/ge_nrtl_flash.md)
   - [Fugacity coefficients of an NRTL activity-coefficient liquid](./eos/ge_nrtl_phase.md)
   - [Fugacity coefficients of a UNIFAC activity-coefficient liquid](./eos/ge_unifac_phase.md)

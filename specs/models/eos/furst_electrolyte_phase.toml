@@ -1,0 +1,70 @@
+id = "eos.furst_electrolyte_phase"
+name = "Phase state of a Furst electrolyte fluid"
+kind = "direct"
+assumptions = [
+    "this is NeqSim's `SystemFurstElectrolyteEos`: an SRK cubic with three additive Helmholtz terms - the short-range `W` term, the MSA long-range term and the Born solvation term - whose total pressure moves the volume root.",
+    "**the attractive term is Schwartzentruber's for every component.** With its fitted parameters at zero that is Soave's form with `m = 0.48508 + 1.55191 w - 0.15613 w^2`; where a row carries them - water's does - they are read, and the alpha moves 2.6%.",
+    "**the mixing rule is Huron-Vidal**, NeqSim's rule 4, which the system installs. It is what makes the attraction `n B R T alpha_mix` rather than the van der Waals sum.",
+    "**an ion's attraction is `1e-35` and its covolume is fitted**, `(p0 d^3 + p1)` in m3/mol with `p0` and `p1` from `FurstElectrolyteConstants`. Neither is the cubic's, and the ion's own Lennard-Jones diameter is *overwritten* by the value derived back out of that covolume.",
+    "the salt is a component, not a scalar: `Na+` and `Cl-` are in the composition and carry the electrostatics. This is the opposite of the Soreide-Whitson model, where the brine is a number.",
+    "the short-range table's parameters are chosen by the composition's *names*, in three sweeps - a table read, a cation sweep and a gas-then-oil sweep - each overwriting the last. See the model's own module for what that means for a gas-ion pair.",
+    "**the `TEG` branch reads the `MEG` parameter set**, because the name chain tests `TEG` twice and the first match wins (NeqSim issue 3846). Reproduced rather than corrected; the fix upstream is one array swap.",
+    "**the gamma chain is absent from `dFLRdN`**, upstream: the term that would carry it is written and commented out. Reproduced, because completing it would be a different fugacity coefficient.",
+    "`dFLRdTdT` and `dFBorndTdT` are NeqSim's own *simplifications* and not second derivatives - the source says so for the first - so they are reproduced rather than completed.",
+    "**there is no flash.** `eos.pt_flash`'s Jacobian is `d ln phi / d n`, which the Huron-Vidal rule refuses because that derivative is the excess Gibbs energy's second derivative. The cases record phase states at compositions NeqSim's own flash reports.",
+    "no `h_res` or `s_res`: the departure is not assembled, so one reported here would be the cubic's and not the electrolyte's.",
+    "`x` is checked rather than renormalised.",
+]
+references = [
+    "Furst, W.; Renon, H. (1993). \"Representation of excess properties of electrolyte solutions using a new equation of state.\" AIChE Journal 39(2), 335-343.",
+    "Schwartzentruber, J.; Renon, H. (1989). \"Development of a new cubic equation of state for phase equilibrium calculations.\" Fluid Phase Equilibria 52, 127-134.",
+    "Huron, M.-J.; Vidal, J. (1979). \"New mixing rules in simple equations of state for representing vapour-liquid equilibria of strongly non-ideal mixtures.\" Fluid Phase Equilibria 3(4), 255-271.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `SystemFurstElectrolyteEos`, `PhaseModifiedFurstElectrolyteEos`, `ComponentModifiedFurstElectrolyteEos` and `FurstElectrolyteConstants` are the port source.",
+]
+[source]
+standard = "NeqSim 3.20.0 `SystemFurstElectrolyteEos`"
+edition = "`PhaseModifiedFurstElectrolyteEos` and `ComponentModifiedFurstElectrolyteEos`, ported with the parameters `FurstElectrolyteConstants` hardcodes. NeqSim's rule 4 (Huron-Vidal) is the mixing rule the system installs."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name, ions included. The databank supplies each one's critical constants, dielectric coefficients, Lennard-Jones diameter and heat-capacity coefficients, and the name decides its role in the short-range correlation."
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions, checked rather than renormalised"
+[inputs.compressed_phase]
+type = "enum"
+values = ["liquid", "vapour"]
+description = "which root describes the phase wanted. The electrolyte terms carry a pressure, so neither root is the cubic's."
+[outputs]
+[outputs.z_factor]
+unit = "dimensionless"
+description = "the compressibility factor at the chosen root"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fugacity coefficients, as logarithms, at the chosen root. An ion's is large and negative, because its attraction is `1e-35` and its covolume is not."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states, and the dielectric polynomial carries a `1/T` term"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.furst_electrolyte_phase"
+rust = "azoth_eos::furst_electrolyte_phase"

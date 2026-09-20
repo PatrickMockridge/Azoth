@@ -67,6 +67,7 @@ pub mod flash_newton;
 pub mod flash_property;
 pub mod furst_dielectric;
 pub mod furst_electrolyte;
+pub mod furst_electrolyte_phase;
 pub mod furst_mixing;
 pub mod furst_terms;
 pub mod ge_nrtl_flash;
@@ -214,6 +215,7 @@ pub use desmukh_mather_phase::desmukh_mather_phase;
 pub use dew_pressure::dew_pressure;
 pub use dew_temperature::dew_temperature;
 pub use eos_cg_phase::eos_cg_phase;
+pub use furst_electrolyte_phase::furst_electrolyte_phase;
 pub use ge_nrtl_phase::ge_nrtl_phase;
 pub use ge_unifac_phase::ge_unifac_phase;
 pub use ge_uniquac_phase::ge_uniquac_phase;
@@ -272,8 +274,8 @@ pub use results::{
     BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
     DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EosCgPhaseResult,
-    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
-    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
+    FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
+    GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
     HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
