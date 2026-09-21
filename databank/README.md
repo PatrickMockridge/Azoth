@@ -46,22 +46,24 @@ them (35 files, 1,497 columns) is listed with what was done with it and a reason
 ```
 check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1079 read, 0 not-vendored entr(ies))
   397  carried, nothing reads it yet
-  1108  carried with no unit NeqSim states (neqsim-internal)
-  378  not-ported
+  1109  carried with no unit NeqSim states (neqsim-internal)
+  368  not-ported
    10  not-a-value
    10  empty-upstream
     2  superseded-by
     7  unreachable-upstream
+   10  uncalled-upstream
 ```
 
 **The porting backlog is "carried, nothing reads it yet" — 397 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — **378 columns carry it**, carried
-and dropped together, with a handful `unreachable-upstream` and the rest `not-a-value` or
-`empty-upstream` — `PhaseHydrate`, `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`,
-`ParachorSurfaceTension` and the rest. The check refuses a `not-ported` reason with no
-NeqSim name in it, so the list cannot drift back into being somewhere to put a column.
+`not-ported` reason names the class that would close it — **368 columns carry it**, carried
+and dropped together, with a handful `unreachable-upstream`, ten `uncalled-upstream` and the
+rest `not-a-value` or `empty-upstream` — `PhaseHydrate`, `CPAMixingRuleHandler`,
+`SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the rest. The check refuses a
+`not-ported` reason with no NeqSim name in it, so the list cannot drift back into being
+somewhere to put a column.
 
 Nothing here is "out of scope". That word was in an earlier draft of this vocabulary
 and it was wrong: a file it labelled out of scope was work not yet done, and filing it
@@ -76,6 +78,16 @@ a fully qualified `new pkg.Class(`, because the bare `new X(` grep is not a live
 (`ThermodynamicOperations.java:190` writes one that way). `SystemPrMathiasCopeman` is the
 example: the only class that mentions the Mathias-Copeman alpha, never constructed, and
 `mcpr1` appears in no source file at all.
+
+`uncalled-upstream` is the same finding one level down, and it needs its own word because
+the measurement is different: the class **is** live, and the member that would read the
+column is not. `ComponentSolid.fugcoef(PhaseInterface)` has its solid-vapour-pressure branch
+commented out and returns `fugcoef2`; the overload that reads the column,
+`ComponentSolid.fugcoef(double, double)`, is called by nothing; and the one other member that
+reaches the same columns, `ComponentHydrate.getEmptyHydrateStructureVapourPressure`'s
+`type == -1` branch, is settable from nowhere in `src/main`. A reachability check on the
+class answers yes, which is why the class-level test does not cover this case: the ten
+columns that carry the kind are read by a route that exists and cannot be walked.
 
 A reason is a quoted flow mapping, so `grep 'reason: not-ported'` matches nothing.
 Read the tally the check prints; there is no grep for it.

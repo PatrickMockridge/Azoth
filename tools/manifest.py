@@ -41,6 +41,10 @@ number is the porting backlog. `tools/check_manifest.py` prints the tally.
                       so there was no decision to make
   licence             a source that may not be redistributed
   superseded-by       another column in the same file says the same thing
+  unreachable-upstream the class that would read it is never constructed anywhere in
+                      the checkout, so it is work NeqSim has not done either
+  uncalled-upstream   the class that would read it is live, and the member that would
+                      read it is not: no caller, or a branch nothing can set
 """
 
 from __future__ import annotations
@@ -73,6 +77,12 @@ REASON_PREFIXES = (
     # which is work azoth has not done: this is work NeqSim has not done either, so
     # counting it as backlog overstates the port.
     "unreachable-upstream",
+    # Carried data whose *class* is live and whose *reader* is not - a method with no
+    # caller, or a branch nothing in `src/main` can set. The same distinction as
+    # `unreachable-upstream` one level down, and it needs its own word because the
+    # measurement behind it is different: the class is constructed, so a reader checking
+    # "is it reachable?" gets a yes from the class and has to go to the member.
+    "uncalled-upstream",
 )
 
 #: What may be done with a column.
@@ -237,6 +247,14 @@ def _column(raw: dict[str, Any], where: str, problems: list[str]) -> Column:
             f"{where}.{name}: a `not-ported` reason names the NeqSim class or package "
             f"that would close it, in backticks. Without one this list stops being a "
             f"porting backlog and becomes somewhere to put a column."
+        )
+    # Not gated on the disposition, unlike `not-ported` above: for this kind the member
+    # name **is** the claim. `uncalled-upstream` says a particular member has no caller,
+    # so a reason that does not name one has said nothing a reader can check.
+    if prefix == "uncalled-upstream" and "`" not in reason:
+        problems.append(
+            f"{where}.{name}: an `uncalled-upstream` reason names the NeqSim member that "
+            f"would read it but is never called, in backticks."
         )
     if disposition in ("used", "vendored") and not as_field:
         problems.append(
