@@ -166,9 +166,24 @@ The specialist physics.
 - **Wax.** `ComponentWax`, `ComponentWonWax`, `ComponentCoutinhoWax`,
   `ComponentWaxWilson`, `PhaseWax`, `TPmultiflashWAX`, `WaxCharacterise`,
   `WaxModelInterface`, and `pvtsimulation/flowassurance/WaxCurveCalculator`.
-- **Asphaltene.** `AsphalteneCharacterization`, `PedersenAsphalteneCharacterization`,
-  `AsphalteneOnsetPressureFlash`, `AsphalteneOnsetTemperatureFlash`, and
-  `pvtsimulation/flowassurance/FloryHugginsAsphalteneModel`.
+- **Asphaltene, carried on a defect upstream rather than for want of a port.**
+  `AsphalteneCharacterization`, `PedersenAsphalteneCharacterization`,
+  `AsphalteneOnsetPressureFlash`, `AsphalteneOnsetTemperatureFlash`, the
+  `pvtsimulation/flowassurance/` screens (`DeBoerAsphalteneScreening`,
+  `FloryHugginsAsphalteneModel`, `RefractiveIndexAsphalteneScreening`,
+  `AsphalteneStabilityAnalyzer`, `AsphalteneMethodComparison`,
+  `AsphalteneMultiMethodBenchmark`), the onset fitting pair (`AsphalteneOnsetFitting`,
+  `AsphalteneOnsetFunction`) and `process/chemistry/asphaltene/`.
+  The two onset flashes are the reachable pair, and what they scan over is a `TPflash` with
+  `setSolidPhaseCheck("asphaltene")` — a call that **turns on the multiphase check as a side
+  effect** (`SystemThermo.addSolidPhase`), which then skips `Flash`'s own solid hook and hands
+  back a two-phase fluid collapsed to the feed. Measured on methane 0.30 / n-heptane 0.70 at
+  333.15 K and 60 bara: `GAS 0.092231647152` against `OIL 0.907768352848` without the solid
+  check, and one phase at `x = z` with it. So the sweep the onset is found along is not a
+  sequence of states, and only its endpoint — reached where a solid forms and `SolidFlash`
+  re-derives the phases — is a state at all. The coefficient the family's solid is built on is
+  ported (`eos.solid_fugacity`, `eos.tp_solid_flash`); this family is revisited when upstream
+  closes the defect.
 - **Hydrogen and cryogenic.** `ComponentGERG2008Eos`, `ComponentGERG2004`,
   `PhaseGERG2008Eos`, `SystemGERG2008Eos`, `PHflashGERG2008`, `PSFlashGERG2008` and
   `thermo/util/gerg/`; `ComponentLeachmanEos`, `PHflashLeachman`, `PSFlashLeachman` and
@@ -192,10 +207,14 @@ Port on demand, as a caller needs them:
   `thermo/util/spanwagner/`, `thermo/util/Vega/`.
 - **UMR.** `ComponentUMRCPA`, `ComponentUMRCPAvolcor`, `ComponentGEUnifacUMRPRU`,
   `AttractiveTermUMRPRU`, `SystemUMRPRUEos`, `SystemUMRPRUMCEos`.
-- **Solids.** `ComponentSolid`, `ComponentSolidHelmholtzEos`, `PhaseSolid`,
-  `PhaseSolidComplex`, `PhasePureComponentSolid`, `PhaseSolidHelmholtzEos`,
-  `SystemSolidHelmholtzEos`, `SystemArgonSolidHelmholtzEos`, `SolidFlash`, `SolidFlash1`,
-  `SolidFlash12`, `PHsolidFlash`, `thermo/util/solid/`.
+- **Solids.** Ported, each with the id that carries it: `ComponentSolid`
+  (`eos.solid_fugacity`, the tabulated coefficient) and `SolidFlash`
+  (`eos.tp_solid_flash`, the fluid flash carrying one pure solid), over the
+  `PhasePureComponentSolid` route. **Not ported**: `ComponentSolidHelmholtzEos`,
+  `PhaseSolidComplex`, `PhaseSolidHelmholtzEos`, `SystemSolidHelmholtzEos`,
+  `SystemArgonSolidHelmholtzEos`, `SolidFlash1`, `SolidFlash12`, `PHsolidFlash` and
+  `thermo/util/solid/` — `SolidFlash1` because it normalises nothing and leaves phases whose
+  compositions do not sum to one (measured on a water/methane feed: `x` summing to `0.819`).
 - **Sulfur.** `thermo/util/sulfur/SulfurThermodynamics`.
 - **Amines.** `thermo/util/amines/` (`AmineSystem`, `AmineKentEisenberg`), and the
   amine viscosity and diffusivity methods.

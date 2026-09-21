@@ -40,7 +40,13 @@ count = 4
 reason = """\
     not-ported: hydrate, electrolyte and asphaltene models; NeqSim's `PhaseHydrate`, \
     `ComponentSalt` and `pvtsimulation/flowassurance/`. Each is a phase or a mixture rather \
-    than a substance, and the model that would read the row is not ported."""
+    than a substance, and the model that would read the row is not ported. **The asphaltene \
+    row is the one of the four whose model is reachable**, and it is carried because the route \
+    to it is defective upstream - `setSolidPhaseCheck` turns on the multiphase check as a side \
+    effect and the flash then returns a two-phase fluid as the feed - which `ROADMAP.md` \
+    records. The row is also a placeholder rather than a characterisation: 750 g/mol with a \
+    50000 J/mol heat of fusion at 573.15 K, which `AsphalteneCharacterization` overwrites \
+    the molar mass of."""
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "dropped"

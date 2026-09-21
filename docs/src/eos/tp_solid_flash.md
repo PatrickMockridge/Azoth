@@ -64,6 +64,7 @@ not an equation, and both implementations read it from here.
 - **the solid-liquid volume difference is read from the two density correlations at the triple point**, each falling back to the reference liquid's molar volume where the table carries none. NeqSim's fallback divides by `Phase.getDensity()`'s own `1e5`; it is ported as written.
 - **the two routes to this state do not agree.** `SolidFlash` (a `TPflash` with the solid check on, the route the asphaltene onsets take) normalises each phase; `SolidFlash1` (`TPSolidflash()`) normalises nothing and line-searches on `Q`. This port follows `SolidFlash`.
 - **a fluid phase the Newton takes under `1.01e-9` is removed and the solve restarts**, which is what leaves a near-freezing feed with one fluid phase rather than a second one at the floor.
+- **NeqSim's route to this class is not the one a caller reaches by hand.** `setSolidPhaseCheck` turns the multiphase check on as a side effect and `Flash`'s solid hook is guarded on that flag being off, so a two-phase fluid comes back as the feed. The port seeds from the plain two-phase flash.
 - the phases are reported in the solve's own order with the solid **last**, and no other order is promised. `solid_fraction` is the answer the phase's index would otherwise have to be read for.
 - an inhibitor, a hydrate and an energy balance are not modelled, as for the rest of this family.
 - `z` is checked (non-negative, sums to one) rather than renormalised, and `eos` is the cubic the solid's reference liquid is built from as well as the fluid's own.

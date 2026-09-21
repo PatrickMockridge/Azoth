@@ -37,7 +37,11 @@ the physics behind them:
   conductivity, diffusivity, surface tension, density — wait on P1.
 - **Petroleum-fraction characterisation** — pvt pseudocomponent and regression skills
   wait on Tier 1 of [`ROADMAP.md`](../../../ROADMAP.md).
-- **Hydrates, wax, asphaltene and solids** — flow-assurance skills wait on P9.
+- **Hydrates, wax, asphaltene and solids** — the flow-assurance skills wait on P9, which
+  lands hydrate, wax, scale and freezing. **Asphaltene is carried rather than pending**: the
+  reachable pair of onset flashes scans over a flash that upstream collapses to the feed, so
+  there is nothing to drive, and [`ROADMAP.md`](../../../ROADMAP.md) records the defect and
+  what would have to change. No skill is blocked on it.
 
 ## Tranche → domain → skills
 
