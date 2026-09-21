@@ -454,7 +454,7 @@ name = "MELTINGPOINTTEMPERATURE"
 disposition = "vendored"
 as = "meltingpointtemperature"
 unit = "K"
-reason = "not-ported: read as a starting temperature by `WaterDewPointTemperatureFlash` and the legacy `FreezingPointTemperatureFlashOld`, and by nothing else"
+reason = "not-ported: read as a starting temperature by `WaterDewPointTemperatureFlash`, which is the live reader, and by nothing else. The legacy `FreezingPointTemperatureFlashOld` names it too and is unreachable upstream - no `new` for it in `src/main` and no reference outside its own file."
 [[upstreams.files.columns]]
 name = "ENTHALPYOFFORMATION"
 disposition = "vendored"

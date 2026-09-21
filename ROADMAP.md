@@ -164,12 +164,14 @@ solubility, electrolytes, salts and scale, and freezing.
 - **Freezing.** `FreezingPointTemperatureFlash` is ported as `eos.freezing_point`, on the
   route that requires a `PhaseSolidHelmholtzEos`: `eos.hydrogen_phase` for the fluid and
   `eos.parahydrogen_solid_phase` for the solid, with the solid calibrated to the liquid it
-  meets at the triple point. **Its other two routes are carried**: the tabulated
-  `ComponentSolid` one, whose two halves are ported as `eos.solid_fugacity` and
-  `eos.tp_solid_flash` so what is missing is the operation that would drive them, and the
-  legacy `FreezingPointTemperatureFlashTR` and `...FlashOld`. **`FreezeOut` is carried as
-  unreachable upstream**: no `new` for it anywhere in `src/main` or `src/test`, so the one
-  amount-solve this family names does not exist to port.
+  meets at the triple point. **The tabulated `ComponentSolid` route is carried**: its two
+  halves are ported as `eos.solid_fugacity` and `eos.tp_solid_flash`, so what is missing is
+  the operation that would drive them. **`FreezingPointTemperatureFlashTR`,
+  `FreezingPointTemperatureFlashOld` and `FreezeOut` are unreachable upstream**: none has a
+  `new` anywhere in `src/main`, a reference of any kind outside its own file, or a site in
+  `src/test`, and the reflection NeqSim does (`this.getClass()...newInstance()`) can only
+  reach a class something else constructs. So the legacy pair is not work azoth has skipped,
+  and `FreezeOut`'s amount-solve is not a solve that exists.
 
 ### Tier 3 — wax, hydrate, hydrogen, asphaltene
 
@@ -274,10 +276,13 @@ Port on demand, as a caller needs them:
   (`eos.solid_fugacity`, the tabulated coefficient) and `SolidFlash`
   (`eos.tp_solid_flash`, the fluid flash carrying one pure solid), over the
   `PhasePureComponentSolid` route. **Not ported**: `ComponentSolidHelmholtzEos`,
-  `PhaseSolidComplex`, `PhaseSolidHelmholtzEos`, `SystemSolidHelmholtzEos`,
-  `SystemArgonSolidHelmholtzEos`, `SolidFlash1`, `SolidFlash12`, `PHsolidFlash` and
-  `thermo/util/solid/` — `SolidFlash1` because it normalises nothing and leaves phases whose
-  compositions do not sum to one (measured on a water/methane feed: `x` summing to `0.819`).
+  `PhaseSolidComplex`, `PhaseSolidHelmholtzEos`, `SystemSolidHelmholtzEos`, `SolidFlash1`,
+  `PHsolidFlash` and `thermo/util/solid/` — `SolidFlash1` because it normalises nothing and
+  leaves phases whose compositions do not sum to one (measured on a water/methane feed: `x`
+  summing to `0.819`). **Unreachable upstream**: `SolidFlash12`, which has no `new` in
+  `src/main` and no reference outside its own file, and `SystemArgonSolidHelmholtzEos`, whose
+  only sites are two tests and an inventory file — so the argon solid this library carries as
+  `eos.argon_solid_phase` is a phase state with no system that builds it.
 - **Sulfur.** `thermo/util/sulfur/SulfurThermodynamics`.
 - **Amines.** `thermo/util/amines/` (`AmineSystem`, `AmineKentEisenberg`), and the
   amine viscosity and diffusivity methods.
