@@ -79,6 +79,7 @@ class Component:
     cp_solid: tuple[float, ...] = ()
     cp_liquid: tuple[float, ...] = ()
     solid_density_coefs: tuple[float, ...] = ()
+    liquid_density_coefs: tuple[float, ...] = ()
 
     def __post_init__(self) -> None:
         for name in ("Tc", "Pc"):

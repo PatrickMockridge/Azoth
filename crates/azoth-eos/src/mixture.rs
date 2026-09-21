@@ -167,6 +167,8 @@ pub struct Component {
     pub cp_liquid: [f64; 5],
     /// The solid's density-correlation coefficients, zero where the table states none.
     pub solid_density_coefs: [f64; 4],
+    /// The liquid's density-correlation coefficients, the same table's other half.
+    pub liquid_density_coefs: [f64; 4],
     /// The association parameters, or `None` for a component with no site scheme.
     ///
     /// **A component that carries this is not described by its critical constants
@@ -213,6 +215,7 @@ impl Component {
             cp_solid: [0.0; 4],
             cp_liquid: [0.0; 5],
             solid_density_coefs: [0.0; 4],
+            liquid_density_coefs: [0.0; 4],
             association: None,
         })
     }
@@ -266,10 +269,12 @@ impl Component {
         cp_solid: [f64; 4],
         cp_liquid: [f64; 5],
         solid_density_coefs: [f64; 4],
+        liquid_density_coefs: [f64; 4],
     ) -> Self {
         self.cp_solid = cp_solid;
         self.cp_liquid = cp_liquid;
         self.solid_density_coefs = solid_density_coefs;
+        self.liquid_density_coefs = liquid_density_coefs;
         self
     }
 

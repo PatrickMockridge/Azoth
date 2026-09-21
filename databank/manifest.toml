@@ -463,28 +463,28 @@ disposition = "dropped"
 reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "LIQUIDDENSITYCOEFS1"
-disposition = "dropped"
-reason = """\
-    superseded-by: LIQDENS, which is carried across directly rather than through a five-term \
-    correlation"""
+disposition = "used"
+as = "liquiddensitycoefs1"
+unit = "neqsim-internal"
+reason = "read by `eos.tp_solid_flash`, as the liquid molar volume at the triple point, through `getPureComponentLiquidDensity`. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2`'s solid-liquid volume term is what consumes it."
 [[upstreams.files.columns]]
 name = "LIQUIDDENSITYCOEFS2"
-disposition = "dropped"
-reason = """\
-    superseded-by: LIQDENS, which is carried across directly rather than through a five-term \
-    correlation"""
+disposition = "used"
+as = "liquiddensitycoefs2"
+unit = "neqsim-internal"
+reason = "read by `eos.tp_solid_flash`, as the same polynomial, at the next power. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "LIQUIDDENSITYCOEFS3"
-disposition = "dropped"
-reason = """\
-    superseded-by: LIQDENS, which is carried across directly rather than through a five-term \
-    correlation"""
+disposition = "used"
+as = "liquiddensitycoefs3"
+unit = "neqsim-internal"
+reason = "read by `eos.tp_solid_flash`, as the same polynomial. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "LIQUIDDENSITYCOEFS4"
-disposition = "dropped"
-reason = """\
-    superseded-by: LIQDENS, which is carried across directly rather than through a five-term \
-    correlation"""
+disposition = "used"
+as = "liquiddensitycoefs4"
+unit = "neqsim-internal"
+reason = "read by `eos.tp_solid_flash`, as the same polynomial. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "LIQUIDDENSITYCOEFS5"
 disposition = "dropped"

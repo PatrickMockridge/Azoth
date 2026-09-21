@@ -324,6 +324,13 @@ pub struct Entry {
     /// back to the liquid's own molar volume there - which is what makes the solid-liquid
     /// volume change vanish for water.
     pub solid_density_coefs: [f64; 4],
+    /// The liquid's density correlation, `[c1, c2, c3, c4]` of the same polynomial:
+    /// NeqSim's `LIQUIDDENSITYCOEFS1`-`4`.
+    ///
+    /// **Zero on the rows the table states none for** - carbon dioxide and benzene among
+    /// them, but not water - and `ComponentSolid.fugcoef2` reads it as the liquid molar
+    /// volume only above `1e-20`, falling back to the reference phase's own density below.
+    pub liquid_density_coefs: [f64; 4],
     /// Triple-point temperature, in K: NeqSim's `TRIPLEPOINTTEMPERATURE`, read beside it.
     /// Methane's is `90.69` K.
     pub triple_point_temperature: f64,
@@ -398,7 +405,12 @@ impl Entry {
                     self.heat_of_fusion,
                     self.triple_point_temperature,
                 )
-                .with_solid_tables(self.cp_solid, self.cp_liquid, self.solid_density_coefs)
+                .with_solid_tables(
+                    self.cp_solid,
+                    self.cp_liquid,
+                    self.solid_density_coefs,
+                    self.liquid_density_coefs,
+                )
                 .with_association(self.association.clone()),
         )
     }
@@ -1054,6 +1066,10 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "soliddensitycoefs2",
         "soliddensitycoefs3",
         "soliddensitycoefs4",
+        "liquiddensitycoefs1",
+        "liquiddensitycoefs2",
+        "liquiddensitycoefs3",
+        "liquiddensitycoefs4",
         "hydratea1small",
         "hydrateb1small",
         "hydratea1large",
@@ -1201,6 +1217,14 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     let mut fitted = [0.0; 4];
                     for (k, slot) in fitted.iter_mut().enumerate() {
                         let column = format!("soliddensitycoefs{}", k + 1);
+                        *slot = number(&record, index[column.as_str()], &column, row)?;
+                    }
+                    fitted
+                },
+                liquid_density_coefs: {
+                    let mut fitted = [0.0; 4];
+                    for (k, slot) in fitted.iter_mut().enumerate() {
+                        let column = format!("liquiddensitycoefs{}", k + 1);
                         *slot = number(&record, index[column.as_str()], &column, row)?;
                     }
                     fitted
@@ -1530,6 +1554,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 cp_solid: [0.0; 4],
                 cp_liquid: [0.0; 5],
                 solid_density_coefs: [0.0; 4],
+                liquid_density_coefs: [0.0; 4],
                 lambda_r_mie: 0.0,
                 lambda_a_mie: 0.0,
                 m_mie: 0.0,
@@ -1601,6 +1626,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             cp_solid: base.cp_solid,
             cp_liquid: base.cp_liquid,
             solid_density_coefs: base.solid_density_coefs,
+            liquid_density_coefs: base.liquid_density_coefs,
             lambda_r_mie: base.lambda_r_mie,
             lambda_a_mie: base.lambda_a_mie,
             m_mie: base.m_mie,
