@@ -1,10 +1,10 @@
 //! The SAFT-VR-Mie flash, against NeqSim's `TPflashSAFT`.
 //!
 //! The oracle is `validation/neqsim/SaftVrMieFlashProbe.java`, which runs the class three
-//! ways - dispatched, directly, and directly on a system that was initialised first - and
-//! **only the third splits anything**. The dispatched route reads the feed composition before
-//! its own `init(0)`, so it solves a zero feed: the numbers below are the third column's.
-//! The whole finding is written up at `~/Desktop/neqsim-tpflashsaft-reads-a-zero-feed.md`.
+//! ways - dispatched, directly, and directly on a system that was initialised first. **All
+//! three split the feed now**: the first two read the feed composition before their own
+//! `init(0)` at 3.20.0, so they solved a zero feed, and the numbers below are the third
+//! column's. The write-up is at `~/Desktop/neqsim-tpflashsaft-reads-a-zero-feed.md`.
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_eos::tp_flash_saft::tp_flash_saft;

@@ -2,13 +2,32 @@ model = "eos.tp_flash_saft"
 [[cases]]
 id = "methane_butane_two_phase_against_neqsim"
 tolerance = 1e-04
-source = """NeqSim 3.20.0, `SystemSAFTVRMie` with `TPflashSAFT`, run from `validation/neqsim/SaftVrMieFlashProbe.java` - which runs the class three ways because **they disagree**. `ThermodynamicOperations.TPflash()` dispatches to it and reports a single gas phase at every state tried; so does the class run directly; and only the class run on a system that was initialised first finds the split, at `beta = 0.535808206580083` here.
+source = """NeqSim master, `SystemSAFTVRMie` with `TPflashSAFT`, run from
+`validation/neqsim/SaftVrMieFlashProbe.java` - which runs the class three ways because **they
+disagreed at 3.20.0 and now do not**. `ThermodynamicOperations.TPflash()`, the class run
+directly on a fresh system, and the class run on a system initialised first all find
+`beta = 0.535808206580083` here.
 
-**The reason is one statement of ordering.** `run()` reads `getz()` *before* its own `system.init(0)`, and on a fresh system that is `0.0` for every component - so the Rachford-Rice solves a zero feed, whose residual is identically zero, and the vapour fraction walks to zero until the loop's bound fires. The seed is fine: after its own `init(0)` the class reads the correct Wilson K-values. Written up at `~/Desktop/neqsim-tpflashsaft-reads-a-zero-feed.md`.
+**The ordering that made them disagree is closed upstream.** `run()` read `getz()` before its
+own `system.init(0)`, so on a fresh system that was `0.0` for every component and the
+Rachford-Rice solved a zero feed - a fixed point whose residual is identically zero - until
+the loop's bound fired. `7568c8a` initialises the feed fractions first, and the probe's two
+entry points now return the same split. The write-up is at
+`~/Desktop/neqsim-tpflashsaft-reads-a-zero-feed.md`.
 
-So the numbers a port is checked against are the `init(0)`-first ones: the probe's `x = [0.163196975571159, 0.836803024428841]`, `y = [0.978419594354518, 0.0215804056454816]`, `K = [5.99533083741967, 0.0257891174857343]`, which the model's own values below agree with to `1e-5`. The other two probe states - 350 and 200 K at 30 bara - are checked in `crates/azoth-eos/tests/tp_flash_saft.rs` against `0.970118166758440` and `0.406167928288498`.
+**This model was written against the `init(0)`-first side**, which is the one that finds the
+split, so the fix moved NeqSim onto these numbers rather than moving them: the probe's
+`x = [0.163196975571159, 0.836803024428841]`, `y = [0.978419594354518, 0.0215804056454816]`,
+`K = [5.99533083741967, 0.0257891174857343]`, which the model's own values below agree with to
+`1e-5`. The other two probe states - 350 and 200 K at 30 bara - are checked in
+`crates/azoth-eos/tests/tp_flash_saft.rs` against `0.970118166758440` and
+`0.406167928288498`, which both entry points now return there too.
 
-**The tolerance is the loop's own stopping rule, not a measurement of the model**, at `1e-4`: the loop stops on a relative K change of `1e-5`, so the iterate carries that by construction through `1/(1 + beta (K-1))`, and `1e-4` is a decade above where the two kernels' own rounding lands it. The compositions are one quantity; the two kernels agree on the phase and the vapour fraction to `1e-5` either way."""
+**The tolerance is the loop's own stopping rule, not a measurement of the model**, at `1e-4`:
+the loop stops on a relative K change of `1e-5`, so the iterate carries that by construction
+through `1/(1 + beta (K-1))`, and `1e-4` is a decade above where the two kernels' own rounding
+lands it. The compositions are one quantity; the two kernels agree on the phase and the vapour
+fraction to `1e-5` either way."""
 [cases.inputs]
 components = ["methane", "n-butane"]
 T = 250.0

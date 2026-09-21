@@ -1,10 +1,10 @@
 ################ a one-component GE phase ################
-  SystemNRTL      ArrayIndexOutOfBoundsException: Index 1 out of bounds for length 1
-      at neqsim.thermo.component.ComponentGeNRTL.getGamma(ComponentGeNRTL.java:118)
-  SystemGEWilson  NullPointerException: Cannot invoke "neqsim.thermo.component.ComponentInterface.getx()" because the return value of "neqsim.thermo.phase.PhaseInterface.getComponent(int)" is null
-      at neqsim.thermo.phase.PhaseGEWilson.getExcessGibbsEnergy(PhaseGEWilson.java:99)
-  SystemDuanSun   NullPointerException: Cannot invoke "neqsim.thermo.component.ComponentInterface.isIsIon()" because the return value of "neqsim.thermo.phase.PhaseInterface.getComponent(int)" is null
-      at neqsim.thermo.phase.PhaseDuanSun.getExcessGibbsEnergy(PhaseDuanSun.java:88)
+  SystemNRTL      RuntimeException: neqsim.util.exception.InvalidInputException: PhaseGENRTL:addComponent - Input name component with same name already exists in phase. Use addMoles or addMolesChemreac.
+      at neqsim.thermo.phase.Phase.addComponent(Phase.java:154)
+  SystemGEWilson  RuntimeException: neqsim.util.exception.InvalidInputException: PhaseGEWilson:addComponent - Input name component with same name already exists in phase. Use addMoles or addMolesChemreac.
+      at neqsim.thermo.phase.Phase.addComponent(Phase.java:154)
+  SystemDuanSun   RuntimeException: neqsim.util.exception.InvalidInputException: PhaseDuanSun:addComponent - Input name component with same name already exists in phase. Use addMoles or addMolesChemreac.
+      at neqsim.thermo.phase.Phase.addComponent(Phase.java:154)
   (a one-component phase holding water, or a two-component one,
    takes the solvent branch and is unaffected)
   SystemNRTL water ok, gamma = 1.00000000000
