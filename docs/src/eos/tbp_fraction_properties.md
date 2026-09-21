@@ -69,7 +69,7 @@ satisfy for the result to mean what it says.
 - the correlation is written in **g/mol and g/cm3** and this states SI, so the conversion is at the boundary and the coefficients keep NeqSim's own scale. `pc` is computed in **bar** - its coefficients and `0.01325` (= ln 1.01325) say so - and reported in pascals.
 - **the coefficient set switches at `mw = 1120` and the boiling-point correlation at `mw = 540`**, both in g/mol. The two crossings are pinned by tests, because a port that read either threshold in kg/mol would agree at every light cut and diverge only at heavy ones.
 - **above `mw = 1120` the acentric factor is unphysical and is returned anyway.** Measured at `mw = 1121`, `d = 1.0`: `tb = 1006.34005439028` K against `tc = 994.658850370848` K, so `omega` is `-44.6358323245519`. The correlation's behaviour, reproduced rather than repaired; the range warns.
-- `racketZ` - the Peneloux volume shift `addTBPfraction` also sets - is **not here**, and is not a function of these two numbers: it takes a flashed reference system. It is carried, and a pseudo-component built without it has the cubic's own volume rather than the measured one.
+- **`racketZ` - the Peneloux shift `addTBPfraction` also fits - is carried**, and is not a function of these two numbers: it takes a flashed reference system. `PhaseSrkEos` never applies it either - its only callers are the density models.
 - `calcCriticalVolume`, `calcParachorParameter`, `calcCriticalViscosity` and `calcWatsonCharacterizationFactor` are the same class's neighbours and are carried by name: nothing in the ported families reads them.
 - the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.
 

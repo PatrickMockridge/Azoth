@@ -923,14 +923,14 @@ fn the_state_derivatives_are_the_fugacity_coefficients_own() {
 /// **The fitted Soave coefficient is the one a pseudo-component carries.**
 ///
 /// NeqSim's `AttractiveTermSrk.setm` puts a cut's own `m` on its attractive term, and its
-/// TBP machinery does that for every pseudo-component - so a mixture read through
-/// `eos.srk_kappa`'s acentric-factor correlation is a different fluid. Measured, a cut at
-/// `mw = 150` g/mol has a fitted `m` of `1.388519025` where the correlation gives `1.53`
-/// for its acentric factor: the two differ by ten per cent, which is not a rounding.
+/// TBP machinery does that for every pseudo-component. **It also overwrites the component's
+/// acentric factor** with the root of the polynomial `m` belongs to, so the two are not
+/// alternatives: this variant is what `setm` means, and a caller that supplies `m` should
+/// supply the acentric factor it implies rather than the one `calcAcentricFactor` returns.
 ///
 /// The reduction this is checked by: at one component the mixture's attraction must be the
 /// registered `eos.srk_alpha_ab` at the coefficient the component carries, whatever that
-/// coefficient is - and the two variants must then disagree.
+/// coefficient is.
 #[test]
 fn the_fitted_soave_coefficient_is_the_components_own() {
     use azoth_eos::mixture::Component;
@@ -958,8 +958,10 @@ fn the_fitted_soave_coefficient_is_the_components_own() {
     assert!((reduced.a[0] - expected.a_reduced).abs() < 1e-14);
     assert!((reduced.a[0] / expected.a_reduced - 1.0).abs() < 1e-14);
 
-    // And the correlation would have given a different fluid: `kappa(omega)` for this cut
-    // is `1.911`, not `1.5645`, so the two variants' attractions differ by a few per cent.
+    // **This fixture's acentric factor is `calcAcentricFactor`'s**, which is what NeqSim
+    // computes and then discards - so here the two variants *do* disagree, and the check
+    // below is that the variant reads the component's own coefficient rather than deriving
+    // one. A caller following `setm` supplies the root instead, and then they agree.
     let correlated = Mixture::new(
         vec![component.clone().with_alpha_params(Vec::new())],
         vec![0.0],

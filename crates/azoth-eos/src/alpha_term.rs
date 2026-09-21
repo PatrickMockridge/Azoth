@@ -41,11 +41,17 @@ pub enum Alpha {
     /// from the acentric factor.
     ///
     /// This is NeqSim's `AttractiveTermSrk.setm`, which its TBP machinery calls on every
-    /// pseudo-component: `addTBPfraction` reads `eos.tbp_fraction_properties`'s
-    /// `m` and sets it on the component's attractive term, bypassing the correlation. It
-    /// matters because the two disagree - a cut at `mw = 150` g/mol has a fitted `m` of
-    /// `1.388519025` where `eos.srk_kappa` gives `1.53` for its acentric factor - so a
-    /// mixture read through the correlation is a different fluid.
+    /// pseudo-component: `addTBPfraction` reads `eos.tbp_fraction_properties`'s `m` and sets
+    /// it on the component's attractive term.
+    ///
+    /// **And `setm` overwrites the acentric factor with the root of the Soave polynomial it
+    /// belongs to** - `setAcentricFactor(solve(-0.176 w**2 + 1.574 w + (0.48 - m)))` - so a
+    /// component carrying a fitted `m` carries the acentric factor that `m` implies, and
+    /// this variant and `Alpha::Srk` on that factor are the same number. Measured on the wax
+    /// probe's seven cuts, the stored acentric factor reproduces that root to `1e-15`. So
+    /// this is not a way to get a *different* alpha; it is what `setm` means, and it is the
+    /// honest input for a cut, whose `calcAcentricFactor` value NeqSim discards - `0.8392`
+    /// for the `C19` cut, against the `0.6743` it keeps.
     ///
     /// The coefficient is [`crate::mixture::Component::alpha_params`]'s first entry, in
     /// the same slot the fitted correlations read theirs from; a component without one is
