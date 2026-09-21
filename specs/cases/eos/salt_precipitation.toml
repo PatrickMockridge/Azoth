@@ -25,7 +25,9 @@ own arithmetic on the same coefficients.
 
 The brine also avoids a species pair azoth's Pitzer refuses: `ca++|na+` and `cl-|so4--` have
 no theta in the dataset it reads, and its phase refuses such a set rather than running it with
-zeros the way NeqSim does."""
+zeros. **NeqSim refuses it too** - `MultiSaltProbe three-salts` ends in
+`PitzerParameterCoverage`'s `IllegalStateException` on both pinned revisions - so this is a
+brine the two libraries agree about rather than one they differ on."""
 [cases.inputs]
 components = ["water", "Na+", "Cl-", "CO3--", "HCO3-"]
 salt = "NaCl"

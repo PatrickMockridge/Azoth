@@ -113,3 +113,29 @@ The alternative - fetching from GitHub in CI - would make every build depend on 
 network service the project does not control, to answer a question that only matters
 when someone deliberately decides to re-vendor. So it is a human step, and the
 staleness is visible in the file rather than hidden.
+
+## Moving the pin
+
+Moving it is a deliberate act with a procedure, because the two things it invalidates are
+invisible from here: the vendored columns, and the oracle numbers hard-coded into
+`crates/*/tests/*.rs`. Those tests are the only thing that would notice a moved number, and
+their bars are wide enough that a move of `1e-9` passes them - which is how two whole test
+files stayed on the previous revision through the last refresh.
+
+1. **Build the jar** from the checkout, as `.gitignore` says, and name it for its commit.
+2. **`tools/pin_impact.py --from <old> --to <new>`** - which NeqSim classes changed, which of
+   them this tree cites, and which of those moved a *numeric literal* rather than a brace.
+   It needs no jar and no probe run, and it names the files to re-measure. The classes it
+   reports differ from a plain `git diff` because a formatting sweep reaches nothing.
+3. **`tools/oracle_sweep.py`** - re-runs every probe, rebuilds every capture, and reports
+   both what moved and any crate-test literal still holding the *previous* value. It exits
+   non-zero on a stale literal. Run it before regenerating the captures: the committed
+   capture *is* the previous pin, and that is what makes the check decidable with one jar.
+4. **Re-vendor and regenerate**, as the sections above describe, and re-capture.
+
+**The models with no probe are the residual gap.** `crates/*/tests/` holds reference-equation
+tests - ammonia, Vega, Span-Wagner, Leachman, argon and para-hydrogen solid - whose NeqSim
+classes nothing in `validation/neqsim/` drives, so a move there is caught by step 2 and not
+by step 3. In the last window six of those classes changed and exactly one of them,
+`Ammonia2023`, mattered: it gained two methods and the five others changed only in
+`64efef1 Spotless`, which step 2 says by reporting their literals as identical.
