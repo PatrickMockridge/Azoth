@@ -110,7 +110,7 @@ fn the_exact_omegas_are_the_triple_root_solution() {
 
 /// The pair this crate ships is NeqSim's, and it is deliberately not that solution.
 ///
-/// The port rule settles it: azoth is a port of NeqSim 3.20.0, NeqSim's
+/// The port rule settles it: azoth is a port of NeqSim, NeqSim's
 /// `ComponentPR` constructor sets these two literals, and carrying them is what
 /// makes the two agree. Asserted rather than merely stated in a comment, because
 /// "correcting" them back to the exact pair is the single most natural edit a
@@ -126,7 +126,7 @@ fn the_shipped_omegas_are_neqsims_and_are_not_the_triple_root_solution() {
     assert_eq!(
         (OMEGA_A, OMEGA_B),
         (0.45724333333, 0.077803333),
-        "these are NeqSim 3.20.0's ComponentPR literals; see the spec's assumptions"
+        "these are NeqSim's ComponentPR literals; see the spec's assumptions"
     );
     let (p, q) = depressed(OMEGA_A, OMEGA_B);
     assert!(

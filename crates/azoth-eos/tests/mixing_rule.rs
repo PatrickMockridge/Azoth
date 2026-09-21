@@ -49,7 +49,7 @@ fn classic_t2_resolves_each_pair_against_its_own_form() {
     assert_eq!(effective[3], 0.0);
 }
 
-/// The Soreide-Whitson aqueous correlations, against NeqSim 3.20.0's
+/// The Soreide-Whitson aqueous correlations, against NeqSim's
 /// `getkijWhitsonSoreideAqueous` (LEGACY) at S = 2 mol/kg, T = 300 K.
 ///
 /// The four components are water, methane, nitrogen and CO2 in that order, with the
@@ -138,7 +138,7 @@ fn a_mixture_resolves_the_rule_at_reduced_parameters() {
     assert!((reduced.kij[1] - (kij0 + 1.0 / 300.0)).abs() < 1e-15);
 }
 
-/// The UMR rule's two inputs, against NeqSim 3.20.0's `SystemUMRCPAEoS`.
+/// The UMR rule's two inputs, against NeqSim's `SystemUMRCPAEoS`.
 ///
 /// Methane/water 0.98/0.02 at 298.15 K, from `validation/neqsim/UmrCpaProbe.java`: the
 /// state NeqSim's own `TPflashUMRCPADehydrationLifecycleTest` pins its water-in-gas

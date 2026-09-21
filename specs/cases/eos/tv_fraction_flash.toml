@@ -2,7 +2,7 @@ model = "eos.tv_fraction_flash"
 [[cases]]
 id = "half_the_volume_is_gas"
 tolerance = 1e-06
-source = "NeqSim 3.20.0 `TVfractionFlash`, whose residual is `V_gas/V_total` on Peneloux-corrected volumes. Measured here rather than transcribed: the class carries its pressures in bar and this crate carries them in pascals, and the step cap is one of the places that shows."
+source = "NeqSim master `TVfractionFlash`, whose residual is `V_gas/V_total` on Peneloux-corrected volumes. Measured here rather than transcribed: the class carries its pressures in bar and this crate carries them in pascals, and the step cap is one of the places that shows."
 [cases.inputs]
 components = ["methane", "n-butane"]
 T = 330.0

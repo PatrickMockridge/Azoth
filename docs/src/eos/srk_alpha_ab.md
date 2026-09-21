@@ -115,7 +115,7 @@ A propane-like component at Tr = 0.8, Pr = 0.25, with the coefficient `eos.srk_k
 
 - Soave, G. (1972). \"Equilibrium constants from a modified Redlich-Kwong equation of state.\" Chemical Engineering Science 27(6), 1197-1203. DOI 10.1016/0009-2509(72)80096-4.
 - Redlich, O.; Kwong, J. N. S. (1949). \"On the Thermodynamics of Solutions. V.\" Chemical Reviews 44(1), 233-244. DOI 10.1021/cr60137a013.
-- NeqSim 3.20.0, `neqsim.thermo.component.ComponentSrk`, constructor.
+- NeqSim master, `neqsim.thermo.component.ComponentSrk`, constructor.
 
 
 ---

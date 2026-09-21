@@ -8,7 +8,7 @@
 
 **Standard thermodynamics, as in Michelsen & Mollerup**
 
-NeqSim 3.20.0 `thermodynamicoperations/flashops/VHflashQfunc`, whose Q-function quartet is `OptimizedVUflash`'s with `Hspec` in place of `Uspec + P Vspec`.
+NeqSim master `thermodynamicoperations/flashops/VHflashQfunc`, whose Q-function quartet is `OptimizedVUflash`'s with `Hspec` in place of `Uspec + P Vspec`.
 
 
 ## Algorithm

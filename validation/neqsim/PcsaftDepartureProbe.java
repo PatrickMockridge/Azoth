@@ -23,8 +23,8 @@ import neqsim.thermo.system.SystemPCSAFT;
  * an ordinary state and nothing about the number says which it is.
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar PcsaftDepartureProbe.java
- * java -cp .:neqsim-3.20.0.jar PcsaftDepartureProbe [T_K P_bara name:z ...]
+ * javac -proc:none -cp neqsim-f0c7436.jar PcsaftDepartureProbe.java
+ * java -cp .:neqsim-f0c7436.jar PcsaftDepartureProbe [T_K P_bara name:z ...]
  * </pre>
  */
 public final class PcsaftDepartureProbe {
@@ -108,7 +108,7 @@ public final class PcsaftDepartureProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("# azoth PcsaftDepartureProbe - NeqSim 3.20.0's SystemPCSAFT.");
+    System.out.println("# azoth PcsaftDepartureProbe - NeqSim master's SystemPCSAFT.");
     System.out.println("# Every dT key is d/dT; azoth carries T*d/dT, so multiply by T.");
     if (args.length >= 4) {
       double t = Double.parseDouble(args[0]);

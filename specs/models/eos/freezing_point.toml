@@ -16,7 +16,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `FreezingPointTemperatureFlash`, `SystemLeachmanEos.createCalibratedParaHydrogenSolidEquation` and `PhaseSolidHelmholtzEos` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `FreezingPointTemperatureFlash`"
+standard = "NeqSim master `FreezingPointTemperatureFlash`"
 edition = "The route that requires a `PhaseSolidHelmholtzEos`, with the reference the phase is on: the flash's own test is the oracle, and its two other routes - a tabulated solid, and the legacy variants - are carried rather than ported."
 [algorithm]
 scheme = "freezing_point_bracket_bisection"

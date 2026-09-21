@@ -5,7 +5,7 @@ latex = '''\alpha = \exp\!\left[(A + B T_r)\left(1 - T_r^{\,C + D\omega + E\omeg
 assumptions = ["the five constants are NeqSim's, fitted for reservoir-fluid components; the acentric factor is the caller's.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
 references = ["Gassem, K. A.; Danner, R. P. (2001). \"An alternative alpha function for the Peng-Robinson equation of state.\" J. Chem. Eng. Data."]
 [source]
-standard = "NeqSim 3.20.0 `AttractiveTermPrGassem2001`"
+standard = "NeqSim master `AttractiveTermPrGassem2001`"
 edition = "`alpha(temperature)`, ported verbatim"
 [inputs]
 [inputs.omega]

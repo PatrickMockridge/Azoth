@@ -12,7 +12,7 @@ The precedent is :mod:`azoth.eos.reference._phase_boundary`, shared by
 solution has to be written once".
 
 The iteration is upstream's: ``thermodynamicoperations/flashops/PSFlash.java`` and
-``PHflash.java``, NeqSim 3.20.0. Both are quasi-Newton in the temperature - entropy in
+``PHflash.java``, NeqSim. Both are quasi-Newton in the temperature - entropy in
 ``T``, enthalpy in ``1/T`` - damped by a factor that halves whenever the residual grows,
 and neither is fatal when a trial temperature cannot be evaluated.
 """
@@ -847,7 +847,7 @@ def solve_pressure_temperature(
                     f"the pressure and temperature are the last iterate rather than a "
                     f"converged state. They satisfy the volume and internal energy asked "
                     f"for to {vol_err:.1e} and {h_err:.1e} relative, which is the "
-                    f"acceptance NeqSim 3.20.0 applies and is looser than the iteration's."
+                    f"acceptance NeqSim applies and is looser than the iteration's."
                 ),
             )
         )

@@ -2,7 +2,7 @@
   "id": "methane_butane_flash_gassem2001_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos with AttractiveTermPrGassem2001 - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos with AttractiveTermPrGassem2001 - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "The second non-Soave alpha term. Gassem et al. (2001)'s alpha is exponential, `exp((A + B Tr)(1 - Tr^g))` with `g = C + D w + E w^2`, and it differs from Soave's on this mixture by 2e-3 in the vapour fraction. azoth's first derivative `psi` matches NeqSim's `diffalphaT`; the second derivative `psi_t` follows the true derivative, where NeqSim's `diffdiffalphaT` is a leftover Soave expression rather than Gassem's second derivative, so heat-capacity departures for this term do not reproduce NeqSim's."
   },

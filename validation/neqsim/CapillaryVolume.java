@@ -1,8 +1,8 @@
 // What `system.getPhase(1).getMolarVolume("m3/mol")` returns at the state
 // `CapillaryDewPointFlash` evaluates its Kelvin exponent at.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar CapillaryVolume.java
-//     java -cp .:neqsim-3.20.0.jar CapillaryVolume
+//     javac -proc:none -cp neqsim-f0c7436.jar CapillaryVolume.java
+//     java -cp .:neqsim-f0c7436.jar CapillaryVolume
 //
 // The class sets `setBeta(1, 1e-15)` and calls `getMolarVolume` on that phase inside its
 // iteration. azoth takes the same exponent's volume from the cubic's own lower root as

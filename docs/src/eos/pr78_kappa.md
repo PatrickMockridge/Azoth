@@ -97,7 +97,7 @@ A heavy component, omega = 0.6 - above the 0.49 threshold, so the heavier branch
 
 - Peng, D. Y.; Robinson, D. B. (1978). \"The Characterization of the Heptanes and Heavier Fractions for the GPA Peng-Robinson Programs.\" GPA Research Report RR-28.
 - Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.
-- NeqSim 3.20.0, `neqsim.thermo.component.attractiveeosterm.AttractiveTermPr1978`.
+- NeqSim master, `neqsim.thermo.component.attractiveeosterm.AttractiveTermPr1978`.
 
 
 ---

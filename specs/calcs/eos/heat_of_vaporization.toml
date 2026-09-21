@@ -6,7 +6,7 @@ assumptions = ["the four coefficients are the raw `heatofvaporizationcoefs1..4` 
 references = ["Watson, K. M. (1943). \\\"Thermodynamics of the Liquid State.\\\" Ind. Eng. Chem. 35(4), 398-406. DOI 10.1021/ie50400a004."]
 [source]
 standard = "NeqSim's `getPureComponentHeatOfVaporization`"
-edition = "the correlation NeqSim 3.20.0 evaluates in `thermo/component/Component.java`, ported verbatim"
+edition = "the correlation NeqSim master evaluates in `thermo/component/Component.java`, ported verbatim"
 [inputs]
 [inputs.c0]
 unit = "dimensionless"

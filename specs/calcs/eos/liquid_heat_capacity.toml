@@ -6,7 +6,7 @@ assumptions = ["the five coefficients are the raw `cpliquid1..5` NeqSim ships, i
 references = ["Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. (2001). \\\"The Properties of Gases and Liquids\\\", 5th ed. McGraw-Hill."]
 [source]
 standard = "NeqSim's `getPureComponentCpLiquid`"
-edition = "the correlation NeqSim 3.20.0 evaluates in `thermo/component/Component.java`, ported verbatim"
+edition = "the correlation NeqSim master evaluates in `thermo/component/Component.java`, ported verbatim"
 [inputs]
 [inputs.c0]
 unit = "dimensionless"

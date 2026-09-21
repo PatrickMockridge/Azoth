@@ -57,7 +57,7 @@ severity = "error"
 rationale = "An absolute temperature; zero and below are not states.\n"
 [worked_example]
 source = "derived from the equation above"
-derivation = "methane, Cv0 = 27.544151394 J/(mol*K), M = 0.016043 kg/mol, omega = 0.0115, Tc = 190.56 K, Vc = 9.9e-5 m**3/mol, dipole = 0 debye, kappa = 0, at T = 300 K:\n\n  mu_r = 0\n  Fc = 1 - 0.2756*0.0115 = 0.9968306\n  T* = 1.2593 * 300 / 190.56 = 1.982525188916877\n  Omega_v = 1.16145*T*^-0.14874 + 0.52487*exp(-0.77320*T*) + 2.16178*exp(-2.43787*T*) = 1.179576645518974\n  eta0 = 40.785 * 0.9968306 * sqrt(16.043*300) / (99**(2/3) * 1.179576645518974) = 111.73149724549657 microPoise\n  alpha = 27.544151394 / 8.3144621 - 1.5 = 1.81280016226185\n  beta = 0.7862 - 0.7109*0.0115 + 1.3168*0.0115**2 = 0.7781987968\n  Z = 2 + 10.5*(300/190.56)**2 = 28.023656643973375\n  psi = 1 + alpha*((0.215 + 0.28288*alpha - 1.061*beta + 0.26665*Z)/(0.6366 + beta*Z + 1.061*alpha*beta)) = 1.5583961077549813\n  k = 3.75 * 8.3144621 * 1.5583961077549813 * 111.73149724549657e-7 / 0.016043 = 0.03384023073765177 W/(m*K)\n\nwhich is NeqSim 3.20.0 `ChungConductivityMethod`'s value at the same state.\n"
+derivation = "methane, Cv0 = 27.544151394 J/(mol*K), M = 0.016043 kg/mol, omega = 0.0115, Tc = 190.56 K, Vc = 9.9e-5 m**3/mol, dipole = 0 debye, kappa = 0, at T = 300 K:\n\n  mu_r = 0\n  Fc = 1 - 0.2756*0.0115 = 0.9968306\n  T* = 1.2593 * 300 / 190.56 = 1.982525188916877\n  Omega_v = 1.16145*T*^-0.14874 + 0.52487*exp(-0.77320*T*) + 2.16178*exp(-2.43787*T*) = 1.179576645518974\n  eta0 = 40.785 * 0.9968306 * sqrt(16.043*300) / (99**(2/3) * 1.179576645518974) = 111.73149724549657 microPoise\n  alpha = 27.544151394 / 8.3144621 - 1.5 = 1.81280016226185\n  beta = 0.7862 - 0.7109*0.0115 + 1.3168*0.0115**2 = 0.7781987968\n  Z = 2 + 10.5*(300/190.56)**2 = 28.023656643973375\n  psi = 1 + alpha*((0.215 + 0.28288*alpha - 1.061*beta + 0.26665*Z)/(0.6366 + beta*Z + 1.061*alpha*beta)) = 1.5583961077549813\n  k = 3.75 * 8.3144621 * 1.5583961077549813 * 111.73149724549657e-7 / 0.016043 = 0.03384023073765177 W/(m*K)\n\nwhich is NeqSim `ChungConductivityMethod`'s value at the same state.\n"
 tolerance = 1e-12
 [worked_example.inputs]
 Cv0 = 27.544151394
@@ -81,7 +81,7 @@ status = "active"
 id = "propane_matches_neqsim"
 type = "reference"
 status = "active"
-source = "NeqSim 3.20.0 `ChungConductivityMethod.calcPureComponentConductivity` for propane at 300 K:\n\n  k = 0.01746969711123719 W/(m*K).\n"
+source = "NeqSim master `ChungConductivityMethod.calcPureComponentConductivity` for propane at 300 K:\n\n  k = 0.01746969711123719 W/(m*K).\n"
 tolerance = 1e-12
 [tests.inputs]
 Cv0 = 65.809299386
@@ -98,7 +98,7 @@ k = 0.01746969711123719
 id = "methanol_exercises_dipole_and_correction"
 type = "reference"
 status = "active"
-source = "NeqSim 3.20.0 `ChungConductivityMethod.calcPureComponentConductivity` for methanol at 350 K:\n\n  k = 0.022615665154001992 W/(m*K).\n"
+source = "NeqSim master `ChungConductivityMethod.calcPureComponentConductivity` for methanol at 350 K:\n\n  k = 0.022615665154001992 W/(m*K).\n"
 tolerance = 1e-12
 [tests.inputs]
 Cv0 = 39.535176124375

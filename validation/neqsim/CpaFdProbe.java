@@ -47,8 +47,8 @@ import neqsim.thermo.system.SystemSrkCPA;
  * Usage:
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar CpaFdProbe.java
- * java -cp .:neqsim-3.20.0.jar CpaFdProbe
+ * javac -proc:none -cp neqsim-f0c7436.jar CpaFdProbe.java
+ * java -cp .:neqsim-f0c7436.jar CpaFdProbe
  * </pre>
  */
 public final class CpaFdProbe {

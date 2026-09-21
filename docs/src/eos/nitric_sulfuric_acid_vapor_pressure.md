@@ -24,7 +24,7 @@ p_water = 100*10**(8.42926609 - 1827.17843/T - 71208.271/T**2); p_nitric = 133.3
 
 **Taleb, D.; Ponche, J. L.; Mirabel, P. (1996)**
 
-The three pure-component correlations of section 3, as NeqSim 3.20.0 implements them in `NitricSulfuricAcidVaporPressure`. The nitric-acid coefficients are NeqSim's refit, not the paper's.
+The three pure-component correlations of section 3, as NeqSim master implements them in `NitricSulfuricAcidVaporPressure`. The nitric-acid coefficients are NeqSim's refit, not the paper's.
 
 DOI: [10.1029/96JD02155](https://doi.org/10.1029/96JD02155)
 

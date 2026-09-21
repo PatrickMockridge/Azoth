@@ -18,7 +18,7 @@ use crate::spec_gen;
 
 /// `Omega_a`, the attraction constant of the Peng-Robinson cubic.
 ///
-/// **NeqSim 3.20.0's value, not the paper's, and carrying it is the point.** This
+/// **NeqSim's value, not the paper's, and carrying it is the point.** This
 /// library is a port, and NeqSim's `ComponentPR` constructor sets
 /// `a = .45724333333 * R**2 * Tc**2 / Pc`. The Peng-Robinson paper prints `0.45724`
 /// and the cubic's triple-root condition gives `0.4572355289213822` exactly;

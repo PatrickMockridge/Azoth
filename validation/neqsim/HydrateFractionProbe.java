@@ -10,8 +10,8 @@
 // The two bounds bound one another: the most hydrate the feed can make is its water divided
 // by the water fraction in the hydrate - `46/54` for structure I, `136/160` for structure II.
 //
-//   javac -proc:none -cp neqsim-3.20.0.jar HydrateFractionProbe.java
-//   java -cp .:neqsim-3.20.0.jar HydrateFractionProbe > captures/hydrate_fraction_probe.tsv
+//   javac -proc:none -cp neqsim-f0c7436.jar HydrateFractionProbe.java
+//   java -cp .:neqsim-f0c7436.jar HydrateFractionProbe > captures/hydrate_fraction_probe.tsv
 
 import neqsim.thermo.component.ComponentHydrate;
 import neqsim.thermo.phase.PhaseInterface;

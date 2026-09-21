@@ -1,7 +1,7 @@
 // Reproduces the numbers in validation/eos/*_against_neqsim.json.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar FlashTp.java
-//     java -cp .:neqsim-3.20.0.jar FlashTp
+//     javac -proc:none -cp neqsim-f0c7436.jar FlashTp.java
+//     java -cp .:neqsim-f0c7436.jar FlashTp
 //
 // This is the only file in the repository that is not part of either
 // implementation, and it is here on purpose: it is the ground truth the port is
@@ -10,7 +10,7 @@
 // which belongs in a build - so the numbers it prints are recorded in the case
 // files beside it.
 //
-// The jar is NeqSim 3.20.0, the version `databank/manifest.toml` names as the source
+// The jar is NeqSim, the version `databank/manifest.toml` names as the source
 // of every vendored table. `databank/sources/neqsim/` holds its data files; the jar
 // is not vendored, because it is 20 MB of compiled Java that nothing here links
 // against and its licence is carried by the attribution in NOTICE.
@@ -261,7 +261,7 @@ public class FlashTp {
 
   /**
    * The UNIFAC activity coefficients `eos.unifac_activity_coefficients` would be checked
-   * against, if NeqSim 3.20.0 could produce them.
+   * against, if NeqSim could produce them.
    *
    * It cannot, and the two attempts below record why rather than asserting it. The
    * number in the bracket after each is the point of it: an oracle nobody can reach is

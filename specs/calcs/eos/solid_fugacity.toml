@@ -16,7 +16,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentSolid.fugcoef2` is the port source, with `Component.getPureComponentCpSolid` and `getPureComponentSolidDensity` for the table it reads.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `ComponentSolid.fugcoef2`"
+standard = "NeqSim master `ComponentSolid.fugcoef2`"
 edition = "The tabulated route, which `ThermodynamicOperations.TPSolidflash` drives through `SolidFlash1`. The Helmholtz route, `PhaseSolidHelmholtzEos`, is `eos.parahydrogen_solid_phase`'s and is not this."
 [inputs]
 [inputs.heat_of_fusion]
@@ -80,7 +80,7 @@ min_inclusive = false
 severity = "error"
 rationale = "an absolute pressure\n"
 [worked_example]
-source = "NeqSim 3.20.0, `ComponentSolid.fugcoef2`, from `validation/neqsim/captures/solid_flash_probe.tsv`"
+source = "NeqSim master, `ComponentSolid.fugcoef2`, from `validation/neqsim/captures/solid_flash_probe.tsv`"
 derivation = "The probe's water at 0 C and 10 bara, where NeqSim reports the solid's coefficient as `0.000407988772148464` and its own `deltaCpSL` as the hardcoded `37.12`:\n\n  dH_fus = 6010.0 J/mol,  T_tp = 273.16 K,  T = 273.15 K,  dV_sl = 0\n  phi_liq(water) = 0.00040802829769106055     (the liquid root at the state)\n\n  fusion = -6010/(8.3144621*273.15) * (1 - 273.15/273.16) = -9.68743...e-05\n  cpTerm = 37.12/(8.3144621*273.15)*(273.16 - 273.15) - 37.12/8.3144621*ln(273.16/273.15)\n         = +1.63461e-04 - 1.63461e-04 = 3.7e-09    (the two cancel to a part in 1e5)\n\n  exponent = -9.68743e-05\n  phi      = 0.00040802829769106055 * exp(-9.68743e-05) = 0.0004079887721484625\n\nThe capture's `solid_fugacity_coefficient[water]` is that last number."
 tolerance = 1e-12
 [worked_example.inputs]

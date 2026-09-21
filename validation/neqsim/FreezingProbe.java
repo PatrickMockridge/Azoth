@@ -14,8 +14,8 @@
 // not abort a valid melting state.
 //
 // A capture, not a test: run it against the pinned jar and commit what it prints.
-//   javac -proc:none -cp neqsim-3.20.0.jar FreezingProbe.java
-//   java -cp .:neqsim-3.20.0.jar FreezingProbe > captures/freezing_probe.tsv
+//   javac -proc:none -cp neqsim-f0c7436.jar FreezingProbe.java
+//   java -cp .:neqsim-f0c7436.jar FreezingProbe > captures/freezing_probe.tsv
 
 import neqsim.thermodynamicoperations.ThermodynamicOperations;
 import neqsim.thermodynamicoperations.flashops.saturationops.FreezingPointResult;

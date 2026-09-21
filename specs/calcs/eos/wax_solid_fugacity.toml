@@ -19,7 +19,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentWax.fugcoef2` is the port source, with `ComponentSolid.setSolidRefFluidPhase` for the reference liquid.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `ComponentWax.fugcoef2`"
+standard = "NeqSim master `ComponentWax.fugcoef2`"
 edition = "The default `Pedersen` wax component model. `ComponentWonWax`, `ComponentWaxWilson` and `ComponentCoutinhoWax` are the phase's other three and are carried."
 [inputs]
 [inputs.molar_mass]
@@ -98,7 +98,7 @@ min_inclusive = false
 severity = "error"
 rationale = "an absolute pressure\n"
 [worked_example]
-source = "NeqSim 3.20.0, `ComponentWax.fugcoef2`, from `validation/neqsim/captures/wax_reference_probe.tsv`"
+source = "NeqSim master, `ComponentWax.fugcoef2`, from `validation/neqsim/captures/wax_reference_probe.tsv`"
 derivation = "The `C19`-scale wax cut - `waxPC1_PC` - at 261 K and 5 bara, where NeqSim reports `wax_phi = 9.64037175863650e-07` and its reference liquid `ref_phi = 9.38058516384021e-07` with `ref_molar_volume = 32.2483111017882` (in units of 1e-5 m3/mol):\n\n  molar mass  = 0.170 kg/mol = 170 g/mol\n  dH_fus      = 26418.6063505621 J/mol,   T_tp = 260.290076470588 K\n  v_liq       = 32.2483111017882e-5 = 3.22483111017882e-4 m3/mol\n  v_sol       = 0.9 v_liq = 2.90234799916094e-4\n\n  fusion  = -26418.6063505621/(8.3144621*261) * (1 - 261/260.290076470588)\n          = -12.17542... * (-0.00272756...) = +0.0332039...\n  dCp     = (0.3033*170 - 4.635e-4*170*261) * 4.184 = 129.673...  J/(mol K)\n  cpTerm  = 129.673.../8.3144621 * (260.290076470588/261 - 1 - ln(0.997272...))\n          = 15.596... * 3.7...e-06 = +0.0000578\n  presTerm= -(3.22483111017882e-4 - 2.90234799916094e-4) * (5.0e5 - 1.0e5) / 8.3144621 / 261\n          = -3.22483111017882e-5 * 4.0e5 / 2170.07... = -0.00594386...\n\n  exponent = 0.0332039... + 0.0000578 - 0.00594386... = 0.0273179...\n  phi     = 9.38058516384021e-07 * exp(0.0273179...) = 9.64037175863650e-07\n\nThe capture's `wax_phi` is that last number, and its reference rows are the two inputs above."
 tolerance = 1e-12
 [worked_example.inputs]

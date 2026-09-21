@@ -2,7 +2,7 @@
   "id": "nc12_flash_pr78_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos with AttractiveTermPr1978 - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos with AttractiveTermPr1978 - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "A heavy pure component (n-dodecane, omega = 0.5764) above its critical temperature, so the 1978 alpha term's heavier-acentric branch applies - the branch the plain Peng-Robinson form does not reach. The compressibility is the physics and matches to the last printed digit."
   },

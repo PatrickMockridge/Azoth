@@ -2,7 +2,7 @@ model = "eos.nrtl_activity_coefficients"
 [[cases]]
 id = "methanol_water_equimolar_at_298_15_k"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `ComponentGeNRTL.getGamma` for methanol/water 0.5/0.5 at 298.15 K, reading NRTLALPHA/NRTLGIJ/NRTLGJI from INTER.csv - the same row the databank resolves `components` to."
+source = "NeqSim master `ComponentGeNRTL.getGamma` for methanol/water 0.5/0.5 at 298.15 K, reading NRTLALPHA/NRTLGIJ/NRTLGJI from INTER.csv - the same row the databank resolves `components` to."
 [cases.inputs]
 components = ["methanol", "water"]
 T = 298.15
@@ -13,7 +13,7 @@ gamma = [1.2331788561677834, 1.5262904213232393]
 [[cases]]
 id = "ethanol_water_equimolar_at_298_15_k"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `ComponentGeNRTL.getGamma` for ethanol/water 0.5/0.5 at 298.15 K, reading NRTLALPHA/NRTLGIJ/NRTLGJI from INTER.csv."
+source = "NeqSim master `ComponentGeNRTL.getGamma` for ethanol/water 0.5/0.5 at 298.15 K, reading NRTLALPHA/NRTLGIJ/NRTLGJI from INTER.csv."
 [cases.inputs]
 components = ["ethanol", "water"]
 T = 298.15

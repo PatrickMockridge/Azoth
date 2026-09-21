@@ -18,7 +18,7 @@ alpha = Tr**(c*(b-1)) * exp(a*(1 - Tr**(b*c)))
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermTwuCoonStatoil`**
+**NeqSim master `AttractiveTermTwuCoonStatoil`**
 
 `alpha(temperature)`, ported verbatim
 

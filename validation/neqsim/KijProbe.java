@@ -2,8 +2,8 @@
 // methane/n-butane, so a mixture difference between the two libraries can be traced to the
 // data rather than to the algebra.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar KijProbe.java
-//     java -cp .:neqsim-3.20.0.jar KijProbe
+//     javac -proc:none -cp neqsim-f0c7436.jar KijProbe.java
+//     java -cp .:neqsim-f0c7436.jar KijProbe
 //
 // NeqSim holds bar throughout.
 

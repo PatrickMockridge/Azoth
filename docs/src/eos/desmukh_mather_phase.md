@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PhaseDesmukhMather`**
+**NeqSim master `PhaseDesmukhMather`**
 
 `ComponentDesmukhMather.getGamma` and `fugcoef`, ported verbatim, with `PhaseDesmukhMather.getParameters`'s pair lookup and its `MDEA` diagonal.
 

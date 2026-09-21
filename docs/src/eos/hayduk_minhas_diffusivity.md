@@ -84,7 +84,7 @@ Source: derived from the equation above
 
 Relative tolerance: `1e-12`
 
-methanol in benzene (paraffin) at 298.15 K: VA = 40.2033 cm**3/mol, eta = 0.91631 cP: VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol (no clamp, within [20, 500]) eta = 9.163064908813372e-4 Pa*s -> 0.91631 cP exponent = 10.2 / 40.2033 - 0.791 = -0.53728 D = 13.3e-8 * 298.15**1.47 * 0.91631**-0.53728 / 40.2033**0.71 = 4.391778089044218e-5 cm**2/s D = 4.391778089044218e-9 m**2/s which is NeqSim 3.20.0 `HaydukMinhasDiffusivity`'s value at the same state.
+methanol in benzene (paraffin) at 298.15 K: VA = 40.2033 cm**3/mol, eta = 0.91631 cP: VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol (no clamp, within [20, 500]) eta = 9.163064908813372e-4 Pa*s -> 0.91631 cP exponent = 10.2 / 40.2033 - 0.791 = -0.53728 D = 13.3e-8 * 298.15**1.47 * 0.91631**-0.53728 / 40.2033**0.71 = 4.391778089044218e-5 cm**2/s D = 4.391778089044218e-9 m**2/s which is NeqSim `HaydukMinhasDiffusivity`'s value at the same state.
 
 
 ## Tests

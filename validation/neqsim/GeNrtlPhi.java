@@ -1,7 +1,7 @@
 // What `PhaseGENRTL` reports for a liquid, for `eos.ge_nrtl_phase`.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar GeNrtlPhi.java
-//     java -cp .:neqsim-3.20.0.jar GeNrtlPhi
+//     javac -proc:none -cp neqsim-f0c7436.jar GeNrtlPhi.java
+//     java -cp .:neqsim-f0c7436.jar GeNrtlPhi
 //
 // The phase's fugacity coefficient is `gamma_i * P0_i / P` - see `ComponentGE.fugcoef` -
 // so it is the composition of the NRTL activity coefficient, already ported, with the

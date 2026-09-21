@@ -10,7 +10,7 @@
 //! 1.456360879 - so a model that read the wrong set would be a different fluid.
 //!
 //! **There is no NeqSim oracle for this model, and that is a finding rather than an
-//! omission.** Against the pinned 3.20.0 jar, `SystemPrCPA` builds `ComponentSrkCPA`
+//! omission.** Against the pinned jar, `SystemPrCPA` builds `ComponentSrkCPA`
 //! components that carry their sites, and its phase never sums them: `PhaseSrkCPA` does that
 //! in its init path and `PhasePrCPA` has the field and the setter and no block that sets it,
 //! so water reports four sites and the phase's own total is zero. Every association term is

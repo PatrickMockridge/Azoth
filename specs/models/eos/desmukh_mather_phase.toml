@@ -18,7 +18,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhaseDesmukhMather`, `ComponentDesmukhMather` and `PhaseGE.getActivityCoefficientInfDilWater` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `PhaseDesmukhMather`"
+standard = "NeqSim master `PhaseDesmukhMather`"
 edition = "`ComponentDesmukhMather.getGamma` and `fugcoef`, ported verbatim, with `PhaseDesmukhMather.getParameters`'s pair lookup and its `MDEA` diagonal."
 [inputs]
 [inputs.components]

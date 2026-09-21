@@ -1,7 +1,7 @@
 // NeqSim's phase envelope for `eos.pt_phase_envelope`, branch by branch.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar PhaseEnvelope.java
-//     java -cp .:neqsim-3.20.0.jar PhaseEnvelope
+//     javac -proc:none -cp neqsim-f0c7436.jar PhaseEnvelope.java
+//     java -cp .:neqsim-f0c7436.jar PhaseEnvelope
 //
 // `ThermodynamicOperations.calcPTphaseEnvelope()` builds a `PTPhaseEnvelopeMichelsen` with
 // `phasefraction = 1e-10` and `lowPres = 1.0` bar, bubble branch first. That is the entry

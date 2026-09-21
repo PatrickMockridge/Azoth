@@ -149,16 +149,18 @@ fn the_2004_revision_matches_its_own_oracle() {
         "Z = {}, NeqSim gives 0.00963585643624156",
         state.z
     );
+    // Master's numbers, at the `1e-7` this settles to. They were `1e-6`-apart from its
+    // 3.20.0 values before the 2004 revision stopped adding the extensive `FBornD` term.
     let want: [f64; 4] = [
-        8.372_546_431_068_63,
-        -5.748_832_668_306_57,
-        -275.908_842_538_599,
-        -166.578_404_248_661,
+        8.372_595_908_242_34,
+        -5.748_783_296_884_28,
+        -275.908_793_598_670,
+        -166.578_354_735_104,
     ];
     for (i, &expected) in want.iter().enumerate() {
         let scale = expected.abs().max(1.0);
         assert!(
-            (state.ln_phi[i] - expected).abs() < 1.0e-6 * scale,
+            (state.ln_phi[i] - expected).abs() < 1.0e-7 * scale,
             "ln phi[{i}] = {}, NeqSim gives {expected}",
             state.ln_phi[i]
         );

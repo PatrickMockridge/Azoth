@@ -19,7 +19,7 @@ references = [
     "`validation/neqsim/CapillaryDew.java` - the driver, and the measurements the case records.\n",
 ]
 [source]
-standard = "NeqSim 3.20.0 `CapillaryDewPointFlash`"
+standard = "NeqSim master `CapillaryDewPointFlash`"
 edition = "The K-value shift and the temperature iteration are ported from `CapillaryDewPointFlash` and `ConstantDutyTemperatureFlash`; the surface tension is an argument here and an interphase property there, and that difference is in the assumptions."
 [algorithm]
 scheme = "capillary_dew_point_newton"

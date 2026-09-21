@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PhaseGENRTL`**
+**NeqSim master `PhaseGENRTL`**
 
 `ComponentGE.fugcoef`, ported verbatim
 

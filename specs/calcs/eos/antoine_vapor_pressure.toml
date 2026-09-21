@@ -12,7 +12,7 @@ assumptions = ["`none` is a **marker, not a form**, and is not in `form`'s vocab
 references = ["Antoine, C. (1888). \\\"Tensions des vapeurs; nouvelle relation entre les tensions et les températures.\\\" Comptes Rendus des Séances de l'Académie des Sciences 107, 681-684.", "Wagner, W. (1973). \\\"New vapour pressure measurements for argon and nitrogen and a new method for establishing rational vapour pressure equations.\\\" Cryogenics 13(8), 470-482. DOI 10.1016/0011-2275(73)90003-9."]
 [source]
 standard = "NeqSim's `getAntoineVaporPressure`"
-edition = "the four correlations NeqSim 3.20.0 evaluates in `thermo/component/Component.java`, ported verbatim"
+edition = "the four correlations NeqSim master evaluates in `thermo/component/Component.java`, ported verbatim"
 [inputs]
 [inputs.A]
 unit = "dimensionless"

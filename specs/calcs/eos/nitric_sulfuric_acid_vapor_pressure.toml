@@ -22,7 +22,7 @@ references = [
 ]
 [source]
 standard = "Taleb, D.; Ponche, J. L.; Mirabel, P. (1996)"
-edition = "The three pure-component correlations of section 3, as NeqSim 3.20.0 implements them in `NitricSulfuricAcidVaporPressure`. The nitric-acid coefficients are NeqSim's refit, not the paper's."
+edition = "The three pure-component correlations of section 3, as NeqSim master implements them in `NitricSulfuricAcidVaporPressure`. The nitric-acid coefficients are NeqSim's refit, not the paper's."
 doi = "10.1029/96JD02155"
 [inputs]
 [inputs.T]
@@ -73,7 +73,7 @@ status = "active"
 id = "at_190_k"
 type = "reference"
 status = "active"
-source = "NeqSim 3.20.0 `NitricSulfuricAcidVaporPressure.pureVaporPressureWater` / `pureVaporPressureNitricAcid` / `pureVaporPressureSulfuricAcid`, run from validation/neqsim/AcidVaporPressure.java. A static utility, so there is nothing between the correlation and the number. The cold end of the stated range, where sulfuric acid's pressure is 7e-12 Pa - small enough that a missing unit factor would show as orders of magnitude rather than a percentage.\n"
+source = "NeqSim master `NitricSulfuricAcidVaporPressure.pureVaporPressureWater` / `pureVaporPressureNitricAcid` / `pureVaporPressureSulfuricAcid`, run from validation/neqsim/AcidVaporPressure.java. A static utility, so there is nothing between the correlation and the number. The cold end of the stated range, where sulfuric acid's pressure is 7e-12 Pa - small enough that a missing unit factor would show as orders of magnitude rather than a percentage.\n"
 tolerance = 1e-09
 [tests.inputs]
 T = 190.0
@@ -85,7 +85,7 @@ p_sulfuric_acid = 7.124061430875013e-12
 id = "at_298_k"
 type = "reference"
 status = "active"
-source = "NeqSim 3.20.0, as the previous case: validation/neqsim/AcidVaporPressure.java. The warm end of the stated range, and the temperature at which the three are within five orders of magnitude of each other rather than thirteen.\n"
+source = "NeqSim master, as the previous case: validation/neqsim/AcidVaporPressure.java. The warm end of the stated range, and the temperature at which the three are within five orders of magnitude of each other rather than thirteen.\n"
 tolerance = 1e-09
 [tests.inputs]
 T = 298.0
@@ -97,7 +97,7 @@ p_sulfuric_acid = 0.0018446818391683764
 id = "above_the_stated_range_at_340_k"
 type = "reference"
 status = "active"
-source = "NeqSim 3.20.0, as the previous case: validation/neqsim/AcidVaporPressure.java. Outside the stated 190-298 K, which is a range *warning* rather than an error - the arithmetic is well defined here and inspecting the extrapolation is legitimate. Nitric acid's own Antoine is stated to about 400 K, so this is inside its range and outside the other two's.\n"
+source = "NeqSim master, as the previous case: validation/neqsim/AcidVaporPressure.java. Outside the stated 190-298 K, which is a range *warning* rather than an error - the arithmetic is well defined here and inspecting the extrapolation is legitimate. Nitric acid's own Antoine is stated to about 400 K, so this is inside its range and outside the other two's.\n"
 tolerance = 1e-09
 [tests.inputs]
 T = 340.0

@@ -13,8 +13,8 @@
 // a **reference liquid phase** of the same component, the heat of fusion, the triple point and
 // a heat-capacity difference, and the phase's composition follows. Both are printed.
 //
-//   javac -proc:none -cp neqsim-3.20.0.jar WaxProbe.java
-//   java -cp .:neqsim-3.20.0.jar WaxProbe > captures/wax_probe.tsv
+//   javac -proc:none -cp neqsim-f0c7436.jar WaxProbe.java
+//   java -cp .:neqsim-f0c7436.jar WaxProbe > captures/wax_probe.tsv
 
 import neqsim.thermo.component.ComponentInterface;
 import neqsim.thermo.phase.PhaseInterface;

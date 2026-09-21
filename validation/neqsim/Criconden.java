@@ -1,7 +1,7 @@
 // NeqSim's cricondenbar and cricondentherm, scanned and refined.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar Criconden.java
-//     java -cp .:neqsim-3.20.0.jar Criconden
+//     javac -proc:none -cp neqsim-f0c7436.jar Criconden.java
+//     java -cp .:neqsim-f0c7436.jar Criconden
 //
 // Both quantities come two ways, and the driver prints both because they are not the same
 // number:

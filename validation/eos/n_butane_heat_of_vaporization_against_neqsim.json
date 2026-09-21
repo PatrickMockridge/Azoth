@@ -2,7 +2,7 @@
   "id": "n_butane_heat_of_vaporization_against_neqsim",
   "calc": "eos.heat_of_vaporization",
   "source": {
-    "attribution": "NeqSim 3.20.0, `getPureComponentHeatOfVaporization` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, `getPureComponentHeatOfVaporization` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "NeqSim's pure-component heat-of-vaporisation correlation. The coefficients are NeqSim's internal scale, and the equation's `1e-3` recovers `J/mol`; this case pins the whole expression, coefficient scale included."
   },

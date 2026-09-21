@@ -14,7 +14,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhaseGEVanLaarAcid` and `ComponentGEVanLaarAcid.fugcoef` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `PhaseGEVanLaarAcid`"
+standard = "NeqSim master `PhaseGEVanLaarAcid`"
 edition = "`ComponentGEVanLaarAcid.fugcoef`, ported verbatim, including its `NON_MODELED_COMPONENT_PENALTY` and its Raoult-reference override."
 doi = "10.1029/96JD02155"
 [inputs]

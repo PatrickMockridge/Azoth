@@ -147,8 +147,8 @@ class Cubic:
         return -self.delta_diff * (self.delta_sum + 2.0 * self.delta_prod * b) / (q * q)
 
 
-#: Peng-Robinson: ``delta = (1 + sqrt(2), 1 - sqrt(2))``. The ``omega`` pair is NeqSim
-#: 3.20.0's, not the paper's - see ``azoth.eos.reference.pr_alpha_ab.OMEGA_A``.
+#: Peng-Robinson: ``delta = (1 + sqrt(2), 1 - sqrt(2))``. The ``omega`` pair is NeqSim's,
+#: not the paper's - see ``azoth.eos.reference.pr_alpha_ab.OMEGA_A``.
 PR = Cubic(
     name="pr",
     omega_a=0.45724333333,

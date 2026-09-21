@@ -21,7 +21,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `CheckScalePotential` is the port source; its `run()` for the Ksp chain and `computeSRLogSpace` for the ratio.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `CheckScalePotential`"
+standard = "NeqSim master `CheckScalePotential`"
 edition = "One row of its `compsalt` walk, which is the whole of what the operation computes per salt."
 [inputs]
 [inputs.salt]
@@ -78,7 +78,7 @@ min_inclusive = false
 severity = "error"
 rationale = "an absolute pressure\n"
 [worked_example]
-source = "NeqSim 3.20.0, `CheckScalePotential`, from `validation/neqsim/captures/scale_probe.tsv`"
+source = "NeqSim master, `CheckScalePotential`, from `validation/neqsim/captures/scale_probe.tsv`"
 derivation = "The probe's brine at 25 C and 10 bara, whose NaCl row the operation reports as `1.28292894726281e-07`:\n\n  T = 298.15 K,  P = 10 bar\n  x[Na+] = 3.97819175172662e-05,  x[Cl-] = the same,  x[water] = 0.994547937931656\n  gamma[Na+] = gamma[Cl-] = 0.997138700891861,  stoc1 = stoc2 = 1,  waterstoc = 0\n\n  Ksp0  = 92.78 - 0.407*298.15 + 0.000747*298.15**2 = 37.8335...\n  Vdelta = -27.0 cm3/mol, so\n  ln corr = -(-27.0)*(10 - 1.01325)/(83.1446*298.15) = +0.009789...\n  Ksp   = 37.8335 * exp(0.009789...) = 38.208500153860996\n\n  m     = 3.97819175172662e-05/(0.994547937931656*0.018015) = 2.220488...e-03 mol/kg\n  IAP   = (0.997138700891861*2.220488e-03)**2 = 4.902241...e-06\n  SR    = 4.902241e-06/38.208500153860996 = 1.282928947262809e-07\n\nThe capture's row is that last number. Its `FeCO3` row is `257932.607723642`, which the same arithmetic with the Greenberg & Tomson override gives as `257932.60772364`."
 tolerance = 1e-12
 [worked_example.inputs]

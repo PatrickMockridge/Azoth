@@ -2,7 +2,7 @@ model = "eos.hydrate_formation_temperature"
 [[cases]]
 id = "methane_ethane_propane_water_at_100_bara"
 tolerance = 1e-06
-source = """NeqSim 3.20.0, an SRK fluid of methane/ethane/propane/water at `79.0 10.10 2.050 10.0`
+source = """NeqSim master, an SRK fluid of methane/ethane/propane/water at `79.0 10.10 2.050 10.0`
 moles, flashed by `HydrateFormationTemperatureFlash` from
 `validation/neqsim/HydrateProbe.java`: the hydrate forms at `293.227691103840` K, and the
 capture prints the same state's cavity occupancies and water fugacities beside it.

@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `SystemSoreideWhitson`**
+**NeqSim master `SystemSoreideWhitson`**
 
 `PhaseSoreideWhitson` and `EosMixingRuleHandler`'s rule 11, ported with the legacy aqueous parameterisation. The water alpha is `eos.soreide_whitson_alpha`'s.
 

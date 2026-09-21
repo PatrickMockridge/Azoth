@@ -1,7 +1,7 @@
 // The cricondenbar of the envelope case, computed a second way.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar BubblePressureProbe.java
-//     java -cp .:neqsim-3.20.0.jar BubblePressureProbe
+//     javac -proc:none -cp neqsim-f0c7436.jar BubblePressureProbe.java
+//     java -cp .:neqsim-f0c7436.jar BubblePressureProbe
 //
 // `PhaseEnvelope` reads the cricondenbar off `calcPTphaseEnvelope`'s own bubble branch, which
 // is a continuation trace: its maximum is whatever the step sequence happened to sample, and

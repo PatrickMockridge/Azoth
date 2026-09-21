@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `SystemEosGE`**
+**NeqSim master `SystemEosGE`**
 
 the gamma-phi branch of `TPflash`, `sucsSubsGammaPhi`, whose K update is `phi_i^L / phi_i^V` with `presdiff` one because both phases are at the feed's pressure.
 

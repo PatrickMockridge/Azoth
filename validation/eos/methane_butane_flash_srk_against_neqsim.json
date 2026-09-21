@@ -2,7 +2,7 @@
   "id": "methane_butane_flash_srk_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemSrkEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemSrkEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "Same driver as the Peng-Robinson cases, on SystemSrkEos. The pair's KIJSRK equals its KIJPR (0.01289789), so azoth's kij lookup - which reads the `kij_pr` column for every cubic - is not a source of error on this case; reading `kijsrk` for SRK is a recorded follow-up, not a divergence this case is hiding."
   },

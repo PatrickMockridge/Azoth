@@ -20,7 +20,7 @@ cp = 1e-3 * (c0 + c1*T + c2*T**2 + c3*T**3 + c4*T**4)
 
 **NeqSim's `getPureComponentCpLiquid`**
 
-the correlation NeqSim 3.20.0 evaluates in `thermo/component/Component.java`, ported verbatim
+the correlation NeqSim master evaluates in `thermo/component/Component.java`, ported verbatim
 
 ## Inputs
 

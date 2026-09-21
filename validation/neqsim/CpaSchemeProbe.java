@@ -27,8 +27,8 @@ import neqsim.thermo.system.SystemSrkCPA;
  * probe cannot see association".
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar CpaSchemeProbe.java
- * java -cp .:neqsim-3.20.0.jar CpaSchemeProbe
+ * javac -proc:none -cp neqsim-f0c7436.jar CpaSchemeProbe.java
+ * java -cp .:neqsim-f0c7436.jar CpaSchemeProbe
  * </pre>
  */
 public final class CpaSchemeProbe {
@@ -58,7 +58,7 @@ public final class CpaSchemeProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("# azoth CpaSchemeProbe - NeqSim 3.20.0's CPA bond test.");
+    System.out.println("# azoth CpaSchemeProbe - NeqSim master's CPA bond test.");
     System.out.println("# A site bonds when charge[i]*charge[j] < 0, so a scheme whose sites");
     System.out.println("# share a sign cannot bond with itself. hcpa is the association's");
     System.out.println("# Helmholtz contribution: zero means the fitted energy was not read.");

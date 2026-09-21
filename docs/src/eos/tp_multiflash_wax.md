@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `TPmultiflashWAX`**
+**NeqSim master `TPmultiflashWAX`**
 
 The `Pedersen` component model (`ComponentWax`), which is `PhaseWax`'s default. The Won, Wilson and Coutinho models are that class's other three and are carried.
 

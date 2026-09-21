@@ -2,7 +2,7 @@ model = "eos.unifac_umrpru_activity_coefficients"
 [[cases]]
 id = "methanol_water_umr_at_the_reference_temperature"
 tolerance = 1e-09
-source = "methanol/water 0.5/0.5 at 298.15 K, from NeqSim 3.20.0's `ComponentGEUnifacUMRPRU` on the `_umr` tables. **Not the numbers `eos.unifac_activity_coefficients` carries at the same state**, although the two models' `a` matrices agree on this pair and the temperature offset vanishes here: their combinatorial terms differ - Flory-Huggins against Staverman-Guggenheim - and that alone moves both `ln gamma`. Because this pair is one the two tables share, the difference between the two cases is the combinatorial term and nothing else."
+source = "methanol/water 0.5/0.5 at 298.15 K, from NeqSim master's `ComponentGEUnifacUMRPRU` on the `_umr` tables. **Not the numbers `eos.unifac_activity_coefficients` carries at the same state**, although the two models' `a` matrices agree on this pair and the temperature offset vanishes here: their combinatorial terms differ - Flory-Huggins against Staverman-Guggenheim - and that alone moves both `ln gamma`. Because this pair is one the two tables share, the difference between the two cases is the combinatorial term and nothing else."
 [cases.inputs]
 components = ["methanol", "water"]
 parameters = "umr"

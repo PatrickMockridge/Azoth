@@ -14,7 +14,7 @@ references = [
 ]
 [source]
 standard = "ASTM D6377-20"
-edition = "NeqSim 3.20.0 `thermodynamicoperations/flashops/TVfractionFlash`: its residual, its adaptive damping, its step cap and its pressure walk are this model's loop."
+edition = "NeqSim master `thermodynamicoperations/flashops/TVfractionFlash`: its residual, its adaptive damping, its step cap and its pressure walk are this model's loop."
 [algorithm]
 scheme = "volume_fraction_newton_pressure"
 initialisation = "from_the_feed_pressure"

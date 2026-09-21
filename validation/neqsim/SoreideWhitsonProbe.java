@@ -1,7 +1,7 @@
 // What `SystemSoreideWhitson` does with the six interaction rows that carry a comma.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar SoreideWhitsonProbe.java
-//     java -cp .:neqsim-3.20.0.jar SoreideWhitsonProbe
+//     javac -proc:none -cp neqsim-f0c7436.jar SoreideWhitsonProbe.java
+//     java -cp .:neqsim-f0c7436.jar SoreideWhitsonProbe
 //
 // `INTER.csv`'s `KIJWhitsonSoriede` column is written with a **decimal comma** on six
 // rows - `propane`/`CO2`, `n-butane`/`CO2`, `n-pentane`/`CO2`, `n-hexane`/`CO2`,

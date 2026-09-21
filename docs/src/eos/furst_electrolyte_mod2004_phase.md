@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `SystemFurstElectrolyteEosMod2004`**
+**NeqSim master `SystemFurstElectrolyteEosMod2004`**
 
 `PhaseModifiedFurstElectrolyteEosMod2004`, which is `eos.furst_electrolyte_phase`'s port with the five quantities its `volInit` and its component zero. The parameters are the same hardcoded `FurstElectrolyteConstants`.
 

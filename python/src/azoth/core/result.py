@@ -2349,7 +2349,7 @@ class PrCpaPhaseResult(_HasWarnings):
     against 0.046473789 for PR and its fitted covolume is 1.4515 against 1.456360879, so
     the two are separate fits rather than one converted into the other.
 
-    **There is no NeqSim reading for this model.** Against the pinned 3.20.0 jar
+    **There is no NeqSim reading for this model.** Against the pinned jar
     ``SystemPrCPA`` builds CPA components whose sites its phase never sums, so its
     association is computed over nothing - see the spec's assumptions. The divergence is
     recorded with the tranche's others; what is not given up is the two-kernel comparison,

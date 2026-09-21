@@ -2,7 +2,7 @@ model = "eos.tp_solid_flash"
 [[cases]]
 id = "ice_from_a_water_methane_feed"
 tolerance = 1e-06
-source = """NeqSim 3.20.0, from `validation/neqsim/captures/solid_flash_probe.tsv`: water 0.5 and
+source = """NeqSim master, from `validation/neqsim/captures/solid_flash_probe.tsv`: water 0.5 and
 methane 0.5 at 273.15 K and 10 bara, `setSolidPhaseCheck("water")` and a plain `TPflash` - the
 `SolidFlash` route, which is the one `AsphalteneOnsetPressureFlash` takes.
 

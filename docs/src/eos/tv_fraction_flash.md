@@ -8,7 +8,7 @@
 
 **ASTM D6377-20**
 
-NeqSim 3.20.0 `thermodynamicoperations/flashops/TVfractionFlash`: its residual, its adaptive damping, its step cap and its pressure walk are this model's loop.
+NeqSim master `thermodynamicoperations/flashops/TVfractionFlash`: its residual, its adaptive damping, its step cap and its pressure walk are this model's loop.
 
 
 ## Algorithm

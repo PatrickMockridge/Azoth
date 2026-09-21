@@ -20,7 +20,7 @@ hov = 1e-3 * c0 * (1 - Tr)**(c1 + c2*Tr + c3*Tr**2)
 
 **NeqSim's `getPureComponentHeatOfVaporization`**
 
-the correlation NeqSim 3.20.0 evaluates in `thermo/component/Component.java`, ported verbatim
+the correlation NeqSim master evaluates in `thermo/component/Component.java`, ported verbatim
 
 ## Inputs
 

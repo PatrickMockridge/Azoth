@@ -15,7 +15,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhaseGENRTL` and `ComponentGE.fugcoef` are the port source.\n",
 ]
 [source]
-standard = "NeqSim 3.20.0 `PhaseGENRTL`"
+standard = "NeqSim master `PhaseGENRTL`"
 edition = "`ComponentGE.fugcoef`, ported verbatim"
 doi = "10.1002/aic.690140124"
 [inputs]

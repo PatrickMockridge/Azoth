@@ -5,7 +5,7 @@ latex = '''\alpha = \left[1 + 0.453\left(1 - T_r\left(1 - 0.0103\,S^{1.1}\right)
 assumptions = ["`salinity` is the molality (mol NaCl / kg H2O), the unit the Soreide-Whitson correlation expects; it is declared dimensionless because the vocabulary carries no molality unit.\n", "the correlation is for water; for any other component NeqSim's class delegates to the 1978 Peng-Robinson alpha (`pr78_kappa`), which is ported separately.\n"]
 references = ["Soreide, I.; Whitson, C. H. (1992). \"Peng-Robinson predictions for hydrocarbons, CO2, N2, and H2S with pure water and NaCl brine.\" Fluid Phase Equilib. 77, 217-240."]
 [source]
-standard = "NeqSim 3.20.0 `AttractiveTermSoreideWhitson`"
+standard = "NeqSim master `AttractiveTermSoreideWhitson`"
 edition = "`alpha(temperature)`, water branch ported verbatim"
 [inputs]
 [inputs.salinity]

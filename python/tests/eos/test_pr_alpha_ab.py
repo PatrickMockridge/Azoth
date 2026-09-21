@@ -164,7 +164,7 @@ def test_the_exact_omegas_are_the_triple_root_solution() -> None:
 def test_the_shipped_omegas_are_neqsims_and_are_not_the_triple_root_solution() -> None:
     """NeqSim's literals, deliberately, and the departure is on record.
 
-    The port rule settles it: azoth is a port of NeqSim 3.20.0, NeqSim's
+    The port rule settles it: azoth is a port of NeqSim, NeqSim's
     `ComponentPR` constructor sets these two, and carrying them is what makes the
     two agree - see
     `validation/eos/methane_butane_flash_against_neqsim.json`. Asserted rather than

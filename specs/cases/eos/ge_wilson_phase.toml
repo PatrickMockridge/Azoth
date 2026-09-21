@@ -2,7 +2,7 @@ model = "eos.ge_wilson_phase"
 [[cases]]
 id = "octane_decane_lean_at_350_k_1_bar"
 tolerance = 1e-08
-source = "NeqSim 3.20.0 `getFugacityCoefficient`, as the first case: validation/neqsim/GeWilsonPhi.java. Both members carry a real vapour-pressure row, unlike the heavy pseudo-components, so no part of this state rests on a repeated tuple and NeqSim confirms both components."
+source = "NeqSim master `getFugacityCoefficient`, as the first case: validation/neqsim/GeWilsonPhi.java. Both members carry a real vapour-pressure row, unlike the heavy pseudo-components, so no part of this state rests on a repeated tuple and NeqSim confirms both components."
 [cases.inputs]
 components = ["n-octane", "nc10"]
 T = 350.0
@@ -16,7 +16,7 @@ p_sat = [36663.00196112154, 6670.013533199678]
 [[cases]]
 id = "heptane_nonane_at_320_k_1_bar"
 tolerance = 1e-08
-source = "NeqSim 3.20.0 `getFugacityCoefficient`, as the first case: validation/neqsim/GeWilsonPhi.java. The lightest pair here, and the one the Wilson correlation's own parameterisation covers best: it is a paraffin-wax model, and both members are well inside its range."
+source = "NeqSim master `getFugacityCoefficient`, as the first case: validation/neqsim/GeWilsonPhi.java. The lightest pair here, and the one the Wilson correlation's own parameterisation covers best: it is a paraffin-wax model, and both members are well inside its range."
 [cases.inputs]
 components = ["n-heptane", "n-nonane"]
 T = 320.0

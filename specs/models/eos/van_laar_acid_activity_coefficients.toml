@@ -2,7 +2,7 @@ id = "eos.van_laar_acid_activity_coefficients"
 name = "Activity coefficients from the Van Laar model for the water-nitric-sulfuric acid system"
 kind = "direct"
 assumptions = [
-    "this is NeqSim's `ComponentGEVanLaarAcid`, the acid-specific Van Laar model of Taleb, Ponche and Mirabel (1996). NeqSim 3.20.0 has no classical fitted-`A12`/`A21` Van Laar.\n",
+    "this is NeqSim's `ComponentGEVanLaarAcid`, the acid-specific Van Laar model of Taleb, Ponche and Mirabel (1996). NeqSim has no classical fitted-`A12`/`A21` Van Laar.\n",
     "the three species are water, nitric acid and sulfuric acid, in that order, and they are evaluated on their own mole-fraction basis: only those three fractions in `x` enter the ternary expression, so a dissolved carrier gas does not.\n",
     "that basis is renormalised to sum to one, which is the form of the port source and does not move the answer: each expression is homogeneous of degree zero in the three fractions, so any scaling of them returns the same activity coefficient.\n",
     "a component outside the three gets a `gamma` of `1.0e12` rather than a refusal. That is NeqSim's `NON_MODELED_COMPONENT_PENALTY` reproduced: a device for pushing an uncovered species out of the liquid phase, not a physical activity coefficient, so the `ln_gamma` beside it is finite but meaningless.\n",

@@ -2,7 +2,7 @@
   "id": "methane_butane_flash_matcop_pr_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "Mathias-Copeman on Peng-Robinson, three fitted parameters from the `mcpr1..3` columns; above the critical temperature it falls back to the base Soave form. NeqSim's hardcoded water/TEG overrides are not ported - azoth reads the databank columns for every substance."
   },

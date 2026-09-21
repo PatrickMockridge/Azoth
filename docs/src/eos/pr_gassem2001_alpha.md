@@ -18,7 +18,7 @@ alpha = exp((A + B*Tr)*(1 - Tr**(C + D*omega + E*omega**2))),  with A = 2.0, B =
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermPrGassem2001`**
+**NeqSim master `AttractiveTermPrGassem2001`**
 
 `alpha(temperature)`, ported verbatim
 

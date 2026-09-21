@@ -2,7 +2,7 @@
   "id": "acetone_hexane_unifac_against_neqsim",
   "calc": "eos.unifac_activity_coefficients",
   "source": {
-    "attribution": "NeqSim 3.20.0, `ComponentGEUnifac.getGamma` - the upstream this library is a port of, run from validation/neqsim/UnifacGamma.java",
+    "attribution": "NeqSim master, `ComponentGEUnifac.getGamma` - the upstream this library is a port of, run from validation/neqsim/UnifacGamma.java",
     "verification": "verified",
     "notes": "NeqSim's classic UNIFAC activity coefficients for acetone/n-hexane 0.5/0.5 at 298.15 K. The second case, and the one that checks the group union rather than a single pair: acetone contributes two subgroups and n-hexane one, so a resolver that ordered or counted the columns wrongly agrees on methanol/water - one group each - and disagrees here."
   },

@@ -16,7 +16,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhaseGEWilson`, `ComponentGEWilson.getWilsonActivityCoefficient` and `ComponentGE.fugcoef` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `PhaseGEWilson`"
+standard = "NeqSim master `PhaseGEWilson`"
 edition = "`ComponentGE.fugcoef`, ported verbatim; the activity coefficient is `eos.wilson_activity_coefficients`', ported from `ComponentGEWilson.getWilsonActivityCoefficient`."
 doi = "10.1021/ja01056a002"
 [inputs]

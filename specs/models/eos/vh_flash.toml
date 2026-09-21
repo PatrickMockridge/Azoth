@@ -14,7 +14,7 @@ references = [
 ]
 [source]
 standard = "Standard thermodynamics, as in Michelsen & Mollerup"
-edition = "NeqSim 3.20.0 `thermodynamicoperations/flashops/VHflashQfunc`, whose Q-function quartet is `OptimizedVUflash`'s with `Hspec` in place of `Uspec + P Vspec`."
+edition = "NeqSim master `thermodynamicoperations/flashops/VHflashQfunc`, whose Q-function quartet is `OptimizedVUflash`'s with `Hspec` in place of `Uspec + P Vspec`."
 [algorithm]
 scheme = "vh_flash_newton_2x2"
 convergence = "relative"

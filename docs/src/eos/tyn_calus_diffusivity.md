@@ -82,7 +82,7 @@ Source: derived from the equation above
 
 Relative tolerance: `1e-12`
 
-benzene in toluene at 298.15 K: VA = 88.1648 cm**3/mol, VB = 105.7876 cm**3/mol, eta = 0.91635 cP: VA = 8.816478555304741e-5 m**3/mol -> 88.1648 cm**3/mol (no clamp, within [20, 600]) VB = 1.0578760045924226e-4 m**3/mol -> 105.7876 cm**3/mol (no clamp) eta = 9.163501315189954e-4 Pa*s -> 0.91635 cP D = 8.93e-8 * 105.7876**0.267 * 298.15 / (0.91635 * 88.1648**0.433) = 1.4502274002446276e-5 cm**2/s D = 1.4502274002446276e-9 m**2/s which is NeqSim 3.20.0 `TynCalusDiffusivity`'s value at the same state.
+benzene in toluene at 298.15 K: VA = 88.1648 cm**3/mol, VB = 105.7876 cm**3/mol, eta = 0.91635 cP: VA = 8.816478555304741e-5 m**3/mol -> 88.1648 cm**3/mol (no clamp, within [20, 600]) VB = 1.0578760045924226e-4 m**3/mol -> 105.7876 cm**3/mol (no clamp) eta = 9.163501315189954e-4 Pa*s -> 0.91635 cP D = 8.93e-8 * 105.7876**0.267 * 298.15 / (0.91635 * 88.1648**0.433) = 1.4502274002446276e-5 cm**2/s D = 1.4502274002446276e-9 m**2/s which is NeqSim `TynCalusDiffusivity`'s value at the same state.
 
 
 ## Tests

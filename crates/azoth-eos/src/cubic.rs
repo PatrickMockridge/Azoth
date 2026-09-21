@@ -20,7 +20,7 @@
 pub enum Cubic {
     /// Peng-Robinson: `omega = (0.45724333333, 0.077803333)`, `delta = (1 + sqrt(2), 1 - sqrt(2))`.
     ///
-    /// The `omega` pair is NeqSim 3.20.0's, not the paper's - see
+    /// The `omega` pair is NeqSim's, not the paper's - see
     /// [`crate::pr_alpha_ab::OMEGA_A`] for the argument.
     #[default]
     Pr,

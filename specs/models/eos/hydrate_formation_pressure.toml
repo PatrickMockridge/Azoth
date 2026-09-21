@@ -16,7 +16,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `HydrateFormationPressureFlash`, `ComponentHydratePVTsim` and `PhaseHydrate` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `HydrateFormationPressureFlash`"
+standard = "NeqSim master `HydrateFormationPressureFlash`"
 edition = "The path that runs when the system is not a `SystemPitzer`: NeqSim dispatches `PitzerHydrateFlash` for that one, and its coupling to the electrolyte models is carried rather than ported."
 [algorithm]
 scheme = "hydrate_pressure_bisection"

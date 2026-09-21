@@ -710,7 +710,7 @@ fn the_soreide_whitson_rule_changes_the_aqueous_a_mix() {
 
 /// The Huron-Vidal rule reproduces NeqSim's CLASSIC_HV water/ethanol liquid phase.
 ///
-/// `a_mix` and the fugacity coefficients are checked against a NeqSim 3.20.0 TP flash
+/// `a_mix` and the fugacity coefficients are checked against a NeqSim TP flash
 /// at T = 350 K, P = 1 bar, x = 0.5/0.5, with the fitted NRTL parameters its database
 /// carries. The tolerance is the databank's, not the port's.
 #[test]
@@ -754,7 +754,7 @@ fn the_huron_vidal_rule_matches_neqsims_water_ethanol_phase() {
 /// The Wong-Sandler rule reproduces NeqSim's water/ethanol liquid phase.
 ///
 /// Same GE model as Huron-Vidal, but a GE-dependent `b_mix`, the rule's own `kij` and
-/// its own temperature coefficient. Checked against a NeqSim 3.20.0 flash at
+/// its own temperature coefficient. Checked against a NeqSim flash at
 /// T = 350 K, P = 1 bar, x = 0.5/0.5.
 ///
 /// Every matrix comes from the databank now rather than from this file: the parameters

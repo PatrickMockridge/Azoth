@@ -2,7 +2,7 @@ model = "eos.salt_precipitation"
 [[cases]]
 id = "the_pitzer_brines_halite_at_25_c"
 tolerance = 1e-03
-source = """NeqSim 3.20.0, `MultiSaltPrecipitation` over one mineral, from
+source = """NeqSim master, `MultiSaltPrecipitation` over one mineral, from
 `validation/neqsim/captures/multi_salt_pitzer_probe.tsv`: a **Pitzer** brine of water, Na+,
 Cl-, CO3-- and HCO3- at 25 C and 10 bara, whose `NaCl` row the operation reports as
 `0.00764735162257383` mol precipitated against `1.246` mol of feed - so the expected value

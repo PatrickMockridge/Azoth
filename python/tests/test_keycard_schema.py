@@ -117,7 +117,7 @@ def a_valid_keycard() -> dict[str, Any]:
                 "Tc": {
                     "value": 190.564,
                     "unit": "K",
-                    "citation": "NeqSim v3.20.0 COMP.csv (Equinor/NTNU), Apache-2.0",
+                    "citation": "NeqSim master COMP.csv (Equinor/NTNU), Apache-2.0",
                 }
             }
         },

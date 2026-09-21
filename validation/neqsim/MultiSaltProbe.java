@@ -6,8 +6,8 @@
 // `CalcSaltSatauration` is the per-mineral half - `precipitate()` and `dissolve()` - and the
 // loop refuses rather than returns when it stalls or when its ledger does not close.
 //
-//   javac -proc:none -cp neqsim-3.20.0.jar MultiSaltProbe.java
-//   java -cp .:neqsim-3.20.0.jar MultiSaltProbe > captures/multi_salt_probe.tsv
+//   javac -proc:none -cp neqsim-f0c7436.jar MultiSaltProbe.java
+//   java -cp .:neqsim-f0c7436.jar MultiSaltProbe > captures/multi_salt_probe.tsv
 
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPitzer;

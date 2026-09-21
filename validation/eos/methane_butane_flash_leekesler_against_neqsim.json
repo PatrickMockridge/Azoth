@@ -2,7 +2,7 @@
   "id": "methane_butane_flash_leekesler_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos with AttractiveTermPrLeeKesler - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos with AttractiveTermPrLeeKesler - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "Not a new correlation: NeqSim's `AttractiveTermPrLeeKesler` (term 21) is the Soave m-factor applied on Peng-Robinson's geometry, which is exactly azoth's `eos=\"pr\", alpha=\"srk\"`. NeqSim's own class doc confirms the name is a misnomer - it implements the Soave m, not the standard PR76 m. This case pins that the polymorphic selector's cross-combination reproduces the term rather than shipping a redundant `leekesler` alias."
   },

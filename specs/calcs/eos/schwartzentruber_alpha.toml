@@ -5,7 +5,7 @@ latex = '''\alpha = \left[1 + m(1 - \sqrt{T_r}) - p_1(1 - T_r)(1 + p_2 T_r + p_3
 assumptions = ["the three `p` parameters are the caller's fitted Schwartzentruber-Renon parameters, not derived.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
 references = ["Schwartzentruber, J.; Renon, H. (1989). \"Extension of UNIFAC to high pressures and temperatures by the use of a cubic equation of state.\" Ind. Eng. Chem. Res. 28(7), 1049-1055."]
 [source]
-standard = "NeqSim 3.20.0 `AttractiveTermSchwartzentruber`"
+standard = "NeqSim master `AttractiveTermSchwartzentruber`"
 edition = "`alpha(temperature)`, ported verbatim"
 [inputs]
 [inputs.omega]

@@ -2,7 +2,7 @@
   "id": "i_pentane_antoine_dippr101_against_neqsim",
   "calc": "eos.antoine_vapor_pressure",
   "source": {
-    "attribution": "NeqSim 3.20.0 at commit 8922111 (`fix(thermo): restore DIPPR-101 vapor-pressure dispatch`, PR #3773), `getAntoineVaporPressure` - the upstream this library is a port of, run from validation/neqsim/DipprOracle.java",
+    "attribution": "NeqSim master at commit 8922111 (`fix(thermo): restore DIPPR-101 vapor-pressure dispatch`, PR #3773), `getAntoineVaporPressure` - the upstream this library is a port of, run from validation/neqsim/DipprOracle.java",
     "verification": "verified",
     "notes": "The DIPPR-101 form for i-pentane, whose row in NeqSim's `COMP.csv` carries DIPPR-101 coefficients under the label `log`. The label names the two-term exponential, so before PR #3773 NeqSim read this row through the wrong correlation and returned 8.28824e38 bar; it now returns 0.91800973328146050 bar at 298.15 K. azoth ports NeqSim's corrected dispatch, where a non-zero `E` decides the form unless the label is `pow10` or `pow10KPa`."
   },

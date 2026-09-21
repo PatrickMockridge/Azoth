@@ -20,8 +20,8 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * Usage, the same shape {@code CpaSweep} takes so the two are read the same way:
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar PrCpaFlash.java
- * java -cp .:neqsim-3.20.0.jar PrCpaFlash [T_K P_bara n_water]...
+ * javac -proc:none -cp neqsim-f0c7436.jar PrCpaFlash.java
+ * java -cp .:neqsim-f0c7436.jar PrCpaFlash [T_K P_bara n_water]...
  * </pre>
  */
 public final class PrCpaFlash {
@@ -98,7 +98,7 @@ public final class PrCpaFlash {
     } else {
       cases = DEFAULT_CASES;
     }
-    System.out.println("# azoth PrCpaFlash - NeqSim 3.20.0's SystemPrCPA with setMixingRule(10).");
+    System.out.println("# azoth PrCpaFlash - NeqSim master's SystemPrCPA with setMixingRule(10).");
     System.out.println("# Phase 0 is whatever the flash ordered first; `PhaseInterface.getBeta`");
     System.out.println("# is the phase's fraction, so the vapour is the smaller one at these");
     System.out.println("# states. `lnPhi` is `log(ComponentInterface.getFugacityCoefficient())`.");

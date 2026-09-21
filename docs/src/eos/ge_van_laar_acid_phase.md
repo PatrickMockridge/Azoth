@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PhaseGEVanLaarAcid`**
+**NeqSim master `PhaseGEVanLaarAcid`**
 
 `ComponentGEVanLaarAcid.fugcoef`, ported verbatim, including its `NON_MODELED_COMPONENT_PENALTY` and its Raoult-reference override.
 

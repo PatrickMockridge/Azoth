@@ -5,7 +5,7 @@ latex = '''\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.384401 + 1
 assumptions = ["the `m` is the UMR-PR kappa, a fourth-order fit in the acentric factor.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
 references = ["Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011."]
 [source]
-standard = "NeqSim 3.20.0 `AttractiveTermUMRPRU`"
+standard = "NeqSim master `AttractiveTermUMRPRU`"
 edition = "`alpha(temperature)`, ported verbatim"
 doi = "10.1021/i160057a011"
 [inputs]

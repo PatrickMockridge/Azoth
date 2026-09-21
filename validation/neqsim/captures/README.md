@@ -1,13 +1,13 @@
 # Probe captures
 
 A **capture** is a probe's standard output, committed verbatim. The probes live one
-directory up, are compiled and run by hand against the pinned `neqsim-3.20.0.jar`, and what
+directory up, are compiled and run by hand against the pinned `neqsim-f0c7436.jar`, and what
 they print is what lands here.
 
 ```bash
 cd validation/neqsim
-javac -proc:none -cp neqsim-3.20.0.jar CpaSweep.java
-java -cp .:neqsim-3.20.0.jar CpaSweep > captures/cpa_sweep.tsv
+javac -proc:none -cp neqsim-f0c7436.jar CpaSweep.java
+java -cp .:neqsim-f0c7436.jar CpaSweep > captures/cpa_sweep.tsv
 ```
 
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate

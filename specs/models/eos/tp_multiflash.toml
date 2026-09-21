@@ -20,7 +20,7 @@ references = [
     "`validation/neqsim/TpMultiFlashSweep.java`, `TpMultiFlashCases.java` - the grid that established what this model does that `eos.pt_flash` does not: 3,312 states over sixteen mixtures.\n",
 ]
 [source]
-standard = "NeqSim 3.20.0 `TPmultiflash`"
+standard = "NeqSim master `TPmultiflash`"
 edition = "`solveBeta`/`calcQ` for the fraction solve, `stabilityAnalysis` for the seeding, both ported; the merge rules are ported from `run()`'s removal loop except the density branch, which the assumptions name."
 [algorithm]
 scheme = "multiphase_fraction_newton"

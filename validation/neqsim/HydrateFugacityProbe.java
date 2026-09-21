@@ -5,8 +5,8 @@
 // the public accessors and compared with the coefficient NeqSim itself produced - which is
 // the only way to tell a misread term from a misread formula.
 //
-//   javac -proc:none -cp neqsim-3.20.0.jar HydrateFugacityProbe.java
-//   java -cp .:neqsim-3.20.0.jar HydrateFugacityProbe > captures/hydrate_fugacity_probe.tsv
+//   javac -proc:none -cp neqsim-f0c7436.jar HydrateFugacityProbe.java
+//   java -cp .:neqsim-f0c7436.jar HydrateFugacityProbe > captures/hydrate_fugacity_probe.tsv
 
 import neqsim.thermo.component.ComponentHydrate;
 import neqsim.thermo.phase.PhaseInterface;

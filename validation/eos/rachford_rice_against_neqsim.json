@@ -2,7 +2,7 @@
   "id": "rachford_rice_against_neqsim",
   "calc": "eos.rachford_rice",
   "source": {
-    "attribution": "NeqSim 3.20.0 `RachfordRice.calcBetaNielsen2023` - the upstream this library is a port of - run from validation/neqsim/RachfordRiceProbe.java, which calls both of the class's solvers at every state so the two can be compared at the same input",
+    "attribution": "NeqSim master `RachfordRice.calcBetaNielsen2023` - the upstream this library is a port of - run from validation/neqsim/RachfordRiceProbe.java, which calls both of the class's solvers at every state so the two can be compared at the same input",
     "verification": "verified",
     "notes": "The probe drives `calcBetaNielsen2023(K, z)` and `calcBetaMichelsen2001(K, z)` directly rather than through a flash, because the class is not reachable from a `TPflash` any other way and its two solvers are the whole of what it carries. NeqSim's default method is Nielsen2023 and nothing in the library calls `setMethod`, so that is the one ported and the one this case validates."
   },

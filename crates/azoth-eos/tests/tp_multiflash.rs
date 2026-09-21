@@ -1,4 +1,4 @@
-//! `eos.tp_multiflash` against NeqSim 3.20.0's own multiphase flash.
+//! `eos.tp_multiflash` against NeqSim's own multiphase flash.
 //!
 //! The expected values are NeqSim's, printed by `validation/neqsim/TpMultiFlashCases.java`
 //! with `setMultiPhaseCheck(true)`. The oracle gates nothing - a divergence is a finding - so

@@ -110,7 +110,7 @@ A propane-like component at Tr = 0.8, Pr = 0.25: sqrt(Tr) = sqrt(0.8) = 0.894427
 ## References
 
 - Redlich, O.; Kwong, J. N. S. (1949). \"On the Thermodynamics of Solutions. V.\" Chemical Reviews 44(1), 233-244. DOI 10.1021/cr60137a013.
-- NeqSim 3.20.0, `neqsim.thermo.component.ComponentRK`, constructor.
+- NeqSim master, `neqsim.thermo.component.ComponentRK`, constructor.
 
 
 ---

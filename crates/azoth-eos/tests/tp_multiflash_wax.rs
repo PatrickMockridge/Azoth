@@ -46,10 +46,11 @@ fn every_case_in_the_spec() {
 
 /// **A material balance, which is what the amount has to be.**
 ///
-/// `sum_p beta_p x_ip` must be the feed for every component, and the wax phase is the one
-/// that a model can get wrong while still landing on a plausible fraction - the hydrate
-/// family's instrument found exactly that, at `+0.0874` on water. The fractions are the ones
-/// the solve reports, so this tests the state it assembled and not the iteration's algebra.
+/// `sum_p beta_p x_ip` must be the feed for every component, and a solid phase is the one a
+/// model can get wrong while still landing on a plausible fraction - the hydrate family's
+/// instrument found exactly that, at `+0.0874` on water, before both libraries took their
+/// guests over both cavity types. The fractions are the ones the solve reports, so this tests
+/// the state it assembled and not the iteration's algebra.
 #[test]
 fn the_state_balances() {
     let names = ["methane", "n-heptane", "nc14", "nc20"];

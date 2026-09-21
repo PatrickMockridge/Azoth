@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `SolidFlash`**
+**NeqSim master `SolidFlash`**
 
 The tabulated `ComponentSolid` route: `ComponentSolid.fugcoef2` over the component's own `HEATOFFUSION`, `TRIPLEPOINTTEMPERATURE`, `CPsolid`, `CPliquid`, `SOLIDDENSITYCOEFS` and `LIQUIDDENSITYCOEFS` columns. The Helmholtz solid routes and `SolidFlash12` are carried.
 

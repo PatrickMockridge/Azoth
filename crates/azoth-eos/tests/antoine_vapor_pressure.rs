@@ -112,7 +112,7 @@ fn the_dippr_form_returns_pascals_without_a_factor() {
     use azoth_eos::antoine_vapor_pressure;
 
     // i-pentane, at the state validation/eos/i_pentane_antoine_dippr101_against_neqsim.json
-    // states: NeqSim 3.20.0 at commit 8922111 returns 0.10329497716461689 bar.
+    // states: NeqSim at commit 8922111 returns 0.10329497716461689 bar.
     let r = antoine_vapor_pressure(
         72.35,
         -5010.9,

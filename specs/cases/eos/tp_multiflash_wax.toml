@@ -2,7 +2,7 @@ model = "eos.tp_multiflash_wax"
 [[cases]]
 id = "the_names_feed_at_290_k"
 tolerance = 1e-06
-source = """NeqSim 3.20.0, from `validation/neqsim/captures/wax_amount_probe.tsv`: methane 70,
+source = """NeqSim master, from `validation/neqsim/captures/wax_amount_probe.tsv`: methane 70,
 n-heptane 10, nc14 10 and nc20 10 at 5 bara, where **no wax forms** and the flash is
 two-phase - gas `0.692281226945417` against oil `0.307718773054583`. The model reaches that
 answer through the two-phase fallback, because the three-phase set does not converge here,

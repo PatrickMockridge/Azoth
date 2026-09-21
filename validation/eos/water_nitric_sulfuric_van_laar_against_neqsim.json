@@ -2,7 +2,7 @@
   "id": "water_nitric_sulfuric_van_laar_against_neqsim",
   "calc": "eos.van_laar_acid_activity_coefficients",
   "source": {
-    "attribution": "NeqSim 3.20.0, `NitricSulfuricAcidVaporPressure.activityCoefficientWater/NitricAcid/SulfuricAcid` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, `NitricSulfuricAcidVaporPressure.activityCoefficientWater/NitricAcid/SulfuricAcid` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "The Taleb-Ponche-Mirabel (1996) Van Laar activity coefficients for water/nitric acid/sulfuric acid 0.5/0.3/0.2 at 250 K. The three acids are already on their own basis, so the composition passes through the model's renormalisation unchanged. NeqSim reaches these through `ComponentGEVanLaarAcid`, whose `getActivityCoefficient` the port replaces; the static utility is the same expression without the phase around it."
   },

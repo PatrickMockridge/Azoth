@@ -2677,8 +2677,7 @@ count = 1
 reason = """\
     used: `ComponentModifiedFurstElectrolyteEos`'s constructor and `initFurstParam` read \
     `[0]` and `[1]` to build an ion's covolume, `b = (p0 d^3 + p1) 1e5`, and then derive \
-    the Lennard-Jones diameter back out of it. **`[2]`..`[5]` are read by nothing in \
-    3.20.0** - `getFurstParam(i)`, the accessor that would reach them, has no caller in \
+    the Lennard-Jones diameter back out of it. **`[2]`..`[5]` are read by nothing** - `getFurstParam(i)`, the accessor that would reach them, has no caller in \
     `src/main`, and the `Wij` correlations its doc comments describe are not implemented \
     - so four of the six are carried and unread."""
 [[upstreams.files.rows]]

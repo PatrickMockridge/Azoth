@@ -23,7 +23,7 @@ where `phi_liq` is the pure component's liquid root on the cubic the fluid runs,
 
 ## Source
 
-**NeqSim 3.20.0 `ComponentSolid.fugcoef2`**
+**NeqSim master `ComponentSolid.fugcoef2`**
 
 The tabulated route, which `ThermodynamicOperations.TPSolidflash` drives through `SolidFlash1`. The Helmholtz route, `PhaseSolidHelmholtzEos`, is `eos.parahydrogen_solid_phase`'s and is not this.
 
@@ -78,7 +78,7 @@ satisfy for the result to mean what it says.
 
 ## Worked example
 
-Source: NeqSim 3.20.0, `ComponentSolid.fugcoef2`, from `validation/neqsim/captures/solid_flash_probe.tsv`
+Source: NeqSim master, `ComponentSolid.fugcoef2`, from `validation/neqsim/captures/solid_flash_probe.tsv`
 
 | Input | Value |
 |---|---|

@@ -2,7 +2,7 @@ model = "eos.freezing_point"
 [[cases]]
 id = "the_triple_point"
 tolerance = 1e-09
-source = """NeqSim 3.20.0's own `FreezingPointTemperatureFlashTest` mixture -
+source = """NeqSim master's own `FreezingPointTemperatureFlashTest` mixture -
 `SystemLeachmanEos(13.6, 0.07042, "para-hydrogen", true)` with `setSolidPhaseCheck` - run
 from `validation/neqsim/FreezingProbe.java`: the flash returns `13.8032999997377` K, which is
 the calibrated triple point its test asserts to 1e-4, and a residual of `1.97e-11` after 32

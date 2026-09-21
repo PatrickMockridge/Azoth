@@ -13,8 +13,8 @@
 // `CLASSIC_TX_CPA`, which is a second thing to be right about rather than a first.
 //
 // A capture, not a test: run it against the pinned jar and commit what it prints.
-//   javac -proc:none -cp neqsim-3.20.0.jar HydrateProbe.java
-//   java -cp .:neqsim-3.20.0.jar HydrateProbe > captures/hydrate_probe.tsv
+//   javac -proc:none -cp neqsim-f0c7436.jar HydrateProbe.java
+//   java -cp .:neqsim-f0c7436.jar HydrateProbe > captures/hydrate_probe.tsv
 
 import neqsim.thermo.component.ComponentHydrate;
 import neqsim.thermo.phase.PhaseInterface;

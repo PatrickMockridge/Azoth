@@ -1,8 +1,8 @@
 // The three pure-component vapour pressures of the water-nitric-sulfuric acid system, for
 // `eos.nitric_sulfuric_acid_vapor_pressure`.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar AcidVaporPressure.java
-//     java -cp .:neqsim-3.20.0.jar AcidVaporPressure
+//     javac -proc:none -cp neqsim-f0c7436.jar AcidVaporPressure.java
+//     java -cp .:neqsim-f0c7436.jar AcidVaporPressure
 //
 // `NitricSulfuricAcidVaporPressure` is a static utility: no system, no flash, no tuning
 // between the caller and the number. So the oracle for this calculation is the most direct

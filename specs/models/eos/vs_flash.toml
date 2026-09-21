@@ -13,7 +13,7 @@ references = [
 ]
 [source]
 standard = "Standard thermodynamics, as in Michelsen & Mollerup"
-edition = "NeqSim 3.20.0 `thermodynamicoperations/flashops/VSflash`: its `calcdQdP`, `calcdQdT`, `calcdQdPP` and its damped clamped step are this model's loop, reached from `VesselDepressurization`'s isentropic branch."
+edition = "NeqSim master `thermodynamicoperations/flashops/VSflash`: its `calcdQdP`, `calcdQdT`, `calcdQdPP` and its damped clamped step are this model's loop, reached from `VesselDepressurization`'s isentropic branch."
 [algorithm]
 scheme = "vs_flash_newton_2x2"
 convergence = "relative"

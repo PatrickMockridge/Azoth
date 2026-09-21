@@ -1,7 +1,7 @@
 // What a built `SystemSoreideWhitson` computes, before any of it is ported.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar SoreideWhitsonArithmetic.java
-//     java -cp .:neqsim-3.20.0.jar SoreideWhitsonArithmetic
+//     javac -proc:none -cp neqsim-f0c7436.jar SoreideWhitsonArithmetic.java
+//     java -cp .:neqsim-f0c7436.jar SoreideWhitsonArithmetic
 //
 // The second of F's two instruments. `SoreideWhitsonProbe` answers what happens to the six
 // interaction rows written with a comma; this prints the model those rows feed - the PR

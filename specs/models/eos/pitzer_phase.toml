@@ -17,7 +17,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhasePitzer`, `ComponentGePitzer`, `PitzerParameterDatasets`, `PitzerElectrostaticMixing` and `PitzerNeutralInteraction` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `PhasePitzer`"
+standard = "NeqSim master `PhasePitzer`"
 edition = "`ComponentGePitzer.getGamma`, `getWaterGamma` and `getPitzerOsmoticCoefficient`, ported verbatim; the catalogue is the USGS PHREEQC file NeqSim bundles, at the commit its dataset id carries."
 [inputs]
 [inputs.components]

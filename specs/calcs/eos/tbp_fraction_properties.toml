@@ -18,7 +18,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TBPfractionModel.PedersenTBPModelSRK` is the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `TBPfractionModel.PedersenTBPModelSRK`"
+standard = "NeqSim master `TBPfractionModel.PedersenTBPModelSRK`"
 edition = "`calcTC`, `calcPC`, `calcTB`, `calcm` and the base class's `calcAcentricFactor`, as `addTBPfraction` composes them."
 [inputs]
 [inputs.molar_mass]
@@ -64,7 +64,7 @@ max_inclusive = true
 severity = "warning"
 rationale = "**Measured outside this at `mw >= 1120`**: the heavy set gives a boiling point above the critical temperature, so the factor comes out at `-44.6358323245519` at `mw = 1121`, `d = 1.0`. A Pitzer factor outside `[-1, 2]` describes no fluid, so it is reported rather than passed on.\n"
 [worked_example]
-source = "NeqSim 3.20.0, `TBPfractionModel.PedersenTBPModelSRK`, from `validation/neqsim/captures/tbp_fraction_probe.tsv` cut[4]"
+source = "NeqSim master, `TBPfractionModel.PedersenTBPModelSRK`, from `validation/neqsim/captures/tbp_fraction_probe.tsv` cut[4]"
 derivation = "A `C19`-scale cut at `mw = 500.0` g/mol and `d = 0.88` g/cm3 - the two numbers `addTBPfraction` takes - which is below both switches, so the oil set and the cubic boiling point apply:\n\n  ln(mw)         = 6.214608098422191\n  tc = 163.12*0.88 + 86.052*6.214608098422191 + 0.43475*500.0 - 1877.4/500.0\n     = 143.5456 + 534.7873345... + 217.375 - 3.7548 = 891.945256085426  K\n  pc = exp(0.01325 - 0.13408 + 2.5019*0.88**1.0 + 208.46/500.0 - 3987.2/500.0**2)\n     = exp(0.01325 - 0.13408 + 2.201672 + 0.41692 - 0.0159488) = 11.9629359599742  bar\n  tb = 2e-6*500.0**3 - 0.0035*500.0**2 + 2.4003*500.0 + 171.74 = 746.890000000000  K\n  m  = 0.7431 + 0.0048122*500.0 + 0.0096707*0.88 - 3.7184e-6*500.0**2 = 2.22811021600000\n  omega = 3/7*log10(11.9629359599742/1.01325)/(891.945256085426/746.89 - 1) - 1\n        = 3/7*1.0717984/0.1942125 - 1 = 1.36586663262266\n\nThe capture's rows are those five numbers."
 tolerance = 1e-12
 [worked_example.inputs]

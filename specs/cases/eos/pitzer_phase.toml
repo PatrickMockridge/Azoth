@@ -2,7 +2,7 @@ model = "eos.pitzer_phase"
 [[cases]]
 id = "sodium_chloride_at_298_k"
 tolerance = 1e-08
-source = "NeqSim 3.20.0 `ComponentGePitzer.getGamma` and `PhasePitzer.getOsmoticCoefficientOfWater`, end to end on a live `SystemPitzer`: validation/neqsim/PitzerArithmetic.java. The catalogue covers this brine, so `dataset = phreeqc`. The `gamma` entries are `exp` of the logarithms NeqSim returns; `water_activity` is `gamma_w x_w`, the conversion `getWaterGamma` documents."
+source = "NeqSim master `ComponentGePitzer.getGamma` and `PhasePitzer.getOsmoticCoefficientOfWater`, end to end on a live `SystemPitzer`: validation/neqsim/PitzerArithmetic.java. The catalogue covers this brine, so `dataset = phreeqc`. The `gamma` entries are `exp` of the logarithms NeqSim returns; `water_activity` is `gamma_w x_w`, the conversion `getWaterGamma` documents."
 [cases.inputs]
 components = ["water", "Na+", "Cl-"]
 T = 298.15
@@ -18,7 +18,7 @@ dataset = "phreeqc"
 [[cases]]
 id = "sodium_calcium_chloride_at_298_k"
 tolerance = 1e-08
-source = "NeqSim 3.20.0, same probe. The divalent calcium activates both flags the ion branch gates on - `unequal-charge-same-sign` and `non-2-2 beta2` - so this is the case the two exist for. The catalogue carries a `B2` for Ca++/Cl- where the CSV carries none."
+source = "NeqSim master, same probe. The divalent calcium activates both flags the ion branch gates on - `unequal-charge-same-sign` and `non-2-2 beta2` - so this is the case the two exist for. The catalogue carries a `B2` for Ca++/Cl- where the CSV carries none."
 [cases.inputs]
 components = ["water", "Na+", "Ca++", "Cl-"]
 T = 298.15
@@ -39,7 +39,7 @@ dataset = "phreeqc"
 [[cases]]
 id = "sodium_bicarbonate_on_the_legacy_dataset_at_298_k"
 tolerance = 1e-08
-source = "NeqSim 3.20.0, same probe. The catalogue carries no `C0` row for Na+/HCO3-, so this brine falls back to `PitzerParameters.csv` and reads every parameter through the two-coefficient Silvester form instead of the six. Its chloride twin above is the same ionic strength on the other dataset, and `phi` differs by 0.22 between them."
+source = "NeqSim master, same probe. The catalogue carries no `C0` row for Na+/HCO3-, so this brine falls back to `PitzerParameters.csv` and reads every parameter through the two-coefficient Silvester form instead of the six. Its chloride twin above is the same ionic strength on the other dataset, and `phi` differs by 0.22 between them."
 [cases.inputs]
 components = ["water", "Na+", "HCO3-"]
 T = 298.15

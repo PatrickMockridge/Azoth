@@ -18,7 +18,7 @@ sigma = 1e-3 * (parachor*1e-6*(rho_l/M - rho_v/M))**4,  with rho in kg/m**3 and 
 
 ## Source
 
-**NeqSim 3.20.0 `ParachorSurfaceTension`**
+**NeqSim master `ParachorSurfaceTension`**
 
 `calcPureComponentSurfaceTension`, ported verbatim: `1e-3 * pow(parachor*1e-6 * (rho_l/M - rho_v/M), 4)`
 

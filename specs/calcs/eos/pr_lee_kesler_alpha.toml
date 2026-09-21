@@ -5,7 +5,7 @@ latex = '''\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.480 + 1.57
 assumptions = ["despite the class name, this is the Soave (SRK) m-factor applied within the Peng-Robinson alpha form, not the Lee-Kesler BWR enthalpy method; NeqSim retains the class for backward compatibility.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
 references = ["Soave, G. (1972). \"Equilibrium constants from a modified Redlich-Kwong equation of state.\" Chem. Eng. Sci. 27(6), 1197-1203."]
 [source]
-standard = "NeqSim 3.20.0 `AttractiveTermPrLeeKesler`"
+standard = "NeqSim master `AttractiveTermPrLeeKesler`"
 edition = "`alpha(temperature)`, ported verbatim"
 [inputs]
 [inputs.omega]

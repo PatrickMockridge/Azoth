@@ -26,8 +26,8 @@ import neqsim.thermo.system.SystemPCSAFT;
  * uses, which is the number a port has to match rather than the one in the table.
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar PcsaftProbe.java
- * java -cp .:neqsim-3.20.0.jar PcsaftProbe [T_K P_bara name:z ...]
+ * javac -proc:none -cp neqsim-f0c7436.jar PcsaftProbe.java
+ * java -cp .:neqsim-f0c7436.jar PcsaftProbe [T_K P_bara name:z ...]
  * </pre>
  */
 public final class PcsaftProbe {
@@ -78,7 +78,7 @@ public final class PcsaftProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("# azoth PcsaftProbe - NeqSim 3.20.0's SystemPCSAFT (PhasePCSAFTRahmat).");
+    System.out.println("# azoth PcsaftProbe - NeqSim master's SystemPCSAFT (PhasePCSAFTRahmat).");
     System.out.println("# The default mixing rule is NeqSim's own, so every k_ij this phase");
     System.out.println("# uses is zero unless a caller sets the classic rule.");
     if (args.length >= 5) {

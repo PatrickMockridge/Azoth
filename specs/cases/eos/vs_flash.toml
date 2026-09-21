@@ -13,7 +13,7 @@ T = 400.0
 [[cases]]
 id = "two_phase_round_trip"
 tolerance = 1e-03
-source = "The 330 K, 25 bar state `eos.pt_flash`'s own case converges to, asked back from its volume and entropy - the isentropic state a `VesselDepressurization` flash reaches. NeqSim 3.20.0's `VSflash` is reached from exactly that branch."
+source = "The 330 K, 25 bar state `eos.pt_flash`'s own case converges to, asked back from its volume and entropy - the isentropic state a `VesselDepressurization` flash reaches. NeqSim master's `VSflash` is reached from exactly that branch."
 [cases.inputs]
 components = ["methane", "n-butane"]
 V = 0.0008190137837513794

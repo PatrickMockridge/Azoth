@@ -19,15 +19,20 @@ section is deleted and the priority moves to whatever is next.
 
 ## What the port is
 
-NeqSim 3.20.0 is 1,285,392 lines of Java across 3,371 files. The part being ported is its
+NeqSim master is 1,299,006 lines of Java across 3,410 files. The part being ported is its
 **calculation layer**:
 
 | Package | Files | Lines |
 |---|---|---|
-| `thermo/` — phase models, components, systems, mixing rules | 370 | 146,563 |
-| `thermodynamicoperations/` — flashes, saturation ops, envelopes | 128 | 53,035 |
-| `physicalproperties/` — transport and interfacial properties | 108 | 17,353 |
-| **Total** | **~606** | **~217,000** |
+| `thermo/` — phase models, components, systems, mixing rules | 382 | 149,597 |
+| `thermodynamicoperations/` — flashes, saturation ops, envelopes | 131 | 54,386 |
+| `physicalproperties/` — transport and interfacial properties | 108 | 17,352 |
+| **Total** | **~621** | **~221,000** |
+
+**Every count here is `find src/main/java -name '*.java' | wc -l`, and `cat | wc -l` for the
+lines, at the revision `databank/manifest.toml` pins.** They are re-measured at each
+pin move rather than carried, because a count taken at one revision and quoted at the next
+is a number nobody can check.
 
 Inside that: **~70 phase models** in seven families (cubic, activity, associating CPA and
 SAFT, reference/Helmholtz, electrolyte, solid/hydrate, bases), **~105 flash operations**
@@ -85,8 +90,11 @@ implements something is evidence it can be implemented, not evidence it is right
 `CriticalPointFlash` is correct by inspection and validated nowhere.
 
 **NeqSim runs as a differential oracle, and it does not gate the build.** The checkout at
-`/tmp/neqsim-check/neqsim` is built (Java 21, `target/neqsim-3.20.0.jar`) and ships 18
-paired input/output flash cases plus literature benchmarks. A divergence from NeqSim is a
+`/tmp/neqsim-check/neqsim` is built (Java 21) to `target/neqsim-3.21.0.jar`, which is copied
+beside the probes as `neqsim-f0c7436.jar` - the pom's version names both the release tag and
+master, fifty commits apart, so the commit is what the copy is named for. The probes under
+`validation/neqsim/` drive it and `validation/eos/` holds 47 paired cases against it plus
+literature benchmarks. A divergence from NeqSim is a
 finding, never a failure: the oracle is a second opinion, not a source of truth.
 
 ## The order

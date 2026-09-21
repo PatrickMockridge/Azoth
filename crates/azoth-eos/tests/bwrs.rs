@@ -1,4 +1,4 @@
-//! The BWRS (MBWR-32) kernel, checked against NeqSim 3.20.0's `ComponentBWRS`.
+//! The BWRS (MBWR-32) kernel, checked against NeqSim's `ComponentBWRS`.
 
 // The Taylor-series reference construction below is index arithmetic by nature, so the
 // range loops it is written with are the clear form, not a needless index.

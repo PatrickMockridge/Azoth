@@ -8,7 +8,7 @@
 
 **Standard thermodynamics, as in Michelsen & Mollerup**
 
-NeqSim 3.20.0 `thermodynamicoperations/flashops/PVFflash`: its bracket, its widening, its Illinois search and its `computeBeta` are this model's loop.
+NeqSim master `thermodynamicoperations/flashops/PVFflash`: its bracket, its widening, its Illinois search and its `computeBeta` are this model's loop.
 
 
 ## Algorithm

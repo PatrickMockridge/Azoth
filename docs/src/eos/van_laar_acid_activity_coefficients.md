@@ -40,7 +40,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- this is NeqSim's `ComponentGEVanLaarAcid`, the acid-specific Van Laar model of Taleb, Ponche and Mirabel (1996). NeqSim 3.20.0 has no classical fitted-`A12`/`A21` Van Laar.
+- this is NeqSim's `ComponentGEVanLaarAcid`, the acid-specific Van Laar model of Taleb, Ponche and Mirabel (1996). NeqSim has no classical fitted-`A12`/`A21` Van Laar.
 
 - the three species are water, nitric acid and sulfuric acid, in that order, and they are evaluated on their own mole-fraction basis: only those three fractions in `x` enter the ternary expression, so a dissolved carrier gas does not.
 

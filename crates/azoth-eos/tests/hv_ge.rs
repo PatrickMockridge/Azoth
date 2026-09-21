@@ -1,4 +1,4 @@
-//! The Huron-Vidal GE model, checked against NeqSim 3.20.0's GE rules.
+//! The Huron-Vidal GE model, checked against NeqSim's GE rules.
 //!
 //! Three checks, in increasing order of what they can catch: the fixed water/ethanol
 //! matrices against CLASSIC_HV, the same numbers resolved from the databank by name, and

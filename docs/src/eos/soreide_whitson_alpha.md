@@ -18,7 +18,7 @@ alpha = (1 + 0.453*(1 - Tr*(1 - 0.0103*salinity**1.1)) + 0.0034*((1/Tr)**3 - 1))
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermSoreideWhitson`**
+**NeqSim master `AttractiveTermSoreideWhitson`**
 
 `alpha(temperature)`, water branch ported verbatim
 

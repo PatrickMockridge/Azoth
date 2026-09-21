@@ -47,7 +47,7 @@ lean/vendor/lean-units/.lake/
 
 # --- Java (the NeqSim oracle driver, compiled by hand, never committed) ---
 #
-# The 60 MB `neqsim-3.20.0.jar` the drivers compile against is built from the
+# The 60 MB `neqsim-f0c7436.jar` the drivers compile against is built from the
 # checkout at `/tmp/neqsim-check/neqsim` by `./mvnw -q -DskipTests package` and
 # copied beside them; it is a local prerequisite, like the checkout itself.
 *.class

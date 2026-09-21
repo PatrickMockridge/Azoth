@@ -27,8 +27,8 @@ import neqsim.thermo.system.SystemSAFTVRMie;
  * what a caller running the model the same way would get.
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar SaftVrMieProbe.java
- * java -cp .:neqsim-3.20.0.jar SaftVrMieProbe [T_K P_bara name:z ...]
+ * javac -proc:none -cp neqsim-f0c7436.jar SaftVrMieProbe.java
+ * java -cp .:neqsim-f0c7436.jar SaftVrMieProbe [T_K P_bara name:z ...]
  * </pre>
  */
 public final class SaftVrMieProbe {
@@ -131,7 +131,7 @@ public final class SaftVrMieProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("# azoth SaftVrMieProbe - NeqSim 3.20.0's SystemSAFTVRMie (PhaseSAFTVRMie).");
+    System.out.println("# azoth SaftVrMieProbe - NeqSim master's SystemSAFTVRMie (PhaseSAFTVRMie).");
     System.out.println("# The phase reads no interaction parameter, so a mixture runs with");
     System.out.println("# the component sets alone; no k_ij appears in these layers.");
     if (args.length >= 5) {

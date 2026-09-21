@@ -19,7 +19,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TPflash.sucsSubsGammaPhi` is the port source for the update rule.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `SystemEosGE`"
+standard = "NeqSim master `SystemEosGE`"
 edition = "the gamma-phi branch of `TPflash`, `sucsSubsGammaPhi`, whose K update is `phi_i^L / phi_i^V` with `presdiff` one because both phases are at the feed's pressure."
 doi = "10.1016/0378-3812(82)85001-2"
 [algorithm]

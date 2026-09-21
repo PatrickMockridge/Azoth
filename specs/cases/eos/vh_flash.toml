@@ -13,7 +13,7 @@ T = 400.0
 [[cases]]
 id = "two_phase_round_trip"
 tolerance = 1e-03
-source = "The 330 K, 25 bar state `eos.pt_flash`'s own case uses, asked for back from its volume and enthalpy. NeqSim 3.20.0's `VHflashQfunc` reports 23.5 bar and 290 K for this state - validation/neqsim/VhFlashProbe.java - which is why the two schemes are not the same model."
+source = "The 330 K, 25 bar state `eos.pt_flash`'s own case uses, asked for back from its volume and enthalpy. NeqSim master's `VHflashQfunc` reports 23.5 bar and 290 K for this state - validation/neqsim/VhFlashProbe.java - which is why the two schemes are not the same model."
 [cases.inputs]
 components = ["methane", "n-butane"]
 V = 0.0008190137837514

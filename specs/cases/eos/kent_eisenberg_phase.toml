@@ -2,7 +2,7 @@ model = "eos.kent_eisenberg_phase"
 [[cases]]
 id = "brine_at_313_k_and_5_bar"
 tolerance = 1e-08
-source = "NeqSim 3.20.0 `ComponentKentEisenberg.fugcoef`, on a live `SystemKentEisenberg`: validation/neqsim/GeElectrolyteProbe.java. All three branches are exercised - water on the Antoine one, CO2 on the Henry one, and the two ions on the constant. The two ions' `ln_phi` is `ln(1e8)` exactly at every temperature, because that branch reads nothing."
+source = "NeqSim master `ComponentKentEisenberg.fugcoef`, on a live `SystemKentEisenberg`: validation/neqsim/GeElectrolyteProbe.java. All three branches are exercised - water on the Antoine one, CO2 on the Henry one, and the two ions on the constant. The two ions' `ln_phi` is `ln(1e8)` exactly at every temperature, because that branch reads nothing."
 [cases.inputs]
 components = ["water", "Na+", "Cl-", "CO2"]
 T = 313.15

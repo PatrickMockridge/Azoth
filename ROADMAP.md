@@ -1,6 +1,6 @@
 # NeqSim port roadmap
 
-The order in which azoth ports [NeqSim](https://github.com/equinor/neqsim) 3.20.0, from
+The order in which azoth ports [NeqSim](https://github.com/equinor/neqsim), from
 the physics the most callers need to the physics the fewest do. Impact first: a property
 or model that ordinary oil, gas and water work uses is ported before one only a
 specialist reaches for.

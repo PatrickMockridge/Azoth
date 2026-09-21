@@ -5,8 +5,8 @@ latex = '''D_{CO_2,\mathrm{water}}^0 = 3.389\times10^{-6}\,\exp\!\left(-\frac{22
 assumptions = ["the correlation is for CO2 diffusing in water, and carries no solute or solvent argument - NeqSim's `CO2water` method returns the same value whatever pair it is asked for.\n", "the activation temperature `2213.7` and prefactor `0.03389` are NeqSim's, tuned in cm**2/s; the `1e-4` recovers m**2/s.\n"]
 references = ["Versteeg, G. F.; van Swaaij, W. P. M. (1988). \\\"Solubility and diffusivity of acid gases (CO2, N2O) in aqueous alkanolamine solutions.\\\" J. Chem. Eng. Data 33(1), 29-34. DOI 10.1021/je00051a011."]
 [source]
-standard = "NeqSim 3.20.0 `CO2water`"
-edition = "the correlation NeqSim 3.20.0 evaluates in `CO2water.calcBinaryDiffusionCoefficient`, ported verbatim"
+standard = "NeqSim master `CO2water`"
+edition = "the correlation NeqSim master evaluates in `CO2water.calcBinaryDiffusionCoefficient`, ported verbatim"
 doi = "10.1021/je00051a011"
 [inputs]
 [inputs.T]
@@ -24,7 +24,7 @@ severity = "error"
 rationale = "An absolute temperature; zero and below are not states.\n"
 [worked_example]
 source = "derived from the equation above"
-derivation = "CO2 in water at 298.15 K:\n\n  d = 0.03389 * exp(-2213.7 / 298.15) * 1e-4 = 2.0208212539579613e-9 m**2/s\n\nwhich is NeqSim 3.20.0 `CO2water`'s value at the same temperature.\n"
+derivation = "CO2 in water at 298.15 K:\n\n  d = 0.03389 * exp(-2213.7 / 298.15) * 1e-4 = 2.0208212539579613e-9 m**2/s\n\nwhich is NeqSim `CO2water`'s value at the same temperature.\n"
 tolerance = 1e-12
 [worked_example.inputs]
 T = 298.15
@@ -41,7 +41,7 @@ status = "active"
 id = "warmer_water"
 type = "reference"
 status = "active"
-source = "NeqSim 3.20.0 `CO2water.calcBinaryDiffusionCoefficient` at 323.15 K:\n\n  d = 3.5891345129268157e-9 m**2/s.\n"
+source = "NeqSim master `CO2water.calcBinaryDiffusionCoefficient` at 323.15 K:\n\n  d = 3.5891345129268157e-9 m**2/s.\n"
 tolerance = 1e-12
 [tests.inputs]
 T = 323.15

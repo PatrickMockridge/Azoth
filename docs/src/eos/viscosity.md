@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PFCTViscosityMethodHeavyOil`**
+**NeqSim master `PFCTViscosityMethodHeavyOil`**
 
 `calcViscosity` and `getRefComponentViscosity`, ported verbatim
 

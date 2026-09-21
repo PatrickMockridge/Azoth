@@ -12,8 +12,8 @@
 // are *given* needs no reaction solve - which is what the example's commented-out lines do.
 // The rows below are that: CO3-- and HCO3- stated, not solved for.
 //
-//   javac -proc:none -cp neqsim-3.20.0.jar ScaleProbe.java
-//   java -cp .:neqsim-3.20.0.jar ScaleProbe > captures/scale_probe.tsv
+//   javac -proc:none -cp neqsim-f0c7436.jar ScaleProbe.java
+//   java -cp .:neqsim-f0c7436.jar ScaleProbe > captures/scale_probe.tsv
 
 import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.system.SystemInterface;

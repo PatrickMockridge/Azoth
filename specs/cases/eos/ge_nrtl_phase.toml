@@ -2,7 +2,7 @@ model = "eos.ge_nrtl_phase"
 [[cases]]
 id = "methanol_water_equimolar_at_298_15_k_1_bar"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `PhaseGENRTL` via `ComponentGE.fugcoef`, run from validation/neqsim/GeNrtlPhi.java: the liquid phase's own `getFugacityCoefficient`, `getActivityCoefficient` and `getAntoineVaporPressure` at the same state. `p_sat` is the bar figure the driver prints times 1e5."
+source = "NeqSim master `PhaseGENRTL` via `ComponentGE.fugcoef`, run from validation/neqsim/GeNrtlPhi.java: the liquid phase's own `getFugacityCoefficient`, `getActivityCoefficient` and `getAntoineVaporPressure` at the same state. `p_sat` is the bar figure the driver prints times 1e5."
 [cases.inputs]
 components = ["methanol", "water"]
 T = 298.15
@@ -16,7 +16,7 @@ p_sat = [16940.747558344778, 3178.7528699883305]
 [[cases]]
 id = "ethanol_water_equimolar_at_350_k_1_bar"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `PhaseGENRTL` via `ComponentGE.fugcoef`, run from validation/neqsim/GeNrtlPhi.java. The second state, and the one that makes the Antoine half do work: methanol/water's saturation pressures are both far below the total pressure, so `ln_phi` there is dominated by `P0/P`, and here the two components' `P0` differ by a factor of two and are comparable to `P`."
+source = "NeqSim master `PhaseGENRTL` via `ComponentGE.fugcoef`, run from validation/neqsim/GeNrtlPhi.java. The second state, and the one that makes the Antoine half do work: methanol/water's saturation pressures are both far below the total pressure, so `ln_phi` there is dominated by `P0/P`, and here the two components' `P0` differ by a factor of two and are comparable to `P`."
 [cases.inputs]
 components = ["ethanol", "water"]
 T = 350.0

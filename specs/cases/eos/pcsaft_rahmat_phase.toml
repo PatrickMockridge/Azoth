@@ -2,7 +2,7 @@ model = "eos.pcsaft_rahmat_phase"
 [[cases]]
 id = "methane_butane_vapour_against_neqsim"
 tolerance = 1e-09
-source = """NeqSim 3.20.0, `SystemPCSAFT` - which builds `PhasePCSAFTRahmat`, the class 3.20.0 runs and the only non-associating PC-SAFT it has - run from `validation/neqsim/PcsaftProbe.java`: `java -cp .:neqsim-3.20.0.jar PcsaftProbe 350 30 methane 0.6 n-butane 0.4`. The probe's `volumeSAFT`, `Z` and `lnPhi` agree with the model at **2.3e-11**, **2.4e-10**, **2.0e-9** and **1.2e-9** relative, and its `d`, `md3`, `m_bar`, `S1`, `S2`, `I1`, `I2`, `C1` and three Helmholtz terms reproduce layer by layer in `crates/azoth-eos/tests/pcsaft.rs`.
+source = """NeqSim master, `SystemPCSAFT` - which builds `PhasePCSAFTRahmat`, the class 3.20.0 runs and the only non-associating PC-SAFT it has - run from `validation/neqsim/PcsaftProbe.java`: `java -cp .:neqsim-f0c7436.jar PcsaftProbe 350 30 methane 0.6 n-butane 0.4`. The probe's `volumeSAFT`, `Z` and `lnPhi` agree with the model at **2.3e-11**, **2.4e-10**, **2.0e-9** and **1.2e-9** relative, and its `d`, `md3`, `m_bar`, `S1`, `S2`, `I1`, `I2`, `C1` and three Helmholtz terms reproduce layer by layer in `crates/azoth-eos/tests/pcsaft.rs`.
 
 **The state is a mixture on purpose.** Methane alone has `m = 1`, so `m_bar - 1` is zero and the chain term, `m_bar`'s derivatives and the whole `k_ij` column vanish: a pure-fluid case would pass with any of them wrong. This pair has `k_ij = 0.022` in the `KIJPCSAFT` column, which no shipped model read before this one.
 

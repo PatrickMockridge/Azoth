@@ -96,7 +96,7 @@ Propane-like, omega = 0.152: 1.574 * omega = 1.574 * 0.152 = 0.239248 omega**2 =
 ## References
 
 - Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991). \"A Cubic Equation of State with a New Alpha Function and a New Mixing Rule.\" Fluid Phase Equilibria 69, 33-50. DOI 10.1016/0378-3812(91)90024-2.
-- NeqSim 3.20.0, `neqsim.thermo.component.attractiveeosterm.AttractiveTermTwu`.
+- NeqSim master, `neqsim.thermo.component.attractiveeosterm.AttractiveTermTwu`.
 
 
 ---

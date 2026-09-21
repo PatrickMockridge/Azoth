@@ -8,7 +8,7 @@
 
 **Standard thermodynamics, as in Michelsen & Mollerup**
 
-NeqSim 3.20.0 `thermodynamicoperations/flashops/PVrefluxflash`: its residual, its secant, its ramped damping, its two-kelvin step cap and its first-iteration probe are this model's loop.
+NeqSim master `thermodynamicoperations/flashops/PVrefluxflash`: its residual, its secant, its ramped damping, its two-kelvin step cap and its first-iteration probe are this model's loop.
 
 
 ## Algorithm

@@ -34,7 +34,7 @@ severity = "error"
 rationale = "An absolute temperature; zero and below are not states.\n"
 [worked_example]
 source = "derived from the equation above"
-derivation = "methanol in benzene (paraffin) at 298.15 K: VA = 40.2033 cm**3/mol, eta = 0.91631 cP:\n\n  VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol (no clamp, within [20, 500])\n  eta = 9.163064908813372e-4 Pa*s -> 0.91631 cP\n  exponent = 10.2 / 40.2033 - 0.791 = -0.53728\n  D = 13.3e-8 * 298.15**1.47 * 0.91631**-0.53728 / 40.2033**0.71 = 4.391778089044218e-5 cm**2/s\n  D = 4.391778089044218e-9 m**2/s\n\nwhich is NeqSim 3.20.0 `HaydukMinhasDiffusivity`'s value at the same state.\n"
+derivation = "methanol in benzene (paraffin) at 298.15 K: VA = 40.2033 cm**3/mol, eta = 0.91631 cP:\n\n  VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol (no clamp, within [20, 500])\n  eta = 9.163064908813372e-4 Pa*s -> 0.91631 cP\n  exponent = 10.2 / 40.2033 - 0.791 = -0.53728\n  D = 13.3e-8 * 298.15**1.47 * 0.91631**-0.53728 / 40.2033**0.71 = 4.391778089044218e-5 cm**2/s\n  D = 4.391778089044218e-9 m**2/s\n\nwhich is NeqSim `HaydukMinhasDiffusivity`'s value at the same state.\n"
 tolerance = 1e-12
 [worked_example.inputs]
 form = "paraffin"
@@ -54,7 +54,7 @@ status = "active"
 id = "methanol_in_water_aqueous"
 type = "reference"
 status = "active"
-source = "NeqSim 3.20.0 `HaydukMinhasDiffusivity.calcBinaryDiffusionCoefficient` (aqueous) for methanol in water at 298.15 K:\n\n  d = 1.6252933415200594e-9 m**2/s.\n"
+source = "NeqSim master `HaydukMinhasDiffusivity.calcBinaryDiffusionCoefficient` (aqueous) for methanol in water at 298.15 K:\n\n  d = 1.6252933415200594e-9 m**2/s.\n"
 tolerance = 1e-12
 [tests.inputs]
 form = "aqueous"

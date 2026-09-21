@@ -26,7 +26,7 @@ p_sat = { dippr101: exp(A + B/T + C*ln(T) + D*T**E); pow10: 1e5*10**(A - B/(T + 
 
 **NeqSim's `getAntoineVaporPressure`**
 
-the four correlations NeqSim 3.20.0 evaluates in `thermo/component/Component.java`, ported verbatim
+the four correlations NeqSim master evaluates in `thermo/component/Component.java`, ported verbatim
 
 ## Inputs
 

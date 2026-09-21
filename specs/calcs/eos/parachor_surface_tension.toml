@@ -5,7 +5,7 @@ latex = '''\sigma = 10^{-3}\,\left[P\,10^{-6}\left(\frac{\rho_L}{M} - \frac{\rho
 assumptions = ["the parachor parameter is in (mN/m)**(1/4) * cm**3/mol, the mixed unit NeqSim stores in `PARACHOR`; it is declared dimensionless because no vocabulary unit expresses a fractional power of a non-SI unit.\n", "a pure component: the two densities are the liquid and vapour of one substance at the interface state, so the mole fractions divide out.\n", "the correlation is the Macleod-Sugden estimate, good to a few percent; it is not the parachor's de-rating for a mixture, which NeqSim's `calcSurfaceTension` adds as a per-component sum.\n"]
 references = ["Macleod, D. B. (1923). \"On a relation between surface tension and density.\" Trans. Faraday Soc. 19, 38-41. DOI 10.1039/TF9231900038."]
 [source]
-standard = "NeqSim 3.20.0 `ParachorSurfaceTension`"
+standard = "NeqSim master `ParachorSurfaceTension`"
 edition = "`calcPureComponentSurfaceTension`, ported verbatim: `1e-3 * pow(parachor*1e-6 * (rho_l/M - rho_v/M), 4)`"
 doi = "10.1039/TF9231900038"
 [inputs]

@@ -2,7 +2,7 @@
   "id": "methane_chung_conductivity_against_neqsim",
   "calc": "eos.chung_conductivity",
   "source": {
-    "attribution": "NeqSim 3.20.0, `ChungConductivityMethod.calcPureComponentConductivity` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, `ChungConductivityMethod.calcPureComponentConductivity` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "NeqSim's pure-component Chung thermal conductivity for methane at 300 K. The `Cv0` is NeqSim's `getCv0(300)` (its ideal-gas `Cp0` minus its gas constant `8.3144621`), and the correlation's gas constant is that value, not the exact SI one."
   },

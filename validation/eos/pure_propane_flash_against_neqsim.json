@@ -2,7 +2,7 @@
   "id": "pure_propane_flash_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "Same jar and same driver as methane_butane_flash_against_neqsim. This case is a pure component below its dew point, which exercises the branch the other one does not: NeqSim reports a vapour fraction of 1.0 here and azoth reports none at all. Read the derivation before treating that as a disagreement."
   },

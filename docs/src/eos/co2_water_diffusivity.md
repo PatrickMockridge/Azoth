@@ -18,9 +18,9 @@ d = 0.03389 * exp(-2213.7/T) * 1e-4,  with T in K; the 1e-4 recovers m**2/s from
 
 ## Source
 
-**NeqSim 3.20.0 `CO2water`**
+**NeqSim master `CO2water`**
 
-the correlation NeqSim 3.20.0 evaluates in `CO2water.calcBinaryDiffusionCoefficient`, ported verbatim
+the correlation NeqSim master evaluates in `CO2water.calcBinaryDiffusionCoefficient`, ported verbatim
 
 DOI: [10.1021/je00051a011](https://doi.org/10.1021/je00051a011)
 
@@ -72,7 +72,7 @@ Source: derived from the equation above
 
 Relative tolerance: `1e-12`
 
-CO2 in water at 298.15 K: d = 0.03389 * exp(-2213.7 / 298.15) * 1e-4 = 2.0208212539579613e-9 m**2/s which is NeqSim 3.20.0 `CO2water`'s value at the same temperature.
+CO2 in water at 298.15 K: d = 0.03389 * exp(-2213.7 / 298.15) * 1e-4 = 2.0208212539579613e-9 m**2/s which is NeqSim `CO2water`'s value at the same temperature.
 
 
 ## Tests

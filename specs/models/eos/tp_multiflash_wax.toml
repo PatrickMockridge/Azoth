@@ -18,7 +18,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TPmultiflashWAX` and `ComponentWax.fugcoef2` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `TPmultiflashWAX`"
+standard = "NeqSim master `TPmultiflashWAX`"
 edition = "The `Pedersen` component model (`ComponentWax`), which is `PhaseWax`'s default. The Won, Wilson and Coutinho models are that class's other three and are carried."
 [algorithm]
 scheme = "multiphase_fraction_newton"

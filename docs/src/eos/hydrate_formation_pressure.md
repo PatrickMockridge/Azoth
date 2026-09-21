@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `HydrateFormationPressureFlash`**
+**NeqSim master `HydrateFormationPressureFlash`**
 
 The path that runs when the system is not a `SystemPitzer`: NeqSim dispatches `PitzerHydrateFlash` for that one, and its coupling to the electrolyte models is carried rather than ported.
 

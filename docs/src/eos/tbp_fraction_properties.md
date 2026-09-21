@@ -26,7 +26,7 @@ Pedersen's TBP correlations: mw = molar_mass*1000 (g/mol), d = density/1000 (g/c
 
 ## Source
 
-**NeqSim 3.20.0 `TBPfractionModel.PedersenTBPModelSRK`**
+**NeqSim master `TBPfractionModel.PedersenTBPModelSRK`**
 
 `calcTC`, `calcPC`, `calcTB`, `calcm` and the base class's `calcAcentricFactor`, as `addTBPfraction` composes them.
 
@@ -77,7 +77,7 @@ satisfy for the result to mean what it says.
 
 ## Worked example
 
-Source: NeqSim 3.20.0, `TBPfractionModel.PedersenTBPModelSRK`, from `validation/neqsim/captures/tbp_fraction_probe.tsv` cut[4]
+Source: NeqSim master, `TBPfractionModel.PedersenTBPModelSRK`, from `validation/neqsim/captures/tbp_fraction_probe.tsv` cut[4]
 
 | Input | Value |
 |---|---|

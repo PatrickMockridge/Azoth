@@ -1,7 +1,7 @@
 // The states where `setMultiPhaseCheck(true)` changes a cubic flash, in full.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar TpMultiFlashCases.java
-//     java -cp .:neqsim-3.20.0.jar TpMultiFlashCases
+//     javac -proc:none -cp neqsim-f0c7436.jar TpMultiFlashCases.java
+//     java -cp .:neqsim-f0c7436.jar TpMultiFlashCases
 //
 // `TpMultiFlashSweep.java` grids 16 mixtures over 207 states each and finds the flag changes
 // the answer at exactly three kinds of place:

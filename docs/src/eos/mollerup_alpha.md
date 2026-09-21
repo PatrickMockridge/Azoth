@@ -18,7 +18,7 @@ alpha = 1 + p1*(1/Tr - 1) + p2*Tr*ln(Tr) + p3*(Tr - 1)
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermMollerup`**
+**NeqSim master `AttractiveTermMollerup`**
 
 `alpha(temperature)`, ported verbatim
 

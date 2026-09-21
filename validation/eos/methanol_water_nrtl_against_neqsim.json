@@ -2,7 +2,7 @@
   "id": "methanol_water_nrtl_against_neqsim",
   "calc": "eos.nrtl_activity_coefficients",
   "source": {
-    "attribution": "NeqSim 3.20.0, `ComponentGeNRTL.getGamma` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, `ComponentGeNRTL.getGamma` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "NeqSim's NRTL activity coefficients for methanol/water 0.5/0.5 at 298.15 K, 1 bar - a state where the flash is all liquid, so the liquid composition is the feed. NRTLALPHA/NRTLGIJ/NRTLGJI are the INTER.csv values azoth's databank carries as nrtlalpha/nrtlgij/nrtlgji."
   },

@@ -2,7 +2,7 @@
   "id": "propane_enthalpy_entropy_against_neqsim",
   "calc": "eos.molar_enthalpy_entropy",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos.getEnthalpy/getEntropy - run from the `enthalpy` method of validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos.getEnthalpy/getEntropy - run from the `enthalpy` method of validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "The reference-state convention is NeqSim's own: the ideal-gas enthalpy is the integral of the Cp polynomial from the fixed `referenceTemperature` of 273.15 K with the formation enthalpy multiplied by zero, and the entropy is the same integral of Cp/T less `R ln(P/referencePressure)`. This case exists to hold azoth's `molar_enthalpy_entropy` to that convention, not just to the databank's Cp coefficients."
   },

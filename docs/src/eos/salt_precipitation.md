@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `MultiSaltPrecipitation`**
+**NeqSim master `MultiSaltPrecipitation`**
 
 `precipitateScales` in `ThermodynamicOperations`. The continuation entry `equilibrateScales`, which carries a previous solid ledger, is not taken.
 

@@ -18,7 +18,7 @@ alpha = (1 + mc1*u + mc2*u**2 + mc3*u**3 + mc4*u**4 + mc5*u**5)**2 with u = 1 - 
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermMatCop5PRUMR`**
+**NeqSim master `AttractiveTermMatCop5PRUMR`**
 
 `alpha(temperature)`, ported verbatim
 

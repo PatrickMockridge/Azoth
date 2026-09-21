@@ -8,7 +8,7 @@
 
 **Standard thermodynamics, as in Michelsen & Mollerup**
 
-NeqSim 3.20.0 `thermodynamicoperations/flashops/OptimizedVUflash`, ported line for line: its `calcdQdP`, `calcdQdT`, `calcdQdPP`, `calcdQdTT` and its damped clamped step are these lines.
+NeqSim master `thermodynamicoperations/flashops/OptimizedVUflash`, ported line for line: its `calcdQdP`, `calcdQdT`, `calcdQdPP`, `calcdQdTT` and its damped clamped step are these lines.
 
 
 ## Algorithm

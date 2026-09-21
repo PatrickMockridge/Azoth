@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PhasePitzer`**
+**NeqSim master `PhasePitzer`**
 
 `ComponentGePitzer.getGamma`, `getWaterGamma` and `getPitzerOsmoticCoefficient`, ported verbatim; the catalogue is the USGS PHREEQC file NeqSim bundles, at the commit its dataset id carries.
 

@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PhaseKentEisenberg`**
+**NeqSim master `PhaseKentEisenberg`**
 
 `ComponentKentEisenberg.fugcoef`, ported verbatim. The activity coefficient is `PhaseKentEisenberg.getActivityCoefficient`'s override, which is the constant one.
 

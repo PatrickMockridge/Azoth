@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `FreezingPointTemperatureFlash`**
+**NeqSim master `FreezingPointTemperatureFlash`**
 
 The route that requires a `PhaseSolidHelmholtzEos`, with the reference the phase is on: the flash's own test is the oracle, and its two other routes - a tabulated solid, and the legacy variants - are carried rather than ported.
 

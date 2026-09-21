@@ -1,7 +1,7 @@
 // What `PhaseGEUnifac` reports for a liquid, for `eos.ge_unifac_phase`.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar GeUnifacPhi.java
-//     java -cp .:neqsim-3.20.0.jar GeUnifacPhi
+//     javac -proc:none -cp neqsim-f0c7436.jar GeUnifacPhi.java
+//     java -cp .:neqsim-f0c7436.jar GeUnifacPhi
 //
 // The phase's fugacity coefficient is `gamma_i * P0_i / P`, the same composition
 // `GeNrtlPhi.java` prints for the NRTL phase - see `ComponentGE.fugcoef` - so this is the

@@ -7,7 +7,7 @@ exposed *because* nothing yet reaches it from Python - the model that will is
 kernels are held together the way every other port here is: both are pinned to the same
 external oracle's numbers, printed by `validation/neqsim/CpaSweep.java`.
 
-    java -cp .:neqsim-3.20.0.jar CpaSweep 300 100 0.6
+    java -cp .:neqsim-f0c7436.jar CpaSweep 300 100 0.6
 
 That is a weaker arrangement than comparing the two implementations, and deliberately so
 rather than accidentally: what it cannot catch is a mistake the Rust kernel and NeqSim

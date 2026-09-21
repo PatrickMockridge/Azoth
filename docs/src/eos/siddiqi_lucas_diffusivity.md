@@ -86,7 +86,7 @@ Source: derived from the equation above
 
 Relative tolerance: `1e-12`
 
-methanol in benzene (organic) at 298.15 K: VA = 40.2033 cm**3/mol, VB = 88.1648 cm**3/mol, eta = 0.91631 cP: VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol VB = 8.816478555304741e-5 m**3/mol -> 88.1648 cm**3/mol eta = 9.163064908813372e-4 Pa*s -> 0.91631 cP D = 9.89e-8 * 0.91631**-0.907 * 40.2033**-0.45 * 88.1648**0.265 * 298.15 = 1.984475615508378e-5 cm**2/s D = 1.984475615508378e-9 m**2/s which is NeqSim 3.20.0 `SiddiqiLucasMethod`'s value at the same state.
+methanol in benzene (organic) at 298.15 K: VA = 40.2033 cm**3/mol, VB = 88.1648 cm**3/mol, eta = 0.91631 cP: VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol VB = 8.816478555304741e-5 m**3/mol -> 88.1648 cm**3/mol eta = 9.163064908813372e-4 Pa*s -> 0.91631 cP D = 9.89e-8 * 0.91631**-0.907 * 40.2033**-0.45 * 88.1648**0.265 * 298.15 = 1.984475615508378e-5 cm**2/s D = 1.984475615508378e-9 m**2/s which is NeqSim `SiddiqiLucasMethod`'s value at the same state.
 
 
 ## Tests

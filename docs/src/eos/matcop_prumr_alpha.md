@@ -18,7 +18,7 @@ alpha = (1 + mc1*(1 - sqrt(Tr)) + mc2*(1 - sqrt(Tr))**2 + mc3*(1 - sqrt(Tr))**3)
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermMatCopPRUMR`**
+**NeqSim master `AttractiveTermMatCopPRUMR`**
 
 `alpha(temperature)`, ported verbatim
 

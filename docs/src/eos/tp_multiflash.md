@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `TPmultiflash`**
+**NeqSim master `TPmultiflash`**
 
 `solveBeta`/`calcQ` for the fraction solve, `stabilityAnalysis` for the seeding, both ported; the merge rules are ported from `run()`'s removal loop except the density branch, which the assumptions name.
 

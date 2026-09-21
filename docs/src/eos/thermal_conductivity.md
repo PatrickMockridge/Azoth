@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PFCTConductivityMethodMod86`**
+**NeqSim master `PFCTConductivityMethodMod86`**
 
 `calcConductivity` and `getRefComponentConductivity`, ported verbatim
 

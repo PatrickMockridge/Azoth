@@ -17,7 +17,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhaseGEUnifac` and `ComponentGE.fugcoef` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `PhaseGEUnifac`"
+standard = "NeqSim master `PhaseGEUnifac`"
 edition = "`ComponentGE.fugcoef`, ported verbatim; the activity coefficient is `eos.unifac_activity_coefficients`'s, ported from `ComponentGEUnifac`."
 doi = "10.1021/ie00058a017"
 [inputs]

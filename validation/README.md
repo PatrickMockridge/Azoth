@@ -49,7 +49,7 @@ components and the runner resolves them through the databank.
 
 ## NeqSim is the ground truth, and `neqsim/` is how to reach it
 
-This library is a port of NeqSim 3.20.0. Where a published source and NeqSim
+This library is a port of NeqSim. Where a published source and NeqSim
 disagree about what a calculation does, NeqSim is what azoth is trying to be, so a
 disagreement with NeqSim is the more interesting failure.
 

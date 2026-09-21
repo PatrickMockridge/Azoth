@@ -20,7 +20,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `SolidFlash`, `Flash.solidPhaseFlash` and `ComponentSolid.fugcoef2` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `SolidFlash`"
+standard = "NeqSim master `SolidFlash`"
 edition = "The tabulated `ComponentSolid` route: `ComponentSolid.fugcoef2` over the component's own `HEATOFFUSION`, `TRIPLEPOINTTEMPERATURE`, `CPsolid`, `CPliquid`, `SOLIDDENSITYCOEFS` and `LIQUIDDENSITYCOEFS` columns. The Helmholtz solid routes and `SolidFlash12` are carried."
 [algorithm]
 scheme = "solid_fraction_newton"

@@ -1,7 +1,7 @@
 // The Pitzer intermediates, printed one at a time so each can be ported and checked.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar PitzerArithmetic.java
-//     java -cp .:neqsim-3.20.0.jar PitzerArithmetic
+//     javac -proc:none -cp neqsim-f0c7436.jar PitzerArithmetic.java
+//     java -cp .:neqsim-f0c7436.jar PitzerArithmetic
 //
 // `ComponentGePitzer`'s arithmetic is large and mostly private, and a phase-level
 // comparison says only that the whole of it agrees or does not. This prints the pieces:

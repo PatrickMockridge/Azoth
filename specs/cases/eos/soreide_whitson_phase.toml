@@ -2,7 +2,7 @@ model = "eos.soreide_whitson_phase"
 [[cases]]
 id = "the_shipped_tests_gas_at_318_k"
 tolerance = 1e-08
-source = """NeqSim 3.20.0's own `SoreideWhitsonSystemTest` mixture - nitrogen, CO2, methane, ethane,
+source = """NeqSim master's own `SoreideWhitsonSystemTest` mixture - nitrogen, CO2, methane, ethane,
 water at `0.1 0.2 0.3 0.3 0.1` - flashed at 45 C and 40 bara, from
 `validation/neqsim/SoreideWhitsonArithmetic.java`: `Z = 0.870487529540554` and
 `lnPhi = [0.0471688081401, -0.154317433458, -0.0560489328823, -0.250178013049, -0.173340993361]`.
@@ -68,7 +68,7 @@ ln_phi = [7.87077912257, 4.51720999562, 7.81676630214, 7.60034898607, -6.0321161
 [[cases]]
 id = "a_condensate_at_333_k"
 tolerance = 1e-08
-source = """NeqSim 3.20.0, the same probe's third mixture - CO2, methane, n-butane, n-heptane,
+source = """NeqSim master, the same probe's third mixture - CO2, methane, n-butane, n-heptane,
 water at `0.15 0.4 0.15 0.1 0.2`, flashed at 60 C and 100 bara - at its flashed vapour
 composition. **The expected values are this library's, and NeqSim's differ**: it gives
 `Z = 0.769862281664881` and `lnPhi = [-0.345400985060, -0.0888646269367, -1.27926109832,

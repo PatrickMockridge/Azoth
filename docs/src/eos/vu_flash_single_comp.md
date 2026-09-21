@@ -8,7 +8,7 @@
 
 **Standard thermodynamics, as in Michelsen & Mollerup**
 
-NeqSim 3.20.0 `thermodynamicoperations/flashops/VUflashSingleComp`: the saturation temperature at the pressure, then `beta = (U - u_liq)/(u_gas - u_liq)` on the two saturated internal energies.
+NeqSim master `thermodynamicoperations/flashops/VUflashSingleComp`: the saturation temperature at the pressure, then `beta = (U - u_liq)/(u_gas - u_liq)` on the two saturated internal energies.
 
 DOI: [10.1016/S0378-3812(01)00701-1](https://doi.org/10.1016/S0378-3812(01)00701-1)
 

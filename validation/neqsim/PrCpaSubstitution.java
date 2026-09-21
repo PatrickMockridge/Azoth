@@ -46,8 +46,8 @@ import neqsim.thermo.system.SystemPrEos;
  * `Z`. NeqSim's class is a third thing: SRK constants, an SRK-CPA fit and a PR cubic.
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar PrCpaSubstitution.java
- * java -cp .:neqsim-3.20.0.jar PrCpaSubstitution
+ * javac -proc:none -cp neqsim-f0c7436.jar PrCpaSubstitution.java
+ * java -cp .:neqsim-f0c7436.jar PrCpaSubstitution
  * </pre>
  */
 public final class PrCpaSubstitution {
@@ -80,7 +80,7 @@ public final class PrCpaSubstitution {
 
   public static void main(String[] args) {
     System.out.println("# azoth PrCpaSubstitution - which fitted set PhasePrCPA carries.");
-    System.out.println("# NeqSim 3.20.0. `a`/`b` are in the class's own internal scale.");
+    System.out.println("# NeqSim master. `a`/`b` are in the class's own internal scale.");
     for (double[] state : new double[][] {{350.0, 30.0}, {250.0, 30.0}}) {
       SystemInterface pr = new SystemPrEos(state[0], state[1]);
       pr.addComponent("methane", 0.6);

@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `TPHydrateFlash`, with the composition and the bound corrected**
+**NeqSim master `TPHydrateFlash`, with the composition and the bound corrected**
 
 The same quantity from a solve that closes: the fraction on the fugacity equality with the hydrate's composition taken from both cavities, and the material balance asserted at the answer rather than left to the caller.
 

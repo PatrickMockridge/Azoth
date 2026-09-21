@@ -2,7 +2,7 @@
   "id": "methane_butane_flash_danesh_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos with AttractiveTermPrDanesh - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos with AttractiveTermPrDanesh - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "Danesh's correlation is Soave's form with `m` scaled by 1.21 above the critical temperature, so a component above its critical temperature (methane at 330 K) attracts more than the plain correlation. azoth's `psi_t` follows the true second derivative with the scaled `m`, where NeqSim's `diffdiffalphaT` mixes the scaled and unscaled `m`; heat-capacity departures therefore diverge for this term."
   },

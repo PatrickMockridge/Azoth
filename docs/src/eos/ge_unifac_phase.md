@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PhaseGEUnifac`**
+**NeqSim master `PhaseGEUnifac`**
 
 `ComponentGE.fugcoef`, ported verbatim; the activity coefficient is `eos.unifac_activity_coefficients`'s, ported from `ComponentGEUnifac`.
 

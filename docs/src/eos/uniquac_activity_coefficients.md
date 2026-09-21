@@ -62,5 +62,5 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 ## References
 
 - Abrams, D. S.; Prausnitz, J. M. (1975). "Statistical thermodynamics of liquid mixtures: A new expression for the excess Gibbs energy of partly or completely miscible systems." AIChE Journal 21(1), 116-128.
-- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEUniquac`, the port source; NeqSim 3.20.0's UNIQUAC is non-functional and upstream `c5ec5fb` now rejects it outright, so there is no differential oracle.
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEUniquac`, the port source; NeqSim master's UNIQUAC is non-functional and upstream `c5ec5fb` now rejects it outright, so there is no differential oracle.
 

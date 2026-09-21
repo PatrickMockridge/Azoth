@@ -2,7 +2,7 @@
   "id": "methane_butane_flash_twucoon_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemSrkEos with AttractiveTermTwuCoon - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemSrkEos with AttractiveTermTwuCoon - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "The first non-Soave alpha term. Twu-Coon's alpha is a power-exponential form with the acentric factor as m, and it differs from Soave's on this mixture by 3e-3 in the vapour fraction - which is the point of a non-Soave correlation, and what this case pins."
   },

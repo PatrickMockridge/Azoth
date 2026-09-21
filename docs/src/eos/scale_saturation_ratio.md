@@ -26,7 +26,7 @@ with Ksp's five coefficients and `Vdelta` from NeqSim's `compsalt` row for the s
 
 ## Source
 
-**NeqSim 3.20.0 `CheckScalePotential`**
+**NeqSim master `CheckScalePotential`**
 
 One row of its `compsalt` walk, which is the whole of what the operation computes per salt.
 
@@ -84,7 +84,7 @@ satisfy for the result to mean what it says.
 
 ## Worked example
 
-Source: NeqSim 3.20.0, `CheckScalePotential`, from `validation/neqsim/captures/scale_probe.tsv`
+Source: NeqSim master, `CheckScalePotential`, from `validation/neqsim/captures/scale_probe.tsv`
 
 | Input | Value |
 |---|---|

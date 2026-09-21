@@ -1,4 +1,4 @@
-//! `eos.capillary_dew_point` against NeqSim 3.20.0's own in-pore dew point.
+//! `eos.capillary_dew_point` against NeqSim's own in-pore dew point.
 //!
 //! The expected values are NeqSim's, printed by `validation/neqsim/CapillaryDew.java`. The
 //! oracle gates nothing - a divergence is a finding - so the assertions say what a divergence

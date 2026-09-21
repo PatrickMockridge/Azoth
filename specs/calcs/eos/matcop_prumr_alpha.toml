@@ -5,7 +5,7 @@ latex = '''\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & c_1 < 1
 assumptions = ["the three Mathias-Copeman coefficients are the caller's fitted parameters, not derived.\n", "when the first coefficient is below 1e-20 the alpha falls back to the standard Peng-Robinson form; unlike `matcop_pr_alpha`, the supercritical fallback is disabled (``useStandardAlphaForSupercritical = false`` in NeqSim).\n", "the fallback ``m`` is the UMR-PR kappa, a fourth-order fit in the acentric factor.\n"]
 references = ["Mathias, P. M.; Copeman, T. W. (1983). \"Extension of the Peng-Robinson equation of state to complex mixtures: evaluation of the various forms of the local composition concept.\" Fluid Phase Equilib. 13, 91-108. DOI 10.1016/0378-3812(83)80084-3."]
 [source]
-standard = "NeqSim 3.20.0 `AttractiveTermMatCopPRUMR`"
+standard = "NeqSim master `AttractiveTermMatCopPRUMR`"
 edition = "`alpha(temperature)`, ported verbatim"
 doi = "10.1016/0378-3812(83)80084-3"
 [inputs]

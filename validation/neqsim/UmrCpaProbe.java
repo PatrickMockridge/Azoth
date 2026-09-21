@@ -38,8 +38,8 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * NeqSim carries volume in {@code m^3/mol * 1e5}, the same scale {@code a} and {@code b} use.
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar UmrCpaProbe.java
- * java -cp .:neqsim-3.20.0.jar UmrCpaProbe [T_K P_bara name:z ...]
+ * javac -proc:none -cp neqsim-f0c7436.jar UmrCpaProbe.java
+ * java -cp .:neqsim-f0c7436.jar UmrCpaProbe [T_K P_bara name:z ...]
  * </pre>
  */
 public final class UmrCpaProbe {
@@ -154,7 +154,7 @@ public final class UmrCpaProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("# azoth UmrCpaProbe - NeqSim 3.20.0's SystemUMRCPAEoS (PhaseUMRCPA).");
+    System.out.println("# azoth UmrCpaProbe - NeqSim master's SystemUMRCPAEoS (PhaseUMRCPA).");
     System.out.println("# The mixing rule is the lifecycle test's: HV with UNIFAC_UMRPRU.");
     if (args.length >= 4) {
       double t = Double.parseDouble(args[0]);

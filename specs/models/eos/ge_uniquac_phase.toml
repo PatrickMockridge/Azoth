@@ -18,7 +18,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhaseGEUniquac` and `ComponentGE.fugcoef` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `PhaseGEUniquac`"
+standard = "NeqSim master `PhaseGEUniquac`"
 edition = "`ComponentGE.fugcoef`, ported verbatim; the activity coefficient is `eos.uniquac_activity_coefficients`'. Upstream commit `c5ec5fb` (PR #3774) rejects standalone UNIQUAC outright, so there is no upstream `gamma` and the phase's composition is checked by construction rather than against an oracle."
 doi = "10.1002/aic.690210115"
 [inputs]

@@ -8,7 +8,7 @@
 //! twice would invite the two copies to disagree.
 //!
 //! The iteration is upstream's `solveQ`: `thermodynamicoperations/flashops/PSFlash.java`
-//! and `PHflash.java`, NeqSim 3.20.0, both running it for `type == 0` - which is every
+//! and `PHflash.java`, NeqSim, both running it for `type == 0` - which is every
 //! default caller. It is a quasi-Newton in the temperature - entropy in `T`, enthalpy in
 //! `1/T` - damped by a factor that halves whenever the residual grows, and it is not
 //! fatal when a trial temperature cannot be evaluated.
@@ -1154,7 +1154,7 @@ pub fn solve_pressure_temperature(
                  energy residual falling below its own convergence criterion, so the \
                  pressure and temperature are the last iterate rather than a converged \
                  state. They satisfy the volume and internal energy asked for to \
-                 {:.1e} and {:.1e} relative, which is the acceptance NeqSim 3.20.0 \
+                 {:.1e} and {:.1e} relative, which is the acceptance NeqSim \
                  applies and is looser than the iteration's.",
                 vol_err, h_err
             ),

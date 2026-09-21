@@ -13,8 +13,8 @@ import neqsim.thermo.system.SystemPCSAFT;
  * to it from a neighbouring one.
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar PcsaftVolumeProbe.java
- * java -cp .:neqsim-3.20.0.jar PcsaftVolumeProbe [T_K P_bara name:z ...]
+ * javac -proc:none -cp neqsim-f0c7436.jar PcsaftVolumeProbe.java
+ * java -cp .:neqsim-f0c7436.jar PcsaftVolumeProbe [T_K P_bara name:z ...]
  * </pre>
  */
 public final class PcsaftVolumeProbe {
@@ -61,7 +61,7 @@ public final class PcsaftVolumeProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("# azoth PcsaftVolumeProbe - NeqSim 3.20.0's SystemPCSAFT volume solve.");
+    System.out.println("# azoth PcsaftVolumeProbe - NeqSim master's SystemPCSAFT volume solve.");
     if (args.length >= 5) {
       double t = Double.parseDouble(args[0]);
       double p = Double.parseDouble(args[1]);

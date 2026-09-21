@@ -62,7 +62,7 @@ lean-units
 NeqSim
 --------
   Project:   NeqSim - https://github.com/equinor/neqsim
-  Version:   3.20.0 (commit {VENDORED})
+  Version:   master (commit {VENDORED})
 """
     assert manifest_tool().neqsim_citations(text) == [VENDORED]
 
@@ -81,7 +81,7 @@ databank/sources/    upstream files, whole, at a named revision    EXISTS
 data/components/     the files both languages read                 EXISTS
 
 `manifest.toml` records the NeqSim commit it was last checked against
-(`{VENDORED}`, v3.20.0), and nothing here can tell you a newer NeqSim exists.
+(`{VENDORED}`, master), and nothing here can tell you a newer NeqSim exists.
 """
     assert manifest_tool().neqsim_citations(text) == [VENDORED]
 
@@ -101,7 +101,7 @@ def test_a_spec_citing_another_revision_is_reported(tmp_path: Path) -> None:
     spec = tmp_path / "specs" / "models" / "eos"
     spec.mkdir(parents=True)
     (spec / "water_phase.toml").write_text(
-        f'references = ["NeqSim 3.20.0, `Iapws_if97.java`, Apache-2.0, commit {STALE}."]\n',
+        f'references = ["NeqSim, `Iapws_if97.java`, Apache-2.0, commit {STALE}."]\n',
         encoding="utf-8",
     )
 
@@ -113,7 +113,7 @@ def test_a_spec_citing_another_revision_is_reported(tmp_path: Path) -> None:
     # And the same spec against the vendored revision is left alone, which is what stops
     # the check being one that fires on everything.
     (spec / "water_phase.toml").write_text(
-        f'references = ["NeqSim 3.20.0, `Iapws_if97.java`, Apache-2.0, commit {VENDORED}."]\n',
+        f'references = ["NeqSim, `Iapws_if97.java`, Apache-2.0, commit {VENDORED}."]\n',
         encoding="utf-8",
     )
     assert manifest_tool().citation_problems(_manifest(), tmp_path) == []

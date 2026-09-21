@@ -86,7 +86,7 @@ Source: derived from the equation above
 
 Relative tolerance: `1e-12`
 
-methanol in water at 298.15 K: phi = 2.26 (water), M = 18.015 g/mol, VA = 40.2033 cm**3/mol, eta = 0.89154 cP: M = 0.018015 kg/mol -> 18.015 g/mol VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol (no clamp, within [20, 600]) eta = 8.915447896200597e-4 Pa*s -> 0.89154 cP D = 7.4e-8 * (2.26 * 18.015)**0.5 * 298.15 / (0.89154 * 40.2033**0.6) = 1.7212261801805907e-5 cm**2/s D = 1.7212261801805907e-9 m**2/s which is NeqSim 3.20.0 `WilkeChangDiffusivity`'s value at the same state.
+methanol in water at 298.15 K: phi = 2.26 (water), M = 18.015 g/mol, VA = 40.2033 cm**3/mol, eta = 0.89154 cP: M = 0.018015 kg/mol -> 18.015 g/mol VA = 4.0203262233375156e-5 m**3/mol -> 40.2033 cm**3/mol (no clamp, within [20, 600]) eta = 8.915447896200597e-4 Pa*s -> 0.89154 cP D = 7.4e-8 * (2.26 * 18.015)**0.5 * 298.15 / (0.89154 * 40.2033**0.6) = 1.7212261801805907e-5 cm**2/s D = 1.7212261801805907e-9 m**2/s which is NeqSim `WilkeChangDiffusivity`'s value at the same state.
 
 
 ## Tests

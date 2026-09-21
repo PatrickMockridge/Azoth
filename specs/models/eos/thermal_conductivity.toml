@@ -12,7 +12,7 @@ references = [
     "Pedersen, K. S.; Fredenslund, A.; Christensen, P. L.; Thomassen, P. (1984). \"Viscosity of crude oils.\" Chem. Eng. Sci. 39(6), 1011-1016. DOI 10.1016/0009-2509(84)87009-8.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `PFCTConductivityMethodMod86`"
+standard = "NeqSim master `PFCTConductivityMethodMod86`"
 edition = "`calcConductivity` and `getRefComponentConductivity`, ported verbatim"
 doi = "10.1063/1.555828"
 [inputs]

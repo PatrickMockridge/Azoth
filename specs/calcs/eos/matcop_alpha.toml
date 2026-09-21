@@ -5,7 +5,7 @@ latex = '''\alpha = \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(
 assumptions = ["the three coefficients are the caller's fitted Mathias-Copeman parameters, not computed from the acentric factor.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own, so one correlation serves Peng-Robinson and Soave-Redlich-Kwong alike.\n"]
 references = ["Mathias, P. M.; Copeman, T. W. (1983). \"Extension of the Peng-Robinson equation of state to complex mixtures: evaluation of the various forms of the local composition concept.\" Fluid Phase Equilib. 13, 91-108. DOI 10.1016/0378-3812(83)80084-3."]
 [source]
-standard = "NeqSim 3.20.0 `AttractiveTermMatCop`"
+standard = "NeqSim master `AttractiveTermMatCop`"
 edition = "`alpha(temperature)`, ported verbatim"
 doi = "10.1016/0378-3812(83)80084-3"
 [inputs]

@@ -5,7 +5,7 @@ latex = '''\alpha = 1 + p_1\left(\frac{1}{T_r} - 1\right) + p_2\,T_r\ln T_r + p_
 assumptions = ["the three parameters are the caller's fitted Mollerup coefficients; NeqSim's default is all zero, which is the trivial alpha of one.\n", "the alpha is cubic-agnostic; the `a` and `b` it scales are the cubic's own.\n"]
 references = ["Mollerup, J. (1986). \"Thermodynamic properties from a cubic equation of state.\" Fluid Phase Equilib. 25, 329-352."]
 [source]
-standard = "NeqSim 3.20.0 `AttractiveTermMollerup`"
+standard = "NeqSim master `AttractiveTermMollerup`"
 edition = "`alpha(temperature)`, ported verbatim"
 [inputs]
 [inputs.p1]

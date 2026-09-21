@@ -2,7 +2,7 @@ model = "eos.wilson_activity_coefficients"
 [[cases]]
 id = "n_butane_nc12_equimolar_at_298_15_k"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `ComponentGEWilson.getWilsonActivityCoefficient` for n-butane/nc12 0.5/0.5 at 298.15 K. The molar mass and critical temperature are the databank rows `components` resolves to."
+source = "NeqSim master `ComponentGEWilson.getWilsonActivityCoefficient` for n-butane/nc12 0.5/0.5 at 298.15 K. The molar mass and critical temperature are the databank rows `components` resolves to."
 [cases.inputs]
 components = ["n-butane", "nc12"]
 T = 298.15

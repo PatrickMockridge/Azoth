@@ -3122,7 +3122,7 @@ def pr_cpa_phase(
     another cubic.
 
     **There is no NeqSim reading to compare against, and that is a finding.** Against the
-    pinned 3.20.0 jar, ``SystemPrCPA`` builds association-carrying components whose sites
+    pinned jar, ``SystemPrCPA`` builds association-carrying components whose sites
     its phase never sums, so its association is computed over nothing and its flash is a
     Peng-Robinson run wearing the name; ``validation/neqsim/PrCpaFlash.java`` prints both
     counts. What is not given up is the two-kernel comparison: this model's case runs

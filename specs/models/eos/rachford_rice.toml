@@ -4,7 +4,7 @@ kind = "procedure"
 assumptions = [
     "`g(beta) = sum_i z_i (K_i - 1) / (1 + beta (K_i - 1)) = 0`, the material balance of a two-phase split written in the vapour fraction. Its root in the physical bracket is unique and strictly decreasing there, so a bracketed Newton converges from any point inside.",
     "the bracket is the poles of `g`: `max over K_i > 1 of 1/(1 - K_i) < beta < min over K_i < 1 of 1/(1 - K_i)`. It exists only when the K-values straddle one, so a missing bracket proves the feed single phase rather than a failure to find one.",
-    "NeqSim's `RachfordRice` carries two solvers behind a static `method` field. This ports `calcBetaNielsen2023`, the default: nothing in NeqSim 3.20.0 calls `setMethod`, so every flash in the library runs it. `calcBetaMichelsen2001` is reachable only directly, and is named here rather than ported.",
+    "NeqSim's `RachfordRice` carries two solvers behind a static `method` field. This ports `calcBetaNielsen2023`, the default: nothing in NeqSim calls `setMethod`, so every flash in the library runs it. `calcBetaMichelsen2001` is reachable only directly, and is named here rather than ported.",
     "Nielsen & Lia solve the equation in a rescaled pair, `a = (alpha - alpha_min)/(alpha_max - alpha)`, `b = 1/(alpha - alpha_min)` for `alpha = 1/(1 - K)`, and in `1/K` when the root is above one half. The reformulation avoids round-off; it is not a different equation.",
     "a component with `K_i < 1e-30` is an ion and is skipped: it stays in the liquid and does not take part in the split. NeqSim's threshold and NeqSim's reason.",
     "NeqSim's `calcBeta` clamps its answer to `[1e-12, 1 - 1e-12]` and declines to iterate when the root would fall outside `[0, 1]`. Neither is ported: the root comes back as the equation gives it, so the negative flash stays visible, and `1e-12` is the answer only where no root exists.",
@@ -19,7 +19,7 @@ references = [
 ]
 [source]
 standard = "Nielsen, L. (2023)"
-edition = "`RachfordRice.calcBetaNielsen2023` from NeqSim 3.20.0, minus the single-phase dispatch: NeqSim answers a root outside `[0, 1]` with the `phaseFractionMinimumLimit` clamp, and this returns the root."
+edition = "`RachfordRice.calcBetaNielsen2023` from NeqSim master, minus the single-phase dispatch: NeqSim answers a root outside `[0, 1]` with the `phaseFractionMinimumLimit` clamp, and this returns the root."
 doi = "10.2118/952327-G"
 [algorithm]
 scheme = "rachford_rice_nielsen_2023"

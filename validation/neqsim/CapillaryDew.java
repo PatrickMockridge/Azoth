@@ -1,7 +1,7 @@
 // NeqSim's capillary (in-pore) dew point, against the bulk one.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar CapillaryDew.java
-//     java -cp .:neqsim-3.20.0.jar CapillaryDew
+//     javac -proc:none -cp neqsim-f0c7436.jar CapillaryDew.java
+//     java -cp .:neqsim-f0c7436.jar CapillaryDew
 //
 // `ThermodynamicOperations.capillaryDewPointTemperatureFlash(r)` — and the two-argument form
 // that also takes a contact angle — build a `CapillaryDewPointFlash` and run it. That is the

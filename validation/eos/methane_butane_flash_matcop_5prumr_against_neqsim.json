@@ -2,7 +2,7 @@
   "id": "methane_butane_flash_matcop_5prumr_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "The five-parameter Mathias-Copeman form, coefficients from the `umrcpa_mc1..5` columns, falling back to the base Soave form when every coefficient is unset."
   },

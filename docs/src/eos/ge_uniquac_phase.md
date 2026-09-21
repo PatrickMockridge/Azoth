@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PhaseGEUniquac`**
+**NeqSim master `PhaseGEUniquac`**
 
 `ComponentGE.fugcoef`, ported verbatim; the activity coefficient is `eos.uniquac_activity_coefficients`'. Upstream commit `c5ec5fb` (PR #3774) rejects standalone UNIQUAC outright, so there is no upstream `gamma` and the phase's composition is checked by construction rather than against an oracle.
 

@@ -1497,7 +1497,7 @@ fn the_interaction_column_follows_the_cubic() {
         assert_eq!(mixture.kij(0, 1), expected, "{cubic:?}");
     }
 
-    // The oracle: NeqSim 3.20.0's `SystemSrkEos` at 350 K and 30 bar with `z = 0.5/0.5`,
+    // The oracle: NeqSim's `SystemSrkEos` at 350 K and 30 bar with `z = 0.5/0.5`,
     // from `validation/neqsim/SrkKijProbe.java`. azoth reproduces it to fifteen digits
     // with `KIJSRK` and is 0.57% out with `KIJPR`.
     let (mixture, _) = databank::mixture_of(&["propane", "co2"], Cubic::Srk, None).unwrap();
@@ -1514,7 +1514,7 @@ fn the_interaction_column_follows_the_cubic() {
     );
 }
 
-/// The UMR-CPA fluid, against NeqSim 3.20.0's `SystemUMRCPAEoS`.
+/// The UMR-CPA fluid, against NeqSim's `SystemUMRCPAEoS`.
 ///
 /// Methane/water 0.98/0.02 at 298.15 K and 70 bara, from
 /// `validation/neqsim/UmrCpaProbe.java` - the state NeqSim's own

@@ -18,7 +18,7 @@ alpha = (1 + m*(1 - sqrt(Tr)) - p1*(1 - Tr)*(1 + p2*Tr + p3*Tr**2))**2 with m = 
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermSchwartzentruber`**
+**NeqSim master `AttractiveTermSchwartzentruber`**
 
 `alpha(temperature)`, ported verbatim
 

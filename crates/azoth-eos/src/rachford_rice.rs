@@ -10,7 +10,7 @@
 //!
 //! Spec: `specs/models/eos/rachford_rice.toml`. NeqSim's `RachfordRice` is the port
 //! source. The class carries two solvers behind a static `method` field whose default is
-//! `Nielsen2023`, and **that default is the one ported**: nothing in NeqSim 3.20.0 calls
+//! `Nielsen2023`, and **that default is the one ported**: nothing in NeqSim calls
 //! `setMethod`, so every flash in the library runs Nielsen's, and `calcBetaMichelsen2001`
 //! is reachable only by calling it directly. The alternative is named in the spec's
 //! assumptions with that measurement rather than ported as a branch nothing takes.

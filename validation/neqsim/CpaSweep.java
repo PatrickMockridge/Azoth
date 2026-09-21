@@ -83,8 +83,8 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  * Usage:
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar CpaSweep.java
- * java -cp .:neqsim-3.20.0.jar CpaSweep [T_K P_bara n_water]...
+ * javac -proc:none -cp neqsim-f0c7436.jar CpaSweep.java
+ * java -cp .:neqsim-f0c7436.jar CpaSweep [T_K P_bara n_water]...
  * </pre>
  *
  * With no arguments it sweeps a default grid: the states this tranche has measured, plus a
@@ -392,7 +392,7 @@ public final class CpaSweep {
   }
 
   private static void header() {
-    System.out.println("# azoth CpaSweep - NeqSim 3.20.0's CPA internals over a grid of states.");
+    System.out.println("# azoth CpaSweep - NeqSim master's CPA internals over a grid of states.");
     System.out.println("#");
     System.out.println("# The fluid is water/methanol, built as SystemSrkCPA with setMixingRule(10).");
     System.out.println("# Rows are emitted in build order, so the first key that differs is the");

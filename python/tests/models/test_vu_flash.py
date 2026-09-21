@@ -53,7 +53,7 @@ def test_an_answer_the_iteration_never_settled_at_says_so() -> None:
     A liquid's volume barely moves with pressure, so the relative volume error is a poor
     judge of a pressure: pure propane at 250 K, the 10 bar state comes back as 15.5 bar -
     55% out - with a relative volume error of 5.5e-4, under the 1e-3 the specification is
-    accepted at. NeqSim 3.20.0 returns that number and sets `lastRunConverged = false`;
+    accepted at. NeqSim returns that number and sets `lastRunConverged = false`;
     returning it *without* a word is the one thing neither does.
     """
     fluid, ideal_gas = components.mixture_of(["propane"])

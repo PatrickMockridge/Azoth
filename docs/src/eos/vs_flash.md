@@ -8,7 +8,7 @@
 
 **Standard thermodynamics, as in Michelsen & Mollerup**
 
-NeqSim 3.20.0 `thermodynamicoperations/flashops/VSflash`: its `calcdQdP`, `calcdQdT`, `calcdQdPP` and its damped clamped step are this model's loop, reached from `VesselDepressurization`'s isentropic branch.
+NeqSim master `thermodynamicoperations/flashops/VSflash`: its `calcdQdP`, `calcdQdT`, `calcdQdPP` and its damped clamped step are this model's loop, reached from `VesselDepressurization`'s isentropic branch.
 
 
 ## Algorithm

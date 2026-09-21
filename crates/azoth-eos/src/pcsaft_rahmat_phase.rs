@@ -12,7 +12,7 @@
 //!
 //! # Why the class name is in the model's
 //!
-//! **`PhasePCSAFTRahmat` is the PC-SAFT that NeqSim 3.20.0 runs.** `SystemPCSAFT` builds
+//! **`PhasePCSAFTRahmat` is the PC-SAFT that NeqSim runs.** `SystemPCSAFT` builds
 //! it, and the sibling it extends - `PhasePCSAFT` - is never instantiated anywhere in the
 //! checkout: there is no `new PhasePCSAFT()` in it, and the only two subclasses are this
 //! one and the associating `PhasePCSAFTa`. The two non-associating classes differ in

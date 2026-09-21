@@ -60,7 +60,7 @@ iterations = 12
 [[cases]]
 id = "water_methanol_cpa_at_356_k_and_1_bar"
 tolerance = 1e-09
-source = """NeqSim 3.20.0, `SystemSrkCPA` with `setMixingRule(10)`, run from `validation/neqsim/CpaSweep.java`: `java -cp .:neqsim-3.20.0.jar CpaSweep 356 1.0 0.6`. `beta`, `x`, `y` and the two `z_` fields are its `flash_beta[0]`, `flash_x[1]`, `flash_x[0]`, `flash_Z[1]` and `flash_Z[0]` - NeqSim orders the vapour first, this model the liquid - and `k` and `ln_phi_*` are its own `flash_lnPhi`, differenced to a `K` in the sweep.
+source = """NeqSim master, `SystemSrkCPA` with `setMixingRule(10)`, run from `validation/neqsim/CpaSweep.java`: `java -cp .:neqsim-f0c7436.jar CpaSweep 356 1.0 0.6`. `beta`, `x`, `y` and the two `z_` fields are its `flash_beta[0]`, `flash_x[1]`, `flash_x[0]`, `flash_Z[1]` and `flash_Z[0]` - NeqSim orders the vapour first, this model the liquid - and `k` and `ln_phi_*` are its own `flash_lnPhi`, differenced to a `K` in the sweep.
 
 **This is the case that catches an associating fluid losing its association at the Python-to-Rust boundary.** Sent without it, the Rust backend ran a classical SRK flash on a fluid carrying the `cpakij_SRK` column and reported `all_liquid`, `beta = -0.016794177236415513` with the same K-values as a non-associating mixture built from the same components. Nothing in the registry could see it, because until `associating` became a key a case could state a fluid's components and not how the runner builds them.
 

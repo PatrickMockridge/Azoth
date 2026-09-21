@@ -1,9 +1,9 @@
 // NeqSim's UNIFAC activity coefficients, reached through public API only.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar UnifacGamma.java
-//     java -cp .:neqsim-3.20.0.jar UnifacGamma
+//     javac -proc:none -cp neqsim-f0c7436.jar UnifacGamma.java
+//     java -cp .:neqsim-f0c7436.jar UnifacGamma
 //
-// `eos.unifac_activity_coefficients`'s spec says NeqSim 3.20.0's classic UNIFAC "fails
+// `eos.unifac_activity_coefficients`'s spec says NeqSim's classic UNIFAC "fails
 // at runtime, so there is no differential oracle". It does fail - but the failure is a
 // desynchronised array inside NeqSim rather than a dead end, and both halves of it are
 // reachable through public API:

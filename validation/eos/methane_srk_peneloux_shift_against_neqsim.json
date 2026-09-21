@@ -2,7 +2,7 @@
   "id": "methane_srk_peneloux_shift_against_neqsim",
   "calc": "eos.srk_peneloux_shift",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemSrkPenelouxEos with the Peneloux volume correction - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemSrkPenelouxEos with the Peneloux volume correction - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "The Soave-Redlich-Kwong Peneloux shift. NeqSim's `getVolumeCorrection()` is printed in its internal unit - `R` in J/(mol*K) against `Pc` in bar, which is `1e5` times the SI `m**3/mol` - so the expected value below is the printed number divided by `1e5`. azoth uses the exact molar gas constant, NeqSim the truncated `8.3144621`, a relative difference of 6e-8 that the tolerance absorbs."
   },

@@ -2,7 +2,7 @@ model = "eos.ge_unifac_phase"
 [[cases]]
 id = "methanol_water_equimolar_at_298_15_k_1_bar"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `PhaseGEUnifac` via `ComponentGE.fugcoef`, run from validation/neqsim/GeUnifacPhi.java: the liquid phase's own `getFugacityCoefficient`, `getActivityCoefficient` and `getAntoineVaporPressure` at the same state. `p_sat` is the bar figure the driver prints times 1e5. The driver synchronises each component's UNIFAC group array before every read, which `ComponentGEUnifac`'s constructor leaves empty; see its header."
+source = "NeqSim master `PhaseGEUnifac` via `ComponentGE.fugcoef`, run from validation/neqsim/GeUnifacPhi.java: the liquid phase's own `getFugacityCoefficient`, `getActivityCoefficient` and `getAntoineVaporPressure` at the same state. `p_sat` is the bar figure the driver prints times 1e5. The driver synchronises each component's UNIFAC group array before every read, which `ComponentGEUnifac`'s constructor leaves empty; see its header."
 [cases.inputs]
 components = ["methanol", "water"]
 T = 298.15
@@ -16,7 +16,7 @@ p_sat = [16940.74755834478, 3178.7528699883306]
 [[cases]]
 id = "methanol_benzene_lean_at_330_k_1_bar"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `PhaseGEUnifac`, as the first case: validation/neqsim/GeUnifacPhi.java. Methanol in benzene is the case the combinatorial term carries: the two substances share no subgroup, so the residual term is large and the activity coefficient is 2.44 against 1.28."
+source = "NeqSim master `PhaseGEUnifac`, as the first case: validation/neqsim/GeUnifacPhi.java. Methanol in benzene is the case the combinatorial term carries: the two substances share no subgroup, so the residual term is large and the activity coefficient is 2.44 against 1.28."
 [cases.inputs]
 components = ["methanol", "benzene"]
 T = 330.0
@@ -30,7 +30,7 @@ p_sat = [74296.1636937194, 52349.94248595396]
 [[cases]]
 id = "water_toluene_at_340_k_1_bar"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `PhaseGEUnifac`, as the first case: validation/neqsim/GeUnifacPhi.java. A strongly non-ideal pair, where toluene's activity coefficient at 0.3 is 11.55 - above the 1/0.3 at which a liquid would split, so the phase is only a statement about a stated composition and not an equilibrium."
+source = "NeqSim master `PhaseGEUnifac`, as the first case: validation/neqsim/GeUnifacPhi.java. A strongly non-ideal pair, where toluene's activity coefficient at 0.3 is 11.55 - above the 1/0.3 at which a liquid would split, so the phase is only a statement about a stated composition and not an equilibrium."
 [cases.inputs]
 components = ["water", "toluene"]
 T = 340.0

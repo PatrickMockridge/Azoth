@@ -2,7 +2,7 @@
   "id": "methane_butane_flash_schwartzentruber_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "Schwartzentruber's correlation, three fitted parameters from the `schwartzentruber1..3` columns. azoth's `psi_t` follows the true second derivative; NeqSim's `diffdiffalphaT` is the same form, so the departure functions agree. NeqSim's `Tr > 100` high-temperature extrapolation is not ported - no ordinary state reaches it."
   },

@@ -2,7 +2,7 @@ model = "eos.mason_saxena_conductivity"
 [[cases]]
 id = "methane_propane_equimolar_at_300_k"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `ChungConductivityMethod.calcConductivity` for methane/propane 0.5/0.5 at 300 K, 10 bar."
+source = "NeqSim master `ChungConductivityMethod.calcConductivity` for methane/propane 0.5/0.5 at 300 K, 10 bar."
 [cases.inputs]
 Cv0 = [27.544151394, 65.809299386]
 M = [0.016043, 0.044097]
@@ -18,7 +18,7 @@ k = 0.025062059480046174
 [[cases]]
 id = "methane_butane_propane_at_350_k"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `ChungConductivityMethod.calcConductivity` for methane/n-butane/propane 0.5/0.3/0.2 at 350 K, 15 bar."
+source = "NeqSim master `ChungConductivityMethod.calcConductivity` for methane/n-butane/propane 0.5/0.3/0.2 at 350 K, 15 bar."
 [cases.inputs]
 Cv0 = [29.759775410875, 103.48780432975, 75.539766125375]
 M = [0.016043, 0.058123, 0.044097]
@@ -34,7 +34,7 @@ k = 0.03158159895228681
 [[cases]]
 id = "methane_rich_propane_at_300_k"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `ChungConductivityMethod.calcConductivity` for methane/propane 0.8/0.2 at 300 K, 10 bar."
+source = "NeqSim master `ChungConductivityMethod.calcConductivity` for methane/propane 0.8/0.2 at 300 K, 10 bar."
 [cases.inputs]
 Cv0 = [27.544151394, 65.809299386]
 M = [0.016043, 0.044097]

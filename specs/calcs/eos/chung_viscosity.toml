@@ -63,7 +63,7 @@ severity = "error"
 rationale = "`V` is the divisor in `y = Vc/(6*V)`; a molar volume must be positive.\n"
 [worked_example]
 source = "derived from the equation above"
-derivation = "methane, omega = 0.0115, Tc = 190.56 K, Vc = 9.9e-5 m**3/mol, M = 0.016043 kg/mol, dipole = 0 debye, kappa = 0, at T = 300 K and V = 2.4409707154781444e-3 m**3/mol (the PR-EoS molar volume at 300 K, 10 bar):\n\n  Vc_cm3 = 9.9e-5 * 1e6 = 99 cm**3/mol;  M_g = 0.016043 * 1000 = 16.043 g/mol\n  mu_r = 131.3 * 0 / sqrt(99 * 190.56) = 0\n  Fc = 1 - 0.2756*0.0115 = 0.9968306\n  T* = 1.2593 * 300 / 190.56 = 1.982525188916877\n  Omega_v = 1.16145*T*^-0.14874 + 0.52487*exp(-0.77320*T*) + 2.16178*exp(-2.43787*T*) = 1.179576645518974\n  y = 9.9e-5 / (6 * 2.4409707154781444e-3) = 0.006759605879486322\n  G1 = (1 - 0.5*y)/(1 - y)**3 = 1.017106813023400\n  G2 = (E0*(1 - exp(-E3*y))/y + E1*G1*exp(E4*y) + E2*G1)/(E0*E3 + E1 + E2) = 0.982363336860928\n  eta** = E6*y**2*G2*exp(E7 + E8/T* + E9/T*^2) = 0.002217161026721926\n  eta* = sqrt(T*)/Omega_v * (Fc*(1/G2 + E5*y)) + eta** = 1.197021703056253\n  mu = 1.197021703056253 * 36.344 * sqrt(16.043*190.56) / 99**(2/3) = 112.400941543013303 microPoise\n  mu = 1.124009415430133e-05 Pa*s\n\nwhich is NeqSim 3.20.0 `ChungViscosityMethod`'s value at the same state.\n"
+derivation = "methane, omega = 0.0115, Tc = 190.56 K, Vc = 9.9e-5 m**3/mol, M = 0.016043 kg/mol, dipole = 0 debye, kappa = 0, at T = 300 K and V = 2.4409707154781444e-3 m**3/mol (the PR-EoS molar volume at 300 K, 10 bar):\n\n  Vc_cm3 = 9.9e-5 * 1e6 = 99 cm**3/mol;  M_g = 0.016043 * 1000 = 16.043 g/mol\n  mu_r = 131.3 * 0 / sqrt(99 * 190.56) = 0\n  Fc = 1 - 0.2756*0.0115 = 0.9968306\n  T* = 1.2593 * 300 / 190.56 = 1.982525188916877\n  Omega_v = 1.16145*T*^-0.14874 + 0.52487*exp(-0.77320*T*) + 2.16178*exp(-2.43787*T*) = 1.179576645518974\n  y = 9.9e-5 / (6 * 2.4409707154781444e-3) = 0.006759605879486322\n  G1 = (1 - 0.5*y)/(1 - y)**3 = 1.017106813023400\n  G2 = (E0*(1 - exp(-E3*y))/y + E1*G1*exp(E4*y) + E2*G1)/(E0*E3 + E1 + E2) = 0.982363336860928\n  eta** = E6*y**2*G2*exp(E7 + E8/T* + E9/T*^2) = 0.002217161026721926\n  eta* = sqrt(T*)/Omega_v * (Fc*(1/G2 + E5*y)) + eta** = 1.197021703056253\n  mu = 1.197021703056253 * 36.344 * sqrt(16.043*190.56) / 99**(2/3) = 112.400941543013303 microPoise\n  mu = 1.124009415430133e-05 Pa*s\n\nwhich is NeqSim `ChungViscosityMethod`'s value at the same state.\n"
 tolerance = 1e-12
 [worked_example.inputs]
 omega = 0.0115
@@ -87,7 +87,7 @@ status = "active"
 id = "mdea_exercises_dipole_and_correction"
 type = "reference"
 status = "active"
-source = "NeqSim 3.20.0 `ChungViscosityMethod.initChungPureComponentViscosity` for MDEA at T = 400 K, V = 1.267668796335155e-4 m**3/mol (its PR-EoS molar volume at 10 bar):\n\n  mu = 1.60360025064361329e-04 Pa*s.\n"
+source = "NeqSim master `ChungViscosityMethod.initChungPureComponentViscosity` for MDEA at T = 400 K, V = 1.267668796335155e-4 m**3/mol (its PR-EoS molar volume at 10 bar):\n\n  mu = 1.60360025064361329e-04 Pa*s.\n"
 tolerance = 1e-12
 [tests.inputs]
 omega = 1.242
@@ -104,7 +104,7 @@ mu = 1.6036002506436133e-04
 id = "propane_matches_neqsim"
 type = "reference"
 status = "active"
-source = "NeqSim 3.20.0 `ChungViscosityMethod.initChungPureComponentViscosity` for propane at T = 300 K, V = 2.31743119817252e-3 m**3/mol (its PR-EoS molar volume at 9 bar):\n\n  mu = 8.491510723076993e-06 Pa*s.\n"
+source = "NeqSim master `ChungViscosityMethod.initChungPureComponentViscosity` for propane at T = 300 K, V = 2.31743119817252e-3 m**3/mol (its PR-EoS molar volume at 9 bar):\n\n  mu = 8.491510723076993e-06 Pa*s.\n"
 tolerance = 1e-12
 [tests.inputs]
 omega = 0.1523

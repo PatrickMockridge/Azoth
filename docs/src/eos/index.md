@@ -9,28 +9,28 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.antoine_vapor_pressure`](./antoine_vapor_pressure.md) | $p_{\mathrm{sat}} = \begin{cases} e^{\,A + B/T + C \ln T + D T^{E}} & \text{dippr101}\\ 10^{5}\,10^{\,A - B/(T + C - 273.15)} & \text{pow10}\\ 10^{\,A - B/(T + C)} & \text{pow10kpa}\\ 10^{5}\,e^{\,A - B/(T + C)} & \text{exp}\\ e^{\,(A x + B x^{3/2} + C x^{3} + D x^{6})/(1-x)}\,P_c,\ x = 1 - T/T_c & \text{wagner} \end{cases}$ | NeqSim's `getAntoineVaporPressure` |
 | [`eos.chung_conductivity`](./chung_conductivity.md) | $k = 3.75\,\frac{R}{M}\,\eta_0\,\Psi,\qquad \Psi = 1 + \alpha\left(\frac{0.215 + 0.28288\alpha - 1.061\beta + 0.26665 Z}{0.6366 + \beta Z + 1.061\alpha\beta}\right)$ | Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988) |
 | [`eos.chung_viscosity`](./chung_viscosity.md) | $\eta = \eta^{*}\,36.344\,\frac{\sqrt{M\,T_c}}{V_c^{2/3}}\quad[\mu P],\qquad \eta^{*} = \frac{\sqrt{T^{*}}}{\Omega_v}\left[F_c\left(\frac{1}{G_2} + E_5\,y\right)\right] + E_6\,y^{2}\,G_2\,\exp\!\left(E_7 + \frac{E_8}{T^{*}} + \frac{E_9}{T^{*2}}\right)$ | Chung, T.-H.; Ajlan, M.; Lee, L. L.; Starling, K. E. (1988) |
-| [`eos.co2_water_diffusivity`](./co2_water_diffusivity.md) | $D_{CO_2,\mathrm{water}}^0 = 3.389\times10^{-6}\,\exp\!\left(-\frac{2213.7}{T}\right)$ | NeqSim 3.20.0 `CO2water` |
+| [`eos.co2_water_diffusivity`](./co2_water_diffusivity.md) | $D_{CO_2,\mathrm{water}}^0 = 3.389\times10^{-6}\,\exp\!\left(-\frac{2213.7}{T}\right)$ | NeqSim master `CO2water` |
 | [`eos.costald_molar_volume`](./costald_molar_volume.md) | $V_s = V^{*}\,V_R^{(0)}\,(1 - \omega V_R^{(\delta)})$ | Hankinson, R. W.; Thomson, G. H. (1979) |
 | [`eos.hayduk_minhas_diffusivity`](./hayduk_minhas_diffusivity.md) | $D_{AB}^0 = 13.3\times10^{-8}\,\frac{T^{1.47}\,\eta_B^{10.2/V_A - 0.791}}{V_A^{0.71}}\quad(\text{paraffin}),\qquad 1.25\times10^{-8}\,\left(V_A^{-0.19}-0.292\right)T^{1.52}\,\eta_B^{9.58/V_A - 1.12}\quad(\text{aqueous})$ | Hayduk, W.; Minhas, B. S. (1982) |
 | [`eos.heat_of_vaporization`](./heat_of_vaporization.md) | $\Delta h_{\mathrm{vap}} = 10^{-3}\,c_0\,\left(1 - T_r\right)^{c_1 + c_2 T_r + c_3 T_r^{2}}$ | NeqSim's `getPureComponentHeatOfVaporization` |
 | [`eos.ideal_gas_cp`](./ideal_gas_cp.md) | $C_{p}^{\mathrm{ig}} = c_{0} + c_{1}T + c_{2}T^{2} + c_{3}T^{3} + c_{4}T^{4}$ | NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0 |
 | [`eos.liquid_heat_capacity`](./liquid_heat_capacity.md) | $c_{p}^{\mathrm{liq}} = 10^{-3}\,\left(c_0 + c_1 T + c_2 T^{2} + c_3 T^{3} + c_4 T^{4}\right)$ | NeqSim's `getPureComponentCpLiquid` |
-| [`eos.matcop5_prumr_alpha`](./matcop5_prumr_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & \text{all } c_k < 10^{-20} \\ \left(1 + c_1 u + c_2 u^2 + c_3 u^3 + c_4 u^4 + c_5 u^5\right)^2 & \text{otherwise} \end{cases}, \quad u = 1 - \sqrt{T_r}, \quad m = 0.37464 + 1.54226\omega - 0.26992\omega^2$ | NeqSim 3.20.0 `AttractiveTermMatCop5PRUMR` |
-| [`eos.matcop_alpha`](./matcop_alpha.md) | $\alpha = \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2$ | NeqSim 3.20.0 `AttractiveTermMatCop` |
-| [`eos.matcop_pr_alpha`](./matcop_pr_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & T_r > 1 \text{ or } c_1 < 10^{-20} \\ \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2 & \text{otherwise} \end{cases}, \quad m = 0.37464 + 1.54226\omega - 0.26992\omega^2$ | NeqSim 3.20.0 `AttractiveTermMatCopPR` |
-| [`eos.matcop_prumr_alpha`](./matcop_prumr_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & c_1 < 10^{-20} \\ \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2 & \text{otherwise} \end{cases}, \quad m = 0.384401 + 1.52276\omega - 0.213808\omega^2 + 0.034616\omega^3 - 0.001976\omega^4$ | NeqSim 3.20.0 `AttractiveTermMatCopPRUMR` |
-| [`eos.matcop_prumr_new_alpha`](./matcop_prumr_new_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & c_1 < 10^{-20} \\ \left(1 + c_1 u + c_2 u^2 + c_3 u^3 + c_4 u^4 + c_5 u^5\right)^2 & \text{otherwise} \end{cases}, \quad u = 1 - \sqrt{T_r}, \quad m = 0.384401 + 1.52276\omega - 0.213808\omega^2 + 0.034616\omega^3 - 0.001976\omega^4$ | NeqSim 3.20.0 `AtractiveTermMatCopPRUMRNew` |
-| [`eos.mollerup_alpha`](./mollerup_alpha.md) | $\alpha = 1 + p_1\left(\frac{1}{T_r} - 1\right) + p_2\,T_r\ln T_r + p_3\left(T_r - 1\right)$ | NeqSim 3.20.0 `AttractiveTermMollerup` |
+| [`eos.matcop5_prumr_alpha`](./matcop5_prumr_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & \text{all } c_k < 10^{-20} \\ \left(1 + c_1 u + c_2 u^2 + c_3 u^3 + c_4 u^4 + c_5 u^5\right)^2 & \text{otherwise} \end{cases}, \quad u = 1 - \sqrt{T_r}, \quad m = 0.37464 + 1.54226\omega - 0.26992\omega^2$ | NeqSim master `AttractiveTermMatCop5PRUMR` |
+| [`eos.matcop_alpha`](./matcop_alpha.md) | $\alpha = \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2$ | NeqSim master `AttractiveTermMatCop` |
+| [`eos.matcop_pr_alpha`](./matcop_pr_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & T_r > 1 \text{ or } c_1 < 10^{-20} \\ \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2 & \text{otherwise} \end{cases}, \quad m = 0.37464 + 1.54226\omega - 0.26992\omega^2$ | NeqSim master `AttractiveTermMatCopPR` |
+| [`eos.matcop_prumr_alpha`](./matcop_prumr_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & c_1 < 10^{-20} \\ \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2 & \text{otherwise} \end{cases}, \quad m = 0.384401 + 1.52276\omega - 0.213808\omega^2 + 0.034616\omega^3 - 0.001976\omega^4$ | NeqSim master `AttractiveTermMatCopPRUMR` |
+| [`eos.matcop_prumr_new_alpha`](./matcop_prumr_new_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & c_1 < 10^{-20} \\ \left(1 + c_1 u + c_2 u^2 + c_3 u^3 + c_4 u^4 + c_5 u^5\right)^2 & \text{otherwise} \end{cases}, \quad u = 1 - \sqrt{T_r}, \quad m = 0.384401 + 1.52276\omega - 0.213808\omega^2 + 0.034616\omega^3 - 0.001976\omega^4$ | NeqSim master `AtractiveTermMatCopPRUMRNew` |
+| [`eos.mollerup_alpha`](./mollerup_alpha.md) | $\alpha = 1 + p_1\left(\frac{1}{T_r} - 1\right) + p_2\,T_r\ln T_r + p_3\left(T_r - 1\right)$ | NeqSim master `AttractiveTermMollerup` |
 | [`eos.nitric_sulfuric_acid_vapor_pressure`](./nitric_sulfuric_acid_vapor_pressure.md) | $\begin{aligned} p_{\mathrm{H_2O}} &= 100 \times 10^{\,8.42926609 - 1827.17843/T - 71208.271/T^{2}}\\ p_{\mathrm{HNO_3}} &= 133.322368421 \times 10^{\,7.57628 - 1470.385/(T - 43.0)}\\ p_{\mathrm{H_2SO_4}} &= 101325 \times e^{\,-10156.0/T + 16.259} \end{aligned}$ | Taleb, D.; Ponche, J. L.; Mirabel, P. (1996) |
-| [`eos.parachor_surface_tension`](./parachor_surface_tension.md) | $\sigma = 10^{-3}\,\left[P\,10^{-6}\left(\frac{\rho_L}{M} - \frac{\rho_V}{M}\right)\right]^4$ | NeqSim 3.20.0 `ParachorSurfaceTension` |
+| [`eos.parachor_surface_tension`](./parachor_surface_tension.md) | $\sigma = 10^{-3}\,\left[P\,10^{-6}\left(\frac{\rho_L}{M} - \frac{\rho_V}{M}\right)\right]^4$ | NeqSim master `ParachorSurfaceTension` |
 | [`eos.pr78_kappa`](./pr78_kappa.md) | $\kappa = \begin{cases} 0.379642 + 1.48503\,\omega - 0.164423\,\omega^{2} + 0.01666\,\omega^{3} & \omega > 0.49 \\ 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2} & \text{otherwise} \end{cases}$ | Peng, D. Y.; Robinson, D. B. (1978) |
 | [`eos.pr_alpha_ab`](./pr_alpha_ab.md) | $\alpha = \left[1 + \kappa\left(1 - \sqrt{T_{r}}\right)\right]^{2}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}$ | Peng, D. Y.; Robinson, D. B. (1976) |
-| [`eos.pr_danesh_alpha`](./pr_danesh_alpha.md) | $\alpha = \left(1 + \tilde m\left(1 - \sqrt{T_r}\right)\right)^2,\qquad \tilde m = \begin{cases}1.21\,m & T_r > 1 \\ m & \text{otherwise}\end{cases}$ | NeqSim 3.20.0 `AttractiveTermPrDanesh` |
-| [`eos.pr_delft1998_alpha`](./pr_delft1998_alpha.md) | $\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = \begin{cases} 0.379642 + 1.48503\omega - 0.164423\omega^2 + 0.01666\omega^3 & \omega > 0.49 \\ 0.37464 + 1.54226\omega - 0.26992\omega^2 & \text{otherwise} \end{cases}$ | NeqSim 3.20.0 `AttractiveTermPrDelft1998` |
+| [`eos.pr_danesh_alpha`](./pr_danesh_alpha.md) | $\alpha = \left(1 + \tilde m\left(1 - \sqrt{T_r}\right)\right)^2,\qquad \tilde m = \begin{cases}1.21\,m & T_r > 1 \\ m & \text{otherwise}\end{cases}$ | NeqSim master `AttractiveTermPrDanesh` |
+| [`eos.pr_delft1998_alpha`](./pr_delft1998_alpha.md) | $\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = \begin{cases} 0.379642 + 1.48503\omega - 0.164423\omega^2 + 0.01666\omega^3 & \omega > 0.49 \\ 0.37464 + 1.54226\omega - 0.26992\omega^2 & \text{otherwise} \end{cases}$ | NeqSim master `AttractiveTermPrDelft1998` |
 | [`eos.pr_departure`](./pr_departure.md) | $\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + \left(1 + \sqrt{2}\right)B}{z + \left(1 - \sqrt{2}\right)B}, \qquad C = \frac{A}{2\sqrt{2}B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - CI, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + C\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + C\psi I, \qquad \frac{C_{p}^{R}}{R} = \frac{H^{R}}{RT} + T\left(\frac{\partial}{\partial T}\frac{H^{R}}{RT}\right)_{P}$ | Peng, D. Y.; Robinson, D. B. (1976) |
-| [`eos.pr_gassem2001_alpha`](./pr_gassem2001_alpha.md) | $\alpha = \exp\!\left[(A + B T_r)\left(1 - T_r^{\,C + D\omega + E\omega^2}\right)\right]$ | NeqSim 3.20.0 `AttractiveTermPrGassem2001` |
+| [`eos.pr_gassem2001_alpha`](./pr_gassem2001_alpha.md) | $\alpha = \exp\!\left[(A + B T_r)\left(1 - T_r^{\,C + D\omega + E\omega^2}\right)\right]$ | NeqSim master `AttractiveTermPrGassem2001` |
 | [`eos.pr_kappa`](./pr_kappa.md) | $\kappa = 0.37464 + 1.54226\,\omega - 0.26992\,\omega^{2}$ | Peng, D. Y.; Robinson, D. B. (1976) |
-| [`eos.pr_lee_kesler_alpha`](./pr_lee_kesler_alpha.md) | $\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.480 + 1.574\omega - 0.176\omega^2$ | NeqSim 3.20.0 `AttractiveTermPrLeeKesler` |
+| [`eos.pr_lee_kesler_alpha`](./pr_lee_kesler_alpha.md) | $\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.480 + 1.574\omega - 0.176\omega^2$ | NeqSim master `AttractiveTermPrLeeKesler` |
 | [`eos.pr_mass_density`](./pr_mass_density.md) | $\rho = \frac{M}{v}$ | The definition of molar mass |
 | [`eos.pr_molar_volume`](./pr_molar_volume.md) | $v = \frac{z\,R\,T}{P}$ | The ideal-gas law with the compressibility factor as the departure from it |
 | [`eos.pr_peneloux_shift`](./pr_peneloux_shift.md) | $c = 0.50033\,\left(0.25969 - Z_{\mathrm{RA}}\right)\frac{R\,T_c}{P_c}, \qquad Z_{\mathrm{RA}} = 0.29056 - 0.08775\,\omega$ | Péneloux, A.; Rauzy, E.; Fréze, R. (1982) |
@@ -40,25 +40,25 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.rackett_molar_volume`](./rackett_molar_volume.md) | $V_s = \frac{R\,T_c}{P_c}\,Z_{\mathrm{RA}}^{\,1 + (1 - T_r)^{2/7}}, \qquad Z_{\mathrm{RA}} = 0.29056 - 0.08775\,\omega$ | Spencer, C. F.; Danner, R. P. (1972) |
 | [`eos.rk_alpha_ab`](./rk_alpha_ab.md) | $\alpha = \frac{1}{\sqrt{T_{r}}}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}$ | Redlich, O.; Kwong, J. N. S. (1949) |
 | [`eos.rk_departure`](./rk_departure.md) | $\psi = -\frac{1}{2}, \qquad I = \ln\frac{z + B}{z}, \qquad C = \frac{A}{B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - CI, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + C\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + C\psi I$ | Redlich, O.; Kwong, J. N. S. (1949) |
-| [`eos.scale_saturation_ratio`](./scale_saturation_ratio.md) | $m_{i} = \\frac{x_{i}}{x_{w}M_{w}}, \\qquad \\mathrm{IAP} = (\\gamma_{1}m_{1})^{\\nu_{1}}(\\gamma_{2}m_{2})^{\\nu_{2}}a_{w}^{\\nu_{w}}, \\qquad \\mathrm{SR} = \\frac{\\mathrm{IAP}}{K_{sp}}, \\qquad K_{sp} = \\exp\\!\\left(\\frac{A}{T} + B + C\\ln T + DT + \\frac{E}{T^{2}}\\right)e^{-\\Delta V (P-P_{0})/(RT}$ | NeqSim 3.20.0 `CheckScalePotential` |
-| [`eos.schwartzentruber_alpha`](./schwartzentruber_alpha.md) | $\alpha = \left[1 + m(1 - \sqrt{T_r}) - p_1(1 - T_r)(1 + p_2 T_r + p_3 T_r^2)\right]^2, \quad m = 0.48508 + 1.55191\omega - 0.15613\omega^2$ | NeqSim 3.20.0 `AttractiveTermSchwartzentruber` |
+| [`eos.scale_saturation_ratio`](./scale_saturation_ratio.md) | $m_{i} = \\frac{x_{i}}{x_{w}M_{w}}, \\qquad \\mathrm{IAP} = (\\gamma_{1}m_{1})^{\\nu_{1}}(\\gamma_{2}m_{2})^{\\nu_{2}}a_{w}^{\\nu_{w}}, \\qquad \\mathrm{SR} = \\frac{\\mathrm{IAP}}{K_{sp}}, \\qquad K_{sp} = \\exp\\!\\left(\\frac{A}{T} + B + C\\ln T + DT + \\frac{E}{T^{2}}\\right)e^{-\\Delta V (P-P_{0})/(RT}$ | NeqSim master `CheckScalePotential` |
+| [`eos.schwartzentruber_alpha`](./schwartzentruber_alpha.md) | $\alpha = \left[1 + m(1 - \sqrt{T_r}) - p_1(1 - T_r)(1 + p_2 T_r + p_3 T_r^2)\right]^2, \quad m = 0.48508 + 1.55191\omega - 0.15613\omega^2$ | NeqSim master `AttractiveTermSchwartzentruber` |
 | [`eos.siddiqi_lucas_diffusivity`](./siddiqi_lucas_diffusivity.md) | $D_{AB}^0 = 2.98\times10^{-7}\,\frac{\eta_B^{-1.026}\,T}{V_A^{0.5473}}\quad(\text{aqueous}),\qquad 9.89\times10^{-8}\,\frac{\eta_B^{-0.907}\,V_B^{0.265}\,T}{V_A^{0.45}}\quad(\text{organic})$ | Siddiqi, M. A.; Lucas, K. (1986) |
-| [`eos.solid_fugacity`](./solid_fugacity.md) | $\\phi^{solid} = \\phi^{liq}(T,P)\\exp\\left[-\\frac{\\Delta H_{fus}}{RT}\\left(1-\\frac{T}{T_{tp}}\\right) + \\frac{\\Delta C_{p,SL}}{RT}(T_{tp}-T) - \\frac{\\Delta C_{p,SL}}{R}\\ln\\frac{T_{tp}}{T} - \\frac{\\Delta V_{SL}(P_{bar}-1)}{RT}\\right]$ | NeqSim 3.20.0 `ComponentSolid.fugcoef2` |
-| [`eos.soreide_whitson_alpha`](./soreide_whitson_alpha.md) | $\alpha = \left[1 + 0.453\left(1 - T_r\left(1 - 0.0103\,S^{1.1}\right)\right) + 0.0034\left(T_r^{-3} - 1\right)\right]^2$ | NeqSim 3.20.0 `AttractiveTermSoreideWhitson` |
+| [`eos.solid_fugacity`](./solid_fugacity.md) | $\\phi^{solid} = \\phi^{liq}(T,P)\\exp\\left[-\\frac{\\Delta H_{fus}}{RT}\\left(1-\\frac{T}{T_{tp}}\\right) + \\frac{\\Delta C_{p,SL}}{RT}(T_{tp}-T) - \\frac{\\Delta C_{p,SL}}{R}\\ln\\frac{T_{tp}}{T} - \\frac{\\Delta V_{SL}(P_{bar}-1)}{RT}\\right]$ | NeqSim master `ComponentSolid.fugcoef2` |
+| [`eos.soreide_whitson_alpha`](./soreide_whitson_alpha.md) | $\alpha = \left[1 + 0.453\left(1 - T_r\left(1 - 0.0103\,S^{1.1}\right)\right) + 0.0034\left(T_r^{-3} - 1\right)\right]^2$ | NeqSim master `AttractiveTermSoreideWhitson` |
 | [`eos.srk_alpha_ab`](./srk_alpha_ab.md) | $\alpha = \left[1 + \kappa\left(1 - \sqrt{T_{r}}\right)\right]^{2}, \qquad A = \frac{\Omega_{a}\,\alpha\,P_{r}}{T_{r}^{2}}, \qquad B = \frac{\Omega_{b}\,P_{r}}{T_{r}}$ | Soave, G. (1972) |
 | [`eos.srk_departure`](./srk_departure.md) | $\psi = \frac{-\kappa\sqrt{T_{r}}}{1 + \kappa\left(1 - \sqrt{T_{r}}\right)}, \qquad I = \ln\frac{z + B}{z}, \qquad C = \frac{A}{B}, \qquad \ln\varphi = z - 1 - \ln\left(z - B\right) - CI, \qquad \frac{H^{R}}{RT} = \left(z - 1\right) + C\left(\psi - 1\right)I, \qquad \frac{S^{R}}{R} = \ln\left(z - B\right) + C\psi I$ | Soave, G. (1972) |
 | [`eos.srk_kappa`](./srk_kappa.md) | $\kappa = 0.48 + 1.574\,\omega - 0.176\,\omega^{2}$ | Soave, G. (1972) |
 | [`eos.srk_peneloux_shift`](./srk_peneloux_shift.md) | $c = 0.40768\,\left(0.29441 - Z_{\mathrm{RA}}\right)\frac{R\,T_c}{P_c}, \qquad Z_{\mathrm{RA}} = 0.29056 - 0.08775\,\omega$ | Péneloux, A.; Rauzy, E.; Fréze, R. (1982) |
 | [`eos.srk_z_factor`](./srk_z_factor.md) | $z^{3} - z^{2} + \left(A - B - B^{2}\right)z - AB = 0$ | Redlich, O.; Kwong, J. N. S. (1949) |
-| [`eos.tbp_fraction_properties`](./tbp_fraction_properties.md) | $T_{c} = c_{0}d + c_{1}\ln M + c_{2}M + \frac{c_{3}}{M}, \qquad P_{c} = \exp\left(0.01325 + c_{0} + c_{1}d^{c_{4}} + \frac{c_{2}}{M} + \frac{c_{3}}{M^{2}}\right), \qquad \omega = \frac{3}{7}\frac{\log_{10}(P_{c}/1.01325)}{T_{c}/T_{b} - 1} - 1$ | NeqSim 3.20.0 `TBPfractionModel.PedersenTBPModelSRK` |
+| [`eos.tbp_fraction_properties`](./tbp_fraction_properties.md) | $T_{c} = c_{0}d + c_{1}\ln M + c_{2}M + \frac{c_{3}}{M}, \qquad P_{c} = \exp\left(0.01325 + c_{0} + c_{1}d^{c_{4}} + \frac{c_{2}}{M} + \frac{c_{3}}{M^{2}}\right), \qquad \omega = \frac{3}{7}\frac{\log_{10}(P_{c}/1.01325)}{T_{c}/T_{b} - 1} - 1$ | NeqSim master `TBPfractionModel.PedersenTBPModelSRK` |
 | [`eos.twu_kappa`](./twu_kappa.md) | $\kappa = 0.48 + 1.574\,\omega - 0.175\,\omega^{2}$ | Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991) |
-| [`eos.twucoon_alpha`](./twucoon_alpha.md) | $\alpha = T_r^{a} e^{b(1 - T_r^{c})} + \omega\left(T_r^{d} e^{e(1 - T_r^{f})} - T_r^{a} e^{b(1 - T_r^{c})}\right)$ | NeqSim 3.20.0 `AttractiveTermTwuCoon` |
-| [`eos.twucoon_param_alpha`](./twucoon_param_alpha.md) | $\alpha = T_r^{c(b-1)} \exp\left(a\left(1 - T_r^{bc}\right)\right)$ | NeqSim 3.20.0 `AttractiveTermTwuCoonParam` |
-| [`eos.twucoon_statoil_alpha`](./twucoon_statoil_alpha.md) | $\alpha = T_r^{c(b-1)} \exp\left(a\left(1 - T_r^{bc}\right)\right)$ | NeqSim 3.20.0 `AttractiveTermTwuCoonStatoil` |
+| [`eos.twucoon_alpha`](./twucoon_alpha.md) | $\alpha = T_r^{a} e^{b(1 - T_r^{c})} + \omega\left(T_r^{d} e^{e(1 - T_r^{f})} - T_r^{a} e^{b(1 - T_r^{c})}\right)$ | NeqSim master `AttractiveTermTwuCoon` |
+| [`eos.twucoon_param_alpha`](./twucoon_param_alpha.md) | $\alpha = T_r^{c(b-1)} \exp\left(a\left(1 - T_r^{bc}\right)\right)$ | NeqSim master `AttractiveTermTwuCoonParam` |
+| [`eos.twucoon_statoil_alpha`](./twucoon_statoil_alpha.md) | $\alpha = T_r^{c(b-1)} \exp\left(a\left(1 - T_r^{bc}\right)\right)$ | NeqSim master `AttractiveTermTwuCoonStatoil` |
 | [`eos.tyn_calus_diffusivity`](./tyn_calus_diffusivity.md) | $D_{AB}^0 = 8.93\times10^{-8}\,\frac{V_B^{0.267}\,T}{\eta_B\,V_A^{0.433}}$ | Tyn, M. T.; Calus, W. F. (1975) |
-| [`eos.umrpr_alpha`](./umrpr_alpha.md) | $\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.384401 + 1.52276\omega - 0.213808\omega^2 + 0.034616\omega^3 - 0.001976\omega^4$ | NeqSim 3.20.0 `AttractiveTermUMRPRU` |
+| [`eos.umrpr_alpha`](./umrpr_alpha.md) | $\alpha = \left(1 + m(1 - \sqrt{T_r})\right)^2, \quad m = 0.384401 + 1.52276\omega - 0.213808\omega^2 + 0.034616\omega^3 - 0.001976\omega^4$ | NeqSim master `AttractiveTermUMRPRU` |
 | [`eos.vdw1f_mix_binary`](./vdw1f_mix_binary.md) | $a_{\mathrm{mix}} = z_{1}^{2}a_{1} + 2z_{1}z_{2}\left(1 - k_{12}\right)\sqrt{a_{1}a_{2}} + z_{2}^{2}a_{2}, \qquad b_{\mathrm{mix}} = z_{1}b_{1} + z_{2}b_{2}$ | van der Waals, J. D. (1890); and the conventional one-fluid treatment in any modern cubic-EOS text |
-| [`eos.wax_solid_fugacity`](./wax_solid_fugacity.md) | $\phi^{wax} = \phi^{liq}(T,P)\exp\left[-\frac{\Delta H_{fus}}{RT}\left(1-\frac{T}{T_{tp}}\right) + \frac{\Delta C_{p,SL}}{R}\left(\frac{T_{tp}}{T} - 1 - \ln\frac{T_{tp}}{T}\right) - \frac{(v^{liq}-v^{sol})(P-P_{ref})}{RT}\right], \qquad v^{sol} = 0.9\,v^{liq}$ | NeqSim 3.20.0 `ComponentWax.fugcoef2` |
+| [`eos.wax_solid_fugacity`](./wax_solid_fugacity.md) | $\phi^{wax} = \phi^{liq}(T,P)\exp\left[-\frac{\Delta H_{fus}}{RT}\left(1-\frac{T}{T_{tp}}\right) + \frac{\Delta C_{p,SL}}{R}\left(\frac{T_{tp}}{T} - 1 - \ln\frac{T_{tp}}{T}\right) - \frac{(v^{liq}-v^{sol})(P-P_{ref})}{RT}\right], \qquad v^{sol} = 0.9\,v^{liq}$ | NeqSim master `ComponentWax.fugcoef2` |
 | [`eos.wilke_chang_diffusivity`](./wilke_chang_diffusivity.md) | $D_{AB}^0 = 7.4\times10^{-8}\,\frac{(\phi_B M_B)^{1/2}\,T}{\eta_B\,V_A^{0.6}}$ | Wilke, C. R.; Chang, P. (1955) |
 
 ## Models
@@ -72,36 +72,36 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.bubble_pressure`](./bubble_pressure.md) | `bubble_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.bubble_temperature`](./bubble_temperature.md) | `bubble_temperature_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.bwrs_phase`](./bwrs_phase.md) | `newton_density_solve` | Younglove, B. A.; Ely, J. F. (1987) |
-| [`eos.capillary_dew_point`](./capillary_dew_point.md) | `capillary_dew_point_newton` | NeqSim 3.20.0 `CapillaryDewPointFlash` |
+| [`eos.capillary_dew_point`](./capillary_dew_point.md) | `capillary_dew_point_newton` | NeqSim master `CapillaryDewPointFlash` |
 | [`eos.co2_phase`](./co2_phase.md) | `newton_density_solve` | Span, R.; Wagner, W. (1996) |
 | [`eos.critical_point`](./critical_point.md) | `heidemann_khalil_critical` | Heidemann, R. A.; Khalil, A. M. (1980) |
-| [`eos.desmukh_mather_phase`](./desmukh_mather_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseDesmukhMather` |
+| [`eos.desmukh_mather_phase`](./desmukh_mather_phase.md) | `direct composition` | NeqSim master `PhaseDesmukhMather` |
 | [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.dew_temperature`](./dew_temperature.md) | `dew_temperature_successive_substitution` | Michelsen, M. L. (1982) |
 | [`eos.eos_cg_phase`](./eos_cg_phase.md) | `log_volume_newton` | Gernert, J.; Span, R. (2016) |
-| [`eos.freezing_point`](./freezing_point.md) | `freezing_point_bracket_bisection` | NeqSim 3.20.0 `FreezingPointTemperatureFlash` |
-| [`eos.furst_electrolyte_mod2004_phase`](./furst_electrolyte_mod2004_phase.md) | `direct composition` | NeqSim 3.20.0 `SystemFurstElectrolyteEosMod2004` |
-| [`eos.furst_electrolyte_phase`](./furst_electrolyte_phase.md) | `direct composition` | NeqSim 3.20.0 `SystemFurstElectrolyteEos` |
-| [`eos.ge_nrtl_flash`](./ge_nrtl_flash.md) | `successive_substitution_flash` | NeqSim 3.20.0 `SystemEosGE` |
-| [`eos.ge_nrtl_phase`](./ge_nrtl_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseGENRTL` |
-| [`eos.ge_unifac_phase`](./ge_unifac_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseGEUnifac` |
-| [`eos.ge_uniquac_phase`](./ge_uniquac_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseGEUniquac` |
-| [`eos.ge_van_laar_acid_phase`](./ge_van_laar_acid_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseGEVanLaarAcid` |
-| [`eos.ge_wilson_phase`](./ge_wilson_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseGEWilson` |
+| [`eos.freezing_point`](./freezing_point.md) | `freezing_point_bracket_bisection` | NeqSim master `FreezingPointTemperatureFlash` |
+| [`eos.furst_electrolyte_mod2004_phase`](./furst_electrolyte_mod2004_phase.md) | `direct composition` | NeqSim master `SystemFurstElectrolyteEosMod2004` |
+| [`eos.furst_electrolyte_phase`](./furst_electrolyte_phase.md) | `direct composition` | NeqSim master `SystemFurstElectrolyteEos` |
+| [`eos.ge_nrtl_flash`](./ge_nrtl_flash.md) | `successive_substitution_flash` | NeqSim master `SystemEosGE` |
+| [`eos.ge_nrtl_phase`](./ge_nrtl_phase.md) | `direct composition` | NeqSim master `PhaseGENRTL` |
+| [`eos.ge_unifac_phase`](./ge_unifac_phase.md) | `direct composition` | NeqSim master `PhaseGEUnifac` |
+| [`eos.ge_uniquac_phase`](./ge_uniquac_phase.md) | `direct composition` | NeqSim master `PhaseGEUniquac` |
+| [`eos.ge_van_laar_acid_phase`](./ge_van_laar_acid_phase.md) | `direct composition` | NeqSim master `PhaseGEVanLaarAcid` |
+| [`eos.ge_wilson_phase`](./ge_wilson_phase.md) | `direct composition` | NeqSim master `PhaseGEWilson` |
 | [`eos.gerg2008_phase`](./gerg2008_phase.md) | `log_volume_newton` | Kunz, O.; Wagner, W. (2012) |
 | [`eos.helium_phase`](./helium_phase.md) | `newton_density_solve` | Vega (NIST IR 8474) helium equation of state |
-| [`eos.hydrate_formation_pressure`](./hydrate_formation_pressure.md) | `hydrate_pressure_bisection` | NeqSim 3.20.0 `HydrateFormationPressureFlash` |
-| [`eos.hydrate_formation_temperature`](./hydrate_formation_temperature.md) | `hydrate_temperature_bisection` | NeqSim 3.20.0 `HydrateFormationTemperatureFlash` |
-| [`eos.hydrate_fraction`](./hydrate_fraction.md) | `hydrate_bound_fixed_point` | NeqSim 3.20.0 `TPHydrateFlash`, with the composition and the bound corrected |
+| [`eos.hydrate_formation_pressure`](./hydrate_formation_pressure.md) | `hydrate_pressure_bisection` | NeqSim master `HydrateFormationPressureFlash` |
+| [`eos.hydrate_formation_temperature`](./hydrate_formation_temperature.md) | `hydrate_temperature_bisection` | NeqSim master `HydrateFormationTemperatureFlash` |
+| [`eos.hydrate_fraction`](./hydrate_fraction.md) | `hydrate_bound_fixed_point` | NeqSim master `TPHydrateFlash`, with the composition and the bound corrected |
 | [`eos.hydrogen_phase`](./hydrogen_phase.md) | `density_solve_on_the_selected_root` | Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009) |
-| [`eos.kent_eisenberg_phase`](./kent_eisenberg_phase.md) | `direct composition` | NeqSim 3.20.0 `PhaseKentEisenberg` |
+| [`eos.kent_eisenberg_phase`](./kent_eisenberg_phase.md) | `direct composition` | NeqSim master `PhaseKentEisenberg` |
 | [`eos.mason_saxena_conductivity`](./mason_saxena_conductivity.md) | `direct composition` | Mason, E. A.; Saxena, S. C. (1958); Chung et al. (1988) |
 | [`eos.molar_enthalpy_entropy`](./molar_enthalpy_entropy.md) | `direct composition` | The composition of ideal-gas and residual contributions |
 | [`eos.nrtl_activity_coefficients`](./nrtl_activity_coefficients.md) | `direct composition` | Renon, H.; Prausnitz, J. M. (1968) |
 | [`eos.parahydrogen_solid_phase`](./parahydrogen_solid_phase.md) | `bracketed_log_volume_newton` | Sannerhaugen, A. (2026) |
 | [`eos.pcsaft_rahmat_phase`](./pcsaft_rahmat_phase.md) | `direct composition` | Gross, J.; Sadowski, G. (2001) |
 | [`eos.ph_flash`](./ph_flash.md) | `ph_flash_inverse_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
-| [`eos.pitzer_phase`](./pitzer_phase.md) | `direct composition` | NeqSim 3.20.0 `PhasePitzer` |
+| [`eos.pitzer_phase`](./pitzer_phase.md) | `direct composition` | NeqSim master `PhasePitzer` |
 | [`eos.pr_cpa_phase`](./pr_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
 | [`eos.ps_flash`](./ps_flash.md) | `ps_flash_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
 | [`eos.pt_flash`](./pt_flash.md) | `successive_substitution_flash` | Rachford, H. H.; Rice, J. D. (1952); Michelsen, M. L. (1982) |
@@ -113,16 +113,16 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.pvf_flash`](./pvf_flash.md) | `pvf_flash_illinois_temperature` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.rachford_rice`](./rachford_rice.md) | `rachford_rice_nielsen_2023` | Nielsen, L. (2023) |
 | [`eos.saft_vr_mie_phase`](./saft_vr_mie_phase.md) | `direct composition` | Lafitte, T. et al. (2013) |
-| [`eos.salt_precipitation`](./salt_precipitation.md) | `removal_extent_bisection` | NeqSim 3.20.0 `MultiSaltPrecipitation` |
-| [`eos.soreide_whitson_phase`](./soreide_whitson_phase.md) | `direct composition` | NeqSim 3.20.0 `SystemSoreideWhitson` |
+| [`eos.salt_precipitation`](./salt_precipitation.md) | `removal_extent_bisection` | NeqSim master `MultiSaltPrecipitation` |
+| [`eos.soreide_whitson_phase`](./soreide_whitson_phase.md) | `direct composition` | NeqSim master `SystemSoreideWhitson` |
 | [`eos.srk_cpa_phase`](./srk_cpa_phase.md) | `direct composition` | Kontogeorgis, G. M. et al. (1996) |
 | [`eos.stability_test`](./stability_test.md) | `tangent_plane_stability` | Michelsen, M. L. (1982), "The isothermal flash problem. Part I. Stability" |
 | [`eos.th_flash`](./th_flash.md) | `th_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
-| [`eos.thermal_conductivity`](./thermal_conductivity.md) | `direct composition` | NeqSim 3.20.0 `PFCTConductivityMethodMod86` |
+| [`eos.thermal_conductivity`](./thermal_conductivity.md) | `direct composition` | NeqSim master `PFCTConductivityMethodMod86` |
 | [`eos.tp_flash_saft`](./tp_flash_saft.md) | `successive_substitution_flash` | Lafitte, T. et al. (2013) |
-| [`eos.tp_multiflash`](./tp_multiflash.md) | `multiphase_fraction_newton` | NeqSim 3.20.0 `TPmultiflash` |
-| [`eos.tp_multiflash_wax`](./tp_multiflash_wax.md) | `multiphase_fraction_newton` | NeqSim 3.20.0 `TPmultiflashWAX` |
-| [`eos.tp_solid_flash`](./tp_solid_flash.md) | `solid_fraction_newton` | NeqSim 3.20.0 `SolidFlash` |
+| [`eos.tp_multiflash`](./tp_multiflash.md) | `multiphase_fraction_newton` | NeqSim master `TPmultiflash` |
+| [`eos.tp_multiflash_wax`](./tp_multiflash_wax.md) | `multiphase_fraction_newton` | NeqSim master `TPmultiflashWAX` |
+| [`eos.tp_solid_flash`](./tp_solid_flash.md) | `solid_fraction_newton` | NeqSim master `SolidFlash` |
 | [`eos.ts_flash`](./ts_flash.md) | `ts_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.tu_flash`](./tu_flash.md) | `tu_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.tv_flash`](./tv_flash.md) | `tv_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
@@ -134,7 +134,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.uniquac_activity_coefficients`](./uniquac_activity_coefficients.md) | `direct composition` | Abrams, D. S.; Prausnitz, J. M. (1975) |
 | [`eos.van_laar_acid_activity_coefficients`](./van_laar_acid_activity_coefficients.md) | `direct composition` | Taleb, D.; Ponche, J. L.; Mirabel, P. (1996) |
 | [`eos.vh_flash`](./vh_flash.md) | `vh_flash_newton_2x2` | Standard thermodynamics, as in Michelsen & Mollerup |
-| [`eos.viscosity`](./viscosity.md) | `direct composition` | NeqSim 3.20.0 `PFCTViscosityMethodHeavyOil` |
+| [`eos.viscosity`](./viscosity.md) | `direct composition` | NeqSim master `PFCTViscosityMethodHeavyOil` |
 | [`eos.vs_flash`](./vs_flash.md) | `vs_flash_newton_2x2` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.vu_flash`](./vu_flash.md) | `vu_flash_newton_2x2` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.vu_flash_single_comp`](./vu_flash_single_comp.md) | `saturation_temperature_bisection` | Standard thermodynamics, as in Michelsen & Mollerup |

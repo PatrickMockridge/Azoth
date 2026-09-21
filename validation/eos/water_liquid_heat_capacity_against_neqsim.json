@@ -2,7 +2,7 @@
   "id": "water_liquid_heat_capacity_against_neqsim",
   "calc": "eos.liquid_heat_capacity",
   "source": {
-    "attribution": "NeqSim 3.20.0, `getPureComponentCpLiquid` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, `getPureComponentCpLiquid` - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "NeqSim's pure-component liquid heat-capacity polynomial. The coefficients are NeqSim's internal scale, and the equation's `1e-3` recovers `J/(mol*K)`."
   },

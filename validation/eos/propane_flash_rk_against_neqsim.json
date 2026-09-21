@@ -2,7 +2,7 @@
   "id": "propane_flash_rk_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemRKEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemRKEos.TPflash - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "A pure component below its dew point. `beta` is deliberately not in `expected` for the same reason the Soave and Peng-Robinson pure-propane cases omit it: NeqSim reports 1.0 for a single-phase feed and azoth reports the absence. The K-value and the two roots are the physics, and they match."
   },

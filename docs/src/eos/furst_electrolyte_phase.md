@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `SystemFurstElectrolyteEos`**
+**NeqSim master `SystemFurstElectrolyteEos`**
 
 `PhaseModifiedFurstElectrolyteEos` and `ComponentModifiedFurstElectrolyteEos`, ported with the parameters `FurstElectrolyteConstants` hardcodes. NeqSim's rule 4 (Huron-Vidal) is the mixing rule the system installs.
 

@@ -20,7 +20,7 @@ where `phi_liq` and `v_liq` are the **cut's own** one-component liquid on the cu
 
 ## Source
 
-**NeqSim 3.20.0 `ComponentWax.fugcoef2`**
+**NeqSim master `ComponentWax.fugcoef2`**
 
 The default `Pedersen` wax component model. `ComponentWonWax`, `ComponentWaxWilson` and `ComponentCoutinhoWax` are the phase's other three and are carried.
 
@@ -79,7 +79,7 @@ satisfy for the result to mean what it says.
 
 ## Worked example
 
-Source: NeqSim 3.20.0, `ComponentWax.fugcoef2`, from `validation/neqsim/captures/wax_reference_probe.tsv`
+Source: NeqSim master, `ComponentWax.fugcoef2`, from `validation/neqsim/captures/wax_reference_probe.tsv`
 
 | Input | Value |
 |---|---|

@@ -1,7 +1,7 @@
 // NeqSim's own fugacity coefficients for `eos.ge_wilson_phase`, after #3774.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar GeWilsonPhi.java
-//     java -cp .:neqsim-3.20.0.jar GeWilsonPhi
+//     javac -proc:none -cp neqsim-f0c7436.jar GeWilsonPhi.java
+//     java -cp .:neqsim-f0c7436.jar GeWilsonPhi
 //
 // **This driver used to compose the coefficient. It no longer has to.**
 // `PhaseGEWilson.getExcessGibbsEnergy` summed `x_i ln(gamma_i)` and never wrote `gamma` back

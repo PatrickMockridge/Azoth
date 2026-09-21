@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `PhaseGEWilson`**
+**NeqSim master `PhaseGEWilson`**
 
 `ComponentGE.fugcoef`, ported verbatim; the activity coefficient is `eos.wilson_activity_coefficients`', ported from `ComponentGEWilson.getWilsonActivityCoefficient`.
 

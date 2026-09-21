@@ -2,7 +2,7 @@ model = "eos.ge_van_laar_acid_phase"
 [[cases]]
 id = "water_nitric_binary_at_250_k_1_bar"
 tolerance = 1e-09
-source = "NeqSim 3.20.0 `PhaseGEVanLaarAcid`, run from validation/neqsim/GeVanLaarAcidPhi.java: a bare phase driven directly, reading its own `getGamma` and `getFugacityCoefficient`. Not `SystemVanLaarActivitySRK` - its tuning is entirely vapour-side and flash-iteration, and the liquid it produces is this one. `gamma` is the figure NeqSim reports; `ln_gamma` and `ln_phi` are its logarithms. `p_sat` is the value the phase uses, which for water is the Taleb correlation and not the databank Antoine."
+source = "NeqSim master `PhaseGEVanLaarAcid`, run from validation/neqsim/GeVanLaarAcidPhi.java: a bare phase driven directly, reading its own `getGamma` and `getFugacityCoefficient`. Not `SystemVanLaarActivitySRK` - its tuning is entirely vapour-side and flash-iteration, and the liquid it produces is this one. `gamma` is the figure NeqSim reports; `ln_gamma` and `ln_phi` are its logarithms. `p_sat` is the value the phase uses, which for water is the Taleb correlation and not the databank Antoine."
 [cases.inputs]
 components = ["water", "nitric acid"]
 T = 250.0
@@ -16,7 +16,7 @@ p_sat = [95.76791536798726, 396.1629357961019]
 [[cases]]
 id = "water_nitric_sulfuric_ternary_at_250_k_1_bar"
 tolerance = 1e-09
-source = "NeqSim 3.20.0, as the first case: validation/neqsim/GeVanLaarAcidPhi.java. The ternary, which is what the Taleb correlation is for: the two binaries are its limits, and the water-nitric-sulfuric interaction is the term neither of them carries."
+source = "NeqSim master, as the first case: validation/neqsim/GeVanLaarAcidPhi.java. The ternary, which is what the Taleb correlation is for: the two binaries are its limits, and the water-nitric-sulfuric interaction is the term neither of them carries."
 [cases.inputs]
 components = ["water", "nitric acid", "sulfuric acid"]
 T = 250.0
@@ -30,7 +30,7 @@ p_sat = [95.76791536798726, 396.1629357961019, 2.6554098435359023e-06]
 [[cases]]
 id = "ternary_at_273_15_k_2_bar"
 tolerance = 1e-09
-source = "NeqSim 3.20.0, as the first case: validation/neqsim/GeVanLaarAcidPhi.java. A different composition and pressure, at the ice point: the phase divides by `P`, so a state at 2 bar rather than 1 is what says the divisor is the caller's argument rather than a constant."
+source = "NeqSim master, as the first case: validation/neqsim/GeVanLaarAcidPhi.java. A different composition and pressure, at the ice point: the phase divides by `P`, so a state at 2 bar rather than 1 is what says the divisor is the caller's argument rather than a constant."
 [cases.inputs]
 components = ["water", "nitric acid", "sulfuric acid"]
 T = 273.15

@@ -59,5 +59,5 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 ## References
 
 - Coutinho, J. A. P.; Andersen, S. I.; Stenby, E. H. (1995). "Evaluation of activity coefficient models in prediction of alkane solid-liquid equilibria." Fluid Phase Equilibria 103, 23-39.
-- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEWilson.getWilsonActivityCoefficient`, the port source; NeqSim 3.20.0's `getActivityCoefficient` returns 0, so the oracle is the direct method.
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEWilson.getWilsonActivityCoefficient`, the port source; NeqSim master's `getActivityCoefficient` returns 0, so the oracle is the direct method.
 

@@ -18,7 +18,7 @@ m = 0.37464 + 1.54226*omega - 0.26992*omega**2,  m_mod = 1.21*m above Tr = 1 els
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermPrDanesh`**
+**NeqSim master `AttractiveTermPrDanesh`**
 
 `alpha(temperature)`, ported verbatim
 

@@ -68,7 +68,7 @@ satisfy for the result to mean what it says.
 
 - A and B are the reduced parameters of the Peng-Robinson cubic and go with that cubic's mixing rules, not with another equation of state's.
 
-- **`Omega_a` and `Omega_b` are NeqSim 3.20.0's, not the paper's**: 0.45724333333 and 0.077803333, from `ComponentPR`'s `a = .45724333333*R**2*Tc**2/Pc` and `b = .077803333*R*Tc/Pc`.
+- **`Omega_a` and `Omega_b` are NeqSim's, not the paper's**: 0.45724333333 and 0.077803333, from `ComponentPR`'s `a = .45724333333*R**2*Tc**2/Pc` and `b = .077803333*R*Tc/Pc`.
 
 
 
@@ -115,7 +115,7 @@ A propane-like component at Tr = 0.8, Pr = 0.25, with the coefficient `eos.pr_ka
 ## References
 
 - Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.
-- NeqSim 3.20.0, `neqsim.thermo.component.ComponentPR`, constructor.
+- NeqSim master, `neqsim.thermo.component.ComponentPR`, constructor.
 
 
 ---

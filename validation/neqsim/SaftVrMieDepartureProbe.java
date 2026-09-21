@@ -48,8 +48,8 @@ import neqsim.thermo.system.SystemSAFTVRMie;
  * {@code ~/Desktop/neqsim-saft-vr-mie-chain-contact-value-temperature.md}.
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar SaftVrMieDepartureProbe.java
- * java -cp .:neqsim-3.20.0.jar SaftVrMieDepartureProbe [T_K P_bara name:z ...]
+ * javac -proc:none -cp neqsim-f0c7436.jar SaftVrMieDepartureProbe.java
+ * java -cp .:neqsim-f0c7436.jar SaftVrMieDepartureProbe [T_K P_bara name:z ...]
  * </pre>
  */
 public final class SaftVrMieDepartureProbe {
@@ -189,7 +189,7 @@ public final class SaftVrMieDepartureProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("# azoth SaftVrMieDepartureProbe - NeqSim 3.20.0's SystemSAFTVRMie.");
+    System.out.println("# azoth SaftVrMieDepartureProbe - NeqSim master's SystemSAFTVRMie.");
     System.out.println("# Every dT key is d/dT; azoth carries T*d/dT, so multiply by T.");
     if (args.length >= 4) {
       double t = Double.parseDouble(args[0]);

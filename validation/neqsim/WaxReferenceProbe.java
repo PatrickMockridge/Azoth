@@ -12,8 +12,8 @@ package neqsim.thermo.component;
 // The other half is pure arithmetic from numbers `WaxProbe` already prints - heat of fusion,
 // triple point, molar mass - so with this the two are separated completely.
 //
-//   javac -proc:none -cp neqsim-3.20.0.jar -d . WaxReferenceProbe.java
-//   java -cp .:neqsim-3.20.0.jar neqsim.thermo.component.WaxReferenceProbe
+//   javac -proc:none -cp neqsim-f0c7436.jar -d . WaxReferenceProbe.java
+//   java -cp .:neqsim-f0c7436.jar neqsim.thermo.component.WaxReferenceProbe
 
 import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.system.SystemInterface;

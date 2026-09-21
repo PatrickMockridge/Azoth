@@ -18,7 +18,7 @@ alpha = (1 + m*(1 - sqrt(Tr)))**2, with m the 1978 Peng-Robinson coefficient (0.
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermPrDelft1998`**
+**NeqSim master `AttractiveTermPrDelft1998`**
 
 `alpha(temperature)`, general branch ported verbatim
 

@@ -18,7 +18,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `SystemSoreideWhitson`, `PhaseSoreideWhitson`, `AttractiveTermSoreideWhitson` and `EosMixingRuleHandler.getkijWhitsonSoreideAqueous` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `SystemSoreideWhitson`"
+standard = "NeqSim master `SystemSoreideWhitson`"
 edition = "`PhaseSoreideWhitson` and `EosMixingRuleHandler`'s rule 11, ported with the legacy aqueous parameterisation. The water alpha is `eos.soreide_whitson_alpha`'s."
 [inputs]
 [inputs.components]

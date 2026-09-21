@@ -6,7 +6,7 @@
 
 ## Source
 
-**NeqSim 3.20.0 `CapillaryDewPointFlash`**
+**NeqSim master `CapillaryDewPointFlash`**
 
 The K-value shift and the temperature iteration are ported from `CapillaryDewPointFlash` and `ConstantDutyTemperatureFlash`; the surface tension is an argument here and an interphase property there, and that difference is in the assumptions.
 

@@ -1,7 +1,7 @@
-// What NeqSim 3.20.0's UNIQUAC liquid reports - and, since #3774, it refuses to exist.
+// What NeqSim's UNIQUAC liquid reports - and, since #3774, it refuses to exist.
 //
-//     javac -proc:none -cp neqsim-3.20.0.jar GeUniquacPhi.java
-//     java -cp .:neqsim-3.20.0.jar GeUniquacPhi
+//     javac -proc:none -cp neqsim-f0c7436.jar GeUniquacPhi.java
+//     java -cp .:neqsim-f0c7436.jar GeUniquacPhi
 //
 // `eos.ge_uniquac_phase` is `gamma_i * P0_i / P`, so an oracle needs NeqSim to produce a
 // UNIQUAC `gamma_i`. It cannot, and it no longer pretends to.

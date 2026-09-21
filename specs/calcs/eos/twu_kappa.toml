@@ -3,7 +3,7 @@ name = "Twu attraction-parameter coefficient"
 equation = "kappa = 0.48 + 1.574*omega - 0.175*omega**2"
 latex = '''\kappa = 0.48 + 1.574\,\omega - 0.175\,\omega^{2}'''
 assumptions = ["the acentric factor supplied is correct for the component intended. NOT CHECKED.\n", "the coefficient is Twu's, which differs from Soave's only in the last constant: 0.175 against 0.176.\n", "the range of acentric factors over which the correlation was fitted is NOT established, and no bound asserts one.\n"]
-references = ["Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991). \\\"A Cubic Equation of State with a New Alpha Function and a New Mixing Rule.\\\" Fluid Phase Equilibria 69, 33-50. DOI 10.1016/0378-3812(91)90024-2.", "NeqSim 3.20.0, `neqsim.thermo.component.attractiveeosterm.AttractiveTermTwu`."]
+references = ["Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991). \\\"A Cubic Equation of State with a New Alpha Function and a New Mixing Rule.\\\" Fluid Phase Equilibria 69, 33-50. DOI 10.1016/0378-3812(91)90024-2.", "NeqSim master, `neqsim.thermo.component.attractiveeosterm.AttractiveTermTwu`."]
 [source]
 standard = "Twu, C. H.; Bluck, D.; Cunningham, J. R.; Coon, J. E. (1991)"
 edition = "A Cubic Equation of State with a New Alpha Function and a New Mixing Rule. Fluid Phase Equilibria, 69, 33-50"

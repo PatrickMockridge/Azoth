@@ -2,7 +2,7 @@
   "id": "methane_butane_flash_matcop_prumr_against_neqsim",
   "calc": "eos.pt_flash",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
+    "attribution": "NeqSim master, SystemPrEos with the matching AttractiveTerm* - the upstream this library is a port of, run from validation/neqsim/FlashTp.java",
     "verification": "verified",
     "notes": "Mathias-Copeman for UMR-PRU. NeqSim's term 17 is constructed without fitted parameters, so it reduces to the base Soave form with the UMR quartic `m`; azoth reproduces that rather than reading a column."
   },

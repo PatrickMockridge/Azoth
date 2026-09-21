@@ -2,7 +2,7 @@ model = "eos.furst_electrolyte_phase"
 [[cases]]
 id = "the_shipped_tests_aqueous_phase"
 tolerance = 1e-08
-source = """NeqSim 3.20.0's own `SystemFurstElectrolyteEosTest` mixture - methane, water, Na+ and Cl-
+source = """NeqSim master's own `SystemFurstElectrolyteEosTest` mixture - methane, water, Na+ and Cl-
 at `0.1 1.0 0.001 0.001` - flashed at 25 C and 10.01325 bara, from
 `validation/neqsim/FurstProbe.java`: `Z = 0.00963585200923298` and
 `lnPhi = [8.37599162790169, -5.74878404423108, -275.908826771314, -166.578345095159]`.

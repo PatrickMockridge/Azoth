@@ -20,7 +20,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TPHydrateFlash` and `ComponentHydratePVTsim` are the port source; the divergence is recorded there and in this spec's first assumption.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `TPHydrateFlash`, with the composition and the bound corrected"
+standard = "NeqSim master `TPHydrateFlash`, with the composition and the bound corrected"
 edition = "The same quantity from a solve that closes: the fraction on the fugacity equality with the hydrate's composition taken from both cavities, and the material balance asserted at the answer rather than left to the caller."
 [algorithm]
 scheme = "hydrate_bound_fixed_point"

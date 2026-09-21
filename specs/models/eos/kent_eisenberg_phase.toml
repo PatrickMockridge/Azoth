@@ -15,7 +15,7 @@ references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhaseKentEisenberg`, `ComponentKentEisenberg` and `ComponentGeNRTL` are the port source.",
 ]
 [source]
-standard = "NeqSim 3.20.0 `PhaseKentEisenberg`"
+standard = "NeqSim master `PhaseKentEisenberg`"
 edition = "`ComponentKentEisenberg.fugcoef`, ported verbatim. The activity coefficient is `PhaseKentEisenberg.getActivityCoefficient`'s override, which is the constant one."
 [inputs]
 [inputs.components]

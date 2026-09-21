@@ -26,8 +26,8 @@ import neqsim.thermo.system.SystemSrkEos;
  * wrong everywhere. The state is the one {@code eos.ph_flash}'s own case uses.
  *
  * <pre>
- * javac -proc:none -cp neqsim-3.20.0.jar PhFlashJacobianProbe.java
- * java -cp .:neqsim-3.20.0.jar PhFlashJacobianProbe
+ * javac -proc:none -cp neqsim-f0c7436.jar PhFlashJacobianProbe.java
+ * java -cp .:neqsim-f0c7436.jar PhFlashJacobianProbe
  * </pre>
  */
 public final class PhFlashJacobianProbe {
@@ -84,7 +84,7 @@ public final class PhFlashJacobianProbe {
   }
 
   public static void main(String[] args) {
-    System.out.println("# azoth PhFlashJacobianProbe - NeqSim 3.20.0's PH-flash Jacobian.");
+    System.out.println("# azoth PhFlashJacobianProbe - NeqSim master's PH-flash Jacobian.");
     System.out.println("# Two-phase state first, then a single-phase control: the claim is");
     System.out.println("# that dH/dT = Cp is wrong ACROSS a phase boundary, not everywhere.");
 

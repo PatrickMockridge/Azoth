@@ -14,8 +14,8 @@
 // overrides `deltaCpSL = 37.12` for the component named `water` and computes it from the
 // table for every other, so ice is the case the class was written around.
 //
-//   javac -proc:none -cp neqsim-3.20.0.jar SolidFlashProbe.java
-//   java -cp .:neqsim-3.20.0.jar SolidFlashProbe > captures/solid_flash_probe.tsv
+//   javac -proc:none -cp neqsim-f0c7436.jar SolidFlashProbe.java
+//   java -cp .:neqsim-f0c7436.jar SolidFlashProbe > captures/solid_flash_probe.tsv
 
 import neqsim.thermo.component.ComponentInterface;
 import neqsim.thermo.component.ComponentSolid;

@@ -18,7 +18,7 @@ alpha = (1 + m*(1 - sqrt(Tr)))**2 with m = 0.480 + 1.574*omega - 0.176*omega**2
 
 ## Source
 
-**NeqSim 3.20.0 `AttractiveTermPrLeeKesler`**
+**NeqSim master `AttractiveTermPrLeeKesler`**
 
 `alpha(temperature)`, ported verbatim
 

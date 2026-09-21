@@ -2,7 +2,7 @@ model = "eos.ge_nrtl_flash"
 [[cases]]
 id = "methanol_water_equimolar_at_350_k_1_bar"
 tolerance = 1e-08
-source = "NeqSim 3.20.0 `SystemNRTL` - `PhaseSrkEos` over `PhaseGENRTL` - driven through the gamma-phi update of `TPflash.sucsSubsGammaPhi` by validation/neqsim/NrtlGammaPhiFlash.java. The tolerance is not tighter because azoth stops on `rms |d ln K|` of 1e-10 and successive substitution amplifies that into the compositions: at the stopping point the two agree to about 6e-11 relative, and the fixed point both approach is beta = 0.73837882729015591."
+source = "NeqSim master `SystemNRTL` - `PhaseSrkEos` over `PhaseGENRTL` - driven through the gamma-phi update of `TPflash.sucsSubsGammaPhi` by validation/neqsim/NrtlGammaPhiFlash.java. The tolerance is not tighter because azoth stops on `rms |d ln K|` of 1e-10 and successive substitution amplifies that into the compositions: at the stopping point the two agree to about 6e-11 relative, and the fixed point both approach is beta = 0.73837882729015591."
 [cases.inputs]
 components = ["methanol", "water"]
 T = 350.0
@@ -21,7 +21,7 @@ phase = "two_phase"
 [[cases]]
 id = "methanol_water_lean_at_353_k_1_bar"
 tolerance = 1e-08
-source = "NeqSim 3.20.0 `SystemNRTL`, as the first case: validation/neqsim/NrtlGammaPhiFlash.java. The second composition, where the liquid is 90 mol% water and methanol's activity coefficient is 3.0 - the region a methanol wash column works in."
+source = "NeqSim master `SystemNRTL`, as the first case: validation/neqsim/NrtlGammaPhiFlash.java. The second composition, where the liquid is 90 mol% water and methanol's activity coefficient is 3.0 - the region a methanol wash column works in."
 [cases.inputs]
 components = ["methanol", "water"]
 T = 353.0
@@ -40,7 +40,7 @@ phase = "two_phase"
 [[cases]]
 id = "ethanol_water_lean_at_360_k_1_bar"
 tolerance = 1e-08
-source = "NeqSim 3.20.0 `SystemNRTL`, as the first case: validation/neqsim/NrtlGammaPhiFlash.java. A different pair, so the case does not rest on one set of NRTL matrices and one pair of Antoine correlations agreeing by luck."
+source = "NeqSim master `SystemNRTL`, as the first case: validation/neqsim/NrtlGammaPhiFlash.java. A different pair, so the case does not rest on one set of NRTL matrices and one pair of Antoine correlations agreeing by luck."
 [cases.inputs]
 components = ["ethanol", "water"]
 T = 360.0
