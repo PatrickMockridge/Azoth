@@ -1102,23 +1102,22 @@ pub fn pressure_over_rt(components: &[MieComponent], x: &[f64], t: f64, v: f64) 
 
 /// `T d(A^R/(R T))/dT` at constant volume, per mole.
 ///
-/// **NeqSim publishes this and its SAFT-VR-Mie value is wrong for any fluid with a chain.**
-/// `PhaseSAFTVRMie.dF_HC_SAFTdT` carries `m a_hs'(eta) d eta/dT - m_min1 d ln g_hs/d eta
-/// d eta/dT` and stops there, so it differentiates the contact value as though it moved
-/// with the packing fraction alone. It does not: `g_hs` is the Mie-weighted contact value,
+/// **`PhaseSAFTVRMie.dF_HC_SAFTdT` omitted the chain contact value's temperature route
+/// until `#3830` added it.** Its expression is
+/// `m a_hs'(eta) d eta/dT - m_min1 d ln g_hs/d eta d eta/dT`; the second
+/// term differentiated the contact value as though it moved with the packing fraction
+/// alone. It does not: `g_hs` is the Mie-weighted contact value,
 /// `exp(sum_i w_i ln g_Mie_ii / W)`, and `g_Mie_ii = g_HS0 exp(beta (g_1 + beta g_2)/g_HS0)`
 /// carries `beta = eps/(k T)` as well. On n-butane alone at 350 K and 30 bara that class
-/// reports `-6.58e-05` where a difference of its own `F_hc` at fixed volume gives
-/// `+1.81e-04` - opposite signs. Methane, `m = 1`, is the exception the class's own probe
-/// state happens to be, because its chain block is skipped outright. Its **volume**
-/// derivative is right, which is why the pressure and the fugacity coefficients here agree
-/// with it.
+/// reported `-6.58e-05` where a difference of its own `F_hc` at fixed volume gives
+/// `+1.81e-04` - opposite signs; it now reports `+1.80909415327985e-04`, which is that
+/// difference. Methane, `m = 1`, was never affected, because its chain block is skipped
+/// outright.
 ///
-/// The check this function is held to is therefore a **finite difference of NeqSim's own
-/// `F` at a pinned molar volume**, which uses none of the derivative code the defect
-/// reaches, and the write-up is at
-/// `~/Desktop/neqsim-saft-vr-mie-chain-contact-value-temperature.md`. Its
-/// `dF_DISP_SAFTdT` is correct and is used as the oracle for that half.
+/// The check this function is held to is a **finite difference of NeqSim's own `F` at a
+/// pinned molar volume**, which uses none of the derivative code above and which the class's
+/// own `dF_HC_SAFTdT` now reproduces. Its `dF_DISP_SAFTdT` is correct and is the oracle for
+/// that half.
 ///
 /// # The three routes
 ///

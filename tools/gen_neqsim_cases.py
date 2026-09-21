@@ -331,10 +331,11 @@ CASES: tuple[Case, ...] = (
         note=(
             "Every layer reproduces one at a time in `crates/azoth-eos/tests/saft_vr_mie.rs` "
             "- the diameter, the chain contact value, `g1`, `g2`, the dispersion, the "
-            "Helmholtz energy and the pressure. The departures are not recorded: "
-            "`PhaseSAFTVRMie.dF_HC_SAFTdT` leaves out the chain contact value's own "
-            "temperature dependence; see "
-            "`~/Desktop/neqsim-saft-vr-mie-chain-contact-value-temperature.md`."
+            "Helmholtz energy and the pressure. **The departures are the oracle's too, since "
+            "`#3830`**: the revision this conversion was ported from left the chain contact "
+            "value's own temperature dependence out of `PhaseSAFTVRMie.dF_HC_SAFTdT`, which "
+            "put its binary `Hres` 4% from the difference of its own `F`, and that class now "
+            "reports the difference's value."
         ),
         inputs={
             "components": ["methane", "n-butane"],

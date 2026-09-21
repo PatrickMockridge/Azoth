@@ -615,8 +615,8 @@ fn the_diameter_temperature_derivative_is_neqsims() {
 /// **This half of NeqSim is correct, so it is the oracle rather than something to work
 /// around**: `PhaseSAFTVRMie` differences `calcPairDispSum(eta, T)` in `T` at a relative
 /// `1e-5` and the port differentiates the same pair sum in closed form, so the two are
-/// independent and land `1e-9` apart. The chain contact value, one layer up, is the half
-/// that is not - see [`the_chain_temperature_derivative_neqsim_omits`].
+/// independent and land `1e-9` apart. The chain contact value, one layer up, is checked the
+/// same way - see [`the_chain_temperature_derivative_carries_the_contact_value`].
 #[test]
 fn the_dispersion_temperature_derivative_is_neqsims() {
     let binary = [methane(), n_butane()];
@@ -644,32 +644,31 @@ fn the_dispersion_temperature_derivative_is_neqsims() {
     );
 }
 
-/// **The chain contact value moves with the temperature, and NeqSim's `dF_HC_SAFTdT` does
-/// not carry it.**
+/// **The chain contact value's temperature dependence, which `PhaseSAFTVRMie.dF_HC_SAFTdT`
+/// once omitted and now carries.**
 ///
-/// `PhaseSAFTVRMie.dF_HC_SAFTdT` is `n (m a_hs'(eta) d eta/dT - m_min1 d ln g_hs/d eta
-/// d eta/dT)` and stops there, which differentiates `g_hs` as though it were a function of
-/// the packing fraction alone. It is not: it is the Mie-weighted contact value,
+/// The class's expression is `n (m a_hs'(eta) d eta/dT - m_min1 d ln g_hs/d eta d eta/dT)`
+/// and used to stop there, differentiating `g_hs` as though it were a function of the
+/// packing fraction alone. It is not: it is the Mie-weighted contact value,
 /// `exp(sum_i w_i ln g_Mie_ii / W)`, and `g_Mie_ii = g_HS0 exp(beta (g_1 + beta g_2)/g_HS0)`
-/// carries `beta = eps/(k T)`. So the class is missing the `T` route and the diameter's.
+/// carries `beta = eps/(k T)`, so the `T` route was missing. `#3830` added it.
 ///
 /// The measurement is a **difference of NeqSim's own `F_hc` at a pinned molar volume**,
 /// which is what the probe's `fAtFixedVolume` does - it perturbs `T`, restores the volume
 /// with `setMolarVolume` and re-runs `volInit`, the same two calls `PhaseSAFTVRMie.dFdVdVdV`
-/// makes - and it uses none of the derivative code the defect reaches.
+/// makes - and it uses none of the derivative code the defect reached.
 ///
 /// | state | NeqSim `dF_HC_SAFTdT` | the difference of its own `F_hc` |
 /// |---|---|---|
-/// | methane, `m = 1` | `-3.69985758564022e-05` | `-3.69985760007019e-05` |
-/// | n-butane, `m = 1.8514` | `-6.58222781509927e-05` | `+1.80907699712241e-04` |
-/// | methane/n-butane | `-3.09846277671377e-05` | `+2.34611958374598e-05` |
+/// | methane, `m = 1` | `-3.69985759026553e-05` | `-3.69985760007019e-05` |
+/// | n-butane, `m = 1.8514` | `+1.80909415327985e-04` | `+1.80909655021488e-04` |
+/// | methane/n-butane | `+2.34594929588809e-05` | `+2.34600273310570e-05` |
 ///
-/// Methane agrees because its chain block is skipped outright at `m = 1` and the contact
+/// Methane was never wrong: its chain block is skipped outright at `m = 1` and the contact
 /// value falls back to the Carnahan-Starling one, which *is* a function of the packing
-/// fraction alone. Every fluid with a chain is wrong, and on n-butane the two disagree in
-/// sign.
+/// fraction alone. Every fluid with a chain was, and on n-butane the two disagreed in sign.
 #[test]
-fn the_chain_temperature_derivative_neqsim_omits() {
+fn the_chain_temperature_derivative_carries_the_contact_value() {
     // The two the class gets right, to the difference quotient's own precision.
     let pure = [methane()];
     let alone = state(&pure, &[1.0], 300.0, 4.609_634_632_033_79e-4).expect("a state");
@@ -699,26 +698,26 @@ fn the_chain_temperature_derivative_neqsim_omits() {
          relative {relative:e}"
     );
 
-    // And the value the class reports instead is not close to it: `T dFdT = 0.325191366576064`.
-    let neqsim = 350.0 * 0.000_929_118_190_217_325;
+    // And the value the class reports carries it too: `T dFdT = 0.344246808830170`, where
+    // the revision this port was written against had `0.325191366576064`.
+    let neqsim = 350.0 * 0.000_983_562_310_943_344;
     assert!(
-        (t_d_f / neqsim - 1.0).abs() > 0.05,
-        "the port should not reproduce NeqSim's chain derivative here: {t_d_f} against \
-         {neqsim}"
+        (t_d_f / neqsim - 1.0).abs() < 1.0e-5,
+        "the port should reproduce NeqSim's chain derivative here: {t_d_f} against {neqsim}"
     );
 }
 
-/// The departure, against NeqSim where NeqSim is right and against its own `F` where it is
-/// not.
+/// The departure, against NeqSim's own - which it is, at both states.
 ///
-/// For methane the class's chain block is skipped, so its `Hres`/`Sres` are correct and it
-/// is the oracle: `-743.045268700689` J/mol and `-1.83391248465549` J/(mol K) against this
-/// model's `-743.0452692786` and `-1.8339124859`, a relative `8e-10`. For the binary the
-/// same class reports `-1378.22736004559` and `-2.77798635110702`, which is the chain
-/// defect carried into the departure - the state below is the one the difference of its own
-/// `F` puts at `-1433.68` and `-2.9364`.
+/// Methane's class skips the chain block outright, so its `Hres`/`Sres` were the oracle
+/// from the start: `-743.045268666078` J/mol and `-1.83391248454012` J/(mol K) against this
+/// model's `-743.0452692786` and `-1.8339124859`, a relative `8e-10`. The binary was not -
+/// the chain omission carried into the departure and put it at `-1378.22736004559` and
+/// `-2.77798635110702`, where the difference of the class's own `F` at a pinned volume
+/// wanted `-1433.68` - and `#3830` closed that: NeqSim reports `-1433.67987339276` and
+/// `-2.93642210352752`, which is the state below.
 #[test]
-fn the_departure_is_neqsims_where_neqsim_is_right() {
+fn the_departure_is_neqsims() {
     let pure = [methane()];
     let (h, s) = departure(
         &pure,
@@ -731,11 +730,11 @@ fn the_departure_is_neqsims_where_neqsim_is_right() {
     let h_res = h * 8.314_462_1 * 300.0;
     let s_res = s * 8.314_462_1;
     assert!(
-        (h_res / -743.045_268_700_689 - 1.0).abs() < 1.0e-8,
+        (h_res / -743.045_268_666_078 - 1.0).abs() < 1.0e-8,
         "methane h_res = {h_res}"
     );
     assert!(
-        (s_res / -1.833_912_484_655_49 - 1.0).abs() < 1.0e-8,
+        (s_res / -1.833_912_484_540_12 - 1.0).abs() < 1.0e-8,
         "methane s_res = {s_res}"
     );
 
@@ -750,8 +749,8 @@ fn the_departure_is_neqsims_where_neqsim_is_right() {
     .expect("a departure");
     let h_res = h * 8.314_462_1 * 350.0;
     let s_res = s * 8.314_462_1;
-    // NeqSim's own `HresTP/n` and `SresTP/n` at this state are `-1378.22736004559` and
-    // `-2.77798635110702`; the difference of its `F` at a pinned volume puts them here.
+    // NeqSim's own `HresTP/n` and `SresTP/n` at this state are `-1433.67987339276` and
+    // `-2.93642210352752`; the difference of its `F` at a pinned volume puts them here.
     assert!(
         (h_res / -1.433_681_608_724_57e3 - 1.0).abs() < 1.0e-4,
         "binary h_res = {h_res}"

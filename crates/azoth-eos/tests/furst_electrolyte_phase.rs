@@ -145,8 +145,8 @@ fn the_2004_revision_matches_its_own_oracle() {
         .expect("solves");
 
     assert!(
-        (state.z - 0.009_635_856_436_241_56).abs() < 1.0e-8,
-        "Z = {}, NeqSim gives 0.00963585643624156",
+        (state.z - 0.009_635_856_372_047_19).abs() < 1.0e-8,
+        "Z = {}, NeqSim gives 0.00963585637204719",
         state.z
     );
     // Master's numbers, at the `1e-7` this settles to. They were `1e-6`-apart from its
