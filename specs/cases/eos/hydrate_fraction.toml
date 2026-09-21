@@ -2,16 +2,14 @@ model = "eos.hydrate_fraction"
 [[cases]]
 id = "the_probes_feed_at_288_15_k"
 tolerance = 1e-09
-source = """**This library's own answer, recorded, because NeqSim's is not one.** Its
-`TPHydrateFlash` returns its `maxHydrateFraction` bound at this state - and returns the *same*
-fraction at 288.15, 283.15 and 278.15 K, because that bound is a constant - and leaves phases
-holding `+0.0874` water and `-0.0734` methane against the feed, as
-`validation/neqsim/captures/hydrate_fraction_probe.tsv` records. So the oracle here is the
-model's own solve, and what the case pins is the invariant beside it.
+source = """**This library's own answer, recorded.** The probe's NeqSim state at this feed closes its own
+balance to `7.3e-13` on methane and `0.0` on water, and returns a fraction that moves with the
+temperature, so the oracle here is this model's own solve and
+`validation/neqsim/captures/hydrate_fraction_probe.tsv` records the other side of it.
 
-`balance_error` is that invariant: the largest `|sum_p beta_p x_ip - z_i|` over the
-components at the answer. It is zero on this model by construction and `0.0874` on NeqSim's
-state, so a case that pinned only `beta` would not say which of the two it is looking at.
+`balance_error` is the invariant beside the answer: the largest `|sum_p beta_p x_ip - z_i|`
+over the components. It is zero on this model by construction, so a case that pinned only
+`beta` would not say which of the two it is looking at.
 
 `residual` is the objective at the feed, which is what decides between no hydrate and all of
 the water; `eos.hydrate_formation_temperature` drives the same quantity to zero, so the two
@@ -35,9 +33,10 @@ balance_error = 0.0
 id = "the_probes_feed_at_283_15_k"
 tolerance = 1e-09
 source = """The probe's second state, and the one that says the fraction moves with the
-temperature: NeqSim returns `0.116056652840164` here as it does at 288.15 K, where this model
-returns a value `1.51e-3` lower - its bound is `z_water/w_water`, and `w_water` is the
-hydrate's own composition, which the cages refill as the temperature falls."""
+temperature: NeqSim returns `0.114923674828150` at 288.15 K and `0.115164244122972` here, and
+this model's bound is `z_water/w_water`, where `w_water` is the hydrate's own composition -
+which the cages refill as the temperature falls. The two solves differ by `1.4e-4` at this
+state, so the case pins this one's answer and not NeqSim's."""
 [cases.inputs]
 components = ["methane", "ethane", "propane", "water"]
 eos = "srk"
@@ -57,7 +56,7 @@ balance_error = 0.0
 id = "the_probes_feed_at_278_15_k"
 tolerance = 1e-09
 source = """The probe's third state. The three are pinned together because the temperature
-is the axis NeqSim's own answer does not have."""
+is the axis the answer moves along - `0.114924`, `0.115164` and `0.115365` on NeqSim's side."""
 [cases.inputs]
 components = ["methane", "ethane", "propane", "water"]
 eos = "srk"

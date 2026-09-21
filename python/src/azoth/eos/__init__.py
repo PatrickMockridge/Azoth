@@ -1970,7 +1970,7 @@ def hydrate_fraction(
 
     ``balance_error`` is the invariant this model exists to keep - the largest
     ``|sum_p beta_p x_ip - z_i|`` over the components at the answer. It is zero here by
-    construction and ``0.0874`` on NeqSim's own state at the same feed.
+    construction, as it is on NeqSim's own state at the same feed.
 
     ``components`` names the substances because the hydrate's guest tables are keyed by name -
     a mixture carries critical constants and no names. ``eos`` is the cubic the fluid runs,

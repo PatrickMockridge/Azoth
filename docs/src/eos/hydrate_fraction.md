@@ -52,14 +52,14 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **this is NeqSim's `TPHydrateFlash` computing the same quantity, and it does not return the same state.** The divergence is deliberate, measured, and recorded upstream, and the state is the difference: its phases hold `+0.0874` water and `-0.0734` methane against the feed.
-- **one wrong composition explains all three symptoms.** NeqSim's hydrate gets water `46/54` and its guests from cavity 0 alone, so its fractions sum to `1.1201`, its state is out by `0.0874` water, and its bound is a constant - which is why its fraction does not move with the temperature.
+- **NeqSim's `TPHydrateFlash` computes the same quantity from the same construction, and the two agree**: at 288.15 K and 100 bara its balance error is `7.3e-13` on methane and `0.0` on water. The solve differs - it optimises over the water extent where this takes the bound.
+- **the composition is what the balance and the bound are both read from.** A phase whose guests occupy one cavity type alone has fractions that do not sum to one, a state that does not recover the feed, and a bound that does not move.
 - **the objective never crosses zero below the formation temperature, so the answer is the bound.** Measured at 288.15 K and 100 bara it runs from `-0.071993842` at zero to `-0.069796728` at a trace - the aqueous phase pins water's fugacity - and reaches `+inf` where the last water leaves.
 - so this solves the **material balance as the bound and the equality as its check**: the fraction is `min_i z_i/w_i` from the cages' own composition, and the equality at the feed decides whether the answer is zero instead.
 - **the answer jumps**, and that is the equilibrium rather than a tolerance: a hydrate stable at one fraction is stable at every fraction up to the bound, so the fraction goes from zero above the formation temperature to the whole of the water below it.
 - **what decides zero is the objective at the feed**, which is monotone in the fraction and is what `eos.hydrate_formation_temperature` drives to zero - the two cross it together, measured at `-0.003202` for 293 K and `+0.010844` for 294 K against `293.2277` K.
 - **the trial the cages are filled from is the water-free fluid**, `f_i = z_i - beta w_i` with a component the hydrate has taken all of at zero - the state at the bound rather than one near it, and why the solve never flashes a trace of water.
-- **the hydrate's composition is the cages' own**, from both cavity types of the stable structure weighted by each type's count per unit cell - not from one cavity, which is where NeqSim's composition comes from and why its fractions sum to `1.1201`.
+- **the hydrate's composition is the cages' own**, from both cavity types of the stable structure weighted by each type's count per unit cell, so its fractions sum to one and every guest's occupancy counts. `ComponentHydrate` builds the same composition, and the two agree on it.
 - the guests' fugacities come from the vapour phase of the flashed fluid, which is what NeqSim's `setFug` reads.
 - the reference water phase is a one-component phase of the same cubic the fluid runs, as in `eos.hydrate_formation_temperature`.
 - no inhibitor and no energy balance, as for the formation temperature.

@@ -187,8 +187,7 @@ The specialist physics.
   through `HydrateFormationTemperatureFlash` (`eos.hydrate_formation_temperature`) and
   `HydrateFormationPressureFlash` (`eos.hydrate_formation_pressure`); and `TPHydrateFlash`
   (`eos.hydrate_fraction`), **with the composition taken from both cavities and the material
-  balance asserted at the answer** — NeqSim's own distributes the guests by the small cage
-  alone and leaves a hydrate whose mole fractions sum to `1.1201`. **Not ported**:
+  balance asserted at the answer**. **Not ported**:
   `PitzerHydrateFlash` with `ComponentHydratePitzer` and `ComponentHydrateGF`, which are
   reachable through the model name and whose coupling to the electrolyte phases is the seam
   this would need; the two inhibitor flashes (`HydrateInhibitorConcentrationFlash`,

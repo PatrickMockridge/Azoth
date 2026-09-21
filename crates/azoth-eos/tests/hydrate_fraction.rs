@@ -67,11 +67,11 @@ fn every_case_in_the_spec() {
     }
 }
 
-/// **The material balance, which is what this model exists over NeqSim's.**
+/// **The material balance, which is the invariant this model exists for.**
 ///
-/// NeqSim's own state at the same feed holds `+0.0874` water and `-0.0734` methane against
-/// the feed, as `validation/neqsim/captures/hydrate_fraction_probe.tsv` records. This one
-/// closes by construction, and the number is asserted rather than described.
+/// It closes by construction here, and NeqSim's own state closes to `7.3e-13` on methane and
+/// `0.0` on water at the same feed, as `validation/neqsim/captures/hydrate_fraction_probe.tsv`
+/// records. The number is asserted rather than described.
 #[test]
 fn the_material_balance_closes() {
     let (mixture, _) =
@@ -80,7 +80,7 @@ fn the_material_balance_closes() {
     let result = hydrate_fraction(&mixture, kelvins(288.15), pascals(1.0e7), &Z).expect("computes");
     assert!(
         result.balance_error < 1.0e-12,
-        "the balance is out by {}, and NeqSim's own state is out by 0.0874 on water",
+        "the balance is out by {}, and NeqSim's own state closes to 0.0 on water",
         result.balance_error
     );
 }

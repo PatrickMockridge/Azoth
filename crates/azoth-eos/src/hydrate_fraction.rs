@@ -5,10 +5,10 @@
 //! solve  beta = min_i z_i / w_i          the fraction at which a component is exhausted
 //! ```
 //!
-//! NeqSim's `TPHydrateFlash` computes the same quantity and **its state is not one**: the
-//! hydrate it leaves has mole fractions summing to `1.1201`, and the phases hold `+0.0874`
-//! water and `-0.0734` methane against the feed. The divergence is recorded upstream and in
-//! the spec; this is the solve that closes.
+//! NeqSim's `TPHydrateFlash` computes the same quantity from the same construction, and the
+//! two agree: measured at 288.15 K and 100 bara its balance error is `7.3e-13` on methane and
+//! `0.0` on water, and its fraction moves with temperature as this one's does. **The solve is
+//! what differs** - it optimises over the water extent where this takes the bound directly.
 //!
 //! # The objective is flat, and the answer is where the water runs out
 //!
@@ -37,9 +37,7 @@
 //! # The composition is the cages' own
 //!
 //! From both cavity types of the stable structure ([`crate::hydrate::composition`]).
-//! NeqSim's takes cavity 0 alone - the small cage, where a structure-I guest mostly is not -
-//! and its fractions sum to `1.1201` rather than one. The balance closes here by
-//! construction: the fluid is `z_i - beta w_i`, which sums to `1 - beta` for any `w` that
+//! The balance closes by construction: the fluid is `z_i - beta w_i`, which sums to `1 - beta` for any `w` that
 //! sums to one, so no phase can hold matter the feed did not have.
 //!
 //! # The two loops

@@ -510,8 +510,8 @@ class HydrateFractionResult(_HasWarnings):
     structure: HydrateStructure
     #: The largest ``|sum_p beta_p x_ip - z_i|`` over the components at the answer.
     #:
-    #: The invariant this model exists to keep: it is zero here by construction and
-    #: ``0.0874`` on NeqSim's own state at the same feed.
+    #: The invariant this model exists to keep: zero here by construction, and ``7.3e-13``
+    #: on NeqSim's own state at the same feed.
     balance_error: float
     #: Flash evaluations taken: the feed's, the fixed point's and the answer's own.
     iterations: int

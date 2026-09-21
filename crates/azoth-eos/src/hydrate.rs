@@ -303,11 +303,11 @@ pub const WATER_PER_CELL: [f64; 2] = [46.0, 136.0];
 /// probability `theta_icav`, so the cell's guest count is the cavities' own weighted sum of
 /// the occupancies, and each guest's is the one weighted by its own.
 ///
-/// **The second cavity is the whole point.** NeqSim's `updateHydrateComposition` distributes
-/// the guests by cavity 0 alone - the small cage - which for structure I is where a guest
-/// mostly is not: its ethane and propane fractions come out as the *feed's* own, because the
-/// loop writes a zero there and the field keeps what it had, and the phase's fractions then
-/// sum to `1.1201` rather than one.
+/// **The second cavity is the whole point.** A guest occupies one cage type at a time and its
+/// occupancy in each is a different function of the state, so a composition built from one
+/// cavity type leaves the other's guests at zero. For structure I that is the large
+/// `5^12 6^2` cage, where most of the ethane and propane sit: the phase's fractions would not
+/// sum to one, and its bound would not move with the temperature.
 #[must_use]
 pub fn composition(
     guests: &[HydrateGuest],
