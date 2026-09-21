@@ -27,7 +27,7 @@ import neqsim.thermo.system.SystemPCSAFT;
  *
  * <pre>
  * javac -proc:none -cp neqsim-f0c7436.jar PcsaftProbe.java
- * java -cp .:neqsim-f0c7436.jar PcsaftProbe [T_K P_bara name:z ...]
+ * java -cp .:neqsim-f0c7436.jar PcsaftProbe [T_K P_bara name z ...]
  * </pre>
  */
 public final class PcsaftProbe {
@@ -86,6 +86,11 @@ public final class PcsaftProbe {
     System.out.println("# The default mixing rule is NeqSim's own, so every k_ij this phase");
     System.out.println("# uses is zero unless a caller sets the classic rule.");
     if (args.length >= 4) {
+      // An odd count is a name without its mole fraction, which the loop below would
+      // drop on the floor rather than refuse.
+      if ((args.length - 2) % 2 != 0) {
+        throw new IllegalArgumentException("a component name without a mole fraction");
+      }
       double t = Double.parseDouble(args[0]);
       double p = Double.parseDouble(args[1]);
       String[] names = new String[(args.length - 2) / 2];

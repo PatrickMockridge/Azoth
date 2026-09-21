@@ -34,7 +34,7 @@ import neqsim.thermo.system.SystemSAFTVRMie;
  *
  * <pre>
  * javac -proc:none -cp neqsim-f0c7436.jar SaftVrMieFlashProbe.java
- * java -cp .:neqsim-f0c7436.jar SaftVrMieFlashProbe [T_K P_bara name:z ...]
+ * java -cp .:neqsim-f0c7436.jar SaftVrMieFlashProbe [T_K P_bara name z ...]
  * </pre>
  */
 public final class SaftVrMieFlashProbe {
@@ -130,7 +130,12 @@ public final class SaftVrMieFlashProbe {
 
   public static void main(String[] args) {
     System.out.println("# azoth SaftVrMieFlashProbe - NeqSim master's TPflashSAFT, by dispatch.");
-    if (args.length >= 5) {
+    if (args.length >= 4) {
+      // An odd count is a name without its mole fraction, which the loop below would
+      // drop on the floor rather than refuse.
+      if ((args.length - 2) % 2 != 0) {
+        throw new IllegalArgumentException("a component name without a mole fraction");
+      }
       double t = Double.parseDouble(args[0]);
       double p = Double.parseDouble(args[1]);
       String[] names = new String[(args.length - 2) / 2];

@@ -39,7 +39,7 @@ import neqsim.thermodynamicoperations.ThermodynamicOperations;
  *
  * <pre>
  * javac -proc:none -cp neqsim-f0c7436.jar UmrCpaProbe.java
- * java -cp .:neqsim-f0c7436.jar UmrCpaProbe [T_K P_bara name:z ...]
+ * java -cp .:neqsim-f0c7436.jar UmrCpaProbe [T_K P_bara name z ...]
  * </pre>
  */
 public final class UmrCpaProbe {
@@ -157,6 +157,11 @@ public final class UmrCpaProbe {
     System.out.println("# azoth UmrCpaProbe - NeqSim master's SystemUMRCPAEoS (PhaseUMRCPA).");
     System.out.println("# The mixing rule is the lifecycle test's: HV with UNIFAC_UMRPRU.");
     if (args.length >= 4) {
+      // An odd count is a name without its mole fraction, which the loop below would
+      // drop on the floor rather than refuse.
+      if ((args.length - 2) % 2 != 0) {
+        throw new IllegalArgumentException("a component name without a mole fraction");
+      }
       double t = Double.parseDouble(args[0]);
       double p = Double.parseDouble(args[1]);
       String[] names = new String[(args.length - 2) / 2];

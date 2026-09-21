@@ -28,7 +28,7 @@ import neqsim.thermo.system.SystemSAFTVRMie;
  *
  * <pre>
  * javac -proc:none -cp neqsim-f0c7436.jar SaftVrMieProbe.java
- * java -cp .:neqsim-f0c7436.jar SaftVrMieProbe [T_K P_bara name:z ...]
+ * java -cp .:neqsim-f0c7436.jar SaftVrMieProbe [T_K P_bara name z ...]
  * </pre>
  */
 public final class SaftVrMieProbe {
@@ -134,7 +134,12 @@ public final class SaftVrMieProbe {
     System.out.println("# azoth SaftVrMieProbe - NeqSim master's SystemSAFTVRMie (PhaseSAFTVRMie).");
     System.out.println("# The phase reads no interaction parameter, so a mixture runs with");
     System.out.println("# the component sets alone; no k_ij appears in these layers.");
-    if (args.length >= 5) {
+    if (args.length >= 4) {
+      // An odd count is a name without its mole fraction, which the loop below would
+      // drop on the floor rather than refuse.
+      if ((args.length - 2) % 2 != 0) {
+        throw new IllegalArgumentException("a component name without a mole fraction");
+      }
       double t = Double.parseDouble(args[0]);
       double p = Double.parseDouble(args[1]);
       String[] names = new String[(args.length - 2) / 2];

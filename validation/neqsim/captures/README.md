@@ -20,6 +20,11 @@ java -cp .:neqsim-f0c7436.jar neqsim.thermo.component.PcsaftCompositionProbe \
   > captures/pcsaft_composition_probe.tsv
 ```
 
+**A state is passed as `T_K P_bara name z name z ...`** - the name and its mole fraction are
+two arguments, not one `name:z` token. Seven probes take that form, and each refuses an odd
+argument count rather than silently dropping a name whose fraction is missing. The other
+three that read arguments take `T_K P_bara n_water` triplets.
+
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate
 that ran the JVM could not run on a runner that has no NeqSim checkout. Committing the
 output is what lets `tools/gen_neqsim_cases.py --check` be a build gate: it reads a capture

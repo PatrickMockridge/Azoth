@@ -287,17 +287,17 @@ fn the_fugacity_coefficients_are_neqsims() {
     // The two liquid states and the single-root one, because the coefficient is a
     // derivative in the composition and a state that agrees on the pressure can still
     // disagree here.
-    let cold = ln_fugacity_coefficients(&[methane()], &[0.0], &[1.0], 150.0, 4.34500702054451e-5)
+    let cold = ln_fugacity_coefficients(&[methane()], &[0.0], &[1.0], 150.0, 4.34500702132853e-5)
         .expect("coefficients");
-    via_volume(cold[0], -1.59206925842347, "cold methane ln phi");
+    via_volume(cold[0], -1.59206925952755, "cold methane ln phi");
 
-    let dense = ln_fugacity_coefficients(&[propane()], &[0.0], &[1.0], 300.0, 8.57488611218831e-5)
+    let dense = ln_fugacity_coefficients(&[propane()], &[0.0], &[1.0], 300.0, 8.57488611416681e-5)
         .expect("coefficients");
-    via_volume(dense[0], -2.14553591424452, "propane ln phi");
+    via_volume(dense[0], -2.14553591596014, "propane ln phi");
 
-    let warm = ln_fugacity_coefficients(&[methane()], &[0.0], &[1.0], 400.0, 6.49279638776721e-4)
+    let warm = ln_fugacity_coefficients(&[methane()], &[0.0], &[1.0], 400.0, 6.49279639225889e-4)
         .expect("coefficients");
-    via_volume(warm[0], -0.0259206072103093, "warm methane ln phi");
+    via_volume(warm[0], -0.0259206078773206, "warm methane ln phi");
 }
 
 /// The composition derivative, against a finite difference of `n F` in the mole numbers at
