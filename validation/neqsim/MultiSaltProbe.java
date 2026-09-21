@@ -55,6 +55,21 @@ public class MultiSaltProbe {
       fluid.init(0);
       fluid.init(1);
 
+      // **The activity coefficients the ratios are built from**, and the phase's own mole
+      // fractions: a port that read different gammas would produce a plausible answer for a
+      // different brine, so they are the model's inputs and are captured as such.
+      for (int phase = 0; phase < fluid.getNumberOfPhases(); phase++) {
+        if (!fluid.getPhase(phase).hasComponent("water")) {
+          continue;
+        }
+        System.out.printf("phase[%d] = %s%n", phase, fluid.getPhase(phase).getType());
+        for (int i = 0; i < fluid.getPhase(phase).getNumberOfComponents(); i++) {
+          String name = fluid.getPhase(phase).getComponent(i).getName();
+          row("x[" + name + "]", fluid.getPhase(phase).getComponent(i).getx());
+          row("gamma[" + name + "]", fluid.getPhase(phase).getActivityCoefficient(i, 0));
+        }
+      }
+
       ThermodynamicOperations operations = new ThermodynamicOperations(fluid);
       MultiSaltPrecipitationResult result = operations.precipitateScales(minerals);
 
