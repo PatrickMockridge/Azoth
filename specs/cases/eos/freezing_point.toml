@@ -9,6 +9,8 @@ the calibrated triple point its test asserts to 1e-4, and a residual of `1.97e-1
 iterations."""
 [cases.inputs]
 components = ["para-hydrogen"]
+solid = "para-hydrogen"
+z = [1.0]
 P = 7042.0
 [cases.expected]
 temperature = 13.8032999997377
@@ -20,6 +22,8 @@ K, residual `2.77e-11`, 30 iterations. The two states are the test's own check t
 invalid bracket trial does not abort a valid melting state."""
 [cases.inputs]
 components = ["para-hydrogen"]
+solid = "para-hydrogen"
+z = [1.0]
 P = 351270.6909625152
 [cases.expected]
 temperature = 13.9150932717025
@@ -31,6 +35,42 @@ iterations. Between them the three states are the whole of that test's para-hydr
 coverage."""
 [cases.inputs]
 components = ["para-hydrogen"]
+solid = "para-hydrogen"
+z = [1.0]
 P = 1876432.785899884
 [cases.expected]
 temperature = 14.3982923022496
+[[cases]]
+id = "the_lng_feed_neqsims_own_test_builds"
+tolerance = 1e-06
+source = """NeqSim master, `FreezingPointTemperatureFlash` on the fluid its own
+`FreezingPointTemperatureFlashTest.testLNGFreezingPointFlashAfterFluidOnlyTPFlash` uses:
+methane, nitrogen, CO2, ethane and propane at 120.35 K with `setSolidPhaseCheck("CO2")`, from
+`validation/neqsim/FreezingSolidProbe.java`. **NeqSim's own test only bounds the answer** - it
+asserts `90 < T < 220` - so this is the number it leaves unmeasured: `184.710072436643` K at
+5 bara, 52 iterations, residual `-5.87e-12`.
+
+**The two phases are the state the residual is built from.** The flash re-flashes at its
+answer, and the capture prints the set it ended on: a gas at beta `0.960492276239053` and an
+oil at `0.0395077237609467`, with CO2's log fugacity coefficient `-0.0830741387484464` in the
+first and `-0.394719218037021` in the second. So this is the multiphase appearance condition
+and not a single-phase fugacity equality - which is what makes it different from
+`eos.tp_solid_flash`'s equation.
+
+**The solid check does not collapse this flash.** `setSolidPhaseCheck` turns the multiphase
+check on as a side effect, and on this feed the two-phase split survives it; the capture's
+phase count is what says so."""
+[cases.inputs]
+components = ["CO2", "nitrogen", "methane", "ethane", "propane"]
+solid = "CO2"
+z = [
+    0.0894843679470231,
+    0.579634022102985,
+    0.170546677734326,
+    0.144227745985202,
+    0.0161071862304642,
+]
+P = 500000.0
+[cases.expected]
+temperature = 184.710072436643
+component = "CO2"

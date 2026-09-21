@@ -149,9 +149,15 @@ fn cubic_of(eos: &str) -> Result<Cubic> {
     }
 }
 
+/// NeqSim's `ComponentSolid.fugcoef`'s own answer for methane, which never freezes.
+///
+/// The class's entry point returns it before any arithmetic, so a methane candidate's solid is
+/// infinitely volatile and its residual has no sign change.
+pub(crate) const METHANE_NEVER_FREEZES: f64 = 1.0e30;
+
 /// A pure solid's fugacity coefficient from the named component's own tables.
 #[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-fn tabulated_solid_fugacity(
+pub(crate) fn tabulated_solid_fugacity(
     mixture: &Mixture,
     index: usize,
     solid: &str,

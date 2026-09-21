@@ -324,6 +324,7 @@ class EosCgPhaseResult:
 @final
 class FreezingPointResult:
     temperature: Qty
+    component: str
     iterations: int
     residual: float
     warnings: list[Warning]
@@ -1425,7 +1426,12 @@ def dew_temperature(
     alpha_params: list[list[float]] | None = None,
 ) -> DewTemperatureResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
-def freezing_point(components: list[str], P: float) -> FreezingPointResult: ...
+def freezing_point(
+    components: list[str],
+    z: list[float],
+    solid: str,
+    P: float,
+) -> FreezingPointResult: ...
 def furst_electrolyte_mod2004_phase(
     components: list[str],
     T: float,

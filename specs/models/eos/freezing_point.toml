@@ -2,7 +2,10 @@ id = "eos.freezing_point"
 name = "Freezing-point temperature"
 kind = "procedure"
 assumptions = [
-    "**one pure substance, and it is para-hydrogen.** `thermo/util/solid/` gives a solid Helmholtz equation for para-hydrogen and for argon, and argon is not a hydrogen phase, so `components` names one entry and it must be `para-hydrogen`.",
+    "**two solid routes, chosen by the candidate's name.** `para-hydrogen` takes the calibrated Helmholtz solid below, and every other substance the tabulated one - `ComponentSolid.fugcoef2` over the databank's melting point, heat of fusion, heat capacities and densities.",
+    "**the tabulated residual is the multiphase appearance condition**, `ln z_k - ln(sum_p beta_p phi_solid_k / phi_kp)` over the phases the flash found. The largest logarithm is taken out before exponentiating because the terms span twenty orders of magnitude and a direct sum underflows.",
+    "**methane never freezes.** `ComponentSolid.fugcoef` returns `1e30` for it before any arithmetic, so a methane candidate's residual has no sign change and the search refuses rather than reporting its triple point of `90.69` K - which is what the tabulated route would otherwise solve to.",
+    "**the highest freezing point of the candidates is the answer.** NeqSim loops every component its caller enabled a solid check for and keeps the maximum, because a fluid freezes at the temperature of whichever substance freezes first.",
     "the fluid is the para-Leachman reference equation, and **which of its roots** is NeqSim's own rule: a gas below the triple-point pressure and a liquid at and above it. The two are different states at the same temperature and pressure.",
     "**the solid is calibrated, not raw.** `eos.parahydrogen_solid_phase` is the thesis equation as it stands; NeqSim's `SystemLeachmanEos` shifts it to the liquid at the triple point. Unshifted it misses the triple point's own definition - the two Gibbs energies equal there - by `3.12` J/mol.",
     "the calibration's constants are computed here from the two models and are not tunables: NeqSim derives them at first use, so a port that hardcoded them would report a number whose provenance nothing holds.",
@@ -17,7 +20,7 @@ references = [
 ]
 [source]
 standard = "NeqSim master `FreezingPointTemperatureFlash`"
-edition = "The route that requires a `PhaseSolidHelmholtzEos`, with the reference the phase is on: the flash's own test is the oracle, and its two other routes - a tabulated solid, and the legacy variants - are carried rather than ported."
+edition = "Both routes the operation has: the one that requires a `PhaseSolidHelmholtzEos`, and the tabulated solid every other system builds. Its two legacy variants are unreachable upstream rather than carried."
 [algorithm]
 scheme = "freezing_point_bracket_bisection"
 initialisation = "span_expansion_from_the_start"
@@ -33,21 +36,32 @@ steps = 50
 [inputs]
 [inputs.components]
 type = "components"
-length = "one entry"
-description = "the substance, by name. `para-hydrogen` is the one this has a solid equation for; the name is resolved against the component databank like every other model's."
+length = "one entry per component"
+description = "the fluid's substances, by name, resolved against the component databank with the keycard's overrides applied."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions. A candidate's own fraction is what decides whether it can appear, and a zero fraction is refused rather than solved."
+[inputs.solid]
+type = "string"
+description = "which substance's freezing point is solved for, and it must be one of `components`. NeqSim loops every component its caller enabled a solid check for and keeps the highest freezing point; naming one is that loop's single-candidate case."
 [inputs.P]
 unit = "Pa"
 description = "absolute pressure at which the freezing point is wanted; the temperature is what is solved for."
 [outputs]
 [outputs.temperature]
 unit = "K"
-description = "the freezing-point temperature: where the calibrated solid's molar Gibbs energy equals the fluid's."
+description = "the freezing-point temperature: where the solid and the fluid meet, on whichever of the two routes the candidate names."
+[outputs.component]
+type = "string"
+description = "which substance's freezing point this is. Named explicitly because a fluid can have more than one candidate and NeqSim keeps the highest."
 [outputs.iterations]
 unit = "dimensionless"
 description = "Bracket expansions and bisection steps together, as NeqSim counts them."
 [outputs.residual]
 unit = "dimensionless"
-description = "The dimensionless Gibbs difference at the reported temperature, `(g_fluid - g_solid)/(R T)`."
+description = "The dimensionless residual at the reported temperature: `(g_fluid - g_solid)/(R T)` on the Helmholtz route, and the multiphase appearance condition on the tabulated one."
 [[valid_range]]
 quantity = "P"
 min = 0

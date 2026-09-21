@@ -952,6 +952,14 @@ impl CalcResult for PureSaturationResult {
 pub struct FreezingPointResult {
     /// The temperature at which the calibrated solid's Gibbs energy meets the fluid's.
     pub temperature: ThermodynamicTemperature,
+    /// Which substance's freezing point this is.
+    ///
+    /// **A fluid can have more than one candidate.** NeqSim solves each component the caller
+    /// enabled a solid check for and reports the **highest** freezing point, because that is
+    /// the one that controls: a fluid at a temperature where one of its substances freezes has
+    /// frozen. So the temperature is the maximum over the candidates and this names the one
+    /// that set it.
+    pub component: String,
     /// Bracket expansions and bisection steps together, as NeqSim counts them.
     pub iterations: u32,
     /// The dimensionless Gibbs difference at the reported temperature,
@@ -963,7 +971,13 @@ pub struct FreezingPointResult {
 
 impl CalcResult for FreezingPointResult {
     const CALC_ID: &'static str = "eos.freezing_point";
-    const FIELDS: &'static [&'static str] = &["temperature", "iterations", "residual", "warnings"];
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "component",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

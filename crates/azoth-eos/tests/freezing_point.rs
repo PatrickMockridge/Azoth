@@ -24,8 +24,13 @@ fn every_case_in_the_spec() {
     assert!(!spec.cases.is_empty());
 
     for case in spec.cases {
-        let result = freezing_point(&names(case), pascals(common::input(case, "P")))
-            .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id));
+        let result = freezing_point(
+            &names(case),
+            case.vector("z").expect("the case declares z"),
+            common::input_str(case, "solid"),
+            pascals(common::input(case, "P")),
+        )
+        .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id));
 
         let context = &format!("{}::{}", spec.id, case.id);
         common::assert_close(
@@ -91,22 +96,59 @@ fn the_calibration_meets_the_liquid_at_the_triple_point() {
     let _ = raw;
 }
 
-/// A substance with no solid equation here is refused rather than approximated.
+/// A candidate that is not one of the fluid's own components is refused.
 #[test]
-fn a_substance_without_a_solid_equation_is_refused() {
-    let error = freezing_point(&["methane".to_string()], pascals(1.0e5))
-        .expect_err("methane has no solid equation in this crate");
+fn a_candidate_the_fluid_does_not_have_is_refused() {
+    let error = freezing_point(
+        &["methane".to_string()],
+        &[1.0],
+        "para-hydrogen",
+        pascals(1.0e5),
+    )
+    .expect_err("the fluid has no para-hydrogen in it");
     assert!(
         matches!(error, AzothError::InvalidInput { .. }),
         "{error:?}"
     );
+}
 
-    let two = freezing_point(
-        &["para-hydrogen".to_string(), "argon".to_string()],
+/// A `z` that does not match the component list is refused rather than zipped short.
+#[test]
+fn a_composition_of_the_wrong_length_is_refused() {
+    let error = freezing_point(
+        &["methane".to_string()],
+        &[1.0, 0.0],
+        "methane",
         pascals(1.0e5),
     )
-    .expect_err("a freezing point is a pure substance's");
-    assert!(matches!(two, AzothError::InvalidInput { .. }), "{two:?}");
+    .expect_err("one component and two fractions");
+    assert!(
+        matches!(error, AzothError::InvalidInput { .. }),
+        "{error:?}"
+    );
+}
+
+/// **Methane does not freeze, and that is NeqSim's own guard rather than an absence.**
+///
+/// `ComponentSolid.fugcoef` returns `1e30` for methane before any arithmetic, so its solid is
+/// infinitely volatile and the residual has no sign change. Measured: the search refuses at 1,
+/// 10 and 50 bara rather than reporting methane's triple point of 90.69 K, which is what the
+/// tabulated route would otherwise solve to.
+#[test]
+fn a_methane_candidate_is_refused() {
+    for p_bar in [1.0, 10.0, 50.0] {
+        let error = freezing_point(
+            &["methane".to_string()],
+            &[1.0],
+            "methane",
+            pascals(p_bar * 1.0e5),
+        )
+        .expect_err("methane has no solid in NeqSim");
+        assert!(
+            matches!(error, AzothError::SolverNotConverged { .. }),
+            "{p_bar} bar: {error:?}"
+        );
+    }
 }
 
 /// The root rule is NeqSim's: a gas below the triple-point pressure, a liquid at and above it.
@@ -128,5 +170,68 @@ fn the_fluid_root_follows_the_triple_point_pressure() {
     assert!(
         (gas - liquid).abs() > 1e-3,
         "the two roots give the same residual, so the rule is not being applied"
+    );
+}
+
+/// The feed NeqSim's own freezing test uses, as mole fractions.
+const LNG: [&str; 5] = ["CO2", "nitrogen", "methane", "ethane", "propane"];
+
+const LNG_Z: [f64; 5] = [
+    0.089_484_367_947_023_1,
+    0.579_634_022_102_985,
+    0.170_546_677_734_326,
+    0.144_227_745_985_202,
+    0.016_107_186_230_464_2,
+];
+
+/// **The tabulated route, against NeqSim's own answer rather than its own test.**
+///
+/// `FreezingPointTemperatureFlashTest.testLNGFreezingPointFlashAfterFluidOnlyTPFlash` asserts
+/// only that the answer lies between 90 and 220 K; the capture prints it. Measured, this
+/// reproduces `184.710072436643` K at 5 bara to `3.4e-9` relative and `194.118909895905` K at
+/// 50 bara to `8.2e-8`.
+#[test]
+fn the_tabulated_route_reproduces_the_capture() {
+    let names: Vec<String> = LNG.iter().map(|name| (*name).to_string()).collect();
+    for (p_bar, want) in [(5.0, 184.710_072_436_643), (50.0, 194.118_909_895_905)] {
+        let result = freezing_point(&names, &LNG_Z, "CO2", pascals(p_bar * 1.0e5))
+            .unwrap_or_else(|e| panic!("{p_bar} bar: {e:?}"));
+        assert_eq!(
+            result.component, "CO2",
+            "{p_bar} bar: the controlling component"
+        );
+        assert!(
+            (result.temperature.value / want - 1.0).abs() < 1.0e-7,
+            "{p_bar} bar: {} against NeqSim's {want}",
+            result.temperature.value
+        );
+    }
+}
+
+/// **At 20 bara NeqSim refuses and this answers, and the answer is suspect.**
+///
+/// NeqSim's own failure is `the freezing-point bracket for CO2 collapsed without satisfying
+/// Gibbs equilibrium; the fluid residual is discontinuous or the requested density root is
+/// unavailable`. This solves to `194.8203` K there - which is **above** the 50 bara answer of
+/// `194.1189`, and a freezing point should rise with pressure, so this is a second root of the
+/// residual rather than the physical one. Recorded as a divergence rather than pinned as an
+/// answer: a case that asserted it would be asserting a number this test distrusts.
+#[test]
+fn the_20_bara_state_neqsim_refuses_is_recorded_and_not_trusted() {
+    let names: Vec<String> = LNG.iter().map(|name| (*name).to_string()).collect();
+    let at_20 = freezing_point(&names, &LNG_Z, "CO2", pascals(20.0 * 1.0e5))
+        .expect("this solves where NeqSim's bracket collapses");
+    let at_50 =
+        freezing_point(&names, &LNG_Z, "CO2", pascals(50.0 * 1.0e5)).expect("50 bara solves");
+    assert!(
+        (at_20.temperature.value / 194.820_296_026_635_28 - 1.0).abs() < 1.0e-7,
+        "the 20 bara answer is now {}",
+        at_20.temperature.value
+    );
+    assert!(
+        at_20.temperature.value > at_50.temperature.value,
+        "the 20 bara answer is {} and the 50 bara one {}, so the 20 bara root is no longer          above it and the divergence this test records has changed shape",
+        at_20.temperature.value,
+        at_50.temperature.value
     );
 }

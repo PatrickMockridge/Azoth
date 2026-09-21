@@ -105,6 +105,10 @@ def _molar_volume(
     return None
 
 
+#: NeqSim's ``ComponentSolid.fugcoef``'s own answer for methane, which never freezes.
+METHANE_NEVER_FREEZES = 1.0e30
+
+
 def _tabulated_solid_fugacity(
     mixture: Mixture, index: int, solid: str, t_si: float, p_si: float, T: Q, P: Q, eos: str
 ) -> float:

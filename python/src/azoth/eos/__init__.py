@@ -2322,23 +2322,36 @@ def solid_fugacity(
     )
 
 
-def freezing_point(components: list[str], P: Q) -> FreezingPointResult:
-    """The freezing-point temperature of para-hydrogen at a pressure.
+def freezing_point(
+    components: list[str], z: list[float], solid: str, P: Q
+) -> FreezingPointResult:
+    """The temperature at which a fluid's solid-forming substance freezes.
 
-    The temperature where the calibrated solid's molar Gibbs energy equals the fluid's, with
-    the fluid on whichever root NeqSim's flash takes: a gas below the triple-point pressure
-    and a liquid at and above it. One substance, and it is ``para-hydrogen`` - the solid
-    equations in NeqSim's ``thermo/util/solid/`` are para-hydrogen's and argon's.
+    Two routes. ``para-hydrogen`` is solved against the calibrated solid Helmholtz equation
+    in NeqSim's ``thermo/util/solid/``, with the fluid on whichever root its flash takes - a
+    gas below the triple-point pressure and a liquid at and above it. Every other substance is
+    solved against the tabulated solid, built from its melting point, heat of fusion, heat
+    capacities and density correlations, and its residual is the multiphase appearance
+    condition over the fluid's own phases.
+
+    ``solid`` names which substance's freezing point is wanted and must be one of
+    ``components``. A fluid can have more than one candidate and NeqSim keeps the **highest**
+    freezing point; naming one is that loop's single-candidate case, and ``component`` on the
+    result reports which substance set the answer.
 
     Raises:
-        InvalidInputError: if ``components`` is not one entry, or names a substance this has
-            no solid equation for.
-        OutOfRangeError: if ``P`` is not positive.
-        SolverNotConvergedError: if the search does not bracket or does not converge.
+        InvalidInputError: if ``z`` does not match ``components``, if ``solid`` is not one of
+            them, if ``P`` is not positive, or if the tabulated route's candidate carries no
+            melt data.
+        OutOfRangeError: from a trial's state.
+        SolverNotConvergedError: if no candidate's residual brackets a sign change. A methane
+            candidate is refused this way, which is NeqSim's own guard rather than an absence.
 
     See :func:`azoth.eos.reference.freezing_point`.
     """
-    return resolve(_FREEZING_POINT)(components=components, P=P)  # type: ignore[no-any-return]
+    return resolve(_FREEZING_POINT)(  # type: ignore[no-any-return]
+        components=components, z=z, solid=solid, P=P
+    )
 
 
 def hydrogen_phase(

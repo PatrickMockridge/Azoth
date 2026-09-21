@@ -161,12 +161,15 @@ solubility, electrolytes, salts and scale, and freezing.
   `BariteCelestiteSolidSolution`, `FlowlineScaleProfile`, `WaterCompatibilityScreener`; and
   the eleven `process/chemistry/scale/` classes, 3,935 lines, `BrineMixingScaleEvaluator`
   among them.
-- **Freezing.** `FreezingPointTemperatureFlash` is ported as `eos.freezing_point`, on the
-  route that requires a `PhaseSolidHelmholtzEos`: `eos.hydrogen_phase` for the fluid and
-  `eos.parahydrogen_solid_phase` for the solid, with the solid calibrated to the liquid it
-  meets at the triple point. **The tabulated `ComponentSolid` route is carried**: its two
-  halves are ported as `eos.solid_fugacity` and `eos.tp_solid_flash`, so what is missing is
-  the operation that would drive them. **`FreezingPointTemperatureFlashTR`,
+- **Freezing.** `FreezingPointTemperatureFlash` is ported as `eos.freezing_point`, on **both**
+  of its routes. The Helmholtz one needs a `PhaseSolidHelmholtzEos`: `eos.hydrogen_phase` for
+  the fluid and `eos.parahydrogen_solid_phase` for the solid, with the solid calibrated to the
+  liquid it meets at the triple point. The tabulated one is `ComponentSolid.fugcoef2` over the
+  candidate's own melt data, and its residual is the multiphase appearance condition over the
+  fluid's phases - a log-sum-exp, where `eos.tp_solid_flash`'s equation is the solid's amount.
+  Measured on NeqSim's own LNG test fluid, this reproduces its answer to `3.4e-9` relative at
+  5 bara and `8.2e-8` at 50; at 20 bara NeqSim's bracket collapses and this solves anyway, to a
+  second root the case records rather than pins. **`FreezingPointTemperatureFlashTR`,
   `FreezingPointTemperatureFlashOld` and `FreezeOut` are unreachable upstream**: none has a
   `new` anywhere in `src/main`, a reference of any kind outside its own file, or a site in
   `src/test`, and the reflection NeqSim does (`this.getClass()...newInstance()`) can only

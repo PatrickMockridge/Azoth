@@ -4493,6 +4493,9 @@ pub struct PyFreezingPointResult {
     /// The temperature at which the calibrated solid's Gibbs energy meets the fluid's.
     #[pyo3(get)]
     pub temperature: PyQty,
+    /// Which substance's freezing point this is, of the fluid's candidates.
+    #[pyo3(get)]
+    pub component: String,
     /// Bracket expansions and bisection steps together.
     #[pyo3(get)]
     pub iterations: u32,
@@ -4521,6 +4524,7 @@ impl From<&FreezingPointResult> for PyFreezingPointResult {
             unit: unit.to_string(),
         };
         Self {
+            component: r.component.clone(),
             temperature: qty(r.temperature.value, "K"),
             iterations: r.iterations,
             residual: r.residual,

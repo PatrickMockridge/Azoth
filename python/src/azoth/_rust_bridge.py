@@ -3063,17 +3063,22 @@ def solid_fugacity(
     )
 
 
-def freezing_point(components: Sequence[str], P: Q) -> FreezingPointResult:
-    """The freezing point of para-hydrogen at a pressure, computed in Rust.
+def freezing_point(
+    components: Sequence[str], z: Sequence[float], solid: str, P: Q
+) -> FreezingPointResult:
+    """A fluid's freezing-point temperature, computed in Rust.
 
-    **The component names cross unresolved**, and the Rust side checks them: the solid
-    equation this composes is para-hydrogen's, so a name that is not that is refused rather
-    than approximated.
+    **The component names cross unresolved**, and the Rust side resolves them: the tabulated
+    solid reads the databank's melting point, heat of fusion and density correlations, and the
+    para-hydrogen route reads the reference equation on that side.
     """
     spec = _models_gen.model("eos.freezing_point")
-    result = _core.freezing_point(list(components), input_to_si(spec, "P", P))
+    result = _core.freezing_point(
+        list(components), list(z), solid, input_to_si(spec, "P", P)
+    )
     return FreezingPointResult(
         temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        component=result.component,
         iterations=result.iterations,
         residual=result.residual,
         warnings=_warnings(result.warnings),

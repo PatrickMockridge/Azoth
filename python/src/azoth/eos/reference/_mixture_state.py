@@ -1987,9 +1987,23 @@ def compositions(z: list[float], k: list[float], beta: float) -> tuple[list[floa
     return x, y
 
 
+def _log(x: float) -> float:
+    """``log``, giving NaN outside its domain as Java and Rust do."""
+    try:
+        return math.log(x)
+    except ValueError:
+        return math.nan
+
+
 def is_trivial(k: list[float], tolerance: float) -> bool:
-    """Whether every K-value has collapsed to 1."""
-    return all(abs(math.log(value)) < tolerance for value in k)
+    """Whether every K-value has collapsed to 1.
+
+    **A negative K-value is not a trivial one, and ``math.log`` would abort instead of saying
+    so.** The Rust kernel is ``value.ln().abs() < TOL``: a negative value's logarithm is `NaN`,
+    the comparison is false, and the iteration carries on. Reached in practice by the
+    freezing-point search, whose outer bisection walks the flash through cold CO2-rich states.
+    """
+    return all(abs(_log(value)) < tolerance for value in k)
 
 
 def normalise(values: list[float]) -> list[float]:

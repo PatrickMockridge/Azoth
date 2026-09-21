@@ -3499,20 +3499,22 @@ pub fn solid_fugacity(
     .map_err(|e| to_pyerr(py, e))
 }
 
-/// The freezing point of para-hydrogen at a pressure, computed in Rust.
+/// A fluid's freezing-point temperature, computed in Rust.
 ///
-/// **The component names cross unresolved**, and this side checks them: the solid equation
-/// this composes is para-hydrogen's, so a name that is not that is refused rather than
-/// approximated.
+/// **The component names cross unresolved**, and this side resolves them: the tabulated solid
+/// reads the databank's melting point, heat of fusion and density correlations, and the
+/// para-hydrogen route reads the reference equation this crate carries.
 #[pyfunction]
-#[pyo3(signature = (components, P))]
+#[pyo3(signature = (components, z, solid, P))]
 #[allow(non_snake_case)] // `P` is the symbol in the chemistry
 pub fn freezing_point(
     py: Python<'_>,
     components: Vec<String>,
+    z: Vec<f64>,
+    solid: String,
     P: f64,
 ) -> PyResult<crate::results::PyFreezingPointResult> {
-    azoth_eos::freezing_point(&components, pascals(P))
+    azoth_eos::freezing_point(&components, &z, &solid, pascals(P))
         .map(|r| crate::results::PyFreezingPointResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

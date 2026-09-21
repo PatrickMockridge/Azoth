@@ -8,7 +8,7 @@
 
 **NeqSim master `FreezingPointTemperatureFlash`**
 
-The route that requires a `PhaseSolidHelmholtzEos`, with the reference the phase is on: the flash's own test is the oracle, and its two other routes - a tabulated solid, and the legacy variants - are carried rather than ported.
+Both routes the operation has: the one that requires a `PhaseSolidHelmholtzEos`, and the tabulated solid every other system builds. Its two legacy variants are unreachable upstream rather than carried.
 
 
 ## Algorithm
@@ -31,7 +31,9 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `components` | - | the substance, by name. `para-hydrogen` is the one this has a solid equation for; the name is resolved against the component databank like every other model's. |
+| `components` | - | the fluid's substances, by name, resolved against the component databank with the keycard's overrides applied. |
+| `z` | dimensionless | the overall mole fractions. A candidate's own fraction is what decides whether it can appear, and a zero fraction is refused rather than solved. |
+| `solid` | - | which substance's freezing point is solved for, and it must be one of `components`. NeqSim loops every component its caller enabled a solid check for and keeps the highest freezing point; naming one is that loop's single-candidate case. |
 | `P` | Pa | absolute pressure at which the freezing point is wanted; the temperature is what is solved for. |
 
 
@@ -39,9 +41,10 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `temperature` | K | the freezing-point temperature: where the calibrated solid's molar Gibbs energy equals the fluid's. |
+| `temperature` | K | the freezing-point temperature: where the solid and the fluid meet, on whichever of the two routes the candidate names. |
+| `component` | - | which substance's freezing point this is. Named explicitly because a fluid can have more than one candidate and NeqSim keeps the highest. |
 | `iterations` | dimensionless | Bracket expansions and bisection steps together, as NeqSim counts them. |
-| `residual` | dimensionless | The dimensionless Gibbs difference at the reported temperature, `(g_fluid - g_solid)/(R T)`. |
+| `residual` | dimensionless | The dimensionless residual at the reported temperature: `(g_fluid - g_solid)/(R T)` on the Helmholtz route, and the multiphase appearance condition on the tabulated one. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -49,7 +52,10 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- **one pure substance, and it is para-hydrogen.** `thermo/util/solid/` gives a solid Helmholtz equation for para-hydrogen and for argon, and argon is not a hydrogen phase, so `components` names one entry and it must be `para-hydrogen`.
+- **two solid routes, chosen by the candidate's name.** `para-hydrogen` takes the calibrated Helmholtz solid below, and every other substance the tabulated one - `ComponentSolid.fugcoef2` over the databank's melting point, heat of fusion, heat capacities and densities.
+- **the tabulated residual is the multiphase appearance condition**, `ln z_k - ln(sum_p beta_p phi_solid_k / phi_kp)` over the phases the flash found. The largest logarithm is taken out before exponentiating because the terms span twenty orders of magnitude and a direct sum underflows.
+- **methane never freezes.** `ComponentSolid.fugcoef` returns `1e30` for it before any arithmetic, so a methane candidate's residual has no sign change and the search refuses rather than reporting its triple point of `90.69` K - which is what the tabulated route would otherwise solve to.
+- **the highest freezing point of the candidates is the answer.** NeqSim loops every component its caller enabled a solid check for and keeps the maximum, because a fluid freezes at the temperature of whichever substance freezes first.
 - the fluid is the para-Leachman reference equation, and **which of its roots** is NeqSim's own rule: a gas below the triple-point pressure and a liquid at and above it. The two are different states at the same temperature and pressure.
 - **the solid is calibrated, not raw.** `eos.parahydrogen_solid_phase` is the thesis equation as it stands; NeqSim's `SystemLeachmanEos` shifts it to the liquid at the triple point. Unshifted it misses the triple point's own definition - the two Gibbs energies equal there - by `3.12` J/mol.
 - the calibration's constants are computed here from the two models and are not tunables: NeqSim derives them at first use, so a port that hardcoded them would report a number whose provenance nothing holds.
@@ -61,9 +67,10 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `the_triple_point` | components = ['para-hydrogen'], P = 7042.0 | temperature = 13.8032999997377 |
-| `above_the_triple_point` | components = ['para-hydrogen'], P = 351270.6909625152 | temperature = 13.9150932717025 |
-| `well_above_the_triple_point` | components = ['para-hydrogen'], P = 1876432.785899884 | temperature = 14.3982923022496 |
+| `the_triple_point` | components = ['para-hydrogen'], solid = para-hydrogen, z = [1.0], P = 7042.0 | temperature = 13.8032999997377 |
+| `above_the_triple_point` | components = ['para-hydrogen'], solid = para-hydrogen, z = [1.0], P = 351270.6909625152 | temperature = 13.9150932717025 |
+| `well_above_the_triple_point` | components = ['para-hydrogen'], solid = para-hydrogen, z = [1.0], P = 1876432.785899884 | temperature = 14.3982923022496 |
+| `the_lng_feed_neqsims_own_test_builds` | components = ['CO2', 'nitrogen', 'methane', 'ethane', 'propane'], solid = CO2, z = [0.0894843679470231, 0.579634022102985, 0.170546677734326, 0.144227745985202, 0.0161071862304642], P = 500000.0 | temperature = 184.710072436643, component = CO2 |
 
 ## References
 

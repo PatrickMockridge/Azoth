@@ -323,11 +323,14 @@ class PureSaturationResult(_HasWarnings):
 class FreezingPointResult(_HasWarnings):
     """Result of ``eos.freezing_point``."""
 
-    #: The temperature at which the calibrated solid's Gibbs energy meets the fluid's.
+    #: The temperature at which the solid and the fluid meet.
     temperature: Q
+    #: Which substance's freezing point this is, of the fluid's candidates.
+    component: str
     #: Bracket expansions and bisection steps together, as NeqSim counts them.
     iterations: int
-    #: The dimensionless Gibbs difference at the reported temperature.
+    #: The dimensionless residual at the reported temperature: the Gibbs difference on the
+    #: Helmholtz route and the multiphase appearance condition on the tabulated one.
     residual: float
     #: Caveats.
     warnings: tuple[Warning, ...]

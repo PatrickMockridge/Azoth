@@ -1,0 +1,45 @@
+# LNG feed at 120.35 K, 5.00000000000000 bara, CO2 the solid candidate
+converged = 1.00000000000000
+temperature_K = 184.710072436643
+iterations = 52.0000000000000
+residual = -5.86843768024536e-12
+component = CO2
+# failure = 
+phases = 2.00000000000000
+phase[0] = GAS
+phase[0].beta = 0.960492276239053
+phase[0].ln_phi_CO2 = -0.0830741387484464
+phase[1] = OIL
+phase[1].beta = 0.0395077237609467
+phase[1].ln_phi_CO2 = -0.394719218037021
+z[CO2] = 0.0894843679470231
+z[nitrogen] = 0.579634022102985
+z[methane] = 0.170546677734326
+z[ethane] = 0.144227745985202
+z[propane] = 0.0161071862304642
+total_moles = 1.89977315480000
+
+# LNG feed at 120.35 K, 20.0000000000000 bara, CO2 the solid candidate
+# failed: IllegalStateException: Freezing-point flash did not converge. The freezing-point bracket for CO2 collapsed without satisfying Gibbs equilibrium; the fluid residual is discontinuous or the requested density root is unavailable.
+
+# LNG feed at 120.35 K, 50.0000000000000 bara, CO2 the solid candidate
+converged = 1.00000000000000
+temperature_K = 194.118909895905
+iterations = 50.0000000000000
+residual = 9.63666368924976e-11
+component = CO2
+# failure = 
+phases = 2.00000000000000
+phase[0] = GAS
+phase[0].beta = 0.740736211613672
+phase[0].ln_phi_CO2 = -0.753083623157419
+phase[1] = OIL
+phase[1].beta = 0.259263788386328
+phase[1].ln_phi_CO2 = -2.36538903691533
+z[CO2] = 0.0894843679470231
+z[nitrogen] = 0.579634022102985
+z[methane] = 0.170546677734326
+z[ethane] = 0.144227745985202
+z[propane] = 0.0161071862304642
+total_moles = 1.89977315480000
+
