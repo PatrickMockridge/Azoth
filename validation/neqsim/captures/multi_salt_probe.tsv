@@ -1,0 +1,75 @@
+# brine at 25.0000000000000 C, 10.0000000000000 bara
+# minerals: CaCO3 CaSO4_A NaCl
+updates = 3.00000000000000
+final_violation = 4.12398629484978e-07
+maximum_absolute_residual_moles = 0.00000000000000
+maximum_normalized_residual = 0.00000000000000
+initial_sr[CaCO3] = 34029733.7382566
+final_sr[CaCO3] = 0.999999981170547
+precipitated_moles[CaCO3] = 0.00399999886038134
+precipitated_grams[CaCO3] = 0.400247885967478
+complementarity[CaCO3] = 8.17752775540725e-09
+balance_residual[CaCO3] = 0.00000000000000
+initial_sr[CaSO4_A] = 3069.63406065733
+final_sr[CaSO4_A] = 1.00000094958339
+precipitated_moles[CaSO4_A] = 0.00498419865616099
+precipitated_grams[CaSO4_A] = 0.678598647036319
+complementarity[CaSO4_A] = 4.12398629484978e-07
+balance_residual[CaSO4_A] = 0.00000000000000
+initial_sr[NaCl] = 0.180530560919739
+final_sr[NaCl] = 0.183202438233481
+precipitated_moles[NaCl] = 0.00000000000000
+precipitated_grams[NaCl] = 0.00000000000000
+complementarity[NaCl] = 0.00000000000000
+balance_residual[NaCl] = 0.00000000000000
+
+# brine at 60.0000000000000 C, 10.0000000000000 bara
+# minerals: CaCO3 CaSO4_A NaCl
+updates = 3.00000000000000
+final_violation = 2.12701359040972e-07
+maximum_absolute_residual_moles = 2.22044604925031e-16
+maximum_normalized_residual = 2.22044604925031e-06
+initial_sr[CaCO3] = 65404616.9795990
+final_sr[CaCO3] = 1.00000000608987
+precipitated_moles[CaCO3] = 0.00399999940095041
+precipitated_grams[CaCO3] = 0.400247940057900
+complementarity[CaCO3] = 2.64479844604262e-09
+balance_residual[CaCO3] = 2.22044604925031e-16
+initial_sr[CaSO4_A] = 6396.75743437771
+final_sr[CaSO4_A] = 1.00000048976310
+precipitated_moles[CaSO4_A] = 0.00499233997397324
+precipitated_grams[CaSO4_A] = 0.679707087456457
+complementarity[CaSO4_A] = 2.12701359040972e-07
+balance_residual[CaSO4_A] = 2.22044604925031e-16
+initial_sr[NaCl] = 0.173258517896951
+final_sr[NaCl] = 0.175452837276496
+precipitated_moles[NaCl] = 0.00000000000000
+precipitated_grams[NaCl] = 0.00000000000000
+complementarity[NaCl] = 0.00000000000000
+balance_residual[NaCl] = 2.22044604925031e-16
+
+# brine at 90.0000000000000 C, 10.0000000000000 bara
+# minerals: CaCO3 CaSO4_A NaCl
+updates = 3.00000000000000
+final_violation = 8.86707668849993e-08
+maximum_absolute_residual_moles = 4.44089209850063e-16
+maximum_normalized_residual = 4.44089209850063e-06
+initial_sr[CaCO3] = 151984688.556308
+final_sr[CaCO3] = 0.999999997434966
+precipitated_moles[CaCO3] = 0.00399999974051191
+precipitated_grams[CaCO3] = 0.400247974035103
+complementarity[CaCO3] = 1.11398029032343e-09
+balance_residual[CaCO3] = 4.44089209850063e-16
+initial_sr[CaSO4_A] = 18894.6026488145
+final_sr[CaSO4_A] = 1.00000020417201
+precipitated_moles[CaSO4_A] = 0.00499738983329235
+precipitated_grams[CaSO4_A] = 0.680394625802754
+complementarity[CaSO4_A] = 8.86707668849993e-08
+balance_residual[CaSO4_A] = 4.44089209850063e-16
+initial_sr[NaCl] = 0.161617928538730
+final_sr[NaCl] = 0.163426094936289
+precipitated_moles[NaCl] = 0.00000000000000
+precipitated_grams[NaCl] = 0.00000000000000
+complementarity[NaCl] = 0.00000000000000
+balance_residual[NaCl] = 4.44089209850063e-16
+
