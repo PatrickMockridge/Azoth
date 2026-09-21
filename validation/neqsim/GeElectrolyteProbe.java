@@ -329,20 +329,30 @@ public class GeElectrolyteProbe {
     System.out.println("  zeta: CO2 = -0.58071053e-2 N2 = -1.2793e-2 O2 = "
         + "0.00033639 - 1.9829898e-5 T + 0.002122208 P/T - 0.005248733 P/(630 - T)");
 
-    // The salinity the phase reports, against `sum m_i` over the ions.
-    SystemInterface duan = build(new SystemDuanSun(T, P),
-        new String[] {"water", "Na+", "Cl-", "CO2"},
-        new double[] {0.89, 0.04, 0.04, 0.03});
-    PhaseInterface duanPhase = phase(duan);
-    double sumMolality = 0.0;
-    for (int i = 0; i < duanPhase.getNumberOfComponents(); i++) {
-      if (duanPhase.getComponent(i).isIsIon()) {
-        sumMolality += duanPhase.getComponent(i).getMolality(duanPhase);
+    // The salinity the phase reports, against `sum m_i` over the ions - which no brine
+    // reaches, because the phase admits CO2 alone. **The refusal is the answer here**, and
+    // it is printed rather than thrown: a probe that ends on a stack trace ends its capture
+    // there too, and the section after it is lost without anything comparing the two.
+    System.out.println();
+    try {
+      SystemInterface duan = build(new SystemDuanSun(T, P),
+          new String[] {"water", "Na+", "Cl-", "CO2"},
+          new double[] {0.89, 0.04, 0.04, 0.03});
+      PhaseInterface duanPhase = phase(duan);
+      double sumMolality = 0.0;
+      for (int i = 0; i < duanPhase.getNumberOfComponents(); i++) {
+        if (duanPhase.getComponent(i).isIsIon()) {
+          sumMolality += duanPhase.getComponent(i).getMolality(duanPhase);
+        }
       }
+      System.out.printf("  sum m_i over the ions = %.15g%n", sumMolality);
+      System.out.printf("  gamma(CO2) = %.15g%n",
+          duanPhase.getActivityCoefficient(
+              duanPhase.getComponent("CO2").getComponentNumber(), 0));
+    } catch (RuntimeException ex) {
+      System.out.printf("  an aqueous brine is refused: %s%n", ex.getMessage());
+      System.out.println("  (so `calcSalinity`'s `sum m_i` has no brine to be computed over,"
+          + " and the correlation above is reachable only through `PhaseDuanSun`)");
     }
-    System.out.printf("%n  sum m_i over the ions = %.15g%n", sumMolality);
-    System.out.printf("  gamma(CO2) = %.15g%n",
-        duanPhase.getActivityCoefficient(
-            duanPhase.getComponent("CO2").getComponentNumber(), 0));
   }
 }

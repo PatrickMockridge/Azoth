@@ -142,7 +142,6 @@
     373.15     5.00     0.0852514023620418      0.112170738401798      0.199970000000000
     373.15    50.00     0.0975193960087399      0.111600836693920      0.199970000000000
   zeta: CO2 = -0.58071053e-2 N2 = -1.2793e-2 O2 = 0.00033639 - 1.9829898e-5 T + 0.002122208 P/T - 0.005248733 P/(630 - T)
-Exception in thread "main" java.lang.RuntimeException: SystemDuanSun supports only CO2
-	at neqsim.thermo.system.SystemDuanSun.addComponent(SystemDuanSun.java:86)
-	at GeElectrolyteProbe.build(GeElectrolyteProbe.java:56)
-	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:333)
+
+  an aqueous brine is refused: SystemDuanSun supports only CO2
+  (so `calcSalinity`'s `sum m_i` has no brine to be computed over, and the correlation above is reachable only through `PhaseDuanSun`)
