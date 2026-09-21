@@ -284,8 +284,13 @@ CASES: tuple[Case, ...] = (
             "which is the revision this conversion is a port of. Upstream reworked both PCSAFT "
             "phases afterwards - dropping the override and adding a finite-difference "
             "consistency test - so these numbers are `3.8e-8` from master's where they were "
-            "`4.6e-11` from 3.20.0's. **Re-porting is the next tranche's call, not this "
-            "sweep's**; see `~/Desktop/neqsim-pcsaft-hard-chain-temperature-derivative.md`."
+            "`4.6e-11` from 3.20.0's. **Where the two differ is localised and worth "
+            "recording**: the volume and `Z` are `1.2e-9` apart and n-butane's `ln phi` "
+            "`2.4e-10`, while **methane's is `3.8e-8`** - the `m = 1` component, where "
+            "`m_bar - 1` and every term carrying it vanish. So it is a *derivative* and not "
+            "a state, and the two libraries' corrections are not the same correction. "
+            "Re-porting is the next tranche's call; see "
+            "`~/Desktop/neqsim-pcsaft-hard-chain-temperature-derivative.md`."
         ),
         inputs={
             "components": ["methane", "n-butane"],
