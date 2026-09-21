@@ -38,12 +38,12 @@ the physics behind them:
 - **Petroleum-fraction characterisation** — pvt pseudocomponent and regression skills
   wait on Tier 1 of [`ROADMAP.md`](../../../ROADMAP.md).
 - **Hydrates, wax, asphaltene and solids** — P9 has landed hydrate, wax, scale and freezing.
-  Four skills were waiting on it and are backed now: `azoth-hydrate-margin-check` and
-  `azoth-hydrate-screening` (`eos.hydrate_formation_temperature`,
-  `eos.hydrate_formation_pressure`, `eos.hydrate_fraction`), `azoth-wax-margin-check`
-  (`eos.tp_multiflash_wax`, `eos.wax_solid_fugacity`) and
-  `azoth-produced-water-scale-screening` (`eos.scale_saturation_ratio`,
-  `eos.salt_precipitation`).
+  Four skills were waiting on it and have been promoted to `azoth`-basis:
+  `azoth-hydrate-margin-check` and `azoth-hydrate-screening`
+  (`eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure`,
+  `eos.hydrate_fraction`), `azoth-wax-margin-check` (`eos.tp_multiflash_wax`,
+  `eos.wax_solid_fugacity`) and `azoth-produced-water-scale-screening`
+  (`eos.scale_saturation_ratio`, `eos.salt_precipitation`).
   **Three of the eight that carried `P9` were never waiting on solids physics and are
   re-based**: `two-phase-flow-regime-screening` and `multiphase-flow-slug-screening` are
   `advisory` — their maps are NeqSim's `fluidmechanics/`, which is not a port source, so no
@@ -64,7 +64,7 @@ the physics behind them:
 | `eos`, `hydraulics`, `thermal` | `azoth` | P0–P2 (done) |
 | `pvt` | `screening` | P1, P3 (mixing), P4 (reference EOS), Tier 1 (characterisation) |
 | `process` | `screening` | P1, P5, P6, P10, P11 (unit ops), P12 (flowsheet) |
-| `flow-assurance` | `screening` | P7, P9 |
+| `flow-assurance` | `azoth`, `screening` | P7, P9 |
 | `safety` | `screening` | P1, P6, P11 |
 | `subsurface` | `screening` | Tier 1 (PVT) |
 | `environment` | `advisory` | none needed |
@@ -82,7 +82,8 @@ alpha functions of P2, for example, are still ahead.
 ## The two speeds
 
 - **Now, at `azoth`-basis**: the four `azoth`-basis `library/` skills, and the `eos/`,
-  `hydraulics/` and `thermal/` skills that drive the 43 implemented calculations.
+  `flow-assurance/`, `hydraulics/` and `thermal/` skills that drive the 65 implemented
+  calculations and 74 models.
 - **As a tranche lands**: the `screening` placeholder for a domain is promoted to
   `azoth`-basis in the same commit, and its `tranche` field is removed.
 

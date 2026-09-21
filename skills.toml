@@ -218,18 +218,16 @@ tags = ["field-development"]
 name = "azoth-hydrate-margin-check"
 version = "0.1.0"
 description = "Educational hydrate operating-margin screening placeholder with public assumptions. USE WHEN: a task needs a quick check of whether an operating point keeps a safe temperature margin above a hydrate equilibrium temperature and should be directed to validated NeqSim methods for real calculations."
-calculation_basis = "screening"
+calculation_basis = "azoth"
 path = "skills/flow-assurance/hydrate-margin-check/SKILL.md"
-tranche = "P9"
 tags = ["flow-assurance"]
 
 [[skill]]
 name = "azoth-hydrate-screening"
 version = "0.1.0"
 description = "Educational hydrate risk screening placeholder with public assumptions. USE WHEN: a task needs a quick hydrate risk triage and should be directed to validated NeqSim methods for real calculations."
-calculation_basis = "screening"
+calculation_basis = "azoth"
 path = "skills/flow-assurance/hydrate-screening/SKILL.md"
-tranche = "P9"
 tags = ["flow-assurance"]
 
 [[skill]]
@@ -252,9 +250,8 @@ tags = ["flow-assurance"]
 name = "azoth-produced-water-scale-screening"
 version = "0.1.0"
 description = "Public produced-water brine builder and screening-level scale evaluation. USE WHEN: a task needs to turn an ion analysis, preset, or TDS value into a NeqSim-ready electrolyte ion mapping and a quick scale/mixing-incompatibility screening (BaSO4, SrSO4, CaSO4, CaCO3), and should be directed to validated NeqSim checkScalePotential methods for design-grade work."
-calculation_basis = "screening"
+calculation_basis = "azoth"
 path = "skills/flow-assurance/produced-water-scale-screening/SKILL.md"
-tranche = "P9"
 tags = ["flow-assurance"]
 
 [[skill]]
@@ -278,9 +275,8 @@ tags = ["flow-assurance"]
 name = "azoth-wax-margin-check"
 version = "0.1.0"
 description = "Educational wax operating-margin screening placeholder with public assumptions. USE WHEN: a task needs a quick check of whether an operating point keeps a safe temperature margin above a wax appearance temperature and should be directed to validated NeqSim methods for real calculations."
-calculation_basis = "screening"
+calculation_basis = "azoth"
 path = "skills/flow-assurance/wax-margin-check/SKILL.md"
-tranche = "P9"
 tags = ["flow-assurance"]
 
 [[skill]]

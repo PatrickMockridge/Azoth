@@ -85,8 +85,9 @@ statement is [Orchestration](./orchestration.md).
 
 ## The skills today
 
-Eleven `azoth`-basis skills cover what the library implements: four under
-`library/`, four under `eos/`, two under `hydraulics/` and one under `thermal/`.
-[`azoth-run-calculation`](../../../skills/library/run-calculation/SKILL.md) is the
-first and the pattern the rest follow. The remainder of NeqSim's catalog is mapped,
+Fifteen `azoth`-basis skills cover what the library implements: four under
+`library/`, four under `eos/`, four under `flow-assurance/`, two under `hydraulics/` and one
+under `thermal/`. [`azoth-run-calculation`](../../../skills/library/run-calculation/SKILL.md)
+is the first and the pattern the rest follow; the four `flow-assurance/` ones were promoted
+when P9 landed the physics they had been waiting on. The remainder of NeqSim's catalog is mapped,
 tranche by tranche, on [The roadmap](./roadmap.md).
