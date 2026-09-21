@@ -205,9 +205,13 @@ The specialist physics.
   Pedersen's cut correlations, which `WaxCharacterise` reads. **Not ported**: the three other
   component models `PhaseWax` can be given by name — `ComponentWonWax` (`Won`),
   `ComponentWaxWilson` (`Wilson`) and `ComponentCoutinhoWax` (`Coutinho`) — `WaxCharacterise`
-  itself, `WaxModelInterface`, and `pvtsimulation/flowassurance/WaxCurveCalculator`, whose
-  only construction site is the usage example in its own javadoc, with
-  `process/chemistry/wax/` carried with the process tier.
+  itself, `WaxModelInterface`, and `pvtsimulation/flowassurance/WaxCurveCalculator`, which adds
+  a sweep and a WAT rather than a model: it clones the fluid down a temperature grid, runs the
+  ordinary wax flash at each point and enforces monotonicity on the resulting curve, so the
+  flash it drives is `eos.tp_multiflash_wax`'s. **It is constructed, not dead** —
+  `neqsim/mcp/runners/FlowAssuranceRunner.java:192` builds it, fully qualified, which is why a
+  bare `new WaxCurveCalculator(` grep misses it. `process/chemistry/wax/` is carried with the
+  process tier.
 - **Asphaltene, carried on a defect upstream rather than for want of a port.**
   `AsphalteneCharacterization`, `PedersenAsphalteneCharacterization`,
   `AsphalteneOnsetPressureFlash`, `AsphalteneOnsetTemperatureFlash`, the
@@ -254,6 +258,18 @@ Port on demand, as a caller needs them:
   `thermo/util/spanwagner/`, `thermo/util/Vega/`.
 - **UMR.** `ComponentUMRCPA`, `ComponentUMRCPAvolcor`, `ComponentGEUnifacUMRPRU`,
   `AttractiveTermUMRPRU`, `SystemUMRPRUEos`, `SystemUMRPRUMCEos`.
+- **Flow assurance with no tranche behind it.** The rest of `pvtsimulation/flowassurance/`:
+  corrosion (`DeWaardMilliamsCorrosion`, the de Waard-Williams correlation NORSOK M-506
+  references, and `CO2CorrosionAnalyzer`, which couples it to an **electrolyte-CPA flash for
+  pH** - so the coupled one has no route even upstream, Electrolyte-CPA being carried as
+  unreachable), cooldown (`PipelineCooldownCalculator`, a lumped-parameter thermal transient,
+  and `SurfCooldownAnalyzer`, which composes it with `eos.hydrate_formation_temperature` to
+  give a no-touch time), `ErosionPredictionCalculator` (API RP 14E and DNV RP O501) and
+  `EmulsionViscosityCalculator` (oil-water viscosity correlations and the inversion point).
+  The specification assigns `flowassurance/` to "the tranche that backs each" and **no tranche
+  backs these four** - so they are here, in the long tail, rather than behind a P-number that
+  no page defines. The seven scale and six asphaltene screens in the same directory are not
+  here: they belong to the salt and asphaltene families above.
 - **Solids.** Ported, each with the id that carries it: `ComponentSolid`
   (`eos.solid_fugacity`, the tabulated coefficient) and `SolidFlash`
   (`eos.tp_solid_flash`, the fluid flash carrying one pure solid), over the

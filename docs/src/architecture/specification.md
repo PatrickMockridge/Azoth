@@ -127,7 +127,11 @@ because they are engineering deliverables rather than thermodynamics — a state
 
 **`pvtsimulation/` is two things and the P9 row above names the half that is physics.** Its
 `flowassurance/` holds the hydrate, wax, asphaltene, scale, corrosion and cooldown
-calculations, which belong to the tranche that backs each — P9 for the first four. The rest
+calculations, which belong to the tranche that backs each — P9 for the first four, and **no
+tranche for the last two**. Corrosion and cooldown are not waiting on a tranche that will
+come; [the port roadmap](../../../ROADMAP.md) carries them under Tier 4 and names them, the
+same place the rest of the long tail lives, so that "the tranche that backs each" resolves for
+every one of the six rather than for four of them. The rest
 of the tree is the simulation suite (`DifferentialLiberation`, `ConstantVolumeDepletion`,
 `SwellingTest`, `SaturationPressure`, `SeparatorTest`, `GOR`, `MMPCalculator`), the model
 tuning and the reservoir properties, and it is here.
