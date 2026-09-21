@@ -44,13 +44,18 @@ the physics behind them:
   `eos.hydrate_fraction`), `azoth-wax-margin-check` (`eos.tp_multiflash_wax`,
   `eos.wax_solid_fugacity`) and `azoth-produced-water-scale-screening`
   (`eos.scale_saturation_ratio`, `eos.salt_precipitation`).
+  **The hydrate ids carry a caveat worth stating**: they reproduce NeqSim's non-Pitzer route,
+  and NeqSim answers a `SystemPitzer` brine from `PitzerHydrateFlash` instead — a path that
+  needs a flash whose two phases run different models, which this library does not have. So a
+  hydrate margin on a brine is not what these three compute, and the difference is the
+  electrolyte coupling rather than the hydrate physics.
   **Three of the eight that carried `P9` were never waiting on solids physics and are
   re-based**: `two-phase-flow-regime-screening` and `multiphase-flow-slug-screening` are
   `advisory` — their maps are NeqSim's `fluidmechanics/`, which is not a port source, so no
   tranche backs them — and `olga-multiphase-simulator` is `data-retrieval`, because it drives
   a commercial simulator rather than computing anything. `surf-cooldown-screening` keeps P9
-  for the hydrate temperature it compares against and states that the cooldown itself is
-  carried.
+  for the hydrate temperature it compares against, and states that the cooldown itself is
+  long-tail work under Tier 4 rather than a tranche's.
   **Asphaltene is carried rather than pending**: the reachable pair of onset flashes scans
   over a flash that upstream collapses to the feed, so there is nothing to drive, and
   [`ROADMAP.md`](../../../ROADMAP.md) records the defect and what would have to change. No
