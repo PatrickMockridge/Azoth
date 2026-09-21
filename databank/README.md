@@ -44,13 +44,13 @@ them (35 files, 1,497 columns) is listed with what was done with it and a reason
 `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (37 vendored file(s), 1497 column(s), 1472 carried of which 1075 read, 0 not-vendored entr(ies))
+check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1079 read, 0 not-vendored entr(ies))
   397  carried, nothing reads it yet
-  1104  carried with no unit NeqSim states (neqsim-internal)
+  1108  carried with no unit NeqSim states (neqsim-internal)
   379  not-ported
     9  not-a-value
    10  empty-upstream
-    6  superseded-by
+    2  superseded-by
     7  unreachable-upstream
 ```
 

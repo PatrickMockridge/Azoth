@@ -56,6 +56,7 @@
 //!   - specs/models/eos/tp_flash_saft.toml
 //!   - specs/models/eos/tp_multiflash.toml
 //!   - specs/models/eos/tp_multiflash_wax.toml
+//!   - specs/models/eos/tp_solid_flash.toml
 //!   - specs/models/eos/ts_flash.toml
 //!   - specs/models/eos/tu_flash.toml
 //!   - specs/models/eos/tv_flash.toml
@@ -6702,6 +6703,131 @@ pub static TP_MULTIFLASH_WAX_SPEC: ModelSpec = ModelSpec {
     cases: TP_MULTIFLASH_WAX_CASES,
 };
 
+static TP_SOLID_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+];
+
+static TP_SOLID_FLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "ice_from_a_water_methane_feed",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 273.15), ("P", 1000000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "methane"])],
+        strings: &[("solid", "water"), ("eos", "srk")],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[("solid_fraction", 0.499785776882074), ("phase_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "ice_from_the_same_feed_colder",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 253.15), ("P", 1000000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "methane"])],
+        strings: &[("solid", "water"), ("eos", "srk")],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[("solid_fraction", 0.499967499063729), ("phase_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "nothing_freezes_above_the_triple_point",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 278.15), ("P", 1000000.0)],
+        flags: &[],
+        lists: &[("components", &["water", "methane"])],
+        strings: &[("solid", "water"), ("eos", "srk")],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[("solid_fraction", 0.0), ("phase_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "carbon_dioxide_ice_where_the_tables_are_not_water",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 193.15), ("P", 1000000.0)],
+        flags: &[],
+        lists: &[("components", &["CO2", "methane"])],
+        strings: &[("solid", "CO2"), ("eos", "srk")],
+        vectors: &[("z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[("solid_fraction", 0.444150617161187), ("phase_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+static TP_SOLID_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "solid_fraction_newton",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("two_phase_flash_plus_solid"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.tp_solid_flash`.
+pub static TP_SOLID_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.tp_solid_flash",
+    kind: "procedure",
+    algorithm: Some(&TP_SOLID_FLASH_ALGORITHM),
+    checks: TP_SOLID_FLASH_CHECKS,
+    cases: TP_SOLID_FLASH_CASES,
+};
+
 static TS_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -8403,6 +8529,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &TP_FLASH_SAFT_SPEC,
     &TP_MULTIFLASH_SPEC,
     &TP_MULTIFLASH_WAX_SPEC,
+    &TP_SOLID_FLASH_SPEC,
     &TS_FLASH_SPEC,
     &TU_FLASH_SPEC,
     &TV_FLASH_SPEC,

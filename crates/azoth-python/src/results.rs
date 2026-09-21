@@ -43,9 +43,9 @@ use azoth_eos::results::{
     SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
     SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
     TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
-    TpMultiflashWaxResult, TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult,
-    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
+    TpMultiflashWaxResult, TpSolidFlashResult, TsFlashResult, TuFlashResult, TvFlashResult,
+    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
@@ -4038,6 +4038,75 @@ impl From<&TpMultiflashWaxResult> for PyTpMultiflashWaxResult {
     }
 }
 
+/// Result of `eos.tp_solid_flash`, transported.
+#[pyclass(
+    frozen,
+    module = "azoth._core",
+    name = "TpSolidFlashResult",
+    eq,
+    skip_from_py_object
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTpSolidFlashResult {
+    /// The fraction of the feed's moles in the pure solid.
+    #[pyo3(get)]
+    pub solid_fraction: f64,
+    /// How many phases the feed splits into, the solid counted when it is there.
+    #[pyo3(get)]
+    pub phase_count: u32,
+    /// The mole fraction of the feed in each phase, the solid last.
+    #[pyo3(get)]
+    pub beta: Vec<f64>,
+    /// The composition of each phase, one vector per phase.
+    #[pyo3(get)]
+    pub x: Vec<Vec<f64>>,
+    /// The pure solid's fugacity coefficient.
+    #[pyo3(get)]
+    pub solid_fugacity_coefficient: f64,
+    /// Fraction-solve steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The norm of the last fraction correction.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Whether the residual met the tolerance.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTpSolidFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TpSolidFlashResult(phase_count={}, solid_fraction={}, solid_fugacity_coefficient={}, {} iteration(s), converged={})",
+            self.phase_count,
+            self.solid_fraction,
+            self.solid_fugacity_coefficient,
+            self.iterations,
+            self.converged
+        )
+    }
+}
+
+impl From<&TpSolidFlashResult> for PyTpSolidFlashResult {
+    fn from(r: &TpSolidFlashResult) -> Self {
+        Self {
+            solid_fraction: r.solid_fraction,
+            phase_count: r.phase_count,
+            beta: r.beta.clone(),
+            x: r.x.clone(),
+            solid_fugacity_coefficient: r.solid_fugacity_coefficient,
+            iterations: r.iterations,
+            residual: r.residual,
+            converged: r.converged,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.salt_precipitation`, transported.
 #[pyclass(
     frozen,
@@ -6678,6 +6747,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         SaltPrecipitationResult::CALC_ID => SaltPrecipitationResult::FIELDS.to_vec(),
         WaxSolidFugacityResult::CALC_ID => WaxSolidFugacityResult::FIELDS.to_vec(),
         TpMultiflashWaxResult::CALC_ID => TpMultiflashWaxResult::FIELDS.to_vec(),
+        TpSolidFlashResult::CALC_ID => TpSolidFlashResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
         EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),

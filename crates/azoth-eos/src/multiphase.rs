@@ -383,6 +383,18 @@ pub fn solve_phase_fractions(
 /// would be the larger dependency. A singular Hessian is reported rather than smoothed
 /// over: it means two phases have met, and the caller's answer is to drop one, not to
 /// take a step the regulariser invented.
+/// `H x = g` by Gaussian elimination with partial pivoting.
+///
+/// Exposed because [`crate::tp_solid_flash`]'s Newton is the same dense solve on a different
+/// gradient: the two flashes differ in what `E` is and in how the step is damped, not in how a
+/// small system is eliminated.
+///
+/// # Errors
+/// * [`AzothError::SolverNotConverged`] if the matrix is singular at a pivot.
+pub fn solve_dense(h: &[Vec<f64>], g: &[f64], algorithm: &ModelAlgorithm) -> Result<Vec<f64>> {
+    solve(h, g, algorithm)
+}
+
 fn solve(h: &[Vec<f64>], g: &[f64], algorithm: &ModelAlgorithm) -> Result<Vec<f64>> {
     let n = g.len();
     let mut a: Vec<Vec<f64>> = (0..n)

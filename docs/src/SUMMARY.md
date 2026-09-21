@@ -127,6 +127,7 @@
   - [SAFT-VR-Mie flash](./eos/tp_flash_saft.md)
   - [Multiphase flash at fixed temperature and pressure](./eos/tp_multiflash.md)
   - [Wax multiphase flash at fixed temperature and pressure](./eos/tp_multiflash_wax.md)
+  - [Solid flash at fixed temperature and pressure](./eos/tp_solid_flash.md)
   - [Temperature-entropy flash](./eos/ts_flash.md)
   - [Temperature-internal-energy flash](./eos/tu_flash.md)
   - [Temperature-volume flash](./eos/tv_flash.md)

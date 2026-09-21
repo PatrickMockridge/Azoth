@@ -142,6 +142,7 @@ from azoth.core.result import (
     TpFlashSaftResult,
     TpMultiflashResult,
     TpMultiflashWaxResult,
+    TpSolidFlashResult,
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
@@ -2884,6 +2885,36 @@ def tp_multiflash_wax(
         phase_count=result.phase_count,
         beta=tuple(result.beta),
         x=tuple(tuple(row) for row in result.x),
+        iterations=result.iterations,
+        residual=result.residual,
+        converged=result.converged,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tp_solid_flash(
+    components: Sequence[str], solid: str, T: Q, P: Q, z: Sequence[float], eos: str = "srk"
+) -> TpSolidFlashResult:
+    """The solid fraction of a feed, computed in Rust.
+
+    **The component names cross unresolved**, and the Rust side resolves them: the melt data
+    and the density correlations are the databank's own columns.
+    """
+    spec = _models_gen.model("eos.tp_solid_flash")
+    result = _core.tp_solid_flash(
+        list(components),
+        solid,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        eos,
+    )
+    return TpSolidFlashResult(
+        solid_fraction=result.solid_fraction,
+        phase_count=result.phase_count,
+        beta=tuple(result.beta),
+        x=tuple(tuple(row) for row in result.x),
+        solid_fugacity_coefficient=result.solid_fugacity_coefficient,
         iterations=result.iterations,
         residual=result.residual,
         converged=result.converged,

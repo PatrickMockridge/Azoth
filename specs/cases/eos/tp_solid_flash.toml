@@ -1,0 +1,91 @@
+model = "eos.tp_solid_flash"
+[[cases]]
+id = "ice_from_a_water_methane_feed"
+tolerance = 1e-06
+source = """NeqSim 3.20.0, from `validation/neqsim/captures/solid_flash_probe.tsv`: water 0.5 and
+methane 0.5 at 273.15 K and 10 bara, `setSolidPhaseCheck("water")` and a plain `TPflash` - the
+`SolidFlash` route, which is the one `AsphalteneOnsetPressureFlash` takes.
+
+**Nearly all the water freezes**: the solid takes `0.499785776882074` of the feed and the gas
+that is left holds water at `0.000428262703006822` - its fugacity pinned to the ice's, which
+is `0.000407988772148464` at this state. The aqueous phase the fluid-only flash seeded is gone,
+which is the removal and restart the solve performs when a fluid phase's fraction falls under
+`1.01e-9`.
+
+**The tolerance is `1e-6`, which is looser than the agreement and looser than NeqSim's own.**
+The outer loop stops on a `1e-3` change in the solid's fraction and takes at least four steps,
+so the answer it lands on is the fourth iterate and not a converged one; a tighter tolerance
+would pin this port's iteration path rather than the state. The two routes agree here to ten
+digits (`SolidFlash1` gives `0.499785776904777`), which is why the state is the one the case
+pins."""
+[cases.inputs]
+components = ["water", "methane"]
+solid = "water"
+eos = "srk"
+T = 273.15
+P = 1000000.0
+z = [0.5, 0.5]
+[cases.expected]
+solid_fraction = 0.499785776882074
+phase_count = 2
+[[cases]]
+id = "ice_from_the_same_feed_colder"
+tolerance = 1e-06
+source = """The same feed at 253.15 K: the solid grows to `0.499967499063729` and the gas's
+water falls to `6.49976068635746e-05`, as the ice's own fugacity falls with temperature
+(`6.12102570341034e-05`). **This is the state where the two routes part company** - the other
+gives three phases and an aqueous whose composition sums to `0.819` - so it is the one that
+says which class the port follows."""
+[cases.inputs]
+components = ["water", "methane"]
+solid = "water"
+eos = "srk"
+T = 253.15
+P = 1000000.0
+z = [0.5, 0.5]
+[cases.expected]
+solid_fraction = 0.499967499063729
+phase_count = 2
+[[cases]]
+id = "nothing_freezes_above_the_triple_point"
+tolerance = 1e-06
+source = """The same feed at 278.15 K, above water's `273.16` K triple point: the candidate
+screen finds a negative amount, no solid is added, and the answer is the fluid-only flash's -
+gas `0.500313091249392` against aqueous `0.499686908750608`. **Both NeqSim routes give this
+exactly**, because neither reaches the solve at all.
+
+It is here to hold the refusal out: a model that raised above the triple point, or that formed
+a solid there, fails at a state the flash itself answers."""
+[cases.inputs]
+components = ["water", "methane"]
+solid = "water"
+eos = "srk"
+T = 278.15
+P = 1000000.0
+z = [0.5, 0.5]
+[cases.expected]
+solid_fraction = 0.0
+phase_count = 2
+[[cases]]
+id = "carbon_dioxide_ice_where_the_tables_are_not_water"
+tolerance = 1e-06
+source = """CO2 0.5 and methane 0.5 at 193.15 K and 10 bara, well below CO2's `216.58` K triple
+point. **The class's water override does not apply and its density fallback does**: CO2's
+`CPsolid` and `CPliquid` rows are both zero, so the heat-capacity difference is zero rather
+than `37.12`, and its `LIQUIDDENSITYCOEFS` row is zero where its solid row is not - so the
+liquid side of the volume difference is the reference phase's own molar volume and the solid
+side is the table's.
+
+The solid takes `0.444150617161187` of the feed. `solid_fugacity_coefficient` is
+`0.0867220206841901`, which is the whole arithmetic in one number: the fusion term dominates
+at `-0.6076`, the heat-capacity term is absent, and the volume term is `-1.6e-07`."""
+[cases.inputs]
+components = ["CO2", "methane"]
+solid = "CO2"
+eos = "srk"
+T = 193.15
+P = 1000000.0
+z = [0.5, 0.5]
+[cases.expected]
+solid_fraction = 0.444150617161187
+phase_count = 2

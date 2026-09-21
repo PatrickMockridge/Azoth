@@ -365,6 +365,31 @@ class HydrateFormationTemperatureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TpSolidFlashResult(_HasWarnings):
+    """Result of ``eos.tp_solid_flash``."""
+
+    #: The fraction of the feed's moles in the pure solid, and zero where none forms.
+    solid_fraction: float
+    #: How many phases the feed splits into, the solid counted when it is there.
+    phase_count: int
+    #: The mole fraction of the feed in each phase, summing to one, the solid last.
+    beta: tuple[float, ...]
+    #: The composition of each phase, one tuple per phase.
+    x: tuple[tuple[float, ...], ...]
+    #: The pure solid's fugacity coefficient, the number the phase exists at all is answered
+    #: from.
+    solid_fugacity_coefficient: float
+    #: Fraction-solve steps taken by the last solve.
+    iterations: int
+    #: The norm of the last fraction correction.
+    residual: float
+    #: Whether the residual met the tolerance.
+    converged: bool
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TpMultiflashWaxResult(_HasWarnings):
     """Result of ``eos.tp_multiflash_wax``."""
 

@@ -987,6 +987,18 @@ class TpMultiflashWaxResult:
     warnings: list[Warning]
 
 @final
+class TpSolidFlashResult:
+    solid_fraction: float
+    phase_count: int
+    beta: list[float]
+    x: list[list[float]]
+    solid_fugacity_coefficient: float
+    iterations: int
+    residual: float
+    converged: bool
+    warnings: list[Warning]
+
+@final
 class TsFlashResult:
     P: Qty
     beta: float | None
@@ -1978,6 +1990,14 @@ def tp_multiflash_wax(
     z: list[float],
     eos: str | None = None,
 ) -> TpMultiflashWaxResult: ...
+def tp_solid_flash(
+    components: list[str],
+    solid: str,
+    T: float,
+    P: float,
+    z: list[float],
+    eos: str | None = None,
+) -> TpSolidFlashResult: ...
 def ts_flash(
     Tc: list[float],
     Pc: list[float],

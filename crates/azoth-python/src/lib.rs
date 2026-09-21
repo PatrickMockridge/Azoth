@@ -236,6 +236,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::tbp_fraction_properties, m)?)?;
     m.add_function(wrap_pyfunction!(eos::wax_solid_fugacity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::tp_multiflash_wax, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::tp_solid_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::scale_saturation_ratio, m)?)?;
     m.add_function(wrap_pyfunction!(eos::solid_fugacity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::salt_precipitation, m)?)?;

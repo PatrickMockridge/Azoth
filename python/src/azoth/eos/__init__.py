@@ -170,6 +170,7 @@ from azoth.core.result import (
     TpFlashSaftResult,
     TpMultiflashResult,
     TpMultiflashWaxResult,
+    TpSolidFlashResult,
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
@@ -313,6 +314,7 @@ __all__ = [
     "tp_flash_saft",
     "tp_multiflash",
     "tp_multiflash_wax",
+    "tp_solid_flash",
     "ts_flash",
     "tu_flash",
     "tv_flash",
@@ -2114,6 +2116,41 @@ def tp_multiflash_wax(
     """
     return resolve("eos.tp_multiflash_wax")(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z, eos=eos
+    )
+
+
+def tp_solid_flash(
+    components: list[str], solid: str, T: Q, P: Q, z: list[float], eos: str = "srk"
+) -> TpSolidFlashResult:
+    """The fraction of a feed that has frozen out as one pure solid.
+
+    NeqSim's ``SolidFlash``: a fluid flash with **one pure solid** in the set, whose
+    components the caller selects by name exactly as ``setSolidPhaseCheck`` does. Nearly all
+    of :func:`tp_multiflash`'s fraction Newton is reused, and one thing about it is not - the
+    precipitating component's ``E`` is ``z_solid/phi_solid`` rather than a sum over phases,
+    which pins its fugacity to the pure solid's in every fluid phase and leaves the solid's own
+    amount as the material balance's remainder.
+
+    **The solid's fugacity coefficient comes from the component's tabulated properties** -
+    :func:`solid_fugacity` over its heat of fusion, triple point, heat-capacity difference and
+    density correlations - with NeqSim's own two overrides: the heat-capacity difference is
+    ``37.12`` J/(mol K) for water, and a density table that is zero falls back to the reference
+    liquid's molar volume. A component whose table carries no melt data is refused rather than
+    treated as one that does not melt.
+
+    ``components`` names the substances because the melt data and the density correlations are
+    the databank's own columns.
+
+    Raises:
+        InvalidInputError: if ``solid`` is not one of ``components``, or if it carries no melt
+            data.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        SolverNotConvergedError: if the fraction solve's Hessian is singular.
+
+    See :func:`azoth.eos.reference.tp_solid_flash`.
+    """
+    return resolve("eos.tp_solid_flash")(  # type: ignore[no-any-return]
+        components=components, solid=solid, T=T, P=P, z=z, eos=eos
     )
 
 

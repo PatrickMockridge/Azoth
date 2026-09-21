@@ -122,6 +122,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.tp_flash_saft`](./tp_flash_saft.md) | `successive_substitution_flash` | Lafitte, T. et al. (2013) |
 | [`eos.tp_multiflash`](./tp_multiflash.md) | `multiphase_fraction_newton` | NeqSim 3.20.0 `TPmultiflash` |
 | [`eos.tp_multiflash_wax`](./tp_multiflash_wax.md) | `multiphase_fraction_newton` | NeqSim 3.20.0 `TPmultiflashWAX` |
+| [`eos.tp_solid_flash`](./tp_solid_flash.md) | `solid_fraction_newton` | NeqSim 3.20.0 `SolidFlash` |
 | [`eos.ts_flash`](./ts_flash.md) | `ts_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.tu_flash`](./tu_flash.md) | `tu_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.tv_flash`](./tv_flash.md) | `tv_flash_inverse_pressure_newton` | Standard thermodynamics, as in Michelsen & Mollerup |

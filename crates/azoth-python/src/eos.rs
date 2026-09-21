@@ -3345,6 +3345,28 @@ pub fn tp_multiflash_wax(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The fraction of a feed that has frozen out as one pure solid, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves them: the melt data and
+/// the density correlations are the databank's own columns.
+#[pyfunction]
+#[pyo3(signature = (components, solid, T, P, z, eos = "srk"))]
+#[allow(non_snake_case)] // `T`, `P` and `z` are the symbols in the chemistry
+pub fn tp_solid_flash(
+    py: Python<'_>,
+    components: Vec<String>,
+    solid: &str,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+) -> PyResult<crate::results::PyTpSolidFlashResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::tp_solid_flash(&names, solid, kelvins(T), pascals(P), &z, eos)
+        .map(|r| crate::results::PyTpSolidFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// One salt's saturation ratio in a brine, computed in Rust.
 #[pyfunction]
 #[pyo3(signature = (salt, x1, x2, x_water, gamma1, gamma2, water_activity, T, P, h3o_molality))]

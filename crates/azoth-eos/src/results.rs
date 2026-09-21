@@ -672,6 +672,49 @@ impl CalcResult for WaxSolidFugacityResult {
     }
 }
 
+/// Result of `eos.tp_solid_flash`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TpSolidFlashResult {
+    /// The fraction of the feed's moles in the pure solid, and zero where none forms.
+    pub solid_fraction: f64,
+    /// How many phases the feed splits into, the solid counted when it is there.
+    pub phase_count: u32,
+    /// The mole fraction of the feed in each phase, summing to one, the solid last.
+    pub beta: Vec<f64>,
+    /// The composition of each phase, one vector per phase, each summing to one.
+    pub x: Vec<Vec<f64>>,
+    /// The pure solid's fugacity coefficient - the number the phase exists at all is
+    /// answered from, and the one the flash's equilibrium pins the feed's water to.
+    pub solid_fugacity_coefficient: f64,
+    /// Newton steps taken by the last fraction solve.
+    pub iterations: u32,
+    /// The norm of the last fraction correction.
+    pub residual: f64,
+    /// Whether the residual met the tolerance.
+    pub converged: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TpSolidFlashResult {
+    const CALC_ID: &'static str = "eos.tp_solid_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "solid_fraction",
+        "phase_count",
+        "beta",
+        "x",
+        "solid_fugacity_coefficient",
+        "iterations",
+        "residual",
+        "converged",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.tp_multiflash_wax`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TpMultiflashWaxResult {
