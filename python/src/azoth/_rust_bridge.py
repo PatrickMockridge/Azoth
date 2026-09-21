@@ -121,6 +121,7 @@ from azoth.core.result import (
     RkDepartureResult,
     RootStructure,
     SaftVrMiePhaseResult,
+    SaltPrecipitationResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
@@ -2923,6 +2924,32 @@ def scale_saturation_ratio(
         saturation_ratio=result.saturation_ratio,
         ion_activity_product=result.ion_activity_product,
         solubility_product=result.solubility_product,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def salt_precipitation(
+    components: Sequence[str], salt: str, T: Q, P: Q, z: Sequence[float]
+) -> SaltPrecipitationResult:
+    """The solid one mineral takes from a brine, computed in Rust.
+
+    **The component names cross unresolved**, and the Rust side resolves them: the brine's
+    coefficients come from the Pitzer phase over the same names.
+    """
+    spec = _models_gen.model("eos.salt_precipitation")
+    result = _core.salt_precipitation(
+        list(components),
+        list(z),
+        salt,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+    )
+    return SaltPrecipitationResult(
+        precipitated_moles=result.precipitated_moles,
+        initial_saturation_ratio=result.initial_saturation_ratio,
+        final_saturation_ratio=result.final_saturation_ratio,
+        iterations=result.iterations,
+        extent_of_maximum=result.extent_of_maximum,
         warnings=_warnings(result.warnings),
     )
 

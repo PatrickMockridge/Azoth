@@ -1,0 +1,44 @@
+model = "eos.salt_precipitation"
+[[cases]]
+id = "the_pitzer_brines_halite_at_25_c"
+tolerance = 1e-03
+source = """NeqSim 3.20.0, `MultiSaltPrecipitation` over one mineral, from
+`validation/neqsim/captures/multi_salt_pitzer_probe.tsv`: a **Pitzer** brine of water, Na+,
+Cl-, CO3-- and HCO3- at 25 C and 10 bara, whose `NaCl` row the operation reports as
+`0.00764735162257383` mol precipitated against `1.246` mol of feed - so the expected value
+here is `0.00613736...` of it.
+
+**The brine is a Pitzer one and the earlier capture is not**, which is the point of this
+case. `CheckScalePotential` reads `getActivityCoefficient` off the phase it is pointed at, so
+the coefficients it used are the *phase model's* - and a `SystemSrkEos` brine answers with its
+cubic phase's (`0.946`, `0.987`), which is a different model from the electrolyte one azoth
+carries. So the oracle is a Pitzer run, and azoth's `eos.pitzer_phase` reproduces NeqSim's
+coefficients on it to five digits: `1.087806` against `1.087828` for Na+, `0.0267930` against
+`0.0267972` for CO3--.
+
+**The tolerance is `1e-3`, and that is P8's bound rather than this solve's.** The extent is
+where the ratio crosses one, and the ratio is the Pitzer coefficients' - measured, azoth's
+`eos.pitzer_phase` gives `1.087806` against NeqSim's `1.087828` for Na+ at the *initial*
+composition, and the coefficients move as the extent takes ions out, so the crossing lands
+`1.35e-4` away. The initial ratio itself agrees to better than `1e-6`, which is this model's
+own arithmetic on the same coefficients.
+
+The brine also avoids a species pair azoth's Pitzer refuses: `ca++|na+` and `cl-|so4--` have
+no theta in the dataset it reads, and its phase refuses such a set rather than running it with
+zeros the way NeqSim does."""
+[cases.inputs]
+components = ["water", "Na+", "Cl-", "CO3--", "HCO3-"]
+salt = "NaCl"
+T = 298.15
+P = 1000000.0
+z = [
+    0.802568218298555,
+    0.0963081861958266,
+    0.0963081861958266,
+    0.00321027287319422,
+    0.00160513643659711,
+]
+[cases.expected]
+precipitated_moles = 0.006137361975339
+initial_saturation_ratio = 1.27219919895626
+final_saturation_ratio = 1.0

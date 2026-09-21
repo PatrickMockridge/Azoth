@@ -825,6 +825,15 @@ class SaftVrMiePhaseResult:
     warnings: list[Warning]
 
 @final
+class SaltPrecipitationResult:
+    precipitated_moles: float
+    initial_saturation_ratio: float
+    final_saturation_ratio: float
+    iterations: int
+    extent_of_maximum: float
+    warnings: list[Warning]
+
+@final
 class ScaleSaturationRatioResult:
     saturation_ratio: float
     ion_activity_product: float
@@ -1815,6 +1824,13 @@ def saft_vr_mie_phase(
     z: list[float],
     compressed_phase: str,
 ) -> SaftVrMiePhaseResult: ...
+def salt_precipitation(
+    components: list[str],
+    z: list[float],
+    salt: str,
+    T: float,
+    P: float,
+) -> SaltPrecipitationResult: ...
 def scale_saturation_ratio(
     salt: str,
     x1: float,

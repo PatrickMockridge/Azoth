@@ -47,6 +47,7 @@
 //!   - specs/models/eos/pvf_flash.toml
 //!   - specs/models/eos/rachford_rice.toml
 //!   - specs/models/eos/saft_vr_mie_phase.toml
+//!   - specs/models/eos/salt_precipitation.toml
 //!   - specs/models/eos/soreide_whitson_phase.toml
 //!   - specs/models/eos/srk_cpa_phase.toml
 //!   - specs/models/eos/stability_test.toml
@@ -5656,6 +5657,91 @@ pub static SAFT_VR_MIE_PHASE_SPEC: ModelSpec = ModelSpec {
     cases: SAFT_VR_MIE_PHASE_CASES,
 };
 
+static SALT_PRECIPITATION_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+];
+
+static SALT_PRECIPITATION_CASES: &[TestCase] = &[TestCase {
+    id: "the_pitzer_brines_halite_at_25_c",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 0.001,
+    numbers: &[("T", 298.15), ("P", 1000000.0)],
+    flags: &[],
+    lists: &[("components", &["water", "Na+", "Cl-", "CO3--", "HCO3-"])],
+    strings: &[("salt", "NaCl")],
+    vectors: &[(
+        "z",
+        &[
+            0.802568218298555,
+            0.0963081861958266,
+            0.0963081861958266,
+            0.00321027287319422,
+            0.00160513643659711,
+        ],
+    )],
+    matrices: &[],
+    expected: &[
+        ("precipitated_moles", 0.006137361975339),
+        ("initial_saturation_ratio", 1.27219919895626),
+        ("final_saturation_ratio", 1.0),
+    ],
+    expected_vectors: &[],
+    expected_strings: &[],
+}];
+
+static SALT_PRECIPITATION_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "removal_extent_bisection",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("full_removal"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.salt_precipitation`.
+pub static SALT_PRECIPITATION_SPEC: ModelSpec = ModelSpec {
+    id: "eos.salt_precipitation",
+    kind: "procedure",
+    algorithm: Some(&SALT_PRECIPITATION_ALGORITHM),
+    checks: SALT_PRECIPITATION_CHECKS,
+    cases: SALT_PRECIPITATION_CASES,
+};
+
 static SOREIDE_WHITSON_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -8308,6 +8394,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PVF_FLASH_SPEC,
     &RACHFORD_RICE_SPEC,
     &SAFT_VR_MIE_PHASE_SPEC,
+    &SALT_PRECIPITATION_SPEC,
     &SOREIDE_WHITSON_PHASE_SPEC,
     &SRK_CPA_PHASE_SPEC,
     &STABILITY_TEST_SPEC,

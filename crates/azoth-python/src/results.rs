@@ -38,13 +38,14 @@ use azoth_eos::results::{
     PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult,
     PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
     RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
-    ScaleSaturationRatioResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
-    SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult,
-    TpMultiflashResult, TpMultiflashWaxResult, TsFlashResult, TuFlashResult, TvFlashResult,
-    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
+    SaltPrecipitationResult, ScaleSaturationRatioResult, SchwartzentruberAlphaResult,
+    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult,
+    SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TbpFractionPropertiesResult,
+    ThFlashResult, ThermalConductivityResult, TpMultiflashResult, TpMultiflashWaxResult,
+    TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult, TwuKappaResult,
+    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
@@ -4037,6 +4038,58 @@ impl From<&TpMultiflashWaxResult> for PyTpMultiflashWaxResult {
     }
 }
 
+/// Result of `eos.salt_precipitation`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SaltPrecipitationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySaltPrecipitationResult {
+    /// The solid taken, in moles per mole of feed.
+    #[pyo3(get)]
+    pub precipitated_moles: f64,
+    /// `IAP/Ksp` before anything was taken.
+    #[pyo3(get)]
+    pub initial_saturation_ratio: f64,
+    /// `IAP/Ksp` at the answer.
+    #[pyo3(get)]
+    pub final_saturation_ratio: f64,
+    /// Bisection steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The extent reached against the bracket's upper end.
+    #[pyo3(get)]
+    pub extent_of_maximum: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySaltPrecipitationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SaltPrecipitationResult(precipitated_moles={}, initial_saturation_ratio={}, {} iteration(s))",
+            self.precipitated_moles, self.initial_saturation_ratio, self.iterations
+        )
+    }
+}
+
+impl From<&SaltPrecipitationResult> for PySaltPrecipitationResult {
+    fn from(r: &SaltPrecipitationResult) -> Self {
+        Self {
+            precipitated_moles: r.precipitated_moles,
+            initial_saturation_ratio: r.initial_saturation_ratio,
+            final_saturation_ratio: r.final_saturation_ratio,
+            iterations: r.iterations,
+            extent_of_maximum: r.extent_of_maximum,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.scale_saturation_ratio`, transported.
 #[pyclass(
     frozen,
@@ -6585,6 +6638,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
         TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),
         ScaleSaturationRatioResult::CALC_ID => ScaleSaturationRatioResult::FIELDS.to_vec(),
+        SaltPrecipitationResult::CALC_ID => SaltPrecipitationResult::FIELDS.to_vec(),
         WaxSolidFugacityResult::CALC_ID => WaxSolidFugacityResult::FIELDS.to_vec(),
         TpMultiflashWaxResult::CALC_ID => TpMultiflashWaxResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),

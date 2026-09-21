@@ -150,6 +150,7 @@ from azoth.core.result import (
     RkAlphaAbResult,
     RkDepartureResult,
     SaftVrMiePhaseResult,
+    SaltPrecipitationResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
@@ -295,6 +296,7 @@ __all__ = [
     "rk_alpha_ab",
     "rk_departure",
     "saft_vr_mie_phase",
+    "salt_precipitation",
     "scale_saturation_ratio",
     "siddiqi_lucas_diffusivity",
     "soreide_whitson_phase",
@@ -2153,6 +2155,34 @@ def scale_saturation_ratio(
         T=T,
         P=P,
         h3o_molality=h3o_molality,
+    )
+
+
+def salt_precipitation(
+    components: list[str], salt: str, T: Q, P: Q, z: list[float]
+) -> SaltPrecipitationResult:
+    """The solid one mineral takes from a brine.
+
+    NeqSim's ``CalcSaltSatauration.precipitate()``: the extent at which the mineral's
+    saturation ratio reaches one, bracketed by the extent at which an ion runs out and solved
+    by bisection. **The activity coefficients are the brine's own**, from
+    :func:`pitzer_phase` over the same composition and state - NeqSim reads them off the phase,
+    and a brine is an electrolyte and not a cubic mixture.
+
+    ``components`` names the substances because the coefficients are keyed by them.
+    ``salt`` names the ``compsalt`` row. ``extent_of_maximum`` is one where an ion was
+    exhausted and less where the ratio crossed one first.
+
+    Raises:
+        InvalidInputError: if the salt is not in the table, or the brine does not name both of
+            its ions and its water.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        SolverNotConvergedError: if the ratio is not under one at the maximum extent.
+
+    See :func:`azoth.eos.reference.salt_precipitation`.
+    """
+    return resolve("eos.salt_precipitation")(  # type: ignore[no-any-return]
+        components=components, salt=salt, T=T, P=P, z=z
     )
 
 

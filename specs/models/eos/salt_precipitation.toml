@@ -1,0 +1,79 @@
+id = "eos.salt_precipitation"
+name = "Scale precipitation of one mineral"
+kind = "procedure"
+assumptions = [
+    "**this is one mineral; the complementarity loop over several is not here.** NeqSim's `MultiSaltPrecipitation` holds one amount per mineral and takes the largest `|SR - 1|` each step, and that loop needs a *list* of names no input shape can declare. This is its per-mineral half.",
+    "**the solve is a bracket and a bisection on the removal extent.** `precipitate` takes `min(n1/stoc1, n2/stoc2)` - where an ion runs out - requires `SR < 1` at that extent or refuses, and bisects to `|log10 SR| <= 1e-8`.",
+    "**`eos.scale_saturation_ratio` is the inner half**, and this model is the loop over it: the ratio is wanted as a function of the moles the mineral has taken, so each trial adjusts them, renormalises and calls the calc.",
+    "**the activity coefficients are `eos.pitzer_phase`'s, over the same brine and state.** NeqSim reads `getActivityCoefficient(i, water)` off the phase the operation was pointed at, so they are the phase model's and not a caller's guess; this calls that model rather than asking.",
+    "**a mineral the fluid cannot form is skipped**, as NeqSim's `ensureSaltIonsPresent` does: the two ions must both be components, so a brine without barium simply has no `BaSO4` amount to report rather than an error.",
+    "**a mineral under saturation precipitates nothing**, and its ratio is reported as it stands rather than driven to one: the capture's `NaCl` sits at `0.18` and moves no solid at all.",
+    "**it refuses rather than returns**: a bracket whose ratio cannot be brought under one is `SolverNotConverged`, as NeqSim's `IllegalStateException` is. A mineral the fluid cannot form is `InvalidInput` rather than a zero.",
+    "the brine **is** the phase. NeqSim reads its ions from the phase the operation was pointed at; this takes that composition, so a caller with a hydrocarbon-bearing fluid must hand over the aqueous phase's own.",
+    "the solid is a **ledger and not a phase**: it is not inserted, it does not take volume, and a caller wanting the deposit as a phase has to say what it does with it. NeqSim's own docstring says the same.",
+]
+references = [
+    "Oddo, J. E.; Tomson, M. B. (1982). \"Simplified calculation of CaCO3 saturation at high temperatures and pressures in brine solutions.\" Journal of Petroleum Technology 34(7), 1583-1590. DOI 10.2118/10352-PA.",
+    "Plummer, L. N.; Busenberg, E. (1982). \"The solubilities of calcite, aragonite and vaterite in CO2-H2O solutions between 0 and 90 C.\" Geochimica et Cosmochimica Acta 46(6), 1011-1040. DOI 10.1016/0016-7037(82)90056-4.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `MultiSaltPrecipitation.solve()` is the loop and `CalcSaltSatauration.precipitate`/`dissolve` the per-mineral halves.",
+]
+[source]
+standard = "NeqSim 3.20.0 `MultiSaltPrecipitation`"
+edition = "`precipitateScales` in `ThermodynamicOperations`. The continuation entry `equilibrateScales`, which carries a previous solid ledger, is not taken."
+[algorithm]
+scheme = "removal_extent_bisection"
+initialisation = "full_removal"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 100
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the brine's substances, by name, including its ions. **The activity coefficients come from `eos.pitzer_phase` over these**, which is why this is not a cubic model: `mixture_of` refuses a cubic over an ion, and rightly."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+description = "the overall mole fractions. Checked rather than renormalised, and taken as the aqueous phase's own composition - see the assumptions."
+[inputs.salt]
+type = "string"
+description = "the mineral's `compsalt` name, matched as the table spells it - `CaCO3`, `CaSO4_A`, `NaCl`. A name the table does not carry, or whose two ions the brine does not have, is refused rather than reported as a zero."
+
+
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[outputs]
+[outputs.precipitated_moles]
+unit = "dimensionless"
+description = "the solid taken, in moles per mole of feed. Zero where the mineral stayed under saturation."
+[outputs.initial_saturation_ratio]
+unit = "dimensionless"
+description = "`IAP/Ksp` before anything was taken, which is what says whether anything will be."
+[outputs.final_saturation_ratio]
+unit = "dimensionless"
+description = "`IAP/Ksp` at the answer: one where the mineral precipitated, and the initial ratio where it did not."
+[outputs.iterations]
+unit = "dimensionless"
+description = "bisection steps taken."
+[outputs.extent_of_maximum]
+unit = "dimensionless"
+description = "the extent reached against the bracket's upper end: **one where an ion was exhausted and less where the ratio crossed first**, which is the difference between a brine that ran out of something and one that did not. NeqSim reports a balance residual here instead, and it is zero by construction."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure"
+[implementations]
+python = "azoth.eos.salt_precipitation"
+rust = "azoth_eos::salt_precipitation"

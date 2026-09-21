@@ -398,6 +398,25 @@ class WaxSolidFugacityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SaltPrecipitationResult(_HasWarnings):
+    """Result of ``eos.salt_precipitation``."""
+
+    #: The solid taken, in moles per mole of feed.
+    precipitated_moles: float
+    #: ``IAP/Ksp`` before anything was taken.
+    initial_saturation_ratio: float
+    #: ``IAP/Ksp`` at the answer: one where the mineral precipitated, and the initial ratio
+    #: where it did not.
+    final_saturation_ratio: float
+    #: Bisection steps taken.
+    iterations: int
+    #: The extent reached against the bracket's upper end: one where an ion was exhausted.
+    extent_of_maximum: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ScaleSaturationRatioResult(_HasWarnings):
     """Result of ``eos.scale_saturation_ratio``."""
 

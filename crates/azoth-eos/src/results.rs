@@ -712,6 +712,40 @@ impl CalcResult for TpMultiflashWaxResult {
     }
 }
 
+/// Result of `eos.salt_precipitation`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SaltPrecipitationResult {
+    /// The solid taken, in moles per mole of feed.
+    pub precipitated_moles: f64,
+    /// `IAP/Ksp` before anything was taken.
+    pub initial_saturation_ratio: f64,
+    /// `IAP/Ksp` at the answer: one where the mineral precipitated, and the initial ratio
+    /// where it did not.
+    pub final_saturation_ratio: f64,
+    /// Bisection steps taken.
+    pub iterations: u32,
+    /// The extent reached against the bracket's upper end: one where an ion was exhausted.
+    pub extent_of_maximum: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SaltPrecipitationResult {
+    const CALC_ID: &'static str = "eos.salt_precipitation";
+    const FIELDS: &'static [&'static str] = &[
+        "precipitated_moles",
+        "initial_saturation_ratio",
+        "final_saturation_ratio",
+        "iterations",
+        "extent_of_maximum",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.scale_saturation_ratio`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScaleSaturationRatioResult {

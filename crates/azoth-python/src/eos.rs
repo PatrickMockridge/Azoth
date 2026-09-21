@@ -3379,6 +3379,27 @@ pub fn scale_saturation_ratio(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The solid one mineral takes from a brine, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves them: the brine is an
+/// electrolyte and its coefficients come from the Pitzer phase over the same names.
+#[pyfunction]
+#[pyo3(signature = (components, z, salt, T, P))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn salt_precipitation(
+    py: Python<'_>,
+    components: Vec<String>,
+    z: Vec<f64>,
+    salt: &str,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::results::PySaltPrecipitationResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::salt_precipitation(&names, salt, kelvins(T), pascals(P), &z)
+        .map(|r| crate::results::PySaltPrecipitationResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The freezing point of para-hydrogen at a pressure, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side checks them: the solid equation

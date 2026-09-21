@@ -10,7 +10,7 @@
 //   java -cp .:neqsim-3.20.0.jar MultiSaltProbe > captures/multi_salt_probe.tsv
 
 import neqsim.thermo.system.SystemInterface;
-import neqsim.thermo.system.SystemSrkEos;
+import neqsim.thermo.system.SystemPitzer;
 import neqsim.thermodynamicoperations.ThermodynamicOperations;
 import neqsim.thermodynamicoperations.flashops.saturationops.MultiSaltPrecipitationResult;
 import neqsim.thermodynamicoperations.flashops.saturationops.SaltPrecipitationResult;
@@ -28,7 +28,11 @@ public class MultiSaltProbe {
     //
     // `precipitateScales`, and not the older `calcMultiSaltPrecipitation`: the operation was
     // renamed, and the probe's first compile against the pinned jar is what said so.
-    String[] minerals = {"CaCO3", "CaSO4_A", "NaCl"};
+    // **A brine azoth's Pitzer covers.** `ca++|na+` and `cl-|so4--` have no theta in the
+    // dataset the port reads, and its phase refuses a species set whose parameters are
+    // missing rather than running it with zeros - so a brine carrying both is one the two
+    // libraries cannot be compared on.
+    String[] minerals = {"NaCl"};
     for (double temperatureC : new double[] {25.0, 60.0, 90.0}) {
       report(temperatureC, 10.0, minerals);
     }
@@ -42,12 +46,17 @@ public class MultiSaltProbe {
     }
     System.out.printf("# minerals:%s%n", names);
     try {
-      SystemInterface fluid = new SystemSrkEos(273.15 + temperatureC, pressureBara);
+      // **A Pitzer brine, and not a cubic one.** The operation reads
+      // `getActivityCoefficient` off the phase it is pointed at, so the numbers a port is
+      // compared on are the *phase model's* - and `SystemSrkEos` answers with the cubic
+      // phase's, which is a different model from the electrolyte one azoth carries.
+      SystemInterface fluid = new SystemPitzer(273.15 + temperatureC, pressureBara);
       fluid.addComponent("water", 1.0);
-      fluid.addComponent("Na+", 0.05);
-      fluid.addComponent("Cl-", 0.05);
-      fluid.addComponent("Ca++", 0.01);
-      fluid.addComponent("SO4--", 0.005);
+      // **A brine at halite's saturation**, because a mineral under it precipitates nothing
+      // and exercises none of the solve: `NaCl`'s product is about `38` and its molality at
+      // saturation about `6`, so the run that matters is the one that crosses that.
+      fluid.addComponent("Na+", 0.12);
+      fluid.addComponent("Cl-", 0.12);
       fluid.addComponent("CO3--", 0.004);
       fluid.addComponent("HCO3-", 0.002);
       fluid.setMixingRule(2);

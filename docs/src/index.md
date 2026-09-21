@@ -172,6 +172,7 @@ Four sections, and the difference between them is the point:
 - [`eos.pvf_flash`](./eos/pvf_flash.md) — Pressure and vapour-fraction flash
 - [`eos.rachford_rice`](./eos/rachford_rice.md) — Vapour fraction from the Rachford-Rice equation
 - [`eos.saft_vr_mie_phase`](./eos/saft_vr_mie_phase.md) — SAFT-VR-Mie phase state
+- [`eos.salt_precipitation`](./eos/salt_precipitation.md) — Scale precipitation of one mineral
 - [`eos.soreide_whitson_phase`](./eos/soreide_whitson_phase.md) — Phase state of a Soreide-Whitson fluid
 - [`eos.srk_cpa_phase`](./eos/srk_cpa_phase.md) — Soave-Redlich-Kwong CPA phase state
 - [`eos.stability_test`](./eos/stability_test.md) — Tangent-plane stability test
