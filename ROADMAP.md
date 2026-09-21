@@ -204,9 +204,16 @@ The specialist physics.
 - **Wax.** Ported, each with the id that carries it: `ComponentWax` (`eos.wax_solid_fugacity`,
   its `fugcoef2`), `TPmultiflashWAX` (`eos.tp_multiflash_wax`) and `PhaseWax`, which is the
   class `SystemThermo` adds when the wax check is on. `eos.tbp_fraction_properties` is
-  Pedersen's cut correlations, which `WaxCharacterise` reads. **Not ported**: the three other
-  component models `PhaseWax` can be given by name — `ComponentWonWax` (`Won`),
-  `ComponentWaxWilson` (`Wilson`) and `ComponentCoutinhoWax` (`Coutinho`) — `WaxCharacterise`
+  Pedersen's cut correlations, which `WaxCharacterise` reads. **The three other component
+  models `PhaseWax` can be given by name — `ComponentWonWax` (`Won`), `ComponentWaxWilson`
+  (`Wilson`) and `ComponentCoutinhoWax` (`Coutinho`) — are reachable and cannot compute**, so
+  they are not a port anybody skipped. Measured on the fluid this family's own probe uses
+  (`WaxModelProbe`, `captures/wax_model_probe.tsv`): Pedersen's reports a wax fraction of
+  `0.146` at 275 K, and all three of the others report **`1.0`** — the entire feed as wax,
+  methane included. Two of them do it by returning `NaN`: Won's solubility parameter and
+  Wilson's activity coefficient are `NaN` at every temperature a wax exists at, because their
+  `sqrt` arguments go negative, and Coutinho's activity coefficient is finite while its
+  coefficient comes out at `8.0e+252`. **Not ported** alongside them: `WaxCharacterise`
   itself, `WaxModelInterface`, and `pvtsimulation/flowassurance/WaxCurveCalculator`, which adds
   a sweep and a WAT rather than a model: it clones the fluid down a temperature grid, runs the
   ordinary wax flash at each point and enforces monotonicity on the resulting curve, so the
