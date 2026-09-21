@@ -296,6 +296,21 @@ pub struct Entry {
     /// through `isHydrateFormer` by every occupancy loop. A non-former is a guest of no cage,
     /// and water is excluded by name rather than by this.
     pub hydrate_former: bool,
+    /// Whether the substance precipitates as wax: NeqSim's `waxformer`, read in `Component`'s
+    /// constructor into `waxFormer`.
+    ///
+    /// **It is the flag that decides whether a substance can be in a wax phase at all** -
+    /// `ComponentWax.fugcoef` returns its `1e50` marker for one that is not - so a model
+    /// reading it and a model ignoring it are answers about different fluids. 16 of the 348
+    /// compiled rows carry it, and they are the n-alkanes from n-hexane up.
+    pub wax_former: bool,
+    /// Heat of fusion, in J/mol: NeqSim's `HEATOFFUSION`, read into `Component` for **every**
+    /// substance and not only the solids - the wax probe's capture prints methane at
+    /// `941.0` J/mol, which is its own.
+    pub heat_of_fusion: f64,
+    /// Triple-point temperature, in K: NeqSim's `TRIPLEPOINTTEMPERATURE`, read beside it.
+    /// Methane's is `90.69` K.
+    pub triple_point_temperature: f64,
     /// SAFT-VR-Mie's repulsive exponent `lambda_r`, dimensionless.
     ///
     /// **This one is an absence marker too, on exactly the rows `m_mie` is.** The table
@@ -362,6 +377,11 @@ impl Entry {
         Ok(
             Component::new(kelvins(self.tc), pascals(self.pc), self.omega)?
                 .with_molar_mass(self.molar_mass)
+                .with_wax_data(
+                    self.wax_former,
+                    self.heat_of_fusion,
+                    self.triple_point_temperature,
+                )
                 .with_association(self.association.clone()),
         )
     }
@@ -1001,6 +1021,9 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "umrcpa_mc4",
         "umrcpa_mc5",
         "hydrateformer",
+        "waxformer",
+        "heatoffusion",
+        "triplepointtemperature",
         "hydratea1small",
         "hydrateb1small",
         "hydratea1large",
@@ -1121,6 +1144,19 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                 hydrate_former: record
                     .get(index["hydrateformer"])
                     .is_some_and(|value| value.trim() == "yes"),
+                // `Component.java` tests `Integer.parseInt(...) == 1`, so the column is a
+                // number and not one of the `yes`/`no` flags beside it.
+                wax_former: record
+                    .get(index["waxformer"])
+                    .and_then(|value| value.trim().parse::<f64>().ok())
+                    .is_some_and(|value| value == 1.0),
+                heat_of_fusion: number(&record, index["heatoffusion"], "heatoffusion", row)?,
+                triple_point_temperature: number(
+                    &record,
+                    index["triplepointtemperature"],
+                    "triplepointtemperature",
+                    row,
+                )?,
                 m_saft: number(&record, index["msaft"], "msaft", row)?,
                 sigma_saft: number(&record, index["sigma_saft_m"], "sigma_saft_m", row)?,
                 epsik_saft: number(&record, index["epsiksaft"], "epsiksaft", row)?,
@@ -1434,6 +1470,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 hydrate_langmuir_a: [[0.0; 2]; 2],
                 hydrate_langmuir_b: [[0.0; 2]; 2],
                 hydrate_former: false,
+                wax_former: false,
+                heat_of_fusion: 0.0,
+                triple_point_temperature: 0.0,
                 lambda_r_mie: 0.0,
                 lambda_a_mie: 0.0,
                 m_mie: 0.0,
@@ -1499,6 +1538,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             hydrate_langmuir_a: base.hydrate_langmuir_a,
             hydrate_langmuir_b: base.hydrate_langmuir_b,
             hydrate_former: base.hydrate_former,
+            wax_former: base.wax_former,
+            heat_of_fusion: base.heat_of_fusion,
+            triple_point_temperature: base.triple_point_temperature,
             lambda_r_mie: base.lambda_r_mie,
             lambda_a_mie: base.lambda_a_mie,
             m_mie: base.m_mie,

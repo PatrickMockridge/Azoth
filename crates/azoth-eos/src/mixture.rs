@@ -143,6 +143,24 @@ pub struct Component {
     /// [`crate::pr_peneloux_shift`] or [`crate::srk_peneloux_shift`] is one source; a
     /// fitted constant is another.
     pub volume_shift: f64,
+    /// Whether the substance precipitates as wax: the databank's `waxformer`, and the flag
+    /// that decides whether it can be in a wax phase at all.
+    ///
+    /// **NeqSim's wax model reads it where a cubic cannot see it.** `ComponentWax.fugcoef`
+    /// returns a `1e50` marker for a substance that is not a former, so the flag is what
+    /// makes the exclusion a number the fraction solve can carry rather than a phase list
+    /// that has to be assembled per state.
+    pub wax_former: bool,
+    /// Heat of fusion, in J/mol, and the triple-point temperature in K, for a substance the
+    /// databank states them for.
+    ///
+    /// Read by `eos.wax_solid_fugacity`'s fusion term. **Zero means the table carries no
+    /// value**, which is every substance the wax model does not treat as a solid; a model
+    /// must refuse a zero rather than compute with it, the rule the other zero-means-absent
+    /// fields here follow.
+    pub heat_of_fusion: f64,
+    /// The triple-point temperature, in K.
+    pub triple_point_temperature: f64,
     /// The association parameters, or `None` for a component with no site scheme.
     ///
     /// **A component that carries this is not described by its critical constants
@@ -183,6 +201,9 @@ impl Component {
             molar_mass: None,
             alpha_params: Vec::new(),
             volume_shift: 0.0,
+            wax_former: false,
+            heat_of_fusion: 0.0,
+            triple_point_temperature: 0.0,
             association: None,
         })
     }
@@ -204,6 +225,25 @@ impl Component {
     #[must_use]
     pub fn with_molar_mass(mut self, molar_mass: Option<f64>) -> Self {
         self.molar_mass = molar_mass;
+        self
+    }
+
+    /// This component, with the wax data attached.
+    ///
+    /// The databank populates it; a caller-supplied pseudo-component may set it from
+    /// `eos.tbp_fraction_properties`'s fits, which is what NeqSim's `addTBPWax` does for a
+    /// cut. A model reading it refuses a zero heat of fusion rather than treating it as a
+    /// substance that does not melt.
+    #[must_use]
+    pub fn with_wax_data(
+        mut self,
+        wax_former: bool,
+        heat_of_fusion: f64,
+        triple_point_temperature: f64,
+    ) -> Self {
+        self.wax_former = wax_former;
+        self.heat_of_fusion = heat_of_fusion;
+        self.triple_point_temperature = triple_point_temperature;
         self
     }
 
