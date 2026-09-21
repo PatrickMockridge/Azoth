@@ -133,13 +133,16 @@ solubility, electrolytes, salts and scale, and freezing.
   (`eos.furst_electrolyte_phase`) and `SystemFurstElectrolyteEos`, with the same three
   again for Mod2004 (`eos.furst_electrolyte_mod2004_phase`) over the parameters
   `FurstElectrolyteConstants` hardcodes.
-- **Duan-Sun, reachable and unimplementable.** `ComponentGeDuanSun`, `PhaseDuanSun`,
-  `SystemDuanSun` and `thermo/util/empiric/DuanSun.java` are **not ported, and no state
-  they accept exists**: `SystemDuanSun.addComponent` throws for every name but `CO2`, and
-  the phase it would build divides by the moles and molar mass of a component named
-  `water`, which a system that admits only `CO2` does not have. There is nothing to
-  reproduce (NeqSim issues 3837 and 3839), and this is not the carried-as-unreachable case
-  below, because `SystemThermo`'s model-name factory does construct it.
+- **Duan-Sun, unreachable.** `ComponentGeDuanSun`, `PhaseDuanSun`, `SystemDuanSun` and
+  `thermo/util/empiric/DuanSun.java` are **not ported, and no state they accept exists**:
+  `SystemDuanSun.addComponent` throws for every name but `CO2`, and the phase it would build
+  divides by the moles and molar mass of a component named `water`, which a system that admits
+  only `CO2` does not have. **`#3841` closed the last way in**: `SystemThermo`'s model-name
+  factory now throws `UnsupportedOperationException` for the conversion rather than building
+  the system, with the reason this entry gives, so `new SystemDuanSun(` appears nowhere in
+  `src/main` - the carried-as-unreachable case and no longer a reachable one with nothing to
+  reproduce (NeqSim issues 3837 and 3839). `validation/neqsim/GeElectrolyteProbe.java` records
+  the refusal.
 - **Electrolyte-CPA.** `PhaseElectrolyteCPA`, `PhaseElectrolyteCPAAdvanced`,
   `PhaseElectrolyteCPAMM`, `PhaseElectrolyteCPAOld` and their `SystemElectrolyte*` are
   **carried as unreachable upstream**: 5,727 lines with no non-test construction site

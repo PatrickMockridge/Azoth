@@ -275,17 +275,37 @@ public class GeElectrolyteProbe {
     // ---------------------------------------------------------------------------------
     // **`SystemDuanSun` admits CO2 and nothing else** - `addComponent` throws for any
     // other name - although the component's own correlation carries nitrogen and oxygen
-    // too. So this is the only topology the system can state, and the other two gases'
-    // rows are reachable only through `PhaseDuanSun` directly.
-    report("water + Na+ + Cl- + CO2", new SystemDuanSun(T, P),
-        new String[] {"water", "Na+", "Cl-", "CO2"}, new double[] {0.89, 0.04, 0.04, 0.03},
-        true);
+    // too. **So no brine topology can be built at all**: the water this phase's own
+    // expressions divide by is the first name refused, and the state below is the one the
+    // record is about. The other two gases' rows are reachable only through `PhaseDuanSun`
+    // directly.
+    //
+    // **Every attempt is caught rather than left to end the run**, because a probe that
+    // dies here records one stack trace and no rows - and `#3841` made the refusal the
+    // answer at the *factory* too, so there is no topology left to report on.
+    for (String[] feed : new String[][] {
+        {"water", "Na+", "Cl-", "CO2"},
+        {"nitrogen"},
+        {"CO2"}}) {
+      try {
+        SystemInterface refused = new SystemDuanSun(T, P);
+        for (String name : feed) {
+          refused.addComponent(name, 1.0 / feed.length);
+        }
+        System.out.printf("  %-24s accepted%n", String.join(" + ", feed));
+      } catch (RuntimeException ex) {
+        System.out.printf("  %-24s throws %s%n", String.join(" + ", feed), ex.getMessage());
+      }
+    }
     try {
       SystemInterface refused = new SystemDuanSun(T, P);
-      refused.addComponent("nitrogen", 0.01);
-      System.out.println("  nitrogen was accepted, which the source says it is not");
-    } catch (RuntimeException ex) {
-      System.out.printf("  adding nitrogen throws: %s%n", ex.getMessage());
+      refused.addComponent("CO2", 1.0);
+      refused.setMixingRule("classic");
+      refused.init(0);
+      refused.init(1);
+      System.out.println("  CO2 alone builds and flashes");
+    } catch (Exception ex) {
+      System.out.printf("  CO2 alone throws %s: %s%n", ex.getClass().getSimpleName(), ex.getMessage());
     }
 
     // The correlation is a function of `T`, `P` and the salinity alone, so this is the

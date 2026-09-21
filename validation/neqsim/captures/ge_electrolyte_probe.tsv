@@ -125,8 +125,24 @@
     CO2       reference phase: 1.00000000001000
 
 ################ Duan-Sun ################
+  water + Na+ + Cl- + CO2  throws SystemDuanSun supports only CO2
+  nitrogen                 throws SystemDuanSun supports only CO2
+  CO2                      accepted
+  CO2 alone builds and flashes
+
+  the three gases against T and P, salinity = 4.0 mol/kg:
+     T / K  P / bar             lambda CO2              lambda N2              lambda O2
+    298.15     1.00     0.0968998467654739      0.141241622870318      0.199970000000000
+    298.15     5.00      0.103568809070947      0.141187348586302      0.199970000000000
+    298.15    50.00      0.111999440341432      0.140629299219642      0.199970000000000
+    313.15     1.00     0.0903507773456834      0.123878817215808      0.199970000000000
+    313.15     5.00     0.0973859551467994      0.123824515541213      0.199970000000000
+    313.15    50.00      0.106586090082555      0.123263641521112      0.199970000000000
+    373.15     1.00     0.0767522653294779      0.112225127617608      0.199970000000000
+    373.15     5.00     0.0852514023620418      0.112170738401798      0.199970000000000
+    373.15    50.00     0.0975193960087399      0.111600836693920      0.199970000000000
+  zeta: CO2 = -0.58071053e-2 N2 = -1.2793e-2 O2 = 0.00033639 - 1.9829898e-5 T + 0.002122208 P/T - 0.005248733 P/(630 - T)
 Exception in thread "main" java.lang.RuntimeException: SystemDuanSun supports only CO2
 	at neqsim.thermo.system.SystemDuanSun.addComponent(SystemDuanSun.java:86)
 	at GeElectrolyteProbe.build(GeElectrolyteProbe.java:56)
-	at GeElectrolyteProbe.report(GeElectrolyteProbe.java:77)
-	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:280)
+	at GeElectrolyteProbe.main(GeElectrolyteProbe.java:333)
