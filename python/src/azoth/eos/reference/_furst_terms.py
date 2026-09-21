@@ -493,12 +493,12 @@ def ln_phi_contributions(
             component.charge**2 * state.shielding / (1.0 + state.shielding * component.diameter_m)
         )
         born_i = component.charge**2 / component.diameter_m if component.diameter_m > 0.0 else 0.0
-        # **`FBornD` is *added* in the 2004 revision, not weighted by the solvent's
-        # composition derivative.** The variant's `dFBorndN` is `FBornX XBorni + FBornD`
-        # where the base's is `+ FBornD solventdiElectricdn`, and since that derivative is
-        # zero there the base would give `FBornX XBorni` alone. So the variant adds a
-        # component-independent term to every `ln phi`.
-        born = f_born_x * born_i + (f_born_d if mod2004 else f_born_d * solvent_dn)
+        # **`FBornD` is weighted by the solvent's composition derivative in both models.**
+        # The 2004 revision once *added* it unweighted, which made a chemical potential depend
+        # on the phase's size - `FBornD` is extensive and the variant sets that derivative to
+        # zero. NeqSim's issue 3862 is that observation and its fix is the one term, so both
+        # models read `FBornX XBorni + FBornD solventdiElectricdn` here.
+        born = f_born_x * born_i + f_born_d * solvent_dn
         out.append(
             CompositionContribution(
                 short_range=fsr2_eps * scale + fsr2_w * component.w_i,

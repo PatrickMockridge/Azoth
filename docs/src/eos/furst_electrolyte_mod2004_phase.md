@@ -31,7 +31,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | Name | Unit | Description |
 |---|---|---|
 | `z_factor` | dimensionless | the compressibility factor at the chosen root |
-| `ln_phi` | dimensionless | the fugacity coefficients, as logarithms, at the chosen root. Every entry carries the component-independent `FBornD` term this revision adds. |
+| `ln_phi` | dimensionless | the fugacity coefficients, as logarithms, at the chosen root, with the Born term the relaxation leaves. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -40,10 +40,10 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- this is NeqSim's `SystemFurstElectrolyteEosMod2004`, the older sibling of `eos.furst_electrolyte_phase`. **The two differ in one term and one set of zeroes**, and both are stated rather than left to be inferred.
+- this is NeqSim's `SystemFurstElectrolyteEosMod2004`, the older sibling of `eos.furst_electrolyte_phase`. **The two differ in the quantities this one zeroes**, which are stated rather than left to be inferred.
 - **the solvent dielectric constant has no temperature and no composition dependence.** `volInit` multiplies its two temperature derivatives by zero and `calcSolventdiElectricdn` returns `0.0`, its body commented out. Measured: `-0.359218709298880` in the base, `-0.00000000000000` here.
 - the shielding parameter's and `XLR`'s temperature derivatives go the same way: `volInit` never assigns them here, so they keep their field defaults of zero.
-- **`dFBorndN` is `FBornX XBorni + FBornD`**, where the base is `FBornX XBorni + FBornD solventdiElectricdn`. With that derivative zero the base gives the first term, so this variant adds a term to every `ln phi` - and `FBornD` is extensive, so `ln phi` depends on the phase size (NeqSim issue 3862).
+- **`dFBorndN` is `FBornX XBorni + FBornD solventdiElectricdn`**, the base model's own expression, which with that derivative zero gives `FBornX XBorni` alone. An unweighted `FBornD` would make `ln phi` depend on the phase size - issue 3862 - and both models read the weighted form.
 - everything else is identical, including the component constructors, which differ from the base's only in their class names: an ion's attraction is `1e-35` and its covolume is the fitted `(p0 d^3 + p1)`.
 - the mixing rule is Huron-Vidal, as it is for the base model; the alpha is Schwartzentruber for every component, with each row's own fitted parameters.
 - the short-range table, the MSA long-range term and the Born term are the base model's, so each glycol reads its own parameter set as it does there.
@@ -55,8 +55,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `the_shipped_test_aqueous_phase` | components = ['methane', 'water', 'Na+', 'Cl-'], T = 298.15, P = 1001325.0, x = [0.000226524776743935, 0.997777272904135, 0.000998101159560386, 0.000998101159560386], compressed_phase = liquid | z_factor = 0.00963585643624156, ln_phi = [8.37254643106863, -5.74883266830657, -275.908842538599, -166.578404248661] |
-| `the_shipped_test_gas` | components = ['methane', 'water', 'Na+', 'Cl-'], T = 298.15, P = 1001325.0, x = [0.996758133992898, 0.00324186600710256, 1.0000986677163e-43, 1.0000986677163e-43], compressed_phase = vapour | z_factor = 0.983240760727211, ln_phi = [-0.0168629980706276, -0.0194516878489426, -71.766130185231, -96.5397755302439] |
+| `the_shipped_test_aqueous_phase` | components = ['methane', 'water', 'Na+', 'Cl-'], T = 298.15, P = 1001325.0, x = [0.000226524776743935, 0.997777272904135, 0.000998101159560386, 0.000998101159560386], compressed_phase = liquid | z_factor = 0.009635856436241555, ln_phi = [8.372595802264165, -5.748783297111036, -275.90879316740336, -166.57835487746573] |
+| `the_shipped_test_gas` | components = ['methane', 'water', 'Na+', 'Cl-'], T = 298.15, P = 1001325.0, x = [0.996758133992898, 0.00324186600710256, 1.0000986677163e-43, 1.0000986677163e-43], compressed_phase = vapour | z_factor = 0.9832407607272112, ln_phi = [-0.0168629980706277, -0.01945168784894277, -71.76613018523096, -96.53977553024383] |
 
 ## References
 
