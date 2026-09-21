@@ -59,9 +59,9 @@ fn matches(actual: f64, expected: f64, context: &str) {
 fn methane_and_the_binary_converge_to_neqsims_vapour_volume() {
     let pure = molar_volume(&[methane()], &[0.0], &[1.0], 300.0, 5.0e6, RootSide::Vapour)
         .expect("a volume");
-    matches(pure.v, 4.55032070500990e-4, "methane v");
-    matches(pure.z, 0.912129702491155, "methane Z");
-    matches(pure.eta, 0.0324636218320417, "methane eta");
+    matches(pure.v, 4.55032070629424e-4, "methane v");
+    matches(pure.z, 0.912129702752957, "methane Z");
+    matches(pure.eta, 0.0324636218228788, "methane eta");
 
     let binary = molar_volume(
         &[methane(), n_butane()],
@@ -72,9 +72,9 @@ fn methane_and_the_binary_converge_to_neqsims_vapour_volume() {
         RootSide::Vapour,
     )
     .expect("a volume");
-    matches(binary.v, 8.14109734626316e-4, "binary v");
-    matches(binary.z, 0.839270581279057, "binary Z");
-    matches(binary.eta, 0.0281366301313126, "binary eta");
+    matches(binary.v, 8.14109735419996e-4, "binary v");
+    matches(binary.z, 0.839270582092991, "binary Z");
+    matches(binary.eta, 0.0281366301038820, "binary eta");
 }
 
 /// The liquid branch, where the root is found by walking up from the packing floor rather
@@ -84,15 +84,15 @@ fn methane_and_the_binary_converge_to_neqsims_vapour_volume() {
 fn methane_and_propane_converge_to_neqsims_liquid_volume() {
     let cold = molar_volume(&[methane()], &[0.0], &[1.0], 150.0, 5.0e6, RootSide::Liquid)
         .expect("a volume");
-    matches(cold.v, 4.34500702054451e-5, "methane v");
-    matches(cold.z, 0.174194753210883, "methane Z");
-    matches(cold.eta, 0.362239782531743, "methane eta");
+    matches(cold.v, 4.34500702132853e-5, "methane v");
+    matches(cold.z, 0.174194753233186, "methane Z");
+    matches(cold.eta, 0.362239782466380, "methane eta");
 
     let dense = molar_volume(&[propane()], &[0.0], &[1.0], 300.0, 1.0e7, RootSide::Liquid)
         .expect("a volume");
-    matches(dense.v, 8.57488611218831e-5, "propane v");
-    matches(dense.z, 0.343773937094727, "propane Z");
-    matches(dense.eta, 0.333379192828988, "propane eta");
+    matches(dense.v, 8.57488611416681e-5, "propane v");
+    matches(dense.z, 0.343773937148494, "propane Z");
+    matches(dense.eta, 0.333379192752067, "propane eta");
 }
 
 /// Above the isotherm's loop there is one root, so **both sides are the same answer** -
@@ -104,8 +104,8 @@ fn an_isotherm_with_one_root_gives_it_to_both_sides() {
         .expect("a volume");
     let liquid = molar_volume(&[methane()], &[0.0], &[1.0], 400.0, 5.0e6, RootSide::Liquid)
         .expect("a volume");
-    matches(vapour.v, 6.49279638776721e-4, "methane v");
-    matches(vapour.z, 0.976129951289097, "methane Z");
+    matches(vapour.v, 6.49279639225889e-4, "methane v");
+    matches(vapour.z, 0.976129951969306, "methane Z");
     // **To a tolerance, not exactly.** The two branches reach this root by different
     // routes - Newton from the ideal gas and a bisection of the walk - so they meet in
     // the twelfth digit rather than in the last one.

@@ -521,6 +521,15 @@ pub fn d_pressure_over_rt_dv(
 /// composition moves `eta` through `sum n_i m_i d_i^3` and `rho` through `sum n_i` alone.
 /// `S1` and `S2` are quadratic in the mole fractions, so their derivatives are row sums.
 ///
+/// **The check is `validation/neqsim/PcsaftCompositionProbe.java`**, which differences
+/// NeqSim's own `getF()` at fixed temperature and volume - that energy is extensive, so the
+/// difference *is* `dFdN` - and which can also place the phase at a volume given to it.
+/// NeqSim's analytic `dFdN` reproduces its own difference to the truncation error, so it is
+/// the quantity to compare against; read at this library's own root the two agree to
+/// `1.1e-9` relative on both components of the methane/n-butane case, over states whose
+/// volumes are `1.2e-9` apart. A `ln phi` near zero turns that state difference into the
+/// larger relative figure the case records.
+///
 /// # Errors
 /// * [`AzothError::OutOfRange`] if the state's compressibility is not positive, where the
 ///   logarithm is not defined.
@@ -613,11 +622,6 @@ pub fn ln_fugacity_coefficients(
 /// The check it is held to is a **finite difference of NeqSim's own `F` at fixed volume**,
 /// which uses none of the derivative code the defect reached. The write-up is at
 /// `~/Desktop/neqsim-pcsaft-hard-chain-temperature-derivative.md`.
-///
-/// **This is not the whole of the divergence.** Against master these numbers are `3.8e-8`
-/// out on methane's `ln phi` while its volume and `Z` are `1.2e-9` and n-butane's `ln phi`
-/// `2.4e-10`, so a composition derivative differs somewhere the `dFdT` above does not reach;
-/// `validation/eos/methane_butane_pcsaft_against_neqsim.json` carries the measurement.
 ///
 /// # The three terms
 ///

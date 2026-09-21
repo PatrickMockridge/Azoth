@@ -10,6 +10,16 @@ javac -proc:none -cp neqsim-f0c7436.jar CpaSweep.java
 java -cp .:neqsim-f0c7436.jar CpaSweep > captures/cpa_sweep.tsv
 ```
 
+**A probe that declares NeqSim's own package compiles with `-d .` and runs under that
+package's name**, because what it needs is package-private; `WaxReferenceProbe` and
+`PcsaftCompositionProbe` are the two, and each says in its header why.
+
+```bash
+javac -proc:none -cp neqsim-f0c7436.jar -d . PcsaftCompositionProbe.java
+java -cp .:neqsim-f0c7436.jar neqsim.thermo.component.PcsaftCompositionProbe \
+  > captures/pcsaft_composition_probe.tsv
+```
+
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate
 that ran the JVM could not run on a runner that has no NeqSim checkout. Committing the
 output is what lets `tools/gen_neqsim_cases.py --check` be a build gate: it reads a capture

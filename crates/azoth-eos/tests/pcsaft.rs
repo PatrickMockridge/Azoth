@@ -58,11 +58,14 @@ fn exact(actual: f64, expected: f64, context: &str) {
     );
 }
 
-/// **`1e-7` here against the layers' `1e-8`, and the limit is still the oracle's.** A
-/// fugacity coefficient is read at a *converged volume*, and NeqSim's volume is good to
-/// `1.3e-9`; `d ln phi/dv` in a dense liquid amplifies that. Measured, the three vapour
-/// states agree to `1e-9` and the two liquid ones to `2.6e-8` - the bar is set by the
-/// worst state, and it is the volume underneath it rather than this derivative.
+/// **`1e-7` here against the layers' `1e-8`, and the limit is the oracle's volume.** A
+/// fugacity coefficient is read at a *converged volume*, and the two solves stop on their
+/// own residual tolerances `1.3e-9` apart; `d ln phi/dv` amplifies that, and a `ln phi`
+/// that is itself near zero amplifies the relative measure on top of it. Measured against
+/// master: `3.7e-8` on the binary's methane, whose `ln phi` is `0.023`, `2.2e-8` on the
+/// 150 K liquid, and `2e-9` or better on the other three. The bar is the volume underneath
+/// the number rather than this derivative, which is why the composition derivative is
+/// checked separately in `the_composition_derivative_is_a_finite_difference_of_the_extensive_energy`.
 fn via_volume(actual: f64, expected: f64, context: &str) {
     let relative = (actual / expected - 1.0).abs();
     assert!(
@@ -81,24 +84,24 @@ fn via_eta(actual: f64, expected: f64, context: &str) {
 
 #[test]
 fn pure_methane_reproduces_every_layer() {
-    let s = state(&[methane()], &[0.0], &[1.0], 300.0, 4.55032070500990e-4).expect("a state");
+    let s = state(&[methane()], &[0.0], &[1.0], 300.0, 4.55032070629424e-4).expect("a state");
 
     exact(s.d[0], 3.60475564638566e-10, "d");
     exact(s.m_bar, 1.0, "m_bar");
     exact(s.m_minus_1, 0.0, "m_minus_1");
     exact(s.md3, 4.68411438936926e-29, "md3");
-    via_eta(s.eta, 0.0324636218320417, "eta");
-    via_eta(s.a_hs, 0.135337273046932, "a_hs");
-    via_eta(s.g_hs, 1.08615265067751, "g_hs");
+    via_eta(s.eta, 0.0324636218228788, "eta");
+    via_eta(s.a_hs, 0.135337273007123, "a_hs");
+    via_eta(s.g_hs, 1.08615265065171, "g_hs");
     exact(s.s1, 2.54117545218473e-29, "s1");
     exact(s.s2, 1.27084183329500e-29, "s2");
-    via_eta(s.i1, 0.933239716943836, "I1");
-    via_eta(s.i2, 0.791857336220105, "I2");
-    via_eta(s.c1, 0.772825283837257, "C1");
-    via_eta(s.f_hc, 0.135337273046932, "F_hc");
-    via_eta(s.f_disp1, -0.197232549697721, "F_disp1");
-    via_eta(s.f_disp2, -0.0323400359099549, "F_disp2");
-    via_eta(s.f(), -0.0942353125607442, "F");
+    via_eta(s.i1, 0.933239716937063, "I1");
+    via_eta(s.i2, 0.791857336202542, "I2");
+    via_eta(s.c1, 0.772825283893056, "C1");
+    via_eta(s.f_hc, 0.135337273007123, "F_hc");
+    via_eta(s.f_disp1, -0.197232549640621, "F_disp1");
+    via_eta(s.f_disp2, -0.0323400359024446, "F_disp2");
+    via_eta(s.f(), -0.0942353125359426, "F");
 }
 
 #[test]
@@ -110,7 +113,7 @@ fn a_binary_reproduces_every_layer() {
         &[0.0, 0.022, 0.022, 0.0],
         &[0.6, 0.4],
         350.0,
-        8.14109734626316e-4,
+        8.14109735419996e-4,
     )
     .expect("a state");
 
@@ -119,18 +122,18 @@ fn a_binary_reproduces_every_layer() {
     exact(s.m_bar, 1.53264, "m_bar");
     exact(s.m_minus_1, 0.53264, "m_minus_1");
     exact(s.md3, 7.26345992024210e-29, "md3");
-    via_eta(s.eta, 0.0281366301313126, "eta");
-    via_eta(s.a_hs, 0.116643052723215, "a_hs");
-    via_eta(s.g_hs, 1.07406652907799, "g_hs");
+    via_eta(s.eta, 0.0281366301038820, "eta");
+    via_eta(s.a_hs, 0.116643052605365, "a_hs");
+    via_eta(s.g_hs, 1.07406652900198, "g_hs");
     exact(s.s1, 6.52038038734557e-29, "s1");
     exact(s.s2, 3.62241907207195e-29, "s2");
-    via_eta(s.i1, 0.832366049443170, "I1");
-    via_eta(s.i2, 0.582385191477821, "I2");
-    via_eta(s.c1, 0.766029681691526, "C1");
-    via_eta(s.f_hc, 0.140713647373789, "F_hc");
-    via_eta(s.f_disp1, -0.252288278624795, "F_disp1");
-    via_eta(s.f_disp2, -0.0575671271038317, "F_disp2");
-    via_eta(s.f(), -0.169141758354838, "F");
+    via_eta(s.i1, 0.832366049423616, "I1");
+    via_eta(s.i2, 0.582385191413255, "I2");
+    via_eta(s.c1, 0.766029681887985, "C1");
+    via_eta(s.f_hc, 0.140713647230860, "F_hc");
+    via_eta(s.f_disp1, -0.252288278372911, "F_disp1");
+    via_eta(s.f_disp2, -0.0575671270560908, "F_disp2");
+    via_eta(s.f(), -0.169141758198142, "F");
 }
 
 /// A component the table has no PC-SAFT set for is refused, not solved for.
@@ -164,19 +167,19 @@ fn a_component_without_a_set_is_refused() {
 /// compressibility are both NeqSim's.
 #[test]
 fn the_pressure_at_neqsims_volume_is_neqsims_compressibility() {
-    let pure = pressure_over_rt(&[methane()], &[0.0], &[1.0], 300.0, 4.55032070500990e-4)
+    let pure = pressure_over_rt(&[methane()], &[0.0], &[1.0], 300.0, 4.55032070629424e-4)
         .expect("a pressure");
-    via_eta(pure * 4.55032070500990e-4, 0.912129702491155, "methane Z");
+    via_eta(pure * 4.55032070629424e-4, 0.912129702752957, "methane Z");
 
     let binary = pressure_over_rt(
         &[methane(), n_butane()],
         &[0.0, 0.022, 0.022, 0.0],
         &[0.6, 0.4],
         350.0,
-        8.14109734626316e-4,
+        8.14109735419996e-4,
     )
     .expect("a pressure");
-    via_eta(binary * 8.14109734626316e-4, 0.839270581279057, "binary Z");
+    via_eta(binary * 8.14109735419996e-4, 0.839270582092991, "binary Z");
 }
 
 /// `F_eta` is what it says, by finite difference of the energy in the packing fraction.
@@ -189,7 +192,7 @@ fn the_eta_derivative_is_the_energy_s_own() {
     let components = [methane(), n_butane()];
     let kij = [0.0, 0.022, 0.022, 0.0];
     let x = [0.6, 0.4];
-    let (t, v) = (350.0, 8.14109734626316e-4);
+    let (t, v) = (350.0, 8.14109735419996e-4);
     let h = 1.0e-8 * v;
 
     let up = state(&components, &kij, &x, t, v + h).expect("a state");
@@ -215,7 +218,7 @@ fn the_second_derivative_is_the_energy_s_own() {
     let components = [methane(), n_butane()];
     let kij = [0.0, 0.022, 0.022, 0.0];
     let x = [0.6, 0.4];
-    let (t, v) = (350.0, 8.14109734626316e-4);
+    let (t, v) = (350.0, 8.14109735419996e-4);
     // **`1e-4` of the volume, not of the energy's scale.** The second difference is
     // `f'' h^2` against an energy of order `0.1`, so it loses twelve digits to
     // cancellation before the truncation error is worth anything; measured over six
@@ -245,7 +248,7 @@ fn the_second_derivative_is_the_pressure_s_own() {
     let components = [methane(), n_butane()];
     let kij = [0.0, 0.022, 0.022, 0.0];
     let x = [0.6, 0.4];
-    let (t, v) = (350.0, 8.14109734626316e-4);
+    let (t, v) = (350.0, 8.14109735419996e-4);
     let h = 1.0e-5 * v;
 
     let up = pressure_over_rt(&components, &kij, &x, t, v + h).expect("a pressure");
@@ -266,20 +269,20 @@ fn the_second_derivative_is_the_pressure_s_own() {
 /// sums' - is checked against a number rather than against a derivation.
 #[test]
 fn the_fugacity_coefficients_are_neqsims() {
-    let pure = ln_fugacity_coefficients(&[methane()], &[0.0], &[1.0], 300.0, 4.55032070500990e-4)
+    let pure = ln_fugacity_coefficients(&[methane()], &[0.0], &[1.0], 300.0, 4.55032070629424e-4)
         .expect("coefficients");
-    via_volume(pure[0], -0.0901325286938552, "methane ln phi");
+    via_volume(pure[0], -0.0901325289347926, "methane ln phi");
 
     let binary = ln_fugacity_coefficients(
         &[methane(), n_butane()],
         &[0.0, 0.022, 0.022, 0.0],
         &[0.6, 0.4],
         350.0,
-        8.14109734626316e-4,
+        8.14109735419996e-4,
     )
     .expect("coefficients");
-    via_volume(binary[0], 0.0229798951078788, "binary ln phi methane");
-    via_volume(binary[1], -0.421092485341446, "binary ln phi n-butane");
+    via_volume(binary[0], 0.0229798942729666, "binary ln phi methane");
+    via_volume(binary[1], -0.421092485770729, "binary ln phi n-butane");
 
     // The two liquid states and the single-root one, because the coefficient is a
     // derivative in the composition and a state that agrees on the pressure can still
@@ -309,7 +312,7 @@ fn the_composition_derivative_is_a_finite_difference_of_the_extensive_energy() {
     let components = [methane(), n_butane()];
     let kij = [0.0, 0.022, 0.022, 0.0];
     let x = [0.6, 0.4];
-    let (t, v) = (350.0, 8.14109734626316e-4);
+    let (t, v) = (350.0, 8.14109735419996e-4);
     let h = 1.0e-6;
 
     let analytic = ln_fugacity_coefficients(&components, &kij, &x, t, v).expect("coefficients");

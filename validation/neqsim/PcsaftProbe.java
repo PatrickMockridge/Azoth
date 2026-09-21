@@ -70,7 +70,11 @@ public final class PcsaftProbe {
         safT.getF1dispI1(), safT.getF2dispI2(), safT.getF2dispZHC());
     System.out.printf("F_hc=%.15g F_disp1=%.15g F_disp2=%.15g F=%.15g%n", safT.F_HC_SAFT(),
         safT.F_DISP1_SAFT(), safT.F_DISP2_SAFT(), safT.getF());
-    System.out.printf("Z=%.15g v=%.15g%n", phase.getZ(), phase.getMolarVolume("m3/mol"));
+    // `getMolarVolume(String)` divides a molar mass by a density that a PC-SAFT phase does
+    // not populate, and returns `Infinity`; the field it does hold is in the unit the
+    // phase's own `volumeSAFT` converts by `1.0e-5`.
+    System.out.printf("Z=%.15g v=%.15g%n", phase.getZ(),
+        phase.getMolarVolume() * 1.0e-5 / phase.getNumberOfMolesInPhase());
     for (int i = 0; i < n; i++) {
       System.out.printf("lnPhi[%d]=%.15g%n", i,
           Math.log(phase.getComponent(i).getFugacityCoefficient()));
@@ -81,7 +85,7 @@ public final class PcsaftProbe {
     System.out.println("# azoth PcsaftProbe - NeqSim master's SystemPCSAFT (PhasePCSAFTRahmat).");
     System.out.println("# The default mixing rule is NeqSim's own, so every k_ij this phase");
     System.out.println("# uses is zero unless a caller sets the classic rule.");
-    if (args.length >= 5) {
+    if (args.length >= 4) {
       double t = Double.parseDouble(args[0]);
       double p = Double.parseDouble(args[1]);
       String[] names = new String[(args.length - 2) / 2];
