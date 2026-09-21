@@ -189,6 +189,7 @@ from azoth.core.result import (
     VuFlashResult,
     VuFlashSingleCompResult,
     WaterPhaseResult,
+    WaxSolidFugacityResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
@@ -322,6 +323,7 @@ __all__ = [
     "vu_flash",
     "vu_flash_single_comp",
     "water_phase",
+    "wax_solid_fugacity",
     "wilke_chang_diffusivity",
     "wilke_chang_phi",
     "wilke_viscosity",
@@ -2022,6 +2024,58 @@ def tbp_fraction_properties(molar_mass: Q, density: Q) -> TbpFractionPropertiesR
     """
     return resolve("eos.tbp_fraction_properties")(  # type: ignore[no-any-return]
         molar_mass=molar_mass, density=density
+    )
+
+
+def wax_solid_fugacity(
+    molar_mass: Q,
+    tc: Q,
+    pc: Q,
+    omega: float,
+    heat_of_fusion: Q,
+    triple_point_temperature: Q,
+    T: Q,
+    P: Q,
+    eos: str = "srk",
+) -> WaxSolidFugacityResult:
+    """A wax cut's solid fugacity coefficient at a state.
+
+    NeqSim's ``ComponentWax.fugcoef2``: the reference liquid's own coefficient times an
+    exponential of the fusion, heat-capacity and pressure terms. The mole fraction cancels
+    out of it, so this is a pure-component quantity.
+
+    **The volume term is referred to one bar**, which is where a port goes wrong by a per
+    cent that grows with the cut's molar mass.
+
+    Args:
+        molar_mass: the cut's molar mass.
+        tc: the cut's critical temperature; the reference liquid is a one-component phase
+            at it.
+        pc: the cut's critical pressure.
+        omega: the cut's acentric factor.
+        heat_of_fusion: the cut's heat of fusion.
+        triple_point_temperature: the cut's triple-point temperature.
+        T: absolute temperature.
+        P: absolute pressure.
+        eos: the cubic the fluid runs, which is also the one the reference liquid is built
+            from.
+
+    Raises:
+        InvalidInputError: if ``eos`` is not a cubic this reaches.
+        OutOfRangeError: if any of the cut's constants or the state is not positive.
+
+    See :func:`azoth.eos.reference.wax_solid_fugacity`.
+    """
+    return resolve("eos.wax_solid_fugacity")(  # type: ignore[no-any-return]
+        molar_mass=molar_mass,
+        tc=tc,
+        pc=pc,
+        omega=omega,
+        heat_of_fusion=heat_of_fusion,
+        triple_point_temperature=triple_point_temperature,
+        T=T,
+        P=P,
+        eos=eos,
     )
 
 

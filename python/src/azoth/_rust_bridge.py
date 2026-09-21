@@ -161,6 +161,7 @@ from azoth.core.result import (
     VuFlashResult,
     VuFlashSingleCompResult,
     WaterPhaseResult,
+    WaxSolidFugacityResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
@@ -2824,6 +2825,36 @@ def tbp_fraction_properties(molar_mass: Q, density: Q) -> TbpFractionPropertiesR
         ),
         acentric_factor=result.acentric_factor,
         attraction_exponent=result.attraction_exponent,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def wax_solid_fugacity(
+    molar_mass: Q,
+    tc: Q,
+    pc: Q,
+    omega: float,
+    heat_of_fusion: Q,
+    triple_point_temperature: Q,
+    T: Q,
+    P: Q,
+    eos: str = "srk",
+) -> WaxSolidFugacityResult:
+    """A wax cut's solid fugacity coefficient, computed in Rust."""
+    spec = _spec_for("eos.wax_solid_fugacity")
+    result = _core.wax_solid_fugacity(
+        input_to_si(spec, "molar_mass", molar_mass),
+        input_to_si(spec, "tc", tc),
+        input_to_si(spec, "pc", pc),
+        omega,
+        input_to_si(spec, "heat_of_fusion", heat_of_fusion),
+        input_to_si(spec, "triple_point_temperature", triple_point_temperature),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        eos,
+    )
+    return WaxSolidFugacityResult(
+        fugacity_coefficient=result.fugacity_coefficient,
         warnings=_warnings(result.warnings),
     )
 

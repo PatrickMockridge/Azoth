@@ -365,6 +365,16 @@ class HydrateFormationTemperatureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class WaxSolidFugacityResult(_HasWarnings):
+    """Result of ``eos.wax_solid_fugacity``."""
+
+    #: The wax phase's fugacity coefficient for one component. Dimensionless.
+    fugacity_coefficient: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TbpFractionPropertiesResult(_HasWarnings):
     """Result of ``eos.tbp_fraction_properties``."""
 

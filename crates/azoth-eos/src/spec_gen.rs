@@ -52,6 +52,7 @@
 //!   - specs/calcs/eos/tyn_calus_diffusivity.toml
 //!   - specs/calcs/eos/umrpr_alpha.toml
 //!   - specs/calcs/eos/vdw1f_mix_binary.toml
+//!   - specs/calcs/eos/wax_solid_fugacity.toml
 //!   - specs/calcs/eos/wilke_chang_diffusivity.toml
 //!
 //! Tables for the `eos` namespace. Every namespace has its own generated
@@ -5722,6 +5723,200 @@ pub static VDW1F_MIX_BINARY_SPEC: CalcSpec = CalcSpec {
     tests: VDW1F_MIX_BINARY_TESTS,
 };
 
+/// Registry entry for `eos.wax_solid_fugacity`.
+static WAX_SOLID_FUGACITY_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "molar_mass",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a molar mass; the heat-capacity fit is linear in it, so a zero or a negative has no meaning",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "tc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a critical temperature; the reference liquid's reduced temperature divides by it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a critical pressure; the reference liquid's reduced pressure divides by it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "heat_of_fusion",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a heat of fusion; a zero makes the solid identical to the liquid and a negative says it melts on freezing",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "triple_point_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a triple-point temperature; it divides and it is logged",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+];
+
+static WAX_SOLID_FUGACITY_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "the_heaviest_cut_of_the_same_capture",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("molar_mass", 0.685054415944094),
+            ("tc", 993.100301671903),
+            ("pc", 951903.245094917),
+            ("omega", 1.36697955720612),
+            ("heat_of_fusion", 148461.408421741),
+            ("triple_point_temperature", 362.982038040391),
+            ("T", 261.0),
+            ("P", 500000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("eos", "srk")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("fugacity_coefficient", 2.05200253441823e-30)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+/// Registered spec for `eos.wax_solid_fugacity`.
+///
+/// Public and addressable directly, so a calc can hold `&WAX_SOLID_FUGACITY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static WAX_SOLID_FUGACITY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.wax_solid_fugacity",
+    checks: WAX_SOLID_FUGACITY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "the_c19_cut_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("molar_mass", 0.17),
+            ("tc", 632.271665693285),
+            ("pc", 1526386.94925152),
+            ("omega", 0.674258471831839),
+            ("heat_of_fusion", 26418.6063505621),
+            ("triple_point_temperature", 260.290076470588),
+            ("T", 261.0),
+            ("P", 500000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("eos", "srk")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("fugacity_coefficient", 9.6403717586365e-07)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    tests: WAX_SOLID_FUGACITY_TESTS,
+};
+
 /// Registry entry for `eos.wilke_chang_diffusivity`.
 static WILKE_CHANG_DIFFUSIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
@@ -5893,6 +6088,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &TYN_CALUS_DIFFUSIVITY_SPEC,
     &UMRPR_ALPHA_SPEC,
     &VDW1F_MIX_BINARY_SPEC,
+    &WAX_SOLID_FUGACITY_SPEC,
     &WILKE_CHANG_DIFFUSIVITY_SPEC,
 ];
 

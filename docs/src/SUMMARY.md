@@ -68,6 +68,7 @@
   - [Liquid binary diffusivity from the Tyn-Calus correlation](./eos/tyn_calus_diffusivity.md)
   - [UMR-PR alpha function](./eos/umrpr_alpha.md)
   - [van der Waals one-fluid mixing, for a binary](./eos/vdw1f_mix_binary.md)
+  - [Wax solid fugacity coefficient](./eos/wax_solid_fugacity.md)
   - [Liquid binary diffusivity from the Wilke-Chang correlation](./eos/wilke_chang_diffusivity.md)
   - [Ammonia reference phase state](./eos/ammonia_phase.md)
   - [Solid argon reference phase state](./eos/argon_solid_phase.md)

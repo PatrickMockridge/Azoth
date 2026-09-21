@@ -120,6 +120,7 @@ Four sections, and the difference between them is the point:
 - [`eos.tyn_calus_diffusivity`](./eos/tyn_calus_diffusivity.md)
 - [`eos.umrpr_alpha`](./eos/umrpr_alpha.md)
 - [`eos.vdw1f_mix_binary`](./eos/vdw1f_mix_binary.md)
+- [`eos.wax_solid_fugacity`](./eos/wax_solid_fugacity.md)
 - [`eos.wilke_chang_diffusivity`](./eos/wilke_chang_diffusivity.md)
 
 *Models* — whose specs fix a procedure rather than an equation:

@@ -1156,6 +1156,11 @@ class WaterPhaseResult:
     warnings: list[Warning]
 
 @final
+class WaxSolidFugacityResult:
+    fugacity_coefficient: float
+    warnings: list[Warning]
+
+@final
 class WilkeChangDiffusivityResult:
     d: Qty
     warnings: list[Warning]
@@ -2124,6 +2129,17 @@ def vu_flash_single_comp(
     alpha_params: list[list[float]] | None = None,
 ) -> VuFlashSingleCompResult: ...
 def water_phase(T: float, P: float) -> WaterPhaseResult: ...
+def wax_solid_fugacity(
+    molar_mass: float,
+    tc: float,
+    pc: float,
+    omega: float,
+    heat_of_fusion: float,
+    triple_point_temperature: float,
+    T: float,
+    P: float,
+    eos: str | None = None,
+) -> WaxSolidFugacityResult: ...
 def wilke_chang_diffusivity(
     phi: float,
     M: float,

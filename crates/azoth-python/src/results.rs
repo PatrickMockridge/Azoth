@@ -49,7 +49,8 @@ use azoth_eos::results::{
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
     VsFlashResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
-    WilkeChangDiffusivityResult, WilkeViscosityResult, WilsonActivityCoefficientsResult,
+    WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -3976,6 +3977,42 @@ impl From<&HydrateFormationTemperatureResult> for PyHydrateFormationTemperatureR
     }
 }
 
+/// Result of `eos.wax_solid_fugacity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "WaxSolidFugacityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyWaxSolidFugacityResult {
+    /// The wax phase's fugacity coefficient for one component.
+    #[pyo3(get)]
+    pub fugacity_coefficient: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyWaxSolidFugacityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "WaxSolidFugacityResult(fugacity_coefficient={})",
+            self.fugacity_coefficient
+        )
+    }
+}
+
+impl From<&WaxSolidFugacityResult> for PyWaxSolidFugacityResult {
+    fn from(r: &WaxSolidFugacityResult) -> Self {
+        Self {
+            fugacity_coefficient: r.fugacity_coefficient,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.tbp_fraction_properties`, transported.
 #[pyclass(
     frozen,
@@ -6443,6 +6480,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HydrateFractionResult::CALC_ID => HydrateFractionResult::FIELDS.to_vec(),
         HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
         TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),
+        WaxSolidFugacityResult::CALC_ID => WaxSolidFugacityResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
         EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),
@@ -6542,6 +6580,7 @@ pub fn calc_ids() -> Vec<String> {
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),
         TbpFractionPropertiesResult::CALC_ID.to_string(),
+        WaxSolidFugacityResult::CALC_ID.to_string(),
     ]
 }
 

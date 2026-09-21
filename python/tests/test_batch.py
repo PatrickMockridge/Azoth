@@ -205,6 +205,10 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         "eos.antoine_vapor_pressure",
         "eos.hayduk_minhas_diffusivity",
         "eos.siddiqi_lucas_diffusivity",
+        # `eos` names the cubic the wax cut's reference liquid is built from, and it is a
+        # categorical choice for the reason `form` is: there is no float-array column to put
+        # it in, and the answer would differ per element if there were.
+        "eos.wax_solid_fugacity",
     }, sorted(excluded)
 
 

@@ -3289,6 +3289,38 @@ pub fn tbp_fraction_properties(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// A wax cut's solid fugacity coefficient, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (molar_mass, tc, pc, omega, heat_of_fusion, triple_point_temperature, T, P, eos = "srk"))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)]
+pub fn wax_solid_fugacity(
+    py: Python<'_>,
+    molar_mass: f64,
+    tc: f64,
+    pc: f64,
+    omega: f64,
+    heat_of_fusion: f64,
+    triple_point_temperature: f64,
+    T: f64,
+    P: f64,
+    eos: &str,
+) -> PyResult<crate::results::PyWaxSolidFugacityResult> {
+    azoth_eos::wax_solid_fugacity(
+        molar_mass,
+        kelvins(tc),
+        pascals(pc),
+        omega,
+        heat_of_fusion,
+        kelvins(triple_point_temperature),
+        kelvins(T),
+        pascals(P),
+        eos,
+    )
+    .map(|r| crate::results::PyWaxSolidFugacityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The freezing point of para-hydrogen at a pressure, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side checks them: the solid equation

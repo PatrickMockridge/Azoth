@@ -654,6 +654,24 @@ impl CalcResult for HydrateFormationTemperatureResult {
     }
 }
 
+/// Result of `eos.wax_solid_fugacity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WaxSolidFugacityResult {
+    /// The wax phase's fugacity coefficient for one component, dimensionless.
+    pub fugacity_coefficient: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for WaxSolidFugacityResult {
+    const CALC_ID: &'static str = "eos.wax_solid_fugacity";
+    const FIELDS: &'static [&'static str] = &["fugacity_coefficient", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.tbp_fraction_properties`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TbpFractionPropertiesResult {

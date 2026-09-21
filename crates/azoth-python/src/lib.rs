@@ -52,6 +52,7 @@ use results::{
     PyReynoldsNumberResult, PyRkAlphaAbResult, PyRkDepartureResult, PySrkAlphaAbResult,
     PySrkDepartureResult, PySrkKappaResult, PySrkZFactorResult, PySwameeJainResult,
     PyTbpFractionPropertiesResult, PyTwuKappaResult, PyVdw1fMixBinaryResult, PyWarning,
+    PyWaxSolidFugacityResult,
 };
 
 #[pymodule]
@@ -93,6 +94,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyHydrateFractionResult>()?;
     m.add_class::<PyHydrateFormationPressureResult>()?;
     m.add_class::<PyTbpFractionPropertiesResult>()?;
+    m.add_class::<PyWaxSolidFugacityResult>()?;
     m.add_class::<PyPhFlashResult>()?;
     m.add_class::<PyPsFlashResult>()?;
     m.add_class::<PyCriticalPointResult>()?;
@@ -227,6 +229,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::hydrate_formation_temperature, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrate_formation_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::tbp_fraction_properties, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::wax_solid_fugacity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrate_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrogen_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::water_phase, m)?)?;
