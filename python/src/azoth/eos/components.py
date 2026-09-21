@@ -2678,6 +2678,9 @@ def from_names(
         cubic=cubic,
         alpha=alpha_name,
         associating=associating,
+        # **The names travel with it**, because a `Component` carries critical constants and
+        # no name: a model that has to look a substance up by name has nowhere else to read it.
+        names=resolved,
     )
 
 
@@ -2741,6 +2744,7 @@ def umr_cpa_mixture_of(
         associating=True,
         mixing_rule="umr",
         umr=tables,
+        names=resolved,
     )
     return (
         fluid,
@@ -2806,6 +2810,7 @@ def soreide_whitson_mixture_of(
         soreide_whitson=SoreideWhitsonParameters(
             roles=soreide_whitson_roles(resolved), salinity=salinity
         ),
+        names=resolved,
     )
     return (
         fluid,

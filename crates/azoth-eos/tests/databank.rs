@@ -185,6 +185,36 @@ fn omega_only() -> databank::Overlay {
     overlay
 }
 
+/// **The names travel with the mixture, because a `Component` has none.**
+///
+/// `Component` carries critical constants and no name, because the databank's key is not a
+/// parameter, so a model that has to look a substance up *by name* has nowhere else to read it.
+/// The hydrate's guest tables and the Fürst short-range table travel as side records for the
+/// same reason; this is the general case of it, and the lookup is here rather than in each
+/// model so the case-insensitivity is decided once.
+#[test]
+fn the_names_survive_resolution_and_a_mixture_from_constants_has_none() {
+    let (mixture, _) =
+        databank::mixture_of(&["methane", "n-butane"], Cubic::Pr, None).expect("the pair resolves");
+    assert_eq!(
+        mixture.names(),
+        Some(["methane".to_string(), "n-butane".to_string()].as_slice())
+    );
+    // By name, and without regard to case or surrounding space: a caller's spelling need not
+    // be the table's.
+    assert_eq!(mixture.index_of("n-Butane "), Some(1));
+    assert_eq!(mixture.index_of("methane"), Some(0));
+    assert_eq!(mixture.index_of("ethane"), None);
+
+    // A mixture built from constants has none to give, and the lookup says so rather than
+    // matching on a position.
+    let (plain, _) = databank::mixture_of(&["methane"], Cubic::Pr, None).expect("resolves");
+    let bare = azoth_eos::mixture::Mixture::new(plain.components().to_vec(), vec![0.0])
+        .expect("one component");
+    assert_eq!(bare.names(), None);
+    assert_eq!(bare.index_of("methane"), None);
+}
+
 #[test]
 fn a_card_overrides_a_shipped_name() {
     // Sabotage: ignore the overlay in `entry`'s `(Some, Some)` arm.

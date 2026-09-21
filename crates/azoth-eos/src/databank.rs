@@ -3311,8 +3311,13 @@ pub fn mixture_of(
     // above was read from *this* cubic's column, so a mixture that then changed cubic
     // would carry the other family's interaction matrix. Setting it here is what makes
     // the pair impossible to mismatched - the resolver has the cubic and uses it.
+    // **And the names travel with it**, because a `Component` carries critical constants and
+    // no name: a model that has to look a substance up by name - the scale family's ions are
+    // the first - has nowhere else to read it.
     Ok((
-        Mixture::new(components, matrix)?.with_cubic(cubic),
+        Mixture::new(components, matrix)?
+            .with_cubic(cubic)
+            .with_names(names.iter().map(|name| (*name).to_string()).collect()),
         ideal_gas,
     ))
 }

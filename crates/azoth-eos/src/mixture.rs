@@ -315,6 +315,17 @@ pub struct Mixture {
     /// keyed by name - so it travels here, assembled by the resolver that knows them. The
     /// same reason [`Self::furst`] is a field rather than a lookup.
     hydration: Option<crate::hydrate::Hydration>,
+    /// The components' names, in the order every vector here is indexed by.
+    ///
+    /// **A `Component` carries critical constants and no name**, because the databank's key is
+    /// not a parameter and a caller building one from constants alone has none to give. A
+    /// model that has to look a substance up *by name* therefore has nowhere to read it: the
+    /// hydrate's guest tables travel in [`Self::hydration`] for exactly that reason and the
+    /// Fürst short-range table in [`Self::furst`], and this is the same thing for a model
+    /// whose key is a substance the databank knows and no specialised record carries.
+    ///
+    /// `None` for a mixture built from constants, which is every caller-supplied one.
+    names: Option<Vec<String>>,
 }
 
 impl Mixture {
@@ -351,6 +362,7 @@ impl Mixture {
             associating: false,
             furst: None,
             hydration: None,
+            names: None,
         };
         // Refused here rather than at the first phase evaluation: a mixture whose
         // association cannot be computed is a mistake in what was asked for, and the
@@ -391,6 +403,35 @@ impl Mixture {
     #[must_use]
     pub fn hydration(&self) -> Option<&crate::hydrate::Hydration> {
         self.hydration.as_ref()
+    }
+
+    /// This mixture, carrying the names its components were resolved from.
+    #[must_use]
+    pub fn with_names(mut self, names: Vec<String>) -> Self {
+        self.names = Some(names);
+        self
+    }
+
+    /// The components' names, in the order every vector here is indexed by, or `None` for a
+    /// mixture built from constants.
+    #[must_use]
+    pub fn names(&self) -> Option<&[String]> {
+        self.names.as_deref()
+    }
+
+    /// The index of a component by name, or `None` where this mixture carries no names or
+    /// none matches.
+    ///
+    /// The lookup every name-keyed model starts with, and it is here rather than in each of
+    /// them so that the case-insensitivity is decided once: the databank's keys are lower
+    /// case and a caller's spelling need not be.
+    #[must_use]
+    pub fn index_of(&self, name: &str) -> Option<usize> {
+        let key = name.trim().to_lowercase();
+        self.names
+            .as_ref()?
+            .iter()
+            .position(|candidate| candidate.to_lowercase() == key)
     }
 
     /// This mixture, running the Wertheim association contribution.

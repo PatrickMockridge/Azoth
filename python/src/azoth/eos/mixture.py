@@ -198,6 +198,24 @@ class Mixture:
     #: whole rather than as a flag because its short-range table is built from the *whole*
     #: composition's names.
     furst: FurstElectrolyte | None = field(default=None)
+    #: The components' names, in the order every vector here is indexed by, or ``None`` for a
+    #: mixture built from constants. **A `Component` carries critical constants and no name**,
+    #: so a model that has to look a substance up by name has nowhere else to read it.
+    names: tuple[str, ...] | None = field(default=None)
+
+    def index_of(self, name: str) -> int | None:
+        """The index of a component by name, or ``None`` where there is none.
+
+        Case-insensitive, because the databank's keys are lower case and a caller's spelling
+        need not be.
+        """
+        if self.names is None:
+            return None
+        key = name.strip().lower()
+        for position, candidate in enumerate(self.names):
+            if candidate.lower() == key:
+                return position
+        return None
 
     def __post_init__(self) -> None:
         if not self.components:
@@ -342,6 +360,7 @@ def mixture(
     soreide_whitson: SoreideWhitsonParameters | None = None,
     huron_vidal: HuronVidalParameters | None = None,
     furst: FurstElectrolyte | None = None,
+    names: Iterable[str] | None = None,
 ) -> Mixture:
     """A :class:`Mixture` from a component list and sparse interaction pairs.
 
@@ -402,4 +421,5 @@ def mixture(
         soreide_whitson=soreide_whitson,
         huron_vidal=huron_vidal,
         furst=furst,
+        names=None if names is None else tuple(names),
     )
