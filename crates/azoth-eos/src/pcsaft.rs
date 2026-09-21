@@ -603,13 +603,21 @@ pub fn ln_fugacity_coefficients(
 
 /// `T d(A^R/(R T))/dT` at constant volume, per mole.
 ///
-/// **NeqSim publishes this and its PC-SAFT value cannot be used.** `PhasePCSAFT.getdDSAFTdT`
-/// multiplies the chain rule for the segment diameter by an extra `3 d_i^2`, so every
-/// `eta`-dependent part of its `dFdT` is about `1e-18` too small: the volume's own
-/// derivative is right and the temperature's is not. The write-up is at
-/// `~/Desktop/neqsim-pcsaft-hard-chain-temperature-derivative.md`; the check this function
-/// is held to is a **finite difference of NeqSim's own `F` at fixed volume**, which uses
-/// none of the derivative code the defect reaches.
+/// **NeqSim's own `getdDSAFTdT` multiplied the chain rule by an extra `3 d_i^2`**, so every
+/// `eta`-dependent part of its `dFdT` was about `1e-18` too small - the volume's own
+/// derivative right and the temperature's not - and both `PhasePCSAFT` and
+/// `PhasePCSAFTRahmat` carried it. **`#3829` removed both overrides**, leaving the parent's
+/// expression, which is this one; the function is unchanged here because the correction was
+/// already made.
+///
+/// The check it is held to is a **finite difference of NeqSim's own `F` at fixed volume**,
+/// which uses none of the derivative code the defect reached. The write-up is at
+/// `~/Desktop/neqsim-pcsaft-hard-chain-temperature-derivative.md`.
+///
+/// **This is not the whole of the divergence.** Against master these numbers are `3.8e-8`
+/// out on methane's `ln phi` while its volume and `Z` are `1.2e-9` and n-butane's `ln phi`
+/// `2.4e-10`, so a composition derivative differs somewhere the `dFdT` above does not reach;
+/// `validation/eos/methane_butane_pcsaft_against_neqsim.json` carries the measurement.
 ///
 /// # The three terms
 ///
