@@ -55,6 +55,7 @@
   - [Scale saturation ratio of one salt](./eos/scale_saturation_ratio.md)
   - [Schwartzentruber-Renon alpha function](./eos/schwartzentruber_alpha.md)
   - [Liquid binary diffusivity from the Siddiqi-Lucas correlation](./eos/siddiqi_lucas_diffusivity.md)
+  - [Pure solid fugacity coefficient](./eos/solid_fugacity.md)
   - [Soreide-Whitson alpha function for water](./eos/soreide_whitson_alpha.md)
   - [Soave-Redlich-Kwong alpha function and reduced attraction parameters](./eos/srk_alpha_ab.md)
   - [Soave-Redlich-Kwong fugacity coefficient and departure functions](./eos/srk_departure.md)

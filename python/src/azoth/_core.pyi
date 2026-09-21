@@ -851,6 +851,11 @@ class SiddiqiLucasDiffusivityResult:
     warnings: list[Warning]
 
 @final
+class SolidFugacityResult:
+    fugacity_coefficient: float
+    warnings: list[Warning]
+
+@final
 class SoreideWhitsonAlphaResult:
     alpha: float
     warnings: list[Warning]
@@ -1857,6 +1862,18 @@ def siddiqi_lucas_diffusivity(
     T: float,
     eta: float,
 ) -> SiddiqiLucasDiffusivityResult: ...
+def solid_fugacity(
+    heat_of_fusion: float,
+    triple_point_temperature: float,
+    delta_cp_sl: float,
+    delta_solid_volume: float,
+    tc: float,
+    pc: float,
+    omega: float,
+    T: float,
+    P: float,
+    eos: str | None = None,
+) -> SolidFugacityResult: ...
 def soreide_whitson_alpha(salinity: float, Tr: float) -> SoreideWhitsonAlphaResult: ...
 def soreide_whitson_phase(
     components: list[str],

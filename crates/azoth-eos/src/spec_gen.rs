@@ -39,6 +39,7 @@
 //!   - specs/calcs/eos/scale_saturation_ratio.toml
 //!   - specs/calcs/eos/schwartzentruber_alpha.toml
 //!   - specs/calcs/eos/siddiqi_lucas_diffusivity.toml
+//!   - specs/calcs/eos/solid_fugacity.toml
 //!   - specs/calcs/eos/soreide_whitson_alpha.toml
 //!   - specs/calcs/eos/srk_alpha_ab.toml
 //!   - specs/calcs/eos/srk_departure.toml
@@ -4443,6 +4444,128 @@ pub static SIDDIQI_LUCAS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
     tests: SIDDIQI_LUCAS_DIFFUSIVITY_TESTS,
 };
 
+/// Registry entry for `eos.solid_fugacity`.
+static SOLID_FUGACITY_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "heat_of_fusion",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a heat of fusion; a zero makes the solid identical to the liquid",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "triple_point_temperature",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a triple-point temperature; it divides and it is logged",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+];
+
+static SOLID_FUGACITY_TESTS: &[TestCase] = &[TestCase {
+    id: "round_trip_units",
+    kind: "property",
+    property: Some("unit_round_trip"),
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-12,
+    numbers: &[],
+    flags: &[],
+    lists: &[],
+    strings: &[],
+    vectors: &[],
+    matrices: &[],
+    expected: &[],
+    expected_vectors: &[],
+    expected_strings: &[],
+}];
+
+/// Registered spec for `eos.solid_fugacity`.
+///
+/// Public and addressable directly, so a calc can hold `&SOLID_FUGACITY_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static SOLID_FUGACITY_SPEC: CalcSpec = CalcSpec {
+    id: "eos.solid_fugacity",
+    checks: SOLID_FUGACITY_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "the_probes_water_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("heat_of_fusion", 6010.0),
+            ("triple_point_temperature", 273.16),
+            ("delta_cp_sl", 37.12),
+            ("delta_solid_volume", 0.0),
+            ("tc", 647.3),
+            ("pc", 22089000.0),
+            ("omega", 0.344),
+            ("T", 273.15),
+            ("P", 1000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("eos", "srk")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("fugacity_coefficient", 0.0004079887721484625)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    tests: SOLID_FUGACITY_TESTS,
+};
+
 /// Registry entry for `eos.soreide_whitson_alpha`.
 static SOREIDE_WHITSON_ALPHA_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -6195,6 +6318,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &SCALE_SATURATION_RATIO_SPEC,
     &SCHWARTZENTRUBER_ALPHA_SPEC,
     &SIDDIQI_LUCAS_DIFFUSIVITY_SPEC,
+    &SOLID_FUGACITY_SPEC,
     &SOREIDE_WHITSON_ALPHA_SPEC,
     &SRK_ALPHA_AB_SPEC,
     &SRK_DEPARTURE_SPEC,

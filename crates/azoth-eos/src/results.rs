@@ -746,6 +746,24 @@ impl CalcResult for SaltPrecipitationResult {
     }
 }
 
+/// Result of `eos.solid_fugacity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SolidFugacityResult {
+    /// The solid's fugacity coefficient for one component, dimensionless.
+    pub fugacity_coefficient: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SolidFugacityResult {
+    const CALC_ID: &'static str = "eos.solid_fugacity";
+    const FIELDS: &'static [&'static str] = &["fugacity_coefficient", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.scale_saturation_ratio`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScaleSaturationRatioResult {

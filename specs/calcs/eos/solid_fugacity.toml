@@ -1,0 +1,110 @@
+id = "eos.solid_fugacity"
+name = "Pure solid fugacity coefficient"
+equation = "phi_solid = phi_liq(T, P) * exp( -dH_fus/(R T) (1 - T/T_tp)\n                                    + dCp_SL/(R T) (T_tp - T)\n                                    - dCp_SL/R ln(T_tp/T)\n                                    - dV_sl (1 - P_bar)/(R T) )\n\nwhere `phi_liq` is the pure component's liquid root on the cubic the fluid runs, at the state's own (T, P), and `P_bar` is the pressure in bar, so the volume term is referred to one atmosphere."
+latex = '''\\phi^{solid} = \\phi^{liq}(T,P)\\exp\\left[-\\frac{\\Delta H_{fus}}{RT}\\left(1-\\frac{T}{T_{tp}}\\right) + \\frac{\\Delta C_{p,SL}}{RT}(T_{tp}-T) - \\frac{\\Delta C_{p,SL}}{R}\\ln\\frac{T_{tp}}{T} - \\frac{\\Delta V_{SL}(P_{bar}-1)}{RT}\\right]'''
+assumptions = [
+    "**this is NeqSim's `ComponentSolid.fugcoef2`**, the **tabulated** solid route: the heat of fusion, the triple point and the heat capacity come from a component's own columns rather than from a correlation. That is what tells it apart from `eos.parahydrogen_solid_phase`'s Helmholtz equation.",
+    "**the reference phase is a *liquid*** - `fugcoef2` initialises it `PhaseType.LIQUID` - and it is the host's own class, so `eos` is a real input and not a label. NeqSim's other entry, `fugcoef`, uses a *gas* reference at the component's solid vapour pressure instead, and is a different model.",
+    "**the heat-capacity difference is an input, because NeqSim computes it two ways**: from the table as `-(cp_solid(T_tp) - cp_liquid(T_tp))` for every component, and **hardcoded to `37.12` for the one named `water`**. Measured, the table gives water `38.0276196`, so reading it there is 2.4 % out.",
+    "the `dV_sl` term is the solid's molar volume over the liquid's, **negative for a solid that is denser**; a component whose tabulated solid density is zero falls back to the liquid's own, which is what makes the term vanish for water.",
+    "the volume term is referred to `P = 1` in NeqSim's **bar**-valued code, so in pascals the bracket is `(P/1e5 - 1)` - and its `R` is `8.3144621`, the one `Component` states as a literal.",
+    "**verified against NeqSim to 14 digits** on the capture's water at 273.15 K and 10 bara: this gives `0.0004079887721484625` against `0.000407988772148464`.",
+    "the coefficient is a ratio to `P x` and so dimensionless. A component that is not allowed to precipitate is excluded by its own reader, not here: this computes the coefficient of a solid the caller has already decided can form.",
+]
+references = [
+    "Prausnitz, J. M.; Lichtenthaler, R. N.; de Azevedo, E. G. (1999). \"Molecular Thermodynamics of Fluid-Phase Equilibria.\", 3rd ed., Prentice Hall. The solid-liquid fugacity ratio this is the exponential of.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentSolid.fugcoef2` is the port source, with `Component.getPureComponentCpSolid` and `getPureComponentSolidDensity` for the table it reads.",
+]
+[source]
+standard = "NeqSim 3.20.0 `ComponentSolid.fugcoef2`"
+edition = "The tabulated route, which `ThermodynamicOperations.TPSolidflash` drives through `SolidFlash1`. The Helmholtz route, `PhaseSolidHelmholtzEos`, is `eos.parahydrogen_solid_phase`'s and is not this."
+[inputs]
+[inputs.heat_of_fusion]
+unit = "J/mol"
+description = "The component's heat of fusion, from the `HEATOFFUSION` column.\n"
+[inputs.triple_point_temperature]
+unit = "K"
+description = "Its triple-point temperature, from `TRIPLEPOINTTEMPERATURE`.\n"
+[inputs.delta_cp_sl]
+unit = "J/(mol*K)"
+description = "The solid-liquid heat-capacity difference **at the triple point**, which the caller states: NeqSim takes it from the table and overrides it to `37.12` for water.\n"
+[inputs.delta_solid_volume]
+unit = "m**3/mol"
+description = "The solid's molar volume less the liquid's, at the triple point. Zero where the table states no solid density.\n"
+[inputs.tc]
+unit = "K"
+description = "The component's critical temperature, which the reference liquid is a one-component phase at.\n"
+[inputs.pc]
+unit = "Pa"
+description = "Its critical pressure.\n"
+[inputs.omega]
+unit = "dimensionless"
+description = "Its acentric factor, which sets the reference liquid's alpha through `eos.srk_kappa`.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature\n"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure\n"
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk"]
+optional = true
+description = "the cubic the fluid runs, which is also the one the reference liquid is built from - NeqSim clones the host phase's class, so this is a real choice"
+[outputs]
+[outputs.fugacity_coefficient]
+unit = "dimensionless"
+description = "The solid's fugacity coefficient for this component, `f_i^solid/(P x_i)`, which is `phi_liq exp(...)` because the `x` cancels.\n"
+[[valid_range]]
+quantity = "heat_of_fusion"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a heat of fusion; a zero makes the solid identical to the liquid\n"
+[[valid_range]]
+quantity = "triple_point_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a triple-point temperature; it divides and it is logged\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure\n"
+[worked_example]
+source = "NeqSim 3.20.0, `ComponentSolid.fugcoef2`, from `validation/neqsim/captures/solid_flash_probe.tsv`"
+derivation = "The probe's water at 0 C and 10 bara, where NeqSim reports the solid's coefficient as `0.000407988772148464` and its own `deltaCpSL` as the hardcoded `37.12`:\n\n  dH_fus = 6010.0 J/mol,  T_tp = 273.16 K,  T = 273.15 K,  dV_sl = 0\n  phi_liq(water) = 0.00040802829769106055     (the liquid root at the state)\n\n  fusion = -6010/(8.3144621*273.15) * (1 - 273.15/273.16) = -9.68743...e-05\n  cpTerm = 37.12/(8.3144621*273.15)*(273.16 - 273.15) - 37.12/8.3144621*ln(273.16/273.15)\n         = +1.63461e-04 - 1.63461e-04 = 3.7e-09    (the two cancel to a part in 1e5)\n\n  exponent = -9.68743e-05\n  phi      = 0.00040802829769106055 * exp(-9.68743e-05) = 0.0004079887721484625\n\nThe capture's `solid_fugacity_coefficient[water]` is that last number."
+tolerance = 1e-12
+[worked_example.inputs]
+heat_of_fusion = 6010.0
+triple_point_temperature = 273.16
+delta_cp_sl = 37.12
+delta_solid_volume = 0.0
+tc = 647.3
+pc = 22089000.0
+omega = 0.344
+T = 273.15
+P = 1000000.0
+eos = "srk"
+[worked_example.expected]
+fugacity_coefficient = 0.0004079887721484625
+[implementations]
+python = "azoth.eos.solid_fugacity"
+rust = "azoth_eos::solid_fugacity"
+[[tests]]
+id = "the_probes_water_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

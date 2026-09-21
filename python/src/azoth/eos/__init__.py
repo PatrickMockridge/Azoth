@@ -154,6 +154,7 @@ from azoth.core.result import (
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
+    SolidFugacityResult,
     SoreideWhitsonAlphaResult,
     SoreideWhitsonPhaseResult,
     SrkAlphaAbResult,
@@ -299,6 +300,7 @@ __all__ = [
     "salt_precipitation",
     "scale_saturation_ratio",
     "siddiqi_lucas_diffusivity",
+    "solid_fugacity",
     "soreide_whitson_phase",
     "srk_alpha_ab",
     "srk_cpa_phase",
@@ -2183,6 +2185,48 @@ def salt_precipitation(
     """
     return resolve("eos.salt_precipitation")(  # type: ignore[no-any-return]
         components=components, salt=salt, T=T, P=P, z=z
+    )
+
+
+def solid_fugacity(
+    heat_of_fusion: Q,
+    triple_point_temperature: Q,
+    delta_cp_sl: Q,
+    delta_solid_volume: Q,
+    tc: Q,
+    pc: Q,
+    omega: float,
+    T: Q,
+    P: Q,
+    eos: str = "srk",
+) -> SolidFugacityResult:
+    """A pure solid's fugacity coefficient at a state.
+
+    NeqSim's ``ComponentSolid.fugcoef2``: the reference liquid's own coefficient times an
+    exponential of the fusion, heat-capacity and volume terms, with the heat of fusion, the
+    triple point and the heat capacity all from a component's **tabulated** columns rather
+    than from a correlation.
+
+    ``delta_cp_sl`` is the caller's because NeqSim computes it two ways - from the table for
+    every component and hardcoded to ``37.12`` for water.
+
+    Raises:
+        InvalidInputError: if ``eos`` is not a cubic this reaches.
+        OutOfRangeError: if any of the constants or the state is not positive.
+
+    See :func:`azoth.eos.reference.solid_fugacity`.
+    """
+    return resolve("eos.solid_fugacity")(  # type: ignore[no-any-return]
+        heat_of_fusion=heat_of_fusion,
+        triple_point_temperature=triple_point_temperature,
+        delta_cp_sl=delta_cp_sl,
+        delta_solid_volume=delta_solid_volume,
+        tc=tc,
+        pc=pc,
+        omega=omega,
+        T=T,
+        P=P,
+        eos=eos,
     )
 
 

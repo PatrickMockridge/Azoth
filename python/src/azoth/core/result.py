@@ -398,6 +398,16 @@ class WaxSolidFugacityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SolidFugacityResult(_HasWarnings):
+    """Result of ``eos.solid_fugacity``."""
+
+    #: The solid's fugacity coefficient for one component. Dimensionless.
+    fugacity_coefficient: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SaltPrecipitationResult(_HasWarnings):
     """Result of ``eos.salt_precipitation``."""
 

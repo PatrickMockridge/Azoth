@@ -3400,6 +3400,40 @@ pub fn salt_precipitation(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// A pure solid's fugacity coefficient, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (heat_of_fusion, triple_point_temperature, delta_cp_sl, delta_solid_volume, tc, pc, omega, T, P, eos = "srk"))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)]
+pub fn solid_fugacity(
+    py: Python<'_>,
+    heat_of_fusion: f64,
+    triple_point_temperature: f64,
+    delta_cp_sl: f64,
+    delta_solid_volume: f64,
+    tc: f64,
+    pc: f64,
+    omega: f64,
+    T: f64,
+    P: f64,
+    eos: &str,
+) -> PyResult<crate::results::PySolidFugacityResult> {
+    azoth_eos::solid_fugacity(
+        heat_of_fusion,
+        triple_point_temperature,
+        delta_cp_sl,
+        delta_solid_volume,
+        kelvins(tc),
+        pascals(pc),
+        omega,
+        kelvins(T),
+        pascals(P),
+        eos,
+    )
+    .map(|r| crate::results::PySolidFugacityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The freezing point of para-hydrogen at a pressure, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side checks them: the solid equation

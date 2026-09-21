@@ -125,6 +125,7 @@ from azoth.core.result import (
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
+    SolidFugacityResult,
     SoreideWhitsonAlphaResult,
     SoreideWhitsonPhaseResult,
     SrkAlphaAbResult,
@@ -2950,6 +2951,38 @@ def salt_precipitation(
         final_saturation_ratio=result.final_saturation_ratio,
         iterations=result.iterations,
         extent_of_maximum=result.extent_of_maximum,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def solid_fugacity(
+    heat_of_fusion: Q,
+    triple_point_temperature: Q,
+    delta_cp_sl: Q,
+    delta_solid_volume: Q,
+    tc: Q,
+    pc: Q,
+    omega: float,
+    T: Q,
+    P: Q,
+    eos: str = "srk",
+) -> SolidFugacityResult:
+    """A pure solid's fugacity coefficient, computed in Rust."""
+    spec = _spec_for("eos.solid_fugacity")
+    result = _core.solid_fugacity(
+        input_to_si(spec, "heat_of_fusion", heat_of_fusion),
+        input_to_si(spec, "triple_point_temperature", triple_point_temperature),
+        input_to_si(spec, "delta_cp_sl", delta_cp_sl),
+        input_to_si(spec, "delta_solid_volume", delta_solid_volume),
+        input_to_si(spec, "tc", tc),
+        input_to_si(spec, "pc", pc),
+        omega,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        eos,
+    )
+    return SolidFugacityResult(
+        fugacity_coefficient=result.fugacity_coefficient,
         warnings=_warnings(result.warnings),
     )
 

@@ -107,6 +107,7 @@ Four sections, and the difference between them is the point:
 - [`eos.scale_saturation_ratio`](./eos/scale_saturation_ratio.md)
 - [`eos.schwartzentruber_alpha`](./eos/schwartzentruber_alpha.md)
 - [`eos.siddiqi_lucas_diffusivity`](./eos/siddiqi_lucas_diffusivity.md)
+- [`eos.solid_fugacity`](./eos/solid_fugacity.md)
 - [`eos.soreide_whitson_alpha`](./eos/soreide_whitson_alpha.md)
 - [`eos.srk_alpha_ab`](./eos/srk_alpha_ab.md)
 - [`eos.srk_departure`](./eos/srk_departure.md)

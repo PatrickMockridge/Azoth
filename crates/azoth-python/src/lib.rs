@@ -50,9 +50,10 @@ use results::{
     PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
     PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
     PyReynoldsNumberResult, PyRkAlphaAbResult, PyRkDepartureResult, PySaltPrecipitationResult,
-    PyScaleSaturationRatioResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
-    PySrkZFactorResult, PySwameeJainResult, PyTbpFractionPropertiesResult, PyTpMultiflashWaxResult,
-    PyTwuKappaResult, PyVdw1fMixBinaryResult, PyWarning, PyWaxSolidFugacityResult,
+    PyScaleSaturationRatioResult, PySolidFugacityResult, PySrkAlphaAbResult, PySrkDepartureResult,
+    PySrkKappaResult, PySrkZFactorResult, PySwameeJainResult, PyTbpFractionPropertiesResult,
+    PyTpMultiflashWaxResult, PyTwuKappaResult, PyVdw1fMixBinaryResult, PyWarning,
+    PyWaxSolidFugacityResult,
 };
 
 #[pymodule]
@@ -97,6 +98,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyWaxSolidFugacityResult>()?;
     m.add_class::<PyTpMultiflashWaxResult>()?;
     m.add_class::<PyScaleSaturationRatioResult>()?;
+    m.add_class::<PySolidFugacityResult>()?;
     m.add_class::<PySaltPrecipitationResult>()?;
     m.add_class::<PyPhFlashResult>()?;
     m.add_class::<PyPsFlashResult>()?;
@@ -235,6 +237,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::wax_solid_fugacity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::tp_multiflash_wax, m)?)?;
     m.add_function(wrap_pyfunction!(eos::scale_saturation_ratio, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::solid_fugacity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::salt_precipitation, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrate_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrogen_phase, m)?)?;

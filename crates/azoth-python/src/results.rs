@@ -39,12 +39,12 @@ use azoth_eos::results::{
     PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
     RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
     SaltPrecipitationResult, ScaleSaturationRatioResult, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult,
-    SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult, SrkKappaResult,
-    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TbpFractionPropertiesResult,
-    ThFlashResult, ThermalConductivityResult, TpMultiflashResult, TpMultiflashWaxResult,
-    TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult, TwuKappaResult,
-    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    SiddiqiLucasDiffusivityResult, SolidFugacityResult, SoreideWhitsonAlphaResult,
+    SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
+    TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
+    TpMultiflashWaxResult, TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult,
+    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
     TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
@@ -4090,6 +4090,42 @@ impl From<&SaltPrecipitationResult> for PySaltPrecipitationResult {
     }
 }
 
+/// Result of `eos.solid_fugacity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SolidFugacityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySolidFugacityResult {
+    /// The solid's fugacity coefficient for one component.
+    #[pyo3(get)]
+    pub fugacity_coefficient: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySolidFugacityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SolidFugacityResult(fugacity_coefficient={})",
+            self.fugacity_coefficient
+        )
+    }
+}
+
+impl From<&SolidFugacityResult> for PySolidFugacityResult {
+    fn from(r: &SolidFugacityResult) -> Self {
+        Self {
+            fugacity_coefficient: r.fugacity_coefficient,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.scale_saturation_ratio`, transported.
 #[pyclass(
     frozen,
@@ -6638,6 +6674,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
         TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),
         ScaleSaturationRatioResult::CALC_ID => ScaleSaturationRatioResult::FIELDS.to_vec(),
+        SolidFugacityResult::CALC_ID => SolidFugacityResult::FIELDS.to_vec(),
         SaltPrecipitationResult::CALC_ID => SaltPrecipitationResult::FIELDS.to_vec(),
         WaxSolidFugacityResult::CALC_ID => WaxSolidFugacityResult::FIELDS.to_vec(),
         TpMultiflashWaxResult::CALC_ID => TpMultiflashWaxResult::FIELDS.to_vec(),
@@ -6741,6 +6778,7 @@ pub fn calc_ids() -> Vec<String> {
         DarcyWeisbachResult::CALC_ID.to_string(),
         TbpFractionPropertiesResult::CALC_ID.to_string(),
         ScaleSaturationRatioResult::CALC_ID.to_string(),
+        SolidFugacityResult::CALC_ID.to_string(),
         WaxSolidFugacityResult::CALC_ID.to_string(),
     ]
 }
