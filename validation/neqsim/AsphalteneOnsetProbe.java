@@ -39,6 +39,27 @@ public class AsphalteneOnsetProbe {
 
   private static void report(String[] names, double[] feed, double temperatureK) {
     System.out.printf("# heavy oil at %.15g K, scanned from 150 bara%n", temperatureK);
+    // **The solid check changes the fluid flash**, which is the finding this family turns on.
+    // The same state, flashed three ways: plainly; with a solid candidate that *cannot*
+    // precipitate; and with the asphaltene candidate. Where the plain flash splits, the two
+    // checked ones return the feed as a single phase.
+    for (double pressure : new double[] {150.0, 100.0, 60.0, 20.0, 5.0}) {
+      for (String candidate : new String[] {null, "methane", "asphaltene"}) {
+        SystemInterface fluid = fresh(names, feed, temperatureK, pressure, candidate);
+        new ThermodynamicOperations(fluid).TPflash();
+        StringBuilder line = new StringBuilder(String.format("  seed[%.12g]", pressure));
+        line.append(" candidate=").append(candidate == null ? "none" : candidate).append(" ->");
+        for (int p = 0; p < fluid.getNumberOfPhases(); p++) {
+          line.append(' ')
+              .append(fluid.getPhase(p).getType())
+              .append(':')
+              .append(String.format("%.12g", fluid.getPhase(p).getBeta()))
+              .append(" x_me=")
+              .append(String.format("%.6g", fluid.getPhase(p).getComponent(0).getx()));
+        }
+        System.out.println(line);
+      }
+    }
     // **A fresh system at every pressure**, because a `TPflash` mutates the system it runs on
     // and NeqSim's own scan carries that mutation from step to step: a sweep that reuses one
     // system measures the search's path rather than the states it passes through. Both are
@@ -117,12 +138,19 @@ public class AsphalteneOnsetProbe {
 
   private static SystemInterface fresh(
       String[] names, double[] feed, double temperatureK, double pressureBara) {
+    return fresh(names, feed, temperatureK, pressureBara, "asphaltene");
+  }
+
+  private static SystemInterface fresh(
+      String[] names, double[] feed, double temperatureK, double pressureBara, String candidate) {
     SystemInterface fluid = new SystemSrkEos(temperatureK, pressureBara);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], feed[i]);
     }
     fluid.setMixingRule(2);
-    fluid.setSolidPhaseCheck("asphaltene");
+    if (candidate != null) {
+      fluid.setSolidPhaseCheck(candidate);
+    }
     fluid.init(0);
     fluid.init(1);
     return fluid;
