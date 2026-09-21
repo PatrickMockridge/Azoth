@@ -47,6 +47,15 @@ public class WaxProbe {
     system.getWaxModel().addTBPWax();
     system.createDatabase(true);
     system.setMixingRule(2);
+    // **The flag has to be on again here, and the turn-off at the end of this method is
+    // what made the instrument irreproducible for an hour.** `addSolidComplexPhase` builds
+    // a hydrate phase and then a wax phase from the system's component *names*, and every
+    // one of those is resolved against the database - the wax pseudo-components exist only
+    // in the temporary table, so a run that reaches this line with the flag off throws
+    // "waxPC1_PC not found in database" and the capture comes out with none of the wax rows
+    // in it. NeqSim's own test never notices because it sets the flag once and never clears
+    // it; this probe clears it, so it has to put it back.
+    NeqSimDataBase.setCreateTemporaryTables(true);
     system.addSolidComplexPhase("wax");
     system.setMultiphaseWaxCheck(true);
     system.setMultiPhaseCheck(true);
