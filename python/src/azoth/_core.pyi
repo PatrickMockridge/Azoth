@@ -955,6 +955,17 @@ class TpMultiflashResult:
     warnings: list[Warning]
 
 @final
+class TpMultiflashWaxResult:
+    wax_fraction: float
+    phase_count: int
+    beta: list[float]
+    x: list[list[float]]
+    iterations: int
+    residual: float
+    converged: bool
+    warnings: list[Warning]
+
+@final
 class TsFlashResult:
     P: Qty
     beta: float | None
@@ -1908,6 +1919,13 @@ def tp_multiflash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> TpMultiflashResult: ...
+def tp_multiflash_wax(
+    components: list[str],
+    T: float,
+    P: float,
+    z: list[float],
+    eos: str | None = None,
+) -> TpMultiflashWaxResult: ...
 def ts_flash(
     Tc: list[float],
     Pc: list[float],

@@ -547,6 +547,14 @@ class DatabankEntry:
     #: Whether the substance occupies a hydrate cage at all: NeqSim's ``HydrateFormer``,
     #: read by every occupancy loop. Water is excluded by name rather than by this.
     hydrate_former: bool
+    #: Whether the substance precipitates as wax: NeqSim's ``waxformer``, read by the wax
+    #: family. 16 of the 348 rows carry it and they are the n-alkanes from n-hexane up.
+    wax_former: bool
+    #: Heat of fusion in J/mol and the triple-point temperature in K, read for **every**
+    #: substance and not only the solids - NeqSim's ``Component`` constructor reads them
+    #: unconditionally, and methane's own `941.0` J/mol at `90.69` K is what that gives.
+    heat_of_fusion: float
+    triple_point_temperature: float
     #: The ionic charge, in units of the elementary charge; zero for a neutral. **Zero
     #: does not mean "not an ion"**: four rows typed ``"ion"`` carry it - ``h+pzcoo-`` is
     #: a zwitterion and ``caco3``, ``nacl`` and ``cacl2`` are neutral salts filed with
@@ -592,6 +600,9 @@ class DatabankEntry:
             omega=self.omega,
             molar_mass=self.molar_mass,
             alpha_params=params,
+            wax_former=self.wax_former,
+            heat_of_fusion=self.heat_of_fusion,
+            triple_point_temperature=self.triple_point_temperature,
             # Carried whether or not the mixture runs it: an associating equation of state
             # reads it and a cubic ignores it, and whether a *phase model* associates is
             # the model's decision rather than the substance's - `SystemNRTL` builds a
@@ -701,6 +712,11 @@ def _table() -> dict[str, DatabankEntry]:
                 float(row["hydrateb2large"]),
             ),
             hydrate_former=row["hydrateformer"].strip() == "yes",
+            # `Component.java` tests `Integer.parseInt(...) == 1`, so the column is a number
+            # and not one of the `yes`/`no` flags beside it.
+            wax_former=float(row["waxformer"]) == 1.0,
+            heat_of_fusion=float(row["heatoffusion"]),
+            triple_point_temperature=float(row["triplepointtemperature"]),
             alpha_params={
                 "schwartzentruber": _three(
                     row, "schwartzentruber1", "schwartzentruber2", "schwartzentruber3"
@@ -1337,6 +1353,11 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             hydrate_langmuir_a=(0.0, 0.0, 0.0, 0.0),
             hydrate_langmuir_b=(0.0, 0.0, 0.0, 0.0),
             hydrate_former=False,
+            # A card states what a cubic reads, and a melt is not something a cubic reads:
+            # a substance a card supplies has no table row to inherit either from.
+            wax_former=False,
+            heat_of_fusion=0.0,
+            triple_point_temperature=0.0,
             ionic_charge=_card_charge(override),
             # The card states metres and the databank holds ångström; this is the crossing.
             deshmukh_mather_diameter=_card_diameter(override),

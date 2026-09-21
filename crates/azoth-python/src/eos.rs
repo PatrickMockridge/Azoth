@@ -3321,6 +3321,30 @@ pub fn wax_solid_fugacity(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The wax fraction of a feed at a state, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves them: the wax flag and
+/// the melt data are the databank's own columns.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, eos = "srk"))]
+#[allow(non_snake_case)] // `T`, `P` and `z` are the symbols in the chemistry
+pub fn tp_multiflash_wax(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+) -> PyResult<crate::results::PyTpMultiflashWaxResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, _) =
+        azoth_eos::databank::mixture_of(&names, eos.parse().unwrap_or(azoth_eos::Cubic::Srk), None)
+            .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::tp_multiflash_wax(&mixture, kelvins(T), pascals(P), &z)
+        .map(|r| crate::results::PyTpMultiflashWaxResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The freezing point of para-hydrogen at a pressure, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side checks them: the solid equation

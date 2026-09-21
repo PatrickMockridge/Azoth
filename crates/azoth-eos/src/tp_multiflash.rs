@@ -40,7 +40,7 @@ use azoth_core::{AzothError, Result, Warning, WarningCode, apply_checks};
 use crate::algorithm_of;
 use crate::mixture::{Mixture, PhaseState, ReducedParameters, RootSide};
 use crate::model_gen;
-use crate::multiphase::{MultiphasePhase, MultiphaseSplit, solve_phase_fractions};
+use crate::multiphase::{MultiphasePhase, MultiphaseSplit, PhaseKind, solve_phase_fractions};
 use crate::pt_flash::pt_flash;
 use crate::results::{Phase, TpMultiflashResult, TpMultiflashSeed};
 use crate::stability_test::{feed_state, stability_test};
@@ -84,12 +84,12 @@ fn phases_of(
             MultiphasePhase {
                 fraction: 1.0 - beta,
                 composition: flash.x.clone(),
-                side: RootSide::Liquid,
+                kind: PhaseKind::Cubic(RootSide::Liquid),
             },
             MultiphasePhase {
                 fraction: beta,
                 composition: flash.y.clone(),
-                side: RootSide::Vapour,
+                kind: PhaseKind::Cubic(RootSide::Vapour),
             },
         ]),
         // No fraction: either every K-value was on one side, or the iteration reached
@@ -105,7 +105,7 @@ fn phases_of(
             Ok(vec![MultiphasePhase {
                 fraction: 1.0,
                 composition: z.to_vec(),
-                side,
+                kind: PhaseKind::Cubic(side),
             }])
         }
     }
@@ -229,7 +229,7 @@ pub fn tp_multiflash(
         phases.push(MultiphasePhase {
             fraction: z[dominant],
             composition: trial.clone(),
-            side,
+            kind: PhaseKind::Cubic(side),
         });
         seeded = true;
         // Upstream returns after the first phase it adds; the solve below is what decides
@@ -370,7 +370,14 @@ fn state_of(
     reduced: &ReducedParameters,
     phase: &MultiphasePhase,
 ) -> Result<Option<PhaseState>> {
-    match mixture.phase_state(reduced, &phase.composition, phase.side) {
+    let PhaseKind::Cubic(side) = phase.kind else {
+        // A wax phase is not a root of the cubic, so there is no `PhaseState` for it and
+        // nothing here to report: this routine exists to hand a *cubic* state to the
+        // comparison that follows, and a caller that put a solid in the set has already
+        // said it is not one.
+        return Ok(None);
+    };
+    match mixture.phase_state(reduced, &phase.composition, side) {
         Ok(state) => Ok(Some(state)),
         Err(AzothError::OutOfRange { .. }) => Ok(None),
         Err(other) => Err(other),

@@ -45,6 +45,7 @@
 use azoth_core::{AzothError, ModelAlgorithm, Result};
 
 use crate::mixture::{Mixture, ReducedParameters, RootSide};
+use crate::wax_solid_fugacity;
 
 /// The floor under the phase-split denominator, upstream's.
 ///
@@ -100,6 +101,24 @@ pub struct MultiphaseSplit {
     pub converged: bool,
 }
 
+/// How one phase's fugacity coefficients are obtained.
+///
+/// **The two are not the same kind of thing, which is why this is one enum and not a third
+/// [`RootSide`].** A cubic phase's coefficients are a function of *its own composition* on a
+/// chosen root - that is what makes a liquid-liquid split answerable at all - and the wax
+/// solid's are a function of the *state alone*: its coefficient is
+/// `phi_liq exp(...)` for one component, with the composition cancelled out of
+/// `SolidFug/(P x)`, so there is no root to choose and nothing about the phase's composition
+/// enters.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhaseKind {
+    /// A phase of the cubic, on this root.
+    Cubic(RootSide),
+    /// The wax solid, whose coefficient is [`crate::wax_solid_fugacity`]'s for a component
+    /// the fluid marks as a wax former and NeqSim's `1e50` marker for everything else.
+    Wax,
+}
+
 /// One phase of a multiphase split.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultiphasePhase {
@@ -107,12 +126,12 @@ pub struct MultiphasePhase {
     pub fraction: f64,
     /// Mole fractions within the phase, summing to one.
     pub composition: Vec<f64>,
-    /// Which root of the cubic this phase sits on.
+    /// Which root of the cubic this phase sits on, or that it is not one.
     ///
     /// Two liquid phases share a side and differ in composition alone, which is what
     /// makes a cubic able to describe a liquid-liquid split at all: the root is chosen
     /// per phase, at that phase's own composition.
-    pub side: RootSide,
+    pub kind: PhaseKind,
 }
 
 /// The fugacity coefficients of every component in every phase, row-major by phase.
@@ -123,8 +142,79 @@ fn coefficients(
 ) -> Result<Vec<Vec<f64>>> {
     let mut out = Vec::with_capacity(phases.len());
     for phase in phases {
-        let state = mixture.phase_state(reduced, &phase.composition, phase.side)?;
-        out.push(state.ln_phi.iter().map(|value| value.exp()).collect());
+        match phase.kind {
+            PhaseKind::Cubic(side) => {
+                let state = mixture.phase_state(reduced, &phase.composition, side)?;
+                out.push(state.ln_phi.iter().map(|value| value.exp()).collect());
+            }
+            PhaseKind::Wax => out.push(wax_coefficients(mixture, reduced)?),
+        }
+    }
+    Ok(out)
+}
+
+/// NeqSim's marker for a component that cannot be in a wax phase.
+///
+/// `ComponentWax.fugcoef` returns it for a substance that is not a wax former, and the
+/// fraction solve turns it into `x = z/(E phi)` - which is zero to any precision the answer
+/// is read at, so the exclusion is a *number* the solve can carry rather than a phase whose
+/// composition has to be assembled per state.
+const NOT_A_WAX_FORMER: f64 = 1.0e50;
+
+/// The wax solid's fugacity coefficient for every component at a state.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if a wax former carries no molar mass, no heat of fusion or
+///   no triple-point temperature, or if the fluid's cubic is not one the wax model reaches.
+///   Each is a value the model reads rather than a case to default: a zero heat of fusion
+///   says the substance does not melt, and a molar mass of zero is not a cut.
+fn wax_coefficients(mixture: &Mixture, reduced: &ReducedParameters) -> Result<Vec<f64>> {
+    let cubic = mixture.cubic();
+    let eos = match cubic {
+        crate::Cubic::Pr => "pr",
+        crate::Cubic::Srk => "srk",
+        other => {
+            return Err(AzothError::invalid_input(
+                "eos",
+                format!(
+                    "a wax phase over a {other:?} fluid is not a state this reaches: the                      reference liquid is a phase of the *host's* own class, and NeqSim's wax                      route is on `PhaseSrkEos` and `PhasePrEos`"
+                ),
+            ));
+        }
+    };
+    let mut out = Vec::with_capacity(mixture.components().len());
+    for (index, component) in mixture.components().iter().enumerate() {
+        if !component.wax_former {
+            out.push(NOT_A_WAX_FORMER);
+            continue;
+        }
+        let missing = |what: &str| {
+            AzothError::invalid_input(
+                "components",
+                format!(
+                    "component {index} is a wax former and carries no {what}; the wax model                      reads it rather than defaulting, and `eos.tbp_fraction_properties` is                      what gives a cut one"
+                ),
+            )
+        };
+        let molar_mass = component.molar_mass.ok_or_else(|| missing("molar mass"))?;
+        if component.heat_of_fusion <= 0.0 {
+            return Err(missing("heat of fusion"));
+        }
+        if component.triple_point_temperature <= 0.0 {
+            return Err(missing("triple-point temperature"));
+        }
+        let coefficient = wax_solid_fugacity(
+            molar_mass,
+            component.tc,
+            component.pc,
+            component.omega,
+            component.heat_of_fusion,
+            azoth_core::units::kelvins(component.triple_point_temperature),
+            azoth_core::units::kelvins(reduced.t_kelvin),
+            azoth_core::units::pascals(reduced.pressure),
+            eos,
+        )?;
+        out.push(coefficient.fugacity_coefficient);
     }
     Ok(out)
 }

@@ -42,8 +42,8 @@ use azoth_eos::results::{
     SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
     SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
     TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
-    TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult, TwuKappaResult,
-    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TpMultiflashWaxResult, TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult,
+    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
     TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
@@ -3977,6 +3977,66 @@ impl From<&HydrateFormationTemperatureResult> for PyHydrateFormationTemperatureR
     }
 }
 
+/// Result of `eos.tp_multiflash_wax`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TpMultiflashWaxResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTpMultiflashWaxResult {
+    /// The fraction of the feed's moles in the wax phase.
+    #[pyo3(get)]
+    pub wax_fraction: f64,
+    /// How many phases the feed splits into.
+    #[pyo3(get)]
+    pub phase_count: u32,
+    /// The mole fraction of the feed in each phase, the wax last.
+    #[pyo3(get)]
+    pub beta: Vec<f64>,
+    /// The composition of each phase, one vector per phase.
+    #[pyo3(get)]
+    pub x: Vec<Vec<f64>>,
+    /// Fraction-solve steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The norm of the last fraction correction.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Whether the residual met the tolerance.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTpMultiflashWaxResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TpMultiflashWaxResult(phase_count={}, wax_fraction={}, {} iteration(s), converged={})",
+            self.phase_count, self.wax_fraction, self.iterations, self.converged
+        )
+    }
+}
+
+impl From<&TpMultiflashWaxResult> for PyTpMultiflashWaxResult {
+    fn from(r: &TpMultiflashWaxResult) -> Self {
+        Self {
+            wax_fraction: r.wax_fraction,
+            phase_count: r.phase_count,
+            beta: r.beta.clone(),
+            x: r.x.clone(),
+            iterations: r.iterations,
+            residual: r.residual,
+            converged: r.converged,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.wax_solid_fugacity`, transported.
 #[pyclass(
     frozen,
@@ -6481,6 +6541,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
         TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),
         WaxSolidFugacityResult::CALC_ID => WaxSolidFugacityResult::FIELDS.to_vec(),
+        TpMultiflashWaxResult::CALC_ID => TpMultiflashWaxResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
         EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),

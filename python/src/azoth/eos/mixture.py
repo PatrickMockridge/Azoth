@@ -64,6 +64,17 @@ class Component:
     molar_mass: Q | None = None
     alpha_params: tuple[float, ...] = ()
     association: AssociationParameters | None = None
+    #: Whether the substance precipitates as wax: the databank's ``waxformer``, and the flag
+    #: that decides whether it can be in a wax phase at all. ``ComponentWax.fugcoef`` returns
+    #: a ``1e50`` marker for one that is not, so the exclusion is a *number* the fraction
+    #: solve carries rather than a phase list assembled per state.
+    wax_former: bool = False
+    #: Heat of fusion in J/mol and the triple-point temperature in K, for a substance the
+    #: databank states them for. **Zero means the table carries no value**, which is every
+    #: substance the wax model does not treat as a solid, and a model reading one refuses a
+    #: zero rather than computing with it.
+    heat_of_fusion: float = 0.0
+    triple_point_temperature: float = 0.0
 
     def __post_init__(self) -> None:
         for name in ("Tc", "Pc"):

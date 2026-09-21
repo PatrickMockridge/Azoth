@@ -73,11 +73,18 @@ MINIMUM_STEPS = 2
 
 
 class _Phase(NamedTuple):
-    """One phase of the set being solved: an amount, a composition and a root."""
+    """One phase of the set being solved: an amount, a composition and a root.
+
+    ``wax`` is the third kind of phase and **not a third root**: a cubic phase's coefficients
+    are a function of *its own composition* on a chosen root, and the wax solid's are a
+    function of the state alone - the mole fraction cancels out of ``SolidFug/(P x)`` - so
+    there is no root to choose and nothing about the phase's composition enters.
+    """
 
     fraction: float
     composition: list[float]
     liquid: bool
+    wax: bool = False
 
 
 def _distance(a: list[float], b: list[float]) -> float:
@@ -164,6 +171,21 @@ def _solve(hessian: list[list[float]], gradient: list[float]) -> list[float] | N
     return x
 
 
+def _wax(coefficients: list[float] | None) -> list[float]:
+    """The wax phase's coefficients, which its caller computes once for the whole solve.
+
+    Raises:
+        AssertionError: if a wax phase is in the set and no coefficients came with it. That
+            is a wiring mistake rather than a state: the coefficients do not depend on the
+            phase, so there is nothing the solve could compute for itself.
+    """
+    assert coefficients is not None, (
+        "a wax phase is in the set and no coefficients came with it; they are the state's "
+        "and the component's, so the caller that knows the mixture is what computes them"
+    )
+    return coefficients
+
+
 def _solve_phase_fractions(
     reduced: ReducedParameters,
     kij: Any,
@@ -171,6 +193,7 @@ def _solve_phase_fractions(
     phases: list[_Phase],
     tolerance: float,
     cap: int,
+    wax_coefficients: list[float] | None = None,
 ) -> tuple[list[_Phase], int, float, bool]:
     """The fractions of a set of phases at a state, and their compositions.
 
@@ -195,7 +218,9 @@ def _solve_phase_fractions(
     for step in range(1, cap + 1):
         iterations = step
         phi = [
-            [
+            _wax(wax_coefficients)
+            if phase.wax
+            else [
                 math.exp(value)
                 for value in phase_state(
                     reduced, kij, phase.composition, liquid=phase.liquid
@@ -238,11 +263,14 @@ def _solve_phase_fractions(
         for k, phase in enumerate(phases):
             candidate = phase.fraction - scale * correction[k]
             fraction = min(max(candidate, FRACTION_FLOOR), 1.0 - FRACTION_FLOOR)
-            updated.append(_Phase(fraction, phase.composition, phase.liquid))
+            updated.append(_Phase(fraction, phase.composition, phase.liquid, phase.wax))
             total += fraction
         for k in range(count):
             updated[k] = _Phase(
-                updated[k].fraction / total, updated[k].composition, updated[k].liquid
+                updated[k].fraction / total,
+                updated[k].composition,
+                updated[k].liquid,
+                updated[k].wax,
             )
 
         # The compositions the material balance gives at those fractions, in the same closed
@@ -252,7 +280,7 @@ def _solve_phase_fractions(
             row_total = sum(row)
             if row_total > 0.0:
                 row = [value / row_total for value in row]
-            updated[k] = _Phase(updated[k].fraction, row, updated[k].liquid)
+            updated[k] = _Phase(updated[k].fraction, row, updated[k].liquid, updated[k].wax)
         phases = updated
 
         if step >= MINIMUM_STEPS and residual <= tolerance and gradient_norm <= GRADIENT_TOLERANCE:

@@ -138,6 +138,7 @@ from azoth.core.result import (
     ThFlashResult,
     TpFlashSaftResult,
     TpMultiflashResult,
+    TpMultiflashWaxResult,
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
@@ -2855,6 +2856,34 @@ def wax_solid_fugacity(
     )
     return WaxSolidFugacityResult(
         fugacity_coefficient=result.fugacity_coefficient,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tp_multiflash_wax(
+    components: Sequence[str], T: Q, P: Q, z: Sequence[float], eos: str = "srk"
+) -> TpMultiflashWaxResult:
+    """The wax fraction of a feed, computed in Rust.
+
+    **The component names cross unresolved**, and the Rust side resolves them: the wax flag
+    and the melt data are the databank's own columns.
+    """
+    spec = _models_gen.model("eos.tp_multiflash_wax")
+    result = _core.tp_multiflash_wax(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        eos,
+    )
+    return TpMultiflashWaxResult(
+        wax_fraction=result.wax_fraction,
+        phase_count=result.phase_count,
+        beta=tuple(result.beta),
+        x=tuple(tuple(row) for row in result.x),
+        iterations=result.iterations,
+        residual=result.residual,
+        converged=result.converged,
         warnings=_warnings(result.warnings),
     )
 

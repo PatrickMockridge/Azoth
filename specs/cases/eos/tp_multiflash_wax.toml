@@ -1,0 +1,88 @@
+model = "eos.tp_multiflash_wax"
+[[cases]]
+id = "the_names_feed_at_290_k"
+tolerance = 1e-06
+source = """NeqSim 3.20.0, from `validation/neqsim/captures/wax_amount_probe.tsv`: methane 70,
+n-heptane 10, nc14 10 and nc20 10 at 5 bara, where **no wax forms** and the flash is
+two-phase - gas `0.692281226945417` against oil `0.307718773054583`. The model reaches that
+answer through the two-phase fallback, because the three-phase set does not converge here,
+and the state it returns is the flash's own. `eos.tp_multiflash` reproduces the same two
+fractions, which is what ties the fallback to the model it falls back to."""
+[cases.inputs]
+components = ["methane", "n-heptane", "nc14", "nc20"]
+eos = "srk"
+T = 290.0
+P = 500000.0
+z = [0.7, 0.1, 0.1, 0.1]
+[cases.expected]
+wax_fraction = 0.0
+phase_count = 2
+[[cases]]
+id = "the_names_feed_at_275_k"
+tolerance = 1e-06
+source = """The same feed at 275 K, still two-phase: gas `0.689807577452219` against oil
+`0.310192422547781`. It is the last state before the wax appears, so a model that formed one
+early would fail here rather than at a state where it already does."""
+[cases.inputs]
+components = ["methane", "n-heptane", "nc14", "nc20"]
+eos = "srk"
+T = 275.0
+P = 500000.0
+z = [0.7, 0.1, 0.1, 0.1]
+[cases.expected]
+wax_fraction = 0.0
+phase_count = 2
+[[cases]]
+id = "the_names_feed_at_265_k"
+tolerance = 1e-06
+source = """**The tolerance is `1e-6`, which is NeqSim's own stopping criterion and therefore the
+finest this can be held to**: its fraction solve ends at `ans.norm2() > 1e-6`, and the three
+wax states here agree to `2.95e-8`, `2.12e-7` and `1.38e-7` relative. A tighter tolerance
+would pin where NeqSim stopped rather than the state it stopped at.
+
+**The wax appears**: three phases - gas `0.691424728665901`, oil
+`0.237901878847604` and wax `0.0706733924864949`. The state is a real one: `x_i phi_i`
+agrees across the three phases to `9.2e-08`, which is NeqSim's own convergence criterion, and
+the material balance closes to `6.3e-09`."""
+[cases.inputs]
+components = ["methane", "n-heptane", "nc14", "nc20"]
+eos = "srk"
+T = 265.0
+P = 500000.0
+z = [0.7, 0.1, 0.1, 0.1]
+[cases.expected]
+wax_fraction = 0.0706733924864949
+phase_count = 3
+[[cases]]
+id = "the_names_feed_at_255_k"
+tolerance = 1e-06
+source = """The amount nearly doubles to `0.132007556310333`, with the oil falling from
+`0.2379` to `0.1749` and the gas holding at `0.6931` - the wax is what leaves the oil, which
+is the shape a precipitation curve has."""
+[cases.inputs]
+components = ["methane", "n-heptane", "nc14", "nc20"]
+eos = "srk"
+T = 255.0
+P = 500000.0
+z = [0.7, 0.1, 0.1, 0.1]
+[cases.expected]
+wax_fraction = 0.132007556310333
+phase_count = 3
+[[cases]]
+id = "the_names_feed_at_245_k"
+tolerance = 1e-06
+source = """`0.154193075421103` at 245 K, the coldest state of the capture that has three
+phases. **235 K is not pinned**: NeqSim collapses the whole feed to one oil phase there where
+this finds gas `0.1420`, oil `0.6934` and wax `0.1653`, and the divergence is in the *phase
+count* rather than in the wax - azoth's own two-phase flash gives oil `0.3174` and gas
+`0.6826` at that state, so the disagreement is with NeqSim's multiphase stability check and
+not with this model."""
+[cases.inputs]
+components = ["methane", "n-heptane", "nc14", "nc20"]
+eos = "srk"
+T = 245.0
+P = 500000.0
+z = [0.7, 0.1, 0.1, 0.1]
+[cases.expected]
+wax_fraction = 0.154193075421103
+phase_count = 3

@@ -672,6 +672,46 @@ impl CalcResult for WaxSolidFugacityResult {
     }
 }
 
+/// Result of `eos.tp_multiflash_wax`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TpMultiflashWaxResult {
+    /// The fraction of the feed's moles in the wax phase, and zero where none forms.
+    pub wax_fraction: f64,
+    /// How many phases the feed splits into: two, or three where the wax survives.
+    pub phase_count: u32,
+    /// The mole fraction of the feed in each phase, summing to one, the wax last.
+    pub beta: Vec<f64>,
+    /// The composition of each phase, one vector per phase.
+    pub x: Vec<Vec<f64>>,
+    /// Fraction-solve steps taken.
+    pub iterations: u32,
+    /// The norm of the last fraction correction.
+    pub residual: f64,
+    /// Whether the residual met the tolerance. **False means the two-phase answer was
+    /// returned**, so this is the flag that says which of the two was solved.
+    pub converged: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TpMultiflashWaxResult {
+    const CALC_ID: &'static str = "eos.tp_multiflash_wax";
+    const FIELDS: &'static [&'static str] = &[
+        "wax_fraction",
+        "phase_count",
+        "beta",
+        "x",
+        "iterations",
+        "residual",
+        "converged",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.tbp_fraction_properties`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TbpFractionPropertiesResult {

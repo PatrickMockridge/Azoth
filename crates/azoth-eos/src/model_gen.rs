@@ -54,6 +54,7 @@
 //!   - specs/models/eos/thermal_conductivity.toml
 //!   - specs/models/eos/tp_flash_saft.toml
 //!   - specs/models/eos/tp_multiflash.toml
+//!   - specs/models/eos/tp_multiflash_wax.toml
 //!   - specs/models/eos/ts_flash.toml
 //!   - specs/models/eos/tu_flash.toml
 //!   - specs/models/eos/tv_flash.toml
@@ -6473,6 +6474,148 @@ pub static TP_MULTIFLASH_SPEC: ModelSpec = ModelSpec {
     cases: TP_MULTIFLASH_CASES,
 };
 
+static TP_MULTIFLASH_WAX_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+];
+
+static TP_MULTIFLASH_WAX_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_names_feed_at_290_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 290.0), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "n-heptane", "nc14", "nc20"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.7, 0.1, 0.1, 0.1])],
+        matrices: &[],
+        expected: &[("wax_fraction", 0.0), ("phase_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_names_feed_at_275_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 275.0), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "n-heptane", "nc14", "nc20"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.7, 0.1, 0.1, 0.1])],
+        matrices: &[],
+        expected: &[("wax_fraction", 0.0), ("phase_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_names_feed_at_265_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 265.0), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "n-heptane", "nc14", "nc20"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.7, 0.1, 0.1, 0.1])],
+        matrices: &[],
+        expected: &[("wax_fraction", 0.0706733924864949), ("phase_count", 3.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_names_feed_at_255_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 255.0), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "n-heptane", "nc14", "nc20"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.7, 0.1, 0.1, 0.1])],
+        matrices: &[],
+        expected: &[("wax_fraction", 0.132007556310333), ("phase_count", 3.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_names_feed_at_245_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 245.0), ("P", 500000.0)],
+        flags: &[],
+        lists: &[("components", &["methane", "n-heptane", "nc14", "nc20"])],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.7, 0.1, 0.1, 0.1])],
+        matrices: &[],
+        expected: &[("wax_fraction", 0.154193075421103), ("phase_count", 3.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+static TP_MULTIFLASH_WAX_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "multiphase_fraction_newton",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 50,
+    bracket: None,
+    initialisation: Some("two_phase_flash_plus_wax"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.tp_multiflash_wax`.
+pub static TP_MULTIFLASH_WAX_SPEC: ModelSpec = ModelSpec {
+    id: "eos.tp_multiflash_wax",
+    kind: "procedure",
+    algorithm: Some(&TP_MULTIFLASH_WAX_ALGORITHM),
+    checks: TP_MULTIFLASH_WAX_CHECKS,
+    cases: TP_MULTIFLASH_WAX_CASES,
+};
+
 static TS_FLASH_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -8172,6 +8315,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &THERMAL_CONDUCTIVITY_SPEC,
     &TP_FLASH_SAFT_SPEC,
     &TP_MULTIFLASH_SPEC,
+    &TP_MULTIFLASH_WAX_SPEC,
     &TS_FLASH_SPEC,
     &TU_FLASH_SPEC,
     &TV_FLASH_SPEC,

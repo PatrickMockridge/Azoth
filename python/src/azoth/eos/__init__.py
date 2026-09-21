@@ -166,6 +166,7 @@ from azoth.core.result import (
     ThFlashResult,
     TpFlashSaftResult,
     TpMultiflashResult,
+    TpMultiflashWaxResult,
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
@@ -305,6 +306,7 @@ __all__ = [
     "th_flash",
     "tp_flash_saft",
     "tp_multiflash",
+    "tp_multiflash_wax",
     "ts_flash",
     "tu_flash",
     "tv_flash",
@@ -2076,6 +2078,36 @@ def wax_solid_fugacity(
         T=T,
         P=P,
         eos=eos,
+    )
+
+
+def tp_multiflash_wax(
+    components: list[str], T: Q, P: Q, z: list[float], eos: str = "srk"
+) -> TpMultiflashWaxResult:
+    """The fraction of a feed that is wax at a temperature and pressure.
+
+    NeqSim's ``TPmultiflashWAX``, and :func:`tp_multiflash` with one more phase in the set:
+    the wax solid's fugacity coefficient comes from :func:`wax_solid_fugacity` and depends on
+    the state alone, so where a cubic phase's coefficients are rebuilt at every trial the
+    solid's are one vector throughout. A substance that is not a wax former is excluded by
+    NeqSim's ``1e50`` marker rather than by leaving it out of the phase.
+
+    ``converged`` is False where the wax does not survive and the answer is the two-phase
+    flash's - which is the same state at those temperatures, and the flag says which of the
+    two was solved.
+
+    ``components`` names the substances because the wax flag and the melt data are the
+    databank's own columns. ``eos`` is the cubic the fluid runs, and it is also the one each
+    wax former's reference liquid is built from.
+
+    Raises:
+        InvalidInputError: if a wax former carries no melt data.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.tp_multiflash_wax`.
+    """
+    return resolve("eos.tp_multiflash_wax")(  # type: ignore[no-any-return]
+        components=components, T=T, P=P, z=z, eos=eos
     )
 
 

@@ -10,7 +10,7 @@ use azoth_core::units::{kelvins, pascals};
 use azoth_eos::Cubic;
 use azoth_eos::databank;
 use azoth_eos::mixture::{RootSide, wilson_k};
-use azoth_eos::multiphase::{MultiphasePhase, solve_phase_fractions};
+use azoth_eos::multiphase::{MultiphasePhase, PhaseKind, solve_phase_fractions};
 
 fn phases_from_wilson(
     mixture: &azoth_eos::Mixture,
@@ -27,12 +27,12 @@ fn phases_from_wilson(
         MultiphasePhase {
             fraction: 0.5,
             composition: vapour_raw.iter().map(|v| v / vapour_total).collect(),
-            side: RootSide::Vapour,
+            kind: PhaseKind::Cubic(RootSide::Vapour),
         },
         MultiphasePhase {
             fraction: 0.5,
             composition: liquid_raw.iter().map(|v| v / liquid_total).collect(),
-            side: RootSide::Liquid,
+            kind: PhaseKind::Cubic(RootSide::Liquid),
         },
     ]
 }
