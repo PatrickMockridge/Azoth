@@ -98,12 +98,13 @@ public class WaxProbe {
           // is what the wax phase's components are; the same component in the gas is an
           // ordinary cubic one, and its coefficient there is the cubic's. Printing both for
           // one name would make the model look like it agreed with itself.
-          if (phase.getType() == neqsim.thermo.phase.PhaseType.WAX) {
-            row(
-                "wax_fugcoef[" + name + "]",
-                phase.getComponent(i).getFugacityCoefficient());
-            row("wax_x[" + name + "]", phase.getComponent(i).getx());
-          }
+          // **Every phase's coefficient for every component**, because the question the
+          // capture has to answer is whether the wax is in equilibrium with the phases
+          // beside it: `x_i phi_i` must be one number across them, and a model that solved
+          // only its own equality would look the same in its own rows.
+          row(
+              "fugcoef[" + p + "][" + name + "]",
+              phase.getComponent(i).getFugacityCoefficient());
         }
       }
 
