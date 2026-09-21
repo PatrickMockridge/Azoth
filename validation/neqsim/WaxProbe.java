@@ -74,6 +74,12 @@ public class WaxProbe {
         row("component[" + i + "].moles", component.getNumberOfmoles());
         System.out.printf("component[%d] = %s%n", i, name);
         row("component[" + i + "].wax_former", component.isWaxFormer() ? 1.0 : 0.0);
+        // **The Peneloux shift, which a wax calculation turns out to need.** `addTBPfraction`
+        // fits `racketZ` from a reference flash and `ComponentSrk.getVolumeCorrection` turns
+        // it into the volume translation the cubic and the fugacity coefficient carry; a port
+        // without it is a per cent out, and the per cent grows with the cut's molar mass.
+        row("component[" + i + "].racket_z", component.getRacketZ());
+        row("component[" + i + "].volume_correction", component.getVolumeCorrection());
         row("component[" + i + "].heat_of_fusion", component.getHeatOfFusion());
         row("component[" + i + "].triple_point_temperature", component.getTriplePointTemperature());
         if (component.getAttractiveTerm() != null) {
