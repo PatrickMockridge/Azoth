@@ -16,10 +16,10 @@ the physics behind them:
   process skill can be `azoth`-basis until tranche P7.
 - **Electrolytes** — P8 is closed: `eos.pitzer_phase`, `eos.kent_eisenberg_phase`,
   `eos.desmukh_mather_phase`, `eos.soreide_whitson_phase` and the Fürst pair
-  (`eos.furst_electrolyte_phase`, `eos.furst_electrolyte_mod2004_phase`) are ported, and no
-  skill drives them. The brine and scale skill waits on P9 and both dehydration skills on
-  P11, so this is the one closed tranche that promotes nothing: the physics a scale
-  calculation is built on is here, and the calculation is not.
+  (`eos.furst_electrolyte_phase`, `eos.furst_electrolyte_mod2004_phase`) are ported. The one
+  skill built on them, `azoth-produced-water-scale-screening`, was promoted when P9 landed
+  `eos.scale_saturation_ratio` and `eos.salt_precipitation`; both dehydration skills still
+  wait on P11.
 - **Activity-coefficient models (NRTL, UNIFAC, UNIQUAC, Wilson, Van Laar)** — P5 is
   closed: all five activity models are ported, and all five have a phase
   (`eos.ge_nrtl_phase`, `eos.ge_unifac_phase`, `eos.ge_uniquac_phase`,
