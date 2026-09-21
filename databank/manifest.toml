@@ -35,18 +35,46 @@ reason = """\
     not-a-value: a row with no type has no critical constants to read either, so there is \
     nothing to carry across."""
 [[upstreams.files.rows]]
-selector = "COMPTYPE in {ice, salt, seawater, asphaltene}"
-count = 4
+selector = "COMPTYPE == 'ice'"
+count = 1
 reason = """\
-    not-ported: hydrate, electrolyte and asphaltene models; NeqSim's `PhaseHydrate`, \
-    `ComponentSalt` and `pvtsimulation/flowassurance/`. Each is a phase or a mixture rather \
-    than a substance, and the model that would read the row is not ported. **The asphaltene \
-    row is the one of the four whose model is reachable**, and it is carried because the route \
-    to it is defective upstream - `setSolidPhaseCheck` turns on the multiphase check as a side \
-    effect and the flash then returns a two-phase fluid as the feed - which `ROADMAP.md` \
-    records. The row is also a placeholder rather than a characterisation: 750 g/mol with a \
-    50000 J/mol heat of fusion at 573.15 K, which `AsphalteneCharacterization` overwrites \
-    the molar mass of."""
+    uncalled-upstream: the ice row, and the route that would read it is dead. Its \
+    `ANTOINESolid*` pair is water's own sublimation curve, `17.38710706` and `-6141.762746`, \
+    which `Component.getSolidVaporPressure` reads - and the only members that reach that are \
+    `ComponentSolid.fugcoef(double, double)`, called by nothing, and \
+    `ComponentHydrate.getEmptyHydrateStructureVapourPressure`'s `type == -1` branch, settable \
+    from nowhere in `src/main`. No `src/main` file calls `addComponent("ice", ...)` either, so \
+    nothing builds the row to begin with."""
+[[upstreams.files.rows]]
+selector = "COMPTYPE == 'salt'"
+count = 1
+reason = """\
+    not-ported: the sodium-bisulfate row. **`ComponentSalt` does not exist** - the name is \
+    resolvable through `ComponentNameResolver` and no class in the checkout reads the row - \
+    and no `src/main` file calls `addComponent("NaHSO4", ...)`. The salt physics this project \
+    carries does not read a component row at all: `eos.scale_saturation_ratio` and \
+    `eos.salt_precipitation` build their ions from an aqueous composition. Its \
+    `ANTOINESolid*` triple is zero, so the dead solid-vapour route cannot read it either."""
+[[upstreams.files.rows]]
+selector = "COMPTYPE == 'seawater'"
+count = 1
+reason = """\
+    uncalled-upstream: the same dead solid-vapour-pressure route as the `ice` row, and its \
+    Antoine pair is identical. No `src/main` file calls `addComponent("seawater", ...)`. It is \
+    the water row with a sea-salt melting point and a `6010` J/mol heat of fusion where the \
+    `ice` row carries `2700`."""
+[[upstreams.files.rows]]
+selector = "COMPTYPE == 'asphaltene'"
+count = 1
+reason = """\
+    not-ported: the asphaltene models. **This is the one of the four rows whose model is \
+    reachable**, and it is carried because the route to it is defective upstream - \
+    `setSolidPhaseCheck` turns on the multiphase check as a side effect and the flash then \
+    returns a two-phase fluid as the feed - which `ROADMAP.md` records. The route is \
+    `AsphalteneCharacterization`, whose one `src/main` construction site is \
+    `AsphalteneCharacterization.java:235`. The row is also a placeholder rather than a \
+    characterisation: 750 g/mol with a 50000 J/mol heat of fusion at 573.15 K, which \
+    `AsphalteneCharacterization` overwrites the molar mass of."""
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "dropped"
