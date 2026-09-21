@@ -75,6 +75,10 @@ class Component:
     #: zero rather than computing with it.
     heat_of_fusion: float = 0.0
     triple_point_temperature: float = 0.0
+    #: The solid route's tabulated polynomials, read by ``eos.tp_solid_flash`` alone.
+    cp_solid: tuple[float, ...] = ()
+    cp_liquid: tuple[float, ...] = ()
+    solid_density_coefs: tuple[float, ...] = ()
 
     def __post_init__(self) -> None:
         for name in ("Tc", "Pc"):

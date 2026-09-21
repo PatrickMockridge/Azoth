@@ -435,28 +435,28 @@ unit = "J/(mol*K)"
 reason = "not-ported: NeqSim's `ChemicalReactionOperations` and `ModifiedRANDSolver` read it for reaction equilibrium; azoth's `eos.molar_enthalpy_entropy` does not (`getHID` zeroes the formation enthalpy)"
 [[upstreams.files.columns]]
 name = "SOLIDDENSITYCOEFS1"
-disposition = "vendored"
+disposition = "used"
 as = "soliddensitycoefs1"
 unit = "neqsim-internal"
-reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"
+reason = "read by `eos.tp_solid_flash`, as the solid's molar volume at the triple point, through `getPureComponentSolidDensity`. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "SOLIDDENSITYCOEFS2"
-disposition = "vendored"
+disposition = "used"
 as = "soliddensitycoefs2"
 unit = "neqsim-internal"
-reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"
+reason = "read by `eos.tp_solid_flash`, as the same polynomial, at the next power. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "SOLIDDENSITYCOEFS3"
-disposition = "vendored"
+disposition = "used"
 as = "soliddensitycoefs3"
 unit = "neqsim-internal"
-reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"
+reason = "read by `eos.tp_solid_flash`, as the same polynomial. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "SOLIDDENSITYCOEFS4"
-disposition = "vendored"
+disposition = "used"
 as = "soliddensitycoefs4"
 unit = "neqsim-internal"
-reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"
+reason = "read by `eos.tp_solid_flash`, as the same polynomial. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "SOLIDDENSITYCOEFS5"
 disposition = "dropped"
@@ -912,72 +912,62 @@ reason = """\
     port, so it is carried with its reader named rather than left unread."""
 [[upstreams.files.columns]]
 name = "CPsolid1"
-disposition = "vendored"
+disposition = "used"
 as = "cpsolid1"
 unit = "neqsim-internal"
-reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"
+reason = "read by `eos.tp_solid_flash`, as the solid's heat capacity at the triple point, through `getPureComponentCpSolid`. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "CPsolid2"
-disposition = "vendored"
+disposition = "used"
 as = "cpsolid2"
 unit = "neqsim-internal"
-reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"
+reason = "read by `eos.tp_solid_flash`, as the same polynomial, at the next power. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "CPsolid3"
-disposition = "vendored"
+disposition = "used"
 as = "cpsolid3"
 unit = "neqsim-internal"
-reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"
+reason = "read by `eos.tp_solid_flash`, as the same polynomial. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "CPsolid4"
-disposition = "vendored"
+disposition = "used"
 as = "cpsolid4"
 unit = "neqsim-internal"
-reason = "not-ported: the solid phase; NeqSim's `SolidFlash1` and `ComponentSolid`"
+reason = "read by `eos.tp_solid_flash`, as the same polynomial. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "CPsolid5"
 disposition = "dropped"
 reason = "empty-upstream: zero over all 348 rows kept"
 [[upstreams.files.columns]]
 name = "CPliquid1"
-disposition = "vendored"
+disposition = "used"
 as = "cpliquid1"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in \
-    `physicalproperties/`"""
+reason = "read by `eos.tp_solid_flash`, as the liquid's heat capacity at the triple point, beside `CPsolid`. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "CPliquid2"
-disposition = "vendored"
+disposition = "used"
 as = "cpliquid2"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in \
-    `physicalproperties/`"""
+reason = "read by `eos.tp_solid_flash`, as the same polynomial, at the next power. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "CPliquid3"
-disposition = "vendored"
+disposition = "used"
 as = "cpliquid3"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in \
-    `physicalproperties/`"""
+reason = "read by `eos.tp_solid_flash`, as the same polynomial. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "CPliquid4"
-disposition = "vendored"
+disposition = "used"
 as = "cpliquid4"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in \
-    `physicalproperties/`"""
+reason = "read by `eos.tp_solid_flash`, as the same polynomial. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "CPliquid5"
-disposition = "vendored"
+disposition = "used"
 as = "cpliquid5"
 unit = "neqsim-internal"
-reason = """\
-    not-ported: the liquid heat-capacity correlation; NeqSim reads `CPliquid1`-`5` in \
-    `physicalproperties/`"""
+reason = "read by `eos.tp_solid_flash`, as the same polynomial. NeqSim reads it in `Component`'s constructor and `ComponentSolid.fugcoef2` is what consumes it."
 [[upstreams.files.columns]]
 name = "MCPR1"
 disposition = "vendored"

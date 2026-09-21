@@ -161,6 +161,12 @@ pub struct Component {
     pub heat_of_fusion: f64,
     /// The triple-point temperature, in K.
     pub triple_point_temperature: f64,
+    /// The solid's heat-capacity coefficients, in the table's own units.
+    pub cp_solid: [f64; 4],
+    /// The liquid's heat-capacity coefficients.
+    pub cp_liquid: [f64; 5],
+    /// The solid's density-correlation coefficients, zero where the table states none.
+    pub solid_density_coefs: [f64; 4],
     /// The association parameters, or `None` for a component with no site scheme.
     ///
     /// **A component that carries this is not described by its critical constants
@@ -204,6 +210,9 @@ impl Component {
             wax_former: false,
             heat_of_fusion: 0.0,
             triple_point_temperature: 0.0,
+            cp_solid: [0.0; 4],
+            cp_liquid: [0.0; 5],
+            solid_density_coefs: [0.0; 4],
             association: None,
         })
     }
@@ -244,6 +253,23 @@ impl Component {
         self.wax_former = wax_former;
         self.heat_of_fusion = heat_of_fusion;
         self.triple_point_temperature = triple_point_temperature;
+        self
+    }
+
+    /// This component, with the solid route's tabulated polynomials attached.
+    ///
+    /// Only `eos.tp_solid_flash` reads them, and only for a component it is asked to
+    /// precipitate; a cubic ignores the field entirely.
+    #[must_use]
+    pub fn with_solid_tables(
+        mut self,
+        cp_solid: [f64; 4],
+        cp_liquid: [f64; 5],
+        solid_density_coefs: [f64; 4],
+    ) -> Self {
+        self.cp_solid = cp_solid;
+        self.cp_liquid = cp_liquid;
+        self.solid_density_coefs = solid_density_coefs;
         self
     }
 

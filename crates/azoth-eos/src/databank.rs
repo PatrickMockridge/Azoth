@@ -308,6 +308,22 @@ pub struct Entry {
     /// substance and not only the solids - the wax probe's capture prints methane at
     /// `941.0` J/mol, which is its own.
     pub heat_of_fusion: f64,
+    /// The solid's heat capacity, `[c1, c2, c3, c4]` of `Cp = (c1 + c2 T + c3 T**2 + c4 T**3)/1000`
+    /// in J/(mol K): NeqSim's `CPsolid1`-`4`.
+    ///
+    /// The `/1000` is the table's own - the coefficients are per kmol - and it is applied
+    /// where the polynomial is evaluated, so the two columns' values are carried as the file
+    /// states them.
+    pub cp_solid: [f64; 4],
+    /// The liquid's heat capacity, `[c1, ..., c5]` of the same polynomial: `CPliquid1`-`5`.
+    pub cp_liquid: [f64; 5],
+    /// The solid's density correlation, `[c1, c2, c3, c4]` of `rho = M 1000 (c1 + c2 T + c3 T**2 + c4 T**3)`:
+    /// NeqSim's `SOLIDDENSITYCOEFS1`-`4`.
+    ///
+    /// **Zero on the rows the table states none for, water among them**, and NeqSim falls
+    /// back to the liquid's own molar volume there - which is what makes the solid-liquid
+    /// volume change vanish for water.
+    pub solid_density_coefs: [f64; 4],
     /// Triple-point temperature, in K: NeqSim's `TRIPLEPOINTTEMPERATURE`, read beside it.
     /// Methane's is `90.69` K.
     pub triple_point_temperature: f64,
@@ -382,6 +398,7 @@ impl Entry {
                     self.heat_of_fusion,
                     self.triple_point_temperature,
                 )
+                .with_solid_tables(self.cp_solid, self.cp_liquid, self.solid_density_coefs)
                 .with_association(self.association.clone()),
         )
     }
@@ -1024,6 +1041,19 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "waxformer",
         "heatoffusion",
         "triplepointtemperature",
+        "cpsolid1",
+        "cpsolid2",
+        "cpsolid3",
+        "cpsolid4",
+        "cpliquid1",
+        "cpliquid2",
+        "cpliquid3",
+        "cpliquid4",
+        "cpliquid5",
+        "soliddensitycoefs1",
+        "soliddensitycoefs2",
+        "soliddensitycoefs3",
+        "soliddensitycoefs4",
         "hydratea1small",
         "hydrateb1small",
         "hydratea1large",
@@ -1151,6 +1181,30 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     .and_then(|value| value.trim().parse::<f64>().ok())
                     .is_some_and(|value| value == 1.0),
                 heat_of_fusion: number(&record, index["heatoffusion"], "heatoffusion", row)?,
+                cp_solid: {
+                    let mut fitted = [0.0; 4];
+                    for (k, slot) in fitted.iter_mut().enumerate() {
+                        let column = format!("cpsolid{}", k + 1);
+                        *slot = number(&record, index[column.as_str()], &column, row)?;
+                    }
+                    fitted
+                },
+                cp_liquid: {
+                    let mut fitted = [0.0; 5];
+                    for (k, slot) in fitted.iter_mut().enumerate() {
+                        let column = format!("cpliquid{}", k + 1);
+                        *slot = number(&record, index[column.as_str()], &column, row)?;
+                    }
+                    fitted
+                },
+                solid_density_coefs: {
+                    let mut fitted = [0.0; 4];
+                    for (k, slot) in fitted.iter_mut().enumerate() {
+                        let column = format!("soliddensitycoefs{}", k + 1);
+                        *slot = number(&record, index[column.as_str()], &column, row)?;
+                    }
+                    fitted
+                },
                 triple_point_temperature: number(
                     &record,
                     index["triplepointtemperature"],
@@ -1473,6 +1527,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 wax_former: false,
                 heat_of_fusion: 0.0,
                 triple_point_temperature: 0.0,
+                cp_solid: [0.0; 4],
+                cp_liquid: [0.0; 5],
+                solid_density_coefs: [0.0; 4],
                 lambda_r_mie: 0.0,
                 lambda_a_mie: 0.0,
                 m_mie: 0.0,
@@ -1541,6 +1598,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             wax_former: base.wax_former,
             heat_of_fusion: base.heat_of_fusion,
             triple_point_temperature: base.triple_point_temperature,
+            cp_solid: base.cp_solid,
+            cp_liquid: base.cp_liquid,
+            solid_density_coefs: base.solid_density_coefs,
             lambda_r_mie: base.lambda_r_mie,
             lambda_a_mie: base.lambda_a_mie,
             m_mie: base.m_mie,

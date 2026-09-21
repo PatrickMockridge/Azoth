@@ -555,6 +555,12 @@ class DatabankEntry:
     #: unconditionally, and methane's own `941.0` J/mol at `90.69` K is what that gives.
     heat_of_fusion: float
     triple_point_temperature: float
+    #: The solid's and the liquid's heat-capacity polynomials and the solid's density one:
+    #: NeqSim's ``CPsolid1``-``4``, ``CPliquid1``-``5`` and ``SOLIDDENSITYCOEFS1``-``4``. The
+    #: ``/1000`` the table's own coefficients carry is applied where the polynomial is read.
+    cp_solid: tuple[float, float, float, float]
+    cp_liquid: tuple[float, float, float, float, float]
+    solid_density_coefs: tuple[float, float, float, float]
     #: The ionic charge, in units of the elementary charge; zero for a neutral. **Zero
     #: does not mean "not an ion"**: four rows typed ``"ion"`` carry it - ``h+pzcoo-`` is
     #: a zwitterion and ``caco3``, ``nacl`` and ``cacl2`` are neutral salts filed with
@@ -603,6 +609,9 @@ class DatabankEntry:
             wax_former=self.wax_former,
             heat_of_fusion=self.heat_of_fusion,
             triple_point_temperature=self.triple_point_temperature,
+            cp_solid=self.cp_solid,
+            cp_liquid=self.cp_liquid,
+            solid_density_coefs=self.solid_density_coefs,
             # Carried whether or not the mixture runs it: an associating equation of state
             # reads it and a cubic ignores it, and whether a *phase model* associates is
             # the model's decision rather than the substance's - `SystemNRTL` builds a
@@ -717,6 +726,11 @@ def _table() -> dict[str, DatabankEntry]:
             wax_former=float(row["waxformer"]) == 1.0,
             heat_of_fusion=float(row["heatoffusion"]),
             triple_point_temperature=float(row["triplepointtemperature"]),
+            cp_solid=tuple(float(row[f"cpsolid{k}"]) for k in range(1, 5)),  # type: ignore[arg-type]
+            cp_liquid=tuple(float(row[f"cpliquid{k}"]) for k in range(1, 6)),  # type: ignore[arg-type]
+            solid_density_coefs=tuple(  # type: ignore[arg-type]
+                float(row[f"soliddensitycoefs{k}"]) for k in range(1, 5)
+            ),
             alpha_params={
                 "schwartzentruber": _three(
                     row, "schwartzentruber1", "schwartzentruber2", "schwartzentruber3"
@@ -1358,6 +1372,9 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             wax_former=False,
             heat_of_fusion=0.0,
             triple_point_temperature=0.0,
+            cp_solid=(0.0, 0.0, 0.0, 0.0),
+            cp_liquid=(0.0, 0.0, 0.0, 0.0, 0.0),
+            solid_density_coefs=(0.0, 0.0, 0.0, 0.0),
             ionic_charge=_card_charge(override),
             # The card states metres and the databank holds ångström; this is the crossing.
             deshmukh_mather_diameter=_card_diameter(override),
