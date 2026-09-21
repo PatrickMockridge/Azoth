@@ -596,6 +596,7 @@ name = "associationsites"
 disposition = "used"
 as = "associationsites"
 unit = "count"
+reason = "read by the CPA phases' site solve. **Seven rows contradict the scheme beside them** - `acetic acid`, `formic acid`, `hydrochloric acid`, `sulfuric acid`, `nitric acid`, `hno3` and `h2so4` name a `1A` scheme and carry a count of zero, each with a fitted 40323 or 41917 J/mol. The scheme is what claims the site exists, so the count is the row's own error, and the model runs those components unassociated as NeqSim does. `validation/neqsim/captures/cpa_scheme_probe.tsv` prints one: `phase sites = 0`."
 [[upstreams.files.columns]]
 name = "associationscheme"
 disposition = "used"

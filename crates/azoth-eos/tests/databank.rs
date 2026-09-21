@@ -541,7 +541,14 @@ fn the_only_blank_association_cells_are_pr_volumes_on_zero_rows() {
         assert_eq!(a.energy, 0.0);
         assert_eq!(a.a_pr, 0.0);
         assert_eq!(a.b_pr, 0.0);
-        assert!(!a.scheme.self_bonds(), "{name} is a 1A component");
+        // **Inert because it has no sites**, and not because its scheme cannot bond: a `1A`
+        // component self-associates, so these two rows are the table's own contradiction -
+        // a scheme that names a site and a count that has none.
+        assert_eq!(a.sites, 0, "{name} carries a 1A scheme and no sites");
+        assert!(
+            a.scheme.self_bonds(),
+            "{name}'s scheme bonds, for what the count allows"
+        );
     }
 }
 

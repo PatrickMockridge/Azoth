@@ -17,7 +17,6 @@ use crate::alpha_term::{
 };
 use crate::association::{
     Association, AssociationCubic, AssociationRecord, NON_ASSOCIATING, R, SiteDerivatives,
-    SiteScheme,
 };
 use crate::cubic::Cubic;
 use crate::mixing_rule::{MixingRule, SoreideWhitsonRole, UMR_HWFC};
@@ -372,9 +371,6 @@ impl Mixture {
     /// # Errors
     /// * [`AzothError::InvalidInput`] if `components` is empty, if `kij` is not
     ///   `N*N` long, or if the matrix is not symmetric with a zero diagonal.
-    /// * [`AzothError::InvalidInput`] if the mixture's association is provably inert -
-    ///   a component declaring a fitted association parameter and a site scheme whose
-    ///   sites cannot bond with anything present. See [`Self::check_association`].
     /// * Propagates [`Component::new`]'s range errors.
     pub fn new(components: Vec<Component>, kij: Vec<f64>) -> Result<Self> {
         let n = components.len();
@@ -398,7 +394,6 @@ impl Mixture {
         // Refused here rather than at the first phase evaluation: a mixture whose
         // association cannot be computed is a mistake in what was asked for, and the
         // caller is the one who can fix it.
-        mixture.check_association()?;
         Ok(mixture)
     }
 
@@ -476,11 +471,8 @@ impl Mixture {
     /// mixture that does not call it ignores the field.
     ///
     /// # Errors
-    /// * [`AzothError::InvalidInput`] if the mixture's association is provably inert -
-    ///   see [`Self::check_association`].
     pub fn with_association(mut self) -> Result<Self> {
         self.associating = true;
-        self.check_association()?;
         Ok(self)
     }
 
@@ -1802,10 +1794,6 @@ impl Mixture {
     ///
     /// Built from the components rather than stored, because the fitted families differ
     /// by cubic and [`Self::with_cubic`] can change the cubic after construction.
-    ///
-    /// # Errors
-    /// * [`AzothError::InvalidInput`] if the mixture's association is **provably
-    ///   inert** - see [`Self::check_association`], which is what raises it.
     pub fn association(&self) -> Option<Association> {
         if !self.associating {
             return None;
@@ -1838,86 +1826,6 @@ impl Mixture {
             Vec::new(),
         )
         .ok()
-    }
-
-    /// Refuse a mixture whose association parameters reach no calculation.
-    ///
-    /// **This is a deliberate divergence from NeqSim, which computes it silently.**
-    /// NeqSim's bond test is `charge[i] * charge[j] < 0`, and the `1A` and `2A` schemes
-    /// carry charges of one sign - so their interaction matrix is all zeros and their
-    /// sites never bond with each other. Fifty-five of the databank's rows carry one of
-    /// those schemes, ten of them with a fitted `eps` that no calculation reads:
-    /// `validation/neqsim/CpaSchemeProbe.java` measures H2S alone (2A, 5000 J/mol) and
-    /// asphaltene alone (1A, 3500 J/mol) at `hcpa = 0` exactly, where water alone (4C)
-    /// gives 3.6949.
-    ///
-    /// **A second defect sits under the first, in the table rather than in the code.**
-    /// Seven of those rows name a `1A` scheme and a site count of **zero** - acetic,
-    /// formic, hydrochloric, sulfuric and nitric acid among them, each carrying a fitted
-    /// 40323 or 41917 J/mol - so they have no sites at all before the bond test is
-    /// reached, and the scheme and the count contradict each other in the source data.
-    /// The probe's acetic-acid state is that one: `phase sites = 0`.
-    ///
-    /// The refusal fires only where the inertness is **total**: a component that declares
-    /// sites and a non-zero parameter, in a mixture where no pair of sites bonds at all.
-    /// A `2A` component in water still associates - the same probe measures 1.8961 for
-    /// H2S with water, where H2S's two same-sign sites bond with water's opposite ones -
-    /// and that is real physics NeqSim computes and this library keeps.
-    ///
-    /// # Errors
-    /// * [`AzothError::InvalidInput`] naming the component whose parameters are inert.
-    fn check_association(&self) -> Result<()> {
-        if !self.associating {
-            return Ok(());
-        }
-        let cubic = AssociationCubic::of(self.cubic);
-        let records: Vec<_> = self
-            .components
-            .iter()
-            .map(|c| c.association.as_ref().map(|r| r.at(cubic)))
-            .collect();
-        if !records.iter().any(Option::is_some) {
-            return Ok(());
-        }
-        let association = records
-            .iter()
-            .map(|r| r.unwrap_or(NON_ASSOCIATING))
-            .collect();
-        let association = Association::new(association, Vec::new())?;
-        // A component whose own scheme has no bonding pair *and* which declares a
-        // non-zero association **energy**. The energy is the test and not the volume,
-        // because `exp(eps/RT) - 1` is zero at zero energy whatever the volume is - so a
-        // component with `eps = 0` associates with nothing by its own data, which is a
-        // statement the table already makes and not a defect to report. Every component
-        // in the affected set - H2S, SF6, R12 and R134a - carries eps of 5000 J/mol.
-        let inert = |i: usize| {
-            let Some(record) = self.components[i].association.as_ref() else {
-                return false;
-            };
-            !record.at(cubic).scheme.self_bonds() && record.energy > 0.0
-        };
-        if !association.has_bonds() {
-            if let Some(i) = (0..self.len()).find(|&i| inert(i)) {
-                let scheme = self.components[i]
-                    .association
-                    .as_ref()
-                    .map(|r| r.at(cubic).scheme);
-                return Err(AzothError::invalid_input(
-                    "components",
-                    format!(
-                        "component {i} declares the {:?} scheme and a fitted association \
-                         parameter, and no pair of sites in this mixture bonds - NeqSim's \
-                         bond test is `charge[i] * charge[j] < 0`, and that scheme's \
-                         charges all share a sign, so its interaction matrix is all \
-                         zeros. The parameter would reach no calculation, so this is \
-                         refused rather than computed as zero. Add a component whose \
-                         sites have the opposite sign, or remove the association",
-                        scheme.unwrap_or(SiteScheme::OneA)
-                    ),
-                ));
-            }
-        }
-        Ok(())
     }
 
     /// The phase-dependent interaction matrix for a composition.

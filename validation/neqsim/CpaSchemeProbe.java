@@ -4,6 +4,31 @@ import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemSrkCPA;
 
 /**
+ * What becomes of a CPA association energy whose scheme carries one charge sign.
+ *
+ * <p>
+ * {@code CPAMixingRuleHandler}'s bond test was {@code charge[i] * charge[j] < 0}, so the
+ * {@code 1A} scheme - one site of one sign - and the {@code 2A} - two of the same - could not
+ * bond with themselves, and the fitted association energy the databank carries for them reached
+ * no calculation. {@code #3832} replaced the sign test with an all-ones matrix for those two
+ * schemes and left it for {@code 2B} and {@code 4C}, whose sites really are donor and acceptor.
+ * <b>Cross-solvation keeps the sign test</b>, so both numbers here matter: the self term and
+ * the mixture's.
+ *
+ * <p>
+ * <b>The databank's own numbers make it checkable.</b> Five {@code 1A} components carry an
+ * association energy of 40323 or 41917 J/mol - acetic, formic, hydrochloric, sulfuric and
+ * nitric acid - and four {@code 2A} components carry 5000 J/mol: H2S, SF6, R12 and R134a. Those
+ * are fitted values rather than defaulted zeros, and this prints what becomes of them.
+ *
+ * <p>
+ * <b>The second defect is in the table rather than the code, and this still shows it.</b> Seven
+ * of those rows name a {@code 1A} scheme and a site count of zero, so they have no sites before
+ * any bond test is reached; the last state below is one, and its {@code hcpa} is zero for a
+ * different reason. {@code hcpa} is the association's Helmholtz contribution, so zero means the
+ * energy was read by nothing.
+ */
+/**
  * Whether NeqSim's CPA bonds anything for a component whose scheme carries one charge sign.
  *
  * <p>
@@ -59,9 +84,10 @@ public final class CpaSchemeProbe {
 
   public static void main(String[] args) {
     System.out.println("# azoth CpaSchemeProbe - NeqSim master's CPA bond test.");
-    System.out.println("# A site bonds when charge[i]*charge[j] < 0, so a scheme whose sites");
-    System.out.println("# share a sign cannot bond with itself. hcpa is the association's");
-    System.out.println("# Helmholtz contribution: zero means the fitted energy was not read.");
+    System.out.println("# A site bonds when charge[i]*charge[j] < 0, except within the 1A and 2A");
+    System.out.println("# schemes, whose equivalent sites bond with each other; cross-solvation");
+    System.out.println("# keeps the sign test. hcpa is the association's Helmholtz contribution:");
+    System.out.println("# zero means the fitted energy was read by nothing.");
 
     // The control: 4C is two of each sign, so water associates with itself.
     probe("water alone (4C)", new String[][] {{"water", "4C"}}, new double[] {1.0});

@@ -91,14 +91,26 @@ impl SiteScheme {
 
     /// Whether this scheme's own sites `a` and `b` associate.
     ///
-    /// NeqSim's rule is a product sign, so `OneA` and `TwoA` - whose charges all share a
-    /// sign - associate with nothing. That is not a simplification of this port: it is
-    /// what `getInteractionMatrix` computes, and it means a component given the `2A`
-    /// scheme carries a fitted association energy that no calculation reads.
+    /// **`OneA` and `TwoA` bond with themselves.** Their sites are equivalent rather than
+    /// donor and acceptor, so a product-sign test finds no bond anywhere and the fitted
+    /// association energy a `2A` component carries would be read by nothing - which is what
+    /// NeqSim's `CPAMixingRuleHandler` did until #3832 replaced the charge test with an
+    /// all-ones matrix for these two schemes. The other two keep the test, because their
+    /// sites *are* a donor and an acceptor.
+    ///
+    /// **The cross rule is not the same rule.** A site on this component and a site on
+    /// another go through [`Self::associates_across`], which keeps the donor/acceptor test
+    /// for every scheme - so a `2A` component still bonds across to water, as it does in
+    /// NeqSim.
     #[must_use]
     pub fn associates_within(self, a: usize, b: usize) -> bool {
-        let c = self.charges();
-        c[a] * c[b] < 0
+        match self {
+            SiteScheme::OneA | SiteScheme::TwoA => true,
+            _ => {
+                let c = self.charges();
+                c[a] * c[b] < 0
+            }
+        }
     }
 
     /// Whether a site on this scheme associates with a site on `other`.
@@ -129,11 +141,13 @@ impl SiteScheme {
 
     /// Whether this scheme's sites bond with each other at all.
     ///
-    /// False for [`SiteScheme::OneA`] and [`SiteScheme::TwoA`], whose charge vectors carry
-    /// one sign, so NeqSim's product test is positive for every pair and the interaction
-    /// matrix is all zeros. Such a component never self-associates - though it still
-    /// *cross*-associates with an oppositely-charged partner, which is why this is a
-    /// property of the scheme and not a verdict on the component.
+    /// False only for [`SiteScheme::NonAssociating`], which has no sites: every other scheme
+    /// self-associates, including `OneA` and `TwoA`, whose equivalent sites bond through the
+    /// all-ones matrix `#3832` put in place of a sign test they could never pass.
+    ///
+    /// **A false here is a property of the scheme and not a verdict on the component.** A
+    /// component whose *count* is zero has no sites whatever its scheme says, and that is the
+    /// table's own contradiction rather than this rule's.
     #[must_use]
     pub fn self_bonds(self) -> bool {
         let n = self.site_count();
@@ -1497,9 +1511,16 @@ mod tests {
         assert!(!four_c.associates_within(2, 3));
         assert!(SiteScheme::TwoB.associates_within(0, 1));
         assert!(!SiteScheme::TwoB.associates_within(0, 0));
-        // The finding: NeqSim's sign test leaves these two schemes with no bonds at all.
-        assert!(!SiteScheme::OneA.associates_within(0, 0));
-        assert!(!SiteScheme::TwoA.associates_within(0, 1));
+        // **Equivalent sites bond with each other**, and only these two schemes have them:
+        // `OneA`'s single site and `TwoA`'s two are the same site, so their matrices are all
+        // ones. NeqSim's sign test left both with no bonds at all until `#3832`.
+        assert!(SiteScheme::OneA.associates_within(0, 0));
+        assert!(SiteScheme::TwoA.associates_within(0, 0));
+        assert!(SiteScheme::TwoA.associates_within(0, 1));
+        // And the cross rule is not the same rule: like-signed sites on different components
+        // still do not bond, which is what `associates_across` keeps.
+        assert!(!SiteScheme::TwoA.associates_across(0, SiteScheme::TwoA, 1));
+        assert!(SiteScheme::TwoA.associates_across(0, SiteScheme::FourC, 0));
     }
 
     #[test]
@@ -1563,8 +1584,13 @@ mod tests {
         }
     }
 
+    /// **`OneA` and `TwoA` bond, and that is what makes their fitted energies reach a
+    /// calculation.** NeqSim's `CPAMixingRuleHandler` filtered these two schemes by the
+    /// donor/acceptor charge product, which their sites all share a sign under, so their
+    /// interaction matrix was all zeros - `#3832` replaced it with an all-ones one, and a
+    /// `2A` component's 5000 J/mol is read again.
     #[test]
-    fn a_mixture_of_one_a_and_two_a_has_sites_and_no_bonds() {
+    fn a_mixture_of_one_a_and_two_a_bonds() {
         let a = Association::new(
             vec![
                 AssociationComponent {
@@ -1582,11 +1608,17 @@ mod tests {
         )
         .expect("valid parameters");
         assert_eq!(a.site_count(), 3);
-        assert!(
-            !a.has_bonds(),
-            "1A and 2A bond with nothing under NeqSim's sign test, so H2S's 5000 J/mol \
-             association energy reaches no calculation"
-        );
+        assert!(a.has_bonds(), "1A and 2A associate with their own sites");
+
+        // **One pair bonds, not three.** Only `TwoA`'s own two sites are equivalent; `OneA`'s
+        // site and a `TwoA` site are *different substances*, and there the donor/acceptor test
+        // still applies - `#3832` left `setCrossAssociationScheme` alone, so two like-signed
+        // sites on different components still do not bond.
+        let unordered = (0..3)
+            .flat_map(|i| (i + 1..3).map(move |j| (i, j)))
+            .filter(|&(i, j)| a.bonds(i, j))
+            .count();
+        assert_eq!(unordered, 1, "only TwoA's own two sites bond");
     }
 
     #[test]
@@ -1731,11 +1763,13 @@ mod tests {
 
     /// The finding, measured through the solve rather than through the bond table: a `2A`
     /// component carries a fitted energy and no bond, so every site fraction is one, the
-    /// association energy is exactly zero, and - once `h` is the unbonded site count
-    /// rather than the class field's initialiser - so is the fugacity term, because there
-    /// are no unbonded sites to weight the distribution function's derivative with.
+    /// **A `2A` component's own sites bond**, so its fitted energy reaches the calculation:
+    /// the site fractions fall below one, the Helmholtz term is non-zero, and there are
+    /// unbonded sites for the fugacity term to weight. `#3832` is what made this true, and
+    /// `validation/neqsim/captures/cpa_scheme_probe.tsv` is NeqSim's own side - H2S alone
+    /// reads `hcpa = 0.0307464482674069` there, where it read exactly zero before.
     #[test]
-    fn a_two_a_component_associates_not_at_all() {
+    fn a_two_a_component_associates_with_itself() {
         let h2s_like = Association::new(
             vec![AssociationComponent {
                 scheme: SiteScheme::TwoA,
@@ -1747,11 +1781,17 @@ mod tests {
         .expect("valid parameters");
         let (covolume, moles, v, t) = (2.9e-5, [1.0], 4.0e-5, 300.0);
         let state = h2s_like.solve(&[covolume], &moles, v, t).expect("solves");
-        assert!(state.fractions.iter().all(|&x| x == 1.0));
-        assert_eq!(state.helmholtz_rt, 0.0);
-        assert_eq!(state.unbonded_sites, 0.0);
-        assert_eq!(state.ln_phi[0], 0.0);
-        assert_eq!(state.d_helmholtz_dv, 0.0);
+        assert!(
+            state.fractions.iter().all(|&x| x < 1.0),
+            "every site is partly bonded: {:?}",
+            state.fractions
+        );
+        assert!(
+            state.helmholtz_rt < 0.0,
+            "the association lowers the energy"
+        );
+        assert!(state.unbonded_sites > 0.0);
+        assert!(state.ln_phi[0] != 0.0);
     }
 
     /// A mixture with no sites at all is a no-op rather than an error, because that is
