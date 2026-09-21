@@ -2,11 +2,11 @@
   "id": "methane_butane_saft_flash_against_neqsim",
   "calc": "eos.tp_flash_saft",
   "source": {
-    "attribution": "NeqSim 3.20.0, SystemSAFTVRMie with TPflashSAFT, run from validation/neqsim/SaftVrMieFlashProbe.java",
+    "attribution": "NeqSim master, SystemSAFTVRMie with TPflashSAFT, run from validation/neqsim/SaftVrMieFlashProbe.java",
     "verification": "verified",
     "notes": "**The `init(0)`-first answer, and only that one.** `TPflashSAFT.run()` reads `getz()` before its own `system.init(0)`, so on a fresh system it solves a zero feed and never finds the split; the probe runs it three ways and they disagree. `~/Desktop/neqsim-tpflashsaft-reads-a-zero-feed.md` is the write-up, and the probe's own two other reports are left out of this case rather than reproduced. The probe does not print the two compressibility factors, so `z_liquid` and `z_vapour` are not checked. **The tolerance is the loop's own stopping rule**, not a measurement of the model."
   },
-  "derivation": "The compositions and the vapour fraction are one quantity here, and this is the tranche's only two-phase case.\n\nThe probe was run as `java -cp .:neqsim-3.20.0.jar SaftVrMieFlashProbe`, reading `saft_vr_mie_flash.tsv`; this is its state 1, whose own header line is:\n\n    # methane/n-butane at T=250.000 K, P=30.0000 bara\n\nThe case compares against the values that header's block prints, which are in the capture verbatim.",
+  "derivation": "The compositions and the vapour fraction are one quantity here, and this is the tranche's only two-phase case.\n\nThe probe was run as `java -cp .:neqsim-f0c7436.jar SaftVrMieFlashProbe`, reading `saft_vr_mie_flash.tsv`; this is its state 1, whose own header line is:\n\n    # methane/n-butane at T=250.000 K, P=30.0000 bara\n\nThe case compares against the values that header's block prints, which are in the capture verbatim.",
   "inputs": {
     "components": ["methane", "n-butane"],
     "T": 250.0,

@@ -18,37 +18,37 @@
 
 === the same brine at 0.5 mol/sec salinity ===
   salt input = 0.500000000000 mol/sec, phase concentration = 0.00000000000
-  after the flash: salt = 0.500000000000, phase concentration = 18.9887178152
+  after the flash: salt = 0.500000000000, phase concentration = 18.6818202154
   phases = 2   T = 318.15 K   P = 40.0000 bar
-  [0] PhaseSoreideWhitson beta = 0.902560910283  z = 0.870482000810607  salinity = 0.00000000000
-        nitrogen   x = 0.110795530387  ln phi = 0.0471679722002
-        CO2        x = 0.221589158778  ln phi = -0.154329019693
-        methane    x = 0.332387321549  ln phi = -0.0560453453254
-        ethane     x = 0.332387427513  ln phi = -0.250173301803
-        water      x = 0.00284056177239  ln phi = -0.173376031041
-  [1] PhaseSoreideWhitson beta = 0.0974390897169  z = 0.0325426356047137  salinity = 18.9887178152
-        nitrogen   x = 2.92734584333e-06  ln phi = 10.5885135283
-        CO2        x = 2.34725407635e-05  ln phi = 8.99842003074
-        methane    x = 2.01658423089e-06  ln phi = 11.9566057485
-        ethane     x = 1.03506345566e-06  ln phi = 12.4294204815
-        water      x = 0.999970548466  ln phi = -6.03710001820
+  [0] PhaseSoreideWhitson beta = 0.900957936504  z = 0.870552111432383  salinity = 0.00000000000
+        nitrogen   x = 0.110992863880  ln phi = 0.0471006782056
+        CO2        x = 0.221985009289  ln phi = -0.154001680613
+        methane    x = 0.332978852846  ln phi = -0.0561305291887
+        ethane     x = 0.332978897006  ln phi = -0.250291717828
+        water      x = 0.00106437697996  ln phi = -0.190656442175
+  [1] PhaseSoreideWhitson beta = 0.0990420634955  z = 0.0321265381818626  salinity = 18.6818202154
+        nitrogen   x = 9.93433563451e-07  ln phi = 11.6709100019
+        CO2        x = 8.52259067533e-06  ln phi = 10.0136431770
+        methane    x = 6.04176191059e-07  ln phi = 13.1635932246
+        ethane     x = 2.02464818140e-07  ln phi = 14.0627319131
+        water      x = 0.999989677335  ln phi = -7.03601178038
 
 === a condensate: CO2 C1 nC4 nC7 water, 60 C, 100 bara ===
   salt input = 0.00000000000 mol/sec, phase concentration = 0.00000000000
   after the flash: salt = 0.00000000000, phase concentration = 0.00000000000
   phases = 2   T = 333.15 K   P = 100.0000 bar
-  [0] PhaseSoreideWhitson beta = 0.393176786858  z = 0.769862281664881  salinity = 0.00000000000
-        CO2        x = 0.183288952782  ln phi = -0.345400985060
-        methane    x = 0.683579694669  ln phi = -0.0888646269367
-        n-butane   x = 0.0399702490289  ln phi = -1.27926109832
-        n-heptane  x = 0.0186031829599  ln phi = -2.07522298313
-        water      x = 0.0745579205601  ln phi = -0.576172200859
-  [1] PhaseSoreideWhitson beta = 0.606823213142  z = 0.284389021524665  salinity = 0.00000000000
-        CO2        x = 0.128431208284  ln phi = 0.0102694825615
-        methane    x = 0.216261226081  ln phi = 1.06199156336
-        n-butane   x = 0.221291181696  ln phi = -2.99060509375
-        n-heptane  x = 0.152739147566  ln phi = -4.18062183867
-        water      x = 0.281277236373  ln phi = -1.90393670962
+  [0] PhaseSoreideWhitson beta = 0.396194899612  z = 0.769083048815338  salinity = 0.00000000000
+        CO2        x = 0.185665176862  ln phi = -0.344901510120
+        methane    x = 0.680978150810  ln phi = -0.0885836143237
+        n-butane   x = 0.0398663745830  ln phi = -1.28772002779
+        n-heptane  x = 0.0188443410379  ln phi = -2.05338403906
+        water      x = 0.0746459567070  ln phi = -0.577905413999
+  [1] PhaseSoreideWhitson beta = 0.603805100388  z = 0.284661753767228  salinity = 0.00000000000
+        CO2        x = 0.126597810854  ln phi = 0.0380281992926
+        methane    x = 0.215632378425  ln phi = 1.06137160135
+        n-butane   x = 0.222265670890  ln phi = -3.00606018358
+        n-heptane  x = 0.153251385480  ln phi = -4.14925099586
+        water      x = 0.282252754352  ln phi = -1.90795201635
 
   alpha against temperature, the shipped mixture:
          T / K       nitrogen            CO2        methane         ethane          water
