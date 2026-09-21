@@ -712,6 +712,33 @@ impl CalcResult for TpMultiflashWaxResult {
     }
 }
 
+/// Result of `eos.scale_saturation_ratio`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScaleSaturationRatioResult {
+    /// `IAP/Ksp`, one at saturation, clamped at `exp(69)` and floored at zero.
+    pub saturation_ratio: f64,
+    /// The ion activity product, so a divergence can be read as either half.
+    pub ion_activity_product: f64,
+    /// `Ksp(T, P)` after the override, the hydrogen-ion correction and the pressure term.
+    pub solubility_product: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ScaleSaturationRatioResult {
+    const CALC_ID: &'static str = "eos.scale_saturation_ratio";
+    const FIELDS: &'static [&'static str] = &[
+        "saturation_ratio",
+        "ion_activity_product",
+        "solubility_product",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.tbp_fraction_properties`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TbpFractionPropertiesResult {

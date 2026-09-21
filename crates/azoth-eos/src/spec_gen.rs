@@ -36,6 +36,7 @@
 //!   - specs/calcs/eos/rackett_molar_volume.toml
 //!   - specs/calcs/eos/rk_alpha_ab.toml
 //!   - specs/calcs/eos/rk_departure.toml
+//!   - specs/calcs/eos/scale_saturation_ratio.toml
 //!   - specs/calcs/eos/schwartzentruber_alpha.toml
 //!   - specs/calcs/eos/siddiqi_lucas_diffusivity.toml
 //!   - specs/calcs/eos/soreide_whitson_alpha.toml
@@ -4158,6 +4159,125 @@ pub static RK_DEPARTURE_SPEC: CalcSpec = CalcSpec {
     tests: RK_DEPARTURE_TESTS,
 };
 
+/// Registry entry for `eos.scale_saturation_ratio`.
+static SCALE_SATURATION_RATIO_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; the correlation takes its logarithm",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+];
+
+static SCALE_SATURATION_RATIO_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "the_ferrous_carbonate_row_of_the_same_brine",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("x1", 0.00109499727966275),
+            ("x2", 9.44820541035073e-07),
+            ("x_water", 0.994547937931656),
+            ("gamma1", 0.997138700891861),
+            ("gamma2", 1.05176801306048),
+            ("water_activity", 0.994547937931656),
+            ("T", 298.15),
+            ("P", 1000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("salt", "FeCO3")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("saturation_ratio", 257932.607723642)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+/// Registered spec for `eos.scale_saturation_ratio`.
+///
+/// Public and addressable directly, so a calc can hold `&SCALE_SATURATION_RATIO_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static SCALE_SATURATION_RATIO_SPEC: CalcSpec = CalcSpec {
+    id: "eos.scale_saturation_ratio",
+    checks: SCALE_SATURATION_RATIO_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "the_nacl_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("x1", 3.97819175172662e-05),
+            ("x2", 3.97819175172662e-05),
+            ("x_water", 0.994547937931656),
+            ("gamma1", 0.997138700891861),
+            ("gamma2", 0.997138700891861),
+            ("water_activity", 0.994547937931656),
+            ("T", 298.15),
+            ("P", 1000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("salt", "NaCl")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("saturation_ratio", 1.282928947262809e-07)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    tests: SCALE_SATURATION_RATIO_TESTS,
+};
+
 /// Registry entry for `eos.schwartzentruber_alpha`.
 static SCHWARTZENTRUBER_ALPHA_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
@@ -6072,6 +6192,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &RACKETT_MOLAR_VOLUME_SPEC,
     &RK_ALPHA_AB_SPEC,
     &RK_DEPARTURE_SPEC,
+    &SCALE_SATURATION_RATIO_SPEC,
     &SCHWARTZENTRUBER_ALPHA_SPEC,
     &SIDDIQI_LUCAS_DIFFUSIVITY_SPEC,
     &SOREIDE_WHITSON_ALPHA_SPEC,

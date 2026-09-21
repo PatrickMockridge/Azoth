@@ -152,6 +152,7 @@ pub mod rk_departure;
 pub mod saft_vr_mie;
 pub mod saft_vr_mie_phase;
 pub mod saturation_temperature;
+pub mod scale_saturation_ratio;
 pub mod schwartzentruber_alpha;
 pub mod siddiqi_lucas_diffusivity;
 pub mod soreide_whitson_alpha;
@@ -319,6 +320,7 @@ pub use results::{
 };
 pub use rk_alpha_ab::rk_alpha_ab;
 pub use rk_departure::rk_departure;
+pub use scale_saturation_ratio::scale_saturation_ratio;
 pub use schwartzentruber_alpha::schwartzentruber_alpha;
 pub use siddiqi_lucas_diffusivity::{SiddiqiLucasForm, siddiqi_lucas_diffusivity};
 pub use soreide_whitson_alpha::soreide_whitson_alpha;

@@ -3345,6 +3345,40 @@ pub fn tp_multiflash_wax(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// One salt's saturation ratio in a brine, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (salt, x1, x2, x_water, gamma1, gamma2, water_activity, T, P, h3o_molality))]
+#[allow(clippy::too_many_arguments)]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn scale_saturation_ratio(
+    py: Python<'_>,
+    salt: &str,
+    x1: f64,
+    x2: f64,
+    x_water: f64,
+    gamma1: f64,
+    gamma2: f64,
+    water_activity: f64,
+    T: f64,
+    P: f64,
+    h3o_molality: Option<f64>,
+) -> PyResult<crate::results::PyScaleSaturationRatioResult> {
+    azoth_eos::scale_saturation_ratio(
+        salt,
+        x1,
+        x2,
+        x_water,
+        gamma1,
+        gamma2,
+        water_activity,
+        h3o_molality,
+        kelvins(T),
+        pascals(P),
+    )
+    .map(|r| crate::results::PyScaleSaturationRatioResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The freezing point of para-hydrogen at a pressure, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side checks them: the solid equation

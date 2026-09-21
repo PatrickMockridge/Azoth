@@ -398,6 +398,20 @@ class WaxSolidFugacityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ScaleSaturationRatioResult(_HasWarnings):
+    """Result of ``eos.scale_saturation_ratio``."""
+
+    #: ``IAP/Ksp``, one at saturation, clamped at ``exp(69)`` and floored at zero.
+    saturation_ratio: float
+    #: The ion activity product, so a divergence can be read as either half.
+    ion_activity_product: float
+    #: ``Ksp(T, P)`` after the override, the hydrogen-ion correction and the pressure term.
+    solubility_product: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TbpFractionPropertiesResult(_HasWarnings):
     """Result of ``eos.tbp_fraction_properties``."""
 

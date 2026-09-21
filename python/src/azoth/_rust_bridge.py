@@ -121,6 +121,7 @@ from azoth.core.result import (
     RkDepartureResult,
     RootStructure,
     SaftVrMiePhaseResult,
+    ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult,
@@ -2884,6 +2885,44 @@ def tp_multiflash_wax(
         iterations=result.iterations,
         residual=result.residual,
         converged=result.converged,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def scale_saturation_ratio(
+    salt: str,
+    x1: float,
+    x2: float,
+    x_water: float,
+    gamma1: float,
+    gamma2: float,
+    water_activity: float,
+    T: Q,
+    P: Q,
+    h3o_molality: Q | None = None,
+) -> ScaleSaturationRatioResult:
+    """One salt's saturation ratio, computed in Rust."""
+    spec = _spec_for("eos.scale_saturation_ratio")
+    result = _core.scale_saturation_ratio(
+        salt,
+        x1,
+        x2,
+        x_water,
+        gamma1,
+        gamma2,
+        water_activity,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        # By keyword: the boundary's own signature puts the defaulted one last, which is
+        # the spec's order and not the position it has there.
+        h3o_molality=(
+            None if h3o_molality is None else input_to_si(spec, "h3o_molality", h3o_molality)
+        ),
+    )
+    return ScaleSaturationRatioResult(
+        saturation_ratio=result.saturation_ratio,
+        ion_activity_product=result.ion_activity_product,
+        solubility_product=result.solubility_product,
         warnings=_warnings(result.warnings),
     )
 

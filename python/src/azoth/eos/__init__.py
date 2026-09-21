@@ -150,6 +150,7 @@ from azoth.core.result import (
     RkAlphaAbResult,
     RkDepartureResult,
     SaftVrMiePhaseResult,
+    ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SiddiqiLucasDiffusivityResult,
     SoreideWhitsonAlphaResult,
@@ -294,6 +295,7 @@ __all__ = [
     "rk_alpha_ab",
     "rk_departure",
     "saft_vr_mie_phase",
+    "scale_saturation_ratio",
     "siddiqi_lucas_diffusivity",
     "soreide_whitson_phase",
     "srk_alpha_ab",
@@ -2108,6 +2110,49 @@ def tp_multiflash_wax(
     """
     return resolve("eos.tp_multiflash_wax")(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z, eos=eos
+    )
+
+
+def scale_saturation_ratio(
+    salt: str,
+    x1: float,
+    x2: float,
+    x_water: float,
+    gamma1: float,
+    gamma2: float,
+    water_activity: float,
+    T: Q,
+    P: Q,
+    h3o_molality: Q | None = None,
+) -> ScaleSaturationRatioResult:
+    """One salt's saturation ratio in an aqueous phase.
+
+    NeqSim's ``CheckScalePotential``, one row of its ``compsalt`` walk: the ratio is
+    ``IAP/Ksp``, one at saturation, and it is **clamped** at ``exp(69)`` and floored at zero
+    as that operation's overflow guards.
+
+    The activity coefficients and the mole fractions are the aqueous phase's own, so a brine
+    whose ions were *stated* needs no reactive speciation. ``salt`` names the row, and three
+    names - ``NaCl``, ``CaCO3`` and ``FeCO3`` - override its correlation.
+
+    Raises:
+        InvalidInputError: if the salt is not in the table, or ``FeS`` is asked for without a
+            hydrogen molality.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+
+    See :func:`azoth.eos.reference.scale_saturation_ratio`.
+    """
+    return resolve("eos.scale_saturation_ratio")(  # type: ignore[no-any-return]
+        salt=salt,
+        x1=x1,
+        x2=x2,
+        x_water=x_water,
+        gamma1=gamma1,
+        gamma2=gamma2,
+        water_activity=water_activity,
+        T=T,
+        P=P,
+        h3o_molality=h3o_molality,
     )
 
 

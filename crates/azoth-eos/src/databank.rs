@@ -1834,12 +1834,16 @@ pub struct SaltRecord {
     pub cation_stoichiometry: f64,
     /// How many anions.
     pub anion_stoichiometry: f64,
-    /// The five solubility-product coefficients. **Their form is not established here**
-    /// - the manifest records the column as `neqsim-internal` - so they are carried as
-    ///   the file states them and a model that needs the correlation must read NeqSim's
-    ///   `ChemicalReactionOperations` rather than assume a polynomial.
+    /// The five solubility-product coefficients of `ln Ksp = A/T + B + C ln T + D T + E/T**2`,
+    /// in which order. **Established by the port**: `eos.scale_saturation_ratio` evaluates
+    /// them against NeqSim's own `CheckScalePotential` and reproduces it to `1e-15` at two
+    /// salts of one brine, so the polynomial is confirmed rather than assumed.
     pub ksp: [f64; 5],
-    /// `Vdelta`, the molar volume change on dissolution. Unit unestablished, as above.
+    /// `Vdelta`, the molar volume change on dissolution, in **cm3/mol**.
+    ///
+    /// The unit is read off the expression that consumes it: `eos.scale_saturation_ratio`'s
+    /// pressure term is `-Vdelta (P - 1.01325)/(83.1446 T)` with `P` in bar, and `83.1446` is
+    /// the gas constant in cm3 bar per (mol K) - so the term is dimensionless as written.
     pub volume_delta: f64,
     /// `waterstoc`, how many waters of hydration the dissolution carries. Zero on every
     /// row of the shipped table, which is the file's marker for a salt with none.

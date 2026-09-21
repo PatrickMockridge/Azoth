@@ -825,6 +825,13 @@ class SaftVrMiePhaseResult:
     warnings: list[Warning]
 
 @final
+class ScaleSaturationRatioResult:
+    saturation_ratio: float
+    ion_activity_product: float
+    solubility_product: float
+    warnings: list[Warning]
+
+@final
 class SchwartzentruberAlphaResult:
     alpha: float
     warnings: list[Warning]
@@ -1808,6 +1815,18 @@ def saft_vr_mie_phase(
     z: list[float],
     compressed_phase: str,
 ) -> SaftVrMiePhaseResult: ...
+def scale_saturation_ratio(
+    salt: str,
+    x1: float,
+    x2: float,
+    x_water: float,
+    gamma1: float,
+    gamma2: float,
+    water_activity: float,
+    T: float,
+    P: float,
+    h3o_molality: float | None = None,
+) -> ScaleSaturationRatioResult: ...
 def schwartzentruber_alpha(
     omega: float,
     p1: float,

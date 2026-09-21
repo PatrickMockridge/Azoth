@@ -104,6 +104,7 @@ Four sections, and the difference between them is the point:
 - [`eos.rackett_molar_volume`](./eos/rackett_molar_volume.md)
 - [`eos.rk_alpha_ab`](./eos/rk_alpha_ab.md)
 - [`eos.rk_departure`](./eos/rk_departure.md)
+- [`eos.scale_saturation_ratio`](./eos/scale_saturation_ratio.md)
 - [`eos.schwartzentruber_alpha`](./eos/schwartzentruber_alpha.md)
 - [`eos.siddiqi_lucas_diffusivity`](./eos/siddiqi_lucas_diffusivity.md)
 - [`eos.soreide_whitson_alpha`](./eos/soreide_whitson_alpha.md)

@@ -38,13 +38,13 @@ use azoth_eos::results::{
     PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult,
     PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
     RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
-    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SoreideWhitsonAlphaResult,
-    SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
-    TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
-    TpMultiflashWaxResult, TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult,
-    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
-    TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
+    ScaleSaturationRatioResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
+    SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult,
+    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult,
+    TpMultiflashResult, TpMultiflashWaxResult, TsFlashResult, TuFlashResult, TvFlashResult,
+    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
@@ -4037,6 +4037,50 @@ impl From<&TpMultiflashWaxResult> for PyTpMultiflashWaxResult {
     }
 }
 
+/// Result of `eos.scale_saturation_ratio`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ScaleSaturationRatioResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyScaleSaturationRatioResult {
+    /// `IAP/Ksp`, one at saturation.
+    #[pyo3(get)]
+    pub saturation_ratio: f64,
+    /// The ion activity product.
+    #[pyo3(get)]
+    pub ion_activity_product: f64,
+    /// `Ksp(T, P)` after the override and the pressure term.
+    #[pyo3(get)]
+    pub solubility_product: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyScaleSaturationRatioResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScaleSaturationRatioResult(saturation_ratio={}, solubility_product={})",
+            self.saturation_ratio, self.solubility_product
+        )
+    }
+}
+
+impl From<&ScaleSaturationRatioResult> for PyScaleSaturationRatioResult {
+    fn from(r: &ScaleSaturationRatioResult) -> Self {
+        Self {
+            saturation_ratio: r.saturation_ratio,
+            ion_activity_product: r.ion_activity_product,
+            solubility_product: r.solubility_product,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.wax_solid_fugacity`, transported.
 #[pyclass(
     frozen,
@@ -6540,6 +6584,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HydrateFractionResult::CALC_ID => HydrateFractionResult::FIELDS.to_vec(),
         HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
         TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),
+        ScaleSaturationRatioResult::CALC_ID => ScaleSaturationRatioResult::FIELDS.to_vec(),
         WaxSolidFugacityResult::CALC_ID => WaxSolidFugacityResult::FIELDS.to_vec(),
         TpMultiflashWaxResult::CALC_ID => TpMultiflashWaxResult::FIELDS.to_vec(),
         ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
@@ -6641,6 +6686,7 @@ pub fn calc_ids() -> Vec<String> {
         KFactorsResult::CALC_ID.to_string(),
         DarcyWeisbachResult::CALC_ID.to_string(),
         TbpFractionPropertiesResult::CALC_ID.to_string(),
+        ScaleSaturationRatioResult::CALC_ID.to_string(),
         WaxSolidFugacityResult::CALC_ID.to_string(),
     ]
 }

@@ -209,6 +209,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # categorical choice for the reason `form` is: there is no float-array column to put
         # it in, and the answer would differ per element if there were.
         "eos.wax_solid_fugacity",
+        # `salt` names the `compsalt` row and the three overrides, like `form` and `eos`:
+        # a categorical input with no float-array column shape.
+        "eos.scale_saturation_ratio",
     }, sorted(excluded)
 
 
