@@ -336,12 +336,12 @@ fn cation_solvent(cation: &FurstComponent, solvent: &FurstComponent, divalent: b
                 cpa(2) * d + cpa(3)
             }
         }
-        // **`TEG` reads the `MEG` set** (NeqSim issue 3846), in NeqSim and here: the chain tests `TEG` twice
-        // and the first match wins, so the branch written for TEG is unreachable and
-        // `furstParamsCPA_TEG` is never read by anything. Reproduced rather than corrected,
-        // because a port that silently improved on its source would be a different model;
-        // it is NeqSim issue 3846 and the fix is one array swap here.
-        "teg" | "triethylene glycol" | "meg" | "ethylene glycol" => meg_fit(d, divalent),
+        // **Each glycol reads its own fit.** NeqSim's chain tests `TEG` twice and the first
+        // match won, so a TEG pair was given the MEG set and `furstParamsCPA_TEG` was read
+        // by nothing - issue 3846, closed upstream in #3847 by the swap this now makes. A
+        // `TEG` pair's `Wij` was `2.11x` what its own fit gives.
+        "teg" | "triethylene glycol" => glycol_fit("furstParamsCPA_TEG", d, divalent),
+        "meg" | "ethylene glycol" => glycol_fit("furstParamsCPA_MEG", d, divalent),
         "mdea" => {
             if divalent {
                 named(6)
@@ -381,16 +381,15 @@ fn cation_solvent(cation: &FurstComponent, solvent: &FurstComponent, divalent: b
     }
 }
 
-/// The MEG fit, which is what a `TEG` component is given.
+/// One glycol's fit, `slope * d + intercept` from the named set.
 ///
-/// One function for two solvent names and not two functions, because that is the defect:
-/// `furstParamsCPA_TEG` differs from this set at `[2]` (`4.98e-5` against `8.0e-5`), `[3]`,
-/// `[6]` and `[7]`, and a `TEG` pair gets `2.11x` the `Wij` its own fit gives.
-fn meg_fit(diameter: f64, divalent: bool) -> f64 {
+/// The two sets differ at `[2]`, `[3]`, `[6]` and `[7]` - `4.98e-5` against `8.0e-5` at `[2]`
+/// - so a `TEG` pair given the MEG set would carry `2.11x` the `Wij` its own fit gives.
+fn glycol_fit(set: &str, diameter: f64, divalent: bool) -> f64 {
     if divalent {
-        named_from("furstParamsCPA_MEG", 6) * diameter + named_from("furstParamsCPA_MEG", 7)
+        named_from(set, 6) * diameter + named_from(set, 7)
     } else {
-        named_from("furstParamsCPA_MEG", 2) * diameter + named_from("furstParamsCPA_MEG", 3)
+        named_from(set, 2) * diameter + named_from(set, 3)
     }
 }
 
@@ -692,6 +691,50 @@ mod tests {
         assert!(
             (value - (cpa(2) * 5.68 + cpa(3))).abs() > 1.0e-8,
             "toluene's constant is 2.38 and water's reference is 78.4, so the two must differ"
+        );
+    }
+
+    /// **Each glycol reads its own fit.**
+    ///
+    /// NeqSim's name chain tested `TEG` twice and the first match won, so a TEG pair was
+    /// given the MEG set and `furstParamsCPA_TEG` was read by nothing - issue 3846. Closed
+    /// upstream in #3847, whose own number this is: `1.60864e-4` for `Na+/TEG` at the table's
+    /// `5.68` Å against the MEG set's `3.394e-4`, the `2.11x` the probe's `held / own` ratio
+    /// measured.
+    #[test]
+    fn a_teg_pair_reads_the_teg_fit_and_a_meg_pair_the_meg_fit() {
+        let cation = FurstComponent {
+            name: "na+".into(),
+            charge: 1.0,
+            diameter: 5.68,
+            dielectric_at_reference: 0.0,
+        };
+        let glycol = |name: &str| FurstComponent {
+            name: name.into(),
+            charge: 0.0,
+            diameter: 2.52,
+            dielectric_at_reference: 23.4,
+        };
+
+        let teg = cation_solvent(&cation, &glycol("teg"), false);
+        let meg = cation_solvent(&cation, &glycol("meg"), false);
+        assert!(
+            (teg - 1.608_64e-4).abs() < 1.0e-10,
+            "TEG's own fit gives {teg}, and NeqSim's probe prints 0.000160864 for this pair"
+        );
+        assert!(
+            (meg - 3.394e-4).abs() < 1.0e-9,
+            "MEG's fit gives {meg}, and NeqSim's probe prints 0.0003394 for it"
+        );
+
+        // The alias resolves the same way, which is what makes the dispatch exhaustive.
+        assert_eq!(
+            cation_solvent(&cation, &glycol("triethylene glycol"), false),
+            teg
+        );
+        assert_eq!(
+            cation_solvent(&cation, &glycol("ethylene glycol"), false),
+            meg
         );
     }
 }

@@ -1,10 +1,10 @@
 
 === TEG ===
   stokes diameter of Na+       = 5.68000000000
-  Wij(Na+, TEG ) the phase holds = 0.000339400000000
+  Wij(Na+, TEG ) the phase holds = 0.000160864000000
   from the TEG parameters        = 0.000160864000000
   from the MEG parameters        = 0.000339400000000
-  ratio held / own               = 2.109857
+  ratio held / own               = 1.000000
 
 === MEG ===
   stokes diameter of Na+       = 5.68000000000

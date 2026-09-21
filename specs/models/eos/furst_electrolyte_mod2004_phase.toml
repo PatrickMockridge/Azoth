@@ -8,7 +8,7 @@ assumptions = [
     "**`dFBorndN` is `FBornX XBorni + FBornD`**, where the base is `FBornX XBorni + FBornD solventdiElectricdn`. With that derivative zero the base gives the first term, so this variant adds a term to every `ln phi` - and `FBornD` is extensive, so `ln phi` depends on the phase size (NeqSim issue 3862).",
     "everything else is identical, including the component constructors, which differ from the base's only in their class names: an ion's attraction is `1e-35` and its covolume is the fitted `(p0 d^3 + p1)`.",
     "the mixing rule is Huron-Vidal, as it is for the base model; the alpha is Schwartzentruber for every component, with each row's own fitted parameters.",
-    "the short-range table, the MSA long-range term and the Born term are the base model's, with the TEG defect it carries (NeqSim issue 3846) reproduced rather than corrected.",
+    "the short-range table, the MSA long-range term and the Born term are the base model's, so each glycol reads its own parameter set as it does there.",
     "**there is no flash**, for the reason the base model gives: `eos.pt_flash`'s Jacobian is `d ln phi / d n`, which the Huron-Vidal rule refuses.",
     "no `h_res` or `s_res`: the departure is not assembled.",
     "`x` is checked rather than renormalised.",

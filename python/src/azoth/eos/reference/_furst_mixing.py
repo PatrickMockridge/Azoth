@@ -118,17 +118,17 @@ def _named(set_name: str, index: int) -> float:
     return values[index] if index < len(values) else 0.0
 
 
-def _meg_fit(diameter: float, divalent: bool) -> float:
-    """The MEG fit, which is what a ``TEG`` component is given.
+def _glycol_fit(set_name: str, diameter: float, divalent: bool) -> float:
+    """One glycol's fit, ``slope * d + intercept`` from the named set.
 
-    One function for two solvent names and not two, because that is the defect: NeqSim's
-    name chain tests ``TEG`` twice and the first match wins, so the branch written for TEG is
-    unreachable and ``furstParamsCPA_TEG`` is read by nothing. Reproduced rather than
-    corrected - NeqSim issue 3846 - and the fix upstream is one array swap.
+    The two sets differ at ``[2]``, ``[3]``, ``[6]`` and ``[7]`` - ``4.98e-5`` against
+    ``8.0e-5`` at ``[2]`` - so a ``TEG`` pair given the MEG set carries ``2.11x`` the ``Wij``
+    its own fit gives. Each glycol reads its own, which is NeqSim's dispatch as of issue 3846's
+    fix (#3847).
     """
     if divalent:
-        return _named("furstParamsCPA_MEG", 6) * diameter + _named("furstParamsCPA_MEG", 7)
-    return _named("furstParamsCPA_MEG", 2) * diameter + _named("furstParamsCPA_MEG", 3)
+        return _named(set_name, 6) * diameter + _named(set_name, 7)
+    return _named(set_name, 2) * diameter + _named(set_name, 3)
 
 
 def _predictive(solvent_dielectric: float, diameter: float, divalent: bool) -> float:
@@ -165,8 +165,13 @@ def _cation_solvent(cation: FurstComponent, solvent: FurstComponent, divalent: b
     name = solvent.name
     if name == "water":
         return _cpa(6) * d + _cpa(7) if divalent else _cpa(2) * d + _cpa(3)
-    if name in ("teg", "triethylene glycol", "meg", "ethylene glycol"):
-        return _meg_fit(d, divalent)
+    # **Each glycol reads its own fit.** NeqSim's chain tested `TEG` twice and the first match
+    # won, so a TEG pair was given the MEG set - issue 3846, closed upstream in #3847 by the
+    # swap this now makes.
+    if name in ("teg", "triethylene glycol"):
+        return _glycol_fit("furstParamsCPA_TEG", d, divalent)
+    if name in ("meg", "ethylene glycol"):
+        return _glycol_fit("furstParamsCPA_MEG", d, divalent)
     if name == "mdea":
         return _named("furstParams", 6) if divalent else _named("furstParams", 2)
     if name == "piperazine":
