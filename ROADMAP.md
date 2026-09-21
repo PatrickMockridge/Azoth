@@ -93,7 +93,15 @@ process model needs.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,
   `CricondenBarFlash`, `CricondenThermFlash`, `SysNewtonRhapsonPhaseEnvelope`.
 - **PVT and flow assurance.** `pvtsimulation/` (simulation, model tuning, reservoir
-  properties).
+  properties), including **`pvtsimulation/flowassurance/` carried as one named group — 21
+  classes and 12,486 lines** — because it is not one family and the specification's rows split
+  it: seven scale calculations (`MultiMineralScaleEquilibrium`, `ScalePredictionCalculator`,
+  `ScaleMassCalculator`, `PitzerScaleActivityModel`, `BariteCelestiteSolidSolution`,
+  `FlowlineScaleProfile`, `WaterCompatibilityScreener`), six asphaltene screens, one wax
+  (`WaxCurveCalculator`), two corrosion (`CO2CorrosionAnalyzer`, `DeWaardMilliamsCorrosion`)
+  and five generic flow-assurance calculators (`HydrateRiskMapper`,
+  `PipelineCooldownCalculator`, `SurfCooldownAnalyzer`, `ErosionPredictionCalculator`,
+  `EmulsionViscosityCalculator`). None of it is ported.
 
 ### Tier 2 — water and gas-water
 
@@ -139,9 +147,25 @@ solubility, electrolytes, salts and scale, and freezing.
   `SystemElectrolyteCPA`. `SystemElectrolyteCPAstatoil` and
   `PhaseElectrolyteCPAstatoil` are **not ported** — 145 lines, eleven `src/main` sites
   that build them, and Fürst plus the Wertheim association this library already has.
-- **Salts and scale.** `MultiSaltPrecipitation`, `CalcSaltSatauration`,
-  `CheckScalePotential`, `AddIonToScaleSaturation`.
-- **Freezing.** `FreezeOut`, `FreezingPointTemperatureFlash`.
+- **Salts and scale.** Ported, each with the id that carries it: `CheckScalePotential`
+  (`eos.scale_saturation_ratio`, one salt's `IAP/Ksp` against its solubility product) and
+  `MultiSaltPrecipitation` over `CalcSaltSatauration` (`eos.salt_precipitation`, one mineral's
+  extent, which is the per-mineral half of the complementarity loop). **Not ported**:
+  `AddIonToScaleSaturation` and `CalciumSulfatePhaseBoundaryQualification`; the
+  `pvtsimulation/flowassurance/` scale set — `MultiMineralScaleEquilibrium`,
+  `ScalePredictionCalculator`, `ScaleMassCalculator`, `PitzerScaleActivityModel`,
+  `BariteCelestiteSolidSolution`, `FlowlineScaleProfile`, `WaterCompatibilityScreener`; and
+  the eleven `process/chemistry/scale/` classes, 3,935 lines, `BrineMixingScaleEvaluator`
+  among them.
+- **Freezing.** `FreezingPointTemperatureFlash` is ported as `eos.freezing_point`, on the
+  route that requires a `PhaseSolidHelmholtzEos`: `eos.hydrogen_phase` for the fluid and
+  `eos.parahydrogen_solid_phase` for the solid, with the solid calibrated to the liquid it
+  meets at the triple point. **Its other two routes are carried**: the tabulated
+  `ComponentSolid` one, whose two halves are ported as `eos.solid_fugacity` and
+  `eos.tp_solid_flash` so what is missing is the operation that would drive them, and the
+  legacy `FreezingPointTemperatureFlashTR` and `...FlashOld`. **`FreezeOut` is carried as
+  unreachable upstream**: no `new` for it anywhere in `src/main` or `src/test`, so the one
+  amount-solve this family names does not exist to port.
 
 ### Tier 3 — wax, hydrate, hydrogen, asphaltene
 
@@ -157,15 +181,30 @@ The specialist physics.
   molar mass and a normal liquid density — but a plus fraction cannot be split into cuts,
   lumped, or recombined into one, and `racketZ` (the Peneloux shift `addTBPfraction` sets from
   a flashed reference system) is carried with it.
-- **Hydrate.** `ComponentHydrate`, `ComponentHydrateBallard`, `ComponentHydrateGF`,
-  `ComponentHydrateKluda`, `ComponentHydratePitzer`, `ComponentHydratePVTsim`,
-  `ComponentHydrateStatoil`, `PhaseHydrate`, `TPHydrateFlash`,
-  `HydrateFormationPressureFlash`, `HydrateFormationTemperatureFlash`,
-  `HydrateInhibitorConcentrationFlash`, `HydrateInhibitorwtFlash`, `PitzerHydrateFlash`,
-  `HydrateEquilibriumLine`, `HydrateEquilibriumDiagnostics`, `OLGAhydrateCurveGenerator`.
-- **Wax.** `ComponentWax`, `ComponentWonWax`, `ComponentCoutinhoWax`,
-  `ComponentWaxWilson`, `PhaseWax`, `TPmultiflashWAX`, `WaxCharacterise`,
-  `WaxModelInterface`, and `pvtsimulation/flowassurance/WaxCurveCalculator`.
+- **Hydrate.** Ported, each with the id that carries it: `PhaseHydrate` over
+  `ComponentHydratePVTsim`, which is the component model `PhaseHydrate` selects by default,
+  through `HydrateFormationTemperatureFlash` (`eos.hydrate_formation_temperature`) and
+  `HydrateFormationPressureFlash` (`eos.hydrate_formation_pressure`); and `TPHydrateFlash`
+  (`eos.hydrate_fraction`), **with the composition taken from both cavities and the material
+  balance asserted at the answer** — NeqSim's own distributes the guests by the small cage
+  alone and leaves a hydrate whose mole fractions sum to `1.1201`. **Not ported**:
+  `PitzerHydrateFlash` with `ComponentHydratePitzer` and `ComponentHydrateGF`, which are
+  reachable through the model name and whose coupling to the electrolyte phases is the seam
+  this would need; the two inhibitor flashes (`HydrateInhibitorConcentrationFlash`,
+  `HydrateInhibitorwtFlash`); `HydrateEquilibriumLine` and `HydrateEquilibriumDiagnostics`;
+  and **carried as unreachable upstream** `ComponentHydrateKluda`, which has no construction
+  site anywhere in `src/main`, `ComponentHydrateStatoil` and `ComponentHydrateBallard`, whose
+  only sites are two commented-out lines in `PhaseHydrate`, and `OLGAhydrateCurveGenerator`,
+  which only a test builds. `process/chemistry/hydrate/` is carried with the process tier.
+- **Wax.** Ported, each with the id that carries it: `ComponentWax` (`eos.wax_solid_fugacity`,
+  its `fugcoef2`), `TPmultiflashWAX` (`eos.tp_multiflash_wax`) and `PhaseWax`, which is the
+  class `SystemThermo` adds when the wax check is on. `eos.tbp_fraction_properties` is
+  Pedersen's cut correlations, which `WaxCharacterise` reads. **Not ported**: the three other
+  component models `PhaseWax` can be given by name — `ComponentWonWax` (`Won`),
+  `ComponentWaxWilson` (`Wilson`) and `ComponentCoutinhoWax` (`Coutinho`) — `WaxCharacterise`
+  itself, `WaxModelInterface`, and `pvtsimulation/flowassurance/WaxCurveCalculator`, whose
+  only construction site is the usage example in its own javadoc, with
+  `process/chemistry/wax/` carried with the process tier.
 - **Asphaltene, carried on a defect upstream rather than for want of a port.**
   `AsphalteneCharacterization`, `PedersenAsphalteneCharacterization`,
   `AsphalteneOnsetPressureFlash`, `AsphalteneOnsetTemperatureFlash`, the
@@ -184,11 +223,16 @@ The specialist physics.
   re-derives the phases — is a state at all. The coefficient the family's solid is built on is
   ported (`eos.solid_fugacity`, `eos.tp_solid_flash`); this family is revisited when upstream
   closes the defect.
-- **Hydrogen and cryogenic.** `ComponentGERG2008Eos`, `ComponentGERG2004`,
-  `PhaseGERG2008Eos`, `SystemGERG2008Eos`, `PHflashGERG2008`, `PSFlashGERG2008` and
-  `thermo/util/gerg/`; `ComponentLeachmanEos`, `PHflashLeachman`, `PSFlashLeachman` and
-  `thermo/util/leachman/`; `thermo/util/hydrogen/ParaOrthoH2Correction`;
-  `thermo/util/solid/ParaHydrogenSolidHelmholtzEquation`.
+- **Hydrogen and cryogenic.** Ported, each with the id that carries it:
+  `thermo/util/leachman/` as `eos.hydrogen_phase`, the Leachman equation of state for the two
+  spin isomers with both the dilute and the dense root selectable;
+  `thermo/util/solid/ParaHydrogenSolidHelmholtzEquation` as `eos.parahydrogen_solid_phase`;
+  and `thermo/util/solid/ArgonSolidHelmholtzEquation` as `eos.argon_solid_phase`.
+  **Not ported**: `ComponentGERG2008Eos`, `ComponentGERG2004`, `PhaseGERG2008Eos`,
+  `SystemGERG2008Eos`, `PHflashGERG2008`, `PSFlashGERG2008` and `thermo/util/gerg/`;
+  `ComponentLeachmanEos`, `PHflashLeachman` and `PSFlashLeachman`, which are the flashes the
+  Leachman *component* is used through rather than the equation; and
+  `thermo/util/hydrogen/ParaOrthoH2Correction`.
 
 ### Tier 4 — the long tail
 
