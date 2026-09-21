@@ -117,8 +117,14 @@ pub fn hydrate_formation_pressure(
         let flash = pt_flash(mixture, t, pascals(p), z)?;
         let fugacities = guest_fugacities(&flash, z, p);
         let reference = reference_water_fugacity(mixture, t.value, p)?;
-        let (_structure, coefficient) =
-            hydrate::stable_structure(&hydration.guests, &fugacities, t.value, p, reference)?;
+        let (_structure, coefficient) = hydrate::stable_structure(
+            &hydration.guests,
+            &fugacities,
+            hydration.model,
+            t.value,
+            p,
+            reference,
+        )?;
         Ok(coefficient * p / fugacities[water_index] - 1.0)
     };
 
@@ -189,8 +195,14 @@ fn finish(
     let flash = pt_flash(mixture, t, pascals(pressure), z)?;
     let fugacities = guest_fugacities(&flash, z, pressure);
     let reference = reference_water_fugacity(mixture, t.value, pressure)?;
-    let (structure, _coefficient) =
-        hydrate::stable_structure(&hydration.guests, &fugacities, t.value, pressure, reference)?;
+    let (structure, _coefficient) = hydrate::stable_structure(
+        &hydration.guests,
+        &fugacities,
+        hydration.model,
+        t.value,
+        pressure,
+        reference,
+    )?;
 
     Ok(HydrateFormationPressureResult {
         pressure: pascals(pressure),

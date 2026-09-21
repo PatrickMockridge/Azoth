@@ -1543,12 +1543,14 @@ def hydrate_formation_pressure(
     T: float,
     z: list[float],
     eos: str,
+    hydrate_model: str,
 ) -> HydrateFormationPressureResult: ...
 def hydrate_formation_temperature(
     components: list[str],
     P: float,
     z: list[float],
     eos: str,
+    hydrate_model: str,
 ) -> HydrateFormationTemperatureResult: ...
 def hydrate_fraction(
     components: list[str],
@@ -1556,6 +1558,7 @@ def hydrate_fraction(
     P: float,
     z: list[float],
     eos: str,
+    hydrate_model: str,
 ) -> HydrateFractionResult: ...
 def hydrogen_phase(
     T: float,

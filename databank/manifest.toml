@@ -867,84 +867,116 @@ unit = "dimensionless"
 reason = "read by `eos.wax_solid_fugacity`'s family. NeqSim reads it in `Component`'s constructor into `waxFormer` and `ComponentWax.fugcoef` returns its `1e50` marker for a substance that is not one - so it is the flag that decides whether a component precipitates at all, and the wax pseudo-components `addTBPWax` adds are the ones that carry a 1."
 [[upstreams.files.columns]]
 name = "B2_largeGF"
-disposition = "vendored"
+disposition = "used"
 as = "b2_largegf"
 unit = "neqsim-internal"
 reason = """\
-    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
-    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
-    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
-    port, so it is carried with its reader named rather than left unread."""
+    read by `eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure` and \
+    `eos.hydrate_fraction` when they are given `hydrate_model = "guo_finch"`, through the \
+    Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydrateGF` builds from them. \
+    **That class's reference is the empty lattice's vapour pressure on each structure**, where \
+    `ComponentHydratePVTsim`'s is one number for both - which is why the Guo-Finch route's \
+    structure comparison is a comparison of the full coefficients and the PVTsim route's is a \
+    comparison of the exponents."""
+
 [[upstreams.files.columns]]
 name = "A1_smallGF"
-disposition = "vendored"
+disposition = "used"
 as = "a1_smallgf"
 unit = "neqsim-internal"
 reason = """\
-    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
-    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
-    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
-    port, so it is carried with its reader named rather than left unread."""
+    read by `eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure` and \
+    `eos.hydrate_fraction` when they are given `hydrate_model = "guo_finch"`, through the \
+    Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydrateGF` builds from them. \
+    **That class's reference is the empty lattice's vapour pressure on each structure**, where \
+    `ComponentHydratePVTsim`'s is one number for both - which is why the Guo-Finch route's \
+    structure comparison is a comparison of the full coefficients and the PVTsim route's is a \
+    comparison of the exponents."""
+
 [[upstreams.files.columns]]
 name = "B1_smallGF"
-disposition = "vendored"
+disposition = "used"
 as = "b1_smallgf"
 unit = "neqsim-internal"
 reason = """\
-    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
-    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
-    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
-    port, so it is carried with its reader named rather than left unread."""
+    read by `eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure` and \
+    `eos.hydrate_fraction` when they are given `hydrate_model = "guo_finch"`, through the \
+    Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydrateGF` builds from them. \
+    **That class's reference is the empty lattice's vapour pressure on each structure**, where \
+    `ComponentHydratePVTsim`'s is one number for both - which is why the Guo-Finch route's \
+    structure comparison is a comparison of the full coefficients and the PVTsim route's is a \
+    comparison of the exponents."""
+
 [[upstreams.files.columns]]
 name = "A1_largeGF"
-disposition = "vendored"
+disposition = "used"
 as = "a1_largegf"
 unit = "neqsim-internal"
 reason = """\
-    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
-    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
-    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
-    port, so it is carried with its reader named rather than left unread."""
+    read by `eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure` and \
+    `eos.hydrate_fraction` when they are given `hydrate_model = "guo_finch"`, through the \
+    Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydrateGF` builds from them. \
+    **That class's reference is the empty lattice's vapour pressure on each structure**, where \
+    `ComponentHydratePVTsim`'s is one number for both - which is why the Guo-Finch route's \
+    structure comparison is a comparison of the full coefficients and the PVTsim route's is a \
+    comparison of the exponents."""
+
 [[upstreams.files.columns]]
 name = "B1_largeGF"
-disposition = "vendored"
+disposition = "used"
 as = "b1_largegf"
 unit = "neqsim-internal"
 reason = """\
-    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
-    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
-    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
-    port, so it is carried with its reader named rather than left unread."""
+    read by `eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure` and \
+    `eos.hydrate_fraction` when they are given `hydrate_model = "guo_finch"`, through the \
+    Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydrateGF` builds from them. \
+    **That class's reference is the empty lattice's vapour pressure on each structure**, where \
+    `ComponentHydratePVTsim`'s is one number for both - which is why the Guo-Finch route's \
+    structure comparison is a comparison of the full coefficients and the PVTsim route's is a \
+    comparison of the exponents."""
+
 [[upstreams.files.columns]]
 name = "A2_smallGF"
-disposition = "vendored"
+disposition = "used"
 as = "a2_smallgf"
 unit = "neqsim-internal"
 reason = """\
-    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
-    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
-    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
-    port, so it is carried with its reader named rather than left unread."""
+    read by `eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure` and \
+    `eos.hydrate_fraction` when they are given `hydrate_model = "guo_finch"`, through the \
+    Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydrateGF` builds from them. \
+    **That class's reference is the empty lattice's vapour pressure on each structure**, where \
+    `ComponentHydratePVTsim`'s is one number for both - which is why the Guo-Finch route's \
+    structure comparison is a comparison of the full coefficients and the PVTsim route's is a \
+    comparison of the exponents."""
+
 [[upstreams.files.columns]]
 name = "B2_smallGF"
-disposition = "vendored"
+disposition = "used"
 as = "b2_smallgf"
 unit = "neqsim-internal"
 reason = """\
-    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
-    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
-    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
-    port, so it is carried with its reader named rather than left unread."""
+    read by `eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure` and \
+    `eos.hydrate_fraction` when they are given `hydrate_model = "guo_finch"`, through the \
+    Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydrateGF` builds from them. \
+    **That class's reference is the empty lattice's vapour pressure on each structure**, where \
+    `ComponentHydratePVTsim`'s is one number for both - which is why the Guo-Finch route's \
+    structure comparison is a comparison of the full coefficients and the PVTsim route's is a \
+    comparison of the exponents."""
+
 [[upstreams.files.columns]]
 name = "A2_largeGF"
-disposition = "vendored"
+disposition = "used"
 as = "a2_largegf"
 unit = "neqsim-internal"
 reason = """\
-    read by NeqSim's `ComponentHydrateGF`, which `PhaseHydrate` builds when `hydrateModel` \
-    is set to `CPAHydrateModel` - reachable, and not the default, which is `PVTsim`. The \
-    Guo-Finch set is the one hydrate parameter family in COMP.csv this tranche does not \
-    port, so it is carried with its reader named rather than left unread."""
+    read by `eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure` and \
+    `eos.hydrate_fraction` when they are given `hydrate_model = "guo_finch"`, through the \
+    Langmuir constant `C = A/T exp(B/T)` that NeqSim's `ComponentHydrateGF` builds from them. \
+    **That class's reference is the empty lattice's vapour pressure on each structure**, where \
+    `ComponentHydratePVTsim`'s is one number for both - which is why the Guo-Finch route's \
+    structure comparison is a comparison of the full coefficients and the PVTsim route's is a \
+    comparison of the exponents."""
+
 [[upstreams.files.columns]]
 name = "CPsolid1"
 disposition = "used"
@@ -2167,52 +2199,60 @@ unit = "neqsim-internal"
 reason = "not-ported: vendored whole; nothing reads it yet"
 [[upstreams.files.columns]]
 name = "B2_largeGF"
-disposition = "vendored"
+disposition = "used"
 as = "b2_largegf"
 unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+reason = """\
+    read by the same `hydrate_model = "guo_finch"` route as the `COMP.csv` column of this name."""
 [[upstreams.files.columns]]
 name = "A1_smallGF"
-disposition = "vendored"
+disposition = "used"
 as = "a1_smallgf"
 unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+reason = """\
+    read by the same `hydrate_model = "guo_finch"` route as the `COMP.csv` column of this name."""
 [[upstreams.files.columns]]
 name = "B1_smallGF"
-disposition = "vendored"
+disposition = "used"
 as = "b1_smallgf"
 unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+reason = """\
+    read by the same `hydrate_model = "guo_finch"` route as the `COMP.csv` column of this name."""
 [[upstreams.files.columns]]
 name = "A1_largeGF"
-disposition = "vendored"
+disposition = "used"
 as = "a1_largegf"
 unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+reason = """\
+    read by the same `hydrate_model = "guo_finch"` route as the `COMP.csv` column of this name."""
 [[upstreams.files.columns]]
 name = "B1_largeGF"
-disposition = "vendored"
+disposition = "used"
 as = "b1_largegf"
 unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+reason = """\
+    read by the same `hydrate_model = "guo_finch"` route as the `COMP.csv` column of this name."""
 [[upstreams.files.columns]]
 name = "A2_smallGF"
-disposition = "vendored"
+disposition = "used"
 as = "a2_smallgf"
 unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+reason = """\
+    read by the same `hydrate_model = "guo_finch"` route as the `COMP.csv` column of this name."""
 [[upstreams.files.columns]]
 name = "B2_smallGF"
-disposition = "vendored"
+disposition = "used"
 as = "b2_smallgf"
 unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+reason = """\
+    read by the same `hydrate_model = "guo_finch"` route as the `COMP.csv` column of this name."""
 [[upstreams.files.columns]]
 name = "A2_largeGF"
-disposition = "vendored"
+disposition = "used"
 as = "a2_largegf"
 unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+reason = """\
+    read by the same `hydrate_model = "guo_finch"` route as the `COMP.csv` column of this name."""
 [[upstreams.files.columns]]
 name = "CPsolid1"
 disposition = "vendored"

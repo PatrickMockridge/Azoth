@@ -115,12 +115,19 @@ fn trial(
     let flash = pt_flash(mixture, t, p, fluid)?;
     let fugacities = guest_fugacities(&flash, fluid, p.value);
     let reference = reference_water_fugacity(mixture.cubic(), t.value, p.value)?;
-    let (structure, coefficient) =
-        hydrate::stable_structure(&hydration.guests, &fugacities, t.value, p.value, reference)?;
+    let (structure, coefficient) = hydrate::stable_structure(
+        &hydration.guests,
+        &fugacities,
+        hydration.model,
+        t.value,
+        p.value,
+        reference,
+    )?;
     Ok(Trial {
         composition: hydrate::composition(
             &hydration.guests,
             &fugacities,
+            hydration.model,
             structure,
             t.value,
             water_index,

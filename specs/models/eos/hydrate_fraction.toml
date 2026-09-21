@@ -11,6 +11,8 @@ assumptions = [
     "**the trial the cages are filled from is the water-free fluid**, `f_i = z_i - beta w_i` with a component the hydrate has taken all of at zero - the state at the bound rather than one near it, and why the solve never flashes a trace of water.",
     "**the hydrate's composition is the cages' own**, from both cavity types of the stable structure weighted by each type's count per unit cell, so its fractions sum to one and every guest's occupancy counts. `ComponentHydrate` builds the same composition, and the two agree on it.",
     "the guests' fugacities come from the vapour phase of the flashed fluid, which is what NeqSim's `setFug` reads.",
+    "**the solid is one of two fitted models**, chosen by `hydrate_model`, as for the formation temperature: `ComponentHydratePVTsim` (the default) and `guo_finch`.",
+    "**the Guo-Finch route has no equilibrium oracle**: NeqSim reaches it only through a `CPA-SRK-EOS`-named system and this library has no CPA flash, so it is pinned at fixed guest fugacities (`validation/neqsim/captures/hydrate_gf_probe.tsv`) rather than at an equilibrium.",
     "the reference water phase is a one-component phase of the same cubic the fluid runs, as in `eos.hydrate_formation_temperature`.",
     "no inhibitor and no energy balance, as for the formation temperature.",
 ]

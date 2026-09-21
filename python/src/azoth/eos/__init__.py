@@ -1934,7 +1934,11 @@ def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
 
 
 def hydrate_formation_temperature(
-    components: list[str], P: Q, z: list[float], eos: str = "srk"
+    components: list[str],
+    P: Q,
+    z: list[float],
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
 ) -> HydrateFormationTemperatureResult:
     """The temperature at which a fluid's hydrate appears, at a pressure.
 
@@ -1954,12 +1958,17 @@ def hydrate_formation_temperature(
     See :func:`azoth.eos.reference.hydrate_formation_temperature`.
     """
     return resolve(_HYDRATE_FORMATION_TEMPERATURE)(  # type: ignore[no-any-return]
-        components=components, P=P, z=z, eos=eos
+        components=components, P=P, z=z, eos=eos, hydrate_model=hydrate_model
     )
 
 
 def hydrate_fraction(
-    components: list[str], T: Q, P: Q, z: list[float], eos: str = "srk"
+    components: list[str],
+    T: Q,
+    P: Q,
+    z: list[float],
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
 ) -> HydrateFractionResult:
     """The fraction of a feed that is hydrate at a temperature and pressure.
 
@@ -1985,12 +1994,16 @@ def hydrate_fraction(
     See :func:`azoth.eos.reference.hydrate_fraction`.
     """
     return resolve(_HYDRATE_FRACTION)(  # type: ignore[no-any-return]
-        components=components, T=T, P=P, z=z, eos=eos
+        components=components, T=T, P=P, z=z, eos=eos, hydrate_model=hydrate_model
     )
 
 
 def hydrate_formation_pressure(
-    components: list[str], T: Q, z: list[float], eos: str = "srk"
+    components: list[str],
+    T: Q,
+    z: list[float],
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
 ) -> HydrateFormationPressureResult:
     """The pressure at which a fluid's hydrate appears, at a temperature.
 
@@ -2013,7 +2026,7 @@ def hydrate_formation_pressure(
     See :func:`azoth.eos.reference.hydrate_formation_pressure`.
     """
     return resolve(_HYDRATE_FORMATION_PRESSURE)(  # type: ignore[no-any-return]
-        components=components, T=T, z=z, eos=eos
+        components=components, T=T, z=z, eos=eos, hydrate_model=hydrate_model
     )
 
 

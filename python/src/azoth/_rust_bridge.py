@@ -2747,7 +2747,11 @@ def gerg2008_phase(
 
 
 def hydrate_formation_temperature(
-    components: Sequence[str], P: Q, z: Sequence[float], eos: str = "srk"
+    components: Sequence[str],
+    P: Q,
+    z: Sequence[float],
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
 ) -> HydrateFormationTemperatureResult:
     """The hydrate formation temperature of a fluid, computed in Rust.
 
@@ -2757,7 +2761,7 @@ def hydrate_formation_temperature(
     """
     spec = _models_gen.model("eos.hydrate_formation_temperature")
     result = _core.hydrate_formation_temperature(
-        list(components), input_to_si(spec, "P", P), list(z), eos
+        list(components), input_to_si(spec, "P", P), list(z), eos, hydrate_model
     )
     return HydrateFormationTemperatureResult(
         temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
@@ -2769,7 +2773,12 @@ def hydrate_formation_temperature(
 
 
 def hydrate_fraction(
-    components: Sequence[str], T: Q, P: Q, z: Sequence[float], eos: str = "srk"
+    components: Sequence[str],
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
 ) -> HydrateFractionResult:
     """The fraction of a feed that is hydrate at a state, computed in Rust.
 
@@ -2784,6 +2793,7 @@ def hydrate_fraction(
         input_to_si(spec, "P", P),
         list(z),
         eos,
+        hydrate_model,
     )
     return HydrateFractionResult(
         beta=result.beta,
@@ -2796,7 +2806,11 @@ def hydrate_fraction(
 
 
 def hydrate_formation_pressure(
-    components: Sequence[str], T: Q, z: Sequence[float], eos: str = "srk"
+    components: Sequence[str],
+    T: Q,
+    z: Sequence[float],
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
 ) -> HydrateFormationPressureResult:
     """The hydrate formation pressure of a fluid, computed in Rust.
 
@@ -2806,7 +2820,7 @@ def hydrate_formation_pressure(
     """
     spec = _models_gen.model("eos.hydrate_formation_pressure")
     result = _core.hydrate_formation_pressure(
-        list(components), input_to_si(spec, "T", T), list(z), eos
+        list(components), input_to_si(spec, "T", T), list(z), eos, hydrate_model
     )
     return HydrateFormationPressureResult(
         pressure=from_si(result.pressure.magnitude_si, result.pressure.unit),

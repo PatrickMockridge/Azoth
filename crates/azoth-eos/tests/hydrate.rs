@@ -18,8 +18,12 @@
 
 use azoth_core::AzothError;
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::hydrate::HydrateModel;
 use azoth_eos::mixture::RootSide;
 use azoth_eos::{Cubic, databank, hydrate};
+
+/// This file drives the PVTsim route; the Guo-Finch route has its own capture.
+const MODEL: HydrateModel = HydrateModel::Pvtsim;
 
 /// `(T in K, P in bara, [f_methane, f_ethane, f_propane, f_water] in bara, the stable
 /// structure, and six occupancies as `[small: methane, ethane, propane; large: ...]`)`.
@@ -115,6 +119,8 @@ fn guests() -> Vec<hydrate::HydrateGuest> {
                 name: entry.name.clone(),
                 langmuir_a: entry.hydrate_langmuir_a,
                 langmuir_b: entry.hydrate_langmuir_b,
+                guo_finch_a: entry.hydrate_guo_finch_a,
+                guo_finch_b: entry.hydrate_guo_finch_b,
                 former: entry.hydrate_former,
             }
         })
@@ -130,7 +136,7 @@ fn the_occupancies_reproduce_the_capture() {
         let refs: Vec<f64> = fugacities.iter().map(|value| value * 1.0e5).collect();
 
         for cavity in 0..2 {
-            let occupied = hydrate::occupancy(&records, &refs, structure, cavity, t);
+            let occupied = hydrate::occupancy(&records, &refs, MODEL, structure, cavity, t);
             for (index, guest) in ["methane", "ethane", "propane"].iter().enumerate() {
                 let wanted = expected[cavity * 3 + index];
                 assert!(
@@ -155,6 +161,7 @@ fn the_water_fugacity_coefficient_reproduces_the_capture() {
         let (found, coefficient) = hydrate::stable_structure(
             &records,
             &refs,
+            MODEL,
             t,
             p_bara * 1.0e5,
             reference_water_fugacity(t, p_bara * 1.0e5),
@@ -184,7 +191,7 @@ fn the_cavity_sum_reproduces_the_probe() {
 
     let mut cavity_sum = 0.0;
     for cavity in 0..2 {
-        let occupied: f64 = hydrate::occupancy(&records, &refs, structure, cavity, t)
+        let occupied: f64 = hydrate::occupancy(&records, &refs, MODEL, structure, cavity, t)
             .iter()
             .sum();
         cavity_sum += hydrate::CAVITIES_PER_WATER[structure][cavity] * (1.0 - occupied).ln();
@@ -204,6 +211,7 @@ fn a_full_cavity_is_refused_rather_than_clamped() {
     let error = hydrate::stable_structure(
         &records,
         &saturated,
+        MODEL,
         293.0,
         1.0e7,
         reference_water_fugacity(293.0, 1.0e7),

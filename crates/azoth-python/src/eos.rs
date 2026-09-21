@@ -3202,7 +3202,7 @@ pub fn hydrogen_phase(
 /// **The component names cross unresolved**, and this side resolves them: the hydrate's guest
 /// tables are keyed by name, so a mixture built from constants alone could not carry them.
 #[pyfunction]
-#[pyo3(signature = (components, P, z, eos = "srk"))]
+#[pyo3(signature = (components, P, z, eos = "srk", hydrate_model = "pvtsim"))]
 #[allow(non_snake_case)] // `P` is the symbol in the chemistry
 pub fn hydrate_formation_temperature(
     py: Python<'_>,
@@ -3210,12 +3210,16 @@ pub fn hydrate_formation_temperature(
     P: f64,
     z: Vec<f64>,
     eos: &str,
+    hydrate_model: &str,
 ) -> PyResult<crate::results::PyHydrateFormationTemperatureResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
         &names,
         eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
         None,
+        hydrate_model
+            .parse()
+            .unwrap_or(azoth_eos::hydrate::HydrateModel::Pvtsim),
     )
     .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::hydrate_formation_temperature(&mixture, pascals(P), &z)
@@ -3228,7 +3232,7 @@ pub fn hydrate_formation_temperature(
 /// **The component names cross unresolved**, and this side resolves them: the hydrate's guest
 /// tables are keyed by name, so a mixture built from constants alone could not carry them.
 #[pyfunction]
-#[pyo3(signature = (components, T, z, eos = "srk"))]
+#[pyo3(signature = (components, T, z, eos = "srk", hydrate_model = "pvtsim"))]
 #[allow(non_snake_case)] // `T` is the symbol in the chemistry
 pub fn hydrate_formation_pressure(
     py: Python<'_>,
@@ -3236,12 +3240,16 @@ pub fn hydrate_formation_pressure(
     T: f64,
     z: Vec<f64>,
     eos: &str,
+    hydrate_model: &str,
 ) -> PyResult<crate::results::PyHydrateFormationPressureResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
         &names,
         eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
         None,
+        hydrate_model
+            .parse()
+            .unwrap_or(azoth_eos::hydrate::HydrateModel::Pvtsim),
     )
     .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::hydrate_formation_pressure(&mixture, kelvins(T), &z)
@@ -3254,7 +3262,7 @@ pub fn hydrate_formation_pressure(
 /// **The component names cross unresolved**, and this side resolves them: the hydrate's guest
 /// tables are keyed by name, so a mixture built from constants alone could not carry them.
 #[pyfunction]
-#[pyo3(signature = (components, T, P, z, eos = "srk"))]
+#[pyo3(signature = (components, T, P, z, eos = "srk", hydrate_model = "pvtsim"))]
 #[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
 pub fn hydrate_fraction(
     py: Python<'_>,
@@ -3263,12 +3271,16 @@ pub fn hydrate_fraction(
     P: f64,
     z: Vec<f64>,
     eos: &str,
+    hydrate_model: &str,
 ) -> PyResult<crate::results::PyHydrateFractionResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
         &names,
         eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
         None,
+        hydrate_model
+            .parse()
+            .unwrap_or(azoth_eos::hydrate::HydrateModel::Pvtsim),
     )
     .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::hydrate_fraction(&mixture, kelvins(T), pascals(P), &z)

@@ -1,13 +1,20 @@
-//! The van der Waals-Platteeuw hydrate fugacity, as NeqSim's `ComponentHydratePVTsim`
-//! builds it.
+//! The van der Waals-Platteeuw hydrate fugacity, in the two fitted forms NeqSim carries.
 //!
-//! The route this carries is the fitted one: a guest's Langmuir constant is
-//! `C = A/T exp(B/T)` from the eight `HydrateA*`/`B*` columns, and the water fugacity
-//! coefficient follows from the cavity occupancies and a per-structure chemical-potential
-//! constant. NeqSim's **base** `ComponentHydrate` integrates a Kihara potential over the
-//! guest's Lennard-Jones parameters instead, and `ComponentHydratePVTsim` overrides that
-//! away - which is why the three `*HYDRATE` LJ columns stay `vendored` in the ledger while
-//! these eight are `used`.
+//! Both build a guest's Langmuir constant as `C = A/T exp(B/T)` and take the water fugacity
+//! coefficient from the cavity occupancies; they differ in which fitted pair, whether a
+//! chemical-potential constant is added, and what the reference term is. [`HydrateModel`] is
+//! the choice, and NeqSim makes it from the *system's model name* rather than from the fluid.
+//!
+//! - `ComponentHydratePVTsim` (the default, [`HydrateModel::Pvtsim`]) reads the eight
+//!   `HydrateA*`/`B*` columns, adds `calcDeltaChemPot`, and references the **reference fluid's**
+//!   own water fugacity.
+//! - `ComponentHydrateGF` ([`HydrateModel::GuoFinch`]) reads the eight `A*_GF`/`B*_GF` columns,
+//!   adds nothing, and references the **empty lattice's** vapour pressure on that structure.
+//!
+//! NeqSim's **base** `ComponentHydrate` integrates a Kihara potential over the guest's
+//! Lennard-Jones parameters instead, and both of the above override that away - which is why
+//! the three `*HYDRATE` LJ columns stay `vendored` in the ledger while the other sixteen are
+//! `used`.
 //!
 //! # The two structures
 //!
@@ -45,14 +52,93 @@ const CHEMICAL_POTENTIAL: [[f64; 4]; 2] = [
     [883.0, -5201.0, -39.16, 5.0e-6],
 ];
 
+/// The reference pressure the empty-lattice vapour pressure is stated against, bar. NeqSim's
+/// `ThermodynamicConstantsInterface.referencePressure`.
+const REFERENCE_PRESSURE_BAR: f64 = 1.01325;
+
+/// The empty structure's vapour pressure constants, structure I then II: Sloan (1990), as
+/// NeqSim's `ComponentHydrate.emptyHydrateVapourPressureConstant`.
+const EMPTY_VAPOUR_PRESSURE: [[f64; 2]; 2] = [[17.44, -6003.9], [17.332, -6017.6]];
+
+/// Avlonitis (1994)'s molar volume of the empty hydrate, `(v0, k1, k2, k3)` in cm3/mol and
+/// per K, structure I then II. NeqSim's `ComponentHydrate.getMolarVolumeHydrate`.
+const HYDRATE_VOLUME: [[f64; 4]; 2] = [
+    [22.35, 3.1075e-4, 5.9537e-7, 1.3707e-10],
+    [22.57, 1.9335e-4, 2.1768e-7, -1.4786e-10],
+];
+
+/// Which fitted hydrate model a calculation runs.
+///
+/// The two differ in three places and nowhere else: which Langmuir pair a guest's constant is
+/// built from, whether the chemical-potential constant is added, and what multiplies the
+/// exponent to make a coefficient. NeqSim picks between them by the *system's model name*
+/// (`PhaseHydrate`'s constructor), so the name is a model-level input rather than a property of
+/// the fluid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum HydrateModel {
+    /// NeqSim's `ComponentHydratePVTsim`, the default: the fitted pair plus `calcDeltaChemPot`,
+    /// against the reference *fluid's* water fugacity.
+    #[default]
+    Pvtsim,
+    /// NeqSim's `ComponentHydrateGF`: the Guo-Finch pair, no chemical-potential constant, and
+    /// the empty lattice's own vapour pressure as the reference.
+    GuoFinch,
+}
+
+impl std::str::FromStr for HydrateModel {
+    type Err = std::convert::Infallible;
+
+    /// The names a spec carries. An unknown string is `Pvtsim`, which is what the databank's
+    /// `eos` column does with an unknown cubic - a spec's own vocabulary check is what should
+    /// refuse, not this.
+    fn from_str(text: &str) -> Result<Self, Self::Err> {
+        Ok(match text.trim().to_lowercase().as_str() {
+            "guo_finch" | "guofinch" | "gf" => Self::GuoFinch,
+            _ => Self::Pvtsim,
+        })
+    }
+}
+
+/// The molar volume of the empty hydrate on one structure, m3/mol. Avlonitis (1994).
+///
+/// The third value NeqSim carries (`v0 = 19.6522`) is the *ice* branch, reached only where
+/// `hydrateStructure == -1`, which nothing in NeqSim sets.
+#[must_use]
+pub fn molar_volume_hydrate(structure: usize, t: f64) -> f64 {
+    let [v0, k1, k2, k3] = HYDRATE_VOLUME[structure];
+    let dt = t - T_REFERENCE;
+    v0 * (1.0 + k1 * dt + k2 * dt * dt + k3 * dt * dt * dt) / 1.0e6
+}
+
+/// The empty hydrate's vapour pressure on one structure, **in bar**.
+///
+/// This is the Guo-Finch route's reference term, and it is the reason that route breaks the
+/// structure comparison: it is a function of the structure, so the term does not cancel out of
+/// a comparison of the two coefficients the way the PVTsim route's reference does.
+#[must_use]
+pub fn empty_hydrate_vapour_pressure(structure: usize, t: f64) -> f64 {
+    let [c0, c1] = EMPTY_VAPOUR_PRESSURE[structure];
+    (c0 + c1 / t).exp() * REFERENCE_PRESSURE_BAR
+}
+
 /// A guest's fitted pair at one structure and cavity, `C = A/T exp(B/T)`.
 ///
 /// A cell left empty in the table is a zero, and a zero here means the guest does not occupy
 /// that cavity at all: ethane's and propane's small-cavity columns are empty, which is why
 /// their occupancies there are exactly zero rather than merely small.
 #[must_use]
-pub fn langmuir(guest: &HydrateGuest, structure: usize, cavity: usize, t: f64) -> f64 {
-    guest.langmuir_a[structure][cavity] / t * (guest.langmuir_b[structure][cavity] / t).exp()
+pub fn langmuir(
+    guest: &HydrateGuest,
+    model: HydrateModel,
+    structure: usize,
+    cavity: usize,
+    t: f64,
+) -> f64 {
+    let (a, b) = match model {
+        HydrateModel::Pvtsim => (guest.langmuir_a, guest.langmuir_b),
+        HydrateModel::GuoFinch => (guest.guo_finch_a, guest.guo_finch_b),
+    };
+    a[structure][cavity] / t * (b[structure][cavity] / t).exp()
 }
 
 /// The occupancy of one cavity type by one guest, `C f_i / (1 + sum_j C_j f_j)`.
@@ -69,6 +155,7 @@ pub fn langmuir(guest: &HydrateGuest, structure: usize, cavity: usize, t: f64) -
 pub fn occupancy(
     guests: &[HydrateGuest],
     ref_fugacities: &[f64],
+    model: HydrateModel,
     structure: usize,
     cavity: usize,
     t: f64,
@@ -77,7 +164,7 @@ pub fn occupancy(
     let mut denominator = 1.0;
     for (guest, fugacity) in guests.iter().zip(ref_fugacities) {
         if guest.former {
-            denominator += langmuir(guest, structure, cavity, t) * fugacity / PA_PER_BAR;
+            denominator += langmuir(guest, model, structure, cavity, t) * fugacity / PA_PER_BAR;
         }
     }
     guests
@@ -85,7 +172,7 @@ pub fn occupancy(
         .zip(ref_fugacities)
         .map(|(guest, fugacity)| {
             if guest.former {
-                langmuir(guest, structure, cavity, t) * fugacity / PA_PER_BAR / denominator
+                langmuir(guest, model, structure, cavity, t) * fugacity / PA_PER_BAR / denominator
             } else {
                 0.0
             }
@@ -129,13 +216,14 @@ fn chemical_potential(structure: usize, t: f64, p: f64) -> f64 {
 fn exponent(
     guests: &[HydrateGuest],
     ref_fugacities: &[f64],
+    model: HydrateModel,
     t: f64,
     p: f64,
     structure: usize,
 ) -> Result<f64, AzothError> {
     let mut val = 0.0;
     for (cavity, per_water) in CAVITIES_PER_WATER[structure].iter().enumerate() {
-        let occupied: f64 = occupancy(guests, ref_fugacities, structure, cavity, t)
+        let occupied: f64 = occupancy(guests, ref_fugacities, model, structure, cavity, t)
             .iter()
             .sum();
         if occupied >= 1.0 {
@@ -152,7 +240,36 @@ fn exponent(
         val += per_water * (1.0 - occupied).ln();
     }
 
-    Ok(val + chemical_potential(structure, t, p))
+    Ok(match model {
+        HydrateModel::Pvtsim => val + chemical_potential(structure, t, p),
+        // The Guo-Finch route's reference is the empty lattice's own vapour pressure, carried
+        // by `reference_term` below, so there is no chemical-potential constant here.
+        HydrateModel::GuoFinch => val,
+    })
+}
+
+/// What multiplies `exp(exponent)` to make the coefficient, `[structure][cavity]` aside.
+///
+/// The two models state their reference differently and the difference is the whole of the
+/// structure comparison's shape. `Pvtsim`'s reference is the *reference fluid's* water
+/// fugacity over the pressure, which is the same number for both structures - so a comparison
+/// of the coefficients is a comparison of the exponents. `GuoFinch`'s is the empty lattice's
+/// vapour pressure **on that structure**, which is not, and the pressure term that goes with
+/// it is a Poynting correction about that vapour pressure rather than about the system's.
+fn reference_term(
+    model: HydrateModel,
+    structure: usize,
+    t: f64,
+    p: f64,
+    reference_water_fugacity: f64,
+) -> f64 {
+    match model {
+        HydrateModel::Pvtsim => reference_water_fugacity / p,
+        HydrateModel::GuoFinch => {
+            let p_empty = empty_hydrate_vapour_pressure(structure, t) * 1.0e5;
+            p_empty * (molar_volume_hydrate(structure, t) / (R * t) * (p - p_empty)).exp() / p
+        }
+    }
 }
 
 /// The hydrate's water fugacity coefficient on one structure, `f_w^hydrate/P`.
@@ -171,38 +288,63 @@ fn exponent(
 pub fn water_fugacity_coefficient(
     guests: &[HydrateGuest],
     ref_fugacities: &[f64],
+    model: HydrateModel,
     t: f64,
     p: f64,
     structure: usize,
     reference_water_fugacity: f64,
 ) -> Result<f64, AzothError> {
-    Ok(exponent(guests, ref_fugacities, t, p, structure)?.exp() * reference_water_fugacity / p)
+    Ok(
+        exponent(guests, ref_fugacities, model, t, p, structure)?.exp()
+            * reference_term(model, structure, t, p, reference_water_fugacity),
+    )
 }
 
 /// The stable structure and its water fugacity coefficient.
 ///
 /// NeqSim evaluates both structures and keeps the **lower** coefficient, which is the more
-/// stable hydrate at that state. The reference term is the same for both - it is the
-/// *reference fluid's* fugacity over the pressure, and neither depends on the structure - so
-/// the comparison is the exponents'.
+/// stable hydrate at that state.
+///
+/// **The comparison is of the coefficients, not of the exponents**, and for the Guo-Finch
+/// route that is not a distinction without a difference: its reference term is the empty
+/// lattice's vapour pressure on that structure, so the two structures do not share a factor and
+/// an exponent comparison would pick the wrong one wherever the vapour pressures differ by more
+/// than the cavity sums do. The PVTsim route's reference is the same number for both, which is
+/// why an exponent comparison happens to agree there.
 ///
 /// # Errors
 /// * [`AzothError::OutOfRange`] from either structure's cavity sum.
 pub fn stable_structure(
     guests: &[HydrateGuest],
     ref_fugacities: &[f64],
+    model: HydrateModel,
     t: f64,
     p: f64,
     reference_water_fugacity: f64,
 ) -> Result<(usize, f64), AzothError> {
-    let first = exponent(guests, ref_fugacities, t, p, 0)?;
-    let second = exponent(guests, ref_fugacities, t, p, 1)?;
-    let (structure, chosen) = if first <= second {
+    let first = water_fugacity_coefficient(
+        guests,
+        ref_fugacities,
+        model,
+        t,
+        p,
+        0,
+        reference_water_fugacity,
+    )?;
+    let second = water_fugacity_coefficient(
+        guests,
+        ref_fugacities,
+        model,
+        t,
+        p,
+        1,
+        reference_water_fugacity,
+    )?;
+    Ok(if first <= second {
         (0, first)
     } else {
         (1, second)
-    };
-    Ok((structure, chosen.exp() * reference_water_fugacity / p))
+    })
 }
 
 /// A gas the mixture's fluid carries, and whether the hydrate takes it into a cage.
@@ -214,6 +356,10 @@ pub struct HydrateGuest {
     pub langmuir_a: [[f64; 2]; 2],
     /// The same pair's `B`, in K.
     pub langmuir_b: [[f64; 2]; 2],
+    /// The Guo-Finch pair, `[structure][cavity]`, in K and in K. Same shape, different fit.
+    pub guo_finch_a: [[f64; 2]; 2],
+    /// The same pair's `B`, in K.
+    pub guo_finch_b: [[f64; 2]; 2],
     /// Whether it occupies a cage at all.
     pub former: bool,
 }
@@ -229,6 +375,8 @@ pub struct Hydration {
     pub guests: Vec<HydrateGuest>,
     /// Where water is, or `None` if the fluid has none - and a hydrate needs one.
     pub water_index: Option<usize>,
+    /// Which fitted model the guests' constants are read with.
+    pub model: HydrateModel,
 }
 
 /// A fluid with the hydrate's tables attached, built from names.
@@ -240,6 +388,7 @@ pub fn hydrate_mixture_of(
     names: &[&str],
     cubic: crate::Cubic,
     overlay: Option<&crate::databank::Overlay>,
+    model: HydrateModel,
 ) -> azoth_core::Result<(
     crate::mixture::Mixture,
     crate::molar_enthalpy_entropy::IdealGasModel,
@@ -255,6 +404,8 @@ pub fn hydrate_mixture_of(
             name: entry.name.clone(),
             langmuir_a: entry.hydrate_langmuir_a,
             langmuir_b: entry.hydrate_langmuir_b,
+            guo_finch_a: entry.hydrate_guo_finch_a,
+            guo_finch_b: entry.hydrate_guo_finch_b,
             former: entry.hydrate_former,
         })
         .collect();
@@ -282,6 +433,7 @@ pub fn hydrate_mixture_of(
         mixture.with_hydration(Hydration {
             guests,
             water_index,
+            model,
         }),
         ideal_gas,
     ))
@@ -312,6 +464,7 @@ pub const WATER_PER_CELL: [f64; 2] = [46.0, 136.0];
 pub fn composition(
     guests: &[HydrateGuest],
     ref_fugacities: &[f64],
+    model: HydrateModel,
     structure: usize,
     t: f64,
     water_index: usize,
@@ -319,7 +472,7 @@ pub fn composition(
     let mut counts = vec![0.0; guests.len()];
     let mut total_guests = 0.0;
     for (cavity, &per_cell) in CAVITIES_PER_CELL[structure].iter().enumerate() {
-        for (index, occupied) in occupancy(guests, ref_fugacities, structure, cavity, t)
+        for (index, occupied) in occupancy(guests, ref_fugacities, model, structure, cavity, t)
             .iter()
             .enumerate()
         {

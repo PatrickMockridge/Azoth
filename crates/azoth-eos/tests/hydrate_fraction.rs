@@ -2,6 +2,7 @@
 
 use azoth_core::AzothError;
 use azoth_core::units::{kelvins, pascals};
+use azoth_eos::hydrate::HydrateModel;
 use azoth_eos::{Cubic, hydrate, hydrate_fraction, model_gen, pt_flash};
 use azoth_test_support as common;
 
@@ -16,19 +17,31 @@ const Z: [f64; 4] = [
 ];
 
 fn probe_mixture() -> hydrate::Hydration {
-    hydrate::hydrate_mixture_of(&["methane", "ethane", "propane", "water"], Cubic::Srk, None)
-        .expect("the probe's feed resolves for a hydrate")
-        .0
-        .hydration()
-        .expect("attached")
-        .clone()
+    hydrate::hydrate_mixture_of(
+        &["methane", "ethane", "propane", "water"],
+        Cubic::Srk,
+        None,
+        HydrateModel::Pvtsim,
+    )
+    .expect("the probe's feed resolves for a hydrate")
+    .0
+    .hydration()
+    .expect("attached")
+    .clone()
 }
 
 fn mixture_from_case(case: &azoth_core::spec::TestCase) -> azoth_eos::mixture::Mixture {
     let names = case.list("components").expect("components");
-    hydrate::hydrate_mixture_of(names, Cubic::Srk, None)
-        .expect("the case resolves for a hydrate")
-        .0
+    hydrate::hydrate_mixture_of(
+        names,
+        Cubic::Srk,
+        None,
+        case.string("hydrate_model")
+            .and_then(|text| text.parse().ok())
+            .unwrap_or(HydrateModel::Pvtsim),
+    )
+    .expect("the case resolves for a hydrate")
+    .0
 }
 
 #[test]
@@ -74,9 +87,13 @@ fn every_case_in_the_spec() {
 /// records. The number is asserted rather than described.
 #[test]
 fn the_material_balance_closes() {
-    let (mixture, _) =
-        hydrate::hydrate_mixture_of(&["methane", "ethane", "propane", "water"], Cubic::Srk, None)
-            .expect("resolves");
+    let (mixture, _) = hydrate::hydrate_mixture_of(
+        &["methane", "ethane", "propane", "water"],
+        Cubic::Srk,
+        None,
+        HydrateModel::Pvtsim,
+    )
+    .expect("resolves");
     let result = hydrate_fraction(&mixture, kelvins(288.15), pascals(1.0e7), &Z).expect("computes");
     assert!(
         result.balance_error < 1.0e-12,
@@ -98,9 +115,13 @@ fn the_material_balance_closes() {
 /// than against an oracle.
 #[test]
 fn the_two_models_are_one_equilibrium() {
-    let (mixture, _) =
-        hydrate::hydrate_mixture_of(&["methane", "ethane", "propane", "water"], Cubic::Srk, None)
-            .expect("resolves");
+    let (mixture, _) = hydrate::hydrate_mixture_of(
+        &["methane", "ethane", "propane", "water"],
+        Cubic::Srk,
+        None,
+        HydrateModel::Pvtsim,
+    )
+    .expect("resolves");
     let formation =
         azoth_eos::hydrate_formation_temperature(&mixture, pascals(1.0e7), &Z).expect("solves");
     let at = formation.temperature.value;
@@ -155,9 +176,13 @@ fn the_two_models_are_one_equilibrium() {
 /// size - so the test names both sides of it rather than only the side that moves.
 #[test]
 fn the_cages_move_the_fraction_and_not_the_fluid() {
-    let (mixture, _) =
-        hydrate::hydrate_mixture_of(&["methane", "ethane", "propane", "water"], Cubic::Srk, None)
-            .expect("resolves");
+    let (mixture, _) = hydrate::hydrate_mixture_of(
+        &["methane", "ethane", "propane", "water"],
+        Cubic::Srk,
+        None,
+        HydrateModel::Pvtsim,
+    )
+    .expect("resolves");
     let mut broken = probe_mixture();
     for guest in &mut broken.guests {
         if guest.name == "methane" {
@@ -188,8 +213,13 @@ fn the_cages_move_the_fraction_and_not_the_fluid() {
 /// A fluid with no water, or nothing that occupies a cage, is refused.
 #[test]
 fn a_fluid_that_cannot_form_a_hydrate_is_refused() {
-    let no_water = hydrate::hydrate_mixture_of(&["methane", "ethane"], Cubic::Srk, None)
-        .expect_err("no water, no hydrate");
+    let no_water = hydrate::hydrate_mixture_of(
+        &["methane", "ethane"],
+        Cubic::Srk,
+        None,
+        HydrateModel::Pvtsim,
+    )
+    .expect_err("no water, no hydrate");
     assert!(
         matches!(no_water, AzothError::InvalidInput { .. }),
         "{no_water:?}"

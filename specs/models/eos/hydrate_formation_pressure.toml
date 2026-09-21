@@ -6,7 +6,8 @@ assumptions = [
     "**the same equilibrium `eos.hydrate_formation_temperature` reads the other way round**: both solve for the state where the hydrate's water fugacity equals the fluid's, one at a fixed pressure and this one at a fixed temperature, and the residual here is the quantity that model drives to zero.",
     "**NeqSim iterates `P <- P (f_w^hydrate/f_w^fluid)` and this brackets and bisects**: measured, its answer is `1.03e-5` relative low with a residual of `-1.15e-6` at it where this bisects to `1.65e-9`, so the two agree on the root and differ on where to stop.",
     "**the scan steps in the logarithm of the pressure**, because that is the variable a hydrate curve is drawn on; a linear scan over the bracket's decades would put every point of interest in its first two steps.",
-    "the solid is the fitted model, `ComponentHydratePVTsim`, as for the formation temperature, and the structure is taken as the lower of the two coefficients.",
+    "**the solid is one of two fitted models**, chosen by `hydrate_model`: `ComponentHydratePVTsim` (the default), which adds a chemical-potential constant to its Langmuir pair, and `guo_finch`, which reads the `A*_GF`/`B*_GF` pair and references the empty lattice's vapour pressure instead.",
+    "**the Guo-Finch route has no equilibrium oracle**: NeqSim reaches it only through a `CPA-SRK-EOS`-named system and this library has no CPA flash, so it is pinned at fixed guest fugacities (`validation/neqsim/captures/hydrate_gf_probe.tsv`) rather than at an equilibrium.",
     "the reference water phase is a one-component phase of the **same cubic the fluid runs**, so the identity `f_w^hydrate = f_w^fluid` settles the pressure rather than the reference.",
     "no inhibitor and no energy balance, as for the formation temperature.",
 ]
@@ -17,7 +18,7 @@ references = [
 ]
 [source]
 standard = "NeqSim master `HydrateFormationPressureFlash`"
-edition = "The path that runs when the system is not a `SystemPitzer`: NeqSim dispatches `PitzerHydrateFlash` for that one, and its coupling to the electrolyte models is carried rather than ported."
+edition = "The path that runs when the system is not a `SystemPitzer`: NeqSim dispatches `PitzerHydrateFlash` for that one, and its coupling to the electrolyte models is carried rather than ported. `hydrate_model` selects between the two component models."
 [algorithm]
 scheme = "hydrate_pressure_bisection"
 initialisation = "log_scan_for_sign_change"

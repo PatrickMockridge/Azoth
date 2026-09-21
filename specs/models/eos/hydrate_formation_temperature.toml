@@ -4,7 +4,9 @@ kind = "procedure"
 assumptions = [
     "the fluid is flashed at each trial temperature by `eos.pt_flash`, and the hydrate's guests take their fugacities from the **vapour** phase's - what NeqSim's `setFug` copies in.",
     "the equilibrium is on **water**: the temperature is where the hydrate's water fugacity equals the fluid's. A flash equalises water's fugacity across the fluid's own phases, so which of them is read does not change the answer - NeqSim prefers the aqueous, and its pressure flash takes the vapour.",
-    "**the solid is the fitted model**, `ComponentHydratePVTsim`: a Langmuir constant `C = A/T exp(B/T)` from the `HydrateA*`/`B*` columns, and the structure taken as the lower of the two coefficients. NeqSim's base `ComponentHydrate` integrates a Kihara potential instead and is not this.",
+    "**the solid is one of two fitted models**, chosen by `hydrate_model`: `ComponentHydratePVTsim` (the default), which adds a chemical-potential constant to its Langmuir pair, and `guo_finch`, which reads the `A*_GF`/`B*_GF` pair and references the empty lattice's vapour pressure instead.",
+    "**the Guo-Finch route has no equilibrium oracle**: NeqSim reaches it only through a `CPA-SRK-EOS`-named system and this library has no CPA flash, so it is pinned at fixed guest fugacities (`validation/neqsim/captures/hydrate_gf_probe.tsv`) rather than at an equilibrium.",
+    "the Langmuir constant is `C = A/T exp(B/T)` and the structure is taken as the lower of the two coefficients; NeqSim's base `ComponentHydrate` integrates a Kihara potential instead and is neither model.",
     "the reference water phase is a one-component phase of the **same cubic the fluid runs**, which is where its fugacity comes from; the identity `f_w^hydrate = f_w^fluid` therefore settles the temperature rather than the reference.",
     "the stable structure is reported for the answer, I or II, because it is what decides which cages the occupancies refer to and a caller reading an occupancy needs it.",
     "no inhibitor: NeqSim's `HydrateInhibitorConcentrationFlash` and `...wtFlash` are the models that add methanol or MEG, and neither is ported here.",
@@ -17,7 +19,7 @@ references = [
 ]
 [source]
 standard = "NeqSim master `HydrateFormationTemperatureFlash`"
-edition = "The path that runs when the system is not a `SystemPitzer`: NeqSim dispatches `PitzerHydrateFlash` for that one, and its coupling to the electrolyte models is carried rather than ported."
+edition = "The path that runs when the system is not a `SystemPitzer`: NeqSim dispatches `PitzerHydrateFlash` for that one, and its coupling to the electrolyte models is carried rather than ported. `hydrate_model` selects between the two component models."
 [algorithm]
 scheme = "hydrate_temperature_bisection"
 initialisation = "linear_scan_for_sign_change"

@@ -2,6 +2,7 @@
 
 use azoth_core::AzothError;
 use azoth_core::units::kelvins;
+use azoth_eos::hydrate::HydrateModel;
 use azoth_eos::{
     Cubic, hydrate, hydrate_formation_pressure, hydrate_formation_temperature, model_gen,
 };
@@ -13,9 +14,16 @@ fn mixture_from_case(case: &azoth_core::spec::TestCase) -> azoth_eos::mixture::M
     let names = case
         .list("components")
         .expect("the case declares components");
-    hydrate::hydrate_mixture_of(names, Cubic::Srk, None)
-        .expect("the case's components resolve for a hydrate")
-        .0
+    hydrate::hydrate_mixture_of(
+        names,
+        Cubic::Srk,
+        None,
+        case.string("hydrate_model")
+            .and_then(|text| text.parse().ok())
+            .unwrap_or(HydrateModel::Pvtsim),
+    )
+    .expect("the case's components resolve for a hydrate")
+    .0
 }
 
 #[test]
@@ -65,9 +73,13 @@ fn every_case_in_the_spec() {
 /// so the consistency is between the two here rather than against an oracle.
 #[test]
 fn the_two_models_are_one_curve() {
-    let (mixture, _) =
-        hydrate::hydrate_mixture_of(&["methane", "ethane", "propane", "water"], Cubic::Srk, None)
-            .expect("resolves");
+    let (mixture, _) = hydrate::hydrate_mixture_of(
+        &["methane", "ethane", "propane", "water"],
+        Cubic::Srk,
+        None,
+        HydrateModel::Pvtsim,
+    )
+    .expect("resolves");
     let z = [
         0.781_018_289_668_808_7,
         0.099_851_705_388_037_56,
@@ -97,15 +109,25 @@ fn the_two_models_are_one_curve() {
 /// A fluid with no water, or with nothing that occupies a cage, is refused.
 #[test]
 fn a_fluid_that_cannot_form_a_hydrate_is_refused() {
-    let no_water = hydrate::hydrate_mixture_of(&["methane", "ethane"], Cubic::Srk, None)
-        .expect_err("no water, no hydrate");
+    let no_water = hydrate::hydrate_mixture_of(
+        &["methane", "ethane"],
+        Cubic::Srk,
+        None,
+        HydrateModel::Pvtsim,
+    )
+    .expect_err("no water, no hydrate");
     assert!(
         matches!(no_water, AzothError::InvalidInput { .. }),
         "{no_water:?}"
     );
 
-    let no_guest = hydrate::hydrate_mixture_of(&["water", "methanol"], Cubic::Srk, None)
-        .expect_err("nothing in the mixture occupies a cage");
+    let no_guest = hydrate::hydrate_mixture_of(
+        &["water", "methanol"],
+        Cubic::Srk,
+        None,
+        HydrateModel::Pvtsim,
+    )
+    .expect_err("nothing in the mixture occupies a cage");
     assert!(
         matches!(no_guest, AzothError::InvalidInput { .. }),
         "{no_guest:?}"

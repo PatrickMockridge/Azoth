@@ -292,6 +292,10 @@ pub struct Entry {
     pub hydrate_langmuir_a: [[f64; 2]; 2],
     /// The same pair's `B`.
     pub hydrate_langmuir_b: [[f64; 2]; 2],
+    /// The Guo-Finch Langmuir pair, `[structure][cavity]`, in K. NeqSim's `A*_GF`/`B*_GF`.
+    pub hydrate_guo_finch_a: [[f64; 2]; 2],
+    /// The same pair's `B`, in K.
+    pub hydrate_guo_finch_b: [[f64; 2]; 2],
     /// Whether the substance can occupy a hydrate cavity: NeqSim's `HydrateFormer`, read
     /// through `isHydrateFormer` by every occupancy loop. A non-former is a guest of no cage,
     /// and water is excluded by name rather than by this.
@@ -1078,6 +1082,14 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "hydrateb2small",
         "hydratea2large",
         "hydrateb2large",
+        "a1_smallgf",
+        "b1_smallgf",
+        "a1_largegf",
+        "b1_largegf",
+        "a2_smallgf",
+        "b2_smallgf",
+        "a2_largegf",
+        "b2_largegf",
         "schwartzentruber1",
         "schwartzentruber2",
         "schwartzentruber3",
@@ -1182,6 +1194,28 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                         for (cavity, slot) in cavities.iter_mut().enumerate() {
                             let size = if cavity == 0 { "small" } else { "large" };
                             let column = format!("hydrateb{}{size}", structure + 1);
+                            *slot = number(&record, index[column.as_str()], &column, row)?;
+                        }
+                    }
+                    fitted
+                },
+                hydrate_guo_finch_a: {
+                    let mut fitted = [[0.0; 2]; 2];
+                    for (structure, cavities) in fitted.iter_mut().enumerate() {
+                        for (cavity, slot) in cavities.iter_mut().enumerate() {
+                            let size = if cavity == 0 { "small" } else { "large" };
+                            let column = format!("a{}_{size}gf", structure + 1);
+                            *slot = number(&record, index[column.as_str()], &column, row)?;
+                        }
+                    }
+                    fitted
+                },
+                hydrate_guo_finch_b: {
+                    let mut fitted = [[0.0; 2]; 2];
+                    for (structure, cavities) in fitted.iter_mut().enumerate() {
+                        for (cavity, slot) in cavities.iter_mut().enumerate() {
+                            let size = if cavity == 0 { "small" } else { "large" };
+                            let column = format!("b{}_{size}gf", structure + 1);
                             *slot = number(&record, index[column.as_str()], &column, row)?;
                         }
                     }
@@ -1547,6 +1581,8 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // refuse rather than treat a card's substance as a guest of a cage.
                 hydrate_langmuir_a: [[0.0; 2]; 2],
                 hydrate_langmuir_b: [[0.0; 2]; 2],
+                hydrate_guo_finch_a: [[0.0; 2]; 2],
+                hydrate_guo_finch_b: [[0.0; 2]; 2],
                 hydrate_former: false,
                 wax_former: false,
                 heat_of_fusion: 0.0,
@@ -1619,6 +1655,8 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             schwartzentruber: base.schwartzentruber,
             hydrate_langmuir_a: base.hydrate_langmuir_a,
             hydrate_langmuir_b: base.hydrate_langmuir_b,
+            hydrate_guo_finch_a: base.hydrate_guo_finch_a,
+            hydrate_guo_finch_b: base.hydrate_guo_finch_b,
             hydrate_former: base.hydrate_former,
             wax_former: base.wax_former,
             heat_of_fusion: base.heat_of_fusion,
