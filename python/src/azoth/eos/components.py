@@ -148,6 +148,14 @@ COLUMNS = (
     "hydrateb2small",
     "hydratea2large",
     "hydrateb2large",
+    "a1_smallgf",
+    "b1_smallgf",
+    "a1_largegf",
+    "b1_largegf",
+    "a2_smallgf",
+    "b2_smallgf",
+    "a2_largegf",
+    "b2_largegf",
     "schwartzentruber1",
     "schwartzentruber2",
     "schwartzentruber3",
@@ -544,6 +552,11 @@ class DatabankEntry:
     hydrate_langmuir_a: tuple[float, float, float, float]
     #: The same, for ``B``.
     hydrate_langmuir_b: tuple[float, float, float, float]
+    #: The Guo-Finch Langmuir pair, ``A*_GF``/``B*_GF``, indexed the same way. A second fit
+    #: of the same quantity, read when the model is ``guo_finch``.
+    hydrate_guo_finch_a: tuple[float, float, float, float]
+    #: The same, for ``B``.
+    hydrate_guo_finch_b: tuple[float, float, float, float]
     #: Whether the substance occupies a hydrate cage at all: NeqSim's ``HydrateFormer``,
     #: read by every occupancy loop. Water is excluded by name rather than by this.
     hydrate_former: bool
@@ -722,6 +735,18 @@ def _table() -> dict[str, DatabankEntry]:
                 float(row["hydrateb1large"]),
                 float(row["hydrateb2small"]),
                 float(row["hydrateb2large"]),
+            ),
+            hydrate_guo_finch_a=(
+                float(row["a1_smallgf"]),
+                float(row["a1_largegf"]),
+                float(row["a2_smallgf"]),
+                float(row["a2_largegf"]),
+            ),
+            hydrate_guo_finch_b=(
+                float(row["b1_smallgf"]),
+                float(row["b1_largegf"]),
+                float(row["b2_smallgf"]),
+                float(row["b2_largegf"]),
             ),
             hydrate_former=row["hydrateformer"].strip() == "yes",
             # `Component.java` tests `Integer.parseInt(...) == 1`, so the column is a number
@@ -1372,6 +1397,8 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # table is neither: a substance a card supplies is not a guest of a cage.
             hydrate_langmuir_a=(0.0, 0.0, 0.0, 0.0),
             hydrate_langmuir_b=(0.0, 0.0, 0.0, 0.0),
+            hydrate_guo_finch_a=(0.0, 0.0, 0.0, 0.0),
+            hydrate_guo_finch_b=(0.0, 0.0, 0.0, 0.0),
             hydrate_former=False,
             # A card states what a cubic reads, and a melt is not something a cubic reads:
             # a substance a card supplies has no table row to inherit either from.

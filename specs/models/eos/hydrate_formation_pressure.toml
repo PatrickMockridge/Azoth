@@ -47,6 +47,11 @@ description = "the overall mole fractions, checked rather than renormalised."
 type = "enum"
 values = ["pr", "srk", "rk"]
 description = "the cubic the fluid runs. It is also the equation the hydrate's reference water phase is built from, because NeqSim's is a phase of the *host's* own class - so this is a real choice and not a label."
+[inputs.hydrate_model]
+type = "enum"
+values = ["pvtsim", "guo_finch"]
+optional = true
+description = "which of NeqSim's two fitted component models fills the cages. `pvtsim` is its default; `guo_finch` is what it selects for a `CPA-SRK-EOS`-named system, and the two differ in their reference term."
 [outputs]
 [outputs.pressure]
 unit = "Pa"

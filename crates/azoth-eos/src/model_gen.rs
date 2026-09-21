@@ -3110,7 +3110,7 @@ static HYDRATE_FORMATION_PRESSURE_CASES: &[TestCase] = &[
         numbers: &[("T", 288.15)],
         flags: &[],
         lists: &[("components", &["methane", "ethane", "propane", "water"])],
-        strings: &[("eos", "srk")],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
         vectors: &[(
             "z",
             &[
@@ -3135,7 +3135,7 @@ static HYDRATE_FORMATION_PRESSURE_CASES: &[TestCase] = &[
         numbers: &[("T", 283.15)],
         flags: &[],
         lists: &[("components", &["methane", "ethane", "propane", "water"])],
-        strings: &[("eos", "srk")],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
         vectors: &[(
             "z",
             &[
@@ -3160,7 +3160,7 @@ static HYDRATE_FORMATION_PRESSURE_CASES: &[TestCase] = &[
         numbers: &[("T", 278.15)],
         flags: &[],
         lists: &[("components", &["methane", "ethane", "propane", "water"])],
-        strings: &[("eos", "srk")],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
         vectors: &[(
             "z",
             &[
@@ -3247,7 +3247,7 @@ static HYDRATE_FORMATION_TEMPERATURE_CASES: &[TestCase] = &[
         numbers: &[("P", 10000000.0)],
         flags: &[],
         lists: &[("components", &["methane", "ethane", "propane", "water"])],
-        strings: &[("eos", "srk")],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
         vectors: &[(
             "z",
             &[
@@ -3272,7 +3272,7 @@ static HYDRATE_FORMATION_TEMPERATURE_CASES: &[TestCase] = &[
         numbers: &[("P", 5000000.0)],
         flags: &[],
         lists: &[("components", &["methane", "ethane", "propane", "water"])],
-        strings: &[("eos", "srk")],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
         vectors: &[(
             "z",
             &[
@@ -3297,7 +3297,7 @@ static HYDRATE_FORMATION_TEMPERATURE_CASES: &[TestCase] = &[
         numbers: &[("P", 20000000.0)],
         flags: &[],
         lists: &[("components", &["methane", "ethane", "propane", "water"])],
-        strings: &[("eos", "srk")],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
         vectors: &[(
             "z",
             &[
@@ -3384,7 +3384,7 @@ static HYDRATE_FRACTION_CASES: &[TestCase] = &[
         numbers: &[("T", 288.15), ("P", 10000000.0)],
         flags: &[],
         lists: &[("components", &["methane", "ethane", "propane", "water"])],
-        strings: &[("eos", "srk")],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
         vectors: &[(
             "z",
             &[
@@ -3409,7 +3409,7 @@ static HYDRATE_FRACTION_CASES: &[TestCase] = &[
         numbers: &[("T", 283.15), ("P", 10000000.0)],
         flags: &[],
         lists: &[("components", &["methane", "ethane", "propane", "water"])],
-        strings: &[("eos", "srk")],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
         vectors: &[(
             "z",
             &[
@@ -3434,7 +3434,7 @@ static HYDRATE_FRACTION_CASES: &[TestCase] = &[
         numbers: &[("T", 278.15), ("P", 10000000.0)],
         flags: &[],
         lists: &[("components", &["methane", "ethane", "propane", "water"])],
-        strings: &[("eos", "srk")],
+        strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
         vectors: &[(
             "z",
             &[

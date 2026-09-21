@@ -19,6 +19,7 @@ this family is drawn on is pinned at the same states by three models."""
 [cases.inputs]
 components = ["methane", "ethane", "propane", "water"]
 eos = "srk"
+hydrate_model = "pvtsim"
 T = 288.15
 z = [
     0.7810182896688087,
@@ -38,6 +39,7 @@ pressure `-5.271e-7` against `7.585e-9` at this one."""
 [cases.inputs]
 components = ["methane", "ethane", "propane", "water"]
 eos = "srk"
+hydrate_model = "pvtsim"
 T = 283.15
 z = [
     0.7810182896688087,
@@ -57,6 +59,7 @@ pressure `-5.174e-7` against `-9.816e-9` at this one."""
 [cases.inputs]
 components = ["methane", "ethane", "propane", "water"]
 eos = "srk"
+hydrate_model = "pvtsim"
 T = 278.15
 z = [
     0.7810182896688087,

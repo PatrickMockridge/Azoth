@@ -35,6 +35,7 @@ not an equation, and both implementations read it from here.
 | `P` | Pa | absolute pressure at which the formation temperature is wanted; the temperature is what is solved for. |
 | `z` | dimensionless | the overall mole fractions, checked rather than renormalised. |
 | `eos` | pr / srk / rk | the cubic the fluid runs. It is also the equation the hydrate's reference water phase is built from, because NeqSim's is a phase of the *host's* own class - so this is a real choice and not a label: a PR fluid and an SRK one give different temperatures. |
+| `hydrate_model` | pvtsim / guo_finch | *Optional.* which of NeqSim's two fitted component models fills the cages. `pvtsim` is its default; `guo_finch` is what it selects for a `CPA-SRK-EOS`-named system, and the two differ in their reference term. |
 
 
 ## Outputs
@@ -67,9 +68,9 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_ethane_propane_water_at_100_bara` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | temperature = 293.22769110384, structure = structure_ii |
-| `the_same_feed_at_50_bara` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, P = 5000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | temperature = 288.530460404555, structure = structure_ii |
-| `the_same_feed_at_200_bara` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, P = 20000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | temperature = 297.061002920514, structure = structure_ii |
+| `methane_ethane_propane_water_at_100_bara` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | temperature = 293.22769110384, structure = structure_ii |
+| `the_same_feed_at_50_bara` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, P = 5000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | temperature = 288.530460404555, structure = structure_ii |
+| `the_same_feed_at_200_bara` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, P = 20000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | temperature = 297.061002920514, structure = structure_ii |
 
 ## References
 

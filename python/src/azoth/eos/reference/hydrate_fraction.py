@@ -74,7 +74,12 @@ def _maximum_fraction(z: list[float], in_hydrate: list[float]) -> float:
 
 
 def hydrate_fraction(
-    components: list[str], T: Q, P: Q, z: list[float], eos: str = "srk"
+    components: list[str],
+    T: Q,
+    P: Q,
+    z: list[float],
+    eos: str = "srk",
+    hydrate_model: str = _hydrate.PVTSIM,
 ) -> HydrateFractionResult:
     """The fraction of a feed that is hydrate at a temperature and pressure.
 
@@ -121,10 +126,12 @@ def hydrate_fraction(
         fugacities = _guest_fugacities(flash, fluid, p_si)
         reference = _reference_water_fugacity(eos, t_si, p_si)
         structure, coefficient = _hydrate.stable_structure(
-            hydration.guests, fugacities, t_si, p_si, reference
+            hydration.guests, fugacities, hydrate_model, t_si, p_si, reference
         )
         return (
-            _hydrate.composition(hydration.guests, fugacities, structure, t_si, water_index),
+            _hydrate.composition(
+                hydration.guests, fugacities, hydrate_model, structure, t_si, water_index
+            ),
             structure,
             coefficient,
             fugacities,

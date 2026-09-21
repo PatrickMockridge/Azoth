@@ -14,6 +14,7 @@ attached to, so this case pins the hydrate and not the mixing rule."""
 [cases.inputs]
 components = ["methane", "ethane", "propane", "water"]
 eos = "srk"
+hydrate_model = "pvtsim"
 P = 10000000.0
 z = [
     0.7810182896688087,
@@ -32,6 +33,7 @@ temperature, which is the direction the phase boundary runs."""
 [cases.inputs]
 components = ["methane", "ethane", "propane", "water"]
 eos = "srk"
+hydrate_model = "pvtsim"
 P = 5000000.0
 z = [
     0.7810182896688087,
@@ -50,6 +52,7 @@ model is monotone in pressure rather than right at one point."""
 [cases.inputs]
 components = ["methane", "ethane", "propane", "water"]
 eos = "srk"
+hydrate_model = "pvtsim"
 P = 20000000.0
 z = [
     0.7810182896688087,

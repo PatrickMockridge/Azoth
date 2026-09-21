@@ -35,6 +35,7 @@ not an equation, and both implementations read it from here.
 | `T` | K | absolute temperature at which the formation pressure is wanted; the pressure is what is solved for. |
 | `z` | dimensionless | the overall mole fractions, checked rather than renormalised. |
 | `eos` | pr / srk / rk | the cubic the fluid runs. It is also the equation the hydrate's reference water phase is built from, because NeqSim's is a phase of the *host's* own class - so this is a real choice and not a label. |
+| `hydrate_model` | pvtsim / guo_finch | *Optional.* which of NeqSim's two fitted component models fills the cages. `pvtsim` is its default; `guo_finch` is what it selects for a `CPA-SRK-EOS`-named system, and the two differ in their reference term. |
 
 
 ## Outputs
@@ -66,9 +67,9 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `the_probes_feed_at_288_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, T = 288.15, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | pressure = 4755816.196713141, structure = structure_ii |
-| `the_probes_feed_at_283_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, T = 283.15, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | pressure = 2553765.013200787, structure = structure_ii |
-| `the_probes_feed_at_278_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, T = 278.15, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | pressure = 1408645.517847312, structure = structure_ii |
+| `the_probes_feed_at_288_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 288.15, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | pressure = 4755816.196713141, structure = structure_ii |
+| `the_probes_feed_at_283_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 283.15, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | pressure = 2553765.013200787, structure = structure_ii |
+| `the_probes_feed_at_278_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 278.15, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | pressure = 1408645.517847312, structure = structure_ii |
 
 ## References
 

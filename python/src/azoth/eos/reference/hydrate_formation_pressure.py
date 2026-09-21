@@ -55,7 +55,11 @@ def _guest_fugacities(flash: PtFlashResult, z: list[float], p: float) -> list[fl
 
 
 def hydrate_formation_pressure(
-    components: list[str], T: Q, z: list[float], eos: str = "srk"
+    components: list[str],
+    T: Q,
+    z: list[float],
+    eos: str = "srk",
+    hydrate_model: str = _hydrate.PVTSIM,
 ) -> HydrateFormationPressureResult:
     """The pressure at which a fluid's hydrate appears, at a temperature.
 
@@ -100,7 +104,7 @@ def hydrate_formation_pressure(
         fugacities = _guest_fugacities(flash, z, p)
         reference = _reference_water_fugacity(eos, t_si, p)
         _structure, coefficient = _hydrate.stable_structure(
-            hydration.guests, fugacities, t_si, p, reference
+            hydration.guests, fugacities, hydrate_model, t_si, p, reference
         )
         return coefficient * p / fugacities[water_index] - 1.0
 
@@ -142,7 +146,7 @@ def hydrate_formation_pressure(
             fugacities = _guest_fugacities(flash, z, mid)
             reference = _reference_water_fugacity(eos, t_si, mid)
             structure, _coefficient = _hydrate.stable_structure(
-                hydration.guests, fugacities, t_si, mid, reference
+                hydration.guests, fugacities, hydrate_model, t_si, mid, reference
             )
             return HydrateFormationPressureResult(
                 pressure=from_si(mid, "Pa"),

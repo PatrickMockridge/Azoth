@@ -37,6 +37,26 @@ _CHEMICAL_POTENTIAL: tuple[tuple[float, float, float, float], ...] = (
 #: NeqSim works its fugacities in bara and this states its own in pascals.
 _PA_PER_BAR = 1.0e5
 
+#: The reference pressure the empty-lattice vapour pressure is stated against, bar. NeqSim's
+#: ``ThermodynamicConstantsInterface.referencePressure``.
+_REFERENCE_PRESSURE_BAR = 1.01325
+
+#: The empty structure's vapour pressure constants, structure I then II: Sloan (1990), as
+#: NeqSim's ``ComponentHydrate.emptyHydrateVapourPressureConstant``.
+_EMPTY_VAPOUR_PRESSURE = ((17.44, -6003.9), (17.332, -6017.6))
+
+#: Avlonitis (1994)'s molar volume of the empty hydrate, ``(v0, k1, k2, k3)`` in cm3/mol and
+#: per K, structure I then II. NeqSim's ``ComponentHydrate.getMolarVolumeHydrate``.
+_HYDRATE_VOLUME = (
+    (22.35, 3.1075e-4, 5.9537e-7, 1.3707e-10),
+    (22.57, 1.9335e-4, 2.1768e-7, -1.4786e-10),
+)
+
+#: Which fitted hydrate model a calculation runs. NeqSim picks between them by the *system's
+#: model name* rather than by anything about the fluid, so the name is a model-level choice.
+PVTSIM = "pvtsim"
+GUO_FINCH = "guo_finch"
+
 #: The cavities of each type in one unit cell: structure I then II, small then large.
 #: NeqSim's ``ComponentHydrate`` constructor, and the counts its ``46/54`` and ``136/160``
 #: bounds come from - which are the *fully occupied* limits, not the composition at a state.
@@ -49,18 +69,22 @@ WATER_PER_CELL: tuple[float, float] = (46.0, 136.0)
 class HydrateGuest:
     """A substance's hydrate record: what the occupancy loops read, and no more."""
 
-    __slots__ = ("former", "langmuir_a", "langmuir_b", "name")
+    __slots__ = ("former", "guo_finch_a", "guo_finch_b", "langmuir_a", "langmuir_b", "name")
 
     def __init__(
         self,
         name: str,
         langmuir_a: tuple[float, float, float, float],
         langmuir_b: tuple[float, float, float, float],
+        guo_finch_a: tuple[float, float, float, float],
+        guo_finch_b: tuple[float, float, float, float],
         former: bool,
     ) -> None:
         self.name = name
         self.langmuir_a = langmuir_a
         self.langmuir_b = langmuir_b
+        self.guo_finch_a = guo_finch_a
+        self.guo_finch_b = guo_finch_b
         self.former = former
 
 
@@ -74,15 +98,49 @@ class Hydration:
         self.water_index = water_index
 
 
-def langmuir(guest: HydrateGuest, structure: int, cavity: int, t: float) -> float:
-    """``C = A/T exp(B/T)`` for one guest at one structure's cavity."""
+def langmuir(guest: HydrateGuest, model: str, structure: int, cavity: int, t: float) -> float:
+    """``C = A/T exp(B/T)`` for one guest at one structure's cavity, on one model's pair."""
     index = structure * 2 + cavity
-    return guest.langmuir_a[index] / t * math.exp(guest.langmuir_b[index] / t)
+    a, b = (
+        (guest.langmuir_a, guest.langmuir_b)
+        if model == PVTSIM
+        else (guest.guo_finch_a, guest.guo_finch_b)
+    )
+    return a[index] / t * math.exp(b[index] / t)
+
+
+def empty_hydrate_vapour_pressure(structure: int, t: float) -> float:
+    """The empty hydrate's vapour pressure on one structure, **in bar**.
+
+    The Guo-Finch route's reference term, and the reason that route breaks the structure
+    comparison: it is a function of the structure, so it does not cancel the way the PVTsim
+    route's single reference does.
+    """
+    c0, c1 = _EMPTY_VAPOUR_PRESSURE[structure]
+    return math.exp(c0 + c1 / t) * _REFERENCE_PRESSURE_BAR
+
+
+def molar_volume_hydrate(structure: int, t: float) -> float:
+    """The molar volume of the empty hydrate on one structure, m3/mol. Avlonitis (1994)."""
+    v0, k1, k2, k3 = _HYDRATE_VOLUME[structure]
+    dt = t - T_REFERENCE
+    return v0 * (1.0 + k1 * dt + k2 * dt * dt + k3 * dt * dt * dt) / 1.0e6
+
+
+def _reference_term(
+    model: str, structure: int, t: float, p: float, reference_water_fugacity: float
+) -> float:
+    """What multiplies ``exp(exponent)`` to make the coefficient."""
+    if model == PVTSIM:
+        return reference_water_fugacity / p
+    p_empty = empty_hydrate_vapour_pressure(structure, t) * _PA_PER_BAR
+    return p_empty * math.exp(molar_volume_hydrate(structure, t) / (R * t) * (p - p_empty)) / p
 
 
 def occupancy(
     guests: list[HydrateGuest],
     ref_fugacities: list[float],
+    model: str,
     structure: int,
     cavity: int,
     t: float,
@@ -96,9 +154,9 @@ def occupancy(
     denominator = 1.0
     for guest, fugacity in zip(guests, ref_fugacities, strict=True):
         if guest.former:
-            denominator += langmuir(guest, structure, cavity, t) * fugacity / _PA_PER_BAR
+            denominator += langmuir(guest, model, structure, cavity, t) * fugacity / _PA_PER_BAR
     return [
-        langmuir(guest, structure, cavity, t) * fugacity / _PA_PER_BAR / denominator
+        langmuir(guest, model, structure, cavity, t) * fugacity / _PA_PER_BAR / denominator
         if guest.former
         else 0.0
         for guest, fugacity in zip(guests, ref_fugacities, strict=True)
@@ -122,6 +180,7 @@ def _chemical_potential(structure: int, t: float, p: float) -> float:
 def exponent(
     guests: list[HydrateGuest],
     ref_fugacities: list[float],
+    model: str,
     t: float,
     p: float,
     structure: int,
@@ -145,7 +204,7 @@ def exponent(
     """
     val = 0.0
     for cavity, per_water in enumerate(CAVITIES_PER_WATER[structure]):
-        occupied = sum(occupancy(guests, ref_fugacities, structure, cavity, t))
+        occupied = sum(occupancy(guests, ref_fugacities, model, structure, cavity, t))
         if occupied >= 1.0:
             raise OutOfRangeError(
                 "occupancy",
@@ -154,12 +213,15 @@ def exponent(
                 f"where the cavity sum's logarithm has no value",
             )
         val += per_water * math.log(1.0 - occupied)
-    return val + _chemical_potential(structure, t, p)
+    # The Guo-Finch route's reference is the empty lattice's own vapour pressure, carried by
+    # `_reference_term`, so it adds no chemical-potential constant.
+    return val + (_chemical_potential(structure, t, p) if model == PVTSIM else 0.0)
 
 
 def water_fugacity_coefficient(
     guests: list[HydrateGuest],
     ref_fugacities: list[float],
+    model: str,
     t: float,
     p: float,
     structure: int,
@@ -175,32 +237,38 @@ def water_fugacity_coefficient(
     Raises:
         OutOfRangeError: from the structure's cavity sum.
     """
-    return (
-        math.exp(exponent(guests, ref_fugacities, t, p, structure)) * reference_water_fugacity / p
+    return math.exp(exponent(guests, ref_fugacities, model, t, p, structure)) * _reference_term(
+        model, structure, t, p, reference_water_fugacity
     )
 
 
 def stable_structure(
     guests: list[HydrateGuest],
     ref_fugacities: list[float],
+    model: str,
     t: float,
     p: float,
     reference_water_fugacity: float,
 ) -> tuple[int, float]:
     """The stable structure and its coefficient: the **lower** of the two.
 
-    The reference term is the same for both - it is the *reference fluid's* fugacity over the
-    pressure, and neither depends on the structure - so the comparison is the exponents'.
+    **The coefficients are compared, not the exponents.** The PVTsim route's reference is one
+    number for both structures, so comparing exponents happens to agree there; the Guo-Finch
+    route's is the empty lattice's vapour pressure on that structure, which does not cancel.
     """
-    first = exponent(guests, ref_fugacities, t, p, 0)
-    second = exponent(guests, ref_fugacities, t, p, 1)
-    structure, chosen = (0, first) if first <= second else (1, second)
-    return structure, math.exp(chosen) * reference_water_fugacity / p
+    first = water_fugacity_coefficient(
+        guests, ref_fugacities, model, t, p, 0, reference_water_fugacity
+    )
+    second = water_fugacity_coefficient(
+        guests, ref_fugacities, model, t, p, 1, reference_water_fugacity
+    )
+    return (0, first) if first <= second else (1, second)
 
 
 def composition(
     guests: list[HydrateGuest],
     ref_fugacities: list[float],
+    model: str,
     structure: int,
     t: float,
     water_index: int,
@@ -222,7 +290,9 @@ def composition(
     total_guests = 0.0
     for cavity in range(2):
         per_cell = CAVITIES_PER_CELL[structure][cavity]
-        for index, occupied in enumerate(occupancy(guests, ref_fugacities, structure, cavity, t)):
+        for index, occupied in enumerate(
+            occupancy(guests, ref_fugacities, model, structure, cavity, t)
+        ):
             counts[index] += per_cell * occupied
             total_guests += per_cell * occupied
     water = WATER_PER_CELL[structure]
@@ -249,6 +319,8 @@ def hydration_for(names: list[str]) -> Hydration:
                 name=entry.name,
                 langmuir_a=entry.hydrate_langmuir_a,
                 langmuir_b=entry.hydrate_langmuir_b,
+                guo_finch_a=entry.hydrate_guo_finch_a,
+                guo_finch_b=entry.hydrate_guo_finch_b,
                 former=entry.hydrate_former,
             )
         )
