@@ -2,8 +2,7 @@
 
 Educational SURF flowline/riser cooldown and no-touch-time screening placeholder with public assumptions. USE WHEN: a task needs a quick, public estimate of how long an insulated subsea flowline stays above its hydrate formation temperature after shutdown, and should be directed to validated NeqSim methods for real cooldown and hydrate calculations.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P9.
+This is a `screening` skill with a mixed backing. **Its hydrate half is ported and the cooldown is not**: the temperature it compares against is `eos.hydrate_formation_temperature`, and the cooldown estimate is `pvtsimulation/flowassurance/SurfCooldownAnalyzer`, carried inside tranche P9's directory but not ported from it.
 
 ## When to Use
 
@@ -47,7 +46,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P9. The validated engine today is NeqSim's, credited in `NOTICE`.
+`eos.hydrate_formation_temperature` is the hydrate temperature this compares against, and it is ported. The cooldown itself is not: NeqSim's is `pvtsimulation/flowassurance/SurfCooldownAnalyzer`, carried as part of `pvtsimulation/flowassurance/` in tranche P9 and not ported from it.
 
 ## References
 

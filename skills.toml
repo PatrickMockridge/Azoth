@@ -236,18 +236,16 @@ tags = ["flow-assurance"]
 name = "azoth-multiphase-flow-slug-screening"
 version = "0.1.0"
 description = "Educational multiphase slug-flow regime and slug-catcher volume screening. USE WHEN: a task needs a public, screening-level indicator of whether a multiphase line is in an intermittent/slug regime and a first-pass slug-catcher volume estimate before validated multiphase flow analysis."
-calculation_basis = "screening"
+calculation_basis = "advisory"
 path = "skills/flow-assurance/multiphase-flow-slug-screening/SKILL.md"
-tranche = "P9"
 tags = ["flow-assurance"]
 
 [[skill]]
 name = "azoth-olga-multiphase-simulator"
 version = "0.1.0"
 description = "Run the OLGA transient multiphase flow simulator from Python: locate the installation, generate its PVT table and hydrate equilibrium curve from a NeqSim fluid, validate a genkey case with a rule check, launch the batch engine with the right flags, decode the engine exit code, and read .tpl trend and .ppl profile results. USE WHEN: a task must execute an OLGA case, batch or sweep OLGA runs, build a two- or three-phase OLGA PVT table or a HYDRATECURVE for HYDRATECHECK, diagnose an OLGA failure or licence error, or benchmark OLGA against the NeqSim pipeline models (TwoFluidPipe, PipeBeggsAndBrills) so that a multiphase flow result can be quoted with a known accuracy."
-calculation_basis = "screening"
+calculation_basis = "data-retrieval"
 path = "skills/flow-assurance/olga-multiphase-simulator/SKILL.md"
-tranche = "P9"
 tags = ["flow-assurance"]
 
 [[skill]]
@@ -272,9 +270,8 @@ tags = ["flow-assurance"]
 name = "azoth-two-phase-flow-regime-screening"
 version = "0.1.0"
 description = "Educational two-phase flow-regime screening that classifies a horizontal gas-liquid flow pattern from superficial velocities using a simplified public Mandhane-style map and flags slug risk. USE WHEN: a task needs a public, screening-level flow-regime flag (stratified, slug, annular, bubble) and slug-risk triage to pair with slug-flow and flow-induced-vibration work."
-calculation_basis = "screening"
+calculation_basis = "advisory"
 path = "skills/flow-assurance/two-phase-flow-regime-screening/SKILL.md"
-tranche = "P9"
 tags = ["flow-assurance"]
 
 [[skill]]

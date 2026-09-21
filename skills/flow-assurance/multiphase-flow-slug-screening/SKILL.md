@@ -2,8 +2,8 @@
 
 Educational multiphase slug-flow regime and slug-catcher volume screening. USE WHEN: a task needs a public, screening-level indicator of whether a multiphase line is in an intermittent/slug regime and a first-pass slug-catcher volume estimate before validated multiphase flow analysis.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P9.
+This is an `advisory` skill: azoth will not compute it, and the map below is the content.
+**No tranche backs it**: the regime map and the catcher-volume correlation are NeqSim's `fluidmechanics/`, which azoth does not port.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P9. The validated engine today is NeqSim's, credited in `NOTICE`.
+None, and none is planned under this name. NeqSim's `fluidmechanics/` is not the port source, so the backing would be azoth's own `hydraulics.*`. The validated engine today is NeqSim's, credited in `NOTICE`.
 
 ## References
 

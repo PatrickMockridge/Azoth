@@ -92,16 +92,17 @@ process model needs.
   `PUflash`, `PVFflash`, `TVfractionFlash`, `QfuncFlash`, `ImprovedVUflashQfunc`.
 - **Phase envelopes.** `PTphaseEnvelope`, `HPTphaseEnvelope`, `PTPhaseEnvelopeMichelsen`,
   `CricondenBarFlash`, `CricondenThermFlash`, `SysNewtonRhapsonPhaseEnvelope`.
-- **PVT and flow assurance.** `pvtsimulation/` (simulation, model tuning, reservoir
-  properties), including **`pvtsimulation/flowassurance/` carried as one named group — 21
-  classes and 12,486 lines** — because it is not one family and the specification's rows split
-  it: seven scale calculations (`MultiMineralScaleEquilibrium`, `ScalePredictionCalculator`,
-  `ScaleMassCalculator`, `PitzerScaleActivityModel`, `BariteCelestiteSolidSolution`,
-  `FlowlineScaleProfile`, `WaterCompatibilityScreener`), six asphaltene screens, one wax
-  (`WaxCurveCalculator`), two corrosion (`CO2CorrosionAnalyzer`, `DeWaardMilliamsCorrosion`)
-  and five generic flow-assurance calculators (`HydrateRiskMapper`,
-  `PipelineCooldownCalculator`, `SurfCooldownAnalyzer`, `ErosionPredictionCalculator`,
-  `EmulsionViscosityCalculator`). None of it is ported.
+- **Flow assurance.** `pvtsimulation/flowassurance/` is carried as **one named group — 21
+  classes and 12,486 lines** — because it is not one family: seven scale calculations
+  (`MultiMineralScaleEquilibrium`, `ScalePredictionCalculator`, `ScaleMassCalculator`,
+  `PitzerScaleActivityModel`, `BariteCelestiteSolidSolution`, `FlowlineScaleProfile`,
+  `WaterCompatibilityScreener`), six asphaltene screens, one wax (`WaxCurveCalculator`), two
+  corrosion (`CO2CorrosionAnalyzer`, `DeWaardMilliamsCorrosion`) and five generic
+  flow-assurance calculators (`HydrateRiskMapper`, `PipelineCooldownCalculator`,
+  `SurfCooldownAnalyzer`, `ErosionPredictionCalculator`, `EmulsionViscosityCalculator`).
+  None of it is ported. **The rest of `pvtsimulation/` is not here**: the simulation suite,
+  the model tuning and the reservoir properties are engineering deliverables, and
+  [the specification](docs/src/architecture/specification.md) puts them beyond the port.
 
 ### Tier 2 — water and gas-water
 

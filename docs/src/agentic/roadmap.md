@@ -37,11 +37,24 @@ the physics behind them:
   conductivity, diffusivity, surface tension, density — wait on P1.
 - **Petroleum-fraction characterisation** — pvt pseudocomponent and regression skills
   wait on Tier 1 of [`ROADMAP.md`](../../../ROADMAP.md).
-- **Hydrates, wax, asphaltene and solids** — the flow-assurance skills wait on P9, which
-  lands hydrate, wax, scale and freezing. **Asphaltene is carried rather than pending**: the
-  reachable pair of onset flashes scans over a flash that upstream collapses to the feed, so
-  there is nothing to drive, and [`ROADMAP.md`](../../../ROADMAP.md) records the defect and
-  what would have to change. No skill is blocked on it.
+- **Hydrates, wax, asphaltene and solids** — P9 has landed hydrate, wax, scale and freezing.
+  Four skills were waiting on it and are backed now: `azoth-hydrate-margin-check` and
+  `azoth-hydrate-screening` (`eos.hydrate_formation_temperature`,
+  `eos.hydrate_formation_pressure`, `eos.hydrate_fraction`), `azoth-wax-margin-check`
+  (`eos.tp_multiflash_wax`, `eos.wax_solid_fugacity`) and
+  `azoth-produced-water-scale-screening` (`eos.scale_saturation_ratio`,
+  `eos.salt_precipitation`).
+  **Three of the eight that carried `P9` were never waiting on solids physics and are
+  re-based**: `two-phase-flow-regime-screening` and `multiphase-flow-slug-screening` are
+  `advisory` — their maps are NeqSim's `fluidmechanics/`, which is not a port source, so no
+  tranche backs them — and `olga-multiphase-simulator` is `data-retrieval`, because it drives
+  a commercial simulator rather than computing anything. `surf-cooldown-screening` keeps P9
+  for the hydrate temperature it compares against and states that the cooldown itself is
+  carried.
+  **Asphaltene is carried rather than pending**: the reachable pair of onset flashes scans
+  over a flash that upstream collapses to the feed, so there is nothing to drive, and
+  [`ROADMAP.md`](../../../ROADMAP.md) records the defect and what would have to change. No
+  skill is blocked on it.
 
 ## Tranche → domain → skills
 

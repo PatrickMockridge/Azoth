@@ -2,8 +2,8 @@
 
 Run the OLGA transient multiphase flow simulator from Python: locate the installation, generate its PVT table and hydrate equilibrium curve from a NeqSim fluid, validate a genkey case with a rule check, launch the batch engine with the right flags, decode the engine exit code, and read .tpl trend and .ppl profile results. USE WHEN: a task must execute an OLGA case, batch or sweep OLGA runs, build a two- or three-phase OLGA PVT table or a HYDRATECURVE for HYDRATECHECK, diagnose an OLGA failure or licence error, or benchmark OLGA against the NeqSim pipeline models (TwoFluidPipe, PipeBeggsAndBrills) so that a multiphase flow result can be quoted with a known accuracy.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P9.
+This is a `data-retrieval` skill: it drives OLGA and reads what OLGA writes.
+**No tranche backs the simulator**: OLGA is a commercial tool and not NeqSim physics, so azoth will not compute what this runs. The one part of it that is azoth's is the hydrate equilibrium curve, `eos.hydrate_formation_temperature`.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P9. The validated engine today is NeqSim's, credited in `NOTICE`.
+`eos.hydrate_formation_temperature` computes the hydrate equilibrium temperature a `HYDRATECURVE` is built from. The simulator, the case files and the trend and profile readers are OLGA's and no tranche will back them. The validated engine today is NeqSim's, credited in `NOTICE`.
 
 ## References
 

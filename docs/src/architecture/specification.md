@@ -105,7 +105,7 @@ are vendored and reachable.
 | P6 | The full flash set and the phase envelope | `flashops/`, `saturationops/` |
 | P7 | Associating — CPA, UMR-CPA, PC-SAFT, SAFT-VR-Mie | `thermo/phase/` |
 | P8 | Electrolytes | `thermo/phase/` |
-| P9 | Solids and flow assurance — hydrates, wax, asphaltene, scale, freezing | `flashops/`, `pvtsimulation/` |
+| P9 | Solids and flow assurance — hydrates, wax, asphaltene, scale, freezing | `flashops/`, `pvtsimulation/flowassurance/` |
 | P10 | Reactions | `chemicalreactions/` |
 | P11 | Unit operations | `process/equipment/` |
 | P12 | Flowsheets | — |
@@ -113,9 +113,16 @@ are vendored and reachable.
 Beyond P12: the interoperation surface — the middleware a flowsheet editor, a notebook
 and an agent all drive, with the MCP server as its later projection — and then mechanical
 design, safety, cost, electrical, automation, `standards/`, `statistics/`,
-`fluidmechanics/` and `pvtsimulation/`. They are last because they are engineering
-deliverables rather than thermodynamics — a statement about **order**, not about whether
-they belong.
+`fluidmechanics/` and `pvtsimulation/` **without its `flowassurance/`**. They are last
+because they are engineering deliverables rather than thermodynamics — a statement about
+**order**, not about whether they belong.
+
+**`pvtsimulation/` is two things and the P9 row above names the half that is physics.** Its
+`flowassurance/` holds the hydrate, wax, asphaltene, scale, corrosion and cooldown
+calculations, which belong to the tranche that backs each — P9 for the first four. The rest
+of the tree is the simulation suite (`DifferentialLiberation`, `ConstantVolumeDepletion`,
+`SwellingTest`, `SaturationPressure`, `SeparatorTest`, `GOR`, `MMPCalculator`), the model
+tuning and the reservoir properties, and it is here.
 
 The middleware's shape is [The middleware](./middleware.md), and it is deferred until P12
 closes — an interoperation surface sits on top of the kernels and the executor, not beside

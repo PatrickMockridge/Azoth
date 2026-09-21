@@ -2,8 +2,8 @@
 
 Educational two-phase flow-regime screening that classifies a horizontal gas-liquid flow pattern from superficial velocities using a simplified public Mandhane-style map and flags slug risk. USE WHEN: a task needs a public, screening-level flow-regime flag (stratified, slug, annular, bubble) and slug-risk triage to pair with slug-flow and flow-induced-vibration work.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P9.
+This is an `advisory` skill: azoth will not compute it, and the map below is the content.
+**No tranche backs it**: the map is NeqSim's `fluidmechanics/`, which azoth does not port, and azoth's own `hydraulics.*` is where a flow-regime calculation belongs if one is written.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P9. The validated engine today is NeqSim's, credited in `NOTICE`.
+None, and none is planned under this name. NeqSim's `fluidmechanics/` is not the port source, so the backing would be azoth's own `hydraulics.*`. The validated engine today is NeqSim's, credited in `NOTICE`.
 
 ## References
 
