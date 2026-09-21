@@ -500,6 +500,67 @@ def consumer_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
 #: `databank/README.md` writes one in parentheses, two lines after the word `commit`.
 COMMIT_CITATION = re.compile(r"\b([0-9a-f]{40})\b")
 
+#: A NeqSim *version* as a provenance field spells it: `NeqSim 3.21.0`, `NeqSim v3.20.0`.
+VERSION_CITATION = re.compile(r"NeqSim\s+v?\d+\.\d+(?:\.\d+)?")
+
+#: The fields a version must never appear in, and the field that opens a multi-line one.
+_PROVENANCE_PREFIXES = ("source = ", "standard = ", "edition = ")
+
+
+def _provenance_lines(text: str) -> list[str]:
+    """Every line that states where a port came from, and nothing else.
+
+    The distinction is the whole difficulty of the version check: a *citation* names the
+    revision a port is taken from and must move with the pin, while a *claim* - "it was 3%
+    out at 3.20.0" - names an old revision deliberately and must not. Only the fields that
+    cite are read, so the two cannot be confused by a scanner.
+    """
+    found: list[str] = []
+    in_references = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if re.match(r"references\s*=\s*\[", stripped):
+            in_references = True
+        if in_references or stripped.startswith(_PROVENANCE_PREFIXES):
+            found.append(line)
+        if in_references and "]" in line:
+            in_references = False
+    return found
+
+
+def version_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
+    """Check that no provenance field cites NeqSim by *version*.
+
+    **A version does not name the revision, and that is why this exists.** NeqSim's `pom.xml`
+    carries the same `<revision>` at the release tag and on master - fifty commits apart when
+    this was written - so `NeqSim 3.21.0` names two different trees, and a port citing it cites
+    one nobody can check it against. The commit is the pin, and `NeqSim master` is the only
+    readable name that resolves to the bytes vendored under `databank/sources/`.
+
+    The check runs over the same documents `citation_problems` does, and reads only the
+    fields that cite, so a claim about an older revision's *behaviour* is left alone.
+    """
+    documents = [
+        *(root / "specs").rglob("*.toml"),
+        root / "NOTICE",
+        root / "databank" / "README.md",
+    ]
+    recorded = next((u.commit for u in manifest.upstreams if u.id == "neqsim"), "")
+    messages: list[str] = []
+    for path in sorted(documents):
+        if not path.is_file():
+            continue
+        for line in _provenance_lines(path.read_text(encoding="utf-8")):
+            for found in sorted(set(VERSION_CITATION.findall(line))):
+                messages.append(
+                    f"{path.relative_to(root)}: cites `{found}` as a provenance. A version "
+                    f"names both NeqSim's release tag and its master, so it does not identify "
+                    f"the revision - cite `NeqSim master` or the commit `{recorded[:7]}` that "
+                    f"`{MANIFEST.name}` pins."
+                )
+    return messages
+
+
 #: A line that is nothing but one word, which is how `NOTICE` heads each upstream - and
 #: how it does *not* head a TOML key or a Markdown heading. **Three characters or more**,
 #: because `databank/README.md` draws its stages with a lone `v` on a line of its own and

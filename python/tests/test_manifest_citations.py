@@ -119,6 +119,37 @@ def test_a_spec_citing_another_revision_is_reported(tmp_path: Path) -> None:
     assert manifest_tool().citation_problems(_manifest(), tmp_path) == []
 
 
+def test_a_provenance_citing_a_version_is_reported(tmp_path: Path) -> None:
+    """**A version does not name the revision**, and a port citing one cites a tree nobody
+    can check it against: NeqSim's `pom.xml` carries the same `<revision>` at the release tag
+    and on master, fifty commits apart.
+
+    Sabotage, over a scratch root, for the same reason the commit check's is: this is a test
+    of the rule and not of the tree it happens to be sitting in.
+    """
+    spec = tmp_path / "specs" / "models" / "eos"
+    spec.mkdir(parents=True)
+    (spec / "water_phase.toml").write_text(
+        'source = { standard = "NeqSim 3.21.0 `Iapws_if97.java`" }\n', encoding="utf-8"
+    )
+    problems = manifest_tool().version_problems(_manifest(), tmp_path)
+    assert len(problems) == 1, problems
+    assert "NeqSim 3.21.0" in problems[0]
+
+    # And the same field naming the revision is left alone, which is what stops the check
+    # being one that fires on everything.
+    (spec / "water_phase.toml").write_text(
+        'source = { standard = "NeqSim master `Iapws_if97.java`" }\n', encoding="utf-8"
+    )
+    assert manifest_tool().version_problems(_manifest(), tmp_path) == []
+
+    # A *claim* about an older revision's behaviour is not a provenance and is not read.
+    (spec / "water_phase.toml").write_text(
+        'notes = "its `getGamma` returned 0 at NeqSim 3.20.0"\n', encoding="utf-8"
+    )
+    assert manifest_tool().version_problems(_manifest(), tmp_path) == []
+
+
 @pytest.mark.parametrize("document", ["NOTICE", "databank/README.md"])
 def test_the_two_pages_that_state_the_revision_are_scanned(document: str) -> None:
     """A page whose passage the scanner never enters would pass this check vacuously."""

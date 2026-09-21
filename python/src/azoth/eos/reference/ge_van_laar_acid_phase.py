@@ -134,9 +134,7 @@ def ge_van_laar_acid_phase(
     # eagerly, so `acid_pa.get(index, next(remaining))` would spend a fallback pressure on
     # every acid component too and run out.
     remaining = iter(fallback_p_sat)
-    p_sat = [
-        acid_pa[index] if index in acid_pa else next(remaining) for index in params.acid_index
-    ]
+    p_sat = [acid_pa[index] if index in acid_pa else next(remaining) for index in params.acid_index]
 
     # The penalty replaces the whole coefficient, not just `P0`: NeqSim returns it before
     # computing anything else.

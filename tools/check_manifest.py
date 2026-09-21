@@ -45,6 +45,11 @@ def main() -> int:
 
     found, problems = manifest_module.read()
     problems.extend(manifest_module.validate(found))
+    # **The two citation checks: the commit a provenance names, and the version it must not.**
+    # A version identifies neither of NeqSim's trees, so a port citing one cites a revision
+    # nobody can check it against - which is what this caught the first time it ran.
+    problems.extend(manifest_module.citation_problems(found))
+    problems.extend(manifest_module.version_problems(found))
 
     if problems:
         for problem in problems:
